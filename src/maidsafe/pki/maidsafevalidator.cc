@@ -26,8 +26,13 @@
 #define MAIDSAFE_VALIDATIONIMPL_H_
 
 #include "maidsafe/pki/maidsafevalidator.h"
-#include <maidsafe/base/crypto.h>
+
+#include "boost/bind.hpp"
+#include "boost/function.hpp"
+#include "maidsafe-dht/common/crypto.h"
+
 #include <cstdio>
+
 #include "maidsafe/common/returncodes.h"
 
 
@@ -35,10 +40,12 @@ namespace maidsafe {
 
 namespace pki {
 
+boost::function<std::string(const std::string&)> Hash512 =
+    boost::bind(&crypto::Hash<crypto::SHA512>, _1);
+
 bool MaidsafeValidator::ValidateSignerId(const std::string &signer_id,
                                          const std::string &public_key,
                                          const std::string &signed_public_key) {
-  crypto::Crypto co;
   if (signer_id.empty() || public_key.empty() || signed_public_key.empty()) {
 #ifdef DEBUG
     if (signer_id.empty())
@@ -50,8 +57,7 @@ bool MaidsafeValidator::ValidateSignerId(const std::string &signer_id,
 #endif
     return false;
   }
-  if (signer_id != co.Hash(public_key + signed_public_key, "",
-      crypto::STRING_STRING, false)) {
+  if (signer_id != Hash512(public_key + signed_public_key)) {
 #ifdef DEBUG
     printf("MaidsafeValidator::ValidateSignerId - Id doesn't validate.\n");
 #endif
@@ -64,15 +70,14 @@ bool MaidsafeValidator::ValidateRequest(const std::string &signed_request,
                                         const std::string &public_key,
                                         const std::string &signed_public_key,
                                         const std::string &key) {
-  crypto::Crypto co;
-  if (co.AsymCheckSig(co.Hash(signed_public_key + key + id(), "",
-      crypto::STRING_STRING, false), signed_request, public_key,
-      crypto::STRING_STRING))
+  if (crypto::AsymCheckSig(Hash512(signed_public_key + key + kId_),
+                           signed_request,
+                           public_key))
     return true;
 
-  if (co.AsymCheckSig(co.Hash(public_key + signed_public_key +
-      key, "", crypto::STRING_STRING, false), signed_request, public_key,
-      crypto::STRING_STRING))
+  if (crypto::AsymCheckSig(Hash512(public_key + signed_public_key + key),
+                           signed_request,
+                           public_key))
     return true;
 #ifdef DEBUG
   printf("MaidsafeValidator::ValidateRequest - Failed to validate request.\n");
@@ -80,8 +85,10 @@ bool MaidsafeValidator::ValidateRequest(const std::string &signed_request,
   return false;
 }
 
-int MaidsafeValidator::CreateRequestSignature(const std::string &private_key,
-    const std::list<std::string> &parameters, std::string *request_signature) {
+int MaidsafeValidator::CreateRequestSignature(
+    const std::string &private_key,
+    const std::list<std::string> &parameters,
+    std::string *request_signature) {
   if (private_key.empty())
     return kValidatorNoPrivateKey;
   if (parameters.size() == 0)
@@ -92,12 +99,7 @@ int MaidsafeValidator::CreateRequestSignature(const std::string &private_key,
   for (it = parameters.begin(); it != parameters.end(); ++it)
     concatenation += *it;
 
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  std::string request;
-  request = co.Hash(concatenation, "", crypto::STRING_STRING, false);
-  *request_signature = co.AsymSign(request, "", private_key,
-                       crypto::STRING_STRING);
+  *request_signature = crypto::AsymSign(Hash512(concatenation), private_key);
   return 0;
 }
 

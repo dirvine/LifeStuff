@@ -488,16 +488,6 @@ SET(ALL_LIFESTUFF_LIGHT_HEADER_FILES
       ${HEADER_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR})
 
 
-FILE(GLOB SOURCE_FILES_VAULT_DIR "${SRC_MAIDSAFE}/vault/*.cc")
-FILE(GLOB HEADER_FILES_VAULT_DIR "${SRC_MAIDSAFE}/vault/*.h")
-SET(STYLE_VAULT ${SOURCE_FILES_VAULT_DIR} ${HEADER_FILES_VAULT_DIR})
-LIST(REMOVE_ITEM SOURCE_FILES_VAULT_DIR "${SRC_MAIDSAFE}/vault/pdvault_main.cc")
-LIST(REMOVE_ITEM SOURCE_FILES_VAULT_DIR "${SRC_MAIDSAFE}/vault/win_service.cc")
-LIST(REMOVE_ITEM SOURCE_FILES_VAULT_DIR "${SRC_MAIDSAFE}/vault/unix_deamon.cc")
-SET(ALL_FILES_VAULT_DIR ${SOURCE_FILES_VAULT_DIR} ${HEADER_FILES_VAULT_DIR})
-SOURCE_GROUP("vault Source Files" FILES ${SOURCE_FILES_VAULT_DIR})
-SOURCE_GROUP("vault Header Files" FILES ${HEADER_FILES_VAULT_DIR})
-
 ####    TESTS    ####
 FILE(GLOB ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/*.cc" "${SRC_MAIDSAFE}/client/tests/*.h")
 LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/client_main.cc")
@@ -510,10 +500,6 @@ FILE(GLOB ALL_FILES_COMMON_TESTS_DIR "${SRC_MAIDSAFE}/common/tests/*.cc" "${SRC_
 LIST(REMOVE_ITEM ALL_FILES_COMMON_TESTS_DIR "${SRC_MAIDSAFE}/common/tests/testbufferpackethandler.cc")
 
 FILE(GLOB ALL_FILES_FUSE_TESTS_DIR "${SRC_MAIDSAFE}/fuse/tests/*.cc" "${SRC_MAIDSAFE}/fuse/tests/*.h")
-
-FILE(GLOB ALL_FILES_VAULT_TESTS_DIR "${SRC_MAIDSAFE}/vault/tests/*.cc" "${SRC_MAIDSAFE}/vault/tests/*.h")
-LIST(REMOVE_ITEM ALL_FILES_VAULT_TESTS_DIR "${SRC_MAIDSAFE}/vault/tests/vault_main.cc")
-LIST(REMOVE_ITEM ALL_FILES_VAULT_TESTS_DIR "${SRC_MAIDSAFE}/vault/tests/testpdvault.cc")
 
 SET(NETWORK_TEST_FILES
       "${SRC_MAIDSAFE}/sharedtest/networktest.cc"
@@ -574,63 +560,39 @@ ADD_EXECUTABLE(TESTclient
 
 ADD_EXECUTABLE(TESTfuse EXCLUDE_FROM_ALL
                  ${ALL_FILES_FUSE_TESTS_DIR})
-ADD_EXECUTABLE(TESTvault
-                 ${ALL_FILES_VAULT_TESTS_DIR}
-                 "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
-                 "${SRC_MAIDSAFE}/sharedtest/chunkstoreops.h"
-                 "${SRC_MAIDSAFE}/sharedtest/mockkadops.cc"
-                 "${SRC_MAIDSAFE}/sharedtest/mockkadops.h"
-                 "${SRC_MAIDSAFE}/sharedtest/threadpool.cc"
-                 "${SRC_MAIDSAFE}/sharedtest/threadpool.h"
-                 "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
-ADD_EXECUTABLE(TESTauthentication_net
-                 ${NETWORK_TEST_FILES}
-                 "${SRC_MAIDSAFE}/client/tests/testauthentication.cc")
-ADD_EXECUTABLE(TESTbufferpackethandler_net
-                 ${NETWORK_TEST_FILES}
-                 "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
-                 "${SRC_MAIDSAFE}/common/tests/testbufferpackethandler.cc")
-ADD_EXECUTABLE(TESTclientcontroller_net
-                 ${NETWORK_TEST_FILES}
-                 "${SRC_MAIDSAFE}/sharedtest/mockclientcontroller.h"
-                 "${SRC_MAIDSAFE}/sharedtest/mocksessionsingleton.h"
-                 "${SRC_MAIDSAFE}/client/tests/testclientcontroller.cc")
+# ADD_EXECUTABLE(TESTauthentication_net
+#                  ${NETWORK_TEST_FILES}
+#                  "${SRC_MAIDSAFE}/client/tests/testauthentication.cc")
+# ADD_EXECUTABLE(TESTbufferpackethandler_net
+#                  ${NETWORK_TEST_FILES}
+#                  "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
+#                  "${SRC_MAIDSAFE}/common/tests/testbufferpackethandler.cc")
+# ADD_EXECUTABLE(TESTclientcontroller_net
+#                  ${NETWORK_TEST_FILES}
+#                  "${SRC_MAIDSAFE}/sharedtest/mockclientcontroller.h"
+#                  "${SRC_MAIDSAFE}/sharedtest/mocksessionsingleton.h"
+#                  "${SRC_MAIDSAFE}/client/tests/testclientcontroller.cc")
 ADD_EXECUTABLE(TESTclientcontroller_local
                  ${NETWORK_TEST_FILES}
                  "${SRC_MAIDSAFE}/sharedtest/mockclientcontroller.h"
                  "${SRC_MAIDSAFE}/sharedtest/mocksessionsingleton.h"
                  "${SRC_MAIDSAFE}/client/tests/testclientcontroller.cc")
-ADD_EXECUTABLE(TESTimconnectionhandler_net
-                 ${NETWORK_TEST_FILES}
-                 "${SRC_MAIDSAFE}/client/tests/testimconnhandler.cc"
-                 "${SRC_MAIDSAFE}/client/tests/testimmessaging.cc")
-ADD_EXECUTABLE(TESTpdvault_net
-                 "${SRC_MAIDSAFE}/sharedtest/localvaults.h"
-                 "${SRC_MAIDSAFE}/sharedtest/mocksessionsingleton.h"
-                 "${SRC_MAIDSAFE}/sharedtest/networktest.h"
-                 "${SRC_MAIDSAFE}/sharedtest/testcallback.h"
-                 "${SRC_MAIDSAFE}/vault/tests/testpdvault.cc")
+# ADD_EXECUTABLE(TESTimconnectionhandler_net
+#                  ${NETWORK_TEST_FILES}
+#                  "${SRC_MAIDSAFE}/client/tests/testimconnhandler.cc"
+#                  "${SRC_MAIDSAFE}/client/tests/testimmessaging.cc")
 
 ADD_EXECUTABLE(DEMOclient
                  "${SRC_MAIDSAFE}/client/tests/client_main.cc")
-ADD_EXECUTABLE(DEMOvault
-                 "${SRC_MAIDSAFE}/sharedtest/mocksessionsingleton.h"
-                 "${SRC_MAIDSAFE}/vault/tests/vault_main.cc")
-IF(WIN32)
-  ADD_EXECUTABLE(vault "${SRC_MAIDSAFE}/vault/win_service.cc")
-ELSE()
-  ADD_EXECUTABLE(vault "${SRC_MAIDSAFE}/vault/unix_deamon.cc")
-ENDIF()
 
-SET(ALL_EXECUTABLES lifestuff lslocal lslightlocal TESTcommon TESTclientfilesystem TESTclient TESTvault TESTauthentication_net TESTbufferpackethandler_net
-    TESTclientcontroller_net TESTclientcontroller_local TESTimconnectionhandler_net TESTpdvault_net TESTfuse DEMOclient DEMOvault vault)
+SET(ALL_EXECUTABLES lifestuff lslocal lslightlocal TESTcommon TESTclientfilesystem TESTclient 
+                    TESTclientcontroller_local TESTfuse DEMOclient)
 
 ADD_LIBRARY(PDclientlib STATIC ${ALL_FILES_CLIENT_DIR})
 ADD_LIBRARY(PDlsmclientlib STATIC ${ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR})
 ADD_LIBRARY(PDclientfilesystemlib STATIC ${ALL_FILES_CLIENT_FILESYSTEM_DIR})
 ADD_LIBRARY(PDcommonlib STATIC ${ALL_FILES_COMMON_DIR})
 ADD_LIBRARY(PDfuselib STATIC ${ALL_FILES_FUSE_DIR})
-ADD_LIBRARY(PDvaultlib STATIC ${ALL_FILES_VAULT_DIR})
 
 ADD_SUBDIRECTORY(${SRC_MAIDSAFE}/encrypt ${CMAKE_BINARY_DIR}/encrypt)
 ADD_SUBDIRECTORY(${SRC_MAIDSAFE}/passport ${CMAKE_BINARY_DIR}/passport)
@@ -650,8 +612,8 @@ ENDIF()
 IF(UNIX)
   ADD_CUSTOM_TARGET(CleanCoverage COMMAND ${CMAKE_COMMAND} -DSEARCH_DIR=${CMAKE_BINARY_DIR} -P ${${PROJECT_NAME}_ROOT}/build/clean_coverage.cmake)
 ENDIF()
-ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTencrypt TESTpassport TESTpki TESTcommon TESTclientfilesystem TESTclient TESTvault TESTfuse TESTauthentication_net
-                    TESTbufferpackethandler_net TESTclientcontroller_net TESTclientcontroller_local TESTimconnectionhandler_net TESTpdvault_net DEMOclient DEMOvault)
+ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTencrypt TESTpassport TESTpki TESTcommon
+                  TESTclientfilesystem TESTclient TESTfuse TESTclientcontroller_local DEMOclient)
 SET(TEST_EXECUTABLES )
 
 
@@ -665,25 +627,20 @@ TARGET_LINK_LIBRARIES(PDcommonlib passport ${Boost_FILESYSTEM_LIBRARY})
 TARGET_LINK_LIBRARIES(PDclientfilesystemlib PDcommonlib encrypt pki ${Boost_DATE_TIME_LIBRARY})
 TARGET_LINK_LIBRARIES(PDlsmclientlib PDclientfilesystemlib ${QT_LIBRARIES} ${Boost_REGEX_LIBRARY})
 TARGET_LINK_LIBRARIES(PDclientlib PDclientfilesystemlib ${QT_LIBRARIES} ${Boost_REGEX_LIBRARY})
-TARGET_LINK_LIBRARIES(PDvaultlib PDcommonlib pki ${QT_LIBRARIES} ${Boost_DATE_TIME_LIBRARY})
 TARGET_LINK_LIBRARIES(PDfuselib ${Fuse_LIBRARY} ${Boost_SYSTEM_LIBRARY})
 TARGET_LINK_LIBRARIES(lifestuff PDclientlib PDfuselib ${QT_LIBRARIES})
 TARGET_LINK_LIBRARIES(lslocal PDlsmclientlib PDfuselib ${QT_LIBRARIES})
 TARGET_LINK_LIBRARIES(lslightlocal PDlsmclientlib ${QT_LIBRARIES})
 TARGET_LINK_LIBRARIES(TESTcommon PDcommonlib ${Boost_DATE_TIME_LIBRARY} ${Gtest_LIBRARY} ${Gmock_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTclientfilesystem PDclientlib ${Gtest_LIBRARY})
-TARGET_LINK_LIBRARIES(TESTclient PDclientlib PDvaultlib ${Gtest_LIBRARY} ${Gmock_LIBRARY})
-TARGET_LINK_LIBRARIES(TESTvault PDvaultlib PDclientlib ${Gtest_LIBRARY} ${Gmock_LIBRARY})
+TARGET_LINK_LIBRARIES(TESTclient PDclientlib ${Gtest_LIBRARY} ${Gmock_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTfuse PDfuselib ${Gtest_LIBRARY})
-TARGET_LINK_LIBRARIES(TESTauthentication_net PDclientlib PDvaultlib ${Gtest_LIBRARY})
-TARGET_LINK_LIBRARIES(TESTbufferpackethandler_net PDclientlib PDvaultlib ${Gtest_LIBRARY})
-TARGET_LINK_LIBRARIES(TESTclientcontroller_net PDclientlib PDvaultlib ${Gtest_LIBRARY})
+# TARGET_LINK_LIBRARIES(TESTauthentication_net PDclientlib ${Gtest_LIBRARY})
+# TARGET_LINK_LIBRARIES(TESTbufferpackethandler_net PDclientlib ${Gtest_LIBRARY})
+# TARGET_LINK_LIBRARIES(TESTclientcontroller_net PDclientlib ${Gtest_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTclientcontroller_local PDlsmclientlib ${Gtest_LIBRARY})
-TARGET_LINK_LIBRARIES(TESTimconnectionhandler_net PDclientlib PDvaultlib ${Gtest_LIBRARY})
-TARGET_LINK_LIBRARIES(TESTpdvault_net PDclientlib PDvaultlib ${Gtest_LIBRARY})
+# TARGET_LINK_LIBRARIES(TESTimconnectionhandler_net PDclientlib ${Gtest_LIBRARY})
 TARGET_LINK_LIBRARIES(DEMOclient PDclientlib)
-TARGET_LINK_LIBRARIES(DEMOvault PDclientlib PDvaultlib)
-TARGET_LINK_LIBRARIES(vault PDvaultlib)
 
 ###################################################################################################
 # Compiler and linker flags - after all targets declared                                          #
@@ -694,12 +651,11 @@ ENDIF()
 ADD_DEFINITIONS(-DBOOST_FILESYSTEM_NO_DEPRECATED -DBOOST_FILESYSTEM_VERSION=3)
 
 SET_TARGET_PROPERTIES(PDlsmclientlib PROPERTIES COMPILE_FLAGS -DLOCAL_PDVAULT)
-SET_TARGET_PROPERTIES(TESTauthentication_net PROPERTIES COMPILE_FLAGS -DMS_NETWORK_TEST)
-SET_TARGET_PROPERTIES(TESTbufferpackethandler_net PROPERTIES COMPILE_FLAGS -DMS_NETWORK_TEST)
+# SET_TARGET_PROPERTIES(TESTauthentication_net PROPERTIES COMPILE_FLAGS -DMS_NETWORK_TEST)
+# SET_TARGET_PROPERTIES(TESTbufferpackethandler_net PROPERTIES COMPILE_FLAGS -DMS_NETWORK_TEST)
 SET_TARGET_PROPERTIES(TESTclientcontroller_local PROPERTIES COMPILE_FLAGS -DLOCAL_PDVAULT)
-SET_TARGET_PROPERTIES(TESTclientcontroller_net PROPERTIES COMPILE_FLAGS -DMS_NETWORK_TEST)
-SET_TARGET_PROPERTIES(TESTimconnectionhandler_net PROPERTIES COMPILE_FLAGS -DMS_NETWORK_TEST)
-SET_TARGET_PROPERTIES(TESTpdvault_net PROPERTIES COMPILE_FLAGS -DMS_NETWORK_TEST)
+# SET_TARGET_PROPERTIES(TESTclientcontroller_net PROPERTIES COMPILE_FLAGS -DMS_NETWORK_TEST)
+# SET_TARGET_PROPERTIES(TESTimconnectionhandler_net PROPERTIES COMPILE_FLAGS -DMS_NETWORK_TEST)
 SET_TARGET_PROPERTIES(lslightlocal PROPERTIES COMPILE_FLAGS "-DPD_LIGHT -DLOCAL_PDVAULT")
 IF(APPLE)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DPD_APPLE -D_FORTIFY_SOURCE=2 -DOSX -DBSD -D__FreeBSD__=10 -D_FILE_OFFSET_BITS=64")
@@ -710,7 +666,8 @@ IF(APPLE)
 ELSEIF(UNIX AND NOT APPLE)
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -DDEBUG -ggdb -pg -fprofile-arcs -ftest-coverage")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DQT_NO_DEBUG_OUTPUT -DQT_NO_WARNING_OUTPUT -DQT_NO_DEBUG_STREAM -O2 -Wuninitialized")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wall -DPD_LINUX -DPD_POSIX -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -Wredundant-decls -Wunused-function -Wunused-label -Wunused-parameter -Wunused-value -Wunused-variable -std=c++98 -ansi -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wall -DPD_LINUX -DPD_POSIX -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -Wredundant-decls -Wunused-function -Wunused-label -Wunused-parameter -Wunused-value -Wunused-variable
+                      -std=c++0x -ansi -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
   ##put libs in here that will have no chance of passing tests - 3rd party ONLY !!
   SET_TARGET_PROPERTIES(lifestuff lslocal PROPERTIES COMPILE_FLAGS "-w -DLOCAL_PDVAULT")
   SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -pg -fprofile-arcs -ftest-coverage")
@@ -862,7 +819,7 @@ FUNCTION(ADD_MAIDSAFE_TEST GTEST_GROUP_NAME GTEST_NAME TEST_PATH)
   ENDIF()
 ENDFUNCTION()
 
-SET(TEST_EXECUTABLES TESTclient TESTclientfilesystem TESTcommon TESTvault TESTencrypt TESTpassport TESTpki TESTfuse)
+SET(TEST_EXECUTABLES TESTclient TESTclientfilesystem TESTcommon TESTencrypt TESTpassport TESTpki TESTfuse)
 FOREACH(TEST_EXECUTABLE ${TEST_EXECUTABLES})
   IF(TEST_EXECUTABLE STREQUAL "TESTclient")
     SET(GTEST_SOURCE_FILES ${ALL_FILES_CLIENT_TESTS_DIR})
@@ -870,8 +827,6 @@ FOREACH(TEST_EXECUTABLE ${TEST_EXECUTABLES})
     SET(GTEST_SOURCE_FILES ${ALL_FILES_CLIENT_FILESYSTEM_TESTS_DIR})
   ELSEIF(TEST_EXECUTABLE STREQUAL "TESTcommon")
     SET(GTEST_SOURCE_FILES ${ALL_FILES_COMMON_TESTS_DIR})
-  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTvault")
-    SET(GTEST_SOURCE_FILES ${ALL_FILES_VAULT_TESTS_DIR})
   ELSEIF(TEST_EXECUTABLE STREQUAL "TESTencrypt")
     SET(GTEST_SOURCE_FILES ${ALL_FILES_ENCRYPT_TESTS_DIR})
   ELSEIF(TEST_EXECUTABLE STREQUAL "TESTpassport")
@@ -924,26 +879,26 @@ FOREACH(TEST_EXECUTABLE ${TEST_EXECUTABLES})
 ENDFOREACH()
 
 IF(NOT ${MAIDSAFE_TEST_TYPE} MATCHES "BEH")
-  LIST(FIND EXCLUDED_TESTS Test_authentication_net TEST_EXCLUDED)
-  IF(TEST_EXCLUDED EQUAL -1)
-    ADD_TEST(Test_authentication_net ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/TESTauthentication_net${TEST_POSTFIX})
-    SET_PROPERTY(TEST Test_authentication_net PROPERTY TIMEOUT ${NETWORK_SYSTEM_TEST_TIMEOUT})
-    SET_PROPERTY(TEST Test_authentication_net PROPERTY LABELS Functional Authentication)
-  ENDIF()
+  # LIST(FIND EXCLUDED_TESTS Test_authentication_net TEST_EXCLUDED)
+  # IF(TEST_EXCLUDED EQUAL -1)
+    # ADD_TEST(Test_authentication_net ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/TESTauthentication_net${TEST_POSTFIX})
+    # SET_PROPERTY(TEST Test_authentication_net PROPERTY TIMEOUT ${NETWORK_SYSTEM_TEST_TIMEOUT})
+    # SET_PROPERTY(TEST Test_authentication_net PROPERTY LABELS Functional Authentication)
+  # ENDIF()
 
-  LIST(FIND EXCLUDED_TESTS Test_bufferpackethandler_net TEST_EXCLUDED)
-  IF(TEST_EXCLUDED EQUAL -1)
-    ADD_TEST(Test_bufferpackethandler_net ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/TESTbufferpackethandler_net${TEST_POSTFIX})
-    SET_PROPERTY(TEST Test_bufferpackethandler_net PROPERTY TIMEOUT ${NETWORK_SYSTEM_TEST_TIMEOUT})
-    SET_PROPERTY(TEST Test_bufferpackethandler_net PROPERTY LABELS Functional BufferPacketHandler)
-  ENDIF()
+  # LIST(FIND EXCLUDED_TESTS Test_bufferpackethandler_net TEST_EXCLUDED)
+  # IF(TEST_EXCLUDED EQUAL -1)
+    # ADD_TEST(Test_bufferpackethandler_net ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/TESTbufferpackethandler_net${TEST_POSTFIX})
+    # SET_PROPERTY(TEST Test_bufferpackethandler_net PROPERTY TIMEOUT ${NETWORK_SYSTEM_TEST_TIMEOUT})
+    # SET_PROPERTY(TEST Test_bufferpackethandler_net PROPERTY LABELS Functional BufferPacketHandler)
+  # ENDIF()
 
-  LIST(FIND EXCLUDED_TESTS Test_clientcontroller_net TEST_EXCLUDED)
-  IF(TEST_EXCLUDED EQUAL -1)
-    ADD_TEST(Test_clientcontroller_net ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/TESTclientcontroller_net${TEST_POSTFIX})
-    SET_PROPERTY(TEST Test_clientcontroller_net PROPERTY TIMEOUT ${NETWORK_SYSTEM_TEST_TIMEOUT})
-    SET_PROPERTY(TEST Test_clientcontroller_net PROPERTY LABELS Functional ClientController NetworkCC)
-  ENDIF()
+  # LIST(FIND EXCLUDED_TESTS Test_clientcontroller_net TEST_EXCLUDED)
+  # IF(TEST_EXCLUDED EQUAL -1)
+    # ADD_TEST(Test_clientcontroller_net ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/TESTclientcontroller_net${TEST_POSTFIX})
+    # SET_PROPERTY(TEST Test_clientcontroller_net PROPERTY TIMEOUT ${NETWORK_SYSTEM_TEST_TIMEOUT})
+    # SET_PROPERTY(TEST Test_clientcontroller_net PROPERTY LABELS Functional ClientController NetworkCC)
+  # ENDIF()
 
   LIST(FIND EXCLUDED_TESTS Test_clientcontroller_local TEST_EXCLUDED)
   IF(TEST_EXCLUDED EQUAL -1)
@@ -952,25 +907,18 @@ IF(NOT ${MAIDSAFE_TEST_TYPE} MATCHES "BEH")
     SET_PROPERTY(TEST Test_clientcontroller_local PROPERTY LABELS Functional ClientController LocalCC)
   ENDIF()
 
-  LIST(FIND EXCLUDED_TESTS Test_imconnectionhandler_net TEST_EXCLUDED)
-  IF(TEST_EXCLUDED EQUAL -1)
-    ADD_TEST(Test_imconnectionhandler_net ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/TESTimconnectionhandler_net${TEST_POSTFIX})
-    SET_PROPERTY(TEST Test_imconnectionhandler_net PROPERTY TIMEOUT ${NETWORK_SYSTEM_TEST_TIMEOUT})
-    SET_PROPERTY(TEST Test_imconnectionhandler_net PROPERTY LABELS Functional InstantMessaging)
-  ENDIF()
-
-  LIST(FIND EXCLUDED_TESTS Test_pdvault_net TEST_EXCLUDED)
-  IF(TEST_EXCLUDED EQUAL -1)
-    ADD_TEST(Test_pdvault_net ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/TESTpdvault_net${TEST_POSTFIX})
-    SET_PROPERTY(TEST Test_pdvault_net PROPERTY TIMEOUT ${NETWORK_SYSTEM_TEST_TIMEOUT})
-    SET_PROPERTY(TEST Test_pdvault_net PROPERTY LABELS Functional PdVault)
-  ENDIF()
+  # LIST(FIND EXCLUDED_TESTS Test_imconnectionhandler_net TEST_EXCLUDED)
+  # IF(TEST_EXCLUDED EQUAL -1)
+    # ADD_TEST(Test_imconnectionhandler_net ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/TESTimconnectionhandler_net${TEST_POSTFIX})
+    # SET_PROPERTY(TEST Test_imconnectionhandler_net PROPERTY TIMEOUT ${NETWORK_SYSTEM_TEST_TIMEOUT})
+    # SET_PROPERTY(TEST Test_imconnectionhandler_net PROPERTY LABELS Functional InstantMessaging)
+  # ENDIF()
 
   LIST(FIND EXCLUDED_TESTS STYLE_CHECK TEST_EXCLUDED)
   IF((TEST_EXCLUDED EQUAL -1) AND PYTHONINTERP_FOUND)
     IF(UNIX)
       SET(STYLE_ALL ${STYLE_CLIENT} ${STYLE_COMMON} ${STYLE_FUSE}
-            ${STYLE_VAULT} ${STYLE_ENCRYPT} ${STYLE_PASSPORT} ${STYLE_PKI})
+                    ${STYLE_ENCRYPT} ${STYLE_PASSPORT} ${STYLE_PKI})
       ADD_TEST(STYLE_CHECK ${${PROJECT_NAME}_ROOT}/build/tools/cpplint.py ${STYLE_ALL})
       SET_PROPERTY(TEST STYLE_CHECK PROPERTY LABELS Functional CodingStyle)
     ELSE()
@@ -1032,7 +980,7 @@ ENDIF()
 IF(CMAKE_BUILD_TYPE MATCHES Release)
   INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindInstallBuilder.cmake)
   IF(InstallBuilder_BUILDER_EXE AND InstallBuilder_CUSTOMISE_EXE)
-    ADD_CUSTOM_TARGET(lifestuffInstaller ALL ${InstallBuilder_BUILDER_EXE} build ${${PROJECT_NAME}_ROOT}/installer/bitrock/lifestuff.xml DEPENDS lifestuff vault)
+    ADD_CUSTOM_TARGET(lifestuffInstaller ALL ${InstallBuilder_BUILDER_EXE} build ${${PROJECT_NAME}_ROOT}/installer/bitrock/lifestuff.xml DEPENDS lifestuff)
     ADD_CUSTOM_TARGET(lslightlocalInstaller ALL ${InstallBuilder_BUILDER_EXE} build ${${PROJECT_NAME}_ROOT}/installer/bitrock/lslightlocal.xml DEPENDS lslightlocal)
   ENDIF()
 ENDIF()
