@@ -21,14 +21,14 @@
 * ============================================================================
 */
 
-#include <maidsafe/base/log.h>
 #include "gtest/gtest.h"
+#include "maidsafe-dht/common/log.h"
 
 int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
   // setting output to be stderr
 #ifndef HAVE_GLOG
-  bool FLAGS_logtostderr;
+//  bool FLAGS_logtostderr;
 #endif
 //  FLAGS_logtostderr = true;
   testing::InitGoogleTest(&argc, argv);

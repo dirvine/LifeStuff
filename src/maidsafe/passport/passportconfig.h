@@ -24,9 +24,11 @@
 #ifndef MAIDSAFE_PASSPORT_PASSPORTCONFIG_H_
 #define MAIDSAFE_PASSPORT_PASSPORTCONFIG_H_
 
+#include "boost/shared_ptr.hpp"
 
 // *** typedefs, enums and consts ***
 namespace maidsafe {
+
 namespace passport {
 
 enum ReturnCode {
@@ -75,6 +77,7 @@ enum PacketType {
 const std::uint16_t kCryptoKeyBufferCount(6);
 
 }  // namespace passport
+
 }  // namespace maidsafe
 
 
@@ -82,6 +85,7 @@ const std::uint16_t kCryptoKeyBufferCount(6);
 namespace testing { class AssertionResult; }
 
 namespace maidsafe {
+
 namespace passport {
 
 class MidPacket;
@@ -90,17 +94,17 @@ class Key;
 class Passport;
 
 namespace test {
-testing::AssertionResult Empty(std::shared_ptr<pki::Packet> packet);
+testing::AssertionResult Empty(boost::shared_ptr<pki::Packet> packet);
 class SystemPacketsTest_BEH_PASSPORT_CreateSig_Test;
 class SystemPacketsTest_BEH_PASSPORT_PutToAndGetFromKey_Test;
 struct ExpectedMidContent;
 testing::AssertionResult Equal(
-    std::shared_ptr<ExpectedMidContent> expected,
-    std::shared_ptr<MidPacket> mid);
+    boost::shared_ptr<ExpectedMidContent> expected,
+    boost::shared_ptr<MidPacket> mid);
 struct ExpectedTmidContent;
 testing::AssertionResult Equal(
-    std::shared_ptr<ExpectedTmidContent> expected,
-    std::shared_ptr<TmidPacket> mid);
+    boost::shared_ptr<ExpectedTmidContent> expected,
+    boost::shared_ptr<TmidPacket> mid);
 class SystemPacketHandlerTest_FUNC_PASSPORT_All_Test;
 class PassportTest_BEH_PASSPORT_SetNewUserData_Test;
 class PassportTest_BEH_PASSPORT_ConfirmNewUserData_Test;

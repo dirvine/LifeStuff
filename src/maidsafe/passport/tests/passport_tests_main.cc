@@ -21,16 +21,11 @@
 * ============================================================================
 */
 
-#include <maidsafe/base/log.h>
+#include "maidsafe-dht/common/log.h"
 #include "gtest/gtest.h"
 
 int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
-  // setting output to be stderr
-#ifndef HAVE_GLOG
-  bool FLAGS_logtostderr;
-#endif
-//  FLAGS_logtostderr = true;
   testing::InitGoogleTest(&argc, argv);
   int result(RUN_ALL_TESTS());
   int test_count = testing::UnitTest::GetInstance()->test_to_run_count();

@@ -23,7 +23,7 @@
 #include <gtest/gtest.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/tr1/memory.hpp>
-#include <maidsafe/base/utils.h>
+#include "maidsafe-dht/common/utils.h"
 
 #include "maidsafe/passport/systempackethandler.h"
 #include "maidsafe/passport/cryptokeypairs.h"
@@ -38,37 +38,37 @@ const boost::uint16_t kRsaKeySize(4096);
 const boost::uint8_t kMaxThreadCount(5);
 
 boost::uint32_t NonZeroRnd() {
-  boost::uint32_t result = base::RandomUint32();
+  boost::uint32_t result = RandomUint32();
   while (result == 0)
-    result = base::RandomUint32();
+    result = RandomUint32();
   return result;
 }
 
 class SystemPacketHandlerTest : public testing::Test {
  public:
-  typedef std::tr1::shared_ptr<pki::Packet> PacketPtr;
-  typedef std::tr1::shared_ptr<SignaturePacket> SignaturePtr;
-  typedef std::tr1::shared_ptr<MidPacket> MidPtr;
-  typedef std::tr1::shared_ptr<TmidPacket> TmidPtr;
+  typedef boost::shared_ptr<pki::Packet> PacketPtr;
+  typedef boost::shared_ptr<SignaturePacket> SignaturePtr;
+  typedef boost::shared_ptr<MidPacket> MidPtr;
+  typedef boost::shared_ptr<TmidPacket> TmidPtr;
   SystemPacketHandlerTest()
       : packet_handler_(),
         crypto_key_pairs_(kRsaKeySize, kMaxThreadCount),
-        kUsername1_(base::RandomAlphaNumericString(20)),
-        kUsername2_(base::RandomAlphaNumericString(20)),
+        kUsername1_(RandomAlphaNumericString(20)),
+        kUsername2_(RandomAlphaNumericString(20)),
         kPin1_(boost::lexical_cast<std::string>(NonZeroRnd())),
         kPin2_(boost::lexical_cast<std::string>(NonZeroRnd())),
-        kMidRid1_(base::RandomString((base::RandomUint32() % 64) + 64)),
-        kMidRid2_(base::RandomString((base::RandomUint32() % 64) + 64)),
-        kSmidRid1_(base::RandomString((base::RandomUint32() % 64) + 64)),
-        kSmidRid2_(base::RandomString((base::RandomUint32() % 64) + 64)),
-        kPassword1_(base::RandomAlphaNumericString(30)),
-        kPassword2_(base::RandomAlphaNumericString(30)),
-        kPublicName1_(base::RandomAlphaNumericString(30)),
-        kPublicName2_(base::RandomAlphaNumericString(30)),
-        kMidPlainTextMasterData1_(base::RandomString(10000)),
-        kMidPlainTextMasterData2_(base::RandomString(10000)),
-        kSmidPlainTextMasterData1_(base::RandomString(10000)),
-        kSmidPlainTextMasterData2_(base::RandomString(10000)),
+        kMidRid1_(RandomString((RandomUint32() % 64) + 64)),
+        kMidRid2_(RandomString((RandomUint32() % 64) + 64)),
+        kSmidRid1_(RandomString((RandomUint32() % 64) + 64)),
+        kSmidRid2_(RandomString((RandomUint32() % 64) + 64)),
+        kPassword1_(RandomAlphaNumericString(30)),
+        kPassword2_(RandomAlphaNumericString(30)),
+        kPublicName1_(RandomAlphaNumericString(30)),
+        kPublicName2_(RandomAlphaNumericString(30)),
+        kMidPlainTextMasterData1_(RandomString(10000)),
+        kMidPlainTextMasterData2_(RandomString(10000)),
+        kSmidPlainTextMasterData1_(RandomString(10000)),
+        kSmidPlainTextMasterData2_(RandomString(10000)),
         mpid_keys1_(),
         mpid_keys2_(),
         maid_keys1_(),
@@ -204,13 +204,13 @@ class SystemPacketHandlerTest : public testing::Test {
   crypto::RsaKeyPair pmid_keys1_, pmid_keys2_, anmid_keys1_, anmid_keys2_;
   crypto::RsaKeyPair ansmid_keys1_, ansmid_keys2_, antmid_keys1_, antmid_keys2_;
   crypto::RsaKeyPair anmpid_keys1_, anmpid_keys2_, anmaid_keys1_, anmaid_keys2_;
-  std::vector< std::tr1::shared_ptr<pki::Packet> > packets1_, packets2_;
+  std::vector< boost::shared_ptr<pki::Packet> > packets1_, packets2_;
 };
 
 TEST_F(SystemPacketHandlerTest, FUNC_PASSPORT_All) {
   // *********************** Test AddPendingPacket *****************************
   // Add pending for each packet type
-  std::vector< std::tr1::shared_ptr<pki::Packet> >::iterator packets1_itr =
+  std::vector< boost::shared_ptr<pki::Packet> >::iterator packets1_itr =
       packets1_.begin();
   while (packets1_itr != packets1_.end())
     EXPECT_TRUE(packet_handler_.AddPendingPacket(*packets1_itr++));
@@ -226,7 +226,7 @@ TEST_F(SystemPacketHandlerTest, FUNC_PASSPORT_All) {
   }
 
   // Overwrite pending for each packet type
-  std::vector< std::tr1::shared_ptr<pki::Packet> >::iterator packets2_itr =
+  std::vector< boost::shared_ptr<pki::Packet> >::iterator packets2_itr =
       packets2_.begin();
   while (packets2_itr != packets2_.end())
     EXPECT_TRUE(packet_handler_.AddPendingPacket(*packets2_itr++));
