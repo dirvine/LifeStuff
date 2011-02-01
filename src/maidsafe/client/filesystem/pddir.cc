@@ -139,7 +139,7 @@ int PdDir::GetDirKey(const fs::path &file_name, std::string *dir_key) {
     return id;
   try {
     std::string s = "select dir_key from mdm where id=" +
-                    base::IntToString(id) + ";";
+                    IntToString(id) + ";";
 #ifdef DEBUG
     // printf("PdDir::GetDirKey: %s\n", s.c_str());
 #endif
@@ -150,7 +150,7 @@ int PdDir::GetDirKey(const fs::path &file_name, std::string *dir_key) {
 #endif
       return kDBCantFindDirKey;
     } else {
-      *dir_key = base::DecodeFromHex(
+      *dir_key = DecodeFromHex(
                  q_mdm.fieldValue(static_cast<unsigned int>(0)));
       return kSuccess;
     }
@@ -203,7 +203,7 @@ int PdDir::GetIdFromName(const fs::path &file_name) {
 
 bool PdDir::DataMapExists(const int &id) {
   try {
-    std::string s = "select * from dm where id=" + base::IntToString(id) + ";";
+    std::string s = "select * from dm where id=" + IntToString(id) + ";";
     CppSQLite3Query q_dm = db_->execQuery(s.c_str());
     return !q_dm.eof();
   }
@@ -218,7 +218,7 @@ bool PdDir::DataMapExists(const int &id) {
 bool PdDir::DataMapExists(const std::string &file_hash) {
   try {
     std::string s = "select * from dm where file_hash='" +
-                    base::EncodeToHex(file_hash) + "';";
+                    EncodeToHex(file_hash) + "';";
     CppSQLite3Query q_dm = db_->execQuery(s.c_str());
     return !q_dm.eof();
   }
@@ -288,19 +288,19 @@ int PdDir::AddElement(const std::string &ser_mdm,
       stmt.bind(7, mdm.file_size_high());
       stmt.bind(8, mdm.file_size_low());
       stmt.bind(9, mdm.creation_time());
-      boost::uint32_t current_time = base::GetEpochTime();
+      boost::uint32_t current_time/* = GetDurationSinceEpoch()*/(0);
       stmt.bind(10, boost::lexical_cast<std::string>(current_time).c_str());
       stmt.bind(11, boost::lexical_cast<std::string>(current_time).c_str());
-      stmt.bind(12, base::EncodeToHex(dir_key).c_str());
+      stmt.bind(12, EncodeToHex(dir_key).c_str());
       ins_mdm = stmt.execDML();
       stmt.finalize();
 
       if (!ser_dm.empty()) {
         CppSQLite3Statement stmt1 = db_->compileStatement(
             "insert into dm values(?,?,?);");
-        stmt1.bind(1, base::EncodeToHex(dm.file_hash()).c_str());
+        stmt1.bind(1, EncodeToHex(dm.file_hash()).c_str());
         stmt1.bind(2, mdm.id());
-        stmt1.bind(3, base::EncodeToHex(ser_dm).c_str());
+        stmt1.bind(3, EncodeToHex(ser_dm).c_str());
         // printf("aaaaaaaaaaaa %s\n", ser_dm.c_str());
         ins_dm = stmt1.execDML();
         stmt1.finalize();
@@ -317,7 +317,7 @@ int PdDir::AddElement(const std::string &ser_mdm,
         stmt2.bind(1, mdm.type());
         stmt2.bind(2, mdm.stats().c_str());
         stmt2.bind(3, mdm.tag().c_str());
-        boost::uint32_t current_time = base::GetEpochTime();
+        boost::uint32_t current_time/* = GetDurationSinceEpoch()*/;
         stmt2.bind(4, static_cast<int>(current_time));
         stmt2.bind(5, static_cast<int>(current_time));
         stmt2.bind(6, mdm.id());
@@ -375,7 +375,7 @@ int PdDir::ModifyMetaDataMap(const std::string &ser_mdm,
     stmt.bind(3, mdm.tag().c_str());
     stmt.bind(4, mdm.file_size_high());
     stmt.bind(5, mdm.file_size_low());
-    boost::uint32_t current_time = base::GetEpochTime();
+    boost::uint32_t current_time/* = GetDurationSinceEpoch()*/;
     // stmt.bind(6, (const unsigned char)current_time);
     // stmt.bind(7, (const unsigned char)current_time);
     stmt.bind(6, static_cast<int>(current_time));
@@ -394,8 +394,8 @@ int PdDir::ModifyMetaDataMap(const std::string &ser_mdm,
 
     CppSQLite3Statement stmt1 = db_->compileStatement(
         "update dm set file_hash = ?, ser_dm = ? where id = ?;");
-    stmt1.bind(1, base::EncodeToHex(dm.file_hash()).c_str());
-    stmt1.bind(2, base::EncodeToHex(ser_dm).c_str());
+    stmt1.bind(1, EncodeToHex(dm.file_hash()).c_str());
+    stmt1.bind(2, EncodeToHex(ser_dm).c_str());
     stmt1.bind(3, id);
     modified_elements = stmt1.execDML();
     stmt1.finalize();
@@ -430,8 +430,7 @@ int PdDir::RemoveElement(const fs::path &file_name) {
       return kDBCantFindFile;
     }
 
-    std::string s = "select type from mdm where id=" +
-                    base::IntToString(id) + ";";
+    std::string s = "select type from mdm where id=" + IntToString(id) + ";";
 #ifdef DEBUG
     // printf("PdDir::RemoveElement: %s\n", s.c_str());
 #endif
@@ -443,7 +442,7 @@ int PdDir::RemoveElement(const fs::path &file_name) {
     if (ItemType(type) == REGULAR_FILE ||
         ItemType(type) == SMALL_FILE ||
         ItemType(type) == EMPTY_FILE) {
-      s = "delete from dm where id=" + base::IntToString(id) + ";";
+      s = "delete from dm where id=" + IntToString(id) + ";";
       rows = db_->execDML(s.c_str());
       if (rows > 0) {
         flag_dm = true;
@@ -453,7 +452,7 @@ int PdDir::RemoveElement(const fs::path &file_name) {
     }
 
     // delete metadatamap
-    s = "delete from mdm where id=" + base::IntToString(id) + ";";
+    s = "delete from mdm where id=" + IntToString(id) + ";";
     rows = db_->execDML(s.c_str());
     if (rows>0)
       flag_mdm = true;
@@ -527,7 +526,7 @@ int PdDir::GetDataMapFromHash(const std::string &file_hash,
                               std::string *ser_dm) {
   try {
     std::string s = "select ser_dm from dm where file_hash='" +
-                    base::EncodeToHex(file_hash) + "';";
+                    EncodeToHex(file_hash) + "';";
     CppSQLite3Query q_dm = db_->execQuery(s.c_str());
     if (q_dm.eof()) {
 #ifdef DEBUG
@@ -536,7 +535,7 @@ int PdDir::GetDataMapFromHash(const std::string &file_hash,
       ser_dm->clear();
       return kDBCantFindFile;
     } else {
-      *ser_dm = base::DecodeFromHex(q_dm.fieldValue(
+      *ser_dm = DecodeFromHex(q_dm.fieldValue(
                 static_cast<unsigned int>(0)));
       return kSuccess;
     }
@@ -555,8 +554,7 @@ int PdDir::GetDataMap(const fs::path &file_name, std::string *ser_dm) {
     return kDBCantFindFile;
 
   try {
-    std::string s = "select ser_dm from dm where id=" +
-                    base::IntToString(id) + ";";
+    std::string s = "select ser_dm from dm where id=" + IntToString(id) + ";";
     CppSQLite3Query q_dm = db_->execQuery(s.c_str());
     if (q_dm.eof()) {
 #ifdef DEBUG
@@ -565,8 +563,7 @@ int PdDir::GetDataMap(const fs::path &file_name, std::string *ser_dm) {
       ser_dm->clear();
       return kDBCantFindFile;
     } else {
-      *ser_dm = base::DecodeFromHex(q_dm.fieldValue(
-                static_cast<unsigned int>(0)));
+      *ser_dm = DecodeFromHex(q_dm.fieldValue(static_cast<unsigned int>(0)));
       return kSuccess;
     }
   }
@@ -590,15 +587,14 @@ int PdDir::GetMetaDataMap(const fs::path &file_name, std::string *ser_mdm) {
   try {
     std::string file_hash;
     std::string s = "select file_hash from dm where id=" +
-                    base::IntToString(id) + ";";
+                    IntToString(id) + ";";
     CppSQLite3Query q_dm = db_->execQuery(s.c_str());
     if (q_dm.eof())
       file_hash.clear();
     else
-      file_hash = base::DecodeFromHex(q_dm.fieldValue(
-                  static_cast<unsigned int>(0)));
+      file_hash = DecodeFromHex(q_dm.fieldValue(static_cast<unsigned int>(0)));
 
-    s = "select * from mdm where id=" + base::IntToString(id) + ";";
+    s = "select * from mdm where id=" + IntToString(id) + ";";
     CppSQLite3Query q_mdm = db_->execQuery(s.c_str());
     if (q_mdm.eof()) {
 #ifdef DEBUG
@@ -657,7 +653,7 @@ int PdDir::ChangeTime(const fs::path &file_name, char time_type) {
   }
 
   try {
-    boost::uint32_t current_time = base::GetEpochTime();
+    boost::uint32_t current_time/* = GetDurationSinceEpoch()*/;
     std::string s = "update mdm set " + time_field + " = ? where id = ?;";
     CppSQLite3Statement stmt = db_->compileStatement(s.c_str());
     // stmt.bind(1, (const unsigned char)current_time);

@@ -26,10 +26,14 @@
 #ifndef MAIDSAFE_CLIENT_FILESYSTEM_SEHANDLER_H_
 #define MAIDSAFE_CLIENT_FILESYSTEM_SEHANDLER_H_
 
-#include <boost/filesystem.hpp>
-#include <boost/multi_index_container.hpp>
-#include <boost/signals2.hpp>
-#include <boost/thread/mutex.hpp>
+#include "boost/filesystem.hpp"
+#include "boost/multi_index_container.hpp"
+#include "boost/multi_index/composite_key.hpp"
+#include "boost/multi_index/member.hpp"
+#include "boost/multi_index/ordered_index.hpp"
+#include "boost/signals2.hpp"
+#include "boost/thread/condition_variable.hpp"
+#include "boost/thread/mutex.hpp"
 
 #include <map>
 #include <string>

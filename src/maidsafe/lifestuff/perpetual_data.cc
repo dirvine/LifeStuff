@@ -87,7 +87,7 @@ PerpetualData::PerpetualData(QWidget* parent)
   //ui_.stackedWidget->addWidget(create_);
   //ui_.stackedWidget->addWidget(progressPage_);
   ui_.stackedWidget->addWidget(userPanels_);
-  
+
 
   //setCentralWidget(ui_.stackedWidget);
   //ui_.stackedWidget->setCurrentWidget(login_);
@@ -129,7 +129,7 @@ PerpetualData::PerpetualData(QWidget* parent)
 
   connect(lsLogin_, SIGNAL(destroyed()),
           this,   SLOT(onQuit()));
-  
+
   initSignals();
 
 }
@@ -354,7 +354,7 @@ void PerpetualData::setState(State state) {
         progressPage_->setError(false);
         progressPage_->setCanCancel(false);  // can't cancel it yet
         positionWidgetInScreenCenter(progressPage_);
-        progressPage_->show();        
+        progressPage_->show();
         // connect(create_, SIGNAL(cancel()),
         //         this,    SLOT(onCreateCancelled()));
         break;
@@ -450,7 +450,7 @@ void PerpetualData::onLoginNewUser(const QString& name,
 //  login_->setUsername(name);
 //  login_->setPin(pin);
 //  login_->setPassword(password);
-  
+
 //  this->show();
 }
 
@@ -1256,7 +1256,7 @@ void PerpetualData::showLoginWindow()
 }
 
 void PerpetualData::positionLSWinInCenter()
-{                              
+{
     positionWidgetInScreenCenter(this);
     this->show();
 }
@@ -1270,18 +1270,18 @@ void PerpetualData::positionWidgetInScreenCenter(QWidget *widget)
     if (widget) {
         int x = widget->width();
         int y = widget->height();
-        widget->setGeometry(deskX/2 - x/2, deskY/2 - y/2, x, y);        
+        widget->setGeometry(deskX/2 - x/2, deskY/2 - y/2, x, y);
     }
 }
 
 void PerpetualData::initSignals()
 {
-    QObject::connect(this, SIGNAL(inLoginState()), 
+    QObject::connect(this, SIGNAL(inLoginState()),
         SystemTrayIcon::instance(), SLOT(onLoginMOde()));
     QObject::connect(this, SIGNAL(inSetupUserState()),
         SystemTrayIcon::instance(), SLOT(onSetupUserMode()));
     QObject::connect(this, SIGNAL(inCreateUserState()),
-        SystemTrayIcon::instance(), SLOT(onSetupUserMode()));// same as onSetupUserMode  
+        SystemTrayIcon::instance(), SLOT(onSetupUserMode()));// same as onSetupUserMode
     QObject::connect(this, SIGNAL(inLoggedInState()),
         SystemTrayIcon::instance(), SLOT(onLoggedInMode()));
     QObject::connect(this, SIGNAL(inLoggingOutState()),
@@ -1292,26 +1292,26 @@ void PerpetualData::onShowWindowRequest()
 {
     // the pd window needs to be made visible
     // coz possibly someone clicked on the sys tray icon
-    // but be shouldn't show it when we are in some other window like 
+    // but be shouldn't show it when we are in some other window like
     // create user wizard or something else.
 
     // we could check the states as well.
     switch (state_) {
-        case SETUP_USER: 
+        case SETUP_USER:
         case CREATE_USER:
         case LOGIN:
             {
                 // do nothing, no show
             }
             break;
-            
+
         case LOGGED_IN:
         case LOGGING_OUT:
             {
                 this->show();
             }
             break;
-    }             
+    }
 }
 
 void PerpetualData::updateTitlebar(const QString& title)

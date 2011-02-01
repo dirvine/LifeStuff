@@ -20,8 +20,9 @@
 *
 * ============================================================================
 */
-#include <gtest/gtest.h>
-#include <maidsafe/base/utils.h>
+#include "gtest/gtest.h"
+#include "maidsafe-dht/common/utils.h"
+
 #include "maidsafe/common/vaultbufferpackethandler.h"
 #include "maidsafe/common/commonutils.h"
 #include "maidsafe/sharedtest/cached_keys.h"
@@ -244,7 +245,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
   std::string user("el usuario");
   bpi.add_users(SHA512String(user));
   for (int i = 0; i < 10; ++i)
-    bpi.add_users(SHA512String(user + base::IntToString(i)));
+    bpi.add_users(SHA512String(user + boost::lexical_cast<std::string>(i)));
   gp_info.set_data(bpi.SerializeAsString());
   gp_info.set_signature(RSASign(gp_info.data(), private_key_));
   ASSERT_TRUE(vbph_.ChangeOwnerInfo(gp_info.SerializeAsString(), public_key_,
@@ -254,7 +255,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
   lp.set_contact_id(user);
   maidsafe::EndPoint ep;
   for (int n = 0; n < 3; ++n) {
-    ep.add_ip(base::IntToString(n));
+    ep.add_ip(boost::lexical_cast<std::string>(n));
     ep.add_port(n);
   }
   lp.set_end_point(RSAEncrypt(ep.SerializeAsString(), public_key_));
@@ -277,7 +278,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
   ep.Clear();
   ASSERT_TRUE(ep.ParseFromString(dec_ep));
   for (int a = 0; a < 3; ++a) {
-    ASSERT_EQ(base::IntToString(a), ep.ip(a));
+    ASSERT_EQ(boost::lexical_cast<std::string>(a), ep.ip(a));
     ASSERT_EQ(a, static_cast<int>(ep.port(a)));
   }
   msgs.clear();
@@ -288,7 +289,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
   lp.set_contact_id("el rey mazorca");
   ep.Clear();
   for (int n = 0; n < 3; ++n) {
-    ep.add_ip(base::IntToString(n));
+    ep.add_ip(boost::lexical_cast<std::string>(n));
     ep.add_port(n);
   }
   lp.set_end_point(RSAEncrypt(ep.SerializeAsString(), public_key_));
@@ -305,7 +306,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
     lp.set_contact_id(user);
     ep.Clear();
     for (int n = 0; n < 3; ++n) {
-      ep.add_ip(base::IntToString(n));
+      ep.add_ip(boost::lexical_cast<std::string>(n));
       ep.add_port(n);
     }
     lp.set_end_point(RSAEncrypt(ep.SerializeAsString(), public_key_));
@@ -327,7 +328,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
   ep.Clear();
   ASSERT_TRUE(ep.ParseFromString(dec_ep));
   for (int a = 0; a < 3; ++a) {
-    ASSERT_EQ(base::IntToString(a), ep.ip(a));
+    ASSERT_EQ(boost::lexical_cast<std::string>(a), ep.ip(a));
     ASSERT_EQ(a, static_cast<int>(ep.port(a)));
   }
   ASSERT_TRUE(vbph_.GetPresence(&ser_bp_, &msgs));
@@ -335,10 +336,10 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
 
   for (int y = 0; y < 10; ++y) {
     lp.Clear();
-    lp.set_contact_id(user + base::IntToString(y));
+    lp.set_contact_id(user + boost::lexical_cast<std::string>(y));
     ep.Clear();
     for (int n = 0; n < 3; ++n) {
-      ep.add_ip(base::IntToString(n));
+      ep.add_ip(boost::lexical_cast<std::string>(n));
       ep.add_port(n);
     }
     lp.set_end_point(RSAEncrypt(ep.SerializeAsString(), public_key_));
@@ -356,12 +357,12 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
                                    keys_[1].public_key()));
     lp.Clear();
     ASSERT_TRUE(lp.ParseFromString(lp_gp.data()));
-    ASSERT_EQ(user + base::IntToString(e), lp.contact_id());
+    ASSERT_EQ(user + boost::lexical_cast<std::string>(e), lp.contact_id());
     dec_ep = RSADecrypt(lp.end_point(), private_key_);
     ep.Clear();
     ASSERT_TRUE(ep.ParseFromString(dec_ep));
     for (int a = 0; a < 3; ++a) {
-      ASSERT_EQ(base::IntToString(a), ep.ip(a));
+      ASSERT_EQ(boost::lexical_cast<std::string>(a), ep.ip(a));
       ASSERT_EQ(a, static_cast<int>(ep.port(a)));
     }
   }

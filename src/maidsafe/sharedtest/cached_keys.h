@@ -25,10 +25,10 @@
 #ifndef MAIDSAFE_SHAREDTEST_CACHED_KEYS_H_
 #define MAIDSAFE_SHAREDTEST_CACHED_KEYS_H_
 
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <maidsafe/base/crypto.h>
-#include <maidsafe/passport/passport.h>
+#include "boost/date_time/posix_time/posix_time.hpp"
+#include "boost/filesystem/fstream.hpp"
+#include "maidsafe-dht/common/crypto.h"
+#include "maidsafe/passport/passport.h"
 
 #include <string>
 #include <vector>
@@ -41,7 +41,7 @@ namespace fs = boost::filesystem;
 namespace cached_keys {
 
 inline void MakeKeys(const int &key_count,
-                     std::vector<crypto::RsaKeyPair> *keys,
+                     std::vector<maidsafe::crypto::RsaKeyPair> *keys,
                      bool for_passport = false) {
   keys->clear();
   fs::path key_file;
@@ -60,7 +60,7 @@ inline void MakeKeys(const int &key_count,
     if (fin.good() && keyring.ParseFromIstream(&fin) &&
         keyring.key_size() > 0) {
       for (int i = 0; i < keyring.key_size(); ++i) {
-        crypto::RsaKeyPair keypair;
+        maidsafe::crypto::RsaKeyPair keypair;
         keypair.set_public_key(keyring.key(i).public_key());
         keypair.set_private_key(keyring.key(i).private_key());
         if (!keypair.public_key().empty() && !keypair.private_key().empty()) {
@@ -79,7 +79,7 @@ inline void MakeKeys(const int &key_count,
     kps.StartToCreateKeyPairs(need_keys);
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
     for (int i = 0; i < need_keys; ++i) {
-      crypto::RsaKeyPair rsakp;
+      maidsafe::crypto::RsaKeyPair rsakp;
       if (!kps.GetKeyPair(&rsakp))
         break;
       keys->push_back(rsakp);

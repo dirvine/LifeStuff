@@ -22,11 +22,11 @@
 * ============================================================================
 */
 
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <boost/tr1/memory.hpp>
-#include <gtest/gtest.h>
-#include <maidsafe/base/utils.h>
+#include "boost/filesystem.hpp"
+#include "boost/filesystem/fstream.hpp"
+#include "boost/tr1/memory.hpp"
+#include "gtest/gtest.h"
+#include "maidsafe-dht/common/utils.h"
 
 #include "maidsafe/common/filesystem.h"
 #include "maidsafe/encrypt/dataiohandler.h"
@@ -85,7 +85,7 @@ fs::path CreateRandomFile(const fs::path &file_path,
     size_t stringsize = (filesize > 100000) ? 100000 :
                         static_cast<size_t>(filesize);
     boost::uint64_t remainingsize = filesize;
-    std::string rand_str = base::RandomString(2 * stringsize);
+    std::string rand_str = maidsafe::RandomString(2 * stringsize);
     std::string file_content;
     boost::uint64_t start_pos = 0;
     while (remainingsize) {
@@ -118,7 +118,7 @@ class SelfEncryptionTest : public testing::Test {
  public:
   SelfEncryptionTest()
       : kRootDir_(test_se::TempDir() /
-            ("maidsafe_TestSE_" + base::RandomAlphaNumericString(6))),
+            ("maidsafe_TestSE_" + RandomAlphaNumericString(6))),
         kInputDir_(kRootDir_ / "Inputs"),
         kOutputDir_(kRootDir_ / "Outputs") {}
   ~SelfEncryptionTest() {}
@@ -476,19 +476,19 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_HashFile) {
   ofs2 << "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijkl"
           "mnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu";
   ofs2.close();
-  EXPECT_EQ(base::EncodeToHex(utils::SHA512(path1)),
+  EXPECT_EQ(EncodeToHex(utils::SHA512(path1)),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
-  EXPECT_EQ(base::EncodeToHex(utils::SHA512(path2)),
+  EXPECT_EQ(EncodeToHex(utils::SHA512(path2)),
         "8e959b75dae313da8cf4f72814fc143f8f7779c6eb9f7fa17299aeadb6889018501d28"
         "9e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909");
 }
 
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_HashString) {
-  EXPECT_EQ(base::EncodeToHex(utils::SHA512(std::string("abc"))),
+  EXPECT_EQ(EncodeToHex(utils::SHA512(std::string("abc"))),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
-  EXPECT_EQ(base::EncodeToHex(utils::SHA512(std::string("abcdefghbcdef"
+  EXPECT_EQ(EncodeToHex(utils::SHA512(std::string("abcdefghbcdef"
         "ghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklm"
         "nopqrlmnopqrsmnopqrstnopqrstu"))),
         "8e959b75dae313da8cf4f72814fc143f8f7779c6eb9f7fa17299aeadb6889018501d28"
@@ -512,13 +512,13 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_GeneratePreEncryptionHashes) {
   DataIoHandlerPtr input_handler1(new FileIOHandler(path1, true));
   EXPECT_TRUE(utils::GeneratePreEncryptionHashes(input_handler1, &data_map));
   EXPECT_EQ(3, data_map.chunk_name_size());
-  EXPECT_EQ(base::EncodeToHex(data_map.chunk_name(0)),
+  EXPECT_EQ(EncodeToHex(data_map.chunk_name(0)),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
-  EXPECT_EQ(base::EncodeToHex(data_map.chunk_name(1)),
+  EXPECT_EQ(EncodeToHex(data_map.chunk_name(1)),
         "8e959b75dae313da8cf4f72814fc143f8f7779c6eb9f7fa17299aeadb6889018501d28"
         "9e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909");
-  EXPECT_EQ(base::EncodeToHex(data_map.chunk_name(2)),
+  EXPECT_EQ(EncodeToHex(data_map.chunk_name(2)),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
 }
@@ -527,17 +527,17 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_HashUnique) {
   std::string hash = utils::SHA512(static_cast<std::string>("abc"));
   DataMap data_map;
   data_map.add_chunk_name(hash);
-  EXPECT_EQ(base::EncodeToHex(data_map.chunk_name(0)),
+  EXPECT_EQ(EncodeToHex(data_map.chunk_name(0)),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
   EXPECT_TRUE(utils::HashUnique(data_map, true, &hash));
   data_map.add_chunk_name(hash);
-  EXPECT_EQ(base::EncodeToHex(data_map.chunk_name(1)),
+  EXPECT_EQ(EncodeToHex(data_map.chunk_name(1)),
         "9fddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192"
         "992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca4");
   EXPECT_TRUE(utils::HashUnique(data_map, true, &hash));
   data_map.add_chunk_name(hash);
-  EXPECT_EQ(base::EncodeToHex(data_map.chunk_name(2)),
+  EXPECT_EQ(EncodeToHex(data_map.chunk_name(2)),
         "a49fddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a21"
         "92992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54c");
   hash = utils::SHA512(static_cast<std::string>("ab"));
@@ -549,7 +549,7 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_HashUnique) {
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_ResizeObfuscationHash) {
   std::string input("abc");
   std::string hash = utils::SHA512(input);
-  EXPECT_EQ(base::EncodeToHex(hash),
+  EXPECT_EQ(EncodeToHex(hash),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
   std::string amended_hash("Rubbish");
@@ -671,11 +671,11 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_DecryptFile) {
 }
 
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEncryptStrings) {
-  StringPtr str1(new std::string(base::RandomString(0)));
-  StringPtr str2(new std::string(base::RandomString(2)));
-  StringPtr str3(new std::string(base::RandomString(4)));
-  StringPtr str4(new std::string(base::RandomString(24)));
-  StringPtr str5(new std::string(base::RandomString(1024)));
+  StringPtr str1(new std::string(RandomString(0)));
+  StringPtr str2(new std::string(RandomString(2)));
+  StringPtr str3(new std::string(RandomString(4)));
+  StringPtr str4(new std::string(RandomString(24)));
+  StringPtr str5(new std::string(RandomString(1024)));
   DataMap data_map1, data_map2, data_map3, data_map4, data_map5;
   data_map1.set_file_hash(utils::SHA512(*str1));
   data_map2.set_file_hash(utils::SHA512(*str2));
@@ -706,10 +706,10 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEncryptStrings) {
 }
 
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfDecryptString) {
-  StringPtr str1(new std::string(base::RandomString(2)));
-  StringPtr str2(new std::string(base::RandomString(4)));
-  StringPtr str3(new std::string(base::RandomString(24)));
-  StringPtr str4(new std::string(base::RandomString(1024)));
+  StringPtr str1(new std::string(RandomString(2)));
+  StringPtr str2(new std::string(RandomString(4)));
+  StringPtr str3(new std::string(RandomString(24)));
+  StringPtr str4(new std::string(RandomString(1024)));
   DataMap data_map1, data_map2, data_map3, data_map4;
   data_map1.set_file_hash(utils::SHA512(*str1));
   data_map2.set_file_hash(utils::SHA512(*str2));

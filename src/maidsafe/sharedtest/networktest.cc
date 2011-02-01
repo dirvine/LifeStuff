@@ -57,14 +57,14 @@ NetworkTest::NetworkTest()
       transport_id_(-1),
 #ifdef MS_NETWORK_TEST
       test_dir_(file_system::TempDir() / ("maidsafe_Test" + test_case_name_ +
-                "_FUNC_" + base::RandomAlphaNumericString(6))),
+                "_FUNC_" + RandomAlphaNumericString(6))),
 #else
       test_dir_(file_system::TempDir() / ("maidsafe_Test" + test_case_name_ +
-                "_" + base::RandomAlphaNumericString(6))),
+                "_" + RandomAlphaNumericString(6))),
 #endif
-      transport_(NULL),
-      transport_handler_(NULL),
-      channel_manager_(NULL),
+//      transport_(NULL),
+//      transport_handler_(NULL),
+//      channel_manager_(NULL),
       chunkstore_(new ChunkStore(std::string(test_dir_.string() +
                                  "/ChunkStore"), 99999999, 0)),
       kad_ops_(),

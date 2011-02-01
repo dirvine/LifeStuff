@@ -98,7 +98,7 @@ void PendingOperationsDialog::OperationStatus(const std::string &file,
     ui_.opTreeWidget->removeItemWidget(theWidget, 0);
     delete theWidget;
   } else {
-    std::string str = base::IntToString(percentage);
+    std::string str = boost::lexical_cast<std::string>(percentage);
     theWidget->setText(1, QString::fromStdString(str));
   }
   if (ui_.opTreeWidget->topLevelItemCount() < 1) {

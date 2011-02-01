@@ -18,7 +18,7 @@
 #include <QDebug>
 #include <QValidator>
 #include <QMessageBox>
-#include <maidsafe/maidsafe-dht.h>
+//  #include <maidsafe/maidsafe-dht.h>
 
 // std
 #include <limits.h>

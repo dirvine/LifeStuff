@@ -61,6 +61,7 @@ ELSE()
 ENDIF()
 OPTION (BUILD_SHARED_LIBS "Build shared libraries." OFF)
 
+
 FIND_PROGRAM(GITCOMMAND git PATHS ENV ProgramFiles PATH_SUFFIXES "Git/bin")
 SET(UPDATE_TYPE git)
 SET(UPDATE_COMMAND "${GITCOMMAND}")
@@ -342,9 +343,11 @@ LIST(REMOVE_DUPLICATES LIBS_DIRS_DEBUG)
 LINK_DIRECTORIES(${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
 
 INCLUDE_DIRECTORIES(${${PROJECT_NAME}_SOURCE_DIR})
+MESSAGE(${${PROJECT_NAME}_SOURCE_DIR})
 INCLUDE_DIRECTORIES(${${PROJECT_NAME}_BINARY_DIR})
 LIST(REMOVE_DUPLICATES INCLUDE_DIRS)
 INCLUDE_DIRECTORIES(AFTER SYSTEM ${INCLUDE_DIRS})
+MESSAGE("\${INCLUDE_DIRS} - ${INCLUDE_DIRS}")
 
 MESSAGE("================================================================================")
 
@@ -386,6 +389,7 @@ ENDIF()
 # Set up all files as GLOBs                                                                       #
 ###################################################################################################
 SET(SRC_MAIDSAFE "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe")
+MESSAGE(${${PROJECT_NAME}_SOURCE_DIR}/maidsafe)
 
 ####    CODE    ####
 FILE(GLOB SOURCE_FILES_CLIENT_DIR "${SRC_MAIDSAFE}/client/*.cc")
@@ -428,7 +432,8 @@ ELSE()
   FILE(GLOB SOURCE_FILES_FUSE_DIR "${SRC_MAIDSAFE}/fuse/linux/*.cc")
   FILE(GLOB HEADER_FILES_FUSE_DIR "${SRC_MAIDSAFE}/fuse/linux/*.h")
 ENDIF()
-SET(ALL_FILES_FUSE_DIR ${SOURCE_FILES_FUSE_DIR} ${HEADER_FILES_FUSE_DIR})
+SET(ALL_FILES_FUSE_DIR ${SOURCE_FILES_FUSE_DIR};${HEADER_FILES_FUSE_DIR})
+MESSAGE(${ALL_FILES_FUSE_DIR})
 SET(STYLE_FUSE ${ALL_FILES_FUSE_DIR})
 SOURCE_GROUP("fuse Source Files" FILES ${SOURCE_FILES_FUSE_DIR})
 SOURCE_GROUP("fuse Header Files" FILES ${HEADER_FILES_FUSE_DIR})
@@ -511,20 +516,21 @@ SET(NETWORK_TEST_FILES
 # All Platforms:  Add exes and Create all PD libs                                                 #
 ###################################################################################################
 IF(APPLE)
-  ADD_EXECUTABLE(lifestuff MACOSX_BUNDLE ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
+  # ADD_EXECUTABLE(lifestuff MACOSX_BUNDLE ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
   ADD_EXECUTABLE(lslocal MACOSX_BUNDLE ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
   ADD_EXECUTABLE(lslightlocal MACOSX_BUNDLE ${ALL_LIFESTUFF_LIGHT_SOURCE_FILES} ${ALL_LIFESTUFF_LIGHT_HEADER_FILES})
 ELSEIF((UNIX AND NOT APPLE) OR MSVC)
-  ADD_EXECUTABLE(lifestuff ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
+  # ADD_EXECUTABLE(lifestuff ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
   ADD_EXECUTABLE(lslocal ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
   ADD_EXECUTABLE(lslightlocal ${ALL_LIFESTUFF_LIGHT_SOURCE_FILES} ${ALL_LIFESTUFF_LIGHT_HEADER_FILES})
 ELSEIF(WIN32)
-  ADD_EXECUTABLE(lifestuff WIN32 ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
+  # ADD_EXECUTABLE(lifestuff WIN32 ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
   ADD_EXECUTABLE(lslocal WIN32 ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
   ADD_EXECUTABLE(lslightlocal WIN32 ${ALL_LIFESTUFF_LIGHT_SOURCE_FILES} ${ALL_LIFESTUFF_LIGHT_HEADER_FILES})
 ENDIF()
 IF(MSVC)
-  SET_TARGET_PROPERTIES(lifestuff lslocal lslightlocal PROPERTIES WIN32_EXECUTABLE TRUE)
+  # SET_TARGET_PROPERTIES(lifestuff lslocal lslightlocal PROPERTIES WIN32_EXECUTABLE TRUE)
+  SET_TARGET_PROPERTIES(lslocal lslightlocal PROPERTIES WIN32_EXECUTABLE TRUE)
 ENDIF()
 
 SET(BEHAVIOURAL_TEST_TIMEOUT 60)
@@ -532,31 +538,31 @@ SET(FUNCTIONAL_TEST_TIMEOUT 600)
 SET(LOCAL_SYSTEM_TEST_TIMEOUT 1800)
 SET(NETWORK_SYSTEM_TEST_TIMEOUT 3600)
 
-ADD_EXECUTABLE(TESTcommon
-                 ${ALL_FILES_COMMON_TESTS_DIR}
-                 "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
-                 "${SRC_MAIDSAFE}/sharedtest/chunkstoreops.h"
-                 "${SRC_MAIDSAFE}/sharedtest/mockkadops.cc"
-                 "${SRC_MAIDSAFE}/sharedtest/mockkadops.h"
-                 "${SRC_MAIDSAFE}/sharedtest/testcallback.h"
-                 "${SRC_MAIDSAFE}/sharedtest/threadpool.cc"
-                 "${SRC_MAIDSAFE}/sharedtest/threadpool.h"
-                 "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
+# ADD_EXECUTABLE(TESTcommon
+#                  ${ALL_FILES_COMMON_TESTS_DIR}
+#                  "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
+#                  "${SRC_MAIDSAFE}/sharedtest/chunkstoreops.h"
+#                  "${SRC_MAIDSAFE}/sharedtest/mockkadops.cc"
+#                  "${SRC_MAIDSAFE}/sharedtest/mockkadops.h"
+#                  "${SRC_MAIDSAFE}/sharedtest/testcallback.h"
+#                  "${SRC_MAIDSAFE}/sharedtest/threadpool.cc"
+#                  "${SRC_MAIDSAFE}/sharedtest/threadpool.h"
+#                  "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
 ADD_EXECUTABLE(TESTclientfilesystem
                  ${ALL_FILES_CLIENT_FILESYSTEM_TESTS_DIR}
                  "${SRC_MAIDSAFE}/sharedtest/cachepassport.h"
                  "${SRC_MAIDSAFE}/sharedtest/testcallback.h"
                  "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
-ADD_EXECUTABLE(TESTclient
-                 ${ALL_FILES_CLIENT_TESTS_DIR}
-                 ${NETWORK_TEST_FILES}
-                 "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
-                 "${SRC_MAIDSAFE}/sharedtest/cachepassport.h"
-                 "${SRC_MAIDSAFE}/sharedtest/mockkadops.cc"
-                 "${SRC_MAIDSAFE}/sharedtest/mockkadops.h"
-                 "${SRC_MAIDSAFE}/sharedtest/mocksessionsingleton.h"
-                 "${SRC_MAIDSAFE}/sharedtest/threadpool.cc"
-                 "${SRC_MAIDSAFE}/sharedtest/threadpool.h" )
+# ADD_EXECUTABLE(TESTclient
+#                  ${ALL_FILES_CLIENT_TESTS_DIR}
+#                  ${NETWORK_TEST_FILES}
+#                  "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
+#                  "${SRC_MAIDSAFE}/sharedtest/cachepassport.h"
+#                  "${SRC_MAIDSAFE}/sharedtest/mockkadops.cc"
+#                  "${SRC_MAIDSAFE}/sharedtest/mockkadops.h"
+#                  "${SRC_MAIDSAFE}/sharedtest/mocksessionsingleton.h"
+#                  "${SRC_MAIDSAFE}/sharedtest/threadpool.cc"
+#                  "${SRC_MAIDSAFE}/sharedtest/threadpool.h" )
 
 ADD_EXECUTABLE(TESTfuse EXCLUDE_FROM_ALL
                  ${ALL_FILES_FUSE_TESTS_DIR})
@@ -582,13 +588,13 @@ ADD_EXECUTABLE(TESTclientcontroller_local
 #                  "${SRC_MAIDSAFE}/client/tests/testimconnhandler.cc"
 #                  "${SRC_MAIDSAFE}/client/tests/testimmessaging.cc")
 
-ADD_EXECUTABLE(DEMOclient
-                 "${SRC_MAIDSAFE}/client/tests/client_main.cc")
+# ADD_EXECUTABLE(DEMOclient
+#                  "${SRC_MAIDSAFE}/client/tests/client_main.cc")
 
-SET(ALL_EXECUTABLES lifestuff lslocal lslightlocal TESTcommon TESTclientfilesystem TESTclient 
-                    TESTclientcontroller_local TESTfuse DEMOclient)
+# SET(ALL_EXECUTABLES lifestuff lslocal lslightlocal TESTcommon TESTclientfilesystem TESTclientcontroller_local TESTfuse)
+SET(ALL_EXECUTABLES lslocal lslightlocal TESTclientfilesystem TESTclientcontroller_local TESTfuse)
 
-ADD_LIBRARY(PDclientlib STATIC ${ALL_FILES_CLIENT_DIR})
+# ADD_LIBRARY(PDclientlib STATIC ${ALL_FILES_CLIENT_DIR})
 ADD_LIBRARY(PDlsmclientlib STATIC ${ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR})
 ADD_LIBRARY(PDclientfilesystemlib STATIC ${ALL_FILES_CLIENT_FILESYSTEM_DIR})
 ADD_LIBRARY(PDcommonlib STATIC ${ALL_FILES_COMMON_DIR})
@@ -612,8 +618,10 @@ ENDIF()
 IF(UNIX)
   ADD_CUSTOM_TARGET(CleanCoverage COMMAND ${CMAKE_COMMAND} -DSEARCH_DIR=${CMAKE_BINARY_DIR} -P ${${PROJECT_NAME}_ROOT}/build/clean_coverage.cmake)
 ENDIF()
-ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTencrypt TESTpassport TESTpki TESTcommon
-                  TESTclientfilesystem TESTclient TESTfuse TESTclientcontroller_local DEMOclient)
+# ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTencrypt TESTpassport TESTpki TESTcommon
+#                   TESTclientfilesystem TESTclient TESTfuse TESTclientcontroller_local DEMOclient)
+ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTencrypt TESTpassport TESTpki
+                  TESTclientfilesystem TESTfuse TESTclientcontroller_local)
 SET(TEST_EXECUTABLES )
 
 
@@ -626,25 +634,26 @@ SET(BUILD_SHARED_LIBS OFF)
 TARGET_LINK_LIBRARIES(PDcommonlib passport ${Boost_FILESYSTEM_LIBRARY})
 TARGET_LINK_LIBRARIES(PDclientfilesystemlib PDcommonlib encrypt pki ${Boost_DATE_TIME_LIBRARY})
 TARGET_LINK_LIBRARIES(PDlsmclientlib PDclientfilesystemlib ${QT_LIBRARIES} ${Boost_REGEX_LIBRARY})
-TARGET_LINK_LIBRARIES(PDclientlib PDclientfilesystemlib ${QT_LIBRARIES} ${Boost_REGEX_LIBRARY})
+# TARGET_LINK_LIBRARIES(PDclientlib PDclientfilesystemlib ${QT_LIBRARIES} ${Boost_REGEX_LIBRARY})
 TARGET_LINK_LIBRARIES(PDfuselib ${Fuse_LIBRARY} ${Boost_SYSTEM_LIBRARY})
-TARGET_LINK_LIBRARIES(lifestuff PDclientlib PDfuselib ${QT_LIBRARIES})
+# TARGET_LINK_LIBRARIES(lifestuff PDclientlib PDfuselib ${QT_LIBRARIES})
 TARGET_LINK_LIBRARIES(lslocal PDlsmclientlib PDfuselib ${QT_LIBRARIES})
 TARGET_LINK_LIBRARIES(lslightlocal PDlsmclientlib ${QT_LIBRARIES})
-TARGET_LINK_LIBRARIES(TESTcommon PDcommonlib ${Boost_DATE_TIME_LIBRARY} ${Gtest_LIBRARY} ${Gmock_LIBRARY})
-TARGET_LINK_LIBRARIES(TESTclientfilesystem PDclientlib ${Gtest_LIBRARY})
-TARGET_LINK_LIBRARIES(TESTclient PDclientlib ${Gtest_LIBRARY} ${Gmock_LIBRARY})
+# TARGET_LINK_LIBRARIES(TESTcommon PDcommonlib ${Boost_DATE_TIME_LIBRARY} ${Gtest_LIBRARY} ${Gmock_LIBRARY})
+TARGET_LINK_LIBRARIES(TESTclientfilesystem PDlsmclientlib ${Gtest_LIBRARY})
+# TARGET_LINK_LIBRARIES(TESTclient PDclientlib ${Gtest_LIBRARY} ${Gmock_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTfuse PDfuselib ${Gtest_LIBRARY})
 # TARGET_LINK_LIBRARIES(TESTauthentication_net PDclientlib ${Gtest_LIBRARY})
 # TARGET_LINK_LIBRARIES(TESTbufferpackethandler_net PDclientlib ${Gtest_LIBRARY})
 # TARGET_LINK_LIBRARIES(TESTclientcontroller_net PDclientlib ${Gtest_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTclientcontroller_local PDlsmclientlib ${Gtest_LIBRARY})
 # TARGET_LINK_LIBRARIES(TESTimconnectionhandler_net PDclientlib ${Gtest_LIBRARY})
-TARGET_LINK_LIBRARIES(DEMOclient PDclientlib)
+# TARGET_LINK_LIBRARIES(DEMOclient PDclientlib)
 
 ###################################################################################################
 # Compiler and linker flags - after all targets declared                                          #
 ###################################################################################################
+
 IF(Glog_FOUND)
   ADD_DEFINITIONS(-DHAVE_GLOG)
 ENDIF()
@@ -662,14 +671,15 @@ IF(APPLE)
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -pg -fprofile-arcs -ftest-coverage")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DQT_NO_DEBUG_OUTPUT -DQT_NO_WARNING_OUTPUT -DQT_NO_DEBUG_STREAM -O2 -Wuninitialized")
   SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -pg -fprofile-arcs -ftest-coverage")
-  SET_TARGET_PROPERTIES(lifestuff lslocal PROPERTIES COMPILE_FLAGS -DLOCAL_PDVAULT)
+  # SET_TARGET_PROPERTIES(lifestuff lslocal PROPERTIES COMPILE_FLAGS -DLOCAL_PDVAULT)
+  SET_TARGET_PROPERTIES(lslocal PROPERTIES COMPILE_FLAGS -DLOCAL_PDVAULT)
 ELSEIF(UNIX AND NOT APPLE)
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -DDEBUG -ggdb -pg -fprofile-arcs -ftest-coverage")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DQT_NO_DEBUG_OUTPUT -DQT_NO_WARNING_OUTPUT -DQT_NO_DEBUG_STREAM -O2 -Wuninitialized")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wall -DPD_LINUX -DPD_POSIX -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -Wredundant-decls -Wunused-function -Wunused-label -Wunused-parameter -Wunused-value -Wunused-variable
-                      -std=c++0x -ansi -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wall -DPD_LINUX -DPD_POSIX -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -Wredundant-decls -Wunused-function -Wunused-label -Wunused-parameter -Wunused-value -Wunused-variable -std=c++0x -Weffc++ -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
   ##put libs in here that will have no chance of passing tests - 3rd party ONLY !!
-  SET_TARGET_PROPERTIES(lifestuff lslocal PROPERTIES COMPILE_FLAGS "-w -DLOCAL_PDVAULT")
+  # SET_TARGET_PROPERTIES(lifestuff lslocal PROPERTIES COMPILE_FLAGS "-w -DLOCAL_PDVAULT")
+  SET_TARGET_PROPERTIES(lslocal PROPERTIES COMPILE_FLAGS "-w -DLOCAL_PDVAULT")
   SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -pg -fprofile-arcs -ftest-coverage")
 ELSEIF(WIN32)
   ADD_DEFINITIONS(-DPD_WIN32 -DWIN32 -D_WIN32 -D__WINDOWS__ -D__WIN32__ -D_WINDOWS)
@@ -702,7 +712,8 @@ ELSEIF(WIN32)
                               LINK_FLAGS_DEBUG "${LINKER_LIBS_DIRS_DEBUG}"
                               LINK_FLAGS_RELWITHDEBINFO "${LINKER_LIBS_DIRS_DEBUG}"
                               LINK_FLAGS_MINSIZEREL "${LINKER_LIBS_DIRS_DEBUG}")
-    SET_TARGET_PROPERTIES(lifestuff lslocal PROPERTIES COMPILE_FLAGS "-DLOCAL_PDVAULT")
+    # SET_TARGET_PROPERTIES(lifestuff lslocal PROPERTIES COMPILE_FLAGS "-DLOCAL_PDVAULT")
+    SET_TARGET_PROPERTIES(lslocal PROPERTIES COMPILE_FLAGS "-DLOCAL_PDVAULT")
   ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
     SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG") # -g -pg -fprofile-arcs -ftest-coverage")
@@ -710,10 +721,10 @@ ELSEIF(WIN32)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I c:/usr/include -D_FORTIFY_SOURCE=2 -D__MINGW__ -L c:/MinGW/lib/ -L c:/MinGW/mingw32/lib/ -static -mthreads -D_GLIBCXX_USE_WCHAR_T")
     # SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--enable-auto-import")
     # SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -pg -fprofile-arcs -ftest-coverage")
-    SET_TARGET_PROPERTIES(lifestuff lslocal PROPERTIES COMPILE_FLAGS "-w -DLOCAL_PDVAULT")
+    # SET_TARGET_PROPERTIES(lifestuff lslocal PROPERTIES COMPILE_FLAGS "-w -DLOCAL_PDVAULT")
+    SET_TARGET_PROPERTIES(lslocal PROPERTIES COMPILE_FLAGS "-w -DLOCAL_PDVAULT")
   ENDIF()
 ENDIF()
-
 ###################################################################################################
 # Tests                                                                                           #
 ###################################################################################################
@@ -819,14 +830,15 @@ FUNCTION(ADD_MAIDSAFE_TEST GTEST_GROUP_NAME GTEST_NAME TEST_PATH)
   ENDIF()
 ENDFUNCTION()
 
-SET(TEST_EXECUTABLES TESTclient TESTclientfilesystem TESTcommon TESTencrypt TESTpassport TESTpki TESTfuse)
+#SET(TEST_EXECUTABLES TESTclient TESTclientfilesystem TESTcommon TESTencrypt TESTpassport TESTpki TESTfuse)
+SET(TEST_EXECUTABLES TESTclient TESTclientfilesystem TESTencrypt TESTpassport TESTpki TESTfuse)
 FOREACH(TEST_EXECUTABLE ${TEST_EXECUTABLES})
   IF(TEST_EXECUTABLE STREQUAL "TESTclient")
     SET(GTEST_SOURCE_FILES ${ALL_FILES_CLIENT_TESTS_DIR})
   ELSEIF(TEST_EXECUTABLE STREQUAL "TESTclientfilesystem")
     SET(GTEST_SOURCE_FILES ${ALL_FILES_CLIENT_FILESYSTEM_TESTS_DIR})
-  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTcommon")
-    SET(GTEST_SOURCE_FILES ${ALL_FILES_COMMON_TESTS_DIR})
+  # ELSEIF(TEST_EXECUTABLE STREQUAL "TESTcommon")
+  #   SET(GTEST_SOURCE_FILES ${ALL_FILES_COMMON_TESTS_DIR})
   ELSEIF(TEST_EXECUTABLE STREQUAL "TESTencrypt")
     SET(GTEST_SOURCE_FILES ${ALL_FILES_ENCRYPT_TESTS_DIR})
   ELSEIF(TEST_EXECUTABLE STREQUAL "TESTpassport")
@@ -980,7 +992,7 @@ ENDIF()
 IF(CMAKE_BUILD_TYPE MATCHES Release)
   INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindInstallBuilder.cmake)
   IF(InstallBuilder_BUILDER_EXE AND InstallBuilder_CUSTOMISE_EXE)
-    ADD_CUSTOM_TARGET(lifestuffInstaller ALL ${InstallBuilder_BUILDER_EXE} build ${${PROJECT_NAME}_ROOT}/installer/bitrock/lifestuff.xml DEPENDS lifestuff)
+    # ADD_CUSTOM_TARGET(lifestuffInstaller ALL ${InstallBuilder_BUILDER_EXE} build ${${PROJECT_NAME}_ROOT}/installer/bitrock/lifestuff.xml DEPENDS lifestuff)
     ADD_CUSTOM_TARGET(lslightlocalInstaller ALL ${InstallBuilder_BUILDER_EXE} build ${${PROJECT_NAME}_ROOT}/installer/bitrock/lslightlocal.xml DEPENDS lslightlocal)
   ENDIF()
 ENDIF()

@@ -49,6 +49,10 @@ namespace bs2 = boost::signals2;
 
 namespace maidsafe {
 
+namespace kademlia {
+class Contact;
+}  // namespace kademlia
+
 namespace test {
 class ClientControllerTest;
 class ClientControllerTest_FUNC_MAID_SaveSession_Test;
@@ -59,7 +63,7 @@ class ClientControllerTest_FUNC_MAID_ClearStaleMessages_Test;
 class ClientControllerTest_FUNC_MAID_NET_ClearStaleMessages_Test;
 class ClientControllerTest_FUNC_MAID_ContactAddition_Test;
 class ClientControllerTest_FUNC_MAID_NET_ContactAddition_Test;
-}
+}  // namespace test
 
 class ChunkStore;
 class Contact;
@@ -204,7 +208,7 @@ class ClientController {
   // Vault operations
   bool VaultStoreInfo(boost::uint64_t *offered_space,
                       boost::uint64_t *free_space);
-  bool VaultContactInfo(kad::Contact *contact);
+  bool VaultContactInfo(kademlia::Contact *contact);
   OwnLocalVaultResult SetLocalVaultOwned(
       const boost::uint32_t &port,
       const boost::uint64_t &space,

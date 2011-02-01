@@ -26,18 +26,18 @@
 #ifndef MAIDSAFE_SHAREDTEST_CHUNKSTOREOPS_H_
 #define MAIDSAFE_SHAREDTEST_CHUNKSTOREOPS_H_
 
-#include <boost/cstdint.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread.hpp>
-#include <maidsafe/base/utils.h>
+#include "boost/cstdint.hpp"
+#include "boost/filesystem.hpp"
+#include "boost/shared_ptr.hpp"
+#include "boost/thread.hpp"
+#include "maidsafe-dht/common/utils.h"
 
 #include <string>
 #include <vector>
 
 #include "maidsafe/common/packet.pb.h"
 
-namespace fs = boost::filesystem;
+namespace fs3 = boost::filesystem3;
 
 namespace maidsafe {
 class ChunkStore;
@@ -85,11 +85,11 @@ bool MakeChunks(const boost::uint32_t &num_chunks,
     while (chunk_size > upper)
       chunk_size = chunk_size / 2;
     chunksize->push_back(chunk_size);
-    value->push_back(base::RandomAlphaNumericString(chunksize->at(i)));
+    value->push_back(maidsafe::RandomAlphaNumericString(chunksize->at(i)));
     if (hashable) {
       name->push_back(maidsafe::SHA512String(value->at(i)));
     } else {
-      name->push_back(maidsafe::SHA512String(base::IntToString(i)));
+      name->push_back(maidsafe::SHA512String(boost::lexical_cast<std::string>(i)));
     }
   }
   return (chunksize->size() == num_chunks && value->size() == num_chunks &&
@@ -131,12 +131,12 @@ bool MakePackets(const boost::uint32_t &num_packets,
     while (packet_size > upper)
       packet_size = packet_size / 2;
     packetsize->push_back(packet_size);
-    std::string data = base::RandomAlphaNumericString(packetsize->at(i));
+    std::string data = maidsafe::RandomAlphaNumericString(packetsize->at(i));
     maidsafe::GenericPacket gp;
     gp.set_data(data);
     gp.set_signature(maidsafe::RSASign(data, private_key.at(i)));
     value->push_back(gp);
-    name->push_back(maidsafe::SHA512String(base::IntToString(i)));
+    name->push_back(maidsafe::SHA512String(boost::lexical_cast<std::string>(i)));
   }
   return (packetsize->size() == num_packets && value->size() == num_packets &&
           name->size() == num_packets);
@@ -145,18 +145,18 @@ bool MakePackets(const boost::uint32_t &num_packets,
 // Checks for the existance of non_hex_filename's stored chunk in root_dir_path
 // and if found, modifies path_found to location of file otherwise path_found
 // is set to an empty path.
-bool FindFile(const fs::path &root_dir_path,
+bool FindFile(const fs3::path &root_dir_path,
               const std::string &non_hex_filename,
-              fs::path *path_found) {
-  if (!fs::exists(root_dir_path)) {
+              fs3::path *path_found) {
+  if (!fs3::exists(root_dir_path)) {
     path_found->clear();
     return false;
   }
-  std::string hex_filename = base::EncodeToHex(non_hex_filename);
-  fs::directory_iterator end_itr;
-  for (fs::directory_iterator itr(root_dir_path); itr != end_itr; ++itr) {
+  std::string hex_filename = maidsafe::EncodeToHex(non_hex_filename);
+  fs3::directory_iterator end_itr;
+  for (fs3::directory_iterator itr(root_dir_path); itr != end_itr; ++itr) {
 //    printf("Iter at %s\n", itr->path().filename().c_str());
-    if (fs::is_directory((*itr).status())) {
+    if (fs3::is_directory((*itr).status())) {
       if (FindFile((*itr).path(), non_hex_filename, path_found))
         return true;
     } else if ((*itr).path().filename().string() == hex_filename) {
@@ -170,10 +170,10 @@ bool FindFile(const fs::path &root_dir_path,
 
 // This checks that the file is in "./TESTSTORAGE/parent/branch" where the path
 // is expected to be of form eg "./TESTSTORAGE/Hashable/Normal/0/c/5/0c56c76..."
-bool CheckFilePath(const fs::path &file_path,
+bool CheckFilePath(const fs3::path &file_path,
                    const std::string &parent,
                    const std::string &branch) {
-  fs::path root_path(file_path);
+  fs3::path root_path(file_path);
   // need a remove_filename for each of the 4 subdirs
   for (int i = 0; i < 4; ++i)
     root_path.remove_filename();
@@ -257,7 +257,7 @@ class ChunkstoreTest : public testing::Test {
  protected:
   ChunkstoreTest()
       : storedir(file_system::TempDir() / ("maidsafe_TestChunkstore"
-                 + base::RandomAlphaNumericString(6))),
+                 + RandomAlphaNumericString(6))),
         file_path(storedir / "chunk.txt"),
         file_content("ABC"),
         hash_file_content(SHA512String(file_content)),
@@ -275,26 +275,26 @@ class ChunkstoreTest : public testing::Test {
         p_value() {}
   void SetUp() {
     try {
-      fs::remove_all(storedir);
-      fs::create_directory(storedir);
+      fs3::remove_all(storedir);
+      fs3::create_directory(storedir);
     }
     catch(const std::exception &e) {
       printf("%s\n", e.what());
     }
-    fs::ofstream ofs;
+    fs3::ofstream ofs;
     ofs.open(file_path);
     ofs << file_content;
     ofs.close();
   }
   void TearDown() {
     try {
-      fs::remove_all(storedir);
+      fs3::remove_all(storedir);
     }
     catch(const std::exception &e) {
       printf("%s\n", e.what());
     }
   }
-  fs::path storedir, file_path;
+  fs3::path storedir, file_path;
   std::string file_content, hash_file_content, other_hash;
   std::vector<size_t> h_size, nh_size, p_size;
   std::vector<std::string> h_value, nh_value, h_name, nh_name, p_name;

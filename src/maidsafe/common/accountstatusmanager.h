@@ -30,6 +30,8 @@
 #include "boost/asio/io_service.hpp"
 #include "boost/asio/strand.hpp"
 #include "boost/date_time/posix_time/posix_time.hpp"
+#include "boost/function.hpp"
+#include "boost/shared_ptr.hpp"
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
 #include "boost/thread/thread.hpp"
@@ -55,7 +57,7 @@ class AccountStatusManager {
  public:
   AccountStatusManager();
   ~AccountStatusManager();
-  void StartUpdating(std::function<void()> update_functor);
+  void StartUpdating(boost::function<void()> update_functor);
   void StopUpdating();
   void Update();
   void SetAccountStatus(const std::uint64_t &space_offered,
@@ -66,8 +68,8 @@ class AccountStatusManager {
                      std::uint64_t *space_taken);
   void ReserveSpace(const std::uint64_t &reserved_value);
   void UnReserveSpace(const std::uint64_t &reserved_value);
-  void AmendmentDone(const AmendAccountRequest::Amendment &amendment_type,  // TODO
-                     const std::uint64_t &amendment_value);
+//  void AmendmentDone(const AmendAccountRequest::Amendment &amendment_type,  // TODO
+//                     const std::uint64_t &amendment_value);
   void UpdateFailed();
   bool AbleToStore(const boost::uint64_t &size);
   friend class test::AccountStatusManagerTest_BEH_MAID_ASM_Init_Test;
@@ -98,12 +100,12 @@ class AccountStatusManager {
   const int kMaxAmendments_;
   boost::mutex mutex_;
   int amendments_since_update_;
-  std::function<void()> update_functor_;
-  std::function<void(const boost::system::error_code &error)> wait_functor_;
+  boost::function<void()> update_functor_;
+  boost::function<void(const boost::system::error_code &error)> wait_functor_;
   boost::asio::io_service io_service_;
   boost::asio::strand strand_;
-  std::shared_ptr<boost::asio::deadline_timer> timer_;
-  std::shared_ptr<boost::asio::io_service::work> work_;
+  boost::shared_ptr<boost::asio::deadline_timer> timer_;
+  boost::shared_ptr<boost::asio::io_service::work> work_;
   boost::thread worker_thread_;
   boost::condition_variable update_done_cond_var_;
   bool awaiting_update_result_;

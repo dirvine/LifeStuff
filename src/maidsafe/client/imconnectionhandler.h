@@ -37,7 +37,6 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include <maidsafe/transport/transporthandler-api.h>
 #include <string>
 
 #include "maidsafe/common/returncodes.h"
@@ -88,36 +87,36 @@ typedef boost::multi_index::multi_index_container<
 > connections_container;
 
 class IMConnectionHandler {
- public:
-  IMConnectionHandler();
-  ReturnCode Start(transport::TransportHandler *trans_hdler,
-      new_message_notifier msg_notifier, new_connection_notifier conn_notifier);
-  void Stop();
-  ReturnCode AddConnection(const boost::int16_t &trans_id,
-      const boost::uint32_t &conn_id);
-  ReturnCode CreateConnection(const boost::int16_t &trans_id,
-      const EndPoint &endpoint, boost::uint32_t *conn_id);
-  ReturnCode SendMessage(const boost::int16_t &trans_id,
-      const boost::uint32_t &conn_id, const std::string &msg);
-  ReturnCode CloseConnection(const boost::int16_t &trans_id,
-      const boost::uint32_t &conn_id);
-  ReturnCode CloseConnections(const boost::int16_t &trans_id);
-  void OnMessageArrive(const std::string &msg, const boost::uint32_t &conn_id,
-      const boost::int16_t &trans_id, const double &rtt);
- private:
-  void ConnectionTimesOut(const boost::int16_t &trans_id,
-      const boost::uint32_t &conn_id, const boost::system::error_code &ec);
-  connections_container connections_;
-  transport::TransportHandler *transport_handler_;
-  new_message_notifier message_notifier_;
-  new_connection_notifier conn_notifier_;
-  bool started_;
-  boost::mutex connections_mutex_;
-  boost::shared_ptr<boost::thread> worker_;
-  boost::asio::io_service io_;
-  boost::asio::strand strand_;
-  boost::asio::deadline_timer timer_;
-  boost::condition_variable send_finished_;
+// public:
+//  IMConnectionHandler();
+//  ReturnCode Start(transport::TransportHandler *trans_hdler,
+//      new_message_notifier msg_notifier, new_connection_notifier conn_notifier);
+//  void Stop();
+//  ReturnCode AddConnection(const boost::int16_t &trans_id,
+//      const boost::uint32_t &conn_id);
+//  ReturnCode CreateConnection(const boost::int16_t &trans_id,
+//      const EndPoint &endpoint, boost::uint32_t *conn_id);
+//  ReturnCode SendMessage(const boost::int16_t &trans_id,
+//      const boost::uint32_t &conn_id, const std::string &msg);
+//  ReturnCode CloseConnection(const boost::int16_t &trans_id,
+//      const boost::uint32_t &conn_id);
+//  ReturnCode CloseConnections(const boost::int16_t &trans_id);
+//  void OnMessageArrive(const std::string &msg, const boost::uint32_t &conn_id,
+//      const boost::int16_t &trans_id, const double &rtt);
+// private:
+//  void ConnectionTimesOut(const boost::int16_t &trans_id,
+//      const boost::uint32_t &conn_id, const boost::system::error_code &ec);
+//  connections_container connections_;
+//  transport::TransportHandler *transport_handler_;
+//  new_message_notifier message_notifier_;
+//  new_connection_notifier conn_notifier_;
+//  bool started_;
+//  boost::mutex connections_mutex_;
+//  boost::shared_ptr<boost::thread> worker_;
+//  boost::asio::io_service io_;
+//  boost::asio::strand strand_;
+//  boost::asio::deadline_timer timer_;
+//  boost::condition_variable send_finished_;
 };
 
 }  // namespace maidsafe

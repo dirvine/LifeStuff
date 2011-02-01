@@ -26,10 +26,10 @@
 #include <boost/filesystem.hpp>
 #include <boost/shared_ptr.hpp>
 #include <gtest/gtest.h>
-#include <maidsafe/maidsafe-dht_config.h>
-#include <maidsafe/rpcprotocol/channelmanager-api.h>
-#include <maidsafe/transport/transporthandler-api.h>
-#include <maidsafe/transport/transportudt.h>
+//  #include <maidsafe/maidsafe-dht_config.h>
+//  #include <maidsafe/rpcprotocol/channelmanager-api.h>
+//  #include <maidsafe/transport/transporthandler-api.h>
+//  #include <maidsafe/transport/transportudt.h>
 
 #include <string>
 #include <vector>
@@ -41,6 +41,8 @@
 
 #define TEST_MS_NET(test_fixture, test_type, test_name_prefix, test_name)\
   TEST_F(test_fixture, FUNC_##test_name_prefix##_NET_##test_name)
+
+namespace fs3 = boost::filesystem3;
 
 namespace maidsafe {
 
@@ -56,7 +58,7 @@ typedef boost::shared_ptr<TestStoreManager> TestStoreManagerPtr;
 boost::uint8_t K();
 int kNetworkSize();
 LocalVaults *pdvaults();
-fs::path *kadconfig();
+fs3::path *kadconfig();
 
 #else  // MS_NETWORK_TEST
 
@@ -85,14 +87,14 @@ class NetworkTest {
   bool Init();
   bool IsLastTest();
   boost::int16_t transport_id() const { return transport_id_; }
-  fs::path test_dir() const { return test_dir_; }
-  transport::Transport *transport() const { return transport_; }
-  transport::TransportHandler *transport_handler() const {
-    return transport_handler_;
-  }
-  rpcprotocol::ChannelManager *channel_manager() const {
-    return channel_manager_;
-  }
+  fs3::path test_dir() const { return test_dir_; }
+//  transport::Transport *transport() const { return transport_; }
+//  transport::TransportHandler *transport_handler() const {
+//    return transport_handler_;
+//  }
+//  rpcprotocol::ChannelManager *channel_manager() const {
+//    return channel_manager_;
+//  }
   boost::shared_ptr<maidsafe::ChunkStore> chunkstore() const {
     return chunkstore_;
   }
@@ -108,10 +110,10 @@ class NetworkTest {
   const testing::TestInfo* const test_info_;
   std::string test_case_name_;
   boost::int16_t transport_id_;
-  fs::path test_dir_;
-  transport::Transport *transport_;
-  transport::TransportHandler *transport_handler_;
-  rpcprotocol::ChannelManager *channel_manager_;
+  fs3::path test_dir_;
+//  transport::Transport *transport_;
+//  transport::TransportHandler *transport_handler_;
+//  rpcprotocol::ChannelManager *channel_manager_;
   boost::shared_ptr<maidsafe::ChunkStore> chunkstore_;
   boost::shared_ptr<maidsafe::KadOps> kad_ops_;
   TestStoreManagerPtr store_manager_;

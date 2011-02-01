@@ -88,5 +88,7 @@ class FSLinux {
   static int ms_fgetattr(const char *path, struct stat *, struct
       fuse_file_info *);
 };
+
 }  // namespace fs_l_fuse
+
 #endif  // MAIDSAFE_FUSE_LINUX_FSLINUX_H_

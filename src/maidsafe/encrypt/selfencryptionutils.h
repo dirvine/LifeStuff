@@ -32,7 +32,7 @@
 #include <string>
 #include <vector>
 
-namespace fs = boost::filesystem;
+namespace fs3 = boost::filesystem3;
 
 namespace maidsafe {
 
@@ -43,14 +43,14 @@ class DataMap;
 
 namespace utils {
 
-int EncryptContent(std::tr1::shared_ptr<DataIOHandler> input_handler,
-                   const fs::path &output_dir,
+int EncryptContent(boost::shared_ptr<DataIOHandler> input_handler,
+                   const fs3::path &output_dir,
                    DataMap *data_map,
-                   std::map<std::string, fs::path> *to_chunk_store);
+                   std::map<std::string, fs3::path> *to_chunk_store);
 int DecryptContent(const DataMap &data_map,
-                   std::vector<fs::path> chunk_paths,
+                   std::vector<fs3::path> chunk_paths,
                    const boost::uint64_t &offset,
-                   std::tr1::shared_ptr<DataIOHandler> output_handler);
+                   boost::shared_ptr<DataIOHandler> output_handler);
 int EncryptDataMap(const DataMap &data_map,
                    const std::string &this_directory_key,
                    const std::string &parent_directory_key,
@@ -60,10 +60,10 @@ int DecryptDataMap(const std::string &encrypted_data_map,
                    const std::string &parent_directory_key,
                    DataMap *data_map);
 // check to ensure entry is encryptable
-int CheckEntry(std::tr1::shared_ptr<DataIOHandler> input_handler);
-bool CheckCompressibility(std::tr1::shared_ptr<DataIOHandler> input_handler);
+int CheckEntry(boost::shared_ptr<DataIOHandler> input_handler);
+bool CheckCompressibility(boost::shared_ptr<DataIOHandler> input_handler);
 bool CalculateChunkSizes(const std::string &file_hash,
-                         std::tr1::shared_ptr<DataIOHandler> input_handler,
+                         boost::shared_ptr<DataIOHandler> input_handler,
                          DataMap *data_map,
                          boost::uint16_t *chunk_count);
 // returns a positive or negative int based on char passed into it to
@@ -71,7 +71,7 @@ bool CalculateChunkSizes(const std::string &file_hash,
 // through to 'f' returns 7
 int ChunkAddition(char hex_digit);
 bool GeneratePreEncryptionHashes(
-    std::tr1::shared_ptr<DataIOHandler> input_handler,
+    boost::shared_ptr<DataIOHandler> input_handler,
     DataMap *data_map);
 // Generate a string of required_size from input in a repeatable way
 bool ResizeObfuscationHash(const std::string &input,
@@ -82,7 +82,7 @@ bool ResizeObfuscationHash(const std::string &input,
 bool HashUnique(const DataMap &data_map,
                 bool pre_encryption,
                 std::string *hash);
-std::string SHA512(const fs::path &file_path);
+std::string SHA512(const fs3::path &file_path);
 std::string SHA512(const std::string &content);
 
 }  // namespace utils

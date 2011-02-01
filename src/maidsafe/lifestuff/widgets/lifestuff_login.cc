@@ -18,7 +18,7 @@
 #include <QDebug>
 #include <QValidator>
 #include <QMessageBox>
-#include <maidsafe/maidsafe-dht.h>
+//  #include <maidsafe/maidsafe-dht.h>
 
 // std
 #include <limits>
@@ -477,7 +477,7 @@ bool LifeStuffLogin::eventFilter(QObject *obj, QEvent *event) {
         return true;
       } else {
       return false;
-      }          
+      }
    } else if (obj == ui_.PassEdit) {
      if (event->type() == QEvent::FocusIn) {
         if (ui_.PassEdit->text() == tr("Password")) {
@@ -487,7 +487,7 @@ bool LifeStuffLogin::eventFilter(QObject *obj, QEvent *event) {
            return true;
       } else {
       return false;
-      }          
+      }
    } else {
      return LifeStuffLogin::eventFilter(obj, event);
    }
@@ -495,17 +495,17 @@ bool LifeStuffLogin::eventFilter(QObject *obj, QEvent *event) {
 
 void LifeStuffLogin::mousePressEvent(QMouseEvent *event)
 {
-    if (ui_.UserEdit->underMouse()) {        
+    if (ui_.UserEdit->underMouse()) {
         ui_.UserEdit->setEnabled(true);
         ui_.UserEdit->setFocus();
-        state_ = EDIT_USER;          
-    } else if (ui_.PinEdit->underMouse()) {        
+        state_ = EDIT_USER;
+    } else if (ui_.PinEdit->underMouse()) {
         ui_.PinEdit->setEnabled(true);
         ui_.PinEdit->setFocus();
         state_ = EDIT_PIN;
   } else if (ui_.PassEdit->underMouse()) {
       state_ = EDIT_PASSWORD;
-  } 
+  }
 
     updateUI();
     QWidget::mousePressEvent(event);

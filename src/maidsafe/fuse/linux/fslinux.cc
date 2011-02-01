@@ -466,8 +466,8 @@ int FSLinux::ms_getattr(const char *path, struct stat *stbuf) {
     stbuf->st_size = 4*1024;
     stbuf->st_uid = fuse_get_context()->uid;
     stbuf->st_gid = fuse_get_context()->gid;
-    stbuf->st_mtime = base::GetEpochMilliseconds();
-    stbuf->st_atime = base::GetEpochMilliseconds();
+//    stbuf->st_mtime = base::GetEpochMilliseconds();
+//    stbuf->st_atime = base::GetEpochMilliseconds();
     return 0;
   }
 

@@ -132,7 +132,7 @@ ItemType SEHandler::CheckEntry(const fs::path &absolute_path,
 
     *file_size = fs::file_size(absolute_path);
     *file_hash = SHA512File(absolute_path);
-    if (absolute_path.filename().string() == base::EncodeToHex(*file_hash)) {
+    if (absolute_path.filename().string() == EncodeToHex(*file_hash)) {
       *file_size = 0;
       file_hash->clear();
       return MAIDSAFE_CHUNK;
@@ -252,7 +252,7 @@ int SEHandler::EncryptString(const std::string &data,
 
   if (AddChunksToChunkstore(data_map) != kSuccess)
     return kChunkstoreError;
-  StoreChunks(data_map, PRIVATE, "", base::EncodeToHex(data_map.file_hash()));
+  StoreChunks(data_map, PRIVATE, "", EncodeToHex(data_map.file_hash()));
   if (!data_map.SerializeToString(serialised_data_map)) {
 #ifdef DEBUG
     printf("SEHandler::EncryptString - Failed to serialize data_map\n");
@@ -416,7 +416,7 @@ int SEHandler::GenerateUniqueKey(std::string *key) {
   const int kMaxAttempts(5);
   int count(0);
   for (; count < kMaxAttempts; ++count) {
-    *key = SHA512String(base::RandomString(200));
+    *key = SHA512String(RandomString(200));
     if (store_manager_->KeyUnique(*key, false))
       break;
   }
@@ -723,7 +723,7 @@ int SEHandler::AddChunksToChunkstore(const encrypt::DataMap &data_map) {
   for (int j = 0; j < data_map.encrypted_chunk_name_size(); ++j) {
     // If this succeeds, chunk is moved to chunkstore.  If not, clean up temp.
     fs::path temp_chunk(file_system::TempDir() /
-                        base::EncodeToHex(data_map.encrypted_chunk_name(j)));
+                        EncodeToHex(data_map.encrypted_chunk_name(j)));
     int res = client_chunkstore_->AddChunkToOutgoing(
               data_map.encrypted_chunk_name(j), temp_chunk);
     if (res != kSuccess) {
@@ -820,7 +820,7 @@ void SEHandler::ChunkDone(const std::string &chunkname, ReturnCode rc) {
   if (it_cn.first == it_cn.second) {
 #ifdef DEBUG
     printf("SEHandler::ChunkDone - No record of the chunk %s\n",
-           base::EncodeToHex(chunkname).c_str());
+           EncodeToHex(chunkname).c_str());
 #endif
     return;
   }
@@ -843,7 +843,7 @@ void SEHandler::ChunkDone(const std::string &chunkname, ReturnCode rc) {
   if (!found_pending_chunk) {
 #ifdef DEBUG
     printf("SEHandler::ChunkDone - No record of the chunk %s needing update\n",
-           base::EncodeToHex(chunkname).c_str());
+           EncodeToHex(chunkname).c_str());
 #endif
     return;
   }

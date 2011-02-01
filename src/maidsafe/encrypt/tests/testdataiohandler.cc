@@ -22,10 +22,10 @@
 * ============================================================================
 */
 
-#include <gtest/gtest.h>
-#include <boost/filesystem/fstream.hpp>
-#include <boost/filesystem.hpp>
-#include <maidsafe/base/utils.h>
+#include "gtest/gtest.h"
+#include "boost/filesystem/fstream.hpp"
+#include "boost/filesystem.hpp"
+#include "maidsafe-dht/common/utils.h"
 
 #include <limits>
 
@@ -41,9 +41,9 @@ class StringIOHandlerTest : public testing::Test {
  public:
   StringIOHandlerTest()
       : kMinSize_(1000),
-        kDataSize_((base::RandomUint32() % 249000) + kMinSize_),
+        kDataSize_((RandomUint32() % 249000) + kMinSize_),
         // ensure input contains null chars
-        kData_(std::string(10, 0) + base::RandomString(kDataSize_ - 10)),
+        kData_(std::string(10, 0) + RandomString(kDataSize_ - 10)),
         data_(new std::string(kData_)) {}
  protected:
   const size_t kMinSize_, kDataSize_;
@@ -164,7 +164,7 @@ TEST_F(StringIOHandlerTest, BEH_ENCRYPT_WriteToString) {
   read_data = "Test";
   EXPECT_FALSE(output_handler.Read(test_size, &read_data));
   EXPECT_TRUE(read_data.empty());
-  size_t split(base::RandomUint32() % kDataSize_);
+  size_t split(RandomUint32() % kDataSize_);
   std::string part1(kData_.substr(0, split)), part2(kData_.substr(split));
   EXPECT_TRUE(output_handler.Write(part1));
   EXPECT_EQ(part1, output_handler.Data());
@@ -258,13 +258,13 @@ class FileIOHandlerTest : public testing::Test {
  public:
   FileIOHandlerTest()
       : kRootDir_(test_file_io_handler::TempDir() /
-            ("maidsafe_TestIO_" + base::RandomAlphaNumericString(6))),
+            ("maidsafe_TestIO_" + RandomAlphaNumericString(6))),
         kInputFile_(kRootDir_ / "In.txt"),
         kOutputFile_(kRootDir_ / "Out.txt"),
         kMinSize_(10),
-        kDataSize_((base::RandomUint32() % 249) + kMinSize_),
+        kDataSize_((RandomUint32() % 249) + kMinSize_),
         // ensure input contains null chars
-        kData_(std::string(10, 0) + base::RandomString(kDataSize_ - 10)) {}
+        kData_(std::string(10, 0) + RandomString(kDataSize_ - 10)) {}
  protected:
   void SetUp() {
     try {
@@ -447,7 +447,7 @@ TEST_F(FileIOHandlerTest, BEH_ENCRYPT_WriteToFile) {
   read_data = "Test";
   EXPECT_FALSE(output_handler.Read(test_size, &read_data));
   EXPECT_TRUE(read_data.empty());
-  size_t split(base::RandomUint32() % kDataSize_);
+  size_t split(RandomUint32() % kDataSize_);
   std::string part1(kData_.substr(0, split)), part2(kData_.substr(split));
   EXPECT_TRUE(output_handler.Write(part1));
 //  EXPECT_EQ(part1, ReadDataFromOutputFile());

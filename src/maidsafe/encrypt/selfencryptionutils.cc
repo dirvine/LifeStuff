@@ -32,8 +32,8 @@
 
 #include "maidsafe/encrypt/selfencryptionutils.h"
 
-#include <maidsafe/base/crypto.h>
-#include <maidsafe/base/utils.h>
+#include "maidsafe-dht/common/crypto.h"
+#include "maidsafe-dht/common/utils.h"
 
 #include <set>
 
@@ -41,7 +41,7 @@
 #include "maidsafe/encrypt/datamap.pb.h"
 #include "maidsafe/encrypt/selfencryptionconfig.h"
 
-namespace fs = boost::filesystem;
+namespace fs3 = boost::filesystem3;
 
 namespace maidsafe {
 
@@ -49,10 +49,10 @@ namespace encrypt {
 
 namespace utils {
 
-int EncryptContent(std::tr1::shared_ptr<DataIOHandler> input_handler,
-                   const fs::path &output_dir,
+int EncryptContent(boost::shared_ptr<DataIOHandler> input_handler,
+                   const fs3::path &output_dir,
                    DataMap *data_map,
-                   std::map<std::string, fs::path> *to_chunk_store) {
+                   std::map<std::string, fs3::path> *to_chunk_store) {
   if (!data_map || !to_chunk_store)
     return kNullPointer;
   to_chunk_store->clear();
@@ -63,13 +63,13 @@ int EncryptContent(std::tr1::shared_ptr<DataIOHandler> input_handler,
     return kInputTooSmall;
   }
 
-  std::string file_hash = base::EncodeToHex(data_map->file_hash());
+  std::string file_hash = EncodeToHex(data_map->file_hash());
   if (file_hash.empty()) {
     if (input_handler->Type() == DataIOHandler::kFileIOHandler) {
-      file_hash = SHA512(std::tr1::static_pointer_cast<FileIOHandler>
+      file_hash = SHA512(boost::shared_static_cast<FileIOHandler>
                   (input_handler)->FilePath());
     } else {
-      file_hash = SHA512(std::tr1::static_pointer_cast<StringIOHandler>
+      file_hash = SHA512(boost::shared_static_cast<StringIOHandler>
                   (input_handler)->Data());
     }
   }
@@ -108,7 +108,7 @@ int EncryptContent(std::tr1::shared_ptr<DataIOHandler> input_handler,
     Chunk chunk;
     if (compress) {
       int compression_level = 9;
-      std::string compr_type("gzip" + base::IntToString(compression_level));
+      std::string compr_type("gzip" + IntToString(compression_level));
       chunk.set_compression_type(compr_type);
     }
     // initialise counter for amount of data put into chunk
@@ -139,12 +139,9 @@ int EncryptContent(std::tr1::shared_ptr<DataIOHandler> input_handler,
       if (!input_handler->Read(this_chunklet_size, &this_chunklet))
         return kIoError;
       // compress if required and reset this chunklet size
-      crypto::Crypto encryptor;
-      encryptor.set_symm_algorithm(crypto::AES_256);
       if (compress) {
         try {
-          this_chunklet = encryptor.Compress(this_chunklet, "", 9,
-                                             crypto::STRING_STRING);
+          this_chunklet = crypto::Compress(this_chunklet, 9);
         }
         catch(const std::exception &e) {
 #ifdef DEBUG
@@ -159,18 +156,19 @@ int EncryptContent(std::tr1::shared_ptr<DataIOHandler> input_handler,
       ResizeObfuscationHash(obfuscate_hash, this_chunklet_size,
                             &resized_obs_hash);
       // output encrypted chunklet
-      std::string encrypted_chunklet = encryptor.SymmEncrypt(
-          (encryptor.Obfuscate(this_chunklet, resized_obs_hash, crypto::XOR)),
-          "", crypto::STRING_STRING, encryption_hash);
+      std::string encrypted_chunklet(
+          crypto::SymmEncrypt(crypto::XOR(this_chunklet, resized_obs_hash),
+                              encryption_hash,
+                              ""));
       chunk.add_chunklet(encrypted_chunklet);
     }
     // assign temporary name for chunk
-    fs::path temp_chunk_name = output_dir;
-    temp_chunk_name /= base::EncodeToHex(data_map->chunk_name(chunk_no));
+    fs3::path temp_chunk_name = output_dir;
+    temp_chunk_name /= EncodeToHex(data_map->chunk_name(chunk_no));
     // remove any old copies of the chunk
     try {
-      if (fs::exists(temp_chunk_name))
-        fs::remove(temp_chunk_name);
+      if (fs3::exists(temp_chunk_name))
+        fs3::remove(temp_chunk_name);
     }
     catch(const std::exception &e) {
 #ifdef DEBUG
@@ -184,9 +182,9 @@ int EncryptContent(std::tr1::shared_ptr<DataIOHandler> input_handler,
     chunk.SerializeToOstream(&this_chunk_out);
     this_chunk_out.close();
     std::string post_enc_hash = SHA512(temp_chunk_name);
-    fs::path correct_chunk_name(output_dir / base::EncodeToHex(post_enc_hash));
+    fs3::path correct_chunk_name(output_dir / EncodeToHex(post_enc_hash));
     try {
-      fs::rename(temp_chunk_name, correct_chunk_name);
+      fs3::rename(temp_chunk_name, correct_chunk_name);
     }
     catch(const std::exception &e) {
 #ifdef DEBUG
@@ -205,12 +203,12 @@ int EncryptContent(std::tr1::shared_ptr<DataIOHandler> input_handler,
 }
 
 int DecryptContent(const DataMap &data_map,
-                   std::vector<fs::path> chunk_paths,
+                   std::vector<fs3::path> chunk_paths,
                    const boost::uint64_t &offset,
-                   std::tr1::shared_ptr<DataIOHandler> output_handler) {
+                   boost::shared_ptr<DataIOHandler> output_handler) {
   if (!output_handler)
     return kNullPointer;
-  std::string file_hash = base::EncodeToHex(data_map.file_hash());
+  std::string file_hash(EncodeToHex(data_map.file_hash()));
   // if there is no file hash, then the file has never been encrypted
   if (file_hash.empty()) {
 #ifdef DEBUG
@@ -249,12 +247,11 @@ int DecryptContent(const DataMap &data_map,
     for (boost::uint16_t chunk_no = 0; chunk_no < chunk_count; ++chunk_no) {
       // get chunk
       Chunk chunk;
-      std::vector<fs::path>::iterator it = chunk_paths.begin();
+      std::vector<fs3::path>::iterator it = chunk_paths.begin();
       while (it != chunk_paths.end()) {
-        std::string enc =
-            base::EncodeToHex(data_map.encrypted_chunk_name(chunk_no));
+        std::string enc(EncodeToHex(data_map.encrypted_chunk_name(chunk_no)));
         if ((*it).filename().string() ==
-            base::EncodeToHex(data_map.encrypted_chunk_name(chunk_no))) {
+            EncodeToHex(data_map.encrypted_chunk_name(chunk_no))) {
           break;
         } else {
           ++it;
@@ -266,9 +263,9 @@ int DecryptContent(const DataMap &data_map,
 #endif
         return kChunkPathNotFound;
       }
-      fs::path chunk_path(*it);
+      fs3::path chunk_path(*it);
       chunk_paths.erase(it);
-      fs::ifstream fin(chunk_path, std::ifstream::binary);
+      fs3::ifstream fin(chunk_path, std::ifstream::binary);
       if (!fin.good()) {
 #ifdef DEBUG
         printf("Decrypt - !fin.good()\n");
@@ -296,18 +293,17 @@ int DecryptContent(const DataMap &data_map,
         std::string this_chunklet = chunk.chunklet(i);
         // adjust size of obfuscate hash to match size of chunklet
         std::string resized_obs_hash;
-        utils::ResizeObfuscationHash(obfuscate_hash,
+        utils::ResizeObfuscationHash(
+            obfuscate_hash,
             static_cast<boost::uint16_t>(this_chunklet.size()),
             &resized_obs_hash);
-        crypto::Crypto decryptor;
-        decryptor.set_symm_algorithm(crypto::AES_256);
-        std::string decrypted_chunklet = decryptor.Obfuscate(
-            (decryptor.SymmDecrypt(this_chunklet, "", crypto::STRING_STRING,
-                encryption_hash)), resized_obs_hash, crypto::XOR);
+
+        std::string decrypted_chunklet(
+            crypto::XOR(crypto::SymmDecrypt(this_chunklet, encryption_hash, ""),
+                        resized_obs_hash));
         // decompress if required
         if (compressed) {
-          decrypted_chunklet = decryptor.Uncompress(decrypted_chunklet, "",
-                                                    crypto::STRING_STRING);
+          decrypted_chunklet = crypto::Uncompress(decrypted_chunklet);
         }
         output_handler->Write(decrypted_chunklet);
       }
@@ -325,8 +321,8 @@ int EncryptDataMap(const DataMap &data_map,
   if (!encrypted_data_map)
     return kNullPointer;
   encrypted_data_map->clear();
-  std::string encrypt_hash = SHA512(parent_directory_key + this_directory_key);
-  std::string xor_hash = SHA512(this_directory_key + parent_directory_key);
+  std::string encrypt_hash(SHA512(parent_directory_key + this_directory_key));
+  std::string xor_hash(SHA512(this_directory_key + parent_directory_key));
   std::string serialised_data_map;
   try {
     if (!data_map.SerializeToString(&serialised_data_map))
@@ -339,11 +335,10 @@ int EncryptDataMap(const DataMap &data_map,
   if (!ResizeObfuscationHash(xor_hash, serialised_data_map.size(),
                              &xor_hash_extended))
     return kEncryptError;
-  crypto::Crypto encryptor;
-  encryptor.set_symm_algorithm(crypto::AES_256);
-  *encrypted_data_map = encryptor.SymmEncrypt(
-      encryptor.Obfuscate(serialised_data_map, xor_hash_extended, crypto::XOR),
-      "", crypto::STRING_STRING, encrypt_hash);
+  *encrypted_data_map = crypto::SymmEncrypt(crypto::XOR(serialised_data_map,
+                                                        xor_hash_extended),
+                                            encrypt_hash,
+                                            "");
   return encrypted_data_map->empty() ? kEncryptError : kSuccess;
 }
 
@@ -354,18 +349,15 @@ int DecryptDataMap(const std::string &encrypted_data_map,
   if (!data_map)
     return kNullPointer;
   data_map->Clear();
-  std::string encrypt_hash = SHA512(parent_directory_key + this_directory_key);
-  std::string xor_hash = SHA512(this_directory_key + parent_directory_key);
-  crypto::Crypto decryptor;
-  decryptor.set_symm_algorithm(crypto::AES_256);
-  std::string intermediate = decryptor.SymmDecrypt(encrypted_data_map, "",
-                             crypto::STRING_STRING, encrypt_hash);
+  std::string encrypt_hash(SHA512(parent_directory_key + this_directory_key));
+  std::string xor_hash(SHA512(this_directory_key + parent_directory_key));
+  std::string intermediate(crypto::SymmDecrypt(encrypted_data_map,
+                                               encrypt_hash, ""));
   std::string xor_hash_extended;
   if (intermediate.empty() ||
       !ResizeObfuscationHash(xor_hash, intermediate.size(), &xor_hash_extended))
     return kBadDataMap;
-  std::string serialised_data_map = decryptor.Obfuscate(intermediate,
-                                    xor_hash_extended, crypto::XOR);
+  std::string serialised_data_map(crypto::XOR(intermediate, xor_hash_extended));
   try {
     if (serialised_data_map.empty() ||
         !data_map->ParseFromString(serialised_data_map)) {
@@ -378,18 +370,18 @@ int DecryptDataMap(const std::string &encrypted_data_map,
   return kSuccess;
 }
 
-int CheckEntry(std::tr1::shared_ptr<DataIOHandler> input_handler) {
+int CheckEntry(boost::shared_ptr<DataIOHandler> input_handler) {
   // if file size < 2 bytes, it's too small to chunk
   boost::uint64_t filesize(0);
   input_handler->Size(&filesize);
   return filesize < 2 ? kInputTooSmall : kSuccess;
 }
 
-bool CheckCompressibility(std::tr1::shared_ptr<DataIOHandler> input_handler) {
+bool CheckCompressibility(boost::shared_ptr<DataIOHandler> input_handler) {
   int nElements = sizeof(kNoCompressType) / sizeof(kNoCompressType[0]);
   if (input_handler->Type() == DataIOHandler::kFileIOHandler) {
     try {
-      std::string extension = std::tr1::static_pointer_cast<FileIOHandler>(
+      std::string extension = boost::shared_static_cast<FileIOHandler>(
           input_handler)->FilePath().extension().string();
       std::set<std::string> no_comp(kNoCompressType,
                                     kNoCompressType + nElements);
@@ -423,11 +415,8 @@ bool CheckCompressibility(std::tr1::shared_ptr<DataIOHandler> input_handler) {
   }
   input_handler->Close();
   try {
-    crypto::Crypto crypto_obj;
-    std::string compressed_test_chunk =
-        crypto_obj.Compress(uncompressed_test_chunk, "", 9,
-                            crypto::STRING_STRING);
-    double ratio = compressed_test_chunk.size() / test_chunk_size;
+    std::string test_chunk(crypto::Compress(uncompressed_test_chunk, 9));
+    double ratio = test_chunk.size() / test_chunk_size;
     return (ratio <= 0.9);
   }
   catch(const std::exception &e) {
@@ -439,7 +428,7 @@ bool CheckCompressibility(std::tr1::shared_ptr<DataIOHandler> input_handler) {
 }
 
 bool CalculateChunkSizes(const std::string &file_hash,
-                         std::tr1::shared_ptr<DataIOHandler> input_handler,
+                         boost::shared_ptr<DataIOHandler> input_handler,
                          DataMap *data_map,
                          boost::uint16_t *chunk_count) {
   boost::uint64_t file_size = 0;
@@ -508,7 +497,7 @@ int ChunkAddition(char hex_digit) {
 }
 
 bool GeneratePreEncryptionHashes(
-    std::tr1::shared_ptr<DataIOHandler> input_handler,
+    boost::shared_ptr<DataIOHandler> input_handler,
     DataMap *data_map) {
   if (!input_handler->Open())
     return false;
@@ -587,16 +576,12 @@ bool HashUnique(const DataMap &data_map,
   return true;
 }
 
-std::string SHA512(const fs::path &file_path) {  // files
-  crypto::Crypto file_crypto;
-  file_crypto.set_hash_algorithm(crypto::SHA_512);
-  return file_crypto.Hash(file_path.string(), "", crypto::FILE_STRING, false);
+std::string SHA512(const fs3::path &file_path) {  // files
+  return crypto::HashFile<crypto::SHA512>(file_path);
 }
 
 std::string SHA512(const std::string &content) {  // strings
-  crypto::Crypto string_crypto;
-  string_crypto.set_hash_algorithm(crypto::SHA_512);
-  return string_crypto.Hash(content, "", crypto::STRING_STRING, false);
+  return crypto::Hash<crypto::SHA512>(content);
 }
 
 }  // namespace utils

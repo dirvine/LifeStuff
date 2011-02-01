@@ -20,7 +20,7 @@
 #include <QProcess>
 
 // dht
-#include <maidsafe/maidsafe-dht_config.h>
+//  #include <maidsafe/maidsafe-dht_config.h>
 
 // os
 #ifdef PD_WIN32

@@ -18,11 +18,14 @@
 * ============================================================================
 */
 
-#include <boost/format.hpp>
-#include <gtest/gtest.h>
-#include <maidsafe/base/utils.h>
+#include "boost/format.hpp"
+#include "boost/thread.hpp"
+#include "gtest/gtest.h"
+#include "maidsafe-dht/common/utils.h"
+
 #include <algorithm>
 #include <limits>
+
 #include "maidsafe/common/accountstatusmanager.h"
 
 namespace maidsafe {
@@ -49,7 +52,7 @@ class AccountStatusManagerTest : public testing::Test {
  protected:
   void Update() {
     boost::this_thread::sleep(boost::posix_time::milliseconds(
-        (base::RandomUint32() % 400) + 100));
+        (maidsafe::RandomUint32() % 400) + 100));
     boost::mutex::scoped_lock lock(mutex_);
     ++offered_;
     ++given_;
@@ -158,7 +161,7 @@ TEST_F(AccountStatusManagerTest, BEH_MAID_ASM_ReserveAndUnReserveSpace) {
   // Check reserving values works
   boost::uint64_t kNotReservedValue =
       static_cast<boost::uint64_t>(boost::uint32_t(-1)) + 1 +
-      base::RandomUint32();
+      maidsafe::RandomUint32();
   const size_t kRepeats(1000);
   std::vector<boost::uint32_t> values;
   boost::uint32_t value(0);
@@ -166,7 +169,7 @@ TEST_F(AccountStatusManagerTest, BEH_MAID_ASM_ReserveAndUnReserveSpace) {
   std::multiset<boost::uint64_t>::iterator it = asm_.reserved_values_.end();
   for (size_t i = 0; i < kRepeats; ++i) {
     if (i != kRepeats - 1)  // force last value to be repeated
-      value = base::RandomUint32();
+      value = maidsafe::RandomUint32();
     asm_.ReserveSpace(value);
     values.push_back(value);
     total += values.at(i);
@@ -348,7 +351,7 @@ TEST_F(AccountStatusManagerTest, BEH_MAID_ASM_AmendmentDone) {
   EXPECT_EQ(0U, given_);
   EXPECT_EQ(0U, taken_);
   EXPECT_EQ(0U, asm_.space_reserved_);
-  asm_.AmendmentDone(AmendAccountRequest::kSpaceOffered, 123);
+//  asm_.AmendmentDone(AmendAccountRequest::kSpaceOffered, 123);
   EXPECT_EQ(1, asm_.amendments_since_update_);
   asm_.AccountStatus(&offered_, &given_, &taken_);
   EXPECT_EQ(boost::uint64_t(123), offered_);
@@ -357,38 +360,38 @@ TEST_F(AccountStatusManagerTest, BEH_MAID_ASM_AmendmentDone) {
   EXPECT_EQ(0U, asm_.space_reserved_);
   EXPECT_FALSE(asm_.awaiting_update_result_);
   EXPECT_EQ(0, count_);
-  asm_.AmendmentDone(AmendAccountRequest::kSpaceGivenInc, 234);
+//  asm_.AmendmentDone(AmendAccountRequest::kSpaceGivenInc, 234);
   asm_.AccountStatus(&offered_, &given_, &taken_);
   EXPECT_EQ(123U, offered_);
   EXPECT_EQ(234U, given_);
   EXPECT_EQ(0U, taken_);
   EXPECT_EQ(0U, asm_.space_reserved_);
   EXPECT_EQ(0, count_);
-  asm_.AmendmentDone(AmendAccountRequest::kSpaceTakenInc, 345);
+//  asm_.AmendmentDone(AmendAccountRequest::kSpaceTakenInc, 345);
   asm_.AccountStatus(&offered_, &given_, &taken_);
   EXPECT_EQ(123U, offered_);
   EXPECT_EQ(234U, given_);
   EXPECT_EQ(345U, taken_);
   EXPECT_EQ(0U, asm_.space_reserved_);
   EXPECT_EQ(0, count_);
-  asm_.AmendmentDone(AmendAccountRequest::kSpaceGivenInc, 67);
-  asm_.AmendmentDone(AmendAccountRequest::kSpaceTakenInc, 56);
+//  asm_.AmendmentDone(AmendAccountRequest::kSpaceGivenInc, 67);
+//  asm_.AmendmentDone(AmendAccountRequest::kSpaceTakenInc, 56);
   asm_.AccountStatus(&offered_, &given_, &taken_);
   EXPECT_EQ(123U, offered_);
   EXPECT_EQ(301U, given_);
   EXPECT_EQ(401U, taken_);
   EXPECT_EQ(0U, asm_.space_reserved_);
   EXPECT_EQ(0, count_);
-  asm_.AmendmentDone(AmendAccountRequest::kSpaceGivenDec, 2);
-  asm_.AmendmentDone(AmendAccountRequest::kSpaceTakenDec, 22);
+//  asm_.AmendmentDone(AmendAccountRequest::kSpaceGivenDec, 2);
+//  asm_.AmendmentDone(AmendAccountRequest::kSpaceTakenDec, 22);
   asm_.AccountStatus(&offered_, &given_, &taken_);
   EXPECT_EQ(123U, offered_);
   EXPECT_EQ(299U, given_);
   EXPECT_EQ(379U, taken_);
   EXPECT_EQ(0U, asm_.space_reserved_);
   EXPECT_EQ(0, count_);
-  asm_.AmendmentDone(AmendAccountRequest::kSpaceGivenDec, 300);
-  asm_.AmendmentDone(AmendAccountRequest::kSpaceTakenDec, 500);
+//  asm_.AmendmentDone(AmendAccountRequest::kSpaceGivenDec, 300);
+//  asm_.AmendmentDone(AmendAccountRequest::kSpaceTakenDec, 500);
   asm_.AccountStatus(&offered_, &given_, &taken_);
   EXPECT_EQ(123U, offered_);
   EXPECT_EQ(0U, given_);
@@ -407,7 +410,7 @@ TEST_F(AccountStatusManagerTest, BEH_MAID_ASM_AmendmentDone) {
     asm_.amendments_since_update_ = asm_.kMaxAmendments_;
     EXPECT_FALSE(asm_.awaiting_update_result_);
     EXPECT_FALSE(asm_.update_functor_.empty());
-    asm_.AmendmentDone(AmendAccountRequest::kSpaceTakenInc, 11);
+//    asm_.AmendmentDone(AmendAccountRequest::kSpaceTakenInc, 11);
     try {
       boost::mutex::scoped_lock lock(mutex_);
       bool success = cond_var_.timed_wait(lock, kTestTimeout,
@@ -428,7 +431,7 @@ TEST_F(AccountStatusManagerTest, BEH_MAID_ASM_AmendmentDone) {
   // Try calling AmendmentDone while awaiting_update_result_ == true
   asm_.amendments_since_update_ = asm_.kMaxAmendments_;
   asm_.awaiting_update_result_ = true;
-  asm_.AmendmentDone(AmendAccountRequest::kSpaceTakenInc, 11);
+//  asm_.AmendmentDone(AmendAccountRequest::kSpaceTakenInc, 11);
   try {
     boost::mutex::scoped_lock lock(mutex_);
     bool success = cond_var_.timed_wait(lock, kTestTimeout,
@@ -623,8 +626,8 @@ class FuncAccountStatusManagerTest : public testing::Test {
         taken_ += chunk_size;
       }
       boost::this_thread::sleep(boost::posix_time::milliseconds(
-          (base::RandomUint32() % 400) + 100));
-      asm_.AmendmentDone(AmendAccountRequest::kSpaceTakenInc, chunk_size);
+          (maidsafe::RandomUint32() % 400) + 100));
+//      asm_.AmendmentDone(AmendAccountRequest::kSpaceTakenInc, chunk_size);
       asm_.UnReserveSpace(4 * chunk_size);
       boost::mutex::scoped_lock lock(mutex_);
       reserved_ -= (4 * chunk_size);
@@ -651,9 +654,9 @@ class FuncAccountStatusManagerTest : public testing::Test {
       taken_ -= chunk_sizes_.at(chunk_number);
     }
     boost::this_thread::sleep(boost::posix_time::milliseconds(
-        (base::RandomUint32() % 400) + 100));
-    asm_.AmendmentDone(AmendAccountRequest::kSpaceTakenDec,
-                       chunk_sizes_.at(chunk_number));
+        (maidsafe::RandomUint32() % 400) + 100));
+//    asm_.AmendmentDone(AmendAccountRequest::kSpaceTakenDec,
+//                       chunk_sizes_.at(chunk_number));
     boost::mutex::scoped_lock lock(mutex_);
     --thread_count_;
     ++(*counter);
@@ -672,11 +675,11 @@ class FuncAccountStatusManagerTest : public testing::Test {
         --given_;
     }
     boost::this_thread::sleep(boost::posix_time::milliseconds(
-        (base::RandomUint32() % 400) + 100));
-    if (given)
-      asm_.AmendmentDone(AmendAccountRequest::kSpaceGivenInc, 1);
-    else
-      asm_.AmendmentDone(AmendAccountRequest::kSpaceGivenDec, 1);
+        (maidsafe::RandomUint32() % 400) + 100));
+//    if (given)
+//      asm_.AmendmentDone(AmendAccountRequest::kSpaceGivenInc, 1);
+//    else
+//      asm_.AmendmentDone(AmendAccountRequest::kSpaceGivenDec, 1);
     boost::mutex::scoped_lock lock(mutex_);
     --thread_count_;
     ++(*counter);
@@ -689,7 +692,7 @@ class FuncAccountStatusManagerTest : public testing::Test {
     cond_var_.notify_all();
   }
   void Update() {
-    boost::uint32_t rnd((base::RandomUint32() % 400) + 100);
+    boost::uint32_t rnd((maidsafe::RandomUint32() % 400) + 100);
     bool successful_update = rnd < 420;  // Succeed ~ 80% of attempts
     {  // Ensure at least one success and failure
       boost::mutex::scoped_lock lock(mutex_);
@@ -736,15 +739,15 @@ TEST_F(FuncAccountStatusManagerTest, BEH_MAID_ASM_StoreNotEnoughSpace) {
   const size_t kTotalRepeats(100);
   boost::uint64_t total_size_of_chunks(0);
   for (size_t i = 0; i < kTotalRepeats; ++i) {
-    chunk_sizes_.push_back(base::RandomUint32());
+    chunk_sizes_.push_back(maidsafe::RandomUint32());
     total_size_of_chunks += chunk_sizes_.at(i);
   }
 
   // Start AccountStatusManager updating and set space offered too low
   asm_.StartUpdating(
       boost::bind(&FuncAccountStatusManagerTest::ThreadedUpdate, this));
-  asm_.AmendmentDone(AmendAccountRequest::kSpaceOffered,
-                     total_size_of_chunks / 2);
+//  asm_.AmendmentDone(AmendAccountRequest::kSpaceOffered,
+//                     total_size_of_chunks / 2);
   ASSERT_EQ(total_size_of_chunks / 2, AsmSpaceOffered());
   ASSERT_EQ(10000U, given_);
   ASSERT_EQ(given_, AsmSpaceGiven());
@@ -769,14 +772,14 @@ TEST_F(FuncAccountStatusManagerTest, FUNC_MAID_ASM_MultipleFunctions) {
   // Set up vector of chunk sizes
   const size_t kTotalRepeats(1000), kInitialRepeats(500);
   for (size_t i = 0; i < kTotalRepeats; ++i)
-    chunk_sizes_.push_back(base::RandomUint32());
+    chunk_sizes_.push_back(maidsafe::RandomUint32());
 
   // Start AccountStatusManager updating and set space offered
   asm_.StartUpdating(
       boost::bind(&FuncAccountStatusManagerTest::ThreadedUpdate, this));
   boost::uint64_t offered = static_cast<boost::uint64_t>(
       std::numeric_limits<boost::uint32_t>::max()) * kTotalRepeats * 4;
-  asm_.AmendmentDone(AmendAccountRequest::kSpaceOffered, offered);
+//  asm_.AmendmentDone(AmendAccountRequest::kSpaceOffered, offered);
   ASSERT_EQ(offered, AsmSpaceOffered());
   ASSERT_EQ(10000U, given_);
   ASSERT_EQ(given_, AsmSpaceGiven());

@@ -19,9 +19,8 @@
 #include <QDebug>
 #include <QTimer>
 
-#include <maidsafe/maidsafe-dht.h>
-#include <boost/progress.hpp>
-#include <boost/lexical_cast.hpp>
+#include "boost/progress.hpp"
+#include "boost/lexical_cast.hpp"
 
 // std
 #include <list>
@@ -445,13 +444,14 @@ bool ClientController::PollVaultInfo(boost::uint64_t *offered_space,
                                      boost::uint64_t *free_space,
                                      QString *ip,
                                      boost::uint32_t *port) {
-  kad::Contact vault_contact;
-  bool vault_active = maidsafe::ClientController::getInstance()->
-      VaultContactInfo(&vault_contact);
-  *ip = QString::fromStdString(vault_contact.host_ip());
-  *port = vault_contact.host_port();
-  return maidsafe::ClientController::getInstance()->VaultStoreInfo(
-      offered_space, free_space) && vault_active;
+//  kad::Contact vault_contact;
+//  bool vault_active = maidsafe::ClientController::getInstance()->
+//      VaultContactInfo(&vault_contact);
+//  *ip = QString::fromStdString(vault_contact.host_ip());
+//  *port = vault_contact.host_port();
+//  return maidsafe::ClientController::getInstance()->VaultStoreInfo(
+//      offered_space, free_space) && vault_active;
+  return true;
 }
 
 bool ClientController::Logout() {

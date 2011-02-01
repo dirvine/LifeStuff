@@ -39,7 +39,7 @@
 #include "maidsafe/client/storemanager.h"
 
 
-namespace fs = boost::filesystem;
+namespace fs3 = boost::filesystem3;
 
 namespace maidsafe {
 
@@ -56,7 +56,7 @@ class LocalStoreManager : public StoreManagerInterface {
  public:
   LocalStoreManager(boost::shared_ptr<ChunkStore> client_chunkstore,
                     const boost::uint8_t &k,
-                    const fs::path &db_directory);
+                    const fs3::path &db_directory);
   virtual ~LocalStoreManager();
   virtual void Init(VoidFuncOneInt callback, const boost::uint16_t &port);
   virtual void SetPmid(const std::string &/*pmid_name*/) {}
@@ -122,7 +122,7 @@ class LocalStoreManager : public StoreManagerInterface {
   // Vault
   virtual bool VaultStoreInfo(boost::uint64_t *offered_space,
                               boost::uint64_t *free_space);
-  virtual bool VaultContactInfo(kad::Contact *contact);
+  virtual bool VaultContactInfo(kademlia::Contact *contact);
   virtual void SetLocalVaultOwned(const std::string &priv_key,
                                   const std::string &pub_key,
                                   const std::string &signed_pub_key,
@@ -171,7 +171,7 @@ class LocalStoreManager : public StoreManagerInterface {
   void CreateSerialisedSignedValue(const std::string &value,
                                    const std::string &private_key,
                                    std::string *ser_gp);
-  void ExecStringCallback(kad::VoidFunctorOneString cb,
+  void ExecStringCallback(boost::function<void(const std::string&)> cb,
                           MaidsafeRpcResult result);
   void ExecuteReturnSignal(const std::string &chunkname, ReturnCode rc);
   void ExecReturnCodeCallback(VoidFuncOneInt cb, ReturnCode rc);

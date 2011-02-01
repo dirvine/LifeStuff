@@ -20,7 +20,7 @@
 #include <QMessageBox>
 
 // core
-#include <maidsafe/maidsafe-dht.h>
+//  #include <maidsafe/maidsafe-dht.h>
 #include "maidsafe/common/maidsafe_service_messages.pb.h"
 #include "maidsafe/common/filesystem.h"
 
@@ -93,7 +93,7 @@ void CreateUser::onNext() {
     return;
   }
 
-#ifdef LOCAL_PDVAULT 
+#ifdef LOCAL_PDVAULT
   if (index == pages_.size() - 4) {
     vault_type_ = 0;
     space_ = "10240";

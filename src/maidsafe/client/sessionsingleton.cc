@@ -111,7 +111,7 @@ bool SessionSingleton::SetSessionName(bool clear) {
   } else {
     if (Username() == "" || Pin() == "")
       return false;
-    ud_.session_name = base::EncodeToHex(SHA1String(Pin() + Username()));
+    ud_.session_name = EncodeToHex(SHA1String(Pin() + Username()));
   }
   return true;
 }
@@ -623,7 +623,7 @@ int SessionSingleton::StartLiveConnection(const std::string &contact,
       return kLiveContactNotFound;
     it->second.transport = transport_id;
     it->second.connection_id = conn_id;
-    it->second.init_timestamp = base::GetEpochTime();
+    it->second.init_timestamp = /*GetDurationSinceEpoch()*/0;
   }
   return kSuccess;
 }

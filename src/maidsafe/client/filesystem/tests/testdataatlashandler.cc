@@ -52,7 +52,7 @@ class DataAtlasHandlerTest : public testing::Test {
  protected:
   DataAtlasHandlerTest()
       : test_root_dir_(file_system::TempDir() / ("maidsafe_TestDAH_" +
-                       base::RandomAlphaNumericString(6))) {}
+                       RandomAlphaNumericString(6))) {}
   ~DataAtlasHandlerTest() { }
   void SetUp() {
     SessionSingleton *ss(SessionSingleton::getInstance());
@@ -117,7 +117,7 @@ class DataAtlasHandlerTest : public testing::Test {
       mdm.set_tag("");
       mdm.set_file_size_high(0);
       mdm.set_file_size_low(0);
-      boost::uint32_t current_time_ = base::GetEpochTime();
+      boost::uint32_t current_time_ = /*GetDurationSinceEpoch()*/0;
       mdm.set_creation_time(current_time_);
       mdm.SerializeToString(&ser_mdm);
       if (kRootSubdir[i][1].empty())

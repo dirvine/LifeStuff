@@ -25,6 +25,7 @@
 #include <gtest/gtest.h>
 
 #include <boost/filesystem.hpp>
+#include <boost/thread.hpp>
 #include <boost/scoped_ptr.hpp>
 
 #include "maidsafe/client/filesystem/pddir.h"
@@ -90,12 +91,12 @@ void PrepareDMap(const std::string &file_hash, std::string &ser_dm) {
   // Creating DataMap
   encrypt::DataMap dm;
   dm.set_file_hash(file_hash);
-  dm.add_chunk_name(base::RandomString(64));
-  dm.add_chunk_name(base::RandomString(64));
-  dm.add_chunk_name(base::RandomString(64));
-  dm.add_encrypted_chunk_name(base::RandomString(64));
-  dm.add_encrypted_chunk_name(base::RandomString(64));
-  dm.add_encrypted_chunk_name(base::RandomString(64));
+  dm.add_chunk_name(RandomString(64));
+  dm.add_chunk_name(RandomString(64));
+  dm.add_chunk_name(RandomString(64));
+  dm.add_encrypted_chunk_name(RandomString(64));
+  dm.add_encrypted_chunk_name(RandomString(64));
+  dm.add_encrypted_chunk_name(RandomString(64));
   dm.SerializeToString(&ser_dm);
 }
 

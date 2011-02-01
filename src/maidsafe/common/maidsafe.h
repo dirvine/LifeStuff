@@ -25,9 +25,12 @@
 #ifndef MAIDSAFE_COMMON_MAIDSAFE_H_
 #define MAIDSAFE_COMMON_MAIDSAFE_H_
 
-#include <boost/cstdint.hpp>
-#include <maidsafe/maidsafe-dht.h>
-#define THIS_MAIDSAFE_DHT_VERSION 24
+#include "boost/cstdint.hpp"
+#include "boost/function.hpp"
+#include "maidsafe-dht/common/version.h"
+#include "maidsafe-dht/common/utils.h"
+
+#define THIS_MAIDSAFE_DHT_VERSION 25
 #if MAIDSAFE_DHT_VERSION < THIS_MAIDSAFE_DHT_VERSION
 #error This API is not compatible with the installed library.\
   Please update the maidsafe-dht library.
@@ -208,7 +211,7 @@ typedef boost::function<void(const ReturnCode&,
 
 
 inline std::string HexSubstr(const std::string &non_hex) {
-  std::string hex(base::EncodeToHex(non_hex));
+  std::string hex(EncodeToHex(non_hex));
   if (hex.size() > 16)
     return (hex.substr(0, 7) + ".." + hex.substr(hex.size() - 7));
   else

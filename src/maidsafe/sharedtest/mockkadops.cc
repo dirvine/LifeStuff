@@ -27,42 +27,42 @@
 
 namespace mock_kadops {
 
-std::string MakeFindNodesResponse(const FindNodesResponseType &type,
-                                  const std::string &target,
-                                  const boost::uint8_t n,
-                                  std::vector<kad::Contact> *nodes) {
-  std::vector<kad::Contact> contacts;
-  if (type == kFailParse) {
-    if (nodes != NULL)
-      *nodes = contacts;
-    return "It's not going to parse.";
-  }
-
-  kad::FindResponse find_response;
-  if (type == kResultFail)
-    find_response.set_result(kad::kRpcResultFailure);
-  else
-    find_response.set_result(kad::kRpcResultSuccess);
-
-  std::string ref_id(target);
-  if (type == kFarContacts)
-    ref_id = maidsafe::XORObfuscate(ref_id, std::string(ref_id.size(), 0xFF));
-  
-  boost::uint8_t orig(ref_id.at(ref_id.size() - 1)), idx(0);
-  while (contacts.size() < n) {
-    boost::uint8_t x = orig ^ idx++;
-    std::string node_id = ref_id.replace(ref_id.size() - 1, 1, 1, x);
-    contacts.push_back(kad::Contact(node_id, "192.168.1.1", 1234));
-  }
-  for (size_t i = 0; i < contacts.size(); ++i) {
-    std::string ser_contact;
-    contacts[i].SerialiseToString(&ser_contact);
-    find_response.add_closest_nodes(ser_contact);
-  }
-  if (nodes != NULL)
-    *nodes = contacts;
-  
-  return find_response.SerializeAsString();
-}
+//std::string MakeFindNodesResponse(const FindNodesResponseType &type,
+//                                  const std::string &target,
+//                                  const boost::uint8_t n,
+//                                  std::vector<kad::Contact> *nodes) {
+//  std::vector<kad::Contact> contacts;
+//  if (type == kFailParse) {
+//    if (nodes != NULL)
+//      *nodes = contacts;
+//    return "It's not going to parse.";
+//  }
+//
+//  kad::FindResponse find_response;
+//  if (type == kResultFail)
+//    find_response.set_result(kad::kRpcResultFailure);
+//  else
+//    find_response.set_result(kad::kRpcResultSuccess);
+//
+//  std::string ref_id(target);
+//  if (type == kFarContacts)
+//    ref_id = maidsafe::XORObfuscate(ref_id, std::string(ref_id.size(), 0xFF));
+//
+//  boost::uint8_t orig(ref_id.at(ref_id.size() - 1)), idx(0);
+//  while (contacts.size() < n) {
+//    boost::uint8_t x = orig ^ idx++;
+//    std::string node_id = ref_id.replace(ref_id.size() - 1, 1, 1, x);
+//    contacts.push_back(kad::Contact(node_id, "192.168.1.1", 1234));
+//  }
+//  for (size_t i = 0; i < contacts.size(); ++i) {
+//    std::string ser_contact;
+//    contacts[i].SerialiseToString(&ser_contact);
+//    find_response.add_closest_nodes(ser_contact);
+//  }
+//  if (nodes != NULL)
+//    *nodes = contacts;
+//
+//  return find_response.SerializeAsString();
+//}
 
 }  // namespace mock_kadops

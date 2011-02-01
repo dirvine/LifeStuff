@@ -14,9 +14,11 @@
 
 #include "maidsafe/client/localstoremanager.h"
 
-#include <boost/filesystem/fstream.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <maidsafe/pki/maidsafevalidator.h>
+#include "boost/filesystem/fstream.hpp"
+#include "boost/filesystem.hpp"
+#include "boost/scoped_ptr.hpp"
+#include "maidsafe-dht/kademlia/contact.h"
+#include "maidsafe/pki/maidsafevalidator.h"
 
 #include "maidsafe/common/chunkstore.h"
 #include "maidsafe/common/commonutils.h"
@@ -24,11 +26,13 @@
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/clientutils.h"
 
-namespace fs = boost::filesystem;
+namespace fs3 = boost::filesystem3;
 
 namespace maidsafe {
 
-void ExecuteSuccessCallback(const kad::VoidFunctorOneString &cb,
+typedef boost::function<void(const std::string&)> VoidFunctorOneString;
+
+void ExecuteSuccessCallback(const VoidFunctorOneString &cb,
                             boost::mutex *mutex) {
   boost::mutex::scoped_lock gaurd(*mutex);
   std::string ser_result;
@@ -38,7 +42,7 @@ void ExecuteSuccessCallback(const kad::VoidFunctorOneString &cb,
   cb(ser_result);
 }
 
-void ExecuteFailureCallback(const kad::VoidFunctorOneString &cb,
+void ExecuteFailureCallback(const VoidFunctorOneString &cb,
                             boost::mutex *mutex) {
   boost::mutex::scoped_lock gaurd(*mutex);
   std::string ser_result;
@@ -62,7 +66,7 @@ void ExecReturnLoadPacketCallback(const LoadPacketFunctor &cb,
 LocalStoreManager::LocalStoreManager(
     boost::shared_ptr<ChunkStore> client_chunkstore,
     const boost::uint8_t &k,
-    const fs::path &db_directory)
+    const fs3::path &db_directory)
         : K_(k),
           kUpperThreshold_(
               static_cast<boost::uint16_t>(K_ * kMinSuccessfulPecentageStore)),
@@ -92,10 +96,10 @@ void LocalStoreManager::Init(VoidFuncOneInt callback, const boost::uint16_t&) {
   if (local_sm_dir_.empty())
     local_sm_dir_ = file_system::LocalStoreManagerDir().string();
   try {
-    if (!fs::exists(local_sm_dir_ + "/StoreChunks")) {
-      fs::create_directories(local_sm_dir_ + "/StoreChunks");
+    if (!fs3::exists(local_sm_dir_ + "/StoreChunks")) {
+      fs3::create_directories(local_sm_dir_ + "/StoreChunks");
     }
-    if (fs::exists(local_sm_dir_ + "/KademilaDb.db")) {
+    if (fs3::exists(local_sm_dir_ + "/KademilaDb.db")) {
       db_.open(std::string(local_sm_dir_ + "/KademilaDb.db").c_str());
     } else {
       boost::mutex::scoped_lock loch(mutex_);
@@ -148,23 +152,24 @@ int LocalStoreManager::LoadChunk(const std::string &chunk_name,
   return FindAndLoadChunk(chunk_name, data);
 }
 
-int LocalStoreManager::StoreChunk(const std::string &chunk_name, const DirType,
+int LocalStoreManager::StoreChunk(const std::string &chunk_name,
+                                  const DirType,
                                   const std::string&) {
 //  #ifdef LOCAL_PDVAULT
 //  // Simulate knode lookup in AddToWatchList
 //  boost::this_thread::sleep(boost::posix_time::seconds(2));
 //  #endif
-  std::string hex_chunk_name(base::EncodeToHex(chunk_name));
-  fs::path file_path(local_sm_dir_ + "/StoreChunks");
+  std::string hex_chunk_name(EncodeToHex(chunk_name));
+  fs3::path file_path(local_sm_dir_ + "/StoreChunks");
   file_path = file_path / hex_chunk_name;
   client_chunkstore_->Store(chunk_name, file_path);
 
   ChunkType type = client_chunkstore_->chunk_type(chunk_name);
-  fs::path current = client_chunkstore_->GetChunkPath(chunk_name, type, false);
+  fs3::path current = client_chunkstore_->GetChunkPath(chunk_name, type, false);
   try {
-    if (fs::exists(current)) {
-      if (!fs::exists(file_path)) {
-        fs::copy_file(current, file_path);
+    if (fs3::exists(current)) {
+      if (!fs3::exists(file_path)) {
+//        fs3::copy_file(current, file_path);
       }
     } else {
 #ifdef DEBUG
@@ -214,7 +219,7 @@ int LocalStoreManager::DeleteChunk(const std::string &chunk_name,
 //  boost::this_thread::sleep(boost::posix_time::seconds(2));
 #endif
   ChunkType chunk_type = client_chunkstore_->chunk_type(chunk_name);
-    fs::path chunk_path(client_chunkstore_->GetChunkPath(chunk_name, chunk_type,
+    fs3::path chunk_path(client_chunkstore_->GetChunkPath(chunk_name, chunk_type,
                                                          false));
   boost::uint64_t size(chunk_size);
   if (size < 2) {
@@ -226,7 +231,7 @@ int LocalStoreManager::DeleteChunk(const std::string &chunk_name,
       return kDeleteSizeError;
     }
     try {
-      size = fs::file_size(chunk_path);
+      size = fs3::file_size(chunk_path);
     }
     catch(const std::exception &e) {
   #ifdef DEBUG
@@ -262,7 +267,7 @@ bool LocalStoreManager::KeyUnique(const std::string &key, bool) {
 //  boost::this_thread::sleep(boost::posix_time::seconds(2));
 #endif
   bool result = false;
-  std::string hex_key(base::EncodeToHex(key));
+  std::string hex_key(EncodeToHex(key));
   try {
     boost::mutex::scoped_lock loch(mutex_);
     std::string s = "select * from network where key='" + hex_key;
@@ -280,10 +285,10 @@ bool LocalStoreManager::KeyUnique(const std::string &key, bool) {
     result = false;
   }
   if (result) {
-    fs::path file_path(local_sm_dir_ + "/StoreChunks");
+    fs3::path file_path(local_sm_dir_ + "/StoreChunks");
     file_path = file_path / hex_key;
     try {
-      result = (!fs::exists(file_path));
+      result = (!fs3::exists(file_path));
     }
     catch(const std::exception &e) {
 #ifdef DEBUG
@@ -359,13 +364,13 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
   }
 
   for (size_t n = 0; n < ser_gps.size(); ++n) {
-    kad::SignedValue sv;
-    if (sv.ParseFromString(ser_gps[n])) {
-      if (!RSACheckSignedData(sv.value(), sv.value_signature(), public_key)) {
-        ExecReturnCodeCallback(cb, kDeletePacketFailure);
-        return;
-      }
-    }
+//    kad::SignedValue sv;
+//    if (sv.ParseFromString(ser_gps[n])) {
+//      if (!RSACheckSignedData(sv.value(), sv.value_signature(), public_key)) {
+//        ExecReturnCodeCallback(cb, kDeletePacketFailure);
+//        return;
+//      }
+//    }
   }
   ReturnCode rc = DeletePacket_DeleteFromDb(packet_name, ser_gps, public_key);
   ExecReturnCodeCallback(cb, rc);
@@ -378,7 +383,7 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
   // Simulate knode lookup
 //  boost::this_thread::sleep(boost::posix_time::seconds(2));
 #endif
-  std::string hex_key(base::EncodeToHex(key));
+  std::string hex_key(EncodeToHex(key));
   boost::mutex::scoped_lock loch(mutex_);
   try {
     std::string s("select value from network where key='" + hex_key + "';");
@@ -390,17 +395,17 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
 #endif
       return kSuccess;
     } else {
-      kad::SignedValue ksv;
-      if (ksv.ParseFromString(base::DecodeFromHex(q.getStringField(0)))) {
-        if (!RSACheckSignedData(ksv.value(), ksv.value_signature(),
-                                public_key)) {
-#ifdef DEBUG
-          printf("LocalStoreManager::DeletePacket_DeleteFromDb - "
-                 "current value failed validation.\n");
-#endif
-          return kDeletePacketFailure;
-        }
-      }
+//      kad::SignedValue ksv;
+//      if (ksv.ParseFromString(DecodeFromHex(q.getStringField(0)))) {
+//        if (!RSACheckSignedData(ksv.value(), ksv.value_signature(),
+//                                public_key)) {
+//#ifdef DEBUG
+//          printf("LocalStoreManager::DeletePacket_DeleteFromDb - "
+//                 "current value failed validation.\n");
+//#endif
+//          return kDeletePacketFailure;
+//        }
+//      }
     }
   }
   catch(CppSQLite3Exception &e1) {  // NOLINT (Fraser)
@@ -425,7 +430,7 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
   } else {
     for (size_t n = 0; n < values.size(); ++n) {
       try {
-        std::string hex_value(base::EncodeToHex(values[n]));
+        std::string hex_value(EncodeToHex(values[n]));
         std::string s("delete from network where key='" + hex_key + "' "
                       "and value='" + hex_value + "';");
         a = db_.execDML(s.c_str());
@@ -475,16 +480,16 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
     return;
   }
 
-  kad::SignedValue sv;
-  if (sv.ParseFromString(ser_gp)) {
-    if (!RSACheckSignedData(sv.value(), sv.value_signature(), public_key)) {
-      ExecReturnCodeCallback(cb, kSendPacketFailure);
-#ifdef DEBUG
-      printf("%s\n", sv.value().c_str());
-#endif
-      return;
-    }
-  }
+//  kad::SignedValue sv;
+//  if (sv.ParseFromString(ser_gp)) {
+//    if (!RSACheckSignedData(sv.value(), sv.value_signature(), public_key)) {
+//      ExecReturnCodeCallback(cb, kSendPacketFailure);
+//#ifdef DEBUG
+//      printf("%s\n", sv.value().c_str());
+//#endif
+//      return;
+//    }
+//  }
 
   std::vector<std::string> values;
   int n = GetValue_FromDB(packet_name, &values);
@@ -509,22 +514,22 @@ ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
     if (key.length() != kKeySize) {
       return kIncorrectKeySize;
     }
-    std::string hex_key(base::EncodeToHex(key));
+    std::string hex_key(EncodeToHex(key));
     std::string s = "select value from network where key='" + hex_key + "';";
     boost::mutex::scoped_lock loch(mutex_);
     CppSQLite3Query q = db_.execQuery(s.c_str());
     if (!q.eof()) {
-      std::string dec_value = base::DecodeFromHex(q.getStringField(0));
-      kad::SignedValue sv;
-      if (sv.ParseFromString(dec_value)) {
-        if (!RSACheckSignedData(sv.value(), sv.value_signature(), pub_key)) {
-#ifdef DEBUG
-          printf("LocalStoreManager::StorePacket_InsertToDb - "
-                 "Signature didn't validate.\n");
-#endif
-          return kStoreManagerError;
-        }
-      }
+      std::string dec_value = DecodeFromHex(q.getStringField(0));
+//      kad::SignedValue sv;
+//      if (sv.ParseFromString(dec_value)) {
+//        if (!RSACheckSignedData(sv.value(), sv.value_signature(), pub_key)) {
+//#ifdef DEBUG
+//          printf("LocalStoreManager::StorePacket_InsertToDb - "
+//                 "Signature didn't validate.\n");
+//#endif
+//          return kStoreManagerError;
+//        }
+//      }
     }
 
     if (!append) {
@@ -533,7 +538,7 @@ ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
     }
 
     CppSQLite3Buffer bufSQL;
-    std::string hex_value = base::EncodeToHex(value);
+    std::string hex_value = EncodeToHex(value);
     s = "insert into network values ('" + hex_key + "', '" + hex_value + "');";
     int a = db_.execDML(s.c_str());
     if (a != 1) {
@@ -584,30 +589,30 @@ void LocalStoreManager::UpdatePacket(const std::string &packet_name,
     return;
   }
 
-  kad::SignedValue old_sv, new_sv;
-  if (!old_sv.ParseFromString(old_ser_gp) ||
-      !new_sv.ParseFromString(new_ser_gp)) {
-#ifdef DEBUG
-    printf("LSM::UpdatePacket - Old or new doesn't parse.\n");
-#endif
-  }
+//  kad::SignedValue old_sv, new_sv;
+//  if (!old_sv.ParseFromString(old_ser_gp) ||
+//      !new_sv.ParseFromString(new_ser_gp)) {
+//#ifdef DEBUG
+//    printf("LSM::UpdatePacket - Old or new doesn't parse.\n");
+//#endif
+//  }
 
-  if (!RSACheckSignedData(old_sv.value(), old_sv.value_signature(),
-                          public_key)) {
-    ExecReturnCodeCallback(cb, kUpdatePacketFailure);
-#ifdef DEBUG
-    printf("LSM::UpdatePacket - Old fails validation.\n");
-#endif
-    return;
-  }
-  if (!RSACheckSignedData(new_sv.value(), new_sv.value_signature(),
-                          public_key)) {
-#ifdef DEBUG
-    printf("LSM::UpdatePacket - New fails validation.\n");
-#endif
-    ExecReturnCodeCallback(cb, kUpdatePacketFailure);
-    return;
-  }
+//  if (!RSACheckSignedData(old_sv.value(), old_sv.value_signature(),
+//                          public_key)) {
+//    ExecReturnCodeCallback(cb, kUpdatePacketFailure);
+//#ifdef DEBUG
+//    printf("LSM::UpdatePacket - Old fails validation.\n");
+//#endif
+//    return;
+//  }
+//  if (!RSACheckSignedData(new_sv.value(), new_sv.value_signature(),
+//                          public_key)) {
+//#ifdef DEBUG
+//    printf("LSM::UpdatePacket - New fails validation.\n");
+//#endif
+//    ExecReturnCodeCallback(cb, kUpdatePacketFailure);
+//    return;
+//  }
 
   std::vector<std::string> values;
   int n = GetValue_FromDB(packet_name, &values);
@@ -649,9 +654,9 @@ ReturnCode LocalStoreManager::UpdatePacketInDb(const std::string &key,
       return kIncorrectKeySize;
     }
 
-    std::string hex_key(base::EncodeToHex(key));
-    std::string hex_old_value(base::EncodeToHex(old_value));
-    std::string hex_new_value(base::EncodeToHex(new_value));
+    std::string hex_key(EncodeToHex(key));
+    std::string hex_old_value(EncodeToHex(old_value));
+    std::string hex_new_value(EncodeToHex(new_value));
     std::string statement("update network set value='");
     statement += hex_new_value + "' where key='" + hex_key + "' and value='" +
                  hex_old_value + "';";
@@ -800,7 +805,7 @@ int LocalStoreManager::SendMessage(
 
   std::string bp_in_chunk, ser_gp;
   int successes = 0;
-  boost::uint32_t timestamp = base::GetEpochTime();
+  boost::uint32_t timestamp = /*GetDurationSinceEpoch()*/0;
   for (size_t n = 0; n < recs.size(); ++n) {
     std::string rec_pub_key(ss_->GetContactPublicKey(recs[n]));
     std::string bufferpacketname(BufferPacketName(recs[n], rec_pub_key));
@@ -860,19 +865,19 @@ int LocalStoreManager::FindAndLoadChunk(const std::string &chunkname,
   if (client_chunkstore_->Load(chunkname, data) == kSuccess)
     return kSuccess;
 
-  std::string hex_chunkname(base::EncodeToHex(chunkname));
-  fs::path file_path(local_sm_dir_ + "/StoreChunks");
+  std::string hex_chunkname(EncodeToHex(chunkname));
+  fs3::path file_path(local_sm_dir_ + "/StoreChunks");
   file_path = file_path / hex_chunkname;
   try {
-    if (!fs::exists(file_path)) {
+    if (!fs3::exists(file_path)) {
 #ifdef DEBUG
       printf("LocalStoreManager::FindAndLoadChunk - didn't find the BP.\n");
 #endif
       return -1;
     }
-    boost::uintmax_t size = fs::file_size(file_path);
+    boost::uintmax_t size = fs3::file_size(file_path);
     boost::scoped_ptr<char> temp(new char[size]);
-    fs::ifstream fstr;
+    fs3::ifstream fstr;
     fstr.open(file_path, std::ios_base::binary);
     fstr.read(temp.get(), size);
     fstr.close();
@@ -891,8 +896,8 @@ int LocalStoreManager::FindAndLoadChunk(const std::string &chunkname,
 int LocalStoreManager::FlushDataIntoChunk(const std::string &chunkname,
                                           const std::string &data,
                                           const bool &overwrite) {
-  std::string hex_chunkname(base::EncodeToHex(chunkname));
-  fs::path file_path(local_sm_dir_ + "/StoreChunks");
+  std::string hex_chunkname(EncodeToHex(chunkname));
+  fs3::path file_path(local_sm_dir_ + "/StoreChunks");
   file_path = file_path / hex_chunkname;
   try {
     if (boost::filesystem::exists(file_path) && !overwrite) {
@@ -942,8 +947,8 @@ std::string LocalStoreManager::CreateMessage(const std::string &message,
   bpm.set_sender_id(ss_->PublicUsername());
   bpm.set_sender_public_key(mpid_public);
   bpm.set_type(m_type);
-  std::string aes_key =
-      base::RandomString(crypto::AES256_KeySize + crypto::AES256_IVSize);
+  std::string aes_key(RandomString(crypto::AES256_KeySize +
+                                   crypto::AES256_IVSize));
   bpm.set_rsaenc_key(RSAEncrypt(aes_key, rec_public_key));
   bpm.set_aesenc_message(AESEncrypt(message, aes_key));
   bpm.set_timestamp(timestamp);
@@ -963,13 +968,13 @@ int LocalStoreManager::GetValue_FromDB(const std::string &key,
 //  boost::this_thread::sleep(boost::posix_time::seconds(2));
 #endif
   results->clear();
-  std::string hex_key = base::EncodeToHex(key);
+  std::string hex_key = EncodeToHex(key);
   try {
     boost::mutex::scoped_lock loch(mutex_);
     std::string s = "select value from network where key='" + hex_key + "';";
     CppSQLite3Query q = db_.execQuery(s.c_str());
     while (!q.eof()) {
-      results->push_back(base::DecodeFromHex(q.getStringField(0)));
+      results->push_back(DecodeFromHex(q.getStringField(0)));
       q.nextRow();
     }
   }
@@ -984,13 +989,13 @@ int LocalStoreManager::GetValue_FromDB(const std::string &key,
 
 bool LocalStoreManager::VaultStoreInfo(boost::uint64_t *offered_space,
                                        boost::uint64_t *free_space) {
-  *offered_space = base::RandomUint32();
-  *free_space = base::RandomUint32() % *offered_space;
+  *offered_space = RandomUint32();
+  *free_space = RandomUint32() % *offered_space;
   return true;
 }
 
-bool LocalStoreManager::VaultContactInfo(kad::Contact *contact) {
-  kad::Contact ctc;
+bool LocalStoreManager::VaultContactInfo(kademlia::Contact *contact) {
+  kademlia::Contact ctc;
   *contact = ctc;
   return true;
 }
@@ -1024,14 +1029,14 @@ void LocalStoreManager::CreateSerialisedSignedValue(
 
 void LocalStoreManager::ExecuteReturnSignal(const std::string &chunkname,
                                             ReturnCode rc) {
-  int sleep_seconds((base::RandomInt32() % 5) + 1);
+  int sleep_seconds((RandomInt32() % 5) + 1);
   boost::this_thread::sleep(boost::posix_time::seconds(sleep_seconds));
   sig_chunk_uploaded_(chunkname, rc);
   boost::mutex::scoped_lock loch_laggan(signal_mutex_);
   chunks_pending_.erase(chunkname);
 }
 
-void LocalStoreManager::ExecStringCallback(kad::VoidFunctorOneString cb,
+void LocalStoreManager::ExecStringCallback(VoidFunctorOneString cb,
                                            MaidsafeRpcResult result) {
   std::string ser_result;
   GenericResponse response;

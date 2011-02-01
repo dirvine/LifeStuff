@@ -60,7 +60,7 @@ std::string CreateRandomFile(const std::string &filename,
   int file_size = static_cast<int>(filesize);
   if (filesize > INT_MAX)
     file_size = INT_MAX;
-  std::string file_content = base::RandomAlphaNumericString(file_size);
+  std::string file_content = maidsafe::RandomAlphaNumericString(file_size);
   return CreateSetFile(filename, file_content);
 }
 
@@ -140,7 +140,7 @@ namespace test {
 class SEHandlerTest : public testing::Test {
  protected:
   SEHandlerTest() : test_root_dir_(file_system::TempDir() / ("maidsafe_TestSEH_"
-                                   + base::RandomAlphaNumericString(6))),
+                                   + RandomAlphaNumericString(6))),
                     client_chunkstore_(), cb_(), db_str1_(), db_str2_(),
                     ss_(SessionSingleton::getInstance()), keys_(), sm_(),
                     dah_(), seh_() {}
@@ -204,7 +204,7 @@ class SEHandlerTest : public testing::Test {
       mdm.set_tag("");
       mdm.set_file_size_high(0);
       mdm.set_file_size_low(0);
-      mdm.set_creation_time(base::GetEpochTime());
+      mdm.set_creation_time(/*GetDurationSinceEpoch()*/0);
       mdm.SerializeToString(&ser_mdm);
       if (kRootSubdir[i][1].empty())
         seh_->GenerateUniqueKey(&key);
@@ -301,7 +301,7 @@ TEST_F(SEHandlerTest, BEH_MAID_Check_Entry) {
   std::string hash6, hash7, hash8;
   std::string hash9(SHA512File(full_path9));
   fs::path before(full_path9);
-  fs::path after(full_path9.parent_path() / base::EncodeToHex(hash9));
+  fs::path after(full_path9.parent_path() / EncodeToHex(hash9));
   try {
     fs::rename(before, after);
   }
@@ -391,7 +391,7 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptString) {
       seh_->ConnectToOnFileNetworkStatus(boost::bind(&test_seh::FileUpdate, _1,
                                                      _2, &res, &m));
 
-  std::string data(base::RandomString(1024)), ser_dm;
+  std::string data(RandomString(1024)), ser_dm;
   int result = seh_->EncryptString(data, &ser_dm);
   ASSERT_EQ(0, result);
 
@@ -421,7 +421,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithChunksPrevLoaded) {
   boost::signals2::connection c =
       seh_->ConnectToOnFileNetworkStatus(boost::bind(&test_seh::FileUpdate, _1,
                                                      _2, &res, &m));
-  std::string data(base::RandomString(19891)), ser_dm;
+  std::string data(RandomString(19891)), ser_dm;
 
   int result = seh_->EncryptString(data, &ser_dm);
   ASSERT_EQ(0, result);
@@ -452,7 +452,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithLoadChunks) {
                                                      _2, &res, &m));
 
   ss_->SetDefConLevel(kDefCon2);
-  std::string data(base::RandomString(1024)), ser_dm;
+  std::string data(RandomString(1024)), ser_dm;
 
   int result = seh_->EncryptString(data, &ser_dm);
   ASSERT_EQ(0, result);
@@ -709,7 +709,7 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureOfChunkEncryptingFile) {
               file_system::TempDir(), &dm/*, &done_chunks*/));
     ASSERT_EQ(kSuccess, seh_->AddChunksToChunkstore(dm));
     int chunkage = dm.chunk_name_size();
-    removee = base::RandomUint32() % chunkage;
+    removee = RandomUint32() % chunkage;
     std::string a(dm.encrypted_chunk_name(removee));
 #ifdef DEBUG
 //    printf("ENCRYPTED ALL CHUNKS. SIZE: %d - REMOVEE: %d - CHUNK: %s\n",
@@ -767,7 +767,7 @@ TEST_F(SEHandlerTest, BEH_MAID_MultipleFileEncryption) {
   boost::mutex m;
   printf("Start\n");
   for (int n = 0; n < total_files; ++n) {
-    std::string filename("file" + base::IntToString(n));
+    std::string filename("file" + boost::lexical_cast<std::string>(n));
     fs::path rel_path = root_path / fs::path(filename);
     std::string rel_str = TidyPath(rel_path.string());
     filenames.push_back(rel_str);
@@ -814,10 +814,10 @@ TEST_F(SEHandlerTest, BEH_MAID_MultipleEqualFiles) {
   boost::mutex m;
 //  printf("Start\n");
 
-  std::string file_content = base::RandomString(999);
+  std::string file_content = RandomString(999);
   for (int n = 0; n < total_files; ++n) {
 //    printf("%d\n", n);
-    std::string filename("file" + base::IntToString(n));
+    std::string filename("file" + boost::lexical_cast<std::string>(n));
     fs::path rel_path = root_path / fs::path(filename);
     std::string rel_str = TidyPath(rel_path.string());
     std::string full_str = test_seh::CreateSetFile(rel_str, file_content);
@@ -857,9 +857,9 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureSteppedMultipleEqualFiles) {
   boost::mutex m;
   printf("Start\n");
 
-  std::string file_content = base::RandomString(999);
+  std::string file_content = RandomString(999);
   for (int n = 0; n < total_files; ++n) {
-    std::string filename("file" + base::IntToString(n));
+    std::string filename("file" + boost::lexical_cast<std::string>(n));
     fs::path rel_path = root_path / fs::path(filename);
     std::string rel_str = TidyPath(rel_path.string());
     std::string full_str = test_seh::CreateSetFile(rel_str, file_content);
@@ -898,7 +898,7 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureSteppedMultipleEqualFiles) {
   // delete one of the chunks
   int file_dm(total_files/2);
   int chunkage = dms[file_dm].chunk_name_size();
-  int removee = base::RandomUint32() % chunkage;
+  int removee = RandomUint32() % chunkage;
   std::string enc_removee(dms[file_dm].encrypted_chunk_name(removee));
   try {
     ChunkType type = client_chunkstore_->chunk_type(enc_removee);

@@ -152,7 +152,7 @@ class Env: public testing::Environment {
 //    // Make kad config file in ./ for clients' use.
     if (fs::exists(".kadconfig"))
       fs::remove(".kadconfig");
-    fs::copy_file(kad_config_file_, ".kadconfig");
+//    fs::copy_file(kad_config_file_, ".kadconfig");
 
     // Wait for account creation and syncing
     for (int i = 0; i < kNetworkSize_; ++i)

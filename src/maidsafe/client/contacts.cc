@@ -12,9 +12,9 @@
  *      Author: Team
  */
 #include "maidsafe/client/contacts.h"
-#include <boost/filesystem.hpp>
-#include <boost/lexical_cast.hpp>
-#include <maidsafe/maidsafe-dht.h>
+#include "boost/filesystem.hpp"
+#include "boost/lexical_cast.hpp"
+//#include <maidsafe/maidsafe-dht.h>
 
 namespace fs = boost::filesystem;
 
@@ -58,7 +58,7 @@ int ContactsHandler::AddContact(const std::string &pub_name,
                                 const int &last_contact) {
   int lc = 0;
   if (last_contact == 0)
-    lc = base::GetEpochTime();
+    lc = /*GetDurationSinceEpoch()*/0;
   else
     lc = last_contact;
   mi_contact mic(pub_name, pub_key, full_name, office_phone, birthday, gender,
@@ -248,7 +248,7 @@ int ContactsHandler::SetLastContactRank(const std::string &pub_name) {
   }
   mi_contact mic = *it;
   mic.rank_++;
-  mic.last_contact_ = base::GetEpochTime();
+  mic.last_contact_ = /*GetDurationSinceEpoch()*/0;
   cs_.replace(it, mic);
   return 0;
 }

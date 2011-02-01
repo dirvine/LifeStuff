@@ -28,11 +28,11 @@
 #include <boost/filesystem.hpp>
 #include <string>
 
-namespace kad { class Contact; }
+namespace kademlia { class Contact; }
 
 namespace maidsafe {
 
-bool ContactHasId(const std::string &id, const kad::Contact &contact);
+bool ContactHasId(const std::string &id, const kademlia::Contact &contact);
 
 // Return the SHA512 hash of the file contents
 std::string SHA512File(const boost::filesystem::path &file_path);

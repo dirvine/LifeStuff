@@ -70,12 +70,14 @@ class ClientController : public QObject {
  public:
 
  struct PendingOps {
+  PendingOps() {}
   QString name;
   int transBytes;
   int totalBytes;
 };
 
   struct Email {
+    Email() {}
     QString from;
     QString to;
     QString cc;

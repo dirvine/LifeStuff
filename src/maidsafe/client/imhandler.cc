@@ -22,7 +22,7 @@
 * ============================================================================
 */
 
-#include <maidsafe/maidsafe-dht_config.h>
+//  #include <maidsafe/maidsafe-dht_config.h>
 
 #include "maidsafe/common/commonutils.h"
 #include "maidsafe/client/imhandler.h"
@@ -37,8 +37,8 @@ std::string IMHandler::CreateMessage(const std::string &msg,
   maidsafe::BufferPacketMessage bpmsg;
   bpmsg.set_sender_id(ss_->PublicUsername());
   bpmsg.set_type(INSTANT_MSG);
-  std::string aes_key =
-      base::RandomString(crypto::AES256_KeySize + crypto::AES256_IVSize);
+  std::string aes_key(RandomString(crypto::AES256_KeySize +
+                                   crypto::AES256_IVSize));
   bpmsg.set_aesenc_message(AESEncrypt(msg, aes_key));
   std::string rec_pub_key(ss_->GetContactPublicKey(receiver));
   bpmsg.set_rsaenc_key(RSAEncrypt(aes_key, rec_pub_key));
@@ -54,7 +54,7 @@ std::string IMHandler::CreateMessageEndpoint(const std::string &receiver) {
   InstantMessage msg;
   msg.set_sender(ss_->PublicUsername());
   msg.set_message("");
-  msg.set_date(base::GetEpochTime());
+  msg.set_date(0/*GetDurationSinceEpoch()*/);
   msg.set_status(ss_->ConnectionStatus());
   EndPoint *endpoint = msg.mutable_endpoint();
   *endpoint = ss_->Ep();
@@ -63,8 +63,8 @@ std::string IMHandler::CreateMessageEndpoint(const std::string &receiver) {
   BufferPacketMessage bpmsg;
   bpmsg.set_sender_id(ss_->PublicUsername());
   bpmsg.set_type(HELLO_PING);
-  std::string aes_key =
-      base::RandomString(crypto::AES256_KeySize + crypto::AES256_IVSize);
+  std::string aes_key(RandomString(crypto::AES256_KeySize +
+                                   crypto::AES256_IVSize));
   bpmsg.set_aesenc_message(AESEncrypt(ser_msg, aes_key));
   std::string rec_pub_key(ss_->GetContactPublicKey(receiver));
   bpmsg.set_rsaenc_key(RSAEncrypt(aes_key, rec_pub_key));
@@ -81,15 +81,15 @@ std::string IMHandler::CreateLogOutMessage(const std::string &receiver) {
   InstantMessage msg;
   msg.set_sender(ss_->PublicUsername());
   msg.set_message("");
-  msg.set_date(base::GetEpochTime());
+  msg.set_date(/*GetDurationSinceEpoch()*/0);
   msg.set_status(ss_->ConnectionStatus());
   std::string ser_msg(msg.SerializeAsString());
 
   BufferPacketMessage bpmsg;
   bpmsg.set_sender_id(ss_->PublicUsername());
   bpmsg.set_type(LOGOUT_PING);
-  std::string aes_key =
-      base::RandomString(crypto::AES256_KeySize + crypto::AES256_IVSize);
+  std::string aes_key(RandomString(crypto::AES256_KeySize +
+                                   crypto::AES256_IVSize));
   bpmsg.set_aesenc_message(AESEncrypt(ser_msg, aes_key));
   std::string rec_pub_key(ss_->GetContactPublicKey(receiver));
   bpmsg.set_rsaenc_key(RSAEncrypt(aes_key, rec_pub_key));

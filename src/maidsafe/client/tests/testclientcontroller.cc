@@ -25,7 +25,7 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/progress.hpp>
 #include <gtest/gtest.h>
-#include <maidsafe/base/utils.h>
+//  #include <maidsafe/base/utils.h>
 #include <maidsafe/encrypt/selfencryption.h>
 
 #include <list>
@@ -72,11 +72,11 @@ class ClientControllerTest : public testing::Test {
     ss_->ResetSession();
     ASSERT_TRUE(network_test_.Init());
 #ifdef MS_NETWORK_TEST
-    cc_->client_chunkstore_ = network_test_.chunkstore();
-    cc_->sm_ = sm_;
-    cc_->auth_.Init(sm_);
-    cc_->ss_ = ss_;
-    cc_->initialised_ = true;
+//    cc_->client_chunkstore_ = network_test_.chunkstore();
+//    cc_->sm_ = sm_;
+//    cc_->auth_.Init(sm_);
+//    cc_->ss_ = ss_;
+//    cc_->initialised_ = true;
 #else
     cc_->Init(network_test_.K());
 #endif
@@ -85,10 +85,10 @@ class ClientControllerTest : public testing::Test {
   }
   void TearDown() {
 #ifndef MS_NETWORK_TEST
-    cc_->CloseConnection(true);
-    cc_->auth_.tmid_op_status_ = Authentication::kFailed;
-    cc_->auth_.stmid_op_status_ = Authentication::kFailed;
-    cc_->ss_->passport_->StopCreatingKeyPairs();
+//    cc_->CloseConnection(true);
+//    cc_->auth_.tmid_op_status_ = Authentication::kFailed;
+//    cc_->auth_.stmid_op_status_ = Authentication::kFailed;
+//    cc_->ss_->passport_->StopCreatingKeyPairs();
 #endif
     cc_->initialised_ = false;
   }
@@ -395,7 +395,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, BackupFile) {
   fs::path full_path(file_system::MaidsafeHomeDir(ss_->SessionName()));
   full_path /= rel_path;
   fs::ofstream testfile(full_path.string().c_str());
-  testfile << base::RandomAlphaNumericString(1024 * 1024);
+  testfile << RandomAlphaNumericString(1024 * 1024);
   testfile.close();
   std::string hash_original_file = SHA512File(full_path);
   {
@@ -466,7 +466,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, SaveSession) {
   fs::path full_path(file_system::MaidsafeHomeDir(ss_->SessionName()));
   full_path /= rel_path;
   fs::ofstream testfile(full_path.string().c_str());
-  testfile << base::RandomAlphaNumericString(1024 * 1024);
+  testfile << RandomAlphaNumericString(1024 * 1024);
   testfile.close();
   std::string hash_original_file = SHA512File(full_path);
   {
@@ -932,7 +932,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, FuseFunctions) {
 
 TEST_MS_NET(ClientControllerTest, BEH, MAID, HandleMessages) {
   int total_msgs(5);
-  boost::uint32_t now(base::GetEpochTime());
+  boost::uint32_t now(/*GetDurationSinceEpoch()*/0);
   std::list<ValidatedBufferPacketMessage> valid_messages;
   ValidatedBufferPacketMessage vbpm;
   InstantMessage im;
@@ -957,7 +957,7 @@ TEST_MS_NET(ClientControllerTest, BEH, MAID, HandleMessages) {
 TEST_MS_NET(ClientControllerTest, FUNC, MAID, ClearStaleMessages) {
   size_t total_msgs(5);
   boost::thread thr(&ClientController::ClearStaleMessages, cc_);
-  boost::uint32_t now(base::GetEpochTime());
+  boost::uint32_t now(/*GetDurationSinceEpoch()*/0);
   std::list<ValidatedBufferPacketMessage> valid_messages;
   ValidatedBufferPacketMessage vbpm;
   InstantMessage im;
@@ -965,7 +965,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, ClearStaleMessages) {
     vbpm.Clear();
     im.Clear();
     vbpm.set_sender("nalga");
-    vbpm.set_index(base::IntToString(n));
+    vbpm.set_index(boost::lexical_cast<std::string>(n));
     vbpm.set_type(INSTANT_MSG);
     vbpm.set_timestamp(now);
     im.set_sender("nalga");

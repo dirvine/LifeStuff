@@ -1157,7 +1157,7 @@ void FileBrowser::uploadFileFromLocal(const QString& filePath) {
 
   if (widgetList.isEmpty()) {
     try {
-      fs::copy_file(filePath.toStdString(), fullFilePath);
+//      fs::copy_file(filePath.toStdString(), fullFilePath);
       if (fs::exists(fullFilePath)) {
         saveFileToNetwork(uploadFilePath);
       } else {

@@ -29,6 +29,7 @@
 #endif
 
 #include <boost/foreach.hpp>
+#include "maidsafe-dht/kademlia/contact.h"
 
 #include "maidsafe/common/chunkstore.h"
 #include "maidsafe/common/commonutils.h"
@@ -106,10 +107,10 @@ int ClientController::Init(boost::uint8_t k) {
 #endif
       return -2;
     }
-    client_path /= "client" + base::RandomAlphaNumericString(8);
+    client_path /= "client" + RandomAlphaNumericString(8);
     while (fs::exists(client_path))
       client_path = fs::path(client_path.string().substr(0,
-          client_path.string().size() - 8) + base::RandomAlphaNumericString(8));
+          client_path.string().size() - 8) + RandomAlphaNumericString(8));
     client_store_ = client_path.string();
     if (!fs::exists(client_path) && !fs::create_directories(client_path)) {
 #ifdef DEBUG
@@ -339,7 +340,7 @@ int ClientController::SerialiseDa() {
   ser_dm_.clear();
   data_atlas.SerializeToString(&ser_da_);
 
-  std::string file_hash(base::EncodeToHex(SHA512String(ser_da_)));
+  std::string file_hash(EncodeToHex(SHA512String(ser_da_)));
   seh_.EncryptString(ser_da_, &ser_dm_);
 
 #ifdef DEBUG
@@ -410,7 +411,7 @@ bool ClientController::CreateUser(const std::string &username,
 //                                                  vcp.directory);
 //    OwnLocalVaultResult olvr = SetLocalVaultOwned(vcp.port,
 //      vcp.space * 1024 * 1024, (file_system::ApplicationDataDir() / ("Vault_"
-//      + base::EncodeToHex(ss_->Id(PMID)).substr(0, 8))).string());
+//      + EncodeToHex(ss_->Id(PMID)).substr(0, 8))).string());
 //    if (olvr != OWNED_SUCCESS) {
 //  #ifdef DEBUG
 //      printf("CC::CreateUser +++ OwnLocalVaultResult: %d +++\n", olvr);
@@ -490,13 +491,13 @@ bool ClientController::CreateUser(const std::string &username,
     mdm.set_tag("");
     mdm.set_file_size_high(0);
     mdm.set_file_size_low(0);
-    boost::uint32_t current_time = base::GetEpochTime();
+    boost::uint32_t current_time = /*GetDurationSinceEpoch()*/0;
     mdm.set_creation_time(current_time);
     mdm.SerializeToString(&ser_mdm);
     if (kRootSubdir[i][1].empty()) {
       seh_.GenerateUniqueKey(&key);
     } else {
-      key = base::DecodeFromHex(kRootSubdir[i][1]);
+      key = DecodeFromHex(kRootSubdir[i][1]);
     }
     res += dah->AddElement(TidyPath(kRootSubdir[i][0]), ser_mdm, "", key, true);
 
@@ -537,7 +538,7 @@ bool ClientController::CreateUser(const std::string &username,
     mdm.set_tag("");
     mdm.set_file_size_high(0);
     mdm.set_file_size_low(0);
-    boost::uint32_t current_time = base::GetEpochTime();
+    boost::uint32_t current_time = /*GetDurationSinceEpoch()*/0;
     mdm.set_creation_time(current_time);
     mdm.SerializeToString(&ser_mdm);
     if (kSharesSubdir[i][1].empty()) {  // ie no preassigned key so not public
@@ -1047,7 +1048,7 @@ int ClientController::HandleMessages(
       continue;
     }
 
-    boost::uint32_t now = base::GetEpochTime();
+    boost::uint32_t now = /*GetDurationSinceEpoch()*/0;
     received_messages_.insert(std::pair<std::string, boost::uint32_t>(
                               valid_messages->front().SerializeAsString(),
                               now));
@@ -1079,9 +1080,9 @@ void ClientController::ClearStaleMessages() {
       boost::mutex::scoped_lock loch(rec_msg_mutex_);
 #ifdef DEBUG
 //      printf("CC::ClearStaleMessages timestamp: %d %d\n",
-//             base::GetEpochTime(), received_messages_.size());
+//             /*GetDurationSinceEpoch()*/0, received_messages_.size());
 #endif
-      boost::uint32_t now = base::GetEpochTime() - 10;
+      boost::uint32_t now = /*GetDurationSinceEpoch()*/0 - 10;
       std::map<std::string, boost::uint32_t>::iterator it;
       std::vector<std::string> msgs;
       for (it = received_messages_.begin();
@@ -1296,9 +1297,9 @@ int ClientController::AddInstantFile(
   mdm.set_tag(sent_mdm.tag());
   mdm.set_file_size_high(sent_mdm.file_size_high());
   mdm.set_file_size_low(sent_mdm.file_size_low());
-  mdm.set_creation_time(base::GetEpochTime());
-  mdm.set_last_modified(base::GetEpochTime());
-  mdm.set_last_access(base::GetEpochTime());
+  mdm.set_creation_time(/*GetDurationSinceEpoch()*/0);
+  mdm.set_last_modified(/*GetDurationSinceEpoch()*/0);
+  mdm.set_last_access(/*GetDurationSinceEpoch()*/0);
   std::string dir_key;
 
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
@@ -1440,7 +1441,7 @@ int ClientController::HandleAddContactRequest(
   std::string message("\"");
   message += ss_->PublicUsername() + "\" has confirmed you as a contact.";
   im.set_sender(ss_->PublicUsername());
-  im.set_date(base::GetEpochTime());
+  im.set_date(/*GetDurationSinceEpoch()*/0);
   im.set_message(message);
   std::string ser_im;
   im.SerializeToString(&ser_im);
@@ -1536,7 +1537,7 @@ int ClientController::SendEmail(const std::string &subject,
   en->set_to(toList);
   en->set_cc(ccList);
   im.set_sender(ss_->PublicUsername());
-  im.set_date(base::GetEpochTime());
+  im.set_date(/*GetDurationSinceEpoch()*/0);
   im.set_conversation(conversation);
   im.set_message(msg);
   im.set_subject(subject);
@@ -1583,7 +1584,7 @@ int ClientController::SendInstantMessage(
   InstantMessage im;
   im.set_sender(ss_->PublicUsername());
   im.set_message(message);
-  im.set_date(base::GetEpochTime());
+  im.set_date(/*GetDurationSinceEpoch()*/0);
   im.set_conversation(conversation);
   im.SerializeToString(&ser_im);
 
@@ -1672,7 +1673,7 @@ int ClientController::SendInstantFile(
   ifm->set_ser_dm(ser_dm);
   ifm->set_filename(p_filename.filename().string());
   im.set_sender(SessionSingleton::getInstance()->PublicUsername());
-  im.set_date(base::GetEpochTime());
+  im.set_date(/*GetDurationSinceEpoch()*/0);
   im.set_conversation(conversation);
   std::string message;
   if (msg.empty()) {
@@ -1827,7 +1828,7 @@ int ClientController::AddContact(const std::string &public_name) {
   cn->set_action(0);
 
   im.set_sender(ss_->PublicUsername());
-  im.set_date(base::GetEpochTime());
+  im.set_date(/*GetDurationSinceEpoch()*/0);
   std::string message("\"");
   message += im.sender() + "\" has requested to add you as a contact.";
   im.set_message(message);
@@ -1891,13 +1892,13 @@ int ClientController::DeleteContact(const std::string &public_name) {
   ContactNotification *cn = im.mutable_contact_notification();
   cn->set_action(2);
 
-  std::string deletion_msg(base::IntToString(base::GetEpochNanoseconds()));
+  std::string deletion_msg(IntToString(/*GetDurationSinceEpoch()*/0));
   deletion_msg += " deleted " + public_name + " update " +
     ss_->PublicUsername();
 #ifdef DEBUG
   printf("MSG: %s\n", deletion_msg.c_str());
 #endif
-  im.set_date(base::GetEpochMilliseconds());
+  im.set_date(/*GetDurationSinceEpoch()*/0);
   im.set_message(deletion_msg);
   im.set_sender(ss_->PublicUsername());
   std::string ser_im;
@@ -2119,7 +2120,7 @@ int ClientController::CreateNewShare(const std::string &name,
   psn->set_public_key(msid_public_key);
   psn->set_dir_db_key(share_dir_key);
   im.set_sender(ss_->PublicUsername());
-  im.set_date(base::GetEpochTime());
+  im.set_date(/*GetDurationSinceEpoch()*/0);
   std::string message("\"");
   message += im.sender() + "\" has added you as a Read Only participant to"
              " share " + name;
@@ -2179,17 +2180,17 @@ bool ClientController::VaultStoreInfo(boost::uint64_t *offered_space,
   return sm_->VaultStoreInfo(offered_space, free_space);
 }
 
-bool ClientController::VaultContactInfo(kad::Contact *contact) {
+bool ClientController::VaultContactInfo(kademlia::Contact *contact) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::VaultContactInfo - Not initialised.\n");
 #endif
     return false;
   }
-  
+
 #ifdef LOCAL_PDVAULT
   {
-    kad::Contact vc("id", "192.168.1.7", 55555);
+    kademlia::Contact vc;
     *contact = vc;
     return true;
   }

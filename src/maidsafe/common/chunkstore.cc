@@ -61,13 +61,13 @@ bool ChunkStore::Init() {
   try {
     for (path_map_iterator path_map_itr = path_map_.begin();
          path_map_itr != path_map_.end(); ++path_map_itr) {
-      if (fs::exists((*path_map_itr).second)) {
+      if (fs3::exists((*path_map_itr).second)) {
         temp_result = PopulateChunkSet((*path_map_itr).first,
             (*path_map_itr).second) && temp_result;
 //        printf("Found %s\n", (*path_map_itr).second.string().c_str());
       } else {
         temp_result = temp_result &&
-            fs::create_directories((*path_map_itr).second);
+            fs3::create_directories((*path_map_itr).second);
 //        printf("Created %s\n", (*path_map_itr).second.string().c_str());
       }
     }
@@ -76,9 +76,9 @@ bool ChunkStore::Init() {
       std::string key = DecodeFromHex(kDefaultChunks[i][0]);
       std::string value = DecodeFromHex(kDefaultChunks[i][1]);
       ChunkType type(kHashable | kNormal);
-      fs::path chunk_path(GetChunkPath(key, type, true));
+      fs3::path chunk_path(GetChunkPath(key, type, true));
       boost::uint64_t chunk_size(value.size());
-      fs::ofstream fstr;
+      fs3::ofstream fstr;
       fstr.open(chunk_path, std::ios_base::binary);
       fstr.write(value.c_str(), chunk_size);
       fstr.close();
@@ -102,33 +102,33 @@ bool ChunkStore::Init() {
 bool ChunkStore::PopulatePathMap() {
   try {
     path_map_iterator path_map_itr;
-    fs::path hashable_parent(kChunkstorePath_ / kHashableLeaf_);
-    path_map_.insert(std::pair<ChunkType, fs::path>(kHashable | kNormal,
-        fs::path(hashable_parent / kNormalLeaf_)));
+    fs3::path hashable_parent(kChunkstorePath_ / kHashableLeaf_);
+    path_map_.insert(std::pair<ChunkType, fs3::path>(kHashable | kNormal,
+        fs3::path(hashable_parent / kNormalLeaf_)));
     path_map_itr = path_map_.begin();
-    path_map_.insert(path_map_itr, std::pair<ChunkType, fs::path>
-        (kHashable | kCache, fs::path(hashable_parent / kCacheLeaf_)));
+    path_map_.insert(path_map_itr, std::pair<ChunkType, fs3::path>
+        (kHashable | kCache, fs3::path(hashable_parent / kCacheLeaf_)));
     ++path_map_itr;
-    path_map_.insert(path_map_itr, std::pair<ChunkType, fs::path>
-        (kHashable | kOutgoing, fs::path(hashable_parent / kOutgoingLeaf_)));
+    path_map_.insert(path_map_itr, std::pair<ChunkType, fs3::path>
+        (kHashable | kOutgoing, fs3::path(hashable_parent / kOutgoingLeaf_)));
     ++path_map_itr;
-    path_map_.insert(path_map_itr, std::pair<ChunkType, fs::path>
-        (kHashable | kTempCache, fs::path(hashable_parent / kTempCacheLeaf_)));
+    path_map_.insert(path_map_itr, std::pair<ChunkType, fs3::path>
+        (kHashable | kTempCache, fs3::path(hashable_parent / kTempCacheLeaf_)));
     ++path_map_itr;
-    fs::path non_hashable_parent(kChunkstorePath_ / kNonHashableLeaf_);
-    path_map_.insert(path_map_itr, std::pair<ChunkType, fs::path>
-        (kNonHashable | kNormal, fs::path(non_hashable_parent / kNormalLeaf_)));
+    fs3::path non_hashable_parent(kChunkstorePath_ / kNonHashableLeaf_);
+    path_map_.insert(path_map_itr, std::pair<ChunkType, fs3::path>
+        (kNonHashable | kNormal, fs3::path(non_hashable_parent / kNormalLeaf_)));
     ++path_map_itr;
-    path_map_.insert(path_map_itr, std::pair<ChunkType, fs::path>
-        (kNonHashable | kCache, fs::path(non_hashable_parent / kCacheLeaf_)));
+    path_map_.insert(path_map_itr, std::pair<ChunkType, fs3::path>
+        (kNonHashable | kCache, fs3::path(non_hashable_parent / kCacheLeaf_)));
     ++path_map_itr;
-    path_map_.insert(path_map_itr, std::pair<ChunkType, fs::path>
+    path_map_.insert(path_map_itr, std::pair<ChunkType, fs3::path>
         (kNonHashable | kOutgoing,
-        fs::path(non_hashable_parent / kOutgoingLeaf_)));
+        fs3::path(non_hashable_parent / kOutgoingLeaf_)));
     ++path_map_itr;
-    path_map_.insert(path_map_itr, std::pair<ChunkType, fs::path>
+    path_map_.insert(path_map_itr, std::pair<ChunkType, fs3::path>
         (kNonHashable | kTempCache,
-        fs::path(non_hashable_parent / kTempCacheLeaf_)));
+        fs3::path(non_hashable_parent / kTempCacheLeaf_)));
     if (size_t(8) != path_map_.size())
       return false;
     else
@@ -142,24 +142,24 @@ bool ChunkStore::PopulatePathMap() {
   }
 }
 
-void ChunkStore::FindFiles(const fs::path &root_dir_path, ChunkType type,
+void ChunkStore::FindFiles(const fs3::path &root_dir_path, ChunkType type,
                            bool hash_check, bool delete_failures,
                            boost::uint64_t *filecount,
                            std::list<std::string> *failed_keys) {
   try {
-    if (!fs::exists(root_dir_path))
+    if (!fs3::exists(root_dir_path))
       return;
     std::string non_hex_name;
-    fs::directory_iterator end_itr;
-    for (fs::directory_iterator itr(root_dir_path); itr != end_itr; ++itr) {
+    fs3::directory_iterator end_itr;
+    for (fs3::directory_iterator itr(root_dir_path); itr != end_itr; ++itr) {
   //    printf("Iter at %s\n", itr->path().filename().string().c_str());
-      if (fs::is_directory(itr->status())) {
+      if (fs3::is_directory(itr->status())) {
         FindFiles(itr->path(), type, hash_check, delete_failures, filecount,
                   failed_keys);
       } else  {
         ++(*filecount);
         non_hex_name = DecodeFromHex(itr->path().filename().string());
-        boost::uint64_t size = fs::file_size(itr->path());
+        boost::uint64_t size = fs3::file_size(itr->path());
         if (size >= 2) {
           ChunkInfo chunk(non_hex_name,
               boost::posix_time::microsec_clock::local_time(), type, size);
@@ -187,7 +187,7 @@ void ChunkStore::FindFiles(const fs::path &root_dir_path, ChunkType type,
   }
 }
 
-bool ChunkStore::PopulateChunkSet(ChunkType type, const fs::path &dir_path) {
+bool ChunkStore::PopulateChunkSet(ChunkType type, const fs3::path &dir_path) {
   boost::posix_time::ptime now(boost::posix_time::microsec_clock::local_time());
   boost::uint64_t original_size;
   {
@@ -259,7 +259,7 @@ ChunkType ChunkStore::GetChunkType(const std::string &key,
   return type;
 }
 
-ChunkType ChunkStore::GetChunkType(const std::string &key, const fs::path &file,
+ChunkType ChunkStore::GetChunkType(const std::string &key, const fs3::path &file,
                                    bool outgoing) {
   // Return type if we already have the chunk's details
   ChunkType type = chunk_type(key);
@@ -271,7 +271,7 @@ ChunkType ChunkStore::GetChunkType(const std::string &key, const fs::path &file,
   else
     type = kNormal;
   try {
-    if (fs::exists(file)) {
+    if (fs3::exists(file)) {
       if (key == crypto::HashFile<crypto::SHA512>(file)) {
         type |= kHashable;
       } else {
@@ -290,7 +290,7 @@ ChunkType ChunkStore::GetChunkType(const std::string &key, const fs::path &file,
   }
 }
 
-fs::path ChunkStore::GetChunkPath(const std::string &key, ChunkType type,
+fs3::path ChunkStore::GetChunkPath(const std::string &key, ChunkType type,
                                   bool create_path) {
   if (key.size() != kKeySize) {
 #ifdef DEBUG
@@ -311,11 +311,11 @@ fs::path ChunkStore::GetChunkPath(const std::string &key, ChunkType type,
   dir_one = hex_key.substr(0, 1);
   dir_two = hex_key.substr(1, 1);
   dir_three = hex_key.substr(2, 1);
-  fs::path chunk_path((*path_map_itr).second / dir_one / dir_two / dir_three);
+  fs3::path chunk_path((*path_map_itr).second / dir_one / dir_two / dir_three);
   try {
-    if (!fs::exists(chunk_path)) {
+    if (!fs3::exists(chunk_path)) {
       if (create_path) {
-          fs::create_directories(chunk_path);
+          fs3::create_directories(chunk_path);
         chunk_path /= hex_key;
       } else {
         chunk_path.clear();
@@ -366,11 +366,11 @@ int ChunkStore::Store(const std::string &key, const std::string &value) {
       return kInvalidChunkType;
   }
   ChunkType type = GetChunkType(key, value, false);
-  fs::path chunk_path(GetChunkPath(key, type, true));
+  fs3::path chunk_path(GetChunkPath(key, type, true));
   return StoreChunkFunction(key, value, chunk_path, type);
 }
 
-int ChunkStore::Store(const std::string &key, const fs::path &file) {
+int ChunkStore::Store(const std::string &key, const fs3::path &file) {
   int valid = InitialOperationVerification(key);
   if (valid != kSuccess)
     return valid;
@@ -389,7 +389,7 @@ int ChunkStore::Store(const std::string &key, const fs::path &file) {
       return kInvalidChunkType;
   }
   ChunkType type = GetChunkType(key, file, false);
-  fs::path chunk_path(GetChunkPath(key, type, true));
+  fs3::path chunk_path(GetChunkPath(key, type, true));
   return StoreChunkFunction(key, file, chunk_path, type);
 }
 
@@ -405,13 +405,13 @@ int ChunkStore::AddChunkToOutgoing(const std::string &key,
     return kChunkExistsInChunkstore;
   }
   ChunkType type = GetChunkType(key, value, true);
-  fs::path chunk_path(GetChunkPath(key, type, true));
+  fs3::path chunk_path(GetChunkPath(key, type, true));
   return (StoreChunkFunction(key, value, chunk_path, type) == kSuccess) ?
       kSuccess : kChunkstoreFailedStore;
 }
 
 int ChunkStore::AddChunkToOutgoing(const std::string &key,
-                                   const fs::path &file) {
+                                   const fs3::path &file) {
   int valid = InitialOperationVerification(key);
   if (valid != kSuccess)
     return valid;
@@ -422,18 +422,18 @@ int ChunkStore::AddChunkToOutgoing(const std::string &key,
     return kChunkExistsInChunkstore;
   }
   ChunkType type = GetChunkType(key, file, true);
-  fs::path chunk_path(GetChunkPath(key, type, true));
+  fs3::path chunk_path(GetChunkPath(key, type, true));
   return (StoreChunkFunction(key, file, chunk_path, type) == kSuccess) ?
       kSuccess: kChunkstoreFailedStore;
 }
 
 int ChunkStore::StoreChunkFunction(const std::string &key,
                                    const std::string &value,
-                                   const fs::path &chunk_path,
+                                   const fs3::path &chunk_path,
                                    ChunkType type) {
   try {
     boost::uint64_t chunk_size(value.size());
-    fs::ofstream fstr;
+    fs3::ofstream fstr;
     fstr.open(chunk_path, std::ios_base::binary);
     fstr.write(value.c_str(), chunk_size);
     fstr.close();
@@ -461,14 +461,14 @@ int ChunkStore::StoreChunkFunction(const std::string &key,
 }
 
 int ChunkStore::StoreChunkFunction(const std::string &key,
-                                   const fs::path &input_file,
-                                   const fs::path &chunk_path,
+                                   const fs3::path &input_file,
+                                   const fs3::path &chunk_path,
                                    ChunkType type) {
   try {
-    if (fs::exists(chunk_path))
-      fs::remove_all(chunk_path);
-    fs::rename(input_file, chunk_path);
-    boost::uint64_t chunk_size(fs::file_size(chunk_path));
+    if (fs3::exists(chunk_path))
+      fs3::remove_all(chunk_path);
+    fs3::rename(input_file, chunk_path);
+    boost::uint64_t chunk_size(fs3::file_size(chunk_path));
     // If the chunk is hashable then set last checked time to now, otherwise
     // set it to max allowable time.
     boost::posix_time::ptime lastcheckedtime(boost::posix_time::max_date_time);
@@ -501,12 +501,12 @@ int ChunkStore::DeleteChunk(const std::string &key) {
   // Chunk is not in multi-index
   if (type == kInvalidChunkType)
     return kSuccess;
-  fs::path chunk_path(GetChunkPath(key, type, false));
+  fs3::path chunk_path(GetChunkPath(key, type, false));
   return DeleteChunkFunction(key, chunk_path);
 }
 
 int ChunkStore::DeleteChunkFunction(const std::string &key,
-                                    const fs::path &chunk_path) {
+                                    const fs3::path &chunk_path) {
   {
     boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
     chunk_set_by_non_hex_name::iterator itr =
@@ -515,12 +515,12 @@ int ChunkStore::DeleteChunkFunction(const std::string &key,
       DecrementUsedSpace(itr->size_);
       chunkstore_set_.erase(itr);
     } else {
-      DecrementUsedSpace(fs::file_size(chunk_path));
+      DecrementUsedSpace(fs3::file_size(chunk_path));
     }
   }
   // Doesn't matter if we don't actually remove chunk file.
   try {
-    fs::remove(chunk_path);
+    fs3::remove(chunk_path);
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
@@ -544,8 +544,8 @@ int ChunkStore::DeleteChunkFunction(const std::string &key,
 int ChunkStore::Clear() {
   // Delete the directory
   try {
-    if (fs::exists(kChunkstorePath_)) {
-      fs::remove_all(kChunkstorePath_);
+    if (fs3::exists(kChunkstorePath_)) {
+      fs3::remove_all(kChunkstorePath_);
     }
   } catch(const std::exception &e) {
 #ifdef DEBUG
@@ -567,10 +567,10 @@ int ChunkStore::Load(const std::string &key, std::string *value) {
   ChunkType type = chunk_type(key);
   if (type == kInvalidChunkType)
     return kInvalidChunkType;
-  fs::path chunk_path(GetChunkPath(key, type, false));
+  fs3::path chunk_path(GetChunkPath(key, type, false));
   boost::uint64_t chunk_size(0);
   try {
-    if (!fs::exists(chunk_path)) {
+    if (!fs3::exists(chunk_path)) {
 #ifdef DEBUG
       printf("ChunkStore::Load - file %s doesn't exist.\n",
              chunk_path.string().c_str());
@@ -578,7 +578,7 @@ int ChunkStore::Load(const std::string &key, std::string *value) {
       DeleteChunkFunction(key, chunk_path);
       return kChunkFileDoesntExist;
     }
-    chunk_size = fs::file_size(chunk_path);
+    chunk_size = fs3::file_size(chunk_path);
     if (chunk_size != GetChunkSize(key)) {
 #ifdef DEBUG
       printf("ChunkStore::Load - file %s has wrong size.\n",
@@ -588,7 +588,7 @@ int ChunkStore::Load(const std::string &key, std::string *value) {
       return kHashCheckFailure;
     }
     boost::scoped_array<char> temp(new char[chunk_size]);
-    fs::ifstream fstr;
+    fs3::ifstream fstr;
     fstr.open(chunk_path, std::ios_base::binary);
     fstr.read(temp.get(), chunk_size);
     fstr.close();
@@ -612,14 +612,14 @@ int ChunkStore::HashCheckChunk(const std::string &key) {
   ChunkType type = chunk_type(key);
   if (type == kInvalidChunkType)
     return kInvalidChunkType;
-  fs::path chunk_path(GetChunkPath(key, type, false));
+  fs3::path chunk_path(GetChunkPath(key, type, false));
   if (chunk_path.empty())
     return kChunkstoreError;
   return HashCheckChunk(key, chunk_path);
 }
 
 int ChunkStore::HashCheckChunk(const std::string &key,
-                               const fs::path &chunk_path) {
+                               const fs3::path &chunk_path) {
   std::string non_hex_filename;
   boost::uint64_t chunk_size(0);
   boost::posix_time::ptime now(boost::posix_time::microsec_clock::local_time());
@@ -635,7 +635,7 @@ int ChunkStore::HashCheckChunk(const std::string &key,
     non_hex_name_index.modify(itr, change_last_checked(now));
   }
 
-  if (chunk_size != fs::file_size(chunk_path))
+  if (chunk_size != fs3::file_size(chunk_path))
     return kHashCheckFailure;
 
   std::string file_hash = crypto::HashFile<crypto::SHA512>(chunk_path);
@@ -655,8 +655,8 @@ int ChunkStore::ChangeChunkType(const std::string &key, ChunkType type) {
   }
   if (current_type == type)
     return kSuccess;
-  fs::path current_chunk_path(GetChunkPath(key, current_type, false));
-  fs::path new_chunk_path(GetChunkPath(key, type, true));
+  fs3::path current_chunk_path(GetChunkPath(key, current_type, false));
+  fs3::path new_chunk_path(GetChunkPath(key, type, true));
   if (new_chunk_path.empty()) {
 #ifdef DEBUG
     printf("In ChunkStore::ChangeChunkType, %i is not a valid type\n", type);
@@ -666,8 +666,8 @@ int ChunkStore::ChangeChunkType(const std::string &key, ChunkType type) {
   // Try to rename file.
   bool copied(false);
   try {
-    fs::copy_file(current_chunk_path, new_chunk_path);
-    copied = fs::exists(new_chunk_path);
+//    fs3::copy_file(current_chunk_path, new_chunk_path);
+    copied = fs3::exists(new_chunk_path);
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
@@ -677,7 +677,7 @@ int ChunkStore::ChangeChunkType(const std::string &key, ChunkType type) {
   }
   if (copied) {
     try {
-      fs::remove(current_chunk_path);
+      fs3::remove(current_chunk_path);
     }
     catch(const std::exception &e) {
   #ifdef DEBUG

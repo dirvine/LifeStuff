@@ -30,7 +30,7 @@
 #include "maidsafe-dht/common/alternative_store.h"
 
 
-namespace fs = boost::filesystem;
+namespace fs3 = boost::filesystem3;
 
 namespace maidsafe {
 
@@ -113,7 +113,7 @@ typedef boost::multi_index::multi_index_container<
 typedef chunk_set::index<non_hex_name>::type chunk_set_by_non_hex_name;
 typedef chunk_set::index<last_checked>::type chunk_set_by_last_checked;
 typedef chunk_set::index<chunk_type>::type chunk_set_by_chunk_type;
-typedef std::map<ChunkType, fs::path>::iterator path_map_iterator;
+typedef std::map<ChunkType, fs3::path>::iterator path_map_iterator;
 
 struct change_last_checked {
   explicit change_last_checked(const boost::posix_time::ptime &new_time)
@@ -143,13 +143,13 @@ class ChunkStore : public AlternativeStore {
   bool Init();
   bool Has(const std::string &key);
   int Store(const std::string &key, const std::string &value);
-  int Store(const std::string &key, const fs::path &file);
+  int Store(const std::string &key, const fs3::path &file);
   int AddChunkToOutgoing(const std::string &key, const std::string &value);
-  int AddChunkToOutgoing(const std::string &key, const fs::path &file);
+  int AddChunkToOutgoing(const std::string &key, const fs3::path &file);
   int Load(const std::string &key, std::string *value);
   int DeleteChunk(const std::string &key);
   int Clear();
-  fs::path GetChunkPath(const std::string &key,
+  fs3::path GetChunkPath(const std::string &key,
                         ChunkType type,
                         bool create_path);
   boost::uint64_t GetChunkSize(const std::string &key);
@@ -181,15 +181,15 @@ class ChunkStore : public AlternativeStore {
   void set_is_initialised(bool value);
   // Populate map of <ChunkType, path to chunk root directory>
   bool PopulatePathMap();
-  int DeleteChunkFunction(const std::string &key, const fs::path &chunk_path);
-  void FindFiles(const fs::path &root_dir_path,
+  int DeleteChunkFunction(const std::string &key, const fs3::path &chunk_path);
+  void FindFiles(const fs3::path &root_dir_path,
                  ChunkType type,
                  bool hash_check,
                  bool delete_failures,
                  boost::uint64_t *filecount,
                  std::list<std::string> *failed_keys);
   // Iterates through dir_path & fills chunkstore_set_
-  bool PopulateChunkSet(ChunkType type, const fs::path &dir_path);
+  bool PopulateChunkSet(ChunkType type, const fs3::path &dir_path);
   // Returns the type for a key if it already exists in the multi-index,
   // otherwise it returns the appropriate type for the value based on whether
   // it is to be placed in the outgoing queue and whether it hashes to the key.
@@ -201,18 +201,18 @@ class ChunkStore : public AlternativeStore {
   // it is to be placed in the outgoing queue and whether its content hashes to
   // the key.
   ChunkType GetChunkType(const std::string &key,
-                         const fs::path &file,
+                         const fs3::path &file,
                          bool outgoing);
   int StoreChunkFunction(const std::string &key,
                          const std::string &value,
-                         const fs::path &chunk_path,
+                         const fs3::path &chunk_path,
                          ChunkType type);
   int StoreChunkFunction(const std::string &key,
-                         const fs::path &input_file,
-                         const fs::path &chunk_path,
+                         const fs3::path &input_file,
+                         const fs3::path &chunk_path,
                          ChunkType type);
   // Check that hash of value == key for appropriate chunks
-  int HashCheckChunk(const std::string &key, const fs::path &chunk_path);
+  int HashCheckChunk(const std::string &key, const fs3::path &chunk_path);
   inline void IncrementUsedSpace(boost::uint64_t file_size) {
     used_space_ += file_size;
   }
@@ -222,8 +222,8 @@ class ChunkStore : public AlternativeStore {
   int InitialOperationVerification(const std::string &key);
 
   chunk_set chunkstore_set_;
-  std::map<ChunkType, fs::path> path_map_;
-  const fs::path kChunkstorePath_;
+  std::map<ChunkType, fs3::path> path_map_;
+  const fs3::path kChunkstorePath_;
   bool is_initialised_;
   boost::mutex initialised_mutex_, chunkstore_set_mutex_;
   // Leafs of directory paths that make up chunkstore

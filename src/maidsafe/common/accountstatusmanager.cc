@@ -171,50 +171,50 @@ void AccountStatusManager::UnReserveSpace(
   }
 }
 
-void AccountStatusManager::AmendmentDone(
-    const AmendAccountRequest::Amendment &amendment_type,
-    const boost::uint64_t &amendment_value) {
-  bool do_dispatch(false);
-  {
-    boost::mutex::scoped_lock lock(mutex_);
-    switch (amendment_type) {
-      case AmendAccountRequest::kSpaceOffered:
-        space_offered_ = amendment_value;
-        break;
-      case AmendAccountRequest::kSpaceGivenInc:
-        space_given_ += amendment_value;
-        break;
-      case AmendAccountRequest::kSpaceGivenDec:
-        if (amendment_value >= space_given_)
-          space_given_ = 0;
-        else
-          space_given_ -= amendment_value;
-        break;
-      case AmendAccountRequest::kSpaceTakenInc:
-        space_taken_ += amendment_value;
-        break;
-      case AmendAccountRequest::kSpaceTakenDec:
-        if (amendment_value >= space_taken_)
-          space_taken_ = 0;
-        else
-          space_taken_ -= amendment_value;
-        break;
-    }
-    ++amendments_since_update_;
-    if (amendments_since_update_ > kMaxAmendments_ &&
-        !awaiting_update_result_ && !update_functor_.empty()) {
-      // Try to reset current timer
-      if (timer_->expires_from_now(kMaxUpdateInterval_) > 0) {
-        // Reset successful - run update functor & start new asynchronous wait.
-        awaiting_update_result_ = true;
-        do_dispatch = true;
-        timer_->async_wait(wait_functor_);
-      }
-    }
-  }
-  if (do_dispatch)
-    strand_.dispatch(update_functor_);
-}
+//void AccountStatusManager::AmendmentDone(
+//    const AmendAccountRequest::Amendment &amendment_type,
+//    const boost::uint64_t &amendment_value) {
+//  bool do_dispatch(false);
+//  {
+//    boost::mutex::scoped_lock lock(mutex_);
+//    switch (amendment_type) {
+//      case AmendAccountRequest::kSpaceOffered:
+//        space_offered_ = amendment_value;
+//        break;
+//      case AmendAccountRequest::kSpaceGivenInc:
+//        space_given_ += amendment_value;
+//        break;
+//      case AmendAccountRequest::kSpaceGivenDec:
+//        if (amendment_value >= space_given_)
+//          space_given_ = 0;
+//        else
+//          space_given_ -= amendment_value;
+//        break;
+//      case AmendAccountRequest::kSpaceTakenInc:
+//        space_taken_ += amendment_value;
+//        break;
+//      case AmendAccountRequest::kSpaceTakenDec:
+//        if (amendment_value >= space_taken_)
+//          space_taken_ = 0;
+//        else
+//          space_taken_ -= amendment_value;
+//        break;
+//    }
+//    ++amendments_since_update_;
+//    if (amendments_since_update_ > kMaxAmendments_ &&
+//        !awaiting_update_result_ && !update_functor_.empty()) {
+//      // Try to reset current timer
+//      if (timer_->expires_from_now(kMaxUpdateInterval_) > 0) {
+//        // Reset successful - run update functor & start new asynchronous wait.
+//        awaiting_update_result_ = true;
+//        do_dispatch = true;
+//        timer_->async_wait(wait_functor_);
+//      }
+//    }
+//  }
+//  if (do_dispatch)
+//    strand_.dispatch(update_functor_);
+//}
 
 void AccountStatusManager::UpdateFailed() {
   boost::mutex::scoped_lock lock(mutex_);

@@ -77,7 +77,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_GetChunkPath) {
   test_chunk_path /= "e";
   test_chunk_path /= "e";
   test_chunk_path /= "2";
-  test_chunk_path /= base::EncodeToHex(test_chunk_name);
+  test_chunk_path /= EncodeToHex(test_chunk_name);
   // Chunk name empty
   ASSERT_EQ(fs::path(""), chunkstore->GetChunkPath("",
             (maidsafe::kHashable | maidsafe::kNormal), false));

@@ -22,18 +22,18 @@
 * ============================================================================
 */
 
-#include <maidsafe/base/log.h>
+//  #include <maidsafe/base/log.h>
 #include <boost/filesystem.hpp>
 #include <gtest/gtest.h>
 
 #include "maidsafe/sharedtest/networktest.h"
 
 int main(int argc, char **argv) {
-  google::InitGoogleLogging(argv[0]);
+//  google::InitGoogleLogging(argv[0]);
   // setting output to be stderr
-#ifndef HAVE_GLOG
-  bool FLAGS_logtostderr;
-#endif
+//  #ifndef HAVE_GLOG
+//    bool FLAGS_logtostderr;
+//  #endif
 //  FLAGS_logtostderr = true;
   testing::InitGoogleTest(&argc, argv);
 #ifdef MS_NETWORK_TEST

@@ -30,7 +30,7 @@
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/thread/mutex.hpp>
-#include <maidsafe/base/utils.h>
+//  #include <maidsafe/base/utils.h>
 
 #include <string>
 #include <map>

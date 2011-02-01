@@ -33,7 +33,7 @@
 #include "maidsafe/client/clientutils.h"
 #include "maidsafe/client/sessionsingleton.h"
 
-namespace fs = boost::filesystem;
+namespace fs3 = boost::filesystem3;
 
 namespace maidsafe {
 
@@ -42,10 +42,10 @@ DataAtlasHandler::DataAtlasHandler() : db_dir_() {
   if (!ss->SessionName().empty()) {
     db_dir_ = file_system::DbDir(ss->SessionName());
   } else {
-    std::string username = "user1";
-    std::string pin = "1234";
-    std::string s = ".maidsafe" + base::EncodeToHex(SHA1String(pin + username));
-    db_dir_ = fs::path(file_system::TempDir() / s / "dir");
+    std::string username("user1");
+    std::string pin("1234");
+    std::string s(".maidsafe" + EncodeToHex(SHA1String(pin + username)));
+    db_dir_ = fs3::path(file_system::TempDir() / s / "dir");
   }
 }
 
@@ -71,14 +71,14 @@ std::string DataAtlasHandler::GetElementNameFromPath(
 //   printf("\t\tGetElementNameFromPath::GetMetaDataMap %s\n",
 //          element_path.c_str());
 #endif
-  fs::path path(element_path);
+  fs3::path path(element_path);
   return path.filename().string();
 }
 
 void DataAtlasHandler::GetDbPath(const std::string &element_path,
                                  DbInitFlag flag,
                                  std::string *db_path) {
-  fs::path path(element_path);
+  fs3::path path(element_path);
 
   // unless we're creating a new dir db, the one we want is the branch of
   // element_path
@@ -88,13 +88,13 @@ void DataAtlasHandler::GetDbPath(const std::string &element_path,
     // if the branch is null, we're making an element in the root, so set
     // pre_hash_db_name to "/"+db_dir_
     if (path.parent_path().filename().empty())
-      pre_hash_db_name = fs::path("/" + db_dir_.string()).string();
+      pre_hash_db_name = fs3::path("/" + db_dir_.string()).string();
   } else {
     pre_hash_db_name = path.string() + db_dir_.string();
   }
 
-  *db_path = base::EncodeToHex(SHA1String(StringToLowercase(pre_hash_db_name)));
-  fs::path db_path1(db_dir_);
+  *db_path = EncodeToHex(SHA1String(StringToLowercase(pre_hash_db_name)));
+  fs3::path db_path1(db_dir_);
   db_path1 /= *db_path;
   *db_path = db_path1.string();
 }
@@ -207,7 +207,7 @@ int DataAtlasHandler::RemoveElement(const std::string &element_path) {
       std::string db_to_delete;
       GetDbPath(element_path, CREATE, &db_to_delete);
 //      printf("Deleting DB: %s", db_to_delete.c_str());
-      fs::remove(db_to_delete);
+      fs3::remove(db_to_delete);
     }
     catch(const std::exception &e) {
 #ifdef DEBUG
@@ -220,19 +220,19 @@ int DataAtlasHandler::RemoveElement(const std::string &element_path) {
 }
 
 int DataAtlasHandler::ListFolder(const std::string &element_path,
-                                 std::map<fs::path, ItemType> *children) {
+                                 std::map<fs3::path, ItemType> *children) {
   int result = kDataAtlasError;
 
   if (element_path == "\\" || element_path == "/") {
     for (int i = 0 ; i < kRootSubdirSize ; i++) {
-      children->insert(std::pair<fs::path, ItemType>(
+      children->insert(std::pair<fs3::path, ItemType>(
       TidyPath(kRootSubdir[i][0]), DIRECTORY));
     }
     return kSuccess;
   }
 
   // append "/a" to element_path so that GetPdDir finds correct branch
-  fs::path path_(element_path);
+  fs3::path path_(element_path);
   path_ /= "a";
   std::string element_path_modified = path_.string();
   boost::shared_ptr<PdDir> da_(GetPdDir(element_path_modified,
@@ -362,9 +362,9 @@ int DataAtlasHandler::CopyDb(const std::string &original_path,
   //        original_db_path_.c_str(), target_db_path_.c_str());
 #endif
   try {
-    if (fs::exists(target_db_path))
-      fs::remove(target_db_path);
-    fs::copy_file(original_db_path, target_db_path);
+    if (fs3::exists(target_db_path))
+      fs3::remove(target_db_path);
+//    fs3::copy_file(original_db_path, target_db_path);
     return kSuccess;
   }
   catch(const std::exception &e) {
@@ -376,10 +376,10 @@ int DataAtlasHandler::CopyDb(const std::string &original_path,
 }
 
 int DataAtlasHandler::ListSubDirs(const std::string &element_path,
-                                  std::vector<fs::path> *subdirs) {
+                                  std::vector<fs3::path> *subdirs) {
   int result = kDataAtlasError;
   // append "/a" to element_path so that GetPdDir finds correct branch
-  fs::path path(element_path);
+  fs3::path path(element_path);
   path /= "a";
   std::string element_path_modified = path.string();
 
@@ -397,14 +397,14 @@ int DataAtlasHandler::CopySubDbs(const std::string &original_path,
   //        original_path_.c_str(), target_path_.c_str());
 #endif
   int result = kDataAtlasError;
-  std::vector<fs::path> subdirs;
+  std::vector<fs3::path> subdirs;
   result = ListSubDirs(original_path, &subdirs);
   if (result != kSuccess)
     return result;
   boost::uint16_t i = 0;
   while (i < subdirs.size()) {
-    fs::path orig_path(original_path / subdirs[i]);
-    fs::path targ_path(target_path / subdirs[i]);
+    fs3::path orig_path(original_path / subdirs[i]);
+    fs3::path targ_path(target_path / subdirs[i]);
     result = CopySubDbs(orig_path.string(), targ_path.string());
     if (result != kSuccess)
       // ie CopySubDbs failed
@@ -492,7 +492,7 @@ int DataAtlasHandler::ChangeAtime(const std::string &element_path) {
 int DataAtlasHandler::DisconnectPdDir(const std::string &branch_path) {
   int result = kDataAtlasError;
   // append "/a" to branch_path so that GetPdDir finds correct branch
-  fs::path path(branch_path);
+  fs3::path path(branch_path);
   path /= "a";
   std::string element_path_modified = path.string();
 

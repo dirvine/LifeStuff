@@ -25,11 +25,11 @@
 #ifndef MAIDSAFE_CLIENT_STOREMANAGER_H_
 #define MAIDSAFE_CLIENT_STOREMANAGER_H_
 
-#include <boost/function.hpp>
-#include <boost/signals2/signal.hpp>
-#include <boost/thread/condition_variable.hpp>
+#include "boost/function.hpp"
+#include "boost/signals2/signal.hpp"
+#include "boost/thread/condition_variable.hpp"
 
-#include <maidsafe/maidsafe-dht.h>
+//  #include <maidsafe/maidsafe-dht.h>
 #include <maidsafe/passport/passport.h>
 
 #include <list>
@@ -48,6 +48,10 @@ typedef bs2::signal<void(const std::string&, maidsafe::ReturnCode)>
 /*****************************************************************************/
 
 namespace maidsafe {
+
+namespace kademlia {
+class Contact;
+}  // namespace kademlia
 
 enum IfPacketExists {
   kDoNothingReturnFailure,
@@ -136,7 +140,7 @@ class StoreManagerInterface {
   // Vault
   virtual bool VaultStoreInfo(boost::uint64_t *offered_space,
                               boost::uint64_t *free_space)=0;
-  virtual bool VaultContactInfo(kad::Contact *contact)=0;
+  virtual bool VaultContactInfo(kademlia::Contact *contact)=0;
   virtual void SetLocalVaultOwned(
       const std::string &priv_key,
       const std::string &pub_key,
