@@ -343,11 +343,9 @@ LIST(REMOVE_DUPLICATES LIBS_DIRS_DEBUG)
 LINK_DIRECTORIES(${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
 
 INCLUDE_DIRECTORIES(${${PROJECT_NAME}_SOURCE_DIR})
-MESSAGE(${${PROJECT_NAME}_SOURCE_DIR})
 INCLUDE_DIRECTORIES(${${PROJECT_NAME}_BINARY_DIR})
 LIST(REMOVE_DUPLICATES INCLUDE_DIRS)
 INCLUDE_DIRECTORIES(AFTER SYSTEM ${INCLUDE_DIRS})
-MESSAGE("\${INCLUDE_DIRS} - ${INCLUDE_DIRS}")
 
 MESSAGE("================================================================================")
 
@@ -389,7 +387,6 @@ ENDIF()
 # Set up all files as GLOBs                                                                       #
 ###################################################################################################
 SET(SRC_MAIDSAFE "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe")
-MESSAGE(${${PROJECT_NAME}_SOURCE_DIR}/maidsafe)
 
 ####    CODE    ####
 FILE(GLOB SOURCE_FILES_CLIENT_DIR "${SRC_MAIDSAFE}/client/*.cc")
@@ -433,7 +430,6 @@ ELSE()
   FILE(GLOB HEADER_FILES_FUSE_DIR "${SRC_MAIDSAFE}/fuse/linux/*.h")
 ENDIF()
 SET(ALL_FILES_FUSE_DIR ${SOURCE_FILES_FUSE_DIR};${HEADER_FILES_FUSE_DIR})
-MESSAGE(${ALL_FILES_FUSE_DIR})
 SET(STYLE_FUSE ${ALL_FILES_FUSE_DIR})
 SOURCE_GROUP("fuse Source Files" FILES ${SOURCE_FILES_FUSE_DIR})
 SOURCE_GROUP("fuse Header Files" FILES ${HEADER_FILES_FUSE_DIR})
