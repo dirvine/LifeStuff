@@ -89,7 +89,7 @@ LocalStoreManager::~LocalStoreManager() {
 }
 
 void LocalStoreManager::Init(VoidFuncOneInt callback, const boost::uint16_t&) {
-#ifdef LOCAL_PDVAULT
+#ifdef LOCAL_LifeStuffVAULT
   // Simulate knode join
 //  boost::this_thread::sleep(boost::posix_time::seconds(3));
 #endif
@@ -125,7 +125,7 @@ void LocalStoreManager::Close(VoidFuncOneInt callback, bool) {
     if (!t)
       boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   }
-#ifdef LOCAL_PDVAULT
+#ifdef LOCAL_LifeStuffVAULT
   // Simulate chunk threadpool join and knode leave
 //  boost::this_thread::sleep(boost::posix_time::seconds(3));
 #endif
@@ -155,7 +155,7 @@ int LocalStoreManager::LoadChunk(const std::string &chunk_name,
 int LocalStoreManager::StoreChunk(const std::string &chunk_name,
                                   const DirType,
                                   const std::string&) {
-//  #ifdef LOCAL_PDVAULT
+//  #ifdef LOCAL_LifeStuffVAULT
 //  // Simulate knode lookup in AddToWatchList
 //  boost::this_thread::sleep(boost::posix_time::seconds(2));
 //  #endif
@@ -214,7 +214,7 @@ int LocalStoreManager::StoreChunk(const std::string &chunk_name,
 int LocalStoreManager::DeleteChunk(const std::string &chunk_name,
                                    const boost::uint64_t &chunk_size,
                                    DirType, const std::string&) {
-#ifdef LOCAL_PDVAULT
+#ifdef LOCAL_LifeStuffVAULT
   // Simulate knode lookup in RemoveFromWatchList
 //  boost::this_thread::sleep(boost::posix_time::seconds(2));
 #endif
@@ -262,7 +262,7 @@ int LocalStoreManager::DeleteChunk(const std::string &chunk_name,
 }
 
 bool LocalStoreManager::KeyUnique(const std::string &key, bool) {
-#ifdef LOCAL_PDVAULT
+#ifdef LOCAL_LifeStuffVAULT
   // Simulate knode findvalue in AddToWatchList
 //  boost::this_thread::sleep(boost::posix_time::seconds(2));
 #endif
@@ -379,7 +379,7 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
 ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
     const std::string &key, const std::vector<std::string> &values,
     const std::string &public_key) {
-#ifdef LOCAL_PDVAULT
+#ifdef LOCAL_LifeStuffVAULT
   // Simulate knode lookup
 //  boost::this_thread::sleep(boost::posix_time::seconds(2));
 #endif
@@ -506,7 +506,7 @@ ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
                                                      const std::string &value,
                                                      const std::string &pub_key,
                                                      const bool &append) {
-#ifdef LOCAL_PDVAULT
+#ifdef LOCAL_LifeStuffVAULT
   // Simulate knode lookup
 //  boost::this_thread::sleep(boost::posix_time::seconds(2));
 #endif
@@ -857,7 +857,7 @@ int LocalStoreManager::AddBPPresence(const std::vector<std::string> &receivers,
 
 int LocalStoreManager::FindAndLoadChunk(const std::string &chunkname,
                                         std::string *data) {
-#ifdef LOCAL_PDVAULT
+#ifdef LOCAL_LifeStuffVAULT
   // Simulate knode lookup
 //  boost::this_thread::sleep(boost::posix_time::seconds(2));
 #endif
@@ -963,7 +963,7 @@ std::string LocalStoreManager::CreateMessage(const std::string &message,
 
 int LocalStoreManager::GetValue_FromDB(const std::string &key,
                                        std::vector<std::string> *results) {
-#ifdef LOCAL_PDVAULT
+#ifdef LOCAL_LifeStuffVAULT
   // Simulate knode lookup
 //  boost::this_thread::sleep(boost::posix_time::seconds(2));
 #endif

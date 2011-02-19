@@ -41,7 +41,7 @@ namespace test_se {
 
 // TODO(Fraser#5#): Replace with fs::temp_directory_path() from boost 1.45
 fs::path TempDir() {
-#if defined(PD_WIN32)
+#if defined(LifeStuff_WIN32)
   fs::path temp_dir("");
   if (std::getenv("TEMP"))
     temp_dir = std::getenv("TEMP");

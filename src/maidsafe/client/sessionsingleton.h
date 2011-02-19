@@ -124,6 +124,7 @@ struct UserDetails {
 };
 
 struct ConnectionDetails {
+  ConnectionDetails() {}
   EndPoint ep;
   boost::uint16_t transport;
   boost::uint32_t connection_id;

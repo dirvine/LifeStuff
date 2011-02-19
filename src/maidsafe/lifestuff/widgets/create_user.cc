@@ -93,7 +93,7 @@ void CreateUser::onNext() {
     return;
   }
 
-#ifdef LOCAL_PDVAULT
+#ifdef LOCAL_LifeStuffVAULT
   if (index == pages_.size() - 4) {
     vault_type_ = 0;
     space_ = "10240";

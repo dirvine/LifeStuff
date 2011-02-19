@@ -130,7 +130,7 @@ class FileBrowser : public QDialog {
                                             const QString& newfilepath);
 
     void onOpenFileClicked();
-// #ifdef PD_APPLE // TODO (Alec): Find out why this throws
+// #ifdef LifeStuff_APPLE // TODO (Alec): Find out why this throws
     void onOpenWithClicked();
     void onSendFileClicked();
     void onCopyFileClicked();

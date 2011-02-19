@@ -202,7 +202,7 @@ QDir ClientController::shareDirRoot(const QString& name) const {
                           .arg(QDir::separator())
                           .arg(name);
 
-#ifdef PD_WIN32
+#ifdef LifeStuff_WIN32
   QString maidsafeRoot = QString("%1:\\").arg(
                          maidsafe::SessionSingleton::getInstance()->WinDrive());
 #else
@@ -227,7 +227,7 @@ QDir ClientController::myFilesDirRoot(const QString& name) const {
                            maidsafe::TidyPath(maidsafe::kRootSubdir[0][0])) +
                            QString("%1%2").arg(QDir::separator()).arg(name);
 
-#ifdef PD_WIN32
+#ifdef LifeStuff_WIN32
   QString maidsafeRoot = QString("%1:\\").arg(
                          maidsafe::SessionSingleton::getInstance()->WinDrive());
 #else
@@ -419,7 +419,7 @@ bool ClientController::sendInstantFile(const QString& filePath,
       filePath.toStdString(),
       maidsafe::SessionSingleton::getInstance()->SessionName()).string());
 
-#ifdef PD_WIN32
+#ifdef LifeStuff_WIN32
   // trim e.g. C:
   rel_filename.erase(0, 2);
 #endif

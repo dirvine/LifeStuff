@@ -29,7 +29,7 @@
 #include <math.h>
 #include <iostream>
 #include <fstream>
-#ifdef PD_WIN32
+#ifdef LifeStuff_WIN32
 #include <windows.h>
 #include <shellapi.h>
 #endif
@@ -343,7 +343,7 @@ void FileBrowser::onOpenWithClicked() {
     path = rootPath_ + currentDir_ + theItem->text();
 }
 
-#if defined(PD_WIN32)
+#if defined(LifeStuff_WIN32)
   QString operation("open");
   QString run = "RUNDLL32.EXE";
   QString parameters = "shell32.dll,OpenAs_RunDLL ";
@@ -368,7 +368,7 @@ void FileBrowser::onOpenWithClicked() {
         qWarning() << "FileBrowser::open: failed to open"
                    << path;
       }
-#elif defined(PD_APPLE)
+#elif defined(LifeStuff_APPLE)
   QString fileName = QFileDialog::getOpenFileName(this,
                                       tr("Choose Application to open with"),
                                       "/Applications",
@@ -944,7 +944,7 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int) {
 }
 
 void FileBrowser::openFileFromDir(const QString path) {
-#if defined(PD_WIN32)
+#if defined(LifeStuff_WIN32)
       QString operation("open");
       quintptr returnValue;
       QT_WA({
@@ -966,7 +966,7 @@ void FileBrowser::openFileFromDir(const QString path) {
         qWarning() << "FileBrowser::open: failed to open"
                    << path;
       }
-#elif defined(PD_POSIX)
+#elif defined(LifeStuff_POSIX)
 
       QString command;
       QStringList parameters;
@@ -1001,7 +1001,7 @@ void FileBrowser::openFileFromDir(const QString path) {
       QDesktopServices::openUrl(QURL::fromLocalFile(file));
       */
 
-#elif defined(PD_APPLE)
+#elif defined(LifeStuff_APPLE)
       QString command("open");
       QStringList parameters;
       parameters << QString::fromStdString(path.toStdString());

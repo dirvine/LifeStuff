@@ -59,7 +59,7 @@ typedef boost::function<void(const std::string&,
                              const boost::int16_t&,
                              const double&)> IMNotifier;
 
-#ifdef LOCAL_PDVAULT
+#ifdef LOCAL_LifeStuffVAULT
   const boost::uint8_t kCheckForMessagesInterval = 3;
 #else
   const boost::uint8_t kCheckForMessagesInterval = 60;

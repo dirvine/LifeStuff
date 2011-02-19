@@ -47,7 +47,7 @@ class PendingOperationsDialog;
 class UserCalendar;
 class LifeStuffLogin;
 class LifeStuffFull;
-#ifdef PD_LIGHT
+#ifdef LifeStuff_LIGHT
   class FileBrowser;
 #endif
 
@@ -285,7 +285,7 @@ public:
 
   LifeStuffFull* lifeStuffFull_;
 
-#ifdef PD_LIGHT
+#ifdef LifeStuff_LIGHT
   FileBrowser* browser_;
 #endif
 

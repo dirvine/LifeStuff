@@ -23,7 +23,7 @@
 //  #include <maidsafe/maidsafe-dht_config.h>
 
 // os
-#ifdef PD_WIN32
+#ifdef LifeStuff_WIN32
   #include <shellapi.h>
 #endif
 
@@ -33,11 +33,11 @@
 #include "maidsafe/common/filesystem.h"
 
 // 3rd party
-#if defined(PD_WIN32)
-#ifndef PD_LIGHT
+#if defined(LifeStuff_WIN32)
+#ifndef LifeStuff_LIGHT
 #include "maidsafe/fuse/windows/fswin.h"
 #endif
-#elif defined(PD_POSIX)
+#elif defined(LifeStuff_POSIX)
 #include "maidsafe/fuse/linux/fslinux.h"
 #endif
 
@@ -48,10 +48,10 @@ class UserSpaceFileSystem::UserSpaceFileSystemImpl {
  public:
   UserSpaceFileSystemImpl() { }
 
-#ifdef PD_WIN32
+#ifdef LifeStuff_WIN32
   // none needed
-#elif defined(PD_POSIX)
-  #ifndef PD_LIGHT
+#elif defined(LifeStuff_POSIX)
+  #ifndef LifeStuff_LIGHT
     fs_l_fuse::FSLinux fsl_;
   #endif
 #endif
@@ -81,14 +81,14 @@ bool UserSpaceFileSystem::mount() {
   ClientController::instance()->SetMounted(0);
 
   std::string debug_mode("-d");
-#ifdef PD_WIN32
+#ifdef LifeStuff_WIN32
   char drive = ClientController::instance()->DriveLetter();
-  #ifndef PD_LIGHT
+  #ifndef LifeStuff_LIGHT
     fs_w_fuse::Mount(drive);
   #endif
   ClientController::instance()->SetWinDrive(drive);
-#elif defined(PD_POSIX)
-  #ifndef PD_LIGHT
+#elif defined(LifeStuff_POSIX)
+  #ifndef LifeStuff_LIGHT
     std::string mount_point(file_system::MaidsafeFuseDir(
                                 ClientController::instance()->SessionName())
                                     .string());
@@ -107,8 +107,8 @@ bool UserSpaceFileSystem::mount() {
 bool UserSpaceFileSystem::unmount() {
   // unmount drive
   bool success = false;
-#ifdef PD_WIN32
-  #ifndef PD_LIGHT
+#ifdef LifeStuff_WIN32
+  #ifndef LifeStuff_LIGHT
     std::locale loc;
     wchar_t drive_letter = std::use_facet< std::ctype<wchar_t> >
         (loc).widen(ClientController::instance()->WinDrive());
@@ -117,8 +117,8 @@ bool UserSpaceFileSystem::unmount() {
       qWarning() << "UserSpaceFileSystem::unmount: failed to unmount dokan"
                  << success;
   #endif
-#elif defined(PD_POSIX)
-  #ifndef PD_LIGHT
+#elif defined(LifeStuff_POSIX)
+  #ifndef LifeStuff_LIGHT
     // un-mount fuse
     impl_->fsl_.UnMount();
   #endif
@@ -131,7 +131,7 @@ bool UserSpaceFileSystem::unmount() {
     // TODO(Team#5#): 2009-06-25 - do stuff
     success = false;
   }
-#ifdef PD_LIGHT
+#ifdef LifeStuff_LIGHT
   return n;
 #endif
   return success;
@@ -145,7 +145,7 @@ void UserSpaceFileSystem::explore(Location l, QString subDir) {
     dir = ClientController::instance()->shareDirRoot(subDir);
   }
 
-#ifdef PD_WIN32
+#ifdef LifeStuff_WIN32
   // %SystemRoot%\explorer.exe /e /root,M:\Shares\Private\Share 1
   // invoking using QProcess doesn't work if the path has spaces in the name
   // so we need to go old skool...

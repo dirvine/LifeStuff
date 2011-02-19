@@ -24,7 +24,7 @@
 
 #include "maidsafe/client/clientcontroller.h"
 
-#ifdef PD_WIN32
+#ifdef LifeStuff_WIN32
 #include <shlwapi.h>
 #endif
 
@@ -36,7 +36,7 @@
 #include "maidsafe/client/filesystem/dataatlashandler.h"
 #include "maidsafe/client/clientutils.h"
 
-#if defined LOCAL_PDVAULT && !defined MS_NETWORK_TEST
+#if defined LOCAL_LifeStuffVAULT && !defined MS_NETWORK_TEST
 #include "maidsafe/client/localstoremanager.h"
 #else
 #include "maidsafe/client/maidstoremanager.h"
@@ -135,7 +135,7 @@ int ClientController::Init(boost::uint8_t k) {
 #endif
     return -5;
   }
-#ifdef LOCAL_PDVAULT
+#ifdef LOCAL_LifeStuffVAULT
   sm_.reset(new LocalStoreManager(client_chunkstore_, K_, ""));
 #else
   sm_.reset(new MaidsafeStoreManager(client_chunkstore_, K_));
@@ -2188,7 +2188,7 @@ bool ClientController::VaultContactInfo(kademlia::Contact *contact) {
     return false;
   }
 
-#ifdef LOCAL_PDVAULT
+#ifdef LOCAL_LifeStuffVAULT
   {
     kademlia::Contact vc;
     *contact = vc;

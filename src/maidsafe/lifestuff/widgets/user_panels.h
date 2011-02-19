@@ -34,7 +34,7 @@ class VaultInfo;
 class PublicUsername;
 class PersonalMessages;
 class UserInbox;
-#ifdef PD_LIGHT
+#ifdef LifeStuff_LIGHT
   class FileBrowser;
 #endif
 
@@ -67,7 +67,7 @@ class UserPanels : public QWidget {
   explicit UserPanels(QWidget* parent = 0);
   virtual ~UserPanels();
 
-#ifdef PD_LIGHT
+#ifdef LifeStuff_LIGHT
   void CloseFileBrowser();
 #endif
 
@@ -134,7 +134,7 @@ class UserPanels : public QWidget {
   Contacts* contacts_;
   MessageLogs* logs_;
   PublicUsername* public_username_;
-#ifdef PD_LIGHT
+#ifdef LifeStuff_LIGHT
   FileBrowser* browser_;
 #endif
   // track the active panel

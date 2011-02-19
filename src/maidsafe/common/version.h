@@ -21,7 +21,7 @@
 #ifndef MAIDSAFE_COMMON_VERSION_H_
 #define MAIDSAFE_COMMON_VERSION_H_
 
-#define MAIDSAFE_PD_VERSION 1
+#define MAIDSAFE_LifeStuff_VERSION 1
 
 #include "maidsafe-dht/common/version.h"
 #define THIS_MAIDSAFE_DHT_VERSION 25

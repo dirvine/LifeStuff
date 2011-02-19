@@ -26,7 +26,7 @@
 #include "maidsafe/lifestuff/widgets/panel.h"
 #include "maidsafe/lifestuff/widgets/messages.h"
 
-#ifdef PD_LIGHT
+#ifdef LifeStuff_LIGHT
 #include "maidsafe/lifestuff/widgets/file_browser.h"
 #endif
 
@@ -119,7 +119,7 @@ UserPanels::UserPanels(QWidget* parent)
 
 UserPanels::~UserPanels() {}
 
-#ifdef PD_LIGHT
+#ifdef LifeStuff_LIGHT
 void UserPanels::CloseFileBrowser() {
  // browser_->setActive(false);
  // browser_->reset();
@@ -181,13 +181,13 @@ void UserPanels::onPublicUsernameChosen() {
   //ui_.public_username->setText(ClientController::instance()->publicUsername());
   updateTooltips();
 
-#ifdef PD_LIGHT
+#ifdef LifeStuff_LIGHT
  // browser_->setActive(true);
 #endif
 }
 
 void UserPanels::onMyFilesClicked() {
-#ifdef PD_LIGHT
+#ifdef LifeStuff_LIGHT
   browser_->setActive(true);
   browser_->show();
 #else

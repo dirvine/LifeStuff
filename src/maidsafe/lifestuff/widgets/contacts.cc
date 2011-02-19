@@ -390,7 +390,7 @@ void Contacts::onSendMessageClicked() {
   }*/
 }
 
-#ifdef PD_LIGHT
+#ifdef LifeStuff_LIGHT
 void Contacts::onFileSendClicked() {
   QString msg = tr("Please use the PD Browser to send files.");
   QMessageBox::information(this, tr("Information"), msg);
@@ -697,18 +697,18 @@ void Contacts::PopulateMailsList()
 {
     QPixmap pixMailRead = QPixmap(":/menu/email_icon.png");
     QPixmap pixMailUnread = QPixmap(":/menu/email_icon_black.png");
-  
+
     QStringList mesgList;
     mesgList << "John       : Hello, how are you doing";
     mesgList << "Lorraine   : Newsletter";
     mesgList << "Paul Nic   : Welcome to the fair";
     mesgList << "Lorraine   : some subject";
     mesgList << "Henry      : Merry Christmas";
-        
+
     QFont listFont = ui_.mailsList->font();
     listFont.setPointSize(listFont.pointSize() - 1);
     ui_.mailsList->setFont(listFont);
-    
+
     QStringList::const_iterator iter;
     for(iter = mesgList.begin(); iter != mesgList.end(); iter++) {
         QListWidgetItem * item = new QListWidgetItem(pixMailUnread, *iter);

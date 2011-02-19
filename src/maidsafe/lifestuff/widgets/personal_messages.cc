@@ -231,7 +231,7 @@ void PersonalMessages::onSendInvite() {
   out << ui_.message_window->toHtml();
   f.close();
 }
-#ifdef PD_LIGHT
+#ifdef LifeStuff_LIGHT
 void PersonalMessages::onSendFile() {
   QString msg = tr("Please use the PD Browser to send files.");
   QMessageBox::information(this, tr("Information"), msg);

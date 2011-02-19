@@ -283,7 +283,7 @@ void PerpetualData::createActions() {
 }
 
 void PerpetualData::createMenus() {
-#if defined(PD_WIN32)
+#if defined(LifeStuff_WIN32)
   // an example of launching an extrernal application
   // path to application is stored in the action
 
@@ -386,7 +386,7 @@ void PerpetualData::setState(State state) {
                 this,         SLOT(onPublicUsernameChosen()));
         userPanels_->setActive(true);
 
-        #ifdef PD_LIGHT
+        #ifdef LifeStuff_LIGHT
         browser_ = new FileBrowser;
         browser_->setActive(true);
         #endif
@@ -435,7 +435,7 @@ void PerpetualData::onLoginExistingUser() {
   positionLSWinInCenter();
   qDebug() << "public name:" << ClientController::instance()->publicUsername();
 
-#ifdef PD_LIGHT
+#ifdef LifeStuff_LIGHT
   onMountCompleted(true);
 #else
   setState(MOUNT_USER);
@@ -517,7 +517,7 @@ void PerpetualData::onUserCreationCompleted(bool success) {
   qDebug() << "PerpetualData::onUserCreationCompleted:" << success;
 
   if (success) {
-#ifdef PD_LIGHT
+#ifdef LifeStuff_LIGHT
   ClientController::instance()->SetMounted(0);
   onMountCompleted(true);
 #else
@@ -605,7 +605,7 @@ void PerpetualData::onLogout() {
   if (!ClientController::instance()->publicUsername().isEmpty())
     ClientController::instance()->StopCheckingMessages();
   asyncUnmount();
-#ifdef PD_LIGHT
+#ifdef LifeStuff_LIGHT
   userPanels_->CloseFileBrowser();
 #endif
 
@@ -910,7 +910,7 @@ void PerpetualData::onFileReceived(const QString& sender,
   switch (ret) {
     case QMessageBox::Save: {
       // Save
-#ifdef PD_LIGHT
+#ifdef LifeStuff_LIGHT
       bool ok;
       QString text = QInputDialog::getText(this, tr("Save File As"),
                                         tr("Filename"),
@@ -971,7 +971,7 @@ void PerpetualData::onFileReceived(const QString& sender,
 #ifdef DEBUG
       printf("PerpetualData::onFileReceived - Res: %i\n", n);
 #endif
-#endif  // end of elseif PD_LIGHT
+#endif  // end of elseif LifeStuff_LIGHT
       if (n == 0) {
         QString title = tr("File received");
         QString message = tr("'%1' has shared the file '%2' with you")
@@ -1201,7 +1201,7 @@ void PerpetualData::onUpdateChecked(int code, QProcess::ExitStatus status) {
 }
 
 void PerpetualData::onMyFilesClicked() {
-#ifdef PD_LIGHT
+#ifdef LifeStuff_LIGHT
   browser_->setActive(true);
   browser_->show();
 #else

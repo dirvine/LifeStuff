@@ -26,13 +26,13 @@
 
 /*
 // google crash reporter
-#if defined(PD_LINUX)
+#if defined(LifeStuff_LINUX)
   #include <google/breakpad/client/linux/handler/exception_handler.h>
 #elif defined(__MSVC__)
   #include <client/windows/handler/exception_handler.h>
 #endif
 
-#if defined(PD_LINUX)
+#if defined(LifeStuff_LINUX)
 static bool DumpCallback(const char*,
                          const char *dump_id,
                          void*,
@@ -72,7 +72,7 @@ void pdMessageOutput(QtMsgType type, const char* msg) {
 
 int main(int argc, char *argv[]) {
 /*
-#ifdef PD_LINUX
+#ifdef LifeStuff_LINUX
   google_breakpad::ExceptionHandler eh(".", NULL, DumpCallback, NULL, true);
 #elif defined(__MSVC__)
   google_breakpad::ExceptionHandler eh(L".", NULL, DumpCallback,
