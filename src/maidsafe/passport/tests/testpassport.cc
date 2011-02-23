@@ -358,10 +358,10 @@ TEST_F(PassportTest, BEH_PASSPORT_SetInitialDetails) {
   PacketPtr pending_smid(passport_.GetPacket(SMID, false));
   PacketPtr confirmed_mid(passport_.GetPacket(MID, true));
   PacketPtr confirmed_smid(passport_.GetPacket(SMID, true));
-  ASSERT_TRUE(pending_mid);
-  ASSERT_TRUE(pending_smid);
-  EXPECT_FALSE(confirmed_mid);
-  EXPECT_FALSE(confirmed_smid);
+  ASSERT_TRUE(pending_mid.get());
+  ASSERT_TRUE(pending_smid.get());
+  EXPECT_FALSE(confirmed_mid.get());
+  EXPECT_FALSE(confirmed_smid.get());
   EXPECT_EQ(mid_name_, pending_mid->name());
   EXPECT_EQ(smid_name_, pending_smid->name());
 
@@ -383,10 +383,10 @@ TEST_F(PassportTest, BEH_PASSPORT_SetInitialDetails) {
   pending_smid = passport_.GetPacket(SMID, false);
   confirmed_mid = passport_.GetPacket(MID, true);
   confirmed_smid = passport_.GetPacket(SMID, true);
-  ASSERT_TRUE(pending_mid);
-  ASSERT_TRUE(pending_smid);
-  EXPECT_FALSE(confirmed_mid);
-  EXPECT_FALSE(confirmed_smid);
+  ASSERT_TRUE(pending_mid.get());
+  ASSERT_TRUE(pending_smid.get());
+  EXPECT_FALSE(confirmed_mid.get());
+  EXPECT_FALSE(confirmed_smid.get());
   EXPECT_EQ(different_username_mid_name, pending_mid->name());
   EXPECT_EQ(different_username_smid_name, pending_smid->name());
 
@@ -413,10 +413,10 @@ TEST_F(PassportTest, BEH_PASSPORT_SetInitialDetails) {
   pending_smid = passport_.GetPacket(SMID, false);
   confirmed_mid = passport_.GetPacket(MID, true);
   confirmed_smid = passport_.GetPacket(SMID, true);
-  ASSERT_TRUE(pending_mid);
-  ASSERT_TRUE(pending_smid);
-  EXPECT_FALSE(confirmed_mid);
-  EXPECT_FALSE(confirmed_smid);
+  ASSERT_TRUE(pending_mid.get());
+  ASSERT_TRUE(pending_smid.get());
+  EXPECT_FALSE(confirmed_mid.get());
+  EXPECT_FALSE(confirmed_smid.get());
   EXPECT_EQ(different_pin_mid_name, pending_mid->name());
   EXPECT_EQ(different_pin_smid_name, pending_smid->name());
 
@@ -445,10 +445,10 @@ TEST_F(PassportTest, BEH_PASSPORT_SetInitialDetails) {
   pending_smid = passport_.GetPacket(SMID, false);
   confirmed_mid = passport_.GetPacket(MID, true);
   confirmed_smid = passport_.GetPacket(SMID, true);
-  ASSERT_TRUE(pending_mid);
-  ASSERT_TRUE(pending_smid);
-  EXPECT_FALSE(confirmed_mid);
-  EXPECT_FALSE(confirmed_smid);
+  ASSERT_TRUE(pending_mid.get());
+  ASSERT_TRUE(pending_smid.get());
+  EXPECT_FALSE(confirmed_mid.get());
+  EXPECT_FALSE(confirmed_smid.get());
   EXPECT_EQ(different_both_mid_name, pending_mid->name());
   EXPECT_EQ(different_both_smid_name, pending_smid->name());
 
@@ -463,10 +463,10 @@ TEST_F(PassportTest, BEH_PASSPORT_SetInitialDetails) {
   pending_smid = passport_.GetPacket(SMID, false);
   confirmed_mid = passport_.GetPacket(MID, true);
   confirmed_smid = passport_.GetPacket(SMID, true);
-  ASSERT_TRUE(pending_mid);
-  ASSERT_TRUE(pending_smid);
-  EXPECT_FALSE(confirmed_mid);
-  EXPECT_FALSE(confirmed_smid);
+  ASSERT_TRUE(pending_mid.get());
+  ASSERT_TRUE(pending_smid.get());
+  EXPECT_FALSE(confirmed_mid.get());
+  EXPECT_FALSE(confirmed_smid.get());
   EXPECT_EQ(mid_name_, pending_mid->name());
   EXPECT_EQ(smid_name_, pending_smid->name());
 }
@@ -527,12 +527,12 @@ TEST_F(PassportTest, BEH_PASSPORT_SetNewUserData) {
                         passport_.GetPacket(SMID, true)));
   TmidPtr confirmed_tmid(std::static_pointer_cast<TmidPacket>(
                          passport_.GetPacket(TMID, true)));
-  ASSERT_TRUE(pending_mid);
-  ASSERT_TRUE(pending_smid);
-  ASSERT_TRUE(pending_tmid);
-  EXPECT_FALSE(confirmed_mid);
-  EXPECT_FALSE(confirmed_smid);
-  EXPECT_FALSE(confirmed_tmid);
+  ASSERT_TRUE(pending_mid.get());
+  ASSERT_TRUE(pending_smid.get());
+  ASSERT_TRUE(pending_tmid.get());
+  EXPECT_FALSE(confirmed_mid.get());
+  EXPECT_FALSE(confirmed_smid.get());
+  EXPECT_FALSE(confirmed_tmid.get());
   std::string mid_name(pending_mid->name()), smid_name(pending_smid->name());
   std::string tmid_name(pending_tmid->name());
   EXPECT_FALSE(mid_name.empty());
@@ -574,12 +574,12 @@ TEST_F(PassportTest, BEH_PASSPORT_SetNewUserData) {
                    passport_.GetPacket(SMID, true));
   confirmed_tmid = std::static_pointer_cast<TmidPacket>(
                    passport_.GetPacket(TMID, true));
-  ASSERT_TRUE(pending_mid);
-  ASSERT_TRUE(pending_smid);
-  ASSERT_TRUE(pending_tmid);
-  EXPECT_FALSE(confirmed_mid);
-  EXPECT_FALSE(confirmed_smid);
-  EXPECT_FALSE(confirmed_tmid);
+  ASSERT_TRUE(pending_mid.get());
+  ASSERT_TRUE(pending_smid.get());
+  ASSERT_TRUE(pending_tmid.get());
+  EXPECT_FALSE(confirmed_mid.get());
+  EXPECT_FALSE(confirmed_smid.get());
+  EXPECT_FALSE(confirmed_tmid.get());
   EXPECT_EQ(mid_name, pending_mid->name());
   EXPECT_EQ(smid_name, pending_smid->name());
   EXPECT_NE(tmid_name, pending_tmid->name());
@@ -624,9 +624,9 @@ TEST_F(PassportTest, BEH_PASSPORT_ConfirmNewUserData) {
                       passport_.GetPacket(SMID, false)));
   TmidPtr pending_tmid(std::static_pointer_cast<TmidPacket>(
                        passport_.GetPacket(TMID, false)));
-  EXPECT_TRUE(pending_mid);
-  EXPECT_TRUE(pending_smid);
-  EXPECT_TRUE(pending_tmid);
+  EXPECT_TRUE(pending_mid.get());
+  EXPECT_TRUE(pending_smid.get());
+  EXPECT_TRUE(pending_tmid.get());
   EXPECT_FALSE(passport_.GetPacket(MID, true).get());
   EXPECT_FALSE(passport_.GetPacket(SMID, true).get());
   EXPECT_FALSE(passport_.GetPacket(TMID, true).get());
@@ -712,9 +712,9 @@ TEST_F(PassportTest, BEH_PASSPORT_ConfirmNewUserData) {
   EXPECT_FALSE(passport_.GetPacket(MID, false).get());
   EXPECT_FALSE(passport_.GetPacket(SMID, false).get());
   EXPECT_FALSE(passport_.GetPacket(TMID, false).get());
-  EXPECT_TRUE(confirmed_mid);
-  EXPECT_TRUE(confirmed_smid);
-  EXPECT_TRUE(confirmed_tmid);
+  EXPECT_TRUE(confirmed_mid.get());
+  EXPECT_TRUE(confirmed_smid.get());
+  EXPECT_TRUE(confirmed_tmid.get());
 
   EXPECT_TRUE(mid->Equals(pending_mid.get()));
   EXPECT_TRUE(smid->Equals(pending_smid.get()));
@@ -786,10 +786,10 @@ TEST_F(PassportTest, BEH_PASSPORT_UpdateMasterData) {
             new_tmid1, tmid_for_deletion1));
   EXPECT_EQ(original_mid->value(), mid_old_value);
   EXPECT_EQ(original_smid->value(), smid_old_value);
-  ASSERT_TRUE(updated_mid1);
-  ASSERT_TRUE(updated_smid1);
-  ASSERT_TRUE(new_tmid1);
-  ASSERT_TRUE(tmid_for_deletion1);
+  ASSERT_TRUE(updated_mid1.get());
+  ASSERT_TRUE(updated_smid1.get());
+  ASSERT_TRUE(new_tmid1.get());
+  ASSERT_TRUE(tmid_for_deletion1.get());
   EXPECT_EQ(1UL, updated_mid1.use_count());
   EXPECT_EQ(1UL, updated_smid1.use_count());
   EXPECT_EQ(1UL, new_tmid1.use_count());
@@ -876,10 +876,10 @@ TEST_F(PassportTest, BEH_PASSPORT_UpdateMasterData) {
   EXPECT_EQ(updated_smid1->value(), smid_old_value);
   EXPECT_NE(original_mid->value(), mid_old_value);
   EXPECT_EQ(original_smid->value(), smid_old_value);
-  ASSERT_TRUE(updated_mid2);
-  ASSERT_TRUE(updated_smid2);
-  ASSERT_TRUE(new_tmid2);
-  ASSERT_TRUE(tmid_for_deletion2);
+  ASSERT_TRUE(updated_mid2.get());
+  ASSERT_TRUE(updated_smid2.get());
+  ASSERT_TRUE(new_tmid2.get());
+  ASSERT_TRUE(tmid_for_deletion2.get());
   EXPECT_EQ(1UL, updated_mid2.use_count());
   EXPECT_EQ(1UL, updated_smid2.use_count());
   EXPECT_EQ(1UL, new_tmid2.use_count());
@@ -918,10 +918,10 @@ TEST_F(PassportTest, BEH_PASSPORT_UpdateMasterData) {
   EXPECT_EQ(updated_smid1->value(), smid_old_value);
   EXPECT_NE(original_mid->value(), mid_old_value);
   EXPECT_EQ(original_smid->value(), smid_old_value);
-  ASSERT_TRUE(updated_mid3);
-  ASSERT_TRUE(updated_smid3);
-  ASSERT_TRUE(new_tmid3);
-  ASSERT_TRUE(tmid_for_deletion3);
+  ASSERT_TRUE(updated_mid3.get());
+  ASSERT_TRUE(updated_smid3.get());
+  ASSERT_TRUE(new_tmid3.get());
+  ASSERT_TRUE(tmid_for_deletion3.get());
   EXPECT_EQ(1UL, updated_mid3.use_count());
   EXPECT_EQ(1UL, updated_smid3.use_count());
   EXPECT_EQ(1UL, new_tmid3.use_count());
