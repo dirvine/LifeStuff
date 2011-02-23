@@ -319,7 +319,7 @@ void Authentication::CreateSignaturePacket(
   }
 
   // Create packet
-  std::tr1::shared_ptr<passport::SignaturePacket>
+  std::shared_ptr<passport::SignaturePacket>
       sig_packet(new passport::SignaturePacket);
   int result(kPendingResult);
   if (packet_type == passport::MPID)
@@ -344,7 +344,7 @@ void Authentication::CreateSignaturePacket(
 
 void Authentication::SignaturePacketUniqueCallback(
     const ReturnCode &return_code,
-    std::tr1::shared_ptr<passport::SignaturePacket> packet,
+    std::shared_ptr<passport::SignaturePacket> packet,
     OpStatus *op_status) {
   passport::PacketType packet_type =
       static_cast<passport::PacketType>(packet->packet_type());
@@ -370,7 +370,7 @@ void Authentication::SignaturePacketUniqueCallback(
 
 void Authentication::SignaturePacketStoreCallback(
     const ReturnCode &return_code,
-    std::tr1::shared_ptr<passport::SignaturePacket> packet,
+    std::shared_ptr<passport::SignaturePacket> packet,
     OpStatus *op_status) {
   passport::PacketType packet_type =
       static_cast<passport::PacketType>(packet->packet_type());
@@ -403,9 +403,9 @@ int Authentication::CreateTmidPacket(const std::string &username,
     return kAuthenticationError;
   }
 
-  std::tr1::shared_ptr<passport::MidPacket> mid(new passport::MidPacket);
-  std::tr1::shared_ptr<passport::MidPacket> smid(new passport::MidPacket);
-  std::tr1::shared_ptr<passport::TmidPacket> tmid(new passport::TmidPacket);
+  std::shared_ptr<passport::MidPacket> mid(new passport::MidPacket);
+  std::shared_ptr<passport::MidPacket> smid(new passport::MidPacket);
+  std::shared_ptr<passport::TmidPacket> tmid(new passport::TmidPacket);
   int result(kPendingResult);
   const boost::uint8_t kMaxAttempts(3);
   boost::uint8_t attempt(0);
@@ -450,7 +450,7 @@ int Authentication::CreateTmidPacket(const std::string &username,
 
 void Authentication::SaveSession(const std::string &serialised_master_datamap,
                                  const VoidFuncOneInt &functor) {
-  std::tr1::shared_ptr<SaveSessionData>
+  std::shared_ptr<SaveSessionData>
       save_session_data(new SaveSessionData(functor, kRegular));
 
   std::string mid_old_value, smid_old_value;
@@ -515,8 +515,8 @@ void Authentication::SaveSession(const std::string &serialised_master_datamap,
 
 void Authentication::SaveSessionCallback(
     const ReturnCode &return_code,
-    std::tr1::shared_ptr<pki::Packet> packet,
-    std::tr1::shared_ptr<SaveSessionData> save_session_data) {
+    std::shared_ptr<pki::Packet> packet,
+    std::shared_ptr<SaveSessionData> save_session_data) {
   OpStatus op_status(kSucceeded);
   if ((save_session_data->op_type == kIsUnique && return_code != kKeyUnique) ||
       (save_session_data->op_type != kIsUnique && return_code != kSuccess)) {
@@ -672,7 +672,7 @@ int Authentication::CreateMsidPacket(std::string *msid_name,
   msid_public_key->clear();
   msid_private_key->clear();
 
-  std::tr1::shared_ptr<passport::SignaturePacket>
+  std::shared_ptr<passport::SignaturePacket>
       msid(new passport::SignaturePacket);
   std::vector<boost::uint32_t> share_stats(2, 0);
   int result = passport_->InitialiseSignaturePacket(passport::MSID, msid);
@@ -857,7 +857,7 @@ void Authentication::DeletePacket(const passport::PacketType &packet_type,
   }
 
   // Retrieve packet
-  std::tr1::shared_ptr<pki::Packet> packet(passport_->GetPacket(packet_type,
+  std::shared_ptr<pki::Packet> packet(passport_->GetPacket(packet_type,
                                                                 true));
   if (!packet) {
     boost::mutex::scoped_lock lock(mutex_);
@@ -911,13 +911,13 @@ int Authentication::ChangeUserData(const std::string &serialised_master_datamap,
   int uniqueness_result(kPendingResult);
   VoidFuncOneInt uniqueness_functor = boost::bind(
       &Authentication::PacketOpCallback, this, _1, &uniqueness_result);
-  std::tr1::shared_ptr<SaveSessionData>
+  std::shared_ptr<SaveSessionData>
       save_new_packets(new SaveSessionData(uniqueness_functor, kIsUnique));
 
   int delete_result(kPendingResult);
   VoidFuncOneInt delete_functor = boost::bind(&Authentication::PacketOpCallback,
                                              this, _1, &delete_result);
-  std::tr1::shared_ptr<SaveSessionData>
+  std::shared_ptr<SaveSessionData>
       delete_old_packets(new SaveSessionData(delete_functor, kDeleteOld));
 
   int result = passport_->ChangeUserData(new_username, new_pin,
@@ -1110,7 +1110,7 @@ int Authentication::ChangePassword(const std::string &serialised_master_datamap,
   int result(kPendingResult);
   VoidFuncOneInt functor = boost::bind(&Authentication::PacketOpCallback, this,
                                        _1, &result);
-  std::tr1::shared_ptr<SaveSessionData>
+  std::shared_ptr<SaveSessionData>
       update_packets(new SaveSessionData(functor, kUpdate));
   update_packets->process_mid = kSucceeded;
   update_packets->process_smid = kSucceeded;
@@ -1227,7 +1227,7 @@ bool Authentication::CheckPassword(const std::string &password) {
   }
 }
 
-int Authentication::StorePacket(std::tr1::shared_ptr<pki::Packet> packet,
+int Authentication::StorePacket(std::shared_ptr<pki::Packet> packet,
                                 bool check_uniqueness) {
   int result(kPendingResult);
   if (check_uniqueness) {
@@ -1279,7 +1279,7 @@ int Authentication::StorePacket(std::tr1::shared_ptr<pki::Packet> packet,
   return result;
 }
 
-int Authentication::DeletePacket(std::tr1::shared_ptr<pki::Packet> packet) {
+int Authentication::DeletePacket(std::shared_ptr<pki::Packet> packet) {
   int result(kPendingResult);
   VoidFuncOneInt functor = boost::bind(&Authentication::PacketOpCallback, this,
                                        _1, &result);
@@ -1319,7 +1319,7 @@ int Authentication::DeletePacket(std::tr1::shared_ptr<pki::Packet> packet) {
   return result;
 }
 
-int Authentication::PacketUnique(std::tr1::shared_ptr<pki::Packet> packet) {
+int Authentication::PacketUnique(std::shared_ptr<pki::Packet> packet) {
   int result(kPendingResult);
   VoidFuncOneInt functor = boost::bind(&Authentication::PacketOpCallback, this,
                                        _1, &result);

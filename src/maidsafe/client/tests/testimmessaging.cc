@@ -97,7 +97,7 @@ class ImMessagingTest : public testing::Test {
  protected:
   void SetUp() {
     SessionSingleton *ss(SessionSingleton::getInstance());
-    boost::shared_ptr<passport::test::CachePassport> passport(
+    std::shared_ptr<passport::test::CachePassport> passport(
         new passport::test::CachePassport(kRsaKeySize, 5, 10));
     passport->Init();
     ss->passport_ = passport;
@@ -167,11 +167,11 @@ class ImMessagingTest : public testing::Test {
   }
 
   NetworkTest network_test_;
-  boost::shared_ptr<transport::Transport> ctc1_trans_, ctc2_trans_;
+  std::shared_ptr<transport::Transport> ctc1_trans_, ctc2_trans_;
   SessionSingleton *ss_;
   std::string publicusername_;
   EndPoint ctc1_ep_, ctc2_ep_;
-  boost::shared_ptr<TestStoreManager> sm_;
+  std::shared_ptr<TestStoreManager> sm_;
   std::vector<crypto::RsaKeyPair> keys_;
   std::string sm_rec_msg_;
   boost::uint32_t alt_ctc_conn_;
@@ -789,14 +789,14 @@ class CCImMessagingTest : public testing::Test {
   }
  protected:
   void SetUp() {
-    boost::shared_ptr<passport::test::CachePassport> passport(
+    std::shared_ptr<passport::test::CachePassport> passport(
         new passport::test::CachePassport(kRsaKeySize, 5, 10));
     passport->Init();
     ss1_->passport_ = passport;
     ss1_->CreateTestPackets(publicusername1_);
     ASSERT_TRUE(network_test_.Init());
     sm1_ = network_test_.store_manager();
-    boost::shared_ptr<ChunkStore> cstore2(new ChunkStore(
+    std::shared_ptr<ChunkStore> cstore2(new ChunkStore(
         network_test_.test_dir().string() + "/ChunkStore2", 0, 0));
     cstore2->Init();
 #ifdef MS_NETWORK_TEST
@@ -866,7 +866,7 @@ class CCImMessagingTest : public testing::Test {
   MockSessionSingleton *ss2_;
   std::string publicusername1_, publicusername2_;
   std::string mpid_public_key1_, mpid_public_key2_;
-  boost::shared_ptr<TestStoreManager> sm1_, sm2_;
+  std::shared_ptr<TestStoreManager> sm1_, sm2_;
   std::string sm_rec_msg_;
   std::string sender_, latest_ctc_updated_;
   int latest_status_;

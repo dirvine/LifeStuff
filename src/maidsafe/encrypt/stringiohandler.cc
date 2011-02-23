@@ -30,7 +30,7 @@ namespace maidsafe {
 
 namespace encrypt {
 
-StringIOHandler::StringIOHandler(std::tr1::shared_ptr<std::string> data,
+StringIOHandler::StringIOHandler(std::shared_ptr<std::string> data,
                                  bool read)
     : DataIOHandler(read, kStringIOHandler),
       data_(data),

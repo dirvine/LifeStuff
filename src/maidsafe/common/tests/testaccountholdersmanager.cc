@@ -131,8 +131,8 @@
 //    std::string pmid_, account_name_;
 //    transport::TransportHandler transport_handler_;
 //    rpcprotocol::ChannelManager channel_manager_;
-//    boost::shared_ptr<ChunkStore> chunkstore_;
-//    boost::shared_ptr<MockKadOps> mock_kad_ops_;
+//    std::shared_ptr<ChunkStore> chunkstore_;
+//    std::shared_ptr<MockKadOps> mock_kad_ops_;
 //    std::vector<kademlia::Contact> few_far_contacts_, few_close_contacts_,
 //                                   close_contacts_;
 //    std::string fail_result_, few_far_result_, few_close_result_, far_result_,

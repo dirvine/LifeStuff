@@ -38,7 +38,7 @@ class SessionSingletonTest : public testing::Test {
 
  protected:
   void SetUp() {
-    boost::shared_ptr<passport::test::CachePassport> passport(
+    std::shared_ptr<passport::test::CachePassport> passport(
         new passport::test::CachePassport(kRsaKeySize, 5, 10));
     passport->Init();
     ss_->passport_ = passport;

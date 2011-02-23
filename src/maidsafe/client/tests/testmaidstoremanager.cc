@@ -280,9 +280,9 @@ void PacketOpCallback(const int &store_manager_result,
 }
 
 void RunDeletePacketCallbacks(
-    std::list< boost::function < void(boost::shared_ptr<
+    std::list< boost::function < void(std::shared_ptr<
         maidsafe::DeletePacketData>) > > functors,
-    boost::shared_ptr<maidsafe::DeletePacketData> delete_data) {
+    std::shared_ptr<maidsafe::DeletePacketData> delete_data) {
   while (!functors.empty()) {
     functors.front()(delete_data);
     functors.pop_front();
@@ -290,9 +290,9 @@ void RunDeletePacketCallbacks(
 }
 
 void RunUpdatePacketCallbacks(
-    std::list< boost::function < void(boost::shared_ptr<
+    std::list< boost::function < void(std::shared_ptr<
         maidsafe::UpdatePacketData>) > > functors,
-    boost::shared_ptr<maidsafe::UpdatePacketData> update_data) {
+    std::shared_ptr<maidsafe::UpdatePacketData> update_data) {
   while (!functors.empty()) {
     functors.front()(update_data);
     functors.pop_front();
@@ -362,7 +362,7 @@ class MaidStoreManagerTest : public testing::Test {
   }
 
   virtual void SetUp() {
-    client_chunkstore_ = boost::shared_ptr<ChunkStore>
+    client_chunkstore_ = std::shared_ptr<ChunkStore>
         (new ChunkStore(client_chunkstore_dir_.string(), 0, 0));
     ASSERT_TRUE(client_chunkstore_->Init());
     boost::uint64_t count(0);
@@ -381,7 +381,7 @@ class MaidStoreManagerTest : public testing::Test {
   }
 
   fs::path test_root_dir_, client_chunkstore_dir_;
-  boost::shared_ptr<ChunkStore> client_chunkstore_;
+  std::shared_ptr<ChunkStore> client_chunkstore_;
   crypto::RsaKeyPair client_pmid_keys_, client_maid_keys_;
   std::string client_pmid_public_signature_, client_pmid_;
   boost::mutex mutex_;
@@ -400,14 +400,14 @@ class MaidStoreManagerTest : public testing::Test {
 
 class MockMsmKeyUnique : public MaidsafeStoreManager {
  public:
-  explicit MockMsmKeyUnique(boost::shared_ptr<ChunkStore> cstore)
+  explicit MockMsmKeyUnique(std::shared_ptr<ChunkStore> cstore)
       : MaidsafeStoreManager(cstore, test_msm::K) {}
   MOCK_METHOD1(SendChunkPrep, int(const StoreData &store_data));
 };
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique) {
   MockMsmKeyUnique msm(client_chunkstore_);
-  boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
+  std::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
       &msm.channel_manager_, kad::CLIENT, "", "", false, false, test_msm::K,
       client_chunkstore_));
   msm.kad_ops_ = mko;
@@ -549,10 +549,10 @@ MATCHER_P(EqualsContact, kad_contact, "") {
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ExpectAmendment) {
   MockMsmKeyUnique msm(client_chunkstore_);
-  boost::shared_ptr<MockClientRpcs> mock_rpcs(
+  std::shared_ptr<MockClientRpcs> mock_rpcs(
       new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
   msm.client_rpcs_ = mock_rpcs;
-  boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
+  std::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
       &msm.channel_manager_, kad::CLIENT, "", "", false, false, test_msm::K,
       client_chunkstore_));
   msm.kad_ops_ = mko;
@@ -668,10 +668,10 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_AddToWatchList) {
   FAIL();
 /*
   MockMsmKeyUnique msm(client_chunkstore_);
-  boost::shared_ptr<MockClientRpcs> mock_rpcs(
+  std::shared_ptr<MockClientRpcs> mock_rpcs(
       new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
   msm.client_rpcs_ = mock_rpcs;
-  boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
+  std::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
       &msm.channel_manager_, kad::CLIENT, "", "", false, false, test_msm::K,
       client_chunkstore_));
   msm.kad_ops_ = mko;
@@ -1032,13 +1032,13 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
   std::string chunk_value = base::RandomString(chunk_size);
   std::string chunk_name = SHA512String(chunk_value);
 
-  boost::shared_ptr<StoreData> store_data(new StoreData(chunk_name, chunk_size,
+  std::shared_ptr<StoreData> store_data(new StoreData(chunk_name, chunk_size,
                                           (kHashable | kNormal), PRIVATE, "",
                                           client_pmid_,
                                           client_pmid_keys_.public_key(),
                                           client_pmid_public_signature_,
                                           client_pmid_keys_.private_key()));
-  boost::shared_ptr<WatchListOpData>
+  std::shared_ptr<WatchListOpData>
       add_to_watchlist_data(new WatchListOpData(store_data));
   for (size_t i = 0; i < test_msm::K; ++i) {
     WatchListOpData::AddToWatchDataHolder
@@ -1246,8 +1246,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   std::vector<std::string> names;
   for (int i = 100; i < 104; ++i)
     names.push_back(SHA512String(base::IntToString(i)));
-  boost::shared_ptr<SendChunkData> send_chunk_data(
-      new SendChunkData(boost::shared_ptr<StoreData>(new StoreData())));
+  std::shared_ptr<SendChunkData> send_chunk_data(
+      new SendChunkData(std::shared_ptr<StoreData>(new StoreData())));
   StorePrepRequest &store_prep_request = send_chunk_data->store_prep_request;
   StoreChunkRequest &store_chunk_request = send_chunk_data->store_chunk_request;
 
@@ -1436,12 +1436,12 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp) {
   // Make request
   std::string chunk_value(base::RandomString(163));
   std::string chunk_name(SHA512String(chunk_value));
-  boost::shared_ptr<StoreData> store_data(new StoreData(chunk_name,
+  std::shared_ptr<StoreData> store_data(new StoreData(chunk_name,
       chunk_value.size(), (kHashable | kOutgoing), PRIVATE, "", client_pmid_,
       client_pmid_keys_.public_key(), client_pmid_public_signature_,
       client_pmid_keys_.private_key()));
   client_chunkstore_->AddChunkToOutgoing(chunk_name, chunk_value);
-  boost::shared_ptr<SendChunkData> send_chunk_data(
+  std::shared_ptr<SendChunkData> send_chunk_data(
       new SendChunkData(store_data));
   send_chunk_data->peer = peer;
   ASSERT_EQ(kSuccess, msm.GetStoreRequests(send_chunk_data));
@@ -1449,14 +1449,14 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp) {
   StoreChunkRequest store_chunk_request = send_chunk_data->store_chunk_request;
 
   // Make proper response
-  boost::shared_ptr<vault::VaultChunkStore> vault_chunkstore(
+  std::shared_ptr<vault::VaultChunkStore> vault_chunkstore(
       new vault::VaultChunkStore(
           (test_root_dir_ / "VaultChunkstore").string(), 999999, 0));
   vault::VaultService vault_service(peer_pmid, peer_pmid_pub,
       peer_pmid_pri, peer_pmid_pub_signature, vault_chunkstore, NULL, 0,
-      boost::shared_ptr<maidsafe::KadOps>(new maidsafe::MockKadOps(NULL, NULL,
+      std::shared_ptr<maidsafe::KadOps>(new maidsafe::MockKadOps(NULL, NULL,
       kad::CLIENT, "", "", false, false, test_msm::K,
-      boost::shared_ptr<maidsafe::ChunkStore>())));
+      std::shared_ptr<maidsafe::ChunkStore>())));
   StorePrepResponse good_store_prep_response;
   google::protobuf::Closure *done =
       google::protobuf::NewCallback(&google::protobuf::DoNothing);
@@ -1542,7 +1542,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp) {
 
 /* class MockMsmSendChunkPrep : public MaidsafeStoreManager {
  public:
-  explicit MockMsmSendChunkPrep(boost::shared_ptr<ChunkStore> cstore)
+  explicit MockMsmSendChunkPrep(std::shared_ptr<ChunkStore> cstore)
       : MaidsafeStoreManager(cstore, test_msm::K) {}
   MOCK_METHOD3(AssessTaskStatus, TaskStatus(const std::string &data_name,
                                             StoreTaskType task_type,
@@ -1555,7 +1555,7 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendChunkPrep) {
   FAIL();
 /*
   MockMsmSendChunkPrep msm(client_chunkstore_);
-  boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
+  std::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
       &msm.channel_manager_, kad::CLIENT, "", "", false, false, test_msm::K,
       client_chunkstore_));
   msm.kad_ops_ = mko;
@@ -1637,14 +1637,14 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendChunkPrep) {
 
 /* class MockMsmSendPrepCallback : public MaidsafeStoreManager {
  public:
-  explicit MockMsmSendPrepCallback(boost::shared_ptr<ChunkStore> cstore)
+  explicit MockMsmSendPrepCallback(std::shared_ptr<ChunkStore> cstore)
       : MaidsafeStoreManager(cstore, test_msm::K) {}
   MOCK_METHOD3(ValidatePrepResponse, int(
       const std::string &peer_node_id,
       const SignedSize &request_signed_size,
       const StorePrepResponse *store_prep_response));
   MOCK_METHOD1(SendChunkContent, int(
-      boost::shared_ptr<SendChunkData> send_chunk_data));
+      std::shared_ptr<SendChunkData> send_chunk_data));
 }; */
 
 TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendPrepCallback) {
@@ -1652,7 +1652,7 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendPrepCallback) {
 /*
   // Set up test data
   MockMsmSendPrepCallback msm(client_chunkstore_);
-  boost::shared_ptr<MockClientRpcs> mock_rpcs(
+  std::shared_ptr<MockClientRpcs> mock_rpcs(
       new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
   msm.client_rpcs_ = mock_rpcs;
   std::string chunkname = SHA512String("eee");
@@ -1671,7 +1671,7 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendPrepCallback) {
   ASSERT_EQ(kSuccess, msm.tasks_handler_.StartSubTask(chunkname, kStoreChunk,
       peer));
   ASSERT_TRUE(msm.ss_->SetConnectionStatus(0));
-  boost::shared_ptr<SendChunkData>
+  std::shared_ptr<SendChunkData>
       send_chunk_data(new SendChunkData(store_data, peer, true));
 
   // Set up expectations
@@ -1751,7 +1751,7 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendChunkContent) {
   FAIL();
 /*
   MaidsafeStoreManager msm(client_chunkstore_, test_msm::K);
-  boost::shared_ptr<MockClientRpcs> mock_rpcs(
+  std::shared_ptr<MockClientRpcs> mock_rpcs(
       new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
   msm.client_rpcs_ = mock_rpcs;
   std::string chunkname = SHA512String("fff");
@@ -1765,7 +1765,7 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendChunkContent) {
   std::string peername = SHA512String("peer");
   kad::Contact peer(peername, "192.192.1.1", 9999);
   ASSERT_TRUE(msm.ss_->SetConnectionStatus(0));
-  boost::shared_ptr<SendChunkData>
+  std::shared_ptr<SendChunkData>
       send_chunk_data(new SendChunkData(store_data, peer, true));
 
   // Set up expectations
@@ -1877,10 +1877,10 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_RemoveFromWatchList) {
   FAIL();
 /*
   MockMsmKeyUnique msm(client_chunkstore_);
-  boost::shared_ptr<MockClientRpcs> mock_rpcs(
+  std::shared_ptr<MockClientRpcs> mock_rpcs(
       new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
   msm.client_rpcs_ = mock_rpcs;
-  boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
+  std::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
       &msm.channel_manager_, kad::CLIENT, "", "", false, false, test_msm::K,
       client_chunkstore_));
   msm.kad_ops_ = mko;
@@ -2219,18 +2219,18 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_DeleteChunk) {
 
 class MockMsmStoreLoadPacket : public MaidsafeStoreManager {
  public:
-  explicit MockMsmStoreLoadPacket(boost::shared_ptr<ChunkStore> cstore)
+  explicit MockMsmStoreLoadPacket(std::shared_ptr<ChunkStore> cstore)
       : MaidsafeStoreManager(cstore, test_msm::K) {}
-  MOCK_METHOD1(SendPacket, void(boost::shared_ptr<StoreData> store_data));
+  MOCK_METHOD1(SendPacket, void(std::shared_ptr<StoreData> store_data));
   MOCK_METHOD1(DeletePacketFromNet,
-               void(boost::shared_ptr<DeletePacketData> delete_data));
+               void(std::shared_ptr<DeletePacketData> delete_data));
   MOCK_METHOD1(UpdatePacketOnNetwork,
-               void(boost::shared_ptr<UpdatePacketData> update_data));
+               void(std::shared_ptr<UpdatePacketData> update_data));
 };
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   MockMsmStoreLoadPacket msm(client_chunkstore_);
-  boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
+  std::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
       &msm.channel_manager_, kad::CLIENT, "", "", false, false, test_msm::K,
       client_chunkstore_));
   msm.kad_ops_ = mko;
@@ -2373,7 +2373,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_LoadPacket) {
   MockMsmStoreLoadPacket msm(client_chunkstore_);
-  boost::shared_ptr<MockKadOps> mko(
+  std::shared_ptr<MockKadOps> mko(
       new MockKadOps(&msm.transport_handler_, &msm.channel_manager_,
                      kad::CLIENT, "", "", false, false, test_msm::K,
                      client_chunkstore_));
@@ -2547,14 +2547,14 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket) {
   delete_response.SerializeToString(&ser_kad_delete_response_fail);
 
   // Set up lists of DeletePacketCallbacks using serialised Kad delete responses
-  std::list< boost::function< void(boost::shared_ptr<DeletePacketData>) > >
+  std::list< boost::function< void(std::shared_ptr<DeletePacketData>) > >
       functors_kad_good;
   for (size_t i = 0; i < kValueCount - 1; ++i) {
     functors_kad_good.push_back(boost::bind(
         &MaidsafeStoreManager::DeletePacketCallback, &msm,
         ser_kad_delete_response_good, _1));
   }
-  std::list< boost::function< void(boost::shared_ptr<DeletePacketData>) > >
+  std::list< boost::function< void(std::shared_ptr<DeletePacketData>) > >
       functors_kad_empty(functors_kad_good),
       functors_kad_cant_parse(functors_kad_good),
       functors_kad_fail(functors_kad_good);
@@ -2693,7 +2693,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdatePacket) {
   update_response.SerializeToString(&ser_kad_update_response_fail);
 
   // Set up lists of DeletePacketCallbacks using serialised Kad delete responses
-  std::list< boost::function< void(boost::shared_ptr<UpdatePacketData>) > >
+  std::list< boost::function< void(std::shared_ptr<UpdatePacketData>) > >
       functors_kad_good, functors_kad_empty, functors_kad_cant_parse,
       functors_kad_fail;
   functors_kad_empty.push_back(
@@ -2815,10 +2815,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountStatus) {
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
   MockMsmKeyUnique msm(client_chunkstore_);
-  boost::shared_ptr<MockClientRpcs> mock_rpcs(
+  std::shared_ptr<MockClientRpcs> mock_rpcs(
       new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
   msm.client_rpcs_ = mock_rpcs;
-  boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
+  std::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
       &msm.channel_manager_, kad::CLIENT, "", "", false, false, test_msm::K,
       client_chunkstore_));
   msm.kad_ops_ = mko;
@@ -3007,7 +3007,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetFilteredAverage) {
 
 /* TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AmendAccount) {
   MockMsmKeyUnique msm(client_chunkstore_);
-  boost::shared_ptr<MockClientRpcs> mock_rpcs(
+  std::shared_ptr<MockClientRpcs> mock_rpcs(
       new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
   msm.client_rpcs_ = mock_rpcs;
   ASSERT_TRUE(client_chunkstore_->is_initialised());

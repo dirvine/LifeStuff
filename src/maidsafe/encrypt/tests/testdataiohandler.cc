@@ -48,7 +48,7 @@ class StringIOHandlerTest : public testing::Test {
  protected:
   const size_t kMinSize_, kDataSize_;
   const std::string kData_;
-  std::tr1::shared_ptr<std::string> data_;
+  std::shared_ptr<std::string> data_;
 };
 
 TEST_F(StringIOHandlerTest, BEH_ENCRYPT_TestReadFromString) {
@@ -107,7 +107,7 @@ TEST_F(StringIOHandlerTest, BEH_ENCRYPT_TestReadFromString) {
   EXPECT_EQ(kData_.substr(0, test_size), read_data);
 
   // Check empty string handling
-  std::tr1::shared_ptr<std::string> empty_data(new std::string);
+  std::shared_ptr<std::string> empty_data(new std::string);
   StringIOHandler empty_input_handler(empty_data, true);
   EXPECT_TRUE(empty_input_handler.Data().empty());
   EXPECT_TRUE(empty_input_handler.Size(&tempsize));
@@ -301,7 +301,7 @@ class FileIOHandlerTest : public testing::Test {
     if (file_size > std::numeric_limits<size_t>::max())
       return "";
     size_t size = static_cast<size_t>(file_size);
-    std::tr1::shared_ptr<char> data(new char[size]);
+    std::shared_ptr<char> data(new char[size]);
     try {
       fs::ifstream in_file(kOutputFile_, fs::ofstream::binary);
       in_file.read(data.get(), size);

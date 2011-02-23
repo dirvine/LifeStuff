@@ -58,8 +58,8 @@ struct ClientData {
       msm(),
       returning(false) {}
   std::string chunkstore_dir;
-  boost::shared_ptr<maidsafe::ChunkStore> chunkstore;
-  boost::shared_ptr<maidsafe::MaidsafeStoreManager> msm;
+  std::shared_ptr<maidsafe::ChunkStore> chunkstore;
+  std::shared_ptr<maidsafe::MaidsafeStoreManager> msm;
   bool returning;
 };
 
@@ -167,7 +167,7 @@ class RunPDClient {
   bool SetUp() {
     printf("Starting client...\n");
     boost::posix_time::ptime stop;
-    client_->chunkstore = boost::shared_ptr<ChunkStore> (
+    client_->chunkstore = std::shared_ptr<ChunkStore> (
         new ChunkStore(client_->chunkstore_dir, 0, 0));
     if (!client_->chunkstore->Init()) {
       printf("Failed initialising chunkstore.\n");
@@ -414,7 +414,7 @@ class RunPDClient {
   base::KadConfig kad_config_;
   boost::mutex mutex_;
   boost::posix_time::seconds single_function_timeout_;
-  boost::shared_ptr<testpdclient::ClientData> client_;
+  std::shared_ptr<testpdclient::ClientData> client_;
   std::map<std::string, std::string> chunks_;
 };
 

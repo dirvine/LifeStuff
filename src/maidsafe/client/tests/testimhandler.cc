@@ -43,7 +43,7 @@ class ImHandlerTest : public testing::Test {
                     keys_(),
                     mpid_public_key_() {}
   virtual void SetUp() {
-    boost::shared_ptr<passport::test::CachePassport> passport(
+    std::shared_ptr<passport::test::CachePassport> passport(
         new passport::test::CachePassport(kRsaKeySize, 5, 10));
     passport->Init();
     ss_->passport_ = passport;
@@ -179,7 +179,7 @@ class MultiImHandlerTest : public ImHandlerTest {
     ImHandlerTest::SetUp();
     imhandler1_.ss_ = &ss1_;
     imhandler2_.ss_ = &ss2_;
-    boost::shared_ptr<passport::test::CachePassport> passport(
+    std::shared_ptr<passport::test::CachePassport> passport(
         new passport::test::CachePassport(kRsaKeySize, 5, 10));
     passport->Init();
     ss_->passport_ = passport;

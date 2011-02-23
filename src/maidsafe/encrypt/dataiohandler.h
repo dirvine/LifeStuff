@@ -25,7 +25,7 @@
 #ifndef MAIDSAFE_ENCRYPT_DATAIOHANDLER_H_
 #define MAIDSAFE_ENCRYPT_DATAIOHANDLER_H_
 
-#include <boost/tr1/memory.hpp>
+#include <memory>
 #include <boost/filesystem/fstream.hpp>
 #include <string>
 
@@ -85,7 +85,7 @@ class DataIOHandler {
 
 class StringIOHandler : public DataIOHandler {
  public:
-  StringIOHandler(std::tr1::shared_ptr<std::string> data, bool read);
+  StringIOHandler(std::shared_ptr<std::string> data, bool read);
   ~StringIOHandler() {}
   virtual bool Open();
   virtual void Close();
@@ -95,7 +95,7 @@ class StringIOHandler : public DataIOHandler {
   virtual bool SetGetPointer(const boost::uint64_t &position);
   std::string Data() const { return *data_; }
  private:
-  std::tr1::shared_ptr<std::string> data_;
+  std::shared_ptr<std::string> data_;
   bool is_open_;
   size_t readptr_;
 };

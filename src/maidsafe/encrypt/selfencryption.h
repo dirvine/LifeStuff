@@ -27,8 +27,8 @@
 
 #include <boost/cstdint.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/tr1/memory.hpp>
 
+#include <memory>
 #include <map>
 #include <string>
 #include <vector>
@@ -70,7 +70,7 @@ int SelfDecryptToFile(const DataMap &data_map,
 int SelfDecryptToString(const DataMap &data_map,
                         const std::vector<fs::path> &chunk_paths,
                         const boost::uint64_t &offset,
-                        std::tr1::shared_ptr<std::string> output_string);
+                        std::shared_ptr<std::string> output_string);
 
 // Encrypt a datamap to a string
 int EncryptDataMap(const DataMap &data_map,

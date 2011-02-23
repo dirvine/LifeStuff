@@ -26,7 +26,7 @@
 #include "maidsafe/client/filesystem/sehandler.h"
 
 #include <boost/filesystem/fstream.hpp>
-#include <boost/tr1/memory.hpp>
+#include <memory>
 #include <maidsafe/encrypt/selfencryption.h>
 
 #include "maidsafe/common/commonutils.h"
@@ -363,7 +363,7 @@ int SEHandler::DecryptString(const std::string &serialised_data_map,
 #endif
     return kEncryptionSMFailure;
   }
-  std::tr1::shared_ptr<std::string> decrypted(new std::string);
+  std::shared_ptr<std::string> decrypted(new std::string);
   if (encrypt::SelfDecryptToString(data_map, chunk_paths, 0, decrypted) !=
       kSuccess) {
 #ifdef DEBUG

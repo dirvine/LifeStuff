@@ -25,9 +25,9 @@
 #define MAIDSAFE_CLIENT_AUTHENTICATION_H_
 
 #include <boost/cstdint.hpp>
-#include <boost/tr1/memory.hpp>
 #include <maidsafe/passport/passport.h>
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -114,8 +114,8 @@ class Authentication {
           process_mid(kPending), process_smid(kPending),
           process_tmid(kPending), process_stmid(kPending),
           functor(func), op_type(op_t) {}
-    std::tr1::shared_ptr<passport::MidPacket> mid, smid;
-    std::tr1::shared_ptr<passport::TmidPacket> tmid, stmid;
+    std::shared_ptr<passport::MidPacket> mid, smid;
+    std::shared_ptr<passport::TmidPacket> tmid, stmid;
     OpStatus process_mid, process_smid, process_tmid, process_stmid;
     VoidFuncOneInt functor;
     SaveSessionOpType op_type;
@@ -139,16 +139,16 @@ class Authentication {
                              OpStatus *dependent_op_status);
   void SignaturePacketUniqueCallback(
       const ReturnCode &return_code,
-      std::tr1::shared_ptr<passport::SignaturePacket> packet,
+      std::shared_ptr<passport::SignaturePacket> packet,
       OpStatus *op_status);
   void SignaturePacketStoreCallback(
     const ReturnCode &return_code,
-    std::tr1::shared_ptr<passport::SignaturePacket> packet,
+    std::shared_ptr<passport::SignaturePacket> packet,
     OpStatus *op_status);
   void SaveSessionCallback(
       const ReturnCode &return_code,
-      std::tr1::shared_ptr<pki::Packet> packet,
-      std::tr1::shared_ptr<SaveSessionData> save_session_data);
+      std::shared_ptr<pki::Packet> packet,
+      std::shared_ptr<SaveSessionData> save_session_data);
   void DeletePacket(const passport::PacketType &packet_type,
                     OpStatus *op_status,
                     OpStatus *dependent_op_status);
@@ -196,10 +196,10 @@ class Authentication {
   }
   // Designed to be called as functor in timed_wait - user_info mutex locked
   bool PacketOpDone(int *return_code) { return *return_code != kPendingResult; }
-  int StorePacket(std::tr1::shared_ptr<pki::Packet> packet,
+  int StorePacket(std::shared_ptr<pki::Packet> packet,
                   bool check_uniqueness);
-  int DeletePacket(std::tr1::shared_ptr<pki::Packet> packet);
-  int PacketUnique(std::tr1::shared_ptr<pki::Packet> packet);
+  int DeletePacket(std::shared_ptr<pki::Packet> packet);
+  int PacketUnique(std::shared_ptr<pki::Packet> packet);
   void PacketOpCallback(const ReturnCode &return_code, int *op_result);
   char *UtilsTrimRight(char *szSource);
   char *UtilsTrimLeft(char *szSource);

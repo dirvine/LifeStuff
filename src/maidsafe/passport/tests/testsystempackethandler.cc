@@ -22,7 +22,7 @@
 
 #include <gtest/gtest.h>
 #include <boost/lexical_cast.hpp>
-#include <boost/tr1/memory.hpp>
+#include <memory>
 #include "maidsafe-dht/common/utils.h"
 
 #include "maidsafe/passport/systempackethandler.h"

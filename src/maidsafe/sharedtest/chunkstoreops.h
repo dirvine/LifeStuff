@@ -45,7 +45,7 @@ class ChunkStore;
 
 namespace test_chunkstore {
 
-void WaitForInitialisation(boost::shared_ptr<maidsafe::ChunkStore> chunkstore,
+void WaitForInitialisation(std::shared_ptr<maidsafe::ChunkStore> chunkstore,
                            const boost::uint64_t &timeout) {
   boost::uint64_t count(0);
   while (count < timeout && !chunkstore->is_initialised()) {
@@ -197,32 +197,32 @@ bool CheckFilePath(const fs3::path &file_path,
 
 class ThreadedTest {
  public:
-  explicit ThreadedTest(boost::shared_ptr<maidsafe::ChunkStore> chunkstore)
+  explicit ThreadedTest(std::shared_ptr<maidsafe::ChunkStore> chunkstore)
       : chunkstore_(chunkstore) {}
   virtual ~ThreadedTest() {}
   void Has(const boost::posix_time::milliseconds &delay,
                 const std::string &name,
-                boost::shared_ptr<bool> result) {
+                std::shared_ptr<bool> result) {
     boost::this_thread::sleep(delay);
     *result = chunkstore_->Has(name);
   }
   void Store(const boost::posix_time::milliseconds &delay,
                   const std::string &name,
                   const std::string &value,
-                  boost::shared_ptr<int> result) {
+                  std::shared_ptr<int> result) {
     boost::this_thread::sleep(delay);
     *result = chunkstore_->Store(name, value);
   }
   void DeleteChunk(const boost::posix_time::milliseconds &delay,
                    const std::string &name,
-                   boost::shared_ptr<int> result) {
+                   std::shared_ptr<int> result) {
     boost::this_thread::sleep(delay);
     *result = chunkstore_->DeleteChunk(name);
   }
   void Load(const boost::posix_time::milliseconds &delay,
                  const std::string &name,
-                 boost::shared_ptr<std::string> value,
-                 boost::shared_ptr<int> result) {
+                 std::shared_ptr<std::string> value,
+                 std::shared_ptr<int> result) {
     boost::this_thread::sleep(delay);
     std::string val = *value;
     int res = chunkstore_->Load(name, &val);
@@ -231,19 +231,19 @@ class ThreadedTest {
   }
   void HashCheckChunk(const boost::posix_time::milliseconds &delay,
                       const std::string &name,
-                      boost::shared_ptr<int> result) {
+                      std::shared_ptr<int> result) {
     boost::this_thread::sleep(delay);
     *result = chunkstore_->HashCheckChunk(name);
   }
   void ChangeChunkType(const boost::posix_time::milliseconds &delay,
                        const std::string &name,
                        maidsafe::ChunkType type,
-                       boost::shared_ptr<int> result) {
+                       std::shared_ptr<int> result) {
     boost::this_thread::sleep(delay);
     *result = chunkstore_->ChangeChunkType(name, type);
   }
  protected:
-  boost::shared_ptr<maidsafe::ChunkStore> chunkstore_;
+  std::shared_ptr<maidsafe::ChunkStore> chunkstore_;
 };
 
 }  // namespace test_chunkstore

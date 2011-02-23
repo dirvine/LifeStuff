@@ -42,7 +42,7 @@ static const boost::uint8_t upper_threshold_(static_cast<boost::uint8_t>
 
 void CreateChunkage(std::map<std::string, std::string> *chunks_map,
                     int chunk_number,  fs::path test_root_dir_,
-                    boost::shared_ptr<maidsafe::ChunkStore> client_chunkstore) {
+                    std::shared_ptr<maidsafe::ChunkStore> client_chunkstore) {
   chunks_map->clear();
   while (chunks_map->size() < size_t(chunk_number)) {
     std::string chunk(base::RandomString(256 * 1024));
@@ -111,7 +111,7 @@ class LocalStoreManagerTest : public testing::Test {
     catch(const std::exception &e) {
       printf("%s\n", e.what());
     }
-    client_chunkstore_ = boost::shared_ptr<ChunkStore>
+    client_chunkstore_ = std::shared_ptr<ChunkStore>
                              (new ChunkStore(test_root_dir_.string(),
                                                        0, 0));
     ASSERT_TRUE(client_chunkstore_->Init());
@@ -128,7 +128,7 @@ class LocalStoreManagerTest : public testing::Test {
       return;
     }
     ss_ = SessionSingleton::getInstance();
-    boost::shared_ptr<passport::test::CachePassport> passport(
+    std::shared_ptr<passport::test::CachePassport> passport(
         new passport::test::CachePassport(kRsaKeySize, 5, 10));
     passport->Init();
     ss_->passport_ = passport;
@@ -158,7 +158,7 @@ class LocalStoreManagerTest : public testing::Test {
     ss_->passport_->StopCreatingKeyPairs();
   }
   fs::path test_root_dir_;
-  boost::shared_ptr<ChunkStore> client_chunkstore_;
+  std::shared_ptr<ChunkStore> client_chunkstore_;
   LocalStoreManager *sm_;
   test::CallbackObject cb_;
   SessionSingleton *ss_;
@@ -247,7 +247,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   std::vector<std::string> values(1, gp.value());
 
   // Overwrite original signature packets
-  ss_->passport_ = boost::shared_ptr<passport::Passport>(
+  ss_->passport_ = std::shared_ptr<passport::Passport>(
       new passport::Passport(kRsaKeySize, 5));
   ss_->passport_->Init();
   ss_->CreateTestPackets("");
@@ -351,7 +351,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_UpdatePacket) {
   }
 
   // Try to update with different keys
-  ss_->passport_ = boost::shared_ptr<passport::Passport>(
+  ss_->passport_ = std::shared_ptr<passport::Passport>(
       new passport::Passport(kRsaKeySize, 5));
   ss_->passport_->Init();
   ss_->CreateTestPackets("");
