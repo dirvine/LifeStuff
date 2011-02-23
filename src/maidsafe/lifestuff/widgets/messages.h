@@ -85,6 +85,7 @@ class Messages : public Panel {
 
   // Hold basic message info
   struct Message {
+    Message() {}
     QDateTime time;
     QString from;
     QString text;

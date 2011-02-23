@@ -15,6 +15,7 @@
 #ifndef QT_WIDGETS_FILE_BROWSER_H_
 #define QT_WIDGETS_FILE_BROWSER_H_
 
+#include <memory>
 
 #include <QAction>
 #include <QFileSystemModel>
