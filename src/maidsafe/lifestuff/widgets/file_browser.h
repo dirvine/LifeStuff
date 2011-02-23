@@ -15,7 +15,6 @@
 #ifndef QT_WIDGETS_FILE_BROWSER_H_
 #define QT_WIDGETS_FILE_BROWSER_H_
 
-#include <boost/shared_ptr.hpp>
 
 #include <QAction>
 #include <QFileSystemModel>

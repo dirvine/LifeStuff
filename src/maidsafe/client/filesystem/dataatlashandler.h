@@ -26,7 +26,6 @@
 #define MAIDSAFE_CLIENT_FILESYSTEM_DATAATLASHANDLER_H_
 
 #include <boost/filesystem.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include <map>
 #include <string>

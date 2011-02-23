@@ -25,7 +25,6 @@
 
 #include <gtest/gtest.h>
 #include <boost/bind.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <maidsafe/transport/transportudt.h>
 #include <maidsafe/base/utils.h>

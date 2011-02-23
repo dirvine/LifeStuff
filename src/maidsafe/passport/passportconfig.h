@@ -24,7 +24,6 @@
 #ifndef MAIDSAFE_PASSPORT_PASSPORTCONFIG_H_
 #define MAIDSAFE_PASSPORT_PASSPORTCONFIG_H_
 
-#include "boost/shared_ptr.hpp"
 
 // *** typedefs, enums and consts ***
 namespace maidsafe {

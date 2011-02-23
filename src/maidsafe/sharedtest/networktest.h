@@ -24,7 +24,6 @@
 
 #include <boost/cstdint.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/shared_ptr.hpp>
 #include <gtest/gtest.h>
 //  #include <maidsafe/maidsafe-dht_config.h>
 //  #include <maidsafe/rpcprotocol/channelmanager-api.h>

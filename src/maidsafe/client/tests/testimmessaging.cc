@@ -24,7 +24,6 @@
 
 #include <gtest/gtest.h>
 #include <boost/bind.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <maidsafe/maidsafe-dht_config.h>
 #include <maidsafe/transport/transport-api.h>

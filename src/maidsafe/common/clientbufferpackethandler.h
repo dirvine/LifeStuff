@@ -27,7 +27,6 @@
 
 #include "boost/cstdint.hpp"
 #include "boost/function.hpp"
-#include "boost/shared_ptr.hpp"
 #include "maidsafe-dht/kademlia/contact.h"
 
 #include <list>
