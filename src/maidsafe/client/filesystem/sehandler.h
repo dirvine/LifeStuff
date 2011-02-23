@@ -62,7 +62,7 @@ void ModifyUpToDateDms(ModificationType modification_type,
                        const boost::uint16_t &test_size,
                        const std::vector<std::string> &keys,
                        const std::vector<std::string> &encrypted_data_maps,
-                       boost::shared_ptr<maidsafe::SEHandler> seh);
+                       std::shared_ptr<maidsafe::SEHandler> seh);
 }  // namespace test_seh
 
 namespace maidsafe {
@@ -150,9 +150,9 @@ class SEHandler {
   typedef std::map<std::string, std::string> UpToDateDatamaps;
   SEHandler();
   ~SEHandler();
-  void Init(boost::shared_ptr<StoreManagerInterface> storem,
-            boost::shared_ptr<ChunkStore> client_chunkstore);
-  int EncryptFile(const fs::path &relative_entry,
+  void Init(std::shared_ptr<StoreManagerInterface> storem,
+            std::shared_ptr<ChunkStore> client_chunkstore);
+  int EncryptAFile(const fs::path &relative_entry,
                   const DirType &dir_type,
                   const std::string &msid);
   int EncryptString(const std::string &data, std::string *serialised_data_map);
@@ -161,7 +161,7 @@ class SEHandler {
                        const std::string &hash,
                        const boost::uint64_t &file_size,
                        std::string *serialised_meta_data_map);
-  int DecryptFile(const fs::path &relative_entry);
+  int DecryptAFile(const fs::path &relative_entry);
   int DecryptString(const std::string &serialised_data_map,
                     std::string *decrypted_string);
   bool MakeElement(const fs::path &relative_entry,
@@ -214,7 +214,7 @@ class SEHandler {
       const boost::uint16_t &test_size,
       const std::vector<std::string> &keys,
       const std::vector<std::string> &encrypted_data_maps,
-      boost::shared_ptr<maidsafe::SEHandler> seh);
+      std::shared_ptr<maidsafe::SEHandler> seh);
   ItemType CheckEntry(const fs::path &absolute_path,
                       boost::uint64_t *file_size,
                       std::string *file_hash);
@@ -243,8 +243,8 @@ class SEHandler {
                             const DirType &dir_type,
                             const std::string &msid);
 
-  boost::shared_ptr<StoreManagerInterface> store_manager_;
-  boost::shared_ptr<ChunkStore> client_chunkstore_;
+  std::shared_ptr<StoreManagerInterface> store_manager_;
+  std::shared_ptr<ChunkStore> client_chunkstore_;
   SessionSingleton *session_singleton_;
   std::map<std::string, std::string> up_to_date_datamaps_;
   PendingChunksSet pending_chunks_;

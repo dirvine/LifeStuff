@@ -64,8 +64,8 @@ SEHandler::~SEHandler() {
   connection_to_chunk_uploads_.disconnect();
 }
 
-void SEHandler::Init(boost::shared_ptr<StoreManagerInterface> storem,
-                     boost::shared_ptr<ChunkStore> client_chunkstore) {
+void SEHandler::Init(std::shared_ptr<StoreManagerInterface> storem,
+                     std::shared_ptr<ChunkStore> client_chunkstore) {
   up_to_date_datamaps_mutex_.lock();
   up_to_date_datamaps_.clear();
   up_to_date_datamaps_mutex_.unlock();
@@ -148,7 +148,7 @@ ItemType SEHandler::CheckEntry(const fs::path &absolute_path,
   return UNKNOWN;
 }
 
-int SEHandler::EncryptFile(const fs::path &relative_entry,
+int SEHandler::EncryptAFile(const fs::path &relative_entry,
                            const DirType &dir_type,
                            const std::string &msid) {
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler);
@@ -296,7 +296,7 @@ bool SEHandler::ProcessMetaData(const fs::path &relative_entry,
   return true;
 }  // end ProcessMetaData
 
-int SEHandler::DecryptFile(const fs::path &relative_entry) {
+int SEHandler::DecryptAFile(const fs::path &relative_entry) {
 #ifdef DEBUG
   // printf("Decrypting: %s\n", entry);
 #endif
@@ -690,7 +690,7 @@ int SEHandler::LoadChunks(const encrypt::DataMap &data_map,
 //  int SEHandler::AddToChunkStore(
 //      const std::map<std::string, fs::path> &to_chunk_store,
 //      const fs::path &processing_path,
-//      boost::shared_ptr<DataIOHandler> iohandler/*,
+//      std::shared_ptr<DataIOHandler> iohandler/*,
 //      std::set<std::string> *done_chunks*/) {
 //    std::map<std::string, fs::path>::const_iterator it =
 //        to_chunk_store.begin();

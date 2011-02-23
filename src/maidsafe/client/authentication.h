@@ -61,7 +61,7 @@ class Authentication {
                      kSingleOpTimeout_(10000) {}
   ~Authentication();
   // Used to intialise passport_ in all cases.
-  void Init(boost::shared_ptr<StoreManagerInterface> sm);
+  void Init(std::shared_ptr<StoreManagerInterface> sm);
   // Used to intialise passport_ in all cases.
   int GetUserInfo(const std::string &username, const std::string &pin);
   // Used when creating a new user.
@@ -78,11 +78,11 @@ class Authentication {
   // Used when logging in.
   void GetMasterDataMap(
       const std::string &password,
-      boost::shared_ptr<boost::mutex> login_mutex,
-      boost::shared_ptr<boost::condition_variable> login_cond_var,
-      boost::shared_ptr<int> result,
-      boost::shared_ptr<std::string> serialised_master_datamap,
-      boost::shared_ptr<std::string> surrogate_serialised_master_datamap);
+      std::shared_ptr<boost::mutex> login_mutex,
+      std::shared_ptr<boost::condition_variable> login_cond_var,
+      std::shared_ptr<int> result,
+      std::shared_ptr<std::string> serialised_master_datamap,
+      std::shared_ptr<std::string> surrogate_serialised_master_datamap);
   int CreateMsidPacket(std::string *msid_name,
                        std::string *msid_public_key,
                        std::string *msid_private_key);
@@ -204,9 +204,9 @@ class Authentication {
   char *UtilsTrimRight(char *szSource);
   char *UtilsTrimLeft(char *szSource);
   std::string UtilsTrim(std::string source);
-  boost::shared_ptr<StoreManagerInterface> store_manager_;
+  std::shared_ptr<StoreManagerInterface> store_manager_;
   SessionSingleton *session_singleton_;
-  boost::shared_ptr<passport::Passport> passport_;
+  std::shared_ptr<passport::Passport> passport_;
   boost::mutex mutex_;
   boost::condition_variable cond_var_;
   OpStatus tmid_op_status_, stmid_op_status_;

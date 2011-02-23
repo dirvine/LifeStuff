@@ -57,7 +57,7 @@ class KadOps {
 //         bool port_forwarded,
 //         bool use_upnp,
 //         boost::uint8_t k,
-//         boost::shared_ptr<ChunkStore> chunkstore);
+//         std::shared_ptr<ChunkStore> chunkstore);
 //  virtual ~KadOps() {}
 //  void Init(const boost::filesystem::path &kad_config,
 //            bool first_node,

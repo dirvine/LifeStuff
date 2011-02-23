@@ -338,8 +338,8 @@ class ClientController {
   bool RemoveFromPendingFiles(const std::string &file);
 
   // Variables
-  boost::shared_ptr<ChunkStore> client_chunkstore_;
-  boost::shared_ptr<StoreManagerInterface> sm_;
+  std::shared_ptr<ChunkStore> client_chunkstore_;
+  std::shared_ptr<StoreManagerInterface> sm_;
   Authentication auth_;
   SessionSingleton *ss_;
   std::string ser_da_, ser_dm_;

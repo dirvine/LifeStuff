@@ -42,7 +42,7 @@ int SelfEncryptFile(const fs::path &input_file,
                     DataMap *data_map/*,
                     std::set<std::string> *done_chunks*/) {
   std::map<std::string, fs::path> to_chunk_store;
-  std::tr1::shared_ptr<DataIOHandler> input_handler(
+  std::shared_ptr<DataIOHandler> input_handler(
       new FileIOHandler(input_file, true));
   return utils::EncryptContent(input_handler, output_dir, data_map,
                                &to_chunk_store);
@@ -53,8 +53,8 @@ int SelfEncryptString(const std::string &input_string,
                       DataMap *data_map/*,
                       std::set<std::string> *done_chunks*/) {
   std::map<std::string, fs::path> to_chunk_store;
-  std::tr1::shared_ptr<DataIOHandler> input_handler(
-      new StringIOHandler(std::tr1::shared_ptr<std::string>(
+  std::shared_ptr<DataIOHandler> input_handler(
+      new StringIOHandler(std::shared_ptr<std::string>(
           new std::string(input_string)), true));
   return utils::EncryptContent(input_handler, output_dir, data_map,
                                &to_chunk_store);
@@ -79,7 +79,7 @@ int SelfDecryptToFile(const DataMap &data_map,
 #endif
     return kDecryptError;
   }
-  std::tr1::shared_ptr<DataIOHandler> output_handler(
+  std::shared_ptr<DataIOHandler> output_handler(
       new FileIOHandler(output_file, false));
   return utils::DecryptContent(data_map, chunk_paths, offset, output_handler);
 }
@@ -87,12 +87,12 @@ int SelfDecryptToFile(const DataMap &data_map,
 int SelfDecryptToString(const DataMap &data_map,
                         const std::vector<fs::path> &chunk_paths,
                         const boost::uint64_t &offset,
-                        std::tr1::shared_ptr<std::string> output_string) {
+                        std::shared_ptr<std::string> output_string) {
   if (output_string)
     output_string->clear();
   else
     output_string.reset(new std::string);
-  std::tr1::shared_ptr<DataIOHandler> output_handler(
+  std::shared_ptr<DataIOHandler> output_handler(
       new StringIOHandler(output_string, false));
   return utils::DecryptContent(data_map, chunk_paths, offset, output_handler);
 }

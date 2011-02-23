@@ -39,7 +39,7 @@ namespace maidsafe {
 PdDir::PdDir(const fs::path &db_name, DbInitFlag flag, int *result)
     : db_(), db_name_(db_name), connected_(false) {
   try {
-    db_ = boost::shared_ptr<CppSQLite3DB>(new CppSQLite3DB);
+    db_ = std::shared_ptr<CppSQLite3DB>(new CppSQLite3DB);
     *result = Init(flag);
   }
   catch(...) {

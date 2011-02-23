@@ -42,7 +42,7 @@ namespace kademlia { class Node; }
 
 class ContactCache {
  public:
-  explicit ContactCache(const boost::shared_ptr<kademlia::Node> &node)
+  explicit ContactCache(const std::shared_ptr<kademlia::Node> &node)
       : kMaxUpdateInterval_(10),
         node_(node),
         pmid_(),
@@ -73,7 +73,7 @@ class ContactCache {
   void GetContactCallback(const int &result,
                           const kademlia::Contact &contact);
   const boost::posix_time::seconds kMaxUpdateInterval_;
-  boost::shared_ptr<kademlia::Node> node_;
+  std::shared_ptr<kademlia::Node> node_;
   kademlia::NodeId pmid_;
   kademlia::Contact contact_;
   boost::mutex mutex_;

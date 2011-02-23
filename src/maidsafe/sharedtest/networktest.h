@@ -51,9 +51,9 @@ class KadOps;
 
 namespace test {
 
-typedef std::vector< boost::shared_ptr<vault::PDVault> > LocalVaults;
+typedef std::vector< std::shared_ptr<vault::PDVault> > LocalVaults;
 typedef MaidsafeStoreManager TestStoreManager;
-typedef boost::shared_ptr<TestStoreManager> TestStoreManagerPtr;
+typedef std::shared_ptr<TestStoreManager> TestStoreManagerPtr;
 
 boost::uint8_t K();
 int kNetworkSize();
@@ -74,7 +74,7 @@ class KadOps;
 namespace test {
 
 typedef LocalStoreManager TestStoreManager;
-typedef boost::shared_ptr<TestStoreManager> TestStoreManagerPtr;
+typedef std::shared_ptr<TestStoreManager> TestStoreManagerPtr;
 
 boost::uint8_t K();
 
@@ -95,10 +95,10 @@ class NetworkTest {
 //  rpcprotocol::ChannelManager *channel_manager() const {
 //    return channel_manager_;
 //  }
-  boost::shared_ptr<maidsafe::ChunkStore> chunkstore() const {
+  std::shared_ptr<maidsafe::ChunkStore> chunkstore() const {
     return chunkstore_;
   }
-  boost::shared_ptr<maidsafe::KadOps> kad_ops() const { return kad_ops_; }
+  std::shared_ptr<maidsafe::KadOps> kad_ops() const { return kad_ops_; }
   TestStoreManagerPtr store_manager() const { return store_manager_; }
   boost::uint8_t K() const { return K_; }
   boost::uint8_t kUpperThreshold() const { return kUpperThreshold_; }
@@ -114,8 +114,8 @@ class NetworkTest {
 //  transport::Transport *transport_;
 //  transport::TransportHandler *transport_handler_;
 //  rpcprotocol::ChannelManager *channel_manager_;
-  boost::shared_ptr<maidsafe::ChunkStore> chunkstore_;
-  boost::shared_ptr<maidsafe::KadOps> kad_ops_;
+  std::shared_ptr<maidsafe::ChunkStore> chunkstore_;
+  std::shared_ptr<maidsafe::KadOps> kad_ops_;
   TestStoreManagerPtr store_manager_;
   const boost::uint8_t K_, kUpperThreshold_, kLowerThreshold_;
 };

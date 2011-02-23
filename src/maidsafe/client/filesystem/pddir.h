@@ -108,7 +108,7 @@ class PdDir {
   // disconnect from current db.
   int ChangeTime(const fs::path &file_name, char time_type);
   void SanitiseSingleQuotes(std::string *str);
-  boost::shared_ptr<CppSQLite3DB> db_;
+  std::shared_ptr<CppSQLite3DB> db_;
   fs::path db_name_;
   bool connected_;
 };

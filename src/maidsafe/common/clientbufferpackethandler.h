@@ -104,7 +104,7 @@ struct ModifyBPCallbackData {
 //  GetBPPresenceResponse *get_presence_response;
 //  AddBPPresenceResponse *add_presence_response;
 //  kademlia::Contact ctc;
-//  boost::shared_ptr<ChangeBPData> data;
+//  std::shared_ptr<ChangeBPData> data;
 //  boost::int16_t transport_id;
 //  bool is_calledback;
 };
@@ -123,8 +123,8 @@ class ClientBufferPacketHandler {
 //  static const boost::uint16_t kParallelStores = 1;
 //  static const boost::uint16_t kParallelFindCtcs = 1;
 // public:
-//  ClientBufferPacketHandler(boost::shared_ptr<BufferPacketRpcs> rpcs,
-//                            boost::shared_ptr<KadOps> kadops,
+//  ClientBufferPacketHandler(std::shared_ptr<BufferPacketRpcs> rpcs,
+//                            std::shared_ptr<KadOps> kadops,
 //                            boost::uint8_t upper_threshold)
 //    : rpcs_(rpcs), kad_ops_(kadops), kUpperThreshold_(upper_threshold) {}
 //  virtual ~ClientBufferPacketHandler() {}
@@ -157,14 +157,14 @@ class ClientBufferPacketHandler {
 //                   const boost::int16_t &transport_id);
 // private:
 //  virtual void FindNodes(VoidFuncIntContacts cb,
-//                         boost::shared_ptr<ChangeBPData> data);
+//                         std::shared_ptr<ChangeBPData> data);
 //  virtual void FindNodesCallback(
 //      const ReturnCode &result,
 //      const std::vector<kad::Contact> &closest_nodes,
-//      boost::shared_ptr<ChangeBPData> data,
+//      std::shared_ptr<ChangeBPData> data,
 //      const boost::int16_t &transport_id);
 //  void ActionOnBpDone(
-//      boost::shared_ptr<std::vector<ModifyBPCallbackData> > cb_datas,
+//      std::shared_ptr<std::vector<ModifyBPCallbackData> > cb_datas,
 //      boost::int16_t index);
 //  std::list<ValidatedBufferPacketMessage> ValidateMsgs(
 //      const GetBPMessagesResponse *response,
@@ -174,8 +174,8 @@ class ClientBufferPacketHandler {
 //      const std::string &private_key);
 //  ClientBufferPacketHandler &operator=(const ClientBufferPacketHandler);
 //  ClientBufferPacketHandler(const ClientBufferPacketHandler&);
-//  boost::shared_ptr<BufferPacketRpcs> rpcs_;
-//  boost::shared_ptr<KadOps> kad_ops_;
+//  std::shared_ptr<BufferPacketRpcs> rpcs_;
+//  std::shared_ptr<KadOps> kad_ops_;
 //  const boost::uint16_t kUpperThreshold_;
 };
 

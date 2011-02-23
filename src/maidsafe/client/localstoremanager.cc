@@ -64,7 +64,7 @@ void ExecReturnLoadPacketCallback(const LoadPacketFunctor &cb,
 }
 
 LocalStoreManager::LocalStoreManager(
-    boost::shared_ptr<ChunkStore> client_chunkstore,
+    std::shared_ptr<ChunkStore> client_chunkstore,
     const boost::uint8_t &k,
     const fs3::path &db_directory)
         : K_(k),
@@ -782,7 +782,7 @@ int LocalStoreManager::LoadBPMessages(
   return kUpperThreshold_;
 }
 
-int LocalStoreManager::SendMessage(
+int LocalStoreManager::SendAMessage(
     const std::vector<std::string> &receivers, const std::string &message,
     const MessageType &m_type, std::map<std::string, ReturnCode> *add_results) {
   if (!add_results)

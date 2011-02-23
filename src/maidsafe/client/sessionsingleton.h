@@ -400,7 +400,7 @@ class SessionSingleton {
   static boost::scoped_ptr<SessionSingleton> single_;
   static boost::once_flag flag_;
   UserDetails ud_;
-  boost::shared_ptr<passport::Passport> passport_;
+  std::shared_ptr<passport::Passport> passport_;
   ContactsHandler ch_;
   PrivateShareHandler psh_;
   std::set<std::string> conversations_;

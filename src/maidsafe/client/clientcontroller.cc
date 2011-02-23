@@ -127,7 +127,7 @@ int ClientController::Init(boost::uint8_t k) {
 #endif
     return -4;
   }
-  client_chunkstore_ = boost::shared_ptr<ChunkStore>
+  client_chunkstore_ = std::shared_ptr<ChunkStore>
       (new ChunkStore(client_path.string(), 0, 0));
   if (!client_chunkstore_->Init()) {
 #ifdef DEBUG
@@ -588,12 +588,12 @@ bool ClientController::ValidateUser(const std::string &password) {
   }
   ser_da_.clear();
 
-  boost::shared_ptr<boost::mutex> login_mutex(new boost::mutex);
-  boost::shared_ptr<boost::condition_variable> login_cond_var(
+  std::shared_ptr<boost::mutex> login_mutex(new boost::mutex);
+  std::shared_ptr<boost::condition_variable> login_cond_var(
       new boost::condition_variable);
-  boost::shared_ptr<int> result(new int(kPendingResult));
-  boost::shared_ptr<std::string> serialised_master_datamap(new std::string);
-  boost::shared_ptr<std::string> surrogate_serialised_master_datamap(
+  std::shared_ptr<int> result(new int(kPendingResult));
+  std::shared_ptr<std::string> serialised_master_datamap(new std::string);
+  std::shared_ptr<std::string> surrogate_serialised_master_datamap(
       new std::string);
   boost::thread(&Authentication::GetMasterDataMap, &auth_, password,
       login_mutex, login_cond_var, result, serialised_master_datamap,
@@ -1449,7 +1449,7 @@ int ClientController::HandleAddContactRequest(
   std::vector<std::string> contact_names;
   contact_names.push_back(sender);
   std::map<std::string, ReturnCode> add_results;
-  if (sm_->SendMessage(contact_names, ser_im, INSTANT_MSG,
+  if (sm_->SendAMessage(contact_names, ser_im, INSTANT_MSG,
       &add_results) != static_cast<int>(contact_names.size())) {
 #ifdef DEBUG
     printf("ClientController::HandleAddContactRequest - Failed send msg\n");
@@ -1546,7 +1546,7 @@ int ClientController::SendEmail(const std::string &subject,
   im.SerializeToString(&ser_email);
 
   std::map<std::string, ReturnCode> add_results;
-  if (sm_->SendMessage(contact_to, ser_email, INSTANT_MSG, &add_results) !=
+  if (sm_->SendAMessage(contact_to, ser_email, INSTANT_MSG, &add_results) !=
       static_cast<int>(contact_to.size())) {
 #ifdef DEBUG
     printf("ClientController::SendEmail - Not all recepients got "
@@ -1589,7 +1589,7 @@ int ClientController::SendInstantMessage(
   im.SerializeToString(&ser_im);
 
   std::map<std::string, ReturnCode> add_results;
-  if (sm_->SendMessage(contact_names, ser_im, INSTANT_MSG, &add_results) !=
+  if (sm_->SendAMessage(contact_names, ser_im, INSTANT_MSG, &add_results) !=
       static_cast<int>(contact_names.size())) {
 #ifdef DEBUG
     printf("ClientController::SendInstantMessage - Not all recepients got "
@@ -1689,7 +1689,7 @@ int ClientController::SendInstantFile(
   im.SerializeToString(&ser_instant_file);
 
   std::map<std::string, ReturnCode> add_results;
-  if (sm_->SendMessage(contact_names, ser_instant_file, INSTANT_MSG,
+  if (sm_->SendAMessage(contact_names, ser_instant_file, INSTANT_MSG,
       &add_results) != static_cast<int>(contact_names.size())) {
 #ifdef DEBUG
     printf("ClientController::SendInstantFile - Not all recepients got "
@@ -1865,7 +1865,7 @@ int ClientController::AddContact(const std::string &public_name) {
   std::vector<std::string> contact_names;
   contact_names.push_back(public_name);
   std::map<std::string, ReturnCode> add_results;
-  if (sm_->SendMessage(contact_names, ser_im, ADD_CONTACT_RQST,
+  if (sm_->SendAMessage(contact_names, ser_im, ADD_CONTACT_RQST,
       &add_results) != static_cast<int>(contact_names.size())) {
 #ifdef DEBUG
     printf("ClientController::AddContact - Failed to send request\n");
@@ -1907,7 +1907,7 @@ int ClientController::DeleteContact(const std::string &public_name) {
   std::vector<std::string> contact_names;
   contact_names.push_back(public_name);
   std::map<std::string, ReturnCode> add_results;
-  if (sm_->SendMessage(contact_names, ser_im, ADD_CONTACT_RQST,
+  if (sm_->SendAMessage(contact_names, ser_im, ADD_CONTACT_RQST,
       &add_results) != static_cast<int>(contact_names.size())) {
 #ifdef DEBUG
     printf("ClientController::DeleteContact - Failed to send deletion msg\n");
@@ -2130,7 +2130,7 @@ int ClientController::CreateNewShare(const std::string &name,
 
   if (ro_recs.size() > 0) {
     std::map<std::string, ReturnCode> add_results;
-    if (sm_->SendMessage(ro_recs, share_message, INSTANT_MSG,
+    if (sm_->SendAMessage(ro_recs, share_message, INSTANT_MSG,
         &add_results) != static_cast<int>(ro_recs.size())) {
   #ifdef DEBUG
       printf("ClientController::CreateNewShare - Not all recepients got "
@@ -2151,7 +2151,7 @@ int ClientController::CreateNewShare(const std::string &name,
     im.set_message(message);
     im.SerializeToString(&share_message);
     std::map<std::string, ReturnCode> add_results;
-    if (sm_->SendMessage(admin_recs, share_message, INSTANT_MSG,
+    if (sm_->SendAMessage(admin_recs, share_message, INSTANT_MSG,
         &add_results) != static_cast<int>(admin_recs.size())) {
   #ifdef DEBUG
       printf("ClientController::CreateNewShare - Not all recepients got "
@@ -2293,7 +2293,7 @@ int ClientController::BackupElement(const std::string &path,
 //    p = pending_files_.insert(std::pair<std::string, int>(path, 0));
 //  }
   if (AddToPendingFiles(path))
-    return seh_.EncryptFile(path, dir_type, msid);
+    return seh_.EncryptAFile(path, dir_type, msid);
 
   return -1;
 }
@@ -2305,7 +2305,7 @@ int ClientController::RetrieveElement(const std::string &path) {
 #endif
     return kClientControllerNotInitialised;
   }
-  int result = seh_.DecryptFile(path);
+  int result = seh_.DecryptAFile(path);
   return result;
 }
 

@@ -36,7 +36,7 @@ namespace maidsafe {
 //               bool port_forwarded,
 //               bool use_upnp,
 //               boost::uint8_t k,
-//               boost::shared_ptr<ChunkStore> chunkstore)
+//               std::shared_ptr<ChunkStore> chunkstore)
 //    : K_(k),
 //      knode_(channel_manager, transport_handler, type, private_key,
 //             public_key, port_forwarded, use_upnp, K_),

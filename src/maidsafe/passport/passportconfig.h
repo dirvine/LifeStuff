@@ -94,17 +94,17 @@ class Key;
 class Passport;
 
 namespace test {
-testing::AssertionResult Empty(boost::shared_ptr<pki::Packet> packet);
+testing::AssertionResult Empty(std::shared_ptr<pki::Packet> packet);
 class SystemPacketsTest_BEH_PASSPORT_CreateSig_Test;
 class SystemPacketsTest_BEH_PASSPORT_PutToAndGetFromKey_Test;
 struct ExpectedMidContent;
 testing::AssertionResult Equal(
-    boost::shared_ptr<ExpectedMidContent> expected,
-    boost::shared_ptr<MidPacket> mid);
+    std::shared_ptr<ExpectedMidContent> expected,
+    std::shared_ptr<MidPacket> mid);
 struct ExpectedTmidContent;
 testing::AssertionResult Equal(
-    boost::shared_ptr<ExpectedTmidContent> expected,
-    boost::shared_ptr<TmidPacket> mid);
+    std::shared_ptr<ExpectedTmidContent> expected,
+    std::shared_ptr<TmidPacket> mid);
 class SystemPacketHandlerTest_FUNC_PASSPORT_All_Test;
 class PassportTest_BEH_PASSPORT_SetNewUserData_Test;
 class PassportTest_BEH_PASSPORT_ConfirmNewUserData_Test;

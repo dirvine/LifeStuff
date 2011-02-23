@@ -56,7 +56,7 @@ Authentication::~Authentication() {
 #endif
 }
 
-void Authentication::Init(boost::shared_ptr<StoreManagerInterface> sm) {
+void Authentication::Init(std::shared_ptr<StoreManagerInterface> sm) {
   store_manager_ = sm;
   session_singleton_ = SessionSingleton::getInstance();
   passport_ = session_singleton_->passport_;
@@ -604,11 +604,11 @@ int Authentication::SaveSession(const std::string &serialised_master_datamap) {
 
 void Authentication::GetMasterDataMap(
     const std::string &password,
-    boost::shared_ptr<boost::mutex> login_mutex,
-    boost::shared_ptr<boost::condition_variable> login_cond_var,
-    boost::shared_ptr<int> result,
-    boost::shared_ptr<std::string> serialised_master_datamap,
-    boost::shared_ptr<std::string> surrogate_serialised_master_datamap) {
+    std::shared_ptr<boost::mutex> login_mutex,
+    std::shared_ptr<boost::condition_variable> login_cond_var,
+    std::shared_ptr<int> result,
+    std::shared_ptr<std::string> serialised_master_datamap,
+    std::shared_ptr<std::string> surrogate_serialised_master_datamap) {
   boost::mutex::scoped_lock login_lock(*login_mutex);
   serialised_master_datamap->clear();
   surrogate_serialised_master_datamap->clear();

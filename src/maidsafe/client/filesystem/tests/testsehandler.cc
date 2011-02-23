@@ -68,7 +68,7 @@ void ModifyUpToDateDms(ModificationType modification_type,
                        const boost::uint16_t &test_size,
                        const std::vector<std::string> &keys,
                        const std::vector<std::string> &enc_dms,
-                       boost::shared_ptr<maidsafe::SEHandler> seh) {
+                       std::shared_ptr<maidsafe::SEHandler> seh) {
   switch (modification_type) {
     case kAdd:
       for (boost::uint16_t i = 0; i < test_size; ++i)
@@ -148,7 +148,7 @@ class SEHandlerTest : public testing::Test {
   ~SEHandlerTest() {}
 
   void SetUp() {
-    boost::shared_ptr<passport::test::CachePassport> passport(
+    std::shared_ptr<passport::test::CachePassport> passport(
         new passport::test::CachePassport(kRsaKeySize, 5, 10));
     passport->Init();
     ss_->passport_ = passport;
@@ -170,7 +170,7 @@ class SEHandlerTest : public testing::Test {
     catch(const std::exception& e) {
       printf("%s\n", e.what());
     }
-    client_chunkstore_ = boost::shared_ptr<ChunkStore>(
+    client_chunkstore_ = std::shared_ptr<ChunkStore>(
                              new ChunkStore(test_root_dir_.string(), 0, 0));
     ASSERT_TRUE(client_chunkstore_->Init());
     int count(0);
@@ -237,12 +237,12 @@ class SEHandlerTest : public testing::Test {
   }
 
   fs::path test_root_dir_;
-  boost::shared_ptr<ChunkStore> client_chunkstore_;
+  std::shared_ptr<ChunkStore> client_chunkstore_;
   test::CallbackObject cb_;
   std::string db_str1_, db_str2_;
   SessionSingleton *ss_;
   std::vector<crypto::RsaKeyPair> keys_;
-  boost::shared_ptr<LocalStoreManager> sm_;
+  std::shared_ptr<LocalStoreManager> sm_;
   boost::scoped_ptr<DataAtlasHandler> dah_;
   boost::scoped_ptr<SEHandler> seh_;
 
@@ -358,7 +358,7 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptFile) {
   std::string rel_str = TidyPath(rel_path.string());
 
   std::string full_str = test_seh::CreateRandomFile(rel_str, 9999);
-  int result = seh_->EncryptFile(rel_str, PRIVATE, "");
+  int result = seh_->EncryptAFile(rel_str, PRIVATE, "");
   ASSERT_EQ(0, result);
 
   // Wait for signal that file has been succesfully uploaded
@@ -512,7 +512,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithChunksPrevLoaded) {
   std::string full_str(test_seh::CreateRandomFile(rel_str, 1026));
   std::string hash_before, hash_after;
   hash_before = SHA512File(fs::path(full_str));
-  int result = seh_->EncryptFile(rel_str, PRIVATE, "");
+  int result = seh_->EncryptAFile(rel_str, PRIVATE, "");
   ASSERT_EQ(0, result);
 
   // Wait for signal that file has been succesfully uploaded
@@ -530,7 +530,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithChunksPrevLoaded) {
   ASSERT_FALSE(fs::exists(full_str));
 
   boost::this_thread::sleep(boost::posix_time::seconds(1));
-  result = seh_->DecryptFile(rel_str);
+  result = seh_->DecryptAFile(rel_str);
   ASSERT_EQ(0, result);
   ASSERT_TRUE(fs::exists(full_str));
   hash_after = SHA512File(fs::path(full_str));
@@ -553,7 +553,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithLoadChunks) {
   std::string hash_before, hash_after;
   fs::path full_path(full_str);
   hash_before = SHA512File(full_path);
-  int result = seh_->EncryptFile(rel_str, PRIVATE, "");
+  int result = seh_->EncryptAFile(rel_str, PRIVATE, "");
   ASSERT_EQ(0, result);
 
   // Wait for signal that file has been succesfully uploaded
@@ -589,7 +589,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithLoadChunks) {
   catch(const std::exception &e) {
     printf("%s\n", e.what());
   }
-  result = seh_->DecryptFile(rel_str);
+  result = seh_->DecryptAFile(rel_str);
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   ASSERT_EQ(0, result);
   ASSERT_TRUE(fs::exists(full_str));
@@ -786,7 +786,7 @@ TEST_F(SEHandlerTest, BEH_MAID_MultipleFileEncryption) {
                       &done, &received_chunks));
   printf("Connected\n");
   for (int a = 0; a < total_files; ++a) {
-    int result = seh_->EncryptFile(filenames[a], PRIVATE, "");
+    int result = seh_->EncryptAFile(filenames[a], PRIVATE, "");
     ASSERT_EQ(0, result);
   }
 
@@ -833,7 +833,7 @@ TEST_F(SEHandlerTest, BEH_MAID_MultipleEqualFiles) {
                       &received_chunks));
 //  printf("Connected\n");
   for (int a = 0; a < total_files; ++a) {
-    int result = seh_->EncryptFile(filenames[a], PRIVATE, "");
+    int result = seh_->EncryptAFile(filenames[a], PRIVATE, "");
     ASSERT_EQ(0, result);
   }
 
@@ -960,11 +960,11 @@ TEST_F(SEHandlerTest, BEH_MAID_OneFileModifiedAndSavedAgain) {
   std::string rel_str = TidyPath(rel_path.string());
 
   std::string full_str = test_seh::CreateRandomFile(rel_str, 9999);
-  int result = seh_->EncryptFile(rel_str, PRIVATE, "");
+  int result = seh_->EncryptAFile(rel_str, PRIVATE, "");
   ASSERT_EQ(0, result);
 
   full_str = test_seh::CreateRandomFile(rel_str, 33333);
-  result = seh_->EncryptFile(rel_str, PRIVATE, "");
+  result = seh_->EncryptAFile(rel_str, PRIVATE, "");
   ASSERT_EQ(0, result);
 
   // Wait for signal that file has been succesfully uploaded

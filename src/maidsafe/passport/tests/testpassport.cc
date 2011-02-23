@@ -46,10 +46,10 @@ class PassportTest : public testing::Test {
         mid_name_(),
         smid_name_() {}
  protected:
-  typedef boost::shared_ptr<pki::Packet> PacketPtr;
-  typedef boost::shared_ptr<MidPacket> MidPtr;
-  typedef boost::shared_ptr<TmidPacket> TmidPtr;
-  typedef boost::shared_ptr<SignaturePacket> SignaturePtr;
+  typedef std::shared_ptr<pki::Packet> PacketPtr;
+  typedef std::shared_ptr<MidPacket> MidPtr;
+  typedef std::shared_ptr<TmidPacket> TmidPtr;
+  typedef std::shared_ptr<SignaturePacket> SignaturePtr;
   void SetUp() {
     passport_.Init();
   }
@@ -514,17 +514,17 @@ TEST_F(PassportTest, BEH_PASSPORT_SetNewUserData) {
   EXPECT_EQ(kSuccess,
             passport_.SetNewUserData(kPassword_, kPlainTextMasterData_, mid,
                                      smid, tmid));
-  MidPtr pending_mid(boost::shared_static_cast<MidPacket>(
+  MidPtr pending_mid(std::static_pointer_cast<MidPacket>(
                      passport_.GetPacket(MID, false)));
-  MidPtr pending_smid(boost::shared_static_cast<MidPacket>(
+  MidPtr pending_smid(std::static_pointer_cast<MidPacket>(
                       passport_.GetPacket(SMID, false)));
-  TmidPtr pending_tmid(boost::shared_static_cast<TmidPacket>(
+  TmidPtr pending_tmid(std::static_pointer_cast<TmidPacket>(
                        passport_.GetPacket(TMID, false)));
-  MidPtr confirmed_mid(boost::shared_static_cast<MidPacket>(
+  MidPtr confirmed_mid(std::static_pointer_cast<MidPacket>(
                        passport_.GetPacket(MID, true)));
-  MidPtr confirmed_smid(boost::shared_static_cast<MidPacket>(
+  MidPtr confirmed_smid(std::static_pointer_cast<MidPacket>(
                         passport_.GetPacket(SMID, true)));
-  TmidPtr confirmed_tmid(boost::shared_static_cast<TmidPacket>(
+  TmidPtr confirmed_tmid(std::static_pointer_cast<TmidPacket>(
                          passport_.GetPacket(TMID, true)));
   ASSERT_TRUE(pending_mid);
   ASSERT_TRUE(pending_smid);
@@ -561,17 +561,17 @@ TEST_F(PassportTest, BEH_PASSPORT_SetNewUserData) {
   EXPECT_EQ(kSuccess,
             passport_.SetNewUserData(kPassword_, kPlainTextMasterData_,
                                      retry_mid, retry_smid, retry_tmid));
-  pending_mid = boost::shared_static_cast<MidPacket>(
+  pending_mid = std::static_pointer_cast<MidPacket>(
                 passport_.GetPacket(MID, false));
-  pending_smid = boost::shared_static_cast<MidPacket>(
+  pending_smid = std::static_pointer_cast<MidPacket>(
                  passport_.GetPacket(SMID, false));
-  pending_tmid = boost::shared_static_cast<TmidPacket>(
+  pending_tmid = std::static_pointer_cast<TmidPacket>(
                  passport_.GetPacket(TMID, false));
-  confirmed_mid = boost::shared_static_cast<MidPacket>(
+  confirmed_mid = std::static_pointer_cast<MidPacket>(
                   passport_.GetPacket(MID, true));
-  confirmed_smid = boost::shared_static_cast<MidPacket>(
+  confirmed_smid = std::static_pointer_cast<MidPacket>(
                    passport_.GetPacket(SMID, true));
-  confirmed_tmid = boost::shared_static_cast<TmidPacket>(
+  confirmed_tmid = std::static_pointer_cast<TmidPacket>(
                    passport_.GetPacket(TMID, true));
   ASSERT_TRUE(pending_mid);
   ASSERT_TRUE(pending_smid);
@@ -617,11 +617,11 @@ TEST_F(PassportTest, BEH_PASSPORT_ConfirmNewUserData) {
   EXPECT_EQ(kSuccess,
             passport_.SetNewUserData(kPassword_, kPlainTextMasterData_, mid,
                                      smid, tmid));
-  MidPtr pending_mid(boost::shared_static_cast<MidPacket>(
+  MidPtr pending_mid(std::static_pointer_cast<MidPacket>(
                      passport_.GetPacket(MID, false)));
-  MidPtr pending_smid(boost::shared_static_cast<MidPacket>(
+  MidPtr pending_smid(std::static_pointer_cast<MidPacket>(
                       passport_.GetPacket(SMID, false)));
-  TmidPtr pending_tmid(boost::shared_static_cast<TmidPacket>(
+  TmidPtr pending_tmid(std::static_pointer_cast<TmidPacket>(
                        passport_.GetPacket(TMID, false)));
   EXPECT_TRUE(pending_mid);
   EXPECT_TRUE(pending_smid);
@@ -702,11 +702,11 @@ TEST_F(PassportTest, BEH_PASSPORT_ConfirmNewUserData) {
   EXPECT_FALSE(passport_.GetPacket(TMID, true));
 
   EXPECT_EQ(kSuccess, passport_.ConfirmNewUserData(mid, smid, tmid));
-  MidPtr confirmed_mid(boost::shared_static_cast<MidPacket>(
+  MidPtr confirmed_mid(std::static_pointer_cast<MidPacket>(
                        passport_.GetPacket(MID, true)));
-  MidPtr confirmed_smid(boost::shared_static_cast<MidPacket>(
+  MidPtr confirmed_smid(std::static_pointer_cast<MidPacket>(
                         passport_.GetPacket(SMID, true)));
-  TmidPtr confirmed_tmid(boost::shared_static_cast<TmidPacket>(
+  TmidPtr confirmed_tmid(std::static_pointer_cast<TmidPacket>(
                          passport_.GetPacket(TMID, true)));
   EXPECT_FALSE(passport_.GetPacket(MID, false));
   EXPECT_FALSE(passport_.GetPacket(SMID, false));
@@ -1218,10 +1218,10 @@ class PassportVPTest : public testing::TestWithParam<ChangeType> {
         stmid_for_deletion_(new TmidPacket),
         kChangePassword_(GetParam() == kChangePassword) {}
  protected:
-  typedef boost::shared_ptr<pki::Packet> PacketPtr;
-  typedef boost::shared_ptr<MidPacket> MidPtr;
-  typedef boost::shared_ptr<TmidPacket> TmidPtr;
-  typedef boost::shared_ptr<SignaturePacket> SignaturePtr;
+  typedef std::shared_ptr<pki::Packet> PacketPtr;
+  typedef std::shared_ptr<MidPacket> MidPtr;
+  typedef std::shared_ptr<TmidPacket> TmidPtr;
+  typedef std::shared_ptr<SignaturePacket> SignaturePtr;
   void SetUp() {
     passport_.Init();
     MidPtr mid(new MidPacket), smid(new MidPacket);

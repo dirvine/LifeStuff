@@ -27,7 +27,6 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/thread/mutex.hpp>
-
 #include <list>
 #include <map>
 #include <set>
@@ -54,7 +53,7 @@ class SessionSingleton;
 
 class LocalStoreManager : public StoreManagerInterface {
  public:
-  LocalStoreManager(boost::shared_ptr<ChunkStore> client_chunkstore,
+  LocalStoreManager(std::shared_ptr<ChunkStore> client_chunkstore,
                     const boost::uint8_t &k,
                     const fs3::path &db_directory);
   virtual ~LocalStoreManager();
@@ -110,7 +109,7 @@ class LocalStoreManager : public StoreManagerInterface {
   virtual int ModifyBPInfo(const std::string &info);
   virtual int LoadBPMessages(
       std::list<ValidatedBufferPacketMessage> *messages);
-  virtual int SendMessage(const std::vector<std::string> &receivers,
+  virtual int SendAMessage(const std::vector<std::string> &receivers,
                            const std::string &message,
                            const MessageType &m_type,
                            std::map<std::string, ReturnCode> *add_results);
@@ -185,7 +184,7 @@ class LocalStoreManager : public StoreManagerInterface {
   VaultBufferPacketHandler vbph_;
   boost::mutex mutex_;
   std::string local_sm_dir_;
-  boost::shared_ptr<ChunkStore> client_chunkstore_;
+  std::shared_ptr<ChunkStore> client_chunkstore_;
   SessionSingleton *ss_;
   std::set<std::string> chunks_pending_;
 };

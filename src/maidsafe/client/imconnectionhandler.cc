@@ -133,7 +133,7 @@ namespace maidsafe {
 //  if (it == connections_.end()) {
 //    return kConnectionNotExists;
 //  }
-//  boost::shared_ptr<boost::asio::deadline_timer> timer(it->timer);
+//  std::shared_ptr<boost::asio::deadline_timer> timer(it->timer);
 //  connections_.erase(it);
 //  timer->cancel();
 //  return kSuccess;

@@ -61,7 +61,7 @@ struct connection_info {
   boost::uint16_t trans_id;
   boost::uint32_t conn_id;
   bool restart_timer;
-  boost::shared_ptr<boost::asio::deadline_timer> timer;
+  std::shared_ptr<boost::asio::deadline_timer> timer;
 };
 
 // Tags
@@ -112,7 +112,7 @@ class IMConnectionHandler {
 //  new_connection_notifier conn_notifier_;
 //  bool started_;
 //  boost::mutex connections_mutex_;
-//  boost::shared_ptr<boost::thread> worker_;
+//  std::shared_ptr<boost::thread> worker_;
 //  boost::asio::io_service io_;
 //  boost::asio::strand strand_;
 //  boost::asio::deadline_timer timer_;

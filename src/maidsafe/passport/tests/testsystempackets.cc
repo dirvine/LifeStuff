@@ -40,9 +40,9 @@ const boost::uint8_t kMaxThreadCount(5);
 
 class SystemPacketsTest : public testing::Test {
  public:
-  typedef boost::shared_ptr<SignaturePacket> SignaturePtr;
-  typedef boost::shared_ptr<MidPacket> MidPtr;
-  typedef boost::shared_ptr<TmidPacket> TmidPtr;
+  typedef std::shared_ptr<SignaturePacket> SignaturePtr;
+  typedef std::shared_ptr<MidPacket> MidPtr;
+  typedef std::shared_ptr<TmidPacket> TmidPtr;
   SystemPacketsTest()
       : crypto_key_pairs_(kRsaKeySize, kMaxThreadCount),
         signature_packet_types_(),
@@ -119,15 +119,15 @@ TEST_F(SystemPacketsTest, BEH_PASSPORT_IsSignature) {
   EXPECT_FALSE(IsSignature(UNKNOWN, false));
 }
 
-testing::AssertionResult Empty(boost::shared_ptr<pki::Packet> packet) {
+testing::AssertionResult Empty(std::shared_ptr<pki::Packet> packet) {
   PacketType packet_type = static_cast<PacketType>(packet->packet_type());
   if (!packet->name().empty())
     return testing::AssertionFailure() << "Packet name not empty.";
   if (!packet->value().empty())
     return testing::AssertionFailure() << "Packet value not empty.";
   if (IsSignature(packet_type, false)) {
-    boost::shared_ptr<SignaturePacket> sig_packet =
-        boost::shared_static_cast<SignaturePacket>(packet);
+    std::shared_ptr<SignaturePacket> sig_packet =
+        std::static_pointer_cast<SignaturePacket>(packet);
     if (!sig_packet->public_key_.empty())
       return testing::AssertionFailure() << "Packet public key not empty.";
     if (!sig_packet->private_key_.empty())
@@ -137,8 +137,8 @@ testing::AssertionResult Empty(boost::shared_ptr<pki::Packet> packet) {
     if (!sig_packet->public_key_signature_.empty())
       return testing::AssertionFailure() << "Packet public key sig not empty.";
   } else if (packet_type == MID || packet_type == SMID) {
-    boost::shared_ptr<MidPacket> mid_packet =
-        boost::shared_static_cast<MidPacket>(packet);
+    std::shared_ptr<MidPacket> mid_packet =
+        std::static_pointer_cast<MidPacket>(packet);
     if (!mid_packet->username_.empty())
       return testing::AssertionFailure() << "Packet username not empty.";
     if (!mid_packet->pin_.empty())
@@ -156,8 +156,8 @@ testing::AssertionResult Empty(boost::shared_ptr<pki::Packet> packet) {
     if (!mid_packet->secure_iv_.empty())
       return testing::AssertionFailure() << "Packet secure IV not empty.";
   } else if (packet_type == TMID || packet_type == STMID) {
-    boost::shared_ptr<TmidPacket> tmid_packet =
-        boost::shared_static_cast<TmidPacket>(packet);
+    std::shared_ptr<TmidPacket> tmid_packet =
+        std::static_pointer_cast<TmidPacket>(packet);
     if (!tmid_packet->username_.empty())
       return testing::AssertionFailure() << "Packet username not empty.";
     if (!tmid_packet->pin_.empty())
@@ -364,8 +364,8 @@ struct ExpectedMidContent {
 };
 
 testing::AssertionResult Equal(
-    boost::shared_ptr<ExpectedMidContent> expected,
-    boost::shared_ptr<MidPacket> mid) {
+    std::shared_ptr<ExpectedMidContent> expected,
+    std::shared_ptr<MidPacket> mid) {
   std::string dbg(expected->packet_type == MID ? "MID" : "SMID");
   if (expected->mid_name != mid->name())
     return testing::AssertionFailure() << dbg << " name wrong.";
@@ -416,7 +416,7 @@ TEST_F(SystemPacketsTest, BEH_PASSPORT_CreateMid) {
   std::string expected_mid_name(
       crypto::Hash<crypto::SHA512>(kUsername + kPinStr));
   mid.reset(new MidPacket(kUsername, kPinStr, ""));
-  boost::shared_ptr<ExpectedMidContent> expected_mid_content(
+  std::shared_ptr<ExpectedMidContent> expected_mid_content(
       new ExpectedMidContent(expected_mid_name, "", kUsername, kPinStr, "",
                              expected_salt, expected_secure_password, MID, ""));
   EXPECT_FALSE(Empty(mid));
@@ -426,7 +426,7 @@ TEST_F(SystemPacketsTest, BEH_PASSPORT_CreateMid) {
   std::string expected_smid_name(
         crypto::Hash<crypto::SHA512>(kUsername + kPinStr + kSmidAppendix));
   MidPtr smid(new MidPacket(kUsername, kPinStr, kSmidAppendix));
-  boost::shared_ptr<ExpectedMidContent> expected_smid_content(
+  std::shared_ptr<ExpectedMidContent> expected_smid_content(
       new ExpectedMidContent(expected_smid_name, "", kUsername, kPinStr,
                              kSmidAppendix, expected_salt,
                              expected_secure_password, SMID, ""));
@@ -475,7 +475,7 @@ TEST_F(SystemPacketsTest, BEH_PASSPORT_SetAndDecryptRid) {
                                    crypto::AES256_IVSize));
   mid.reset(new MidPacket(kUsername, kPinStr, ""));
   mid->SetRid(kRid1);
-  boost::shared_ptr<ExpectedMidContent> expected_mid_content(
+  std::shared_ptr<ExpectedMidContent> expected_mid_content(
       new ExpectedMidContent(expected_mid_name, expected_encrypted_rid1,
                              kUsername, kPinStr, "", expected_salt,
                              expected_secure_password, MID, kRid1));
@@ -511,7 +511,7 @@ TEST_F(SystemPacketsTest, BEH_PASSPORT_SetAndDecryptRid) {
       crypto::Hash<crypto::SHA512>(kUsername + kPinStr + kSmidAppendix));
   smid.reset(new MidPacket(kUsername, kPinStr, kSmidAppendix));
   smid->SetRid(kRid1);
-  boost::shared_ptr<ExpectedMidContent> expected_smid_content(
+  std::shared_ptr<ExpectedMidContent> expected_smid_content(
       new ExpectedMidContent(expected_smid_name, expected_encrypted_rid1,
                              kUsername, kPinStr, kSmidAppendix, expected_salt,
                              expected_secure_password, SMID, kRid1));
@@ -571,8 +571,8 @@ struct ExpectedTmidContent {
 };
 
 testing::AssertionResult Equal(
-    boost::shared_ptr<ExpectedTmidContent> expected,
-    boost::shared_ptr<TmidPacket> tmid) {
+    std::shared_ptr<ExpectedTmidContent> expected,
+    std::shared_ptr<TmidPacket> tmid) {
   std::string dbg(expected->packet_type == TMID ? "TMID" : "STMID");
   if (expected->tmid_name != tmid->name())
     return testing::AssertionFailure() << dbg << " name wrong.";
@@ -626,7 +626,7 @@ TEST_F(SystemPacketsTest, BEH_PASSPORT_CreateTmid) {
                                                               kRid));
 
   tmid.reset(new TmidPacket(kUsername, kPinStr, kRid, false, "", ""));
-  boost::shared_ptr<ExpectedTmidContent> expected_tmid_content(
+  std::shared_ptr<ExpectedTmidContent> expected_tmid_content(
       new ExpectedTmidContent(expected_tmid_name, "", kUsername, kPinStr, "",
                               "", "", "", TMID, kRid));
   EXPECT_FALSE(Empty(tmid));
@@ -689,7 +689,7 @@ TEST_F(SystemPacketsTest, BEH_PASSPORT_SetAndDecryptData) {
 
   TmidPtr tmid(new TmidPacket(kUsername, kPinStr, kRid, false, kPassword,
                               kPlainData));
-  boost::shared_ptr<ExpectedTmidContent> expected_tmid_content(
+  std::shared_ptr<ExpectedTmidContent> expected_tmid_content(
       new ExpectedTmidContent(expected_tmid_name, expected_encrypted_data,
                               kUsername, kPinStr, kPassword, kPlainData,
                               expected_salt, expected_secure_password, TMID,
