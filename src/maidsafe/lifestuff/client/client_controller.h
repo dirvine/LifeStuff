@@ -77,7 +77,7 @@ class ClientController : public QObject {
 };
 
   struct Email {
-    Email() {}
+    Email() : from(), to(), cc(), bcc(), subject(), body(), date() {}
     QString from;
     QString to;
     QString cc;
