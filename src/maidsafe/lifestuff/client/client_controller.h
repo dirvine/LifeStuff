@@ -70,7 +70,7 @@ class ClientController : public QObject {
  public:
 
  struct PendingOps {
-  PendingOps() {}
+  PendingOps() : name(), transBytes(), totalBytes() {}
   QString name;
   int transBytes;
   int totalBytes;
