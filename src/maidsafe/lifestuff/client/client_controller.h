@@ -69,12 +69,12 @@ class ClientController : public QObject {
   Q_OBJECT
  public:
 
- struct PendingOps {
-  PendingOps() : name(), transBytes(), totalBytes() {}
-  QString name;
-  int transBytes;
-  int totalBytes;
-};
+  struct PendingOps {
+    PendingOps() : name(), transBytes(), totalBytes() {}
+    QString name;
+    int transBytes;
+    int totalBytes;
+  };
 
   struct Email {
     Email() : from(), to(), cc(), bcc(), subject(), body(), date() {}
