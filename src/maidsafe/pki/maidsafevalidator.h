@@ -41,11 +41,12 @@ class MaidsafeValidator : public Securifier {
    * pmid - pmid not encoded
    * Default Ctor, use base class set_id method to set pmid
    */
-  explicit MaidsafeValidator(const std::string &pmid)
-      : Securifier(pmid, "signing_private_key",
-                   "asymmetric_decryption_private_key") {}
-  MaidsafeValidator() : Securifier("pmid", "signing_private_key",
-                                   "asymmetric_decryption_private_key") {}
+  MaidsafeValidator(const std::string &pmid,
+                    const std::string &signing_private_key,
+                    const std::string &asymmetric_decryption_private_key)
+    : Securifier(pmid, signing_private_key, 
+                 asymmetric_decryption_private_key) {} 
+  MaidsafeValidator() : Securifier("", "", "") {}
   /**
    * Signer Id is not validated with the following rule:
    *   ID = H(public_key + signed_public_key)
@@ -72,6 +73,15 @@ class MaidsafeValidator : public Securifier {
   int CreateRequestSignature(const std::string &private_key,
                              const std::list<std::string> &parameters,
                              std::string *request_signature);
+  /**
+  * Method to create a signed message by hashing and then signing the
+  * concatenated parameters passed in the list of strings with the provided
+  * private key. The method assumes that the first and second parameters of the
+  * parameters argument are public key and signed public key, respectively.
+  */  
+  int SignMessage(const std::string &private_key,
+    const std::list<std::string> &parameters,
+    std::string *request_signature);
 };
 
 }  // namespace pki

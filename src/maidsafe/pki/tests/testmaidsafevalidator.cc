@@ -72,7 +72,7 @@ TEST_F(MSValidatorTest, BEH_PKI_TestValidateSignedRequest) {
 //  validator_.set_id(rec_id);
   std::string key(crypto::Hash<crypto::SHA512>(RandomString(10)));
   std::string signed_request(crypto::AsymSign(
-      crypto::Hash<crypto::SHA512>(signed_public_key_ + key + rec_id),
+      crypto::Hash<crypto::SHA512>(keys_.at(0).public_key() + signed_public_key_ + key),
       keys_.at(0).private_key()));
   ASSERT_TRUE(validator_.ValidateRequest(signed_request,
                                          keys_.at(0).public_key(),
@@ -96,20 +96,21 @@ TEST_F(MSValidatorTest, BEH_PKI_TestCreateRequestSignature) {
   ASSERT_EQ(kValidatorNoParameters,
             validator_.CreateRequestSignature(keys_.at(0).private_key(), params,
                                               &signature));
-  std::string a("a");
-  params.push_back(a);
+  params.push_back(keys_.at(0).public_key());
+  params.push_back(signed_public_key_);
+  params.push_back("a");  
+  params.push_back("b");
+  params.push_back("c");  
   ASSERT_EQ(0, validator_.CreateRequestSignature(keys_.at(0).private_key(),
                                                  params, &signature));
 //  validator_.set_id(a);
   ASSERT_TRUE(validator_.ValidateRequest(signature, keys_.at(0).public_key(),
-                                         "", ""));
-  params.push_back("b");
-  params.push_back("c");
-  ASSERT_EQ(0, validator_.CreateRequestSignature(keys_.at(0).private_key(),
+                                         signed_public_key_, "abc"));
+/*  ASSERT_EQ(0, validator_.CreateRequestSignature(keys_.at(0).private_key(),
                                                  params, &signature));
 //  validator_.set_id("c");
   ASSERT_TRUE(validator_.ValidateRequest(signature, keys_.at(0).public_key(),
-                                         "a", "b"));
+                                         "", "abc"));*/
 }
 
 }  // namespace test

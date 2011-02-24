@@ -74,15 +74,27 @@ bool MaidsafeValidator::ValidateRequest(const std::string &signed_request,
                            signed_request,
                            public_key))
     return true;
-
   if (crypto::AsymCheckSig(Hash512(public_key + signed_public_key + key),
                            signed_request,
                            public_key))
-    return true;
+    return true;  
 #ifdef DEBUG
   printf("MaidsafeValidator::ValidateRequest - Failed to validate request.\n");
 #endif
   return false;
+}
+
+
+int MaidsafeValidator::SignMessage(
+    const std::string &private_key,
+    const std::list<std::string> &parameters,
+    std::string *signature) {
+  if (private_key.empty())
+    return kValidatorNoPrivateKey;
+  if (parameters.size() < 3)
+    return kValidatorNoParameters;
+  if (parameters.size() > 2) 
+    return CreateRequestSignature(private_key, parameters, signature);
 }
 
 int MaidsafeValidator::CreateRequestSignature(
