@@ -56,7 +56,7 @@ class DataAtlasHandlerTest : public testing::Test {
   ~DataAtlasHandlerTest() { }
   void SetUp() {
     SessionSingleton *ss(SessionSingleton::getInstance());
-    boost::shared_ptr<passport::test::CachePassport> passport(
+    std::shared_ptr<passport::test::CachePassport> passport(
         new passport::test::CachePassport(kRsaKeySize, 5, 10));
     passport->Init();
     ss->passport_ = passport;
@@ -80,7 +80,7 @@ class DataAtlasHandlerTest : public testing::Test {
     catch(const std::exception& e) {
       printf("%s\n", e.what());
     }
-    boost::shared_ptr<ChunkStore>
+    std::shared_ptr<ChunkStore>
         client_chunkstore_(new ChunkStore(test_root_dir_.string(), 0, 0));
     ASSERT_TRUE(client_chunkstore_->Init());
     int count(0);
@@ -88,7 +88,7 @@ class DataAtlasHandlerTest : public testing::Test {
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
       count += 10;
     }
-    boost::shared_ptr<LocalStoreManager>
+    std::shared_ptr<LocalStoreManager>
         sm(new LocalStoreManager(client_chunkstore_, test_dah::K,
                                  test_root_dir_));
     test::CallbackObject cb;
@@ -101,7 +101,7 @@ class DataAtlasHandlerTest : public testing::Test {
     ASSERT_EQ(0, file_system::Mount(ss->
         SessionName(), ss->DefConLevel()));
     boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
-    boost::shared_ptr<SEHandler> seh(new SEHandler());
+    std::shared_ptr<SEHandler> seh(new SEHandler());
     seh->Init(sm, client_chunkstore_);
     if (dah->Init(true))
       FAIL();

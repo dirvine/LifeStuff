@@ -62,12 +62,12 @@ class AuthenticationTest : public testing::Test {
   }
   void TearDown() {}
   int GetMasterDataMap(std::string *ser_dm_login) {
-    boost::shared_ptr<boost::mutex> login_mutex(new boost::mutex);
-    boost::shared_ptr<boost::condition_variable> login_cond_var(
+    std::shared_ptr<boost::mutex> login_mutex(new boost::mutex);
+    std::shared_ptr<boost::condition_variable> login_cond_var(
         new boost::condition_variable);
-    boost::shared_ptr<int> result(new int(kPendingResult));
-    boost::shared_ptr<std::string> serialised_master_datamap(new std::string);
-    boost::shared_ptr<std::string> surrogate_serialised_master_datamap(
+    std::shared_ptr<int> result(new int(kPendingResult));
+    std::shared_ptr<std::string> serialised_master_datamap(new std::string);
+    std::shared_ptr<std::string> surrogate_serialised_master_datamap(
         new std::string);
     boost::thread(&Authentication::GetMasterDataMap, &authentication_,
         password_, login_mutex, login_cond_var, result,
@@ -95,7 +95,7 @@ class AuthenticationTest : public testing::Test {
 
   NetworkTest network_test_;
   SessionSingleton *ss_;
-  boost::shared_ptr<TestStoreManager> sm_;
+  std::shared_ptr<TestStoreManager> sm_;
   Authentication authentication_;
   std::string username_, pin_, password_, ser_dm_;
   std::vector<crypto::RsaKeyPair> test_keys_;

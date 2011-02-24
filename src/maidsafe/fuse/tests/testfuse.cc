@@ -45,7 +45,7 @@ namespace fs_l_fuse {
 
 namespace fuse_test {
 
-static std::vector< boost::shared_ptr<vault::PDVault> > pdvaults_;
+static std::vector< std::shared_ptr<vault::PDVault> > pdvaults_;
 static const int kNetworkSize_ = 16;
 static const int kTestK_ = 4;
 static bool logged_in_;

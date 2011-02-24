@@ -55,12 +55,12 @@ int DataAtlasHandler::Init(bool new_user) {
   } else {
     // create root db
     int result;
-    boost::shared_ptr<PdDir> da(GetPdDir("/", CREATE, &result));
+    std::shared_ptr<PdDir> da(GetPdDir("/", CREATE, &result));
     // create keys db
 //    std::string keys_db_name_;
 //    GetKeyDbPath(&keys_db_name_);
 //    int result_ = -1;
-//    boost::shared_ptr<KeyAtlas> key_db_(GetKeysDb(CREATE, &result_));
+//    std::shared_ptr<KeyAtlas> key_db_(GetKeysDb(CREATE, &result_));
     return kSuccess;
   }
 }
@@ -99,7 +99,7 @@ void DataAtlasHandler::GetDbPath(const std::string &element_path,
   *db_path = db_path1.string();
 }
 
-boost::shared_ptr<PdDir> DataAtlasHandler::GetPdDir(
+std::shared_ptr<PdDir> DataAtlasHandler::GetPdDir(
     const std::string &element_path,
     DbInitFlag flag,
     int *result) {
@@ -114,7 +114,7 @@ boost::shared_ptr<PdDir> DataAtlasHandler::GetPdDir(
 //          db_name.c_str());
 #endif
 //  int res = kDataAtlasError;
-  boost::shared_ptr<PdDir> da(new PdDir(db_name, flag, result));
+  std::shared_ptr<PdDir> da(new PdDir(db_name, flag, result));
 #ifdef DEBUG
 //   printf("In getpddir: made new db with result %i\n", res);
 #endif
@@ -133,7 +133,7 @@ int DataAtlasHandler::AddElement(const std::string &element_path,
 #ifdef DEBUG
     // printf("This is a dir(%s)\n", element_path.c_str());
 #endif
-    boost::shared_ptr<PdDir> da_newdir_(GetPdDir(element_path,
+    std::shared_ptr<PdDir> da_newdir_(GetPdDir(element_path,
                                                  CREATE, &result));
 #ifdef DEBUG
     // printf("New dir's db added with result %i", result);
@@ -145,7 +145,7 @@ int DataAtlasHandler::AddElement(const std::string &element_path,
 #ifdef DEBUG
   // printf("Getting db.\n");
 #endif
-  boost::shared_ptr<PdDir> da_(GetPdDir(element_path, CONNECT, &result));
+  std::shared_ptr<PdDir> da_(GetPdDir(element_path, CONNECT, &result));
 #ifdef DEBUG
   // printf("Got db with result %i\n", result);
 #endif
@@ -165,7 +165,7 @@ int DataAtlasHandler::ModifyMetaDataMap(const std::string &element_path,
                                         const std::string &ser_mdm,
                                         const std::string &ser_dm) {
   int result = kDataAtlasError;
-  boost::shared_ptr<PdDir> da_(GetPdDir(element_path, CONNECT, &result));
+  std::shared_ptr<PdDir> da_(GetPdDir(element_path, CONNECT, &result));
   if (result != kSuccess)
     return result;
   return da_->ModifyMetaDataMap(ser_mdm, ser_dm);
@@ -192,7 +192,7 @@ int DataAtlasHandler::RemoveElement(const std::string &element_path) {
       return result;
     }
   }
-  boost::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
+  std::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
   if (result != kSuccess) {
     printf("DataAtlasHandler::RemoveElement fail 2\n");
     return result;
@@ -235,7 +235,7 @@ int DataAtlasHandler::ListFolder(const std::string &element_path,
   fs3::path path_(element_path);
   path_ /= "a";
   std::string element_path_modified = path_.string();
-  boost::shared_ptr<PdDir> da_(GetPdDir(element_path_modified,
+  std::shared_ptr<PdDir> da_(GetPdDir(element_path_modified,
                                         CONNECT, &result));
   if (result != kSuccess)
     return result;
@@ -277,11 +277,11 @@ int DataAtlasHandler::CopyElement(const std::string &original_path,
                                   const std::string &new_dir_key,
                                   bool force) {
   int result = kDataAtlasError;
-  boost::shared_ptr<PdDir> da_original(GetPdDir(original_path, CONNECT,
+  std::shared_ptr<PdDir> da_original(GetPdDir(original_path, CONNECT,
       &result));
   if (result != kSuccess)
     return result;
-  boost::shared_ptr<PdDir> da_target(GetPdDir(target_path, CONNECT, &result));
+  std::shared_ptr<PdDir> da_target(GetPdDir(target_path, CONNECT, &result));
   if (result != kSuccess)
     return result;
   std::string ser_mdm, ser_dm, original_name, target_name;
@@ -383,7 +383,7 @@ int DataAtlasHandler::ListSubDirs(const std::string &element_path,
   path /= "a";
   std::string element_path_modified = path.string();
 
-  boost::shared_ptr<PdDir> da(GetPdDir(element_path_modified, CONNECT,
+  std::shared_ptr<PdDir> da(GetPdDir(element_path_modified, CONNECT,
       &result));
   if (result != kSuccess)
     return result;
@@ -424,7 +424,7 @@ int DataAtlasHandler::GetDirKey(const std::string &element_path,
     *dir_key = maidsafe::SessionSingleton::getInstance()->RootDbKey();
     return kSuccess;
   }
-  boost::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
+  std::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("In DAH::GetDirKey, result from GetPdDir = %i\n", result);
@@ -437,7 +437,7 @@ int DataAtlasHandler::GetDirKey(const std::string &element_path,
 int DataAtlasHandler::GetDataMap(const std::string &element_path,
                                  std::string *ser_dm) {
   int result = kDataAtlasError;
-  boost::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
+  std::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("In DAH::GetDataMap, result from GetPdDir = %i\n", result);
@@ -453,7 +453,7 @@ int DataAtlasHandler::GetMetaDataMap(const std::string &element_path,
   // printf("\t\tDataAtlasHandler::GetMetaDataMap %s\n", element_path.c_str());
 #endif
   int result = kDataAtlasError;
-  boost::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
+  std::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
   if (result != kSuccess)
     return result;
   std::string the_path(GetElementNameFromPath(element_path));
@@ -467,7 +467,7 @@ int DataAtlasHandler::GetMetaDataMap(const std::string &element_path,
 
 int DataAtlasHandler::ChangeCtime(const std::string &element_path) {
   int result = kDataAtlasError;
-  boost::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
+  std::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
   if (result != kSuccess)
     return result;
   return da->ChangeCtime(GetElementNameFromPath(element_path));
@@ -475,7 +475,7 @@ int DataAtlasHandler::ChangeCtime(const std::string &element_path) {
 
 int DataAtlasHandler::ChangeMtime(const std::string &element_path) {
   int result = kDataAtlasError;
-  boost::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
+  std::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
   if (result != kSuccess)
     return result;
   return da->ChangeMtime(GetElementNameFromPath(element_path));
@@ -483,7 +483,7 @@ int DataAtlasHandler::ChangeMtime(const std::string &element_path) {
 
 int DataAtlasHandler::ChangeAtime(const std::string &element_path) {
   int result = kDataAtlasError;
-  boost::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
+  std::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
   if (result != kSuccess)
     return result;
   return da->ChangeAtime(GetElementNameFromPath(element_path));
@@ -496,7 +496,7 @@ int DataAtlasHandler::DisconnectPdDir(const std::string &branch_path) {
   path /= "a";
   std::string element_path_modified = path.string();
 
-  boost::shared_ptr<PdDir> da(GetPdDir(element_path_modified, DISCONNECT,
+  std::shared_ptr<PdDir> da(GetPdDir(element_path_modified, DISCONNECT,
       &result));
   return result;
 }

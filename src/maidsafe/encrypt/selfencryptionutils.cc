@@ -49,7 +49,7 @@ namespace encrypt {
 
 namespace utils {
 
-int EncryptContent(boost::shared_ptr<DataIOHandler> input_handler,
+int EncryptContent(std::shared_ptr<DataIOHandler> input_handler,
                    const fs3::path &output_dir,
                    DataMap *data_map,
                    std::map<std::string, fs3::path> *to_chunk_store) {
@@ -66,10 +66,10 @@ int EncryptContent(boost::shared_ptr<DataIOHandler> input_handler,
   std::string file_hash = EncodeToHex(data_map->file_hash());
   if (file_hash.empty()) {
     if (input_handler->Type() == DataIOHandler::kFileIOHandler) {
-      file_hash = SHA512(boost::shared_static_cast<FileIOHandler>
+      file_hash = SHA512(std::static_pointer_cast<FileIOHandler>
                   (input_handler)->FilePath());
     } else {
-      file_hash = SHA512(boost::shared_static_cast<StringIOHandler>
+      file_hash = SHA512(std::static_pointer_cast<StringIOHandler>
                   (input_handler)->Data());
     }
   }
@@ -205,7 +205,7 @@ int EncryptContent(boost::shared_ptr<DataIOHandler> input_handler,
 int DecryptContent(const DataMap &data_map,
                    std::vector<fs3::path> chunk_paths,
                    const boost::uint64_t &offset,
-                   boost::shared_ptr<DataIOHandler> output_handler) {
+                   std::shared_ptr<DataIOHandler> output_handler) {
   if (!output_handler)
     return kNullPointer;
   std::string file_hash(EncodeToHex(data_map.file_hash()));
@@ -370,18 +370,18 @@ int DecryptDataMap(const std::string &encrypted_data_map,
   return kSuccess;
 }
 
-int CheckEntry(boost::shared_ptr<DataIOHandler> input_handler) {
+int CheckEntry(std::shared_ptr<DataIOHandler> input_handler) {
   // if file size < 2 bytes, it's too small to chunk
   boost::uint64_t filesize(0);
   input_handler->Size(&filesize);
   return filesize < 2 ? kInputTooSmall : kSuccess;
 }
 
-bool CheckCompressibility(boost::shared_ptr<DataIOHandler> input_handler) {
+bool CheckCompressibility(std::shared_ptr<DataIOHandler> input_handler) {
   int nElements = sizeof(kNoCompressType) / sizeof(kNoCompressType[0]);
   if (input_handler->Type() == DataIOHandler::kFileIOHandler) {
     try {
-      std::string extension = boost::shared_static_cast<FileIOHandler>(
+      std::string extension = std::static_pointer_cast<FileIOHandler>(
           input_handler)->FilePath().extension().string();
       std::set<std::string> no_comp(kNoCompressType,
                                     kNoCompressType + nElements);
@@ -428,7 +428,7 @@ bool CheckCompressibility(boost::shared_ptr<DataIOHandler> input_handler) {
 }
 
 bool CalculateChunkSizes(const std::string &file_hash,
-                         boost::shared_ptr<DataIOHandler> input_handler,
+                         std::shared_ptr<DataIOHandler> input_handler,
                          DataMap *data_map,
                          boost::uint16_t *chunk_count) {
   boost::uint64_t file_size = 0;
@@ -497,7 +497,7 @@ int ChunkAddition(char hex_digit) {
 }
 
 bool GeneratePreEncryptionHashes(
-    boost::shared_ptr<DataIOHandler> input_handler,
+    std::shared_ptr<DataIOHandler> input_handler,
     DataMap *data_map) {
   if (!input_handler->Open())
     return false;

@@ -23,7 +23,7 @@
 */
 
 #include "maidsafe/client/sessionsingleton.h"
-#include <boost/tr1/memory.hpp>
+#include <memory>
 #include "maidsafe/common/commonutils.h"
 
 namespace maidsafe {
@@ -187,8 +187,8 @@ int SessionSingleton::GetKey(const passport::PacketType &packet_type,
                              std::string *public_key,
                              std::string *private_key,
                              std::string *public_key_signature) {
-  std::tr1::shared_ptr<passport::SignaturePacket> packet(
-      std::tr1::static_pointer_cast<passport::SignaturePacket>(
+  std::shared_ptr<passport::SignaturePacket> packet(
+      std::static_pointer_cast<passport::SignaturePacket>(
           passport_->GetPacket(packet_type, true)));
   int result(packet ? kSuccess : kGetKeyFailure);
   if (id) {
@@ -220,7 +220,7 @@ int SessionSingleton::GetKey(const passport::PacketType &packet_type,
 
 bool SessionSingleton::CreateTestPackets(const std::string &public_username) {
   passport_->Init();
-  std::tr1::shared_ptr<passport::SignaturePacket>
+  std::shared_ptr<passport::SignaturePacket>
       pkt(new passport::SignaturePacket);
   if (passport_->InitialiseSignaturePacket(passport::ANMAID, pkt) != kSuccess)
     return false;

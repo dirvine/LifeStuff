@@ -26,8 +26,7 @@
 #define MAIDSAFE_ENCRYPT_SELFENCRYPTIONUTILS_H_
 
 #include <boost/filesystem.hpp>
-#include <boost/tr1/memory.hpp>
-
+#include <memory>
 #include <map>
 #include <string>
 #include <vector>
@@ -43,14 +42,14 @@ class DataMap;
 
 namespace utils {
 
-int EncryptContent(boost::shared_ptr<DataIOHandler> input_handler,
+int EncryptContent(std::shared_ptr<DataIOHandler> input_handler,
                    const fs3::path &output_dir,
                    DataMap *data_map,
                    std::map<std::string, fs3::path> *to_chunk_store);
 int DecryptContent(const DataMap &data_map,
                    std::vector<fs3::path> chunk_paths,
                    const boost::uint64_t &offset,
-                   boost::shared_ptr<DataIOHandler> output_handler);
+                   std::shared_ptr<DataIOHandler> output_handler);
 int EncryptDataMap(const DataMap &data_map,
                    const std::string &this_directory_key,
                    const std::string &parent_directory_key,
@@ -60,10 +59,10 @@ int DecryptDataMap(const std::string &encrypted_data_map,
                    const std::string &parent_directory_key,
                    DataMap *data_map);
 // check to ensure entry is encryptable
-int CheckEntry(boost::shared_ptr<DataIOHandler> input_handler);
-bool CheckCompressibility(boost::shared_ptr<DataIOHandler> input_handler);
+int CheckEntry(std::shared_ptr<DataIOHandler> input_handler);
+bool CheckCompressibility(std::shared_ptr<DataIOHandler> input_handler);
 bool CalculateChunkSizes(const std::string &file_hash,
-                         boost::shared_ptr<DataIOHandler> input_handler,
+                         std::shared_ptr<DataIOHandler> input_handler,
                          DataMap *data_map,
                          boost::uint16_t *chunk_count);
 // returns a positive or negative int based on char passed into it to
@@ -71,7 +70,7 @@ bool CalculateChunkSizes(const std::string &file_hash,
 // through to 'f' returns 7
 int ChunkAddition(char hex_digit);
 bool GeneratePreEncryptionHashes(
-    boost::shared_ptr<DataIOHandler> input_handler,
+    std::shared_ptr<DataIOHandler> input_handler,
     DataMap *data_map);
 // Generate a string of required_size from input in a repeatable way
 bool ResizeObfuscationHash(const std::string &input,

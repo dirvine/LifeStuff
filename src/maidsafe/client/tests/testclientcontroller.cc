@@ -96,7 +96,7 @@ class ClientControllerTest : public testing::Test {
   NetworkTest network_test_;
   ClientController *cc_;
   SessionSingleton *ss_;
-  boost::shared_ptr<TestStoreManager> sm_;
+  std::shared_ptr<TestStoreManager> sm_;
   VaultConfigParameters vcp_;
  private:
   ClientControllerTest(const ClientControllerTest&);

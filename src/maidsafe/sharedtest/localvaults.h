@@ -78,7 +78,7 @@
 //   public:
 //    Env(const boost::uint8_t &k,
 //        const int kNetworkSize,
-//        std::vector<boost::shared_ptr<vault::PDVault> > *pdvaults,
+//        std::vector<std::shared_ptr<vault::PDVault> > *pdvaults,
 //        fs::path *kadconfig)
 //        : K_(k),
 //          vault_dir_(file_system::TempDir() / ("maidsafe_TestVaults_" +
@@ -118,7 +118,7 @@
 //          fs::create_directories(local_dir);
 //        }
 //
-//        boost::shared_ptr<vault::PDVault>
+//        std::shared_ptr<vault::PDVault>
 //            pdvault_local(new vault::PDVault(public_key, private_key, signed_key,
 //                          local_dir, 0, false, false, kad_config_file_,
 //                          1073741824, 0, K_));
@@ -226,7 +226,7 @@
 //    Env &operator=(const Env&);
 //    boost::uint8_t K_;
 //    fs::path vault_dir_, chunkstore_dir_, kad_config_file_;
-//    std::vector< boost::shared_ptr<vault::PDVault> > *pdvaults_;
+//    std::vector< std::shared_ptr<vault::PDVault> > *pdvaults_;
 //    const int kNetworkSize_;
 //    int current_nodes_created_;
 //  };

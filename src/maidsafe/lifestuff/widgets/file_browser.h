@@ -15,7 +15,7 @@
 #ifndef QT_WIDGETS_FILE_BROWSER_H_
 #define QT_WIDGETS_FILE_BROWSER_H_
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include <QAction>
 #include <QFileSystemModel>
@@ -86,7 +86,7 @@ class FileBrowser : public QDialog {
   void setViewMode(ViewMode viewMode);
   ViewMode viewMode_;
 
-  boost::shared_ptr<QProcess> myProcess_;
+  std::shared_ptr<QProcess> myProcess_;
 
   QIcon getAssociatedIconFromPath(const QString& filepath);
   QString getCurrentTreePath(QTreeWidgetItem* item);

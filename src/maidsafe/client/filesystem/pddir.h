@@ -51,7 +51,6 @@
 #define MAIDSAFE_CLIENT_FILESYSTEM_PDDIR_H_
 
 #include <boost/filesystem.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include <map>
 #include <string>
@@ -108,7 +107,7 @@ class PdDir {
   // disconnect from current db.
   int ChangeTime(const fs::path &file_name, char time_type);
   void SanitiseSingleQuotes(std::string *str);
-  boost::shared_ptr<CppSQLite3DB> db_;
+  std::shared_ptr<CppSQLite3DB> db_;
   fs::path db_name_;
   bool connected_;
 };

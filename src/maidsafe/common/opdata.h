@@ -204,7 +204,7 @@ struct SingleOpDataHolder {
   }
     std::string node_id;
     ResponseType response;
-    boost::shared_ptr<rpcprotocol::Controller> controller;
+    std::shared_ptr<rpcprotocol::Controller> controller;
 };
 
 // This is used to hold the data required to perform a Kad lookup to get a
@@ -215,7 +215,7 @@ struct WatchListOpData {
   typedef SingleOpDataHolder<AddToWatchListResponse> AddToWatchDataHolder;
   typedef SingleOpDataHolder<RemoveFromWatchListResponse>
       RemoveFromWatchDataHolder;
-  explicit WatchListOpData(boost::shared_ptr<StoreData> sd)
+  explicit WatchListOpData(std::shared_ptr<StoreData> sd)
       : store_data(sd),
         mutex(),
         chunk_info_holders(),
@@ -227,7 +227,7 @@ struct WatchListOpData {
         consensus_upload_copies(-1),
         payment_values(),
         task_id(kRootTask) {}
-  boost::shared_ptr<StoreData> store_data;
+  std::shared_ptr<StoreData> store_data;
   boost::mutex mutex;
   std::vector<kad::Contact> chunk_info_holders;
   std::vector<AddToWatchDataHolder> add_to_watchlist_data_holders;
@@ -256,7 +256,7 @@ struct ExpectAmendmentOpData {
 // This is used to hold the data required to perform a SendChunkPrep followed by
 // a SendChunkContent operation.
 struct SendChunkData {
-  explicit SendChunkData(boost::shared_ptr<StoreData> sd)
+  explicit SendChunkData(std::shared_ptr<StoreData> sd)
       : store_data(sd),
         peer(),
         local(false),
@@ -268,14 +268,14 @@ struct SendChunkData {
         chunk_copy_task_id(kRootTask) {
     controller->set_timeout(120);
   }
-  boost::shared_ptr<StoreData> store_data;
+  std::shared_ptr<StoreData> store_data;
   kad::Contact peer;
   bool local;
   StorePrepRequest store_prep_request;
   StorePrepResponse store_prep_response;
   StoreChunkRequest store_chunk_request;
   StoreChunkResponse store_chunk_response;
-  boost::shared_ptr<rpcprotocol::Controller> controller;
+  std::shared_ptr<rpcprotocol::Controller> controller;
   TaskId chunk_copy_task_id;
 };
 
@@ -321,13 +321,13 @@ struct AmendAccountData {
 
 struct GenericConditionData {
  public:
-  explicit GenericConditionData(boost::shared_ptr<boost::condition_variable> cv)
+  explicit GenericConditionData(std::shared_ptr<boost::condition_variable> cv)
       : cond_flag(false),
         cond_variable(cv),
         cond_mutex() {}
   ~GenericConditionData() {}
   bool cond_flag;
-  boost::shared_ptr<boost::condition_variable> cond_variable;
+  std::shared_ptr<boost::condition_variable> cond_variable;
   boost::mutex cond_mutex;
  private:
   GenericConditionData &operator=(const GenericConditionData&);
@@ -385,7 +385,7 @@ class GetChunkOpData {
   std::map<std::string, kad::Contact> chunk_holder_contacts;
   std::vector<GetChunkReferencesResponse> ref_responses;
   std::vector<CheckChunkResponse> check_responses;
-  std::list< boost::shared_ptr<rpcprotocol::Controller> > controllers;
+  std::list< std::shared_ptr<rpcprotocol::Controller> > controllers;
   boost::mutex mutex;
   boost::condition_variable condition;
  private:

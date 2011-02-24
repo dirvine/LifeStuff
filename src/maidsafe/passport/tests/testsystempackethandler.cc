@@ -22,7 +22,7 @@
 
 #include <gtest/gtest.h>
 #include <boost/lexical_cast.hpp>
-#include <boost/tr1/memory.hpp>
+#include <memory>
 #include "maidsafe-dht/common/utils.h"
 
 #include "maidsafe/passport/systempackethandler.h"
@@ -46,10 +46,10 @@ boost::uint32_t NonZeroRnd() {
 
 class SystemPacketHandlerTest : public testing::Test {
  public:
-  typedef boost::shared_ptr<pki::Packet> PacketPtr;
-  typedef boost::shared_ptr<SignaturePacket> SignaturePtr;
-  typedef boost::shared_ptr<MidPacket> MidPtr;
-  typedef boost::shared_ptr<TmidPacket> TmidPtr;
+  typedef std::shared_ptr<pki::Packet> PacketPtr;
+  typedef std::shared_ptr<SignaturePacket> SignaturePtr;
+  typedef std::shared_ptr<MidPacket> MidPtr;
+  typedef std::shared_ptr<TmidPacket> TmidPtr;
   SystemPacketHandlerTest()
       : packet_handler_(),
         crypto_key_pairs_(kRsaKeySize, kMaxThreadCount),
@@ -204,13 +204,13 @@ class SystemPacketHandlerTest : public testing::Test {
   crypto::RsaKeyPair pmid_keys1_, pmid_keys2_, anmid_keys1_, anmid_keys2_;
   crypto::RsaKeyPair ansmid_keys1_, ansmid_keys2_, antmid_keys1_, antmid_keys2_;
   crypto::RsaKeyPair anmpid_keys1_, anmpid_keys2_, anmaid_keys1_, anmaid_keys2_;
-  std::vector< boost::shared_ptr<pki::Packet> > packets1_, packets2_;
+  std::vector< std::shared_ptr<pki::Packet> > packets1_, packets2_;
 };
 
 TEST_F(SystemPacketHandlerTest, FUNC_PASSPORT_All) {
   // *********************** Test AddPendingPacket *****************************
   // Add pending for each packet type
-  std::vector< boost::shared_ptr<pki::Packet> >::iterator packets1_itr =
+  std::vector< std::shared_ptr<pki::Packet> >::iterator packets1_itr =
       packets1_.begin();
   while (packets1_itr != packets1_.end())
     EXPECT_TRUE(packet_handler_.AddPendingPacket(*packets1_itr++));
@@ -226,7 +226,7 @@ TEST_F(SystemPacketHandlerTest, FUNC_PASSPORT_All) {
   }
 
   // Overwrite pending for each packet type
-  std::vector< boost::shared_ptr<pki::Packet> >::iterator packets2_itr =
+  std::vector< std::shared_ptr<pki::Packet> >::iterator packets2_itr =
       packets2_.begin();
   while (packets2_itr != packets2_.end())
     EXPECT_TRUE(packet_handler_.AddPendingPacket(*packets2_itr++));

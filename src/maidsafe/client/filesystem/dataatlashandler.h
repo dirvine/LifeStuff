@@ -26,7 +26,6 @@
 #define MAIDSAFE_CLIENT_FILESYSTEM_DATAATLASHANDLER_H_
 
 #include <boost/filesystem.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include <map>
 #include <string>
@@ -80,7 +79,7 @@ class DataAtlasHandler {
 
  private:
   std::string GetElementNameFromPath(const std::string &element_path);
-  boost::shared_ptr<PdDir> GetPdDir(const std::string &element_path,
+  std::shared_ptr<PdDir> GetPdDir(const std::string &element_path,
                                     DbInitFlag flag,
                                     int *result);
   int CopyDb(const std::string &original_path_,
@@ -89,7 +88,7 @@ class DataAtlasHandler {
                   std::vector<fs::path> *subdirs_);
   int CopySubDbs(const std::string &original_path_,
                  const std::string &target_path_);
-  boost::shared_ptr<KeyAtlas> GetKeysDb(DbInitFlag flag_, int *result);
+  std::shared_ptr<KeyAtlas> GetKeysDb(DbInitFlag flag_, int *result);
   fs::path db_dir_;
 };
 

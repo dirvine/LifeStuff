@@ -61,8 +61,8 @@ class ContactCacheTest : public testing::Test {
   std::string pmid_;
 //  transport::TransportHandler transport_handler_;
 //  rpcprotocol::ChannelManager channel_manager_;
-  boost::shared_ptr<ChunkStore> chunkstore_;
-  boost::shared_ptr<kademlia::Node> mko_;
+  std::shared_ptr<ChunkStore> chunkstore_;
+  std::shared_ptr<kademlia::Node> mko_;
   ContactCache contact_cache_;
   std::string fail_response_, good_response_;
 };

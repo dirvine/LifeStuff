@@ -109,8 +109,8 @@ class CBPHandlerTest : public testing::Test {
   }
 
   NetworkTest network_test_;
-  boost::shared_ptr<ClientBufferPacketHandler> cbph_;
-  boost::shared_ptr<BufferPacketRpcs> bp_rpcs_;
+  std::shared_ptr<ClientBufferPacketHandler> cbph_;
+  std::shared_ptr<BufferPacketRpcs> bp_rpcs_;
   std::vector<crypto::RsaKeyPair> keys_;
 };
 

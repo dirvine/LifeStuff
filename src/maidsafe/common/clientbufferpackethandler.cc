@@ -35,7 +35,7 @@ namespace maidsafe {
 //  ser_owner_info->set_signature(
 //      RSASign(ser_owner_info->data(), args.kMpidPrivateKey));
 //
-//  boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
+//  std::shared_ptr<ChangeBPData> data(new ChangeBPData);
 //  data->cb = cb;
 //  data->create_request.set_bufferpacket_name(
 //      SHA512String(args.kPublicUsername + args.kMpidPublicKey));
@@ -56,7 +56,7 @@ namespace maidsafe {
 //void ClientBufferPacketHandler::ModifyOwnerInfo(
 //    const BPInputParameters &args, const std::vector<std::string> &users,
 //    bp_operations_cb cb, const boost::int16_t &transport_id) {
-//  boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
+//  std::shared_ptr<ChangeBPData> data(new ChangeBPData);
 //  BufferPacketInfo buffer_packet_info;
 //  buffer_packet_info.set_owner(args.kPublicUsername);
 //  buffer_packet_info.set_owner_publickey(args.kMpidPublicKey);
@@ -88,7 +88,7 @@ namespace maidsafe {
 //void ClientBufferPacketHandler::GetMessages(
 //    const BPInputParameters &args, bp_getmessages_cb cb,
 //    const boost::int16_t &transport_id) {
-//  boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
+//  std::shared_ptr<ChangeBPData> data(new ChangeBPData);
 //  std::string bpname(SHA512String(args.kPublicUsername + args.kMpidPublicKey));
 //  data->get_msgs_request.set_bufferpacket_name(bpname);
 //  data->get_msgs_request.set_public_key(args.kMpidPublicKey);
@@ -112,7 +112,7 @@ namespace maidsafe {
 //    const std::string &recver_public_key, const std::string &receiver_id,
 //    const std::string &message, const MessageType &m_type,
 //    bp_operations_cb cb, const boost::int16_t &transport_id) {
-//  boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
+//  std::shared_ptr<ChangeBPData> data(new ChangeBPData);
 //
 //  BufferPacketMessage bpmsg;
 //  bpmsg.set_sender_id(my_pu);
@@ -151,7 +151,7 @@ namespace maidsafe {
 //void ClientBufferPacketHandler::GetPresence(
 //    const BPInputParameters &args, bp_getpresence_cb cb,
 //    const boost::int16_t &transport_id) {
-//  boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
+//  std::shared_ptr<ChangeBPData> data(new ChangeBPData);
 //  std::string bpname(SHA512String(args.kPublicUsername + args.kMpidPublicKey));
 //  data->get_presence_request.set_bufferpacket_name(bpname);
 //  data->get_presence_request.set_public_key(args.kMpidPublicKey);
@@ -174,7 +174,7 @@ namespace maidsafe {
 //    const BPInputParameters &args, const std::string &my_pu,
 //    const std::string &recver_public_key, const std::string &receiver_id,
 //    bp_operations_cb cb, const boost::int16_t &transport_id) {
-//  boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
+//  std::shared_ptr<ChangeBPData> data(new ChangeBPData);
 //
 //  LivePresence lp;
 //  lp.set_contact_id(my_pu);
@@ -204,7 +204,7 @@ namespace maidsafe {
 //}
 //
 //void ClientBufferPacketHandler::FindNodes(
-//    VoidFuncIntContacts cb, boost::shared_ptr<ChangeBPData> data) {
+//    VoidFuncIntContacts cb, std::shared_ptr<ChangeBPData> data) {
 //  switch (data->type) {
 //    case CREATEBP:
 ////        kad_ops_->FindKClosestNodes(data->create_request.bufferpacket_name(),
@@ -235,7 +235,7 @@ namespace maidsafe {
 //
 //void ClientBufferPacketHandler::FindNodesCallback(
 //    const ReturnCode &result, const std::vector<kad::Contact> &closest_nodes,
-//    boost::shared_ptr<ChangeBPData> data, const boost::int16_t &transport_id) {
+//    std::shared_ptr<ChangeBPData> data, const boost::int16_t &transport_id) {
 //  if (result != kSuccess || closest_nodes.size() < kUpperThreshold_) {
 //    switch (data->type) {
 //      case CREATEBP: data->cb(kStoreNewBPError);
@@ -262,7 +262,7 @@ namespace maidsafe {
 //    return;
 //  }
 //
-//  boost::shared_ptr<std::vector<ModifyBPCallbackData> >
+//  std::shared_ptr<std::vector<ModifyBPCallbackData> >
 //      cb_datas(new std::vector<ModifyBPCallbackData>);
 //  for (size_t n = 0; n < closest_nodes.size(); ++n) {
 //    ModifyBPCallbackData cb_data;
@@ -393,7 +393,7 @@ namespace maidsafe {
 //}
 //
 //void ClientBufferPacketHandler::ActionOnBpDone(
-//    boost::shared_ptr<std::vector<ModifyBPCallbackData> > cb_datas,
+//    std::shared_ptr<std::vector<ModifyBPCallbackData> > cb_datas,
 //    boost::int16_t index) {
 //  cb_datas->at(index).is_calledback = true;
 //  // Reply of ModifyBPInfo Rpc

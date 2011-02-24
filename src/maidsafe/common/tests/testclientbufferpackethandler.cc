@@ -315,12 +315,12 @@
 //
 //  class MockBPH : public maidsafe::ClientBufferPacketHandler {
 //   public:
-//    MockBPH(boost::shared_ptr<maidsafe::BufferPacketRpcs> rpcs,
-//            boost::shared_ptr<maidsafe::KadOps> kadops,
+//    MockBPH(std::shared_ptr<maidsafe::BufferPacketRpcs> rpcs,
+//            std::shared_ptr<maidsafe::KadOps> kadops,
 //            boost::uint8_t upper_threshold)
 //      : maidsafe::ClientBufferPacketHandler(rpcs, kadops, upper_threshold) {}
 //    MOCK_METHOD2(FindNodes, void(maidsafe::VoidFuncIntContacts,
-//                                 boost::shared_ptr<maidsafe::ChangeBPData>));
+//                                 std::shared_ptr<maidsafe::ChangeBPData>));
 //  };
 //
 //  class ClientBPTest : public testing::Test {
@@ -401,9 +401,9 @@
 //    transport::TransportHandler *trans_han_;
 //    rpcprotocol::ChannelManager *ch_man_;
 //    boost::filesystem::path test_dir_, kad_config_file_;
-//    boost::shared_ptr<maidsafe::ChunkStore> chunkstore_;
-//    boost::shared_ptr<maidsafe::KadOps> kad_ops_;
-//    boost::shared_ptr<MockBPRpcs> BPMock;
+//    std::shared_ptr<maidsafe::ChunkStore> chunkstore_;
+//    std::shared_ptr<maidsafe::KadOps> kad_ops_;
+//    std::shared_ptr<MockBPRpcs> BPMock;
 //    std::vector<crypto::RsaKeyPair> keys_;
 //  };
 //

@@ -24,7 +24,7 @@
 
 #include "boost/filesystem.hpp"
 #include "boost/filesystem/fstream.hpp"
-#include "boost/tr1/memory.hpp"
+#include <memory>
 #include "gtest/gtest.h"
 #include "maidsafe-dht/common/utils.h"
 
@@ -123,8 +123,8 @@ class SelfEncryptionTest : public testing::Test {
         kOutputDir_(kRootDir_ / "Outputs") {}
   ~SelfEncryptionTest() {}
  protected:
-  typedef std::tr1::shared_ptr<DataIOHandler> DataIoHandlerPtr;
-  typedef std::tr1::shared_ptr<std::string> StringPtr;
+  typedef std::shared_ptr<DataIOHandler> DataIoHandlerPtr;
+  typedef std::shared_ptr<std::string> StringPtr;
   void SetUp() {
     if (fs::exists(kRootDir_))
       fs::remove_all(kRootDir_);

@@ -128,7 +128,7 @@ class StoreManagerInterface {
   virtual int ModifyBPInfo(const std::string &info)=0;
   virtual int LoadBPMessages(
       std::list<ValidatedBufferPacketMessage> *messages)=0;
-  virtual int SendMessage(const std::vector<std::string> &receivers,
+  virtual int SendAMessage(const std::vector<std::string> &receivers,
                            const std::string &message,
                            const MessageType &m_type,
                            std::map<std::string, ReturnCode> *add_results)=0;

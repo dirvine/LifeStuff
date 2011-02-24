@@ -41,7 +41,7 @@
 //             false, test_kadops::K, chunkstore_) {}
 //    transport::TransportHandler transport_handler_;
 //    rpcprotocol::ChannelManager channel_manager_;
-//    boost::shared_ptr<ChunkStore> chunkstore_;
+//    std::shared_ptr<ChunkStore> chunkstore_;
 //    MockKadOps mko_;
 //  };
 //
