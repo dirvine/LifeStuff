@@ -204,8 +204,17 @@ void MidPacket::Initialise() {
     return Clear();
 
   salt_ = crypto::Hash<crypto::SHA512>(pin_ + username_);
-  std::string secure_password = crypto::SecurePassword(username_, salt_,
-      boost::lexical_cast<boost::uint32_t>(pin_));
+  boost::uint32_t pin;
+  try {
+    pin = boost::lexical_cast<boost::uint32_t>(pin_);
+  } 
+  catch(boost::bad_lexical_cast & e){
+#ifdef DEBUG
+    printf("MidPacket::Initialise: Bad pin: %s\n", e.what());
+#endif
+    return Clear();
+  }
+  std::string secure_password = crypto::SecurePassword(username_, salt_, pin);
   secure_key_ = secure_password.substr(0, crypto::AES256_KeySize);
   secure_iv_ = secure_password.substr(crypto::AES256_KeySize,
                                       crypto::AES256_IVSize);
