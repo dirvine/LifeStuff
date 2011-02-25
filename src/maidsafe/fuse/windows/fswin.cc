@@ -25,7 +25,7 @@ THE SOFTWARE.
 #include "maidsafe/fuse/windows/fswin.h"
 
 #include <winbase.h>
-#include <boost/lexical_cast.hpp>
+#include "boost/lexical_cast.hpp"
 
 #include <list>
 #include <map>

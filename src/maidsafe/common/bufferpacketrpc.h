@@ -25,10 +25,8 @@
 #ifndef MAIDSAFE_COMMON_BUFFERPACKETRPC_H_
 #define MAIDSAFE_COMMON_BUFFERPACKETRPC_H_
 
-#include <boost/cstdint.hpp>
-
+#include "boost/cstdint.hpp"
 #include <string>
-
 #include "maidsafe/common/maidsafe_service.pb.h"
 
 namespace kad { class Contact; }

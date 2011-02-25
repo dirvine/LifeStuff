@@ -28,15 +28,12 @@
 #include "boost/function.hpp"
 #include "boost/signals2/signal.hpp"
 #include "boost/thread/condition_variable.hpp"
-
 //  #include <maidsafe/maidsafe-dht.h>
-#include <maidsafe/passport/passport.h>
-
+#include "maidsafe/passport/passport.h"
 #include <list>
 #include <map>
 #include <string>
 #include <vector>
-
 #include "maidsafe/common/maidsafe.h"
 #include "maidsafe/common/maidsafe_service_messages.pb.h"
 

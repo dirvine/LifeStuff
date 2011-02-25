@@ -22,9 +22,9 @@
 #ifndef MAIDSAFE_SHAREDTEST_NETWORKTEST_H_
 #define MAIDSAFE_SHAREDTEST_NETWORKTEST_H_
 
-#include <boost/cstdint.hpp>
-#include <boost/filesystem.hpp>
-#include <gtest/gtest.h>
+#include "boost/cstdint.hpp"
+#include "boost/filesystem.hpp"
+#include "gtest/gtest.h"
 //  #include <maidsafe/maidsafe-dht_config.h>
 //  #include <maidsafe/rpcprotocol/channelmanager-api.h>
 //  #include <maidsafe/transport/transporthandler-api.h>

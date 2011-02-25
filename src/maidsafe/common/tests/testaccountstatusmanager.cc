@@ -22,10 +22,8 @@
 #include "boost/thread.hpp"
 #include "gtest/gtest.h"
 #include "maidsafe-dht/common/utils.h"
-
 #include <algorithm>
 #include <limits>
-
 #include "maidsafe/common/accountstatusmanager.h"
 
 namespace maidsafe {

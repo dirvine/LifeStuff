@@ -19,7 +19,7 @@
 #include <QWidget>
 #include <QString>
 
-#include <boost/thread/mutex.hpp>
+#include "boost/thread/mutex.hpp"
 
 // local
 #include "maidsafe/lifestuff/client/client_controller.h"

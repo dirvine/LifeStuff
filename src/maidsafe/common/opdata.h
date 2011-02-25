@@ -22,15 +22,13 @@
 #define MAIDSAFE_COMMON_OPDATA_H_
 
 
-#include <boost/cstdint.hpp>
-#include <maidsafe/passport/passport.h>
-
+#include "boost/cstdint.hpp"
+#include "maidsafe/passport/passport.h"
 #include <list>
 #include <map>
 #include <set>
 #include <string>
 #include <vector>
-
 #include "maidsafe/common/chunkstore.h"
 #include "maidsafe/common/maidsafe.h"
 #include "maidsafe/common/maidsafe_service.pb.h"

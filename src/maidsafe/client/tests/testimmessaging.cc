@@ -22,14 +22,13 @@
 * ============================================================================
 */
 
-#include <gtest/gtest.h>
-#include <boost/bind.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <maidsafe/maidsafe-dht_config.h>
-#include <maidsafe/transport/transport-api.h>
-#include <maidsafe/transport/transportudt.h>
-#include <maidsafe/protobuf/general_messages.pb.h>
-
+#include "gtest/gtest.h"
+#include "boost/bind.hpp"
+#include "boost/filesystem/fstream.hpp"
+#include "maidsafe/maidsafe-dht_config.h"
+#include "maidsafe/transport/transport-api.h"
+#include "maidsafe/transport/transportudt.h"
+#include "maidsafe/protobuf/general_messages.pb.h"
 #include "maidsafe/client/imconnectionhandler.h"
 #include "maidsafe/client/maidstoremanager.h"
 #include "maidsafe/client/sessionsingleton.h"

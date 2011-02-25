@@ -25,7 +25,7 @@
 #ifndef MAIDSAFE_ENCRYPT_SELFENCRYPTIONUTILS_H_
 #define MAIDSAFE_ENCRYPT_SELFENCRYPTIONUTILS_H_
 
-#include <boost/filesystem.hpp>
+#include "boost/filesystem.hpp"
 #include <memory>
 #include <map>
 #include <string>

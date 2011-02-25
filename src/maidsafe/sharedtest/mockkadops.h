@@ -21,7 +21,7 @@
 #ifndef MAIDSAFE_SHAREDTEST_MOCKKADOPS_H_
 #define MAIDSAFE_SHAREDTEST_MOCKKADOPS_H_
 
-#include <gmock/gmock.h>
+#include gmock/gmock.h
 
 #include <vector>
 #include <string>

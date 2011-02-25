@@ -24,11 +24,9 @@
 
 #include "maidsafe/client/filesystem/pddir.h"
 
-#include <boost/filesystem.hpp>
-#include <boost/lexical_cast.hpp>
-
+#include "boost/filesystem.hpp"
+#include "boost/lexical_cast.hpp"
 #include <exception>
-
 #include "maidsafe/common/cppsqlite3.h"
 #include "maidsafe/client/clientutils.h"
 

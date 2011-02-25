@@ -15,8 +15,8 @@
 #ifndef MAIDSAFE_LIFESTUFF_CLIENT_CHECK_FOR_MESSAGES_THREAD_H_
 #define MAIDSAFE_LIFESTUFF_CLIENT_CHECK_FOR_MESSAGES_THREAD_H_
 
-#include <boost/cstdint.hpp>
-#include <boost/thread/mutex.hpp>
+#include "boost/cstdint.hpp"
+#include "boost/thread/mutex.hpp"
 #include "maidsafe/lifestuff/client/worker_thread.h"
 
 class CheckForMessagesThread : public QThread {

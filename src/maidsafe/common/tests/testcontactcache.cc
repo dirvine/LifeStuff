@@ -18,7 +18,7 @@
 * ============================================================================
 */
 
-#include <gtest/gtest.h>
+#include "gtest/gtest.h"
 #include "maidsafe/common/commonutils.h"
 #include "maidsafe/common/contactcache.h"
 #include "maidsafe/common/chunkstore.h"

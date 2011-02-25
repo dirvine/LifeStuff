@@ -29,7 +29,7 @@
 #ifndef MAIDSAFE_COMMON_FILESYSTEM_H_
 #define MAIDSAFE_COMMON_FILESYSTEM_H_
 
-#include <boost/filesystem.hpp>
+#include "boost/filesystem.hpp"
 #include <string>
 
 namespace fs = boost::filesystem;

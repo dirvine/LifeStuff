@@ -23,9 +23,7 @@
 */
 
 #include "maidsafe/encrypt/selfencryption.h"
-
 #include <set>
-
 #include "maidsafe/encrypt/dataiohandler.h"
 #include "maidsafe/encrypt/datamap.pb.h"
 #include "maidsafe/encrypt/selfencryptionconfig.h"

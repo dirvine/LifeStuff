@@ -23,7 +23,6 @@
 */
 
 #include "maidsafe/common/commonutils.h"
-
 #include "boost/function.hpp"
 #include "maidsafe-dht/common/crypto.h"
 #include "maidsafe-dht/kademlia/contact.h"

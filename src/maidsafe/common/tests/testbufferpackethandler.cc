@@ -22,11 +22,9 @@
 * ============================================================================
 */
 
-#include <gtest/gtest.h>
-
+#include "gtest/gtest.h"
 #include "maidsafe/common/clientbufferpackethandler.h"
 #include "maidsafe/common/bufferpacketrpc.h"
-
 #include "maidsafe/sharedtest/cached_keys.h"
 #include "maidsafe/sharedtest/networktest.h"
 

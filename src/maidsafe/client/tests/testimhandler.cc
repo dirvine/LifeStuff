@@ -22,7 +22,7 @@
 * ============================================================================
 */
 
-#include <gtest/gtest.h>
+#include "gtest/gtest.h"
 #include "maidsafe/common/commonutils.h"
 #include "maidsafe/common/maidsafe.h"
 #include "maidsafe/client/imhandler.h"

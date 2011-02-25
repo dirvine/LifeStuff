@@ -18,9 +18,9 @@
 * ============================================================================
 */
 
-#include <gtest/gtest.h>
-#include <boost/thread/thread.hpp>
-#include <boost/concept_check.hpp>
+#include "gtest/gtest.h"
+#include "boost/thread/thread.hpp"
+#include "boost/concept_check.hpp"
 #include <algorithm>
 #include "maidsafe/client/storemanagertaskshandler.h"
 

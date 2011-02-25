@@ -31,10 +31,8 @@
 #include "boost/shared_ptr.hpp"
 #include "boost/thread.hpp"
 #include "maidsafe-dht/common/utils.h"
-
 #include <string>
 #include <vector>
-
 #include "maidsafe/common/packet.pb.h"
 
 namespace fs3 = boost::filesystem3;

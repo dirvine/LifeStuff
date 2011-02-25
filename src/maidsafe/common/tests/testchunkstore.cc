@@ -12,9 +12,9 @@
  *      Author: Jose, Haiyang
  */
 
-#include <boost/thread.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <gtest/gtest.h>
+#include "boost/thread.hpp"
+#include "boost/filesystem/fstream.hpp"
+#include "gtest/gtest.h"
 #include "maidsafe/common/chunkstore.h"
 #include "maidsafe/common/commonutils.h"
 #include "maidsafe/common/filesystem.h"

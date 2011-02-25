@@ -17,7 +17,7 @@
 // qt
 #include <QDebug>
 
-#include <boost/lexical_cast.hpp>
+#include "boost/lexical_cast.hpp"
 // std
 #include <string>
 

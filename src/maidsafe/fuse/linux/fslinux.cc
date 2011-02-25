@@ -28,9 +28,9 @@
  */
 #include "maidsafe/fuse/linux/fslinux.h"
 
-#include <boost/filesystem/convenience.hpp>
-#include <boost/bind.hpp>
-#include <boost/filesystem/path.hpp>
+#include "boost/filesystem/convenience.hpp"
+#include "boost/bind.hpp"
+#include "boost/filesystem/path.hpp"
 
 #include <unistd.h>
 #include <errno.h>

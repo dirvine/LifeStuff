@@ -23,11 +23,11 @@
 */
 
 
-#include <gtest/gtest.h>
-#include <boost/bind.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <maidsafe/transport/transportudt.h>
-#include <maidsafe/base/utils.h>
+#include "gtest/gtest.h"
+#include "boost/bind.hpp"
+#include "boost/scoped_ptr.hpp"
+#include "maidsafe/transport/transportudt.h"
+#include "maidsafe/base/utils.h"
 #include "maidsafe/client/imconnectionhandler.h"
 #include "maidsafe/common/packet.pb.h"
 #include "maidsafe/sharedtest/networktest.h"

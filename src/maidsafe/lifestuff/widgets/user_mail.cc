@@ -12,10 +12,8 @@
  *      Author: Stephen Alexander
  */
 #include "maidsafe/lifestuff/widgets/user_mail.h"
-
 #include <QMessageBox>
 #include <QDebug>
-
 #include "maidsafe/lifestuff/client/client_controller.h"
 
 

@@ -22,7 +22,7 @@
 * ============================================================================
 */
 
-#include <gtest/gtest.h>
+#include "gtest/gtest.h"
 #include "maidsafe/passport/cryptokeypairs.h"
 
 namespace maidsafe {

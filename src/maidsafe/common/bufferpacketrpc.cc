@@ -23,7 +23,6 @@
 */
 
 #include "maidsafe/common/bufferpacketrpc.h"
-
 #include "maidsafe-dht/kademlia/contact.h"
 
 namespace maidsafe {

@@ -25,7 +25,7 @@
 #ifndef MAIDSAFE_COMMON_COMMONUTILS_H_
 #define MAIDSAFE_COMMON_COMMONUTILS_H_
 
-#include <boost/filesystem.hpp>
+#include "boost/filesystem.hpp"
 #include <string>
 
 namespace kademlia { class Contact; }

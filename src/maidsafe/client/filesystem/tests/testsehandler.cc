@@ -22,10 +22,10 @@
 * ============================================================================
 */
 
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <gtest/gtest.h>
-#include <maidsafe/encrypt/selfencryption.h>
+#include "boost/filesystem.hpp"
+#include "boost/filesystem/fstream.hpp"
+#include "gtest/gtest.h"
+#include "maidsafe/encrypt/selfencryption.h"
 
 #include "maidsafe/common/chunkstore.h"
 #include "maidsafe/common/commonutils.h"

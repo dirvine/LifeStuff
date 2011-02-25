@@ -22,11 +22,10 @@
 * ============================================================================
 */
 
-#include <gtest/gtest.h>
-
-#include <boost/filesystem.hpp>
-#include <boost/thread.hpp>
-#include <boost/scoped_ptr.hpp>
+#include "gtest/gtest.h"
+#include "boost/filesystem.hpp"
+#include "boost/thread.hpp"
+#include "boost/scoped_ptr.hpp"
 
 #include "maidsafe/client/filesystem/pddir.h"
 

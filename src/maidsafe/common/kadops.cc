@@ -19,9 +19,7 @@
 */
 
 #include "maidsafe/common/kadops.h"
-
 #include <algorithm>
-
 #include "maidsafe/common/filesystem.h"
 #include "maidsafe/common/chunkstore.h"
 #include "maidsafe/common/packet.pb.h"

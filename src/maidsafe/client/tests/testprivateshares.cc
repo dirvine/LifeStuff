@@ -24,9 +24,9 @@
 * ============================================================================
 */
 
-#include <boost/filesystem.hpp>
-#include <gtest/gtest.h>
-#include <maidsafe/base/utils.h>
+#include "boost/filesystem.hpp"
+#include "gtest/gtest.h"
+#include "maidsafe/base/utils.h"
 #include "maidsafe/client/privateshares.h"
 
 namespace maidsafe {

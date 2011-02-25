@@ -15,8 +15,8 @@
 #include "maidsafe/lifestuff/widgets/vault_info.h"
 
 // boost
-#include <boost/lexical_cast.hpp>
-#include <boost/progress.hpp>
+#include "boost/lexical_cast.hpp"
+#include "boost/progress.hpp"
 
 // qt
 #include <QMessageBox>

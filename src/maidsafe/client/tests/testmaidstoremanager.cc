@@ -21,12 +21,11 @@
 * ============================================================================
 */
 
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
-#include <maidsafe/base/utils.h>
-#include <maidsafe/protobuf/contact_info.pb.h>
-#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
-
+#include "gtest/gtest.h"
+#include "gmock/gmock.h"
+#include "maidsafe/base/utils.h"
+#include "maidsafe/protobuf/contact_info.pb.h"
+#include "maidsafe/protobuf/kademlia_service_messages.pb.h"
 #include "maidsafe/common/chunkstore.h"
 #include "maidsafe/common/commonutils.h"
 #include "maidsafe/common/filesystem.h"

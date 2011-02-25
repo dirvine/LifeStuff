@@ -23,7 +23,7 @@
 */
 
 #include "maidsafe/client/imconnectionhandler.h"
-#include <boost/bind.hpp>
+#include "boost/bind.hpp"
 #include <utility>
 #include "maidsafe/common/packet.pb.h"
 

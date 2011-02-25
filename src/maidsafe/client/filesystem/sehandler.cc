@@ -24,11 +24,9 @@
 */
 
 #include "maidsafe/client/filesystem/sehandler.h"
-
-#include <boost/filesystem/fstream.hpp>
+#include "boost/filesystem/fstream.hpp"
 #include <memory>
-#include <maidsafe/encrypt/selfencryption.h>
-
+#include "maidsafe/encrypt/selfencryption.h"
 #include "maidsafe/common/commonutils.h"
 #include "maidsafe/common/chunkstore.h"
 #include "maidsafe/client/filesystem/dataatlashandler.h"

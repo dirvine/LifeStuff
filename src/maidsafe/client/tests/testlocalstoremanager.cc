@@ -20,9 +20,8 @@
 *
 * ============================================================================
 */
-#include <gtest/gtest.h>
-#include <boost/signals2/connection.hpp>
-
+#include "gtest/gtest.h"
+#include "boost/signals2/connection.hpp"
 #include "maidsafe/common/chunkstore.h"
 #include "maidsafe/common/commonutils.h"
 #include "maidsafe/common/filesystem.h"

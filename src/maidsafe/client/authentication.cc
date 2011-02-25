@@ -22,9 +22,7 @@
 */
 
 #include "maidsafe/client/authentication.h"
-
-#include <boost/regex.hpp>
-
+#include "boost/regex.hpp"
 #include "maidsafe/common/commonutils.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/storemanager.h"

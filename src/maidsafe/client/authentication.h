@@ -24,13 +24,11 @@
 #ifndef MAIDSAFE_CLIENT_AUTHENTICATION_H_
 #define MAIDSAFE_CLIENT_AUTHENTICATION_H_
 
-#include <boost/cstdint.hpp>
-#include <maidsafe/passport/passport.h>
-
+#include "boost/cstdint.hpp"
+#include "maidsafe/passport/passport.h"
 #include <memory>
 #include <string>
 #include <vector>
-
 #include "maidsafe/common/maidsafe.h"
 #include "maidsafe/common/returncodes.h"
 

@@ -22,7 +22,6 @@
 */
 #include "gtest/gtest.h"
 #include "maidsafe-dht/common/utils.h"
-
 #include "maidsafe/common/vaultbufferpackethandler.h"
 #include "maidsafe/common/commonutils.h"
 #include "maidsafe/sharedtest/cached_keys.h"

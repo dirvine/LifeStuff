@@ -13,7 +13,7 @@
  */
 #include "maidsafe/lifestuff/widgets/user_inbox.h"
 
-#include <boost/filesystem.hpp>
+#include "boost/filesystem.hpp"
 
 #include <QMessageBox>
 #include <QDebug>

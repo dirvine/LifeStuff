@@ -29,7 +29,7 @@
  */
 
 #include "maidsafe/common/filesystem.h"
-#include <boost/thread.hpp>
+#include "boost/thread.hpp"
 #include <stdio.h>
 #ifdef LifeStuff_WIN32
 #include <shlwapi.h>

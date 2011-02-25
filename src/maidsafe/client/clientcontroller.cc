@@ -28,7 +28,7 @@
 #include <shlwapi.h>
 #endif
 
-#include <boost/foreach.hpp>
+#include "boost/foreach.hpp"
 #include "maidsafe-dht/kademlia/contact.h"
 
 #include "maidsafe/common/chunkstore.h"

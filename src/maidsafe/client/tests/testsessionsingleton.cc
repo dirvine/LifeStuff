@@ -22,8 +22,7 @@
 * ============================================================================
 */
 
-#include <gtest/gtest.h>
-
+#include "gtest/gtest.h"
 #include "maidsafe/common/commonutils.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/sharedtest/cachepassport.h"

@@ -16,8 +16,8 @@
 #define MAIDSAFE_FUSE_LINUX_FUSECPP_H_
 #define FUSE_USE_VERSION 26
 #include <string.h>
-#include <fuse/fuse.h>
-#include <fuse/fuse_lowlevel.h>
+#include "fuse/fuse.h"
+#include "fuse/fuse_lowlevel.h"
 
 namespace fuse_cpp {
 

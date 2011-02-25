@@ -21,12 +21,10 @@
 * ============================================================================
 */
 
-#include <gtest/gtest.h>
-#include <boost/filesystem.hpp>
-
+#include "gtest/gtest.h"
+#include "boost/filesystem.hpp"
 #include <string>
 #include <vector>
-
 #include "maidsafe/common/chunkstore.h"
 #include "maidsafe/client/filesystem/dataatlashandler.h"
 #include "maidsafe/client/filesystem/pddir.h"

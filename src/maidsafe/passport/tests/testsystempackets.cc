@@ -21,8 +21,8 @@
 * ============================================================================
 */
 
-#include <gtest/gtest.h>
-#include <boost/lexical_cast.hpp>
+#include "gtest/gtest.h"
+#include "boost/lexical_cast.hpp"
 #include "maidsafe-dht/common/utils.h"
 
 #include "maidsafe/passport/systempackets.h"

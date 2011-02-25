@@ -15,8 +15,8 @@
 #include "maidsafe/lifestuff/widgets/lifestuff_fullview.h"
 
 // boost
-#include <boost/progress.hpp>
-#include <boost/filesystem/fstream.hpp>
+#include "boost/progress.hpp"
+#include "boost/filesystem/fstream.hpp"
 
 #include "maidsafe/lifestuff/client/send_instant_message_thread.h"
 #include "maidsafe/lifestuff/client/client_controller.h"

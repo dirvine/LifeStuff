@@ -27,7 +27,6 @@
 #include <string>
 #include <vector>
 #include <functional>
-
 #include "boost/thread/condition_variable.hpp"
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include "boost/thread/mutex.hpp"

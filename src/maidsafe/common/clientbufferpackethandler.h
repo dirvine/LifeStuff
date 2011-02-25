@@ -28,11 +28,9 @@
 #include "boost/cstdint.hpp"
 #include "boost/function.hpp"
 #include "maidsafe-dht/kademlia/contact.h"
-
 #include <list>
 #include <string>
 #include <vector>
-
 #include "maidsafe/common/maidsafe.h"
 #include "maidsafe/common/returncodes.h"
 #include "maidsafe/common/maidsafe_service.pb.h"

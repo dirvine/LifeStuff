@@ -19,7 +19,6 @@
 #include "boost/scoped_ptr.hpp"
 #include "maidsafe-dht/kademlia/contact.h"
 #include "maidsafe/pki/maidsafevalidator.h"
-
 #include "maidsafe/common/chunkstore.h"
 #include "maidsafe/common/commonutils.h"
 #include "maidsafe/common/maidsafe_messages.pb.h"

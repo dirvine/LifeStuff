@@ -25,17 +25,15 @@
 #ifndef MAIDSAFE_CLIENT_CLIENTCONTROLLER_H_
 #define MAIDSAFE_CLIENT_CLIENTCONTROLLER_H_
 
-#include <boost/function.hpp>
-#include <boost/signals2.hpp>
-#include <boost/thread/condition_variable.hpp>
-#include <boost/thread/mutex.hpp>
-
+#include "boost/function.hpp"
+#include "boost/signals2.hpp"
+#include "boost/thread/condition_variable.hpp"
+#include "boost/thread/mutex.hpp"
 #include <list>
 #include <map>
 #include <set>
 #include <string>
 #include <vector>
-
 #include "maidsafe/common/filesystem.h"
 #include "maidsafe/common/maidsafe.h"
 #include "maidsafe/common/maidsafe_service_messages.pb.h"

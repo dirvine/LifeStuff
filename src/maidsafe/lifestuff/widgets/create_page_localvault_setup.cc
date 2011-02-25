@@ -21,9 +21,8 @@
 #include <QString>
 #include <QValidator>
 
-#include <boost/filesystem.hpp>
-#include <boost/lexical_cast.hpp>
-
+#include "boost/filesystem.hpp"
+#include "boost/lexical_cast.hpp"
 #include "maidsafe/common/filesystem.h"
 #include "maidsafe/lifestuff/client/client_controller.h"
 

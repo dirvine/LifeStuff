@@ -26,9 +26,9 @@
 #ifndef MAIDSAFE_SHAREDTEST_THREADPOOL_H_
 #define MAIDSAFE_SHAREDTEST_THREADPOOL_H_
 
-#include <boost/thread/condition_variable.hpp>
-#include <boost/function.hpp>
-#include <boost/thread/thread.hpp>
+#include "boost/thread/condition_variable.hpp"
+#include "boost/function.hpp"
+#include "boost/thread/thread.hpp"
 #include <queue>
 #include <vector>
 

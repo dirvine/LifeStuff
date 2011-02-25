@@ -24,7 +24,7 @@
 #ifndef MAIDSAFE_ENCRYPT_SELFENCRYPTIONCONFIG_H_
 #define MAIDSAFE_ENCRYPT_SELFENCRYPTIONCONFIG_H_
 
-#include <boost/cstdint.hpp>
+#include "boost/cstdint.hpp"
 #include <string>
 
 namespace maidsafe {

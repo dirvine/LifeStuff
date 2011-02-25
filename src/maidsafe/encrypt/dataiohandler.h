@@ -26,7 +26,7 @@
 #define MAIDSAFE_ENCRYPT_DATAIOHANDLER_H_
 
 #include <memory>
-#include <boost/filesystem/fstream.hpp>
+#include "boost/filesystem/fstream.hpp"
 #include <string>
 
 namespace fs = boost::filesystem;

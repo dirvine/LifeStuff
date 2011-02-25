@@ -23,11 +23,8 @@
 */
 
 #include "maidsafe/client/filesystem/dataatlashandler.h"
-
-#include <boost/filesystem.hpp>
-
+#include "boost/filesystem.hpp"
 #include <exception>
-
 #include "maidsafe/common/commonutils.h"
 #include "maidsafe/client/filesystem/pddir.h"
 #include "maidsafe/client/clientutils.h"

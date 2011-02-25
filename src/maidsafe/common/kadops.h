@@ -25,10 +25,8 @@
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
 #include "maidsafe-dht/kademlia/node-api.h"
-
 #include <string>
 #include <vector>
-
 #include "maidsafe/common/maidsafe.h"
 
 namespace transport { class TransportHandler; }

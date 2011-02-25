@@ -22,11 +22,11 @@
 * ============================================================================
 */
 
-#include <boost/filesystem/fstream.hpp>
-#include <boost/progress.hpp>
-#include <gtest/gtest.h>
+#include "boost/filesystem/fstream.hpp"
+#include "boost/progress.hpp"
+#include "gtest/gtest.h"
 //  #include <maidsafe/base/utils.h>
-#include <maidsafe/encrypt/selfencryption.h>
+#include "maidsafe/encrypt/selfencryption.h"
 
 #include <list>
 #include <string>
