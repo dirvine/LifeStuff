@@ -70,7 +70,7 @@ bool MaidsafeValidator::ValidateRequest(const std::string &signed_request,
                                         const std::string &public_key,
                                         const std::string &signed_public_key,
                                         const std::string &key) {
-  if (crypto::AsymCheckSig(Hash512(signed_public_key + key + kId_),
+  if (crypto::AsymCheckSig(Hash512(signed_public_key + key +  kSigningKeyId_),
                            signed_request,
                            public_key))
     return true;
