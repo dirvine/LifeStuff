@@ -105,8 +105,7 @@ TEST_F(PassportTest, BEH_PASSPORT_SignaturePacketFunctions) {
             passport_.InitialiseSignaturePacket(ANMAID, anmaid1));
   EXPECT_FALSE(anmaid1->name().empty());
   ASSERT_TRUE(passport_.GetPacket(ANMAID, false).get() != NULL);
-  EXPECT_TRUE(passport_.
-                  GetPacket(ANMAID, false)->Equals(anmaid1.get()) != NULL);
+  EXPECT_TRUE(passport_.GetPacket(ANMAID, false)->Equals(anmaid1.get()));
   EXPECT_FALSE(passport_.GetPacket(ANMAID, true).get());
 
   SignaturePtr anmaid2(new SignaturePacket);
@@ -114,8 +113,7 @@ TEST_F(PassportTest, BEH_PASSPORT_SignaturePacketFunctions) {
             passport_.InitialiseSignaturePacket(ANMAID, anmaid2));
   EXPECT_FALSE(anmaid2->name().empty());
   ASSERT_TRUE(passport_.GetPacket(ANMAID, false).get() != NULL);
-  EXPECT_TRUE(passport_.
-                  GetPacket(ANMAID, false)->Equals(anmaid2.get()) != NULL);
+  EXPECT_TRUE(passport_.GetPacket(ANMAID, false)->Equals(anmaid2.get()));
   EXPECT_FALSE(anmaid1->Equals(anmaid2.get()));
   EXPECT_FALSE(passport_.GetPacket(ANMAID, true).get());
 
@@ -138,18 +136,17 @@ TEST_F(PassportTest, BEH_PASSPORT_SignaturePacketFunctions) {
   EXPECT_EQ(kSuccess, passport_.ConfirmSignaturePacket(anmaid2));
   EXPECT_FALSE(passport_.GetPacket(ANMAID, false).get());
   ASSERT_TRUE(passport_.GetPacket(ANMAID, true).get() != NULL);
-  EXPECT_TRUE(passport_.GetPacket(ANMAID, true)->Equals(anmaid2.get()) != NULL);
+  EXPECT_TRUE(passport_.GetPacket(ANMAID, true)->Equals(anmaid2.get()));
 
   SignaturePtr anmaid3(new SignaturePacket);
   EXPECT_EQ(kSuccess,
             passport_.InitialiseSignaturePacket(ANMAID, anmaid3));
   EXPECT_FALSE(anmaid3->name().empty());
   ASSERT_TRUE(passport_.GetPacket(ANMAID, false).get() != NULL);
-  EXPECT_TRUE(passport_.
-                  GetPacket(ANMAID, false)->Equals(anmaid3.get()) != NULL);
+  EXPECT_TRUE(passport_.GetPacket(ANMAID, false)->Equals(anmaid3.get()));
   EXPECT_FALSE(anmaid2->Equals(anmaid3.get()));
   ASSERT_TRUE(passport_.GetPacket(ANMAID, true).get() != NULL);
-  EXPECT_TRUE(passport_.GetPacket(ANMAID, true)->Equals(anmaid2.get()) != NULL);
+  EXPECT_TRUE(passport_.GetPacket(ANMAID, true)->Equals(anmaid2.get()));
 
   EXPECT_TRUE(passport_.SignaturePacketName(MID, false).empty());
   EXPECT_TRUE(passport_.SignaturePacketPublicKey(MID, false).empty());
