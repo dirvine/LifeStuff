@@ -207,8 +207,8 @@ void MidPacket::Initialise() {
   boost::uint32_t pin;
   try {
     pin = boost::lexical_cast<boost::uint32_t>(pin_);
-  } 
-  catch(boost::bad_lexical_cast & e){
+  }
+  catch(boost::bad_lexical_cast & e) {
 #ifdef DEBUG
     printf("MidPacket::Initialise: Bad pin: %s\n", e.what());
 #endif

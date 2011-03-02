@@ -74,7 +74,7 @@ class PassportTest : public testing::Test {
       return false;
     if (passport_.ConfirmNewUserData(mid, smid, tmid) != kSuccess)
       return false;
-    return passport_.GetPacket(MID, true).get() && 
+    return passport_.GetPacket(MID, true).get() &&
            passport_.GetPacket(SMID, true).get() &&
            passport_.GetPacket(TMID, true).get();
   }

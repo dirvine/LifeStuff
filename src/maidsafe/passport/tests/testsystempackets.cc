@@ -425,7 +425,7 @@ TEST_F(SystemPacketsTest, BEH_PASSPORT_CreateMid) {
   mid.reset(new MidPacket(kUsername, kPinStr, ""));
   std::shared_ptr<ExpectedMidContent> expected_mid_content(
       new ExpectedMidContent(expected_mid_name, "", kUsername, kPinStr, "",
-                             expected_salt, expected_secure_key, 
+                             expected_salt, expected_secure_key,
                              expected_secure_iv, MID, ""));
   EXPECT_FALSE(Empty(mid));
   EXPECT_TRUE(Equal(expected_mid_content, mid));
@@ -436,8 +436,8 @@ TEST_F(SystemPacketsTest, BEH_PASSPORT_CreateMid) {
   MidPtr smid(new MidPacket(kUsername, kPinStr, kSmidAppendix));
   std::shared_ptr<ExpectedMidContent> expected_smid_content(
       new ExpectedMidContent(expected_smid_name, "", kUsername, kPinStr,
-                             kSmidAppendix, expected_salt,
-                             expected_secure_key, expected_secure_iv, SMID, ""));
+                             kSmidAppendix, expected_salt, expected_secure_key,
+                             expected_secure_iv, SMID, ""));
   EXPECT_FALSE(Empty(smid));
   EXPECT_TRUE(Equal(expected_smid_content, smid));
 }
@@ -521,7 +521,7 @@ TEST_F(SystemPacketsTest, BEH_PASSPORT_SetAndDecryptRid) {
   std::shared_ptr<ExpectedMidContent> expected_smid_content(
       new ExpectedMidContent(expected_smid_name, expected_encrypted_rid1,
                              kUsername, kPinStr, kSmidAppendix, expected_salt,
-                             expected_secure_key, expected_secure_iv, SMID, 
+                             expected_secure_key, expected_secure_iv, SMID,
                              kRid1));
   EXPECT_FALSE(Empty(smid));
   EXPECT_TRUE(Equal(expected_smid_content, smid));
@@ -560,7 +560,7 @@ struct ExpectedTmidContent {
                       const std::string &plain_data_in,
                       const std::string &salt_in,
                       const std::string &secure_key_in,
-                      const std::string & secure_iv_in, 
+                      const std::string & secure_iv_in,
                       const PacketType &packet_type_in,
                       const std::string &rid_in)
     : tmid_name(tmid_name_in),
@@ -701,14 +701,14 @@ TEST_F(SystemPacketsTest, BEH_PASSPORT_SetAndDecryptData) {
                                        substr(crypto::AES256_KeySize,
                                               crypto::AES256_IVSize);
   std::string expected_encrypted_data(crypto::SymmEncrypt(kPlainData,
-                                                          expected_secure_key, 
+                                                          expected_secure_key,
                                                           expected_secure_iv));
   TmidPtr tmid(new TmidPacket(kUsername, kPinStr, kRid, false, kPassword,
                               kPlainData));
   std::shared_ptr<ExpectedTmidContent> expected_tmid_content(
       new ExpectedTmidContent(expected_tmid_name, expected_encrypted_data,
                               kUsername, kPinStr, kPassword, kPlainData,
-                              expected_salt, expected_secure_key, 
+                              expected_salt, expected_secure_key,
                               expected_secure_iv, TMID, kRid));
   EXPECT_FALSE(Empty(tmid));
   EXPECT_TRUE(Equal(expected_tmid_content, tmid));
