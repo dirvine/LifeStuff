@@ -26,7 +26,8 @@
 #include "boost/filesystem.hpp"
 #include "boost/thread.hpp"
 #include "boost/scoped_ptr.hpp"
-
+#include "maidsafe-encrypt/self_encryption.h"
+#include "maidsafe-encrypt/data_map.h"
 #include "maidsafe/client/filesystem/pddir.h"
 
 namespace fs = boost::filesystem;
@@ -89,14 +90,14 @@ void PrepareMDM(const boost::int32_t id,
 void PrepareDMap(const std::string &file_hash, std::string &ser_dm) {
   // Creating DataMap
   encrypt::DataMap dm;
-  dm.set_file_hash(file_hash);
-  dm.add_chunk_name(RandomString(64));
-  dm.add_chunk_name(RandomString(64));
-  dm.add_chunk_name(RandomString(64));
-  dm.add_encrypted_chunk_name(RandomString(64));
-  dm.add_encrypted_chunk_name(RandomString(64));
-  dm.add_encrypted_chunk_name(RandomString(64));
-  dm.SerializeToString(&ser_dm);
+//MAHMOUD 07/03/11  dm.set_file_hash(file_hash);
+//MAHMOUD 07/03/11  dm.add_chunk_name(RandomString(64));
+//MAHMOUD 07/03/11  dm.add_chunk_name(RandomString(64));
+//MAHMOUD 07/03/11  dm.add_chunk_name(RandomString(64));
+//MAHMOUD 07/03/11  dm.add_encrypted_chunk_name(RandomString(64));
+//MAHMOUD 07/03/11  dm.add_encrypted_chunk_name(RandomString(64));
+//MAHMOUD 07/03/11  dm.add_encrypted_chunk_name(RandomString(64));
+//MAHMOUD 07/03/11  dm.SerializeToString(&ser_dm); 
 }
 
 TEST_F(PdDirTest, BEH_MAID_CreateDb) {

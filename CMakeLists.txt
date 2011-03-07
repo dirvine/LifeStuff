@@ -261,6 +261,14 @@ SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Protobuf_LIBRARY_DIR_DEBUG})
 #ENDIF()
 
 ###################################################################################################
+# MaidSafe-Encrypt library search                                                                 #
+###################################################################################################
+INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindEncrypt.cmake)
+SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Encrypt_INCLUDE_DIR})
+SET(LIBS_DIRS ${LIBS_DIRS} ${Encrypt_LIBRARY_DIR})
+SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Encrypt_LIBRARY_DIR_DEBUG})
+
+###################################################################################################
 # Python library search                                                                           #
 ###################################################################################################
 UNSET(PYTHON_EXECUTABLE CACHE)
@@ -596,7 +604,7 @@ ADD_LIBRARY(LifeStuffclientfilesystemlib STATIC ${ALL_FILES_CLIENT_FILESYSTEM_DI
 ADD_LIBRARY(LifeStuffcommonlib STATIC ${ALL_FILES_COMMON_DIR})
 ADD_LIBRARY(LifeStufffuselib STATIC ${ALL_FILES_FUSE_DIR})
 
-ADD_SUBDIRECTORY(${SRC_MAIDSAFE}/encrypt ${CMAKE_BINARY_DIR}/encrypt)
+#ADD_SUBDIRECTORY(${SRC_MAIDSAFE}/encrypt ${CMAKE_BINARY_DIR}/encrypt)
 ADD_SUBDIRECTORY(${SRC_MAIDSAFE}/passport ${CMAKE_BINARY_DIR}/passport)
 ADD_SUBDIRECTORY(${SRC_MAIDSAFE}/pki ${CMAKE_BINARY_DIR}/pki)
 
@@ -627,8 +635,8 @@ SET(TEST_EXECUTABLES )
 ADD_DEFINITIONS(-DSTATICLIB)
 SET(BUILD_SHARED_LIBS OFF)
 
-TARGET_LINK_LIBRARIES(LifeStuffcommonlib passport ${Boost_FILESYSTEM_LIBRARY})
-TARGET_LINK_LIBRARIES(LifeStuffclientfilesystemlib LifeStuffcommonlib encrypt pki ${Boost_DATE_TIME_LIBRARY})
+TARGET_LINK_LIBRARIES(LifeStuffcommonlib passport ${Encrypt_LIBRARY} ${Boost_FILESYSTEM_LIBRARY})
+TARGET_LINK_LIBRARIES(LifeStuffclientfilesystemlib LifeStuffcommonlib pki ${Boost_DATE_TIME_LIBRARY})
 TARGET_LINK_LIBRARIES(LifeStufflsmclientlib LifeStuffclientfilesystemlib ${QT_LIBRARIES} ${Boost_REGEX_LIBRARY})
 # TARGET_LINK_LIBRARIES(LifeStuffclientlib LifeStuffclientfilesystemlib ${QT_LIBRARIES} ${Boost_REGEX_LIBRARY})
 TARGET_LINK_LIBRARIES(LifeStufffuselib ${Fuse_LIBRARY} ${Boost_SYSTEM_LIBRARY})

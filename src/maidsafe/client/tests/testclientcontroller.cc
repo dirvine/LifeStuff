@@ -26,7 +26,8 @@
 #include "boost/progress.hpp"
 #include "gtest/gtest.h"
 //  #include <maidsafe/base/utils.h>
-#include "maidsafe/encrypt/selfencryption.h"
+#include "maidsafe-encrypt/self_encryption.h"
+#include "maidsafe-encrypt/data_map.h"
 
 #include <list>
 #include <string>

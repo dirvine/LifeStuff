@@ -29,6 +29,8 @@
 #include <exception>
 #include "maidsafe/common/cppsqlite3.h"
 #include "maidsafe/client/clientutils.h"
+#include "maidsafe-encrypt/self_encryption.h"
+#include "maidsafe-encrypt/data_map.h"
 
 namespace fs = boost::filesystem;
 
@@ -240,9 +242,9 @@ int PdDir::AddElement(const std::string &ser_mdm,
   try {
     if (!mdm.ParseFromString(ser_mdm))
       return kParseDataMapError;
-    if (!ser_dm.empty())
-      if (!dm.ParseFromString(ser_dm))
-        return kParseDataMapError;
+//MAHMOUD 07/03/2011    if (!ser_dm.empty())
+//MAHMOUD 07/03/2011      if (!dm.ParseFromString(ser_dm))
+//MAHMOUD 07/03/2011        return kParseDataMapError;
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
@@ -296,7 +298,7 @@ int PdDir::AddElement(const std::string &ser_mdm,
       if (!ser_dm.empty()) {
         CppSQLite3Statement stmt1 = db_->compileStatement(
             "insert into dm values(?,?,?);");
-        stmt1.bind(1, EncodeToHex(dm.file_hash()).c_str());
+//MAHMOUD 07/03/2011        stmt1.bind(1, EncodeToHex(dm.file_hash()).c_str());
         stmt1.bind(2, mdm.id());
         stmt1.bind(3, EncodeToHex(ser_dm).c_str());
         // printf("aaaaaaaaaaaa %s\n", ser_dm.c_str());
@@ -353,8 +355,8 @@ int PdDir::ModifyMetaDataMap(const std::string &ser_mdm,
   encrypt::DataMap dm;
   if (!mdm.ParseFromString(ser_mdm))
     return kParseDataMapError;
-  if (!dm.ParseFromString(ser_dm))
-    return kParseDataMapError;
+//MAHMOUD 07/03/2011  if (!dm.ParseFromString(ser_dm))
+//MAHMOUD 07/03/2011    return kParseDataMapError;
 
   int id = GetIdFromName(mdm.display_name());
   if (id < 0) {
@@ -392,7 +394,7 @@ int PdDir::ModifyMetaDataMap(const std::string &ser_mdm,
 
     CppSQLite3Statement stmt1 = db_->compileStatement(
         "update dm set file_hash = ?, ser_dm = ? where id = ?;");
-    stmt1.bind(1, EncodeToHex(dm.file_hash()).c_str());
+//MAHMOUD 07/03/2011    stmt1.bind(1, EncodeToHex(dm.file_hash()).c_str());
     stmt1.bind(2, EncodeToHex(ser_dm).c_str());
     stmt1.bind(3, id);
     modified_elements = stmt1.execDML();

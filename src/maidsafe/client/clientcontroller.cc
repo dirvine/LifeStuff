@@ -30,7 +30,8 @@
 
 #include "boost/foreach.hpp"
 #include "maidsafe-dht/kademlia/contact.h"
-
+#include "maidsafe-encrypt/self_encryption.h"
+#include "maidsafe-encrypt/data_map.h"
 #include "maidsafe/common/chunkstore.h"
 #include "maidsafe/common/commonutils.h"
 #include "maidsafe/client/filesystem/dataatlashandler.h"
@@ -222,20 +223,20 @@ int ClientController::ParseDa() {
     ss_->SetPd(data_atlas.pd());
 
   encrypt::DataMap dm_root, other_dms;
-  dm_root = data_atlas.dms(0);
+//MAHMOUD 07/03/2011  dm_root = data_atlas.dms(0);
 
   std::string ser_dm_root, other_ser_dms;
-  dm_root.SerializeToString(&ser_dm_root);
+//MAHMOUD 07/03/2011  dm_root.SerializeToString(&ser_dm_root);
   int i = seh_.DecryptDb(kRoot, PRIVATE, ser_dm_root, "", "", false, false);
   if (i != 0)
     return -1;
 
-  for (int n = 0; n < kRootSubdirSize; ++n) {
+/*MAHMOUD 07/03/2011  for (int n = 0; n < kRootSubdirSize; ++n) {
     other_dms = data_atlas.dms(n + 1);
     other_dms.SerializeToString(&other_ser_dms);
     i += seh_.DecryptDb(TidyPath(kRootSubdir[n][0]), PRIVATE, other_ser_dms,
                         "", "", false, false);
-  }
+  } MAHMOUD*/
 
   return (i == 0) ? 0 : -1;
 }
@@ -253,11 +254,11 @@ int ClientController::SerialiseDa() {
   encrypt::DataMap root_dm, subdirs_dm;
   if (AddToPendingFiles(kRoot))
     seh_.EncryptDb(kRoot, PRIVATE, "", "", false, &root_dm);
-  encrypt::DataMap *dm = data_atlas.add_dms();
-  *dm = root_dm;
+//MAHMOUD 07/03/2011  encrypt::DataMap *dm = data_atlas.add_dms();
+//MAHMOUD 07/03/2011  *dm = root_dm;
 
   for (int i = 0; i < kRootSubdirSize; ++i) {
-    subdirs_dm.Clear();
+//MAHMOUD 07/03/2011    subdirs_dm.Clear();
     std::string tidy_path(TidyPath(kRootSubdir[i][0]));
     if (AddToPendingFiles(tidy_path)) {
 #ifdef DEBUG
@@ -266,8 +267,8 @@ int ClientController::SerialiseDa() {
 #else
       seh_.EncryptDb(tidy_path, PRIVATE, "", "", false, &subdirs_dm);
 #endif
-      dm = data_atlas.add_dms();
-      *dm = subdirs_dm;
+//MAHMOUD 07/03/2011      dm = data_atlas.add_dms();
+//MAHMOUD 07/03/2011      *dm = subdirs_dm;
     }
   }
 

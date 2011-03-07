@@ -1,4 +1,4 @@
-import "maidsafe/encrypt/datamap.proto";
+//#import "maidsafe/encrypt/datamap.proto";
 import "maidsafe/common/packet.proto";
 
 package maidsafe;
@@ -75,7 +75,7 @@ message DataAtlas {
   optional bytes root_db_key = 1;
   optional bytes serialised_keyring = 2;
   repeated MetaDataMap mdms = 3;
-  repeated encrypt.DataMap dms = 4;
+  repeated bytes dms = 4;
   repeated PublicContact contacts = 5;
   repeated Share shares = 6;
   optional PersonalDetails pd = 7;
