@@ -22,12 +22,16 @@
 *
 * ============================================================================
 */
+#include <cstdint>
+#include <iostream>  // NOLINT
+#include <memory>
+#include <sstream>
 
+#include "maidsafe/client/filesystem/sehandler.h"
 #include "boost/archive/text_oarchive.hpp"
 #include "boost/archive/text_iarchive.hpp"
-#include "maidsafe/client/filesystem/sehandler.h"
+#include "boost/filesystem.hpp"
 #include "boost/filesystem/fstream.hpp"
-#include <memory>
 #include "maidsafe-encrypt/config.h"
 #include "maidsafe-encrypt/self_encryption.h"
 #include "maidsafe-encrypt/data_map.h"
@@ -37,6 +41,11 @@
 #include "maidsafe/client/clientutils.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/storemanager.h"
+#include "boost/serialization/serialization.hpp"
+
+
+
+using namespace maidsafe::encrypt;
 
 namespace maidsafe {
   
@@ -135,7 +144,7 @@ ItemType SEHandler::CheckEntry(const fs::path &absolute_path,
     *file_size = fs::file_size(absolute_path);
     *file_hash = SHA512File(absolute_path);
     if (absolute_path.filename().string() == EncodeToHex(*file_hash)) {
-//MAHMOUD      *file_size = 0;
+      *file_size = 0;
       file_hash->clear();
       return MAIDSAFE_CHUNK;
     }
@@ -164,10 +173,8 @@ int SEHandler::EncryptAFile(const fs::path &relative_entry,
   maidsafe::encrypt::DataMap data_map, data_map_retrieved;
   std::string serialised_data_map_retrieved, serialised_data_map;
   std::string serialised_meta_data_map, dir_key;
-  std::istringstream in_string_stream;
-  boost::archive::text_iarchive ia(in_string_stream);
-  std::ostringstream out_string_stream;
-  boost::archive::text_oarchive oa(out_string_stream);
+  std::stringstream string_stream;
+  boost::archive::text_oarchive oa(string_stream);  
   switch (item_type) {
     // case DIRECTORY:
     // case EMPTY_DIRECTORY:
@@ -175,9 +182,8 @@ int SEHandler::EncryptAFile(const fs::path &relative_entry,
     //   break;
     case EMPTY_FILE:
       data_map.content = file_hash;
-      boost::serialization::serialize<boost::archive::text_oarchive>(
-          oa, data_map, 0);
-      serialised_data_map = out_string_stream.str();
+      oa << data_map; 
+      serialised_data_map = string_stream.str();
       break;
     case REGULAR_FILE:
     case SMALL_FILE:
@@ -186,8 +192,9 @@ int SEHandler::EncryptAFile(const fs::path &relative_entry,
       if (dah->GetDataMap(relative_entry.string(),
                           &serialised_data_map_retrieved) == kSuccess) {
         try {
-          boost::serialization::serialize<boost::archive::text_oarchive>(
-               oa, data_map_retrieved, 0);
+          std::stringstream in_string_stream(serialised_data_map_retrieved);
+          boost::archive::text_iarchive ia(in_string_stream);          
+          ia >> data_map_retrieved;
         }
         catch(const std::exception&) {
           serialised_data_map_retrieved.clear();
@@ -202,9 +209,8 @@ int SEHandler::EncryptAFile(const fs::path &relative_entry,
         if (AddChunksToChunkstore(data_map) != kSuccess)
           return kChunkstoreError;
         StoreChunks(data_map, dir_type, msid, relative_entry);
-      boost::serialization::serialize<boost::archive::text_iarchive>(
-          ia, data_map, 0);
-      serialised_data_map = in_string_stream.str();
+        oa << data_map;      
+        string_stream >> serialised_data_map; 
       }
       break;
     case LOCKED_FILE:

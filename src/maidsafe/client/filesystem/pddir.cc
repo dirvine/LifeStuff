@@ -701,10 +701,9 @@ void PdDir::SanitiseSingleQuotes(std::string *str) {
 
 bool PdDir::ParseFromString(maidsafe::encrypt::DataMap& data_map, 
                                   const std::string& serialized) {
-  std::istringstream in_string_stream(serialized);
+  std::stringstream in_string_stream(serialized);
   boost::archive::text_iarchive ia(in_string_stream);
-  boost::serialization::serialize<boost::archive::text_iarchive>(ia, data_map, 
-      0);  
+  ia >> data_map;
   return !data_map.content.empty();
 }
 

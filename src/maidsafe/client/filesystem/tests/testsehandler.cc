@@ -243,16 +243,14 @@ class SEHandlerTest : public testing::Test {
                          std::string& serialized) {
     std::ostringstream out_string_stream(serialized);
     boost::archive::text_oarchive oa(out_string_stream);
-    boost::serialization::serialize<boost::archive::text_oarchive>(oa, data_map, 
-        0);
+    oa << data_map;
     return !serialized.empty();
   }     
   bool ParseFromString(maidsafe::encrypt::DataMap& data_map, 
                       const std::string& serialized) {
     std::istringstream in_string_stream(serialized);
     boost::archive::text_iarchive ia(in_string_stream);
-    boost::serialization::serialize<boost::archive::text_iarchive>(ia, data_map, 
-        0);  
+    ia >> data_map;
     return !data_map.content.empty();
   }
 
@@ -302,7 +300,7 @@ TEST_F(SEHandlerTest, BEH_MAID_Check_Entry) {
   boost::uint64_t size6 = 0;
   boost::uint64_t size7 = 0;
   boost::uint64_t size8 = 0;
-  boost::uint64_t size9 = 256;
+  boost::uint64_t size9 = 0;
   fs::path full_path1(test_seh::CreateRandomFile(rel_str1, size1));
   fs::path full_path2(test_seh::CreateRandomFile(rel_str2, size2));
   fs::path full_path3(test_seh::CreateRandomFile(rel_str3, size3));
@@ -331,7 +329,7 @@ TEST_F(SEHandlerTest, BEH_MAID_Check_Entry) {
   full_path9 = after;
   boost::uint64_t returned_size1(9), returned_size2(9), returned_size3(9),
                   returned_size6(9), returned_size7(9), returned_size8(9),
-                  returned_size9(9);
+                  returned_size9(0);
   std::string returned_hash1("A"), returned_hash2("A"), returned_hash3("A"),
               returned_hash6("A"), returned_hash7("A"), returned_hash8("A"),
               returned_hash9("A");
