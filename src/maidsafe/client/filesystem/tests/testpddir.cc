@@ -29,6 +29,8 @@
 #include "maidsafe-encrypt/self_encryption.h"
 #include "maidsafe-encrypt/data_map.h"
 #include "maidsafe/client/filesystem/pddir.h"
+#include "boost/archive/text_oarchive.hpp"
+#include "boost/archive/text_iarchive.hpp"
 
 namespace fs = boost::filesystem;
 
@@ -60,6 +62,16 @@ class PdDirTest : public testing::Test {
   std::string db_name1_;
 };
 
+bool SerializeToString(maidsafe::encrypt::DataMap& data_map, 
+                       std::string& serialized) {
+  std::ostringstream out_string_stream(serialized);
+  boost::archive::text_oarchive oa(out_string_stream);
+  boost::serialization::serialize<boost::archive::text_oarchive>(oa, data_map, 
+      0);
+  return !serialized.empty();
+}     
+
+
 void PrepareMDM(const boost::int32_t id,
                 const std::string &display_name,
                 const ItemType &type,
@@ -90,14 +102,29 @@ void PrepareMDM(const boost::int32_t id,
 void PrepareDMap(const std::string &file_hash, std::string &ser_dm) {
   // Creating DataMap
   encrypt::DataMap dm;
-//MAHMOUD 07/03/11  dm.set_file_hash(file_hash);
-//MAHMOUD 07/03/11  dm.add_chunk_name(RandomString(64));
-//MAHMOUD 07/03/11  dm.add_chunk_name(RandomString(64));
-//MAHMOUD 07/03/11  dm.add_chunk_name(RandomString(64));
-//MAHMOUD 07/03/11  dm.add_encrypted_chunk_name(RandomString(64));
-//MAHMOUD 07/03/11  dm.add_encrypted_chunk_name(RandomString(64));
-//MAHMOUD 07/03/11  dm.add_encrypted_chunk_name(RandomString(64));
-//MAHMOUD 07/03/11  dm.SerializeToString(&ser_dm); 
+  dm.content = file_hash;
+  maidsafe::encrypt::ChunkDetails chunk1;
+  chunk1.pre_hash = RandomString(64);
+  chunk1.hash = RandomString(64);
+  chunk1.content = "content1";
+  chunk1.pre_size = 100;
+  chunk1.size = 99;
+  dm.chunks.push_back(chunk1);
+  maidsafe::encrypt::ChunkDetails chunk2;
+  chunk2.pre_hash = RandomString(64);
+  chunk2.hash = RandomString(64);
+  chunk2.content = "content2";
+  chunk2.pre_size = 100;
+  chunk2.size = 99;
+  dm.chunks.push_back(chunk2); 
+  maidsafe::encrypt::ChunkDetails chunk3;
+  chunk3.pre_hash = RandomString(64);
+  chunk3.hash = RandomString(64);
+  chunk3.content = "content3";
+  chunk3.pre_size = 100;
+  chunk3.size = 99;
+  dm.chunks.push_back(chunk3);   
+  SerializeToString(dm, ser_dm);
 }
 
 TEST_F(PdDirTest, BEH_MAID_CreateDb) {

@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#include "maidsafe-dht/common/crypto.h"
-#include "maidsafe-dht/common/utils.h"
+#include "maidsafe/common/crypto.h"
+#include "maidsafe/common/utils.h"
 #include "maidsafe/common/clientbufferpackethandler.h"
 #include "maidsafe/common/commonutils.h"
 #include "maidsafe/common/kadops.h"

@@ -29,7 +29,7 @@
 
 #include "boost/bind.hpp"
 #include "boost/function.hpp"
-#include "maidsafe-dht/common/crypto.h"
+#include "maidsafe/common/crypto.h"
 
 #include <cstdio>
 

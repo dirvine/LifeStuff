@@ -25,7 +25,8 @@
 #ifndef MAIDSAFE_PKI_MAIDSAFEVALIDATOR_H_
 #define MAIDSAFE_PKI_MAIDSAFEVALIDATOR_H_
 
-#include "maidsafe-dht/common/securifier.h"
+#include "maidsafe-dht/kademlia/securifier.h"
+
 
 #include <list>
 #include <string>

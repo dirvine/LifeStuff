@@ -23,7 +23,7 @@
 #include "maidsafe/passport/systempackets.h"
 #include <cstdio>
 #include "boost/lexical_cast.hpp"
-#include "maidsafe-dht/common/crypto.h"
+#include "maidsafe/common/crypto.h"
 #include "maidsafe/passport/signaturepacket.pb.h"
 
 namespace maidsafe {

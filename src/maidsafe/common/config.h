@@ -29,7 +29,7 @@
 #include <string>
 #include <vector>
 #include <functional>
-#include "maidsafe-dht/common/utils.h"
+#include "maidsafe/common/utils.h"
 #include "maidsafe/common/returncodes.h"
 
 namespace maidsafe {

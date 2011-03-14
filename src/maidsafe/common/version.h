@@ -22,9 +22,10 @@
 #define MAIDSAFE_COMMON_VERSION_H_
 
 #define MAIDSAFE_LifeStuff_VERSION 1
+#define MAIDSAFE_COMMON_VERSION 1
 
-#include "maidsafe-dht/common/version.h"
-#define THIS_MAIDSAFE_DHT_VERSION 25
+#include "maidsafe-dht/version.h"
+#define THIS_MAIDSAFE_DHT_VERSION 26
 #if MAIDSAFE_DHT_VERSION < THIS_MAIDSAFE_DHT_VERSION
 #error This API is not compatible with the installed library.\
   Please update the maidsafe-dht library.

@@ -22,7 +22,7 @@
 */
 
 #include "gtest/gtest.h"
-#include "maidsafe-dht/common/log.h"
+#include "maidsafe/common/log.h"
 
 int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);

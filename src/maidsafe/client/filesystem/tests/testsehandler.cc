@@ -37,6 +37,10 @@
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/sharedtest/cachepassport.h"
 #include "maidsafe/sharedtest/testcallback.h"
+#include "boost/archive/text_oarchive.hpp"
+#include "boost/archive/text_iarchive.hpp"
+#include "maidsafe-encrypt/config.h"
+
 
 namespace fs = boost::filesystem;
 
@@ -235,6 +239,22 @@ class SEHandlerTest : public testing::Test {
       printf("%s\n", e.what());
     }
   }
+  bool SerializeToString(maidsafe::encrypt::DataMap& data_map, 
+                         std::string& serialized) {
+    std::ostringstream out_string_stream(serialized);
+    boost::archive::text_oarchive oa(out_string_stream);
+    boost::serialization::serialize<boost::archive::text_oarchive>(oa, data_map, 
+        0);
+    return !serialized.empty();
+  }     
+  bool ParseFromString(maidsafe::encrypt::DataMap& data_map, 
+                      const std::string& serialized) {
+    std::istringstream in_string_stream(serialized);
+    boost::archive::text_iarchive ia(in_string_stream);
+    boost::serialization::serialize<boost::archive::text_iarchive>(ia, data_map, 
+        0);  
+    return !data_map.content.empty();
+  }
 
   fs::path test_root_dir_;
   std::shared_ptr<ChunkStore> client_chunkstore_;
@@ -282,7 +302,7 @@ TEST_F(SEHandlerTest, BEH_MAID_Check_Entry) {
   boost::uint64_t size6 = 0;
   boost::uint64_t size7 = 0;
   boost::uint64_t size8 = 0;
-  boost::uint64_t size9 = 0;
+  boost::uint64_t size9 = 256;
   fs::path full_path1(test_seh::CreateRandomFile(rel_str1, size1));
   fs::path full_path2(test_seh::CreateRandomFile(rel_str2, size2));
   fs::path full_path3(test_seh::CreateRandomFile(rel_str3, size3));
@@ -375,12 +395,12 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptFile) {
   // Check the chunks are stored
   std::string ser_dm;
   ASSERT_EQ(0, dah_->GetDataMap(rel_str, &ser_dm));
-  ASSERT_FALSE(ser_dm.empty());
+//  ASSERT_FALSE(ser_dm.empty());
   encrypt::DataMap dm;
-/*MAHMOUD 07/03/11  ASSERT_TRUE(dm.ParseFromString(ser_dm));
+  ASSERT_TRUE(ParseFromString(dm, ser_dm));
 
-  for (int i = 0; i < dm.encrypted_chunk_name_size(); ++i)
-    ASSERT_FALSE(sm_->KeyUnique(dm.encrypted_chunk_name(i), false)); MAHMOUD*/
+  for (int i = 0; i < dm.chunks.size(); ++i)
+    ASSERT_FALSE(sm_->KeyUnique(dm.chunks[i].hash, false));
 }
 
 TEST_F(SEHandlerTest, BEH_MAID_EncryptString) {
@@ -408,10 +428,10 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptString) {
 
   // Check the chunks are stored
   encrypt::DataMap dm;
-/*MAHMOUD 07/03/11  ASSERT_TRUE(dm.ParseFromString(ser_dm));
+  ASSERT_TRUE(ParseFromString(dm, ser_dm));
 
-  for (int i = 0; i < dm.encrypted_chunk_name_size(); ++i)
-    ASSERT_FALSE(sm_->KeyUnique(dm.encrypted_chunk_name(i), false)); MAHMOUD*/
+  for (int i = 0; i < dm.chunks.size(); ++i)
+    ASSERT_FALSE(sm_->KeyUnique(dm.chunks[i].hash, false));
 }
 
 TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithChunksPrevLoaded) {
@@ -624,8 +644,8 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptAndDecryptPrivateDb) {
   }
   ASSERT_EQ(100, res2);
   c.disconnect();
-/*MAHMOUD 07/03/11  for (int i = 0; i < dm.encrypted_chunk_name_size(); ++i)
-    ASSERT_FALSE(sm_->KeyUnique(dm.encrypted_chunk_name(i), false)); MAHMOUD*/
+  for (int i = 0; i < dm.chunks.size(); ++i)
+    ASSERT_FALSE(sm_->KeyUnique(dm.chunks[i].hash, false));
 
   // Test decryption with the directory DB ser_dm in the map
   std::string ser_dm;
@@ -684,6 +704,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptAndDecryptAnonDb) {
 TEST_F(SEHandlerTest, BEH_MAID_FailureOfChunkEncryptingFile) {
   // Connect to SEH signal
   int res(0), res2(res);
+  const encrypt::SelfEncryptionParams sep;  
   boost::mutex m;
   boost::signals2::connection c =
       seh_->ConnectToOnFileNetworkStatus(boost::bind(&test_seh::FileUpdate, _1,
@@ -699,18 +720,18 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureOfChunkEncryptingFile) {
   encrypt::DataMap dm, dm_retrieved;
   std::string ser_dm_retrieved, ser_dm, ser_mdm, dir_key;
   if (dah_->GetDataMap(rel_entry, &ser_dm_retrieved) == kSuccess)
-//MAHMOUD 07/03/11    dm_retrieved.ParseFromString(ser_dm_retrieved);
+    ParseFromString(dm_retrieved, ser_dm_retrieved);
 
   int removee(-1);
 //  std::set<std::string> done_chunks;
-/*MAHMOUD 07/03/11  if (ser_dm_retrieved.empty() || dm_retrieved.file_hash() != file_hash) {
-    dm.set_file_hash(file_hash);
-    ASSERT_EQ(kSuccess, encrypt::SelfEncryptFile(full_str,
-              file_system::TempDir(), &dm));
+  if (ser_dm_retrieved.empty() || dm_retrieved.content != file_hash) {
+    dm.content = file_hash;
+    ASSERT_EQ(kSuccess, encrypt::SelfEncrypt(full_str,
+              file_system::TempDir(), false, sep, &dm));
     ASSERT_EQ(kSuccess, seh_->AddChunksToChunkstore(dm));
-    int chunkage = dm.chunk_name_size();
+    int chunkage = dm.chunks.size();
     removee = RandomUint32() % chunkage;
-    std::string a(dm.encrypted_chunk_name(removee));
+    std::string a(dm.chunks[removee].hash);
 #ifdef DEBUG
 //    printf("ENCRYPTED ALL CHUNKS. SIZE: %d - REMOVEE: %d - CHUNK: %s\n",
 //           chunkage, removee, base::EncodeToHex(a).substr(0, 10).c_str());
@@ -731,8 +752,8 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureOfChunkEncryptingFile) {
 //    printf("Before seh->StoreChunks\n");
     seh_->StoreChunks(dm, PRIVATE, "", rel_entry);
 //    printf("After seh->StoreChunks\n");
-    dm.SerializeToString(&ser_dm);
-  } MAHMOUD*/
+    SerializeToString(dm, ser_dm);
+  } 
 
   ASSERT_TRUE(seh_->ProcessMetaData(rel_entry, item_type, file_hash, file_size,
                                     &ser_mdm));
@@ -750,12 +771,12 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureOfChunkEncryptingFile) {
 
   ASSERT_EQ(-1, res2);
   c.disconnect();
-/*MAHMOUD 07/03/11  for (int i = 0; i < dm.encrypted_chunk_name_size(); ++i) {
+  for (int i = 0; i < dm.chunks.size(); ++i) {
     if (i == removee)
-      ASSERT_TRUE(sm_->KeyUnique(dm.encrypted_chunk_name(i), false));
+      ASSERT_TRUE(sm_->KeyUnique(dm.chunks[i].hash, false));
     else
-      ASSERT_FALSE(sm_->KeyUnique(dm.encrypted_chunk_name(i), false));
-  } MAHMOUD*/
+      ASSERT_FALSE(sm_->KeyUnique(dm.chunks[i].hash, false));
+  } 
 }
 
 TEST_F(SEHandlerTest, BEH_MAID_MultipleFileEncryption) {
@@ -852,6 +873,7 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureSteppedMultipleEqualFiles) {
   std::vector<boost::tuple<std::string, std::string, int> > fileage;
   std::vector<std::string> filenames, fullnames;
   std::vector<encrypt::DataMap> dms;
+  const encrypt::SelfEncryptionParams sep;    
   fs::path root_path(kRootSubdir[0][0]);
   int total_files(20);
   boost::mutex m;
@@ -877,16 +899,16 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureSteppedMultipleEqualFiles) {
     ItemType item_type = seh_->CheckEntry(fullnames[a], &file_size, &file_hash);
     encrypt::DataMap dm, dm_retrieved;
     std::string ser_dm_retrieved, ser_dm, ser_mdm, dir_key;
-//MAHMOUD 07/03/11    if (dah_->GetDataMap(filenames[a], &ser_dm_retrieved) == kSuccess)
-//MAHMOUD 07/03/11      dm_retrieved.ParseFromString(ser_dm_retrieved);
+    if (dah_->GetDataMap(filenames[a], &ser_dm_retrieved) == kSuccess)
+      ParseFromString(dm_retrieved, ser_dm_retrieved);
 
-/*MAHMOUD 07/03/11    if (ser_dm_retrieved.empty() || dm_retrieved.file_hash() != file_hash) {
-      dm.set_file_hash(file_hash);
-      ASSERT_EQ(kSuccess, encrypt::SelfEncryptFile(fullnames[a],
-                          file_system::TempDir(), &dm));
+    if (ser_dm_retrieved.empty() || dm_retrieved.content != file_hash) {
+      dm.content = file_hash;
+      ASSERT_EQ(kSuccess, encrypt::SelfEncrypt(fullnames[a],
+                          file_system::TempDir(), false, sep, &dm));
       ASSERT_EQ(kSuccess, seh_->AddChunksToChunkstore(dm));
-      dm.SerializeToString(&ser_dm);
-    } MAHMOUD*/
+      SerializeToString(dm, ser_dm);
+    } 
     dms.push_back(dm);
 
     ASSERT_TRUE(seh_->ProcessMetaData(filenames[a], item_type, file_hash,
@@ -896,10 +918,10 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureSteppedMultipleEqualFiles) {
   }
 
   // delete one of the chunks
-/*MAHMOUD 07/03/11  int file_dm(total_files/2);
-  int chunkage = dms[file_dm].chunk_name_size();
+  int file_dm(total_files/2);
+  int chunkage = dms[file_dm].chunks.size();
   int removee = RandomUint32() % chunkage;
-  std::string enc_removee(dms[file_dm].encrypted_chunk_name(removee));
+  std::string enc_removee(dms[file_dm].chunks[removee].hash);
   try {
     ChunkType type = client_chunkstore_->chunk_type(enc_removee);
     fs::path chunk_path(client_chunkstore_->GetChunkPath(enc_removee, type,
@@ -911,7 +933,7 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureSteppedMultipleEqualFiles) {
   }
   catch(const std::exception &e) {
     FAIL() << "Couldn't erase chunk - " << e.what();
-  } MAHMOUD*/
+  } 
 
   bool done(false), done2(done);
   int received_chunks(1);
@@ -925,7 +947,7 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureSteppedMultipleEqualFiles) {
     seh_->ChunksToMultiIndex(dms[y], "", filenames[y]);
   }
 //  printf("After seh->StoreChunks\n");
-//MAHMOUD 07/03/11  ASSERT_EQ(size_t(total_files * chunkage), seh_->pending_chunks_.size());
+  ASSERT_EQ(size_t(total_files * chunkage), seh_->pending_chunks_.size());
 
   for (int y = 0; y < total_files; ++y) {
     seh_->StoreChunksToNetwork(dms[y], PRIVATE, "");

@@ -27,10 +27,10 @@
 
 #include "boost/cstdint.hpp"
 #include "boost/function.hpp"
-#include "maidsafe-dht/common/version.h"
-#include "maidsafe-dht/common/utils.h"
+#include "maidsafe-dht/version.h"
+#include "maidsafe/common/utils.h"
 
-#define THIS_MAIDSAFE_DHT_VERSION 25
+#define THIS_MAIDSAFE_DHT_VERSION 26
 #if MAIDSAFE_DHT_VERSION < THIS_MAIDSAFE_DHT_VERSION
 #error This API is not compatible with the installed library.\
   Please update the maidsafe-dht library.
@@ -60,7 +60,7 @@ const std::string kAnonymousRequestSignature(2 * kKeySize, 'f');
 
 enum DbInitFlag {CONNECT, CREATE, DISCONNECT};
 
-const size_t kMaxPath(255);
+const size_t kMaxPath(300);
 
 const std::string kRoot("/");
 

@@ -27,7 +27,7 @@
 #include "boost/multi_index/ordered_index.hpp"
 #include "boost/multi_index/sequenced_index.hpp"
 #include "boost/thread/mutex.hpp"
-#include "maidsafe-dht/common/alternative_store.h"
+#include "maidsafe-dht/kademlia/alternative_store.h"
 
 
 namespace fs3 = boost::filesystem3;
@@ -134,7 +134,7 @@ struct change_type {
   ChunkType new_type_;
 };
 
-class ChunkStore : public AlternativeStore {
+class ChunkStore : public kademlia::AlternativeStore {
  public:
   ChunkStore(const std::string &chunkstore_dir,
              const boost::uint64_t &available_space,

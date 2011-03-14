@@ -193,7 +193,7 @@ ENDFUNCTION()
 ###################################################################################################
 # Boost libraries search                                                                          #
 ###################################################################################################
-SET(REQUIRED_BOOST_COMPONENTS date_time filesystem regex system thread)
+SET(REQUIRED_BOOST_COMPONENTS date_time filesystem regex system thread serialization)
 INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindBoost.cmake)
 SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Boost_INCLUDE_DIR})
 SET(LIBS_DIRS ${LIBS_DIRS} ${Boost_LIBRARY_DIRS})
@@ -604,7 +604,6 @@ ADD_LIBRARY(LifeStuffclientfilesystemlib STATIC ${ALL_FILES_CLIENT_FILESYSTEM_DI
 ADD_LIBRARY(LifeStuffcommonlib STATIC ${ALL_FILES_COMMON_DIR})
 ADD_LIBRARY(LifeStufffuselib STATIC ${ALL_FILES_FUSE_DIR})
 
-#ADD_SUBDIRECTORY(${SRC_MAIDSAFE}/encrypt ${CMAKE_BINARY_DIR}/encrypt)
 ADD_SUBDIRECTORY(${SRC_MAIDSAFE}/passport ${CMAKE_BINARY_DIR}/passport)
 ADD_SUBDIRECTORY(${SRC_MAIDSAFE}/pki ${CMAKE_BINARY_DIR}/pki)
 
@@ -624,7 +623,7 @@ IF(UNIX)
 ENDIF()
 # ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTencrypt TESTpassport TESTpki TESTcommon
 #                   TESTclientfilesystem TESTclient TESTfuse TESTclientcontroller_local DEMOclient)
-ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTencrypt TESTpassport TESTpki
+ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTencrypt TESTpki TESTpassport 
                   TESTclientfilesystem TESTfuse TESTclientcontroller_local)
 SET(TEST_EXECUTABLES )
 
@@ -635,11 +634,11 @@ SET(TEST_EXECUTABLES )
 ADD_DEFINITIONS(-DSTATICLIB)
 SET(BUILD_SHARED_LIBS OFF)
 
-TARGET_LINK_LIBRARIES(LifeStuffcommonlib passport ${Encrypt_LIBRARY} ${Boost_FILESYSTEM_LIBRARY})
+TARGET_LINK_LIBRARIES(LifeStuffcommonlib passport ${Encrypt_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} /home/maidsafe/LifeStuff/MaidSafe-Common/installed/lib/libmaidsafe_common.a /home/maidsafe/LifeStuff/MaidSafe-Common/installed/lib/libcryptopp.a)
 TARGET_LINK_LIBRARIES(LifeStuffclientfilesystemlib LifeStuffcommonlib pki ${Boost_DATE_TIME_LIBRARY})
 TARGET_LINK_LIBRARIES(LifeStufflsmclientlib LifeStuffclientfilesystemlib ${QT_LIBRARIES} ${Boost_REGEX_LIBRARY})
 # TARGET_LINK_LIBRARIES(LifeStuffclientlib LifeStuffclientfilesystemlib ${QT_LIBRARIES} ${Boost_REGEX_LIBRARY})
-TARGET_LINK_LIBRARIES(LifeStufffuselib ${Fuse_LIBRARY} ${Boost_SYSTEM_LIBRARY})
+TARGET_LINK_LIBRARIES(LifeStufffuselib ${Fuse_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_SERIALIZATION_LIBRARY_RELEASE})
 # TARGET_LINK_LIBRARIES(lifestuff LifeStuffclientlib LifeStufffuselib ${QT_LIBRARIES})
 TARGET_LINK_LIBRARIES(lslocal LifeStufflsmclientlib LifeStufffuselib ${QT_LIBRARIES})
 TARGET_LINK_LIBRARIES(lslightlocal LifeStufflsmclientlib ${QT_LIBRARIES})
@@ -653,7 +652,7 @@ TARGET_LINK_LIBRARIES(TESTfuse LifeStufffuselib ${Gtest_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTclientcontroller_local LifeStufflsmclientlib ${Gtest_LIBRARY})
 # TARGET_LINK_LIBRARIES(TESTimconnectionhandler_net LifeStuffclientlib ${Gtest_LIBRARY})
 # TARGET_LINK_LIBRARIES(DEMOclient LifeStuffclientlib)
-
+#TARGET_LINK_LIBRARIES(TESTpassport ${Encrypt_LIBRARY} /home/maidsafe/LifeStuff/MaidSafe-Common/installed/lib/libmaidsafe_common.a)
 ###################################################################################################
 # Compiler and linker flags - after all targets declared                                          #
 ###################################################################################################
@@ -835,7 +834,7 @@ FUNCTION(ADD_MAIDSAFE_TEST GTEST_GROUP_NAME GTEST_NAME TEST_PATH)
 ENDFUNCTION()
 
 #SET(TEST_EXECUTABLES TESTclient TESTclientfilesystem TESTcommon TESTencrypt TESTpassport TESTpki TESTfuse)
-SET(TEST_EXECUTABLES TESTclientfilesystem TESTencrypt TESTpassport TESTpki TESTfuse)
+SET(TEST_EXECUTABLES TESTclientfilesystem TESTencrypt TESTpki TESTfuse)
 FOREACH(TEST_EXECUTABLE ${TEST_EXECUTABLES})
   IF(TEST_EXECUTABLE STREQUAL "TESTclient")
     SET(GTEST_SOURCE_FILES ${ALL_FILES_CLIENT_TESTS_DIR})
@@ -845,8 +844,8 @@ FOREACH(TEST_EXECUTABLE ${TEST_EXECUTABLES})
   #   SET(GTEST_SOURCE_FILES ${ALL_FILES_COMMON_TESTS_DIR})
   ELSEIF(TEST_EXECUTABLE STREQUAL "TESTencrypt")
     SET(GTEST_SOURCE_FILES ${ALL_FILES_ENCRYPT_TESTS_DIR})
-  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTpassport")
-    SET(GTEST_SOURCE_FILES ${ALL_FILES_PASSPORT_TESTS_DIR})
+#  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTpassport")
+#    SET(GTEST_SOURCE_FILES ${ALL_FILES_PASSPORT_TESTS_DIR})
   ELSEIF(TEST_EXECUTABLE STREQUAL "TESTpki")
     SET(GTEST_SOURCE_FILES ${ALL_FILES_PKI_TESTS_DIR})
   ELSEIF(TEST_EXECUTABLE STREQUAL "TESTfuse")

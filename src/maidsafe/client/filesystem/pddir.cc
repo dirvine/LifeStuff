@@ -23,7 +23,6 @@
 */
 
 #include "maidsafe/client/filesystem/pddir.h"
-
 #include "boost/filesystem.hpp"
 #include "boost/lexical_cast.hpp"
 #include <exception>
@@ -31,6 +30,8 @@
 #include "maidsafe/client/clientutils.h"
 #include "maidsafe-encrypt/self_encryption.h"
 #include "maidsafe-encrypt/data_map.h"
+#include "boost/archive/text_oarchive.hpp"
+#include "boost/archive/text_iarchive.hpp"
 
 namespace fs = boost::filesystem;
 
@@ -242,9 +243,9 @@ int PdDir::AddElement(const std::string &ser_mdm,
   try {
     if (!mdm.ParseFromString(ser_mdm))
       return kParseDataMapError;
-//MAHMOUD 07/03/2011    if (!ser_dm.empty())
-//MAHMOUD 07/03/2011      if (!dm.ParseFromString(ser_dm))
-//MAHMOUD 07/03/2011        return kParseDataMapError;
+    if (!ser_dm.empty()) 
+      if (!ParseFromString(dm, ser_dm))
+        return kParseDataMapError;
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
@@ -298,7 +299,7 @@ int PdDir::AddElement(const std::string &ser_mdm,
       if (!ser_dm.empty()) {
         CppSQLite3Statement stmt1 = db_->compileStatement(
             "insert into dm values(?,?,?);");
-//MAHMOUD 07/03/2011        stmt1.bind(1, EncodeToHex(dm.file_hash()).c_str());
+        stmt1.bind(1, EncodeToHex(dm.content).c_str());
         stmt1.bind(2, mdm.id());
         stmt1.bind(3, EncodeToHex(ser_dm).c_str());
         // printf("aaaaaaaaaaaa %s\n", ser_dm.c_str());
@@ -355,9 +356,8 @@ int PdDir::ModifyMetaDataMap(const std::string &ser_mdm,
   encrypt::DataMap dm;
   if (!mdm.ParseFromString(ser_mdm))
     return kParseDataMapError;
-//MAHMOUD 07/03/2011  if (!dm.ParseFromString(ser_dm))
-//MAHMOUD 07/03/2011    return kParseDataMapError;
-
+  if (!ParseFromString(dm, ser_dm))
+    return kParseDataMapError;
   int id = GetIdFromName(mdm.display_name());
   if (id < 0) {
 #ifdef DEBUG
@@ -394,7 +394,7 @@ int PdDir::ModifyMetaDataMap(const std::string &ser_mdm,
 
     CppSQLite3Statement stmt1 = db_->compileStatement(
         "update dm set file_hash = ?, ser_dm = ? where id = ?;");
-//MAHMOUD 07/03/2011    stmt1.bind(1, EncodeToHex(dm.file_hash()).c_str());
+    stmt1.bind(1, EncodeToHex(dm.content).c_str());
     stmt1.bind(2, EncodeToHex(ser_dm).c_str());
     stmt1.bind(3, id);
     modified_elements = stmt1.execDML();
@@ -697,6 +697,15 @@ void PdDir::SanitiseSingleQuotes(std::string *str) {
       ++i;
     }
   }
+}
+
+bool PdDir::ParseFromString(maidsafe::encrypt::DataMap& data_map, 
+                                  const std::string& serialized) {
+  std::istringstream in_string_stream(serialized);
+  boost::archive::text_iarchive ia(in_string_stream);
+  boost::serialization::serialize<boost::archive::text_iarchive>(ia, data_map, 
+      0);  
+  return !data_map.content.empty();
 }
 
 }  // namespace maidsafe

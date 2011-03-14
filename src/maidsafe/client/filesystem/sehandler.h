@@ -198,6 +198,14 @@ class SEHandler {
     pending_chunks_.clear();
     path_count_ = 0;
   }
+int EncryptDataMap(maidsafe::encrypt::DataMap &data_map,
+                   const std::string &this_directory_key,
+                   const std::string &parent_directory_key,
+                   std::string *encrypted_data_map);
+int DecryptDataMap(const std::string &encrypted_data_map,
+                   const std::string &this_directory_key,
+                   const std::string &parent_directory_key,
+                   maidsafe::encrypt::DataMap *data_map);
 
  private:
   SEHandler &operator=(const SEHandler &);
@@ -242,7 +250,14 @@ class SEHandler {
   void StoreChunksToNetwork(const encrypt::DataMap &data_map,
                             const DirType &dir_type,
                             const std::string &msid);
-
+  void SerializeToString(maidsafe::encrypt::DataMap& data_map,
+                                std::string& serialized);  
+  void ParseFromString(maidsafe::encrypt::DataMap& data_map, 
+                                  const std::string& serialized);
+  bool ResizeObfuscationHash(const std::string &input,
+                             const size_t &required_size,
+                             std::string *resized_data);  
+  
   std::shared_ptr<StoreManagerInterface> store_manager_;
   std::shared_ptr<ChunkStore> client_chunkstore_;
   SessionSingleton *session_singleton_;

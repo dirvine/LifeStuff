@@ -16,7 +16,7 @@
 
 #include "boost/filesystem/fstream.hpp"
 #include "boost/scoped_array.hpp"
-#include "maidsafe-dht/common/crypto.h"
+#include "maidsafe/common/crypto.h"
 #include "maidsafe/common/config.h"
 
 namespace maidsafe {
@@ -557,7 +557,7 @@ int ChunkStore::Clear() {
   chunkstore_set_.clear();
   set_is_initialised(false);
   return kSuccess;
-}
+} 
 
 int ChunkStore::Load(const std::string &key, std::string *value) {
   value->clear();
