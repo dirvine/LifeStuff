@@ -635,7 +635,7 @@ ADD_DEFINITIONS(-DSTATICLIB)
 SET(BUILD_SHARED_LIBS OFF)
 
 TARGET_LINK_LIBRARIES(LifeStuffcommonlib passport ${Encrypt_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} /home/maidsafe/LifeStuff/MaidSafe-Common/installed/lib/libmaidsafe_common.a /home/maidsafe/LifeStuff/MaidSafe-Common/installed/lib/libcryptopp.a)
-TARGET_LINK_LIBRARIES(LifeStuffclientfilesystemlib LifeStuffcommonlib pki ${Boost_DATE_TIME_LIBRARY})
+TARGET_LINK_LIBRARIES(LifeStuffclientfilesystemlib LifeStuffcommonlib pki ${Boost_DATE_TIME_LIBRARY} )
 TARGET_LINK_LIBRARIES(LifeStufflsmclientlib LifeStuffclientfilesystemlib ${QT_LIBRARIES} ${Boost_REGEX_LIBRARY})
 # TARGET_LINK_LIBRARIES(LifeStuffclientlib LifeStuffclientfilesystemlib ${QT_LIBRARIES} ${Boost_REGEX_LIBRARY})
 TARGET_LINK_LIBRARIES(LifeStufffuselib ${Fuse_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_SERIALIZATION_LIBRARY_RELEASE})

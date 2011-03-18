@@ -210,7 +210,7 @@ int SEHandler::EncryptAFile(const fs::path &relative_entry,
           return kChunkstoreError;
         StoreChunks(data_map, dir_type, msid, relative_entry);
         oa << data_map;      
-        string_stream >> serialised_data_map; 
+        serialised_data_map = string_stream.str(); 
       }
       break;
     case LOCKED_FILE:
@@ -258,8 +258,6 @@ int SEHandler::EncryptAFile(const fs::path &relative_entry,
 int SEHandler::EncryptString(const std::string &data,
                              std::string *serialised_data_map) {
   const encrypt::SelfEncryptionParams sep;
-  std::ostringstream out_string_stream;  
-  boost::archive::text_oarchive oa(out_string_stream);
   if (data.empty())
     return kEncryptionSmallInput;
 
@@ -272,10 +270,7 @@ int SEHandler::EncryptString(const std::string &data,
   if (AddChunksToChunkstore(data_map) != kSuccess)
     return kChunkstoreError;
   StoreChunks(data_map, PRIVATE, "", EncodeToHex(data_map.content));
-  boost::serialization::serialize<boost::archive::text_oarchive>(
-      oa, data_map, 0);
-  *serialised_data_map = out_string_stream.str();
-  if (serialised_data_map->empty()) {
+  if (!SerializeToString(data_map, *serialised_data_map)) {
 #ifdef DEBUG
     printf("SEHandler::EncryptString - Failed to serialize data_map\n");
 #endif
@@ -352,11 +347,7 @@ int SEHandler::DecryptAFile(const fs::path &relative_entry) {
     }
   }
   encrypt::DataMap data_map;
-  std::string sting;
-  std::ostringstream out_string_stream(sting);
-  boost::archive::text_oarchive oa(out_string_stream);  
-  boost::serialization::serialize<boost::archive::text_oarchive>(oa, data_map,
-    0);
+  ParseFromString(data_map, serialised_data_map);
   std::vector<fs::path> chunk_paths;
   int n = LoadChunks(data_map, &chunk_paths);
   if (n != kSuccess) {
@@ -376,11 +367,7 @@ int SEHandler::DecryptString(const std::string &serialised_data_map,
                              std::string *decrypted_string) {
   encrypt::DataMap data_map;
   decrypted_string->clear();
-  std::istringstream in_string_stream(serialised_data_map);
-  boost::archive::text_iarchive ia(in_string_stream);
-  boost::serialization::serialize<boost::archive::text_iarchive>(ia, data_map,
-    0);
-if (data_map.content.empty()) {
+  if (!ParseFromString(data_map, serialised_data_map)) {
 #ifdef DEBUG
       printf("SEHandler::DecryptString - Failed to parse into DM.\n");
 #endif
@@ -508,13 +495,14 @@ int SEHandler::EncryptDb(const fs::path &dir_path,
     return kEncryptionDbMissing;
   }
   std::string file_hash(SHA512File(db_path));
+  const fs::path db_absolute_path(db_path);
 
   // when encrypting root db and keys db (during logout), GetDbPath fails above,
   // so insert alternative value for file hashes.
   if (file_hash.empty())
     file_hash = SHA512String(db_path);
   data_map->content = file_hash;
-  if (encrypt::SelfEncrypt(db_path, file_system::TempDir(), false, sep, 
+  if (encrypt::SelfEncrypt(db_absolute_path, file_system::TempDir(), sep, 
        data_map) != kSuccess) {
     return kEncryptDbFailure;
   } 
@@ -958,20 +946,21 @@ bs2::connection SEHandler::ConnectToOnFileAdded(
   return file_added_.connect(slot);
 }
 
-void SEHandler::SerializeToString(maidsafe::encrypt::DataMap& data_map, 
+bool SEHandler::SerializeToString(maidsafe::encrypt::DataMap& data_map, 
                                   std::string& serialized) {
-  std::ostringstream out_string_stream(serialized);
-  boost::archive::text_oarchive oa(out_string_stream);
-  boost::serialization::serialize<boost::archive::text_oarchive>(oa, data_map, 
-      0);
+  std::stringstream string_stream;
+  boost::archive::text_oarchive oa(string_stream);
+  oa << data_map;
+  serialized = string_stream.str();
+  return !serialized.empty();
 }
 
-void SEHandler::ParseFromString(maidsafe::encrypt::DataMap& data_map, 
-                                  const std::string& serialized) {
-  std::istringstream in_string_stream(serialized);
-  boost::archive::text_iarchive ia(in_string_stream);
-  boost::serialization::serialize<boost::archive::text_iarchive>(ia, data_map, 
-      0);  
+bool SEHandler::ParseFromString(maidsafe::encrypt::DataMap& data_map, 
+                                const std::string& serialized) {
+  std::stringstream string_stream(serialized);  
+  boost::archive::text_iarchive ia(string_stream);
+  ia >> data_map;
+  return !data_map.content.empty();
 }
 
 int SEHandler::EncryptDataMap(maidsafe::encrypt::DataMap &data_map,
@@ -987,8 +976,7 @@ int SEHandler::EncryptDataMap(maidsafe::encrypt::DataMap &data_map,
                                                       parent_directory_key);
   std::string serialised_data_map;
   try {
-    SerializeToString(data_map, serialised_data_map);
-    if (serialised_data_map.empty())
+    if (!SerializeToString(data_map, serialised_data_map))
       return encrypt::kBadDataMap;
   }
   catch(const std::exception&) {

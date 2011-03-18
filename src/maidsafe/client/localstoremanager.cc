@@ -168,7 +168,7 @@ int LocalStoreManager::StoreChunk(const std::string &chunk_name,
   try {
     if (fs3::exists(current)) {
       if (!fs3::exists(file_path)) {
-//        fs3::copy_file(current, file_path);
+        fs3::copy_file(current, file_path);
       }
     } else {
 #ifdef DEBUG

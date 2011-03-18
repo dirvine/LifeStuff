@@ -409,7 +409,7 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptString) {
       seh_->ConnectToOnFileNetworkStatus(boost::bind(&test_seh::FileUpdate, _1,
                                                      _2, &res, &m));
 
-  std::string data(RandomString(1024)), ser_dm;
+  std::string data(RandomString(2048)), ser_dm;
   int result = seh_->EncryptString(data, &ser_dm);
   ASSERT_EQ(0, result);
 
@@ -470,7 +470,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithLoadChunks) {
                                                      _2, &res, &m));
 
   ss_->SetDefConLevel(kDefCon2);
-  std::string data(RandomString(1024)), ser_dm;
+  std::string data(RandomString(2048)), ser_dm;
 
   int result = seh_->EncryptString(data, &ser_dm);
   ASSERT_EQ(0, result);
@@ -527,7 +527,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithChunksPrevLoaded) {
   rel_path /= "file1";
   std::string rel_str = TidyPath(rel_path.string());
 
-  std::string full_str(test_seh::CreateRandomFile(rel_str, 1026));
+  std::string full_str(test_seh::CreateRandomFile(rel_str, 2048));
   std::string hash_before, hash_after;
   hash_before = SHA512File(fs::path(full_str));
   int result = seh_->EncryptAFile(rel_str, PRIVATE, "");
