@@ -334,9 +334,9 @@ class ClientController {
   void FileUpdate(const std::string &file, int percentage);
   bool AddToPendingFiles(const std::string &file);
   bool RemoveFromPendingFiles(const std::string &file);  
-  void SerializeToString(maidsafe::encrypt::DataMap& data_map,
+  bool SerializeToString(maidsafe::encrypt::DataMap& data_map,
                                 std::string& serialized);  
-  void ParseFromString(maidsafe::encrypt::DataMap& data_map, 
+  bool ParseFromString(maidsafe::encrypt::DataMap& data_map, 
                                   const std::string& serialized);
 
   // Variables

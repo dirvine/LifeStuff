@@ -3405,20 +3405,21 @@ bool ClientController::RemoveFromPendingFiles(const std::string &file) {
   return true;
 }
 
-void ClientController::SerializeToString(maidsafe::encrypt::DataMap& data_map, 
+bool ClientController::SerializeToString(maidsafe::encrypt::DataMap& data_map, 
                                   std::string& serialized) {
-  std::ostringstream out_string_stream(serialized);
-  boost::archive::text_oarchive oa(out_string_stream);
-  boost::serialization::serialize<boost::archive::text_oarchive>(oa, data_map, 
-      0);
+  std::stringstream string_stream;
+  boost::archive::text_oarchive oa(string_stream);
+  oa << data_map;
+  serialized = string_stream.str();
+  return !serialized.empty();
 }
 
-void ClientController::ParseFromString(maidsafe::encrypt::DataMap& data_map, 
+bool ClientController::ParseFromString(maidsafe::encrypt::DataMap& data_map, 
                                   const std::string& serialized) {
-  std::istringstream in_string_stream(serialized);
-  boost::archive::text_iarchive ia(in_string_stream);
-  boost::serialization::serialize<boost::archive::text_iarchive>(ia, data_map, 
-      0);  
+  std::stringstream string_stream(serialized);
+  boost::archive::text_iarchive ia(string_stream);
+  ia >> data_map;
+  return (data_map.size > 0);
 }
 
 }  // namespace maidsafe
