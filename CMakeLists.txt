@@ -23,12 +23,7 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8 FATAL_ERROR)
 MESSAGE("================================================================================\n")
-SET(CMAKE_CACHEFILE "${CMAKE_CACHEFILE_DIR}/CMakeCache.txt")
-IF(WIN32)
-  STRING(REPLACE "/" "\\" CMAKE_CACHEFILE ${CMAKE_CACHEFILE})
-ENDIF()
 
-SET(ERROR_MESSAGE "No generator previously specified.  Run:\n")
 SET(ERROR_MESSAGE_CMAKE_PATH "cmake ../../..")
 GET_FILENAME_COMPONENT(CMAKE_BUILD_TYPE_DIR ${CMAKE_BINARY_DIR} NAME)
 
@@ -36,241 +31,34 @@ GET_FILENAME_COMPONENT(CMAKE_BUILD_TYPE_DIR ${CMAKE_BINARY_DIR} NAME)
 IF(CMAKE_BUILD_TYPE_DIR MATCHES "Win_MSVC")
   SET(CMAKE_BUILD_TYPE_DIR Release)
   SET(ERROR_MESSAGE_CMAKE_PATH "   cmake ..\\..")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}\tdel ${CMAKE_CACHEFILE}\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}then run e.g:\n\t${ERROR_MESSAGE_CMAKE_PATH} -G\"Visual Studio 9 2008\"\n\n")
-ELSEIF(UNIX)
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}\trm ${CMAKE_CACHEFILE}\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}then run e.g:\n\t${ERROR_MESSAGE_CMAKE_PATH} -G\"CodeBlocks - Unix Makefiles\"\n\n")
-ELSE()
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}\tdel ${CMAKE_CACHEFILE}\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}then run e.g:\n\t${ERROR_MESSAGE_CMAKE_PATH} -G\"CodeBlocks - MinGW Makefiles\"\n\n")
+ELSEIF(CMAKE_BUILD_TYPE_DIR MATCHES "kdev")
+  SET(CMAKE_BUILD_TYPE_DIR Debug)
+  SET(KDEV 1)
 ENDIF()
 
-
-
-SET(ERROR_MESSAGE "${ERROR_MESSAGE}To see a full list of generators, run:\n\t${ERROR_MESSAGE_CMAKE_PATH} --help\n")
+SET(ERROR_MESSAGE "No generator previously specified.\nTo see a full list of generators, run:\n\t${ERROR_MESSAGE_CMAKE_PATH} --help\n")
 SET(CMAKE_GEN ${CMAKE_GENERATOR} CACHE INTERNAL "" FORCE)
 IF(NOT ${CMAKE_C_COMPILER_WORKS})
   MESSAGE(FATAL_ERROR ${ERROR_MESSAGE})
 ENDIF()
 
-IF(CMAKE_BUILD_TYPE_DIR MATCHES "Release")
-  SET(PROJECT_NAME LifeStuff)
+IF((CMAKE_BUILD_TYPE_DIR MATCHES "Release") OR (DEFINED ${KDEV}))
+  SET(PROJECT_NAME DDA)
 ELSE()
-  SET(PROJECT_NAME LifeStuff_${CMAKE_BUILD_TYPE_DIR})
+  SET(PROJECT_NAME DDA_${CMAKE_BUILD_TYPE_DIR})
 ENDIF()
 OPTION (BUILD_SHARED_LIBS "Build shared libraries." OFF)
-
-
-FIND_PROGRAM(GITCOMMAND git PATHS ENV ProgramFiles PATH_SUFFIXES "Git/bin")
-SET(UPDATE_TYPE git)
-SET(UPDATE_COMMAND "${GITCOMMAND}")
 
 # This call resets CMAKE_BUILD_TYPE, hence it's copied from CMAKE_BUILD_TYPE_DIR which is set above.
 PROJECT(${PROJECT_NAME})
 SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_DIR} CACHE INTERNAL "Except for MSVC, the build type is set by running cmake from the appropriate build subdirectory e.g. for a Debug build, \"cd build/Linux/Debug && cmake ../../..\"." FORCE)
-
-SET(${PROJECT_NAME}_ROOT ${PROJECT_SOURCE_DIR})
-SET(${PROJECT_NAME}_SOURCE_DIR ${${PROJECT_NAME}_ROOT}/src)
-SET(SOURCE_DIR ${${PROJECT_NAME}_ROOT}/src)
-
-IF(NOT MAIDSAFE_TEST_TYPE)
-  SET(MAIDSAFE_TEST_TYPE "BEH" CACHE STRING "Choose the type of TEST, options are: _ BEH FUNC" FORCE)
-  SET(MAIDSAFE_TEST_TYPE_MESSAGE "Tests included: Behavioural")
-ELSE()
-  IF(${MAIDSAFE_TEST_TYPE} MATCHES _)
-    SET(MAIDSAFE_TEST_TYPE_MESSAGE "Tests included: All")
-  ELSEIF(${MAIDSAFE_TEST_TYPE} MATCHES BEH)
-    SET(MAIDSAFE_TEST_TYPE_MESSAGE "Tests included: Behavioural")
-  ELSEIF(${MAIDSAFE_TEST_TYPE} MATCHES FUNC)
-    SET(MAIDSAFE_TEST_TYPE_MESSAGE "Tests included: Functional")
-  ELSE()
-    SET(MAIDSAFE_TEST_TYPE "_" CACHE STRING "Choose the type of TEST, options are: _ BEH FUNC" FORCE)
-    SET(MAIDSAFE_TEST_TYPE_MESSAGE "Tests included: All")
-  ENDIF()
-ENDIF()
-
-ENABLE_TESTING()
-
-IF(APPLE)
-  SET(CMAKE_OSX_SYSROOT "/")
-ENDIF()
-
-IF(CMAKE_BUILD_TYPE MATCHES "Release")
-  IF(MSVC)
-    MESSAGE("---------------------------")
-  ELSE()
-    MESSAGE("Building a package which is OK to release.")
-    MESSAGE("-----------------------------------------------------------------------")
-  ENDIF()
-ELSE()
-  IF(MSVC)
-    MESSAGE("---------------------------")
-  ELSE()
-    MESSAGE("Building a package which is NOT OK to release.")
-    MESSAGE("---------------------------------------------------------------------------")
-  ENDIF()
-ENDIF()
-
-
-# setup a single target path for libraries and executables -
-# this avoids copying all the dlls and exes together
-UNSET(CMAKE_RUNTIME_OUTPUT_DIRECTORY CACHE)
-UNSET(CMAKE_LIBRARY_OUTPUT_DIRECTORY CACHE)
-UNSET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY CACHE)
-IF(MSVC)
-  IF(CMAKE_CL_64)
-    SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${${PROJECT_NAME}_BINARY_DIR}/bin/x64 CACHE PATH "Executable target dir (x64).")
-    SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${${PROJECT_NAME}_BINARY_DIR}/bin/x64 CACHE PATH "Shared library target dir (x64).")
-    SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${${PROJECT_NAME}_BINARY_DIR}/bin/x64 CACHE PATH "Static library target dir (x64).")
-  ELSE()
-    SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${${PROJECT_NAME}_BINARY_DIR}/bin/win32 CACHE PATH "Executable target dir (win32).")
-    SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${${PROJECT_NAME}_BINARY_DIR}/bin/win32 CACHE PATH "Shared library target dir (win32).")
-    SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${${PROJECT_NAME}_BINARY_DIR}/bin/win32 CACHE PATH "Static library target dir (win32).")
-  ENDIF()
-ELSE()
-  SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${${PROJECT_NAME}_BINARY_DIR}/bin CACHE PATH "Executable target dir.")
-  SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${${PROJECT_NAME}_BINARY_DIR}/bin CACHE PATH "Shared library target dir.")
-  SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${${PROJECT_NAME}_BINARY_DIR}/bin CACHE PATH "Static library target dir.")
-ENDIF()
-
-SET(CMAKE_DEBUG_POSTFIX _d)
-SET(CMAKE_RELWITHDEBINFO_POSTFIX _rwdi)
-SET(CMAKE_MINSIZEREL_POSTFIX _msr)
-
-IF(CMAKE_BUILD_TYPE MATCHES "Debug")
-  SET(TEST_POSTFIX ${CMAKE_DEBUG_POSTFIX})
-ELSEIF(CMAKE_BUILD_TYPE MATCHES "RelWithDebInfo")
-  SET(TEST_POSTFIX ${CMAKE_RELWITHDEBINFO_POSTFIX})
-ELSEIF(CMAKE_BUILD_TYPE MATCHES "MinSizeRel")
-  SET(TEST_POSTFIX ${CMAKE_MINSIZEREL_POSTFIX})
-ENDIF()
-
-# Create CTestCustom.cmake to avoid inclusion of coverage results from third-party code
-FILE(WRITE ${${PROJECT_NAME}_BINARY_DIR}/CTestCustom.cmake "SET(CTEST_CUSTOM_COVERAGE_EXCLUDE \${CTEST_CUSTOM_COVERAGE_EXCLUDE} \"examples/\" \"*.pb.*\" \"tests/\" \"tools/\" \"cppsqlite3\")\n\n")
+INCLUDE_DIRECTORIES(${PROJECT_BINARY_DIR})
 
 ###################################################################################################
-# Set default directories to be searched for included files and libs                              #
+# MaidSafe Common library search                                                                  #
 ###################################################################################################
-IF(DEFINED ADD_LIBRARY_DIR)
-  IF(DEFAULT_LIBRARY_DIR)
-    LIST(REMOVE_DUPLICATES DEFAULT_LIBRARY_DIR)
-  ENDIF()
-  SET(DEFAULT_LIBRARY_DIR ${DEFAULT_LIBRARY_DIR} ${ADD_LIBRARY_DIR} CACHE PATH "Path to libraries directories" FORCE)
-ENDIF()
-
-IF(MSVC)
-  SET(CMAKE_INCLUDE_PATH "c:\\msvc\\include")
-  SET(CMAKE_LIBRARY_PATH "c:\\msvc\\lib" ${DEFAULT_LIBRARY_DIR})
-ELSEIF(WIN32) # MinGW builds
-  SET(CMAKE_INCLUDE_PATH "c:\\MinGW\\include")
-  SET(CMAKE_LIBRARY_PATH "c:\\MinGW\\lib" ${DEFAULT_LIBRARY_DIR})
-ELSE()
-  SET(CMAKE_INCLUDE_PATH "/usr/local/include /usr/include")
-  SET(CMAKE_LIBRARY_PATH "/usr/local/lib /usr/lib" ${DEFAULT_LIBRARY_DIR})
-ENDIF()
-
-
-# Function to help set <MODULE>_ROOT_DIR for use of following Find Modules
-# Example: For PROJ_VARIABLE set to "BOOST_ROOT_DIR", PROJ_SEARCH_REGEX set to "boost",
-# and PROJ_SEARCH_DIR set to c:\msvc, if "boost_1_41_0" and "boost_1_42_0"
-# are both subdirectories of c:\msvc, then BOOST_ROOT_DIR_CACHED is set
-# and cached to c:\msvc\boost_1_42_0
-FUNCTION(FIND_THIRD_PARTY_PROJECT PROJ_VARIABLE PROJ_SEARCH_REGEX PROJ_SEARCH_DIR)
-  UNSET(${ARGV0}_CACHED CACHE)
-  STRING(REPLACE "/" "\\" PROJ_SEARCH_DIR ${PROJ_SEARCH_DIR})
-  EXECUTE_PROCESS(COMMAND CMD /C DIR ${PROJ_SEARCH_DIR} /A:D /O:-N /B OUTPUT_VARIABLE THIRD_PARTY_ROOT_DIRS ERROR_VARIABLE ERR_VAR)
-  IF(NOT ERR_VAR)
-    STRING(REGEX MATCH "${PROJ_SEARCH_REGEX}[^\n]*" THIRD_PARTY_ROOT_DIR "${THIRD_PARTY_ROOT_DIRS}")
-    IF(NOT THIRD_PARTY_ROOT_DIR)
-      SET(${ARGV0})
-    ELSE()
-      SET(${ARGV0}_CACHED "${PROJ_SEARCH_DIR}\\${THIRD_PARTY_ROOT_DIR}" CACHE PATH "")
-    ENDIF()
-  ENDIF()
-ENDFUNCTION()
-
-###################################################################################################
-# Boost libraries search                                                                          #
-###################################################################################################
-SET(REQUIRED_BOOST_COMPONENTS date_time filesystem regex system thread)
-INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindBoost.cmake)
-SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Boost_INCLUDE_DIR})
-SET(LIBS_DIRS ${LIBS_DIRS} ${Boost_LIBRARY_DIRS})
-SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Boost_LIBRARY_DIRS})
-
-###################################################################################################
-# QT library search                                                                               #
-###################################################################################################
-# Including this file sets up environment with correct dirs / flags - no need to explicitly set
-# anything else other than linking to QT_LIBRARIES as appropriate.
-INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindQt4.cmake)
-IF (NOT WIN32)
-  # these are required for static builds
-  SET(QT_LIBRARIES ${QT_LIBRARIES} z Xext X11 xcb Xau Xdmcp)
-ENDIF()
-
-###################################################################################################
-# Google Test library search                                                                      #
-###################################################################################################
-INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindGtest.cmake)
-SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Gtest_INCLUDE_DIR})
-SET(LIBS_DIRS ${LIBS_DIRS} ${Gtest_LIBRARY_DIR})
-SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Gtest_LIBRARY_DIR_DEBUG})
-IF(NOT WIN32)
-  SET(Gtest_LIBRARY "${Gtest_LIBRARY};pthread")
-ENDIF()
-
-###################################################################################################
-# Google Mock library search                                                                      #
-###################################################################################################
-INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindGmock.cmake)
-SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Gmock_INCLUDE_DIR})
-SET(LIBS_DIRS ${LIBS_DIRS} ${Gmock_LIBRARY_DIR})
-SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Gmock_LIBRARY_DIR_DEBUG})
-
-###################################################################################################
-# Google Log library search - Glog can't currently be compiled on Windows with MinGW              #
-###################################################################################################
-IF((NOT WIN32) OR MSVC)
-  INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindGlog.cmake)
-  IF(Glog_FOUND)
-    SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Glog_INCLUDE_DIR})
-    SET(LIBS_DIRS ${LIBS_DIRS} ${Glog_LIBRARY_DIR})
-    SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Glog_LIBRARY_DIR_DEBUG})
-  ENDIF()
-ENDIF()
-
-###################################################################################################
-# Protocol Buffers library search                                                                 #
-###################################################################################################
-FILE(GLOB_RECURSE PROTO_FILES RELATIVE ${${PROJECT_NAME}_SOURCE_DIR} "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/*.proto")
-INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindProtobuf.cmake)
-SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Protobuf_INCLUDE_DIR})
-SET(LIBS_DIRS ${LIBS_DIRS} ${Protobuf_LIBRARY_DIR})
-SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Protobuf_LIBRARY_DIR_DEBUG})
-
-###################################################################################################
-# Google BreakPad library search                                                                  #
-###################################################################################################
-#IF((UNIX AND NOT APPLE) OR MSVC)
-#  INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindBreakpad.cmake)
-#  SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Breakpad_INCLUDE_DIR})
-#  SET(LIBS_DIRS ${LIBS_DIRS} ${Breakpad_LIBRARY_DIR})
-#  SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Breakpad_LIBRARY_DIR_DEBUG})
-#ENDIF()
-
-###################################################################################################
-# Python library search                                                                           #
-###################################################################################################
-UNSET(PYTHON_EXECUTABLE CACHE)
-INCLUDE(FindPythonInterp)
-FIND_PACKAGE(PythonInterp)
-IF(PYTHONINTERP_FOUND)
-  MESSAGE("-- Found python executable: style checking enabled.")
-ELSE()
-  MESSAGE("-- Didn't find python executable: style checking disabled.")
-ENDIF()
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/build)
+INCLUDE(maidsafe_find_common)
 
 ###################################################################################################
 # Dokan / Fuse library search                                                                     #
@@ -296,92 +84,21 @@ ELSE()
 ENDIF()
 
 ###################################################################################################
-# All other libraries (except maidsafe_dht) search                                                #
+# QT library search                                                                               #
 ###################################################################################################
-IF(UNIX)
-  SET(OTHER_LIBS dl pthread)
-  IF(NOT APPLE)
-    SET(OTHER_LIBS rt c m ${OTHER_LIBS})
-  ENDIF()
-ELSEIF(WIN32)
-  IF(MSVC)
-    SET(OTHER_LIBS ws2_32 odbc32 odbccp32 WSock32 IPHlpApi)
-  ELSE()
-    SET(OTHER_LIBS advapi32 ws2_32 iphlpapi mswsock)
-  ENDIF()
+# Including this file sets up environment with correct dirs / flags - no need to explicitly set
+# anything else other than linking to QT_LIBRARIES as appropriate.
+INCLUDE(maidsafe_find_qt4)
+IF(NOT WIN32)
+  # these are required for static builds
+  set(QT_ROOT_DIR "/usr/")
+  SET(QT_LIBRARIES ${QT_LIBRARIES} z Xext X11 xcb Xau Xdmcp)
 ENDIF()
-FOREACH(library ${OTHER_LIBS})
-  FIND_LIBRARY(CURRENT_LIB ${library})
-  IF(CURRENT_LIB)
-    MESSAGE("-- Found library ${CURRENT_LIB}")
-    GET_FILENAME_COMPONENT(CURRENT_LIBRARY_DIR ${CURRENT_LIB} PATH)
-    SET(LIBS_DIRS ${LIBS_DIRS} ${CURRENT_LIBRARY_DIR})
-    SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${CURRENT_LIBRARY_DIR})
-  ELSE()
-    SET(ERROR_MESSAGE "\nCould not find library ${library}.")
-    IF(MSVC)
-      SET(ERROR_MESSAGE "${ERROR_MESSAGE}\nRun cmake from a Visual Studio Command Prompt.")
-    ELSE()
-      SET(ERROR_MESSAGE "${ERROR_MESSAGE}  Run\n${ERROR_MESSAGE_CMAKE_PATH} -DADD_LIBRARY_DIR=<Path to ${library} directory>")
-    ENDIF()
-    MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
-  ENDIF()
-  UNSET(CURRENT_LIB CACHE)
-ENDFOREACH()
 
 ###################################################################################################
-# maidsafe-dht, cryptopp and udt library search                                                   #
+# Standard setup                                                                                  #
 ###################################################################################################
-INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindMaidsafeDht.cmake)
-SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${maidsafe_dht_INCLUDE_DIR})
-SET(LIBS_DIRS ${LIBS_DIRS} ${maidsafe_dht_LIBRARY_DIR})
-SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${maidsafe_dht_LIBRARY_DIR_DEBUG})
-
-
-LIST(REMOVE_DUPLICATES LIBS_DIRS)
-LIST(REMOVE_DUPLICATES LIBS_DIRS_DEBUG)
-LINK_DIRECTORIES(${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
-
-INCLUDE_DIRECTORIES(${${PROJECT_NAME}_SOURCE_DIR})
-INCLUDE_DIRECTORIES(${${PROJECT_NAME}_BINARY_DIR})
-LIST(REMOVE_DUPLICATES INCLUDE_DIRS)
-INCLUDE_DIRECTORIES(AFTER SYSTEM ${INCLUDE_DIRS})
-
-MESSAGE("================================================================================")
-
-###################################################################################################
-# Cleanup of temporary test folders                                                               #
-###################################################################################################
-IF(WIN32)
-  IF(NOT CLEAN_TEMP)
-    SET(CLEAN_TEMP "OFF" CACHE INTERNAL "Cleanup of temp test folders, options are: ONCE, OFF, ALWAYS" FORCE)
-  ENDIF(NOT CLEAN_TEMP)
-  EXECUTE_PROCESS(COMMAND CMD /C ECHO %TEMP% OUTPUT_VARIABLE temp_path OUTPUT_STRIP_TRAILING_WHITESPACE)
-  STRING(REPLACE "\\" "/" temp_path ${temp_path})
-  FILE(GLOB temp_dirs ${temp_path}/maidsafe_Test*)
-  LIST(LENGTH temp_dirs temp_dir_count)
-  IF(NOT ${temp_dir_count} EQUAL 0)
-    MESSAGE("")
-    IF(CLEAN_TEMP MATCHES ONCE OR CLEAN_TEMP MATCHES ALWAYS)
-      MESSAGE("Cleaning up temporary test folders.\n")
-      FOREACH(temp_dir ${temp_dirs})
-        FILE(REMOVE_RECURSE ${temp_dir})
-        MESSAGE("-- Removed ${temp_dir}")
-      ENDFOREACH()
-    ELSE()
-      MESSAGE("The following temporary test folders could be cleaned up:\n")
-      FOREACH(temp_dir ${temp_dirs})
-        MESSAGE("-- Found ${temp_dir}")
-      ENDFOREACH()
-      MESSAGE("")
-      MESSAGE("To cleanup, run cmake ../.. -DCLEAN_TEMP=ONCE or cmake ../.. -DCLEAN_TEMP=ALWAYS")
-    ENDIF()
-    MESSAGE("================================================================================")
-  ENDIF()
-  IF(NOT CLEAN_TEMP MATCHES ALWAYS)
-    SET(CLEAN_TEMP "OFF" CACHE INTERNAL "Cleanup of temp test folders, options are: ONCE, OFF, ALWAYS" FORCE)
-  ENDIF()
-ENDIF()
+INCLUDE(maidsafe_standard_setup)
 
 ###################################################################################################
 # Set up all files as GLOBs                                                                       #
@@ -393,15 +110,15 @@ FILE(GLOB SOURCE_FILES_CLIENT_DIR "${SRC_MAIDSAFE}/client/*.cc")
 FILE(GLOB HEADER_FILES_CLIENT_DIR "${SRC_MAIDSAFE}/client/*.h")
 SET(ALL_FILES_CLIENT_DIR ${SOURCE_FILES_CLIENT_DIR} ${HEADER_FILES_CLIENT_DIR})
 SET(STYLE_CLIENT ${ALL_FILES_CLIENT_DIR})
-LIST(REMOVE_ITEM ALL_FILES_CLIENT_DIR "${SRC_MAIDSAFE}/client/main.cc")
+# LIST(REMOVE_ITEM ALL_FILES_CLIENT_DIR "${SRC_MAIDSAFE}/client/main.cc")
 SET(ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR ${ALL_FILES_CLIENT_DIR})
-LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/maidstoremanager.cc")
-LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/maidstoremanager.h")
-LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/clientrpc.cc")
-LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/clientrpc.h")
-LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/storemanagertaskshandler.cc")
-LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/storemanagertaskshandler.h")
-LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/opdata.h")
+#LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/maidstoremanager.cc")
+#LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/maidstoremanager.h")
+#LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/clientrpc.cc")
+#LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/clientrpc.h")
+#LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/storemanagertaskshandler.cc")
+#LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/storemanagertaskshandler.h")
+#LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/opdata.h")
 SOURCE_GROUP("client Source Files" FILES ${SOURCE_FILES_CLIENT_DIR})
 SOURCE_GROUP("client Header Files" FILES ${HEADER_FILES_CLIENT_DIR})
 
@@ -417,8 +134,8 @@ FILE(GLOB SOURCE_FILES_COMMON_DIR "${SRC_MAIDSAFE}/common/*.c*")
 FILE(GLOB HEADER_FILES_COMMON_DIR "${SRC_MAIDSAFE}/common/*.h")
 SET(ALL_FILES_COMMON_DIR ${SOURCE_FILES_COMMON_DIR} ${HEADER_FILES_COMMON_DIR})
 SET(STYLE_COMMON ${ALL_FILES_COMMON_DIR})
-LIST(REMOVE_ITEM STYLE_COMMON "${SRC_MAIDSAFE}/common/sqlite3.c")
-LIST(REMOVE_ITEM STYLE_COMMON "${SRC_MAIDSAFE}/common/sqlite3.h")
+#LIST(REMOVE_ITEM STYLE_COMMON "${SRC_MAIDSAFE}/common/sqlite3.c")
+#LIST(REMOVE_ITEM STYLE_COMMON "${SRC_MAIDSAFE}/common/sqlite3.h")
 SOURCE_GROUP("common Source Files" FILES ${SOURCE_FILES_COMMON_DIR})
 SOURCE_GROUP("common Header Files" FILES ${HEADER_FILES_COMMON_DIR})
 
@@ -534,16 +251,6 @@ SET(FUNCTIONAL_TEST_TIMEOUT 600)
 SET(LOCAL_SYSTEM_TEST_TIMEOUT 1800)
 SET(NETWORK_SYSTEM_TEST_TIMEOUT 3600)
 
-# ADD_EXECUTABLE(TESTcommon
-#                  ${ALL_FILES_COMMON_TESTS_DIR}
-#                  "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
-#                  "${SRC_MAIDSAFE}/sharedtest/chunkstoreops.h"
-#                  "${SRC_MAIDSAFE}/sharedtest/mockkadops.cc"
-#                  "${SRC_MAIDSAFE}/sharedtest/mockkadops.h"
-#                  "${SRC_MAIDSAFE}/sharedtest/testcallback.h"
-#                  "${SRC_MAIDSAFE}/sharedtest/threadpool.cc"
-#                  "${SRC_MAIDSAFE}/sharedtest/threadpool.h"
-#                  "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
 ADD_EXECUTABLE(TESTclientfilesystem
                  ${ALL_FILES_CLIENT_FILESYSTEM_TESTS_DIR}
                  "${SRC_MAIDSAFE}/sharedtest/cachepassport.h"
@@ -596,7 +303,6 @@ ADD_LIBRARY(LifeStuffclientfilesystemlib STATIC ${ALL_FILES_CLIENT_FILESYSTEM_DI
 ADD_LIBRARY(LifeStuffcommonlib STATIC ${ALL_FILES_COMMON_DIR})
 ADD_LIBRARY(LifeStufffuselib STATIC ${ALL_FILES_FUSE_DIR})
 
-ADD_SUBDIRECTORY(${SRC_MAIDSAFE}/encrypt ${CMAKE_BINARY_DIR}/encrypt)
 ADD_SUBDIRECTORY(${SRC_MAIDSAFE}/passport ${CMAKE_BINARY_DIR}/passport)
 ADD_SUBDIRECTORY(${SRC_MAIDSAFE}/pki ${CMAKE_BINARY_DIR}/pki)
 
@@ -616,7 +322,7 @@ IF(UNIX)
 ENDIF()
 # ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTencrypt TESTpassport TESTpki TESTcommon
 #                   TESTclientfilesystem TESTclient TESTfuse TESTclientcontroller_local DEMOclient)
-ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTencrypt TESTpassport TESTpki
+ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTencrypt TESTpki TESTpassport 
                   TESTclientfilesystem TESTfuse TESTclientcontroller_local)
 SET(TEST_EXECUTABLES )
 
@@ -627,11 +333,11 @@ SET(TEST_EXECUTABLES )
 ADD_DEFINITIONS(-DSTATICLIB)
 SET(BUILD_SHARED_LIBS OFF)
 
-TARGET_LINK_LIBRARIES(LifeStuffcommonlib passport ${Boost_FILESYSTEM_LIBRARY})
-TARGET_LINK_LIBRARIES(LifeStuffclientfilesystemlib LifeStuffcommonlib encrypt pki ${Boost_DATE_TIME_LIBRARY})
+TARGET_LINK_LIBRARIES(LifeStuffcommonlib passport ${Encrypt_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} /home/maidsafe/LifeStuff/MaidSafe-Common/installed/lib/libmaidsafe_common.a /home/maidsafe/LifeStuff/MaidSafe-Common/installed/lib/libcryptopp.a)
+TARGET_LINK_LIBRARIES(LifeStuffclientfilesystemlib LifeStuffcommonlib pki ${Boost_DATE_TIME_LIBRARY} )
 TARGET_LINK_LIBRARIES(LifeStufflsmclientlib LifeStuffclientfilesystemlib ${QT_LIBRARIES} ${Boost_REGEX_LIBRARY})
 # TARGET_LINK_LIBRARIES(LifeStuffclientlib LifeStuffclientfilesystemlib ${QT_LIBRARIES} ${Boost_REGEX_LIBRARY})
-TARGET_LINK_LIBRARIES(LifeStufffuselib ${Fuse_LIBRARY} ${Boost_SYSTEM_LIBRARY})
+TARGET_LINK_LIBRARIES(LifeStufffuselib ${Fuse_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_SERIALIZATION_LIBRARY_RELEASE})
 # TARGET_LINK_LIBRARIES(lifestuff LifeStuffclientlib LifeStufffuselib ${QT_LIBRARIES})
 TARGET_LINK_LIBRARIES(lslocal LifeStufflsmclientlib LifeStufffuselib ${QT_LIBRARIES})
 TARGET_LINK_LIBRARIES(lslightlocal LifeStufflsmclientlib ${QT_LIBRARIES})
@@ -645,7 +351,7 @@ TARGET_LINK_LIBRARIES(TESTfuse LifeStufffuselib ${Gtest_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTclientcontroller_local LifeStufflsmclientlib ${Gtest_LIBRARY})
 # TARGET_LINK_LIBRARIES(TESTimconnectionhandler_net LifeStuffclientlib ${Gtest_LIBRARY})
 # TARGET_LINK_LIBRARIES(DEMOclient LifeStuffclientlib)
-
+#TARGET_LINK_LIBRARIES(TESTpassport ${Encrypt_LIBRARY} /home/maidsafe/LifeStuff/MaidSafe-Common/installed/lib/libmaidsafe_common.a)
 ###################################################################################################
 # Compiler and linker flags - after all targets declared                                          #
 ###################################################################################################
@@ -827,7 +533,7 @@ FUNCTION(ADD_MAIDSAFE_TEST GTEST_GROUP_NAME GTEST_NAME TEST_PATH)
 ENDFUNCTION()
 
 #SET(TEST_EXECUTABLES TESTclient TESTclientfilesystem TESTcommon TESTencrypt TESTpassport TESTpki TESTfuse)
-SET(TEST_EXECUTABLES TESTclientfilesystem TESTencrypt TESTpassport TESTpki TESTfuse)
+SET(TEST_EXECUTABLES TESTclientfilesystem TESTencrypt TESTpki TESTfuse)
 FOREACH(TEST_EXECUTABLE ${TEST_EXECUTABLES})
   IF(TEST_EXECUTABLE STREQUAL "TESTclient")
     SET(GTEST_SOURCE_FILES ${ALL_FILES_CLIENT_TESTS_DIR})
@@ -837,8 +543,8 @@ FOREACH(TEST_EXECUTABLE ${TEST_EXECUTABLES})
   #   SET(GTEST_SOURCE_FILES ${ALL_FILES_COMMON_TESTS_DIR})
   ELSEIF(TEST_EXECUTABLE STREQUAL "TESTencrypt")
     SET(GTEST_SOURCE_FILES ${ALL_FILES_ENCRYPT_TESTS_DIR})
-  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTpassport")
-    SET(GTEST_SOURCE_FILES ${ALL_FILES_PASSPORT_TESTS_DIR})
+#  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTpassport")
+#    SET(GTEST_SOURCE_FILES ${ALL_FILES_PASSPORT_TESTS_DIR})
   ELSEIF(TEST_EXECUTABLE STREQUAL "TESTpki")
     SET(GTEST_SOURCE_FILES ${ALL_FILES_PKI_TESTS_DIR})
   ELSEIF(TEST_EXECUTABLE STREQUAL "TESTfuse")

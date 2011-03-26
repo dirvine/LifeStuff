@@ -24,7 +24,7 @@
 
 #include "maidsafe/common/commonutils.h"
 #include "boost/function.hpp"
-#include "maidsafe-dht/common/crypto.h"
+#include "maidsafe/common/crypto.h"
 #include "maidsafe-dht/kademlia/contact.h"
 #include "maidsafe-dht/kademlia/node_id.h"
 
@@ -35,7 +35,7 @@ bool ContactHasId(const std::string &id, const kademlia::Contact &contact) {
 }
 
 std::string SHA512File(const boost::filesystem::path &file_path) {
-  return crypto::Hash<crypto::SHA512>(file_path.string());
+  return crypto::HashFile<crypto::SHA512>(file_path.string());
 }
 
 std::string SHA512String(const std::string &input) {

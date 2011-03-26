@@ -29,7 +29,7 @@
 #include <list>
 #include <vector>
 #include "boost/thread.hpp"
-#include "maidsafe-dht/common/crypto.h"
+#include "maidsafe/common/crypto.h"
 
 namespace maidsafe {
 

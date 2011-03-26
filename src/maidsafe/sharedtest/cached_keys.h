@@ -27,7 +27,7 @@
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include "boost/filesystem/fstream.hpp"
-#include "maidsafe-dht/common/crypto.h"
+#include "maidsafe/common/crypto.h"
 #include "maidsafe/passport/passport.h"
 
 #include <string>

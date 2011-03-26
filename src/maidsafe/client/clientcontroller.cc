@@ -28,9 +28,12 @@
 #include <shlwapi.h>
 #endif
 
+#include "boost/archive/text_oarchive.hpp"
+#include "boost/archive/text_iarchive.hpp"
 #include "boost/foreach.hpp"
 #include "maidsafe-dht/kademlia/contact.h"
-
+#include "maidsafe-encrypt/self_encryption.h"
+#include "maidsafe-encrypt/data_map.h"
 #include "maidsafe/common/chunkstore.h"
 #include "maidsafe/common/commonutils.h"
 #include "maidsafe/client/filesystem/dataatlashandler.h"
@@ -222,21 +225,19 @@ int ClientController::ParseDa() {
     ss_->SetPd(data_atlas.pd());
 
   encrypt::DataMap dm_root, other_dms;
-  dm_root = data_atlas.dms(0);
+  ParseFromString(dm_root, data_atlas.dms(0));
 
   std::string ser_dm_root, other_ser_dms;
-  dm_root.SerializeToString(&ser_dm_root);
+  SerializeToString(dm_root, ser_dm_root);
   int i = seh_.DecryptDb(kRoot, PRIVATE, ser_dm_root, "", "", false, false);
   if (i != 0)
     return -1;
 
   for (int n = 0; n < kRootSubdirSize; ++n) {
-    other_dms = data_atlas.dms(n + 1);
-    other_dms.SerializeToString(&other_ser_dms);
+    other_ser_dms = data_atlas.dms(n + 1);
     i += seh_.DecryptDb(TidyPath(kRootSubdir[n][0]), PRIVATE, other_ser_dms,
                         "", "", false, false);
   }
-
   return (i == 0) ? 0 : -1;
 }
 
@@ -253,11 +254,11 @@ int ClientController::SerialiseDa() {
   encrypt::DataMap root_dm, subdirs_dm;
   if (AddToPendingFiles(kRoot))
     seh_.EncryptDb(kRoot, PRIVATE, "", "", false, &root_dm);
-  encrypt::DataMap *dm = data_atlas.add_dms();
-  *dm = root_dm;
+  std::string *dm = data_atlas.add_dms();
+  SerializeToString(root_dm, *dm);
 
   for (int i = 0; i < kRootSubdirSize; ++i) {
-    subdirs_dm.Clear();
+//    subdirs_dm.Clear();
     std::string tidy_path(TidyPath(kRootSubdir[i][0]));
     if (AddToPendingFiles(tidy_path)) {
 #ifdef DEBUG
@@ -267,7 +268,7 @@ int ClientController::SerialiseDa() {
       seh_.EncryptDb(tidy_path, PRIVATE, "", "", false, &subdirs_dm);
 #endif
       dm = data_atlas.add_dms();
-      *dm = subdirs_dm;
+      SerializeToString(subdirs_dm, *dm);
     }
   }
 
@@ -508,7 +509,7 @@ bool ClientController::CreateUser(const std::string &username,
       res += -1;
 #ifdef DEBUG
     printf("In ClientController::CreateUser %s - %d - %d\n",
-           kRootSubdir[i][0].c_str(), res, dm.encrypted_chunk_name_size());
+           kRootSubdir[i][0].c_str(), res, dm.chunks.size());
 #endif
   }
 
@@ -3402,6 +3403,23 @@ bool ClientController::RemoveFromPendingFiles(const std::string &file) {
     return false;
   pending_files_.erase(it);
   return true;
+}
+
+bool ClientController::SerializeToString(maidsafe::encrypt::DataMap& data_map, 
+                                  std::string& serialized) {
+  std::stringstream string_stream;
+  boost::archive::text_oarchive oa(string_stream);
+  oa << data_map;
+  serialized = string_stream.str();
+  return !serialized.empty();
+}
+
+bool ClientController::ParseFromString(maidsafe::encrypt::DataMap& data_map, 
+                                  const std::string& serialized) {
+  std::stringstream string_stream(serialized);
+  boost::archive::text_iarchive ia(string_stream);
+  ia >> data_map;
+  return (data_map.size > 0);
 }
 
 }  // namespace maidsafe

@@ -16,7 +16,7 @@
 
 #include "boost/filesystem/fstream.hpp"
 #include "boost/scoped_array.hpp"
-#include "maidsafe-dht/common/crypto.h"
+#include "maidsafe/common/crypto.h"
 #include "maidsafe/common/config.h"
 
 namespace maidsafe {
@@ -308,10 +308,11 @@ fs3::path ChunkStore::GetChunkPath(const std::string &key, ChunkType type,
   }
   std::string hex_key = EncodeToHex(key);
   std::string dir_one, dir_two, dir_three;
-  dir_one = hex_key.substr(0, 1);
+/*MAHMOUD  dir_one = hex_key.substr(0, 1);
   dir_two = hex_key.substr(1, 1);
   dir_three = hex_key.substr(2, 1);
-  fs3::path chunk_path((*path_map_itr).second / dir_one / dir_two / dir_three);
+  fs3::path chunk_path((*path_map_itr).second / dir_one / dir_two / dir_three); MAHMOUD*/
+  fs3::path chunk_path((*path_map_itr).second); //Added to store all chunks in one directory
   try {
     if (!fs3::exists(chunk_path)) {
       if (create_path) {
@@ -557,7 +558,7 @@ int ChunkStore::Clear() {
   chunkstore_set_.clear();
   set_is_initialised(false);
   return kSuccess;
-}
+} 
 
 int ChunkStore::Load(const std::string &key, std::string *value) {
   value->clear();
@@ -666,7 +667,7 @@ int ChunkStore::ChangeChunkType(const std::string &key, ChunkType type) {
   // Try to rename file.
   bool copied(false);
   try {
-//    fs3::copy_file(current_chunk_path, new_chunk_path);
+    fs3::copy_file(current_chunk_path, new_chunk_path);
     copied = fs3::exists(new_chunk_path);
   }
   catch(const std::exception &e) {

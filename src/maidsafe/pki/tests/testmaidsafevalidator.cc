@@ -24,8 +24,8 @@
 
 #include <gtest/gtest.h>
 
-#include "maidsafe-dht/common/crypto.h"
-#include "maidsafe-dht/common/utils.h"
+#include "maidsafe/common/crypto.h"
+#include "maidsafe/common/utils.h"
 
 #include "maidsafe/common/commonutils.h"
 #include "maidsafe/common/returncodes.h"

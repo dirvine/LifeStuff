@@ -20,7 +20,7 @@
 */
 
 #include "maidsafe/passport/passport.h"
-#include "maidsafe-dht/common/utils.h"
+#include "maidsafe/common/utils.h"
 #include "maidsafe/passport/passportconfig.h"
 #include "maidsafe/passport/systempackets.h"
 

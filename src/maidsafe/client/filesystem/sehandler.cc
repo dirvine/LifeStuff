@@ -22,20 +22,33 @@
 *
 * ============================================================================
 */
+#include <cstdint>
+#include <iostream>  // NOLINT
+#include <memory>
+#include <sstream>
 
 #include "maidsafe/client/filesystem/sehandler.h"
+#include "boost/archive/text_oarchive.hpp"
+#include "boost/archive/text_iarchive.hpp"
+#include "boost/filesystem.hpp"
 #include "boost/filesystem/fstream.hpp"
-#include <memory>
-#include "maidsafe/encrypt/selfencryption.h"
+#include "maidsafe-encrypt/config.h"
+#include "maidsafe-encrypt/self_encryption.h"
+#include "maidsafe-encrypt/data_map.h"
 #include "maidsafe/common/commonutils.h"
 #include "maidsafe/common/chunkstore.h"
 #include "maidsafe/client/filesystem/dataatlashandler.h"
 #include "maidsafe/client/clientutils.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/storemanager.h"
+#include "boost/serialization/serialization.hpp"
+
+
+
+using namespace maidsafe::encrypt;
 
 namespace maidsafe {
-
+  
 SEHandler::SEHandler() : store_manager_(), client_chunkstore_(),
                          session_singleton_(), up_to_date_datamaps_(),
                          pending_chunks_(), up_to_date_datamaps_mutex_(),
@@ -149,6 +162,7 @@ ItemType SEHandler::CheckEntry(const fs::path &absolute_path,
 int SEHandler::EncryptAFile(const fs::path &relative_entry,
                            const DirType &dir_type,
                            const std::string &msid) {
+  const encrypt::SelfEncryptionParams sep;
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler);
   fs::path absolute_entry =
       file_system::FullMSPathFromRelPath(relative_entry.string(),
@@ -156,17 +170,20 @@ int SEHandler::EncryptAFile(const fs::path &relative_entry,
   boost::uint64_t file_size(0);
   std::string file_hash;
   ItemType item_type = CheckEntry(absolute_entry, &file_size, &file_hash);
-  encrypt::DataMap data_map, data_map_retrieved;
+  maidsafe::encrypt::DataMap data_map, data_map_retrieved;
   std::string serialised_data_map_retrieved, serialised_data_map;
   std::string serialised_meta_data_map, dir_key;
+  std::stringstream string_stream;
+  boost::archive::text_oarchive oa(string_stream);  
   switch (item_type) {
     // case DIRECTORY:
     // case EMPTY_DIRECTORY:
     //   GenerateUniqueKey(dir_key_);
     //   break;
     case EMPTY_FILE:
-      data_map.set_file_hash(file_hash);
-      data_map.SerializeToString(&serialised_data_map);
+      data_map.content = file_hash;
+      oa << data_map; 
+      serialised_data_map = string_stream.str();
       break;
     case REGULAR_FILE:
     case SMALL_FILE:
@@ -175,23 +192,25 @@ int SEHandler::EncryptAFile(const fs::path &relative_entry,
       if (dah->GetDataMap(relative_entry.string(),
                           &serialised_data_map_retrieved) == kSuccess) {
         try {
-          data_map_retrieved.ParseFromString(serialised_data_map_retrieved);
+          std::stringstream in_string_stream(serialised_data_map_retrieved);
+          boost::archive::text_iarchive ia(in_string_stream);          
+          ia >> data_map_retrieved;
         }
         catch(const std::exception&) {
           serialised_data_map_retrieved.clear();
         }
       }
-      if (serialised_data_map_retrieved.empty() ||
-          data_map_retrieved.file_hash() != file_hash) {
-        data_map.set_file_hash(file_hash);
-        if (encrypt::SelfEncryptFile(absolute_entry, file_system::TempDir(),
-                                     &data_map) != kSuccess) {
+      if (serialised_data_map_retrieved.empty()) {
+        data_map.content = file_hash;
+        if (encrypt::SelfEncrypt(absolute_entry, file_system::TempDir(),
+                                     sep, &data_map) != kSuccess) {
           return kEncryptFileFailure;
-        }
+        } 
         if (AddChunksToChunkstore(data_map) != kSuccess)
           return kChunkstoreError;
         StoreChunks(data_map, dir_type, msid, relative_entry);
-        data_map.SerializeToString(&serialised_data_map);
+        oa << data_map;      
+        serialised_data_map = string_stream.str(); 
       }
       break;
     case LOCKED_FILE:
@@ -238,25 +257,25 @@ int SEHandler::EncryptAFile(const fs::path &relative_entry,
 
 int SEHandler::EncryptString(const std::string &data,
                              std::string *serialised_data_map) {
+  const encrypt::SelfEncryptionParams sep;
   if (data.empty())
     return kEncryptionSmallInput;
 
   encrypt::DataMap data_map;
   serialised_data_map->clear();
-  data_map.set_file_hash(SHA512String(data));
-  if (encrypt::SelfEncryptString(data, file_system::TempDir(), &data_map) !=
-      kSuccess)
-    return kEncryptStringFailure;
-
+  data_map.content = SHA512String(data);
+ if (encrypt::SelfEncrypt(data, file_system::TempDir(), false, sep, &data_map) 
+     != kSuccess)
+  return kEncryptStringFailure;
   if (AddChunksToChunkstore(data_map) != kSuccess)
     return kChunkstoreError;
-  StoreChunks(data_map, PRIVATE, "", EncodeToHex(data_map.file_hash()));
-  if (!data_map.SerializeToString(serialised_data_map)) {
+  StoreChunks(data_map, PRIVATE, "", EncodeToHex(data_map.content));
+  if (!SerializeToString(data_map, *serialised_data_map)) {
 #ifdef DEBUG
     printf("SEHandler::EncryptString - Failed to serialize data_map\n");
 #endif
     return kEncryptionDMFailure;
-  }
+    }
   return 0;
 }
 
@@ -328,7 +347,7 @@ int SEHandler::DecryptAFile(const fs::path &relative_entry) {
     }
   }
   encrypt::DataMap data_map;
-  data_map.ParseFromString(serialised_data_map);
+  ParseFromString(data_map, serialised_data_map);
   std::vector<fs::path> chunk_paths;
   int n = LoadChunks(data_map, &chunk_paths);
   if (n != kSuccess) {
@@ -337,7 +356,7 @@ int SEHandler::DecryptAFile(const fs::path &relative_entry) {
 #endif
     return kEncryptionSMFailure;
   }
-  if (encrypt::SelfDecryptToFile(data_map, chunk_paths, 0, false,
+  if (encrypt::SelfDecrypt(data_map, chunk_paths[0].parent_path(), false,
                                  decrypted_path) == kSuccess)
     return kSuccess;
   else
@@ -348,12 +367,12 @@ int SEHandler::DecryptString(const std::string &serialised_data_map,
                              std::string *decrypted_string) {
   encrypt::DataMap data_map;
   decrypted_string->clear();
-  if (!data_map.ParseFromString(serialised_data_map)) {
+  if (!ParseFromString(data_map, serialised_data_map)) {
 #ifdef DEBUG
       printf("SEHandler::DecryptString - Failed to parse into DM.\n");
 #endif
     return kEncryptionDMFailure;
-  }
+  } 
   std::vector<fs::path> chunk_paths;
   if (LoadChunks(data_map, &chunk_paths) != kSuccess) {
 #ifdef DEBUG
@@ -361,15 +380,16 @@ int SEHandler::DecryptString(const std::string &serialised_data_map,
 #endif
     return kEncryptionSMFailure;
   }
-  std::shared_ptr<std::string> decrypted(new std::string);
-  if (encrypt::SelfDecryptToString(data_map, chunk_paths, 0, decrypted) !=
-      kSuccess) {
+//  std::shared_ptr<std::string> decrypted(new std::string);
+  std::string decrypted;
+if (encrypt::SelfDecrypt(data_map, chunk_paths[0].parent_path(), &decrypted) 
+  != kSuccess) {
 #ifdef DEBUG
       printf("SEHandler::DecryptString - Failed to decrypt.\n");
 #endif
     return kDecryptStringFailure;
-  }
-  *decrypted_string = *decrypted;
+  } 
+  *decrypted_string = decrypted;
   return kSuccess;
 }
 
@@ -390,8 +410,8 @@ bool SEHandler::MakeElement(const fs::path &relative_entry,
       GenerateUniqueKey(&dir_key);
   } else if (type == EMPTY_FILE) {
     encrypt::DataMap data_map;
-    data_map.set_file_hash(SHA512String(""));
-    data_map.SerializeToString(&serialised_data_map);
+    data_map.content = SHA512String("");
+    SerializeToString(data_map, serialised_data_map);    
   } else {
 #ifdef DEBUG
     printf("Type not recognised in SEHandler::MakeElement.\n");
@@ -460,6 +480,7 @@ int SEHandler::EncryptDb(const fs::path &dir_path,
 #ifdef DEBUG
   printf("SEHandler::EncryptDb - %s\n", dir_path.string().c_str());
 #endif
+  const encrypt::SelfEncryptionParams sep;
   std::string serialised_data_map, encrypted_data_map, db_path;
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler);
   dah->GetDbPath(dir_path.string(), CREATE, &db_path);
@@ -474,24 +495,24 @@ int SEHandler::EncryptDb(const fs::path &dir_path,
     return kEncryptionDbMissing;
   }
   std::string file_hash(SHA512File(db_path));
+  const fs::path db_absolute_path(db_path);
 
   // when encrypting root db and keys db (during logout), GetDbPath fails above,
   // so insert alternative value for file hashes.
   if (file_hash.empty())
     file_hash = SHA512String(db_path);
-  data_map->set_file_hash(file_hash);
-  if (encrypt::SelfEncryptFile(db_path, file_system::TempDir(), data_map) !=
-      kSuccess) {
+  data_map->content = file_hash;
+  if (encrypt::SelfEncrypt(db_absolute_path, file_system::TempDir(), sep, 
+       data_map) != kSuccess) {
     return kEncryptDbFailure;
-  }
-
+  } 
   if (encrypt_data_map) {
     std::string this_dir_key, parent_dir_key;
     // The following function sets parent_dir_key to SHA512 hash of MSID public
     // key if msid != "" otherwise it sets it to the dir key of the parent dir.
     if (GetDirKeys(dir_path, msid, &this_dir_key, &parent_dir_key) != kSuccess)
       return kEncryptDbFailure;
-    if (encrypt::EncryptDataMap(*data_map, this_dir_key, parent_dir_key,
+   if (EncryptDataMap(*data_map, this_dir_key, parent_dir_key,
                                 &encrypted_data_map) != kSuccess) {
 #ifdef DEBUG
       printf("EncryptDb: Can't encrypt data_map\n");
@@ -499,8 +520,8 @@ int SEHandler::EncryptDb(const fs::path &dir_path,
       return kEncryptDbFailure;
     }
   } else {
-    data_map->SerializeToString(&encrypted_data_map);
-  }
+    SerializeToString(*data_map, encrypted_data_map);
+  } 
 
   if (AddChunksToChunkstore(*data_map) != kSuccess)
     return kChunkstoreError;
@@ -620,16 +641,16 @@ int SEHandler::DecryptDb(const fs::path &dir_path,
     // key if msid != "" otherwise it sets it to the dir key of the parent dir.
     if (GetDirKeys(dir_path, msid, &this_dir_key, &parent_dir_key) != kSuccess)
       return kDecryptDbFailure;
-    if (encrypt::DecryptDataMap(retrieved_encrypted_data_map, this_dir_key,
+    if (DecryptDataMap(retrieved_encrypted_data_map, this_dir_key,
                                 parent_dir_key, &data_map) != kSuccess) {
 #ifdef DEBUG
       printf("DecryptDb: Died decrypting data_map.\n");
 #endif
       return kDecryptDbFailure;
-    }
+    } 
   } else {
     try {
-      data_map.ParseFromString(retrieved_encrypted_data_map);
+      ParseFromString(data_map, retrieved_encrypted_data_map);
     }
     catch(const std::exception &e) {
 #ifdef DEBUG
@@ -652,7 +673,7 @@ int SEHandler::DecryptDb(const fs::path &dir_path,
     return kDecryptDbFailure;
   }
 
-  if (encrypt::SelfDecryptToFile(data_map, chunk_paths, 0, overwrite, db_path)
+if (encrypt::SelfDecrypt(data_map, chunk_paths[0], overwrite, db_path)
       != kSuccess) {
 #ifdef DEBUG
     printf("Failed to self decrypt.\n");
@@ -667,9 +688,9 @@ int SEHandler::DecryptDb(const fs::path &dir_path,
 int SEHandler::LoadChunks(const encrypt::DataMap &data_map,
                           std::vector<fs::path> *chunk_paths) {
   int result(kSuccess);
-  for (int i = 0; i < data_map.encrypted_chunk_name_size(); ++i) {
+  for (int i = 0; i < data_map.chunks.size(); ++i) {
     std::string data;
-    int n = store_manager_->LoadChunk(data_map.encrypted_chunk_name(i), &data);
+    int n = store_manager_->LoadChunk(data_map.chunks[i].hash, &data);
 #ifdef DEBUG
 //    printf("SEHandler::LoadChunks %d of %d, chunk(%s): result(%d)\n",
 //           i + 1, data_map.encrypted_chunk_name_size(),
@@ -679,9 +700,9 @@ int SEHandler::LoadChunks(const encrypt::DataMap &data_map,
       result = n;
     else
       chunk_paths->push_back(
-          client_chunkstore_->GetChunkPath(data_map.encrypted_chunk_name(i),
+          client_chunkstore_->GetChunkPath(data_map.chunks[i].hash,
                                            (kHashable | kNormal), false));
-  }
+  } 
   return result;
 }
 
@@ -718,12 +739,12 @@ int SEHandler::LoadChunks(const encrypt::DataMap &data_map,
 
 int SEHandler::AddChunksToChunkstore(const encrypt::DataMap &data_map) {
   int result(kSuccess);
-  for (int j = 0; j < data_map.encrypted_chunk_name_size(); ++j) {
+  for (int j = 0; j < data_map.chunks.size(); ++j) {
     // If this succeeds, chunk is moved to chunkstore.  If not, clean up temp.
     fs::path temp_chunk(file_system::TempDir() /
-                        EncodeToHex(data_map.encrypted_chunk_name(j)));
+                        EncodeToHex(data_map.chunks[j].hash));
     int res = client_chunkstore_->AddChunkToOutgoing(
-              data_map.encrypted_chunk_name(j), temp_chunk);
+              data_map.chunks[j].hash, temp_chunk);
     if (res != kSuccess) {
       try {
         fs::remove(temp_chunk);
@@ -736,7 +757,7 @@ int SEHandler::AddChunksToChunkstore(const encrypt::DataMap &data_map) {
       if (res != kChunkExistsInChunkstore)
         result = kChunkstoreError;
     }
-  }
+  } 
   return result;
 }
 
@@ -761,8 +782,8 @@ void SEHandler::ChunksToMultiIndex(const encrypt::DataMap &data_map,
   {
     int n(0);
     boost::mutex::scoped_lock loch_eigheach(chunkmap_mutex_);
-    for (int i = 0; i < data_map.encrypted_chunk_name_size(); ++i) {
-      PendingChunks pc(data_map.encrypted_chunk_name(i), path, msid,
+   for (int i = 0; i < data_map.chunks.size(); ++i) {
+      PendingChunks pc(data_map.chunks[i].hash, path, msid,
                        path_count_);
       std::pair<PendingChunksSet::iterator, bool> p =
           pending_chunks_.insert(pc);
@@ -781,7 +802,7 @@ void SEHandler::ChunksToMultiIndex(const encrypt::DataMap &data_map,
 #endif
       }
     }
-    if (n == data_map.encrypted_chunk_name_size())
+    if (n == data_map.chunks.size())
       file_added_(path.string());
     else
       printf("SEHandler::StoreChunks: No notification\n");
@@ -792,8 +813,8 @@ void SEHandler::ChunksToMultiIndex(const encrypt::DataMap &data_map,
 void SEHandler::StoreChunksToNetwork(const encrypt::DataMap &data_map,
                                      const DirType &dir_type,
                                      const std::string &msid) {
-  for (int j = 0; j < data_map.encrypted_chunk_name_size(); ++j)
-    store_manager_->StoreChunk(data_map.encrypted_chunk_name(j), dir_type,
+  for (int j = 0; j < data_map.chunks.size(); ++j)
+    store_manager_->StoreChunk(data_map.chunks[j].hash, dir_type,
                                msid);
 }
 
@@ -924,5 +945,101 @@ bs2::connection SEHandler::ConnectToOnFileAdded(
     const OnFileAdded::slot_type &slot) {
   return file_added_.connect(slot);
 }
+
+bool SEHandler::SerializeToString(maidsafe::encrypt::DataMap& data_map, 
+                                  std::string& serialized) {
+  std::stringstream string_stream;
+  boost::archive::text_oarchive oa(string_stream);
+  oa << data_map;
+  serialized = string_stream.str();
+  return !serialized.empty();
+}
+
+bool SEHandler::ParseFromString(maidsafe::encrypt::DataMap& data_map, 
+                                const std::string& serialized) {
+  std::stringstream string_stream(serialized);  
+  boost::archive::text_iarchive ia(string_stream);
+  ia >> data_map;
+  return !data_map.content.empty();
+}
+
+int SEHandler::EncryptDataMap(maidsafe::encrypt::DataMap &data_map,
+                   const std::string &this_directory_key,
+                   const std::string &parent_directory_key,
+                   std::string *encrypted_data_map) {
+  if (!encrypted_data_map)
+    return encrypt::kNullPointer;
+  encrypted_data_map->clear();
+  std::string encrypt_hash = crypto::Hash<crypto::SHA512>(parent_directory_key 
+                                                          + this_directory_key);
+  std::string xor_hash = crypto::Hash<crypto::SHA512>(this_directory_key + 
+                                                      parent_directory_key);
+  std::string serialised_data_map;
+  try {
+    if (!SerializeToString(data_map, serialised_data_map))
+      return encrypt::kBadDataMap;
+  }
+  catch(const std::exception&) {
+    return encrypt::kBadDataMap;
+  }
+  std::string xor_hash_extended;
+  if (!ResizeObfuscationHash(xor_hash, serialised_data_map.size(),
+                             &xor_hash_extended))
+    return encrypt::kEncryptError;
+  *encrypted_data_map = crypto::SymmEncrypt(crypto::XOR(serialised_data_map,
+                                                        xor_hash_extended),
+                                            encrypt_hash,
+                                            "");
+  return encrypted_data_map->empty() ? encrypt::kEncryptError : kSuccess;
+}
+
+int SEHandler::DecryptDataMap(const std::string &encrypted_data_map,
+                   const std::string &this_directory_key,
+                   const std::string &parent_directory_key,
+                   maidsafe::encrypt::DataMap *data_map) {
+  if (!data_map)
+    return encrypt::kNullPointer;
+//  data_map->Clear();
+  std::string encrypt_hash = crypto::Hash<crypto::SHA512>(parent_directory_key 
+                                                          + this_directory_key);
+  std::string xor_hash = crypto::Hash<crypto::SHA512>(this_directory_key + 
+                                                      parent_directory_key);
+  std::string intermediate(crypto::SymmDecrypt(encrypted_data_map,
+                                               encrypt_hash, ""));
+  std::string xor_hash_extended;
+  if (intermediate.empty() ||
+      !ResizeObfuscationHash(xor_hash, intermediate.size(), &xor_hash_extended))
+    return encrypt::kBadDataMap;
+  std::string serialised_data_map(crypto::XOR(intermediate, xor_hash_extended));
+  try {
+    if (serialised_data_map.empty())
+      return encrypt::kDecryptError;
+  ParseFromString(*data_map, serialised_data_map);
+  if (data_map->content.empty()) 
+    return encrypt::kDecryptError;
+  }
+  catch(const std::exception&) {
+    return encrypt::kDecryptError;
+  }
+  return kSuccess;
+}
+
+
+bool SEHandler::ResizeObfuscationHash(const std::string &input,
+                           const size_t &required_size,
+                           std::string *resized_data) {
+  if (!resized_data)
+    return false;
+  resized_data->clear();
+  resized_data->reserve(required_size);
+  std::string hash(input);
+  while (resized_data->size() < required_size) {
+    hash =  crypto::Hash<crypto::SHA512>(hash);
+    resized_data->append(hash);
+  }
+  resized_data->resize(required_size);
+  return true;
+}
+
 
 }  // namespace maidsafe

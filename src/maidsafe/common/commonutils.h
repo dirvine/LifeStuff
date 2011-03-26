@@ -28,9 +28,9 @@
 #include "boost/filesystem.hpp"
 #include <string>
 
-namespace kademlia { class Contact; }
-
 namespace maidsafe {
+
+namespace kademlia { class Contact; }
 
 bool ContactHasId(const std::string &id, const kademlia::Contact &contact);
 

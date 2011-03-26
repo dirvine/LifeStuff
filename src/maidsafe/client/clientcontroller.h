@@ -333,7 +333,11 @@ class ClientController {
   std::vector<std::string> GetOffLineContacts();
   void FileUpdate(const std::string &file, int percentage);
   bool AddToPendingFiles(const std::string &file);
-  bool RemoveFromPendingFiles(const std::string &file);
+  bool RemoveFromPendingFiles(const std::string &file);  
+  bool SerializeToString(maidsafe::encrypt::DataMap& data_map,
+                                std::string& serialized);  
+  bool ParseFromString(maidsafe::encrypt::DataMap& data_map, 
+                                  const std::string& serialized);
 
   // Variables
   std::shared_ptr<ChunkStore> client_chunkstore_;
