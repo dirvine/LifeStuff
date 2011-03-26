@@ -25,10 +25,10 @@
 #ifndef MAIDSAFE_PKI_MAIDSAFEVALIDATOR_H_
 #define MAIDSAFE_PKI_MAIDSAFEVALIDATOR_H_
 
-#include "maidsafe-dht/common/securifier.h"
-
 #include <list>
 #include <string>
+
+#include "maidsafe-dht/common/securifier.h"
 
 namespace maidsafe {
 
@@ -44,8 +44,8 @@ class MaidsafeValidator : public Securifier {
   MaidsafeValidator(const std::string &pmid,
                     const std::string &signing_private_key,
                     const std::string &asymmetric_decryption_private_key)
-    : Securifier(pmid, signing_private_key, 
-                 asymmetric_decryption_private_key) {} 
+    : Securifier(pmid, signing_private_key,
+                 asymmetric_decryption_private_key) {}
   MaidsafeValidator() : Securifier("", "", "") {}
   /**
    * Signer Id is not validated with the following rule:

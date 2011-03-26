@@ -20,11 +20,12 @@
 * ============================================================================
 */
 
-#include "gtest/gtest.h"
-#include "boost/lexical_cast.hpp"
 #include <memory>
-#include "maidsafe-dht/common/utils.h"
 
+#include "boost/lexical_cast.hpp"
+#include "gtest/gtest.h"
+
+#include "maidsafe-dht/common/utils.h"
 #include "maidsafe/passport/systempackethandler.h"
 #include "maidsafe/passport/cryptokeypairs.h"
 

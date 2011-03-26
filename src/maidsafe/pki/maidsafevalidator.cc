@@ -27,14 +27,13 @@
 
 #include "maidsafe/pki/maidsafevalidator.h"
 
-#include "boost/bind.hpp"
-#include "boost/function.hpp"
-#include "maidsafe-dht/common/crypto.h"
-
 #include <cstdio>
 
-#include "maidsafe/common/returncodes.h"
+#include "boost/bind.hpp"
+#include "boost/function.hpp"
 
+#include "maidsafe-dht/common/crypto.h"
+#include "maidsafe/common/returncodes.h"
 
 namespace maidsafe {
 
@@ -77,7 +76,7 @@ bool MaidsafeValidator::ValidateRequest(const std::string &signed_request,
   if (crypto::AsymCheckSig(Hash512(public_key + signed_public_key + key),
                            signed_request,
                            public_key))
-    return true;  
+    return true;
 #ifdef DEBUG
   printf("MaidsafeValidator::ValidateRequest - Failed to validate request.\n");
 #endif
@@ -91,10 +90,10 @@ int MaidsafeValidator::SignMessage(
     std::string *signature) {
   if (private_key.empty())
     return kValidatorNoPrivateKey;
-  if (parameters.size() < 3)
-    return kValidatorNoParameters;
-  if (parameters.size() > 2) 
+  if (parameters.size() > 2)
     return CreateRequestSignature(private_key, parameters, signature);
+  else
+    return kValidatorNoParameters;
 }
 
 int MaidsafeValidator::CreateRequestSignature(
