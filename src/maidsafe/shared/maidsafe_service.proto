@@ -1,4 +1,4 @@
-import "maidsafe/common/maidsafe_service_messages.proto";
+import "maidsafe/shared/maidsafe_service_messages.proto";
 
 package maidsafe;
 

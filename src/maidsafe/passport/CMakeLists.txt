@@ -21,16 +21,7 @@
 # ============================================================================ #
 
 
-SET(LIBS_DIRS ${maidsafe_dht_LIBRARY_DIR} ${Boost_LIBRARY_DIRS} ${Protobuf_LIBRARY_DIR})
-SET(LIBS_DIRS_DEBUG ${maidsafe_dht_LIBRARY_DIR_DEBUG} ${Boost_LIBRARY_DIRS} ${Protobuf_LIBRARY_DIR_DEBUG})
-SET(TEST_LIBS_DIRS ${LIBS_DIRS} ${Gtest_LIBRARY_DIR})
-SET(TEST_LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Gtest_LIBRARY_DIR_DEBUG})
-
-IF(NOT Glog_FOUND)
-  SET(Glog_INCLUDE_DIR)
-ENDIF()
-SET_PROPERTY(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES
-               ${${PROJECT_NAME}_SOURCE_DIR} ${Boost_INCLUDE_DIR} ${maidsafe_dht_INCLUDE_DIR} ${Protobuf_INCLUDE_DIR} ${Gtest_INCLUDE_DIR} ${Glog_INCLUDE_DIR})
+SET_PROPERTY(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES ${PROJECT_SOURCE_DIR}/src ${INCLUDE_DIRS})
 
 FILE(GLOB SOURCE_FILES_PASSPORT_DIR "${SRC_MAIDSAFE}/passport/*.cc")
 FILE(GLOB HEADER_FILES_PASSPORT_DIR "${SRC_MAIDSAFE}/passport/*.h")
@@ -65,8 +56,8 @@ IF(Glog_FOUND)
   ADD_DEFINITIONS(-DHAVE_GLOG)
 ENDIF()
 ADD_DEFINITIONS(-DBOOST_FILESYSTEM_NO_DEPRECATED -DBOOST_FILESYSTEM_VERSION=3)
-TARGET_LINK_LIBRARIES(passport maidsafe_dht_LIBRARY ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Protobuf_LIBRARY} ${Encrypt_LIBRARY} /home/maidsafe/LifeStuff/MaidSafe-Common/installed/lib/libmaidsafe_common.a /home/maidsafe/LifeStuff/MaidSafe-Common/installed/lib/libcryptopp.a)
-TARGET_LINK_LIBRARIES(TESTpassport passport ${Gtest_LIBRARY} /home/maidsafe/LifeStuff/MaidSafe-Common/installed/lib/libmaidsafe_common.a /home/maidsafe/LifeStuff/MaidSafe-Common/installed/lib/libcryptopp.a ${Encrypt_LIBRARY})
+TARGET_LINK_LIBRARIES(passport maidsafe_dht_static boost_thread boost_system protobuf_static encrypt_static)
+TARGET_LINK_LIBRARIES(TESTpassport passport gtest_static)
 IF(UNIX)
   IF(APPLE)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOSX -DLifeStuff_APPLE -DBSD -D__FreeBSD__=10 -D_FORTIFY_SOURCE=2 -D_FILE_OFFSET_BITS=64")

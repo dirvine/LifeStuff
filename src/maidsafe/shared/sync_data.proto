@@ -1,4 +1,4 @@
-import "maidsafe/common/packet.proto";
+import "maidsafe/shared/packet.proto";
 package maidsafe.vault;
 
 message VaultAccountSet {

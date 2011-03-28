@@ -33,7 +33,7 @@
 #include "boost/function.hpp"
 
 #include "maidsafe/common/crypto.h"
-#include "maidsafe/common/returncodes.h"
+#include "maidsafe/shared/returncodes.h"
 
 namespace maidsafe {
 

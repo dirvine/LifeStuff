@@ -4,8 +4,8 @@
 // requester provides the pmid of (one of) his vault(s) - known as "client's
 // PMID" and the recipient's is known as "vault's PMID".
 
-import "maidsafe/common/packet.proto";
-import "maidsafe/common/sync_data.proto";
+import "maidsafe/shared/packet.proto";
+import "maidsafe/shared/sync_data.proto";
 
 package maidsafe;
 

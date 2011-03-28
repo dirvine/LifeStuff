@@ -28,7 +28,7 @@
 #include <list>
 #include <string>
 
-#include "maidsafe-dht/kademlia/securifier.h"
+#include "maidsafe/maidsafe-dht/kademlia/securifier.h"
 
 namespace maidsafe {
 
