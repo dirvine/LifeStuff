@@ -43,16 +43,16 @@ IF(NOT ${CMAKE_C_COMPILER_WORKS})
 ENDIF()
 
 IF((CMAKE_BUILD_TYPE_DIR MATCHES "Release") OR (DEFINED ${KDEV}))
-  SET(PROJECT_NAME DDA)
+  SET(PROJECT_NAME LifeStuff)
 ELSE()
-  SET(PROJECT_NAME DDA_${CMAKE_BUILD_TYPE_DIR})
+  SET(PROJECT_NAME LifeStuff_${CMAKE_BUILD_TYPE_DIR})
 ENDIF()
 OPTION (BUILD_SHARED_LIBS "Build shared libraries." OFF)
+
 
 # This call resets CMAKE_BUILD_TYPE, hence it's copied from CMAKE_BUILD_TYPE_DIR which is set above.
 PROJECT(${PROJECT_NAME})
 SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_DIR} CACHE INTERNAL "Except for MSVC, the build type is set by running cmake from the appropriate build subdirectory e.g. for a Debug build, \"cd build/Linux/Debug && cmake ../../..\"." FORCE)
-INCLUDE_DIRECTORIES(${PROJECT_BINARY_DIR})
 
 ###################################################################################################
 # MaidSafe Common library search                                                                  #
@@ -61,14 +61,30 @@ SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/build)
 INCLUDE(maidsafe_find_common)
 
 ###################################################################################################
-# Dokan / Fuse library search                                                                     #
+# MaidSafe DHT & Encrypt library search                                                           #
+###################################################################################################
+FIND_FILE(ENCRYPT_CMAKE encrypt.cmake PATHS ${MAIDSAFE_COMMON_INSTALL_DIR}/share/maidsafe)
+IF(NOT ENCRYPT_CMAKE)
+  MESSAGE(FATAL_ERROR "\n\nThis project needs to have MaidSafe-Encrypt installed.\n\n")
+ELSE()
+  MESSAGE("-- Found MaidSafe-Encrypt library (Version ${})")
+ENDIF()
+INCLUDE(${ENCRYPT_CMAKE})
+FIND_FILE(DHT_CMAKE maidsafe_dht.cmake PATHS ${MAIDSAFE_COMMON_INSTALL_DIR}/share/maidsafe)
+IF(NOT DHT_CMAKE)
+  MESSAGE(FATAL_ERROR "\n\nThis project needs to have MaidSafe-DHT installed.\n\n")
+ENDIF()
+INCLUDE(${DHT_CMAKE})
+
+###################################################################################################
+# Callback File System / Fuse library search                                                      #
 ###################################################################################################
 IF(WIN32)
-  INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindDokan.cmake)
-  SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Dokan_INCLUDE_DIR})
-  SET(LIBS_DIRS ${LIBS_DIRS} ${Dokan_LIBRARY_DIR})
-  SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Dokan_LIBRARY_DIR})
-  SET(Fuse_LIBRARY ${Dokan_LIBRARY})
+  INCLUDE(maidsafe_find_cbfs)
+  SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Cbfs_INCLUDE_DIR})
+  SET(LIBS_DIRS ${LIBS_DIRS} ${Cbfs_LIBRARY_DIR})
+  SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Cbfs_LIBRARY_DIR})
+  SET(Fuse_LIBRARY ${Cbfs_LIBRARY})
 ELSE()
   FIND_LIBRARY(Fuse_LIBRARY libfuse.a)
   IF(Fuse_LIBRARY)
@@ -98,30 +114,32 @@ ENDIF()
 ###################################################################################################
 # Standard setup                                                                                  #
 ###################################################################################################
+SET(PROTO_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
+FILE(GLOB_RECURSE PROTO_FILES RELATIVE ${PROTO_SOURCE_DIR} "${PROTO_SOURCE_DIR}/maidsafe/*.proto")
 INCLUDE(maidsafe_standard_setup)
+HANDLE_VERSIONS(${PROJECT_SOURCE_DIR}/src/maidsafe/shared/version.h)
 
 ###################################################################################################
 # Set up all files as GLOBs                                                                       #
 ###################################################################################################
-SET(SRC_MAIDSAFE "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe")
+SET(SRC_MAIDSAFE "${PROJECT_SOURCE_DIR}/src/maidsafe")
 
 ####    CODE    ####
 FILE(GLOB SOURCE_FILES_CLIENT_DIR "${SRC_MAIDSAFE}/client/*.cc")
 FILE(GLOB HEADER_FILES_CLIENT_DIR "${SRC_MAIDSAFE}/client/*.h")
 SET(ALL_FILES_CLIENT_DIR ${SOURCE_FILES_CLIENT_DIR} ${HEADER_FILES_CLIENT_DIR})
 SET(STYLE_CLIENT ${ALL_FILES_CLIENT_DIR})
-# LIST(REMOVE_ITEM ALL_FILES_CLIENT_DIR "${SRC_MAIDSAFE}/client/main.cc")
+LIST(REMOVE_ITEM ALL_FILES_CLIENT_DIR "${SRC_MAIDSAFE}/client/main.cc")
 SET(ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR ${ALL_FILES_CLIENT_DIR})
-#LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/maidstoremanager.cc")
-#LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/maidstoremanager.h")
-#LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/clientrpc.cc")
-#LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/clientrpc.h")
-#LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/storemanagertaskshandler.cc")
-#LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/storemanagertaskshandler.h")
-#LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/opdata.h")
+LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/maidstoremanager.cc")
+LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/maidstoremanager.h")
+LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/clientrpc.cc")
+LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/clientrpc.h")
+LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/storemanagertaskshandler.cc")
+LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/storemanagertaskshandler.h")
+LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/opdata.h")
 SOURCE_GROUP("client Source Files" FILES ${SOURCE_FILES_CLIENT_DIR})
 SOURCE_GROUP("client Header Files" FILES ${HEADER_FILES_CLIENT_DIR})
-
 
 FILE(GLOB SOURCE_FILES_CLIENT_FILESYSTEM_DIR "${SRC_MAIDSAFE}/client/filesystem/*.cc")
 FILE(GLOB HEADER_FILES_CLIENT_FILESYSTEM_DIR "${SRC_MAIDSAFE}/client/filesystem/*.h")
@@ -130,14 +148,12 @@ SET(STYLE_CLIENT_FILESYSTEM ${ALL_FILES_CLIENT_FILESYSTEM_DIR})
 SOURCE_GROUP("client filesystem Source Files" FILES ${SOURCE_FILES_CLIENT_FILESYSTEM_DIR})
 SOURCE_GROUP("client filesystem Header Files" FILES ${HEADER_FILES_CLIENT_FILESYSTEM_DIR})
 
-FILE(GLOB SOURCE_FILES_COMMON_DIR "${SRC_MAIDSAFE}/common/*.c*")
-FILE(GLOB HEADER_FILES_COMMON_DIR "${SRC_MAIDSAFE}/common/*.h")
-SET(ALL_FILES_COMMON_DIR ${SOURCE_FILES_COMMON_DIR} ${HEADER_FILES_COMMON_DIR})
-SET(STYLE_COMMON ${ALL_FILES_COMMON_DIR})
-#LIST(REMOVE_ITEM STYLE_COMMON "${SRC_MAIDSAFE}/common/sqlite3.c")
-#LIST(REMOVE_ITEM STYLE_COMMON "${SRC_MAIDSAFE}/common/sqlite3.h")
-SOURCE_GROUP("common Source Files" FILES ${SOURCE_FILES_COMMON_DIR})
-SOURCE_GROUP("common Header Files" FILES ${HEADER_FILES_COMMON_DIR})
+FILE(GLOB SOURCE_FILES_SHARED_DIR "${SRC_MAIDSAFE}/shared/*.cc")
+FILE(GLOB HEADER_FILES_SHARED_DIR "${SRC_MAIDSAFE}/shared/*.h")
+SET(ALL_FILES_SHARED_DIR ${SOURCE_FILES_SHARED_DIR} ${HEADER_FILES_SHARED_DIR})
+SET(STYLE_SHARED ${ALL_FILES_SHARED_DIR})
+SOURCE_GROUP("shared Source Files" FILES ${SOURCE_FILES_SHARED_DIR})
+SOURCE_GROUP("shared Header Files" FILES ${HEADER_FILES_SHARED_DIR})
 
 IF(WIN32)
   FILE(GLOB SOURCE_FILES_FUSE_DIR "${SRC_MAIDSAFE}/fuse/windows/*.cc")
@@ -214,16 +230,16 @@ LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/testim
 
 FILE(GLOB ALL_FILES_CLIENT_FILESYSTEM_TESTS_DIR "${SRC_MAIDSAFE}/client/filesystem/tests/*.cc" "${SRC_MAIDSAFE}/client/filesystem/tests/*.h")
 
-FILE(GLOB ALL_FILES_COMMON_TESTS_DIR "${SRC_MAIDSAFE}/common/tests/*.cc" "${SRC_MAIDSAFE}/common/tests/*.h")
-LIST(REMOVE_ITEM ALL_FILES_COMMON_TESTS_DIR "${SRC_MAIDSAFE}/common/tests/testbufferpackethandler.cc")
+#FILE(GLOB ALL_FILES_SHARED_TESTS_DIR "${SRC_MAIDSAFE}/shared/tests/*.cc" "${SRC_MAIDSAFE}/shared/tests/*.h")
+#LIST(REMOVE_ITEM ALL_FILES_SHARED_TESTS_DIR "${SRC_MAIDSAFE}/shared/tests/testbufferpackethandler.cc")
 
 FILE(GLOB ALL_FILES_FUSE_TESTS_DIR "${SRC_MAIDSAFE}/fuse/tests/*.cc" "${SRC_MAIDSAFE}/fuse/tests/*.h")
 
-SET(NETWORK_TEST_FILES
-      "${SRC_MAIDSAFE}/sharedtest/networktest.cc"
-      "${SRC_MAIDSAFE}/sharedtest/networktest.h"
-      "${SRC_MAIDSAFE}/sharedtest/localvaults.h"
-      "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
+#SET(NETWORK_TEST_FILES
+#      "${SRC_MAIDSAFE}/sharedtest/networktest.cc"
+#      "${SRC_MAIDSAFE}/sharedtest/networktest.h"
+#      "${SRC_MAIDSAFE}/sharedtest/localvaults.h"
+#      "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
 
 ###################################################################################################
 # All Platforms:  Add exes and Create all LifeStuff libs                                                 #
@@ -246,11 +262,19 @@ IF(MSVC)
   SET_TARGET_PROPERTIES(lslocal lslightlocal PROPERTIES WIN32_EXECUTABLE TRUE)
 ENDIF()
 
-SET(BEHAVIOURAL_TEST_TIMEOUT 60)
-SET(FUNCTIONAL_TEST_TIMEOUT 600)
 SET(LOCAL_SYSTEM_TEST_TIMEOUT 1800)
 SET(NETWORK_SYSTEM_TEST_TIMEOUT 3600)
 
+# ADD_EXECUTABLE(TESTshared
+#                  ${ALL_FILES_SHARED_TESTS_DIR}
+#                  "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
+#                  "${SRC_MAIDSAFE}/sharedtest/chunkstoreops.h"
+#                  "${SRC_MAIDSAFE}/sharedtest/mockkadops.cc"
+#                  "${SRC_MAIDSAFE}/sharedtest/mockkadops.h"
+#                  "${SRC_MAIDSAFE}/sharedtest/testcallback.h"
+#                  "${SRC_MAIDSAFE}/sharedtest/threadpool.cc"
+#                  "${SRC_MAIDSAFE}/sharedtest/threadpool.h"
+#                  "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
 ADD_EXECUTABLE(TESTclientfilesystem
                  ${ALL_FILES_CLIENT_FILESYSTEM_TESTS_DIR}
                  "${SRC_MAIDSAFE}/sharedtest/cachepassport.h"
@@ -275,7 +299,7 @@ ADD_EXECUTABLE(TESTfuse EXCLUDE_FROM_ALL
 # ADD_EXECUTABLE(TESTbufferpackethandler_net
 #                  ${NETWORK_TEST_FILES}
 #                  "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
-#                  "${SRC_MAIDSAFE}/common/tests/testbufferpackethandler.cc")
+#                  "${SRC_MAIDSAFE}/shared/tests/testbufferpackethandler.cc")
 # ADD_EXECUTABLE(TESTclientcontroller_net
 #                  ${NETWORK_TEST_FILES}
 #                  "${SRC_MAIDSAFE}/sharedtest/mockclientcontroller.h"
@@ -294,72 +318,60 @@ ADD_EXECUTABLE(TESTclientcontroller_local
 # ADD_EXECUTABLE(DEMOclient
 #                  "${SRC_MAIDSAFE}/client/tests/client_main.cc")
 
-# SET(ALL_EXECUTABLES lifestuff lslocal lslightlocal TESTcommon TESTclientfilesystem TESTclientcontroller_local TESTfuse)
+# SET(ALL_EXECUTABLES lifestuff lslocal lslightlocal TESTshared TESTclientfilesystem TESTclientcontroller_local TESTfuse)
 SET(ALL_EXECUTABLES lslocal lslightlocal TESTclientfilesystem TESTclientcontroller_local TESTfuse)
+
+#RENAME_EXECUTABLE(lifestuff)
+RENAME_EXECUTABLE(lslocal)
+RENAME_EXECUTABLE(lslightlocal)
+#RENAME_EXECUTABLE(TESTshared)
+RENAME_EXECUTABLE(TESTclientfilesystem)
+#RENAME_EXECUTABLE(TESTclient)
+RENAME_EXECUTABLE(TESTfuse)
+#RENAME_EXECUTABLE(TESTauthentication_net)
+#RENAME_EXECUTABLE(TESTbufferpackethandler_net)
+#RENAME_EXECUTABLE(TESTclientcontroller_net)
+RENAME_EXECUTABLE(TESTclientcontroller_local)
+#RENAME_EXECUTABLE(TESTimconnectionhandler_net)
+#RENAME_EXECUTABLE(DEMOclient)
 
 # ADD_LIBRARY(LifeStuffclientlib STATIC ${ALL_FILES_CLIENT_DIR})
 ADD_LIBRARY(LifeStufflsmclientlib STATIC ${ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR})
 ADD_LIBRARY(LifeStuffclientfilesystemlib STATIC ${ALL_FILES_CLIENT_FILESYSTEM_DIR})
-ADD_LIBRARY(LifeStuffcommonlib STATIC ${ALL_FILES_COMMON_DIR})
+ADD_LIBRARY(LifeStuffsharedlib STATIC ${ALL_FILES_SHARED_DIR})
 ADD_LIBRARY(LifeStufffuselib STATIC ${ALL_FILES_FUSE_DIR})
 
 ADD_SUBDIRECTORY(${SRC_MAIDSAFE}/passport ${CMAKE_BINARY_DIR}/passport)
 ADD_SUBDIRECTORY(${SRC_MAIDSAFE}/pki ${CMAKE_BINARY_DIR}/pki)
 
-# Force renaming of exes to match standard CMake library renaming policy
-IF(NOT MSVC)
-  FOREACH(EXECUTABLE ${ALL_EXECUTABLES})
-    SET_TARGET_PROPERTIES(${EXECUTABLE} PROPERTIES
-                            DEBUG_OUTPUT_NAME ${EXECUTABLE}${CMAKE_DEBUG_POSTFIX}
-                            RELWITHDEBINFO_OUTPUT_NAME ${EXECUTABLE}${CMAKE_RELWITHDEBINFO_POSTFIX}
-                            MINSIZEREL_OUTPUT_NAME ${EXECUTABLE}${CMAKE_MINSIZEREL_POSTFIX})
-  ENDFOREACH()
-ENDIF()
-
-# When this target is built, it removes all .gcda files from the build directory and its subdirectories
-IF(UNIX)
-  ADD_CUSTOM_TARGET(CleanCoverage COMMAND ${CMAKE_COMMAND} -DSEARCH_DIR=${CMAKE_BINARY_DIR} -P ${${PROJECT_NAME}_ROOT}/build/clean_coverage.cmake)
-ENDIF()
-# ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTencrypt TESTpassport TESTpki TESTcommon
+# ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTencrypt TESTpassport TESTpki TESTshared
 #                   TESTclientfilesystem TESTclient TESTfuse TESTclientcontroller_local DEMOclient)
-ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTencrypt TESTpki TESTpassport 
+ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTpassport TESTpki
                   TESTclientfilesystem TESTfuse TESTclientcontroller_local)
-SET(TEST_EXECUTABLES )
 
+TARGET_LINK_LIBRARIES(LifeStuffsharedlib passport boost_filesystem)
+TARGET_LINK_LIBRARIES(LifeStuffclientfilesystemlib LifeStuffsharedlib encrypt_static pki boost_date_time)
+TARGET_LINK_LIBRARIES(LifeStufflsmclientlib LifeStuffclientfilesystemlib ${QT_LIBRARIES} boost_regex)
+# TARGET_LINK_LIBRARIES(LifeStuffclientlib LifeStuffclientfilesystemlib ${QT_LIBRARIES} boost_regex)
+TARGET_LINK_LIBRARIES(LifeStufffuselib ${Fuse_LIBRARY} boost_system)
+# TARGET_LINK_LIBRARIES(lifestuff LifeStuffclientlib LifeStufffuselib ${QT_LIBRARIES})
+TARGET_LINK_LIBRARIES(lslocal LifeStufflsmclientlib LifeStufffuselib ${QT_LIBRARIES})
+TARGET_LINK_LIBRARIES(lslightlocal LifeStufflsmclientlib ${QT_LIBRARIES})
+# TARGET_LINK_LIBRARIES(TESTshared LifeStuffsharedlib boost_date_time gtest_static gmock_static)
+TARGET_LINK_LIBRARIES(TESTclientfilesystem LifeStufflsmclientlib gtest_static)
+# TARGET_LINK_LIBRARIES(TESTclient LifeStuffclientlib gtest_static gmock_static)
+TARGET_LINK_LIBRARIES(TESTfuse LifeStufffuselib gtest_static)
+# TARGET_LINK_LIBRARIES(TESTauthentication_net LifeStuffclientlib gtest_static)
+# TARGET_LINK_LIBRARIES(TESTbufferpackethandler_net LifeStuffclientlib gtest_static)
+# TARGET_LINK_LIBRARIES(TESTclientcontroller_net LifeStuffclientlib gtest_static)
+TARGET_LINK_LIBRARIES(TESTclientcontroller_local LifeStufflsmclientlib gtest_static)
+# TARGET_LINK_LIBRARIES(TESTimconnectionhandler_net LifeStuffclientlib gtest_static)
+# TARGET_LINK_LIBRARIES(DEMOclient LifeStuffclientlib)
 
 ###################################################################################################
 # Builds                                                                                          #
 ###################################################################################################
-ADD_DEFINITIONS(-DSTATICLIB)
-SET(BUILD_SHARED_LIBS OFF)
-
-TARGET_LINK_LIBRARIES(LifeStuffcommonlib passport ${Encrypt_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} /home/maidsafe/LifeStuff/MaidSafe-Common/installed/lib/libmaidsafe_common.a /home/maidsafe/LifeStuff/MaidSafe-Common/installed/lib/libcryptopp.a)
-TARGET_LINK_LIBRARIES(LifeStuffclientfilesystemlib LifeStuffcommonlib pki ${Boost_DATE_TIME_LIBRARY} )
-TARGET_LINK_LIBRARIES(LifeStufflsmclientlib LifeStuffclientfilesystemlib ${QT_LIBRARIES} ${Boost_REGEX_LIBRARY})
-# TARGET_LINK_LIBRARIES(LifeStuffclientlib LifeStuffclientfilesystemlib ${QT_LIBRARIES} ${Boost_REGEX_LIBRARY})
-TARGET_LINK_LIBRARIES(LifeStufffuselib ${Fuse_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_SERIALIZATION_LIBRARY_RELEASE})
-# TARGET_LINK_LIBRARIES(lifestuff LifeStuffclientlib LifeStufffuselib ${QT_LIBRARIES})
-TARGET_LINK_LIBRARIES(lslocal LifeStufflsmclientlib LifeStufffuselib ${QT_LIBRARIES})
-TARGET_LINK_LIBRARIES(lslightlocal LifeStufflsmclientlib ${QT_LIBRARIES})
-# TARGET_LINK_LIBRARIES(TESTcommon LifeStuffcommonlib ${Boost_DATE_TIME_LIBRARY} ${Gtest_LIBRARY} ${Gmock_LIBRARY})
-TARGET_LINK_LIBRARIES(TESTclientfilesystem LifeStufflsmclientlib ${Gtest_LIBRARY})
-# TARGET_LINK_LIBRARIES(TESTclient LifeStuffclientlib ${Gtest_LIBRARY} ${Gmock_LIBRARY})
-TARGET_LINK_LIBRARIES(TESTfuse LifeStufffuselib ${Gtest_LIBRARY})
-# TARGET_LINK_LIBRARIES(TESTauthentication_net LifeStuffclientlib ${Gtest_LIBRARY})
-# TARGET_LINK_LIBRARIES(TESTbufferpackethandler_net LifeStuffclientlib ${Gtest_LIBRARY})
-# TARGET_LINK_LIBRARIES(TESTclientcontroller_net LifeStuffclientlib ${Gtest_LIBRARY})
-TARGET_LINK_LIBRARIES(TESTclientcontroller_local LifeStufflsmclientlib ${Gtest_LIBRARY})
-# TARGET_LINK_LIBRARIES(TESTimconnectionhandler_net LifeStuffclientlib ${Gtest_LIBRARY})
-# TARGET_LINK_LIBRARIES(DEMOclient LifeStuffclientlib)
-#TARGET_LINK_LIBRARIES(TESTpassport ${Encrypt_LIBRARY} /home/maidsafe/LifeStuff/MaidSafe-Common/installed/lib/libmaidsafe_common.a)
-###################################################################################################
-# Compiler and linker flags - after all targets declared                                          #
-###################################################################################################
-
-IF(Glog_FOUND)
-  ADD_DEFINITIONS(-DHAVE_GLOG)
-ENDIF()
-ADD_DEFINITIONS(-DBOOST_FILESYSTEM_NO_DEPRECATED -DBOOST_FILESYSTEM_VERSION=3)
+INCLUDE(maidsafe_standard_flags)
 
 SET_TARGET_PROPERTIES(LifeStufflsmclientlib PROPERTIES COMPILE_FLAGS -DLOCAL_LifeStuffVAULT)
 # SET_TARGET_PROPERTIES(TESTauthentication_net PROPERTIES COMPILE_FLAGS -DMS_NETWORK_TEST)
@@ -427,274 +439,28 @@ ELSEIF(WIN32)
     SET_TARGET_PROPERTIES(lslocal PROPERTIES COMPILE_FLAGS "-w -DLOCAL_LifeStuffVAULT")
   ENDIF()
 ENDIF()
+
+
 ###################################################################################################
 # Tests                                                                                           #
 ###################################################################################################
-INCLUDE(CTest)
-SET(CTEST_CUSTOM_MAXIMUM_PASSED_TEST_OUTPUT_SIZE 50000)
-SET(CTEST_CUSTOM_MAXIMUM_FAILED_TEST_OUTPUT_SIZE 50000)
-SET(CTEST_CONTINUOUS_DURATION 600)
-SET(CTEST_CONTINUOUS_MINIMUM_INTERVAL 60)
-SET(CTEST_START_WITH_EMPTY_BINARY_DIRECTORY true)
-
-IF(EXCLUDE_TEST)
-  SET(EXCLUDED_TESTS ${EXCLUDED_TESTS} ${EXCLUDE_TEST})
-  LIST(REMOVE_DUPLICATES EXCLUDED_TESTS)
-  SET(EXCLUDED_TESTS ${EXCLUDED_TESTS} CACHE INTERNAL "List of tests to exclude from CTest" FORCE)
-  UNSET(EXCLUDE_TEST CACHE)
-ENDIF()
-
-IF(INCLUDE_TEST)
-  IF(EXCLUDED_TESTS)
-    LIST(REMOVE_DUPLICATES EXCLUDED_TESTS)
-    LIST(REMOVE_ITEM EXCLUDED_TESTS ${INCLUDE_TEST})
-  ENDIF()
-  SET(EXCLUDED_TESTS ${EXCLUDED_TESTS} CACHE INTERNAL "List of tests to exclude from CTest" FORCE)
-  UNSET(INCLUDE_TEST CACHE)
-ENDIF()
-
-FUNCTION(GET_TEST_PARAMETERS GTEST_SOURCE_FILE GTEST_GROUP_NAME)
-  # Find start of parameter list
-  FILE(STRINGS ${GTEST_SOURCE_FILE} GTEST_PARAMETER_CASE REGEX ^INSTANTIATE_TEST_CASE_P.*${GTEST_GROUP_NAME},)
-  IF(NOT GTEST_PARAMETER_CASE)
-    RETURN()
-  ENDIF()
-  # Get instantiation name
-  STRING(REGEX REPLACE ["\) \(,"] ";" GTEST_PARAMETER_CASE_AS_LIST ${GTEST_PARAMETER_CASE})
-  LIST(GET GTEST_PARAMETER_CASE_AS_LIST 1 GTEST_INSTANTIATION_NAME)
-  # Read file into variable FULL_FILE
-  FILE(STRINGS ${GTEST_SOURCE_FILE} FULL_FILE REGEX .)
-  # Get line number of start of parameter list
-  LIST(FIND FULL_FILE ${GTEST_PARAMETER_CASE} PARAMETER_VALUES_INDEX)
-  # Use comma count to add appendices to list until closing bracket is found
-  SET(PARAMETER_COUNT 0)
-  WHILE(NOT END_OF_PARAM_LIST)
-    LIST(GET FULL_FILE ${PARAMETER_VALUES_INDEX} GTEST_PARAMS)
-    STRING(REGEX MATCHALL [,] COMMA_LIST ${GTEST_PARAMS})
-    FOREACH(COMMA ${COMMA_LIST})
-      SET(GTEST_PARAMETER_APPENDICES ${GTEST_PARAMETER_APPENDICES} "/${PARAMETER_COUNT}")
-      MATH(EXPR PARAMETER_COUNT ${PARAMETER_COUNT}+1)
-    ENDFOREACH()
-    STRING(REGEX MATCH [\)] END_OF_PARAM_LIST ${GTEST_PARAMS})
-    MATH(EXPR PARAMETER_VALUES_INDEX ${PARAMETER_VALUES_INDEX}+1)
-  ENDWHILE()
-  IF(NOT PARAMETER_COUNT EQUAL 0)
-    LIST(REMOVE_AT GTEST_PARAMETER_APPENDICES -1)
-  ENDIF()
-  SET(GTEST_INSTANTIATION_NAME ${GTEST_INSTANTIATION_NAME}/ PARENT_SCOPE)
-  SET(GTEST_PARAMETER_APPENDICES ${GTEST_PARAMETER_APPENDICES} PARENT_SCOPE)
-ENDFUNCTION()
-
-FUNCTION(GET_TEST_TYPES GTEST_SOURCE_FILE GTEST_GROUP_NAME)
-  # Find TYPED_TEST_CASE and retrieve associated typedef
-  FILE(STRINGS ${GTEST_SOURCE_FILE} GTEST_TYPED_TEST_CASE REGEX ^TYPED_TEST_CASE)
-  IF(NOT GTEST_TYPED_TEST_CASE)
-    RETURN()
-  ENDIF()
-  STRING(REGEX REPLACE ["\) \(,"] ";" GTEST_TYPED_TEST_CASE ${GTEST_TYPED_TEST_CASE})
-  LIST(GET GTEST_TYPED_TEST_CASE 3 GTEST_TYPEDEF)
-  # Get type list from typedef
-  FILE(STRINGS ${GTEST_SOURCE_FILE} GTEST_TYPES REGEX ">\ ${GTEST_TYPEDEF}")
-  # Read file into variable FULL_FILE
-  FILE(STRINGS ${GTEST_SOURCE_FILE} FULL_FILE REGEX .)
-  # Get line number of end of type list
-  LIST(FIND FULL_FILE ${GTEST_TYPES} PARAMETER_VALUES_INDEX)
-  # Use comma count to add appendices to list until opening bracket is found
-  SET(PARAMETER_COUNT 0)
-  SET(GTEST_TYPE_APPENDICES ${GTEST_TYPE_APPENDICES} "/${PARAMETER_COUNT}")
-  WHILE(NOT START_OF_TYPE_LIST)
-    LIST(GET FULL_FILE ${PARAMETER_VALUES_INDEX} GTEST_PARAMS)
-    STRING(REGEX MATCHALL [,] COMMA_LIST ${GTEST_PARAMS})
-    FOREACH(COMMA ${COMMA_LIST})
-      MATH(EXPR PARAMETER_COUNT ${PARAMETER_COUNT}+1)
-      SET(GTEST_TYPE_APPENDICES ${GTEST_TYPE_APPENDICES} "/${PARAMETER_COUNT}")
-    ENDFOREACH()
-    STRING(REGEX MATCH [<] START_OF_TYPE_LIST ${GTEST_PARAMS})
-    MATH(EXPR PARAMETER_VALUES_INDEX ${PARAMETER_VALUES_INDEX}-1)
-  ENDWHILE()
-  SET(GTEST_TYPE_APPENDICES ${GTEST_TYPE_APPENDICES} PARENT_SCOPE)
-ENDFUNCTION()
-
-FUNCTION(ADD_MAIDSAFE_TEST GTEST_GROUP_NAME GTEST_NAME TEST_PATH)
-  ADD_TEST(${GTEST_GROUP_NAME}.${GTEST_NAME} ${TEST_PATH} --gtest_filter=${GTEST_GROUP_NAME}.${GTEST_NAME})
-  IF("${GTEST_NAME}" MATCHES "^FUNC_" OR "${GTEST_NAME}" MATCHES "^DISABLED_FUNC_")
-    SET_PROPERTY(TEST ${GTEST_GROUP_NAME}.${GTEST_NAME} PROPERTY LABELS Functional ${GTEST_GROUP_NAME})
-    SET_PROPERTY(TEST ${GTEST_GROUP_NAME}.${GTEST_NAME} PROPERTY TIMEOUT 600)
-  ELSEIF("${GTEST_NAME}" MATCHES "^BEH_" OR "${GTEST_NAME}" MATCHES "^DISABLED_BEH_")
-    SET_PROPERTY(TEST ${GTEST_GROUP_NAME}.${GTEST_NAME} PROPERTY LABELS Behavioural ${GTEST_GROUP_NAME})
-    SET_PROPERTY(TEST ${GTEST_GROUP_NAME}.${GTEST_NAME} PROPERTY TIMEOUT 60)
+IF((TEST_EXCLUDED EQUAL -1) AND PYTHONINTERP_FOUND)
+  IF(UNIX)
+    SET(STYLE_ALL ${STYLE_CLIENT} ${STYLE_SHARED} ${STYLE_FUSE}
+                  ${STYLE_PASSPORT} ${STYLE_PKI})
+    ADD_TEST(STYLE_CHECK python ${MaidSafeCommon_TOOLS_DIR}/cpplint.py ${STYLE_ALL})
   ELSE()
-    MESSAGE("")
-    MESSAGE("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    MESSAGE("")
-    MESSAGE(AUTHOR_WARNING "${GTEST_NAME} should be named \"BEH_...\" or \"FUNC_...\" (with an optional \"DISABLED_\" prepended).")
-    MESSAGE("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    STRING(REPLACE "/" "\\\\" STYLE_CHECK_SOURCE ${PROJECT_SOURCE_DIR})
+    ADD_TEST(STYLE_CHECK ${MaidSafeCommon_TOOLS_DIR}/run_cpplint.bat ${STYLE_CHECK_SOURCE} ${MaidSafeCommon_TOOLS_DIR}/cpplint.py)
   ENDIF()
-ENDFUNCTION()
-
-#SET(TEST_EXECUTABLES TESTclient TESTclientfilesystem TESTcommon TESTencrypt TESTpassport TESTpki TESTfuse)
-SET(TEST_EXECUTABLES TESTclientfilesystem TESTencrypt TESTpki TESTfuse)
-FOREACH(TEST_EXECUTABLE ${TEST_EXECUTABLES})
-  IF(TEST_EXECUTABLE STREQUAL "TESTclient")
-    SET(GTEST_SOURCE_FILES ${ALL_FILES_CLIENT_TESTS_DIR})
-  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTclientfilesystem")
-    SET(GTEST_SOURCE_FILES ${ALL_FILES_CLIENT_FILESYSTEM_TESTS_DIR})
-  # ELSEIF(TEST_EXECUTABLE STREQUAL "TESTcommon")
-  #   SET(GTEST_SOURCE_FILES ${ALL_FILES_COMMON_TESTS_DIR})
-  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTencrypt")
-    SET(GTEST_SOURCE_FILES ${ALL_FILES_ENCRYPT_TESTS_DIR})
-#  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTpassport")
-#    SET(GTEST_SOURCE_FILES ${ALL_FILES_PASSPORT_TESTS_DIR})
-  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTpki")
-    SET(GTEST_SOURCE_FILES ${ALL_FILES_PKI_TESTS_DIR})
-  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTfuse")
-    SET(GTEST_SOURCE_FILES ${ALL_FILES_FUSE_TESTS_DIR})
-  ENDIF()
-  FOREACH(GTEST_SOURCE_FILE ${GTEST_SOURCE_FILES})
-    FILE(STRINGS ${GTEST_SOURCE_FILE} GTEST_NAMES REGEX ^TEST)
-    FILE(STRINGS ${GTEST_SOURCE_FILE} GTEST_TYPED_NAMES REGEX ^TYPED_TEST)
-    SET(GTEST_NAMES ${GTEST_NAMES} ${GTEST_TYPED_NAMES})
-    FOREACH(GTEST_NAME ${GTEST_NAMES})
-      STRING(REGEX MATCH "TEST_MS_NET" TEST_IS_MS_NETWORK_TYPE ${GTEST_NAME})
-      STRING(REGEX REPLACE ["\) \(,"] ";" GTEST_NAME ${GTEST_NAME})
-      LIST(GET GTEST_NAME 0 GTEST_TEST_TYPE)
-      LIST(GET GTEST_NAME 1 GTEST_GROUP_NAME)
-      IF(TEST_IS_MS_NETWORK_TYPE)
-        LIST(GET GTEST_NAME 3 GTEST_NAME_PART1)
-        LIST(GET GTEST_NAME 5 GTEST_NAME_PART2)
-        LIST(GET GTEST_NAME 7 GTEST_NAME_PART3)
-        SET(GTEST_NAME "${GTEST_NAME_PART1}_${GTEST_NAME_PART2}_${GTEST_NAME_PART3}")
-      ELSE()
-        LIST(GET GTEST_NAME 3 GTEST_NAME)
-      ENDIF()
-      LIST(FIND EXCLUDED_TESTS ${GTEST_GROUP_NAME}.${GTEST_NAME} THIS_GTEST_EXCLUDED)
-      IF(THIS_GTEST_EXCLUDED EQUAL -1)
-        IF("${GTEST_NAME}" MATCHES "(${MAIDSAFE_TEST_TYPE}).+")
-          IF(${GTEST_TEST_TYPE} MATCHES TEST_P)
-            SET(GTEST_PARAMETER_APPENDICES)
-            SET(GTEST_INSTANTIATION_NAME)
-            GET_TEST_PARAMETERS(${GTEST_SOURCE_FILE} ${GTEST_GROUP_NAME})
-            FOREACH(GTEST_PARAMETER_APPENDIX ${GTEST_PARAMETER_APPENDICES})
-              ADD_MAIDSAFE_TEST(${GTEST_INSTANTIATION_NAME}${GTEST_GROUP_NAME} ${GTEST_NAME}${GTEST_PARAMETER_APPENDIX} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TEST_EXECUTABLE}${TEST_POSTFIX})
-            ENDFOREACH()
-          ELSEIF(${GTEST_TEST_TYPE} MATCHES TYPED_TEST)
-            SET(GTEST_TYPE_APPENDICES)
-            GET_TEST_TYPES(${GTEST_SOURCE_FILE} ${GTEST_GROUP_NAME})
-            FOREACH(GTEST_TYPE_APPENDIX ${GTEST_TYPE_APPENDICES})
-              ADD_MAIDSAFE_TEST(${GTEST_GROUP_NAME}${GTEST_TYPE_APPENDIX} ${GTEST_NAME} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TEST_EXECUTABLE}${TEST_POSTFIX})
-            ENDFOREACH()
-          ELSE()
-            ADD_MAIDSAFE_TEST(${GTEST_GROUP_NAME} ${GTEST_NAME} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TEST_EXECUTABLE}${TEST_POSTFIX})
-          ENDIF()
-        ENDIF()
-      ENDIF()
-    ENDFOREACH()
-  ENDFOREACH()
-ENDFOREACH()
-
-IF(NOT ${MAIDSAFE_TEST_TYPE} MATCHES "BEH")
-  # LIST(FIND EXCLUDED_TESTS Test_authentication_net TEST_EXCLUDED)
-  # IF(TEST_EXCLUDED EQUAL -1)
-    # ADD_TEST(Test_authentication_net ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/TESTauthentication_net${TEST_POSTFIX})
-    # SET_PROPERTY(TEST Test_authentication_net PROPERTY TIMEOUT ${NETWORK_SYSTEM_TEST_TIMEOUT})
-    # SET_PROPERTY(TEST Test_authentication_net PROPERTY LABELS Functional Authentication)
-  # ENDIF()
-
-  # LIST(FIND EXCLUDED_TESTS Test_bufferpackethandler_net TEST_EXCLUDED)
-  # IF(TEST_EXCLUDED EQUAL -1)
-    # ADD_TEST(Test_bufferpackethandler_net ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/TESTbufferpackethandler_net${TEST_POSTFIX})
-    # SET_PROPERTY(TEST Test_bufferpackethandler_net PROPERTY TIMEOUT ${NETWORK_SYSTEM_TEST_TIMEOUT})
-    # SET_PROPERTY(TEST Test_bufferpackethandler_net PROPERTY LABELS Functional BufferPacketHandler)
-  # ENDIF()
-
-  # LIST(FIND EXCLUDED_TESTS Test_clientcontroller_net TEST_EXCLUDED)
-  # IF(TEST_EXCLUDED EQUAL -1)
-    # ADD_TEST(Test_clientcontroller_net ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/TESTclientcontroller_net${TEST_POSTFIX})
-    # SET_PROPERTY(TEST Test_clientcontroller_net PROPERTY TIMEOUT ${NETWORK_SYSTEM_TEST_TIMEOUT})
-    # SET_PROPERTY(TEST Test_clientcontroller_net PROPERTY LABELS Functional ClientController NetworkCC)
-  # ENDIF()
-
-  LIST(FIND EXCLUDED_TESTS Test_clientcontroller_local TEST_EXCLUDED)
-  IF(TEST_EXCLUDED EQUAL -1)
-    ADD_TEST(Test_clientcontroller_local ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/TESTclientcontroller_local${TEST_POSTFIX})
-    SET_PROPERTY(TEST Test_clientcontroller_local PROPERTY TIMEOUT ${LOCAL_SYSTEM_TEST_TIMEOUT})
-    SET_PROPERTY(TEST Test_clientcontroller_local PROPERTY LABELS Functional ClientController LocalCC)
-  ENDIF()
-
-  # LIST(FIND EXCLUDED_TESTS Test_imconnectionhandler_net TEST_EXCLUDED)
-  # IF(TEST_EXCLUDED EQUAL -1)
-    # ADD_TEST(Test_imconnectionhandler_net ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/TESTimconnectionhandler_net${TEST_POSTFIX})
-    # SET_PROPERTY(TEST Test_imconnectionhandler_net PROPERTY TIMEOUT ${NETWORK_SYSTEM_TEST_TIMEOUT})
-    # SET_PROPERTY(TEST Test_imconnectionhandler_net PROPERTY LABELS Functional InstantMessaging)
-  # ENDIF()
-
-  LIST(FIND EXCLUDED_TESTS STYLE_CHECK TEST_EXCLUDED)
-  IF((TEST_EXCLUDED EQUAL -1) AND PYTHONINTERP_FOUND)
-    IF(UNIX)
-      SET(STYLE_ALL ${STYLE_CLIENT} ${STYLE_COMMON} ${STYLE_FUSE}
-                    ${STYLE_ENCRYPT} ${STYLE_PASSPORT} ${STYLE_PKI})
-      ADD_TEST(STYLE_CHECK ${${PROJECT_NAME}_ROOT}/build/tools/cpplint.py ${STYLE_ALL})
-      SET_PROPERTY(TEST STYLE_CHECK PROPERTY LABELS Functional CodingStyle)
-    ELSE()
-      ADD_TEST(STYLE_CHECK ${${PROJECT_NAME}_ROOT}/build/tools/finderrorsall.bat)
-      SET_PROPERTY(TEST STYLE_CHECK PROPERTY LABELS Functional CodingStyle)
-    ENDIF()
-  ENDIF()
+  SET_PROPERTY(TEST STYLE_CHECK PROPERTY LABELS Functional CodingStyle)
 ENDIF()
 
-IF(UNIX)
-  SET(MEMORYCHECK_COMMAND "/usr/bin/valgrind --show-reachable=no")
-ENDIF(UNIX)
+#ADD_GTESTS(TESTclient)
+ADD_GTESTS(TESTclientfilesystem)
+#ADD_GTESTS(TESTshared)
+ADD_GTESTS(TESTpassport)
+ADD_GTESTS(TESTpki)
+ADD_GTESTS(TESTfuse)
 
-###################################################################################################
-# Adding the install targets                                                                      #
-###################################################################################################
-MESSAGE("")
-MESSAGE("${MAIDSAFE_TEST_TYPE_MESSAGE}")
-MESSAGE("")
-MESSAGE("    To include all tests,                ${ERROR_MESSAGE_CMAKE_PATH} -DMAIDSAFE_TEST_TYPE=ALL")
-MESSAGE("    To include behavioural tests,        ${ERROR_MESSAGE_CMAKE_PATH} -DMAIDSAFE_TEST_TYPE=BEH")
-MESSAGE("    To include functional tests,        ${ERROR_MESSAGE_CMAKE_PATH} -DMAIDSAFE_TEST_TYPE=FUNC")
-MESSAGE("================================================================================")
-MESSAGE("")
-IF(EXCLUDED_TESTS)
-  MESSAGE("Tests excluded:")
-  FOREACH(EXCLUDED_TEST ${EXCLUDED_TESTS})
-    MESSAGE("-- ${EXCLUDED_TEST}")
-  ENDFOREACH()
-ELSE()
-  MESSAGE("No tests excluded.")
-ENDIF()
-MESSAGE("")
-MESSAGE("    To exclude a test,                 ${ERROR_MESSAGE_CMAKE_PATH} -DEXCLUDE_TEST=<Test Name>")
-MESSAGE("    To re-include a test,              ${ERROR_MESSAGE_CMAKE_PATH} -DINCLUDE_TEST=<Test Name>")
-MESSAGE("================================================================================")
-MESSAGE("")
-IF(NOT MSVC)
-  MESSAGE("Build type is set to \"${CMAKE_BUILD_TYPE}\"")
-  IF((NOT MAIDSAFE_DHT_BUILD_TYPE MATCHES "Debug") AND
-     (NOT MAIDSAFE_DHT_BUILD_TYPE MATCHES "RelWithDebInfo") AND
-     (NOT MAIDSAFE_DHT_BUILD_TYPE MATCHES "MinSizeRel"))
-    SET(MAIDSAFE_DHT_BUILD_TYPE Release)
-  ENDIF()
-  MESSAGE("Linking to \"${MAIDSAFE_DHT_BUILD_TYPE}\" build of maidsafe-dht, cryptopp & udt")
-  MESSAGE("")
-  MESSAGE("    To alter build type (e.g. to Debug), ${ERROR_MESSAGE_CMAKE_PATH} -DCMAKE_BUILD_TYPE=Debug")
-  MESSAGE("")
-  MESSAGE("    To link to (e.g. Debug) build of maidsafe-dht, cryptopp & udt,")
-  MESSAGE("                                  ${ERROR_MESSAGE_CMAKE_PATH} -DMAIDSAFE_DHT_BUILD_TYPE=Debug")
-  MESSAGE("")
-  MESSAGE("    Options are Release, Debug, RelWithDebInfo, MinSizeRel")
-  MESSAGE("================================================================================")
-  MESSAGE("")
-ENDIF()
-
-
-# BitRock InstallBuilder
-IF(CMAKE_BUILD_TYPE MATCHES Release)
-  INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindInstallBuilder.cmake)
-  IF(InstallBuilder_BUILDER_EXE AND InstallBuilder_CUSTOMISE_EXE)
-    # ADD_CUSTOM_TARGET(lifestuffInstaller ALL ${InstallBuilder_BUILDER_EXE} build ${${PROJECT_NAME}_ROOT}/installer/bitrock/lifestuff.xml DEPENDS lifestuff)
-    ADD_CUSTOM_TARGET(lslightlocalInstaller ALL ${InstallBuilder_BUILDER_EXE} build ${${PROJECT_NAME}_ROOT}/installer/bitrock/lslightlocal.xml DEPENDS lslightlocal)
-  ENDIF()
-ENDIF()
+TEST_SUMMARY_OUTPUT()
