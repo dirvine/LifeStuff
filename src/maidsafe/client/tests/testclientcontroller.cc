@@ -33,8 +33,8 @@
 #include <string>
 #include <vector>
 
-#include "maidsafe/common/chunkstore.h"
-#include "maidsafe/common/commonutils.h"
+#include "maidsafe/shared/chunkstore.h"
+#include "maidsafe/shared/commonutils.h"
 #include "maidsafe/client/clientutils.h"
 #include "maidsafe/client/clientcontroller.h"
 #include "maidsafe/client/sessionsingleton.h"
@@ -63,15 +63,15 @@ namespace test {
 class ClientControllerTest : public testing::Test {
  public:
   ClientControllerTest()
-      : network_test_(),
+      : // network_test_(),
         cc_(ClientController::getInstance()),
         ss_(SessionSingleton::getInstance()),
-        sm_(network_test_.store_manager()),
+        sm_(/*network_test_.store_manager()*/),
         vcp_() {}
  protected:
   void SetUp() {
     ss_->ResetSession();
-    ASSERT_TRUE(network_test_.Init());
+//    ASSERT_TRUE(network_test_.Init());
 #ifdef MS_NETWORK_TEST
 //    cc_->client_chunkstore_ = network_test_.chunkstore();
 //    cc_->sm_ = sm_;
@@ -79,10 +79,10 @@ class ClientControllerTest : public testing::Test {
 //    cc_->ss_ = ss_;
 //    cc_->initialised_ = true;
 #else
-    cc_->Init(network_test_.K());
+//    cc_->Init(network_test_.K());
 #endif
     vcp_.space = 1000000;
-    vcp_.directory = (network_test_.test_dir() / "VaultChunkstore").string();
+    vcp_.directory = /*(network_test_.test_dir() / */"VaultChunkstore"/*).string()*/;
   }
   void TearDown() {
 #ifndef MS_NETWORK_TEST
@@ -94,7 +94,7 @@ class ClientControllerTest : public testing::Test {
     cc_->initialised_ = false;
   }
 
-  NetworkTest network_test_;
+//  NetworkTest network_test_;
   ClientController *cc_;
   SessionSingleton *ss_;
   std::shared_ptr<TestStoreManager> sm_;
@@ -480,7 +480,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, SaveSession) {
   ASSERT_EQ(0, cc_->SaveSession());
   printf("\n\n\nSaved the session\n\n\n");
   boost::this_thread::sleep(boost::posix_time::seconds(10));
-  network_test_.chunkstore()->Clear();
+//  network_test_.chunkstore()->Clear();
   printf("\n\n\nCleared the chunkstore\n\n\n");
   ss_->ResetSession();
   // Reset the client controller
@@ -488,7 +488,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, SaveSession) {
   boost::once_flag temp = BOOST_ONCE_INIT;
   ClientController::flag_ = temp;
   cc_ = ClientController::getInstance();
-  cc_->Init(network_test_.K());
+//  cc_->Init(network_test_.K());
   printf("\n\n\nReset the session\n\n\n");
 
 

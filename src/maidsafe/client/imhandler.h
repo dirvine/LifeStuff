@@ -26,7 +26,7 @@
 #define MAIDSAFE_CLIENT_IMHANDLER_H_
 
 #include <string>
-#include "maidsafe/common/packet.pb.h"
+#include "maidsafe/shared/packet.pb.h"
 
 namespace maidsafe {
 

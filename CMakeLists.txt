@@ -53,6 +53,7 @@ OPTION (BUILD_SHARED_LIBS "Build shared libraries." OFF)
 # This call resets CMAKE_BUILD_TYPE, hence it's copied from CMAKE_BUILD_TYPE_DIR which is set above.
 PROJECT(${PROJECT_NAME})
 SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_DIR} CACHE INTERNAL "Except for MSVC, the build type is set by running cmake from the appropriate build subdirectory e.g. for a Debug build, \"cd build/Linux/Debug && cmake ../../..\"." FORCE)
+INCLUDE_DIRECTORIES(${PROJECT_BINARY_DIR})
 
 ###################################################################################################
 # MaidSafe Common library search                                                                  #
@@ -148,7 +149,7 @@ SET(STYLE_CLIENT_FILESYSTEM ${ALL_FILES_CLIENT_FILESYSTEM_DIR})
 SOURCE_GROUP("client filesystem Source Files" FILES ${SOURCE_FILES_CLIENT_FILESYSTEM_DIR})
 SOURCE_GROUP("client filesystem Header Files" FILES ${HEADER_FILES_CLIENT_FILESYSTEM_DIR})
 
-FILE(GLOB SOURCE_FILES_SHARED_DIR "${SRC_MAIDSAFE}/shared/*.cc")
+FILE(GLOB SOURCE_FILES_SHARED_DIR "${SRC_MAIDSAFE}/shared/*.cc" "${SRC_MAIDSAFE}/shared/sqlite3.c")
 FILE(GLOB HEADER_FILES_SHARED_DIR "${SRC_MAIDSAFE}/shared/*.h")
 SET(ALL_FILES_SHARED_DIR ${SOURCE_FILES_SHARED_DIR} ${HEADER_FILES_SHARED_DIR})
 SET(STYLE_SHARED ${ALL_FILES_SHARED_DIR})
@@ -235,11 +236,11 @@ FILE(GLOB ALL_FILES_CLIENT_FILESYSTEM_TESTS_DIR "${SRC_MAIDSAFE}/client/filesyst
 
 FILE(GLOB ALL_FILES_FUSE_TESTS_DIR "${SRC_MAIDSAFE}/fuse/tests/*.cc" "${SRC_MAIDSAFE}/fuse/tests/*.h")
 
-#SET(NETWORK_TEST_FILES
+SET(NETWORK_TEST_FILES
 #      "${SRC_MAIDSAFE}/sharedtest/networktest.cc"
 #      "${SRC_MAIDSAFE}/sharedtest/networktest.h"
 #      "${SRC_MAIDSAFE}/sharedtest/localvaults.h"
-#      "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
+      "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
 
 ###################################################################################################
 # All Platforms:  Add exes and Create all LifeStuff libs                                                 #
@@ -390,11 +391,13 @@ IF(APPLE)
 ELSEIF(UNIX AND NOT APPLE)
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -DDEBUG -ggdb -pg -fprofile-arcs -ftest-coverage")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DQT_NO_DEBUG_OUTPUT -DQT_NO_WARNING_OUTPUT -DQT_NO_DEBUG_STREAM -O2 -Wuninitialized")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wall -DLifeStuff_LINUX -DLifeStuff_POSIX -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -Wredundant-decls -Wunused-function -Wunused-label -Wunused-parameter -Wunused-value -Wunused-variable -std=c++0x -Weffc++ -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
-  ##put libs in here that will have no chance of passing tests - 3rd party ONLY !!
+  # SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wall -DLifeStuff_LINUX -DLifeStuff_POSIX -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -Wredundant-decls -Wunused-function -Wunused-label -Wunused-parameter -Wunused-value -Wunused-variable -std=c++0x -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wall -DLifeStuff_LINUX -DLifeStuff_POSIX -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -Wredundant-decls -Wunused-function -Wunused-label -Wunused-parameter -Wunused-value -Wunused-variable -std=c++0x -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
+  # put libs in here that will have no chance of passing tests - 3rd party ONLY !!
   # SET_TARGET_PROPERTIES(lifestuff lslocal PROPERTIES COMPILE_FLAGS "-w -DLOCAL_LifeStuffVAULT")
   SET_TARGET_PROPERTIES(lslocal PROPERTIES COMPILE_FLAGS "-w -DLOCAL_LifeStuffVAULT")
   SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -pg -fprofile-arcs -ftest-coverage")
+  ADD_DEFINITIONS(-w)
 ELSEIF(WIN32)
   ADD_DEFINITIONS(-DLifeStuff_WIN32 -DWIN32 -D_WIN32 -D__WINDOWS__ -D__WIN32__ -D_WINDOWS)
   ADD_DEFINITIONS(-DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x501)

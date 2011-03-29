@@ -24,7 +24,7 @@
 #include "boost/thread/condition.hpp"
 #include "boost/thread/mutex.hpp"
 #include <string>
-#include "maidsafe/common/returncodes.h"
+#include "maidsafe/shared/returncodes.h"
 
 namespace maidsafe {
 namespace test {

@@ -34,10 +34,10 @@
 #include <set>
 #include <string>
 #include <vector>
-#include "maidsafe/common/filesystem.h"
-#include "maidsafe/common/maidsafe.h"
-#include "maidsafe/common/maidsafe_service_messages.pb.h"
-#include "maidsafe/common/returncodes.h"
+#include "maidsafe/shared/filesystem.h"
+#include "maidsafe/shared/maidsafe.h"
+#include "maidsafe/shared/maidsafe_service_messages.pb.h"
+#include "maidsafe/shared/returncodes.h"
 #include "maidsafe/client/authentication.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/filesystem/distributed_filesystem.pb.h"
@@ -333,10 +333,10 @@ class ClientController {
   std::vector<std::string> GetOffLineContacts();
   void FileUpdate(const std::string &file, int percentage);
   bool AddToPendingFiles(const std::string &file);
-  bool RemoveFromPendingFiles(const std::string &file);  
+  bool RemoveFromPendingFiles(const std::string &file);
   bool SerializeToString(maidsafe::encrypt::DataMap& data_map,
-                                std::string& serialized);  
-  bool ParseFromString(maidsafe::encrypt::DataMap& data_map, 
+                                std::string& serialized);
+  bool ParseFromString(maidsafe::encrypt::DataMap& data_map,
                                   const std::string& serialized);
 
   // Variables

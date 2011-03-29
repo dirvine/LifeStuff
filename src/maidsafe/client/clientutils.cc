@@ -23,7 +23,7 @@
 */
 
 #include "maidsafe/client/clientutils.h"
-#include "maidsafe/common/commonutils.h"
+#include "maidsafe/shared/commonutils.h"
 #include "maidsafe/client/sessionsingleton.h"
 
 namespace maidsafe {

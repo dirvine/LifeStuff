@@ -25,7 +25,7 @@
 #include "maidsafe/client/imconnectionhandler.h"
 #include "boost/bind.hpp"
 #include <utility>
-#include "maidsafe/common/packet.pb.h"
+#include "maidsafe/shared/packet.pb.h"
 
 namespace maidsafe {
 

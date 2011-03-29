@@ -45,7 +45,7 @@
 #include <cstdlib>
 #include <map>
 
-#include "maidsafe/common/filesystem.h"
+#include "maidsafe/shared/filesystem.h"
 #include "maidsafe/client/clientutils.h"
 #include "maidsafe/client/clientcontroller.h"
 #include "maidsafe/client/sessionsingleton.h"

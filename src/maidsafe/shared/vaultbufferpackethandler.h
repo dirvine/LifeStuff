@@ -27,7 +27,7 @@
 
 #include <string>
 #include <vector>
-#include "maidsafe/common/packet.pb.h"
+#include "maidsafe/shared/packet.pb.h"
 
 namespace maidsafe {
 

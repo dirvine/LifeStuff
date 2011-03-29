@@ -27,9 +27,9 @@
 #include "gtest/gtest.h"
 #include "maidsafe-encrypt/data_map.h"
 #include "maidsafe-encrypt/self_encryption.h"
-#include "maidsafe/common/chunkstore.h"
-#include "maidsafe/common/commonutils.h"
-#include "maidsafe/common/filesystem.h"
+#include "maidsafe/shared/chunkstore.h"
+#include "maidsafe/shared/commonutils.h"
+#include "maidsafe/shared/filesystem.h"
 #include "maidsafe/client/filesystem/dataatlashandler.h"
 #include "maidsafe/client/filesystem/sehandler.h"
 #include "maidsafe/client/clientutils.h"
@@ -239,14 +239,14 @@ class SEHandlerTest : public testing::Test {
       printf("%s\n", e.what());
     }
   }
-  bool SerializeToString(maidsafe::encrypt::DataMap& data_map, 
+  bool SerializeToString(maidsafe::encrypt::DataMap& data_map,
                          std::string& serialized) {
     std::ostringstream out_string_stream(serialized);
     boost::archive::text_oarchive oa(out_string_stream);
     oa << data_map;
     return !serialized.empty();
-  }     
-  bool ParseFromString(maidsafe::encrypt::DataMap& data_map, 
+  }
+  bool ParseFromString(maidsafe::encrypt::DataMap& data_map,
                       const std::string& serialized) {
     std::istringstream in_string_stream(serialized);
     boost::archive::text_iarchive ia(in_string_stream);
@@ -702,7 +702,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptAndDecryptAnonDb) {
 TEST_F(SEHandlerTest, BEH_MAID_FailureOfChunkEncryptingFile) {
   // Connect to SEH signal
   int res(0), res2(res);
-  const encrypt::SelfEncryptionParams sep;  
+  const encrypt::SelfEncryptionParams sep;
   boost::mutex m;
   boost::signals2::connection c =
       seh_->ConnectToOnFileNetworkStatus(boost::bind(&test_seh::FileUpdate, _1,
@@ -751,7 +751,7 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureOfChunkEncryptingFile) {
     seh_->StoreChunks(dm, PRIVATE, "", rel_entry);
 //    printf("After seh->StoreChunks\n");
     SerializeToString(dm, ser_dm);
-  } 
+  }
 
   ASSERT_TRUE(seh_->ProcessMetaData(rel_entry, item_type, file_hash, file_size,
                                     &ser_mdm));
@@ -774,7 +774,7 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureOfChunkEncryptingFile) {
       ASSERT_TRUE(sm_->KeyUnique(dm.chunks[i].hash, false));
     else
       ASSERT_FALSE(sm_->KeyUnique(dm.chunks[i].hash, false));
-  } 
+  }
 }
 
 TEST_F(SEHandlerTest, BEH_MAID_MultipleFileEncryption) {
@@ -871,7 +871,7 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureSteppedMultipleEqualFiles) {
   std::vector<boost::tuple<std::string, std::string, int> > fileage;
   std::vector<std::string> filenames, fullnames;
   std::vector<encrypt::DataMap> dms;
-  const encrypt::SelfEncryptionParams sep;    
+  const encrypt::SelfEncryptionParams sep;
   fs::path root_path(kRootSubdir[0][0]);
   int total_files(20);
   boost::mutex m;
@@ -906,7 +906,7 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureSteppedMultipleEqualFiles) {
                           file_system::TempDir(), false, sep, &dm));
       ASSERT_EQ(kSuccess, seh_->AddChunksToChunkstore(dm));
       SerializeToString(dm, ser_dm);
-    } 
+    }
     dms.push_back(dm);
 
     ASSERT_TRUE(seh_->ProcessMetaData(filenames[a], item_type, file_hash,
@@ -927,11 +927,11 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureSteppedMultipleEqualFiles) {
     if (fs::exists(chunk_path)) {
       fs::remove_all(chunk_path);
 //      printf("Deleted chunk %s\n", chunk_path.string().c_str());
-    } 
+    }
   }
   catch(const std::exception &e) {
     FAIL() << "Couldn't erase chunk - " << e.what();
-  } 
+  }
 
   bool done(false), done2(done);
   int received_chunks(1);

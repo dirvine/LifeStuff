@@ -12,9 +12,9 @@
  *      Author: Team
  */
 
-#include "maidsafe/common/vaultbufferpackethandler.h"
-#include "maidsafe/common/commonutils.h"
-#include "maidsafe/common/maidsafe.h"
+#include "maidsafe/shared/vaultbufferpackethandler.h"
+#include "maidsafe/shared/commonutils.h"
+#include "maidsafe/shared/maidsafe.h"
 
 namespace maidsafe {
 

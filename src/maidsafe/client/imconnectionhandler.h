@@ -38,7 +38,7 @@
 
 #include <string>
 
-#include "maidsafe/common/returncodes.h"
+#include "maidsafe/shared/returncodes.h"
 
 namespace maidsafe {
 

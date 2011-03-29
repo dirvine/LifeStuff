@@ -30,7 +30,7 @@
 #include "maidsafe-dht/version.h"
 #include "maidsafe/common/utils.h"
 
-#define THIS_MAIDSAFE_DHT_VERSION 26
+#define THIS_MAIDSAFE_DHT_VERSION 27
 #if MAIDSAFE_DHT_VERSION < THIS_MAIDSAFE_DHT_VERSION
 #error This API is not compatible with the installed library.\
   Please update the maidsafe-dht library.
@@ -41,7 +41,7 @@
 
 #include <string>
 #include <vector>
-#include "maidsafe/common/returncodes.h"
+#include "maidsafe/shared/returncodes.h"
 
 namespace kad { class Contact; }
 

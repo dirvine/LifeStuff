@@ -26,7 +26,7 @@
 //             -Added CppSQLiteDB3::tableExists()
 // // // // // // // // // // // // // // // // // // // //
 // // // // // // // // // // // // // // // // // // // //
-#include "maidsafe/common/cppsqlite3.h"
+#include "maidsafe/shared/cppsqlite3.h"
 #include <cstdlib>
 
 

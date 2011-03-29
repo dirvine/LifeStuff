@@ -34,7 +34,7 @@
 #include <shellapi.h>
 #endif
 
-#include "maidsafe/common/filesystem.h"
+#include "maidsafe/shared/filesystem.h"
 #include "maidsafe/lifestuff/client/client_controller.h"
 #include "maidsafe/lifestuff/client/make_directory_thread.h"
 #include "maidsafe/lifestuff/client/read_file_thread.h"

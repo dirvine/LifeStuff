@@ -29,9 +29,9 @@
 #include <set>
 #include <string>
 #include <vector>
-#include "maidsafe/common/chunkstore.h"
-#include "maidsafe/common/maidsafe.h"
-#include "maidsafe/common/maidsafe_service.pb.h"
+#include "maidsafe/shared/chunkstore.h"
+#include "maidsafe/shared/maidsafe.h"
+#include "maidsafe/shared/maidsafe_service.pb.h"
 #include "maidsafe/client/storemanagertaskshandler.h"
 
 namespace maidsafe {

@@ -23,7 +23,7 @@
 
 #include "boost/filesystem.hpp"
 #include "boost/lexical_cast.hpp"
-#include "maidsafe/common/filesystem.h"
+#include "maidsafe/shared/filesystem.h"
 #include "maidsafe/lifestuff/client/client_controller.h"
 
 // Must be at least a 2 digit number

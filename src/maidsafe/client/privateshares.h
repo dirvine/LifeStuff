@@ -33,7 +33,7 @@
 #include <string>
 #include <list>
 #include <vector>
-#include "maidsafe/common/maidsafe.h"
+#include "maidsafe/shared/maidsafe.h"
 
 namespace maidsafe {
 

@@ -27,8 +27,8 @@
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/common/commonutils.h"
-#include "maidsafe/common/returncodes.h"
+#include "maidsafe/shared/commonutils.h"
+#include "maidsafe/shared/returncodes.h"
 #include "maidsafe/pki/maidsafevalidator.h"
 #include "maidsafe/pki/packet.h"
 

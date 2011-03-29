@@ -21,8 +21,8 @@
 
 // core
 //  #include <maidsafe/maidsafe-dht.h>
-#include "maidsafe/common/maidsafe_service_messages.pb.h"
-#include "maidsafe/common/filesystem.h"
+#include "maidsafe/shared/maidsafe_service_messages.pb.h"
+#include "maidsafe/shared/filesystem.h"
 
 // local
 

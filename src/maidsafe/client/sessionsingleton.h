@@ -37,8 +37,8 @@
 #include "maidsafe/client/contacts.h"
 #include "maidsafe/client/privateshares.h"
 #include "maidsafe/client/filesystem/distributed_filesystem.pb.h"
-#include "maidsafe/common/filesystem.h"
-#include "maidsafe/common/maidsafe.h"
+#include "maidsafe/shared/filesystem.h"
+#include "maidsafe/shared/maidsafe.h"
 
 namespace maidsafe {
 

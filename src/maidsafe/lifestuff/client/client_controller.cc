@@ -30,7 +30,7 @@
 #include <vector>
 
 // core
-#include "maidsafe/common/filesystem.h"
+#include "maidsafe/shared/filesystem.h"
 #include "maidsafe/client/clientutils.h"
 #include "maidsafe/client/contacts.h"
 #include "maidsafe/client/sessionsingleton.h"

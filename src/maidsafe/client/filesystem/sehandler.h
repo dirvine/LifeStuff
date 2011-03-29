@@ -39,8 +39,8 @@
 #include <string>
 #include <vector>
 
-#include "maidsafe/common/maidsafe.h"
-#include "maidsafe/common/returncodes.h"
+#include "maidsafe/shared/maidsafe.h"
+#include "maidsafe/shared/returncodes.h"
 #include "maidsafe/client/filesystem/distributed_filesystem.pb.h"
 
 namespace bs2 = boost::signals2;
@@ -251,13 +251,13 @@ int DecryptDataMap(const std::string &encrypted_data_map,
                             const DirType &dir_type,
                             const std::string &msid);
   bool SerializeToString(maidsafe::encrypt::DataMap& data_map,
-                         std::string& serialized);  
-  bool ParseFromString(maidsafe::encrypt::DataMap& data_map, 
+                         std::string& serialized);
+  bool ParseFromString(maidsafe::encrypt::DataMap& data_map,
                        const std::string& serialized);
   bool ResizeObfuscationHash(const std::string &input,
                              const size_t &required_size,
-                             std::string *resized_data);  
-  
+                             std::string *resized_data);
+
   std::shared_ptr<StoreManagerInterface> store_manager_;
   std::shared_ptr<ChunkStore> client_chunkstore_;
   SessionSingleton *session_singleton_;

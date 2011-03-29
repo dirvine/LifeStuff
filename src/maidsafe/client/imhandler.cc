@@ -24,7 +24,7 @@
 
 //  #include <maidsafe/maidsafe-dht_config.h>
 
-#include "maidsafe/common/commonutils.h"
+#include "maidsafe/shared/commonutils.h"
 #include "maidsafe/client/imhandler.h"
 #include "maidsafe/client/sessionsingleton.h"
 

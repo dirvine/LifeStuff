@@ -29,7 +29,7 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "maidsafe/common/maidsafe.h"
+#include "maidsafe/shared/maidsafe.h"
 #include "maidsafe/client/filesystem/distributed_filesystem.pb.h"
 
 namespace fs = boost::filesystem;

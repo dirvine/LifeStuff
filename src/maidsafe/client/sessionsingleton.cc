@@ -24,7 +24,7 @@
 
 #include "maidsafe/client/sessionsingleton.h"
 #include <memory>
-#include "maidsafe/common/commonutils.h"
+#include "maidsafe/shared/commonutils.h"
 
 namespace maidsafe {
 

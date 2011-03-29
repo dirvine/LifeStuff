@@ -30,7 +30,7 @@
 #include <vector>
 #include <functional>
 #include "maidsafe/common/utils.h"
-#include "maidsafe/common/returncodes.h"
+#include "maidsafe/shared/returncodes.h"
 
 namespace maidsafe {
 

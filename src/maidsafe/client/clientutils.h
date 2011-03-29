@@ -27,7 +27,7 @@
 
 #include "maidsafe/passport/passport.h"
 #include <string>
-#include "maidsafe/common/maidsafe.h"
+#include "maidsafe/shared/maidsafe.h"
 
 namespace kad { class Contact; }
 

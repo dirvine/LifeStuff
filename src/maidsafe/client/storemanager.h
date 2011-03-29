@@ -34,8 +34,8 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "maidsafe/common/maidsafe.h"
-#include "maidsafe/common/maidsafe_service_messages.pb.h"
+#include "maidsafe/shared/maidsafe.h"
+#include "maidsafe/shared/maidsafe_service_messages.pb.h"
 
 namespace bs2 = boost::signals2;
 

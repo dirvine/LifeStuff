@@ -26,7 +26,7 @@
 #include "boost/filesystem.hpp"
 #include "boost/lexical_cast.hpp"
 #include <exception>
-#include "maidsafe/common/cppsqlite3.h"
+#include "maidsafe/shared/cppsqlite3.h"
 #include "maidsafe/client/clientutils.h"
 #include "maidsafe-encrypt/self_encryption.h"
 #include "maidsafe-encrypt/data_map.h"
@@ -243,7 +243,7 @@ int PdDir::AddElement(const std::string &ser_mdm,
   try {
     if (!mdm.ParseFromString(ser_mdm))
       return kParseDataMapError;
-    if (!ser_dm.empty()) 
+    if (!ser_dm.empty())
       if (!ParseFromString(dm, ser_dm))
         return kParseDataMapError;
   }
@@ -699,7 +699,7 @@ void PdDir::SanitiseSingleQuotes(std::string *str) {
   }
 }
 
-bool PdDir::ParseFromString(maidsafe::encrypt::DataMap& data_map, 
+bool PdDir::ParseFromString(maidsafe::encrypt::DataMap& data_map,
                                   const std::string& serialized) {
   std::stringstream in_string_stream(serialized);
   boost::archive::text_iarchive ia(in_string_stream);

@@ -32,8 +32,8 @@
 #include <set>
 #include <string>
 #include <vector>
-#include "maidsafe/common/cppsqlite3.h"
-#include "maidsafe/common/vaultbufferpackethandler.h"
+#include "maidsafe/shared/cppsqlite3.h"
+#include "maidsafe/shared/vaultbufferpackethandler.h"
 #include "maidsafe/client/storemanager.h"
 
 

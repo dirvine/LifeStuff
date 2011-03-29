@@ -34,8 +34,8 @@
 #include "maidsafe-dht/kademlia/contact.h"
 #include "maidsafe-encrypt/self_encryption.h"
 #include "maidsafe-encrypt/data_map.h"
-#include "maidsafe/common/chunkstore.h"
-#include "maidsafe/common/commonutils.h"
+#include "maidsafe/shared/chunkstore.h"
+#include "maidsafe/shared/commonutils.h"
 #include "maidsafe/client/filesystem/dataatlashandler.h"
 #include "maidsafe/client/clientutils.h"
 
@@ -3405,7 +3405,7 @@ bool ClientController::RemoveFromPendingFiles(const std::string &file) {
   return true;
 }
 
-bool ClientController::SerializeToString(maidsafe::encrypt::DataMap& data_map, 
+bool ClientController::SerializeToString(maidsafe::encrypt::DataMap& data_map,
                                   std::string& serialized) {
   std::stringstream string_stream;
   boost::archive::text_oarchive oa(string_stream);
@@ -3414,7 +3414,7 @@ bool ClientController::SerializeToString(maidsafe::encrypt::DataMap& data_map,
   return !serialized.empty();
 }
 
-bool ClientController::ParseFromString(maidsafe::encrypt::DataMap& data_map, 
+bool ClientController::ParseFromString(maidsafe::encrypt::DataMap& data_map,
                                   const std::string& serialized) {
   std::stringstream string_stream(serialized);
   boost::archive::text_iarchive ia(string_stream);

@@ -27,7 +27,7 @@
 #include <vector>
 #include "boost/archive/text_oarchive.hpp"
 #include "boost/archive/text_iarchive.hpp"
-#include "maidsafe/common/chunkstore.h"
+#include "maidsafe/shared/chunkstore.h"
 #include "maidsafe/client/filesystem/dataatlashandler.h"
 #include "maidsafe/client/filesystem/pddir.h"
 #include "maidsafe/client/filesystem/sehandler.h"
@@ -147,22 +147,22 @@ class DataAtlasHandlerTest : public testing::Test {
     }
   }
   fs::path test_root_dir_;
-  bool SerializeToString(maidsafe::encrypt::DataMap& data_map, 
+  bool SerializeToString(maidsafe::encrypt::DataMap& data_map,
                          std::string& serialized) {
     std::stringstream string_stream;
     boost::archive::text_oarchive oa(string_stream);
     oa << data_map;
     serialized = string_stream.str();
     return !serialized.empty();
-  }   
-  bool ParseFromString(maidsafe::encrypt::DataMap& data_map, 
+  }
+  bool ParseFromString(maidsafe::encrypt::DataMap& data_map,
                        const std::string& serialized) {
     std::stringstream string_stream(serialized);
     boost::archive::text_iarchive ia(string_stream);
     ia >> data_map;
     return !data_map.content.empty();
-  }  
-  
+  }
+
  private:
   explicit DataAtlasHandlerTest(const DataAtlasHandlerTest&);
   DataAtlasHandlerTest &operator=(const DataAtlasHandlerTest&);
@@ -199,16 +199,16 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDetail) {
   chunk2.content = "content2";
   chunk2.pre_size = 100;
   chunk2.size = 99;
-  dm.chunks.push_back(chunk2); 
+  dm.chunks.push_back(chunk2);
   maidsafe::encrypt::ChunkDetails chunk3;
   chunk3.pre_hash = "chunk3";
   chunk3.hash = "enc_chunk3";
   chunk3.content = "content3";
   chunk3.pre_size = 100;
   chunk3.size = 99;
-  dm.chunks.push_back(chunk3);   
+  dm.chunks.push_back(chunk3);
   SerializeToString(dm, ser_dm);
-  
+
   // Creating MetaDataMap
   MetaDataMap mdm;
   mdm.set_id(-2);
@@ -298,7 +298,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDetail) {
   for (int i = 0; i < dm.chunks.size(); i++) {
       EXPECT_EQ(dm.chunks[i].hash,
                 recovered_dm.chunks[i].hash);
-  } 
+  }
 
   ASSERT_EQ(0, data_atlas.Disconnect());
 
@@ -329,14 +329,14 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDAH) {
   chunk2.content = "content2";
   chunk2.pre_size = 100;
   chunk2.size = 99;
-  dm.chunks.push_back(chunk2); 
+  dm.chunks.push_back(chunk2);
   maidsafe::encrypt::ChunkDetails chunk3;
   chunk3.pre_hash = "chunk3";
   chunk3.hash = "enc_chunk3";
   chunk3.content = "content3";
   chunk3.pre_size = 100;
   chunk3.size = 99;
-  dm.chunks.push_back(chunk3);   
+  dm.chunks.push_back(chunk3);
   SerializeToString(dm, ser_dm);
 
   // Creating MetaDataMap
@@ -414,7 +414,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDAH) {
   // check each recovered DM chunk name = each origional DM chunk name
   for (int i = 0; i < dm.chunks.size(); i++) {
     EXPECT_EQ(dm.chunks[i].hash, recovered_dm.chunks[i].hash);
-  } 
+  }
 
   // check recovered encrypted DM size = origional encrypted DM size
   ASSERT_EQ(dm.chunks.size(),
@@ -424,7 +424,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDAH) {
   // each origional encrypted DM chunk name
   for (int i = 0; i < dm.chunks.size(); i++) {
     EXPECT_EQ(dm.chunks[i].hash, recovered_dm.chunks[i].hash);
-  } 
+  }
 }
 
 TEST_F(DataAtlasHandlerTest, BEH_MAID_ObscureFilename) {
@@ -455,16 +455,16 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_ObscureFilename) {
   chunk2.content = "content2";
   chunk2.pre_size = 100;
   chunk2.size = 99;
-  dm.chunks.push_back(chunk2); 
+  dm.chunks.push_back(chunk2);
   maidsafe::encrypt::ChunkDetails chunk3;
   chunk3.pre_hash = "chunk3";
   chunk3.hash = "enc_chunk3";
   chunk3.content = "content3";
   chunk3.pre_size = 100;
   chunk3.size = 99;
-  dm.chunks.push_back(chunk3);   
+  dm.chunks.push_back(chunk3);
   SerializeToString(dm, ser_dm);
-  
+
   // Creating MetaDataMap
   MetaDataMap mdm;
   mdm.set_id(-2);
@@ -538,7 +538,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_ObscureFilename) {
   // check each recovered DM chunk name = each origional DM chunk name
   for (int i = 0; i < dm.chunks.size(); i++) {
     EXPECT_EQ(dm.chunks[i].hash, recovered_dm.chunks[i].hash);
-  } 
+  }
 
   // check recovered encrypted DM size = origional encrypted DM size
   ASSERT_EQ(dm.chunks.size(), recovered_dm.chunks.size());
@@ -547,7 +547,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_ObscureFilename) {
   // each origional encrypted DM chunk name
   for (int i = 0; i < dm.chunks.size(); i++) {
     EXPECT_EQ(dm.chunks[i].hash, recovered_dm.chunks[i].hash);
-  } 
+  }
 }
 
 TEST_F(DataAtlasHandlerTest, BEH_MAID_RemoveMSFileAndPath) {
@@ -576,14 +576,14 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RemoveMSFileAndPath) {
   chunk2.content = "content2";
   chunk2.pre_size = 100;
   chunk2.size = 99;
-  dm.chunks.push_back(chunk2); 
+  dm.chunks.push_back(chunk2);
   maidsafe::encrypt::ChunkDetails chunk3;
   chunk3.pre_hash = "chunk3";
   chunk3.hash = "enc_chunk3";
   chunk3.content = "content3";
   chunk3.pre_size = 100;
   chunk3.size = 99;
-  dm.chunks.push_back(chunk3);   
+  dm.chunks.push_back(chunk3);
   SerializeToString(dm, ser_dm);
 
   // Creating MetaDataMap
@@ -661,16 +661,16 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_CopyMSFile) {
   chunk2.content = "content2_original";
   chunk2.pre_size = 100;
   chunk2.size = 99;
-  dm_original.chunks.push_back(chunk2); 
+  dm_original.chunks.push_back(chunk2);
   maidsafe::encrypt::ChunkDetails chunk3;
   chunk3.pre_hash = "chunk3_original";
   chunk3.hash = "enc_chunk3_original";
   chunk3.content = "content3_original";
   chunk3.pre_size = 100;
   chunk3.size = 99;
-  dm_original.chunks.push_back(chunk3);   
+  dm_original.chunks.push_back(chunk3);
   SerializeToString(dm_original, ser_dm_original);
- 
+
   dm_exists.content = file_hash_exists;
   maidsafe::encrypt::ChunkDetails chunk1e;
   chunk1.pre_hash = "chunk1_exists";
@@ -685,14 +685,14 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_CopyMSFile) {
   chunk2.content = "content2_exists";
   chunk2.pre_size = 100;
   chunk2.size = 99;
-  dm_exists.chunks.push_back(chunk2e); 
+  dm_exists.chunks.push_back(chunk2e);
   maidsafe::encrypt::ChunkDetails chunk3e;
   chunk3.pre_hash = "chunk3_exists";
   chunk3.hash = "enc_chunk3_exists";
   chunk3.content = "content3_exists";
   chunk3.pre_size = 100;
   chunk3.size = 99;
-  dm_exists.chunks.push_back(chunk3e);   
+  dm_exists.chunks.push_back(chunk3e);
   SerializeToString(dm_exists, ser_dm_exists);
 
   // Creating MetaDataMaps
@@ -836,16 +836,16 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RenameMSFile) {
   chunk2.content = "content2_original";
   chunk2.pre_size = 100;
   chunk2.size = 99;
-  dm_original.chunks.push_back(chunk2); 
+  dm_original.chunks.push_back(chunk2);
   maidsafe::encrypt::ChunkDetails chunk3;
   chunk3.pre_hash = "chunk3_original";
   chunk3.hash = "enc_chunk3_original";
   chunk3.content = "content3_original";
   chunk3.pre_size = 100;
   chunk3.size = 99;
-  dm_original.chunks.push_back(chunk3);   
+  dm_original.chunks.push_back(chunk3);
   SerializeToString(dm_original, ser_dm_original);
- 
+
   dm_exists.content = file_hash_exists;
   maidsafe::encrypt::ChunkDetails chunk1e;
   chunk1.pre_hash = "chunk1_exists";
@@ -860,14 +860,14 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RenameMSFile) {
   chunk2.content = "content2_exists";
   chunk2.pre_size = 100;
   chunk2.size = 99;
-  dm_exists.chunks.push_back(chunk2e); 
+  dm_exists.chunks.push_back(chunk2e);
   maidsafe::encrypt::ChunkDetails chunk3e;
   chunk3.pre_hash = "chunk3_exists";
   chunk3.hash = "enc_chunk3_exists";
   chunk3.content = "content3_exists";
   chunk3.pre_size = 100;
   chunk3.size = 99;
-  dm_exists.chunks.push_back(chunk3e);   
+  dm_exists.chunks.push_back(chunk3e);
   SerializeToString(dm_exists, ser_dm_exists);
 
   // Creating MetaDataMaps
@@ -1086,16 +1086,16 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RemoveMSFileRepeatedDataMap) {
   chunk2.content = "content2";
   chunk2.pre_size = 100;
   chunk2.size = 99;
-  dm.chunks.push_back(chunk2); 
+  dm.chunks.push_back(chunk2);
   maidsafe::encrypt::ChunkDetails chunk3;
   chunk3.pre_hash = "chunk3";
   chunk3.hash = "enc_chunk3";
   chunk3.content = "content3";
   chunk3.pre_size = 100;
   chunk3.size = 99;
-  dm.chunks.push_back(chunk3);   
+  dm.chunks.push_back(chunk3);
   SerializeToString(dm, ser_dm);
-  
+
   // Creating MetaDataMap
   MetaDataMap mdm;
   mdm.set_id(-2);
@@ -1190,16 +1190,16 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddRepeatedDataMap) {
   chunk2.content = "content2";
   chunk2.pre_size = 100;
   chunk2.size = 99;
-  dm.chunks.push_back(chunk2); 
+  dm.chunks.push_back(chunk2);
   maidsafe::encrypt::ChunkDetails chunk3;
   chunk3.pre_hash = "chunk3";
   chunk3.hash = "enc_chunk3";
   chunk3.content = "content3";
   chunk3.pre_size = 100;
   chunk3.size = 99;
-  dm.chunks.push_back(chunk3);   
+  dm.chunks.push_back(chunk3);
   SerializeToString(dm, ser_dm);
-  
+
   // Creating MetaDataMap
   MetaDataMap mdm1;
   mdm1.set_id(-2);
@@ -1267,7 +1267,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddRepeatedDataMap) {
             recovered_dm.chunks.size());
   for (int i = 0; i < dm.chunks.size(); i++) {
     EXPECT_EQ(dm.chunks[i].hash, recovered_dm.chunks[i].hash);
-  } 
+  }
 
   ASSERT_EQ(0, dah_->GetDataMap(element_path2, &ser_dm_recovered2)) <<
             "Didn't retrieve DataMap from DataAtlas";
@@ -1304,16 +1304,16 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddEmptyDir) {
   chunk2.content = "content2";
   chunk2.pre_size = 100;
   chunk2.size = 99;
-  dm.chunks.push_back(chunk2); 
+  dm.chunks.push_back(chunk2);
   maidsafe::encrypt::ChunkDetails chunk3;
   chunk3.pre_hash = "chunk3";
   chunk3.hash = "enc_chunk3";
   chunk3.content = "content3";
   chunk3.pre_size = 100;
   chunk3.size = 99;
-  dm.chunks.push_back(chunk3);   
-  SerializeToString(dm, ser_dm);  
-  
+  dm.chunks.push_back(chunk3);
+  SerializeToString(dm, ser_dm);
+
   // Creating MetaDataMaps
   MetaDataMap mdm1, mdm2;
   mdm1.set_id(-2);
@@ -1466,16 +1466,16 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_EmptyFileHandling) {
   chunk2.content = "content2";
   chunk2.pre_size = 100;
   chunk2.size = 99;
-  dm2.chunks.push_back(chunk2); 
+  dm2.chunks.push_back(chunk2);
   maidsafe::encrypt::ChunkDetails chunk3;
   chunk3.pre_hash = "chunk3";
   chunk3.hash = "enc_chunk3";
   chunk3.content = "content3";
   chunk3.pre_size = 100;
   chunk3.size = 99;
-  dm2.chunks.push_back(chunk3);   
-  SerializeToString(dm2, ser_dm2);  
-  
+  dm2.chunks.push_back(chunk3);
+  SerializeToString(dm2, ser_dm2);
+
   //  Update MetaDataMap
   MetaDataMap mdm2;
   mdm2.set_id(-2);
@@ -1536,7 +1536,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_EmptyFileHandling) {
   ASSERT_NE("", recovered_dm2.chunks[1].hash) <<
             "Enc Chunk 2 has not changed in DataMap";
   ASSERT_NE("", recovered_dm2.chunks[2].hash) <<
-            "Enc Chunk 3 has not changed in DataMap"; 
+            "Enc Chunk 3 has not changed in DataMap";
 }
 
 }  // namespace test

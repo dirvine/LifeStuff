@@ -32,7 +32,7 @@
 #include "boost/thread/mutex.hpp"
 #include "maidsafe-dht/kademlia/contact.h"
 #include "maidsafe-dht/kademlia/node_id.h"
-#include "maidsafe/common/returncodes.h"
+#include "maidsafe/shared/returncodes.h"
 
 namespace maidsafe {
 

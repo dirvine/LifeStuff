@@ -28,7 +28,7 @@
  * ==========================================================================
  */
 
-#include "maidsafe/common/filesystem.h"
+#include "maidsafe/shared/filesystem.h"
 #include "boost/thread.hpp"
 #include <stdio.h>
 #ifdef LifeStuff_WIN32
@@ -36,7 +36,7 @@
 #include <shlobj.h>
 #include <sstream>
 #endif
-#include "maidsafe/common/returncodes.h"
+#include "maidsafe/shared/returncodes.h"
 
 namespace fs = boost::filesystem;
 

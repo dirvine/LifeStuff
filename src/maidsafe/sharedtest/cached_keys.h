@@ -33,7 +33,7 @@
 #include <string>
 #include <vector>
 
-#include "maidsafe/common/filesystem.h"
+#include "maidsafe/shared/filesystem.h"
 #include "maidsafe/passport/signaturepacket.pb.h"
 
 namespace fs = boost::filesystem;

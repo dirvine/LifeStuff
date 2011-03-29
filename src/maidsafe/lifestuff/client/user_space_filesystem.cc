@@ -31,7 +31,7 @@
 #include <string>
 
 // core
-#include "maidsafe/common/filesystem.h"
+#include "maidsafe/shared/filesystem.h"
 
 // 3rd party
 #if defined(LifeStuff_WIN32)

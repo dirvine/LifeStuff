@@ -29,8 +29,8 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "maidsafe/common/maidsafe.h"
-#include "maidsafe/common/returncodes.h"
+#include "maidsafe/shared/maidsafe.h"
+#include "maidsafe/shared/returncodes.h"
 
 namespace maidsafe {
 

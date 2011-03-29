@@ -18,7 +18,7 @@
 * ============================================================================
 */
 
-#include "maidsafe/common/contactcache.h"
+#include "maidsafe/shared/contactcache.h"
 #include "maidsafe-dht/kademlia/node-api.h"
 
 namespace maidsafe {

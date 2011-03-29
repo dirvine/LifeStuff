@@ -28,7 +28,7 @@
 #include <list>
 #include <string>
 
-#include "maidsafe/maidsafe-dht/kademlia/securifier.h"
+#include "maidsafe-dht/kademlia/securifier.h"
 
 namespace maidsafe {
 
@@ -78,7 +78,7 @@ class MaidsafeValidator : public Securifier {
   * concatenated parameters passed in the list of strings with the provided
   * private key. The method assumes that the first and second parameters of the
   * parameters argument are public key and signed public key, respectively.
-  */  
+  */
   int SignMessage(const std::string &private_key,
     const std::list<std::string> &parameters,
     std::string *request_signature);
