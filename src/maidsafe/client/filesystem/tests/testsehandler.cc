@@ -724,8 +724,8 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureOfChunkEncryptingFile) {
 //  std::set<std::string> done_chunks;
   if (ser_dm_retrieved.empty() || dm_retrieved.content != file_hash) {
     dm.content = file_hash;
-    ASSERT_EQ(kSuccess, encrypt::SelfEncrypt(full_str,
-              file_system::TempDir(), false, sep, &dm));
+//    ASSERT_EQ(kSuccess, encrypt::SelfEncrypt(full_str,
+//              file_system::TempDir(), false, sep, &dm));
     ASSERT_EQ(kSuccess, seh_->AddChunksToChunkstore(dm));
     int chunkage = dm.chunks.size();
     removee = RandomUint32() % chunkage;
@@ -902,8 +902,8 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureSteppedMultipleEqualFiles) {
 
     if (ser_dm_retrieved.empty() || dm_retrieved.content != file_hash) {
       dm.content = file_hash;
-      ASSERT_EQ(kSuccess, encrypt::SelfEncrypt(fullnames[a],
-                          file_system::TempDir(), false, sep, &dm));
+//      ASSERT_EQ(kSuccess, encrypt::SelfEncrypt(fullnames[a],
+//                          file_system::TempDir(), false, sep, &dm));
       ASSERT_EQ(kSuccess, seh_->AddChunksToChunkstore(dm));
       SerializeToString(dm, ser_dm);
     }

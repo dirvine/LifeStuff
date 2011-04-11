@@ -202,10 +202,10 @@ int SEHandler::EncryptAFile(const fs::path &relative_entry,
       }
       if (serialised_data_map_retrieved.empty()) {
         data_map.content = file_hash;
-        if (encrypt::SelfEncrypt(absolute_entry, file_system::TempDir(),
-                                     sep, &data_map) != kSuccess) {
-          return kEncryptFileFailure;
-        }
+//        if (encrypt::SelfEncrypt(absolute_entry, file_system::TempDir(), sep,
+//                                 &data_map) != kSuccess) {
+//          return kEncryptFileFailure;
+//        }
         if (AddChunksToChunkstore(data_map) != kSuccess)
           return kChunkstoreError;
         StoreChunks(data_map, dir_type, msid, relative_entry);
@@ -264,9 +264,9 @@ int SEHandler::EncryptString(const std::string &data,
   encrypt::DataMap data_map;
   serialised_data_map->clear();
   data_map.content = SHA512String(data);
- if (encrypt::SelfEncrypt(data, file_system::TempDir(), false, sep, &data_map)
-     != kSuccess)
-  return kEncryptStringFailure;
+//  if (encrypt::SelfEncrypt(data, file_system::TempDir(), false, sep,
+//                           &data_map) != kSuccess)
+//    return kEncryptStringFailure;
   if (AddChunksToChunkstore(data_map) != kSuccess)
     return kChunkstoreError;
   StoreChunks(data_map, PRIVATE, "", EncodeToHex(data_map.content));
@@ -356,9 +356,9 @@ int SEHandler::DecryptAFile(const fs::path &relative_entry) {
 #endif
     return kEncryptionSMFailure;
   }
-  if (encrypt::SelfDecrypt(data_map, chunk_paths[0].parent_path(), false,
-                                 decrypted_path) == kSuccess)
-    return kSuccess;
+//  if (encrypt::SelfDecrypt(data_map, chunk_paths[0].parent_path(), false,
+//                                 decrypted_path) == kSuccess)
+//    return kSuccess;
   else
     return kDecryptFileFailure;
 }
@@ -382,13 +382,13 @@ int SEHandler::DecryptString(const std::string &serialised_data_map,
   }
 //  std::shared_ptr<std::string> decrypted(new std::string);
   std::string decrypted;
-if (encrypt::SelfDecrypt(data_map, chunk_paths[0].parent_path(), &decrypted)
-  != kSuccess) {
-#ifdef DEBUG
-      printf("SEHandler::DecryptString - Failed to decrypt.\n");
-#endif
-    return kDecryptStringFailure;
-  }
+//  if (encrypt::SelfDecrypt(data_map, chunk_paths[0].parent_path(),
+//                           &decrypted) != kSuccess) {
+//#ifdef DEBUG
+//      printf("SEHandler::DecryptString - Failed to decrypt.\n");
+//#endif
+//    return kDecryptStringFailure;
+//  }
   *decrypted_string = decrypted;
   return kSuccess;
 }
@@ -502,10 +502,10 @@ int SEHandler::EncryptDb(const fs::path &dir_path,
   if (file_hash.empty())
     file_hash = SHA512String(db_path);
   data_map->content = file_hash;
-  if (encrypt::SelfEncrypt(db_absolute_path, file_system::TempDir(), sep,
-       data_map) != kSuccess) {
-    return kEncryptDbFailure;
-  }
+//  if (encrypt::SelfEncrypt(db_absolute_path, file_system::TempDir(), sep,
+//                           data_map) != kSuccess) {
+//    return kEncryptDbFailure;
+//  }
   if (encrypt_data_map) {
     std::string this_dir_key, parent_dir_key;
     // The following function sets parent_dir_key to SHA512 hash of MSID public
@@ -673,16 +673,16 @@ int SEHandler::DecryptDb(const fs::path &dir_path,
     return kDecryptDbFailure;
   }
 
-if (encrypt::SelfDecrypt(data_map, chunk_paths[0], overwrite, db_path)
-      != kSuccess) {
-#ifdef DEBUG
-    printf("Failed to self decrypt.\n");
-#endif
-    return kDecryptDbFailure;
-  } else {
-    AddToUpToDateDms(dir_key, retrieved_encrypted_data_map);
-    return kSuccess;
-  }
+//  if (encrypt::SelfDecrypt(data_map, chunk_paths[0], overwrite, db_path) !=
+//      kSuccess) {
+//#ifdef DEBUG
+//    printf("Failed to self decrypt.\n");
+//#endif
+//    return kDecryptDbFailure;
+//  } else {
+//    AddToUpToDateDms(dir_key, retrieved_encrypted_data_map);
+//    return kSuccess;
+//  }
 }
 
 int SEHandler::LoadChunks(const encrypt::DataMap &data_map,
