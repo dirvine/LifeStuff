@@ -37,7 +37,6 @@ ELSEIF(CMAKE_BUILD_TYPE_DIR MATCHES "kdev")
 ENDIF()
 
 SET(ERROR_MESSAGE "No generator previously specified.\nTo see a full list of generators, run:\n\t${ERROR_MESSAGE_CMAKE_PATH} --help\n")
-SET(CMAKE_GEN ${CMAKE_GENERATOR} CACHE INTERNAL "" FORCE)
 IF(NOT ${CMAKE_C_COMPILER_WORKS})
   MESSAGE(FATAL_ERROR ${ERROR_MESSAGE})
 ENDIF()
@@ -53,7 +52,7 @@ OPTION (BUILD_SHARED_LIBS "Build shared libraries." OFF)
 # This call resets CMAKE_BUILD_TYPE, hence it's copied from CMAKE_BUILD_TYPE_DIR which is set above.
 PROJECT(${PROJECT_NAME})
 SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_DIR} CACHE INTERNAL "Except for MSVC, the build type is set by running cmake from the appropriate build subdirectory e.g. for a Debug build, \"cd build/Linux/Debug && cmake ../../..\"." FORCE)
-INCLUDE_DIRECTORIES(${PROJECT_BINARY_DIR})
+
 
 ###################################################################################################
 # MaidSafe Common library search                                                                  #
@@ -243,7 +242,7 @@ SET(NETWORK_TEST_FILES
       "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
 
 ###################################################################################################
-# All Platforms:  Add exes and Create all LifeStuff libs                                                 #
+# All Platforms:  Add exes and Create all LifeStuff libs                                          #
 ###################################################################################################
 IF(APPLE)
   # ADD_EXECUTABLE(lifestuff MACOSX_BUNDLE ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
@@ -382,7 +381,7 @@ SET_TARGET_PROPERTIES(TESTclientcontroller_local PROPERTIES COMPILE_FLAGS -DLOCA
 # SET_TARGET_PROPERTIES(TESTimconnectionhandler_net PROPERTIES COMPILE_FLAGS -DMS_NETWORK_TEST)
 SET_TARGET_PROPERTIES(lslightlocal PROPERTIES COMPILE_FLAGS "-DLifeStuff_LIGHT -DLOCAL_LifeStuffVAULT")
 IF(APPLE)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLifeStuff_APPLE -D_FORTIFY_SOURCE=2 -DOSX -DBSD -D__FreeBSD__=10 -D_FILE_OFFSET_BITS=64")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLifeStuff_APPLE -DOSX -D__FreeBSD__=10 -D_FILE_OFFSET_BITS=64")
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -pg -fprofile-arcs -ftest-coverage")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DQT_NO_DEBUG_OUTPUT -DQT_NO_WARNING_OUTPUT -DQT_NO_DEBUG_STREAM -O2 -Wuninitialized")
   SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -pg -fprofile-arcs -ftest-coverage")
@@ -404,10 +403,7 @@ ELSEIF(WIN32)
   ADD_DEFINITIONS(-D_UNICODE -DUNICODE -D_BIND_TO_CURRENT_VCLIBS_VERSION=1)
   IF(MSVC)
     # flag to link to static version of Google Glog
-    IF(Glog_FOUND)
-      ADD_DEFINITIONS(-DGOOGLE_GLOG_DLL_DECL=)
-    ENDIF()
-    ADD_DEFINITIONS(-D__MSVC__ -DNOMINMAX -DBOOST_ALL_NO_LIB -DUDT_STATIC)
+    ADD_DEFINITIONS(-D__MSVC__ -DNOMINMAX -DBOOST_ALL_NO_LIB)
     SET(CMAKE_CXX_FLAGS_RELEASE "/O2 /Ob2 /Ot /Oy /GL /D \"NDEBUG\" /EHsc /MT /Gy /W3 /Zi /wd4503 /D \"QT_NO_DEBUG_OUTPUT\" /D \"QT_NO_WARNING_OUTPUT\" /D \"QT_NO_DEBUG_STREAM\"")
     SET(CMAKE_CXX_FLAGS_DEBUG "/Od /Ot /Oy /D \"_DEBUG\" /D \"DEBUG\" /EHsc /MTd  /c /ZI /TP /wd4503")
     # CMake defaults to passing stack size in LINKER_FLAGS of 10MB.  Set this to windows default of 1MB
