@@ -223,11 +223,7 @@ enum ReturnCode {
   kStoreManagerTaskIncorrectOperation = -13003,
   kStoreManagerTaskParentNotActive = -13004,
   kStoreManagerTaskNotFound = -13005,
-  kStoreManagerTaskCancelledOrDone = -13006,
-
-  // Validator
-  kValidatorNoParameters = -14001,
-  kValidatorNoPrivateKey = -14002
+  kStoreManagerTaskCancelledOrDone = -13006
 };
 
 }  // namespace maidsafe

@@ -55,26 +55,14 @@ SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_DIR} CACHE INTERNAL "Except for MSVC, th
 
 
 ###################################################################################################
-# MaidSafe Common library search                                                                  #
+# MaidSafe Common, DHT, Encrypt, Passport and PKI library search                                  #
 ###################################################################################################
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/build)
 INCLUDE(maidsafe_find_common)
-
-###################################################################################################
-# MaidSafe DHT & Encrypt library search                                                           #
-###################################################################################################
-FIND_FILE(ENCRYPT_CMAKE encrypt.cmake PATHS ${MAIDSAFE_COMMON_INSTALL_DIR}/share/maidsafe)
-IF(NOT ENCRYPT_CMAKE)
-  MESSAGE(FATAL_ERROR "\n\nThis project needs to have MaidSafe-Encrypt installed.\n\n")
-ELSE()
-  MESSAGE("-- Found MaidSafe-Encrypt library (Version ${})")
-ENDIF()
-INCLUDE(${ENCRYPT_CMAKE})
-FIND_FILE(DHT_CMAKE maidsafe_dht.cmake PATHS ${MAIDSAFE_COMMON_INSTALL_DIR}/share/maidsafe)
-IF(NOT DHT_CMAKE)
-  MESSAGE(FATAL_ERROR "\n\nThis project needs to have MaidSafe-DHT installed.\n\n")
-ENDIF()
-INCLUDE(${DHT_CMAKE})
+ADD_MAIDSAFE_LIBRARY(MaidSafe-DHT)
+ADD_MAIDSAFE_LIBRARY(Encrypt)
+ADD_MAIDSAFE_LIBRARY(PKI)
+ADD_MAIDSAFE_LIBRARY(Passport)
 
 ###################################################################################################
 # Callback File System / Fuse library search                                                      #
@@ -341,16 +329,12 @@ ADD_LIBRARY(LifeStuffclientfilesystemlib STATIC ${ALL_FILES_CLIENT_FILESYSTEM_DI
 ADD_LIBRARY(LifeStuffsharedlib STATIC ${ALL_FILES_SHARED_DIR})
 ADD_LIBRARY(LifeStufffuselib STATIC ${ALL_FILES_FUSE_DIR})
 
-ADD_SUBDIRECTORY(${SRC_MAIDSAFE}/passport ${CMAKE_BINARY_DIR}/passport)
-ADD_SUBDIRECTORY(${SRC_MAIDSAFE}/pki ${CMAKE_BINARY_DIR}/pki)
-
-# ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTencrypt TESTpassport TESTpki TESTshared
+# ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTencrypt TESTshared
 #                   TESTclientfilesystem TESTclient TESTfuse TESTclientcontroller_local DEMOclient)
-ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTpassport TESTpki
-                  TESTclientfilesystem TESTfuse TESTclientcontroller_local)
+ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTclientfilesystem TESTfuse TESTclientcontroller_local)
 
-TARGET_LINK_LIBRARIES(LifeStuffsharedlib passport boost_filesystem)
-TARGET_LINK_LIBRARIES(LifeStuffclientfilesystemlib LifeStuffsharedlib encrypt_static pki boost_date_time)
+TARGET_LINK_LIBRARIES(LifeStuffsharedlib passport_static boost_filesystem)
+TARGET_LINK_LIBRARIES(LifeStuffclientfilesystemlib LifeStuffsharedlib encrypt_static pki_static boost_date_time)
 TARGET_LINK_LIBRARIES(LifeStufflsmclientlib LifeStuffclientfilesystemlib ${QT_LIBRARIES} boost_regex)
 # TARGET_LINK_LIBRARIES(LifeStuffclientlib LifeStuffclientfilesystemlib ${QT_LIBRARIES} boost_regex)
 TARGET_LINK_LIBRARIES(LifeStufffuselib ${Fuse_LIBRARY} boost_system)
@@ -445,8 +429,7 @@ ENDIF()
 ###################################################################################################
 IF((TEST_EXCLUDED EQUAL -1) AND PYTHONINTERP_FOUND)
   IF(UNIX)
-    SET(STYLE_ALL ${STYLE_CLIENT} ${STYLE_SHARED} ${STYLE_FUSE}
-                  ${STYLE_PASSPORT} ${STYLE_PKI})
+    SET(STYLE_ALL ${STYLE_CLIENT} ${STYLE_SHARED} ${STYLE_FUSE})
     ADD_TEST(STYLE_CHECK python ${MaidSafeCommon_TOOLS_DIR}/cpplint.py ${STYLE_ALL})
   ELSE()
     STRING(REPLACE "/" "\\\\" STYLE_CHECK_SOURCE ${PROJECT_SOURCE_DIR})
@@ -458,8 +441,6 @@ ENDIF()
 #ADD_GTESTS(TESTclient)
 ADD_GTESTS(TESTclientfilesystem)
 #ADD_GTESTS(TESTshared)
-ADD_GTESTS(TESTpassport)
-ADD_GTESTS(TESTpki)
 ADD_GTESTS(TESTfuse)
 
 TEST_SUMMARY_OUTPUT()
