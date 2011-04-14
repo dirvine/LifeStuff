@@ -46,10 +46,11 @@ typedef bs2::signal<void(const std::string&, maidsafe::ReturnCode)>
 
 namespace maidsafe {
 
+namespace dht {
 namespace kademlia {
-class Contact;
+  class Contact;
 }  // namespace kademlia
-
+}  // namespace dht
 enum IfPacketExists {
   kDoNothingReturnFailure,
   kDoNothingReturnSuccess,
@@ -137,7 +138,7 @@ class StoreManagerInterface {
   // Vault
   virtual bool VaultStoreInfo(boost::uint64_t *offered_space,
                               boost::uint64_t *free_space)=0;
-  virtual bool VaultContactInfo(kademlia::Contact *contact)=0;
+  virtual bool VaultContactInfo(dht::kademlia::Contact *contact)=0;
   virtual void SetLocalVaultOwned(
       const std::string &priv_key,
       const std::string &pub_key,

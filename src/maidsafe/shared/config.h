@@ -34,7 +34,11 @@
 
 namespace maidsafe {
 
-namespace kademlia { class Contact; }
+namespace dht {
+namespace kademlia {
+  class Contact; 
+}  // namespace dht
+}  //namespace kademlia
 
 // system constants
 const std::uint32_t kMinRegularFileSize = 512;
@@ -182,10 +186,10 @@ enum SortingMode { ALPHA, RANK, LAST };
 enum ShareFilter { kAll, kRo, kAdmin };
 
 typedef std::function<void(const ReturnCode&)> VoidFuncOneInt;
-typedef std::function<void(const ReturnCode&, const kademlia::Contact&)>
+typedef std::function<void(const ReturnCode&, const dht::kademlia::Contact&)>
         VoidFuncIntContact;
 typedef std::function<void(const ReturnCode&,
-    const std::vector<kademlia::Contact>&)> VoidFuncIntContacts;
+    const std::vector<dht::kademlia::Contact>&)> VoidFuncIntContacts;
 
 
 inline std::string HexSubstr(const std::string &non_hex) {

@@ -26,7 +26,7 @@
 #define MAIDSAFE_FUSE_WINDOWS_FSWIN_H_
 
 #include <windows.h>
-#include <dokan.h>
+/*#include <dokan.h>
 #if DOKAN_VERSION < 600
 #error This API is not compatible with the installed library.\
   Please update the dokan library.
@@ -34,14 +34,14 @@
 #error This API uses a newer version of the dokan library.\
   Please update this project.
 #endif
-
+  */
 #include <string>
 
 namespace fs_w_fuse {
 
-void Mount(char drive);
+void Mount(char drive){}
 
-bool UnMount(char drive);
+bool UnMount(char drive){ return true;}
 
 }  // namespace fs_w_fuse
 

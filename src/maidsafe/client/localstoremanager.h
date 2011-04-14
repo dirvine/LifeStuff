@@ -120,7 +120,7 @@ class LocalStoreManager : public StoreManagerInterface {
   // Vault
   virtual bool VaultStoreInfo(boost::uint64_t *offered_space,
                               boost::uint64_t *free_space);
-  virtual bool VaultContactInfo(kademlia::Contact *contact);
+  virtual bool VaultContactInfo(dht::kademlia::Contact *contact);
   virtual void SetLocalVaultOwned(const std::string &priv_key,
                                   const std::string &pub_key,
                                   const std::string &signed_pub_key,

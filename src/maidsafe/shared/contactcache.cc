@@ -19,7 +19,7 @@
 */
 
 #include "maidsafe/shared/contactcache.h"
-#include "maidsafe-dht/kademlia/node-api.h"
+#include "maidsafe/dht/kademlia/node-api.h"
 
 namespace maidsafe {
 
@@ -27,7 +27,7 @@ ContactCache::~ContactCache() {
   WaitForUpdate();
 }
 
-void ContactCache::Init(const kademlia::NodeId& pmid) {
+void ContactCache::Init(const dht::kademlia::NodeId& pmid) {
   if (!pmid.IsValid()) {
 #ifdef DEBUG
     printf("In ContactCache::Init, no valid PMID set.\n");
@@ -63,7 +63,7 @@ void ContactCache::WaitForUpdate() {
     cond_var_.wait(lock);
 }
 
-bool ContactCache::GetContact(kademlia::Contact *contact) {
+bool ContactCache::GetContact(dht::kademlia::Contact *contact) {
   boost::mutex::scoped_lock lock(mutex_);
   if (active_ && contact != NULL) {
     *contact = contact_;
@@ -79,7 +79,7 @@ void ContactCache::DoUpdate() {
 }
 
 void ContactCache::GetContactCallback(const int& result,
-                                      const kademlia::Contact& contact) {
+                                      const dht::kademlia::Contact& contact) {
   boost::mutex::scoped_lock lock(mutex_);
   if (result == kSuccess) {
     last_update_ = boost::posix_time::microsec_clock::universal_time();

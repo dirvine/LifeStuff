@@ -27,10 +27,10 @@
 
 #include "boost/cstdint.hpp"
 #include "boost/function.hpp"
-#include "maidsafe-dht/version.h"
+#include "maidsafe/dht/version.h"
 #include "maidsafe/common/utils.h"
 
-#define THIS_MAIDSAFE_DHT_VERSION 28
+#define THIS_MAIDSAFE_DHT_VERSION 29
 #if MAIDSAFE_DHT_VERSION < THIS_MAIDSAFE_DHT_VERSION
 #error This API is not compatible with the installed library.\
   Please update the maidsafe-dht library.

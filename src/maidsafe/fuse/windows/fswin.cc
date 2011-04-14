@@ -36,7 +36,7 @@ THE SOFTWARE.
 #include "maidsafe/client/sessionsingleton.h"
 
 namespace fs = boost::filesystem;
-
+/*
 namespace fs_w_fuse {
 
 #ifdef __MSVC__
@@ -1367,4 +1367,4 @@ bool UnMount(char drive) {
   return DokanRemoveMountPoint(mount_point);
 }
 
-}  // namespace fs_w_fuse
+}  // namespace fs_w_fuse*/

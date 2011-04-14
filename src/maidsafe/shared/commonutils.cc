@@ -25,12 +25,13 @@
 #include "maidsafe/shared/commonutils.h"
 #include "boost/function.hpp"
 #include "maidsafe/common/crypto.h"
-#include "maidsafe-dht/kademlia/contact.h"
-#include "maidsafe-dht/kademlia/node_id.h"
+#include "maidsafe/dht/kademlia/contact.h"
+#include "maidsafe/dht/kademlia/node_id.h"
 
 namespace maidsafe {
 
-bool ContactHasId(const std::string &id, const kademlia::Contact &contact) {
+bool ContactHasId(const std::string &id,
+                  const dht::kademlia::Contact &contact) {
   return contact.node_id().String() == id;
 }
 
@@ -82,7 +83,6 @@ std::string AESEncrypt(const std::string &input,
 
 std::string AESDecrypt(const std::string &input,
                        const std::string &key) {
-
   return crypto::SymmDecrypt(input, key, "");
 }
 

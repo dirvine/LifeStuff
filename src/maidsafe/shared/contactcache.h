@@ -30,18 +30,24 @@
 #include "boost/thread/condition_variable.hpp"
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include "boost/thread/mutex.hpp"
-#include "maidsafe-dht/kademlia/contact.h"
-#include "maidsafe-dht/kademlia/node_id.h"
+#include "maidsafe/dht/kademlia/contact.h"
+#include "maidsafe/dht/kademlia/node_id.h"
 #include "maidsafe/shared/returncodes.h"
 
 namespace maidsafe {
 
 namespace test { class ContactCacheTest_BEH_MAID_CTC_Update_Test; }
-namespace kademlia { class Node; }
+namespace dht {
+namespace kademlia { 
+  class Node;
+  class NodeId;
+  class Contact;
+}  // namespace dht
+}  // namespace kademlia
 
 class ContactCache {
  public:
-  explicit ContactCache(const std::shared_ptr<kademlia::Node> &node)
+  explicit ContactCache(const std::shared_ptr<dht::kademlia::Node> &node)
       : kMaxUpdateInterval_(10),
         node_(node),
         pmid_(),
@@ -52,11 +58,11 @@ class ContactCache {
         active_(false),
         update_in_progress_(false) {}
   ~ContactCache();
-  void Init(const kademlia::NodeId &pmid_);
+  void Init(const dht::kademlia::NodeId &pmid_);
   void Update();
   void WaitForUpdate();
-  bool GetContact(kademlia::Contact *contact);
-  kademlia::NodeId pmid() {
+  bool GetContact(dht::kademlia::Contact *contact);
+  dht::kademlia::NodeId pmid() {
     boost::mutex::scoped_lock lock(mutex_);
     return pmid_;
   }
@@ -70,11 +76,11 @@ class ContactCache {
   friend class test::ContactCacheTest_BEH_MAID_CTC_Update_Test;
   void DoUpdate();
   void GetContactCallback(const int &result,
-                          const kademlia::Contact &contact);
+                          const dht::kademlia::Contact &contact);
   const boost::posix_time::seconds kMaxUpdateInterval_;
-  std::shared_ptr<kademlia::Node> node_;
-  kademlia::NodeId pmid_;
-  kademlia::Contact contact_;
+  std::shared_ptr<dht::kademlia::Node> node_;
+  dht::kademlia::NodeId pmid_;
+  dht::kademlia::Contact contact_;
   boost::mutex mutex_;
   boost::condition_variable cond_var_;
   boost::posix_time::ptime last_update_;

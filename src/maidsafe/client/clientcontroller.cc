@@ -31,9 +31,9 @@
 #include "boost/archive/text_oarchive.hpp"
 #include "boost/archive/text_iarchive.hpp"
 #include "boost/foreach.hpp"
-#include "maidsafe-dht/kademlia/contact.h"
-#include "maidsafe-encrypt/self_encryption.h"
-#include "maidsafe-encrypt/data_map.h"
+#include "maidsafe/dht/kademlia/contact.h"
+#include "maidsafe/maidsafe-encrypt/self_encryption.h"
+#include "maidsafe/maidsafe-encrypt/data_map.h"
 #include "maidsafe/shared/chunkstore.h"
 #include "maidsafe/shared/commonutils.h"
 #include "maidsafe/client/filesystem/dataatlashandler.h"
@@ -2181,7 +2181,7 @@ bool ClientController::VaultStoreInfo(boost::uint64_t *offered_space,
   return sm_->VaultStoreInfo(offered_space, free_space);
 }
 
-bool ClientController::VaultContactInfo(kademlia::Contact *contact) {
+bool ClientController::VaultContactInfo(dht::kademlia::Contact *contact) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::VaultContactInfo - Not initialised.\n");
@@ -2191,7 +2191,7 @@ bool ClientController::VaultContactInfo(kademlia::Contact *contact) {
 
 #ifdef LOCAL_LifeStuffVAULT
   {
-    kademlia::Contact vc;
+    dht::kademlia::Contact vc;
     *contact = vc;
     return true;
   }

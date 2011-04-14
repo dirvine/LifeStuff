@@ -30,9 +30,13 @@
 
 namespace maidsafe {
 
-namespace kademlia { class Contact; }
+namespace dht {
+namespace kademlia {
+  class Contact;
+}  // namespace kademlia
+}  // namespace dht
 
-bool ContactHasId(const std::string &id, const kademlia::Contact &contact);
+bool ContactHasId(const std::string &id, const dht::kademlia::Contact &contact);
 
 // Return the SHA512 hash of the file contents
 std::string SHA512File(const boost::filesystem::path &file_path);

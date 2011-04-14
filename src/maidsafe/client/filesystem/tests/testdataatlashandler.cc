@@ -36,8 +36,8 @@
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/sharedtest/cachepassport.h"
 #include "maidsafe/sharedtest/testcallback.h"
-#include "maidsafe-encrypt/self_encryption.h"
-#include "maidsafe-encrypt/data_map.h"
+#include "maidsafe/maidsafe-encrypt/self_encryption.h"
+#include "maidsafe/maidsafe-encrypt/data_map.h"
 
 
 namespace fs = boost::filesystem;

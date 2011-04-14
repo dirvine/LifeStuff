@@ -27,7 +27,7 @@
 #include "boost/multi_index/ordered_index.hpp"
 #include "boost/multi_index/sequenced_index.hpp"
 #include "boost/thread/mutex.hpp"
-#include "maidsafe-dht/kademlia/alternative_store.h"
+#include "maidsafe/dht/kademlia/alternative_store.h"
 
 
 namespace fs3 = boost::filesystem3;
@@ -45,15 +45,15 @@ class ChunkstoreTest_BEH_MAID_Space_Test;
 class ChunkstoreTest_BEH_MAID_ReuseDirectory_Test;
 class ChunkstoreTest_BEH_MAID_Clear_Test;
 class ChunkstoreTest_BEH_MAID_ThreadedChangeType_Test;
-} // namespace test
+}  // namespace test
 
 namespace vault {
 namespace test {
 class VaultChunkstoreTest_BEH_MAID_LoadRandomChunk_Test;
 class VaultChunkstoreTest_BEH_MAID_HashCheckChunk_Test;
 class VaultChunkstoreTest_BEH_MAID_FreeCacheSpace_Test;
-} // namespace test
-} // namespace vault
+}  // namespace test
+}  // namespace vault
 
 // ChunkType defines which directory chunk is held in. Chunks must have type
 // comprised of one primary and one secondary type. NB signed data doesn't get
@@ -134,7 +134,7 @@ struct change_type {
   ChunkType new_type_;
 };
 
-class ChunkStore : public kademlia::AlternativeStore {
+class ChunkStore : public dht::kademlia::AlternativeStore {
  public:
   ChunkStore(const std::string &chunkstore_dir,
              const boost::uint64_t &available_space,
@@ -232,6 +232,6 @@ class ChunkStore : public kademlia::AlternativeStore {
   boost::uint64_t available_space_, used_space_;
 };
 
-} // namespace maidsafe
+}  // namespace maidsafe
 
-#endif // MAIDSAFE_COMMON_CHUNKSTORE_H_
+#endif  // MAIDSAFE_COMMON_CHUNKSTORE_H_

@@ -28,8 +28,8 @@
 #include <exception>
 #include "maidsafe/shared/cppsqlite3.h"
 #include "maidsafe/client/clientutils.h"
-#include "maidsafe-encrypt/self_encryption.h"
-#include "maidsafe-encrypt/data_map.h"
+#include "maidsafe/maidsafe-encrypt/self_encryption.h"
+#include "maidsafe/maidsafe-encrypt/data_map.h"
 #include "boost/archive/text_oarchive.hpp"
 #include "boost/archive/text_iarchive.hpp"
 

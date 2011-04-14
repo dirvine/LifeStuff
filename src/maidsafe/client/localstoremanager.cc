@@ -17,7 +17,7 @@
 #include "boost/filesystem/fstream.hpp"
 #include "boost/filesystem.hpp"
 #include "boost/scoped_ptr.hpp"
-#include "maidsafe-dht/kademlia/contact.h"
+#include "maidsafe/dht/kademlia/contact.h"
 #include "maidsafe/pki/maidsafevalidator.h"
 #include "maidsafe/shared/chunkstore.h"
 #include "maidsafe/shared/commonutils.h"
@@ -993,8 +993,8 @@ bool LocalStoreManager::VaultStoreInfo(boost::uint64_t *offered_space,
   return true;
 }
 
-bool LocalStoreManager::VaultContactInfo(kademlia::Contact *contact) {
-  kademlia::Contact ctc;
+bool LocalStoreManager::VaultContactInfo(dht::kademlia::Contact *contact) {
+  dht::kademlia::Contact ctc;
   *contact = ctc;
   return true;
 }

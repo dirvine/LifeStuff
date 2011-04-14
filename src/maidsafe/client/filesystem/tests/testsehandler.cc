@@ -25,8 +25,8 @@
 #include "boost/filesystem.hpp"
 #include "boost/filesystem/fstream.hpp"
 #include "gtest/gtest.h"
-#include "maidsafe-encrypt/data_map.h"
-#include "maidsafe-encrypt/self_encryption.h"
+#include "maidsafe/maidsafe-encrypt/data_map.h"
+#include "maidsafe/maidsafe-encrypt/self_encryption.h"
 #include "maidsafe/shared/chunkstore.h"
 #include "maidsafe/shared/commonutils.h"
 #include "maidsafe/shared/filesystem.h"
@@ -39,7 +39,7 @@
 #include "maidsafe/sharedtest/testcallback.h"
 #include "boost/archive/text_oarchive.hpp"
 #include "boost/archive/text_iarchive.hpp"
-#include "maidsafe-encrypt/config.h"
+#include "maidsafe/maidsafe-encrypt/config.h"
 
 
 namespace fs = boost::filesystem;

@@ -47,10 +47,11 @@ namespace bs2 = boost::signals2;
 
 namespace maidsafe {
 
+namespace dht {
 namespace kademlia {
-class Contact;
+  class Contact;
 }  // namespace kademlia
-
+}  // namespace dht
 namespace test {
 class ClientControllerTest;
 class ClientControllerTest_FUNC_MAID_SaveSession_Test;
@@ -206,7 +207,7 @@ class ClientController {
   // Vault operations
   bool VaultStoreInfo(boost::uint64_t *offered_space,
                       boost::uint64_t *free_space);
-  bool VaultContactInfo(kademlia::Contact *contact);
+  bool VaultContactInfo(dht::kademlia::Contact *contact);
   OwnLocalVaultResult SetLocalVaultOwned(
       const boost::uint32_t &port,
       const boost::uint64_t &space,
