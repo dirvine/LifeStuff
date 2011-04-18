@@ -35,8 +35,8 @@
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/self_encryption.h"
 #include "maidsafe/encrypt/data_map.h"
-#include "maidsafe/shared/commonutils.h"
-#include "maidsafe/shared/chunkstore.h"
+#include "maidsafe/common/crypto.h"
+#include "maidsafe/common/chunk_store.h"
 #include "maidsafe/client/filesystem/dataatlashandler.h"
 #include "maidsafe/client/clientutils.h"
 #include "maidsafe/client/sessionsingleton.h"
@@ -140,7 +140,7 @@ ItemType SEHandler::CheckEntry(const fs::path &absolute_path,
       return LINK;
 
     *file_size = fs::file_size(absolute_path);
-    *file_hash = SHA512File(absolute_path);
+    *file_hash = crypto::HashFile<crypto::SHA512>(absolute_path);
     if (absolute_path.filename().string() == EncodeToHex(*file_hash)) {
       *file_size = 0;
       file_hash->clear();
@@ -261,7 +261,7 @@ int SEHandler::EncryptString(const std::string &data,
 
   encrypt::DataMap data_map;
   serialised_data_map->clear();
-  data_map.content = SHA512String(data);
+  data_map.content = crypto::Hash<crypto::SHA512>(data);
 //  if (encrypt::SelfEncrypt(data, file_system::TempDir(), false, sep,
 //                           &data_map) != kSuccess)
 //    return kEncryptStringFailure;
@@ -408,7 +408,7 @@ bool SEHandler::MakeElement(const fs::path &relative_entry,
       GenerateUniqueKey(&dir_key);
   } else if (type == EMPTY_FILE) {
     encrypt::DataMap data_map;
-    data_map.content = SHA512String("");
+    data_map.content = crypto::Hash<crypto::SHA512>("");
     SerializeToString(&data_map, serialised_data_map);
   } else {
 #ifdef DEBUG
@@ -432,7 +432,7 @@ int SEHandler::GenerateUniqueKey(std::string *key) {
   const int kMaxAttempts(5);
   int count(0);
   for (; count < kMaxAttempts; ++count) {
-    *key = SHA512String(RandomString(200));
+    *key = crypto::Hash<crypto::SHA512>(RandomString(200));
     if (store_manager_->KeyUnique(*key, false))
       break;
   }
@@ -464,7 +464,7 @@ int SEHandler::GetDirKeys(const fs::path &dir_path,
     if (kSuccess != session_singleton_->GetShareKeys(msid, parent_key,
                                                      &private_key))
       return kEncryptionGetDirKeyFailure;
-    *parent_key = SHA512String(*parent_key);
+    *parent_key = crypto::Hash<crypto::SHA512>(*parent_key);
   }
   return kSuccess;
 }
@@ -492,13 +492,13 @@ int SEHandler::EncryptDb(const fs::path &dir_path,
 #endif
     return kEncryptionDbMissing;
   }
-  std::string file_hash(SHA512File(db_path));
+  std::string file_hash(crypto::HashFile<crypto::SHA512>(db_path));
   const fs::path db_absolute_path(db_path);
 
   // when encrypting root db and keys db (during logout), GetDbPath fails above,
   // so insert alternative value for file hashes.
   if (file_hash.empty())
-    file_hash = SHA512String(db_path);
+    file_hash = crypto::Hash<crypto::SHA512>(db_path);
   data_map->content = file_hash;
 //  if (encrypt::SelfEncrypt(db_absolute_path, file_system::TempDir(), sep,
 //                           data_map) != kSuccess) {
@@ -612,14 +612,14 @@ int SEHandler::DecryptDb(const fs::path &dir_path,
     }
     std::string serialised_encrypted_data_map = packet_content[0];
     if (dir_type != ANONYMOUS) {
-      GenericPacket gp;
-      if (!gp.ParseFromString(serialised_encrypted_data_map)) {
-#ifdef DEBUG
-        printf("Failed to parse generic packet.\n");
-#endif
-        return kDecryptDbFailure;
-      }
-      retrieved_encrypted_data_map = gp.data();
+//      GenericPacket gp;
+//      if (!gp.ParseFromString(serialised_encrypted_data_map)) {
+//#ifdef DEBUG
+//        printf("Failed to parse generic packet.\n");
+//#endif
+//        return kDecryptDbFailure;
+//      }
+//      retrieved_encrypted_data_map = gp.data();
       // TODO(Fraser#5#): 2010-06-28 - Check gp signature is valid
       if (retrieved_encrypted_data_map.empty()) {
 #ifdef DEBUG
@@ -696,10 +696,10 @@ int SEHandler::LoadChunks(const encrypt::DataMap &data_map,
 #endif
     if (n != kSuccess)
       result = n;
-    else
-      chunk_paths->push_back(
-          client_chunkstore_->GetChunkPath(data_map.chunks[i].hash,
-                                           (kHashable | kNormal), false));
+//    else
+//      chunk_paths->push_back(
+//          client_chunkstore_->GetChunkPath(data_map.chunks[i].hash,
+//                                           (kHashable | kNormal), false));
   }
   return result;
 }
@@ -741,8 +741,8 @@ int SEHandler::AddChunksToChunkstore(const encrypt::DataMap &data_map) {
     // If this succeeds, chunk is moved to chunkstore.  If not, clean up temp.
     fs::path temp_chunk(file_system::TempDir() /
                         EncodeToHex(data_map.chunks[j].hash));
-    int res = client_chunkstore_->AddChunkToOutgoing(
-              data_map.chunks[j].hash, temp_chunk);
+    int res/* = client_chunkstore_->AddChunkToOutgoing(
+              data_map.chunks[j].hash, temp_chunk)*/;
     if (res != kSuccess) {
       try {
         fs::remove(temp_chunk);

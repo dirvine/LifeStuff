@@ -37,7 +37,7 @@
 #include "maidsafe/passport/passport.h"
 
 #include "maidsafe/shared/maidsafe.h"
-#include "maidsafe/shared/maidsafe_service_messages.pb.h"
+//  #include "maidsafe/shared/maidsafe_service_messages.pb.h"
 
 namespace bs2 = boost::signals2;
 
@@ -60,20 +60,20 @@ enum IfPacketExists {
   kAppend
 };
 
-typedef boost::function<void(const OwnLocalVaultResult&, const std::string&)>
-        SetLocalVaultOwnedFunctor;
-
-typedef boost::function<void(const VaultOwnershipStatus&)>
-    LocalVaultOwnedFunctor;
-
+//typedef boost::function<void(const OwnLocalVaultResult&, const std::string&)>
+//        SetLocalVaultOwnedFunctor;
+//
+//typedef boost::function<void(const VaultOwnershipStatus&)>
+//    LocalVaultOwnedFunctor;
+//
 typedef boost::function<void(const std::vector<std::string>&,
                              const ReturnCode&)>
         LoadPacketFunctor;
 
-typedef boost::function<void(const ReturnCode&)> CreateAccountFunctor;
-
-typedef boost::function<void(const std::string&)> IMNotifier;
-typedef boost::function<void(const std::string&, const int&)> IMStatusNotifier;
+//typedef boost::function<void(const ReturnCode&)> CreateAccountFunctor;
+//
+//typedef boost::function<void(const std::string&)> IMNotifier;
+//typedef boost::function<void(const std::string&, const int&)> IMStatusNotifier;
 
 class StoreManagerInterface {
  public:
@@ -124,40 +124,40 @@ class StoreManagerInterface {
                             const VoidFuncOneInt &cb)=0;
 
   // Buffer packet
-  virtual int CreateBP()=0;
-  virtual int ModifyBPInfo(const std::string &info)=0;
-  virtual int LoadBPMessages(
-      std::list<ValidatedBufferPacketMessage> *messages)=0;
-  virtual int SendAMessage(const std::vector<std::string> &receivers,
-                           const std::string &message,
-                           const MessageType &m_type,
-                           std::map<std::string, ReturnCode> *add_results)=0;
-  virtual int LoadBPPresence(std::list<LivePresence> *messages)=0;
-  virtual int AddBPPresence(
-      const std::vector<std::string> &receivers,
-      std::map<std::string, ReturnCode> *add_results)=0;
+//  virtual int CreateBP()=0;
+//  virtual int ModifyBPInfo(const std::string &info)=0;
+//  virtual int LoadBPMessages(
+//      std::list<ValidatedBufferPacketMessage> *messages)=0;
+//  virtual int SendAMessage(const std::vector<std::string> &receivers,
+//                           const std::string &message,
+//                           const MessageType &m_type,
+//                           std::map<std::string, ReturnCode> *add_results)=0;
+//  virtual int LoadBPPresence(std::list<LivePresence> *messages)=0;
+//  virtual int AddBPPresence(
+//      const std::vector<std::string> &receivers,
+//      std::map<std::string, ReturnCode> *add_results)=0;
 
   // Vault
-  virtual bool VaultStoreInfo(boost::uint64_t *offered_space,
-                              boost::uint64_t *free_space)=0;
-  virtual bool VaultContactInfo(dht::kademlia::Contact *contact)=0;
-  virtual void SetLocalVaultOwned(
-      const std::string &priv_key,
-      const std::string &pub_key,
-      const std::string &signed_pub_key,
-      const boost::uint32_t &port,
-      const std::string &vault_dir,
-      const boost::uint64_t &space,
-      const SetLocalVaultOwnedFunctor &functor)=0;
-  virtual void LocalVaultOwned(const LocalVaultOwnedFunctor &functor)=0;
-  virtual int CreateAccount(const boost::uint64_t &space)=0;
+//  virtual bool VaultStoreInfo(boost::uint64_t *offered_space,
+//                              boost::uint64_t *free_space)=0;
+//  virtual bool VaultContactInfo(dht::kademlia::Contact *contact)=0;
+//  virtual void SetLocalVaultOwned(
+//      const std::string &priv_key,
+//      const std::string &pub_key,
+//      const std::string &signed_pub_key,
+//      const boost::uint32_t &port,
+//      const std::string &vault_dir,
+//      const boost::uint64_t &space,
+//      const SetLocalVaultOwnedFunctor &functor)=0;
+//  virtual void LocalVaultOwned(const LocalVaultOwnedFunctor &functor)=0;
+//  virtual int CreateAccount(const boost::uint64_t &space)=0;
 
   // Instant Messaging
-  virtual bool SendPresence(const std::string &contactname)=0;
-  virtual void SendLogOutMessage(const std::string &contactname)=0;
-  virtual void SetSessionEndPoint()=0;
-  virtual void SetInstantMessageNotifier(IMNotifier on_msg,
-                                         IMStatusNotifier status_notifier)=0;
+//  virtual bool SendPresence(const std::string &contactname)=0;
+//  virtual void SendLogOutMessage(const std::string &contactname)=0;
+//  virtual void SetSessionEndPoint()=0;
+//  virtual void SetInstantMessageNotifier(IMNotifier on_msg,
+//                                         IMStatusNotifier status_notifier)=0;
 
 /************************** Signals **************************/
   bs2::connection ConnectToOnChunkUploaded(

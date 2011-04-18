@@ -23,7 +23,7 @@
 
 #include "maidsafe/client/authentication.h"
 #include "boost/regex.hpp"
-#include "maidsafe/shared/commonutils.h"
+#include "maidsafe/common/crypto.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/storemanager.h"
 
@@ -163,13 +163,13 @@ void Authentication::GetMidTmidCallback(const std::vector<std::string> &values,
 #endif
 
   int result(kSuccess);
-  GenericPacket packet;
-  if (!packet.ParseFromString(values.at(0)) || packet.data().empty())
+//  GenericPacket packet;
+//  if (!packet.ParseFromString(values.at(0)) || packet.data().empty())
     result = kBadPacket;
   if (op_status == kPendingMid) {
     std::string tmid_name;
-    if (result == kSuccess)
-      result = passport_->InitialiseTmid(surrogate, packet.data(), &tmid_name);
+//    if (result == kSuccess)
+//      result = passport_->InitialiseTmid(surrogate, packet.data(), &tmid_name);
     if (result != kSuccess) {
 #ifdef DEBUG
       printf("Authentication::GetMidTmidCallback - error %i.\n", result);
@@ -194,7 +194,7 @@ void Authentication::GetMidTmidCallback(const std::vector<std::string> &values,
     boost::mutex::scoped_lock lock(mutex_);
     if (surrogate) {
       if (result == kSuccess) {
-        encrypted_stmid_ = packet.data();
+//        encrypted_stmid_ = packet.data();
         stmid_op_status_ = kSucceeded;
       } else {
         stmid_op_status_ = kFailed;
@@ -203,7 +203,7 @@ void Authentication::GetMidTmidCallback(const std::vector<std::string> &values,
         cond_var_.notify_all();
     } else {
       if (result == kSuccess) {
-        encrypted_tmid_ = packet.data();
+//        encrypted_tmid_ = packet.data();
         tmid_op_status_ = kSucceeded;
       } else {
         tmid_op_status_ = kFailed;
@@ -1173,15 +1173,15 @@ int Authentication::ChangePassword(const std::string &serialised_master_datamap,
 
 int Authentication::PublicUsernamePublicKey(const std::string &public_username,
                                             std::string *public_key) {
-  std::string packet_name = SHA512String(public_username);
+  std::string packet_name = crypto::Hash<crypto::SHA512>(public_username);
   std::vector<std::string> packet_content;
   int result = store_manager_->LoadPacket(packet_name, &packet_content);
   if (result != kSuccess || packet_content.empty())
     return kUserDoesntExist;
-  GenericPacket packet;
-  if (!packet.ParseFromString(packet_content.at(0)) || !public_key)
-    return kAuthenticationError;
-  *public_key = packet.data();
+//  GenericPacket packet;
+//  if (!packet.ParseFromString(packet_content.at(0)) || !public_key)
+//    return kAuthenticationError;
+//  *public_key = packet.data();
   return kSuccess;
 }
 

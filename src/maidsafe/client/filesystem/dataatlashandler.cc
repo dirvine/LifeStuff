@@ -25,7 +25,7 @@
 #include "maidsafe/client/filesystem/dataatlashandler.h"
 #include <exception>
 #include "boost/filesystem.hpp"
-#include "maidsafe/shared/commonutils.h"
+#include "maidsafe/common/crypto.h"
 #include "maidsafe/client/filesystem/pddir.h"
 #include "maidsafe/client/clientutils.h"
 #include "maidsafe/client/sessionsingleton.h"
@@ -41,7 +41,8 @@ DataAtlasHandler::DataAtlasHandler() : db_dir_() {
   } else {
     std::string username("user1");
     std::string pin("1234");
-    std::string s(".maidsafe" + EncodeToHex(SHA1String(pin + username)));
+    std::string s(".maidsafe" + EncodeToHex(crypto::Hash<crypto::SHA1>(pin +
+                                                                       username)));
     db_dir_ = fs3::path(file_system::TempDir() / s / "dir");
   }
 }
@@ -90,7 +91,7 @@ void DataAtlasHandler::GetDbPath(const std::string &element_path,
     pre_hash_db_name = path.string() + db_dir_.string();
   }
 
-  *db_path = EncodeToHex(SHA1String(StringToLowercase(pre_hash_db_name)));
+  *db_path = EncodeToHex(crypto::Hash<crypto::SHA1>(StringToLowercase(pre_hash_db_name)));
   fs3::path db_path1(db_dir_);
   db_path1 /= *db_path;
   *db_path = db_path1.string();

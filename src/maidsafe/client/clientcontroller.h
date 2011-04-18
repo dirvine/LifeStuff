@@ -38,7 +38,7 @@
 
 #include "maidsafe/shared/filesystem.h"
 #include "maidsafe/shared/maidsafe.h"
-#include "maidsafe/shared/maidsafe_service_messages.pb.h"
+//  #include "maidsafe/shared/maidsafe_service_messages.pb.h"
 #include "maidsafe/shared/returncodes.h"
 #include "maidsafe/client/authentication.h"
 #include "maidsafe/client/sessionsingleton.h"
@@ -88,25 +88,25 @@ class CCCallback {
 
 class BPCallback {
  public:
-  BPCallback() : result(kGeneralError), end_point(), status(0) {}
+  BPCallback() : result(kGeneralError), /*end_point(), */status(0) {}
   void ContactInfoCallback(const ReturnCode &res,
-                           const std::list<EndPoint> &ep,
+//                           const std::list<EndPoint> &ep,
                            const PersonalDetails &pd,
                            const boost::uint32_t &st) {
     result = res;
-    end_point = ep;
+//    end_point = ep;
     personal_details = pd;
     status = st;
   }
 
   void Reset() {
-    end_point.clear();
+//    end_point.clear();
     personal_details.Clear();
     result = kGeneralError;
   }
 
   ReturnCode result;
-  std::list<EndPoint> end_point;
+//  std::list<EndPoint> end_point;
   PersonalDetails personal_details;
   boost::uint32_t status;
 };
@@ -154,36 +154,36 @@ class ClientController {
   inline bool initialised() { return initialised_; }
 
   // Messages
-  typedef boost::function<void(const InstantMessage&)> IMNotifier;
-  bool GetMessages();
-  int HandleMessages(
-      std::list<ValidatedBufferPacketMessage> *valid_messages);
-  int HandleReceivedShare(const PrivateShareNotification &psn,
-                          const std::string &name);
-  int HandleDeleteContactNotification(const std::string &sender);
-  int HandleInstantMessage(
-      const ValidatedBufferPacketMessage &vbpm);
-  int HandleAddContactRequest(const ContactInfo &ci, const std::string &sender);
-  int HandleAddContactResponse(const ContactInfo &ci,
-                               const std::string &sender);
-  int GetInstantMessages(std::list<InstantMessage> *messages);
-  int SendInstantMessage(const std::string &message,
-                         const std::vector<std::string> &contact_names,
-                         const std::string &conversation);
-  int SendInstantFile(std::string *filename,
-                      const std::string &msg,
-                      const std::vector<std::string> &contact_names,
-                      const std::string &conversation);
-  int SendEmail(const std::string &subject, const std::string &msg,
-                const std::vector<std::string> &to,
-                const std::vector<std::string> &cc,
-                const std::vector<std::string> &bcc,
-                const std::string &conversation);
-  int AddInstantFile(const InstantFileNotification &ifm,
-                     const std::string &location);
-  void onInstantMessage(const std::string &message, const boost::uint32_t&,
-                        const boost::int16_t&, const double&);
-  void SetIMNotifier(IMNotifier imn);
+//  typedef boost::function<void(const InstantMessage&)> IMNotifier;
+//  bool GetMessages();
+//  int HandleMessages(
+//      std::list<ValidatedBufferPacketMessage> *valid_messages);
+//  int HandleReceivedShare(const PrivateShareNotification &psn,
+//                          const std::string &name);
+//  int HandleDeleteContactNotification(const std::string &sender);
+//  int HandleInstantMessage(
+//      const ValidatedBufferPacketMessage &vbpm);
+//  int HandleAddContactRequest(const ContactInfo &ci, const std::string &sender);
+//  int HandleAddContactResponse(const ContactInfo &ci,
+//                               const std::string &sender);
+//  int GetInstantMessages(std::list<InstantMessage> *messages);
+//  int SendInstantMessage(const std::string &message,
+//                         const std::vector<std::string> &contact_names,
+//                         const std::string &conversation);
+//  int SendInstantFile(std::string *filename,
+//                      const std::string &msg,
+//                      const std::vector<std::string> &contact_names,
+//                      const std::string &conversation);
+//  int SendEmail(const std::string &subject, const std::string &msg,
+//                const std::vector<std::string> &to,
+//                const std::vector<std::string> &cc,
+//                const std::vector<std::string> &bcc,
+//                const std::string &conversation);
+//  int AddInstantFile(const InstantFileNotification &ifm,
+//                     const std::string &location);
+//  void onInstantMessage(const std::string &message, const boost::uint32_t&,
+//                        const boost::int16_t&, const double&);
+//  void SetIMNotifier(IMNotifier imn);
 
   // Contact operations
   int ContactList(const std::string &pub_name,
@@ -207,14 +207,14 @@ class ClientController {
                      const std::set<std::string> &readonlys);
 
   // Vault operations
-  bool VaultStoreInfo(boost::uint64_t *offered_space,
-                      boost::uint64_t *free_space);
-  bool VaultContactInfo(dht::kademlia::Contact *contact);
-  OwnLocalVaultResult SetLocalVaultOwned(
-      const boost::uint32_t &port,
-      const boost::uint64_t &space,
-      const std::string &vault_dir) const;
-  bool IsLocalVaultOwned();
+//  bool VaultStoreInfo(boost::uint64_t *offered_space,
+//                      boost::uint64_t *free_space);
+//  bool VaultContactInfo(dht::kademlia::Contact *contact);
+//  OwnLocalVaultResult SetLocalVaultOwned(
+//      const boost::uint32_t &port,
+//      const boost::uint64_t &space,
+//      const std::string &vault_dir) const;
+//  bool IsLocalVaultOwned();
 
 
   // FUSE based stuff here
@@ -289,7 +289,7 @@ class ClientController {
                        ser_dm_(),
                        db_enc_queue_(),
                        seh_(),
-                       instant_messages_(),
+//                       instant_messages_(),
                        received_messages_(),
                        rec_msg_mutex_(),
                        clear_messages_thread_(),
@@ -297,7 +297,7 @@ class ClientController {
                        initialised_(false),
                        logging_out_(false),
                        logged_in_(false),
-                       imn_(),
+//                       imn_(),
                        K_(0),
                        upper_threshold_(0),
                        to_seh_file_update_(),
@@ -323,15 +323,15 @@ class ClientController {
   int RemoveDb(const std::string &path_);
   DirType GetDirType(const std::string &path_);
   int PathDistinction(const std::string &path, std::string *msid);
-  void ClearStaleMessages();
-  void SetLocalVaultOwnedCallback(const OwnLocalVaultResult &result,
-                                  const std::string &pmid_name,
-                                  bool *callback_arrived,
-                                  OwnLocalVaultResult *res);
-  VaultOwnershipStatus LocalVaultOwned() const;
-  void LocalVaultOwnedCallback(const VaultOwnershipStatus &result,
-                               bool *callback_arrived,
-                               VaultOwnershipStatus *res);
+//  void ClearStaleMessages();
+//  void SetLocalVaultOwnedCallback(const OwnLocalVaultResult &result,
+//                                  const std::string &pmid_name,
+//                                  bool *callback_arrived,
+//                                  OwnLocalVaultResult *res);
+//  VaultOwnershipStatus LocalVaultOwned() const;
+//  void LocalVaultOwnedCallback(const VaultOwnershipStatus &result,
+//                               bool *callback_arrived,
+//                               VaultOwnershipStatus *res);
   std::string GenerateBPInfo();
   std::vector<std::string> GetOffLineContacts();
   void FileUpdate(const std::string &file, int percentage);
@@ -350,7 +350,7 @@ class ClientController {
   std::string ser_da_, ser_dm_;
   std::map<std::string, std::pair<std::string, std::string> > db_enc_queue_;
   SEHandler seh_;
-  std::list<InstantMessage> instant_messages_;
+//  std::list<InstantMessage> instant_messages_;
   std::map<std::string, boost::uint32_t> received_messages_;
   boost::mutex rec_msg_mutex_;
   boost::thread clear_messages_thread_;
@@ -358,7 +358,7 @@ class ClientController {
   bool initialised_;
   bool logging_out_;
   bool logged_in_;
-  IMNotifier imn_;
+//  IMNotifier imn_;
   boost::uint8_t K_;
   boost::uint16_t upper_threshold_;
   bs2::connection to_seh_file_update_;

@@ -23,7 +23,7 @@
 */
 
 #include "maidsafe/client/clientutils.h"
-#include "maidsafe/shared/commonutils.h"
+#include "maidsafe/common/crypto.h"
 #include "maidsafe/client/sessionsingleton.h"
 
 namespace maidsafe {
@@ -67,7 +67,7 @@ void ClientUtils::GetChunkSignatureKeys(DirType dir_type,
     case PRIVATE_SHARE:
       if (kSuccess == ss_->GetShareKeys(msid, public_key, private_key)) {
         *key_id = msid;
-        *public_key_sig = RSASign(*public_key, *private_key);
+//        *public_key_sig = RSASign(*public_key, *private_key);
       } else {
         key_id->clear();
         public_key->clear();

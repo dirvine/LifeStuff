@@ -25,7 +25,7 @@
 //  #include <maidsafe/base/log.h>
 #include "boost/filesystem.hpp"
 #include "gtest/gtest.h"
-#include "maidsafe/sharedtest/networktest.h"
+//  #include "maidsafe/sharedtest/networktest.h"
 
 int main(int argc, char **argv) {
 //  google::InitGoogleLogging(argv[0]);

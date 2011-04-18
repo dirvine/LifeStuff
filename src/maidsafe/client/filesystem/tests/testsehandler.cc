@@ -27,8 +27,8 @@
 #include "gtest/gtest.h"
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/encrypt/self_encryption.h"
-#include "maidsafe/shared/chunkstore.h"
-#include "maidsafe/shared/commonutils.h"
+#include "maidsafe/common/chunk_store.h"
+#include "maidsafe/common/crypto.h"
 #include "maidsafe/shared/filesystem.h"
 #include "maidsafe/client/filesystem/dataatlashandler.h"
 #include "maidsafe/client/filesystem/sehandler.h"
@@ -174,14 +174,14 @@ class SEHandlerTest : public testing::Test {
     catch(const std::exception& e) {
       printf("%s\n", e.what());
     }
-    client_chunkstore_ = std::shared_ptr<ChunkStore>(
-                             new ChunkStore(test_root_dir_.string(), 0, 0));
-    ASSERT_TRUE(client_chunkstore_->Init());
+//    client_chunkstore_ = std::shared_ptr<ChunkStore>(
+//                             new ChunkStore(test_root_dir_.string(), 0, 0));
+//    ASSERT_TRUE(client_chunkstore_->Init());
     int count(0);
-    while (!client_chunkstore_->is_initialised() && count < 10000) {
-      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-      count += 10;
-    }
+//    while (!client_chunkstore_->is_initialised() && count < 10000) {
+//      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+//      count += 10;
+//    }
     sm_.reset(new LocalStoreManager(client_chunkstore_, test_seh::K,
                                     test_root_dir_));
     sm_->Init(boost::bind(&test::CallbackObject::ReturnCodeCallback, &cb_, _1),
@@ -313,11 +313,11 @@ TEST_F(SEHandlerTest, BEH_MAID_Check_Entry) {
   fs::create_directories(full_path7);
   fs::path full_path8 = test_seh::CreateRandomFile(rel_str8, size8);
   fs::path full_path9 = test_seh::CreateRandomFile(rel_str9, size9);
-  std::string hash1(SHA512File(full_path1));
-  std::string hash2(SHA512File(full_path2));
-  std::string hash3(SHA512File(full_path3));
+  std::string hash1(crypto::HashFile<crypto::SHA512>(full_path1));
+  std::string hash2(crypto::HashFile<crypto::SHA512>(full_path2));
+  std::string hash3(crypto::HashFile<crypto::SHA512>(full_path3));
   std::string hash6, hash7, hash8;
-  std::string hash9(SHA512File(full_path9));
+  std::string hash9(crypto::HashFile<crypto::SHA512>(full_path9));
   fs::path before(full_path9);
   fs::path after(full_path9.parent_path() / EncodeToHex(hash9));
   try {
@@ -529,7 +529,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithChunksPrevLoaded) {
 
   std::string full_str(test_seh::CreateRandomFile(rel_str, 2048));
   std::string hash_before, hash_after;
-  hash_before = SHA512File(fs::path(full_str));
+  hash_before = crypto::HashFile<crypto::SHA512>(fs::path(full_str));
   int result = seh_->EncryptAFile(rel_str, PRIVATE, "");
   ASSERT_EQ(0, result);
 
@@ -551,7 +551,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithChunksPrevLoaded) {
   result = seh_->DecryptAFile(rel_str);
   ASSERT_EQ(0, result);
   ASSERT_TRUE(fs::exists(full_str));
-  hash_after = SHA512File(fs::path(full_str));
+  hash_after = crypto::HashFile<crypto::SHA512>(fs::path(full_str));
   ASSERT_EQ(hash_before, hash_after);
 }
 
@@ -570,7 +570,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithLoadChunks) {
   std::string full_str = test_seh::CreateRandomFile(rel_str, 256 * 1024);
   std::string hash_before, hash_after;
   fs::path full_path(full_str);
-  hash_before = SHA512File(full_path);
+  hash_before = crypto::HashFile<crypto::SHA512>(full_path);
   int result = seh_->EncryptAFile(rel_str, PRIVATE, "");
   ASSERT_EQ(0, result);
 
@@ -611,7 +611,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithLoadChunks) {
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   ASSERT_EQ(0, result);
   ASSERT_TRUE(fs::exists(full_str));
-  hash_after = SHA512File(fs::path(full_str));
+  hash_after = crypto::HashFile<crypto::SHA512>(fs::path(full_str));
   ASSERT_EQ(hash_before, hash_after);
 }
 
@@ -623,9 +623,9 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptAndDecryptPrivateDb) {
                                                      _2, &res, &m));
 
   fs::path db_path(db_str1_);
-  std::string key = SHA512String("somekey");
+  std::string key = crypto::Hash<crypto::SHA512>("somekey");
   ASSERT_TRUE(fs::exists(db_path));
-  std::string hash_before = SHA512File(db_path);
+  std::string hash_before = crypto::HashFile<crypto::SHA512>(db_path);
 
   // Create the entry
   encrypt::DataMap dm;
@@ -650,7 +650,7 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptAndDecryptPrivateDb) {
   ASSERT_EQ(0, seh_->DecryptDb(TidyPath(kRootSubdir[0][0]), PRIVATE,
                                ser_dm, key, "", true, false));
   ASSERT_TRUE(fs::exists(db_path));
-  ASSERT_EQ(hash_before, SHA512File(db_path));
+  ASSERT_EQ(hash_before, crypto::HashFile<crypto::SHA512>(db_path));
 
   // Deleting the details of the DB
   fs::remove(db_path);
@@ -662,13 +662,13 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptAndDecryptPrivateDb) {
   ASSERT_EQ(0, seh_->DecryptDb(TidyPath(kRootSubdir[0][0]), PRIVATE,
                                ser_dm, key, "", true, false));
   ASSERT_TRUE(fs::exists(db_path));
-  ASSERT_EQ(hash_before, SHA512File(db_path));
+  ASSERT_EQ(hash_before, crypto::HashFile<crypto::SHA512>(db_path));
 
   // Test decryption with the directory DB ser_dm in the map
   ASSERT_EQ(0, seh_->DecryptDb(TidyPath(kRootSubdir[0][0]), PRIVATE,
                                ser_dm, key, "", true, false));
   ASSERT_TRUE(fs::exists(db_path));
-  ASSERT_EQ(hash_before, SHA512File(db_path));
+  ASSERT_EQ(hash_before, crypto::HashFile<crypto::SHA512>(db_path));
   fs::remove(file_system::MaidsafeDir(ss_->SessionName()) / key);
 }
 
@@ -676,7 +676,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptAndDecryptAnonDb) {
   fs::path db_path(db_str2_);
   std::string key = "testkey";
   ASSERT_TRUE(fs::exists(db_path));
-  std::string hash_before = SHA512File(db_path);
+  std::string hash_before = crypto::HashFile<crypto::SHA512>(db_path);
   std::string ser_dm;
 // *********************************************
 // Anonymous Shares are disabled at the moment *
@@ -691,11 +691,11 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptAndDecryptAnonDb) {
 //  ASSERT_EQ(0, seh->DecryptDb(TidyPath(kSharesSubdir[1][0]),
 //    ANONYMOUS, ser_dm, key, "", false, false));
   ASSERT_TRUE(fs::exists(db_path));
-  ASSERT_EQ(hash_before, SHA512File(db_path));
+  ASSERT_EQ(hash_before, crypto::HashFile<crypto::SHA512>(db_path));
 //  ASSERT_EQ(0, seh->DecryptDb(TidyPath(kSharesSubdir[1][0]),
 //    ANONYMOUS, "", key, "", false, false));
   ASSERT_TRUE(fs::exists(db_path));
-  ASSERT_EQ(hash_before, SHA512File(db_path));
+  ASSERT_EQ(hash_before, crypto::HashFile<crypto::SHA512>(db_path));
   fs::remove(file_system::MaidsafeDir(ss_->SessionName()) / key);
 }
 
@@ -737,12 +737,12 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureOfChunkEncryptingFile) {
 
     // delete one of the chunks
     try {
-      ChunkType type = client_chunkstore_->chunk_type(a);
-      fs::path chunk_path(client_chunkstore_->GetChunkPath(a, type, false));
-      if (fs::exists(chunk_path)) {
-        fs::remove_all(chunk_path);
-//        printf("Deleted chunk %s\n", chunk_path.string().c_str());
-      }
+//      ChunkType type = client_chunkstore_->chunk_type(a);
+//      fs::path chunk_path(client_chunkstore_->GetChunkPath(a, type, false));
+//      if (fs::exists(chunk_path)) {
+//        fs::remove_all(chunk_path);
+////        printf("Deleted chunk %s\n", chunk_path.string().c_str());
+//      }
     }
     catch(const std::exception &e) {
       FAIL() << "Couldn't erase chunk - " << e.what();
@@ -921,13 +921,13 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureSteppedMultipleEqualFiles) {
   int removee = RandomUint32() % chunkage;
   std::string enc_removee(dms[file_dm].chunks[removee].hash);
   try {
-    ChunkType type = client_chunkstore_->chunk_type(enc_removee);
-    fs::path chunk_path(client_chunkstore_->GetChunkPath(enc_removee, type,
-                                                         false));
-    if (fs::exists(chunk_path)) {
-      fs::remove_all(chunk_path);
+//    ChunkType type = client_chunkstore_->chunk_type(enc_removee);
+//    fs::path chunk_path(client_chunkstore_->GetChunkPath(enc_removee, type,
+//                                                         false));
+//    if (fs::exists(chunk_path)) {
+//      fs::remove_all(chunk_path);
 //      printf("Deleted chunk %s\n", chunk_path.string().c_str());
-    }
+//    }
   }
   catch(const std::exception &e) {
     FAIL() << "Couldn't erase chunk - " << e.what();

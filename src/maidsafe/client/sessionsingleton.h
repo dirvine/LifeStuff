@@ -107,7 +107,7 @@ struct UserDetails {
                   mounted(0),
                   win_drive('\0'),
                   connection_status(0),
-                  ep(),
+//                  ep(),
                   pd() {}
   DefConLevels defconlevel;
   bool da_modified;
@@ -119,13 +119,13 @@ struct UserDetails {
   int mounted;
   char win_drive;
   int connection_status;
-  EndPoint ep;
+//  EndPoint ep;
   PersonalDetails pd;
 };
 
 struct ConnectionDetails {
   ConnectionDetails() {}
-  EndPoint ep;
+//  EndPoint ep;
   boost::uint16_t transport;
   boost::uint32_t connection_id;
   int status;
@@ -160,7 +160,7 @@ class SessionSingleton {
   int Mounted();
   char WinDrive();
   int ConnectionStatus();
-  EndPoint Ep();
+//  EndPoint Ep();
   PersonalDetails Pd();
 
   // Mutators
@@ -176,7 +176,7 @@ class SessionSingleton {
   bool SetMounted(int mounted);
   bool SetWinDrive(char win_drive);
   bool SetConnectionStatus(int status);
-  bool SetEp(const EndPoint &ep);
+//  bool SetEp(const EndPoint &ep);
   bool SetPd(const PersonalDetails &pd);
 
   ///////////////////////////
@@ -285,36 +285,36 @@ class SessionSingleton {
   //// Live Contact Handling ////
   ///////////////////////////////
 
-  typedef std::map<std::string, ConnectionDetails> live_map;
-  int AddLiveContact(const std::string &contact,
-                     const EndPoint &end_points,
-                     int status);
-  int LivePublicUsernameList(std::list<std::string> *contacts);
-  int LiveContactMap(std::map<std::string, ConnectionDetails> *live_contacts);
-  int LiveContactDetails(const std::string &contact,
-                         EndPoint *end_points,
-                         boost::uint16_t *transport_id,
-                         boost::uint32_t *connection_id,
-                         int *status,
-                         boost::uint32_t *init_timestamp);
-  int LiveContactTransportConnection(const std::string &contact,
-                                     boost::uint16_t *transport_id,
-                                     boost::uint32_t *connection_id);
-  int LiveContactStatus(const std::string &contact, int *status);
-  int StartLiveConnection(const std::string &contact,
-                          boost::uint16_t transport_id,
-                          const boost::uint32_t &connection_id);
-  int ModifyTransportId(const std::string &contact,
-                        boost::uint16_t transport_id);
-  int ModifyConnectionId(const std::string &contact,
-                         const boost::uint32_t &connection_id);
-  int ModifyEndPoint(const std::string &contact, const std::string &ip,
-                     const boost::uint16_t &port, int which);
-  int ModifyEndPoint(const std::string &contact, const EndPoint end_point);
-  int ModifyStatus(const std::string &contact,
-                   int status);
-  int DeleteLiveContact(const std::string &contact);
-  void ClearLiveContacts();
+//  typedef std::map<std::string, ConnectionDetails> live_map;
+//  int AddLiveContact(const std::string &contact,
+//                     const EndPoint &end_points,
+//                     int status);
+//  int LivePublicUsernameList(std::list<std::string> *contacts);
+//  int LiveContactMap(std::map<std::string, ConnectionDetails> *live_contacts);
+//  int LiveContactDetails(const std::string &contact,
+//                         EndPoint *end_points,
+//                         boost::uint16_t *transport_id,
+//                         boost::uint32_t *connection_id,
+//                         int *status,
+//                         boost::uint32_t *init_timestamp);
+//  int LiveContactTransportConnection(const std::string &contact,
+//                                     boost::uint16_t *transport_id,
+//                                     boost::uint32_t *connection_id);
+//  int LiveContactStatus(const std::string &contact, int *status);
+//  int StartLiveConnection(const std::string &contact,
+//                          boost::uint16_t transport_id,
+//                          const boost::uint32_t &connection_id);
+//  int ModifyTransportId(const std::string &contact,
+//                        boost::uint16_t transport_id);
+//  int ModifyConnectionId(const std::string &contact,
+//                         const boost::uint32_t &connection_id);
+//  int ModifyEndPoint(const std::string &contact, const std::string &ip,
+//                     const boost::uint16_t &port, int which);
+//  int ModifyEndPoint(const std::string &contact, const EndPoint end_point);
+//  int ModifyStatus(const std::string &contact,
+//                   int status);
+//  int DeleteLiveContact(const std::string &contact);
+//  void ClearLiveContacts();
 
  protected:
   SessionSingleton() : ud_(),

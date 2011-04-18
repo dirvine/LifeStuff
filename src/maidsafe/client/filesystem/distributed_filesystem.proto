@@ -1,5 +1,5 @@
 //#import "maidsafe/encrypt/datamap.proto";
-import "maidsafe/shared/packet.proto";
+// import "maidsafe/shared/packet.proto";
 
 package maidsafe;
 

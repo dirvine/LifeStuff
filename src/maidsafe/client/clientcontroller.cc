@@ -34,8 +34,8 @@
 #include "maidsafe/dht/kademlia/contact.h"
 #include "maidsafe/encrypt/self_encryption.h"
 #include "maidsafe/encrypt/data_map.h"
-#include "maidsafe/shared/chunkstore.h"
-#include "maidsafe/shared/commonutils.h"
+#include "maidsafe/common/chunk_store.h"
+#include "maidsafe/common/crypto.h"
 #include "maidsafe/client/filesystem/dataatlashandler.h"
 #include "maidsafe/client/clientutils.h"
 
@@ -130,14 +130,14 @@ int ClientController::Init(boost::uint8_t k) {
 #endif
     return -4;
   }
-  client_chunkstore_ = std::shared_ptr<ChunkStore>
-      (new ChunkStore(client_path.string(), 0, 0));
-  if (!client_chunkstore_->Init()) {
-#ifdef DEBUG
-    printf("CC::Init - Failed to initialise client chunkstore.\n");
-#endif
-    return -5;
-  }
+//  client_chunkstore_ = std::shared_ptr<ChunkStore>
+//      (new ChunkStore(client_path.string(), 0, 0));
+//  if (!client_chunkstore_->Init()) {
+//#ifdef DEBUG
+//    printf("CC::Init - Failed to initialise client chunkstore.\n");
+//#endif
+//    return -5;
+//  }
 #ifdef LOCAL_LifeStuffVAULT
   sm_.reset(new LocalStoreManager(client_chunkstore_, K_, ""));
 #else
@@ -341,7 +341,7 @@ int ClientController::SerialiseDa() {
   ser_dm_.clear();
   data_atlas.SerializeToString(&ser_da_);
 
-  std::string file_hash(EncodeToHex(SHA512String(ser_da_)));
+  std::string file_hash(EncodeToHex(crypto::Hash<crypto::SHA512>(ser_da_)));
   seh_.EncryptString(ser_da_, &ser_dm_);
 
 #ifdef DEBUG
@@ -392,18 +392,18 @@ bool ClientController::CreateUser(const std::string &username,
   }
 
   // Create the account
-  result = sm_->CreateAccount(vcp.space * 1024 * 1024);
-  if (result != kSuccess) {
-#ifdef DEBUG
-    printf("In CC::CreateUser - Failed to create user account.\n");
-#endif
-    ss_->ResetSession();
-    return false;
-  } else {
-#ifdef DEBUG
-    printf("In CC::CreateUser - sm_->CreateAccount DONE.\n");
-#endif
-  }
+//  result = sm_->CreateAccount(vcp.space * 1024 * 1024);
+//  if (result != kSuccess) {
+//#ifdef DEBUG
+//    printf("In CC::CreateUser - Failed to create user account.\n");
+//#endif
+//    ss_->ResetSession();
+//    return false;
+//  } else {
+//#ifdef DEBUG
+//    printf("In CC::CreateUser - sm_->CreateAccount DONE.\n");
+//#endif
+//  }
 
   // TODO(Fraser#5#): 2010-02-26 - Once GUI has got vault_dir defaulting to
   // ApplicationDataDir, change this back to allow vcp.directory to be passed.
@@ -420,11 +420,11 @@ bool ClientController::CreateUser(const std::string &username,
 //      return false;
 //    }
 
-  client_chunkstore_->Init();
+//  client_chunkstore_->Init();
   seh_.Init(sm_, client_chunkstore_);
   std::string ser_da(ss_->SerialiseKeyring());
 
-  std::string hashed(SHA512String(ser_da));
+  std::string hashed(crypto::Hash<crypto::SHA512>(ser_da));
   std::string ser_dm;
   result = seh_.EncryptString(ser_da, &ser_dm);
 
@@ -576,7 +576,7 @@ bool ClientController::CreateUser(const std::string &username,
 
   logged_in_ = true;
   // setting endpoint in session
-  sm_->SetSessionEndPoint();
+//  sm_->SetSessionEndPoint();
   return true;
 }
 
@@ -630,7 +630,7 @@ bool ClientController::ValidateUser(const std::string &password) {
 #endif
     return false;
   }
-  client_chunkstore_->Init();
+//  client_chunkstore_->Init();
   seh_.Init(sm_, client_chunkstore_);
   if (seh_.DecryptString(ser_dm_, &ser_da_) != 0) {
     ss_->ResetSession();
@@ -670,28 +670,28 @@ bool ClientController::ValidateUser(const std::string &password) {
   file_system::FuseMountPoint(ss_->SessionName());
 
   // setting endpoint in session
-  sm_->SetSessionEndPoint();
+//  sm_->SetSessionEndPoint();
 
   // Do BP operations if need be
   if (!ss_->PublicUsername().empty()) {
     // Getting presense of contacts
-    std::list<LivePresence> presence_msgs;
-    if (sm_->LoadBPPresence(&presence_msgs) > 0) {
-      std::list<LivePresence>::const_iterator it = presence_msgs.begin();
-      for (; it != presence_msgs.end(); ++it) {
-        EndPoint ep;
-        if (ep.ParseFromString(it->end_point())) {
-          ss_->AddLiveContact(it->contact_id(), ep, 0);
-          sm_->SendPresence(it->contact_id());
-        }
-      }
-    }
-    std::vector<std::string> offline_ctcs = GetOffLineContacts();
-    std::map<std::string, ReturnCode> results;
-    sm_->AddBPPresence(offline_ctcs, &results);
+//    std::list<LivePresence> presence_msgs;
+//    if (sm_->LoadBPPresence(&presence_msgs) > 0) {
+//      std::list<LivePresence>::const_iterator it = presence_msgs.begin();
+//      for (; it != presence_msgs.end(); ++it) {
+//        EndPoint ep;
+//        if (ep.ParseFromString(it->end_point())) {
+//          ss_->AddLiveContact(it->contact_id(), ep, 0);
+//          sm_->SendPresence(it->contact_id());
+//        }
+//      }
+//    }
+//    std::vector<std::string> offline_ctcs = GetOffLineContacts();
+//    std::map<std::string, ReturnCode> results;
+//    sm_->AddBPPresence(offline_ctcs, &results);
 
-    clear_messages_thread_ = boost::thread(
-                             &ClientController::ClearStaleMessages, this);
+//    clear_messages_thread_ = boost::thread(
+//                             &ClientController::ClearStaleMessages, this);
   }
 
   logged_in_ = true;
@@ -790,7 +790,7 @@ bool ClientController::Logout() {
 
   file_system::UnMount(ss_->SessionName(), ss_->DefConLevel());
   ss_->ResetSession();
-  instant_messages_.clear();
+//  instant_messages_.clear();
   {
     boost::mutex::scoped_lock loch(rec_msg_mutex_);
     received_messages_.clear();
@@ -962,15 +962,15 @@ bool ClientController::CreatePublicUsername(const std::string &pub_username) {
     return false;
   }
 
-  if (sm_->CreateBP() != kSuccess) {
-#ifdef DEBUG
-    printf("CC::CreatePublicUsername - Failed to create the BP.\n");
-#endif
-    return false;
-  }
+//  if (sm_->CreateBP() != kSuccess) {
+//#ifdef DEBUG
+//    printf("CC::CreatePublicUsername - Failed to create the BP.\n");
+//#endif
+//    return false;
+//  }
 
-  clear_messages_thread_ = boost::thread(
-                           &ClientController::ClearStaleMessages, this);
+//  clear_messages_thread_ = boost::thread(
+//                           &ClientController::ClearStaleMessages, this);
   return true;
 }
 
@@ -996,759 +996,759 @@ int ClientController::ChangeConnectionStatus(int status) {
 // Message Operations //
 ////////////////////////
 
-bool ClientController::GetMessages() {
-  if (!initialised_) {
-#ifdef DEBUG
-    printf("CC::GetMessages - Not initialised.\n");
-#endif
-    return false;
-  }
-  // Only getting MPID buffer packet
-  if (ss_->PublicUsername().empty()) {
-#ifdef DEBUG
-    printf("ClientController::GetMessages - How about the P.U.?\n");
-#endif
-    return false;
-  }
-
-  std::list<ValidatedBufferPacketMessage> valid_messages;
-  if (sm_->LoadBPMessages(&valid_messages) < upper_threshold_) {
-#ifdef DEBUG
-    printf("ClientController::GetMessages - Muffed the load\n");
-#endif
-    return false;
-  }
-  if (valid_messages.empty()) {
-    // TODO(Team#5#): return code for no messages
-    return true;
-  }
-  HandleMessages(&valid_messages);
-  return true;
-}
-
-int ClientController::HandleMessages(
-    std::list<ValidatedBufferPacketMessage> *valid_messages) {
-  if (!initialised_) {
-#ifdef DEBUG
-    printf("CC::HandleMessages - Not initialised.\n");
-#endif
-    return kClientControllerNotInitialised;
-  }
-
-  int result = 0;
-  while (!valid_messages->empty()) {
-    std::map<std::string, boost::uint32_t>::iterator it;
-    rec_msg_mutex_.lock();
-    it = received_messages_.find(valid_messages->front().SerializeAsString());
-    if (it != received_messages_.end()) {
-#ifdef DEBUG
-      printf("ClientController::HandleMessages - Previously received msg.\n");
-#endif
-      rec_msg_mutex_.unlock();
-      valid_messages->pop_front();
-      continue;
-    }
-
-    boost::uint32_t now = /*GetDurationSinceEpoch()*/0;
-    received_messages_.insert(std::pair<std::string, boost::uint32_t>(
-                              valid_messages->front().SerializeAsString(),
-                              now));
-    rec_msg_mutex_.unlock();
-    switch (valid_messages->front().type()) {
-      case ADD_CONTACT_RQST:
-      case INSTANT_MSG:
-          result += HandleInstantMessage(valid_messages->front());
-          break;
-      default: break;  // TODO(Team): define other types of message
-    }
-    valid_messages->pop_front();
-  }
-  return result;
-}
-
-void ClientController::ClearStaleMessages() {
-  while (!logging_out_) {
-    int round(0);
-    while (round < 2) {
-      if (!logging_out_) {
-        boost::this_thread::sleep(boost::posix_time::seconds(5));
-        ++round;
-      } else {
-        return;
-      }
-    }
-    {
-      boost::mutex::scoped_lock loch(rec_msg_mutex_);
-#ifdef DEBUG
-//      printf("CC::ClearStaleMessages timestamp: %d %d\n",
-//             /*GetDurationSinceEpoch()*/0, received_messages_.size());
-#endif
-      boost::uint32_t now = /*GetDurationSinceEpoch()*/0 - 10;
-      std::map<std::string, boost::uint32_t>::iterator it;
-      std::vector<std::string> msgs;
-      for (it = received_messages_.begin();
-           it != received_messages_.end(); ++it) {
-        if (it->second < now)
-          msgs.push_back(it->first);
-      }
-      for (size_t n = 0 ; n < msgs.size(); ++n) {
-        received_messages_.erase(msgs[n]);
-      }
-#ifdef DEBUG
-//      printf("CC::ClearStaleMessages() - erased %d\n", msgs.size());
-#endif
-    }
-  }
-#ifdef DEBUG
-  printf("CC::ClearStaleMessages() - Left\n");
-#endif
-}
-
-int ClientController::HandleDeleteContactNotification(
-    const std::string &sender) {
-  if (!initialised_) {
-#ifdef DEBUG
-    printf("CC::HandleDeleteContactNotification - Not initialised.\n");
-#endif
-    return kClientControllerNotInitialised;
-  }
-  int n = ss_->UpdateContactConfirmed(sender, 'U');
-  if (n != 0) {
-#ifdef DEBUG
-    printf("Status on contact not updated.\n");
-#endif
-    return -40003;
-  }
-
-  return 0;
-}
-
-int ClientController::HandleReceivedShare(
-    const PrivateShareNotification &psn, const std::string &name) {
-  if (!initialised_) {
-#ifdef DEBUG
-    printf("CC::HandleReceivedShare - Not initialised.\n");
-#endif
-    return kClientControllerNotInitialised;
-  }
-#ifdef DEBUG
-  printf("Dir key: %s", HexSubstr(psn.dir_db_key()).c_str());
-  printf("Public key: %s", HexSubstr(psn.public_key()).c_str());
-#endif
-
-  std::vector<std::string> attributes;
-  std::list<ShareParticipants> participants;
-  if (name.empty())
-    attributes.push_back(psn.name());
-  // TODO(Dan#5#): 2009-06-25 - Make sure name is the correct one
-  else
-    attributes.push_back(name);
-  attributes.push_back(psn.msid());
-  attributes.push_back(psn.public_key());
-  attributes.push_back("");
-
-  std::vector<boost::uint32_t> share_stats(2, 0);
-  if (!psn.has_private_key()) {
-    int n = ss_->AddPrivateShare(attributes, share_stats, &participants);
-    if (n != 0)
-      return n;
-  } else {
-    attributes[3] = psn.private_key();
-
-    // Get the public key of the contacts
-    std::vector<Contact> contact_list;
-
-    for (int n = 0; n < psn.admins_size(); n++) {
-      if (psn.admins(n) ==
-          ss_->PublicUsername())
-        continue;  // Not to add myself to the share DB
-      ShareParticipants sp;
-      sp.id = psn.admins(n);
-      sp.role = 'A';
-      contact_list.clear();
-      mi_contact mic;
-      int r = ss_->GetContactInfo(psn.admins(n), &mic);
-      // GetContactList(dbName, contact_list, psn.admins(n), false);
-      if (r == 0) {
-        sp.public_key = mic.pub_key_;
-      } else {  // search for the public key in kadsafe
-        std::string public_key;
-        int result = auth_.PublicUsernamePublicKey(sp.id, &public_key);
-        if (result != kSuccess) {
-#ifdef DEBUG
-          printf("Couldn't find %s's public key.\n", sp.id.c_str());
-#endif
-          return -20002;
-        }
-        sp.public_key = public_key;
-      }
-      participants.push_back(sp);
-    }
-
-    for (int n = 0; n < psn.readonlys_size(); n++) {
-      ShareParticipants sp;
-      sp.id = psn.readonlys(n);
-      sp.role = 'R';
-      contact_list.clear();
-      mi_contact mic;
-      int r = ss_->GetContactInfo(psn.admins(n), &mic);
-      if (r == 0) {
-        sp.public_key = mic.pub_key_;
-      } else {  // search for the public key in kadsafe
-        std::string public_key;
-        int result = auth_.PublicUsernamePublicKey(sp.id, &public_key);
-        if (result != kSuccess) {
-#ifdef DEBUG
-          printf("Couldn't find %s's public key.\n", sp.id.c_str());
-#endif
-          return -20003;
-        }
-        sp.public_key = public_key;
-      }
-      participants.push_back(sp);
-    }
-
-    int n = ss_->AddPrivateShare(attributes, share_stats, &participants);
-    if (n != 0)
-      return n;
-  }
-
-  // Create directory in Shares/Private
-  std::string share_path("Shares/Private/" + psn.name());
-  DirType dir_type;
-  std::string msid("");
-
-  int n = GetDb(share_path, &dir_type, &msid);
-  if (n != 0) {
-#ifdef DEBUG
-    printf("Didn't get the DB.\n");
-#endif
-    return -20004;
-  }
-  std::string ser_mdm("");
-  msid.clear();
-  PathDistinction(share_path, &msid);
-  dir_type = GetDirType(share_path);
-  if (!seh_.ProcessMetaData(share_path, EMPTY_DIRECTORY, "", 0, &ser_mdm)) {
-#ifdef DEBUG
-    printf("Didn't process metadata.\n");
-#endif
-    return -20005;
-  }
-
-  boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler);
-  n = dah->AddElement(share_path, ser_mdm, "", psn.dir_db_key(), false);
-  if (n != 0) {
-#ifdef DEBUG
-    printf("Didn't add element to DB.\n");
-#endif
-    return -20006;
-  }
-  fs::path pp(share_path);
-  dir_type = GetDirType(pp.parent_path().string());
-#ifdef DEBUG
-  printf("CC::HandleReceivedShare, after GetDirType parent(%s): %i.\n",
-    share_path.c_str(), static_cast<int>(dir_type));
-#endif
-
-  if (SaveDb(share_path, dir_type, "", false)) {
-#ifdef DEBUG
-    printf("CC::HandleReceivedShare, SaveDb(%s) failed.\n", share_path.c_str());
-#endif
-    return -20007;
-  }
-  return 0;
-}
-
-int ClientController::HandleInstantMessage(
-    const ValidatedBufferPacketMessage &vbpm) {
-  if (!initialised_) {
-#ifdef DEBUG
-    printf("CC::HandleInstantMessage - Not initialised.\n");
-#endif
-    return kClientControllerNotInitialised;
-  }
-  InstantMessage im;
-  if (im.ParseFromString(vbpm.message())) {
-      instant_messages_.push_back(im);
-    return 0;
-  }
-
-  return -1;
-}
-
-int ClientController::AddInstantFile(
-    const InstantFileNotification &ifm, const std::string &location) {
-  if (!initialised_) {
-#ifdef DEBUG
-    printf("CC::AddInstantFile - Not initialised.\n");
-#endif
-    return kClientControllerNotInitialised;
-  }
-  fs::path path(TidyPath(kRootSubdir[0][0]));
-
-  MetaDataMap sent_mdm;
-  sent_mdm.ParseFromString(ifm.ser_mdm());
-
-  MetaDataMap mdm;
-  mdm.set_id(-2);
-  mdm.set_display_name(ifm.filename());
-  mdm.set_type(sent_mdm.type());
-  mdm.set_stats("");
-  mdm.set_tag(sent_mdm.tag());
-  mdm.set_file_size_high(sent_mdm.file_size_high());
-  mdm.set_file_size_low(sent_mdm.file_size_low());
-  mdm.set_creation_time(/*GetDurationSinceEpoch()*/0);
-  mdm.set_last_modified(/*GetDurationSinceEpoch()*/0);
-  mdm.set_last_access(/*GetDurationSinceEpoch()*/0);
-  std::string dir_key;
-
-  boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-  fs::path path_with_filename;
-  if (location.empty()) {
-    path_with_filename = fs::path(TidyPath(kRootSubdir[0][0]));
-    path_with_filename /= ifm.filename();
-  } else {
-    // TODO(Dan#5#): 2009-06-25 - Make sure location is the correct path
-    path_with_filename = fs::path(TidyPath(location));
-    mdm.set_display_name(path_with_filename.filename().string());
-  }
-  std::string ser_mdm;
-  mdm.SerializeToString(&ser_mdm);
-  std::string path_add_element(path_with_filename.string());
-  DirType dir_type;
-  std::string msid;
-  int n = GetDb(path_add_element, &dir_type, &msid);
-  if (n != 0) {
-#ifdef DEBUG
-    printf("MAS - Riata en GetDb - %s\n", path_add_element.c_str());
-#endif
-    return -8888888;
-  }
-
-  n = dah_->AddElement(path_add_element, ser_mdm, ifm.ser_dm(), dir_key, false);
-  if (n != 0) {
-#ifdef DEBUG
-    printf("Riata en AddElement\n");
-#endif
-    return -1111;
-  }
-
-  std::string path_save_db(path_with_filename.string());
-  if (msid.empty()) {
-    if (SaveDb(path_save_db, dir_type, msid, false)) {
-#ifdef DEBUG
-      printf("\t\tCC::AddInstantFile failed to save the db to queue. %i %s\n",
-        dir_type, path_save_db.c_str());
-#endif
-      return -11111;
-    }
-  } else {
-    if (SaveDb(path_save_db, dir_type, msid, true)) {
-#ifdef DEBUG
-      printf("\t\tCC::AddInstantFile failed to save the db immediately.\n");
-#endif
-      return -111111;
-    }
-  }
-
-  return 0;
-}
-
-int ClientController::HandleAddContactRequest(
-    const ContactInfo &ci, const std::string &sender) {
-//  printf("CC::HandleAddContactRequest - 000000000.\n");
-  if (!initialised_) {
-#ifdef DEBUG
-    printf("CC::HandleAddContactRequest - Not initialised.\n");
-#endif
-    return kClientControllerNotInitialised;
-  }
-
-  // Check if contact is on the list and has unconfirmed status
-//  printf("CC::HandleAddContactRequest - 1111111111.\n");
-  std::string rec_public_key;
-  mi_contact mic;
-  if (ss_->GetContactInfo(sender, &mic) == 0) {  // Contact exists
-    if (mic.confirmed_ == 'C') {
-#ifdef DEBUG
-      printf("Sender's already confirmed.\n");
-#endif
-      return -7;
-    }
-    int n =  ss_->UpdateContactConfirmed(sender, 'C');
-    if (n != 0) {
-#ifdef DEBUG
-      printf("Couldn't update sender's confirmed status.\n");
-#endif
-      return -77;
-    }
-    rec_public_key = mic.pub_key_;
-  } else {  // Contact didn't exist. Add from scratch.
-    // Get contact's public key
-//    printf("CC::HandleAddContactRequest - 222222222.\n");
-    int result = auth_.PublicUsernamePublicKey(sender, &rec_public_key);
-    if (result != kSuccess) {
-#ifdef DEBUG
-      printf("Can't get sender's public key.\n");
-#endif
-      return -777;
-    }
-
-    // Add to the contacts MI
-//    printf("QQQQQQQQQQQQQQQQQQQQQQQQQQQQ\n");
-    int n = ss_->AddContact(sender, rec_public_key, ci.name(),
-                            ci.office_number(), ci.birthday(),
-                            ci.gender().empty() ? 'M' : ci.gender().at(0),
-                            ci.language(), ci.country(), ci.city(), 'C', 0, 0);
-//    printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
-    if (n != 0) {
-#ifdef DEBUG
-      printf("ClientController::HandleAddContactRequest - "
-             "Adding contact failed.\n");
-#endif
-      return -7777;
-    }
-
-    std::string bpinfo = GenerateBPInfo();
-    if (bpinfo.empty()) {
-#ifdef DEBUG
-      printf("ClientController::HandleAddContactRequest - BPI empty\n");
-#endif
-      return -77777;
-    }
-    if (sm_->ModifyBPInfo(bpinfo) != kSuccess) {
-#ifdef DEBUG
-      printf("ClientController::HandleAddContactRequest - Failed save BPI\n");
-#endif
-      return -777777;
-    }
-  }
-
-  InstantMessage im;
-  ContactNotification *cn = im.mutable_contact_notification();
-  ContactInfo *info = cn->mutable_contact();
-
-  info->set_name(ss_->Pd().full_name());
-  info->set_birthday(ss_->Pd().birthday());
-  info->set_office_number(ss_->Pd().phone_number());
-  info->set_gender(ss_->Pd().gender());
-  info->set_country(ss_->Pd().country());
-  info->set_city(ss_->Pd().city());
-  info->set_language(ss_->Pd().language());
-
-  cn->set_action(1);
-
-  std::string message("\"");
-  message += ss_->PublicUsername() + "\" has confirmed you as a contact.";
-  im.set_sender(ss_->PublicUsername());
-  im.set_date(/*GetDurationSinceEpoch()*/0);
-  im.set_message(message);
-  std::string ser_im;
-  im.SerializeToString(&ser_im);
-
-  std::vector<std::string> contact_names;
-  contact_names.push_back(sender);
-  std::map<std::string, ReturnCode> add_results;
-  if (sm_->SendAMessage(contact_names, ser_im, INSTANT_MSG,
-      &add_results) != static_cast<int>(contact_names.size())) {
-#ifdef DEBUG
-    printf("ClientController::HandleAddContactRequest - Failed send msg\n");
-#endif
-    return -7777777;
-  }
-
-  return 0;
-}
-
-int ClientController::HandleAddContactResponse(
-    const ContactInfo &ci, const std::string &sender) {
-  if (!initialised_) {
-#ifdef DEBUG
-    printf("CC::HandleAddContactResponse - Not initialised.\n");
-#endif
-    return kClientControllerNotInitialised;
-  }
-
-  std::vector<Contact> list;
-  mi_contact mic;
-  int n = ss_->GetContactInfo(sender, &mic);
-  if (n != 0) {
-#ifdef DEBUG
-    printf("ClientController::HandleAddContactResponse - Get list failed.\n");
-#endif
-    return -8;
-  }
-
-  n = ss_->UpdateContactFullName(sender, ci.name());
-  n += ss_->UpdateContactOfficePhone(sender, ci.office_number());
-  n += ss_->UpdateContactBirthday(sender, ci.birthday());
-  n += ss_->UpdateContactGender(sender,
-                                ci.gender().empty() ? 'M' : ci.gender().at(0));
-  n += ss_->UpdateContactLanguage(sender, ci.language());
-  n += ss_->UpdateContactCountry(sender, ci.country());
-  n += ss_->UpdateContactCity(sender, ci.city());
-  n += ss_->UpdateContactConfirmed(sender, 'C');
-  if (n != 0) {
-#ifdef DEBUG
-    printf("ClientController::HandleAddContactResponse - No update contact.\n");
-#endif
-    return -88;
-  }
-  return 0;
-}
-
-int ClientController::SendEmail(const std::string &subject,
-                                const std::string &msg,
-                                const std::vector<std::string> &to,
-                                const std::vector<std::string> &cc,
-                                const std::vector<std::string> &bcc,
-                                const std::string &conversation) {
-  if (!initialised_) {
-#ifdef DEBUG
-    printf("CC::SendEmail - Not initialised.\n");
-#endif
-    return kClientControllerNotInitialised;
-  }
-  if (ss_->ConnectionStatus() == 1) {
-#ifdef DEBUG
-    printf("Can't send an email while off-line.\n");
-#endif
-    return -9999;
-  }
-
-  std::string toList, ccList;
-  std::vector<std::string> contact_to;
-
-  BOOST_FOREACH(std::string contact, to) {
-    contact_to.push_back(contact);
-    toList.append(contact+", ");
-  }
-  BOOST_FOREACH(std::string contact, cc) {
-    contact_to.push_back(contact);
-    ccList.append(contact+", ");
-  }
-  BOOST_FOREACH(std::string contact, bcc) {
-    contact_to.push_back(contact);
-  }
-
-  InstantMessage im;
-  EmailNotification *en =
-    im.mutable_email_notification();
-  en->set_to(toList);
-  en->set_cc(ccList);
-  im.set_sender(ss_->PublicUsername());
-  im.set_date(/*GetDurationSinceEpoch()*/0);
-  im.set_conversation(conversation);
-  im.set_message(msg);
-  im.set_subject(subject);
-
-  std::string ser_email;
-  im.SerializeToString(&ser_email);
-
-  std::map<std::string, ReturnCode> add_results;
-  if (sm_->SendAMessage(contact_to, ser_email, INSTANT_MSG, &add_results) !=
-      static_cast<int>(contact_to.size())) {
-#ifdef DEBUG
-    printf("ClientController::SendEmail - Not all recepients got "
-           "the message\n");
-#endif
-    return -999;
-  }
-
-  int res = 0;
-  for (size_t n = 0; n < contact_to.size(); ++n) {
-    res += ss_->SetLastContactRank(contact_to[n]);
-  }
-
-  return res;
-}
-
-int ClientController::SendInstantMessage(
-    const std::string &message,
-    const std::vector<std::string> &contact_names,
-    const std::string &conversation) {
-  if (!initialised_) {
-#ifdef DEBUG
-    printf("CC::SendInstantMessage - Not initialised.\n");
-#endif
-    return kClientControllerNotInitialised;
-  }
-  if (ss_->ConnectionStatus() == 1) {
-#ifdef DEBUG
-    printf("Can't send a message while off-line.\n");
-#endif
-    return -9999;
-  }
-
-  std::string ser_im;
-  InstantMessage im;
-  im.set_sender(ss_->PublicUsername());
-  im.set_message(message);
-  im.set_date(/*GetDurationSinceEpoch()*/0);
-  im.set_conversation(conversation);
-  im.SerializeToString(&ser_im);
-
-  std::map<std::string, ReturnCode> add_results;
-  if (sm_->SendAMessage(contact_names, ser_im, INSTANT_MSG, &add_results) !=
-      static_cast<int>(contact_names.size())) {
-#ifdef DEBUG
-    printf("ClientController::SendInstantMessage - Not all recepients got "
-           "the message\n");
-#endif
-    return -999;
-  }
-
-  int res = 0;
-  for (size_t n = 0; n < contact_names.size(); ++n) {
-    res += ss_->SetLastContactRank(contact_names[n]);
-  }
-
-  return res;
-}
-
-int ClientController::GetInstantMessages(std::list<InstantMessage> *messages) {
-  if (!initialised_) {
-#ifdef DEBUG
-    printf("CC::GetInstantMessages - Not initialised.\n");
-#endif
-    return kClientControllerNotInitialised;
-  }
-  *messages = instant_messages_;
-  instant_messages_.clear();
-  return 0;
-}
-
-int ClientController::SendInstantFile(
-    std::string *filename, const std::string &msg,
-    const std::vector<std::string> &contact_names,
-    const std::string &conversation) {
-  if (!initialised_) {
-#ifdef DEBUG
-    printf("CC::SendInstantFile - Not initialised.\n");
-#endif
-    return kClientControllerNotInitialised;
-  }
-  if (ss_->ConnectionStatus() == 1) {
-#ifdef DEBUG
-    printf("Can't send a message while off-line.\n");
-#endif
-    return -6666666;
-  }
-
-  std::string path = *filename;
-  DirType dir_type;
-  std::string msid("");
-  int n = GetDb(*filename, &dir_type, &msid);
-  if (n != 0) {
-#ifdef DEBUG
-    printf("GetDb for file location failed.\n");
-#endif
-    return -6;
-  }
-
-  boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-  std::string ser_dm("");
-  n = dah_->GetDataMap(*filename, &ser_dm);
-  if (n != 0) {
-#ifdef DEBUG
-    printf("GetDataMap for instant file failed.\n");
-#endif
-    return -66;
-  }
-
-  std::string ser_mdm("");
-  n = dah_->GetMetaDataMap(*filename, &ser_mdm);
-  if (n != 0) {
-#ifdef DEBUG
-    printf("GetMetaDataMap for instant file failed.\n");
-#endif
-    return -666;
-  }
-
-  fs::path p_filename(*filename);
-  InstantMessage im;
-  InstantFileNotification *ifm =
-      im.mutable_instantfile_notification();
-  ifm->set_ser_mdm(ser_mdm);
-  ifm->set_ser_dm(ser_dm);
-  ifm->set_filename(p_filename.filename().string());
-  im.set_sender(SessionSingleton::getInstance()->PublicUsername());
-  im.set_date(/*GetDurationSinceEpoch()*/0);
-  im.set_conversation(conversation);
-  std::string message;
-  if (msg.empty()) {
-    message = "\"";
-    message += im.sender() + "\" has sent you file " +
-               p_filename.filename().string();
-  } else {
-    message = msg + " - Filename: " + p_filename.filename().string();
-  }
-  im.set_message(message);
-
-  std::string ser_instant_file;
-  im.SerializeToString(&ser_instant_file);
-
-  std::map<std::string, ReturnCode> add_results;
-  if (sm_->SendAMessage(contact_names, ser_instant_file, INSTANT_MSG,
-      &add_results) != static_cast<int>(contact_names.size())) {
-#ifdef DEBUG
-    printf("ClientController::SendInstantFile - Not all recepients got "
-           "the message\n");
-#endif
-    return -666666;
-  }
-
-  int res = 0;
-  for (size_t nn = 0; nn < contact_names.size(); ++nn) {
-    res += ss_->SetLastContactRank(contact_names[nn]);
-  }
-
-  return res;
-}
-
-void ClientController::onInstantMessage(const std::string &message,
-                                        const boost::uint32_t&,
-                                        const boost::int16_t&,
-                                        const double&) {
-  GenericPacket gp;
-  if (!gp.ParseFromString(message)) {
-    return;
-  }
-
-  BufferPacketMessage bpm;
-  if (!bpm.ParseFromString(gp.data())) {
-    return;
-  }
-
-  std::string senders_pk = ss_->GetContactPublicKey(bpm.sender_id());
-  if (senders_pk.empty()) {
-    return;
-  }
-
-  if (!RSACheckSignedData(gp.data(), gp.signature(), senders_pk)) {
-    return;
-  }
-
-  std::string mpid_private_key;
-  if (SessionSingleton::getInstance()->MPublicID(NULL, NULL, &mpid_private_key,
-                                                 NULL) != kSuccess) {
-    return;
-  }
-  std::string aes_key(RSADecrypt(bpm.rsaenc_key(), mpid_private_key));
-  std::string instant_message(AESDecrypt(bpm.aesenc_message(), aes_key));
-  InstantMessage im;
-  if (!im.ParseFromString(instant_message)) {
-    return;
-  }
-  imn_(im);
-//  analyseMessage(im);
-}
-
-void ClientController::SetIMNotifier(IMNotifier imn) {
-  imn_ = imn;
-}
-
+//bool ClientController::GetMessages() {
+//  if (!initialised_) {
+//#ifdef DEBUG
+//    printf("CC::GetMessages - Not initialised.\n");
+//#endif
+//    return false;
+//  }
+//  // Only getting MPID buffer packet
+//  if (ss_->PublicUsername().empty()) {
+//#ifdef DEBUG
+//    printf("ClientController::GetMessages - How about the P.U.?\n");
+//#endif
+//    return false;
+//  }
+//
+//  std::list<ValidatedBufferPacketMessage> valid_messages;
+//  if (sm_->LoadBPMessages(&valid_messages) < upper_threshold_) {
+//#ifdef DEBUG
+//    printf("ClientController::GetMessages - Muffed the load\n");
+//#endif
+//    return false;
+//  }
+//  if (valid_messages.empty()) {
+//    // TODO(Team#5#): return code for no messages
+//    return true;
+//  }
+//  HandleMessages(&valid_messages);
+//  return true;
+//}
+
+//int ClientController::HandleMessages(
+//    std::list<ValidatedBufferPacketMessage> *valid_messages) {
+//  if (!initialised_) {
+//#ifdef DEBUG
+//    printf("CC::HandleMessages - Not initialised.\n");
+//#endif
+//    return kClientControllerNotInitialised;
+//  }
+//
+//  int result = 0;
+//  while (!valid_messages->empty()) {
+//    std::map<std::string, boost::uint32_t>::iterator it;
+//    rec_msg_mutex_.lock();
+//    it = received_messages_.find(valid_messages->front().SerializeAsString());
+//    if (it != received_messages_.end()) {
+//#ifdef DEBUG
+//      printf("ClientController::HandleMessages - Previously received msg.\n");
+//#endif
+//      rec_msg_mutex_.unlock();
+//      valid_messages->pop_front();
+//      continue;
+//    }
+//
+//    boost::uint32_t now = /*GetDurationSinceEpoch()*/0;
+//    received_messages_.insert(std::pair<std::string, boost::uint32_t>(
+//                              valid_messages->front().SerializeAsString(),
+//                              now));
+//    rec_msg_mutex_.unlock();
+//    switch (valid_messages->front().type()) {
+//      case ADD_CONTACT_RQST:
+//      case INSTANT_MSG:
+//          result += HandleInstantMessage(valid_messages->front());
+//          break;
+//      default: break;  // TODO(Team): define other types of message
+//    }
+//    valid_messages->pop_front();
+//  }
+//  return result;
+//}
+//
+//void ClientController::ClearStaleMessages() {
+//  while (!logging_out_) {
+//    int round(0);
+//    while (round < 2) {
+//      if (!logging_out_) {
+//        boost::this_thread::sleep(boost::posix_time::seconds(5));
+//        ++round;
+//      } else {
+//        return;
+//      }
+//    }
+//    {
+//      boost::mutex::scoped_lock loch(rec_msg_mutex_);
+//#ifdef DEBUG
+////      printf("CC::ClearStaleMessages timestamp: %d %d\n",
+////             /*GetDurationSinceEpoch()*/0, received_messages_.size());
+//#endif
+//      boost::uint32_t now = /*GetDurationSinceEpoch()*/0 - 10;
+//      std::map<std::string, boost::uint32_t>::iterator it;
+//      std::vector<std::string> msgs;
+//      for (it = received_messages_.begin();
+//           it != received_messages_.end(); ++it) {
+//        if (it->second < now)
+//          msgs.push_back(it->first);
+//      }
+//      for (size_t n = 0 ; n < msgs.size(); ++n) {
+//        received_messages_.erase(msgs[n]);
+//      }
+//#ifdef DEBUG
+////      printf("CC::ClearStaleMessages() - erased %d\n", msgs.size());
+//#endif
+//    }
+//  }
+//#ifdef DEBUG
+//  printf("CC::ClearStaleMessages() - Left\n");
+//#endif
+//}
+//
+//int ClientController::HandleDeleteContactNotification(
+//    const std::string &sender) {
+//  if (!initialised_) {
+//#ifdef DEBUG
+//    printf("CC::HandleDeleteContactNotification - Not initialised.\n");
+//#endif
+//    return kClientControllerNotInitialised;
+//  }
+//  int n = ss_->UpdateContactConfirmed(sender, 'U');
+//  if (n != 0) {
+//#ifdef DEBUG
+//    printf("Status on contact not updated.\n");
+//#endif
+//    return -40003;
+//  }
+//
+//  return 0;
+//}
+//
+//int ClientController::HandleReceivedShare(
+//    const PrivateShareNotification &psn, const std::string &name) {
+//  if (!initialised_) {
+//#ifdef DEBUG
+//    printf("CC::HandleReceivedShare - Not initialised.\n");
+//#endif
+//    return kClientControllerNotInitialised;
+//  }
+//#ifdef DEBUG
+//  printf("Dir key: %s", HexSubstr(psn.dir_db_key()).c_str());
+//  printf("Public key: %s", HexSubstr(psn.public_key()).c_str());
+//#endif
+//
+//  std::vector<std::string> attributes;
+//  std::list<ShareParticipants> participants;
+//  if (name.empty())
+//    attributes.push_back(psn.name());
+//  // TODO(Dan#5#): 2009-06-25 - Make sure name is the correct one
+//  else
+//    attributes.push_back(name);
+//  attributes.push_back(psn.msid());
+//  attributes.push_back(psn.public_key());
+//  attributes.push_back("");
+//
+//  std::vector<boost::uint32_t> share_stats(2, 0);
+//  if (!psn.has_private_key()) {
+//    int n = ss_->AddPrivateShare(attributes, share_stats, &participants);
+//    if (n != 0)
+//      return n;
+//  } else {
+//    attributes[3] = psn.private_key();
+//
+//    // Get the public key of the contacts
+//    std::vector<Contact> contact_list;
+//
+//    for (int n = 0; n < psn.admins_size(); n++) {
+//      if (psn.admins(n) ==
+//          ss_->PublicUsername())
+//        continue;  // Not to add myself to the share DB
+//      ShareParticipants sp;
+//      sp.id = psn.admins(n);
+//      sp.role = 'A';
+//      contact_list.clear();
+//      mi_contact mic;
+//      int r = ss_->GetContactInfo(psn.admins(n), &mic);
+//      // GetContactList(dbName, contact_list, psn.admins(n), false);
+//      if (r == 0) {
+//        sp.public_key = mic.pub_key_;
+//      } else {  // search for the public key in kadsafe
+//        std::string public_key;
+//        int result = auth_.PublicUsernamePublicKey(sp.id, &public_key);
+//        if (result != kSuccess) {
+//#ifdef DEBUG
+//          printf("Couldn't find %s's public key.\n", sp.id.c_str());
+//#endif
+//          return -20002;
+//        }
+//        sp.public_key = public_key;
+//      }
+//      participants.push_back(sp);
+//    }
+//
+//    for (int n = 0; n < psn.readonlys_size(); n++) {
+//      ShareParticipants sp;
+//      sp.id = psn.readonlys(n);
+//      sp.role = 'R';
+//      contact_list.clear();
+//      mi_contact mic;
+//      int r = ss_->GetContactInfo(psn.admins(n), &mic);
+//      if (r == 0) {
+//        sp.public_key = mic.pub_key_;
+//      } else {  // search for the public key in kadsafe
+//        std::string public_key;
+//        int result = auth_.PublicUsernamePublicKey(sp.id, &public_key);
+//        if (result != kSuccess) {
+//#ifdef DEBUG
+//          printf("Couldn't find %s's public key.\n", sp.id.c_str());
+//#endif
+//          return -20003;
+//        }
+//        sp.public_key = public_key;
+//      }
+//      participants.push_back(sp);
+//    }
+//
+//    int n = ss_->AddPrivateShare(attributes, share_stats, &participants);
+//    if (n != 0)
+//      return n;
+//  }
+//
+//  // Create directory in Shares/Private
+//  std::string share_path("Shares/Private/" + psn.name());
+//  DirType dir_type;
+//  std::string msid("");
+//
+//  int n = GetDb(share_path, &dir_type, &msid);
+//  if (n != 0) {
+//#ifdef DEBUG
+//    printf("Didn't get the DB.\n");
+//#endif
+//    return -20004;
+//  }
+//  std::string ser_mdm("");
+//  msid.clear();
+//  PathDistinction(share_path, &msid);
+//  dir_type = GetDirType(share_path);
+//  if (!seh_.ProcessMetaData(share_path, EMPTY_DIRECTORY, "", 0, &ser_mdm)) {
+//#ifdef DEBUG
+//    printf("Didn't process metadata.\n");
+//#endif
+//    return -20005;
+//  }
+//
+//  boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler);
+//  n = dah->AddElement(share_path, ser_mdm, "", psn.dir_db_key(), false);
+//  if (n != 0) {
+//#ifdef DEBUG
+//    printf("Didn't add element to DB.\n");
+//#endif
+//    return -20006;
+//  }
+//  fs::path pp(share_path);
+//  dir_type = GetDirType(pp.parent_path().string());
+//#ifdef DEBUG
+//  printf("CC::HandleReceivedShare, after GetDirType parent(%s): %i.\n",
+//    share_path.c_str(), static_cast<int>(dir_type));
+//#endif
+//
+//  if (SaveDb(share_path, dir_type, "", false)) {
+//#ifdef DEBUG
+//    printf("CC::HandleReceivedShare, SaveDb(%s) failed.\n", share_path.c_str());
+//#endif
+//    return -20007;
+//  }
+//  return 0;
+//}
+//
+//int ClientController::HandleInstantMessage(
+//    const ValidatedBufferPacketMessage &vbpm) {
+//  if (!initialised_) {
+//#ifdef DEBUG
+//    printf("CC::HandleInstantMessage - Not initialised.\n");
+//#endif
+//    return kClientControllerNotInitialised;
+//  }
+//  InstantMessage im;
+//  if (im.ParseFromString(vbpm.message())) {
+//      instant_messages_.push_back(im);
+//    return 0;
+//  }
+//
+//  return -1;
+//}
+//
+//int ClientController::AddInstantFile(
+//    const InstantFileNotification &ifm, const std::string &location) {
+//  if (!initialised_) {
+//#ifdef DEBUG
+//    printf("CC::AddInstantFile - Not initialised.\n");
+//#endif
+//    return kClientControllerNotInitialised;
+//  }
+//  fs::path path(TidyPath(kRootSubdir[0][0]));
+//
+//  MetaDataMap sent_mdm;
+//  sent_mdm.ParseFromString(ifm.ser_mdm());
+//
+//  MetaDataMap mdm;
+//  mdm.set_id(-2);
+//  mdm.set_display_name(ifm.filename());
+//  mdm.set_type(sent_mdm.type());
+//  mdm.set_stats("");
+//  mdm.set_tag(sent_mdm.tag());
+//  mdm.set_file_size_high(sent_mdm.file_size_high());
+//  mdm.set_file_size_low(sent_mdm.file_size_low());
+//  mdm.set_creation_time(/*GetDurationSinceEpoch()*/0);
+//  mdm.set_last_modified(/*GetDurationSinceEpoch()*/0);
+//  mdm.set_last_access(/*GetDurationSinceEpoch()*/0);
+//  std::string dir_key;
+//
+//  boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
+//  fs::path path_with_filename;
+//  if (location.empty()) {
+//    path_with_filename = fs::path(TidyPath(kRootSubdir[0][0]));
+//    path_with_filename /= ifm.filename();
+//  } else {
+//    // TODO(Dan#5#): 2009-06-25 - Make sure location is the correct path
+//    path_with_filename = fs::path(TidyPath(location));
+//    mdm.set_display_name(path_with_filename.filename().string());
+//  }
+//  std::string ser_mdm;
+//  mdm.SerializeToString(&ser_mdm);
+//  std::string path_add_element(path_with_filename.string());
+//  DirType dir_type;
+//  std::string msid;
+//  int n = GetDb(path_add_element, &dir_type, &msid);
+//  if (n != 0) {
+//#ifdef DEBUG
+//    printf("MAS - Riata en GetDb - %s\n", path_add_element.c_str());
+//#endif
+//    return -8888888;
+//  }
+//
+//  n = dah_->AddElement(path_add_element, ser_mdm, ifm.ser_dm(), dir_key, false);
+//  if (n != 0) {
+//#ifdef DEBUG
+//    printf("Riata en AddElement\n");
+//#endif
+//    return -1111;
+//  }
+//
+//  std::string path_save_db(path_with_filename.string());
+//  if (msid.empty()) {
+//    if (SaveDb(path_save_db, dir_type, msid, false)) {
+//#ifdef DEBUG
+//      printf("\t\tCC::AddInstantFile failed to save the db to queue. %i %s\n",
+//        dir_type, path_save_db.c_str());
+//#endif
+//      return -11111;
+//    }
+//  } else {
+//    if (SaveDb(path_save_db, dir_type, msid, true)) {
+//#ifdef DEBUG
+//      printf("\t\tCC::AddInstantFile failed to save the db immediately.\n");
+//#endif
+//      return -111111;
+//    }
+//  }
+//
+//  return 0;
+//}
+//
+//int ClientController::HandleAddContactRequest(
+//    const ContactInfo &ci, const std::string &sender) {
+////  printf("CC::HandleAddContactRequest - 000000000.\n");
+//  if (!initialised_) {
+//#ifdef DEBUG
+//    printf("CC::HandleAddContactRequest - Not initialised.\n");
+//#endif
+//    return kClientControllerNotInitialised;
+//  }
+//
+//  // Check if contact is on the list and has unconfirmed status
+////  printf("CC::HandleAddContactRequest - 1111111111.\n");
+//  std::string rec_public_key;
+//  mi_contact mic;
+//  if (ss_->GetContactInfo(sender, &mic) == 0) {  // Contact exists
+//    if (mic.confirmed_ == 'C') {
+//#ifdef DEBUG
+//      printf("Sender's already confirmed.\n");
+//#endif
+//      return -7;
+//    }
+//    int n =  ss_->UpdateContactConfirmed(sender, 'C');
+//    if (n != 0) {
+//#ifdef DEBUG
+//      printf("Couldn't update sender's confirmed status.\n");
+//#endif
+//      return -77;
+//    }
+//    rec_public_key = mic.pub_key_;
+//  } else {  // Contact didn't exist. Add from scratch.
+//    // Get contact's public key
+////    printf("CC::HandleAddContactRequest - 222222222.\n");
+//    int result = auth_.PublicUsernamePublicKey(sender, &rec_public_key);
+//    if (result != kSuccess) {
+//#ifdef DEBUG
+//      printf("Can't get sender's public key.\n");
+//#endif
+//      return -777;
+//    }
+//
+//    // Add to the contacts MI
+////    printf("QQQQQQQQQQQQQQQQQQQQQQQQQQQQ\n");
+//    int n = ss_->AddContact(sender, rec_public_key, ci.name(),
+//                            ci.office_number(), ci.birthday(),
+//                            ci.gender().empty() ? 'M' : ci.gender().at(0),
+//                            ci.language(), ci.country(), ci.city(), 'C', 0, 0);
+////    printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
+//    if (n != 0) {
+//#ifdef DEBUG
+//      printf("ClientController::HandleAddContactRequest - "
+//             "Adding contact failed.\n");
+//#endif
+//      return -7777;
+//    }
+//
+//    std::string bpinfo = GenerateBPInfo();
+//    if (bpinfo.empty()) {
+//#ifdef DEBUG
+//      printf("ClientController::HandleAddContactRequest - BPI empty\n");
+//#endif
+//      return -77777;
+//    }
+//    if (sm_->ModifyBPInfo(bpinfo) != kSuccess) {
+//#ifdef DEBUG
+//      printf("ClientController::HandleAddContactRequest - Failed save BPI\n");
+//#endif
+//      return -777777;
+//    }
+//  }
+//
+//  InstantMessage im;
+//  ContactNotification *cn = im.mutable_contact_notification();
+//  ContactInfo *info = cn->mutable_contact();
+//
+//  info->set_name(ss_->Pd().full_name());
+//  info->set_birthday(ss_->Pd().birthday());
+//  info->set_office_number(ss_->Pd().phone_number());
+//  info->set_gender(ss_->Pd().gender());
+//  info->set_country(ss_->Pd().country());
+//  info->set_city(ss_->Pd().city());
+//  info->set_language(ss_->Pd().language());
+//
+//  cn->set_action(1);
+//
+//  std::string message("\"");
+//  message += ss_->PublicUsername() + "\" has confirmed you as a contact.";
+//  im.set_sender(ss_->PublicUsername());
+//  im.set_date(/*GetDurationSinceEpoch()*/0);
+//  im.set_message(message);
+//  std::string ser_im;
+//  im.SerializeToString(&ser_im);
+//
+//  std::vector<std::string> contact_names;
+//  contact_names.push_back(sender);
+//  std::map<std::string, ReturnCode> add_results;
+//  if (sm_->SendAMessage(contact_names, ser_im, INSTANT_MSG,
+//      &add_results) != static_cast<int>(contact_names.size())) {
+//#ifdef DEBUG
+//    printf("ClientController::HandleAddContactRequest - Failed send msg\n");
+//#endif
+//    return -7777777;
+//  }
+//
+//  return 0;
+//}
+//
+//int ClientController::HandleAddContactResponse(
+//    const ContactInfo &ci, const std::string &sender) {
+//  if (!initialised_) {
+//#ifdef DEBUG
+//    printf("CC::HandleAddContactResponse - Not initialised.\n");
+//#endif
+//    return kClientControllerNotInitialised;
+//  }
+//
+//  std::vector<Contact> list;
+//  mi_contact mic;
+//  int n = ss_->GetContactInfo(sender, &mic);
+//  if (n != 0) {
+//#ifdef DEBUG
+//    printf("ClientController::HandleAddContactResponse - Get list failed.\n");
+//#endif
+//    return -8;
+//  }
+//
+//  n = ss_->UpdateContactFullName(sender, ci.name());
+//  n += ss_->UpdateContactOfficePhone(sender, ci.office_number());
+//  n += ss_->UpdateContactBirthday(sender, ci.birthday());
+//  n += ss_->UpdateContactGender(sender,
+//                                ci.gender().empty() ? 'M' : ci.gender().at(0));
+//  n += ss_->UpdateContactLanguage(sender, ci.language());
+//  n += ss_->UpdateContactCountry(sender, ci.country());
+//  n += ss_->UpdateContactCity(sender, ci.city());
+//  n += ss_->UpdateContactConfirmed(sender, 'C');
+//  if (n != 0) {
+//#ifdef DEBUG
+//    printf("ClientController::HandleAddContactResponse - No update contact.\n");
+//#endif
+//    return -88;
+//  }
+//  return 0;
+//}
+//
+//int ClientController::SendEmail(const std::string &subject,
+//                                const std::string &msg,
+//                                const std::vector<std::string> &to,
+//                                const std::vector<std::string> &cc,
+//                                const std::vector<std::string> &bcc,
+//                                const std::string &conversation) {
+//  if (!initialised_) {
+//#ifdef DEBUG
+//    printf("CC::SendEmail - Not initialised.\n");
+//#endif
+//    return kClientControllerNotInitialised;
+//  }
+//  if (ss_->ConnectionStatus() == 1) {
+//#ifdef DEBUG
+//    printf("Can't send an email while off-line.\n");
+//#endif
+//    return -9999;
+//  }
+//
+//  std::string toList, ccList;
+//  std::vector<std::string> contact_to;
+//
+//  BOOST_FOREACH(std::string contact, to) {
+//    contact_to.push_back(contact);
+//    toList.append(contact+", ");
+//  }
+//  BOOST_FOREACH(std::string contact, cc) {
+//    contact_to.push_back(contact);
+//    ccList.append(contact+", ");
+//  }
+//  BOOST_FOREACH(std::string contact, bcc) {
+//    contact_to.push_back(contact);
+//  }
+//
+//  InstantMessage im;
+//  EmailNotification *en =
+//    im.mutable_email_notification();
+//  en->set_to(toList);
+//  en->set_cc(ccList);
+//  im.set_sender(ss_->PublicUsername());
+//  im.set_date(/*GetDurationSinceEpoch()*/0);
+//  im.set_conversation(conversation);
+//  im.set_message(msg);
+//  im.set_subject(subject);
+//
+//  std::string ser_email;
+//  im.SerializeToString(&ser_email);
+//
+//  std::map<std::string, ReturnCode> add_results;
+//  if (sm_->SendAMessage(contact_to, ser_email, INSTANT_MSG, &add_results) !=
+//      static_cast<int>(contact_to.size())) {
+//#ifdef DEBUG
+//    printf("ClientController::SendEmail - Not all recepients got "
+//           "the message\n");
+//#endif
+//    return -999;
+//  }
+//
+//  int res = 0;
+//  for (size_t n = 0; n < contact_to.size(); ++n) {
+//    res += ss_->SetLastContactRank(contact_to[n]);
+//  }
+//
+//  return res;
+//}
+//
+//int ClientController::SendInstantMessage(
+//    const std::string &message,
+//    const std::vector<std::string> &contact_names,
+//    const std::string &conversation) {
+//  if (!initialised_) {
+//#ifdef DEBUG
+//    printf("CC::SendInstantMessage - Not initialised.\n");
+//#endif
+//    return kClientControllerNotInitialised;
+//  }
+//  if (ss_->ConnectionStatus() == 1) {
+//#ifdef DEBUG
+//    printf("Can't send a message while off-line.\n");
+//#endif
+//    return -9999;
+//  }
+//
+//  std::string ser_im;
+//  InstantMessage im;
+//  im.set_sender(ss_->PublicUsername());
+//  im.set_message(message);
+//  im.set_date(/*GetDurationSinceEpoch()*/0);
+//  im.set_conversation(conversation);
+//  im.SerializeToString(&ser_im);
+//
+//  std::map<std::string, ReturnCode> add_results;
+//  if (sm_->SendAMessage(contact_names, ser_im, INSTANT_MSG, &add_results) !=
+//      static_cast<int>(contact_names.size())) {
+//#ifdef DEBUG
+//    printf("ClientController::SendInstantMessage - Not all recepients got "
+//           "the message\n");
+//#endif
+//    return -999;
+//  }
+//
+//  int res = 0;
+//  for (size_t n = 0; n < contact_names.size(); ++n) {
+//    res += ss_->SetLastContactRank(contact_names[n]);
+//  }
+//
+//  return res;
+//}
+//
+//int ClientController::GetInstantMessages(std::list<InstantMessage> *messages) {
+//  if (!initialised_) {
+//#ifdef DEBUG
+//    printf("CC::GetInstantMessages - Not initialised.\n");
+//#endif
+//    return kClientControllerNotInitialised;
+//  }
+//  *messages = instant_messages_;
+//  instant_messages_.clear();
+//  return 0;
+//}
+//
+//int ClientController::SendInstantFile(
+//    std::string *filename, const std::string &msg,
+//    const std::vector<std::string> &contact_names,
+//    const std::string &conversation) {
+//  if (!initialised_) {
+//#ifdef DEBUG
+//    printf("CC::SendInstantFile - Not initialised.\n");
+//#endif
+//    return kClientControllerNotInitialised;
+//  }
+//  if (ss_->ConnectionStatus() == 1) {
+//#ifdef DEBUG
+//    printf("Can't send a message while off-line.\n");
+//#endif
+//    return -6666666;
+//  }
+//
+//  std::string path = *filename;
+//  DirType dir_type;
+//  std::string msid("");
+//  int n = GetDb(*filename, &dir_type, &msid);
+//  if (n != 0) {
+//#ifdef DEBUG
+//    printf("GetDb for file location failed.\n");
+//#endif
+//    return -6;
+//  }
+//
+//  boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
+//  std::string ser_dm("");
+//  n = dah_->GetDataMap(*filename, &ser_dm);
+//  if (n != 0) {
+//#ifdef DEBUG
+//    printf("GetDataMap for instant file failed.\n");
+//#endif
+//    return -66;
+//  }
+//
+//  std::string ser_mdm("");
+//  n = dah_->GetMetaDataMap(*filename, &ser_mdm);
+//  if (n != 0) {
+//#ifdef DEBUG
+//    printf("GetMetaDataMap for instant file failed.\n");
+//#endif
+//    return -666;
+//  }
+//
+//  fs::path p_filename(*filename);
+//  InstantMessage im;
+//  InstantFileNotification *ifm =
+//      im.mutable_instantfile_notification();
+//  ifm->set_ser_mdm(ser_mdm);
+//  ifm->set_ser_dm(ser_dm);
+//  ifm->set_filename(p_filename.filename().string());
+//  im.set_sender(SessionSingleton::getInstance()->PublicUsername());
+//  im.set_date(/*GetDurationSinceEpoch()*/0);
+//  im.set_conversation(conversation);
+//  std::string message;
+//  if (msg.empty()) {
+//    message = "\"";
+//    message += im.sender() + "\" has sent you file " +
+//               p_filename.filename().string();
+//  } else {
+//    message = msg + " - Filename: " + p_filename.filename().string();
+//  }
+//  im.set_message(message);
+//
+//  std::string ser_instant_file;
+//  im.SerializeToString(&ser_instant_file);
+//
+//  std::map<std::string, ReturnCode> add_results;
+//  if (sm_->SendAMessage(contact_names, ser_instant_file, INSTANT_MSG,
+//      &add_results) != static_cast<int>(contact_names.size())) {
+//#ifdef DEBUG
+//    printf("ClientController::SendInstantFile - Not all recepients got "
+//           "the message\n");
+//#endif
+//    return -666666;
+//  }
+//
+//  int res = 0;
+//  for (size_t nn = 0; nn < contact_names.size(); ++nn) {
+//    res += ss_->SetLastContactRank(contact_names[nn]);
+//  }
+//
+//  return res;
+//}
+//
+//void ClientController::onInstantMessage(const std::string &message,
+//                                        const boost::uint32_t&,
+//                                        const boost::int16_t&,
+//                                        const double&) {
+//  GenericPacket gp;
+//  if (!gp.ParseFromString(message)) {
+//    return;
+//  }
+//
+//  BufferPacketMessage bpm;
+//  if (!bpm.ParseFromString(gp.data())) {
+//    return;
+//  }
+//
+//  std::string senders_pk = ss_->GetContactPublicKey(bpm.sender_id());
+//  if (senders_pk.empty()) {
+//    return;
+//  }
+//
+//  if (!RSACheckSignedData(gp.data(), gp.signature(), senders_pk)) {
+//    return;
+//  }
+//
+//  std::string mpid_private_key;
+//  if (SessionSingleton::getInstance()->MPublicID(NULL, NULL, &mpid_private_key,
+//                                                 NULL) != kSuccess) {
+//    return;
+//  }
+//  std::string aes_key(RSADecrypt(bpm.rsaenc_key(), mpid_private_key));
+//  std::string instant_message(AESDecrypt(bpm.aesenc_message(), aes_key));
+//  InstantMessage im;
+//  if (!im.ParseFromString(instant_message)) {
+//    return;
+//  }
+//  imn_(im);
+////  analyseMessage(im);
+//}
+//
+//void ClientController::SetIMNotifier(IMNotifier imn) {
+//  imn_ = imn;
+//}
+//
 
 ////////////////////////
 // Contact Operations //
@@ -1814,66 +1814,66 @@ int ClientController::AddContact(const std::string &public_name) {
   // TODO(Richard): the info is empty because there is no way
   // to get the users contact data
 
-  InstantMessage im;
-  ContactNotification *cn = im.mutable_contact_notification();
-  ContactInfo *info = cn->mutable_contact();
-
-  info->set_name(ss_->Pd().full_name());
-  info->set_birthday(ss_->Pd().birthday());
-  info->set_office_number(ss_->Pd().phone_number());
-  info->set_gender(ss_->Pd().gender());
-  info->set_country(ss_->Pd().country());
-  info->set_city(ss_->Pd().city());
-  info->set_language(ss_->Pd().language());
-
-  cn->set_action(0);
-
-  im.set_sender(ss_->PublicUsername());
-  im.set_date(/*GetDurationSinceEpoch()*/0);
-  std::string message("\"");
-  message += im.sender() + "\" has requested to add you as a contact.";
-  im.set_message(message);
-
-  std::string ser_im;
-  im.SerializeToString(&ser_im);
-
-  Contact c;
-  c.SetPublicName(public_name);
-  c.SetPublicKey(public_key);
-  c.SetConfirmed('U');
-  if (ss_->AddContact(public_name, public_key, "", "", "", '-', -1,
-         -1, "", 'U', 0, 0) != 0) {
-#ifdef DEBUG
-    printf("ClientController::AddContact - Failed to add contact to session\n");
-#endif
-    return -2;
-  }
-
-  std::string bpinfo = GenerateBPInfo();
-  if (bpinfo.empty()) {
-#ifdef DEBUG
-    printf("ClientController::AddContact - BPInfo is empty\n");
-#endif
-    return -22;
-  }
-  if (sm_->ModifyBPInfo(bpinfo) != kSuccess) {
-#ifdef DEBUG
-    printf("ClientController::AddContact - Failed to modify BPInfo\n");
-#endif
-    return -222;
-  }
-
-  std::vector<std::string> contact_names;
-  contact_names.push_back(public_name);
-  std::map<std::string, ReturnCode> add_results;
-  if (sm_->SendAMessage(contact_names, ser_im, ADD_CONTACT_RQST,
-      &add_results) != static_cast<int>(contact_names.size())) {
-#ifdef DEBUG
-    printf("ClientController::AddContact - Failed to send request\n");
-#endif
-    return -2222;
-  }
-
+//  InstantMessage im;
+//  ContactNotification *cn = im.mutable_contact_notification();
+//  ContactInfo *info = cn->mutable_contact();
+//
+//  info->set_name(ss_->Pd().full_name());
+//  info->set_birthday(ss_->Pd().birthday());
+//  info->set_office_number(ss_->Pd().phone_number());
+//  info->set_gender(ss_->Pd().gender());
+//  info->set_country(ss_->Pd().country());
+//  info->set_city(ss_->Pd().city());
+//  info->set_language(ss_->Pd().language());
+//
+//  cn->set_action(0);
+//
+//  im.set_sender(ss_->PublicUsername());
+//  im.set_date(/*GetDurationSinceEpoch()*/0);
+//  std::string message("\"");
+//  message += im.sender() + "\" has requested to add you as a contact.";
+//  im.set_message(message);
+//
+//  std::string ser_im;
+//  im.SerializeToString(&ser_im);
+//
+//  Contact c;
+//  c.SetPublicName(public_name);
+//  c.SetPublicKey(public_key);
+//  c.SetConfirmed('U');
+//  if (ss_->AddContact(public_name, public_key, "", "", "", '-', -1,
+//         -1, "", 'U', 0, 0) != 0) {
+//#ifdef DEBUG
+//    printf("ClientController::AddContact - Failed to add contact to session\n");
+//#endif
+//    return -2;
+//  }
+//
+//  std::string bpinfo = GenerateBPInfo();
+//  if (bpinfo.empty()) {
+//#ifdef DEBUG
+//    printf("ClientController::AddContact - BPInfo is empty\n");
+//#endif
+//    return -22;
+//  }
+//  if (sm_->ModifyBPInfo(bpinfo) != kSuccess) {
+//#ifdef DEBUG
+//    printf("ClientController::AddContact - Failed to modify BPInfo\n");
+//#endif
+//    return -222;
+//  }
+//
+//  std::vector<std::string> contact_names;
+//  contact_names.push_back(public_name);
+//  std::map<std::string, ReturnCode> add_results;
+//  if (sm_->SendAMessage(contact_names, ser_im, ADD_CONTACT_RQST,
+//      &add_results) != static_cast<int>(contact_names.size())) {
+//#ifdef DEBUG
+//    printf("ClientController::AddContact - Failed to send request\n");
+//#endif
+//    return -2222;
+//  }
+//
   return 0;
 }
 
@@ -1889,55 +1889,55 @@ int ClientController::DeleteContact(const std::string &public_name) {
   std::set<std::string> s;
   s.insert(public_name);
 
-  InstantMessage im;
-  ContactNotification *cn = im.mutable_contact_notification();
-  cn->set_action(2);
-
-  std::string deletion_msg(IntToString(/*GetDurationSinceEpoch()*/0));
-  deletion_msg += " deleted " + public_name + " update " +
-    ss_->PublicUsername();
-#ifdef DEBUG
-  printf("MSG: %s\n", deletion_msg.c_str());
-#endif
-  im.set_date(/*GetDurationSinceEpoch()*/0);
-  im.set_message(deletion_msg);
-  im.set_sender(ss_->PublicUsername());
-  std::string ser_im;
-  im.SerializeToString(&ser_im);
-
-  std::vector<std::string> contact_names;
-  contact_names.push_back(public_name);
-  std::map<std::string, ReturnCode> add_results;
-  if (sm_->SendAMessage(contact_names, ser_im, ADD_CONTACT_RQST,
-      &add_results) != static_cast<int>(contact_names.size())) {
-#ifdef DEBUG
-    printf("ClientController::DeleteContact - Failed to send deletion msg\n");
-#endif
-    return -504;
-  }
-
-  int n = ss_->DeleteContact(public_name);
-  if (n != 0) {
-#ifdef DEBUG
-    printf("ClientController::DeleteContact - Failed session delete.\n");
-#endif
-    return -504;
-  }
-
-  std::string bpinfo = GenerateBPInfo();
-  if (bpinfo.empty()) {
-#ifdef DEBUG
-    printf("ClientController::DeleteContact - BPInfo is empty\n");
-#endif
-    return -504;
-  }
-  if (sm_->ModifyBPInfo(bpinfo) != kSuccess) {
-#ifdef DEBUG
-    printf("ClientController::DeleteContact - Failed to save new BPInfo\n");
-#endif
-    return -504;
-  }
-
+//  InstantMessage im;
+//  ContactNotification *cn = im.mutable_contact_notification();
+//  cn->set_action(2);
+//
+//  std::string deletion_msg(IntToString(/*GetDurationSinceEpoch()*/0));
+//  deletion_msg += " deleted " + public_name + " update " +
+//    ss_->PublicUsername();
+//#ifdef DEBUG
+//  printf("MSG: %s\n", deletion_msg.c_str());
+//#endif
+//  im.set_date(/*GetDurationSinceEpoch()*/0);
+//  im.set_message(deletion_msg);
+//  im.set_sender(ss_->PublicUsername());
+//  std::string ser_im;
+//  im.SerializeToString(&ser_im);
+//
+//  std::vector<std::string> contact_names;
+//  contact_names.push_back(public_name);
+//  std::map<std::string, ReturnCode> add_results;
+//  if (sm_->SendAMessage(contact_names, ser_im, ADD_CONTACT_RQST,
+//      &add_results) != static_cast<int>(contact_names.size())) {
+//#ifdef DEBUG
+//    printf("ClientController::DeleteContact - Failed to send deletion msg\n");
+//#endif
+//    return -504;
+//  }
+//
+//  int n = ss_->DeleteContact(public_name);
+//  if (n != 0) {
+//#ifdef DEBUG
+//    printf("ClientController::DeleteContact - Failed session delete.\n");
+//#endif
+//    return -504;
+//  }
+//
+//  std::string bpinfo = GenerateBPInfo();
+//  if (bpinfo.empty()) {
+//#ifdef DEBUG
+//    printf("ClientController::DeleteContact - BPInfo is empty\n");
+//#endif
+//    return -504;
+//  }
+//  if (sm_->ModifyBPInfo(bpinfo) != kSuccess) {
+//#ifdef DEBUG
+//    printf("ClientController::DeleteContact - Failed to save new BPInfo\n");
+//#endif
+//    return -504;
+//  }
+//
   return 0;
 }
 
@@ -1956,13 +1956,14 @@ std::string ClientController::GenerateBPInfo() {
 #endif
     return "";
   }
-  BufferPacketInfo bpi;
-  bpi.set_owner(ss_->PublicUsername());
-  bpi.set_owner_publickey(mpid_public_key);
-  for (size_t n = 0; n < contacts.size(); ++n)
-    bpi.add_users(SHA512String(contacts[n]));
-  std::string ser_bpi(bpi.SerializeAsString());
-  return ser_bpi;
+//  BufferPacketInfo bpi;
+//  bpi.set_owner(ss_->PublicUsername());
+//  bpi.set_owner_publickey(mpid_public_key);
+//  for (size_t n = 0; n < contacts.size(); ++n)
+//    bpi.add_users(SHA512String(contacts[n]));
+//  std::string ser_bpi(bpi.SerializeAsString());
+//  return ser_bpi;
+  return "";
 }
 
 //////////////////////
@@ -2113,55 +2114,55 @@ int ClientController::CreateNewShare(const std::string &name,
   }
 
   // Send message to all participants
-  InstantMessage im;
-  PrivateShareNotification *psn =
-      im.mutable_privateshare_notification();
-  psn->set_name(name);
-  psn->set_msid(msid_name);
-  psn->set_public_key(msid_public_key);
-  psn->set_dir_db_key(share_dir_key);
-  im.set_sender(ss_->PublicUsername());
-  im.set_date(/*GetDurationSinceEpoch()*/0);
-  std::string message("\"");
-  message += im.sender() + "\" has added you as a Read Only participant to"
-             " share " + name;
-  im.set_message(message);
-  std::string share_message;
-  im.SerializeToString(&share_message);
-
-  if (ro_recs.size() > 0) {
-    std::map<std::string, ReturnCode> add_results;
-    if (sm_->SendAMessage(ro_recs, share_message, INSTANT_MSG,
-        &add_results) != static_cast<int>(ro_recs.size())) {
-  #ifdef DEBUG
-      printf("ClientController::CreateNewShare - Not all recepients got "
-             "the message\n");
-  #endif
-      return -22;
-    }
-  }
-
-  // Send to ADMINS
-  if (admin_recs.size() > 0) {
-    std::string *me = psn->add_admins();
-    *me = ss_->PublicUsername();
-    psn->set_private_key(msid_private_key);
-    message = std::string("\"");
-    message += im.sender() + "\" has added you as an Administrator participant "
-               "to share " + name;
-    im.set_message(message);
-    im.SerializeToString(&share_message);
-    std::map<std::string, ReturnCode> add_results;
-    if (sm_->SendAMessage(admin_recs, share_message, INSTANT_MSG,
-        &add_results) != static_cast<int>(admin_recs.size())) {
-  #ifdef DEBUG
-      printf("ClientController::CreateNewShare - Not all recepients got "
-             "the message\n");
-  #endif
-      return -22;
-    }
-  }
-
+//  InstantMessage im;
+//  PrivateShareNotification *psn =
+//      im.mutable_privateshare_notification();
+//  psn->set_name(name);
+//  psn->set_msid(msid_name);
+//  psn->set_public_key(msid_public_key);
+//  psn->set_dir_db_key(share_dir_key);
+//  im.set_sender(ss_->PublicUsername());
+//  im.set_date(/*GetDurationSinceEpoch()*/0);
+//  std::string message("\"");
+//  message += im.sender() + "\" has added you as a Read Only participant to"
+//             " share " + name;
+//  im.set_message(message);
+//  std::string share_message;
+//  im.SerializeToString(&share_message);
+//
+//  if (ro_recs.size() > 0) {
+//    std::map<std::string, ReturnCode> add_results;
+//    if (sm_->SendAMessage(ro_recs, share_message, INSTANT_MSG,
+//        &add_results) != static_cast<int>(ro_recs.size())) {
+//  #ifdef DEBUG
+//      printf("ClientController::CreateNewShare - Not all recepients got "
+//             "the message\n");
+//  #endif
+//      return -22;
+//    }
+//  }
+//
+//  // Send to ADMINS
+//  if (admin_recs.size() > 0) {
+//    std::string *me = psn->add_admins();
+//    *me = ss_->PublicUsername();
+//    psn->set_private_key(msid_private_key);
+//    message = std::string("\"");
+//    message += im.sender() + "\" has added you as an Administrator participant "
+//               "to share " + name;
+//    im.set_message(message);
+//    im.SerializeToString(&share_message);
+//    std::map<std::string, ReturnCode> add_results;
+//    if (sm_->SendAMessage(admin_recs, share_message, INSTANT_MSG,
+//        &add_results) != static_cast<int>(admin_recs.size())) {
+//  #ifdef DEBUG
+//      printf("ClientController::CreateNewShare - Not all recepients got "
+//             "the message\n");
+//  #endif
+//      return -22;
+//    }
+//  }
+//
   return 0;
 }
 
@@ -2169,110 +2170,110 @@ int ClientController::CreateNewShare(const std::string &name,
 // Vault Operations //
 //////////////////////
 
-bool ClientController::VaultStoreInfo(boost::uint64_t *offered_space,
-                                      boost::uint64_t *free_space) {
-  if (!initialised_) {
-#ifdef DEBUG
-    printf("CC::PollVaultInfo - Not initialised.\n");
-#endif
-    return false;
-  }
-
-  return sm_->VaultStoreInfo(offered_space, free_space);
-}
-
-bool ClientController::VaultContactInfo(dht::kademlia::Contact *contact) {
-  if (!initialised_) {
-#ifdef DEBUG
-    printf("CC::VaultContactInfo - Not initialised.\n");
-#endif
-    return false;
-  }
-
-#ifdef LOCAL_LifeStuffVAULT
-  dht::kademlia::Contact vc;
-  *contact = vc;
-  return true;
-#endif
-
-  if (!sm_->VaultContactInfo(contact)) {
-#ifdef DEBUG
-    printf("ClientController::VaultContactInfo: getting contact failed.\n");
-#endif
-    return false;
-  }
-
-  return true;
-}
-
-OwnLocalVaultResult ClientController::SetLocalVaultOwned(
-    const boost::uint32_t &port, const boost::uint64_t &space,
-    const std::string &vault_dir) const {
-  bool callback_arrived = false;
-  OwnLocalVaultResult result;
-  std::string pmid_public_key, pmid_private_key, pmid_public_key_signature;
-  if (ss_->ProxyMID(NULL, &pmid_public_key, &pmid_private_key,
-                    &pmid_public_key_signature) != kSuccess) {
-    return INVALID_RSA_KEYS;
-  }
-  sm_->SetLocalVaultOwned(pmid_private_key, pmid_public_key,
-      pmid_public_key_signature, port, vault_dir, space,
-      boost::bind(&ClientController::SetLocalVaultOwnedCallback,
-                  const_cast<ClientController*>(this), _1, _2,
-                  &callback_arrived, &result));
-  while (!callback_arrived)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
-  return result;
-}
-
-void ClientController::SetLocalVaultOwnedCallback(
-    const OwnLocalVaultResult &result, const std::string &pmid_name,
-    bool *callback_arrived, OwnLocalVaultResult *res) {
-  std::string pmid_id;
-  if (ss_->ProxyMID(&pmid_id, NULL, NULL, NULL) != kSuccess) {
-    *res = INVALID_RSA_KEYS;
-    *callback_arrived = true;
-    return;
-  }
-  if (result == OWNED_SUCCESS) {
-#ifdef DEBUG
-    printf("ClientController::SetLocalVaultOwnedCallback %s -- %s\n",
-           HexSubstr(pmid_id).c_str(), HexSubstr(pmid_name).c_str());
-#endif
-    if (pmid_name == pmid_id) {
-      *res = result;
-    } else {
-      // FAILURE -- incorrect pmid name returned by the vault
-      *res = INVALID_PMID_NAME;
-    }
-  } else {
-    *res = result;
-  }
-  *callback_arrived = true;
-}
-
-bool ClientController::IsLocalVaultOwned() {
-  return (LocalVaultOwned() != NOT_OWNED);
-}
-
-VaultOwnershipStatus ClientController::LocalVaultOwned() const {
-  VaultOwnershipStatus result;
-  bool callback_arrived = false;
-  sm_->LocalVaultOwned(boost::bind(&ClientController::LocalVaultOwnedCallback,
-      const_cast<ClientController*>(this), _1, &callback_arrived, &result));
-  while (!callback_arrived)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  return result;
-}
-
-void ClientController::LocalVaultOwnedCallback(
-    const VaultOwnershipStatus &result,
-    bool *callback_arrived,
-    VaultOwnershipStatus *res) {
-  *res = result;
-  *callback_arrived = true;
-}
-
+//bool ClientController::VaultStoreInfo(boost::uint64_t *offered_space,
+//                                      boost::uint64_t *free_space) {
+//  if (!initialised_) {
+//#ifdef DEBUG
+//    printf("CC::PollVaultInfo - Not initialised.\n");
+//#endif
+//    return false;
+//  }
+//
+//  return sm_->VaultStoreInfo(offered_space, free_space);
+//}
+//
+//bool ClientController::VaultContactInfo(dht::kademlia::Contact *contact) {
+//  if (!initialised_) {
+//#ifdef DEBUG
+//    printf("CC::VaultContactInfo - Not initialised.\n");
+//#endif
+//    return false;
+//  }
+//
+//#ifdef LOCAL_LifeStuffVAULT
+//  dht::kademlia::Contact vc;
+//  *contact = vc;
+//  return true;
+//#endif
+//
+//  if (!sm_->VaultContactInfo(contact)) {
+//#ifdef DEBUG
+//    printf("ClientController::VaultContactInfo: getting contact failed.\n");
+//#endif
+//    return false;
+//  }
+//
+//  return true;
+//}
+//
+//OwnLocalVaultResult ClientController::SetLocalVaultOwned(
+//    const boost::uint32_t &port, const boost::uint64_t &space,
+//    const std::string &vault_dir) const {
+//  bool callback_arrived = false;
+//  OwnLocalVaultResult result;
+//  std::string pmid_public_key, pmid_private_key, pmid_public_key_signature;
+//  if (ss_->ProxyMID(NULL, &pmid_public_key, &pmid_private_key,
+//                    &pmid_public_key_signature) != kSuccess) {
+//    return INVALID_RSA_KEYS;
+//  }
+//  sm_->SetLocalVaultOwned(pmid_private_key, pmid_public_key,
+//      pmid_public_key_signature, port, vault_dir, space,
+//      boost::bind(&ClientController::SetLocalVaultOwnedCallback,
+//                  const_cast<ClientController*>(this), _1, _2,
+//                  &callback_arrived, &result));
+//  while (!callback_arrived)
+//    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
+//  return result;
+//}
+//
+//void ClientController::SetLocalVaultOwnedCallback(
+//    const OwnLocalVaultResult &result, const std::string &pmid_name,
+//    bool *callback_arrived, OwnLocalVaultResult *res) {
+//  std::string pmid_id;
+//  if (ss_->ProxyMID(&pmid_id, NULL, NULL, NULL) != kSuccess) {
+//    *res = INVALID_RSA_KEYS;
+//    *callback_arrived = true;
+//    return;
+//  }
+//  if (result == OWNED_SUCCESS) {
+//#ifdef DEBUG
+//    printf("ClientController::SetLocalVaultOwnedCallback %s -- %s\n",
+//           HexSubstr(pmid_id).c_str(), HexSubstr(pmid_name).c_str());
+//#endif
+//    if (pmid_name == pmid_id) {
+//      *res = result;
+//    } else {
+//      // FAILURE -- incorrect pmid name returned by the vault
+//      *res = INVALID_PMID_NAME;
+//    }
+//  } else {
+//    *res = result;
+//  }
+//  *callback_arrived = true;
+//}
+//
+//bool ClientController::IsLocalVaultOwned() {
+//  return (LocalVaultOwned() != NOT_OWNED);
+//}
+//
+//VaultOwnershipStatus ClientController::LocalVaultOwned() const {
+//  VaultOwnershipStatus result;
+//  bool callback_arrived = false;
+//  sm_->LocalVaultOwned(boost::bind(&ClientController::LocalVaultOwnedCallback,
+//      const_cast<ClientController*>(this), _1, &callback_arrived, &result));
+//  while (!callback_arrived)
+//    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+//  return result;
+//}
+//
+//void ClientController::LocalVaultOwnedCallback(
+//    const VaultOwnershipStatus &result,
+//    bool *callback_arrived,
+//    VaultOwnershipStatus *res) {
+//  *res = result;
+//  *callback_arrived = true;
+//}
+//
 ///////////////////
 // SE Operations //
 ///////////////////
@@ -3323,13 +3324,13 @@ int ClientController::create(const std::string &path) {
 void ClientController::RegisterImNotifiers(
       boost::function<void(const std::string&)> msg_not,
       boost::function<void(const std::string&, const int&)> conn_not) {
-  sm_->SetInstantMessageNotifier(msg_not, conn_not);
+//  sm_->SetInstantMessageNotifier(msg_not, conn_not);
 }
 
 std::vector<std::string> ClientController::GetOffLineContacts() {
   std::vector<std::string> contacts;
   std::map<std::string, ConnectionDetails> livectcs;
-  ss_->LiveContactMap(&livectcs);
+//  ss_->LiveContactMap(&livectcs);
   std::set<std::string> online_contacts;
   for (std::map<std::string, ConnectionDetails>::iterator it = livectcs.begin();
        it != livectcs.end(); ++it) {

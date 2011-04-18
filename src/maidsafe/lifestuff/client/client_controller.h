@@ -295,7 +295,7 @@ class ClientController : public QObject {
   void OnNewMessage(const std::string &msg);
   void OnHelloPing(const std::string &contact_name, const int &status);
 
-  void analyseMessage(const maidsafe::InstantMessage& im);
+//  void analyseMessage(const maidsafe::InstantMessage& im);
   CheckForMessagesThread *cfmt_;
 };
 

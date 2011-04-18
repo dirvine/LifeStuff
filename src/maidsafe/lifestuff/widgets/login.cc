@@ -24,7 +24,7 @@
 #include <limits.h>
 
 // core
-#include "maidsafe/shared/maidsafe_service_messages.pb.h"
+//  #include "maidsafe/shared/maidsafe_service_messages.pb.h"
 #include "maidsafe/lifestuff/client/check_user_thread.h"
 #include "maidsafe/lifestuff/client/validate_user_thread.h"
 

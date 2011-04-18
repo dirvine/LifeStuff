@@ -112,8 +112,8 @@ int ClientController::AddInstantFile(const QString &sender,
                                      int sizeLow, int sizeHigh,
                                      const ClientController::ItemType &ityp,
                                      const QString &s) {
-  maidsafe::InstantFileNotification ifn;
-  ifn.set_filename(filename.toStdString());
+//  maidsafe::InstantFileNotification ifn;
+//  ifn.set_filename(filename.toStdString());
 
   maidsafe::MetaDataMap mdm;
   mdm.set_tag(tag.toStdString());
@@ -121,12 +121,13 @@ int ClientController::AddInstantFile(const QString &sender,
   mdm.set_file_size_low(sizeLow);
   std::string ser_mdm;
   mdm.SerializeToString(&ser_mdm);
-  ifn.set_ser_mdm(ser_mdm);
+//  ifn.set_ser_mdm(ser_mdm);
 
-  int n = maidsafe::ClientController::getInstance()->
-          AddInstantFile(ifn, s.toStdString());
+//  int n = maidsafe::ClientController::getInstance()->
+//          AddInstantFile(ifn, s.toStdString());
 
-  return n;
+//  return n;
+  return 0;
 }
 
 bool ClientController::createShare(const QString &shareName,
@@ -332,19 +333,19 @@ bool ClientController::handleAddContactRequest(const QString& name) {
   int n = maidsafe::SessionSingleton::getInstance()->
           GetContactInfo(name.toStdString(), &mic);
 
-  maidsafe::ContactInfo ci;
-
-  ci.set_birthday(mic.birthday_);
-  ci.set_city(mic.birthday_);
-  ci.set_country(mic.country_);
-  std::string str(1, mic.gender_);
-  ci.set_gender(str);
-  ci.set_language(mic.language_);
-  ci.set_name(mic.full_name_);
-  ci.set_office_number(mic.office_phone_);
-
-  n = maidsafe::ClientController::getInstance()->
-      HandleAddContactRequest(ci, name.toStdString());
+//  maidsafe::ContactInfo ci;
+//
+//  ci.set_birthday(mic.birthday_);
+//  ci.set_city(mic.birthday_);
+//  ci.set_country(mic.country_);
+//  std::string str(1, mic.gender_);
+//  ci.set_gender(str);
+//  ci.set_language(mic.language_);
+//  ci.set_name(mic.full_name_);
+//  ci.set_office_number(mic.office_phone_);
+//
+//  n = maidsafe::ClientController::getInstance()->
+//      HandleAddContactRequest(ci, name.toStdString());
 
   if (n == 0)
     return true;
@@ -361,9 +362,9 @@ bool ClientController::sendInstantMessage(const QString& txt,
   foreach(QString c, to) {
     contacts.push_back(c.toStdString());
   }
-  const int n = maidsafe::ClientController::getInstance()->
+  int n/* = maidsafe::ClientController::getInstance()->
                 SendInstantMessage(txt.toStdString(), contacts,
-                conversation.toStdString());
+                conversation.toStdString())*/;
 
   qDebug() << "ClientController::sendInstantMessage res: " << n;
   return (n == 0);
@@ -387,9 +388,9 @@ bool ClientController::sendEmail(const QString& subject,
   foreach(QString c, bcc) {
     stdbcc.push_back(c.toStdString());
   }
-  const int n = maidsafe::ClientController::getInstance()->
+  int n/* = maidsafe::ClientController::getInstance()->
               SendEmail(subject.toStdString(), message.toStdString(), contacts,
-              stdcc, stdbcc, conversation.toStdString());
+              stdcc, stdbcc, conversation.toStdString())*/;
 
   return (n == 0);
 }
@@ -432,9 +433,9 @@ bool ClientController::sendInstantFile(const QString& filePath,
   foreach(QString c, to) {
     contacts.push_back(c.toStdString());
   }
-  const int n = maidsafe::ClientController::getInstance()->
+  int n/* = maidsafe::ClientController::getInstance()->
                 SendInstantFile(&rel_filename, txt.toStdString(), contacts,
-                conversation.toStdString());
+                conversation.toStdString())*/;
   qDebug() << "ClientController::sendInstantFile res: " << n;
 
   return (n == 0);
@@ -466,168 +467,169 @@ bool ClientController::IsLocalVaultOwned() {
   // For local version returns always false. Use the return true to check for
   // other behaviour.
 
-  //  return true;
-  return maidsafe::ClientController::getInstance()->IsLocalVaultOwned();
+    return true;
+//  return maidsafe::ClientController::getInstance()->IsLocalVaultOwned();
 }
 
 bool ClientController::GetMessages() {
-  return maidsafe::ClientController::getInstance()->GetMessages();
+//  return maidsafe::ClientController::getInstance()->GetMessages();
+  return 0;
 }
 
 void ClientController::onCheckMessagesCompleted(bool) {  //NOLINT
-  std::list<maidsafe::InstantMessage> msgs;
-  int n = maidsafe::ClientController::getInstance()->GetInstantMessages(&msgs);
+//  std::list<maidsafe::InstantMessage> msgs;
+  int n/* = maidsafe::ClientController::getInstance()->GetInstantMessages(&msgs)*/;
 
   if (n != 0)
     return;
 
-  std::list<maidsafe::InstantMessage> temp = msgs;
-  while (!temp.empty()) {
-    analyseMessage(temp.front());
-    temp.pop_front();
-  }
+//  std::list<maidsafe::InstantMessage> temp = msgs;
+//  while (!temp.empty()) {
+//    analyseMessage(temp.front());
+//    temp.pop_front();
+//  }
 }
 
-void ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
-  boost::progress_timer t;
-  int type = static_cast<int>(TEXT);
-  int n = 0;
-  if (im.has_contact_notification()) {
-    qDebug() << "HANDLING Contact Notification";
-    maidsafe::ContactNotification cn = im.contact_notification();
-    maidsafe::ContactInfo ci;
-    if (cn.has_contact())
-      ci = cn.contact();
-
-    switch (cn.action()) {
-      // ADD REQUEST - we have requested to add a user
-      case 0:
-            {
-              qDebug() << "HANDLING AddContactRequest";
-
-              emit addedContact(QString::fromStdString(im.sender()));
-              type = CONTACT_REQUEST;
-
-              break;
-            }
-      // ADD RESPONSE - a user has responded to our add request
-      case 1:
-            {
-              qDebug() << "HANDLING AddContactResponse";
-              n = maidsafe::ClientController::getInstance()->
-                                      HandleAddContactResponse(ci, im.sender());
-
-              if (n == 0) {
-                emit confirmedContact(QString::fromStdString(im.sender()));
-                type = CONTACT_RESPONSE;
-              }
-              break;
-            }
-      // DELETE CONTACT - a contact has deleted you from their list
-      case 2:
-            {
-              qDebug() << "HANDLING Deletecontact";
-              n = maidsafe::ClientController::getInstance()->
-                                   HandleDeleteContactNotification(im.sender());
-
-              qDebug() << "HANDLING Deletecontact result " << n;
-              if (n == 0) {
-                emit deletedContact(QString::fromStdString(im.sender()));
-                type = CONTACT_DELETE;
-              }
-              break;
-            }
-    }
-  } else if (im.has_instantfile_notification()) {
-    maidsafe::InstantFileNotification ifn = im.instantfile_notification();
-    maidsafe::MetaDataMap sent_mdm;
-    sent_mdm.ParseFromString(ifn.ser_mdm());
-
-    maidsafe::ItemType mSafeType = sent_mdm.type();
-    ClientController::ItemType ityp;
-    switch (mSafeType) {
-      case maidsafe::DIRECTORY:
-        ityp = DIRECTORY;
-        break;
-      case maidsafe::REGULAR_FILE:
-        ityp = REGULAR_FILE;
-        break;
-      case maidsafe::SMALL_FILE:
-        ityp = SMALL_FILE;
-        break;
-      case maidsafe::EMPTY_FILE:
-        ityp = EMPTY_FILE;
-        break;
-      case maidsafe::LOCKED_FILE:
-        ityp = LOCKED_FILE;
-        break;
-      case maidsafe::EMPTY_DIRECTORY:
-        ityp = EMPTY_DIRECTORY;
-        break;
-      case maidsafe::LINK:
-        ityp = LINK;
-        break;
-      case maidsafe::MAIDSAFE_CHUNK:
-        ityp = MAIDSAFE_CHUNK;
-        break;
-      case maidsafe::NOT_FOR_PROCESSING:
-        ityp = NOT_FOR_PROCESSING;
-        break;
-      case maidsafe::UNKNOWN:
-        ityp = UNKNOWN;
-        break;
-      default:
-        ityp = UNKNOWN;
-        break;
-    }
-
-    int sizeLow = sent_mdm.file_size_low();
-    int sizeHigh = sent_mdm.file_size_high();
-    QString tag = QString::fromStdString(sent_mdm.tag());
-
-    emit fileReceived(QString::fromStdString(im.sender()),
-                      QString::fromStdString(ifn.filename()),
-                      tag, sizeLow, sizeHigh, ityp);
-    type = FILE;
-  } else if (im.has_privateshare_notification()) {
-    // we have added a new private share
-    // \TODO what about someone else adding us to one og their shares?
-    n = maidsafe::ClientController::getInstance()->
-                    HandleReceivedShare(im.privateshare_notification(), "");
-    if (n == 0) {
-      maidsafe::PrivateShareNotification psn = im.privateshare_notification();
-      emit addedPrivateShare(QString::fromStdString(psn.name()));
-      type = SHARE;
-    }
-  } else if (im.has_email_notification()) {
-    // TODO(Stephen) :: emit signal to inform GUI of new email and
-    // woo only qt stuff from here :)
-    QDateTime theDate = QDateTime::currentDateTime();
-    theDate.setTime_t(im.date());
-    QString date = theDate.toString("dd/MM/yyyy hh:mm:ss");
-
-    emit emailReceieved(QString::fromStdString(im.subject()),
-                        QString::fromStdString(im.conversation()),
-                        QString::fromStdString(im.message()),
-                        QString::fromStdString(im.sender()),
-                        date);
-    type = EMAIL;
-  }
-
-  QDateTime time = QDateTime::currentDateTime();
-  if (im.has_date()) {
-    time = QDateTime::fromTime_t(im.date());
-  }
-  const QString message = QString::fromStdString(im.message());
-  const QString sender = QString::fromStdString(im.sender());
-  const QString conversation = QString::fromStdString(im.conversation());
-
-  emit messageReceived(type, time, sender, message, conversation);
-//  printf("Ansa %f", t.elapsed());
-
-//  return n;
-}
-
+//void ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
+//  boost::progress_timer t;
+//  int type = static_cast<int>(TEXT);
+//  int n = 0;
+//  if (im.has_contact_notification()) {
+//    qDebug() << "HANDLING Contact Notification";
+//    maidsafe::ContactNotification cn = im.contact_notification();
+//    maidsafe::ContactInfo ci;
+//    if (cn.has_contact())
+//      ci = cn.contact();
+//
+//    switch (cn.action()) {
+//      // ADD REQUEST - we have requested to add a user
+//      case 0:
+//            {
+//              qDebug() << "HANDLING AddContactRequest";
+//
+//              emit addedContact(QString::fromStdString(im.sender()));
+//              type = CONTACT_REQUEST;
+//
+//              break;
+//            }
+//      // ADD RESPONSE - a user has responded to our add request
+//      case 1:
+//            {
+//              qDebug() << "HANDLING AddContactResponse";
+//              n = maidsafe::ClientController::getInstance()->
+//                                      HandleAddContactResponse(ci, im.sender());
+//
+//              if (n == 0) {
+//                emit confirmedContact(QString::fromStdString(im.sender()));
+//                type = CONTACT_RESPONSE;
+//              }
+//              break;
+//            }
+//      // DELETE CONTACT - a contact has deleted you from their list
+//      case 2:
+//            {
+//              qDebug() << "HANDLING Deletecontact";
+//              n = maidsafe::ClientController::getInstance()->
+//                                   HandleDeleteContactNotification(im.sender());
+//
+//              qDebug() << "HANDLING Deletecontact result " << n;
+//              if (n == 0) {
+//                emit deletedContact(QString::fromStdString(im.sender()));
+//                type = CONTACT_DELETE;
+//              }
+//              break;
+//            }
+//    }
+//  } else if (im.has_instantfile_notification()) {
+//    maidsafe::InstantFileNotification ifn = im.instantfile_notification();
+//    maidsafe::MetaDataMap sent_mdm;
+//    sent_mdm.ParseFromString(ifn.ser_mdm());
+//
+//    maidsafe::ItemType mSafeType = sent_mdm.type();
+//    ClientController::ItemType ityp;
+//    switch (mSafeType) {
+//      case maidsafe::DIRECTORY:
+//        ityp = DIRECTORY;
+//        break;
+//      case maidsafe::REGULAR_FILE:
+//        ityp = REGULAR_FILE;
+//        break;
+//      case maidsafe::SMALL_FILE:
+//        ityp = SMALL_FILE;
+//        break;
+//      case maidsafe::EMPTY_FILE:
+//        ityp = EMPTY_FILE;
+//        break;
+//      case maidsafe::LOCKED_FILE:
+//        ityp = LOCKED_FILE;
+//        break;
+//      case maidsafe::EMPTY_DIRECTORY:
+//        ityp = EMPTY_DIRECTORY;
+//        break;
+//      case maidsafe::LINK:
+//        ityp = LINK;
+//        break;
+//      case maidsafe::MAIDSAFE_CHUNK:
+//        ityp = MAIDSAFE_CHUNK;
+//        break;
+//      case maidsafe::NOT_FOR_PROCESSING:
+//        ityp = NOT_FOR_PROCESSING;
+//        break;
+//      case maidsafe::UNKNOWN:
+//        ityp = UNKNOWN;
+//        break;
+//      default:
+//        ityp = UNKNOWN;
+//        break;
+//    }
+//
+//    int sizeLow = sent_mdm.file_size_low();
+//    int sizeHigh = sent_mdm.file_size_high();
+//    QString tag = QString::fromStdString(sent_mdm.tag());
+//
+//    emit fileReceived(QString::fromStdString(im.sender()),
+//                      QString::fromStdString(ifn.filename()),
+//                      tag, sizeLow, sizeHigh, ityp);
+//    type = FILE;
+//  } else if (im.has_privateshare_notification()) {
+//    // we have added a new private share
+//    // \TODO what about someone else adding us to one og their shares?
+//    n = maidsafe::ClientController::getInstance()->
+//                    HandleReceivedShare(im.privateshare_notification(), "");
+//    if (n == 0) {
+//      maidsafe::PrivateShareNotification psn = im.privateshare_notification();
+//      emit addedPrivateShare(QString::fromStdString(psn.name()));
+//      type = SHARE;
+//    }
+//  } else if (im.has_email_notification()) {
+//    // TODO(Stephen) :: emit signal to inform GUI of new email and
+//    // woo only qt stuff from here :)
+//    QDateTime theDate = QDateTime::currentDateTime();
+//    theDate.setTime_t(im.date());
+//    QString date = theDate.toString("dd/MM/yyyy hh:mm:ss");
+//
+//    emit emailReceieved(QString::fromStdString(im.subject()),
+//                        QString::fromStdString(im.conversation()),
+//                        QString::fromStdString(im.message()),
+//                        QString::fromStdString(im.sender()),
+//                        date);
+//    type = EMAIL;
+//  }
+//
+//  QDateTime time = QDateTime::currentDateTime();
+//  if (im.has_date()) {
+//    time = QDateTime::fromTime_t(im.date());
+//  }
+//  const QString message = QString::fromStdString(im.message());
+//  const QString sender = QString::fromStdString(im.sender());
+//  const QString conversation = QString::fromStdString(im.conversation());
+//
+//  emit messageReceived(type, time, sender, message, conversation);
+////  printf("Ansa %f", t.elapsed());
+//
+////  return n;
+//}
+//
 int ClientController::SaveSession() {
   return maidsafe::ClientController::getInstance()->SaveSession();
 }
@@ -866,10 +868,10 @@ int ClientController::mknod(const QString &path) {
 }
 
 void ClientController::OnNewMessage(const std::string &msg) {
-  maidsafe::InstantMessage im;
-  if (im.ParseFromString(msg)) {
-    analyseMessage(im);
-  }
+//  maidsafe::InstantMessage im;
+//  if (im.ParseFromString(msg)) {
+//    analyseMessage(im);
+//  }
 }
 
 QString ClientController::getContactTooltip(HintLevel level) {

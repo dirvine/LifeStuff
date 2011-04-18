@@ -26,7 +26,7 @@
 
 #include <utility>
 #include "boost/bind.hpp"
-#include "maidsafe/shared/packet.pb.h"
+//  #include "maidsafe/shared/packet.pb.h"
 
 namespace maidsafe {
 // void dummy_timeout_func(const boost::system::error_code &) {

@@ -20,7 +20,7 @@
 #include <QTimer>
 
 // core
-#include "maidsafe/shared/packet.pb.h"
+//  #include "maidsafe/shared/packet.pb.h"
 
 // local
 #include "maidsafe/lifestuff/client/client_controller.h"

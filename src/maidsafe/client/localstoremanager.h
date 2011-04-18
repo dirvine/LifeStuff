@@ -33,7 +33,7 @@
 #include "boost/filesystem.hpp"
 #include "boost/thread/mutex.hpp"
 #include "maidsafe/shared/cppsqlite3.h"
-#include "maidsafe/shared/vaultbufferpackethandler.h"
+//  #include "maidsafe/shared/vaultbufferpackethandler.h"
 #include "maidsafe/client/storemanager.h"
 
 
@@ -104,36 +104,36 @@ class LocalStoreManager : public StoreManagerInterface {
                             const VoidFuncOneInt &cb);
 
   // Buffer packet
-  virtual int CreateBP();
-  virtual int ModifyBPInfo(const std::string &info);
-  virtual int LoadBPMessages(
-      std::list<ValidatedBufferPacketMessage> *messages);
-  virtual int SendAMessage(const std::vector<std::string> &receivers,
-                           const std::string &message,
-                           const MessageType &m_type,
-                           std::map<std::string, ReturnCode> *add_results);
-  virtual int LoadBPPresence(std::list<LivePresence> *messages);
-  virtual int AddBPPresence(
-      const std::vector<std::string> &receivers,
-      std::map<std::string, ReturnCode> *add_results);
+//  virtual int CreateBP();
+//  virtual int ModifyBPInfo(const std::string &info);
+//  virtual int LoadBPMessages(
+//      std::list<ValidatedBufferPacketMessage> *messages);
+//  virtual int SendAMessage(const std::vector<std::string> &receivers,
+//                           const std::string &message,
+//                           const MessageType &m_type,
+//                           std::map<std::string, ReturnCode> *add_results);
+//  virtual int LoadBPPresence(std::list<LivePresence> *messages);
+//  virtual int AddBPPresence(
+//      const std::vector<std::string> &receivers,
+//      std::map<std::string, ReturnCode> *add_results);
 
   // Vault
-  virtual bool VaultStoreInfo(boost::uint64_t *offered_space,
-                              boost::uint64_t *free_space);
-  virtual bool VaultContactInfo(dht::kademlia::Contact *contact);
-  virtual void SetLocalVaultOwned(const std::string &priv_key,
-                                  const std::string &pub_key,
-                                  const std::string &signed_pub_key,
-                                  const boost::uint32_t &port,
-                                  const std::string &vault_dir,
-                                  const boost::uint64_t &space,
-                                  const SetLocalVaultOwnedFunctor &functor);
-  virtual void LocalVaultOwned(const LocalVaultOwnedFunctor &functor);
-  virtual int CreateAccount(const boost::uint64_t&) { return kSuccess; }
-  bool SendPresence(const std::string &) { return false; }
-  void SendLogOutMessage(const std::string &) {}
-  void SetSessionEndPoint() {}
-  void SetInstantMessageNotifier(IMNotifier, IMStatusNotifier) {}
+//  virtual bool VaultStoreInfo(boost::uint64_t *offered_space,
+//                              boost::uint64_t *free_space);
+//  virtual bool VaultContactInfo(dht::kademlia::Contact *contact);
+//  virtual void SetLocalVaultOwned(const std::string &priv_key,
+//                                  const std::string &pub_key,
+//                                  const std::string &signed_pub_key,
+//                                  const boost::uint32_t &port,
+//                                  const std::string &vault_dir,
+//                                  const boost::uint64_t &space,
+//                                  const SetLocalVaultOwnedFunctor &functor);
+//  virtual void LocalVaultOwned(const LocalVaultOwnedFunctor &functor);
+//  virtual int CreateAccount(const boost::uint64_t&) { return kSuccess; }
+//  bool SendPresence(const std::string &) { return false; }
+//  void SendLogOutMessage(const std::string &) {}
+//  void SetSessionEndPoint() {}
+//  void SetInstantMessageNotifier(IMNotifier, IMStatusNotifier) {}
  private:
   friend class
       test::LocalStoreManagerTest_BEH_MAID_AddAndGetBufferPacketMessages_Test;
@@ -162,10 +162,10 @@ class LocalStoreManager : public StoreManagerInterface {
   std::string BufferPacketName();
   std::string BufferPacketName(const std::string &publicusername,
                                const std::string &public_key);
-  std::string CreateMessage(const std::string &message,
-                            const std::string &rec_public_key,
-                            const MessageType &m_type,
-                            const boost::uint32_t &timestamp);
+//  std::string CreateMessage(const std::string &message,
+//                            const std::string &rec_public_key,
+//                            const MessageType &m_type,
+//                            const boost::uint32_t &timestamp);
   void CreateSerialisedSignedValue(const std::string &value,
                                    const std::string &private_key,
                                    std::string *ser_gp);
@@ -180,7 +180,7 @@ class LocalStoreManager : public StoreManagerInterface {
   const boost::uint8_t K_;
   const boost::uint16_t kUpperThreshold_;
   CppSQLite3DB db_;
-  VaultBufferPacketHandler vbph_;
+//  VaultBufferPacketHandler vbph_;
   boost::mutex mutex_;
   std::string local_sm_dir_;
   std::shared_ptr<ChunkStore> client_chunkstore_;
