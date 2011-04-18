@@ -32,8 +32,8 @@
 
 #include <string>
 
-#include "maidsafe/client/clientcontroller.h"
-#include "maidsafe/fuse/linux/fusecpp.h"
+#include "maidsafe/lifestuff/client/clientcontroller.h"
+#include "maidsafe/lifestuff/fuse/linux/fusecpp.h"
 
 namespace fs_l_fuse {
 

@@ -39,7 +39,7 @@
 #include "maidsafe/lifestuff/fuse/windows/fswin.h"
 #endif
 #elif defined(LifeStuff_POSIX)
-#include "maidsafe/fuse/linux/fslinux.h"
+#include "maidsafe/lifestuff/fuse/linux/fslinux.h"
 #endif
 
 // local

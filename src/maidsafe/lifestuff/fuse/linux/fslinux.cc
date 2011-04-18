@@ -26,7 +26,7 @@
  *
  * ==========================================================================
  */
-#include "maidsafe/fuse/linux/fslinux.h"
+#include "maidsafe/lifestuff/fuse/linux/fslinux.h"
 
 #include <unistd.h>
 #include <errno.h>
@@ -45,11 +45,11 @@
 #include "boost/bind.hpp"
 #include "boost/filesystem/path.hpp"
 
-#include "maidsafe/shared/filesystem.h"
-#include "maidsafe/client/clientutils.h"
-#include "maidsafe/client/clientcontroller.h"
-#include "maidsafe/client/sessionsingleton.h"
-#include "maidsafe/client/filesystem/distributed_filesystem.pb.h"
+#include "maidsafe/lifestuff/shared/filesystem.h"
+#include "maidsafe/lifestuff/client/clientutils.h"
+#include "maidsafe/lifestuff/client/clientcontroller.h"
+#include "maidsafe/lifestuff/client/sessionsingleton.h"
+#include "maidsafe/lifestuff/client/filesystem/distributed_filesystem.pb.h"
 
 
 
