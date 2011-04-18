@@ -23,6 +23,10 @@
 
 #include <string>
 
+namespace maidsafe {
+
+namespace lifestuff {
+
 // Credentials operation interface
 class UserCredentials {
  public:
@@ -41,5 +45,9 @@ class UserCredentials {
   virtual bool ChangePassword(const std::string &new_password) = 0;
   virtual bool LeaveMaidsafeNetwork() = 0;
 };
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_CLIENT_USER_CREDENTIALS_API_H_

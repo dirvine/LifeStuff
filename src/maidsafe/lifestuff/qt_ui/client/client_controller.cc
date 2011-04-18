@@ -670,7 +670,7 @@ bool ClientController::CreateUser(const QString &username, const QString &pin,
   vcp.directory = directory.toStdString();
 
   return maidsafe::ClientController::getInstance()->CreateUser(
-                          username_, pin_, password_, vcp);
+                          username_, pin_, password_);
 }
 
 bool ClientController::CheckUserExists(const std::string &username,
@@ -687,7 +687,7 @@ bool ClientController::CheckUserExists(const std::string &username,
 
   bool result = true;
   int rc = maidsafe::ClientController::getInstance()->CheckUserExists(
-                                    username, pin, defCon);
+                                    username, pin);
 
   if (rc == maidsafe::kUserDoesntExist)
     result = true;

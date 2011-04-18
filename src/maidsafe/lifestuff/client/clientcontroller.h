@@ -44,6 +44,7 @@
 #include "maidsafe/lifestuff/client/sessionsingleton.h"
 #include "maidsafe/lifestuff/client/filesystem/distributed_filesystem.pb.h"
 #include "maidsafe/lifestuff/client/filesystem/sehandler.h"
+#include "maidsafe/lifestuff/client/user_credentials_api.h"
 
 namespace bs2 = boost::signals2;
 
@@ -119,7 +120,7 @@ struct VaultConfigParameters {
   std::string directory;
 };
 
-class ClientController {
+class ClientController : public lifestuff::UserCredentials {
  public:
   static ClientController* getInstance() {
     boost::call_once(InitPtr, flag_);
@@ -134,24 +135,23 @@ class ClientController {
   void StopRvPing();
   int ParseDa();
   int SerialiseDa();
-  int CheckUserExists(const std::string &username,
-                      const std::string &pin,
-                      DefConLevels level);
-  bool CreateUser(const std::string &username,
-                  const std::string &pin,
-                  const std::string &password,
-                  const VaultConfigParameters &vcp);
-  bool ValidateUser(const std::string &password);
-  bool Logout();
-  int SaveSession();
-  bool LeaveMaidsafeNetwork();
-  bool CreatePublicUsername(const std::string &public_username);
-  bool ChangeUsername(const std::string &new_username);
-  bool ChangePin(const std::string &new_pin);
-  bool ChangePassword(const std::string &new_password);
   int ChangeConnectionStatus(int status);
   int RunDbEncQueue();
   inline bool initialised() { return initialised_; }
+
+  // User credential operations
+  virtual int CheckUserExists(const std::string &username,
+                              const std::string &pin);
+  virtual bool ValidateUser(const std::string &password);
+  virtual bool CreateUser(const std::string &username,
+                          const std::string &pin,
+                          const std::string &password);
+  virtual bool Logout();
+  virtual int SaveSession();
+  virtual bool ChangeUsername(const std::string &new_username);
+  virtual bool ChangePin(const std::string &new_pin);
+  virtual bool ChangePassword(const std::string &new_password);
+  virtual bool LeaveMaidsafeNetwork();
 
   // Messages
 //  typedef boost::function<void(const InstantMessage&)> IMNotifier;
@@ -186,6 +186,7 @@ class ClientController {
 //  void SetIMNotifier(IMNotifier imn);
 
   // Contact operations
+  bool CreatePublicUsername(const std::string &public_username);
   int ContactList(const std::string &pub_name,
                   const SortingMode &sm,
                   std::vector<Contact> *c_list);

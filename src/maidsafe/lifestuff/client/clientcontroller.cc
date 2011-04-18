@@ -352,8 +352,7 @@ int ClientController::SerialiseDa() {
 }
 
 int ClientController::CheckUserExists(const std::string &username,
-                                      const std::string &pin,
-                                      DefConLevels level) {
+                                      const std::string &pin) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::CheckUserExists - Not initialised.\n");
@@ -361,14 +360,13 @@ int ClientController::CheckUserExists(const std::string &username,
     return kClientControllerNotInitialised;
   }
   ss_->ResetSession();
-  ss_->SetDefConLevel(level);
+  ss_->SetDefConLevel(kDefCon1);
   return auth_.GetUserInfo(username, pin);
 }
 
 bool ClientController::CreateUser(const std::string &username,
                                   const std::string &pin,
-                                  const std::string &password,
-                                  const VaultConfigParameters &vcp) {
+                                  const std::string &password) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::CreateUser - Not initialised.\n");
