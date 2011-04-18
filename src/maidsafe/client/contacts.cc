@@ -14,7 +14,6 @@
 #include "maidsafe/client/contacts.h"
 #include "boost/filesystem.hpp"
 #include "boost/lexical_cast.hpp"
-//#include <maidsafe/maidsafe-dht.h>
 
 namespace fs = boost::filesystem;
 

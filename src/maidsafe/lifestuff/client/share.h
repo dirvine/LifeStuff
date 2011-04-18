@@ -66,4 +66,4 @@ class Share {
 typedef QList<Share> ShareList;
 
 
-#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_SHARE_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_SHARE_H_

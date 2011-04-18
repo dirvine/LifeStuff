@@ -33,12 +33,12 @@ class GetEmailThread : public WorkerThread {
   virtual void run();
 
  private:
-	 QString subject_;
+  QString subject_;
 
   signals:
   void getEmailCompleted(int, const QString&);
 };
 
-#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_GET_EMAIL_THREAD_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_GET_EMAIL_THREAD_H_
 
 

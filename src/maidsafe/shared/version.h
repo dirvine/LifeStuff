@@ -18,8 +18,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_COMMON_VERSION_H_
-#define MAIDSAFE_COMMON_VERSION_H_
+#ifndef MAIDSAFE_SHARED_VERSION_H_
+#define MAIDSAFE_SHARED_VERSION_H_
 
 #define MAIDSAFE_LifeStuff_VERSION 1
 
@@ -43,4 +43,4 @@
   Please update this project.
 #endif
 
-#endif  // MAIDSAFE_COMMON_VERSION_H_
+#endif  // MAIDSAFE_SHARED_VERSION_H_

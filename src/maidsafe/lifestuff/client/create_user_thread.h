@@ -48,5 +48,5 @@ class CreateUserThread : public WorkerThread {
   QString directory_;
 };
 
-#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_CREATE_USER_THREAD_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_CREATE_USER_THREAD_H_
 

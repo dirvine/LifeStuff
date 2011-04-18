@@ -43,5 +43,5 @@ class MountThread : public WorkerThread {
   MountAction action_;
 };
 
-#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_MOUNT_THREAD_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_MOUNT_THREAD_H_
 

@@ -60,4 +60,4 @@ class Presence {
 };
 
 
-#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_PRESENCE_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_PRESENCE_H_

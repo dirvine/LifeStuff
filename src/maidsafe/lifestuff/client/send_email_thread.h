@@ -28,9 +28,9 @@ class SendEmailThread : public WorkerThread {
   Q_OBJECT
  public:
   SendEmailThread(const QString& subject, const QString& message,
-									const QList<QString>& to, const QList<QString>& cc,
-									const QList<QString>& bcc, const QString& conversation,
-									QObject* parent = 0);
+                  const QList<QString>& to, const QList<QString>& cc,
+                  const QList<QString>& bcc, const QString& conversation,
+                  QObject* parent = 0);
   virtual ~SendEmailThread();
 
   virtual void run();
@@ -47,4 +47,4 @@ class SendEmailThread : public WorkerThread {
   void sendEmailCompleted(int, const QString&);
 };
 
-#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_SEND_EMAIL_THREAD_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_SEND_EMAIL_THREAD_H_

@@ -12,8 +12,8 @@
 * Author: Team
 */
 
-#ifndef MAIDSAFE_COMMON_CHUNKSTORE_H_
-#define MAIDSAFE_COMMON_CHUNKSTORE_H_
+#ifndef MAIDSAFE_SHARED_CHUNKSTORE_H_
+#define MAIDSAFE_SHARED_CHUNKSTORE_H_
 
 #include <cstdint>
 #include <list>
@@ -234,4 +234,4 @@ class ChunkStore : public dht::kademlia::AlternativeStore {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_COMMON_CHUNKSTORE_H_
+#endif  // MAIDSAFE_SHARED_CHUNKSTORE_H_

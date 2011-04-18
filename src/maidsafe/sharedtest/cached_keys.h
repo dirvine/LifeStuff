@@ -25,16 +25,16 @@
 #ifndef MAIDSAFE_SHAREDTEST_CACHED_KEYS_H_
 #define MAIDSAFE_SHAREDTEST_CACHED_KEYS_H_
 
+#include <string>
+#include <vector>
+
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include "boost/filesystem/fstream.hpp"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/passport/passport.h"
-
-#include <string>
-#include <vector>
+#include "maidsafe/passport/signaturepacket.pb.h"
 
 #include "maidsafe/shared/filesystem.h"
-#include "maidsafe/passport/signaturepacket.pb.h"
 
 namespace fs = boost::filesystem;
 

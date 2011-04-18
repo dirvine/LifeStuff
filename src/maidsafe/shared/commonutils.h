@@ -22,11 +22,11 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_COMMON_COMMONUTILS_H_
-#define MAIDSAFE_COMMON_COMMONUTILS_H_
+#ifndef MAIDSAFE_SHARED_COMMONUTILS_H_
+#define MAIDSAFE_SHARED_COMMONUTILS_H_
 
-#include "boost/filesystem.hpp"
 #include <string>
+#include "boost/filesystem.hpp"
 
 namespace maidsafe {
 
@@ -84,4 +84,4 @@ std::string XORObfuscate(const std::string &first,
                          const std::string &second);
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_COMMON_COMMONUTILS_H_
+#endif  // MAIDSAFE_SHARED_COMMONUTILS_H_

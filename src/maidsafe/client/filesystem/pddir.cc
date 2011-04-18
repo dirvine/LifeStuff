@@ -23,9 +23,9 @@
 */
 
 #include "maidsafe/client/filesystem/pddir.h"
+#include <exception>
 #include "boost/filesystem.hpp"
 #include "boost/lexical_cast.hpp"
-#include <exception>
 #include "maidsafe/shared/cppsqlite3.h"
 #include "maidsafe/client/clientutils.h"
 #include "maidsafe/maidsafe-encrypt/self_encryption.h"
@@ -244,7 +244,7 @@ int PdDir::AddElement(const std::string &ser_mdm,
     if (!mdm.ParseFromString(ser_mdm))
       return kParseDataMapError;
     if (!ser_dm.empty())
-      if (!ParseFromString(dm, ser_dm))
+      if (!ParseFromString(&dm, ser_dm))
         return kParseDataMapError;
   }
   catch(const std::exception &e) {
@@ -356,7 +356,7 @@ int PdDir::ModifyMetaDataMap(const std::string &ser_mdm,
   encrypt::DataMap dm;
   if (!mdm.ParseFromString(ser_mdm))
     return kParseDataMapError;
-  if (!ParseFromString(dm, ser_dm))
+  if (!ParseFromString(&dm, ser_dm))
     return kParseDataMapError;
   int id = GetIdFromName(mdm.display_name());
   if (id < 0) {
@@ -699,12 +699,12 @@ void PdDir::SanitiseSingleQuotes(std::string *str) {
   }
 }
 
-bool PdDir::ParseFromString(maidsafe::encrypt::DataMap& data_map,
+bool PdDir::ParseFromString(maidsafe::encrypt::DataMap *data_map,
                                   const std::string& serialized) {
   std::stringstream in_string_stream(serialized);
   boost::archive::text_iarchive ia(in_string_stream);
-  ia >> data_map;
-  return !data_map.content.empty();
+  ia >> *data_map;
+  return !data_map->content.empty();
 }
 
 }  // namespace maidsafe

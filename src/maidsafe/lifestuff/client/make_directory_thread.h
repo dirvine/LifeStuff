@@ -39,4 +39,4 @@ class MakeDirectoryThread : public WorkerThread {
   void makeDirectoryCompleted(int, const QString&);
 };
 
-#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_MAKE_DIRECTORY_THREAD_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_MAKE_DIRECTORY_THREAD_H_

@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_COMMON_VAULTBUFFERPACKETHANDLER_H_
-#define MAIDSAFE_COMMON_VAULTBUFFERPACKETHANDLER_H_
+#ifndef MAIDSAFE_SHARED_VAULTBUFFERPACKETHANDLER_H_
+#define MAIDSAFE_SHARED_VAULTBUFFERPACKETHANDLER_H_
 
 #include <string>
 #include <vector>
@@ -60,4 +60,4 @@ class VaultBufferPacketHandler {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_COMMON_VAULTBUFFERPACKETHANDLER_H_
+#endif  // MAIDSAFE_SHARED_VAULTBUFFERPACKETHANDLER_H_

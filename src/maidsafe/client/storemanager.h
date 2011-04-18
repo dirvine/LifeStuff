@@ -25,15 +25,17 @@
 #ifndef MAIDSAFE_CLIENT_STOREMANAGER_H_
 #define MAIDSAFE_CLIENT_STOREMANAGER_H_
 
+#include <list>
+#include <map>
+#include <string>
+#include <vector>
+
 #include "boost/function.hpp"
 #include "boost/signals2/signal.hpp"
 #include "boost/thread/condition_variable.hpp"
 //  #include <maidsafe/maidsafe-dht.h>
 #include "maidsafe/passport/passport.h"
-#include <list>
-#include <map>
-#include <string>
-#include <vector>
+
 #include "maidsafe/shared/maidsafe.h"
 #include "maidsafe/shared/maidsafe_service_messages.pb.h"
 

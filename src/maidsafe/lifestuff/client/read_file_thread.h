@@ -41,4 +41,4 @@ class ReadFileThread : public WorkerThread {
 };
 
 
-#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_READ_FILE_THREAD_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_READ_FILE_THREAD_H_

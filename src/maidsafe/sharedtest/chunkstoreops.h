@@ -26,13 +26,15 @@
 #ifndef MAIDSAFE_SHAREDTEST_CHUNKSTOREOPS_H_
 #define MAIDSAFE_SHAREDTEST_CHUNKSTOREOPS_H_
 
+#include <string>
+#include <vector>
+
 #include "boost/cstdint.hpp"
 #include "boost/filesystem.hpp"
 #include "boost/shared_ptr.hpp"
 #include "boost/thread.hpp"
+
 #include "maidsafe-dht/common/utils.h"
-#include <string>
-#include <vector>
 #include "maidsafe/common/packet.pb.h"
 
 namespace fs3 = boost::filesystem3;
@@ -87,7 +89,7 @@ bool MakeChunks(const boost::uint32_t &num_chunks,
     if (hashable) {
       name->push_back(maidsafe::SHA512String(value->at(i)));
     } else {
-      name->push_back(maidsafe::SHA512String(boost::lexical_cast<std::string>(i)));
+      name->push_back(maidsafe::SHA512String(boost::lexical_cast<std::string>(i)));  // NOLINT
     }
   }
   return (chunksize->size() == num_chunks && value->size() == num_chunks &&
@@ -134,7 +136,7 @@ bool MakePackets(const boost::uint32_t &num_packets,
     gp.set_data(data);
     gp.set_signature(maidsafe::RSASign(data, private_key.at(i)));
     value->push_back(gp);
-    name->push_back(maidsafe::SHA512String(boost::lexical_cast<std::string>(i)));
+    name->push_back(maidsafe::SHA512String(boost::lexical_cast<std::string>(i)));  // NOLINT
   }
   return (packetsize->size() == num_packets && value->size() == num_packets &&
           name->size() == num_packets);

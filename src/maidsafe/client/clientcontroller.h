@@ -25,15 +25,17 @@
 #ifndef MAIDSAFE_CLIENT_CLIENTCONTROLLER_H_
 #define MAIDSAFE_CLIENT_CLIENTCONTROLLER_H_
 
-#include "boost/function.hpp"
-#include "boost/signals2.hpp"
-#include "boost/thread/condition_variable.hpp"
-#include "boost/thread/mutex.hpp"
 #include <list>
 #include <map>
 #include <set>
 #include <string>
 #include <vector>
+
+#include "boost/function.hpp"
+#include "boost/signals2.hpp"
+#include "boost/thread/condition_variable.hpp"
+#include "boost/thread/mutex.hpp"
+
 #include "maidsafe/shared/filesystem.h"
 #include "maidsafe/shared/maidsafe.h"
 #include "maidsafe/shared/maidsafe_service_messages.pb.h"
@@ -335,9 +337,9 @@ class ClientController {
   void FileUpdate(const std::string &file, int percentage);
   bool AddToPendingFiles(const std::string &file);
   bool RemoveFromPendingFiles(const std::string &file);
-  bool SerializeToString(maidsafe::encrypt::DataMap& data_map,
+  bool SerializeToString(maidsafe::encrypt::DataMap *data_map,
                                 std::string& serialized);
-  bool ParseFromString(maidsafe::encrypt::DataMap& data_map,
+  bool ParseFromString(maidsafe::encrypt::DataMap *data_map,
                                   const std::string& serialized);
 
   // Variables

@@ -22,9 +22,11 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_COMMON_MAIDSAFE_H_
-#define MAIDSAFE_COMMON_MAIDSAFE_H_
+#ifndef MAIDSAFE_SHARED_MAIDSAFE_H_
+#define MAIDSAFE_SHARED_MAIDSAFE_H_
 
+#include <string>
+#include <vector>
 #include "boost/cstdint.hpp"
 #include "boost/function.hpp"
 #include "maidsafe/dht/version.h"
@@ -39,8 +41,6 @@
   Please update this project.
 #endif
 
-#include <string>
-#include <vector>
 #include "maidsafe/shared/returncodes.h"
 
 namespace kad { class Contact; }
@@ -220,4 +220,4 @@ inline std::string HexSubstr(const std::string &non_hex) {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_COMMON_MAIDSAFE_H_
+#endif  // MAIDSAFE_SHARED_MAIDSAFE_H_

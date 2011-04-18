@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_COMMON_RETURNCODES_H_
-#define MAIDSAFE_COMMON_RETURNCODES_H_
+#ifndef MAIDSAFE_SHARED_RETURNCODES_H_
+#define MAIDSAFE_SHARED_RETURNCODES_H_
 
 namespace maidsafe {
 
@@ -228,4 +228,4 @@ enum ReturnCode {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_COMMON_RETURNCODES_H_
+#endif  // MAIDSAFE_SHARED_RETURNCODES_H_

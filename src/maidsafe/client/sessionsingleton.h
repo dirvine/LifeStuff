@@ -25,15 +25,17 @@
 #ifndef MAIDSAFE_CLIENT_SESSIONSINGLETON_H_
 #define MAIDSAFE_CLIENT_SESSIONSINGLETON_H_
 
-#include "boost/utility.hpp"
-#include "boost/thread/once.hpp"
-#include "boost/scoped_ptr.hpp"
-#include "maidsafe/passport/passport.h"
 #include <list>
 #include <map>
 #include <set>
 #include <string>
 #include <vector>
+
+#include "boost/utility.hpp"
+#include "boost/thread/once.hpp"
+#include "boost/scoped_ptr.hpp"
+#include "maidsafe/passport/passport.h"
+
 #include "maidsafe/client/contacts.h"
 #include "maidsafe/client/privateshares.h"
 #include "maidsafe/client/filesystem/distributed_filesystem.pb.h"

@@ -28,10 +28,6 @@
  */
 #include "maidsafe/fuse/linux/fslinux.h"
 
-#include "boost/filesystem/convenience.hpp"
-#include "boost/bind.hpp"
-#include "boost/filesystem/path.hpp"
-
 #include <unistd.h>
 #include <errno.h>
 #include <dirent.h>
@@ -44,6 +40,10 @@
 #include <string>
 #include <cstdlib>
 #include <map>
+
+#include "boost/filesystem/convenience.hpp"
+#include "boost/bind.hpp"
+#include "boost/filesystem/path.hpp"
 
 #include "maidsafe/shared/filesystem.h"
 #include "maidsafe/client/clientutils.h"
@@ -514,7 +514,7 @@ int FSLinux::ms_getattr(const char *path, struct stat *stbuf) {
 
 #ifdef DEBUG
 int FSLinux::ms_fgetattr(const char *path, struct stat *stbuf,
-                         struct fuse_file_info *fi) {
+                         struct fuse_file_info *fi) {  //NOLINT
 #else
 int FSLinux::ms_fgetattr(const char *path, struct stat *stbuf,
                          struct fuse_file_info*) {

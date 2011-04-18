@@ -26,11 +26,12 @@
 #ifndef MAIDSAFE_SHAREDTEST_THREADPOOL_H_
 #define MAIDSAFE_SHAREDTEST_THREADPOOL_H_
 
+#include <queue>
+#include <vector>
+
 #include "boost/thread/condition_variable.hpp"
 #include "boost/function.hpp"
 #include "boost/thread/thread.hpp"
-#include <queue>
-#include <vector>
 
 namespace base {
 

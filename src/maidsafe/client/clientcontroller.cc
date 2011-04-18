@@ -225,10 +225,10 @@ int ClientController::ParseDa() {
     ss_->SetPd(data_atlas.pd());
 
   encrypt::DataMap dm_root, other_dms;
-  ParseFromString(dm_root, data_atlas.dms(0));
+  ParseFromString(&dm_root, data_atlas.dms(0));
 
   std::string ser_dm_root, other_ser_dms;
-  SerializeToString(dm_root, ser_dm_root);
+  SerializeToString(&dm_root, ser_dm_root);
   int i = seh_.DecryptDb(kRoot, PRIVATE, ser_dm_root, "", "", false, false);
   if (i != 0)
     return -1;
@@ -255,7 +255,7 @@ int ClientController::SerialiseDa() {
   if (AddToPendingFiles(kRoot))
     seh_.EncryptDb(kRoot, PRIVATE, "", "", false, &root_dm);
   std::string *dm = data_atlas.add_dms();
-  SerializeToString(root_dm, *dm);
+  SerializeToString(&root_dm, *dm);
 
   for (int i = 0; i < kRootSubdirSize; ++i) {
 //    subdirs_dm.Clear();
@@ -268,7 +268,7 @@ int ClientController::SerialiseDa() {
       seh_.EncryptDb(tidy_path, PRIVATE, "", "", false, &subdirs_dm);
 #endif
       dm = data_atlas.add_dms();
-      SerializeToString(subdirs_dm, *dm);
+      SerializeToString(&subdirs_dm, *dm);
     }
   }
 
@@ -2190,11 +2190,9 @@ bool ClientController::VaultContactInfo(dht::kademlia::Contact *contact) {
   }
 
 #ifdef LOCAL_LifeStuffVAULT
-  {
-    dht::kademlia::Contact vc;
-    *contact = vc;
-    return true;
-  }
+  dht::kademlia::Contact vc;
+  *contact = vc;
+  return true;
 #endif
 
   if (!sm_->VaultContactInfo(contact)) {
@@ -3405,21 +3403,21 @@ bool ClientController::RemoveFromPendingFiles(const std::string &file) {
   return true;
 }
 
-bool ClientController::SerializeToString(maidsafe::encrypt::DataMap& data_map,
-                                  std::string& serialized) {
+bool ClientController::SerializeToString(maidsafe::encrypt::DataMap *data_map,
+                                         std::string& serialized) {
   std::stringstream string_stream;
   boost::archive::text_oarchive oa(string_stream);
-  oa << data_map;
+  oa << *data_map;
   serialized = string_stream.str();
   return !serialized.empty();
 }
 
-bool ClientController::ParseFromString(maidsafe::encrypt::DataMap& data_map,
+bool ClientController::ParseFromString(maidsafe::encrypt::DataMap *data_map,
                                   const std::string& serialized) {
   std::stringstream string_stream(serialized);
   boost::archive::text_iarchive ia(string_stream);
-  ia >> data_map;
-  return (data_map.size > 0);
+  ia >> *data_map;
+  return (data_map->size > 0);
 }
 
 }  // namespace maidsafe

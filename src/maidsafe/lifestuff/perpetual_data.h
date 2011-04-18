@@ -32,7 +32,7 @@
 #include "maidsafe/lifestuff/client/save_file_thread.h"
 
 // generated
-#include "ui_pd.h"
+#include "ui_pd.h"  //  NOLINT
 
 class QLabel;
 class Login;
@@ -78,7 +78,7 @@ class PerpetualData : public QMainWindow {
     QTranslator* qtTranslator;
     QTranslator* myAppTranslator;
 
-signals:
+ signals:
     // for updating other parts of the application like sys tray
     void inLoginState();
     void inSetupUserState();
@@ -178,12 +178,12 @@ signals:
     // slot invoked when login or logout is in progress
     // and we do not want to process any actions like
     // button press or menu selection
-    void enableInputs(bool);
+    void enableInputs(bool);  //NOLINT
     void positionLSWinInCenter();
-    void positionWidgetInScreenCenter(QWidget *);
+    void positionWidgetInScreenCenter(QWidget *);  //NOLINT
     void onShowWindowRequest();   // example when user click on sys tray icon
 
-public:
+ public:
     void showLoginWindow();
 
  private:

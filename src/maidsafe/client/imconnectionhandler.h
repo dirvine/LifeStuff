@@ -25,6 +25,8 @@
 #ifndef MAIDSAFE_CLIENT_IMCONNECTIONHANDLER_H_
 #define MAIDSAFE_CLIENT_IMCONNECTIONHANDLER_H_
 
+#include <string>
+
 #include "boost/multi_index_container.hpp"
 #include "boost/multi_index/ordered_index.hpp"
 #include "boost/multi_index/identity.hpp"
@@ -35,8 +37,6 @@
 #include "boost/thread.hpp"
 #include "boost/asio.hpp"
 #include "boost/date_time/posix_time/posix_time.hpp"
-
-#include <string>
 
 #include "maidsafe/shared/returncodes.h"
 
@@ -89,7 +89,7 @@ class IMConnectionHandler {
 // public:
 //  IMConnectionHandler();
 //  ReturnCode Start(transport::TransportHandler *trans_hdler,
-//      new_message_notifier msg_notifier, new_connection_notifier conn_notifier);
+//    new_message_notifier msg_notifier, new_connection_notifier conn_notifier);
 //  void Stop();
 //  ReturnCode AddConnection(const boost::int16_t &trans_id,
 //      const boost::uint32_t &conn_id);

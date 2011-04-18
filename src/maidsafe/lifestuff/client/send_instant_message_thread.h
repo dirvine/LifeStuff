@@ -42,4 +42,4 @@ class SendInstantMessageThread : public WorkerThread {
     void sendMessageCompleted(bool, const QString&);
 };
 
-#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_SEND_INSTANT_MESSAGE_THREAD_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_SEND_INSTANT_MESSAGE_THREAD_H_

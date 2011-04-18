@@ -19,15 +19,15 @@
 #include <QDebug>
 #include <QTimer>
 
-#include "boost/progress.hpp"
-#include "boost/lexical_cast.hpp"
-
 // std
 #include <list>
 #include <map>
 #include <set>
 #include <string>
 #include <vector>
+
+#include "boost/progress.hpp"
+#include "boost/lexical_cast.hpp"
 
 // core
 #include "maidsafe/shared/filesystem.h"
@@ -70,8 +70,8 @@ void ClientController::StartCheckingMessages() {
   cfmt_ = new CheckForMessagesThread(this);
   cfmt_->set_interval(kCheckForMessagesInterval);
   cfmt_->set_started(true);
-  connect(cfmt_, SIGNAL(completed(bool)),
-          this,  SLOT(onCheckMessagesCompleted(bool)));
+  connect(cfmt_, SIGNAL(completed(bool)), this,  //NOLINT
+          SLOT(onCheckMessagesCompleted(bool)));  //NOLINT
   cfmt_->start();
 }
 
@@ -91,7 +91,7 @@ QString ClientController::publicUsername() const {
          maidsafe::SessionSingleton::getInstance()->PublicUsername());
 }
 
-bool ClientController::getPendingOps(QList<PendingOps> &ops) {
+bool ClientController::getPendingOps(QList<PendingOps> *ops) {
 //  array<pendingOps> pending;
 //  maidsafe::PendingOps po;
 //  get pendingOps from maisafe and convert to QT PendingOps
@@ -102,7 +102,7 @@ bool ClientController::getPendingOps(QList<PendingOps> &ops) {
   op.transBytes = 1583;
   op.totalBytes = 10000;
 
-  ops.append(op);
+  ops->append(op);
   return true;
 }
 
@@ -394,9 +394,9 @@ bool ClientController::sendEmail(const QString& subject,
   return (n == 0);
 }
 
-QDomElement ClientController::EmailToNode(QDomDocument &d,
+QDomElement ClientController::EmailToNode(QDomDocument *d,
                                           const ClientController::Email &c) {
-  QDomElement em = d.createElement( "contact" );
+  QDomElement em = d->createElement("contact");
 
   em.setAttribute("from", c.from);
   em.setAttribute("to", c.to);
@@ -474,7 +474,7 @@ bool ClientController::GetMessages() {
   return maidsafe::ClientController::getInstance()->GetMessages();
 }
 
-void ClientController::onCheckMessagesCompleted(bool) {
+void ClientController::onCheckMessagesCompleted(bool) {  //NOLINT
   std::list<maidsafe::InstantMessage> msgs;
   int n = maidsafe::ClientController::getInstance()->GetInstantMessages(&msgs);
 
@@ -490,7 +490,7 @@ void ClientController::onCheckMessagesCompleted(bool) {
 
 void ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
   boost::progress_timer t;
-  int type = int(TEXT);
+  int type = static_cast<int>(TEXT);
   int n = 0;
   if (im.has_contact_notification()) {
     qDebug() << "HANDLING Contact Notification";
@@ -753,7 +753,8 @@ int ClientController::getattr(const QString &path, QString &lastModified,
   std::string ser_mdm;
   maidsafe::MetaDataMap mdm;
   std::string the_path(maidsafe::TidyPath(path.toStdString()));
-  int result = maidsafe::ClientController::getInstance()->getattr(the_path, &ser_mdm);
+  int result = maidsafe::ClientController::getInstance()->getattr(the_path,
+                                                                  &ser_mdm);
   mdm.ParseFromString(ser_mdm);
 
   QDateTime *mod = new QDateTime;

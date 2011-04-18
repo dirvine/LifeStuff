@@ -89,7 +89,7 @@ class MockKadOps : public KadOps {
 //    tp_.EnqueueTask(boost::bind(&KadOps::GetNodeContactDetailsCallback, this,
 //                                response, callback));
 //  }
-//void ThreadedFindKClosestNodesCallback(const std::string &response,
+// void ThreadedFindKClosestNodesCallback(const std::string &response,
 //                                         VoidFuncIntContacts callback) {
 //    tp_.EnqueueTask(boost::bind(&KadOps::FindKClosestNodesCallback, this,
 //                                response, callback));

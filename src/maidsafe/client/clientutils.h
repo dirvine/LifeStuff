@@ -25,8 +25,8 @@
 #ifndef MAIDSAFE_CLIENT_CLIENTUTILS_H_
 #define MAIDSAFE_CLIENT_CLIENTUTILS_H_
 
-#include "maidsafe/passport/passport.h"
 #include <string>
+#include "maidsafe/passport/passport.h"
 #include "maidsafe/shared/maidsafe.h"
 
 namespace kad { class Contact; }

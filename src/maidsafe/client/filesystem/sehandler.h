@@ -26,6 +26,10 @@
 #ifndef MAIDSAFE_CLIENT_FILESYSTEM_SEHANDLER_H_
 #define MAIDSAFE_CLIENT_FILESYSTEM_SEHANDLER_H_
 
+#include <map>
+#include <string>
+#include <vector>
+
 #include "boost/filesystem.hpp"
 #include "boost/multi_index_container.hpp"
 #include "boost/multi_index/composite_key.hpp"
@@ -34,10 +38,6 @@
 #include "boost/signals2.hpp"
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
-
-#include <map>
-#include <string>
-#include <vector>
 
 #include "maidsafe/shared/maidsafe.h"
 #include "maidsafe/shared/returncodes.h"
@@ -198,7 +198,7 @@ class SEHandler {
     pending_chunks_.clear();
     path_count_ = 0;
   }
-int EncryptDataMap(maidsafe::encrypt::DataMap &data_map,
+int EncryptDataMap(maidsafe::encrypt::DataMap *data_map,
                    const std::string &this_directory_key,
                    const std::string &parent_directory_key,
                    std::string *encrypted_data_map);
@@ -250,9 +250,9 @@ int DecryptDataMap(const std::string &encrypted_data_map,
   void StoreChunksToNetwork(const encrypt::DataMap &data_map,
                             const DirType &dir_type,
                             const std::string &msid);
-  bool SerializeToString(maidsafe::encrypt::DataMap& data_map,
+  bool SerializeToString(maidsafe::encrypt::DataMap *data_map,
                          std::string& serialized);
-  bool ParseFromString(maidsafe::encrypt::DataMap& data_map,
+  bool ParseFromString(maidsafe::encrypt::DataMap *data_map,
                        const std::string& serialized);
   bool ResizeObfuscationHash(const std::string &input,
                              const size_t &required_size,

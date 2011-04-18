@@ -25,10 +25,12 @@
 #ifndef MAIDSAFE_CLIENT_FILESYSTEM_DATAATLASHANDLER_H_
 #define MAIDSAFE_CLIENT_FILESYSTEM_DATAATLASHANDLER_H_
 
-#include "boost/filesystem.hpp"
 #include <map>
 #include <string>
 #include <vector>
+
+#include "boost/filesystem.hpp"
+
 #include "maidsafe/shared/maidsafe.h"
 #include "maidsafe/client/filesystem/distributed_filesystem.pb.h"
 

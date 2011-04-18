@@ -20,15 +20,15 @@
 
 #include <signal.h>
 
+#include <map>
+#include <vector>
+#include <fstream>  // NOLINT (Fraser) - for protobuf config file
+
 #include "boost/thread/thread.hpp"
 #include "boost/thread/xtime.hpp"
 #include "maidsafe/protobuf/general_messages.pb.h"
 #include "maidsafe/maidsafe-dht.h"
 #include "maidsafe/base/utils.h"
-
-#include <map>
-#include <vector>
-#include <fstream>  // NOLINT (Fraser) - for protobuf config file
 
 #include "maidsafe/common/commonutils.h"
 #include "maidsafe/common/chunkstore.h"

@@ -21,9 +21,10 @@
 #ifndef MAIDSAFE_SHAREDTEST_TESTCALLBACK_H_
 #define MAIDSAFE_SHAREDTEST_TESTCALLBACK_H_
 
+#include <string>
+
 #include "boost/thread/condition.hpp"
 #include "boost/thread/mutex.hpp"
-#include <string>
 #include "maidsafe/shared/returncodes.h"
 
 namespace maidsafe {

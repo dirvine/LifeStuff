@@ -37,5 +37,5 @@ class ValidateUserThread : public WorkerThread {
   QString password_;
 };
 
-#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_VALIDATE_USER_THREAD_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_VALIDATE_USER_THREAD_H_
 

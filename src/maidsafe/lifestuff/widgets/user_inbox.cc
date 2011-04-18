@@ -185,7 +185,7 @@ void UserInbox::onReplyClicked() {
     e.body = htmlMessage;
     e.subject = subject;
 
-    root.appendChild(ClientController::instance()->EmailToNode(doc, e));
+    root.appendChild(ClientController::instance()->EmailToNode(&doc, e));
 
     QFile file( emailFullPath );
     if( !file.open( QIODevice::Append ) )

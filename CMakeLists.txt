@@ -140,6 +140,8 @@ FILE(GLOB SOURCE_FILES_SHARED_DIR "${SRC_MAIDSAFE}/shared/*.cc" "${SRC_MAIDSAFE}
 FILE(GLOB HEADER_FILES_SHARED_DIR "${SRC_MAIDSAFE}/shared/*.h")
 SET(ALL_FILES_SHARED_DIR ${SOURCE_FILES_SHARED_DIR} ${HEADER_FILES_SHARED_DIR})
 SET(STYLE_SHARED ${ALL_FILES_SHARED_DIR})
+LIST(REMOVE_ITEM STYLE_SHARED "${SRC_MAIDSAFE}/shared/sqlite3.h")
+
 SOURCE_GROUP("shared Source Files" FILES ${SOURCE_FILES_SHARED_DIR})
 SOURCE_GROUP("shared Header Files" FILES ${HEADER_FILES_SHARED_DIR})
 
@@ -427,7 +429,7 @@ ENDIF()
 ###################################################################################################
 # Tests                                                                                           #
 ###################################################################################################
-IF((TEST_EXCLUDED EQUAL -1) AND PYTHONINTERP_FOUND)
+IF(PYTHONINTERP_FOUND)
   IF(UNIX)
     SET(STYLE_ALL ${STYLE_CLIENT} ${STYLE_SHARED} ${STYLE_FUSE})
     ADD_TEST(STYLE_CHECK python ${MaidSafeCommon_TOOLS_DIR}/cpplint.py ${STYLE_ALL})

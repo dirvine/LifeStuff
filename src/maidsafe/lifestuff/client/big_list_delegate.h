@@ -41,7 +41,7 @@ class BigListDelegate : public QAbstractItemDelegate {
      QSize sizeHint(const QStyleOptionViewItem &option,
                     const QModelIndex &index) const;
 
- public slots:
+  public slots:
      void setPixelSize(int size);
 
  private:

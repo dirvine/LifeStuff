@@ -24,8 +24,8 @@
 
 // os
 #ifdef LifeStuff_WIN32
-   #include <windows.h>
-   #include <shellapi.h>
+  #include <windows.h>
+  #include <shellapi.h>
 #endif
 
 #include <string>
@@ -154,8 +154,8 @@ void UserSpaceFileSystem::explore(Location l, QString subDir) {
   quintptr returnValue;
   QT_WA({
         returnValue = (quintptr)ShellExecute(0,
-                          (TCHAR *)(operation.utf16()),
-                          (TCHAR *)(dir.absolutePath().utf16()),
+                          (TCHAR *)(operation.utf16()),  //NOLINT
+                          (TCHAR *)(dir.absolutePath().utf16()),  //NOLINT
                           0,
                           0,
                           SW_SHOWNORMAL);

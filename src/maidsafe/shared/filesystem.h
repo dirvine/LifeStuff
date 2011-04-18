@@ -26,8 +26,8 @@
  * ==========================================================================
  */
 
-#ifndef MAIDSAFE_COMMON_FILESYSTEM_H_
-#define MAIDSAFE_COMMON_FILESYSTEM_H_
+#ifndef MAIDSAFE_SHARED_FILESYSTEM_H_
+#define MAIDSAFE_SHARED_FILESYSTEM_H_
 
 #include "boost/filesystem.hpp"
 #include <string>
@@ -67,4 +67,4 @@ class FSMS;
 
 class FSOSX;
 
-#endif  // MAIDSAFE_COMMON_FILESYSTEM_H_
+#endif  // MAIDSAFE_SHARED_FILESYSTEM_H_

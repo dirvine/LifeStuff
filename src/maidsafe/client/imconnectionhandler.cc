@@ -23,16 +23,16 @@
 */
 
 #include "maidsafe/client/imconnectionhandler.h"
-#include "boost/bind.hpp"
+
 #include <utility>
+#include "boost/bind.hpp"
 #include "maidsafe/shared/packet.pb.h"
 
 namespace maidsafe {
-
-//void dummy_timeout_func(const boost::system::error_code &) {
-//}
+// void dummy_timeout_func(const boost::system::error_code &) {
+// }
 //
-//IMConnectionHandler::IMConnectionHandler() : connections_(),
+// IMConnectionHandler::IMConnectionHandler() : connections_(),
 //                                             transport_handler_(NULL),
 //                                             message_notifier_(),
 //                                             conn_notifier_(),
@@ -44,11 +44,11 @@ namespace maidsafe {
 //                                             timer_(io_),
 //                                             send_finished_() {
 //  timer_.expires_at(boost::posix_time::pos_infin);
-//}
+// }
 //
-//ReturnCode IMConnectionHandler::Start(transport::TransportHandler *trans_hdler,
-//      new_message_notifier msg_notifier,
-//      new_connection_notifier conn_notifier) {
+//  ReturnCode IMConnectionHandler::Start(
+//  transport::TransportHandler *trans_hdler, new_message_notifier msg_notifier,
+//    new_connection_notifier conn_notifier) {
 //  if (msg_notifier.empty() || conn_notifier.empty() || trans_hdler == NULL)
 //    return kFailedToStartHandler;
 //  if (started_)
@@ -61,9 +61,9 @@ namespace maidsafe {
 //      &boost::asio::io_service::run, &io_)));
 //  started_ = true;
 //  return kSuccess;
-//}
+// }
 //
-//void IMConnectionHandler::Stop() {
+// void IMConnectionHandler::Stop() {
 //  if (!started_)
 //    return;
 //  io_.stop();
@@ -76,9 +76,9 @@ namespace maidsafe {
 //    }
 //    connections_.clear();
 //  }
-//}
+// }
 //
-//ReturnCode IMConnectionHandler::AddConnection(const boost::int16_t &trans_id,
+// ReturnCode IMConnectionHandler::AddConnection(const boost::int16_t &trans_id,
 //      const boost::uint32_t &conn_id) {
 //  if (!started_)
 //    return kHandlerNotStarted;
@@ -97,15 +97,15 @@ namespace maidsafe {
 //    return kSuccess;
 //  }
 //  return kConnectionAlreadyExists;
-//}
+// }
 //
-//ReturnCode IMConnectionHandler::CreateConnection(
+// ReturnCode IMConnectionHandler::CreateConnection(
 //      const boost::int16_t &trans_id, const EndPoint &endpoint,
 //      boost::uint32_t *conn_id) {
 //  if (!started_)
 //    return kHandlerNotStarted;
 //  if (!transport_handler_->ConnectToSend(endpoint.ip(0), endpoint.port(0),
-//      endpoint.ip(1), endpoint.port(1), endpoint.ip(2), endpoint.port(2), true,
+//    endpoint.ip(1), endpoint.port(1), endpoint.ip(2), endpoint.port(2), true,
 //      conn_id, trans_id)) {
 //    connection_info conn_info(io_, trans_id, *conn_id);
 //    {
@@ -120,10 +120,10 @@ namespace maidsafe {
 //    return kSuccess;
 //  }
 //  return kFailedToConnect;
-//}
+// }
 //
-//ReturnCode IMConnectionHandler::CloseConnection(const boost::int16_t &trans_id,
-//      const boost::uint32_t &conn_id) {
+// ReturnCode IMConnectionHandler::CloseConnection(
+// const boost::int16_t &trans_id, const boost::uint32_t &conn_id) {
 //  if (!started_)
 //    return kHandlerNotStarted;
 //  connections_container::iterator it = connections_.find(
@@ -137,9 +137,9 @@ namespace maidsafe {
 //  connections_.erase(it);
 //  timer->cancel();
 //  return kSuccess;
-//}
+// }
 //
-//ReturnCode IMConnectionHandler::SendMessage(const boost::int16_t &trans_id,
+// ReturnCode IMConnectionHandler::SendMessage(const boost::int16_t &trans_id,
 //      const boost::uint32_t &conn_id, const std::string &msg) {
 //  if (!started_)
 //    return kHandlerNotStarted;
@@ -174,9 +174,9 @@ namespace maidsafe {
 //    connections_.erase(it);
 //    return kConnectionDown;
 //  }
-//}
+// }
 //
-//void IMConnectionHandler::OnMessageArrive(const std::string &msg,
+// void IMConnectionHandler::OnMessageArrive(const std::string &msg,
 //      const boost::uint32_t &conn_id, const boost::int16_t &trans_id,
 //      const double&) {
 //  if (!started_)
@@ -202,9 +202,9 @@ namespace maidsafe {
 //    }
 //    message_notifier_(msg);
 //  }
-//}
+// }
 //
-//void IMConnectionHandler::ConnectionTimesOut(const boost::int16_t &trans_id,
+// void IMConnectionHandler::ConnectionTimesOut(const boost::int16_t &trans_id,
 //      const boost::uint32_t &conn_id, const boost::system::error_code &ec) {
 //  if (!started_)
 //    return;
@@ -224,9 +224,9 @@ namespace maidsafe {
 //    connections_.erase(it);
 //    transport_handler_->CloseConnection(conn_id, trans_id);
 //  }
-//}
+// }
 //
-//ReturnCode IMConnectionHandler::CloseConnections(
+// ReturnCode IMConnectionHandler::CloseConnections(
 //      const boost::int16_t &trans_id) {
 //  if (!started_)
 //    return kHandlerNotStarted;
@@ -244,7 +244,6 @@ namespace maidsafe {
 //  }
 //  indx.erase(l_limit, u_limit);
 //  return kSuccess;
-//}
+// }
 
 }  // namespace maidsafe
-

@@ -218,8 +218,8 @@ int LocalStoreManager::DeleteChunk(const std::string &chunk_name,
 //  boost::this_thread::sleep(boost::posix_time::seconds(2));
 #endif
   ChunkType chunk_type = client_chunkstore_->chunk_type(chunk_name);
-    fs3::path chunk_path(client_chunkstore_->GetChunkPath(chunk_name, chunk_type,
-                                                         false));
+    fs3::path chunk_path(client_chunkstore_->GetChunkPath(chunk_name,
+                                                          chunk_type, false));
   boost::uint64_t size(chunk_size);
   if (size < 2) {
     if (chunk_type < 0 || chunk_path.empty()) {
@@ -398,10 +398,10 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
 //      if (ksv.ParseFromString(DecodeFromHex(q.getStringField(0)))) {
 //        if (!RSACheckSignedData(ksv.value(), ksv.value_signature(),
 //                                public_key)) {
-//#ifdef DEBUG
+// #ifdef DEBUG
 //          printf("LocalStoreManager::DeletePacket_DeleteFromDb - "
 //                 "current value failed validation.\n");
-//#endif
+// #endif
 //          return kDeletePacketFailure;
 //        }
 //      }
@@ -483,9 +483,9 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
 //  if (sv.ParseFromString(ser_gp)) {
 //    if (!RSACheckSignedData(sv.value(), sv.value_signature(), public_key)) {
 //      ExecReturnCodeCallback(cb, kSendPacketFailure);
-//#ifdef DEBUG
+// #ifdef DEBUG
 //      printf("%s\n", sv.value().c_str());
-//#endif
+// #endif
 //      return;
 //    }
 //  }
@@ -522,10 +522,10 @@ ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
 //      kad::SignedValue sv;
 //      if (sv.ParseFromString(dec_value)) {
 //        if (!RSACheckSignedData(sv.value(), sv.value_signature(), pub_key)) {
-//#ifdef DEBUG
+// #ifdef DEBUG
 //          printf("LocalStoreManager::StorePacket_InsertToDb - "
 //                 "Signature didn't validate.\n");
-//#endif
+// #endif
 //          return kStoreManagerError;
 //        }
 //      }
@@ -591,24 +591,24 @@ void LocalStoreManager::UpdatePacket(const std::string &packet_name,
 //  kad::SignedValue old_sv, new_sv;
 //  if (!old_sv.ParseFromString(old_ser_gp) ||
 //      !new_sv.ParseFromString(new_ser_gp)) {
-//#ifdef DEBUG
+// #ifdef DEBUG
 //    printf("LSM::UpdatePacket - Old or new doesn't parse.\n");
-//#endif
+// #endif
 //  }
 
 //  if (!RSACheckSignedData(old_sv.value(), old_sv.value_signature(),
 //                          public_key)) {
 //    ExecReturnCodeCallback(cb, kUpdatePacketFailure);
-//#ifdef DEBUG
+// #ifdef DEBUG
 //    printf("LSM::UpdatePacket - Old fails validation.\n");
-//#endif
+// #endif
 //    return;
 //  }
 //  if (!RSACheckSignedData(new_sv.value(), new_sv.value_signature(),
 //                          public_key)) {
-//#ifdef DEBUG
+// #ifdef DEBUG
 //    printf("LSM::UpdatePacket - New fails validation.\n");
-//#endif
+// #endif
 //    ExecReturnCodeCallback(cb, kUpdatePacketFailure);
 //    return;
 //  }

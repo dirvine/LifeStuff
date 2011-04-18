@@ -25,11 +25,12 @@ THE SOFTWARE.
 #include "maidsafe/fuse/windows/fswin.h"
 
 #include <winbase.h>
-#include "boost/lexical_cast.hpp"
 
 #include <list>
 #include <map>
 #include <vector>
+
+#include "boost/lexical_cast.hpp"
 
 #include "maidsafe/client/clientcontroller.h"
 #include "maidsafe/client/clientutils.h"

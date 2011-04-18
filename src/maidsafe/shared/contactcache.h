@@ -20,8 +20,8 @@
 
 // TODO(Steve#) auto-update contact
 
-#ifndef MAIDSAFE_COMMON_CONTACTCACHE_H_
-#define MAIDSAFE_COMMON_CONTACTCACHE_H_
+#ifndef MAIDSAFE_SHARED_CONTACTCACHE_H_
+#define MAIDSAFE_SHARED_CONTACTCACHE_H_
 
 #include <set>
 #include <string>
@@ -38,7 +38,7 @@ namespace maidsafe {
 
 namespace test { class ContactCacheTest_BEH_MAID_CTC_Update_Test; }
 namespace dht {
-namespace kademlia { 
+namespace kademlia {
   class Node;
   class NodeId;
   class Contact;
@@ -89,4 +89,4 @@ class ContactCache {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_COMMON_CONTACTCACHE_H_
+#endif  // MAIDSAFE_SHARED_CONTACTCACHE_H_

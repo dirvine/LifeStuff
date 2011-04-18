@@ -22,16 +22,16 @@
 * ============================================================================
 */
 
+#include <list>
+#include <string>
+#include <vector>
+
 #include "boost/filesystem/fstream.hpp"
 #include "boost/progress.hpp"
 #include "gtest/gtest.h"
 //  #include <maidsafe/base/utils.h>
 #include "maidsafe/maidsafe-encrypt/self_encryption.h"
 #include "maidsafe/maidsafe-encrypt/data_map.h"
-
-#include <list>
-#include <string>
-#include <vector>
 
 #include "maidsafe/shared/chunkstore.h"
 #include "maidsafe/shared/commonutils.h"
@@ -63,7 +63,7 @@ namespace test {
 class ClientControllerTest : public testing::Test {
  public:
   ClientControllerTest()
-      : // network_test_(),
+      :  // network_test_(),
         cc_(ClientController::getInstance()),
         ss_(SessionSingleton::getInstance()),
         sm_(/*network_test_.store_manager()*/),
@@ -82,7 +82,8 @@ class ClientControllerTest : public testing::Test {
 //    cc_->Init(network_test_.K());
 #endif
     vcp_.space = 1000000;
-    vcp_.directory = /*(network_test_.test_dir() / */"VaultChunkstore"/*).string()*/;
+    vcp_.directory = "VaultChunkstore";
+//  vcp_.directory = (network_test_.test_dir() / "VaultChunkstore"/*).string();
   }
   void TearDown() {
 #ifndef MS_NETWORK_TEST

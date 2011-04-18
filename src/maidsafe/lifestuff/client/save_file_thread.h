@@ -39,4 +39,4 @@ class SaveFileThread : public WorkerThread {
   void saveFileCompleted(int, const QString&);
 };
 
-#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_SAVE_FILE_THREAD_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_SAVE_FILE_THREAD_H_

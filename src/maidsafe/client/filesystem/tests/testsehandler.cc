@@ -239,19 +239,19 @@ class SEHandlerTest : public testing::Test {
       printf("%s\n", e.what());
     }
   }
-  bool SerializeToString(maidsafe::encrypt::DataMap& data_map,
+  bool SerializeToString(maidsafe::encrypt::DataMap *data_map,
                          std::string& serialized) {
     std::ostringstream out_string_stream(serialized);
     boost::archive::text_oarchive oa(out_string_stream);
-    oa << data_map;
+    oa << *data_map;
     return !serialized.empty();
   }
-  bool ParseFromString(maidsafe::encrypt::DataMap& data_map,
+  bool ParseFromString(maidsafe::encrypt::DataMap *data_map,
                       const std::string& serialized) {
     std::istringstream in_string_stream(serialized);
     boost::archive::text_iarchive ia(in_string_stream);
-    ia >> data_map;
-    return !data_map.content.empty();
+    ia >> *data_map;
+    return !data_map->content.empty();
   }
 
   fs::path test_root_dir_;
@@ -395,7 +395,7 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptFile) {
   ASSERT_EQ(0, dah_->GetDataMap(rel_str, &ser_dm));
 //  ASSERT_FALSE(ser_dm.empty());
   encrypt::DataMap dm;
-  ASSERT_TRUE(ParseFromString(dm, ser_dm));
+  ASSERT_TRUE(ParseFromString(&dm, ser_dm));
 
   for (int i = 0; i < dm.chunks.size(); ++i)
     ASSERT_FALSE(sm_->KeyUnique(dm.chunks[i].hash, false));
@@ -426,7 +426,7 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptString) {
 
   // Check the chunks are stored
   encrypt::DataMap dm;
-  ASSERT_TRUE(ParseFromString(dm, ser_dm));
+  ASSERT_TRUE(ParseFromString(&dm, ser_dm));
 
   for (int i = 0; i < dm.chunks.size(); ++i)
     ASSERT_FALSE(sm_->KeyUnique(dm.chunks[i].hash, false));
@@ -718,7 +718,7 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureOfChunkEncryptingFile) {
   encrypt::DataMap dm, dm_retrieved;
   std::string ser_dm_retrieved, ser_dm, ser_mdm, dir_key;
   if (dah_->GetDataMap(rel_entry, &ser_dm_retrieved) == kSuccess)
-    ParseFromString(dm_retrieved, ser_dm_retrieved);
+    ParseFromString(&dm_retrieved, ser_dm_retrieved);
 
   int removee(-1);
 //  std::set<std::string> done_chunks;
@@ -750,7 +750,7 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureOfChunkEncryptingFile) {
 //    printf("Before seh->StoreChunks\n");
     seh_->StoreChunks(dm, PRIVATE, "", rel_entry);
 //    printf("After seh->StoreChunks\n");
-    SerializeToString(dm, ser_dm);
+    SerializeToString(&dm, ser_dm);
   }
 
   ASSERT_TRUE(seh_->ProcessMetaData(rel_entry, item_type, file_hash, file_size,
@@ -898,14 +898,14 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureSteppedMultipleEqualFiles) {
     encrypt::DataMap dm, dm_retrieved;
     std::string ser_dm_retrieved, ser_dm, ser_mdm, dir_key;
     if (dah_->GetDataMap(filenames[a], &ser_dm_retrieved) == kSuccess)
-      ParseFromString(dm_retrieved, ser_dm_retrieved);
+      ParseFromString(&dm_retrieved, ser_dm_retrieved);
 
     if (ser_dm_retrieved.empty() || dm_retrieved.content != file_hash) {
       dm.content = file_hash;
 //      ASSERT_EQ(kSuccess, encrypt::SelfEncrypt(fullnames[a],
 //                          file_system::TempDir(), false, sep, &dm));
       ASSERT_EQ(kSuccess, seh_->AddChunksToChunkstore(dm));
-      SerializeToString(dm, ser_dm);
+      SerializeToString(&dm, ser_dm);
     }
     dms.push_back(dm);
 

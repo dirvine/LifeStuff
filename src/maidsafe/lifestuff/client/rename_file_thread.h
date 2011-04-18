@@ -41,4 +41,4 @@ class RenameFileThread : public WorkerThread {
   void renameFileCompleted(int, const QString&, const QString&);
 };
 
-#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_RENAME_FILE_THREAD_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_RENAME_FILE_THREAD_H_

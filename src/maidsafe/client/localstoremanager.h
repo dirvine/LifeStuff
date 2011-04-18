@@ -25,13 +25,13 @@
 #ifndef MAIDSAFE_CLIENT_LOCALSTOREMANAGER_H_
 #define MAIDSAFE_CLIENT_LOCALSTOREMANAGER_H_
 
-#include "boost/filesystem.hpp"
-#include "boost/thread/mutex.hpp"
 #include <list>
 #include <map>
 #include <set>
 #include <string>
 #include <vector>
+#include "boost/filesystem.hpp"
+#include "boost/thread/mutex.hpp"
 #include "maidsafe/shared/cppsqlite3.h"
 #include "maidsafe/shared/vaultbufferpackethandler.h"
 #include "maidsafe/client/storemanager.h"

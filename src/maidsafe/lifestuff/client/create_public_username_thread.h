@@ -37,5 +37,5 @@ class CreatePublicUsernameThread : public WorkerThread {
   QString username_;
 };
 
-#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_CREATE_PUBLIC_USERNAME_THREAD_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_CREATE_PUBLIC_USERNAME_THREAD_H_
 

@@ -62,11 +62,11 @@ class PdDirTest : public testing::Test {
   std::string db_name1_;
 };
 
-bool SerializeToString(maidsafe::encrypt::DataMap& data_map,
+bool SerializeToString(maidsafe::encrypt::DataMap *data_map,
                        std::string& serialized) {
   std::stringstream string_stream;
   boost::archive::text_oarchive oa(string_stream);
-  oa << data_map;
+  oa << *data_map;
   serialized = string_stream.str();
   return !serialized.empty();
 }
@@ -124,7 +124,7 @@ void PrepareDMap(const std::string &file_hash, std::string &ser_dm) {
   chunk3.pre_size = 100;
   chunk3.size = 99;
   dm.chunks.push_back(chunk3);
-  SerializeToString(dm, ser_dm);
+  SerializeToString(&dm, ser_dm);
 }
 
 TEST_F(PdDirTest, BEH_MAID_CreateDb) {

@@ -108,7 +108,7 @@ class PdDir {
   // disconnect from current db.
   int ChangeTime(const fs::path &file_name, char time_type);
   void SanitiseSingleQuotes(std::string *str);
-  bool ParseFromString(maidsafe::encrypt::DataMap& data_map,
+  bool ParseFromString(maidsafe::encrypt::DataMap *data_map,
                                   const std::string& serialized);
   std::shared_ptr<CppSQLite3DB> db_;
   fs::path db_name_;

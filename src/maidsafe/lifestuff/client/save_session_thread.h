@@ -35,9 +35,9 @@ class SaveSessionThread : public WorkerThread {
 
  private:
 
-  signals:
-    void completed(int);
+ signals:
+    void completed(int);  //  NOLINT
 };
 
-#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_SAVE_SESSION_THREAD_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_SAVE_SESSION_THREAD_H_
 

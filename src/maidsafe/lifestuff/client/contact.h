@@ -55,4 +55,4 @@ class Contact : public QObject {
 
 typedef QList<Contact*> ContactList;
 
-#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_CONTACT_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_CONTACT_H_

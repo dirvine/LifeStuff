@@ -17,9 +17,10 @@
 // qt
 #include <QDebug>
 
-#include "boost/lexical_cast.hpp"
 // std
 #include <string>
+
+#include "boost/lexical_cast.hpp"
 
 // core
 #include "maidsafe/lifestuff/client/client_controller.h"

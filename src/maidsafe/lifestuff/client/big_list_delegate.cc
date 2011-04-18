@@ -26,7 +26,7 @@ void BigListDelegate::paint(QPainter *painter,
                             const QModelIndex &index) const {
   if (qVariantCanConvert<QString>(index.data())) {
     QString data = qVariantValue<QString>(index.data());
-    QRect rect(option.rect.topLeft(),QSize(32,32));
+    QRect rect(option.rect.topLeft(), QSize(32, 32));
 
     QApplication::style()->drawItemPixmap(painter, rect, Qt::AlignLeft, icon_);
 

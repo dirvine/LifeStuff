@@ -56,4 +56,4 @@ class Profile {
 };
 
 
-#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_PROFILE_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_PROFILE_H_

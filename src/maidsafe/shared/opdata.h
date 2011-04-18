@@ -18,17 +18,18 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_COMMON_OPDATA_H_
-#define MAIDSAFE_COMMON_OPDATA_H_
+#ifndef MAIDSAFE_SHARED_OPDATA_H_
+#define MAIDSAFE_SHARED_OPDATA_H_
 
-
-#include "boost/cstdint.hpp"
-#include "maidsafe/passport/passport.h"
 #include <list>
 #include <map>
 #include <set>
 #include <string>
 #include <vector>
+
+#include "boost/cstdint.hpp"
+#include "maidsafe/passport/passport.h"
+
 #include "maidsafe/shared/chunkstore.h"
 #include "maidsafe/shared/maidsafe.h"
 #include "maidsafe/shared/maidsafe_service.pb.h"
@@ -393,4 +394,4 @@ class GetChunkOpData {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_COMMON_OPDATA_H_
+#endif  // MAIDSAFE_SHARED_OPDATA_H_

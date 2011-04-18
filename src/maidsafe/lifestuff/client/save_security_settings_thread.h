@@ -43,4 +43,4 @@ class SaveSecuritySettingsThread : public WorkerThread {
 };
 
 
-#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_SAVE_SECURITY_SETTINGS_THREAD_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_SAVE_SECURITY_SETTINGS_THREAD_H_

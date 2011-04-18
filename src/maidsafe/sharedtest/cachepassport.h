@@ -22,8 +22,8 @@
 #ifndef MAIDSAFE_SHAREDTEST_CACHEPASSPORT_H_
 #define MAIDSAFE_SHAREDTEST_CACHEPASSPORT_H_
 
-#include "maidsafe/passport/passport.h"
 #include <vector>
+#include "maidsafe/passport/passport.h"
 #include "maidsafe/sharedtest/cached_keys.h"
 
 namespace maidsafe {

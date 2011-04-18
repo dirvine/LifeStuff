@@ -35,5 +35,5 @@ class WorkerThread : public QThread {
     void completed(bool success);
 };
 
-#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_WORKER_THREAD_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_WORKER_THREAD_H_
 

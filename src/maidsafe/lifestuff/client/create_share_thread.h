@@ -49,5 +49,5 @@ class CreateShareThread : public WorkerThread {
   QStringList roSet_;
 };
 
-#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_CREATE_SHARE_THREAD_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_CREATE_SHARE_THREAD_H_
 

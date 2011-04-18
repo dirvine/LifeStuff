@@ -64,7 +64,7 @@ class UserSpaceFileSystem : public QObject {
 
 
 
-#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_USER_SPACE_FILESYSTEM_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_USER_SPACE_FILESYSTEM_H_
 
 
 

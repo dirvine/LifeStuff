@@ -187,7 +187,7 @@ class ClientController : public QObject {
                      const ClientController::ItemType &type,
                      const QString &s);
 
-  bool getPendingOps(QList<PendingOps> &ops);
+  bool getPendingOps(QList<PendingOps> *ops);
 
   ///////////////////////////////
   //// Conversation Handling ////
@@ -246,7 +246,7 @@ class ClientController : public QObject {
                  const QList<QString>& bcc,
                  const QString& conversation);
 
-  QDomElement EmailToNode(QDomDocument &d, const ClientController::Email &c);
+  QDomElement EmailToNode(QDomDocument *d, const ClientController::Email &c);
 
   // Vault info
   bool PollVaultInfo(boost::uint64_t *offered_space,
@@ -299,7 +299,7 @@ class ClientController : public QObject {
   CheckForMessagesThread *cfmt_;
 };
 
-#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_CLIENT_CONTROLLER_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_CLIENT_CONTROLLER_H_
 
 
 

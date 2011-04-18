@@ -25,14 +25,13 @@
 #ifndef MAIDSAFE_CLIENT_CONTACTS_H_
 #define MAIDSAFE_CLIENT_CONTACTS_H_
 
+#include <functional>
+#include <string>
+#include <vector>
 #include "boost/multi_index_container.hpp"
 #include "boost/multi_index/ordered_index.hpp"
 #include "boost/multi_index/identity.hpp"
 #include "boost/multi_index/member.hpp"
-#include <functional>
-#include <string>
-#include <vector>
-
 
 namespace maidsafe {
 

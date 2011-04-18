@@ -22,6 +22,9 @@
 #ifndef MAIDSAFE_SHAREDTEST_NETWORKTEST_H_
 #define MAIDSAFE_SHAREDTEST_NETWORKTEST_H_
 
+#include <string>
+#include <vector>
+
 #include "boost/cstdint.hpp"
 #include "boost/filesystem.hpp"
 #include "gtest/gtest.h"
@@ -30,8 +33,6 @@
 //  #include <maidsafe/transport/transporthandler-api.h>
 //  #include <maidsafe/transport/transportudt.h>
 
-#include <string>
-#include <vector>
 
 #ifdef MS_NETWORK_TEST
 

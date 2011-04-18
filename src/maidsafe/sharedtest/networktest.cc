@@ -143,7 +143,8 @@ bool NetworkTest::Init() {
 }
 
 bool NetworkTest::IsLastTest() {
-//  return testing::UnitTest::GetInstance()->test_to_run_count() == gTestRunCount;
+// return (
+//  testing::UnitTest::GetInstance()->test_to_run_count() == gTestRunCount);
   return gTestRunCount == 3;
 }
 

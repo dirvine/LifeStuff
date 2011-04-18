@@ -17,10 +17,10 @@
 // qt
 #include <QDebug>
 
-#include "boost/lexical_cast.hpp"
-
 #include <string>
 #include <vector>
+
+#include "boost/lexical_cast.hpp"
 
 // core
 #include "maidsafe/lifestuff/client/client_controller.h"

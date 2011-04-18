@@ -18,10 +18,10 @@
 * ============================================================================
 */
 
+#include <algorithm>
 #include "gtest/gtest.h"
 #include "boost/thread/thread.hpp"
 #include "boost/concept_check.hpp"
-#include <algorithm>
 #include "maidsafe/client/storemanagertaskshandler.h"
 
 namespace test_msm_tasks_handler {

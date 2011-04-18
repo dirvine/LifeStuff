@@ -116,8 +116,9 @@ bool ChunkStore::PopulatePathMap() {
         (kHashable | kTempCache, fs3::path(hashable_parent / kTempCacheLeaf_)));
     ++path_map_itr;
     fs3::path non_hashable_parent(kChunkstorePath_ / kNonHashableLeaf_);
-    path_map_.insert(path_map_itr, std::pair<ChunkType, fs3::path>
-        (kNonHashable | kNormal, fs3::path(non_hashable_parent / kNormalLeaf_)));
+    path_map_.insert(path_map_itr,
+                     std::pair<ChunkType, fs3::path> (kNonHashable |
+                       kNormal, fs3::path(non_hashable_parent / kNormalLeaf_)));
     ++path_map_itr;
     path_map_.insert(path_map_itr, std::pair<ChunkType, fs3::path>
         (kNonHashable | kCache, fs3::path(non_hashable_parent / kCacheLeaf_)));
@@ -259,7 +260,8 @@ ChunkType ChunkStore::GetChunkType(const std::string &key,
   return type;
 }
 
-ChunkType ChunkStore::GetChunkType(const std::string &key, const fs3::path &file,
+ChunkType ChunkStore::GetChunkType(const std::string &key,
+                                   const fs3::path &file,
                                    bool outgoing) {
   // Return type if we already have the chunk's details
   ChunkType type = chunk_type(key);
@@ -311,8 +313,9 @@ fs3::path ChunkStore::GetChunkPath(const std::string &key, ChunkType type,
 /*MAHMOUD dir_one = hex_key.substr(0, 1);
 dir_two = hex_key.substr(1, 1);
 dir_three = hex_key.substr(2, 1);
-fs3::path chunk_path((*path_map_itr).second / dir_one / dir_two / dir_three); MAHMOUD*/
-  fs3::path chunk_path((*path_map_itr).second); //Added to store all chunks in one directory
+fs3::path chunk_path((*path_map_itr).second / dir_one / dir_two / dir_three);*/
+  // Added to store all chunks in one directory
+  fs3::path chunk_path((*path_map_itr).second);
   try {
     if (!fs3::exists(chunk_path)) {
       if (create_path) {
@@ -512,7 +515,7 @@ int ChunkStore::DeleteChunkFunction(const std::string &key,
     boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
     chunk_set_by_non_hex_name::iterator itr =
         chunkstore_set_.get<non_hex_name>().find(key);
-    if (itr != chunkstore_set_.end()) { // i.e. we have the chunk's details
+    if (itr != chunkstore_set_.end()) {  // i.e. we have the chunk's details
       DecrementUsedSpace(itr->size_);
       chunkstore_set_.erase(itr);
     } else {
@@ -713,5 +716,5 @@ int ChunkStore::InitialOperationVerification(const std::string &key) {
   return kSuccess;
 }
 
-} // namespace maidsafe
+}  // namespace maidsafe
 

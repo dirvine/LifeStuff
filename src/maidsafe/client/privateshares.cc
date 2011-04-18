@@ -12,8 +12,8 @@
  *      Author: Team
  */
 #include "maidsafe/client/privateshares.h"
-#include "boost/filesystem.hpp"
 #include <utility>
+#include "boost/filesystem.hpp"
 
 namespace fs = boost::filesystem;
 

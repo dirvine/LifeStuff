@@ -27,7 +27,7 @@
 
 namespace mock_kadops {
 
-//std::string MakeFindNodesResponse(const FindNodesResponseType &type,
+// std::string MakeFindNodesResponse(const FindNodesResponseType &type,
 //                                  const std::string &target,
 //                                  const boost::uint8_t n,
 //                                  std::vector<kad::Contact> *nodes) {
@@ -63,6 +63,6 @@ namespace mock_kadops {
 //    *nodes = contacts;
 //
 //  return find_response.SerializeAsString();
-//}
+// }
 
 }  // namespace mock_kadops

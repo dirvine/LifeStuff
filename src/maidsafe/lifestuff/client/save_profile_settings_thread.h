@@ -41,4 +41,4 @@ class SaveProfileSettingsThread : public WorkerThread {
   QHash<QString, QString> theHash_;
 };
 
-#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_SAVE_PROFILE_SETTINGS_THREAD_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_SAVE_PROFILE_SETTINGS_THREAD_H_

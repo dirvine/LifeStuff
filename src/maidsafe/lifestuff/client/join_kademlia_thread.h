@@ -34,5 +34,5 @@ class JoinKademliaThread : public WorkerThread {
   virtual void run();
 };
 
-#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_JOIN_KADEMLIA_THREAD_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_JOIN_KADEMLIA_THREAD_H_
 

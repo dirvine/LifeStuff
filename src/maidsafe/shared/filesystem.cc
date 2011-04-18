@@ -29,13 +29,13 @@
  */
 
 #include "maidsafe/shared/filesystem.h"
-#include "boost/thread.hpp"
 #include <stdio.h>
 #ifdef LifeStuff_WIN32
 #include <shlwapi.h>
 #include <shlobj.h>
 #include <sstream>
 #endif
+#include "boost/thread.hpp"
 #include "maidsafe/shared/returncodes.h"
 
 namespace fs = boost::filesystem;
