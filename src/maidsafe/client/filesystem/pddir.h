@@ -58,7 +58,7 @@
 
 #include "maidsafe/shared/maidsafe.h"
 #include "maidsafe/client/filesystem/distributed_filesystem.pb.h"
-#include "maidsafe/maidsafe-encrypt/data_map.h"
+#include "maidsafe/encrypt/data_map.h"
 
 class CppSQLite3DB;
 

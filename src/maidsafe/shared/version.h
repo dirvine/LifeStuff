@@ -33,13 +33,33 @@
   Please update this project.
 #endif
 
-#include "maidsafe-encrypt/version.h"
-#define THIS_NEEDS_MAIDSAFE_ENCRYPT_VERSION 6
+#include "maidsafe/encrypt/version.h"
+#define THIS_NEEDS_MAIDSAFE_ENCRYPT_VERSION 7
 #if MAIDSAFE_ENCRYPT_VERSION < THIS_NEEDS_MAIDSAFE_ENCRYPT_VERSION
 #error This API is not compatible with the installed library.\
   Please update the MaidSafe-Encrypt library.
 #elif MAIDSAFE_ENCRYPT_VERSION > THIS_NEEDS_MAIDSAFE_ENCRYPT_VERSION
 #error This API uses a newer version of the MaidSafe-Encrypt library.\
+  Please update this project.
+#endif
+
+#include "maidsafe/passport/version.h"
+#define THIS_NEEDS_MAIDSAFE_PASSPORT_VERSION 1
+#if MAIDSAFE_PASSPORT_VERSION < THIS_NEEDS_MAIDSAFE_PASSPORT_VERSION
+#error This API is not compatible with the installed library.\
+  Please update the MaidSafe-Passport library.
+#elif MAIDSAFE_PASSPORT_VERSION > THIS_NEEDS_MAIDSAFE_PASSPORT_VERSION
+#error This API uses a newer version of the MaidSafe-Passport library.\
+  Please update this project.
+#endif
+
+#include "maidsafe/pki/version.h"
+#define THIS_NEEDS_MAIDSAFE_PKI_VERSION 1
+#if MAIDSAFE_PKI_VERSION < THIS_NEEDS_MAIDSAFE_PKI_VERSION
+#error This API is not compatible with the installed library.\
+  Please update the MaidSafe-Pki library.
+#elif MAIDSAFE_PKI_VERSION > THIS_NEEDS_MAIDSAFE_PKI_VERSION
+#error This API uses a newer version of the MaidSafe-Pki library.\
   Please update this project.
 #endif
 
