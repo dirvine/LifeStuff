@@ -24,7 +24,7 @@
 
 #include <gtest/gtest.h>
 
-#include "maidsafe/sharedtest/localvaults.h"
+//#include "maidsafe/sharedtest/localvaults.h"
 
 #if defined MAIDSAFE_WIN32
 #include "maidsafe/fuse/windows/fswin.h"

@@ -682,6 +682,7 @@ bool LocalStoreManager::ValidateGenericPacket(std::string ser_gp,
 //  if (!gp.ParseFromString(ser_gp))
 //    return false;
 //  return RSACheckSignedData(gp.data(), gp.signature(), public_key);
+    return true;
 }
 
 ////////////// BUFFER PACKET //////////////
