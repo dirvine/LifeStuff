@@ -29,7 +29,7 @@
 #include "boost/progress.hpp"
 #include "boost/lexical_cast.hpp"
 
-#include "maidsafe/lifestuff/qt_ui/mock_user_credentials.h"
+#include "maidsafe/lifestuff/qt_ui/mock_implementation/mock_user_credentials.h"
 // core
 //#include "maidsafe/lifestuff/shared/filesystem.h"
 //#include "maidsafe/lifestuff/client/clientutils.h"

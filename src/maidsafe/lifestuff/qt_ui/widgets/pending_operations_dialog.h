@@ -19,12 +19,15 @@
 #include <QWidget>
 #include <QString>
 
+#include "boost/signals2.hpp"
 #include "boost/thread/mutex.hpp"
 
 // local
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 
 #include "ui_pending_operations_dialog.h"
+
+namespace bs2 = boost::signals2;
 
 class PendingOperationsDialog : public QDialog {
     Q_OBJECT
