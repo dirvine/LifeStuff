@@ -17,6 +17,8 @@
 // qt
 #include <QDebug>
 
+#include "boost/thread.hpp"
+
 // core
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 

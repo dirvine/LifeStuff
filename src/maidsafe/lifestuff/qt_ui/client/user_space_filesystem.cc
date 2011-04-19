@@ -30,6 +30,8 @@
 
 #include <string>
 
+#include"boost/thread.hpp"
+
 // core
 #include "maidsafe/lifestuff/shared/filesystem.h"
 

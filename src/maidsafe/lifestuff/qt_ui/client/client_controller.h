@@ -26,17 +26,22 @@
 
 #include <list>
 #include <map>
+#include<memory>
 #include <set>
 #include <string>
 #include <vector>
 
-// core
-#include "maidsafe/lifestuff/client/clientinterface.h"
-#include "maidsafe/lifestuff/client/clientcontroller.h"
-#include "maidsafe/lifestuff/client/contacts.h"
-#include "maidsafe/lifestuff/client/sessionsingleton.h"
-#include "maidsafe/lifestuff/client/clientutils.h"
 
+// core
+//#include "maidsafe/lifestuff/client/clientinterface.h"
+//#include "maidsafe/lifestuff/client/clientcontroller.h"
+//#include "maidsafe/lifestuff/client/contacts.h"
+//#include "maidsafe/lifestuff/client/sessionsingleton.h"
+//#include "maidsafe/lifestuff/client/clientutils.h"
+#include "maidsafe/lifestuff/client/user_credentials_api.h"
+#include "maidsafe/lifestuff/shared/maidsafe.h"
+#include "maidsafe/lifestuff/shared/returncodes.h"
+#include "maidsafe/lifestuff/shared/filesystem.h"
 // local
 #include "maidsafe/lifestuff/qt_ui/client/check_for_messages_thread.h"
 #include "maidsafe/lifestuff/qt_ui/client/contact.h"
@@ -126,26 +131,33 @@ class ClientController : public QObject {
   QString publicUsername() const;
 
   inline bool SetWinDrive(char win_drive) {
-    return maidsafe::SessionSingleton::getInstance()->SetWinDrive(win_drive);
+//    return maidsafe::SessionSingleton::getInstance()->SetWinDrive(win_drive);
+    return true;
   }
   inline char WinDrive() {
-    return maidsafe::SessionSingleton::getInstance()->WinDrive();
+//    return maidsafe::SessionSingleton::getInstance()->WinDrive();
+    return ' ';
   }
   inline int Mounted() {
-    return maidsafe::SessionSingleton::getInstance()->Mounted();
+//    return maidsafe::SessionSingleton::getInstance()->Mounted();
+    return 0;
   }
   inline bool SetMounted(int mounted) {
-    return maidsafe::SessionSingleton::getInstance()->SetMounted(mounted);
+//    return maidsafe::SessionSingleton::getInstance()->SetMounted(mounted);
+    return true;
   }
   inline std::string SessionName() {
-    return maidsafe::SessionSingleton::getInstance()->SessionName();
+//    return maidsafe::SessionSingleton::getInstance()->SessionName();
+    return " ";
   }
   inline bool SetConnectionStatus(int status) {
-    return maidsafe::SessionSingleton::getInstance()->
-           SetConnectionStatus(status);
+//    return maidsafe::SessionSingleton::getInstance()->
+//           SetConnectionStatus(status);
+    return true;
   }
   inline std::string TidyPath(std::string str) {
-    return maidsafe::TidyPath(str);
+//    return maidsafe::TidyPath(str);
+    return "";
   }
 
   char DriveLetter();
@@ -256,9 +268,9 @@ class ClientController : public QObject {
   bool IsLocalVaultOwned();
 
   int SaveSession();
-  bs2::connection ConnectToOnFileNetworkStatus(
-      const OnFileNetworkStatus::slot_type &slot);
-  bs2::connection ConnectToOnFileAdded(const OnFileAdded::slot_type &slot);
+//  bs2::connection ConnectToOnFileNetworkStatus(
+//      const OnFileNetworkStatus::slot_type &slot);
+//  bs2::connection ConnectToOnFileAdded(const OnFileAdded::slot_type &slot);
 
  signals:
   void messageReceived(int type, const QDateTime& time, const QString& from,
@@ -297,6 +309,7 @@ class ClientController : public QObject {
 
 //  void analyseMessage(const maidsafe::InstantMessage& im);
   CheckForMessagesThread *cfmt_;
+  std::shared_ptr<maidsafe::lifestuff::UserCredentials> user_credentials_;
 };
 
 #endif  // MAIDSAFE_LIFESTUFF_CLIENT_CLIENT_CONTROLLER_H_

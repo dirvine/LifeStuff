@@ -35,28 +35,28 @@ SaveProfileSettingsThread::~SaveProfileSettingsThread() { }
 void SaveProfileSettingsThread::run() {
   printf("SaveProfileSettingsThread::run");
 
-  maidsafe::PersonalDetails pd =
-          maidsafe::SessionSingleton::getInstance()->Pd();
+//  maidsafe::PersonalDetails pd =
+//          maidsafe::SessionSingleton::getInstance()->Pd();
 
-  pd.set_full_name(theHash_["FullName"].toStdString());
-  pd.set_birthday(theHash_["BirthDay"].toStdString());
-  pd.set_city(theHash_["City"].toStdString());
+  //pd.set_full_name(theHash_["FullName"].toStdString());
+  //pd.set_birthday(theHash_["BirthDay"].toStdString());
+  //pd.set_city(theHash_["City"].toStdString());
   try {
-    pd.set_country(boost::lexical_cast<int>(theHash_["Country"].toStdString()));
-    pd.set_gender(theHash_["Gender"].toStdString());
-    pd.set_language(
-        boost::lexical_cast<int>(theHash_["Language"].toStdString()));
+  //  pd.set_country(boost::lexical_cast<int>(theHash_["Country"].toStdString()));
+  //  pd.set_gender(theHash_["Gender"].toStdString());
+  //  pd.set_language(
+  //      boost::lexical_cast<int>(theHash_["Language"].toStdString()));
   }
   catch(const std::exception &e) {
     printf("In SaveProfileSettingsThread::run() %s\n", e.what());
   }
-  pd.set_phone_number(theHash_["Phone"].toStdString());
+  //pd.set_phone_number(theHash_["Phone"].toStdString());
 
-  printf("SaveProfileSettingsThread::run - %i - %s\n", pd.country(),
-         theHash_["Country"].toStdString().c_str());
-  printf("SaveProfileSettingsThread::run - %i - %s\n", pd.language(),
-         theHash_["Language"].toStdString().c_str());
-  maidsafe::SessionSingleton::getInstance()->SetPd(pd);
+  //printf("SaveProfileSettingsThread::run - %i - %s\n", pd.country(),
+  //       theHash_["Country"].toStdString().c_str());
+  //printf("SaveProfileSettingsThread::run - %i - %s\n", pd.language(),
+  //       theHash_["Language"].toStdString().c_str());
+  //maidsafe::SessionSingleton::getInstance()->SetPd(pd);
 
   // TODO(Team): Implement save settings
 

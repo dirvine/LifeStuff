@@ -64,17 +64,17 @@ void ProfileSettings::setActive(bool b) {
 
     ui_.pubNameEdit->setText(pub);
 
-    maidsafe::PersonalDetails pd =
-        maidsafe::SessionSingleton::getInstance()->Pd();
-    ui_.fullNameEdit->setText(QString(pd.full_name().c_str()));
-    ui_.phoneNumberEdit->setText(QString(pd.phone_number().c_str()));
-    ui_.birthDayEdit->setText(QString(pd.birthday().c_str()));
+ //   maidsafe::PersonalDetails pd =
+ //       maidsafe::SessionSingleton::getInstance()->Pd();
+ //   ui_.fullNameEdit->setText(QString(pd.full_name().c_str()));
+ //   ui_.phoneNumberEdit->setText(QString(pd.phone_number().c_str()));
+ //   ui_.birthDayEdit->setText(QString(pd.birthday().c_str()));
 //    std::string language(IntToString(pd.language()));
 //    ui_.languageEdit->setText(QString(language.c_str()));
-    ui_.cityEdit->setText(QString(pd.city().c_str()));
+ //   ui_.cityEdit->setText(QString(pd.city().c_str()));
 //    ui_.countryEdit->setText(QString(IntToString(pd.country()).c_str()));
 
-    QString gender = QString::fromStdString(pd.gender().c_str());
+    QString gender/* = QString::fromStdString(pd.gender().c_str())*/;
 
     qDebug() << "gender reading :" + gender;
 

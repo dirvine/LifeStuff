@@ -33,12 +33,12 @@ PendingOperationsDialog::PendingOperationsDialog(QWidget* parent)
   connect(ui_.cancelAllBtn, SIGNAL(clicked(bool)),
           this,             SLOT(onCancelAll()));
 
-  pending_files_connection_ =
+  pending_files_connection_/* =
       ClientController::instance()->ConnectToOnFileNetworkStatus(
-          boost::bind(&PendingOperationsDialog::OperationStatus, this, _1, _2));
-  file_added_connection_ =
+          boost::bind(&PendingOperationsDialog::OperationStatus, this, _1, _2))*/;
+  file_added_connection_ /*=
       ClientController::instance()->ConnectToOnFileAdded(
-          boost::bind(&PendingOperationsDialog::FileAdded, this, _1));
+          boost::bind(&PendingOperationsDialog::FileAdded, this, _1))*/;
 }
 
 PendingOperationsDialog::~PendingOperationsDialog() {
