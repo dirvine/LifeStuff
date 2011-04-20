@@ -35,7 +35,9 @@
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
+namespace lifestuff {
 enum DefConLevels {kDefCon1 = 1, kDefCon2, kDefCon3};
+}  // namespace lifestuff
 }  // namespace maidsafe
 
 namespace file_system {
@@ -55,9 +57,9 @@ fs::path MakeRelativeMSPath(const std::string &entry,
 fs::path FullMSPathFromRelPath(const std::string &entry,
                                const std::string &session_name);
 int Mount(const std::string &session_name,
-          const maidsafe::DefConLevels &defcon);
+          const maidsafe::lifestuff::DefConLevels &defcon);
 int UnMount(const std::string &session_name,
-            const maidsafe::DefConLevels &defcon);
+            const maidsafe::lifestuff::DefConLevels &defcon);
 int FuseMountPoint(const std::string &session_name);
 bool RemoveDir(const fs::path &dir, const boost::uint8_t &max_attempts);
 

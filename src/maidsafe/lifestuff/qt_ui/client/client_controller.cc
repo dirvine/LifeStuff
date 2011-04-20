@@ -37,6 +37,13 @@
 //#include "maidsafe/lifestuff/client/sessionsingleton.h"
 //#include "maidsafe/lifestuff/client/privateshares.h"
 
+
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 const int MESSAGE_POLL_TIMEOUT_MS = 3000;
 
 namespace {
@@ -692,20 +699,20 @@ bool ClientController::CreateUser(const QString &username, const QString &pin,
 bool ClientController::CheckUserExists(const std::string &username,
                                       const std::string &pin,
                                       DefConLevel level) {
-  maidsafe::DefConLevels defCon;
+  maidsafe::lifestuff::DefConLevels defCon;
   if (level == kDefCon1) {
-    defCon = maidsafe::kDefCon1;
+    defCon = maidsafe::lifestuff::kDefCon1;
   } else if (level == kDefCon2) {
-    defCon = maidsafe::kDefCon2;
+    defCon = maidsafe::lifestuff::kDefCon2;
   } else {
-    defCon = maidsafe::kDefCon3;
+    defCon = maidsafe::lifestuff::kDefCon3;
   }
 
   bool result = true;
 // int rc = maidsafe::ClientController::getInstance()->CheckUserExists(
 //                                  username, pin);
   int rc = user_credentials_->CheckUserExists(username, pin);
-  if (rc == maidsafe::kUserDoesntExist)
+  if (rc == maidsafe::lifestuff::kUserDoesntExist)
     result = true;
   else
     result = false;
@@ -940,9 +947,9 @@ QString ClientController::getEmailTooltip(HintLevel level) {
 
 QString ClientController::getMyFilesTooltip(HintLevel level) {
   if (level == SMALL) {
-    return QString::fromStdString(TidyPath(maidsafe::kRootSubdir[0][0]));
+    return QString::fromStdString(TidyPath(maidsafe::lifestuff::kRootSubdir[0][0]));
   } else if (level == FULL) {
-    return QString::fromStdString(TidyPath(maidsafe::kRootSubdir[0][0])) +
+    return QString::fromStdString(TidyPath(maidsafe::lifestuff::kRootSubdir[0][0])) +
            QString(": Use This Tab to manage your protected PD Files");
   }
   return "";
@@ -964,3 +971,11 @@ void ClientController::OnHelloPing(const std::string &contact_name,
 //    const OnFileAdded::slot_type &slot) {
 //  return maidsafe::ClientController::getInstance()->ConnectToOnFileAdded(slot);
 //}
+
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
+

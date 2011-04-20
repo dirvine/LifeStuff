@@ -33,6 +33,11 @@
 #include "maidsafe/lifestuff/qt_ui/widgets/create_page_options.h"
 #include "maidsafe/lifestuff/qt_ui/widgets/create_page_complete.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
 
 CreateUser::CreateUser(QWidget* parent)
     : QWidget(parent), vault_type_(0), space_(), port_(), directory_() {
@@ -184,3 +189,9 @@ void CreateUser::changeEvent(QEvent *event) {
     QWidget::changeEvent(event);
   }
 }
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

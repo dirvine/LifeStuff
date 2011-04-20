@@ -72,6 +72,8 @@ void ChunkDone(const std::string &chunkname, maidsafe::ReturnCode rc,
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 namespace test {
 
 class LocalStoreManagerTest : public testing::Test {
@@ -609,5 +611,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddRequestBufferPacketMessage) {
 }
 
 }  // namespace test
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe

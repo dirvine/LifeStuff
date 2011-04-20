@@ -34,6 +34,8 @@ namespace fs3 = boost::filesystem3;
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 DataAtlasHandler::DataAtlasHandler() : db_dir_() {
   SessionSingleton *ss = SessionSingleton::getInstance();
   if (!ss->SessionName().empty()) {
@@ -419,7 +421,7 @@ int DataAtlasHandler::GetDirKey(const std::string &element_path,
 //  printf("In DAH::GetDirKey, element_path_ = %s\n", element_path.c_str());
 #endif
   if (element_path == "" || element_path == "/" || element_path == "\\") {
-    *dir_key = maidsafe::SessionSingleton::getInstance()->RootDbKey();
+    *dir_key = SessionSingleton::getInstance()->RootDbKey();
     return kSuccess;
   }
   std::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
@@ -498,5 +500,7 @@ int DataAtlasHandler::DisconnectPdDir(const std::string &branch_path) {
       &result));
   return result;
 }
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe

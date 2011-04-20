@@ -21,6 +21,13 @@
 // core
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
+
 JoinKademliaThread::JoinKademliaThread(QObject* parent)
     : WorkerThread(parent) { }
 
@@ -32,7 +39,7 @@ void JoinKademliaThread::run() {
 //    boost::this_thread::sleep(boost::posix_time::seconds(2));
 //    qDebug() << "JoinKademliaThread::run - After SLEEP";
 //  #endif
-  if (ClientController::instance()->Init() == maidsafe::kSuccess) {
+  if (ClientController::instance()->Init() == maidsafe::lifestuff::kSuccess) {
     emit completed(true);
   } else {
     emit completed(false);
@@ -41,4 +48,10 @@ void JoinKademliaThread::run() {
   deleteLater();
 }
 
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 

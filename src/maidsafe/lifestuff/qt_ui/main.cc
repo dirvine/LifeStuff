@@ -89,13 +89,13 @@ int main(int argc, char *argv[]) {
   app.setApplicationName("LifeStuff");
   app.setApplicationVersion("0.1");
 
-  SystemTrayIcon::instance()->show();
+  maidsafe::lifestuff::qt_ui::SystemTrayIcon::instance()->show();
 
   // initialise client controller
-  ClientController::instance();
+  maidsafe::lifestuff::qt_ui::ClientController::instance();
 
   // the main application window
-  PerpetualData pd;
+  maidsafe::lifestuff::qt_ui::PerpetualData pd;
   pd.hide();
   pd.showLoginWindow();
 
@@ -110,16 +110,16 @@ int main(int argc, char *argv[]) {
   // keep the application running in the tray when the window is closed
   app.setQuitOnLastWindowClosed(false);
 
-  QObject::connect(SystemTrayIcon::instance(), SIGNAL(quit()),
-                   &pd,                        SLOT(quit()));
-  QObject::connect(SystemTrayIcon::instance(), SIGNAL(open()),
-                   &pd,                        SLOT(onShowWindowRequest()));
-  QObject::connect(SystemTrayIcon::instance(), SIGNAL(close()),
-                   &pd,                        SLOT(hide()));
+  QObject::connect(maidsafe::lifestuff::qt_ui::SystemTrayIcon::instance(),
+                   SIGNAL(quit()), &pd, SLOT(quit()));
+  QObject::connect(maidsafe::lifestuff::qt_ui::SystemTrayIcon::instance(),
+                   SIGNAL(open()), &pd, SLOT(onShowWindowRequest()));
+  QObject::connect(maidsafe::lifestuff::qt_ui::SystemTrayIcon::instance(),
+                   SIGNAL(close()), &pd, SLOT(hide()));
 
   int rv = app.exec();
 
-  SystemTrayIcon::instance()->hide();
+  maidsafe::lifestuff::qt_ui::SystemTrayIcon::instance()->hide();
 
   return rv;
 }

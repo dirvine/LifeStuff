@@ -34,6 +34,12 @@
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 #include "maidsafe/lifestuff/qt_ui/widgets/user_panels.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 Contacts::Contacts(QWidget* parent)
     : Panel(parent), init_(false) {
   ui_.setupUi(this);
@@ -721,3 +727,8 @@ void Contacts::PopulateIMList()
 
 }
 
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

@@ -36,6 +36,12 @@
 #include "maidsafe/lifestuff/qt_ui/client/send_instant_message_thread.h"
 #include "maidsafe/lifestuff/qt_ui/widgets/user_panels.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 PersonalMessages::PersonalMessages(QWidget* parent, QString name)
     : QMainWindow(parent), active_(false), init_(false), convName_() {
   setAttribute(Qt::WA_DeleteOnClose, true);
@@ -480,5 +486,8 @@ void PersonalMessages::changeEvent(QEvent *event) {
   }
 }
 
+}  // namespace qt_ui
 
+}  // namespace lifestuff
 
+}  // namespace maidsafe

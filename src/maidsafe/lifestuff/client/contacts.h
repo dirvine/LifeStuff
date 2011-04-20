@@ -35,6 +35,8 @@
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 // TODO(Dan#5#): 2009-07-22 - Language and country lists to be decided on and
 //                            incorporated to the logic.
 
@@ -225,6 +227,8 @@ class ContactsHandler {
 
   int ClearContacts();
 };
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe
 

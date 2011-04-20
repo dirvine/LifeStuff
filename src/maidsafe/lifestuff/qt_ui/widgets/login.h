@@ -24,6 +24,12 @@
 // generated
 #include "ui_login.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 // Main Login screen for Perpetual Data
 /*!
     Has fields for:
@@ -119,6 +125,12 @@ class Login : public QWidget {
 
     State state_;
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_LOGIN_H_
 

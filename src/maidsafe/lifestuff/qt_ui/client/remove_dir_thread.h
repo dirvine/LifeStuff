@@ -17,6 +17,12 @@
 
 #include "maidsafe/lifestuff/qt_ui/client/worker_thread.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 // Worker thread for removing a directory
 /*!
     removing a directory from the network is blocking and can take a while so we
@@ -39,5 +45,11 @@ class RemoveDirThread : public WorkerThread {
   signals:
   void removeDirCompleted(int, const QString&);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_CLIENT_REMOVE_DIR_THREAD_H_

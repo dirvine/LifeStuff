@@ -26,6 +26,8 @@
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 class MockClientController : public ClientController {
  public:
   MockClientController() : ClientController() {
@@ -35,6 +37,8 @@ class MockClientController : public ClientController {
     delete ss_;
   }
 };
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe
 

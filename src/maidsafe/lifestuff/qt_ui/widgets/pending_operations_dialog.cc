@@ -21,6 +21,11 @@
 
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
 
 PendingOperationsDialog::PendingOperationsDialog(QWidget* parent)
     : QDialog(parent), ops_(), pending_files_connection_() {
@@ -124,3 +129,8 @@ void PendingOperationsDialog::FileAdded(const std::string &file) {
   newItem->setText(1, tr("0"));
 }
 
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

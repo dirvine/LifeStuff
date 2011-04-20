@@ -132,6 +132,8 @@ void PrintRpcTimings(const rpcprotocol::RpcStatsMap &rpc_timings) {
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 namespace test {
 
 class RunPDClient {
@@ -419,6 +421,8 @@ class RunPDClient {
 };
 
 }  // namespace test
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe
 

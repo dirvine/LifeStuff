@@ -24,6 +24,12 @@
 
 #include "maidsafe/lifestuff/qt_ui/client/contact.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 // Representation of a Share
 /*!
     Holds information about a Share:
@@ -65,5 +71,10 @@ class Share {
 
 typedef QList<Share> ShareList;
 
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_CLIENT_SHARE_H_

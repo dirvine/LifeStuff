@@ -14,6 +14,12 @@
 
 #include "maidsafe/lifestuff/qt_ui/widgets/smily.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 Smily::Smily(QWidget* parent) : QDialog(parent) {
   setWindowFlags(Qt::Popup);
   ui_.setupUi(this);
@@ -30,4 +36,8 @@ void Smily::onCellDoubleClicked(int row, int column) {
   this->close();
 }
 
+}  // namespace qt_ui
 
+}  // namespace lifestuff
+
+}  // namespace maidsafe

@@ -17,6 +17,12 @@
 
 #include "maidsafe/lifestuff/qt_ui/client/worker_thread.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 // Worker thread for creating the pulbic username of users
 /*!
     Creating the public username is blocking and can take a while so we
@@ -36,6 +42,12 @@ class CreatePublicUsernameThread : public WorkerThread {
  private:
   QString username_;
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_CLIENT_CREATE_PUBLIC_USERNAME_THREAD_H_
 

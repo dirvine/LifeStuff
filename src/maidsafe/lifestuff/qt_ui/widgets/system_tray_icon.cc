@@ -19,6 +19,12 @@
 #include <QMenu>
 #include <QAction>
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 // static
 SystemTrayIcon* SystemTrayIcon::instance() {
   static SystemTrayIcon icon;
@@ -154,3 +160,9 @@ void SystemTrayIcon::onLoggingOutMode()
         action_quit_->setEnabled(false);
     }
 }
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

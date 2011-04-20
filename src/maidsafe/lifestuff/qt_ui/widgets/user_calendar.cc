@@ -20,6 +20,12 @@
 
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 UserCalendar::UserCalendar(QWidget* parent) : QDialog(parent) {
   ui_.setupUi(this);
   setWindowIcon(QPixmap(":/icons/32/Triangle"));
@@ -56,3 +62,8 @@ void UserCalendar::changeEvent(QEvent *event) {
   }
 }
 
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

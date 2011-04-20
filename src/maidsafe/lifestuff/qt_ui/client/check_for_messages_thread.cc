@@ -23,6 +23,13 @@
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
+
 CheckForMessagesThread::CheckForMessagesThread(QObject* parent)
     : QThread(parent), interval_(3), started_(false),
       interval_mutex_(), start_mutex_() { }
@@ -54,3 +61,9 @@ void CheckForMessagesThread::set_started(bool turn_on) {
   boost::mutex::scoped_lock loch_lomond(start_mutex_);
   started_ = turn_on;
 }
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

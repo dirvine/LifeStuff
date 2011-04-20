@@ -25,6 +25,10 @@
 
 class QWizardPage;
 
+namespace maidsafe {
+namespace lifestuff {
+namespace qt_ui {
+
 // Main User creation screen for Perpetual Data
 /*!
     Takes the user through a series of pages:
@@ -85,6 +89,12 @@ class CreateUser : public QWidget {
  protected:
   void changeEvent(QEvent *event);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_CREATE_USER_H_
 

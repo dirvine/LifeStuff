@@ -24,6 +24,12 @@
 
 #include "ui_add_calendar_entry.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 class AddCalendarEntry : public QDialog {
     Q_OBJECT
 
@@ -51,5 +57,11 @@ class AddCalendarEntry : public QDialog {
  protected:
   void changeEvent(QEvent *event);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_ADD_CALENDAR_ENTRY_H_

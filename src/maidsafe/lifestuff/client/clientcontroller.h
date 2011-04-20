@@ -50,11 +50,17 @@ namespace bs2 = boost::signals2;
 
 namespace maidsafe {
 
+
 namespace dht {
 namespace kademlia {
   class Contact;
 }  // namespace kademlia
 }  // namespace dht
+
+class ChunkStore;
+
+namespace lifestuff {
+
 namespace test {
 class ClientControllerTest;
 class ClientControllerTest_FUNC_MAID_SaveSession_Test;
@@ -67,7 +73,6 @@ class ClientControllerTest_FUNC_MAID_ContactAddition_Test;
 class ClientControllerTest_FUNC_MAID_NET_ContactAddition_Test;
 }  // namespace test
 
-class ChunkStore;
 class Contact;
 class PrivateShare;
 class MockClientController;
@@ -368,6 +373,8 @@ class ClientController : public lifestuff::UserCredentials {
   static boost::once_flag flag_;
   static boost::scoped_ptr<ClientController> single_;
 };
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe
 

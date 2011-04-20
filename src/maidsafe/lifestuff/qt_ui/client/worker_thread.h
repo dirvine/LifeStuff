@@ -17,6 +17,11 @@
 
 #include <QThread>
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
 
 // Worker thread for mounting
 /*!
@@ -34,6 +39,11 @@ class WorkerThread : public QThread {
   signals:
     void completed(bool success);
 };
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_CLIENT_WORKER_THREAD_H_
 

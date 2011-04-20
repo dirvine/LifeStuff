@@ -47,6 +47,12 @@
 // local
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 class UserSpaceFileSystem::UserSpaceFileSystemImpl {
  public:
   UserSpaceFileSystemImpl() { }
@@ -190,3 +196,9 @@ void UserSpaceFileSystem::explore(Location l, QString subDir) {
   }
 #endif
 }
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

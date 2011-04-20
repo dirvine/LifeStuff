@@ -19,6 +19,11 @@
 #include <QObject>
 #include <QString>
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
 
 // Manages access and control of the user space file systems
 /*!
@@ -62,7 +67,11 @@ class UserSpaceFileSystem : public QObject {
   UserSpaceFileSystemImpl* impl_;
 };
 
+}  // namespace qt_ui
 
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_CLIENT_USER_SPACE_FILESYSTEM_H_
 

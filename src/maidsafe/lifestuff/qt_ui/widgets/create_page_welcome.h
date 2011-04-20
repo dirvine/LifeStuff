@@ -23,6 +23,12 @@
 
 class QWizardPage;
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 class CreateWelcomePage : public QWizardPage {
   Q_OBJECT
 
@@ -36,6 +42,12 @@ class CreateWelcomePage : public QWizardPage {
  protected:
   void changeEvent(QEvent *event);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_CREATE_PAGE_WELCOME_H_
 

@@ -37,6 +37,8 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 PdDir::PdDir(const fs::path &db_name, DbInitFlag flag, int *result)
     : db_(), db_name_(db_name), connected_(false) {
   try {
@@ -706,5 +708,7 @@ bool PdDir::ParseFromString(maidsafe::encrypt::DataMap *data_map,
   ia >> *data_map;
   return !data_map->content.empty();
 }
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe

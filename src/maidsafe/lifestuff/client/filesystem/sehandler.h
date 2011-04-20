@@ -53,7 +53,9 @@ typedef bs2::signal<void(const std::string&)> OnFileAdded;
 /*****************************************************************************/
 
 namespace maidsafe {
+namespace lifestuff {
 class SEHandler;
+}  // namespace lifestuff
 }  // namespace maidsafe
 
 namespace test_seh {
@@ -62,12 +64,18 @@ void ModifyUpToDateDms(ModificationType modification_type,
                        const boost::uint16_t &test_size,
                        const std::vector<std::string> &keys,
                        const std::vector<std::string> &encrypted_data_maps,
-                       std::shared_ptr<maidsafe::SEHandler> seh);
+                       std::shared_ptr<maidsafe::lifestuff::SEHandler> seh);
 }  // namespace test_seh
 
 namespace maidsafe {
 
-namespace encrypt { class DataMap; }
+namespace encrypt { 
+  class DataMap;
+}  // namespace encrypt
+
+class ChunkStore;
+
+namespace lifestuff {
 
 namespace test {
 class SEHandlerTest_BEH_MAID_Check_Entry_Test;
@@ -79,7 +87,6 @@ class SEHandlerTest_BEH_MAID_FailureOfChunkEncryptingFile_Test;
 class SEHandlerTest_BEH_MAID_FailureSteppedMultipleEqualFiles_Test;
 }  // namespace test
 
-class ChunkStore;
 class SessionSingleton;
 class StoreManagerInterface;
 
@@ -222,7 +229,7 @@ int DecryptDataMap(const std::string &encrypted_data_map,
       const boost::uint16_t &test_size,
       const std::vector<std::string> &keys,
       const std::vector<std::string> &encrypted_data_maps,
-      std::shared_ptr<maidsafe::SEHandler> seh);
+      std::shared_ptr<SEHandler> seh);
   ItemType CheckEntry(const fs::path &absolute_path,
                       boost::uint64_t *file_size,
                       std::string *file_hash);
@@ -269,6 +276,8 @@ int DecryptDataMap(const std::string &encrypted_data_map,
   int path_count_;
   OnFileAdded file_added_;
 };
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe
 

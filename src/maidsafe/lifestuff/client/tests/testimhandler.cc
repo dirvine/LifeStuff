@@ -34,6 +34,8 @@
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 namespace test {
 
 class ImHandlerTest : public testing::Test {
@@ -250,5 +252,7 @@ TEST_F(MultiImHandlerTest, FUNC_MAID_Create_ValidateMsg) {
 }
 
 }  // namespace test
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe

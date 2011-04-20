@@ -22,6 +22,12 @@
 
 // core
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 // A Contact's profile
 /*!
 
@@ -55,5 +61,10 @@ class Profile {
   static Profile fromContact(const QString &pubName);
 };
 
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_CLIENT_PROFILE_H_

@@ -38,6 +38,8 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 class PdDir;
 class KeyAtlas;
 
@@ -91,6 +93,8 @@ class DataAtlasHandler {
   std::shared_ptr<KeyAtlas> GetKeysDb(DbInitFlag flag_, int *result);
   fs::path db_dir_;
 };
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe
 

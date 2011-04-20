@@ -26,6 +26,12 @@
 
 // local
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 ValidateUserThread::ValidateUserThread(const QString& password,
                                        QObject* parent)
     : WorkerThread(parent), password_(password) { }
@@ -48,5 +54,11 @@ void ValidateUserThread::run() {
 
   deleteLater();
 }
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 

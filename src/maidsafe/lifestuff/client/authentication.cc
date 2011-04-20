@@ -29,6 +29,8 @@
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 Authentication::~Authentication() {
   passport_->StopCreatingKeyPairs();
   bool tmid_success, stmid_success;
@@ -1381,5 +1383,7 @@ std::string Authentication::UtilsTrim(std::string source) {
   return UtilsTrimLeft(UtilsTrimRight(UtilsTrimLeft(&source.at(0))));
 }
 
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe

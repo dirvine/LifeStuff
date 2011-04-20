@@ -36,6 +36,8 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 namespace test {
 
 class PdDirTest : public testing::Test {
@@ -1266,5 +1268,7 @@ TEST_F(PdDirTest, BEH_MAID_ModifyViaAddElement) {
 }
 
 }  // namespace test
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe

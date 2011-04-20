@@ -22,6 +22,12 @@
 // generated
 #include "ui_user_shares_panel.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 // Custom widget that displays shares
 /*!
     Displays a list of current shares and lets you create new ones.
@@ -71,5 +77,11 @@ class Shares : public Panel {
  signals:
   void complete();
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_SHARES_H_

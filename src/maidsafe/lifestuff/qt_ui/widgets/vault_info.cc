@@ -30,6 +30,11 @@
 // local
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
 
 VaultInfo::VaultInfo(QWidget* parent)
     : Panel(parent)
@@ -104,3 +109,9 @@ void VaultInfo::changeEvent(QEvent *event) {
     QWidget::changeEvent(event);
   }
 }
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

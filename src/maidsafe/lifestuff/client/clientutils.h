@@ -33,6 +33,8 @@ namespace kad { class Contact; }
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 namespace vault {
 class RunPDVaults;
 namespace test {
@@ -40,9 +42,12 @@ class PDVaultTest;
 }  // namespace test
 }  // namespace vault
 
+}  // namespace lifestuff
 }  // namespace maidsafe
 
 namespace maidsafe {
+
+namespace lifestuff {
 
 class SessionSingleton;
 
@@ -72,6 +77,8 @@ class ClientUtils {
   friend class vault::RunPDVaults;
   SessionSingleton *ss_;
 };
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe
 

@@ -17,6 +17,11 @@
 // qt
 #include <QDebug>
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
 
 CreateWelcomePage::CreateWelcomePage(QWidget* parent)
     : QWizardPage(parent) {
@@ -34,3 +39,8 @@ void CreateWelcomePage::changeEvent(QEvent *event) {
   }
 }
 
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

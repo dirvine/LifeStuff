@@ -29,6 +29,12 @@
 
 namespace bs2 = boost::signals2;
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 class PendingOperationsDialog : public QDialog {
     Q_OBJECT
 
@@ -58,5 +64,11 @@ class PendingOperationsDialog : public QDialog {
  protected:
   void changeEvent(QEvent *event);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_PENDING_OPERATIONS_DIALOG_H_

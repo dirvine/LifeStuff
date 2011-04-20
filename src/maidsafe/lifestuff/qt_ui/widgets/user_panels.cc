@@ -42,6 +42,12 @@
 namespace {
 }
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 UserPanels::UserPanels(QWidget* parent)
     : QWidget(parent),
       shares_(NULL),
@@ -376,5 +382,11 @@ void UserPanels::changeEvent(QEvent *event) {
     QWidget::changeEvent(event);
   }
 }
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 

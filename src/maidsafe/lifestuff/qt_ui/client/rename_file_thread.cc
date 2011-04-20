@@ -21,6 +21,12 @@
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 RenameFileThread::RenameFileThread(const QString& filepath,
                                    const QString& newFilePath,
                                    QObject* parent)
@@ -37,3 +43,9 @@ void RenameFileThread::run() {
 
   emit renameFileCompleted(success, filepath_, newFilePath_);
 }
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

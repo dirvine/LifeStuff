@@ -23,6 +23,12 @@
 
 class QWizardPage;
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 class CreateLicensePage : public QWizardPage {
   Q_OBJECT
 
@@ -42,6 +48,12 @@ class CreateLicensePage : public QWizardPage {
  protected:
   void changeEvent(QEvent *event);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_CREATE_PAGE_LICENSE_H_
 

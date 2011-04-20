@@ -17,6 +17,11 @@
 // qt
 #include <QDebug>
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
 
 Progress::Progress(QWidget* parent) : QWidget(parent) {
   ui_.setupUi(this);
@@ -60,4 +65,9 @@ void Progress::changeEvent(QEvent *event) {
   }
 }
 
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 

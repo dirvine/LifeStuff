@@ -16,6 +16,11 @@
 #include <QDebug>
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
 
 UserMail::UserMail(QWidget* parent) : QDialog(parent) {
   ui_.setupUi(this);
@@ -75,3 +80,8 @@ void UserMail::changeEvent(QEvent *event) {
   }
 }
 
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

@@ -24,6 +24,12 @@
 
 #include "ui_connection_settings.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 class ConnectionSettings : public QWidget {
     Q_OBJECT
 
@@ -39,6 +45,12 @@ class ConnectionSettings : public QWidget {
  protected:
   void changeEvent(QEvent *event);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_CONNECTION_SETTINGS_H_
 

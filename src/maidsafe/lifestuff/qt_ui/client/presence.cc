@@ -18,6 +18,12 @@
 #include <QApplication>
 #include <QDebug>
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 Presence::Presence() : state_(INVALID), message_() { }
 
 Presence::Presence(State state, QString message)
@@ -73,3 +79,9 @@ bool Presence::operator!=(const Presence& other) const {
 Presence Presence::fromContact(const QString &pubName) {
   return Presence();
 }
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

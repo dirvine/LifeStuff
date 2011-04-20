@@ -42,11 +42,13 @@
 namespace bs2 = boost::signals2;
 
 /********************************** Signals **********************************/
-typedef bs2::signal<void(const std::string&, maidsafe::ReturnCode)>
+typedef bs2::signal<void(const std::string&, maidsafe::lifestuff::ReturnCode)>
         OnChunkUploaded;
 /*****************************************************************************/
 
 namespace maidsafe {
+
+namespace lifestuff {
 
 namespace dht {
 namespace kademlia {
@@ -175,6 +177,8 @@ class StoreManagerInterface {
   StoreManagerInterface& operator=(const StoreManagerInterface&);
 /*************************************************************/
 };
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe
 

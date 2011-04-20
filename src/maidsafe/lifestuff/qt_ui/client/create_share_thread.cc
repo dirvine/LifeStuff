@@ -23,6 +23,13 @@
 
 // local
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
+
 CreateShareThread::CreateShareThread(const QString& shareName,
                                      const QStringList& adminSet,
                                      const QStringList& roSet,
@@ -59,4 +66,10 @@ void CreateShareThread::QListStringToStdSet(const QStringList& qList,
   }
 }
 
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 

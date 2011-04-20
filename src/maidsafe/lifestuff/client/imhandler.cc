@@ -29,6 +29,8 @@
 #include "maidsafe/lifestuff/client/sessionsingleton.h"
 
 namespace maidsafe {
+
+namespace lifestuff {
 //
 //IMHandler::IMHandler() : ss_(SessionSingleton::getInstance()) {}
 //
@@ -127,4 +129,6 @@ namespace maidsafe {
 //  return true;
 //}
 //
-}  // namespace
+}  // namespace lifestuff
+
+}  // namespace maidsafe

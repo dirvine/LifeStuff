@@ -21,6 +21,12 @@
 // generated
 #include "ui_user_public_username_panel.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 // Custom widget that prompts user for a public username
 /*!
     When a public username has been successfully set the complete()
@@ -51,5 +57,11 @@ class PublicUsername : public Panel {
  protected:
   void changeEvent(QEvent *event);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_PUBLIC_USERNAME_H_

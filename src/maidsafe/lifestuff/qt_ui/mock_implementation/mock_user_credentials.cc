@@ -19,7 +19,7 @@
 * ============================================================================
 */
 
-#include "maidsafe/lifestuff/qt_ui/mock_user_credentials.h"
+#include "maidsafe/lifestuff/qt_ui/mock_implementation/mock_user_credentials.h"
 #include <string>
 #include"boost/thread.hpp"
 #include "maidsafe/lifestuff/shared/returncodes.h"

@@ -45,6 +45,8 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 namespace test {
 
 InstantMessage GetImFromBpMessage(const std::string &ser_bpmsg,
@@ -1414,6 +1416,8 @@ TEST_MS_NET(CCImMessagingTest, FUNC, MAID, TestMultipleImToContact) {
 }
 
 }  // namespace test
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe
 

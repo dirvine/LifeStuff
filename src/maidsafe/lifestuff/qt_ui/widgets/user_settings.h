@@ -29,6 +29,12 @@
 #include "maidsafe/lifestuff/qt_ui/widgets/profile_settings.h"
 #include "ui_user_settings.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 class SecuritySettings;
 class FileTransferSettings;
 class ConnectionSettings;
@@ -82,5 +88,11 @@ class UserSettings : public QDialog {
  protected:
   void changeEvent(QEvent *event);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_USER_SETTINGS_H_

@@ -22,6 +22,12 @@
 #include "maidsafe/lifestuff/qt_ui/client/save_profile_settings_thread.h"
 #include "maidsafe/lifestuff/qt_ui/client/save_security_settings_thread.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 UserSettings::UserSettings(QWidget* parent) : QDialog(parent) {
   ui_.setupUi(this);
   setWindowIcon(QPixmap(":/icons/32/Triangle"));
@@ -215,3 +221,8 @@ void UserSettings::changeEvent(QEvent *event) {
   }
 }
 
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

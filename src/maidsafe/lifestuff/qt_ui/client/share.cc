@@ -14,6 +14,12 @@
 
 #include "maidsafe/lifestuff/qt_ui/client/share.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 Share::Share(const QString& name)
     : name_(name) { }
 
@@ -46,3 +52,9 @@ void Share::addParticipant(const QString& user, Permissions permissions) {
   participants_[user] = permissions;
 }
 
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

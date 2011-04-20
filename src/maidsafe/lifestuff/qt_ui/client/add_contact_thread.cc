@@ -23,6 +23,12 @@
 
 // local
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 AddContactThread::AddContactThread(const QString& publicUsername,
                                    QObject* parent)
     : WorkerThread(parent), publicUsername_(publicUsername) { }
@@ -42,4 +48,8 @@ void AddContactThread::run() {
   deleteLater();
 }
 
+}  // namespace qt_ui
 
+}  // namespace lifestuff
+
+}  // namespace maidsafe

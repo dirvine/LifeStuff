@@ -20,6 +20,12 @@
 // core
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 SendInstantMessageThread::SendInstantMessageThread(const QString& text,
                                                    const QString& convName,
                                                    QList<QString> conts,
@@ -38,3 +44,9 @@ void SendInstantMessageThread::run() {
   emit sendMessageCompleted(success, text_);
   }
 
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

@@ -51,7 +51,7 @@ static const boost::uint8_t K(4);
 std::string CreateSetFile(const std::string &filename,
                           const std::string &file_content) {
   fs::path file_path(file_system::MaidsafeHomeDir(
-      maidsafe::SessionSingleton::getInstance()->SessionName()) / filename);
+      maidsafe::lifestuff::SessionSingleton::getInstance()->SessionName()) / filename);  //NOLINT
   fs::ofstream ofs;
   ofs.open(file_path, std::ofstream::binary | std::ofstream::ate);
   ofs.write(file_content.data(), file_content.size());
@@ -72,7 +72,7 @@ void ModifyUpToDateDms(ModificationType modification_type,
                        const boost::uint16_t &test_size,
                        const std::vector<std::string> &keys,
                        const std::vector<std::string> &enc_dms,
-                       std::shared_ptr<maidsafe::SEHandler> seh) {
+                       std::shared_ptr<maidsafe::lifestuff::SEHandler> seh) {
   switch (modification_type) {
     case kAdd:
       for (boost::uint16_t i = 0; i < test_size; ++i)
@@ -138,6 +138,8 @@ void SamePathDifferentContent(const std::string &, int percentage,
 }  // namespace test_seh
 
 namespace maidsafe {
+
+namespace lifestuff {
 
 namespace test {
 
@@ -1009,6 +1011,8 @@ TEST_F(SEHandlerTest, BEH_MAID_OneFileModifiedAndSavedAgain) {
 }
 
 }  // namespace test
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe
 

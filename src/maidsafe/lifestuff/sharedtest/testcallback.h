@@ -28,6 +28,9 @@
 #include "maidsafe/lifestuff/shared/returncodes.h"
 
 namespace maidsafe {
+
+namespace lifestuff {
+
 namespace test {
 
 class CallbackObject {
@@ -78,6 +81,9 @@ class CallbackObject {
 };
 
 }  // namespace test
+
+}  // namespace lifestuff
+
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_SHAREDTEST_TESTCALLBACK_H_

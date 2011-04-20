@@ -26,6 +26,12 @@
 // generated
 #include "ui_lifestuff_fullview.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 class LifeStuffFull : public QWidget {
   Q_OBJECT
 
@@ -63,6 +69,12 @@ class LifeStuffFull : public QWidget {
  protected:
   void changeEvent(QEvent *event);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_LIFESTUFF_FULLVIEW_H_
 

@@ -29,6 +29,8 @@ namespace fs3 = boost::filesystem3;
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 typedef boost::function<void(const std::string&)> VoidFunctorOneString;
 
 void ExecuteSuccessCallback(const VoidFunctorOneString &cb,
@@ -1054,5 +1056,7 @@ void LocalStoreManager::ExecReturnLoadPacketCallback(
     LoadPacketFunctor cb, std::vector<std::string> results, ReturnCode rc) {
   boost::thread t(cb, results, rc);
 }
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe

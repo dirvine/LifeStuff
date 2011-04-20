@@ -27,6 +27,12 @@
 
 // local
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 CreateUserThread::CreateUserThread(const QString& username,
                                    const QString& pin,
                                    const QString& password,
@@ -56,3 +62,9 @@ void CreateUserThread::run() {
 }
 
 
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

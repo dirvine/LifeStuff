@@ -26,6 +26,12 @@
 
 class QWizardPage;
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 class CreateLocalVaultPage : public QWizardPage {
   Q_OBJECT
 
@@ -52,6 +58,12 @@ class CreateLocalVaultPage : public QWizardPage {
  protected:
   void changeEvent(QEvent *event);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_CREATE_PAGE_LOCALVAULT_SETUP_H_
 

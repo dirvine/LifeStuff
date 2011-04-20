@@ -23,6 +23,12 @@
 // local
 #include "maidsafe/lifestuff/qt_ui/client/create_public_username_thread.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 PublicUsername::PublicUsername(QWidget* parent)
     : Panel(parent)
     , init_(false) {
@@ -107,3 +113,9 @@ void PublicUsername::changeEvent(QEvent *event) {
     QWidget::changeEvent(event);
   }
 }
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

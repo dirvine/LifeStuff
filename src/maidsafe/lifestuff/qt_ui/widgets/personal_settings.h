@@ -23,6 +23,12 @@
 
 #include "ui_personal_settings.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 class PersonalSettings : public QWidget {
     Q_OBJECT
 
@@ -48,5 +54,11 @@ class PersonalSettings : public QWidget {
  protected:
   void changeEvent(QEvent *event);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_PERSONAL_SETTINGS_H_

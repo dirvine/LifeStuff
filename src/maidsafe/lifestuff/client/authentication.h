@@ -34,6 +34,8 @@
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 namespace test {
 class AuthenticationTest_FUNC_MAID_CreatePublicName_Test;
 class AuthenticationTest_FUNC_MAID_CreateMSIDPacket_Test;
@@ -211,6 +213,8 @@ class Authentication {
   std::string encrypted_tmid_, encrypted_stmid_;
   const int kSingleOpTimeout_;
 };
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe
 

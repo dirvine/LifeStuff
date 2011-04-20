@@ -29,6 +29,8 @@
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 namespace test {
 
 class SessionSingletonTest : public testing::Test {
@@ -592,5 +594,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_LiveContacts) {
 }
 
 }  // namespace test
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe

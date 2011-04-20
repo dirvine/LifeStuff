@@ -44,6 +44,8 @@
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 namespace vault {
 namespace test {
 class RunPDVaults;
@@ -407,6 +409,8 @@ class SessionSingleton {
   std::map<std::string, ConnectionDetails> live_contacts_;
   boost::mutex lc_mutex_;
 };
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe
 

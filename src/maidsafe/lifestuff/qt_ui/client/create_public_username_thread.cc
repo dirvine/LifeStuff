@@ -22,6 +22,13 @@
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
+
 CreatePublicUsernameThread::CreatePublicUsernameThread(const QString& username,
                                                        QObject* parent)
     : WorkerThread(parent), username_(username) { }
@@ -37,4 +44,10 @@ void CreatePublicUsernameThread::run() {
   emit completed(success);
 }
 
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 

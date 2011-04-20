@@ -29,6 +29,8 @@
 //  #include "maidsafe/lifestuff/shared/packet.pb.h"
 
 namespace maidsafe {
+
+namespace lifestuff {
 // void dummy_timeout_func(const boost::system::error_code &) {
 // }
 //
@@ -245,5 +247,7 @@ namespace maidsafe {
 //  indx.erase(l_limit, u_limit);
 //  return kSuccess;
 // }
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe

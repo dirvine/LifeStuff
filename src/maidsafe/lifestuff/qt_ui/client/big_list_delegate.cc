@@ -16,6 +16,12 @@
 #include <QtGui>
 #include <QApplication>
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 BigListDelegate::BigListDelegate(QObject *parent)
      : QAbstractItemDelegate(parent) {
      pixelSize = 12;
@@ -47,3 +53,9 @@ QSize BigListDelegate::sizeHint(const QStyleOptionViewItem & /* option */,
 void BigListDelegate::setPixelSize(int size) {
   pixelSize = size;
 }
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

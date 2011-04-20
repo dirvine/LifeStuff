@@ -28,6 +28,8 @@
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 std::string TidyPath(const std::string &original_path) {
   //  if path is root, don't change it
   if (original_path.size() == 1)
@@ -173,5 +175,7 @@ void ClientUtils::GetPacketSignatureKeys(passport::PacketType packet_type,
       break;
   }
 }
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe

@@ -306,6 +306,8 @@ void RunLoadPacketCallback(const kad::VoidFunctorOneString &cb,
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 namespace test {
 
 class MaidStoreManagerTest : public testing::Test {
@@ -3098,5 +3100,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetFilteredAverage) {
 } */
 
 }  // namespace test
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe

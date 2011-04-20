@@ -22,6 +22,12 @@
 
 #include "maidsafe/lifestuff/qt_ui/client/worker_thread.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 // Worker thread for saving security information
 /*!
     Saving Security Information is blocking and can take a while so we
@@ -42,5 +48,10 @@ class SaveSecuritySettingsThread : public WorkerThread {
   QHash<QString, QString> theHash_;
 };
 
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_CLIENT_SAVE_SECURITY_SETTINGS_THREAD_H_

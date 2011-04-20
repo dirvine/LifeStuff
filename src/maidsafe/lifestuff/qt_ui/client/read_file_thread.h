@@ -17,6 +17,12 @@
 
 #include "maidsafe/lifestuff/qt_ui/client/worker_thread.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 // Worker thread for creating the pulbic username of users
 /*!
     reading a file from the network is blocking and can take a while so we
@@ -40,5 +46,10 @@ class ReadFileThread : public WorkerThread {
   void readFileCompleted(int, const QString&);
 };
 
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_CLIENT_READ_FILE_THREAD_H_

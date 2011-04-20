@@ -18,6 +18,12 @@
 
 #include "maidsafe/lifestuff/qt_ui/client/worker_thread.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 // Worker thread for checking the existance of users
 /*!
     Checking for a user is blocking and can take a while so we use a worker
@@ -38,6 +44,12 @@ class CheckUserThread : public WorkerThread {
  private:
   QString username_, pin_;
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_CLIENT_CHECK_USER_THREAD_H_
 

@@ -18,6 +18,11 @@
 // qt
 #include <QWidget>
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
 
 // Base class for UI Panels
 /*!
@@ -36,5 +41,11 @@ class Panel : public QWidget {
   virtual void reset() {}
   virtual void setActive(bool) {}
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_PANEL_H_

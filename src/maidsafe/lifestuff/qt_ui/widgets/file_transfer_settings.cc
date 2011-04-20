@@ -15,6 +15,12 @@
 #include "maidsafe/lifestuff/qt_ui/widgets/file_transfer_settings.h"
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 FileTransferSettings::FileTransferSettings(QWidget* parent) : QWidget(parent) {
   ui_.setupUi(this);
 }
@@ -28,3 +34,9 @@ void FileTransferSettings::changeEvent(QEvent *event) {
     QWidget::changeEvent(event);
   }
 }
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

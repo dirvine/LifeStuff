@@ -28,6 +28,11 @@
 #include "maidsafe/lifestuff/qt_ui/client/create_share_thread.h"
 #include "maidsafe/lifestuff/qt_ui/client/user_space_filesystem.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
 
 Shares::Shares(QWidget* parent)
     : Panel(parent), init_(false), shareInProcess_() {
@@ -306,3 +311,9 @@ void Shares::changeEvent(QEvent *event) {
     QWidget::changeEvent(event);
   }
 }
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

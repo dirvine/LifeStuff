@@ -31,6 +31,8 @@
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 namespace test {
 
 class PrivateSharesTest : public testing::Test {
@@ -860,5 +862,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_ShareFilter) {
 }
 
 }  // namespace test
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe

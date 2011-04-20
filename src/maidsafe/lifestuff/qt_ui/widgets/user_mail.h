@@ -26,6 +26,12 @@
 
 #include "ui_user_mail.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 class UserMail : public QDialog {
     Q_OBJECT
 
@@ -54,5 +60,11 @@ class UserMail : public QDialog {
  protected:
   void changeEvent(QEvent *event);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_USER_MAIL_H_

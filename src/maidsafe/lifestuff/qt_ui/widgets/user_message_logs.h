@@ -24,6 +24,12 @@
 // generated
 #include "ui_user_message_logs.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 class UserPanels;
 
 // Custom widget that displays Message Logs
@@ -59,5 +65,11 @@ class MessageLogs : public Panel {
   protected:
     void changeEvent(QEvent *event);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_USER_MESSAGE_LOGS_H_

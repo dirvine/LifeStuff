@@ -56,6 +56,12 @@
 // generated
 #include "ui_about.h"  //NOLINT
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 PerpetualData::PerpetualData(QWidget* parent)
     : QMainWindow(parent), quitting_(false), login_(NULL), create_(NULL),
       message_status_(NULL), state_(LOGIN) {
@@ -1315,3 +1321,9 @@ void PerpetualData::updateTitlebar(const QString& title) {
 
     // update title bar of other windows
 }
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

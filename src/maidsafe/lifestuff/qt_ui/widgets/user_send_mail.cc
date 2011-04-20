@@ -22,6 +22,12 @@
 
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 UserSendMail::UserSendMail(QWidget* parent) : QDialog(parent) {
   ui_.setupUi(this);
   setWindowIcon(QPixmap(":/icons/32/Triangle"));
@@ -172,3 +178,9 @@ void UserSendMail::changeEvent(QEvent *event) {
     QWidget::changeEvent(event);
   }
 }
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

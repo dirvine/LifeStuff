@@ -18,6 +18,12 @@
 #include <QApplication>
 #include <QDebug>
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 Profile::Profile()
     : gender(UNSPECIFIED), language(QLocale::English),
       country(QLocale::AnyCountry) { }
@@ -28,3 +34,9 @@ Profile::~Profile() { }
 Profile Profile::fromContact(const QString &pubName) {
   return Profile();
 }
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

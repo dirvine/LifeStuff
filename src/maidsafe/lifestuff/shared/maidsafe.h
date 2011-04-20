@@ -47,6 +47,8 @@ namespace kad { class Contact; }
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 // system constants
 const boost::uint32_t kMinRegularFileSize = 512;
 // This is the size in bytes of the NON-HEX format strings used as keys.  When
@@ -217,6 +219,8 @@ inline std::string HexSubstr(const std::string &non_hex) {
   else
     return hex;
 }
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe
 

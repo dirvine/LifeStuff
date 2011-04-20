@@ -21,6 +21,11 @@
 // local
 #include "maidsafe/lifestuff/qt_ui/client/user_space_filesystem.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
 
 MountThread::MountThread(MountAction action, QObject* parent)
     : WorkerThread(parent), action_(action) { }
@@ -41,4 +46,10 @@ void MountThread::run() {
   deleteLater();
 }
 
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 

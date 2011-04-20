@@ -21,6 +21,11 @@
 // generated
 #include "ui_progress.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
 
 // General purpose page for showing feedback during long lived operations
 class Progress : public QWidget {
@@ -61,6 +66,12 @@ class Progress : public QWidget {
  protected:
   void changeEvent(QEvent *event);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_PROGRESS_H_
 

@@ -29,6 +29,12 @@
 // generated
 #include "ui_user_messages_panel.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 // Custom widget that displays messages
 /*!
     Displays a list of received messages.
@@ -101,5 +107,11 @@ class Messages : public Panel {
  protected:
   void changeEvent(QEvent *event);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_MESSAGES_H_

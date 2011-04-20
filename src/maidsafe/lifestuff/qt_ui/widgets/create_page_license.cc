@@ -17,6 +17,11 @@
 // qt
 #include <QDebug>
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
 
 CreateLicensePage::CreateLicensePage(QWidget* parent)
     : QWizardPage(parent) {
@@ -49,3 +54,9 @@ void CreateLicensePage::changeEvent(QEvent *event) {
     QWidget::changeEvent(event);
   }
 }
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

@@ -26,6 +26,12 @@
 // generated
 #include "ui_user_panels.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 class Messages;
 class MessageLogs;
 class Shares;
@@ -144,6 +150,12 @@ class UserPanels : public QWidget {
  protected:
   void changeEvent(QEvent *event);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_USER_PANELS_H_
 

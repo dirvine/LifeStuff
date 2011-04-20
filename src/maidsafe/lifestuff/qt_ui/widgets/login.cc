@@ -107,6 +107,12 @@ class PasswordValidator : public QValidator {
 
 }  // namespace
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 Login::Login(QWidget* parent)
     : QWidget(parent),
       got_enc_data_(false),
@@ -441,3 +447,8 @@ void Login::changeEvent(QEvent *event) {
   }
 }
 
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

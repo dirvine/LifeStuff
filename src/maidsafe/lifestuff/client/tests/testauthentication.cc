@@ -39,6 +39,8 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 namespace test {
 
 class AuthenticationTest : public testing::Test {
@@ -340,5 +342,7 @@ TEST_MS_NET(AuthenticationTest, FUNC, MAID, RegisterLeaveRegister) {
 }
 
 }  // namespace test
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe

@@ -26,6 +26,8 @@
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 void ClientRpcs::StorePrep(const kad::Contact &peer,
                            bool local,
                            const boost::int16_t &transport_id,
@@ -265,5 +267,7 @@ void ClientRpcs::SetLocalVaultOwned(SetLocalVaultOwnedRequest *request,
   maidsafe::VaultRegistration::Stub service(channel);
   service.SetLocalVaultOwned(controller, request, response, done);
 }
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe

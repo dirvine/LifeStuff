@@ -17,6 +17,12 @@
 // qt
 #include <QDebug>
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 WorkerThread::WorkerThread(QObject* parent)
     : QThread(parent) { }
 
@@ -32,6 +38,12 @@ WorkerThread::~WorkerThread() {
     qDebug() << "\nWorkerThread - not shutdown";
   }
 }
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 
 

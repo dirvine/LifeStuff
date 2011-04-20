@@ -18,6 +18,12 @@
 
 #include "maidsafe/lifestuff/qt_ui/client/worker_thread.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 // Worker thread for joining the kademlia network
 /*!
     Joining the kadmlia network is blocking and can take a while so we
@@ -33,6 +39,12 @@ class JoinKademliaThread : public WorkerThread {
 
   virtual void run();
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_CLIENT_JOIN_KADEMLIA_THREAD_H_
 

@@ -21,6 +21,12 @@
 
 #include "maidsafe/lifestuff/qt_ui/client/worker_thread.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 // Worker thread for saving transfery information
 /*!
     Saving transfer Information is blocking and can take a while so we
@@ -40,5 +46,11 @@ class SaveTransferSettingsThread : public WorkerThread {
  private:
   QHash<QString, QString> theHash_;
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_CLIENT_SAVE_TRANSFER_SETTINGS_THREAD_H_

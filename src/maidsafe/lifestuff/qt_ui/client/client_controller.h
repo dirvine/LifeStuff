@@ -49,6 +49,12 @@
 #include "maidsafe/lifestuff/qt_ui/client/presence.h"
 #include "maidsafe/lifestuff/qt_ui/client/share.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 // Wrapper for maidsafe::ClientController
 /*!
     Implements the ClientController notification interface and wraps up
@@ -309,8 +315,15 @@ class ClientController : public QObject {
 
 //  void analyseMessage(const maidsafe::InstantMessage& im);
   CheckForMessagesThread *cfmt_;
-  std::shared_ptr<maidsafe::lifestuff::UserCredentials> user_credentials_;
+  std::shared_ptr<UserCredentials> user_credentials_;
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
+
 
 #endif  // MAIDSAFE_LIFESTUFF_CLIENT_CLIENT_CONTROLLER_H_
 

@@ -30,6 +30,8 @@
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 class SessionSingleton;
 namespace test {
 //class CCImMessagingTest;
@@ -66,6 +68,8 @@ class IMHandler {
 //  friend class test::ImMessagingTest_FUNC_MAID_NET_HandleTwoConverstions_Test;
 //  SessionSingleton *ss_;
 };
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe
 

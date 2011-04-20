@@ -20,6 +20,12 @@
 // core
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 SaveConnectionSettingsThread::SaveConnectionSettingsThread(
     QHash<QString, QString> theHash, QObject* parent)
       : WorkerThread(parent), theHash_(theHash) { }
@@ -30,3 +36,9 @@ void SaveConnectionSettingsThread::run() {
 //  bool success = false;
   qDebug() << "SaveConnectionSettingsThread::run";
 }
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

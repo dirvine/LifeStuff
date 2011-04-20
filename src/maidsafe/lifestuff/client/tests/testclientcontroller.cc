@@ -58,6 +58,8 @@ void Sleep(const int&) {
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 namespace test {
 
 class ClientControllerTest : public testing::Test {
@@ -989,5 +991,7 @@ TEST_F(ClientControllerTest, FUNC_MAID_FuseFunctions) {
 //}
 //
 }  // namespace test
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe

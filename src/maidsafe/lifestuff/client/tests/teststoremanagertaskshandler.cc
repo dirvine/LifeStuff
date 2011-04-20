@@ -85,6 +85,8 @@ void DeleteTaskCallback(
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 namespace test {
 
 typedef std::pair<TaskId, ReturnCode> TaskReturn;
@@ -713,5 +715,7 @@ TEST_F(MSMTasksHandlerTest, BEH_MAID_ClearHandler) {
 }
 
 }  // namespace test
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe

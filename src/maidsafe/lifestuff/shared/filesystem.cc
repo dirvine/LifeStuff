@@ -162,11 +162,11 @@ fs::path FullMSPathFromRelPath(const std::string &entry,
 }
 
 int Mount(const std::string &session_name,
-          const maidsafe::DefConLevels &defcon) {
+          const maidsafe::lifestuff::DefConLevels &defcon) {
   if (session_name.empty())
-    return maidsafe::kSessionNameEmpty;
+    return  maidsafe::lifestuff::kSessionNameEmpty;
   int result = UnMount(session_name, defcon);
-  if (result != maidsafe::kSuccess)
+  if (result !=  maidsafe::lifestuff::kSuccess)
     return result;
   try {
     fs::path db_dir = DbDir(session_name);
@@ -179,38 +179,38 @@ int Mount(const std::string &session_name,
     if (!fs::exists(ms_home_dir)) {
       mount_result = mount_result && fs::create_directories(ms_home_dir);
     }
-    return mount_result ? maidsafe::kSuccess : maidsafe::kFileSystemMountError;
+    return mount_result ?  maidsafe::lifestuff::kSuccess :  maidsafe::lifestuff::kFileSystemMountError;  //NOLINT
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
     printf("In file_system::CreateDirs: %s\n", e.what());
 #endif
-    return maidsafe::kFileSystemException;
+    return  maidsafe::lifestuff::kFileSystemException;
   }
 }
 
 int UnMount(const std::string &session_name,
-            const maidsafe::DefConLevels &defcon) {
+            const maidsafe::lifestuff::DefConLevels &defcon) {
   if (session_name.empty())
-    return maidsafe::kSessionNameEmpty;
+    return  maidsafe::lifestuff::kSessionNameEmpty;
   fs::path db_dir = DbDir(session_name);
   fs::path ms_home_dir = MaidsafeHomeDir(session_name);
   fs::path ms_dir = MaidsafeDir(session_name);
   switch (defcon) {
-    case maidsafe::kDefCon1:
-      return RemoveDir(db_dir, kMaxRemoveDirAttempts) ?  maidsafe::kSuccess :
-          maidsafe::kFileSystemUnmountError;
-    case maidsafe::kDefCon2: {
+    case maidsafe::lifestuff::kDefCon1:
+      return RemoveDir(db_dir, kMaxRemoveDirAttempts) ?   maidsafe::lifestuff::kSuccess :  //NOLINT
+           maidsafe::lifestuff::kFileSystemUnmountError;
+    case maidsafe::lifestuff::kDefCon2: {
       bool success1(RemoveDir(db_dir, kMaxRemoveDirAttempts));
       bool success2(RemoveDir(ms_home_dir, kMaxRemoveDirAttempts));
-      return (success1 && success2) ?  maidsafe::kSuccess :
-          maidsafe::kFileSystemUnmountError;
+      return (success1 && success2) ?   maidsafe::lifestuff::kSuccess :
+           maidsafe::lifestuff::kFileSystemUnmountError;
     }
-    case maidsafe::kDefCon3:
-      return RemoveDir(ms_dir, kMaxRemoveDirAttempts) ?  maidsafe::kSuccess :
-          maidsafe::kFileSystemUnmountError;
+    case maidsafe::lifestuff::kDefCon3:
+      return RemoveDir(ms_dir, kMaxRemoveDirAttempts) ?   maidsafe::lifestuff::kSuccess :  //NOLINT
+           maidsafe::lifestuff::kFileSystemUnmountError;
     default:
-      return maidsafe::kFileSystemUnmountError;
+      return  maidsafe::lifestuff::kFileSystemUnmountError;
   }
 }
 
@@ -218,17 +218,17 @@ int FuseMountPoint(const std::string &session_name) {
   try {
     fs::path fuse_dir = MaidsafeFuseDir(session_name);
     if (!fs::exists(fuse_dir)) {
-      return fs::create_directories(fuse_dir) ? maidsafe::kSuccess :
-          maidsafe::kFuseMountPointError;
+      return fs::create_directories(fuse_dir) ?  maidsafe::lifestuff::kSuccess :
+           maidsafe::lifestuff::kFuseMountPointError;
     } else {
-      return maidsafe::kSuccess;
+      return  maidsafe::lifestuff::kSuccess;
     }
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
     printf("In file_system::FuseMountPoint: %s\n", e.what());
 #endif
-    return maidsafe::kFileSystemException;
+    return  maidsafe::lifestuff::kFileSystemException;
   }
 }
 

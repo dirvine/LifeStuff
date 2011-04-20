@@ -30,6 +30,12 @@
 
 #include "ui_user_inbox.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 class UserInbox : public QDialog {
   Q_OBJECT
 
@@ -65,5 +71,11 @@ class UserInbox : public QDialog {
  protected:
   void changeEvent(QEvent *event);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_WIDGETS_USER_INBOX_H_

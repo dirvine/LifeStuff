@@ -19,6 +19,8 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 // PrivateShare
 PrivateShare::PrivateShare() : name_(),
     msid_(), msid_pub_key_(), msid_priv_key_(),
@@ -277,7 +279,7 @@ int PrivateShareHandler::MI_GetShareInfo(const std::string &value,
 }
 
 int PrivateShareHandler::MI_GetShareList(
-    std::list<maidsafe::private_share> *ps_list,
+    std::list<private_share> *ps_list,
     const SortingMode &sm, const ShareFilter &sf) {
   ps_list->clear();
   switch (sm) {
@@ -391,9 +393,9 @@ void PrivateShareHandler::MI_ClearPrivateShares() {
   psps_.clear();
 }
 
-void PrivateShareHandler::DecideInclusion(
-    const private_share &ps, const ShareFilter &sf,
-    std::list<maidsafe::private_share> *ps_list) {
+void PrivateShareHandler::DecideInclusion(const private_share &ps,
+                                          const ShareFilter &sf,
+                                          std::list<private_share> *ps_list) {
   bool ro(false);
   if (ps.msid_priv_key_ == "")
     ro = true;
@@ -408,5 +410,7 @@ void PrivateShareHandler::DecideInclusion(
   }
 }
 
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe

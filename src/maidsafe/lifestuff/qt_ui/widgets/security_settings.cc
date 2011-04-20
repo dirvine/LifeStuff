@@ -15,6 +15,12 @@
 #include "maidsafe/lifestuff/qt_ui/widgets/security_settings.h"
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 SecuritySettings::SecuritySettings(QWidget* parent) : QWidget(parent) {
   ui_.setupUi(this);
 
@@ -50,6 +56,8 @@ void SecuritySettings::changeEvent(QEvent *event) {
   }
 }
 
+}  // namespace qt_ui
 
+}  // namespace lifestuff
 
-
+}  // namespace maidsafe

@@ -42,6 +42,8 @@
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 class EndPoint;
 
 typedef boost::function<void(const std::string&)> new_message_notifier;
@@ -117,6 +119,8 @@ class IMConnectionHandler {
 //  boost::asio::deadline_timer timer_;
 //  boost::condition_variable send_finished_;
 };
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe
 

@@ -32,6 +32,8 @@
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 class ClientRpcs {
  public:
   ClientRpcs(transport::TransportHandler *transport_handler,
@@ -129,6 +131,8 @@ class ClientRpcs {
   transport::TransportHandler *transport_handler_;
   rpcprotocol::ChannelManager *channel_manager_;
 };
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe
 

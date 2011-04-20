@@ -21,6 +21,12 @@
 // generated
 #include "ui_share_participants.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 // Custom widget that displays contacts to be chosen as participants in a share
 class ShareParticipantsChoice : public QDialog {
   Q_OBJECT
@@ -37,5 +43,11 @@ class ShareParticipantsChoice : public QDialog {
  protected:
   void changeEvent(QEvent *event);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_SHARE_PARTICIPANTS_H_

@@ -17,6 +17,11 @@
 // qt
 #include <QDebug>
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
 
 CreateCompletePage::CreateCompletePage(QWidget* parent)
     : QWizardPage(parent) {
@@ -58,4 +63,8 @@ void CreateCompletePage::changeEvent(QEvent *event) {
   }
 }
 
+}  // namespace qt_ui
 
+}  // namespace lifestuff
+
+}  // namespace maidsafe

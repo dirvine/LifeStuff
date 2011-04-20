@@ -18,6 +18,12 @@
 
 #include "maidsafe/lifestuff/qt_ui/client/worker_thread.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 // Worker thread for adding users
 /*!
     Adding a user is blocking and can take a while so we use a worker
@@ -40,6 +46,12 @@ class AddContactThread : public WorkerThread {
   signals:
     void completed(int, QString);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_CLIENT_ADD_CONTACT_THREAD_H_
 

@@ -25,6 +25,12 @@
 
 #include "ui_user_personal_message.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 class UserPanels;
 
 class PersonalMessages : public QMainWindow {
@@ -96,5 +102,11 @@ class PersonalMessages : public QMainWindow {
   // All received messages
   MessageList messages_;
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_PERSONAL_MESSAGES_H_

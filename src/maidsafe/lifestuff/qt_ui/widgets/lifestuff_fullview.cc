@@ -25,6 +25,11 @@
 #include <QDebug>
 #include <QMessageBox>
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
 
 LifeStuffFull::LifeStuffFull(QWidget* parent) : QWidget(parent) {
   ui_.setupUi(this);
@@ -311,4 +316,9 @@ void LifeStuffFull::onMessageReceived(int, const QDateTime&,
 
 }
 
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 

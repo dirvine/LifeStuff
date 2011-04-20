@@ -20,6 +20,11 @@
 // local
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
 
 ShareParticipantsChoice::ShareParticipantsChoice(QWidget* parent,
                                                  const QString &title,
@@ -71,3 +76,8 @@ void ShareParticipantsChoice::changeEvent(QEvent *event) {
   }
 }
 
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

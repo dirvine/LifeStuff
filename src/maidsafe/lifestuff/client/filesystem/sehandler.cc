@@ -47,6 +47,8 @@
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 SEHandler::SEHandler() : store_manager_(), client_chunkstore_(),
                          session_singleton_(), up_to_date_datamaps_(),
                          pending_chunks_(), up_to_date_datamaps_mutex_(),
@@ -1039,5 +1041,6 @@ bool SEHandler::ResizeObfuscationHash(const std::string &input,
   return true;
 }
 
+}  // namespace lifestuff
 
 }  // namespace maidsafe

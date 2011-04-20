@@ -19,6 +19,8 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 //  Contacts
 Contact::Contact() :pub_name_(), pub_key_(), full_name_(),
   office_phone_(), birthday_(), gender_('U'), language_(-1),
@@ -306,5 +308,7 @@ int ContactsHandler::ClearContacts() {
   cs_.clear();
   return 0;
 }
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe

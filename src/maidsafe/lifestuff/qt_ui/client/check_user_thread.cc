@@ -26,6 +26,13 @@
 
 // local
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
+
 CheckUserThread::CheckUserThread(const QString& username,
                                    const QString& pin,
                                    QObject* parent)
@@ -50,4 +57,8 @@ void CheckUserThread::run() {
   deleteLater();
 }
 
+}  // namespace qt_ui
 
+}  // namespace lifestuff
+
+}  // namespace maidsafe

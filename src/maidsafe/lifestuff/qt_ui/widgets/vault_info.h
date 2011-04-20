@@ -23,6 +23,12 @@
 // generated
 #include "ui_user_vault_info.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 // Custom widget that displays contacts
 /*!
     Displays a list of contacts and lets you add them.
@@ -48,5 +54,11 @@ class VaultInfo : public Panel {
  protected:
   void changeEvent(QEvent *event);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_VAULT_INFO_H_

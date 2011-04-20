@@ -35,6 +35,13 @@
 #include "ui_pd.h"  //  NOLINT
 
 class QLabel;
+
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 class Login;
 class CreateUser;
 class UserPanels;
@@ -309,6 +316,12 @@ class PerpetualData : public QMainWindow {
   protected:
   void changeEvent(QEvent *event);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_PERPETUAL_DATA_H_
 

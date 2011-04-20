@@ -21,6 +21,12 @@
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 SaveFileThread::SaveFileThread(const QString& filepath, QObject* parent)
     : WorkerThread(parent), filepath_(filepath) { }
 
@@ -45,3 +51,9 @@ void SaveFileThread::run() {
   emit saveFileCompleted(success, filepath_);
 }
 
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

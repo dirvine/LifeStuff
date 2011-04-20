@@ -22,6 +22,12 @@
 class QMenu;
 class QAction;
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 // Wrapper round the system tray icon functionality
 class SystemTrayIcon : public QSystemTrayIcon {
   Q_OBJECT
@@ -58,5 +64,11 @@ class SystemTrayIcon : public QSystemTrayIcon {
   QAction* action_data_share_;
   QAction* action_send_file_;
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_SYSTEM_TRAY_ICON_H_

@@ -17,6 +17,12 @@
 
 #include "ui_smily.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 class Smily : public QDialog {
   Q_OBJECT
  public:
@@ -33,5 +39,10 @@ class Smily : public QDialog {
     void onCellDoubleClicked(int row, int column);
 };
 
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_SMILY_H_

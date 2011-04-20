@@ -20,6 +20,12 @@
 
 // core
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 // Represents a Contact's online presence
 /*!
     Presence is a combination of enumerated state and an
@@ -59,5 +65,10 @@ class Presence {
   QString message_;
 };
 
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_CLIENT_PRESENCE_H_

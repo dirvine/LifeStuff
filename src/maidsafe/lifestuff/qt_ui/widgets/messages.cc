@@ -46,6 +46,12 @@ QString messageToRichText(QString s) {
 
 }  // namespace
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 Messages::Messages(QWidget* parent)
     : Panel(parent), active_(false), init_(false), unread_(0) {
   ui_.setupUi(this);
@@ -179,4 +185,8 @@ void Messages::changeEvent(QEvent *event) {
   }
 }
 
+}  // namespace qt_ui
 
+}  // namespace lifestuff
+
+}  // namespace maidsafe

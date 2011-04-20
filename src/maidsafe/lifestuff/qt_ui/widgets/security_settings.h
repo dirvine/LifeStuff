@@ -25,6 +25,12 @@
 
 #include "ui_security_settings.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 class SecuritySettings : public QWidget {
     Q_OBJECT
 
@@ -44,6 +50,12 @@ class SecuritySettings : public QWidget {
  protected:
   void changeEvent(QEvent *event);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_SECURITY_SETTINGS_H_
 

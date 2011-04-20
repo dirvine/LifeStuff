@@ -20,6 +20,12 @@
 // core
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 SaveSecuritySettingsThread::SaveSecuritySettingsThread(
     QHash<QString, QString> theHash, QObject* parent)
       : WorkerThread(parent), theHash_(theHash) { }
@@ -40,3 +46,9 @@ void SaveSecuritySettingsThread::run() {
   }
   emit completed(success);
 }
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

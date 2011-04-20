@@ -66,6 +66,8 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 namespace test { class DataAtlasHandlerTest_BEH_MAID_AddGetDataMapDetail_Test; }
 
 class PdDir {
@@ -114,6 +116,8 @@ class PdDir {
   fs::path db_name_;
   bool connected_;
 };
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe
 

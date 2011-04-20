@@ -21,6 +21,13 @@
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
+
 GetEmailThread::GetEmailThread(const QString& subject, QObject* parent)
     : WorkerThread(parent), subject_(subject) {}
 
@@ -33,3 +40,9 @@ void GetEmailThread::run() {
 //
 //  emit sendEmailCompleted(success, text_);
 }
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

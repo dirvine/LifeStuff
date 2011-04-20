@@ -26,6 +26,12 @@ class QAbstractItemModel;
 class QObject;
 class QPainter;
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 static const int ItemSize = 256;
 
 class BigListDelegate : public QAbstractItemDelegate {
@@ -49,5 +55,11 @@ class BigListDelegate : public QAbstractItemDelegate {
      QPixmap icon_;
      QString text1, text2, text3;
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_CLIENT_BIG_LIST_DELEGATE_H_

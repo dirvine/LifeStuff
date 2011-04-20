@@ -29,6 +29,8 @@
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 // ! Callback interface to be used for notifications from the ClientController
 /*!
     Note: implementors of this interface should ensure they do not block whilst
@@ -79,6 +81,8 @@ class ClientInterface {
   virtual void systemMessage(const std::string& message) = 0;
 };
 
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe
 

@@ -14,6 +14,13 @@
 
 #include "maidsafe/lifestuff/qt_ui/client/contact.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
+
 Contact::Contact(const QString& publicName, QObject* parent)
     : QObject(parent), publicName_(publicName), presence_(), profile_() { }
 
@@ -54,3 +61,9 @@ Contact* Contact::fromContact(const QString &pubName) {
 
   return contact;
 }
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

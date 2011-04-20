@@ -41,13 +41,16 @@ namespace fs3 = boost::filesystem3;
 
 namespace maidsafe {
 
+class ChunkStore;
+
+namespace lifestuff {
+
 namespace test {
 class CCImMessagingTest;
 class LocalStoreManagerTest_BEH_MAID_AddAndGetBufferPacketMessages_Test;
 class LocalStoreManagerTest_BEH_MAID_AddRequestBufferPacketMessage_Test;
 }  // namespace test
 
-class ChunkStore;
 class SessionSingleton;
 
 class LocalStoreManager : public StoreManagerInterface {
@@ -187,6 +190,8 @@ class LocalStoreManager : public StoreManagerInterface {
   SessionSingleton *ss_;
   std::set<std::string> chunks_pending_;
 };
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe
 

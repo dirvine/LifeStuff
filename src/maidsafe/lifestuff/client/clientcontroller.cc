@@ -47,6 +47,8 @@
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 void CCCallback::StringCallback(const std::string &result) {
   boost::mutex::scoped_lock lock(mutex_);
   result_ = result;
@@ -3418,5 +3420,7 @@ bool ClientController::ParseFromString(maidsafe::encrypt::DataMap *data_map,
   ia >> *data_map;
   return (data_map->size > 0);
 }
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe

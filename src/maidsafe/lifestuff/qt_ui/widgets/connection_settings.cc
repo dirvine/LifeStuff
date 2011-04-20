@@ -16,6 +16,12 @@
 #include "maidsafe/lifestuff/qt_ui/widgets/connection_settings.h"
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 ConnectionSettings::ConnectionSettings(QWidget* parent) : QWidget(parent) {
   ui_.setupUi(this);
 }
@@ -30,4 +36,8 @@ void ConnectionSettings::changeEvent(QEvent *event) {
   }
 }
 
+}  // namespace qt_ui
 
+}  // namespace lifestuff
+
+}  // namespace maidsafe

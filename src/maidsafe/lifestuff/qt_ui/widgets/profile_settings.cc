@@ -21,6 +21,12 @@
 
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 ProfileSettings::ProfileSettings(QWidget* parent)
     : QWidget(parent), init_(false) {
   ui_.setupUi(this);
@@ -131,3 +137,8 @@ void ProfileSettings::changeEvent(QEvent *event) {
   }
 }
 
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

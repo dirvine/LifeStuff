@@ -16,6 +16,12 @@
 #include "maidsafe/lifestuff/qt_ui/widgets/personal_settings.h"
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 PersonalSettings::PersonalSettings(QWidget* parent)
     : QWidget(parent), init_(false) {
   ui_.setupUi(this);
@@ -83,3 +89,8 @@ void PersonalSettings::changeEvent(QEvent *event) {
   }
 }
 
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

@@ -28,6 +28,12 @@
 
 #include "ui_file_browser.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 class FileBrowser : public QDialog {
   Q_OBJECT
  public:
@@ -149,5 +155,11 @@ class FileBrowser : public QDialog {
     void onOpenFinished(int, QProcess::ExitStatus);
     // void onWatchedFileChanged(const QString& path);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  // QT_WIDGETS_FILE_BROWSER_H_

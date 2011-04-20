@@ -17,6 +17,12 @@
 
 #include "maidsafe/lifestuff/qt_ui/client/worker_thread.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 // Worker thread for sending instant messages
 /*!
     sending an instant message over the network is blocking and can take
@@ -41,5 +47,11 @@ class SendInstantMessageThread : public WorkerThread {
   signals:
     void sendMessageCompleted(bool, const QString&);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_CLIENT_SEND_INSTANT_MESSAGE_THREAD_H_

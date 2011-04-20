@@ -18,6 +18,12 @@
 
 #include "maidsafe/lifestuff/qt_ui/client/worker_thread.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 // Worker thread for creating users
 /*!
     Creating a user is blocking and can take a while so we use a worker thread
@@ -47,6 +53,12 @@ class CreateUserThread : public WorkerThread {
   QString port_;
   QString directory_;
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_CLIENT_CREATE_USER_THREAD_H_
 

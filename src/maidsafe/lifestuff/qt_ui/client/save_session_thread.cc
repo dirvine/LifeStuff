@@ -22,6 +22,12 @@
 
 // local
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 SaveSessionThread::SaveSessionThread(QObject* parent)
     : WorkerThread(parent) { }
 
@@ -40,4 +46,10 @@ void SaveSessionThread::run() {
   deleteLater();
 }
 
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 

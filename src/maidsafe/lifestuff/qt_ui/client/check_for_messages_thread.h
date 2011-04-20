@@ -19,6 +19,12 @@
 #include "boost/thread/mutex.hpp"
 #include "maidsafe/lifestuff/qt_ui/client/worker_thread.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 class CheckForMessagesThread : public QThread {
   Q_OBJECT
  public:
@@ -38,5 +44,11 @@ class CheckForMessagesThread : public QThread {
   signals:
     void completed(bool success);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_CLIENT_CHECK_FOR_MESSAGES_THREAD_H_

@@ -21,6 +21,12 @@
 #include "maidsafe/lifestuff/qt_ui/client/client_controller.h"
 
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 MakeDirectoryThread::MakeDirectoryThread(const QString& filepath,
                                          QObject* parent)
     : WorkerThread(parent), filepath_(filepath) { }
@@ -35,3 +41,9 @@ void MakeDirectoryThread::run() {
   emit makeDirectoryCompleted(success, filepath_);
 }
 
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe

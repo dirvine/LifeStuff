@@ -28,6 +28,8 @@
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 boost::scoped_ptr<SessionSingleton> SessionSingleton::single_;
 boost::once_flag SessionSingleton::flag_ = BOOST_ONCE_INIT;
 
@@ -711,6 +713,8 @@ void SessionSingleton::ClearConversations() {
 //  }
 //}
 //
+}  // namespace lifestuff
+
 }  // namespace maidsafe
 
 

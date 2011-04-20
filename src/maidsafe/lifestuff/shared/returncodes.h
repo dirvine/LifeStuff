@@ -27,6 +27,8 @@
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 enum ReturnCode {
   // General
   kSuccess = 0,
@@ -225,6 +227,8 @@ enum ReturnCode {
   kStoreManagerTaskNotFound = -13005,
   kStoreManagerTaskCancelledOrDone = -13006
 };
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe
 

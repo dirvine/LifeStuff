@@ -39,6 +39,8 @@
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 namespace test { class PrivateSharesTest_BEH_MAID_MI_DecideInclusion_Test; }
 
 struct ShareParticipants {
@@ -184,7 +186,7 @@ class PrivateShareHandler {
   int MI_TouchShare(const std::string &value, const int &field);
   int MI_GetShareInfo(const std::string &value, const int &field,
                       PrivateShare *ps);
-  int MI_GetShareList(std::list<maidsafe::private_share> *ps_list,
+  int MI_GetShareList(std::list<maidsafe::lifestuff::private_share> *ps_list,
                       const SortingMode &sm, const ShareFilter &sf);
   int MI_GetFullShareList(const SortingMode &sm, const ShareFilter &sf,
                           std::list<PrivateShare> *ps_list);
@@ -197,9 +199,11 @@ class PrivateShareHandler {
   private_share_participant_set psps_;
   void DecideInclusion(const private_share &ps,
                        const ShareFilter &sf,
-                       std::list<maidsafe::private_share> *ps_list);
+                       std::list<maidsafe::lifestuff::private_share> *ps_list);
 };
 
-}  // namespace
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_CLIENT_PRIVATESHARES_H_

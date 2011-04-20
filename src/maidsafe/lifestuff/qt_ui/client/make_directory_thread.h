@@ -17,6 +17,12 @@
 
 #include "maidsafe/lifestuff/qt_ui/client/worker_thread.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 // Worker thread for creating the pulbic username of users
 /*!
     renaming a file from the network is blocking and can take a while so we
@@ -38,5 +44,11 @@ class MakeDirectoryThread : public WorkerThread {
   signals:
   void makeDirectoryCompleted(int, const QString&);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_CLIENT_MAKE_DIRECTORY_THREAD_H_

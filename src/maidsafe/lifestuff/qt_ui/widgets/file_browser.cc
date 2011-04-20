@@ -45,6 +45,12 @@
 
 namespace fs = boost::filesystem;
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 FileBrowser::FileBrowser(QWidget* parent) : QDialog(parent), init_(false) {
   ui_.setupUi(this);
   setWindowIcon(QPixmap(":/icons/32/ms_icon_blue.png"));
@@ -1460,4 +1466,8 @@ QString FileBrowser::getFullFilePath(const QString& filepath) {
   //qtPath.replace(QString("/"), QString("//"));
   return qtPath;
 }
+}  // namespace qt_ui
 
+}  // namespace lifestuff
+
+}  // namespace maidsafe

@@ -25,11 +25,15 @@
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 class MockSessionSingleton : public SessionSingleton {
  public:
   MockSessionSingleton() {}
   ~MockSessionSingleton() {}
 };
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe
 

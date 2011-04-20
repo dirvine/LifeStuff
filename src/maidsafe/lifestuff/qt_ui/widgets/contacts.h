@@ -30,6 +30,12 @@
 // generated
 #include "ui_user_contacts_panel.h"
 
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace qt_ui {
+
 class PersonalMessages;
 class UserPanels;
 class UserSendMail;
@@ -104,5 +110,11 @@ class Contacts : public Panel {
     bool eventFilter(QObject *obj, QEvent *ev);
     void changeEvent(QEvent *event);
 };
+
+}  // namespace qt_ui
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
 
 #endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_CONTACTS_H_

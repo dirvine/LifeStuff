@@ -51,6 +51,8 @@ static const boost::uint8_t K(4);
 
 namespace maidsafe {
 
+namespace lifestuff {
+
 namespace test {
 
 class DataAtlasHandlerTest : public testing::Test {
@@ -1543,5 +1545,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_EmptyFileHandling) {
 }
 
 }  // namespace test
+
+}  // namespace lifestuff
 
 }  // namespace maidsafe
