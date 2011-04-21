@@ -65,7 +65,7 @@ void fuse_loop_session(struct fuse *fuse, int multithreaded) {
   else
     res = fuse_loop(fuse);
   if (res == -1)
-    maidsafe::SessionSingleton::getInstance()->SetMounted(-1);
+    maidsafe::lifestuff::SessionSingleton::getInstance()->SetMounted(-1);
 }
 
 FSLinux::FSLinux() : fuse_dispatcher_(NULL), fuse_(NULL), mountpoint_('\0'),
@@ -322,12 +322,12 @@ int FSLinux::ms_link(const char *o_path, const char *n_path) {
   // TODO(Fraser): set bool gui_private_share to true if gui has
   //               requested a private share be set up.
   bool gui_private_share(false);
-  if (maidsafe::ClientController::getInstance()->ReadOnly(
-      maidsafe::TidyPath(ln_path), gui_private_share))
+  if (maidsafe::lifestuff::ClientController::getInstance()->ReadOnly(
+      maidsafe::lifestuff::TidyPath(ln_path), gui_private_share))
     return -13;
 
-  if (maidsafe::ClientController::getInstance()->link(
-      maidsafe::TidyPath(lo_path), maidsafe::TidyPath(ln_path)) != 0)
+  if (maidsafe::lifestuff::ClientController::getInstance()->link(
+      maidsafe::lifestuff::TidyPath(lo_path), maidsafe::lifestuff::TidyPath(ln_path)) != 0)
     return -errno;
   return 0;
 }
@@ -339,7 +339,7 @@ int FSLinux::ms_open(const char *path, struct fuse_file_info *fi) {
 #endif
   std::string rel_path(path);
   lpath = (file_system::MaidsafeHomeDir(
-          maidsafe::SessionSingleton::getInstance()->SessionName()) / lpath)
+          maidsafe::lifestuff::SessionSingleton::getInstance()->SessionName()) / lpath)
               .string();
 
   fs::path some_path(lpath);
@@ -347,8 +347,8 @@ int FSLinux::ms_open(const char *path, struct fuse_file_info *fi) {
     if (!fs::exists(some_path.parent_path()))
       fs::create_directories(some_path.parent_path());
     if (!fs::exists(lpath))
-      maidsafe::ClientController::getInstance()->read(
-          maidsafe::TidyPath(rel_path));
+      maidsafe::lifestuff::ClientController::getInstance()->read(
+          maidsafe::lifestuff::TidyPath(rel_path));
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
@@ -377,7 +377,7 @@ int FSLinux::ms_read(const char *path, char *data, size_t size, off_t offset,
   printf("ms_read: %s\tfile handle: %llu", path, fi->fh);
 #endif
   lpath = (file_system::MaidsafeHomeDir(
-          maidsafe::SessionSingleton::getInstance()->SessionName()) / lpath)
+          maidsafe::lifestuff::SessionSingleton::getInstance()->SessionName()) / lpath)
               .string();
 
   int res;
@@ -397,7 +397,7 @@ int FSLinux::ms_release(const char *path, struct fuse_file_info *fi) {
 #endif
   std::string lpath(path);
   lpath = (file_system::MaidsafeHomeDir(
-          maidsafe::SessionSingleton::getInstance()->SessionName()) / lpath)
+          maidsafe::lifestuff::SessionSingleton::getInstance()->SessionName()) / lpath)
               .string();
   std::string original_path(path);
   close(fi->fh);
@@ -407,12 +407,12 @@ int FSLinux::ms_release(const char *path, struct fuse_file_info *fi) {
 //     case 2:
       return 0;
     case 32768:
-      if (!maidsafe::ClientController::getInstance()->atime(maidsafe::TidyPath(
+      if (!maidsafe::lifestuff::ClientController::getInstance()->atime(maidsafe::lifestuff::TidyPath(
            original_path)))
         return -errno;
       break;
     default:
-      if (maidsafe::ClientController::getInstance()->write(maidsafe::TidyPath(
+      if (maidsafe::lifestuff::ClientController::getInstance()->write(maidsafe::lifestuff::TidyPath(
           original_path)) != 0)
         return -errno;
       break;
@@ -424,7 +424,7 @@ int FSLinux::ms_write(const char *path, const char *data, size_t size,
                       off_t offset, struct fuse_file_info *fi) {
   std::string lpath(path);
   lpath = (file_system::MaidsafeHomeDir(
-          maidsafe::SessionSingleton::getInstance()->SessionName()) / lpath)
+          maidsafe::lifestuff::SessionSingleton::getInstance()->SessionName()) / lpath)
               .string();
 #ifdef DEBUG
   printf("ms_write PATH: %s\n", path);
@@ -472,23 +472,23 @@ int FSLinux::ms_getattr(const char *path, struct stat *stbuf) {
   }
 
   std::string ser_mdm;
-  if (maidsafe::ClientController::getInstance()->getattr(
-      maidsafe::TidyPath(lpath), &ser_mdm) != 0) {
+  if (maidsafe::lifestuff::ClientController::getInstance()->getattr(
+      maidsafe::lifestuff::TidyPath(lpath), &ser_mdm) != 0) {
 #ifdef DEBUG
     printf("CC getattr came back as failed.\n");
 #endif
     return -errno;
   }
-  maidsafe::MetaDataMap mdm;
+  maidsafe::lifestuff::MetaDataMap mdm;
   if (ser_mdm != "" && !mdm.ParseFromString(ser_mdm))
     return -ENOENT;
 
   int res = 0;
   memset(stbuf, 0, sizeof(struct stat));
   if (ser_mdm != "") {
-    if (mdm.type() == maidsafe::EMPTY_FILE ||
-        mdm.type() == maidsafe::REGULAR_FILE ||
-        mdm.type() == maidsafe::SMALL_FILE) {
+    if (mdm.type() == maidsafe::lifestuff::EMPTY_FILE ||
+        mdm.type() == maidsafe::lifestuff::REGULAR_FILE ||
+        mdm.type() == maidsafe::lifestuff::SMALL_FILE) {
       stbuf->st_mode = S_IFREG | 0644;
       stbuf->st_nlink = 1;
       stbuf->st_size = mdm.file_size_low();
@@ -496,8 +496,8 @@ int FSLinux::ms_getattr(const char *path, struct stat *stbuf) {
       stbuf->st_gid = fuse_get_context()->gid;
       stbuf->st_mtime = mdm.last_modified();
       stbuf->st_atime = mdm.last_access();
-    } else if (mdm.type() == maidsafe::EMPTY_DIRECTORY ||
-               mdm.type() == maidsafe::DIRECTORY) {
+    } else if (mdm.type() == maidsafe::lifestuff::EMPTY_DIRECTORY ||
+               mdm.type() == maidsafe::lifestuff::DIRECTORY) {
       stbuf->st_mode = S_IFDIR | 0755;
       stbuf->st_nlink = 2;
       stbuf->st_size = 4*1024;
@@ -526,13 +526,13 @@ int FSLinux::ms_fgetattr(const char *path, struct stat *stbuf,
 #endif
 
   std::string ser_mdm;
-  int n = maidsafe::ClientController::getInstance()->getattr(
-          maidsafe::TidyPath(lpath), &ser_mdm);
-  maidsafe::MetaDataMap mdm;
+  int n = maidsafe::lifestuff::ClientController::getInstance()->getattr(
+          maidsafe::lifestuff::TidyPath(lpath), &ser_mdm);
+  maidsafe::lifestuff::MetaDataMap mdm;
   mdm.ParseFromString(ser_mdm);
 
-  bool ro = maidsafe::ClientController::getInstance()->ReadOnly(
-            maidsafe::TidyPath(lpath), false);
+  bool ro = maidsafe::lifestuff::ClientController::getInstance()->ReadOnly(
+            maidsafe::lifestuff::TidyPath(lpath), false);
 
   if (ro)
     stbuf->st_mode = S_IFREG | 0444;
@@ -554,9 +554,9 @@ int FSLinux::ms_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
   printf("ms_readdir PATH:  %s\n", path);
 #endif
 
-  std::map<fs::path, maidsafe::ItemType> children;
-  if (maidsafe::ClientController::getInstance()->readdir(
-      maidsafe::TidyPath(lpath), &children) != 0)
+  std::map<fs::path, maidsafe::lifestuff::ItemType> children;
+  if (maidsafe::lifestuff::ClientController::getInstance()->readdir(
+      maidsafe::lifestuff::TidyPath(lpath), &children) != 0)
     return -errno;
 
   (void) offset;
@@ -593,12 +593,12 @@ int FSLinux::ms_mkdir(const char *path, mode_t) {
   // TODO(Fraser): set bool gui_private_share to true if gui has
   //               requested a private share be set up.
   bool gui_private_share(false);
-  if (maidsafe::ClientController::getInstance()->ReadOnly(
-      maidsafe::TidyPath(lpath1), gui_private_share))
+  if (maidsafe::lifestuff::ClientController::getInstance()->ReadOnly(
+      maidsafe::lifestuff::TidyPath(lpath1), gui_private_share))
     return -13;
 
   lpath = (file_system::MaidsafeHomeDir(
-          maidsafe::SessionSingleton::getInstance()->SessionName()) / lpath)
+          maidsafe::lifestuff::SessionSingleton::getInstance()->SessionName()) / lpath)
               .string();
   fs::path full_path(lpath);
   try {
@@ -613,8 +613,8 @@ int FSLinux::ms_mkdir(const char *path, mode_t) {
 #ifdef DEBUG
   printf("ms_mkdir PATH: %s -- %d\n", lpath1.c_str(), mode);
 #endif
-  if (maidsafe::ClientController::getInstance()->mkdir(
-      maidsafe::TidyPath(lpath1)) != 0)
+  if (maidsafe::lifestuff::ClientController::getInstance()->mkdir(
+      maidsafe::lifestuff::TidyPath(lpath1)) != 0)
     return -errno;
 
   return 0;
@@ -626,21 +626,21 @@ int FSLinux::ms_rename(const char *o_path, const char *n_path) {
   // TODO(Fraser): set bool gui_private_share to true if gui has
   //               requested a private share be set up.
   bool gui_private_share(false);
-  if (maidsafe::ClientController::getInstance()->ReadOnly(
-      maidsafe::TidyPath(lo_path), gui_private_share))
+  if (maidsafe::lifestuff::ClientController::getInstance()->ReadOnly(
+      maidsafe::lifestuff::TidyPath(lo_path), gui_private_share))
     return -13;
 
-  if (maidsafe::ClientController::getInstance()->ReadOnly(
-      maidsafe::TidyPath(ln_path), gui_private_share))
+  if (maidsafe::lifestuff::ClientController::getInstance()->ReadOnly(
+      maidsafe::lifestuff::TidyPath(ln_path), gui_private_share))
     return -13;
 
 #ifdef DEBUG
   printf("ms_rename PATHS: %s -- %s\n", o_path, n_path);
 #endif
-  if (maidsafe::ClientController::getInstance()->rename(
-      maidsafe::TidyPath(lo_path), maidsafe::TidyPath(ln_path)) != 0)
+  if (maidsafe::lifestuff::ClientController::getInstance()->rename(
+      maidsafe::lifestuff::TidyPath(lo_path), maidsafe::lifestuff::TidyPath(ln_path)) != 0)
     return -errno;
-  std::string s_name = maidsafe::SessionSingleton::getInstance()->SessionName();
+  std::string s_name = maidsafe::lifestuff::SessionSingleton::getInstance()->SessionName();
 
   try {
     if (fs::exists(file_system::MaidsafeHomeDir(s_name) / ln_path))
@@ -682,8 +682,8 @@ int FSLinux::ms_mknod(const char *path, mode_t mode, dev_t) {
   // TODO(Fraser): set bool gui_private_share to true if gui has
   //               requested a private share be set up.
   bool gui_private_share(false);
-  if (maidsafe::ClientController::getInstance()->ReadOnly(
-      maidsafe::TidyPath(lpath), gui_private_share))
+  if (maidsafe::lifestuff::ClientController::getInstance()->ReadOnly(
+      maidsafe::lifestuff::TidyPath(lpath), gui_private_share))
     return -13;
 
   int res = open(path, O_CREAT | O_EXCL | O_WRONLY, mode);
@@ -693,8 +693,8 @@ int FSLinux::ms_mknod(const char *path, mode_t mode, dev_t) {
 
   if (res >= 0)
     res = close(res);
-  if (maidsafe::ClientController::getInstance()->mknod(
-      maidsafe::TidyPath(lpath)) != 0)
+  if (maidsafe::lifestuff::ClientController::getInstance()->mknod(
+      maidsafe::lifestuff::TidyPath(lpath)) != 0)
     return -errno;
   return 0;
 }
@@ -709,12 +709,12 @@ int FSLinux::ms_create(const char *path,
   // TODO(Fraser): set bool gui_private_share to true if gui has
   //               requested a private share be set up.
   bool gui_private_share(false);
-  if (maidsafe::ClientController::getInstance()->ReadOnly(
-      maidsafe::TidyPath(lpath1), gui_private_share))
+  if (maidsafe::lifestuff::ClientController::getInstance()->ReadOnly(
+      maidsafe::lifestuff::TidyPath(lpath1), gui_private_share))
     return -13;
 
   lpath = (file_system::MaidsafeHomeDir(
-          maidsafe::SessionSingleton::getInstance()->SessionName()) / lpath)
+          maidsafe::lifestuff::SessionSingleton::getInstance()->SessionName()) / lpath)
               .string();
   fs::path full_path(lpath);
   fs::path branch_path = full_path.parent_path();
@@ -738,8 +738,8 @@ int FSLinux::ms_create(const char *path,
 #ifdef DEBUG
   printf("ms_create rel PATH: %s -- %d\n", lpath1.c_str(), fd);
 #endif
-  if (maidsafe::ClientController::getInstance()->mknod(
-      maidsafe::TidyPath(lpath1)) != 0)
+  if (maidsafe::lifestuff::ClientController::getInstance()->mknod(
+      maidsafe::lifestuff::TidyPath(lpath1)) != 0)
     return -errno;
 
   return 0;
@@ -754,17 +754,17 @@ int FSLinux::ms_rmdir(const char *path) {
   // TODO(Fraser): set bool gui_private_share to true if gui has
   //               requested a private share be set up.
   bool gui_private_share(false);
-  if (maidsafe::ClientController::getInstance()->ReadOnly(
-      maidsafe::TidyPath(lpath), gui_private_share))
+  if (maidsafe::lifestuff::ClientController::getInstance()->ReadOnly(
+      maidsafe::lifestuff::TidyPath(lpath), gui_private_share))
     return -13;
 
-  std::map<fs::path, maidsafe::ItemType> children;
-  maidsafe::ClientController::getInstance()->readdir(
-      maidsafe::TidyPath(lpath), &children);
+  std::map<fs::path, maidsafe::lifestuff::ItemType> children;
+  maidsafe::lifestuff::ClientController::getInstance()->readdir(
+      maidsafe::lifestuff::TidyPath(lpath), &children);
   if (!children.empty())
     return -ENOTEMPTY;
 
-  if (maidsafe::ClientController::getInstance()->rmdir(maidsafe::TidyPath(
+  if (maidsafe::lifestuff::ClientController::getInstance()->rmdir(maidsafe::lifestuff::TidyPath(
       lpath)) != 0)
     return -errno;
 
@@ -780,15 +780,15 @@ int FSLinux::ms_unlink(const char *path) {
   // TODO(Fraser): set bool gui_private_share to true if gui has
   //               requested a private share be set up.
   bool gui_private_share(false);
-  if (maidsafe::ClientController::getInstance()->ReadOnly(
-      maidsafe::TidyPath(lpath), gui_private_share))
+  if (maidsafe::lifestuff::ClientController::getInstance()->ReadOnly(
+      maidsafe::lifestuff::TidyPath(lpath), gui_private_share))
     return -13;
 
-  if (maidsafe::ClientController::getInstance()->unlink(
-      maidsafe::TidyPath(lpath)) != 0)
+  if (maidsafe::lifestuff::ClientController::getInstance()->unlink(
+      maidsafe::lifestuff::TidyPath(lpath)) != 0)
     return -errno;
   lpath = (file_system::MaidsafeHomeDir(
-          maidsafe::SessionSingleton::getInstance()->SessionName()) / lpath)
+          maidsafe::lifestuff::SessionSingleton::getInstance()->SessionName()) / lpath)
               .string();
   try {
     if (fs::exists(lpath))

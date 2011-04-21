@@ -683,10 +683,10 @@ void Contacts::onDirectoryEntered(const QString& dir) {
      ClientController::instance()->SessionName()).string())*/;
 
   if (!dir.startsWith(root, Qt::CaseInsensitive)) {
-    root = QString::fromStdString(file_system::MaidsafeFuseDir(
-               ClientController::instance()->SessionName()).string() +
-               maidsafe::kRootSubdir[0][0]);
-    qfd->setDirectory(root);
+//    root = QString::fromStdString(file_system::MaidsafeFuseDir(
+//               ClientController::instance()->SessionName()).string() +
+//               maidsafe::kRootSubdir[0][0]);
+//    qfd->setDirectory(root);
   }
 #endif
 }

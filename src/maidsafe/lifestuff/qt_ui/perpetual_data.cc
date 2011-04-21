@@ -1028,15 +1028,15 @@ void PerpetualData::onDirectoryEntered(const QString& dir) {
     qfd_->setDirectory(root);
   }
 #else
-  root = QString::fromStdString(file_system::MaidsafeFuseDir(
-      ClientController::instance()->SessionName()).string());
-
-  if (!dir.startsWith(root, Qt::CaseInsensitive)) {
-    root = QString::fromStdString(file_system::MaidsafeFuseDir(
-        ClientController::instance()->SessionName()).string() +
-        maidsafe::kRootSubdir[0][0]);
-    qfd_->setDirectory(root);
-  }
+//  root = QString::fromStdString(file_system::MaidsafeFuseDir(
+//      ClientController::instance()->SessionName()).string());
+//
+//  if (!dir.startsWith(root, Qt::CaseInsensitive)) {
+//    root = QString::fromStdString(file_system::MaidsafeFuseDir(
+//        ClientController::instance()->SessionName()).string() +
+//        maidsafe::kRootSubdir[0][0]);
+//    qfd_->setDirectory(root);
+//  }
 #endif
 }
 
