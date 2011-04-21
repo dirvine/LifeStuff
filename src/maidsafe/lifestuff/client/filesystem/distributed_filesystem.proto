@@ -1,7 +1,7 @@
 //#import "maidsafe/encrypt/datamap.proto";
 // import "maidsafe/shared/packet.proto";
 
-package maidsafe;
+package maidsafe.lifestuff;
 
 enum ItemType {
   REGULAR_FILE = 0;
