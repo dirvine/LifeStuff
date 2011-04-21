@@ -350,7 +350,7 @@ TARGET_LINK_LIBRARIES(LifeStufflsmclientlib LifeStuffclientfilesystemlib ${QT_LI
 # TARGET_LINK_LIBRARIES(LifeStuffclientlib LifeStuffclientfilesystemlib ${QT_LIBRARIES} boost_regex)
 TARGET_LINK_LIBRARIES(LifeStufffuselib ${Fuse_LIBRARY} boost_system)
 # TARGET_LINK_LIBRARIES(lifestuff LifeStuffclientlib LifeStufffuselib ${QT_LIBRARIES})
-TARGET_LINK_LIBRARIES(lslocal LifeStufflsmclientlib LifeStufffuselib ${QT_LIBRARIES})
+TARGET_LINK_LIBRARIES(lslocal LifeStufffuselib LifeStufflsmclientlib ${QT_LIBRARIES})
 TARGET_LINK_LIBRARIES(lslightlocal LifeStufflsmclientlib ${QT_LIBRARIES})
 # TARGET_LINK_LIBRARIES(TESTshared LifeStuffsharedlib boost_date_time gtest_static gmock_static)
 TARGET_LINK_LIBRARIES(TESTclientfilesystem LifeStufflsmclientlib gtest_static)
