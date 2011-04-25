@@ -74,7 +74,7 @@ bool MockUserCredentials::Logout() {
 
 int MockUserCredentials::SaveSession() {
   boost::this_thread::sleep(boost::posix_time::milliseconds(50));
-  return true;
+  return kSuccess;
 }
 
 bool MockUserCredentials::ChangeUsername(const std::string &new_username) {
