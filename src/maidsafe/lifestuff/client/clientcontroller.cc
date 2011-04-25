@@ -93,8 +93,8 @@ void PacketOpCallback(const int &store_manager_result, boost::mutex *mutex,
 }
 
 
-boost::scoped_ptr<ClientController> ClientController::single_;
-boost::once_flag ClientController::flag_ = BOOST_ONCE_INIT;
+// boost::scoped_ptr<ClientController> ClientController::single_;
+// boost::once_flag ClientController::flag_ = BOOST_ONCE_INIT;
 
 int ClientController::Init(boost::uint8_t k) {
   if (initialised_)
