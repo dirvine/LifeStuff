@@ -373,6 +373,12 @@ TEST_SUMMARY_OUTPUT()
   IF(UNIX)
     # Linux requires lower case package names
     SET(CPACK_PACKAGE_NAME "lifestuff_client")
+    SET(CMAKE_INSTALL_PREFIX /opt/maidsafe/lifestuff)
+    SET(CPACK_TOPLEVEL_TAG ${CMAKE_INSTALL_PREFIX})
+    SET(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+    INSTALL(TARGETS ClientDemo RUNTIME DESTINATION .)
+    INSTALL(FILES ${PROJECT_SOURCE_DIR}/installer/linux/scripts/lifestuff_client.desktop DESTINATION .)
+    INSTALL(FILES ${PROJECT_SOURCE_DIR}/installer/common/icons/WinLinux/installer.ico DESTINATION .)   
     EXECUTE_PROCESS(
       COMMAND /usr/bin/dpkg --print-architecture
       OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE
@@ -381,26 +387,18 @@ TEST_SUMMARY_OUTPUT()
       ERROR_QUIET
     )
     IF(EXECUTE_RESULT)
-      MESSAGE(FATAL_ERROR "Unable to determine current dpkg architecture: ${EXECUTE_RESULT} will try RPM")
-      #TODO Customisation  for RPM
-      INSTALL(TARGETS ClientDemo RUNTIME DESTINATION bin)
+      MESSAGE(STATUS "Unable to determine current dpkg architecture: ${EXECUTE_RESULT} - will try RPM")
+      SET(CPACK_RPM_POST_INSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/installer/linux/scripts/postinst)
+      SET(CPACK_RPM_PRE_UNINSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/installer/linux/scripts/prerm)
       SET(CPACK_GENERATOR RPM;TGZ)
     ELSE()
       MESSAGE("Debian package architecture: ${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
-      SET(CMAKE_INSTALL_PREFIX /opt/maidsafe/lifestuff)
-      SET(CPACK_TOPLEVEL_TAG ${CMAKE_INSTALL_PREFIX})
-      SET(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
-
-      INSTALL(TARGETS ClientDemo RUNTIME DESTINATION .)
-      INSTALL(FILES ${PROJECT_SOURCE_DIR}/installer/linux/scripts/lifestuff_client.desktop DESTINATION .)
-      INSTALL(FILES ${PROJECT_SOURCE_DIR}/installer/common/icons/WinLinux/installer.ico DESTINATION .)   
-      #INSTALL(CODE "")
       SET(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${PROJECT_SOURCE_DIR}/installer/linux/scripts/postinst;${PROJECT_SOURCE_DIR}/installer/linux/scripts/prerm") # postinstall and before remove
       SET(CPACK_DEBIAN_PACKAGE_SECTION "Network")
       SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
       SET(CPACK_GENERATOR DEB;TGZ)
     ENDIF()
-    MESSAGE("Package install directory is set to \"${CPACK_PACKAGE_INSTALL_DIRECTORY}\"")
+    #MESSAGE("Package install directory is set to \"${CPACK_PACKAGE_INSTALL_DIRECTORY}\"")
     MESSAGE("================================================================================")
 
 ELSEIF(WIN32)
