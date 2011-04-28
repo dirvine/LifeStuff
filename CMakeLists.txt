@@ -352,3 +352,108 @@ ADD_GTESTS(TESTclientfilesystem)
 ADD_GTESTS(TESTfuse)
 
 TEST_SUMMARY_OUTPUT()
+
+###################################################################################################
+# Install details                                                                                 #
+###################################################################################################
+
+#IF(CMAKE_BUILD_TYPE MATCHES "Release")
+  SET(CPACK_PACKAGE_VENDOR "MaidSafe.net")
+  SET(CPACK_PACKAGE_VERSION_MAJOR "0")
+  SET(CPACK_PACKAGE_VERSION_MINOR "1")
+  SET(CPACK_PACKAGE_VERSION_PATCH "0")
+  SET(CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})
+  SET(CPACK_PACKAGE_CONTACT "support@maidsafe.net")
+  SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY " LifeStuff Client")
+  SET(CPACK_RESOURCE_FILE_README "${PROJECT_SOURCE_DIR}/README")
+  SET(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/licence.txt")
+  SET(CPACK_PACKAGE_EXECUTABLES "ClientDemo", "Life Stuff Client")
+  SET(CPACK_STRIP_FILES "true")
+  
+  IF(UNIX)
+    # Linux requires lower case package names
+    SET(CPACK_PACKAGE_NAME "lifestuff_client")
+    EXECUTE_PROCESS(
+      COMMAND /usr/bin/dpkg --print-architecture
+      OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE
+      RESULT_VARIABLE EXECUTE_RESULT
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      ERROR_QUIET
+    )
+    IF(EXECUTE_RESULT)
+      MESSAGE(FATAL_ERROR "Unable to determine current dpkg architecture: ${EXECUTE_RESULT} will try RPM")
+      #TODO Customisation  for RPM
+      INSTALL(TARGETS ClientDemo RUNTIME DESTINATION bin)
+      SET(CPACK_GENERATOR RPM;TGZ)
+    ELSE()
+      MESSAGE("Debian package architecture: ${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
+      SET(CMAKE_INSTALL_PREFIX /opt/maidsafe/lifestuff)
+      SET(CPACK_TOPLEVEL_TAG ${CMAKE_INSTALL_PREFIX})
+      SET(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+
+      INSTALL(TARGETS ClientDemo RUNTIME DESTINATION .)
+      INSTALL(FILES ${PROJECT_SOURCE_DIR}/installer/linux/scripts/lifestuff_client.desktop DESTINATION .)
+      INSTALL(FILES ${PROJECT_SOURCE_DIR}/installer/common/icons/WinLinux/installer.ico DESTINATION .)   
+      #INSTALL(CODE "")
+      SET(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${PROJECT_SOURCE_DIR}/installer/linux/scripts/postinst;${PROJECT_SOURCE_DIR}/installer/linux/scripts/prerm") # postinstall and before remove
+      SET(CPACK_DEBIAN_PACKAGE_SECTION "Network")
+      SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
+      SET(CPACK_GENERATOR DEB;TGZ)
+    ENDIF()
+    MESSAGE("Package install directory is set to \"${CPACK_PACKAGE_INSTALL_DIRECTORY}\"")
+    MESSAGE("================================================================================")
+
+ELSEIF(WIN32)
+    INSTALL(TARGETS ClientDemo RUNTIME DESTINATION bin)	 
+    SET(CPACK_PACKAGE_NAME "LifeStuffClient")
+    INSTALL(DIRECTORY ${PROJECT_SOURCE_DIR}/installer/windows/cbfs DESTINATION drivers)
+    SET(CPACK_PACKAGE_INSTALL_DIRECTORY "LifeStuff")
+    SET(CPACK_GENERATOR "NSIS")
+    SET(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "LifeStuff ${CPACK_PACKAGE_VERSION}")
+    SET(CPACK_NSIS_MUI_ICON "${PROJECT_SOURCE_DIR}/installer/common/icons/WinLinux/installer.ico")
+    SET(CPACK_NSIS_MUI_UNIICON "${PROJECT_SOURCE_DIR}/installer/common/icons/WinLinux/uninstaller.ico")
+    SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
+#          LogSet on
+          SetShellVarContext all
+          IfFileExists \\\"$SYSDIR\\\\drivers\\\\cbfs3.sys\\\"  upgrade 0
+          CreateDirectory  \\\"$APPDATA\\\\LifeStuff\\\"
+          Goto finish
+          upgrade:
+          !include Library.nsh
+          Var /GLOBAL installer_dll
+          Var /GLOBAL cab_file_name
+          Var /GLOBAL product_name
+          Var /GLOBAL support_pnp
+          Var /GLOBAL modules_to_install
+          Var /GLOBAL reboot_needed
+          StrCpy $installer_dll \\\"drivers\\\\cbfs\\\\32bit\\\\cbfsinst.dll\\\"
+          StrCpy $cab_file_name \\\"drivers\\\\cbfs\\\\cbfs.cab\\\"
+          StrCpy $product_name \\\"713CC6CE-B3E2-4fd9-838D-E28F558F6866\\\"
+          StrCpy $support_pnp \\\"1\\\"
+          StrCpy $modules_to_install \\\"0x1 | 0x00010000 | 0x00020000\\\"
+          StrCpy $reboot_needed \\\"0\\\"
+          System::Call '$installer_dll::InstallA($cab_file_name, $product_name, $support_pnp, $modules_to_install, $reboot_needed)'
+          IntCmp $0 0 done reboot_needed_is_true reboot_needed_is_true
+          reboot_needed_is_true:
+            SetRebootFlag true
+            Goto done
+          done:
+          Pop $0
+          finish:
+        ")
+    SET(CPACK_NSIS_MODIFY_PATH ON)
+    SET(CPACK_NSIS_DISPLAY_NAME "LifeStuff Client")
+    SET(CPACK_NSIS_PACKAGE_NAME "LifeStuff Client")
+    SET(CPACK_NSIS_INSTALLED_ICON_NAME "bin\\\\ClientDemo.exe")
+    SET(CPACK_NSIS_EXECUTABLES_DIRECTORY "bin")
+    SET(CPACK_NSIS_HELP_LINK "http://www.maidsafe.net")
+    SET(CPACK_NSIS_URL_INFO_ABOUT "http://maidsafe.net/lifestuff.asp")
+    SET(CPACK_NSIS_CONTACT "support@maidsafe.net")
+    SET(CPACK_PACKAGE_RELOCATABLE ON)
+    SET(CPACK_NSIS_MENU_LINKS "http://maidsafe.net/lifestuff.asp" "About LifeStuff")
+  ENDIF()
+  SET(CPACK_STRIP_FILES ON)
+  SET(CPACK_PACKAGE_CONTACT "support@maidsafe.net")
+  SET(CPACK_PACKAGE_EXECUTABLES "ClientDemo" "LifeStuff Client")
+
+  INCLUDE(CPack) 

@@ -22,6 +22,7 @@
 #include "maidsafe/lifestuff/client/tests/demo/commands.h"
 
 #include <string>
+#include <iostream>  //NOLINT
 
 #include "boost/format.hpp"
 #include "boost/thread.hpp"
