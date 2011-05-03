@@ -466,6 +466,8 @@ ELSE() # Installing the library
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/sessionsingleton.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/storemanager.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/user_credentials_api.h)
+  SET(LIFESTUFF_CLIENT_FILESYSTEM_INSTALL_FILES
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/filesystem/distributed_filesystem.pb.h)         
   IF(MSVC)
     SET(LIFESTUFF_FUSE_INSTALL_FILES
           ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/fuse/windows/fswin.h)
@@ -488,6 +490,7 @@ ELSE() # Installing the library
   SET(EXPORT_NAME lifestuff_client)
   INSTALL(TARGETS LifeStufflsmclientlib LifeStuffsharedlib LifeStuffclientfilesystemlib LifeStufffuselib EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
   INSTALL(FILES ${LIFESTUFF_CLIENT_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff/client)
+  INSTALL(FILES ${LIFESTUFF_CLIENT_FILESYSTEM_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff/client/filesystem)
   INSTALL(FILES ${LIFESTUFF_FUSE_INSTALL_FILES} DESTINATION ${LIFESTUFF_FUSE_INSTALL_DIR})
   INSTALL(FILES ${LIFESTUFF_SHARED_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff/shared)
   INSTALL(EXPORT ${EXPORT_NAME} DESTINATION share/maidsafe)
