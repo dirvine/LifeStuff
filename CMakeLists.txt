@@ -355,6 +355,8 @@ TEST_SUMMARY_OUTPUT()
 ###################################################################################################
 # Install details                                                                                 #
 ###################################################################################################
+FINAL_MESSAGE()
+
 IF(PACKAGE_BUILD MATCHES "true")
   IF(CMAKE_BUILD_TYPE MATCHES "Release")
     SET(CPACK_PACKAGE_VENDOR "MaidSafe.net")
@@ -467,7 +469,8 @@ ELSE() # Installing the library
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/storemanager.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/user_credentials_api.h)
   SET(LIFESTUFF_CLIENT_FILESYSTEM_INSTALL_FILES
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/filesystem/distributed_filesystem.pb.h)         
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/filesystem/distributed_filesystem.pb.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/filesystem/sehandler.h)
   IF(MSVC)
     SET(LIFESTUFF_FUSE_INSTALL_FILES
           ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/fuse/windows/fswin.h)
