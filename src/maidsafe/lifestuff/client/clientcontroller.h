@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_CLIENT_CLIENTCONTROLLER_H_
-#define MAIDSAFE_CLIENT_CLIENTCONTROLLER_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_CLIENTCONTROLLER_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_CLIENTCONTROLLER_H_
 
 #include <list>
 #include <map>
@@ -127,10 +127,37 @@ struct VaultConfigParameters {
 
 class ClientController : public lifestuff::UserCredentials {
  public:
-  static ClientController* getInstance() {
-    boost::call_once(InitPtr, flag_);
-    return single_.get();
+  ClientController() : client_chunkstore_(),
+                       sm_(),
+                       auth_(),
+                       ss_(SessionSingleton::getInstance()),
+                       ser_da_(),
+                       ser_dm_(),
+                       db_enc_queue_(),
+                       seh_(),
+//                       instant_messages_(),
+                       received_messages_(),
+                       rec_msg_mutex_(),
+                       clear_messages_thread_(),
+                       client_store_(),
+                       initialised_(false),
+                       logging_out_(false),
+                       logged_in_(false),
+//                       imn_(),
+                       K_(0),
+                       upper_threshold_(0),
+                       to_seh_file_update_(),
+                       pending_files_(),
+                       pending_files_mutex_() {
+    Init(K_);  //  Todo prakash: is K_ needed in the API?
   }
+  ClientController &operator=(const ClientController&);
+  ClientController(const ClientController&);
+
+// static ClientController* getInstance() {
+//  boost::call_once(InitPtr, flag_);
+//  return single_.get();
+// }
   ~ClientController() {}
   int Init(boost::uint8_t k);
   // Close connection to kademlia/stub storage.  Currently with UDT, if
@@ -168,7 +195,8 @@ class ClientController : public lifestuff::UserCredentials {
 //  int HandleDeleteContactNotification(const std::string &sender);
 //  int HandleInstantMessage(
 //      const ValidatedBufferPacketMessage &vbpm);
-//  int HandleAddContactRequest(const ContactInfo &ci, const std::string &sender);
+//  int HandleAddContactRequest(const ContactInfo &ci,
+//                              const std::string &sender);
 //  int HandleAddContactResponse(const ContactInfo &ci,
 //                               const std::string &sender);
 //  int GetInstantMessages(std::list<InstantMessage> *messages);
@@ -287,31 +315,8 @@ class ClientController : public lifestuff::UserCredentials {
 
 
   // Functions
-  ClientController() : client_chunkstore_(),
-                       sm_(),
-                       auth_(),
-                       ss_(SessionSingleton::getInstance()),
-                       ser_da_(),
-                       ser_dm_(),
-                       db_enc_queue_(),
-                       seh_(),
-//                       instant_messages_(),
-                       received_messages_(),
-                       rec_msg_mutex_(),
-                       clear_messages_thread_(),
-                       client_store_(),
-                       initialised_(false),
-                       logging_out_(false),
-                       logged_in_(false),
-//                       imn_(),
-                       K_(0),
-                       upper_threshold_(0),
-                       to_seh_file_update_(),
-                       pending_files_(),
-                       pending_files_mutex_() {}
-  ClientController &operator=(const ClientController&);
-  ClientController(const ClientController&);
-  static void InitPtr() { single_.reset(new ClientController()); }
+
+//  static void InitPtr() { single_.reset(new ClientController()); }
   bool JoinKademlia();
   int BackupElement(const std::string &path, const DirType dir_type,
                     const std::string &msid);
@@ -370,12 +375,12 @@ class ClientController : public lifestuff::UserCredentials {
   bs2::connection to_seh_file_update_;
   std::multimap<std::string, int> pending_files_;
   boost::mutex pending_files_mutex_;
-  static boost::once_flag flag_;
-  static boost::scoped_ptr<ClientController> single_;
+//  static boost::once_flag flag_;
+//  static boost::scoped_ptr<ClientController> single_;
 };
 
 }  // namespace lifestuff
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_CLIENT_CLIENTCONTROLLER_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_CLIENTCONTROLLER_H_

@@ -1,0 +1,5 @@
+#!/bin/sh
+cp /opt/maidsafe/lifestuff/lifestuff_client.desktop /usr/share/applications
+ln -s /opt/maidsafe/lifestuff/ClientDemo /usr/bin/ClientDemo
+ 
+

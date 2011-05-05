@@ -66,7 +66,8 @@ class ClientControllerTest : public testing::Test {
  public:
   ClientControllerTest()
       :  // network_test_(),
-        cc_(ClientController::getInstance()),
+        //cc_(ClientController::getInstance()),
+        cc_(new ClientController()),
         ss_(SessionSingleton::getInstance()),
         sm_(/*network_test_.store_manager()*/),
         vcp_() {}
@@ -98,7 +99,7 @@ class ClientControllerTest : public testing::Test {
   }
 
 //  NetworkTest network_test_;
-  ClientController *cc_;
+  std::shared_ptr<ClientController> cc_;
   SessionSingleton *ss_;
   std::shared_ptr<StoreManagerInterface> sm_;
   VaultConfigParameters vcp_;
@@ -487,10 +488,11 @@ TEST_F(ClientControllerTest, FUNC_MAID_SaveSession) {
   printf("\n\n\nCleared the chunkstore\n\n\n");
   ss_->ResetSession();
   // Reset the client controller
-  ClientController::single_.reset();
-  boost::once_flag temp = BOOST_ONCE_INIT;
-  ClientController::flag_ = temp;
-  cc_ = ClientController::getInstance();
+  //ClientController::single_.reset();
+  //boost::once_flag temp = BOOST_ONCE_INIT;
+  //ClientController::flag_ = temp;
+  //cc_ = ClientController::getInstance();
+  cc_.reset(new ClientController());
 //  cc_->Init(network_test_.K());
   printf("\n\n\nReset the session\n\n\n");
 

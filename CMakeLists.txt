@@ -53,7 +53,6 @@ OPTION (BUILD_SHARED_LIBS "Build shared libraries." OFF)
 PROJECT(${PROJECT_NAME})
 SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_DIR} CACHE INTERNAL "Except for MSVC, the build type is set by running cmake from the appropriate build subdirectory e.g. for a Debug build, \"cd build/Linux/Debug && cmake ../../..\"." FORCE)
 
-
 ###################################################################################################
 # MaidSafe Common, DHT, Encrypt, Passport and PKI library search                                  #
 ###################################################################################################
@@ -85,18 +84,6 @@ ELSE()
     SET(ERROR_MESSAGE "${ERROR_MESSAGE}  Run\n${ERROR_MESSAGE_CMAKE_PATH} -DADD_LIBRARY_DIR=<Path to libfuse.a directory>")
     MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
   ENDIF()
-ENDIF()
-
-###################################################################################################
-# QT library search                                                                               #
-###################################################################################################
-# Including this file sets up environment with correct dirs / flags - no need to explicitly set
-# anything else other than linking to QT_LIBRARIES as appropriate.
-INCLUDE(maidsafe_find_qt4)
-IF(NOT WIN32)
-  # these are required for static builds
-  set(QT_ROOT_DIR "/usr/")
-  SET(QT_LIBRARIES ${QT_LIBRARIES} z Xext X11 xcb Xau Xdmcp)
 ENDIF()
 
 ###################################################################################################
@@ -157,70 +144,6 @@ SET(STYLE_FUSE ${ALL_FILES_FUSE_DIR})
 SOURCE_GROUP("fuse Source Files" FILES ${SOURCE_FILES_FUSE_DIR})
 SOURCE_GROUP("fuse Header Files" FILES ${HEADER_FILES_FUSE_DIR})
 
-FILE(GLOB SOURCE_FILES_LIFESTUFF_DIR "${SRC_MAIDSAFE}/qt_ui/*.cc")
-FILE(GLOB HEADER_FILES_LIFESTUFF_DIR "${SRC_MAIDSAFE}/qt_ui/*.h")
-FILE(GLOB SOURCE_FILES_LIFESTUFF_MOCK_IMPLEMENTATION_DIR "${SRC_MAIDSAFE}/qt_ui/mock_implementation/*.cc")
-FILE(GLOB HEADER_FILES_LIFESTUFF_MOCK_IMPLEMENTATION_DIR "${SRC_MAIDSAFE}/qt_ui/mock_implementation/*.h")
-
-QT4_WRAP_CPP(MOC_FILES_LIFESTUFF_DIR ${HEADER_FILES_LIFESTUFF_DIR})
-SOURCE_GROUP("lifestuff Source Files" FILES ${SOURCE_FILES_LIFESTUFF_DIR})
-SOURCE_GROUP("lifestuff Header Files" FILES ${HEADER_FILES_LIFESTUFF_DIR})
-SOURCE_GROUP("lifestuff MOC Files" FILES ${MOC_FILES_LIFESTUFF_DIR})
-SOURCE_GROUP("lifestuff Mock Implementation Source Files" FILES ${SOURCE_FILES_LIFESTUFF_MOCK_IMPLEMENTATION_DIR})
-SOURCE_GROUP("lifestuff Mock Implementation Header Files" FILES ${HEADER_FILES_LIFESTUFF_MOCK_IMPLEMENTATION_DIR})
-
-FILE(GLOB SOURCE_FILES_LIFESTUFF_CLIENT_DIR "${SRC_MAIDSAFE}/qt_ui/client/*.cc")
-FILE(GLOB HEADER_FILES_LIFESTUFF_CLIENT_DIR "${SRC_MAIDSAFE}/qt_ui/client/*.h")
-QT4_WRAP_CPP(MOC_FILES_LIFESTUFF_CLIENT_DIR ${HEADER_FILES_LIFESTUFF_CLIENT_DIR})
-SOURCE_GROUP("lifestuff client Source Files" FILES ${SOURCE_FILES_LIFESTUFF_CLIENT_DIR})
-SOURCE_GROUP("lifestuff client Header Files" FILES ${HEADER_FILES_LIFESTUFF_CLIENT_DIR})
-SOURCE_GROUP("lifestuff client MOC Files" FILES ${MOC_FILES_LIFESTUFF_CLIENT_DIR})
-
-FILE(GLOB SOURCE_FILES_LIFESTUFF_WIDGETS_DIR "${SRC_MAIDSAFE}/qt_ui/widgets/*.cc")
-FILE(GLOB HEADER_FILES_LIFESTUFF_WIDGETS_DIR "${SRC_MAIDSAFE}/qt_ui/widgets/*.h")
-SET(SOURCE_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR ${SOURCE_FILES_LIFESTUFF_WIDGETS_DIR})
-SET(HEADER_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR ${HEADER_FILES_LIFESTUFF_WIDGETS_DIR})
-LIST(REMOVE_ITEM SOURCE_FILES_LIFESTUFF_WIDGETS_DIR "${SRC_MAIDSAFE}/qt_ui/widgets/file_browser.cc")
-LIST(REMOVE_ITEM HEADER_FILES_LIFESTUFF_WIDGETS_DIR "${SRC_MAIDSAFE}/qt_ui/widgets/file_browser.h")
-QT4_WRAP_CPP(MOC_FILES_LIFESTUFF_WIDGETS_DIR ${HEADER_FILES_LIFESTUFF_WIDGETS_DIR})
-QT4_WRAP_CPP(MOC_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR ${HEADER_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR})
-SOURCE_GROUP("lifestuff widgets Source Files" FILES ${SOURCE_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR})
-SOURCE_GROUP("lifestuff widgets Header Files" FILES ${HEADER_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR})
-SOURCE_GROUP("lifestuff widgets MOC Files" FILES ${MOC_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR})
-
-FILE(GLOB QRC_FILES_LIFESTUFF_RESOURCES_DIR "${SRC_MAIDSAFE}/qt_ui/resources/*.qrc")
-QT4_ADD_RESOURCES(RESOURCE_FILES_LIFESTUFF_RESOURCES_DIR ${QRC_FILES_LIFESTUFF_RESOURCES_DIR})
-SOURCE_GROUP("lifestuff Resource Files" FILES ${RESOURCE_FILES_LIFESTUFF_RESOURCES_DIR})
-
-FILE(GLOB UI_FILES_LIFESTUFF_UI_DIR "${SRC_MAIDSAFE}/qt_ui/ui/*.ui")
-MAIDSAFE_QT4_WRAP_UI(UIC_FILES_LIFESTUFF_UI_DIR UI_FILES_LIFESTUFF_UI_DIR)
-SOURCE_GROUP("lifestuff UI Files" FILES ${UI_FILES_LIFESTUFF_UI_DIR})
-SOURCE_GROUP("lifestuff UI Compiled Files" FILES ${UIC_FILES_LIFESTUFF_UI_DIR})
-
-SET(ALL_LIFESTUFF_SOURCE_FILES
-      ${SOURCE_FILES_LIFESTUFF_DIR} ${MOC_FILES_LIFESTUFF_DIR}
-      ${SOURCE_FILES_LIFESTUFF_CLIENT_DIR} ${MOC_FILES_LIFESTUFF_CLIENT_DIR}
-      ${SOURCE_FILES_LIFESTUFF_WIDGETS_DIR} ${MOC_FILES_LIFESTUFF_WIDGETS_DIR}
-      ${RESOURCE_FILES_LIFESTUFF_RESOURCES_DIR} ${UI_FILES_LIFESTUFF_UI_DIR} ${UIC_FILES_LIFESTUFF_UI_DIR}
-      ${SOURCE_FILES_LIFESTUFF_MOCK_IMPLEMENTATION_DIR})
-SET(ALL_LIFESTUFF_HEADER_FILES
-      ${HEADER_FILES_LIFESTUFF_DIR}
-      ${HEADER_FILES_LIFESTUFF_CLIENT_DIR}
-      ${HEADER_FILES_LIFESTUFF_WIDGETS_DIR}
-      ${HEADER_FILES_LIFESTUFF_MOCK_IMPLEMENTATION_DIR})
-SET(ALL_LIFESTUFF_LIGHT_SOURCE_FILES
-      ${SOURCE_FILES_LIFESTUFF_DIR} ${MOC_FILES_LIFESTUFF_DIR}
-      ${SOURCE_FILES_LIFESTUFF_CLIENT_DIR} ${MOC_FILES_LIFESTUFF_CLIENT_DIR}
-      ${SOURCE_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR} ${MOC_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR}
-      ${RESOURCE_FILES_LIFESTUFF_RESOURCES_DIR} ${UI_FILES_LIFESTUFF_UI_DIR} ${UIC_FILES_LIFESTUFF_UI_DIR}
-      ${SOURCE_FILES_LIFESTUFF_MOCK_IMPLEMENTATION_DIR})
-SET(ALL_LIFESTUFF_LIGHT_HEADER_FILES
-      ${HEADER_FILES_LIFESTUFF_DIR}
-      ${HEADER_FILES_LIFESTUFF_CLIENT_DIR}
-      ${HEADER_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR}
-      ${HEADER_FILES_LIFESTUFF_MOCK_IMPLEMENTATION_DIR})
-
-
 ####    TESTS    ####
 FILE(GLOB ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/*.cc" "${SRC_MAIDSAFE}/client/tests/*.h")
 LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/client_main.cc")
@@ -238,28 +161,17 @@ SET(NETWORK_TEST_FILES
 #      "${SRC_MAIDSAFE}/sharedtest/networktest.cc"
 #      "${SRC_MAIDSAFE}/sharedtest/networktest.h"
 #      "${SRC_MAIDSAFE}/sharedtest/localvaults.h"
-      "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
+       "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
 
+FILE(GLOB ALL_FILES_CLIENT_DEMO_DIR "${SRC_MAIDSAFE}/client/tests/demo/*.cc"
+                                         "${SRC_MAIDSAFE}/client/tests/demo/*.h")
+									 
 ###################################################################################################
 # All Platforms:  Add exes and Create all LifeStuff libs                                          #
 ###################################################################################################
-IF(APPLE)
-  # ADD_EXECUTABLE(lifestuff MACOSX_BUNDLE ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
-  ADD_EXECUTABLE(lslocal MACOSX_BUNDLE ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
-  ADD_EXECUTABLE(lslightlocal MACOSX_BUNDLE ${ALL_LIFESTUFF_LIGHT_SOURCE_FILES} ${ALL_LIFESTUFF_LIGHT_HEADER_FILES})
-ELSEIF((UNIX AND NOT APPLE) OR MSVC)
-  # ADD_EXECUTABLE(lifestuff ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
-  ADD_EXECUTABLE(lslocal ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
-  ADD_EXECUTABLE(lslightlocal ${ALL_LIFESTUFF_LIGHT_SOURCE_FILES} ${ALL_LIFESTUFF_LIGHT_HEADER_FILES})
-ELSEIF(WIN32)
-  # ADD_EXECUTABLE(lifestuff WIN32 ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
-  ADD_EXECUTABLE(lslocal WIN32 ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
-  ADD_EXECUTABLE(lslightlocal WIN32 ${ALL_LIFESTUFF_LIGHT_SOURCE_FILES} ${ALL_LIFESTUFF_LIGHT_HEADER_FILES})
-ENDIF()
-IF(MSVC)
-  # SET_TARGET_PROPERTIES(lifestuff lslocal lslightlocal PROPERTIES WIN32_EXECUTABLE TRUE)
-  SET_TARGET_PROPERTIES(lslocal lslightlocal PROPERTIES WIN32_EXECUTABLE TRUE)
-ENDIF()
+
+ADD_EXECUTABLE(ClientDemo ${ALL_FILES_CLIENT_DEMO_DIR})
+
 
 SET(LOCAL_SYSTEM_TEST_TIMEOUT 1800)
 SET(NETWORK_SYSTEM_TEST_TIMEOUT 3600)
@@ -318,11 +230,8 @@ ADD_EXECUTABLE(TESTclientcontroller_local
 #                  "${SRC_MAIDSAFE}/client/tests/client_main.cc")
 
 # SET(ALL_EXECUTABLES lifestuff lslocal lslightlocal TESTshared TESTclientfilesystem TESTclientcontroller_local TESTfuse)
-SET(ALL_EXECUTABLES lslocal lslightlocal TESTclientfilesystem TESTclientcontroller_local TESTfuse)
-
-#RENAME_EXECUTABLE(lifestuff)
-RENAME_EXECUTABLE(lslocal)
-RENAME_EXECUTABLE(lslightlocal)
+SET(ALL_EXECUTABLES TESTclientfilesystem TESTclientcontroller_local TESTfuse ClientDemo)
+RENAME_EXECUTABLE(ClientDemo)
 #RENAME_EXECUTABLE(TESTshared)
 RENAME_EXECUTABLE(TESTclientfilesystem)
 #RENAME_EXECUTABLE(TESTclient)
@@ -332,7 +241,6 @@ RENAME_EXECUTABLE(TESTfuse)
 #RENAME_EXECUTABLE(TESTclientcontroller_net)
 RENAME_EXECUTABLE(TESTclientcontroller_local)
 #RENAME_EXECUTABLE(TESTimconnectionhandler_net)
-#RENAME_EXECUTABLE(DEMOclient)
 
 # ADD_LIBRARY(LifeStuffclientlib STATIC ${ALL_FILES_CLIENT_DIR})
 ADD_LIBRARY(LifeStufflsmclientlib STATIC ${ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR})
@@ -347,11 +255,7 @@ ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTclientfilesystem TESTfuse TESTcli
 TARGET_LINK_LIBRARIES(LifeStuffsharedlib passport_static boost_filesystem)
 TARGET_LINK_LIBRARIES(LifeStuffclientfilesystemlib LifeStuffsharedlib encrypt_static pki_static boost_date_time)
 TARGET_LINK_LIBRARIES(LifeStufflsmclientlib LifeStuffclientfilesystemlib ${QT_LIBRARIES} boost_regex)
-# TARGET_LINK_LIBRARIES(LifeStuffclientlib LifeStuffclientfilesystemlib ${QT_LIBRARIES} boost_regex)
 TARGET_LINK_LIBRARIES(LifeStufffuselib ${Fuse_LIBRARY} boost_system)
-# TARGET_LINK_LIBRARIES(lifestuff LifeStuffclientlib LifeStufffuselib ${QT_LIBRARIES})
-TARGET_LINK_LIBRARIES(lslocal LifeStufffuselib LifeStufflsmclientlib ${QT_LIBRARIES})
-TARGET_LINK_LIBRARIES(lslightlocal LifeStufflsmclientlib ${QT_LIBRARIES})
 # TARGET_LINK_LIBRARIES(TESTshared LifeStuffsharedlib boost_date_time gtest_static gmock_static)
 TARGET_LINK_LIBRARIES(TESTclientfilesystem LifeStufflsmclientlib gtest_static)
 # TARGET_LINK_LIBRARIES(TESTclient LifeStuffclientlib gtest_static gmock_static)
@@ -362,6 +266,7 @@ TARGET_LINK_LIBRARIES(TESTfuse LifeStufffuselib gtest_static)
 TARGET_LINK_LIBRARIES(TESTclientcontroller_local LifeStufflsmclientlib gtest_static)
 # TARGET_LINK_LIBRARIES(TESTimconnectionhandler_net LifeStuffclientlib gtest_static)
 # TARGET_LINK_LIBRARIES(DEMOclient LifeStuffclientlib)
+TARGET_LINK_LIBRARIES(ClientDemo LifeStuffclientfilesystemlib LifeStufflsmclientlib)
 
 ###################################################################################################
 # Builds                                                                                          #
@@ -374,22 +279,17 @@ SET_TARGET_PROPERTIES(LifeStufflsmclientlib PROPERTIES COMPILE_FLAGS -DLOCAL_Lif
 SET_TARGET_PROPERTIES(TESTclientcontroller_local PROPERTIES COMPILE_FLAGS -DLOCAL_LifeStuffVAULT)
 # SET_TARGET_PROPERTIES(TESTclientcontroller_net PROPERTIES COMPILE_FLAGS -DMS_NETWORK_TEST)
 # SET_TARGET_PROPERTIES(TESTimconnectionhandler_net PROPERTIES COMPILE_FLAGS -DMS_NETWORK_TEST)
-SET_TARGET_PROPERTIES(lslightlocal PROPERTIES COMPILE_FLAGS "-DLifeStuff_LIGHT -DLOCAL_LifeStuffVAULT")
 IF(APPLE)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLifeStuff_APPLE -DOSX -D__FreeBSD__=10 -D_FILE_OFFSET_BITS=64")
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -pg -fprofile-arcs -ftest-coverage")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DQT_NO_DEBUG_OUTPUT -DQT_NO_WARNING_OUTPUT -DQT_NO_DEBUG_STREAM -O2 -Wuninitialized")
   SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -pg -fprofile-arcs -ftest-coverage")
-  # SET_TARGET_PROPERTIES(lifestuff lslocal PROPERTIES COMPILE_FLAGS -DLOCAL_LifeStuffVAULT)
-  SET_TARGET_PROPERTIES(lslocal PROPERTIES COMPILE_FLAGS -DLOCAL_LifeStuffVAULT)
 ELSEIF(UNIX AND NOT APPLE)
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -DDEBUG -ggdb -pg -fprofile-arcs -ftest-coverage")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DQT_NO_DEBUG_OUTPUT -DQT_NO_WARNING_OUTPUT -DQT_NO_DEBUG_STREAM -O2 -Wuninitialized")
   # SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wall -DLifeStuff_LINUX -DLifeStuff_POSIX -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -Wredundant-decls -Wunused-function -Wunused-label -Wunused-parameter -Wunused-value -Wunused-variable -std=c++0x -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wall -DLifeStuff_LINUX -DLifeStuff_POSIX -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -Wredundant-decls -Wunused-function -Wunused-label -Wunused-parameter -Wunused-value -Wunused-variable -std=c++0x -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
   # put libs in here that will have no chance of passing tests - 3rd party ONLY !!
-  # SET_TARGET_PROPERTIES(lifestuff lslocal PROPERTIES COMPILE_FLAGS "-w -DLOCAL_LifeStuffVAULT")
-  SET_TARGET_PROPERTIES(lslocal PROPERTIES COMPILE_FLAGS "-w -DLOCAL_LifeStuffVAULT")
   SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -pg -fprofile-arcs -ftest-coverage")
   ADD_DEFINITIONS(-w)
 ELSEIF(WIN32)
@@ -420,8 +320,6 @@ ELSEIF(WIN32)
                               LINK_FLAGS_DEBUG "${LINKER_LIBS_DIRS_DEBUG}"
                               LINK_FLAGS_RELWITHDEBINFO "${LINKER_LIBS_DIRS_DEBUG}"
                               LINK_FLAGS_MINSIZEREL "${LINKER_LIBS_DIRS_DEBUG}")
-    # SET_TARGET_PROPERTIES(lifestuff lslocal PROPERTIES COMPILE_FLAGS "-DLOCAL_LifeStuffVAULT")
-    SET_TARGET_PROPERTIES(lslocal PROPERTIES COMPILE_FLAGS "-DLOCAL_LifeStuffVAULT")
   ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
     SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG") # -g -pg -fprofile-arcs -ftest-coverage")
@@ -429,8 +327,6 @@ ELSEIF(WIN32)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I c:/usr/include -D_FORTIFY_SOURCE=2 -D__MINGW__ -L c:/MinGW/lib/ -L c:/MinGW/mingw32/lib/ -static -mthreads -D_GLIBCXX_USE_WCHAR_T")
     # SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--enable-auto-import")
     # SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -pg -fprofile-arcs -ftest-coverage")
-    # SET_TARGET_PROPERTIES(lifestuff lslocal PROPERTIES COMPILE_FLAGS "-w -DLOCAL_LifeStuffVAULT")
-    SET_TARGET_PROPERTIES(lslocal PROPERTIES COMPILE_FLAGS "-w -DLOCAL_LifeStuffVAULT")
   ENDIF()
 ENDIF()
 
@@ -455,3 +351,152 @@ ADD_GTESTS(TESTclientfilesystem)
 ADD_GTESTS(TESTfuse)
 
 TEST_SUMMARY_OUTPUT()
+
+###################################################################################################
+# Install details                                                                                 #
+###################################################################################################
+FINAL_MESSAGE()
+
+IF(PACKAGE_BUILD MATCHES "true")
+  IF(CMAKE_BUILD_TYPE MATCHES "Release")
+    SET(CPACK_PACKAGE_VENDOR "MaidSafe.net")
+    SET(CPACK_PACKAGE_VERSION_MAJOR "0")
+    SET(CPACK_PACKAGE_VERSION_MINOR "1")
+    SET(CPACK_PACKAGE_VERSION_PATCH "0")
+    SET(CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})
+    SET(CPACK_PACKAGE_CONTACT "support@maidsafe.net")
+    SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY " LifeStuff Client")
+    SET(CPACK_RESOURCE_FILE_README "${PROJECT_SOURCE_DIR}/README")
+    SET(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/licence.txt")
+    SET(CPACK_PACKAGE_EXECUTABLES "ClientDemo", "Life Stuff Client")
+    SET(CPACK_STRIP_FILES "true")
+    IF(UNIX)
+      # Linux requires lower case package names
+      SET(CPACK_PACKAGE_NAME "lifestuff_client")
+      SET(CMAKE_INSTALL_PREFIX /opt/maidsafe/lifestuff)
+      SET(CPACK_TOPLEVEL_TAG ${CMAKE_INSTALL_PREFIX})
+      SET(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+      INSTALL(TARGETS ClientDemo RUNTIME DESTINATION .)
+      INSTALL(FILES ${PROJECT_SOURCE_DIR}/installer/linux/scripts/lifestuff_client.desktop DESTINATION .)
+      INSTALL(FILES ${PROJECT_SOURCE_DIR}/installer/common/icons/WinLinux/installer.ico DESTINATION .)   
+      EXECUTE_PROCESS(
+        COMMAND /usr/bin/dpkg --print-architecture
+        OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE
+        RESULT_VARIABLE EXECUTE_RESULT
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET)
+      IF(EXECUTE_RESULT)
+        MESSAGE(STATUS "Unable to determine current dpkg architecture: ${EXECUTE_RESULT} - will try RPM")
+        SET(CPACK_RPM_POST_INSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/installer/linux/scripts/postinst)
+        SET(CPACK_RPM_PRE_UNINSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/installer/linux/scripts/prerm)
+        SET(CPACK_GENERATOR RPM;TGZ)
+      ELSE()
+        MESSAGE("Debian package architecture: ${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
+        SET(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${PROJECT_SOURCE_DIR}/installer/linux/scripts/postinst;${PROJECT_SOURCE_DIR}/installer/linux/scripts/prerm") # postinstall and before remove
+        SET(CPACK_DEBIAN_PACKAGE_SECTION "Network")
+        SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
+        SET(CPACK_GENERATOR DEB;TGZ)
+      ENDIF()
+      #MESSAGE("Package install directory is set to \"${CPACK_PACKAGE_INSTALL_DIRECTORY}\"")
+      MESSAGE("================================================================================")
+    ELSEIF(WIN32)
+      INSTALL(TARGETS ClientDemo RUNTIME DESTINATION bin)	 
+      SET(CPACK_PACKAGE_NAME "LifeStuffClient")
+      INSTALL(DIRECTORY ${PROJECT_SOURCE_DIR}/installer/windows/cbfs DESTINATION drivers)
+      SET(CPACK_PACKAGE_INSTALL_DIRECTORY "LifeStuff")
+      SET(CPACK_GENERATOR "NSIS")
+      SET(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "LifeStuff ${CPACK_PACKAGE_VERSION}")
+      SET(CPACK_NSIS_MUI_ICON "${PROJECT_SOURCE_DIR}/installer/common/icons/WinLinux/installer.ico")
+      SET(CPACK_NSIS_MUI_UNIICON "${PROJECT_SOURCE_DIR}/installer/common/icons/WinLinux/uninstaller.ico")
+      SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
+#           LogSet on
+            SetShellVarContext all
+            IfFileExists \\\"$SYSDIR\\\\drivers\\\\cbfs3.sys\\\"  upgrade 0
+            CreateDirectory  \\\"$APPDATA\\\\LifeStuff\\\"
+            Goto finish
+            upgrade:
+            !include Library.nsh
+            Var /GLOBAL installer_dll
+            Var /GLOBAL cab_file_name
+            Var /GLOBAL product_name
+            Var /GLOBAL support_pnp
+            Var /GLOBAL modules_to_install
+            Var /GLOBAL reboot_needed
+            StrCpy $installer_dll \\\"drivers\\\\cbfs\\\\32bit\\\\cbfsinst.dll\\\"
+            StrCpy $cab_file_name \\\"drivers\\\\cbfs\\\\cbfs.cab\\\"
+            StrCpy $product_name \\\"713CC6CE-B3E2-4fd9-838D-E28F558F6866\\\"
+            StrCpy $support_pnp \\\"1\\\"
+            StrCpy $modules_to_install \\\"0x1 | 0x00010000 | 0x00020000\\\"
+            StrCpy $reboot_needed \\\"0\\\"
+            System::Call '$installer_dll::InstallA($cab_file_name, $product_name, $support_pnp, $modules_to_install, $reboot_needed)'
+            IntCmp $0 0 done reboot_needed_is_true reboot_needed_is_true
+            reboot_needed_is_true:
+            SetRebootFlag true
+            Goto done
+            done:
+            Pop $0
+            finish:
+        ")
+      SET(CPACK_NSIS_MODIFY_PATH ON)
+      SET(CPACK_NSIS_DISPLAY_NAME "LifeStuff Client")
+      SET(CPACK_NSIS_PACKAGE_NAME "LifeStuff Client")
+      SET(CPACK_NSIS_INSTALLED_ICON_NAME "bin\\\\ClientDemo.exe")
+      SET(CPACK_NSIS_EXECUTABLES_DIRECTORY "bin")
+      SET(CPACK_NSIS_HELP_LINK "http://www.maidsafe.net")
+      SET(CPACK_NSIS_URL_INFO_ABOUT "http://maidsafe.net/lifestuff.asp")
+      SET(CPACK_NSIS_CONTACT "support@maidsafe.net")
+      SET(CPACK_PACKAGE_RELOCATABLE ON)
+      SET(CPACK_NSIS_MENU_LINKS "http://maidsafe.net/lifestuff.asp" "About LifeStuff")
+    ENDIF()
+    SET(CPACK_STRIP_FILES ON)
+    SET(CPACK_PACKAGE_CONTACT "support@maidsafe.net")
+    SET(CPACK_PACKAGE_EXECUTABLES "ClientDemo" "LifeStuff Client")
+    INCLUDE(CPack)
+  ENDIF()
+
+ELSE() # Installing the library
+  SET(LIFESTUFF_CLIENT_INSTALL_FILES
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/authentication.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/clientcontroller.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/clientinterface.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/clientutils.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/contacts.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/imconnectionhandler.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/imhandler.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/localstoremanager.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/privateshares.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/sessionsingleton.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/storemanager.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/user_credentials_api.h)
+  SET(LIFESTUFF_CLIENT_FILESYSTEM_INSTALL_FILES
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/filesystem/distributed_filesystem.pb.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/filesystem/sehandler.h)
+  IF(MSVC)
+    SET(LIFESTUFF_FUSE_INSTALL_FILES
+          ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/fuse/windows/fswin.h)
+    SET(LIFESTUFF_FUSE_INSTALL_DIR include/maidsafe/lifestuff/fuse/windows)
+  ELSE()
+    SET(LIFESTUFF_FUSE_INSTALL_FILES
+          ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/fuse/linux/fslinux.h
+          ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/fuse/linux/fusecpp.h)
+    SET(LIFESTUFF_FUSE_INSTALL_DIR include/maidsafe/lifestuff/fuse/linux)
+  ENDIF()
+  SET(LIFESTUFF_SHARED_INSTALL_FILES
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/config.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/cppsqlite3.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/filesystem.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/maidsafe.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/returncodes.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/sqlite3.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/version.h)
+
+  SET(EXPORT_NAME lifestuff_client)
+  INSTALL(TARGETS LifeStufflsmclientlib LifeStuffsharedlib LifeStuffclientfilesystemlib LifeStufffuselib EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
+  INSTALL(FILES ${LIFESTUFF_CLIENT_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff/client)
+  INSTALL(FILES ${LIFESTUFF_CLIENT_FILESYSTEM_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff/client/filesystem)
+  INSTALL(FILES ${LIFESTUFF_FUSE_INSTALL_FILES} DESTINATION ${LIFESTUFF_FUSE_INSTALL_DIR})
+  INSTALL(FILES ${LIFESTUFF_SHARED_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff/shared)
+  INSTALL(EXPORT ${EXPORT_NAME} DESTINATION share/maidsafe)
+  ADD_VERSION_INFO_TO_INSTALLED_FILE()
+ENDIF()
+UNSET(PACKAGE_BUILD CACHE)
