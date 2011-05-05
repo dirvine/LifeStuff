@@ -331,11 +331,11 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
   ClientUtils client_utils;
   client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
       &key_id, &public_key, &public_key_signature, &private_key);
-  pki::MaidsafeValidator msv;
-  if (!msv.ValidateSignerId(key_id, public_key, public_key_signature)) {
-    ExecReturnCodeCallback(cb, kDeletePacketFailure);
-    return;
-  }
+//  pki::MaidsafeValidator msv;
+//  if (!msv.ValidateSignerId(key_id, public_key, public_key_signature)) {
+//    ExecReturnCodeCallback(cb, kDeletePacketFailure);
+//    return;
+//  }
 
   std::vector<std::string> vals(values);
   bool empty(true);
@@ -468,11 +468,11 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
   ClientUtils client_utils;
   client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
       &key_id, &public_key, &public_key_signature, &private_key);
-  pki::MaidsafeValidator msv;
-  if (!msv.ValidateSignerId(key_id, public_key, public_key_signature)) {
-    ExecReturnCodeCallback(cb, kSendPacketFailure);
-    return;
-  }
+//  pki::MaidsafeValidator msv;
+//  if (!msv.ValidateSignerId(key_id, public_key, public_key_signature)) {
+//    ExecReturnCodeCallback(cb, kSendPacketFailure);
+//    return;
+//  }
 
   std::string ser_gp;
   CreateSerialisedSignedValue(value, private_key, &ser_gp);
@@ -569,14 +569,14 @@ void LocalStoreManager::UpdatePacket(const std::string &packet_name,
   ClientUtils client_utils;
   client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
       &key_id, &public_key, &public_key_signature, &private_key);
-  pki::MaidsafeValidator msv;
-  if (!msv.ValidateSignerId(key_id, public_key, public_key_signature)) {
-    ExecReturnCodeCallback(cb, kUpdatePacketFailure);
-#ifdef DEBUG
-    printf("LSM::UpdatePacket - Signing key doesn't validate.\n");
-#endif
-    return;
-  }
+//  pki::MaidsafeValidator msv;
+//  if (!msv.ValidateSignerId(key_id, public_key, public_key_signature)) {
+//    ExecReturnCodeCallback(cb, kUpdatePacketFailure);
+//#ifdef DEBUG
+//    printf("LSM::UpdatePacket - Signing key doesn't validate.\n");
+//#endif
+//    return;
+//  }
 
   std::string old_ser_gp;
   CreateSerialisedSignedValue(old_value, private_key, &old_ser_gp);
