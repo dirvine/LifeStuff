@@ -24,6 +24,7 @@
 #include "maidsafe/lifestuff/client/authentication.h"
 #include "boost/regex.hpp"
 #include "maidsafe/common/crypto.h"
+#include "maidsafe/lifestuff/client/lifestuff_messages.pb.h"
 #include "maidsafe/lifestuff/client/sessionsingleton.h"
 #include "maidsafe/lifestuff/client/storemanager.h"
 
@@ -66,8 +67,8 @@ void Authentication::Init(std::shared_ptr<StoreManagerInterface> sm) {
 int Authentication::GetUserInfo(const std::string &username,
                                 const std::string &pin) {
   std::string mid_name, smid_name;
-  int result =
-      passport_->SetInitialDetails(username, pin, &mid_name, &smid_name);
+  int result = passport_->SetInitialDetails(username, pin, &mid_name,
+                                            &smid_name);
 
   if (result != kSuccess) {
     tmid_op_status_ = kFailed;
@@ -165,13 +166,13 @@ void Authentication::GetMidTmidCallback(const std::vector<std::string> &values,
 #endif
 
   int result(kSuccess);
-//  GenericPacket packet;
-//  if (!packet.ParseFromString(values.at(0)) || packet.data().empty())
+  GenericPacket packet;
+  if (!packet.ParseFromString(values.at(0)) || packet.data().empty())
     result = kBadPacket;
   if (op_status == kPendingMid) {
     std::string tmid_name;
-//    if (result == kSuccess)
-//      result = passport_->InitialiseTmid(surrogate, packet.data(), &tmid_name);
+    if (result == kSuccess)
+      result = passport_->InitialiseTmid(surrogate, packet.data(), &tmid_name);
     if (result != kSuccess) {
 #ifdef DEBUG
       printf("Authentication::GetMidTmidCallback - error %i.\n", result);
@@ -1180,10 +1181,10 @@ int Authentication::PublicUsernamePublicKey(const std::string &public_username,
   int result = store_manager_->LoadPacket(packet_name, &packet_content);
   if (result != kSuccess || packet_content.empty())
     return kUserDoesntExist;
-//  GenericPacket packet;
-//  if (!packet.ParseFromString(packet_content.at(0)) || !public_key)
-//    return kAuthenticationError;
-//  *public_key = packet.data();
+  GenericPacket packet;
+  if (!packet.ParseFromString(packet_content.at(0)) || !public_key)
+    return kAuthenticationError;
+  *public_key = packet.data();
   return kSuccess;
 }
 
@@ -1382,7 +1383,6 @@ char *Authentication::UtilsTrimLeft(char *szSource) {
 std::string Authentication::UtilsTrim(std::string source) {
   return UtilsTrimLeft(UtilsTrimRight(UtilsTrimLeft(&source.at(0))));
 }
-
 
 }  // namespace lifestuff
 

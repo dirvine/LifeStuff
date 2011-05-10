@@ -149,6 +149,8 @@ FILE(GLOB ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/*.cc" "${SRC_
 LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/client_main.cc")
 LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/testclientcontroller.cc")
 LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/testimmessaging.cc")
+LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/testmaidstoremanager.cc")
+LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/teststoremanagertaskshandler.cc")
 
 FILE(GLOB ALL_FILES_CLIENT_FILESYSTEM_TESTS_DIR "${SRC_MAIDSAFE}/client/filesystem/tests/*.cc" "${SRC_MAIDSAFE}/client/filesystem/tests/*.h")
 
@@ -165,7 +167,7 @@ SET(NETWORK_TEST_FILES
 
 FILE(GLOB ALL_FILES_CLIENT_DEMO_DIR "${SRC_MAIDSAFE}/client/tests/demo/*.cc"
                                          "${SRC_MAIDSAFE}/client/tests/demo/*.h")
-									 
+
 ###################################################################################################
 # All Platforms:  Add exes and Create all LifeStuff libs                                          #
 ###################################################################################################
@@ -191,22 +193,22 @@ ADD_EXECUTABLE(TESTclientfilesystem
                  "${SRC_MAIDSAFE}/sharedtest/cachepassport.h"
                  "${SRC_MAIDSAFE}/sharedtest/testcallback.h"
                  "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
-# ADD_EXECUTABLE(TESTclient
-#                  ${ALL_FILES_CLIENT_TESTS_DIR}
-#                  ${NETWORK_TEST_FILES}
-#                  "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
-#                  "${SRC_MAIDSAFE}/sharedtest/cachepassport.h"
+ADD_EXECUTABLE(TESTclient
+                  ${ALL_FILES_CLIENT_TESTS_DIR}
+                  ${NETWORK_TEST_FILES}
+                  "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
+                  "${SRC_MAIDSAFE}/sharedtest/cachepassport.h"
 #                  "${SRC_MAIDSAFE}/sharedtest/mockkadops.cc"
 #                  "${SRC_MAIDSAFE}/sharedtest/mockkadops.h"
-#                  "${SRC_MAIDSAFE}/sharedtest/mocksessionsingleton.h"
+                  "${SRC_MAIDSAFE}/sharedtest/mocksessionsingleton.h")
 #                  "${SRC_MAIDSAFE}/sharedtest/threadpool.cc"
 #                  "${SRC_MAIDSAFE}/sharedtest/threadpool.h" )
 
 ADD_EXECUTABLE(TESTfuse EXCLUDE_FROM_ALL
                  ${ALL_FILES_FUSE_TESTS_DIR})
-# ADD_EXECUTABLE(TESTauthentication_net
-#                  ${NETWORK_TEST_FILES}
-#                  "${SRC_MAIDSAFE}/client/tests/testauthentication.cc")
+ADD_EXECUTABLE(TESTauthentication_net
+                 ${NETWORK_TEST_FILES}
+                 "${SRC_MAIDSAFE}/client/tests/testauthentication.cc")
 # ADD_EXECUTABLE(TESTbufferpackethandler_net
 #                  ${NETWORK_TEST_FILES}
 #                  "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
@@ -230,13 +232,13 @@ ADD_EXECUTABLE(TESTclientcontroller_local
 #                  "${SRC_MAIDSAFE}/client/tests/client_main.cc")
 
 # SET(ALL_EXECUTABLES lifestuff lslocal lslightlocal TESTshared TESTclientfilesystem TESTclientcontroller_local TESTfuse)
-SET(ALL_EXECUTABLES TESTclientfilesystem TESTclientcontroller_local TESTfuse ClientDemo)
+SET(ALL_EXECUTABLES TESTclient TESTauthentication_net TESTclientfilesystem TESTclientcontroller_local TESTfuse ClientDemo)
 RENAME_EXECUTABLE(ClientDemo)
 #RENAME_EXECUTABLE(TESTshared)
 RENAME_EXECUTABLE(TESTclientfilesystem)
-#RENAME_EXECUTABLE(TESTclient)
+RENAME_EXECUTABLE(TESTclient)
 RENAME_EXECUTABLE(TESTfuse)
-#RENAME_EXECUTABLE(TESTauthentication_net)
+RENAME_EXECUTABLE(TESTauthentication_net)
 #RENAME_EXECUTABLE(TESTbufferpackethandler_net)
 #RENAME_EXECUTABLE(TESTclientcontroller_net)
 RENAME_EXECUTABLE(TESTclientcontroller_local)
@@ -250,7 +252,7 @@ ADD_LIBRARY(LifeStufffuselib STATIC ${ALL_FILES_FUSE_DIR})
 
 # ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTencrypt TESTshared
 #                   TESTclientfilesystem TESTclient TESTfuse TESTclientcontroller_local DEMOclient)
-ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTclientfilesystem TESTfuse TESTclientcontroller_local)
+ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTclientfilesystem TESTfuse TESTclientcontroller_local TESTclient TESTauthentication_net)
 
 TARGET_LINK_LIBRARIES(LifeStuffsharedlib passport_static boost_filesystem)
 TARGET_LINK_LIBRARIES(LifeStuffclientfilesystemlib LifeStuffsharedlib encrypt_static pki_static boost_date_time)
@@ -258,9 +260,9 @@ TARGET_LINK_LIBRARIES(LifeStufflsmclientlib LifeStuffclientfilesystemlib ${QT_LI
 TARGET_LINK_LIBRARIES(LifeStufffuselib ${Fuse_LIBRARY} boost_system)
 # TARGET_LINK_LIBRARIES(TESTshared LifeStuffsharedlib boost_date_time gtest_static gmock_static)
 TARGET_LINK_LIBRARIES(TESTclientfilesystem LifeStufflsmclientlib gtest_static)
-# TARGET_LINK_LIBRARIES(TESTclient LifeStuffclientlib gtest_static gmock_static)
+TARGET_LINK_LIBRARIES(TESTclient LifeStufflsmclientlib gtest_static gmock_static)
 TARGET_LINK_LIBRARIES(TESTfuse LifeStufffuselib gtest_static)
-# TARGET_LINK_LIBRARIES(TESTauthentication_net LifeStuffclientlib gtest_static)
+TARGET_LINK_LIBRARIES(TESTauthentication_net LifeStufflsmclientlib gtest_static)
 # TARGET_LINK_LIBRARIES(TESTbufferpackethandler_net LifeStuffclientlib gtest_static)
 # TARGET_LINK_LIBRARIES(TESTclientcontroller_net LifeStuffclientlib gtest_static)
 TARGET_LINK_LIBRARIES(TESTclientcontroller_local LifeStufflsmclientlib gtest_static)
@@ -345,7 +347,7 @@ IF(PYTHONINTERP_FOUND)
   SET_PROPERTY(TEST STYLE_CHECK PROPERTY LABELS Functional CodingStyle)
 ENDIF()
 
-#ADD_GTESTS(TESTclient)
+ADD_GTESTS(TESTclient)
 ADD_GTESTS(TESTclientfilesystem)
 #ADD_GTESTS(TESTshared)
 ADD_GTESTS(TESTfuse)

@@ -58,6 +58,7 @@ class LocalStoreManager : public StoreManagerInterface {
   LocalStoreManager(std::shared_ptr<ChunkStore> client_chunkstore,
                     const boost::uint8_t &k,
                     const fs3::path &db_directory);
+  LocalStoreManager(const fs3::path &db_directory);
   virtual ~LocalStoreManager();
   virtual void Init(VoidFuncOneInt callback, const boost::uint16_t &port);
   virtual void SetPmid(const std::string &/*pmid_name*/) {}

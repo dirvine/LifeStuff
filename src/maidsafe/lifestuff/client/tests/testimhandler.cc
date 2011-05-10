@@ -23,15 +23,15 @@
 */
 
 #include "gtest/gtest.h"
-#include "maidsafe/common/commonutils.h"
-#include "maidsafe/common/maidsafe.h"
-#include "maidsafe/client/imhandler.h"
-#include "maidsafe/client/sessionsingleton.h"
-#include "maidsafe/sharedtest/cached_keys.h"
-#include "maidsafe/sharedtest/cachepassport.h"
-#include "maidsafe/sharedtest/mocksessionsingleton.h"
+#include "maidsafe/common/utils.h"
+#include "maidsafe/lifestuff/shared/maidsafe.h"
+#include "maidsafe/lifestuff/client/imhandler.h"
+#include "maidsafe/lifestuff/client/sessionsingleton.h"
+#include "maidsafe/lifestuff/sharedtest/cached_keys.h"
+#include "maidsafe/lifestuff/sharedtest/cachepassport.h"
+#include "maidsafe/lifestuff/sharedtest/mocksessionsingleton.h"
 
-
+/*
 namespace maidsafe {
 
 namespace lifestuff {
@@ -256,3 +256,4 @@ TEST_F(MultiImHandlerTest, FUNC_MAID_Create_ValidateMsg) {
 }  // namespace lifestuff
 
 }  // namespace maidsafe
+*/

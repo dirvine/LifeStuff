@@ -23,9 +23,9 @@
 */
 
 #include "gtest/gtest.h"
-#include "maidsafe/common/commonutils.h"
-#include "maidsafe/client/sessionsingleton.h"
-#include "maidsafe/sharedtest/cachepassport.h"
+#include "maidsafe/common/utils.h"
+#include "maidsafe/lifestuff/client/sessionsingleton.h"
+#include "maidsafe/lifestuff/sharedtest/cachepassport.h"
 
 namespace maidsafe {
 
@@ -182,7 +182,8 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionName) {
 
   std::string username("user1");
   std::string pin("1234");
-  std::string session_name = base::EncodeToHex(SHA1String(pin + username));
+  std::string session_name = EncodeToHex(crypto::Hash<crypto::SHA1>(pin +
+                                                                    username));
 
   // Set the session values
   ASSERT_TRUE(ss_->SetUsername(username));
@@ -200,12 +201,12 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionName) {
 TEST_F(SessionSingletonTest, BEH_MAID_SessionContactsIO) {
   // Add contacts to the session
   for (int n = 0; n < 10; n++) {
-    ASSERT_EQ(0, ss_->AddContact("pub_name_" + base::IntToString(n),
-              "pub_key_" + base::IntToString(n),
-              "full_name_" + base::IntToString(n),
-              "office_phone_" + base::IntToString(n),
-              "birthday_" + base::IntToString(n),
-              'M', n, n, "city_" + base::IntToString(n), 'C', 0, 0));
+    ASSERT_EQ(0, ss_->AddContact("pub_name_" + IntToString(n),
+              "pub_key_" + IntToString(n),
+              "full_name_" + IntToString(n),
+              "office_phone_" + IntToString(n),
+              "birthday_" + IntToString(n),
+              'M', n, n, "city_" + IntToString(n), 'C', 0, 0));
   }
 
   // Check contacts are in session
@@ -272,18 +273,18 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionPrivateSharesIO) {
   for (int n = 0; n < 10; n++) {
     // Attributes
     std::vector<std::string> atts;
-    atts.push_back("NAME_" + base::IntToString(n));
-    atts.push_back("MSID_" + base::IntToString(n));
-    atts.push_back("MSID_PUB_KEY_" + base::IntToString(n));
-    atts.push_back("MSID_PRI_KEY_" + base::IntToString(n));
+    atts.push_back("NAME_" + IntToString(n));
+    atts.push_back("MSID_" + IntToString(n));
+    atts.push_back("MSID_PUB_KEY_" + IntToString(n));
+    atts.push_back("MSID_PRI_KEY_" + IntToString(n));
 
     // Participants
-    std::list<maidsafe::ShareParticipants> cp;
+    std::list<ShareParticipants> cp;
     for (int a = 0; a <= n; a++) {
-      maidsafe::ShareParticipants sps;
-      sps.id = "PUB_NAME_" + base::IntToString(n) + "_" + base::IntToString(a);
-      sps.public_key = "PUB_NAME_PUB_KEY_" + base::IntToString(n) +
-                       "_" + base::IntToString(a);
+      ShareParticipants sps;
+      sps.id = "PUB_NAME_" + IntToString(n) + "_" + IntToString(a);
+      sps.public_key = "PUB_NAME_PUB_KEY_" + IntToString(n) +
+                       "_" + IntToString(a);
       sps.role = 'C';
       cp.push_back(sps);
     }
@@ -368,32 +369,32 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionPrivateSharesIO) {
 
 TEST_F(SessionSingletonTest, BEH_MAID_PubUsernameList) {
   for (size_t n = 0; n < 10; n++) {
-    ASSERT_EQ(0, ss_->AddContact("pub_name_" + base::IntToString(n),
-              "pub_key_" + base::IntToString(n),
-              "full_name_" + base::IntToString(n),
-              "office_phone_" + base::IntToString(n),
-              "birthday_" + base::IntToString(n),
-              'M', n, n, "city_" + base::IntToString(n), 'C', 0, 0));
+    ASSERT_EQ(0, ss_->AddContact("pub_name_" + IntToString(n),
+              "pub_key_" + IntToString(n),
+              "full_name_" + IntToString(n),
+              "office_phone_" + IntToString(n),
+              "birthday_" + IntToString(n),
+              'M', n, n, "city_" + IntToString(n), 'C', 0, 0));
   }
   std::vector<std::string> publicusernames;
   ASSERT_EQ(0, ss_->GetPublicUsernameList(&publicusernames));
   ASSERT_EQ(size_t(10), publicusernames.size());
   for (size_t a = 0; a < publicusernames.size(); ++a)
-    ASSERT_EQ("pub_name_" + base::IntToString(a), publicusernames[a]);
+    ASSERT_EQ("pub_name_" + IntToString(a), publicusernames[a]);
 }
 
 TEST_F(SessionSingletonTest, BEH_MAID_ContactPublicKey) {
   for (size_t n = 0; n < 10; n++) {
-    ASSERT_EQ(0, ss_->AddContact("pub_name_" + base::IntToString(n),
-              "pub_key_" + base::IntToString(n),
-              "full_name_" + base::IntToString(n),
-              "office_phone_" + base::IntToString(n),
-              "birthday_" + base::IntToString(n),
-              'M', n, n, "city_" + base::IntToString(n), 'C', 0, 0));
+    ASSERT_EQ(0, ss_->AddContact("pub_name_" + IntToString(n),
+              "pub_key_" + IntToString(n),
+              "full_name_" + IntToString(n),
+              "office_phone_" + IntToString(n),
+              "birthday_" + IntToString(n),
+              'M', n, n, "city_" + IntToString(n), 'C', 0, 0));
   }
   for (size_t a = 0; a < 10; ++a)
-    ASSERT_EQ("pub_key_" + base::IntToString(a),
-              ss_->GetContactPublicKey("pub_name_" + base::IntToString(a)));
+    ASSERT_EQ("pub_key_" + IntToString(a),
+              ss_->GetContactPublicKey("pub_name_" + IntToString(a)));
 }
 
 TEST_F(SessionSingletonTest, BEH_MAID_Conversations) {
@@ -420,11 +421,11 @@ TEST_F(SessionSingletonTest, BEH_MAID_Conversations) {
   ASSERT_EQ(size_t(0), conv.size());
 
   for (int n = 0; n < 10; ++n)
-    ASSERT_EQ(0, ss_->AddConversation(base::IntToString(n)));
+    ASSERT_EQ(0, ss_->AddConversation(IntToString(n)));
   ASSERT_EQ(0, ss_->ConversationList(&conv));
   ASSERT_EQ(size_t(10), conv.size());
 
-  std::string remove = base::IntToString(base::RandomUint32() % 10);
+  std::string remove = IntToString(RandomUint32() % 10);
   ASSERT_EQ(0, ss_->RemoveConversation(remove));
   ASSERT_EQ(0, ss_->ConversationList(&conv));
   ASSERT_EQ(size_t(9), conv.size());
@@ -436,20 +437,20 @@ TEST_F(SessionSingletonTest, BEH_MAID_Conversations) {
   }
   for (int y = 0; y < 10; ++y)
     ASSERT_EQ(kNonExistentConversation,
-              ss_->ConversationExits(base::IntToString(y)));
+              ss_->ConversationExits(IntToString(y)));
 
   for (int e = 0; e < 10; ++e)
-    ASSERT_EQ(0, ss_->AddConversation(base::IntToString(e)));
+    ASSERT_EQ(0, ss_->AddConversation(IntToString(e)));
   ASSERT_EQ(0, ss_->ConversationList(&conv));
   ASSERT_EQ(size_t(10), conv.size());
   ss_->ClearConversations();
   for (int l = 0; l < 10; ++l)
     ASSERT_EQ(kNonExistentConversation,
-              ss_->ConversationExits(base::IntToString(l)));
+              ss_->ConversationExits(IntToString(l)));
   ASSERT_EQ(0, ss_->ConversationList(&conv));
   ASSERT_EQ(size_t(0), conv.size());
 }
-
+/*
 TEST_F(SessionSingletonTest, BEH_MAID_LiveContacts) {
   // Verify LiveContacts are empty after reset
   std::list<std::string> contacts;
@@ -492,7 +493,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_LiveContacts) {
   std::string contact_a("ava");
   end_points.Clear();
   for (int n = 0; n < 3; ++n) {
-    end_points.add_ip("192.168.1." + base::IntToString(n));
+    end_points.add_ip("192.168.1." + IntToString(n));
     end_points.add_port(64000 + n);
   }
   ASSERT_EQ(0, ss_->AddLiveContact(contact_a, end_points, 7));
@@ -527,7 +528,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_LiveContacts) {
             &connection_id, &status, &timestamp));
   ASSERT_EQ(boost::uint32_t(2), transport_id);
   ASSERT_EQ(boost::uint32_t(23456), connection_id);
-  boost::uint32_t now = base::GetEpochTime();
+  boost::uint32_t now = GetEpochTime();
   ASSERT_TRUE(timestamp <= now && timestamp > now - 2);
 
   // Modifying details of added contact
@@ -535,10 +536,10 @@ TEST_F(SessionSingletonTest, BEH_MAID_LiveContacts) {
   ASSERT_EQ(0, ss_->ModifyConnectionId(contact_a, 33333));
   inserted_eps.Clear();
   for (int n = 0; n < 3; ++n) {
-    inserted_eps.add_ip("172.22.18." + base::IntToString(n));
+    inserted_eps.add_ip("172.22.18." + IntToString(n));
     inserted_eps.add_port(22700 + n);
     ASSERT_EQ(0, ss_->ModifyEndPoint(contact_a,
-                                     "172.22.18." + base::IntToString(n),
+                                     "172.22.18." + IntToString(n),
                                      22700 + n, n));
   }
   ASSERT_EQ(0, ss_->ModifyStatus(contact_a, 2));
@@ -551,7 +552,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_LiveContacts) {
   ASSERT_EQ(boost::uint32_t(3), transport_id);
   ASSERT_EQ(boost::uint32_t(33333), connection_id);
   ASSERT_EQ(2, status);
-  now = base::GetEpochTime();
+  now = GetEpochTime();
   ASSERT_TRUE(timestamp <= now && timestamp > now - 2);
 
   // Deleting inserted contact
@@ -560,11 +561,11 @@ TEST_F(SessionSingletonTest, BEH_MAID_LiveContacts) {
   // Inserting multiple contacts
   int test_contacts(10);
   for (int n = 0; n < test_contacts; ++n) {
-    std::string contact_n("ava" + base::IntToString(n));
+    std::string contact_n("ava" + IntToString(n));
     end_points.Clear();
     for (int a = 0; a < 3; ++a) {
-      end_points.add_ip("192.168." + base::IntToString(n) + "." +
-                        base::IntToString(a));
+      end_points.add_ip("192.168." + IntToString(n) + "." +
+                        IntToString(a));
       end_points.add_port(64000 + (n * 10) + a);
     }
     ASSERT_EQ(0, ss_->AddLiveContact(contact_n, end_points, n));
@@ -575,7 +576,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_LiveContacts) {
   int y(0);
   int estado;
   for (cit = contacts.begin(); cit != contacts.end(); ++cit) {
-    ASSERT_EQ("ava" + base::IntToString(y), *cit);
+    ASSERT_EQ("ava" + IntToString(y), *cit);
     ASSERT_EQ(0, ss_->LiveContactStatus(*cit, &estado));
     ASSERT_EQ(y, estado);
     ++y;
@@ -583,16 +584,16 @@ TEST_F(SessionSingletonTest, BEH_MAID_LiveContacts) {
 
   for (int e = 0; e < 10; ++e)
     if ((e%2) == 0)
-      ASSERT_EQ(1, ss_->DeleteLiveContact("ava" + base::IntToString(e)));
+      ASSERT_EQ(1, ss_->DeleteLiveContact("ava" + IntToString(e)));
   ASSERT_EQ(0, ss_->LivePublicUsernameList(&contacts));
   ASSERT_EQ(size_t(5), contacts.size());
   y = 1;
   for (cit = contacts.begin(); cit != contacts.end(); ++cit) {
-    ASSERT_EQ("ava" + base::IntToString(y), *cit);
+    ASSERT_EQ("ava" + IntToString(y), *cit);
     y += 2;
   }
 }
-
+*/
 }  // namespace test
 
 }  // namespace lifestuff

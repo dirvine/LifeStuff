@@ -24,6 +24,7 @@
 //  #include "maidsafe/lifestuff/shared/maidsafe_messages.pb.h"
 #include "maidsafe/lifestuff/client/sessionsingleton.h"
 #include "maidsafe/lifestuff/client/clientutils.h"
+#include "maidsafe/lifestuff/client/lifestuff_messages.pb.h"
 
 namespace fs3 = boost::filesystem3;
 
@@ -77,6 +78,16 @@ LocalStoreManager::LocalStoreManager(
           ss_(SessionSingleton::getInstance()),
           chunks_pending_() {}
 
+LocalStoreManager::LocalStoreManager(const fs3::path &db_directory)
+    : K_(0),
+      kUpperThreshold_(0),
+      db_(),
+      mutex_(),
+      local_sm_dir_(db_directory.string()),
+      client_chunkstore_(),
+      ss_(SessionSingleton::getInstance()),
+      chunks_pending_() {}
+
 LocalStoreManager::~LocalStoreManager() {
   bool t(false);
   while (!t) {
@@ -105,8 +116,9 @@ void LocalStoreManager::Init(VoidFuncOneInt callback, const boost::uint16_t&) {
     } else {
       boost::mutex::scoped_lock loch(mutex_);
       db_.open(std::string(local_sm_dir_ + "/KademilaDb.db").c_str());
-      db_.execDML(
-        "create table network(key text,value text, primary key(key,value));");
+      db_.execDML("create table network(key text,"
+                                       "value text,"
+                                       "primary key(key,value));");
     }
     ExecReturnCodeCallback(callback, kSuccess);
   }
@@ -378,7 +390,8 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
 }
 
 ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
-    const std::string &key, const std::vector<std::string> &values,
+    const std::string &key,
+    const std::vector<std::string> &values,
     const std::string &public_key) {
 #ifdef LOCAL_LifeStuffVAULT
   // Simulate knode lookup
@@ -467,7 +480,8 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
   std::string key_id, public_key, public_key_signature, private_key;
   ClientUtils client_utils;
   client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
-      &key_id, &public_key, &public_key_signature, &private_key);
+                                      &key_id, &public_key,
+                                      &public_key_signature, &private_key);
 //  pki::MaidsafeValidator msv;
 //  if (!msv.ValidateSignerId(key_id, public_key, public_key_signature)) {
 //    ExecReturnCodeCallback(cb, kSendPacketFailure);
@@ -481,16 +495,16 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
     return;
   }
 
-//  kad::SignedValue sv;
-//  if (sv.ParseFromString(ser_gp)) {
-//    if (!RSACheckSignedData(sv.value(), sv.value_signature(), public_key)) {
-//      ExecReturnCodeCallback(cb, kSendPacketFailure);
-// #ifdef DEBUG
-//      printf("%s\n", sv.value().c_str());
-// #endif
-//      return;
-//    }
-//  }
+  SignedValue sv;
+  if (sv.ParseFromString(ser_gp)) {
+    if (!crypto::AsymCheckSig(sv.value(), sv.value_signature(), public_key)) {
+      ExecReturnCodeCallback(cb, kSendPacketFailure);
+ #ifdef DEBUG
+      printf("%s\n", sv.value().c_str());
+ #endif
+      return;
+    }
+  }
 
   std::vector<std::string> values;
   int n = GetValue_FromDB(packet_name, &values);
@@ -521,16 +535,16 @@ ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
     CppSQLite3Query q = db_.execQuery(s.c_str());
     if (!q.eof()) {
       std::string dec_value = DecodeFromHex(q.getStringField(0));
-//      kad::SignedValue sv;
-//      if (sv.ParseFromString(dec_value)) {
-//        if (!RSACheckSignedData(sv.value(), sv.value_signature(), pub_key)) {
-// #ifdef DEBUG
-//          printf("LocalStoreManager::StorePacket_InsertToDb - "
-//                 "Signature didn't validate.\n");
-// #endif
-//          return kStoreManagerError;
-//        }
-//      }
+      SignedValue sv;
+      if (sv.ParseFromString(dec_value)) {
+        if (!crypto::AsymCheckSig(sv.value(), sv.value_signature(), pub_key)) {
+ #ifdef DEBUG
+          printf("LocalStoreManager::StorePacket_InsertToDb - "
+                 "Signature didn't validate.\n");
+ #endif
+          return kStoreManagerError;
+        }
+      }
     }
 
     if (!append) {
@@ -590,30 +604,30 @@ void LocalStoreManager::UpdatePacket(const std::string &packet_name,
     return;
   }
 
-//  kad::SignedValue old_sv, new_sv;
-//  if (!old_sv.ParseFromString(old_ser_gp) ||
-//      !new_sv.ParseFromString(new_ser_gp)) {
-// #ifdef DEBUG
-//    printf("LSM::UpdatePacket - Old or new doesn't parse.\n");
-// #endif
-//  }
+  SignedValue old_sv, new_sv;
+  if (!old_sv.ParseFromString(old_ser_gp) ||
+      !new_sv.ParseFromString(new_ser_gp)) {
+ #ifdef DEBUG
+    printf("LSM::UpdatePacket - Old or new doesn't parse.\n");
+ #endif
+  }
 
-//  if (!RSACheckSignedData(old_sv.value(), old_sv.value_signature(),
-//                          public_key)) {
-//    ExecReturnCodeCallback(cb, kUpdatePacketFailure);
-// #ifdef DEBUG
-//    printf("LSM::UpdatePacket - Old fails validation.\n");
-// #endif
-//    return;
-//  }
-//  if (!RSACheckSignedData(new_sv.value(), new_sv.value_signature(),
-//                          public_key)) {
-// #ifdef DEBUG
-//    printf("LSM::UpdatePacket - New fails validation.\n");
-// #endif
-//    ExecReturnCodeCallback(cb, kUpdatePacketFailure);
-//    return;
-//  }
+  if (!crypto::AsymCheckSig(old_sv.value(), old_sv.value_signature(),
+                            public_key)) {
+    ExecReturnCodeCallback(cb, kUpdatePacketFailure);
+ #ifdef DEBUG
+    printf("LSM::UpdatePacket - Old fails validation.\n");
+ #endif
+    return;
+  }
+  if (!crypto::AsymCheckSig(new_sv.value(), new_sv.value_signature(),
+                            public_key)) {
+ #ifdef DEBUG
+    printf("LSM::UpdatePacket - New fails validation.\n");
+ #endif
+    ExecReturnCodeCallback(cb, kUpdatePacketFailure);
+    return;
+  }
 
   std::vector<std::string> values;
   int n = GetValue_FromDB(packet_name, &values);
@@ -680,11 +694,11 @@ ReturnCode LocalStoreManager::UpdatePacketInDb(const std::string &key,
 
 bool LocalStoreManager::ValidateGenericPacket(std::string ser_gp,
                                               std::string public_key) {
-//  GenericPacket gp;
-//  if (!gp.ParseFromString(ser_gp))
-//    return false;
-//  return RSACheckSignedData(gp.data(), gp.signature(), public_key);
-    return true;
+  GenericPacket gp;
+  if (!gp.ParseFromString(ser_gp))
+    return false;
+  return crypto::AsymCheckSig(gp.data(), gp.signature(), public_key);
+//    return true;
 }
 
 ////////////// BUFFER PACKET //////////////
@@ -1020,13 +1034,14 @@ int LocalStoreManager::GetValue_FromDB(const std::string &key,
 bool LocalStoreManager::NotDoneWithUploading() { return false; }
 
 void LocalStoreManager::CreateSerialisedSignedValue(
-    const std::string &value, const std::string &private_key,
+    const std::string &value,
+    const std::string &private_key,
     std::string *ser_gp) {
   ser_gp->clear();
-//  GenericPacket gp;
-//  gp.set_data(value);
-//  gp.set_signature(RSASign(value, private_key));
-//  gp.SerializeToString(ser_gp);
+  GenericPacket gp;
+  gp.set_data(value);
+  gp.set_signature(crypto::AsymSign(value, private_key));
+  gp.SerializeToString(ser_gp);
 }
 
 void LocalStoreManager::ExecuteReturnSignal(const std::string &chunkname,
@@ -1053,7 +1068,9 @@ void LocalStoreManager::ExecReturnCodeCallback(VoidFuncOneInt cb,
 }
 
 void LocalStoreManager::ExecReturnLoadPacketCallback(
-    LoadPacketFunctor cb, std::vector<std::string> results, ReturnCode rc) {
+    LoadPacketFunctor cb,
+    std::vector<std::string> results,
+    ReturnCode rc) {
   boost::thread t(cb, results, rc);
 }
 

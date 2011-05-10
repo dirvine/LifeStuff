@@ -13,44 +13,51 @@
  */
 
 #include "boost/filesystem.hpp"
+#include "boost/thread.hpp"
 #include "gtest/gtest.h"
-#include "maidsafe/maidsafe-dht.h"
-#include "maidsafe/base/utils.h"
-#include "maidsafe/client/contacts.h"
+//  #include "maidsafe/maidsafe-dht.h"
+#include "maidsafe/common/utils.h"
+#include "maidsafe/lifestuff/client/contacts.h"
+
+namespace maidsafe {
+
+namespace lifestuff {
+
+namespace test {
 
 class ContactsTest : public testing::Test {
-  protected:
-    maidsafe::ContactsHandler *sch_;
-    std::string name_;
-    int test;
-    std::vector<std::string> contact_;
+ protected:
+  ContactsHandler *sch_;
+  std::string name_;
+  int test;
+  std::vector<std::string> contact_;
 
-    ContactsTest() : sch_(NULL), name_(""), test(0), contact_() {}
-    ContactsTest(const ContactsTest&);
-    ContactsTest& operator=(const ContactsTest&);
+  ContactsTest() : sch_(NULL), name_(""), test(0), contact_() {}
+  ContactsTest(const ContactsTest&);
+  ContactsTest& operator=(const ContactsTest&);
 
-    virtual void SetUp() {
-      contact_.push_back("dan.schmidt");
-      contact_.push_back("abcdefghijk");
-      contact_.push_back("Dan Schmidt Valle");
-      contact_.push_back("0123654789");
-      contact_.push_back("18061980");
-      contact_.push_back("M");
-      contact_.push_back("1");
-      contact_.push_back("1");
-      contact_.push_back("Troon");
-      contact_.push_back("C");
-      contact_.push_back("0");
-      contact_.push_back("-1");
+  virtual void SetUp() {
+    contact_.push_back("dan.schmidt");
+    contact_.push_back("abcdefghijk");
+    contact_.push_back("Dan Schmidt Valle");
+    contact_.push_back("0123654789");
+    contact_.push_back("18061980");
+    contact_.push_back("M");
+    contact_.push_back("1");
+    contact_.push_back("1");
+    contact_.push_back("Troon");
+    contact_.push_back("C");
+    contact_.push_back("0");
+    contact_.push_back("-1");
 
-      name_ = "Contacts.db";
-      sch_ = new maidsafe::ContactsHandler();
-      sch_->ClearContacts();
-    }
+    name_ = "Contacts.db";
+    sch_ = new ContactsHandler();
+    sch_->ClearContacts();
+  }
 
-    virtual void TearDown() {
-      delete sch_;
-    }
+  virtual void TearDown() {
+    delete sch_;
+  }
 };
 
 TEST_F(ContactsTest, BEH_MAID_ContactValueObject) {
@@ -67,7 +74,7 @@ TEST_F(ContactsTest, BEH_MAID_ContactValueObject) {
   int r = 22;
   int lc = 7;
 
-  maidsafe::Contact contact;
+  Contact contact;
   ASSERT_TRUE(contact.SetPublicName(pn)) << "Failed to set public name.";
   ASSERT_TRUE(contact.SetPublicKey(pk)) << "Failed to set public key.";
   ASSERT_TRUE(contact.SetFullName(fn)) << "Failed to set full name.";
@@ -99,7 +106,7 @@ TEST_F(ContactsTest, BEH_MAID_ContactValueObject) {
 }
 
 TEST_F(ContactsTest, BEH_MAID_Create_ListContacts) {
-  std::vector<maidsafe::mi_contact> mi_list;
+  std::vector<mi_contact> mi_list;
   ASSERT_EQ(0, sch_->GetContactList(&mi_list)) <<
             "MI - Problem getting contact list";
   ASSERT_EQ((unsigned)0, mi_list.size()) <<
@@ -116,13 +123,13 @@ TEST_F(ContactsTest, BEH_MAID_Create_ListContacts) {
 }
 
 TEST_F(ContactsTest, BEH_MAID_AddContacts) {
-  std::vector<maidsafe::mi_contact> mi_list;
+  std::vector<mi_contact> mi_list;
   ASSERT_EQ(0, sch_->GetContactList(&mi_list)) <<
             "MI - Problem getting contact list";
   ASSERT_EQ((unsigned)0, mi_list.size()) <<
             "List came back not empty after DB creation.";
 
-  maidsafe::Contact msc(contact_);
+  Contact msc(contact_);
   ASSERT_EQ(0, sch_->AddContact(msc.PublicName(), msc.PublicKey(),
                msc.FullName(), msc.OfficePhone(), msc.Birthday(),
                msc.Gender(), msc.Language(), msc.Country(), msc.City(),
@@ -133,7 +140,7 @@ TEST_F(ContactsTest, BEH_MAID_AddContacts) {
   ASSERT_EQ((unsigned)1, mi_list.size()) <<
             "List came back empty after addition.";
 
-  maidsafe::mi_contact mic;
+  mi_contact mic;
   ASSERT_EQ(0, sch_->GetContactInfo(msc.PublicName(), &mic)) <<
             "MI - Problem getting the contact";
   ASSERT_EQ(msc.PublicName(), mic.pub_name_) <<
@@ -162,13 +169,13 @@ TEST_F(ContactsTest, BEH_MAID_AddContacts) {
 }
 
 TEST_F(ContactsTest, BEH_MAID_DeleteContacts) {
-  std::vector<maidsafe::mi_contact> mi_list;
+  std::vector<mi_contact> mi_list;
   ASSERT_EQ(0, sch_->GetContactList(&mi_list)) <<
             "MI - Problem getting contact list";
   ASSERT_EQ((unsigned)0, mi_list.size()) <<
             "List came back not empty after DB creation.";
 
-  maidsafe::Contact msc(contact_);
+  Contact msc(contact_);
   ASSERT_EQ(0, sch_->AddContact(msc.PublicName(), msc.PublicKey(),
                msc.FullName(), msc.OfficePhone(), msc.Birthday(),
                msc.Gender(), msc.Language(), msc.Country(), msc.City(),
@@ -179,7 +186,7 @@ TEST_F(ContactsTest, BEH_MAID_DeleteContacts) {
   ASSERT_EQ((unsigned)1, mi_list.size()) <<
             "MI - List came back empty after addition.";
 
-  maidsafe::mi_contact mic;
+  mi_contact mic;
   ASSERT_EQ(0, sch_->GetContactInfo(msc.PublicName(), &mic)) <<
             "MI - Problem getting the contact";
   ASSERT_EQ(msc.PublicName(), mic.pub_name_) <<
@@ -198,13 +205,13 @@ TEST_F(ContactsTest, BEH_MAID_DeleteContacts) {
 }
 
 TEST_F(ContactsTest, BEH_MAID_Update_Select_PubName_Contacts) {
-  std::vector<maidsafe::mi_contact> mi_list;
+  std::vector<mi_contact> mi_list;
   ASSERT_EQ(0, sch_->GetContactList(&mi_list)) <<
             "MI - Problem getting contact list";
   ASSERT_EQ((unsigned)0, mi_list.size()) <<
             "List came back not empty after DB creation.";
 
-  maidsafe::Contact msc(contact_);
+  Contact msc(contact_);
   ASSERT_EQ(0, sch_->AddContact(msc.PublicName(), msc.PublicKey(),
                msc.FullName(), msc.OfficePhone(), msc.Birthday(),
                msc.Gender(), msc.Language(), msc.Country(), msc.City(),
@@ -215,13 +222,13 @@ TEST_F(ContactsTest, BEH_MAID_Update_Select_PubName_Contacts) {
   ASSERT_EQ((unsigned)1, mi_list.size()) <<
             "MI - List came back empty after addition.";
 
-  maidsafe::mi_contact mic;
+  mi_contact mic;
   ASSERT_EQ(0, sch_->GetContactInfo(msc.PublicName(), &mic)) <<
             "MI - Problem getting the contact";
   ASSERT_EQ(msc.PublicName(), mic.pub_name_) <<
             "MI - Public name not the same";
 
-  maidsafe::Contact msc1;
+  Contact msc1;
   ASSERT_TRUE(msc1.SetPublicName(msc.PublicName())) <<
               "Failed to set public name.";
   ASSERT_TRUE(msc1.SetPublicKey("zyxwvutsrq")) <<
@@ -311,13 +318,13 @@ TEST_F(ContactsTest, BEH_MAID_Update_Select_PubName_Contacts) {
 
 TEST_F(ContactsTest, BEH_MAID_LastContact_Rank_Contacts) {
   std::string pub_name("");
-  std::vector<maidsafe::mi_contact> mi_list;
+  std::vector<mi_contact> mi_list;
   ASSERT_EQ(0, sch_->GetContactList(&mi_list)) <<
             "MI - Problem getting contact list";
   ASSERT_EQ((unsigned)0, mi_list.size()) <<
             "List came back not empty after DB creation.";
 
-  maidsafe::Contact msc(contact_);
+  Contact msc(contact_);
   ASSERT_EQ(0, sch_->AddContact(msc.PublicName(), msc.PublicKey(),
                msc.FullName(), msc.OfficePhone(), msc.Birthday(),
                msc.Gender(), msc.Language(), msc.Country(), msc.City(),
@@ -329,7 +336,7 @@ TEST_F(ContactsTest, BEH_MAID_LastContact_Rank_Contacts) {
             "MI - List came back empty after addition.";
 
   pub_name = msc.PublicName();
-  maidsafe::mi_contact mic;
+  mi_contact mic;
   ASSERT_EQ(0, sch_->SetLastContactRank(msc.PublicName())) <<
             "Problem modifying contact";
   ASSERT_EQ(0, sch_->GetContactInfo(msc.PublicName(), &mic)) <<
@@ -354,28 +361,28 @@ TEST_F(ContactsTest, BEH_MAID_LastContact_Rank_Contacts) {
 }
 
 TEST_F(ContactsTest, BEH_MAID_ListContacts_Rank_LastContact) {
-  std::vector<maidsafe::mi_contact> mi_list;
+  std::vector<mi_contact> mi_list;
   ASSERT_EQ(0, sch_->GetContactList(&mi_list)) <<
             "MI - Problem getting contact list";
   ASSERT_EQ((unsigned)0, mi_list.size()) <<
             "List came back not empty after DB creation.";
 
   for (int n = 1; n < 21; n++) {
-    int r = base::RandomUint32()%122;
+    int r = RandomUint32()%122;
     std::vector<std::string> contact;
-    contact.push_back("pub_name_" + base::IntToString(n));
-    contact.push_back("pub_key_" + base::IntToString(n));
-    contact.push_back("full_name_" + base::IntToString(n));
-    contact.push_back("office_phone_" + base::IntToString(n));
-    contact.push_back("birthday_" + base::IntToString(n));
+    contact.push_back("pub_name_" + IntToString(n));
+    contact.push_back("pub_key_" + IntToString(n));
+    contact.push_back("full_name_" + IntToString(n));
+    contact.push_back("office_phone_" + IntToString(n));
+    contact.push_back("birthday_" + IntToString(n));
     contact.push_back("M");
-    contact.push_back(base::IntToString(n));
-    contact.push_back(base::IntToString(n));
-    contact.push_back("city_" + base::IntToString(n));
+    contact.push_back(IntToString(n));
+    contact.push_back(IntToString(n));
+    contact.push_back("city_" + IntToString(n));
     contact.push_back("C");
-    contact.push_back(base::IntToString(r));
-    int rt = base::GetEpochTime() - r;
-    contact.push_back(base::IntToString(rt));
+    contact.push_back(IntToString(r));
+    int rt(0);  // = GetEpochTime() - r;
+    contact.push_back(IntToString(rt));
     ASSERT_EQ(0, sch_->AddContact(contact[0], contact[1], contact[2],
               contact[3], contact[4], 'M', n, n, contact[8], 'C', 0, 0));
   }
@@ -391,8 +398,8 @@ TEST_F(ContactsTest, BEH_MAID_ListContacts_Rank_LastContact) {
             "List came back not empty after DB creation.";
 
   for (unsigned int n = 0; n < mi_list.size()-1; n++) {
-    maidsafe::mi_contact mic = mi_list[n];
-    maidsafe::mi_contact mic1 = mi_list[n+1];
+    mi_contact mic = mi_list[n];
+    mi_contact mic1 = mi_list[n+1];
     ASSERT_GE(mic.rank_, mic1.rank_) << "Rank order higher-to-lower broken.";
   }
 
@@ -402,28 +409,28 @@ TEST_F(ContactsTest, BEH_MAID_ListContacts_Rank_LastContact) {
             "List came back not empty after DB creation.";
 
   for (unsigned int n = 0; n < mi_list.size()-1; n++) {
-    maidsafe::mi_contact mic = mi_list[n];
-    maidsafe::mi_contact mic1 = mi_list[n+1];
+    mi_contact mic = mi_list[n];
+    mi_contact mic1 = mi_list[n+1];
     ASSERT_GE(mic.last_contact_, mic1.last_contact_) <<
               "Last contact order higher-to-lower broken.";
   }
 
   for (int n = 21; n < 101; n++) {
-    int r = base::RandomUint32()%122;
+    int r = RandomUint32()%122;
     std::vector<std::string> contact;
-    contact.push_back("pub_name_" + base::IntToString(n));
-    contact.push_back("pub_key_" + base::IntToString(n));
-    contact.push_back("full_name_" + base::IntToString(n));
-    contact.push_back("office_phone_" + base::IntToString(n));
-    contact.push_back("birthday_" + base::IntToString(n));
+    contact.push_back("pub_name_" + IntToString(n));
+    contact.push_back("pub_key_" + IntToString(n));
+    contact.push_back("full_name_" + IntToString(n));
+    contact.push_back("office_phone_" + IntToString(n));
+    contact.push_back("birthday_" + IntToString(n));
     contact.push_back("M");
-    contact.push_back(base::IntToString(n));
-    contact.push_back(base::IntToString(n));
-    contact.push_back("city_" + base::IntToString(n));
+    contact.push_back(IntToString(n));
+    contact.push_back(IntToString(n));
+    contact.push_back("city_" + IntToString(n));
     contact.push_back("C");
-    contact.push_back(base::IntToString(r));
-    int rt = base::GetEpochTime() - r;
-    contact.push_back(base::IntToString(rt));
+    contact.push_back(IntToString(r));
+    int rt(0);  // = GetEpochTime() - r;
+    contact.push_back(IntToString(rt));
     ASSERT_EQ(0, sch_->AddContact(contact[0], contact[1], contact[2],
               contact[3], contact[4], 'M', n, n, contact[8], 'C', 0, 0));
   }
@@ -434,8 +441,8 @@ TEST_F(ContactsTest, BEH_MAID_ListContacts_Rank_LastContact) {
             "List came back not empty after DB creation.";
 
   for (unsigned int n = 0; n < mi_list.size()-1; n++) {
-    maidsafe::mi_contact mic = mi_list[n];
-    maidsafe::mi_contact mic1 = mi_list[n+1];
+    mi_contact mic = mi_list[n];
+    mi_contact mic1 = mi_list[n+1];
     ASSERT_GE(mic.rank_, mic1.rank_) << "Rank order higher-to-lower broken.";
   }
 
@@ -445,9 +452,15 @@ TEST_F(ContactsTest, BEH_MAID_ListContacts_Rank_LastContact) {
             "MI - List with wrong size.";
 
   for (unsigned int n = 0; n < mi_list.size()-1; n++) {
-    maidsafe::mi_contact mic = mi_list[n];
-    maidsafe::mi_contact mic1 = mi_list[n+1];
+    mi_contact mic = mi_list[n];
+    mi_contact mic1 = mi_list[n+1];
     ASSERT_GE(mic.last_contact_, mic1.last_contact_) <<
               "Last contact order higher-to-lower broken.";
   }
 }
+
+}  // namespace test
+
+}  // namespace lifestuff
+
+}  // namespace maidsafe
