@@ -197,7 +197,7 @@ void Authentication::GetMidTmidCallback(const std::vector<std::string> &values,
     boost::mutex::scoped_lock lock(mutex_);
     if (surrogate) {
       if (result == kSuccess) {
-//        encrypted_stmid_ = packet.data();
+        encrypted_stmid_ = packet.data();
         stmid_op_status_ = kSucceeded;
       } else {
         stmid_op_status_ = kFailed;
@@ -206,7 +206,7 @@ void Authentication::GetMidTmidCallback(const std::vector<std::string> &values,
         cond_var_.notify_all();
     } else {
       if (result == kSuccess) {
-//        encrypted_tmid_ = packet.data();
+        encrypted_tmid_ = packet.data();
         tmid_op_status_ = kSucceeded;
       } else {
         tmid_op_status_ = kFailed;
