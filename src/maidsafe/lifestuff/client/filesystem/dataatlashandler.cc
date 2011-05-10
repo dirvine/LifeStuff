@@ -67,10 +67,6 @@ int DataAtlasHandler::Init(bool new_user) {
 
 std::string DataAtlasHandler::GetElementNameFromPath(
     const std::string &element_path) {
-#ifdef DEBUG
-//   printf("\t\tGetElementNameFromPath::GetMetaDataMap %s\n",
-//          element_path.c_str());
-#endif
   fs3::path path(element_path);
   return path.filename().string();
 }
@@ -104,21 +100,8 @@ std::shared_ptr<PdDir> DataAtlasHandler::GetPdDir(
     DbInitFlag flag,
     int *result) {
   std::string db_name;
-#ifdef DEBUG
-//   printf("In getpddir: element_path = %s\tand flag = %i\n",
-//           element_path.c_str(), flag);
-#endif
   GetDbPath(element_path, flag, &db_name);
-#ifdef DEBUG
-//   printf("In getpddir: getdbpath returned db_name as %s\n",
-//          db_name.c_str());
-#endif
-//  int res = kDataAtlasError;
   std::shared_ptr<PdDir> da(new PdDir(db_name, flag, result));
-#ifdef DEBUG
-//   printf("In getpddir: made new db with result %i\n", res);
-#endif
-//  *result = res;
   return da;
 }
 
@@ -130,34 +113,15 @@ int DataAtlasHandler::AddElement(const std::string &element_path,
   int result = kDataAtlasError;
   // create the new database if the element is a dir and make_new_db == true
   if (ser_dm == "" && make_new_db) {
-#ifdef DEBUG
-    // printf("This is a dir(%s)\n", element_path.c_str());
-#endif
-    std::shared_ptr<PdDir> da_newdir_(GetPdDir(element_path,
-                                                 CREATE, &result));
-#ifdef DEBUG
-    // printf("New dir's db added with result %i", result);
-#endif
+    std::shared_ptr<PdDir> da_newdir_(GetPdDir(element_path, CREATE, &result));
     if (result != kSuccess)
       return result;
   }
 
-#ifdef DEBUG
-  // printf("Getting db.\n");
-#endif
   std::shared_ptr<PdDir> da_(GetPdDir(element_path, CONNECT, &result));
-#ifdef DEBUG
-  // printf("Got db with result %i\n", result);
-#endif
   if (result != kSuccess)
     return result;
-#ifdef DEBUG
-  // printf("Adding to db.\n");
-#endif
   result = da_->AddElement(ser_mdm, ser_dm, dir_key);
-#ifdef DEBUG
-  // printf("Added to db with result %i\n", result);
-#endif
   return result;
 }
 
@@ -176,43 +140,41 @@ int DataAtlasHandler::RemoveElement(const std::string &element_path) {
   std::string ser_mdm;
   result = GetMetaDataMap(element_path, &ser_mdm);
   if (result != kSuccess) {
-    printf("DataAtlasHandler::RemoveElement fail 0\n");
+    DLOG(ERROR) << "DAH::RemoveElement fail GetMetaDataMap" << std::endl;
     return result;
   }
   MetaDataMap mdm;
   if (!mdm.ParseFromString(ser_mdm)) {
-    printf("DataAtlasHandler::RemoveElement fail 0.5\n");
+    DLOG(ERROR) << "DAH::RemoveElement fail ParseFromString" << std::endl;
     return result;
   }
   std::string ser_dm;
   if (mdm.type() != DIRECTORY && mdm.type() != EMPTY_DIRECTORY) {
     result = GetDataMap(element_path, &ser_dm);
     if (result != kSuccess) {
-      printf("DataAtlasHandler::RemoveElement fail 1\n");
+      DLOG(ERROR) << "DAH::RemoveElement fail GetDataMap" << std::endl;
       return result;
     }
   }
   std::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
   if (result != kSuccess) {
-    printf("DataAtlasHandler::RemoveElement fail 2\n");
+    DLOG(ERROR) << "DAH::RemoveElement fail GetPdDir" << std::endl;
     return result;
   }
   result = da->RemoveElement(GetElementNameFromPath(element_path));
   if (result != kSuccess) {
-    printf("DataAtlasHandler::RemoveElement fail 3\n");
+    DLOG(ERROR) << "DAH::RemoveElement fail RemoveElement" << std::endl;
     return result;
   }
-  if (ser_dm == "") {
+  if (ser_dm.empty()) {
     try {
       std::string db_to_delete;
       GetDbPath(element_path, CREATE, &db_to_delete);
-//      printf("Deleting DB: %s", db_to_delete.c_str());
       fs3::remove(db_to_delete);
     }
     catch(const std::exception &e) {
-#ifdef DEBUG
-      printf("%s", e.what());
-#endif
+      DLOG(ERROR) << "DAH::RemoveElement fail remove db: " << e.what()
+                  << std::endl;
       return kDataAtlasException;
     }
   }
@@ -250,23 +212,18 @@ int DataAtlasHandler::RenameElement(const std::string &original_path,
   std::string dir_key;
   int result = GetDirKey(original_path, &dir_key);
   if (result != kSuccess) {
-#ifdef DEBUG
-    printf("Could not get original_path dirkey.\n");
-#endif
+    DLOG(ERROR) << "DAH::RenameElement - Could not get original_path dirkey."
+                << std::endl;
     return result;
   }
 
   if (CopyElement(original_path, target_path, dir_key, force) != kSuccess) {
-#ifdef DEBUG
-    printf("Element could not be copied.\n");
-#endif
+    DLOG(ERROR) << "DAH::RenameElement - Could not be copied." << std::endl;
     return kRenameElementError;
   }
 
   if (RemoveElement(original_path) != kSuccess) {
-#ifdef DEBUG
-    printf("Original element could not be removed.\n");
-#endif
+    DLOG(ERROR) << "DAH::RenameElement - Could not be removed." << std::endl;
     return kRenameElementError;
   }
   return kSuccess;
@@ -292,17 +249,13 @@ int DataAtlasHandler::CopyElement(const std::string &original_path,
   result = da_target->GetMetaDataMap(target_name, &ser_mdm);
   if (result == kSuccess) {  // i.e. target exists
     if (!force) {
-#ifdef DEBUG
-      printf("Target element already exists.\n");
-#endif
+      DLOG(ERROR) << "DAH::CopyElement - Target already exists." << std::endl;
       return kCopyElementError;
     } else {
       // i.e. force==true, so delete old target in preparation of adding new.
       result = da_target->RemoveElement(target_name);
       if (result != kSuccess) {
-#ifdef DEBUG
-        printf("Couldn't remove existing target element before copying.\n");
-#endif
+        DLOG(ERROR) << "DAH::CopyElement - Remove existing fail." << std::endl;
         return kCopyElementError;
       }
     }
@@ -312,9 +265,8 @@ int DataAtlasHandler::CopyElement(const std::string &original_path,
   ser_mdm = "";
   result = da_original->GetMetaDataMap(original_name, &ser_mdm);
   if (result != kSuccess) {
-#ifdef DEBUG
-    printf("Can't retrieve original mdm for copying.\n");
-#endif
+    DLOG(ERROR) << "DAH::CopyElement - Can't retrieve original mdm."
+                << std::endl;
     return kCopyElementError;
   }
   da_original->GetDataMap(original_name, &ser_dm);
@@ -326,16 +278,10 @@ int DataAtlasHandler::CopyElement(const std::string &original_path,
   mdm.set_display_name(target_name);
   mdm.SerializeToString(&ser_mdm);
 
-#ifdef DEBUG
-  // Add these under target path
-  // printf("In DAH::Cpyelmnt, addingelement: %s with sermdm %s & serdm %s\n",
-  //        target_path.c_str(), ser_mdm.c_str(), ser_dm.c_str());
-#endif
   result = AddElement(target_path, ser_mdm, ser_dm, new_dir_key, false);
   if (result != kSuccess) {
-#ifdef DEBUG
-    printf("In copyelement, result of addelement = %i\n", result);
-#endif
+    DLOG(ERROR) << "DAH::CopyElement - result of addelement = " << result
+                << std::endl;
     return kCopyElementError;
   }
 
@@ -343,9 +289,8 @@ int DataAtlasHandler::CopyElement(const std::string &original_path,
   // do any subdirs, sub-subdirs, etc.
   if (mdm.type() == 4 || mdm.type() == 5) {
     if (CopySubDbs(original_path, target_path) != kSuccess) {
-#ifdef DEBUG
-      printf("In copyelement, result of addelement = %i\n", result);
-#endif
+      DLOG(ERROR) << "DAH::CopyElement - result of addelement = " << result
+                  << std::endl;
       return kCopyElementError;
     }
   }
@@ -357,20 +302,13 @@ int DataAtlasHandler::CopyDb(const std::string &original_path,
   std::string original_db_path, target_db_path;
   GetDbPath(original_path, CREATE, &original_db_path);
   GetDbPath(target_path, CREATE, &target_db_path);
-#ifdef DEBUG
-  // printf("In DAH::CopyDb:\noriginal_db_path_ = %s\ntarget_db_path_ = %s\n\n",
-  //        original_db_path_.c_str(), target_db_path_.c_str());
-#endif
   try {
     if (fs3::exists(target_db_path))
       fs3::remove(target_db_path);
-//    fs3::copy_file(original_db_path, target_db_path);
     return kSuccess;
   }
   catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("%s", e.what());
-#endif
+    DLOG(ERROR) << "DAH::CopyDb - " << e.what() << std::endl;
     return kDataAtlasException;
   }
 }
@@ -392,10 +330,6 @@ int DataAtlasHandler::ListSubDirs(const std::string &element_path,
 
 int DataAtlasHandler::CopySubDbs(const std::string &original_path,
                                  const std::string &target_path) {
-#ifdef DEBUG
-  // printf("In DAH::CopySubDbs:\noriginal_path_ = %s\ntarget_path_ = %s\n\n",
-  //        original_path_.c_str(), target_path_.c_str());
-#endif
   int result = kDataAtlasError;
   std::vector<fs3::path> subdirs;
   result = ListSubDirs(original_path, &subdirs);
@@ -417,18 +351,14 @@ int DataAtlasHandler::CopySubDbs(const std::string &original_path,
 int DataAtlasHandler::GetDirKey(const std::string &element_path,
                                 std::string *dir_key) {
   int result = kDataAtlasError;
-#ifdef DEBUG
-//  printf("In DAH::GetDirKey, element_path_ = %s\n", element_path.c_str());
-#endif
   if (element_path == "" || element_path == "/" || element_path == "\\") {
     *dir_key = SessionSingleton::getInstance()->RootDbKey();
     return kSuccess;
   }
   std::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
   if (result != kSuccess) {
-#ifdef DEBUG
-    printf("In DAH::GetDirKey, result from GetPdDir = %i\n", result);
-#endif
+    DLOG(ERROR) << "DAH::GetDirKey - result from GetPdDir = " << result
+                << std::endl;
     return result;
   }
   return da->GetDirKey(GetElementNameFromPath(element_path), dir_key);
@@ -439,9 +369,8 @@ int DataAtlasHandler::GetDataMap(const std::string &element_path,
   int result = kDataAtlasError;
   std::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
   if (result != kSuccess) {
-#ifdef DEBUG
-    printf("In DAH::GetDataMap, result from GetPdDir = %i\n", result);
-#endif
+    DLOG(ERROR) << "DAH::GetDataMap - result from GetPdDir = " << result
+                << std::endl;
     return result;
   }
   return da->GetDataMap(GetElementNameFromPath(element_path), ser_dm);
@@ -449,18 +378,11 @@ int DataAtlasHandler::GetDataMap(const std::string &element_path,
 
 int DataAtlasHandler::GetMetaDataMap(const std::string &element_path,
                                      std::string *ser_mdm) {
-#ifdef DEBUG
-  // printf("\t\tDataAtlasHandler::GetMetaDataMap %s\n", element_path.c_str());
-#endif
   int result = kDataAtlasError;
   std::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
   if (result != kSuccess)
     return result;
   std::string the_path(GetElementNameFromPath(element_path));
-#ifdef DEBUG
-  // printf("\t\tDataAtlasHandler::GetMetaDataMap the_path: %s\n",
-  //   the_path.c_str());
-#endif
   result = da->GetMetaDataMap(the_path, ser_mdm);
   return result;
 }

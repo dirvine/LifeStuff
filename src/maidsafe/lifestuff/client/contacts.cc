@@ -11,9 +11,13 @@
  *  Created on: Nov 13, 2008
  *      Author: Team
  */
+
 #include "maidsafe/lifestuff/client/contacts.h"
+
 #include "boost/filesystem.hpp"
 #include "boost/lexical_cast.hpp"
+
+#include "maidsafe/lifestuff/log.h"
 
 namespace fs = boost::filesystem;
 
@@ -22,27 +26,32 @@ namespace maidsafe {
 namespace lifestuff {
 
 //  Contacts
-Contact::Contact() :pub_name_(), pub_key_(), full_name_(),
-  office_phone_(), birthday_(), gender_('U'), language_(-1),
-  country_(-1), city_(), confirmed_('\0'), rank_(0),  last_contact_(-1) { }
+Contact::Contact() : pub_name_(),
+                     pub_key_(),
+                     full_name_(),
+                     office_phone_(),
+                     birthday_(),
+                     gender_('U'),
+                     language_(-1),
+                     country_(-1),
+                     city_(),
+                     confirmed_('\0'),
+                     rank_(0),
+                     last_contact_(-1) {}
 
 Contact::Contact(const std::vector<std::string> &attributes)
-    :pub_name_(), pub_key_(), full_name_(),
-    office_phone_(), birthday_(), gender_('U'), language_(-1),
-    country_(-1), city_(), confirmed_('\0'), rank_(0), last_contact_(-1) {
-  pub_name_ = attributes[0];
-  pub_key_ = attributes[1];
-  full_name_ = attributes[2];
-  office_phone_ = attributes[3];
-  birthday_ = attributes[4];
-  gender_ = attributes[5].at(0);
-  language_ = boost::lexical_cast<int>(attributes[6]);
-  country_ = boost::lexical_cast<int>(attributes[7]);
-  city_ = attributes[8];
-  confirmed_ = attributes[9].at(0);
-  rank_ = boost::lexical_cast<int>(attributes[10]);
-  last_contact_ = boost::lexical_cast<int>(attributes[11]);
-}
+    : pub_name_(attributes[0]),
+      pub_key_(attributes[1]),
+      full_name_(attributes[2]),
+      office_phone_(attributes[3]),
+      birthday_(attributes[4]),
+      gender_(attributes[5].at(0)),
+      language_(boost::lexical_cast<int>(attributes[6])),
+      country_(boost::lexical_cast<int>(attributes[7])),
+      city_(attributes[8]),
+      confirmed_(attributes[9].at(0)),
+      rank_(boost::lexical_cast<int>(attributes[10])),
+      last_contact_(boost::lexical_cast<int>(attributes[11])) {}
 
 //  ContactsHandler
 int ContactsHandler::AddContact(const std::string &pub_name,
@@ -71,9 +80,8 @@ int ContactsHandler::AddContact(const std::string &pub_name,
 int ContactsHandler::DeleteContact(const std::string &pub_name) {
   contact_set::iterator it = cs_.find(pub_name);
   if (it == cs_.end()) {
-#ifdef DEBUG
-    printf("Contact(%s) not present in contact list.\n", pub_name.c_str());
-#endif
+    DLOG(ERROR) << "Contact(" << pub_name << ") not present in contact list."
+                << std::endl;
     return -1901;
   }
   cs_.erase(pub_name);
@@ -83,9 +91,8 @@ int ContactsHandler::DeleteContact(const std::string &pub_name) {
 int ContactsHandler::UpdateContact(const mi_contact &mic) {
   contact_set::iterator it = cs_.find(mic.pub_name_);
   if (it == cs_.end()) {
-#ifdef DEBUG
-    printf("Contact(%s) not present in contact list.\n", mic.pub_name_.c_str());
-#endif
+    DLOG(ERROR) << "Contact(" << mic.pub_name_ << ") not present in list."
+                << std::endl;
     return -1902;
   }
   mi_contact local_mic = *it;
@@ -108,9 +115,8 @@ int ContactsHandler::UpdateContactKey(const std::string &pub_name,
                                       const std::string &value) {
   contact_set::iterator it = cs_.find(pub_name);
   if (it == cs_.end()) {
-#ifdef DEBUG
-    printf("Contact(%s) not present in contact list.\n", pub_name.c_str());
-#endif
+    DLOG(ERROR) << "Contact(" << pub_name << ") not present in contact list."
+                << std::endl;
     return -1903;
   }
   mi_contact mic = *it;
@@ -123,9 +129,8 @@ int ContactsHandler::UpdateContactFullName(const std::string &pub_name,
                                            const std::string &value) {
   contact_set::iterator it = cs_.find(pub_name);
   if (it == cs_.end()) {
-#ifdef DEBUG
-    printf("Contact(%s) not present in contact list.\n", pub_name.c_str());
-#endif
+    DLOG(ERROR) << "Contact(" << pub_name << ") not present in contact list."
+                << std::endl;
     return -1904;
   }
   mi_contact mic = *it;
@@ -138,9 +143,8 @@ int ContactsHandler::UpdateContactOfficePhone(const std::string &pub_name,
                                               const std::string &value) {
   contact_set::iterator it = cs_.find(pub_name);
   if (it == cs_.end()) {
-#ifdef DEBUG
-    printf("Contact(%s) not present in contact list.\n", pub_name.c_str());
-#endif
+    DLOG(ERROR) << "Contact(" << pub_name << ") not present in contact list."
+                << std::endl;
     return -1905;
   }
   mi_contact mic = *it;
@@ -153,9 +157,8 @@ int ContactsHandler::UpdateContactBirthday(const std::string &pub_name,
                                            const std::string &value) {
   contact_set::iterator it = cs_.find(pub_name);
   if (it == cs_.end()) {
-#ifdef DEBUG
-    printf("Contact(%s) not present in contact list.\n", pub_name.c_str());
-#endif
+    DLOG(ERROR) << "Contact(" << pub_name << ") not present in contact list."
+                << std::endl;
     return -1906;
   }
   mi_contact mic = *it;
@@ -168,9 +171,8 @@ int ContactsHandler::UpdateContactGender(const std::string &pub_name,
                                          const char &value) {
   contact_set::iterator it = cs_.find(pub_name);
   if (it == cs_.end()) {
-#ifdef DEBUG
-    printf("Contact(%s) not present in contact list.\n", pub_name.c_str());
-#endif
+    DLOG(ERROR) << "Contact(" << pub_name << ") not present in contact list."
+                << std::endl;
     return -1907;
   }
   mi_contact mic = *it;
@@ -183,9 +185,8 @@ int ContactsHandler::UpdateContactLanguage(const std::string &pub_name,
                                            const int &value) {
   contact_set::iterator it = cs_.find(pub_name);
   if (it == cs_.end()) {
-#ifdef DEBUG
-    printf("Contact(%s) not present in contact list.\n", pub_name.c_str());
-#endif
+    DLOG(ERROR) << "Contact(" << pub_name << ") not present in contact list."
+                << std::endl;
     return -1908;
   }
   mi_contact mic = *it;
@@ -198,9 +199,8 @@ int ContactsHandler::UpdateContactCountry(const std::string &pub_name,
                                           const int &value) {
   contact_set::iterator it = cs_.find(pub_name);
   if (it == cs_.end()) {
-#ifdef DEBUG
-    printf("Contact(%s) not present in contact list.\n", pub_name.c_str());
-#endif
+    DLOG(ERROR) << "Contact(" << pub_name << ") not present in contact list."
+                << std::endl;
     return -1909;
   }
   mi_contact mic = *it;
@@ -213,9 +213,8 @@ int ContactsHandler::UpdateContactCity(const std::string &pub_name,
                                        const std::string &value) {
   contact_set::iterator it = cs_.find(pub_name);
   if (it == cs_.end()) {
-#ifdef DEBUG
-    printf("Contact(%s) not present in contact list.\n", pub_name.c_str());
-#endif
+    DLOG(ERROR) << "Contact(" << pub_name << ") not present in contact list."
+                << std::endl;
     return -1910;
   }
   mi_contact mic = *it;
@@ -228,9 +227,8 @@ int ContactsHandler::UpdateContactConfirmed(const std::string &pub_name,
                                             const char &value) {
   contact_set::iterator it = cs_.find(pub_name);
   if (it == cs_.end()) {
-#ifdef DEBUG
-    printf("Contact(%s) not present in contact list.\n", pub_name.c_str());
-#endif
+    DLOG(ERROR) << "Contact(" << pub_name << ") not present in contact list."
+                << std::endl;
     return -1911;
   }
   mi_contact mic = *it;
@@ -242,9 +240,8 @@ int ContactsHandler::UpdateContactConfirmed(const std::string &pub_name,
 int ContactsHandler::SetLastContactRank(const std::string &pub_name) {
   contact_set::iterator it = cs_.find(pub_name);
   if (it == cs_.end()) {
-#ifdef DEBUG
-    printf("Contact(%s) not present in contact list.\n", pub_name.c_str());
-#endif
+    DLOG(ERROR) << "Contact(" << pub_name << ") not present in contact list."
+                << std::endl;
     return -1912;
   }
   mi_contact mic = *it;
@@ -258,9 +255,8 @@ int ContactsHandler::GetContactInfo(const std::string &pub_name,
                                     mi_contact *mic) {
   contact_set::iterator it = cs_.find(pub_name);
   if (it == cs_.end()) {
-#ifdef DEBUG
-    printf("Contact(%s) not present in contact list.\n", pub_name.c_str());
-#endif
+    DLOG(ERROR) << "Contact(" << pub_name << ") not present in contact list."
+                << std::endl;
     return -1913;
   }
   *mic = *it;

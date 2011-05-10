@@ -19,7 +19,7 @@
 * ============================================================================
 */
 
-#include <iostream> //NOLINT  
+#include <iostream> //NOLINT
 #include <memory>
 #include <string>
 
@@ -29,7 +29,7 @@
 
 
 int main(int argc, char *argv[]) {
-  std::cout<< "LifeStuff Demo" << std::endl;
+  std::cout << "LifeStuff Demo" << std::endl;
 
   std::shared_ptr<maidsafe::lifestuff::UserCredentials> user_credential;
 
