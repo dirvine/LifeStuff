@@ -616,7 +616,7 @@ ReturnCode LocalStoreManager::UpdatePacketInDb(const std::string &key,
     int n = db_.execDML(statement.c_str());
     if (n != 1) {
       DLOG(ERROR) << "LSM::UpdatePacketInDb - Update failed(" << n << ")"
-                    << std::endl;
+                  << std::endl;
       return kStoreManagerError;
     }
     return kSuccess;

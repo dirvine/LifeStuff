@@ -94,7 +94,7 @@ class AuthenticationTest : public testing::Test {
         login_cond_var->wait(lock);
     }
     catch(const std::exception &e) {
-      printf("GetMasterDataMap: %s\n", e.what());
+      DLOG(WARNING) << "GetMasterDataMap: " << e.what() << std::endl;
       return kPasswordFailure;
     }
 
@@ -319,8 +319,8 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
   ASSERT_EQ(ser_dm_, ser_dm_login);
 }
 
+TEST_F(AuthenticationTest, DISABLED_FUNC_MAID_CreatePublicName) {
 /*
-TEST_F(AuthenticationTest, FUNC_MAID_CreatePublicName) {
   username_ += "11";
   ASSERT_EQ(kSuccess, authentication_.CreatePublicName("el public iuserneim"));
   ASSERT_EQ(kPublicUsernameAlreadySet,
@@ -331,9 +331,11 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreatePublicName) {
 //            authentication_.CreatePublicName("el public iuserneim"));
   authentication_.tmid_op_status_ = Authentication::kFailed;
   authentication_.stmid_op_status_ = Authentication::kFailed;
+*/
 }
 
-TEST_F(AuthenticationTest, FUNC_MAID_CreateMSIDPacket) {
+TEST_F(AuthenticationTest, DISABLED_FUNC_MAID_CreateMSIDPacket) {
+/*
   username_ += "12";
   std::string msid_name, pub_key, priv_key;
   ASSERT_EQ(kSuccess,
@@ -355,8 +357,8 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreateMSIDPacket) {
   ASSERT_EQ(crypto::Hash<crypto::SHA512>(pub_key + gp.signature()), msid_name);
   authentication_.tmid_op_status_ = Authentication::kFailed;
   authentication_.stmid_op_status_ = Authentication::kFailed;
-}
 */
+}
 
 TEST_F(AuthenticationTest, FUNC_MAID_RegisterLeaveRegister) {
   username_ += "13";

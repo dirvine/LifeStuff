@@ -142,9 +142,9 @@ class Authentication {
       std::shared_ptr<passport::SignaturePacket> packet,
       OpStatus *op_status);
   void SignaturePacketStoreCallback(
-    const ReturnCode &return_code,
-    std::shared_ptr<passport::SignaturePacket> packet,
-    OpStatus *op_status);
+      const ReturnCode &return_code,
+      std::shared_ptr<passport::SignaturePacket> packet,
+      OpStatus *op_status);
   void SaveSessionCallback(
       const ReturnCode &return_code,
       std::shared_ptr<pki::Packet> packet,
