@@ -156,10 +156,6 @@ void LocalStoreManager::Close(VoidFuncOneInt callback, bool) {
 int LocalStoreManager::LoadChunk(const std::string &chunk_name,
                                  std::string *data) {
 //  if (client_chunkstore_->Load(chunk_name, data) == kSuccess) {
-#ifdef DEBUG
-//    printf("In LSM::LoadChunk, found chunk %s in local chunkstore.\n",
-//           HexSubstr(chunk_name).c_str());
-#endif
 //    return kSuccess;
 //  }
   return FindAndLoadChunk(chunk_name, data);
@@ -185,9 +181,6 @@ int LocalStoreManager::StoreChunk(const std::string &chunk_name,
 //        fs3::copy_file(current, file_path);
 //      }
 //    } else {
-//#ifdef DEBUG
-//      printf("Chunk(%s) to store doesn't exist.\n", hex_chunk_name.c_str());
-//#endif
 //      signal_mutex_.lock();
 //      chunks_pending_.insert(chunk_name);
 //      signal_mutex_.unlock();
@@ -197,9 +190,6 @@ int LocalStoreManager::StoreChunk(const std::string &chunk_name,
 //    }
 //  }
 //  catch(const std::exception &e) {
-//#ifdef DEBUG
-//    printf("LocalStoreManager::StoreChunk - Exception: %s\n", e.what());
-//#endif
 //    signal_mutex_.lock();
 //    chunks_pending_.insert(chunk_name);
 //    signal_mutex_.unlock();
@@ -212,9 +202,6 @@ int LocalStoreManager::StoreChunk(const std::string &chunk_name,
 //  ChunkType chunk_type = client_chunkstore_->chunk_type(chunk_name);
 //  ChunkType new_type = chunk_type ^ (kOutgoing | kNormal);
 //  if (client_chunkstore_->ChangeChunkType(chunk_name, new_type) != 0) {
-//#ifdef DEBUG
-//    printf("In LocalStoreManager::SendContent, failed to change chunk type.\n");
-//#endif
 //  }
 //  signal_mutex_.lock();
 //  chunks_pending_.insert(chunk_name);
@@ -237,21 +224,12 @@ int LocalStoreManager::DeleteChunk(const std::string &chunk_name,
 //  boost::uint64_t size(chunk_size);
 //  if (size < 2) {
 //    if (chunk_type < 0 || chunk_path.empty()) {
-//#ifdef DEBUG
-//      printf("In LSM::DeleteChunk, didn't find chunk %s in local chunkstore - "
-//             "cant delete without valid size\n", HexSubstr(chunk_name).c_str());
-//#endif
 //      return kDeleteSizeError;
 //    }
 //    try {
 //      size = fs3::file_size(chunk_path);
 //    }
 //    catch(const std::exception &e) {
-//  #ifdef DEBUG
-//      printf("In LSM::DeleteChunk, didn't find chunk %s in local chunkstore - "
-//             "can't delete without valid size.\n%s\n",
-//             HexSubstr(chunk_name).c_str(), e.what());
-//  #endif
 //      return kDeleteSizeError;
 //    }
 //  }
@@ -266,9 +244,6 @@ int LocalStoreManager::DeleteChunk(const std::string &chunk_name,
 //      new_type = chunk_type ^ (kCache | kTempCache);
 //    if (!(new_type < 0) &&
 //        client_chunkstore_->ChangeChunkType(chunk_name, new_type) != kSuccess) {
-//  #ifdef DEBUG
-//      printf("In LSM::DeleteChunk, failed to change chunk type.\n");
-//  #endif
 //    }
 //  }
   return kSuccess;
@@ -304,10 +279,8 @@ bool LocalStoreManager::KeyUnique(const std::string &key, bool) {
       result = (!fs3::exists(file_path));
     }
     catch(const std::exception &e) {
-#ifdef DEBUG
-      printf("LocalStoreManager::KeyUnique - Failed check path existance: %s\n",
-             e.what());
-#endif
+      DLOG(WARNING) << "LSM::KeyUnique - Failed check path existance: "
+                    << e.what() << std::endl;
       return false;
     }
   }
@@ -376,7 +349,7 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
     ser_gps.push_back(ser_gp);
   }
 
-  for (size_t n = 0; n < ser_gps.size(); ++n) {
+//  for (size_t n = 0; n < ser_gps.size(); ++n) {
 //    kad::SignedValue sv;
 //    if (sv.ParseFromString(ser_gps[n])) {
 //      if (!RSACheckSignedData(sv.value(), sv.value_signature(), public_key)) {
@@ -384,7 +357,7 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
 //        return;
 //      }
 //    }
-  }
+//  }
   ReturnCode rc = DeletePacket_DeleteFromDb(packet_name, ser_gps, public_key);
   ExecReturnCodeCallback(cb, rc);
 }
@@ -403,29 +376,24 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
     std::string s("select value from network where key='" + hex_key + "';");
     CppSQLite3Query q = db_.execQuery(s.c_str());
     if (q.eof()) {
-#ifdef DEBUG
-      printf("LocalStoreManager::DeletePacket_DeleteFromDb - value not there "
-             "anyway.\n");
-#endif
+      DLOG(WARNING) << "LSM::DeletePacket_DeleteFromDb - value not there"
+                    << std::endl;
       return kSuccess;
     } else {
-//      kad::SignedValue ksv;
-//      if (ksv.ParseFromString(DecodeFromHex(q.getStringField(0)))) {
-//        if (!RSACheckSignedData(ksv.value(), ksv.value_signature(),
-//                                public_key)) {
-// #ifdef DEBUG
-//          printf("LocalStoreManager::DeletePacket_DeleteFromDb - "
-//                 "current value failed validation.\n");
-// #endif
-//          return kDeletePacketFailure;
-//        }
-//      }
+      SignedValue ksv;
+      if (ksv.ParseFromString(DecodeFromHex(q.getStringField(0)))) {
+        if (!crypto::AsymCheckSig(ksv.value(), ksv.value_signature(),
+                                  public_key)) {
+          DLOG(WARNING) << "LSM::DeletePacket_DeleteFromDb - "
+                           "current value failed validation." << std::endl;
+          return kDeletePacketFailure;
+        }
+      }
     }
   }
   catch(CppSQLite3Exception &e1) {  // NOLINT (Fraser)
-#ifdef DEBUG
-    printf("Error(%i): %s\n", e1.errorCode(),  e1.errorMessage());
-#endif
+    DLOG(WARNING) << "LSM::DeletePacket_DeleteFromDb - " << e1.errorCode()
+                  << ": " << e1.errorMessage() << std::endl;
     return kStoreManagerError;
   }
 
@@ -435,10 +403,8 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
       std::string s("delete from network where key='" + hex_key + "';");
       a = db_.execDML(s.c_str());
     } catch(CppSQLite3Exception &e2) {  // NOLINT (Fraser)
-#ifdef DEBUG
-      printf("Error(%i): %s - ", e2.errorCode(),  e2.errorMessage());
-      printf("%d rows affected\n", a);
-#endif
+      DLOG(WARNING) << "LSM::DeletePacket_DeleteFromDb - " << e2.errorCode()
+                    << ": " << e2.errorMessage() << std::endl;
       return kStoreManagerError;
     }
   } else {
@@ -451,19 +417,15 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
         if (a == 1) {
           --deleted;
         } else {
-#ifdef DEBUG
-          printf("LocalStoreManager::DeletePacket_DeleteFromDb - failure to"
-                 " delete <key, value>(%s, %s).\n",
-                 hex_key.substr(0, 10).c_str(), HexSubstr(values[n]).c_str());
-          printf("%d rows affected\n", a);
-#endif
+          DLOG(WARNING) << "LSM::DeletePacket_DeleteFromDb - failure to delete "
+                           "<key, value>(" << hex_key.substr(0, 10) << ", "
+                        << HexSubstr(values[n]) << ")" << std::endl;
           return kDeletePacketFailure;
         }
       }
       catch(CppSQLite3Exception &e2) {  // NOLINT (Fraser)
-#ifdef DEBUG
-        printf("Error(%i): %s\n", e2.errorCode(),  e2.errorMessage());
-#endif
+        DLOG(WARNING) << "LSM::DeletePacket_DeleteFromDb - " << e2.errorCode()
+                      << ": " << e2.errorMessage() << std::endl;
         return kStoreManagerError;
       }
     }
@@ -499,9 +461,7 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
   if (sv.ParseFromString(ser_gp)) {
     if (!crypto::AsymCheckSig(sv.value(), sv.value_signature(), public_key)) {
       ExecReturnCodeCallback(cb, kSendPacketFailure);
- #ifdef DEBUG
-      printf("%s\n", sv.value().c_str());
- #endif
+      DLOG(WARNING) << "LSM::StorePacket - " << sv.value() << std::endl;
       return;
     }
   }
@@ -538,10 +498,8 @@ ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
       SignedValue sv;
       if (sv.ParseFromString(dec_value)) {
         if (!crypto::AsymCheckSig(sv.value(), sv.value_signature(), pub_key)) {
- #ifdef DEBUG
-          printf("LocalStoreManager::StorePacket_InsertToDb - "
-                 "Signature didn't validate.\n");
- #endif
+          DLOG(WARNING) << "LSM::StorePacket_InsertToDb - "
+                           "Signature didn't validate" << std::endl;
           return kStoreManagerError;
         }
       }
@@ -557,18 +515,14 @@ ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
     s = "insert into network values ('" + hex_key + "', '" + hex_value + "');";
     int a = db_.execDML(s.c_str());
     if (a != 1) {
-#ifdef DEBUG
-      printf("LocalStoreManager::StorePacket_InsertToDb - "
-             "Insert failed.\n");
-#endif
+      DLOG(WARNING) << "LSM::StorePacket_InsertToDb - Insert fail" << std::endl;
       return kStoreManagerError;
     }
     return kSuccess;
   }
   catch(CppSQLite3Exception &e) {  // NOLINT
-#ifdef DEBUG
-    printf("Error(%i): %s\n", e.errorCode(),  e.errorMessage());
-#endif
+    DLOG(WARNING) << "LSM::StorePacket_InsertToDb - " << e.errorCode()
+                  << ": " << e.errorMessage() << std::endl;
     return kStoreManagerError;
   }
 }
@@ -586,9 +540,6 @@ void LocalStoreManager::UpdatePacket(const std::string &packet_name,
 //  pki::MaidsafeValidator msv;
 //  if (!msv.ValidateSignerId(key_id, public_key, public_key_signature)) {
 //    ExecReturnCodeCallback(cb, kUpdatePacketFailure);
-//#ifdef DEBUG
-//    printf("LSM::UpdatePacket - Signing key doesn't validate.\n");
-//#endif
 //    return;
 //  }
 
@@ -598,33 +549,25 @@ void LocalStoreManager::UpdatePacket(const std::string &packet_name,
   CreateSerialisedSignedValue(new_value, private_key, &new_ser_gp);
   if (old_ser_gp.empty() || new_ser_gp.empty()) {
     ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
-#ifdef DEBUG
-    printf("LSM::UpdatePacket - Empty old or new.\n");
-#endif
+    DLOG(WARNING) << "LSM::UpdatePacket - Empty old or new" << std::endl;
     return;
   }
 
   SignedValue old_sv, new_sv;
   if (!old_sv.ParseFromString(old_ser_gp) ||
       !new_sv.ParseFromString(new_ser_gp)) {
- #ifdef DEBUG
-    printf("LSM::UpdatePacket - Old or new doesn't parse.\n");
- #endif
+    DLOG(WARNING) << "LSM::UpdatePacket - Old/new doesn't parse" << std::endl;
   }
 
   if (!crypto::AsymCheckSig(old_sv.value(), old_sv.value_signature(),
                             public_key)) {
     ExecReturnCodeCallback(cb, kUpdatePacketFailure);
- #ifdef DEBUG
-    printf("LSM::UpdatePacket - Old fails validation.\n");
- #endif
+    DLOG(WARNING) << "LSM::UpdatePacket - Old fails validation" << std::endl;
     return;
   }
   if (!crypto::AsymCheckSig(new_sv.value(), new_sv.value_signature(),
                             public_key)) {
- #ifdef DEBUG
-    printf("LSM::UpdatePacket - New fails validation.\n");
- #endif
+    DLOG(WARNING) << "LSM::UpdatePacket - New fails validation" << std::endl;
     ExecReturnCodeCallback(cb, kUpdatePacketFailure);
     return;
   }
@@ -633,9 +576,7 @@ void LocalStoreManager::UpdatePacket(const std::string &packet_name,
   int n = GetValue_FromDB(packet_name, &values);
   if (n == kFindValueError || values.empty()) {
     ExecReturnCodeCallback(cb, kStoreManagerError);
-#ifdef DEBUG
-    printf("LSM::UpdatePacket - Key not there.\n");
-#endif
+    DLOG(WARNING) << "LSM::UpdatePacket - Key not there" << std::endl;
     return;
   }
 
@@ -643,17 +584,13 @@ void LocalStoreManager::UpdatePacket(const std::string &packet_name,
   std::set<std::string>::iterator it = the_values.find(old_ser_gp);
   if (it == the_values.end()) {
     ExecReturnCodeCallback(cb, kStoreManagerError);
-#ifdef DEBUG
-    printf("LSM::UpdatePacket - Old value not there.\n");
-#endif
+    DLOG(WARNING) << "LSM::UpdatePacket - Old value not there" << std::endl;
     return;
   }
   it = the_values.find(new_ser_gp);
   if (it != the_values.end()) {
     ExecReturnCodeCallback(cb, kStoreManagerError);
-#ifdef DEBUG
-    printf("LSM::UpdatePacket - New value already there.\n");
-#endif
+    DLOG(WARNING) << "LSM::UpdatePacket - New value already there" << std::endl;
     return;
   }
 
@@ -666,6 +603,7 @@ ReturnCode LocalStoreManager::UpdatePacketInDb(const std::string &key,
                                                const std::string &new_value) {
   try {
     if (key.length() != kKeySize) {
+      DLOG(WARNING) << "LSM::UpdatePacketInDb: Incorrect key size" << std::endl;
       return kIncorrectKeySize;
     }
 
@@ -677,17 +615,15 @@ ReturnCode LocalStoreManager::UpdatePacketInDb(const std::string &key,
                  hex_old_value + "';";
     int n = db_.execDML(statement.c_str());
     if (n != 1) {
-#ifdef DEBUG
-      printf("LocalStoreManager::UpdatePacketInDb - Update failed(%d).\n", n);
-#endif
+      DLOG(ERROR) << "LSM::UpdatePacketInDb - Update failed(" << n << ")"
+                    << std::endl;
       return kStoreManagerError;
     }
     return kSuccess;
   }
   catch(CppSQLite3Exception &e) {  // NOLINT
-#ifdef DEBUG
-    printf("Error(%i): %s\n", e.errorCode(),  e.errorMessage());
-#endif
+    DLOG(WARNING) << "LSM::UpdatePacketInDb - " << e.errorCode() << ": "
+                  << e.errorMessage() << std::endl;
     return kStoreManagerError;
   }
 }
@@ -698,177 +634,144 @@ bool LocalStoreManager::ValidateGenericPacket(std::string ser_gp,
   if (!gp.ParseFromString(ser_gp))
     return false;
   return crypto::AsymCheckSig(gp.data(), gp.signature(), public_key);
-//    return true;
 }
 
 ////////////// BUFFER PACKET //////////////
 
-//int LocalStoreManager::CreateBP() {
-//  std::string mpid_public, mpid_private;
-//  if (ss_->MPublicID(NULL, &mpid_public, &mpid_private, NULL) != kSuccess)
-//    return -666;
-//
-//  std::string bufferpacketname(BufferPacketName()), ser_packet;
-//  BufferPacket buffer_packet;
-//  GenericPacket *ser_owner_info = buffer_packet.add_owner_info();
-//  BufferPacketInfo buffer_packet_info;
-//  buffer_packet_info.set_owner(ss_->PublicUsername());
-//  buffer_packet_info.set_owner_publickey(mpid_public);
-//  ser_owner_info->set_data(buffer_packet_info.SerializeAsString());
-//  ser_owner_info->set_signature(RSASign(ser_owner_info->data(), mpid_private));
-//  buffer_packet.SerializeToString(&ser_packet);
-//  return FlushDataIntoChunk(bufferpacketname, ser_packet, false);
-//}
-//
-//int LocalStoreManager::ModifyBPInfo(const std::string &info) {
-//  std::string mpid_public, mpid_private;
-//  if (ss_->MPublicID(NULL, &mpid_public, &mpid_private, NULL) != kSuccess)
-//    return -666;
-//
-//  std::string bp_in_chunk;
-//  std::string bufferpacketname(BufferPacketName()), ser_gp;
-//  GenericPacket gp;
-//  gp.set_data(info);
-//  gp.set_signature(RSASign(gp.data(), mpid_private));
-//  gp.SerializeToString(&ser_gp);
-//  if (FindAndLoadChunk(bufferpacketname, &bp_in_chunk) != 0) {
-//#ifdef DEBUG
-//    printf("LocalStoreManager::ModifyBPInfo - Failed to find BP chunk(%s).\n",
-//           bufferpacketname.substr(0, 10).c_str());
-//#endif
-//    return -1;
-//  }
-//  std::string new_bp;
-//  if (!vbph_.ChangeOwnerInfo(ser_gp, mpid_public, &bp_in_chunk)) {
-//#ifdef DEBUG
-//    printf("LocalStoreManager::ModifyBPInfo - Failed to change owner info.\n");
-//#endif
-//    return -2;
-//  }
-//  if (FlushDataIntoChunk(bufferpacketname, bp_in_chunk, true) != 0) {
-//#ifdef DEBUG
-//    printf("LocalStoreManager::ModifyBPInfo - Failed to flush BP to chunk.\n");
-//#endif
-//    return -3;
-//  }
-//  return 0;
-//}
-//
-//int LocalStoreManager::LoadBPMessages(
-//    std::list<ValidatedBufferPacketMessage> *messages) {
-//  std::string mpid_private;
-//  if (ss_->MPublicID(NULL, NULL, &mpid_private, NULL) != kSuccess) {
-//#ifdef DEBUG
-//    printf("LocalStoreManager::LoadBPMessages - No MPID.\n");
-//#endif
-//    return 0;
-//  }
-//
-//  std::string bp_in_chunk;
-//  std::string bufferpacketname(BufferPacketName());
-//  if (FindAndLoadChunk(bufferpacketname, &bp_in_chunk) != 0) {
-//#ifdef DEBUG
-//    printf("LocalStoreManager::LoadBPMessages - Failed to find BP chunk.\n");
-//#endif
-//    return 0;
-//  }
-//  std::vector<std::string> msgs;
-//  if (!vbph_.GetMessages(&bp_in_chunk, &msgs)) {
-//#ifdef DEBUG
-//    printf("LocalStoreManager::LoadBPMessages - Failed to get messages.\n");
-//#endif
-//    return 0;
-//  }
-//  messages->clear();
-//  for (size_t n = 0; n < msgs.size(); ++n) {
-//    ValidatedBufferPacketMessage valid_message;
-//    if (valid_message.ParseFromString(msgs[n])) {
-//      std::string aes_key(AESDecrypt(valid_message.index(), mpid_private));
-//      valid_message.set_message(AESDecrypt(valid_message.message(), aes_key));
-//      valid_message.set_index("");
-//      messages->push_back(valid_message);
-//    }
-//  }
-//  if (FlushDataIntoChunk(bufferpacketname, bp_in_chunk, true) != 0) {
-//#ifdef DEBUG
-//    printf("LSM::LoadBPMessages - Failed to flush BP to chunk.\n");
-//#endif
-//    return 0;
-//  }
-//  return kUpperThreshold_;
-//}
-//
-//int LocalStoreManager::SendAMessage(
-//    const std::vector<std::string> &receivers, const std::string &message,
-//    const MessageType &m_type, std::map<std::string, ReturnCode> *add_results) {
-//  if (!add_results)
-//    return -660;
-//  if (ss_->MPublicID(NULL, NULL, NULL, NULL) != kSuccess)
-//    return -666;
-//
-//  std::set<std::string> sss(receivers.begin(), receivers.end());
-//  std::vector<std::string> recs;
-//  std::set<std::string>::iterator it;
-//  if (sss.size() != receivers.size()) {
-//    for (it = sss.begin(); it != sss.end(); ++it)
-//      recs.push_back(*it);
-//  } else {
-//    recs = receivers;
-//  }
-//  for (size_t n = 0; n < recs.size(); ++n)
-//    add_results->insert(std::pair<std::string, ReturnCode>
-//                                 (recs[n], kBPAwaitingCallback));
-//
-//  std::string bp_in_chunk, ser_gp;
-//  int successes = 0;
-//  boost::uint32_t timestamp = /*GetDurationSinceEpoch()*/0;
-//  for (size_t n = 0; n < recs.size(); ++n) {
-//    std::string rec_pub_key(ss_->GetContactPublicKey(recs[n]));
-//    std::string bufferpacketname(BufferPacketName(recs[n], rec_pub_key));
-//    if (FindAndLoadChunk(bufferpacketname, &bp_in_chunk) != 0) {
-//#ifdef DEBUG
-//      printf("LocalStoreManager::AddBPMessage - Failed to find BP chunk (%s)\n",
-//             recs[n].c_str());
-//#endif
-//      (*add_results)[recs[n]] = kBPAddMessageError;
-//      continue;
-//    }
-//
-//    std::string updated_bp;
-//    if (!vbph_.AddMessage(bp_in_chunk,
-//        CreateMessage(message, rec_pub_key, m_type, timestamp), "",
-//        &updated_bp)) {
-//#ifdef DEBUG
-//      printf("LocalStoreManager::AddBPMessage - Failed to add message (%s).\n",
-//             recs[n].c_str());
-//#endif
-//      (*add_results)[recs[n]] = kBPAddMessageError;
-//      continue;
-//    }
-//
-//    if (FlushDataIntoChunk(bufferpacketname, updated_bp, true) != 0) {
-//#ifdef DEBUG
-//      printf("LSM::AddBPMessage - Failed to flush BP into chunk. (%s).\n",
-//             recs[n].c_str());
-//#endif
-//      (*add_results)[recs[n]] = kBPAddMessageError;
-//      continue;
-//    }
-//    (*add_results)[recs[n]] = kSuccess;
-//    ++successes;
-//  }
-//  return successes;
-//}
-//
-//int LocalStoreManager::LoadBPPresence(std::list<LivePresence>*) {
-//  return kUpperThreshold_;
-//}
-//
-//int LocalStoreManager::AddBPPresence(const std::vector<std::string> &receivers,
-//                                     std::map<std::string, ReturnCode>*) {
-//  return receivers.size();
-//}
-//
+/*
+int LocalStoreManager::CreateBP() {
+  std::string mpid_public, mpid_private;
+  if (ss_->MPublicID(NULL, &mpid_public, &mpid_private, NULL) != kSuccess)
+    return -666;
+
+  std::string bufferpacketname(BufferPacketName()), ser_packet;
+  BufferPacket buffer_packet;
+  GenericPacket *ser_owner_info = buffer_packet.add_owner_info();
+  BufferPacketInfo buffer_packet_info;
+  buffer_packet_info.set_owner(ss_->PublicUsername());
+  buffer_packet_info.set_owner_publickey(mpid_public);
+  ser_owner_info->set_data(buffer_packet_info.SerializeAsString());
+  ser_owner_info->set_signature(RSASign(ser_owner_info->data(), mpid_private));
+  buffer_packet.SerializeToString(&ser_packet);
+  return FlushDataIntoChunk(bufferpacketname, ser_packet, false);
+}
+
+int LocalStoreManager::ModifyBPInfo(const std::string &info) {
+  std::string mpid_public, mpid_private;
+  if (ss_->MPublicID(NULL, &mpid_public, &mpid_private, NULL) != kSuccess)
+    return -666;
+
+  std::string bp_in_chunk;
+  std::string bufferpacketname(BufferPacketName()), ser_gp;
+  GenericPacket gp;
+  gp.set_data(info);
+  gp.set_signature(RSASign(gp.data(), mpid_private));
+  gp.SerializeToString(&ser_gp);
+  if (FindAndLoadChunk(bufferpacketname, &bp_in_chunk) != 0) {
+    return -1;
+  }
+  std::string new_bp;
+  if (!vbph_.ChangeOwnerInfo(ser_gp, mpid_public, &bp_in_chunk)) {
+    return -2;
+  }
+  if (FlushDataIntoChunk(bufferpacketname, bp_in_chunk, true) != 0) {
+    return -3;
+  }
+  return 0;
+}
+
+int LocalStoreManager::LoadBPMessages(
+    std::list<ValidatedBufferPacketMessage> *messages) {
+  std::string mpid_private;
+  if (ss_->MPublicID(NULL, NULL, &mpid_private, NULL) != kSuccess) {
+    return 0;
+  }
+
+  std::string bp_in_chunk;
+  std::string bufferpacketname(BufferPacketName());
+  if (FindAndLoadChunk(bufferpacketname, &bp_in_chunk) != 0) {
+    return 0;
+  }
+  std::vector<std::string> msgs;
+  if (!vbph_.GetMessages(&bp_in_chunk, &msgs)) {
+    return 0;
+  }
+  messages->clear();
+  for (size_t n = 0; n < msgs.size(); ++n) {
+    ValidatedBufferPacketMessage valid_message;
+    if (valid_message.ParseFromString(msgs[n])) {
+      std::string aes_key(AESDecrypt(valid_message.index(), mpid_private));
+      valid_message.set_message(AESDecrypt(valid_message.message(), aes_key));
+      valid_message.set_index("");
+      messages->push_back(valid_message);
+    }
+  }
+  if (FlushDataIntoChunk(bufferpacketname, bp_in_chunk, true) != 0) {
+    return 0;
+  }
+  return kUpperThreshold_;
+}
+
+int LocalStoreManager::SendAMessage(
+    const std::vector<std::string> &receivers, const std::string &message,
+    const MessageType &m_type, std::map<std::string, ReturnCode> *add_results) {
+  if (!add_results)
+    return -660;
+  if (ss_->MPublicID(NULL, NULL, NULL, NULL) != kSuccess)
+    return -666;
+
+  std::set<std::string> sss(receivers.begin(), receivers.end());
+  std::vector<std::string> recs;
+  std::set<std::string>::iterator it;
+  if (sss.size() != receivers.size()) {
+    for (it = sss.begin(); it != sss.end(); ++it)
+      recs.push_back(*it);
+  } else {
+    recs = receivers;
+  }
+  for (size_t n = 0; n < recs.size(); ++n)
+    add_results->insert(std::pair<std::string, ReturnCode>
+                                 (recs[n], kBPAwaitingCallback));
+
+  std::string bp_in_chunk, ser_gp;
+  int successes = 0;
+  boost::uint32_t timestamp = 0;  //GetDurationSinceEpoch();
+  for (size_t n = 0; n < recs.size(); ++n) {
+    std::string rec_pub_key(ss_->GetContactPublicKey(recs[n]));
+    std::string bufferpacketname(BufferPacketName(recs[n], rec_pub_key));
+    if (FindAndLoadChunk(bufferpacketname, &bp_in_chunk) != 0) {
+      (*add_results)[recs[n]] = kBPAddMessageError;
+      continue;
+    }
+
+    std::string updated_bp;
+    if (!vbph_.AddMessage(bp_in_chunk,
+        CreateMessage(message, rec_pub_key, m_type, timestamp), "",
+        &updated_bp)) {
+      (*add_results)[recs[n]] = kBPAddMessageError;
+      continue;
+    }
+
+    if (FlushDataIntoChunk(bufferpacketname, updated_bp, true) != 0) {
+      (*add_results)[recs[n]] = kBPAddMessageError;
+      continue;
+    }
+    (*add_results)[recs[n]] = kSuccess;
+    ++successes;
+  }
+  return successes;
+}
+
+int LocalStoreManager::LoadBPPresence(std::list<LivePresence>*) {
+  return kUpperThreshold_;
+}
+
+int LocalStoreManager::AddBPPresence(const std::vector<std::string> &receivers,
+                                     std::map<std::string, ReturnCode>*) {
+  return receivers.size();
+}
+*/
+
 ////////////// END BUFFER PACKET //////////////
 
 int LocalStoreManager::FindAndLoadChunk(const std::string &chunkname,
@@ -886,9 +789,8 @@ int LocalStoreManager::FindAndLoadChunk(const std::string &chunkname,
   file_path = file_path / hex_chunkname;
   try {
     if (!fs3::exists(file_path)) {
-#ifdef DEBUG
-      printf("LocalStoreManager::FindAndLoadChunk - didn't find the BP.\n");
-#endif
+      DLOG(ERROR) << "LocalStoreManager::FindAndLoadChunk - didn't find  BP"
+                  << std::endl;
       return -1;
     }
     boost::uintmax_t size = fs3::file_size(file_path);
@@ -900,9 +802,8 @@ int LocalStoreManager::FindAndLoadChunk(const std::string &chunkname,
     *data = std::string((const char*)temp.get(), size);
   }
   catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("LocalStoreManager::FindAndLoadChunk - %s\n", e.what());
-#endif
+    DLOG(ERROR) << "LocalStoreManager::FindAndLoadChunk - " << e.what()
+                << std::endl;
     return -1;
   }
   client_chunkstore_->Store(chunkname, *data);
@@ -917,10 +818,9 @@ int LocalStoreManager::FlushDataIntoChunk(const std::string &chunkname,
   file_path = file_path / hex_chunkname;
   try {
     if (boost::filesystem::exists(file_path) && !overwrite) {
-#ifdef DEBUG
-      printf("This BP (%s) already exists\n.",
-             hex_chunkname.substr(0, 10).c_str());
-#endif
+      DLOG(INFO) << "LocalStoreManager::FlushDataIntoChunk - "
+                    "This BP (" << hex_chunkname.substr(0, 10)
+                 << ") already exists" << std::endl;
       return -1;
     }
     boost::filesystem::ofstream bp_file(file_path.string().c_str(),
@@ -929,9 +829,8 @@ int LocalStoreManager::FlushDataIntoChunk(const std::string &chunkname,
     bp_file.close();
   }
   catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("%s\n", e.what());
-#endif
+    DLOG(INFO) << "LocalStoreManager::FlushDataIntoChunk - " << e.what()
+               << std::endl;
     return -1;
   }
   client_chunkstore_->Store(chunkname, data);
@@ -950,32 +849,34 @@ std::string LocalStoreManager::BufferPacketName(const std::string &pub_username,
   return crypto::Hash<crypto::SHA512>(pub_username + public_key);
 }
 
-//std::string LocalStoreManager::CreateMessage(const std::string &message,
-//                                             const std::string &rec_public_key,
-//                                             const MessageType &m_type,
-//                                             const boost::uint32_t &timestamp) {
-//  std::string mpid_public, mpid_private;
-//  if (ss_->MPublicID(NULL, &mpid_public, &mpid_private, NULL) != kSuccess)
-//    return "";
-//  BufferPacketMessage bpm;
-//  GenericPacket gp;
-//
-//  bpm.set_sender_id(ss_->PublicUsername());
-//  bpm.set_sender_public_key(mpid_public);
-//  bpm.set_type(m_type);
-//  std::string aes_key(RandomString(crypto::AES256_KeySize +
-//                                   crypto::AES256_IVSize));
-//  bpm.set_rsaenc_key(RSAEncrypt(aes_key, rec_public_key));
-//  bpm.set_aesenc_message(AESEncrypt(message, aes_key));
-//  bpm.set_timestamp(timestamp);
-//  std::string ser_bpm;
-//  bpm.SerializeToString(&ser_bpm);
-//  gp.set_data(ser_bpm);
-//  gp.set_signature(RSASign(gp.data(), mpid_private));
-//  std::string ser_gp;
-//  gp.SerializeToString(&ser_gp);
-//  return ser_gp;
-//}
+/*
+std::string LocalStoreManager::CreateMessage(const std::string &message,
+                                             const std::string &rec_public_key,
+                                             const MessageType &m_type,
+                                             const boost::uint32_t &timestamp) {
+  std::string mpid_public, mpid_private;
+  if (ss_->MPublicID(NULL, &mpid_public, &mpid_private, NULL) != kSuccess)
+    return "";
+  BufferPacketMessage bpm;
+  GenericPacket gp;
+
+  bpm.set_sender_id(ss_->PublicUsername());
+  bpm.set_sender_public_key(mpid_public);
+  bpm.set_type(m_type);
+  std::string aes_key(RandomString(crypto::AES256_KeySize +
+                                   crypto::AES256_IVSize));
+  bpm.set_rsaenc_key(RSAEncrypt(aes_key, rec_public_key));
+  bpm.set_aesenc_message(AESEncrypt(message, aes_key));
+  bpm.set_timestamp(timestamp);
+  std::string ser_bpm;
+  bpm.SerializeToString(&ser_bpm);
+  gp.set_data(ser_bpm);
+  gp.set_signature(RSASign(gp.data(), mpid_private));
+  std::string ser_gp;
+  gp.SerializeToString(&ser_gp);
+  return ser_gp;
+}
+*/
 
 int LocalStoreManager::GetValue_FromDB(const std::string &key,
                                        std::vector<std::string> *results) {
@@ -995,42 +896,43 @@ int LocalStoreManager::GetValue_FromDB(const std::string &key,
     }
   }
   catch(CppSQLite3Exception &e) {  // NOLINT
-#ifdef DEBUG
-    printf("Error(%i): %s\n", e.errorCode(),  e.errorMessage());
-#endif
+    DLOG(WARNING) << "LSM::GetValue_FromDB - " << e.errorCode() << ": "
+                  << e.errorMessage() << std::endl;
     return kFindValueError;
   }
   return (results->size() > 0) ? kSuccess : kFindValueFailure;
 }
 
-//bool LocalStoreManager::VaultStoreInfo(boost::uint64_t *offered_space,
-//                                       boost::uint64_t *free_space) {
-//  *offered_space = RandomUint32();
-//  *free_space = RandomUint32() % *offered_space;
-//  return true;
-//}
+/*
+bool LocalStoreManager::VaultStoreInfo(boost::uint64_t *offered_space,
+                                       boost::uint64_t *free_space) {
+  *offered_space = RandomUint32();
+  *free_space = RandomUint32() % *offered_space;
+  return true;
+}
 
-//bool LocalStoreManager::VaultContactInfo(dht::kademlia::Contact *contact) {
-//  dht::kademlia::Contact ctc;
-//  *contact = ctc;
-//  return true;
-//}
-//
-//void LocalStoreManager::SetLocalVaultOwned(const std::string&,
-//                                           const std::string &pub_key,
-//                                           const std::string &signed_pub_key,
-//                                           const boost::uint32_t&,
-//                                           const std::string&,
-//                                           const boost::uint64_t&,
-//                                           const SetLocalVaultOwnedFunctor &f) {
-//  std::string pmid_name = SHA512String(pub_key + signed_pub_key);
-//  boost::thread thr(f, OWNED_SUCCESS, pmid_name);
-//}
-//
-//void LocalStoreManager::LocalVaultOwned(const LocalVaultOwnedFunctor &functor) {
-//  boost::thread thr(functor, NOT_OWNED);
-//}
-//
+bool LocalStoreManager::VaultContactInfo(dht::kademlia::Contact *contact) {
+  dht::kademlia::Contact ctc;
+  *contact = ctc;
+  return true;
+}
+
+void LocalStoreManager::SetLocalVaultOwned(const std::string&,
+                                           const std::string &pub_key,
+                                           const std::string &signed_pub_key,
+                                           const boost::uint32_t&,
+                                           const std::string&,
+                                           const boost::uint64_t&,
+                                           const SetLocalVaultOwnedFunctor &f) {
+  std::string pmid_name = SHA512String(pub_key + signed_pub_key);
+  boost::thread thr(f, OWNED_SUCCESS, pmid_name);
+}
+
+void LocalStoreManager::LocalVaultOwned(const LocalVaultOwnedFunctor &functor) {
+  boost::thread thr(functor, NOT_OWNED);
+}
+*/
+
 bool LocalStoreManager::NotDoneWithUploading() { return false; }
 
 void LocalStoreManager::CreateSerialisedSignedValue(

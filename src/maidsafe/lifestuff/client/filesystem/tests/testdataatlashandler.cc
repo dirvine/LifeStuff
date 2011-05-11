@@ -60,7 +60,9 @@ class DataAtlasHandlerTest : public testing::Test {
   DataAtlasHandlerTest()
       : test_root_dir_(file_system::TempDir() / ("maidsafe_TestDAH_" +
                        RandomAlphaNumericString(6))) {}
+
   ~DataAtlasHandlerTest() { }
+
   void SetUp() {
     SessionSingleton *ss(SessionSingleton::getInstance());
     std::shared_ptr<passport::test::CachePassport> passport(
@@ -85,19 +87,19 @@ class DataAtlasHandlerTest : public testing::Test {
       fs::create_directories(test_root_dir_);
     }
     catch(const std::exception& e) {
-      printf("%s\n", e.what());
+      DLOG(WARNING) << "DataAtlasHandlerTest::Setup - " << e.what()
+                    << std::endl;
     }
-    std::shared_ptr<ChunkStore>
-        client_chunkstore_/*(new ChunkStore(test_root_dir_.string(), 0, 0))*/;
+    std::shared_ptr<ChunkStore> client_chunkstore_;
+//  (new ChunkStore(test_root_dir_.string(), 0, 0));
 //    ASSERT_TRUE(client_chunkstore_->Init());
-    int count(0);
+//    int count(0);
 //    while (!client_chunkstore_->is_initialised() && count < 10000) {
 //      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 //      count += 10;
 //    }
     std::shared_ptr<LocalStoreManager>
-        sm(new LocalStoreManager(client_chunkstore_, test_dah::K,
-                                 test_root_dir_));
+        sm(new LocalStoreManager(test_root_dir_));
     test::CallbackObject cb;
     sm->Init(boost::bind(&test::CallbackObject::ReturnCodeCallback, &cb, _1),
              0);
@@ -105,8 +107,7 @@ class DataAtlasHandlerTest : public testing::Test {
       FAIL();
       return;
     }
-    ASSERT_EQ(0, file_system::Mount(ss->
-        SessionName(), ss->DefConLevel()));
+    ASSERT_EQ(0, file_system::Mount(ss->SessionName(), ss->DefConLevel()));
     boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
     std::shared_ptr<SEHandler> seh(new SEHandler());
     seh->Init(sm, client_chunkstore_);
@@ -133,10 +134,10 @@ class DataAtlasHandlerTest : public testing::Test {
         key = kRootSubdir[i][1];
       fs::create_directories(file_system::MaidsafeHomeDir(
           ss->SessionName()) / kRootSubdir[i][0]);
-      dah->AddElement(TidyPath(kRootSubdir[i][0]), ser_mdm, "", key,
-                       true);
+      dah->AddElement(TidyPath(kRootSubdir[i][0]), ser_mdm, "", key, true);
     }
   }
+
   void TearDown() {
     try {
       if (fs::exists(test_root_dir_))
@@ -148,10 +149,13 @@ class DataAtlasHandlerTest : public testing::Test {
         fs::remove_all(file_system::MaidsafeDir(session_name));
     }
     catch(const std::exception& e) {
-      printf("%s\n", e.what());
+      DLOG(WARNING) << "DataAtlasHandlerTest::TearDown - " << e.what()
+                    << std::endl;
     }
   }
+
   fs::path test_root_dir_;
+
   bool SerializeToString(maidsafe::encrypt::DataMap *data_map,
                          std::string& serialized) {
     std::stringstream string_stream;
