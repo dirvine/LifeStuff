@@ -69,6 +69,10 @@ class AuthenticationTest : public testing::Test {
   }
 
   int GetMasterDataMap(std::string *ser_dm_login) {
+    return GetMasterDataMap(ser_dm_login, password_);
+  }
+
+  int GetMasterDataMap(std::string *ser_dm_login, const std::string &password) {
     std::shared_ptr<boost::mutex> login_mutex(new boost::mutex);
     std::shared_ptr<boost::condition_variable> login_cond_var(
         new boost::condition_variable);
@@ -78,7 +82,7 @@ class AuthenticationTest : public testing::Test {
         new std::string);
     boost::thread(&Authentication::GetMasterDataMap,
                   &authentication_,
-                  password_,
+                  password,
                   login_mutex,
                   login_cond_var,
                   result,
@@ -135,18 +139,18 @@ TEST_F(AuthenticationTest, FUNC_MAID_GoodLogin) {
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
   std::string ser_dm_login;
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
-//  ASSERT_EQ(ser_dm_, ser_dm_login);
-//  ASSERT_EQ(username_, ss_->Username());
-//  ASSERT_EQ(pin_, ss_->Pin());
-//  ASSERT_EQ(password_, ss_->Password());
-//
-//  ASSERT_EQ(kSuccess, authentication_.SaveSession(ser_dm_));
-//  ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
-//  ser_dm_login.clear();
-//  ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
-//  ASSERT_EQ(ser_dm_, ser_dm_login);
-//  ASSERT_EQ(username_, ss_->Username());
-//  ASSERT_EQ(pin_, ss_->Pin());
+  ASSERT_EQ(ser_dm_, ser_dm_login);
+  ASSERT_EQ(username_, ss_->Username());
+  ASSERT_EQ(pin_, ss_->Pin());
+  ASSERT_EQ(password_, ss_->Password());
+
+  ASSERT_EQ(kSuccess, authentication_.SaveSession(ser_dm_));
+  ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
+  ser_dm_login.clear();
+  ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
+  ASSERT_EQ(ser_dm_, ser_dm_login);
+  ASSERT_EQ(username_, ss_->Username());
+  ASSERT_EQ(pin_, ss_->Pin());
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_LoginNoUser) {
@@ -291,8 +295,33 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {
   ASSERT_TRUE(sm_->KeyUnique(original_stmidname, false));
 }
 
-TEST_F(AuthenticationTest, FUNC_MAID_CreatePublicName) {
+TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
   username_ += "10";
+  ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,
+                                                       password_, ser_dm_));
+  // Save the session
+  ASSERT_EQ(kSuccess, authentication_.SaveSession(ser_dm_));
+  std::string original_tmidname, original_stmidname;
+
+  ASSERT_EQ(kSuccess, authentication_.ChangePassword(ser_dm_, "password_new"));
+  ASSERT_EQ("password_new", ss_->Password());
+
+  std::string ser_dm_login;
+  ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
+  ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
+  ASSERT_NE(ser_dm_, ser_dm_login);
+
+  ser_dm_login.clear();
+  ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
+  ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login, "password_new"));
+  ASSERT_EQ(ser_dm_, ser_dm_login);
+}
+
+/*
+TEST_F(AuthenticationTest, FUNC_MAID_CreatePublicName) {
+  username_ += "11";
   ASSERT_EQ(kSuccess, authentication_.CreatePublicName("el public iuserneim"));
   ASSERT_EQ(kPublicUsernameAlreadySet,
             authentication_.CreatePublicName("el public iuserneim"));
@@ -305,7 +334,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreatePublicName) {
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_CreateMSIDPacket) {
-  username_ += "11";
+  username_ += "12";
   std::string msid_name, pub_key, priv_key;
   ASSERT_EQ(kSuccess,
             authentication_.CreateMsidPacket(&msid_name, &pub_key, &priv_key));
@@ -327,9 +356,10 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreateMSIDPacket) {
   authentication_.tmid_op_status_ = Authentication::kFailed;
   authentication_.stmid_op_status_ = Authentication::kFailed;
 }
+*/
 
 TEST_F(AuthenticationTest, FUNC_MAID_RegisterLeaveRegister) {
-  username_ += "12";
+  username_ += "13";
   EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,

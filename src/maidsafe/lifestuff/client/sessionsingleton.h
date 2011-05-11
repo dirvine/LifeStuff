@@ -71,6 +71,7 @@ class AuthenticationTest_FUNC_MAID_RepeatedSaveSessionBlocking_Test;
 class AuthenticationTest_FUNC_MAID_RepeatedSaveSessionCallbacks_Test;
 class AuthenticationTest_FUNC_MAID_ChangeUsername_Test;
 class AuthenticationTest_FUNC_MAID_ChangePin_Test;
+class AuthenticationTest_FUNC_MAID_ChangePassword_Test;
 class AuthenticationTest_FUNC_MAID_CreatePublicName_Test;
 class AuthenticationTest_FUNC_MAID_NET_RepeatedSaveSessionBlocking_Test;
 class AuthenticationTest_FUNC_MAID_NET_RepeatedSaveSessionCallbacks_Test;
@@ -367,6 +368,7 @@ class SessionSingleton {
       test::AuthenticationTest_FUNC_MAID_RepeatedSaveSessionCallbacks_Test;
   friend class test::AuthenticationTest_FUNC_MAID_ChangeUsername_Test;
   friend class test::AuthenticationTest_FUNC_MAID_ChangePin_Test;
+  friend class test::AuthenticationTest_FUNC_MAID_ChangePassword_Test;
   friend class test::AuthenticationTest_FUNC_MAID_CreatePublicName_Test;
   friend class
       test::AuthenticationTest_FUNC_MAID_NET_RepeatedSaveSessionBlocking_Test;
