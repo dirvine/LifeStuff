@@ -21,7 +21,6 @@
 #include "maidsafe/pki/maidsafevalidator.h"
 #include "maidsafe/common/chunk_store.h"
 #include "maidsafe/common/crypto.h"
-//  #include "maidsafe/lifestuff/shared/maidsafe_messages.pb.h"
 #include "maidsafe/lifestuff/client/sessionsingleton.h"
 #include "maidsafe/lifestuff/client/clientutils.h"
 #include "maidsafe/lifestuff/client/lifestuff_messages.pb.h"
@@ -171,10 +170,12 @@ int LocalStoreManager::StoreChunk(const std::string &chunk_name,
   std::string hex_chunk_name(EncodeToHex(chunk_name));
   fs3::path file_path(local_sm_dir_ + "/StoreChunks");
   file_path = file_path / hex_chunk_name;
+
+/*
 //  client_chunkstore_->Store(chunk_name, file_path);
 
 //  ChunkType type = client_chunkstore_->chunk_type(chunk_name);
-//  fs3::path current/* = client_chunkstore_->GetChunkPath(chunk_name, type, false)*/;
+//  fs3::path current = client_chunkstore_->GetChunkPath(chunk_name,type,false);
 //  try {
 //    if (fs3::exists(current)) {
 //      if (!fs3::exists(file_path)) {
@@ -208,6 +209,7 @@ int LocalStoreManager::StoreChunk(const std::string &chunk_name,
 //  signal_mutex_.unlock();
 //  boost::thread thr(boost::bind(&LocalStoreManager::ExecuteReturnSignal, this,
 //                                chunk_name, kSuccess));
+*/
   return kChunkStorePending;
 }
 
@@ -218,6 +220,7 @@ int LocalStoreManager::DeleteChunk(const std::string &chunk_name,
   // Simulate knode lookup in RemoveFromWatchList
 //  boost::this_thread::sleep(boost::posix_time::seconds(2));
 #endif
+/*
 //  ChunkType chunk_type = client_chunkstore_->chunk_type(chunk_name);
 //    fs3::path chunk_path(client_chunkstore_->GetChunkPath(chunk_name,
 //                                                          chunk_type, false));
@@ -243,9 +246,11 @@ int LocalStoreManager::DeleteChunk(const std::string &chunk_name,
 //    else if (chunk_type & kCache)
 //      new_type = chunk_type ^ (kCache | kTempCache);
 //    if (!(new_type < 0) &&
-//        client_chunkstore_->ChangeChunkType(chunk_name, new_type) != kSuccess) {
+//        client_chunkstore_->ChangeChunkType(chunk_name,
+//                                            new_type) != kSuccess) {
 //    }
 //  }
+*/
   return kSuccess;
 }
 

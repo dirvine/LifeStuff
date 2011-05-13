@@ -73,28 +73,14 @@ class AuthenticationTest : public testing::Test {
   }
 
   int GetMasterDataMap(std::string *ser_dm_login, const std::string &password) {
-    std::shared_ptr<boost::mutex> login_mutex(new boost::mutex);
-    std::shared_ptr<boost::condition_variable> login_cond_var(
-        new boost::condition_variable);
-    std::shared_ptr<int> result(new int(kPendingResult));
     std::shared_ptr<std::string> serialised_master_datamap(new std::string);
     std::shared_ptr<std::string> surrogate_serialised_master_datamap(
         new std::string);
-    boost::thread(&Authentication::GetMasterDataMap,
-                  &authentication_,
-                  password,
-                  login_mutex,
-                  login_cond_var,
-                  result,
-                  serialised_master_datamap,
-                  surrogate_serialised_master_datamap);
-    try {
-      boost::mutex::scoped_lock lock(*login_mutex);
-      while (*result == kPendingResult)
-        login_cond_var->wait(lock);
-    }
-    catch(const std::exception &e) {
-      DLOG(WARNING) << "GetMasterDataMap: " << e.what() << std::endl;
+    int res =
+        authentication_.GetMasterDataMap(password,
+                                         serialised_master_datamap,
+                                         surrogate_serialised_master_datamap);
+    if (res != 0) {
       return kPasswordFailure;
     }
 
@@ -135,7 +121,6 @@ TEST_F(AuthenticationTest, FUNC_MAID_GoodLogin) {
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,
                                                        password_, ser_dm_));
-
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
   std::string ser_dm_login;
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));

@@ -271,7 +271,8 @@ class SEHandlerTest : public testing::Test {
   SEHandlerTest &operator=(const SEHandlerTest&);
 };
 
-TEST_F(SEHandlerTest, BEH_MAID_Check_Entry) {
+/*
+TEST_F(SEHandlerTest, DISABLED_BEH_MAID_Check_Entry) {
   fs::path rel_path(kRootSubdir[0][0]);
   fs::path rel_path1 = rel_path / "file1";
   fs::path rel_path2 = rel_path / "file2";
@@ -365,7 +366,7 @@ TEST_F(SEHandlerTest, BEH_MAID_Check_Entry) {
   ASSERT_TRUE(returned_hash9.empty());
 }
 
-TEST_F(SEHandlerTest, BEH_MAID_EncryptFile) {
+TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptFile) {
   // Connect to SEH signal
   int res(0), res2(res);
   boost::mutex m;
@@ -403,7 +404,7 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptFile) {
     ASSERT_FALSE(sm_->KeyUnique(dm.chunks[i].hash, false));
 }
 
-TEST_F(SEHandlerTest, BEH_MAID_EncryptString) {
+TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptString) {
   // Connect to SEH signal
   int res(0), res2(res);
   boost::mutex m;
@@ -434,7 +435,7 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptString) {
     ASSERT_FALSE(sm_->KeyUnique(dm.chunks[i].hash, false));
 }
 
-TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithChunksPrevLoaded) {
+TEST_F(SEHandlerTest, DISABLED_BEH_MAID_DecryptStringWithChunksPrevLoaded) {
   // Connect to SEH signal
   int res(0), res2(res);
   boost::mutex m;
@@ -463,7 +464,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithChunksPrevLoaded) {
   ASSERT_EQ(data, dec_string);
 }
 
-TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithLoadChunks) {
+TEST_F(SEHandlerTest, DISABLED_BEH_MAID_DecryptStringWithLoadChunks) {
   // Connect to SEH signal
   int res(0), res2(res);
   boost::mutex m;
@@ -517,7 +518,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithLoadChunks) {
   ASSERT_EQ(data, dec_string);
 }
 
-TEST_F(SEHandlerTest, BEH_MAID_DecryptWithChunksPrevLoaded) {
+TEST_F(SEHandlerTest, DISABLED_BEH_MAID_DecryptWithChunksPrevLoaded) {
   // Connect to SEH signal
   int res(0), res2(res);
   boost::mutex m;
@@ -557,7 +558,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithChunksPrevLoaded) {
   ASSERT_EQ(hash_before, hash_after);
 }
 
-TEST_F(SEHandlerTest, BEH_MAID_DecryptWithLoadChunks) {
+TEST_F(SEHandlerTest, DISABLED_BEH_MAID_DecryptWithLoadChunks) {
   ss_->SetDefConLevel(kDefCon2);
   int res(0), res2(res);
   boost::mutex m;
@@ -617,7 +618,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithLoadChunks) {
   ASSERT_EQ(hash_before, hash_after);
 }
 
-TEST_F(SEHandlerTest, BEH_MAID_EncryptAndDecryptPrivateDb) {
+TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptAndDecryptPrivateDb) {
   int res(0), res2(res);
   boost::mutex m;
   boost::signals2::connection c =
@@ -701,7 +702,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptAndDecryptAnonDb) {
   fs::remove(file_system::MaidsafeDir(ss_->SessionName()) / key);
 }
 
-TEST_F(SEHandlerTest, BEH_MAID_FailureOfChunkEncryptingFile) {
+TEST_F(SEHandlerTest, DISABLED_BEH_MAID_FailureOfChunkEncryptingFile) {
   // Connect to SEH signal
   int res(0), res2(res);
   const encrypt::SelfEncryptionParams sep;
@@ -779,7 +780,7 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureOfChunkEncryptingFile) {
   }
 }
 
-TEST_F(SEHandlerTest, BEH_MAID_MultipleFileEncryption) {
+TEST_F(SEHandlerTest, DISABLED_BEH_MAID_MultipleFileEncryption) {
   // Create the files
   std::vector<boost::tuple<std::string, std::string, int> > fileage;
   std::vector<std::string> filenames;
@@ -827,7 +828,7 @@ TEST_F(SEHandlerTest, BEH_MAID_MultipleFileEncryption) {
   printf("Checked results\n");
 }
 
-TEST_F(SEHandlerTest, BEH_MAID_MultipleEqualFiles) {
+TEST_F(SEHandlerTest, DISABLED_BEH_MAID_MultipleEqualFiles) {
   // Create the files
   std::vector<std::string> filenames;
   fs::path root_path(kRootSubdir[0][0]);
@@ -869,7 +870,7 @@ TEST_F(SEHandlerTest, BEH_MAID_MultipleEqualFiles) {
 //  printf("Done waiting\n");
 }
 
-TEST_F(SEHandlerTest, BEH_MAID_FailureSteppedMultipleEqualFiles) {
+TEST_F(SEHandlerTest, DISABLED_BEH_MAID_FailureSteppedMultipleEqualFiles) {
   std::vector<boost::tuple<std::string, std::string, int> > fileage;
   std::vector<std::string> filenames, fullnames;
   std::vector<encrypt::DataMap> dms;
@@ -969,7 +970,7 @@ TEST_F(SEHandlerTest, BEH_MAID_FailureSteppedMultipleEqualFiles) {
   printf("Checked results\n");
 }
 
-TEST_F(SEHandlerTest, BEH_MAID_OneFileModifiedAndSavedAgain) {
+TEST_F(SEHandlerTest, DISABLED_BEH_MAID_OneFileModifiedAndSavedAgain) {
   // Connect to SEH signal
   int res(0), res2(res);
   boost::mutex m;
@@ -1010,6 +1011,7 @@ TEST_F(SEHandlerTest, BEH_MAID_OneFileModifiedAndSavedAgain) {
 //    ASSERT_FALSE(sm_->KeyUnique(dm.encrypted_chunk_name(i), false));
 }
 
+*/
 }  // namespace test
 
 }  // namespace lifestuff

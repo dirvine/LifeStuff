@@ -73,146 +73,184 @@ int Authentication::GetUserInfo(const std::string &username,
   if (result != kSuccess) {
     tmid_op_status_ = kFailed;
     stmid_op_status_ = kFailed;
+    DLOG(ERROR) << "Auth::GetUserInfo: SetInitialDetails=" << result
+                << std::endl;
     return kAuthenticationError;
   } else {
-    tmid_op_status_ = kPendingMid;
-    stmid_op_status_ = kPendingMid;
+    tmid_op_status_ = kPending;
+    stmid_op_status_ = kPending;
   }
 
-  store_manager_->LoadPacket(mid_name, boost::bind(
-      &Authentication::GetMidTmidCallback, this, _1, _2, false));
-  store_manager_->LoadPacket(smid_name, boost::bind(
-      &Authentication::GetMidTmidCallback, this, _1, _2, true));
+  store_manager_->LoadPacket(mid_name,
+                             boost::bind(&Authentication::GetMidCallback, this,
+                                         _1, _2));
+  store_manager_->LoadPacket(smid_name,
+                             boost::bind(&Authentication::GetSmidCallback, this,
+                                         _1, _2));
 
-  bool success(true);
-  try {
-    boost::mutex::scoped_lock lock(mutex_);
-    success = cond_var_.timed_wait(lock,
-              boost::posix_time::milliseconds(4 * kSingleOpTimeout_),
-              boost::bind(&Authentication::TmidOpDone, this));
-  }
-  catch(const std::exception &e) {
-    DLOG(WARNING) << "Authentication::GetUserInfo: " << e.what() << std::endl;
-  }
-#ifdef DEBUG
-  if (!success)
-    DLOG(WARNING) << "Authentication::GetUserInfo: timed out waiting for TMID."
-                  << std::endl;
-#endif
-  session_singleton_->SetUsername(username);
-  session_singleton_->SetPin(pin);
-  {
-    boost::mutex::scoped_lock lock(mutex_);
-    if (tmid_op_status_ == kSucceeded)
-      return kUserExists;
-    if (tmid_op_status_ == kNoUser) {
-      if (stmid_op_status_ == kNoUser || stmid_op_status_ == kFailed)
-        return kUserDoesntExist;
+  // Wait until both ops are finished here
+  bool mid_finished(false), smid_finished(false);
+  while (!(mid_finished && smid_finished)) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    {
+      boost::mutex::scoped_lock lochly(mid_mutex_);
+      mid_finished = tmid_op_status_ != kPending;
+    }
+    {
+      boost::mutex::scoped_lock lochverly(smid_mutex_);
+      smid_finished = stmid_op_status_ != kPending;
     }
   }
-  // Need to wait for STMID result to decide
-  try {
-    boost::mutex::scoped_lock lock(mutex_);
-    success = cond_var_.timed_wait(lock,
-              boost::posix_time::milliseconds(4 * kSingleOpTimeout_),
-              boost::bind(&Authentication::StmidOpDone, this));
-  }
-  catch(const std::exception &e) {
-    DLOG(WARNING) << "Authentication::GetUserInfo: " << e.what() << std::endl;
-  }
-#ifdef DEBUG
-  if (!success)
-    DLOG(WARNING) << "Authentication::GetUserInfo: timed out waiting for STMID."
-                  << std::endl;
-#endif
-  boost::mutex::scoped_lock lock(mutex_);
-  if (stmid_op_status_ == kSucceeded)
+  if (tmid_op_status_ == kSucceeded || stmid_op_status_ == kSuccess) {
     return kUserExists;
-  if (stmid_op_status_ == kNoUser)
-    return kUserDoesntExist;
-  else
-    return kAuthenticationError;
+  }
+  return kUserDoesntExist;
 }
 
-void Authentication::GetMidTmidCallback(const std::vector<std::string> &values,
-                                        const ReturnCode &return_code,
-                                        bool surrogate) {
-  OpStatus op_status;
-  {
-    boost::mutex::scoped_lock lock(mutex_);
-    op_status = (surrogate ? stmid_op_status_ : tmid_op_status_);
-    if (return_code != kSuccess || values.empty()) {
-      if (surrogate) {
-        if (op_status == kPendingMid)
-          stmid_op_status_ = kNoUser;
-        else
-          stmid_op_status_ = kFailed;
-      } else {
-        if (op_status == kPendingMid)
-          tmid_op_status_ = kNoUser;
-        else
-          tmid_op_status_ = kFailed;
-      }
-      cond_var_.notify_all();
-      return;
+void Authentication::GetMidCallback(const std::vector<std::string> &values,
+                                    const ReturnCode &return_code) {
+  if (return_code != kSuccess || values.empty()) {
+    DLOG(INFO) << "Auth::GetMidCallback: No MID" << std::endl;
+    {
+      boost::mutex::scoped_lock loch_chapala(mid_mutex_);
+      tmid_op_status_ = kFailed;
     }
+    return;
   }
 
 #ifdef DEBUG
   if (values.size() != 1)
-    DLOG(WARNING) << "Authentication::GetMidTmidCallback - Values: "
-                  << values.size() << std::endl;
+    DLOG(WARNING) << "Auth::GetMidCallback - Values: " << values.size()
+                  << std::endl;
 #endif
 
-  int result(kSuccess);
   GenericPacket packet;
-  if (!packet.ParseFromString(values.at(0)) || packet.data().empty())
-    result = kBadPacket;
-  if (op_status == kPendingMid) {
-    std::string tmid_name;
-    if (result == kSuccess)
-      result = passport_->InitialiseTmid(surrogate, packet.data(), &tmid_name);
-    if (result != kSuccess) {
-      DLOG(WARNING) << "Authentication::GetMidTmidCallback - error " << result
-                    << std::endl;
-      boost::mutex::scoped_lock lock(mutex_);
-      if (surrogate)
-        stmid_op_status_ = kFailed;
-      else
-        tmid_op_status_ = kFailed;
-      cond_var_.notify_all();
-      return;
+  if (!packet.ParseFromString(values.at(0)) || packet.data().empty()) {
+    DLOG(INFO) << "Auth::GetMidCallback: Failed to parse" << std::endl;
+    {
+      boost::mutex::scoped_lock loch_chapala(mid_mutex_);
+      tmid_op_status_ = kFailed;
     }
-    boost::mutex::scoped_lock lock(mutex_);
-    if (surrogate)
-      stmid_op_status_ = kPendingTmid;
-    else
-      tmid_op_status_ = kPendingTmid;
-
-    store_manager_->LoadPacket(tmid_name,
-                               boost::bind(&Authentication::GetMidTmidCallback,
-                                           this, _1, _2, surrogate));
-  } else {
-    boost::mutex::scoped_lock lock(mutex_);
-    if (surrogate) {
-      if (result == kSuccess) {
-        encrypted_stmid_ = packet.data();
-        stmid_op_status_ = kSucceeded;
-      } else {
-        stmid_op_status_ = kFailed;
-      }
-      if (tmid_op_status_ == kFailed)
-        cond_var_.notify_all();
-    } else {
-      if (result == kSuccess) {
-        encrypted_tmid_ = packet.data();
-        tmid_op_status_ = kSucceeded;
-      } else {
-        tmid_op_status_ = kFailed;
-      }
-      cond_var_.notify_all();
-    }
+    return;
   }
+
+  std::string tmid_name;
+  int result = passport_->InitialiseTmid(false, packet.data(), &tmid_name);
+  if (result != kSuccess) {
+    DLOG(INFO) << "Auth::GetMidCallback: Failed InitialiseTmid" << std::endl;
+    {
+      boost::mutex::scoped_lock loch_chapala(mid_mutex_);
+      tmid_op_status_ = kFailed;
+    }
+    return;
+  }
+
+  store_manager_->LoadPacket(tmid_name,
+                             boost::bind(&Authentication::GetTmidCallback,
+                                         this, _1, _2));
+}
+
+void Authentication::GetSmidCallback(const std::vector<std::string> &values,
+                                     const ReturnCode &return_code) {
+  if (return_code != kSuccess || values.empty()) {
+    DLOG(INFO) << "Auth::GetSmidCallback: No SMID" << std::endl;
+    {
+      boost::mutex::scoped_lock loch_chapala(smid_mutex_);
+      stmid_op_status_ = kFailed;
+    }
+    return;
+  }
+
+#ifdef DEBUG
+  if (values.size() != 1)
+    DLOG(WARNING) << "Auth::GetSmidCallback - Values: " << values.size()
+                  << std::endl;
+#endif
+
+  GenericPacket packet;
+  if (!packet.ParseFromString(values.at(0)) || packet.data().empty()) {
+    DLOG(INFO) << "Auth::GetSmidCallback: Failed to parse" << std::endl;
+    {
+      boost::mutex::scoped_lock loch_chapala(smid_mutex_);
+      stmid_op_status_ = kFailed;
+    }
+    return;
+  }
+
+  std::string stmid_name;
+  int result = passport_->InitialiseTmid(true, packet.data(), &stmid_name);
+  if (result != kSuccess) {
+    DLOG(INFO) << "Auth::GetSmidCallback: Failed InitialiseStmid" << std::endl;
+    {
+      boost::mutex::scoped_lock loch_chapala(smid_mutex_);
+      stmid_op_status_ = kFailed;
+    }
+    return;
+  }
+
+  store_manager_->LoadPacket(stmid_name,
+                             boost::bind(&Authentication::GetStmidCallback,
+                                         this, _1, _2));
+}
+
+void Authentication::GetTmidCallback(const std::vector<std::string> &values,
+                                        const ReturnCode &return_code) {
+  if (return_code != kSuccess || values.empty()) {
+    DLOG(INFO) << "Auth::GetTmidCallback: No TMID" << std::endl;
+    {
+      boost::mutex::scoped_lock loch_chapala(mid_mutex_);
+      tmid_op_status_ = kFailed;
+    }
+    return;
+  }
+#ifdef DEBUG
+  if (values.size() != 1)
+    DLOG(WARNING) << "Auth::GetTmidCallback - Values: " << values.size()
+                  << std::endl;
+#endif
+
+  GenericPacket packet;
+  if (!packet.ParseFromString(values.at(0)) || packet.data().empty()) {
+    DLOG(INFO) << "Auth::GetTmidCallback: Failed to parse" << std::endl;
+    {
+      boost::mutex::scoped_lock loch_chapala(mid_mutex_);
+      tmid_op_status_ = kFailed;
+    }
+    return;
+  }
+
+  encrypted_tmid_ = packet.data();
+  tmid_op_status_ = kSucceeded;
+}
+
+void Authentication::GetStmidCallback(const std::vector<std::string> &values,
+                                      const ReturnCode &return_code) {
+  if (return_code != kSuccess || values.empty()) {
+    DLOG(INFO) << "Auth::GetStmidCallback: No TMID" << std::endl;
+    {
+      boost::mutex::scoped_lock loch_chapala(smid_mutex_);
+      stmid_op_status_ = kFailed;
+    }
+    return;
+  }
+#ifdef DEBUG
+  if (values.size() != 1)
+    DLOG(WARNING) << "Auth::GetStmidCallback - Values: " << values.size()
+                  << std::endl;
+#endif
+
+  GenericPacket packet;
+  if (!packet.ParseFromString(values.at(0)) || packet.data().empty()) {
+    DLOG(INFO) << "Auth::GetStmidCallback: Failed to parse" << std::endl;
+    {
+      boost::mutex::scoped_lock loch_chapala(smid_mutex_);
+      stmid_op_status_ = kFailed;
+    }
+    return;
+  }
+
+  encrypted_stmid_ = packet.data();
+  stmid_op_status_ = kSucceeded;
 }
 
 int Authentication::CreateUserSysPackets(const std::string &username,
@@ -425,7 +463,7 @@ int Authentication::CreateTmidPacket(const std::string &username,
     result = StorePacket(tmid, false);
 
   if (result != kSuccess) {
-      DLOG(ERROR) << "Authentication::CreateTmidPacket: Failed." << std::endl;
+    DLOG(ERROR) << "Authentication::CreateTmidPacket: Failed." << std::endl;
     return kAuthenticationError;
   } else {
     passport_->ConfirmNewUserData(mid, smid, tmid);
@@ -585,26 +623,35 @@ int Authentication::SaveSession(const std::string &serialised_master_datamap) {
   return result;
 }
 
-void Authentication::GetMasterDataMap(
+int Authentication::GetMasterDataMap(
     const std::string &password,
-    std::shared_ptr<boost::mutex> login_mutex,
-    std::shared_ptr<boost::condition_variable> login_cond_var,
-    std::shared_ptr<int> result,
     std::shared_ptr<std::string> serialised_master_datamap,
     std::shared_ptr<std::string> surrogate_serialised_master_datamap) {
-  boost::mutex::scoped_lock login_lock(*login_mutex);
   serialised_master_datamap->clear();
   surrogate_serialised_master_datamap->clear();
   // Still have not recovered the TMID
-  *result = passport_->GetUserData(password, false, encrypted_tmid_,
+  int res = passport_->GetUserData(password, false, encrypted_tmid_,
                                    serialised_master_datamap.get());
-  if (*result == kSuccess) {
+  if (res == kSuccess) {
     session_singleton_->SetPassword(password);
-    login_cond_var->notify_one();
+    return res;
   } else {
     DLOG(WARNING) << "Authentication::GetMasterDataMap - TMID error "
-                  << *result << std::endl;
+                  << res << std::endl;
   }
+
+  res = passport_->GetUserData(password, true, encrypted_stmid_,
+                               surrogate_serialised_master_datamap.get());
+  if (res == kSuccess) {
+    session_singleton_->SetPassword(password);
+    return res;
+  } else {
+    DLOG(WARNING) << "Authentication::GetMasterDataMap - STMID error "
+                  << res << std::endl;
+    return kPasswordFailure;
+  }
+
+/*
   // Wait for and recover the STMID
   bool success(false);
   try {
@@ -625,23 +672,24 @@ void Authentication::GetMasterDataMap(
                   << std::endl;
 #endif
   if (stmid_op_status_ == kSucceeded) {
-    *result = passport_->GetUserData(password, true, encrypted_stmid_,
-                                     surrogate_serialised_master_datamap.get());
-    if (*result == kSuccess) {
+    res = passport_->GetUserData(password, true, encrypted_stmid_,
+                                 surrogate_serialised_master_datamap.get());
+    if (res == kSuccess) {
       session_singleton_->SetPassword(password);
-      return;
+      return res;
     } else {
       DLOG(WARNING) << "Authentication::GetMasterDataMap - STMID error "
                     << *result << std::endl;
       boost::mutex::scoped_lock lock(mutex_);
       stmid_op_status_ = kFailed;
       encrypted_stmid_.clear();
-      *result = kPasswordFailure;
+      return kPasswordFailure;
     }
   } else {
-    *result = kPasswordFailure;
+    return kPasswordFailure;
   }
-  login_cond_var->notify_one();
+//  login_cond_var->notify_one();
+*/
 }
 
 int Authentication::CreateMsidPacket(std::string *msid_name,

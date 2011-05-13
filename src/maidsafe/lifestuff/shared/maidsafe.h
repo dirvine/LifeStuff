@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_SHARED_MAIDSAFE_H_
-#define MAIDSAFE_SHARED_MAIDSAFE_H_
+#ifndef MAIDSAFE_LIFESTUFF_SHARED_MAIDSAFE_H_
+#define MAIDSAFE_LIFESTUFF_SHARED_MAIDSAFE_H_
 
 #include <string>
 #include <vector>
@@ -224,4 +224,4 @@ inline std::string HexSubstr(const std::string &non_hex) {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_SHARED_MAIDSAFE_H_
+#endif  // MAIDSAFE_LIFESTUFF_SHARED_MAIDSAFE_H_

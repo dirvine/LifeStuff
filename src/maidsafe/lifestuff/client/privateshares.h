@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_CLIENT_PRIVATESHARES_H_
-#define MAIDSAFE_CLIENT_PRIVATESHARES_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_PRIVATESHARES_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_PRIVATESHARES_H_
 
 #include <string>
 #include <list>
@@ -206,4 +206,4 @@ class PrivateShareHandler {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_CLIENT_PRIVATESHARES_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_PRIVATESHARES_H_

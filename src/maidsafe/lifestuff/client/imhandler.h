@@ -22,28 +22,28 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_CLIENT_IMHANDLER_H_
-#define MAIDSAFE_CLIENT_IMHANDLER_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_IMHANDLER_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_IMHANDLER_H_
 
 #include <string>
-//  #include "maidsafe/lifestuff/shared/packet.pb.h"
 
 namespace maidsafe {
 
 namespace lifestuff {
 
 class SessionSingleton;
+
 namespace test {
-//class CCImMessagingTest;
-//class MultiImHandlerTest;
-//class ImMessagingTest_FUNC_MAID_SendReceiveMessages_Test;
-//class ImMessagingTest_FUNC_MAID_ReceiveEndPointMsg_Test;
-//class ImMessagingTest_FUNC_MAID_ReceiveLogOutMsg_Test;
-//class ImMessagingTest_FUNC_MAID_HandleTwoConverstions_Test;
-//class ImMessagingTest_FUNC_MAID_NET_SendReceiveMessages_Test;
-//class ImMessagingTest_FUNC_MAID_NET_ReceiveEndPointMsg_Test;
-//class ImMessagingTest_FUNC_MAID_NET_ReceiveLogOutMsg_Test;
-//class ImMessagingTest_FUNC_MAID_NET_HandleTwoConverstions_Test;
+//  class CCImMessagingTest;
+//  class MultiImHandlerTest;
+//  class ImMessagingTest_FUNC_MAID_SendReceiveMessages_Test;
+//  class ImMessagingTest_FUNC_MAID_ReceiveEndPointMsg_Test;
+//  class ImMessagingTest_FUNC_MAID_ReceiveLogOutMsg_Test;
+//  class ImMessagingTest_FUNC_MAID_HandleTwoConverstions_Test;
+//  class ImMessagingTest_FUNC_MAID_NET_SendReceiveMessages_Test;
+//  class ImMessagingTest_FUNC_MAID_NET_ReceiveEndPointMsg_Test;
+//  class ImMessagingTest_FUNC_MAID_NET_ReceiveLogOutMsg_Test;
+//  class ImMessagingTest_FUNC_MAID_NET_HandleTwoConverstions_Test;
 }  // namespace test
 
 class IMHandler {
@@ -73,4 +73,4 @@ class IMHandler {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_CLIENT_IMHANDLER_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_IMHANDLER_H_

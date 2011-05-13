@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_CLIENT_CLIENTRPC_H_
-#define MAIDSAFE_CLIENT_CLIENTRPC_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_CLIENTRPC_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_CLIENTRPC_H_
 
 #include <string>
 #include "maidsafe/common/maidsafe.h"
@@ -136,4 +136,4 @@ class ClientRpcs {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_CLIENT_CLIENTRPC_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_CLIENTRPC_H_

@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_CLIENT_CONTACTS_H_
-#define MAIDSAFE_CLIENT_CONTACTS_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_CONTACTS_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_CONTACTS_H_
 
 #include <functional>
 #include <string>
@@ -232,4 +232,4 @@ class ContactsHandler {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_CLIENT_CONTACTS_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_CONTACTS_H_

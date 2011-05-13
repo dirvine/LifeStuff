@@ -104,15 +104,10 @@ FILE(GLOB SOURCE_FILES_CLIENT_DIR "${SRC_MAIDSAFE}/client/*.cc")
 FILE(GLOB HEADER_FILES_CLIENT_DIR "${SRC_MAIDSAFE}/client/*.h")
 SET(ALL_FILES_CLIENT_DIR ${SOURCE_FILES_CLIENT_DIR} ${HEADER_FILES_CLIENT_DIR})
 SET(STYLE_CLIENT ${ALL_FILES_CLIENT_DIR})
-LIST(REMOVE_ITEM ALL_FILES_CLIENT_DIR "${SRC_MAIDSAFE}/client/main.cc")
+LIST(REMOVE_ITEM STYLE_CLIENT "${SRC_MAIDSAFE}/client/lifestuff_messages.pb.h" "${SRC_MAIDSAFE}/client/lifestuff_messages.pb.cc")
 SET(ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR ${ALL_FILES_CLIENT_DIR})
-LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/maidstoremanager.cc")
-LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/maidstoremanager.h")
 LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/clientrpc.cc")
 LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/clientrpc.h")
-LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/storemanagertaskshandler.cc")
-LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/storemanagertaskshandler.h")
-LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/opdata.h")
 SOURCE_GROUP("client Source Files" FILES ${SOURCE_FILES_CLIENT_DIR})
 SOURCE_GROUP("client Header Files" FILES ${HEADER_FILES_CLIENT_DIR})
 
@@ -149,8 +144,7 @@ FILE(GLOB ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/*.cc" "${SRC_
 LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/client_main.cc")
 LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/testclientcontroller.cc")
 LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/testimmessaging.cc")
-LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/testmaidstoremanager.cc")
-LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/teststoremanagertaskshandler.cc")
+LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/testauthentication.cc")
 
 FILE(GLOB ALL_FILES_CLIENT_FILESYSTEM_TESTS_DIR "${SRC_MAIDSAFE}/client/filesystem/tests/*.cc" "${SRC_MAIDSAFE}/client/filesystem/tests/*.h")
 
@@ -159,14 +153,10 @@ FILE(GLOB ALL_FILES_CLIENT_FILESYSTEM_TESTS_DIR "${SRC_MAIDSAFE}/client/filesyst
 
 FILE(GLOB ALL_FILES_FUSE_TESTS_DIR "${SRC_MAIDSAFE}/fuse/tests/*.cc" "${SRC_MAIDSAFE}/fuse/tests/*.h")
 
-SET(NETWORK_TEST_FILES
-#      "${SRC_MAIDSAFE}/sharedtest/networktest.cc"
-#      "${SRC_MAIDSAFE}/sharedtest/networktest.h"
-#      "${SRC_MAIDSAFE}/sharedtest/localvaults.h"
-       "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
+SET(NETWORK_TEST_FILES "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
 
 FILE(GLOB ALL_FILES_CLIENT_DEMO_DIR "${SRC_MAIDSAFE}/client/tests/demo/*.cc"
-                                         "${SRC_MAIDSAFE}/client/tests/demo/*.h")
+                                    "${SRC_MAIDSAFE}/client/tests/demo/*.h")
 
 ###################################################################################################
 # All Platforms:  Add exes and Create all LifeStuff libs                                          #
@@ -198,11 +188,7 @@ ADD_EXECUTABLE(TESTclient
                   ${NETWORK_TEST_FILES}
                   "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
                   "${SRC_MAIDSAFE}/sharedtest/cachepassport.h"
-#                  "${SRC_MAIDSAFE}/sharedtest/mockkadops.cc"
-#                  "${SRC_MAIDSAFE}/sharedtest/mockkadops.h"
                   "${SRC_MAIDSAFE}/sharedtest/mocksessionsingleton.h")
-#                  "${SRC_MAIDSAFE}/sharedtest/threadpool.cc"
-#                  "${SRC_MAIDSAFE}/sharedtest/threadpool.h" )
 
 ADD_EXECUTABLE(TESTfuse EXCLUDE_FROM_ALL
                  ${ALL_FILES_FUSE_TESTS_DIR})
@@ -351,6 +337,7 @@ ADD_GTESTS(TESTclient)
 ADD_GTESTS(TESTclientfilesystem)
 #ADD_GTESTS(TESTshared)
 ADD_GTESTS(TESTfuse)
+ADD_GTESTS(TESTauthentication_net)
 
 TEST_SUMMARY_OUTPUT()
 
@@ -380,7 +367,7 @@ IF(PACKAGE_BUILD MATCHES "true")
       SET(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
       INSTALL(TARGETS ClientDemo RUNTIME DESTINATION .)
       INSTALL(FILES ${PROJECT_SOURCE_DIR}/installer/linux/scripts/lifestuff_client.desktop DESTINATION .)
-      INSTALL(FILES ${PROJECT_SOURCE_DIR}/installer/common/icons/WinLinux/installer.ico DESTINATION .)   
+      INSTALL(FILES ${PROJECT_SOURCE_DIR}/installer/common/icons/WinLinux/installer.ico DESTINATION .)
       EXECUTE_PROCESS(
         COMMAND /usr/bin/dpkg --print-architecture
         OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE
@@ -402,7 +389,7 @@ IF(PACKAGE_BUILD MATCHES "true")
       #MESSAGE("Package install directory is set to \"${CPACK_PACKAGE_INSTALL_DIRECTORY}\"")
       MESSAGE("================================================================================")
     ELSEIF(WIN32)
-      INSTALL(TARGETS ClientDemo RUNTIME DESTINATION bin)	 
+      INSTALL(TARGETS ClientDemo RUNTIME DESTINATION bin)
       SET(CPACK_PACKAGE_NAME "LifeStuffClient")
       INSTALL(DIRECTORY ${PROJECT_SOURCE_DIR}/installer/windows/cbfs DESTINATION drivers)
       SET(CPACK_PACKAGE_INSTALL_DIRECTORY "LifeStuff")
@@ -458,45 +445,35 @@ IF(PACKAGE_BUILD MATCHES "true")
 
 ELSE() # Installing the library
   SET(LIFESTUFF_CLIENT_INSTALL_FILES
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/authentication.h
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/clientcontroller.h
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/clientinterface.h
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/clientutils.h
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/contacts.h
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/imconnectionhandler.h
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/imhandler.h
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/localstoremanager.h
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/privateshares.h
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/sessionsingleton.h
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/storemanager.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/user_credentials_api.h)
-  SET(LIFESTUFF_CLIENT_FILESYSTEM_INSTALL_FILES
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/filesystem/distributed_filesystem.pb.h
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/filesystem/sehandler.h)
-  IF(MSVC)
-    SET(LIFESTUFF_FUSE_INSTALL_FILES
-          ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/fuse/windows/fswin.h)
-    SET(LIFESTUFF_FUSE_INSTALL_DIR include/maidsafe/lifestuff/fuse/windows)
-  ELSE()
-    SET(LIFESTUFF_FUSE_INSTALL_FILES
-          ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/fuse/linux/fslinux.h
-          ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/fuse/linux/fusecpp.h)
-    SET(LIFESTUFF_FUSE_INSTALL_DIR include/maidsafe/lifestuff/fuse/linux)
-  ENDIF()
+#  SET(LIFESTUFF_CLIENT_FILESYSTEM_INSTALL_FILES
+#        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/filesystem/distributed_filesystem.pb.h
+#        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/filesystem/sehandler.h)
+#  IF(MSVC)
+#    SET(LIFESTUFF_FUSE_INSTALL_FILES
+#          ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/fuse/windows/fswin.h)
+#    SET(LIFESTUFF_FUSE_INSTALL_DIR include/maidsafe/lifestuff/fuse/windows)
+#  ELSE()
+#    SET(LIFESTUFF_FUSE_INSTALL_FILES
+#          ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/fuse/linux/fslinux.h
+#          ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/fuse/linux/fusecpp.h)
+#    SET(LIFESTUFF_FUSE_INSTALL_DIR include/maidsafe/lifestuff/fuse/linux)
+#  ENDIF()
   SET(LIFESTUFF_SHARED_INSTALL_FILES
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/config.h
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/cppsqlite3.h
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/filesystem.h
+#        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/cppsqlite3.h
+#        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/filesystem.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/maidsafe.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/returncodes.h
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/sqlite3.h
+#        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/sqlite3.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/version.h)
 
   SET(EXPORT_NAME lifestuff_client)
+#  INSTALL(TARGETS LifeStufflsmclientlib LifeStuffsharedlib LifeStuffclientfilesystemlib LifeStufffuselib EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
   INSTALL(TARGETS LifeStufflsmclientlib LifeStuffsharedlib LifeStuffclientfilesystemlib LifeStufffuselib EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
   INSTALL(FILES ${LIFESTUFF_CLIENT_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff/client)
-  INSTALL(FILES ${LIFESTUFF_CLIENT_FILESYSTEM_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff/client/filesystem)
-  INSTALL(FILES ${LIFESTUFF_FUSE_INSTALL_FILES} DESTINATION ${LIFESTUFF_FUSE_INSTALL_DIR})
+#  INSTALL(FILES ${LIFESTUFF_CLIENT_FILESYSTEM_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff/client/filesystem)
+#  INSTALL(FILES ${LIFESTUFF_FUSE_INSTALL_FILES} DESTINATION ${LIFESTUFF_FUSE_INSTALL_DIR})
   INSTALL(FILES ${LIFESTUFF_SHARED_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff/shared)
   INSTALL(EXPORT ${EXPORT_NAME} DESTINATION share/maidsafe)
   ADD_VERSION_INFO_TO_INSTALLED_FILE()

@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_CLIENT_IMCONNECTIONHANDLER_H_
-#define MAIDSAFE_CLIENT_IMCONNECTIONHANDLER_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_IMCONNECTIONHANDLER_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_IMCONNECTIONHANDLER_H_
 
 #include <string>
 
@@ -124,4 +124,4 @@ class IMConnectionHandler {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_CLIENT_IMCONNECTIONHANDLER_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_IMCONNECTIONHANDLER_H_

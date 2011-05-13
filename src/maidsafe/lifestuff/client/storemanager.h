@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_CLIENT_STOREMANAGER_H_
-#define MAIDSAFE_CLIENT_STOREMANAGER_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_STOREMANAGER_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_STOREMANAGER_H_
 
 #include <list>
 #include <map>
@@ -62,20 +62,9 @@ enum IfPacketExists {
   kAppend
 };
 
-//typedef boost::function<void(const OwnLocalVaultResult&, const std::string&)>
-//        SetLocalVaultOwnedFunctor;
-//
-//typedef boost::function<void(const VaultOwnershipStatus&)>
-//    LocalVaultOwnedFunctor;
-//
 typedef boost::function<void(const std::vector<std::string>&,
                              const ReturnCode&)>
         LoadPacketFunctor;
-
-//typedef boost::function<void(const ReturnCode&)> CreateAccountFunctor;
-//
-//typedef boost::function<void(const std::string&)> IMNotifier;
-//typedef boost::function<void(const std::string&, const int&)> IMStatusNotifier;
 
 class StoreManagerInterface {
  public:
@@ -182,4 +171,4 @@ class StoreManagerInterface {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_CLIENT_STOREMANAGER_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_STOREMANAGER_H_

@@ -21,8 +21,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_CLIENT_AUTHENTICATION_H_
-#define MAIDSAFE_CLIENT_AUTHENTICATION_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_AUTHENTICATION_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_AUTHENTICATION_H_
 
 #include <memory>
 #include <string>
@@ -72,15 +72,18 @@ class Authentication {
                        const std::string &pin,
                        const std::string &password,
                        const std::string &serialised_datamap);
+
+  int CreateUserCredentials(const std::string &username,
+                            const std::string &pin,
+                            const std::string &password,
+                            const std::string &serialised_datamap) {}
+
   void SaveSession(const std::string &serialised_master_datamap,
                    const VoidFuncOneInt &functor);
   int SaveSession(const std::string &serialised_master_datamap);
   // Used when logging in.
-  void GetMasterDataMap(
+  int GetMasterDataMap(
       const std::string &password,
-      std::shared_ptr<boost::mutex> login_mutex,
-      std::shared_ptr<boost::condition_variable> login_cond_var,
-      std::shared_ptr<int> result,
       std::shared_ptr<std::string> serialised_master_datamap,
       std::shared_ptr<std::string> surrogate_serialised_master_datamap);
   int CreateMsidPacket(std::string *msid_name,
@@ -128,6 +131,16 @@ class Authentication {
 
   Authentication &operator=(const Authentication&);
   Authentication(const Authentication&);
+
+  void GetMidCallback(const std::vector<std::string> &values,
+                      const ReturnCode &return_code);
+  void GetSmidCallback(const std::vector<std::string> &values,
+                       const ReturnCode &return_code);
+  void GetTmidCallback(const std::vector<std::string> &values,
+                       const ReturnCode &return_code);
+  void GetStmidCallback(const std::vector<std::string> &values,
+                        const ReturnCode &return_code);
+
   void GetMidTmidCallback(const std::vector<std::string> &values,
                           const ReturnCode &return_code,
                           bool surrogate);
@@ -207,7 +220,7 @@ class Authentication {
   std::shared_ptr<StoreManagerInterface> store_manager_;
   SessionSingleton *session_singleton_;
   std::shared_ptr<passport::Passport> passport_;
-  boost::mutex mutex_;
+  boost::mutex mutex_, mid_mutex_, smid_mutex_;
   boost::condition_variable cond_var_;
   OpStatus tmid_op_status_, stmid_op_status_;
   std::string encrypted_tmid_, encrypted_stmid_;
@@ -218,4 +231,4 @@ class Authentication {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_CLIENT_AUTHENTICATION_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_AUTHENTICATION_H_

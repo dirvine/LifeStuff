@@ -373,7 +373,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_UpdatePacket) {
 }
 
 /*
-TEST_F(LocalStoreManagerTest, BEH_MAID_StoreChunk) {
+TEST_F(LocalStoreManagerTest, DISABLED_BEH_MAID_StoreChunk) {
   std::map<std::string, std::string> chunkies;
   int count(1), count2(count);
   boost::mutex m;
@@ -408,7 +408,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_StoreChunk) {
   ASSERT_EQ(chunk_content, result_str);
 }
 
-TEST_F(LocalStoreManagerTest, FUNC_MAID_StoreSeveralChunksWithSignals) {
+TEST_F(LocalStoreManagerTest, DISABLED_FUNC_MAID_StoreSeveralChunksWithSignals) {
   std::map<std::string, std::string> chunkies, chunkies2;
   CreateChunkage(&chunkies, 50, test_root_dir_, client_chunkstore_);
   printf("Done creating chunks.\n");
@@ -447,7 +447,7 @@ TEST_F(LocalStoreManagerTest, FUNC_MAID_StoreSeveralChunksWithSignals) {
   c.disconnect();
 }
 
-TEST_F(LocalStoreManagerTest, BEH_MAID_StoreAndLoadBufferPacket) {
+TEST_F(LocalStoreManagerTest, DISABLED_BEH_MAID_StoreAndLoadBufferPacket) {
   std::string bufferpacketname =
       crypto::Hash<crypto::SHA512>(ss_->PublicUsername() + mpid_public_key_);
   ASSERT_TRUE(sm_->KeyUnique(bufferpacketname, false));
@@ -467,7 +467,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_StoreAndLoadBufferPacket) {
   ASSERT_EQ(mpid_public_key_, bpi.owner_publickey());
 }
 
-TEST_F(LocalStoreManagerTest, BEH_MAID_ModifyBufferPacketInfo) {
+TEST_F(LocalStoreManagerTest, DISABLED_BEH_MAID_ModifyBufferPacketInfo) {
   std::string bufferpacketname =
       crypto::Hash<crypto::SHA512>(ss_->PublicUsername() + mpid_public_key_);
   ASSERT_TRUE(sm_->KeyUnique(bufferpacketname, false));
@@ -504,7 +504,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_ModifyBufferPacketInfo) {
   ASSERT_EQ(ser_info, gp.data());
 }
 
-TEST_F(LocalStoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
+TEST_F(LocalStoreManagerTest, DISABLED_BEH_MAID_AddAndGetBufferPacketMessages) {
   std::string bufferpacketname =
       crypto::Hash<crypto::SHA512>(ss_->PublicUsername() + mpid_public_key_);
   ASSERT_TRUE(sm_->KeyUnique(bufferpacketname, false));
@@ -548,7 +548,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
   ASSERT_EQ(size_t(0), messages.size());
 }
 
-TEST_F(LocalStoreManagerTest, BEH_MAID_AddRequestBufferPacketMessage) {
+TEST_F(LocalStoreManagerTest, DISABLED_BEH_MAID_AddRequestBufferPacketMessage) {
   std::string bufferpacketname =
       crypto::Hash<crypto::SHA512>(ss_->PublicUsername() + mpid_public_key_);
   ASSERT_TRUE(sm_->KeyUnique(bufferpacketname, false));

@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_CLIENT_CLIENTINTERFACE_H_
-#define MAIDSAFE_CLIENT_CLIENTINTERFACE_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_CLIENTINTERFACE_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_CLIENTINTERFACE_H_
 
 #include <string>
 
@@ -86,7 +86,7 @@ class ClientInterface {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_CLIENT_CLIENTINTERFACE_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_CLIENTINTERFACE_H_
 
 
 

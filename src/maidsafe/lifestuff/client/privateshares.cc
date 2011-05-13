@@ -11,8 +11,11 @@
  *  Created on: Nov 13, 2008
  *      Author: Team
  */
+
 #include "maidsafe/lifestuff/client/privateshares.h"
+
 #include <utility>
+
 #include "boost/filesystem.hpp"
 
 namespace fs = boost::filesystem;

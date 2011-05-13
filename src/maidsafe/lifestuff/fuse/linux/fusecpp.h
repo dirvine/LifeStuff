@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef MAIDSAFE_FUSE_LINUX_FUSECPP_H_
-#define MAIDSAFE_FUSE_LINUX_FUSECPP_H_
+#ifndef MAIDSAFE_LIFESTUFF_FUSE_LINUX_FUSECPP_H_
+#define MAIDSAFE_LIFESTUFF_FUSE_LINUX_FUSECPP_H_
 #define FUSE_USE_VERSION 26
 #include <string.h>
 #include "fuse/fuse.h"
@@ -121,6 +121,6 @@ class FuseDispatcher {
 };
 }
 
-#endif  // MAIDSAFE_FUSE_LINUX_FUSECPP_H_
+#endif  // MAIDSAFE_LIFESTUFF_FUSE_LINUX_FUSECPP_H_
 
 

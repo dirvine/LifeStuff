@@ -335,7 +335,7 @@ int PdDir::ModifyMetaDataMap(const std::string &ser_mdm,
     stmt.bind(3, mdm.tag().c_str());
     stmt.bind(4, mdm.file_size_high());
     stmt.bind(5, mdm.file_size_low());
-    boost::uint32_t current_time/* = GetDurationSinceEpoch()*/;
+    boost::uint32_t current_time = 0;  // GetDurationSinceEpoch();
     // stmt.bind(6, (const unsigned char)current_time);
     // stmt.bind(7, (const unsigned char)current_time);
     stmt.bind(6, static_cast<int>(current_time));
@@ -613,7 +613,7 @@ void PdDir::SanitiseSingleQuotes(std::string *str) {
 }
 
 bool PdDir::ParseFromString(maidsafe::encrypt::DataMap *data_map,
-                                  const std::string& serialized) {
+                            const std::string& serialized) {
   std::stringstream in_string_stream(serialized);
   boost::archive::text_iarchive ia(in_string_stream);
   ia >> *data_map;

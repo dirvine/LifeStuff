@@ -76,7 +76,7 @@ class ImHandlerTest : public testing::Test {
   std::string mpid_public_key_;
 };
 
-TEST_F(ImHandlerTest, BEH_MAID_InstMsgCreateMsg) {
+TEST_F(ImHandlerTest, DISABLED_BEH_MAID_InstMsgCreateMsg) {
   std::string ser_msg = imhandler_.CreateMessage("testmsg", "contact1");
   GenericPacket gp;
   ASSERT_TRUE(gp.ParseFromString(ser_msg));
@@ -90,7 +90,7 @@ TEST_F(ImHandlerTest, BEH_MAID_InstMsgCreateMsg) {
   ASSERT_EQ("testmsg", AESDecrypt(bpmsg.aesenc_message(), aes_key));
 }
 
-TEST_F(ImHandlerTest, BEH_MAID_InstMsgCreateEpMsg) {
+TEST_F(ImHandlerTest, DISABLED_BEH_MAID_InstMsgCreateEpMsg) {
   std::string ser_msg = imhandler_.CreateMessageEndpoint("contact2");
   GenericPacket gp;
   ASSERT_TRUE(gp.ParseFromString(ser_msg));
@@ -112,7 +112,7 @@ TEST_F(ImHandlerTest, BEH_MAID_InstMsgCreateEpMsg) {
   ASSERT_EQ(ss_->Ep().port(0), im.endpoint().port(0));
 }
 
-TEST_F(ImHandlerTest, BEH_MAID_InstMsgCreateLogOutMsg) {
+TEST_F(ImHandlerTest, DISABLED_BEH_MAID_InstMsgCreateLogOutMsg) {
   std::string ser_msg = imhandler_.CreateLogOutMessage("contact2");
   GenericPacket gp;
   ASSERT_TRUE(gp.ParseFromString(ser_msg));
@@ -129,7 +129,7 @@ TEST_F(ImHandlerTest, BEH_MAID_InstMsgCreateLogOutMsg) {
   ASSERT_EQ(LOGOUT_PING, bpmsg.type());
 }
 
-TEST_F(ImHandlerTest, BEH_MAID_ValidateMsgs) {
+TEST_F(ImHandlerTest, DISABLED_BEH_MAID_ValidateMsgs) {
   MessageType type;
   std::string rec_msg;
   ASSERT_FALSE(imhandler_.ValidateMessage("not GP", &type,
@@ -217,7 +217,7 @@ class MultiImHandlerTest : public ImHandlerTest {
   IMHandler imhandler1_, imhandler2_;
 };
 
-TEST_F(MultiImHandlerTest, FUNC_MAID_Create_ValidateMsg) {
+TEST_F(MultiImHandlerTest, DISABLED_FUNC_MAID_Create_ValidateMsg) {
   InstantMessage im;
   im.set_sender(ss_->PublicUsername());
   im.set_message("testmsg");

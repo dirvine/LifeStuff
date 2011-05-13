@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_CLIENT_SESSIONSINGLETON_H_
-#define MAIDSAFE_CLIENT_SESSIONSINGLETON_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_SESSIONSINGLETON_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_SESSIONSINGLETON_H_
 
 #include <list>
 #include <map>
@@ -416,4 +416,4 @@ class SessionSingleton {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_CLIENT_SESSIONSINGLETON_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_SESSIONSINGLETON_H_

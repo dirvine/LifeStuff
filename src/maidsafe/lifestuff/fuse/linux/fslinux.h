@@ -27,8 +27,8 @@
  * ==========================================================================
  */
 
-#ifndef MAIDSAFE_FUSE_LINUX_FSLINUX_H_
-#define MAIDSAFE_FUSE_LINUX_FSLINUX_H_
+#ifndef MAIDSAFE_LIFESTUFF_FUSE_LINUX_FSLINUX_H_
+#define MAIDSAFE_LIFESTUFF_FUSE_LINUX_FSLINUX_H_
 
 #include <string>
 
@@ -65,30 +65,30 @@ class FSLinux {
   static int ms_utime(const char *path, struct utimbuf *);
   static int ms_open(const char *path, struct fuse_file_info *);
   static int ms_read(const char *path, char *, size_t, off_t,
-      struct fuse_file_info *);
+                     struct fuse_file_info *);
   static int ms_write(const char *path, const char *data, size_t, off_t,
-      struct fuse_file_info *);
+                      struct fuse_file_info *);
   static int ms_statfs(const char *path, struct statvfs *stbuf);
   static int ms_flush(const char *path, struct fuse_file_info *);
   static int ms_release(const char *path, struct fuse_file_info *);
   static int ms_fsync(const char *path, int, struct fuse_file_info *);
   static int ms_setxattr(const char *path, const char *, const char *, size_t,
-      int);
+                         int);
   static int ms_getxattr(const char *path, const char *, char *, size_t);
   static int ms_listxattr(const char *path, char *, size_t);
   static int ms_removexattr(const char *path, const char *);
   static int ms_opendir(const char *path, struct fuse_file_info *);
-  static int ms_readdir(const char *path, void *buf,
-      fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi);
+  static int ms_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+                        off_t offset, struct fuse_file_info *fi);
   static int ms_releasedir(const char *path, struct fuse_file_info *);
   static int ms_fsyncdir(const char *path, int, struct fuse_file_info *);
   static int ms_access(const char *path, int mask);
   static int ms_create(const char *path, mode_t, struct fuse_file_info *);
   static int ms_ftruncate(const char *path, off_t, struct fuse_file_info *);
-  static int ms_fgetattr(const char *path, struct stat *, struct
-      fuse_file_info *);
+  static int ms_fgetattr(const char *path, struct stat *,
+                         struct fuse_file_info *);
 };
 
 }  // namespace fs_l_fuse
 
-#endif  // MAIDSAFE_FUSE_LINUX_FSLINUX_H_
+#endif  // MAIDSAFE_LIFESTUFF_FUSE_LINUX_FSLINUX_H_

@@ -112,17 +112,16 @@ int DataAtlasHandler::AddElement(const std::string &element_path,
                                  bool make_new_db) {
   int result = kDataAtlasError;
   // create the new database if the element is a dir and make_new_db == true
-  if (ser_dm == "" && make_new_db) {
-    std::shared_ptr<PdDir> da_newdir_(GetPdDir(element_path, CREATE, &result));
+  if (ser_dm.empty() && make_new_db) {
+    std::shared_ptr<PdDir> da_newdir(GetPdDir(element_path, CREATE, &result));
     if (result != kSuccess)
       return result;
   }
 
-  std::shared_ptr<PdDir> da_(GetPdDir(element_path, CONNECT, &result));
+  std::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
   if (result != kSuccess)
     return result;
-  result = da_->AddElement(ser_mdm, ser_dm, dir_key);
-  return result;
+  return da->AddElement(ser_mdm, ser_dm, dir_key);
 }
 
 int DataAtlasHandler::ModifyMetaDataMap(const std::string &element_path,

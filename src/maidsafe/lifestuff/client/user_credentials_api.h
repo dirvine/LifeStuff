@@ -18,6 +18,7 @@
 *
 * ============================================================================
 */
+
 #ifndef MAIDSAFE_LIFESTUFF_CLIENT_USER_CREDENTIALS_API_H_
 #define MAIDSAFE_LIFESTUFF_CLIENT_USER_CREDENTIALS_API_H_
 

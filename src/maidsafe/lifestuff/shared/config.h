@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_SHARED_CONFIG_H_
-#define MAIDSAFE_SHARED_CONFIG_H_
+#ifndef MAIDSAFE_LIFESTUFF_SHARED_CONFIG_H_
+#define MAIDSAFE_LIFESTUFF_SHARED_CONFIG_H_
 
 #include <cstdint>
 #include <string>
@@ -35,9 +35,13 @@
 namespace maidsafe {
 
 namespace dht {
+
 namespace kademlia {
-  class Contact;
+
+class Contact;
+
 }  // namespace dht
+
 }  // namespace kademlia
 
 namespace lifestuff {
@@ -201,8 +205,8 @@ inline std::string HexSubstr(const std::string &non_hex) {
     return hex;
 }
 
-}  // namespace lifestuff 
+}  // namespace lifestuff
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_SHARED_CONFIG_H_
+#endif  // MAIDSAFE_LIFESTUFF_SHARED_CONFIG_H_

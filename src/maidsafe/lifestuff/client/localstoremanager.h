@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_CLIENT_LOCALSTOREMANAGER_H_
-#define MAIDSAFE_CLIENT_LOCALSTOREMANAGER_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_LOCALSTOREMANAGER_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_LOCALSTOREMANAGER_H_
 
 #include <list>
 #include <map>
@@ -33,7 +33,6 @@
 #include "boost/filesystem.hpp"
 #include "boost/thread/mutex.hpp"
 #include "maidsafe/lifestuff/shared/cppsqlite3.h"
-//  #include "maidsafe/lifestuff/shared/vaultbufferpackethandler.h"
 #include "maidsafe/lifestuff/client/storemanager.h"
 
 
@@ -58,7 +57,7 @@ class LocalStoreManager : public StoreManagerInterface {
   LocalStoreManager(std::shared_ptr<ChunkStore> client_chunkstore,
                     const boost::uint8_t &k,
                     const fs3::path &db_directory);
-  LocalStoreManager(const fs3::path &db_directory);
+  explicit LocalStoreManager(const fs3::path &db_directory);
   virtual ~LocalStoreManager();
   virtual void Init(VoidFuncOneInt callback, const boost::uint16_t &port);
   virtual void SetPmid(const std::string &/*pmid_name*/) {}
@@ -196,4 +195,4 @@ class LocalStoreManager : public StoreManagerInterface {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_CLIENT_LOCALSTOREMANAGER_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_LOCALSTOREMANAGER_H_
