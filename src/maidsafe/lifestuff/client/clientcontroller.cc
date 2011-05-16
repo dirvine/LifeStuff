@@ -138,9 +138,9 @@ int ClientController::Init(boost::uint8_t k) {
 //    return -5;
 //  }
 #ifdef LOCAL_LifeStuffVAULT
-  sm_.reset(new LocalStoreManager(client_chunkstore_, K_, ""));
+  packet_manager_.reset(new LocalStoreManager(client_chunkstore_, K_, ""));
 #else
-  sm_.reset(new MaidsafeStoreManager(client_chunkstore_, K_));
+  packet_manager_.reset(new MaidsafeStoreManager(client_chunkstore_, K_));
 #endif
   if (!JoinKademlia()) {
 #ifdef DEBUG
@@ -148,7 +148,7 @@ int ClientController::Init(boost::uint8_t k) {
 #endif
     return -1;
   }
-  auth_.Init(sm_);
+  auth_.Init(packet_manager_);
   to_seh_file_update_ = seh_.ConnectToOnFileNetworkStatus(
                             boost::bind(&ClientController::FileUpdate,
                                         this, _1, _2));
@@ -158,7 +158,7 @@ int ClientController::Init(boost::uint8_t k) {
 
 bool ClientController::JoinKademlia() {
   CCCallback cb;
-  sm_->Init(boost::bind(&CCCallback::ReturnCodeCallback, &cb, _1), 0);
+  packet_manager_->Init(boost::bind(&CCCallback::ReturnCodeCallback, &cb, _1), 0);
   return (cb.WaitForReturnCodeResult() == kSuccess);
 }
 
@@ -640,8 +640,8 @@ void ClientController::CloseConnection(bool clean_up_transport) {
     return;
   }
   CCCallback cb;
-  sm_->StopRvPing();
-  sm_->Close(boost::bind(&CCCallback::ReturnCodeCallback, &cb, _1), true);
+//  packet_manager_->StopRvPing();
+  packet_manager_->Close(boost::bind(&CCCallback::ReturnCodeCallback, &cb, _1), true);
   if (cb.WaitForReturnCodeResult() != kSuccess) {
 #ifdef DEBUG
     printf("ClientController::CloseConnection - Error leaving network.\n");
@@ -653,7 +653,7 @@ void ClientController::CloseConnection(bool clean_up_transport) {
   printf("ClientController::CloseConnection - Successfully left kademlia.\n");
 #endif
   if (clean_up_transport)
-    sm_->CleanUpTransport();
+//    packet_manager_->CleanUpTransport();
   return;
 }
 
@@ -664,8 +664,8 @@ void ClientController::StopRvPing() {
 #endif
     return;
   }
-  if (sm_)
-    sm_->StopRvPing();
+//  if (packet_manager_)
+//    packet_manager_->StopRvPing();
 }
 
 bool ClientController::Logout() {
@@ -694,9 +694,9 @@ bool ClientController::Logout() {
 //    sm_->SendLogOutMessage(it->first);
 //  }
 
-  while (sm_->NotDoneWithUploading()) {
-    boost::this_thread::sleep(boost::posix_time::seconds(1));
-  }
+//  while (packet_manager_->NotDoneWithUploading()) {
+//    boost::this_thread::sleep(boost::posix_time::seconds(1));
+//  }
 #ifdef DEBUG
   printf("ClientController::Logout - After threads done.\n");
 #endif

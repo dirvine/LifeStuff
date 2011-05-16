@@ -69,7 +69,7 @@ class ClientControllerTest : public testing::Test {
         //cc_(ClientController::getInstance()),
         cc_(new ClientController()),
         ss_(SessionSingleton::getInstance()),
-        sm_(/*network_test_.store_manager()*/),
+        packet_manager_(/*network_test_.store_manager()*/),
         vcp_() {}
  protected:
   void SetUp() {
@@ -77,9 +77,9 @@ class ClientControllerTest : public testing::Test {
 //    ASSERT_TRUE(network_test_.Init());
 #ifdef MS_NETWORK_TEST
 //    cc_->client_chunkstore_ = network_test_.chunkstore();
-//    cc_->sm_ = sm_;
-//    cc_->auth_.Init(sm_);
-//    cc_->ss_ = ss_;
+//    cc_->packet_manager_ = packet_manager_;
+//    cc_->auth_.Init(packet_manager_);
+//    cc_->packet_manager_ = packet_manager_;
 //    cc_->initialised_ = true;
 #else
 //    cc_->Init(network_test_.K());
@@ -101,7 +101,7 @@ class ClientControllerTest : public testing::Test {
 //  NetworkTest network_test_;
   std::shared_ptr<ClientController> cc_;
   SessionSingleton *ss_;
-  std::shared_ptr<StoreManagerInterface> sm_;
+  std::shared_ptr<PacketManager> packet_manager_;
   VaultConfigParameters vcp_;
  private:
   ClientControllerTest(const ClientControllerTest&);

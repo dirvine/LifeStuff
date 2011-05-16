@@ -44,12 +44,12 @@ class AuthenticationTest_FUNC_MAID_NET_CreateMSIDPacket_Test;
 class ClientControllerTest;
 }  // namespace test
 
-class StoreManagerInterface;
+class PacketManager;
 class SessionSingleton;
 
 class Authentication {
  public:
-  Authentication() : store_manager_(),
+  Authentication() : packet_manager_(),
                      session_singleton_(),
                      passport_(),
                      mutex_(),
@@ -61,7 +61,7 @@ class Authentication {
                      kSingleOpTimeout_(10000) {}
   ~Authentication();
   // Used to intialise passport_ in all cases.
-  void Init(std::shared_ptr<StoreManagerInterface> sm);
+  void Init(std::shared_ptr<PacketManager> packet_manager);
   // Used to intialise passport_ in all cases.
   int GetUserInfo(const std::string &username, const std::string &pin);
   // Used when creating a new user.
@@ -217,7 +217,7 @@ class Authentication {
   char *UtilsTrimRight(char *szSource);
   char *UtilsTrimLeft(char *szSource);
   std::string UtilsTrim(std::string source);
-  std::shared_ptr<StoreManagerInterface> store_manager_;
+  std::shared_ptr<PacketManager> packet_manager_;
   SessionSingleton *session_singleton_;
   std::shared_ptr<passport::Passport> passport_;
   boost::mutex mutex_, mid_mutex_, smid_mutex_;

@@ -91,7 +91,7 @@ LocalStoreManager::~LocalStoreManager() {
   bool t(false);
   while (!t) {
     {
-      boost::mutex::scoped_lock loch_etive(signal_mutex_);
+//      boost::mutex::scoped_lock loch_etive(signal_mutex_);
       t = chunks_pending_.empty();
     }
     if (!t)
@@ -131,7 +131,7 @@ void LocalStoreManager::Close(VoidFuncOneInt callback, bool) {
   bool t(false);
   while (!t) {
     {
-      boost::mutex::scoped_lock loch_etive(signal_mutex_);
+//      boost::mutex::scoped_lock loch_etive(signal_mutex_);
       t = chunks_pending_.empty();
     }
     if (!t)
@@ -955,8 +955,8 @@ void LocalStoreManager::ExecuteReturnSignal(const std::string &chunkname,
                                             ReturnCode rc) {
   int sleep_seconds((RandomInt32() % 5) + 1);
   boost::this_thread::sleep(boost::posix_time::seconds(sleep_seconds));
-  sig_chunk_uploaded_(chunkname, rc);
-  boost::mutex::scoped_lock loch_laggan(signal_mutex_);
+//  sig_chunk_uploaded_(chunkname, rc);
+//  boost::mutex::scoped_lock loch_laggan(signal_mutex_);
   chunks_pending_.erase(chunkname);
 }
 

@@ -40,7 +40,7 @@
 #include "maidsafe/lifestuff/client/filesystem/dataatlashandler.h"
 #include "maidsafe/lifestuff/client/clientutils.h"
 #include "maidsafe/lifestuff/client/sessionsingleton.h"
-#include "maidsafe/lifestuff/client/storemanager.h"
+#include "maidsafe/lifestuff/client/packet_manager.h"
 #include "boost/serialization/serialization.hpp"
 
 // using namespace maidsafe::encrypt;
@@ -49,7 +49,7 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-SEHandler::SEHandler() : store_manager_(), client_chunkstore_(),
+SEHandler::SEHandler() : packet_manager_(), client_chunkstore_(),
                          session_singleton_(), up_to_date_datamaps_(),
                          pending_chunks_(), up_to_date_datamaps_mutex_(),
                          chunkmap_mutex_(), connection_to_chunk_uploads_(),
@@ -75,7 +75,7 @@ SEHandler::~SEHandler() {
   connection_to_chunk_uploads_.disconnect();
 }
 
-void SEHandler::Init(std::shared_ptr<StoreManagerInterface> storem,
+void SEHandler::Init(std::shared_ptr<PacketManager> packet_manager,
                      std::shared_ptr<ChunkStore> client_chunkstore) {
   up_to_date_datamaps_mutex_.lock();
   up_to_date_datamaps_.clear();
@@ -84,12 +84,12 @@ void SEHandler::Init(std::shared_ptr<StoreManagerInterface> storem,
   pending_chunks_.clear();
   chunkmap_mutex_.unlock();
   session_singleton_ = SessionSingleton::getInstance();
-  store_manager_ = storem;
+  packet_manager_ = packet_manager;
   client_chunkstore_ = client_chunkstore;
-  if (!connection_to_chunk_uploads_.connected())
-    connection_to_chunk_uploads_ =
-        store_manager_->ConnectToOnChunkUploaded(
-            boost::bind(&SEHandler::ChunkDone, this, _1, _2));
+//  if (!connection_to_chunk_uploads_.connected())
+//    connection_to_chunk_uploads_ =
+//        store_manager_->ConnectToOnChunkUploaded(
+//            boost::bind(&SEHandler::ChunkDone, this, _1, _2));
 }
 
 ItemType SEHandler::CheckEntry(const fs::path &absolute_path,
@@ -435,7 +435,7 @@ int SEHandler::GenerateUniqueKey(std::string *key) {
   int count(0);
   for (; count < kMaxAttempts; ++count) {
     *key = crypto::Hash<crypto::SHA512>(RandomString(200));
-    if (store_manager_->KeyUnique(*key, false))
+    if (packet_manager_->KeyUnique(*key, false))
       break;
   }
   return (count < 5) ? kSuccess : kEncryptionKeyGenFailure;
@@ -564,10 +564,10 @@ int SEHandler::EncryptDb(const fs::path &dir_path,
   VoidFuncOneInt functor = boost::bind(&SEHandler::PacketOpCallback, this, _1,
                                        &mutex, &cond_var, &result);
   if (previous_encrypted_data_map.empty()) {
-    store_manager_->StorePacket(dir_key, encrypted_data_map, passport::PD_DIR,
+    packet_manager_->StorePacket(dir_key, encrypted_data_map, passport::PD_DIR,
                                 dir_type, msid, functor);
   } else {
-    store_manager_->UpdatePacket(dir_key, previous_encrypted_data_map,
+    packet_manager_->UpdatePacket(dir_key, previous_encrypted_data_map,
                                  encrypted_data_map, passport::PD_DIR, dir_type,
                                  msid, functor);
   }
@@ -604,7 +604,7 @@ int SEHandler::DecryptDb(const fs::path &dir_path,
       return kSuccess;
     }
     std::vector<std::string> packet_content;
-    int result = store_manager_->LoadPacket(dir_key, &packet_content);
+    int result = packet_manager_->LoadPacket(dir_key, &packet_content);
     if (result != kSuccess || packet_content.empty() ||
         packet_content[0].empty()) {
 #ifdef DEBUG
@@ -690,7 +690,7 @@ int SEHandler::LoadChunks(const encrypt::DataMap &data_map,
   int result(kSuccess);
   for (int i = 0; i < data_map.chunks.size(); ++i) {
     std::string data;
-    int n = store_manager_->LoadChunk(data_map.chunks[i].hash, &data);
+    int n/* = store_manager_->LoadChunk(data_map.chunks[i].hash, &data)*/;
 #ifdef DEBUG
 //    printf("SEHandler::LoadChunks %d of %d, chunk(%s): result(%d)\n",
 //           i + 1, data_map.encrypted_chunk_name_size(),
@@ -813,17 +813,17 @@ void SEHandler::ChunksToMultiIndex(const encrypt::DataMap &data_map,
 void SEHandler::StoreChunksToNetwork(const encrypt::DataMap &data_map,
                                      const DirType &dir_type,
                                      const std::string &msid) {
-  for (int j = 0; j < data_map.chunks.size(); ++j)
-    store_manager_->StoreChunk(data_map.chunks[j].hash, dir_type,
-                               msid);
+//  for (int j = 0; j < data_map.chunks.size(); ++j)
+//  store_manager_->StoreChunk(data_map.chunks[j].hash, dir_type,
+//                             msid);
 }
 
-void SEHandler::PacketOpCallback(const int &store_manager_result,
+void SEHandler::PacketOpCallback(const int &packet_manager_result,
                                  boost::mutex *mutex,
                                  boost::condition_variable *cond_var,
                                  int *op_result) {
   boost::mutex::scoped_lock lock(*mutex);
-  *op_result = store_manager_result;
+  *op_result = packet_manager_result;
   cond_var->notify_one();
 }
 

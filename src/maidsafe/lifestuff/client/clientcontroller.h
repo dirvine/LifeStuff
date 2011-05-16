@@ -128,7 +128,7 @@ struct VaultConfigParameters {
 class ClientController : public lifestuff::UserCredentials {
  public:
   ClientController() : client_chunkstore_(),
-                       sm_(),
+                       packet_manager_(),
                        auth_(),
                        ss_(SessionSingleton::getInstance()),
                        ser_da_(),
@@ -355,7 +355,7 @@ class ClientController : public lifestuff::UserCredentials {
 
   // Variables
   std::shared_ptr<ChunkStore> client_chunkstore_;
-  std::shared_ptr<StoreManagerInterface> sm_;
+  std::shared_ptr<PacketManager> packet_manager_;
   Authentication auth_;
   SessionSingleton *ss_;
   std::string ser_da_, ser_dm_;

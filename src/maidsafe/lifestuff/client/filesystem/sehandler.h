@@ -88,7 +88,7 @@ class SEHandlerTest_BEH_MAID_FailureSteppedMultipleEqualFiles_Test;
 }  // namespace test
 
 class SessionSingleton;
-class StoreManagerInterface;
+class PacketManager;
 
 const int kMaxStoreRetries = 2;
 const int kMaxLoadRetries = 2;
@@ -157,7 +157,7 @@ class SEHandler {
   typedef std::map<std::string, std::string> UpToDateDatamaps;
   SEHandler();
   ~SEHandler();
-  void Init(std::shared_ptr<StoreManagerInterface> storem,
+  void Init(std::shared_ptr<PacketManager> packet_manager,
             std::shared_ptr<ChunkStore> client_chunkstore);
   int EncryptAFile(const fs::path &relative_entry,
                   const DirType &dir_type,
@@ -265,7 +265,7 @@ int DecryptDataMap(const std::string &encrypted_data_map,
                              const size_t &required_size,
                              std::string *resized_data);
 
-  std::shared_ptr<StoreManagerInterface> store_manager_;
+  std::shared_ptr<PacketManager> packet_manager_;
   std::shared_ptr<ChunkStore> client_chunkstore_;
   SessionSingleton *session_singleton_;
   std::map<std::string, std::string> up_to_date_datamaps_;

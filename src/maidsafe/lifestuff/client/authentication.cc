@@ -26,7 +26,7 @@
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/lifestuff/client/lifestuff_messages.pb.h"
 #include "maidsafe/lifestuff/client/sessionsingleton.h"
-#include "maidsafe/lifestuff/client/storemanager.h"
+#include "maidsafe/lifestuff/client/packet_manager.h"
 
 namespace maidsafe {
 
@@ -57,8 +57,8 @@ Authentication::~Authentication() {
 #endif
 }
 
-void Authentication::Init(std::shared_ptr<StoreManagerInterface> sm) {
-  store_manager_ = sm;
+void Authentication::Init(std::shared_ptr<PacketManager> packet_manager) {
+  packet_manager_ = packet_manager;
   session_singleton_ = SessionSingleton::getInstance();
   passport_ = session_singleton_->passport_;
   passport_->Init();
@@ -81,10 +81,10 @@ int Authentication::GetUserInfo(const std::string &username,
     stmid_op_status_ = kPending;
   }
 
-  store_manager_->LoadPacket(mid_name,
+  packet_manager_->LoadPacket(mid_name,
                              boost::bind(&Authentication::GetMidCallback, this,
                                          _1, _2));
-  store_manager_->LoadPacket(smid_name,
+  packet_manager_->LoadPacket(smid_name,
                              boost::bind(&Authentication::GetSmidCallback, this,
                                          _1, _2));
 
@@ -145,7 +145,7 @@ void Authentication::GetMidCallback(const std::vector<std::string> &values,
     return;
   }
 
-  store_manager_->LoadPacket(tmid_name,
+  packet_manager_->LoadPacket(tmid_name,
                              boost::bind(&Authentication::GetTmidCallback,
                                          this, _1, _2));
 }
@@ -188,7 +188,7 @@ void Authentication::GetSmidCallback(const std::vector<std::string> &values,
     return;
   }
 
-  store_manager_->LoadPacket(stmid_name,
+  packet_manager_->LoadPacket(stmid_name,
                              boost::bind(&Authentication::GetStmidCallback,
                                          this, _1, _2));
 }
@@ -372,7 +372,7 @@ void Authentication::CreateSignaturePacket(
   // Check packet name is not already a key on the DHT
   VoidFuncOneInt f = boost::bind(&Authentication::SignaturePacketUniqueCallback,
                                  this, _1, sig_packet, op_status);
-  store_manager_->KeyUnique(sig_packet->name(), false, f);
+  packet_manager_->KeyUnique(sig_packet->name(), false, f);
 }
 
 void Authentication::SignaturePacketUniqueCallback(
@@ -395,7 +395,7 @@ void Authentication::SignaturePacketUniqueCallback(
   VoidFuncOneInt functor =
       boost::bind(&Authentication::SignaturePacketStoreCallback,
                   this, _1, packet, op_status);
-  store_manager_->StorePacket(packet->name(), packet->value(), packet_type,
+  packet_manager_->StorePacket(packet->name(), packet->value(), packet_type,
                               PRIVATE, "", functor);
 }
 
@@ -409,8 +409,8 @@ void Authentication::SignaturePacketStoreCallback(
   if (return_code == kSuccess) {
     *op_status = kSucceeded;
     passport_->ConfirmSignaturePacket(packet);
-    if (packet_type == passport::PMID)
-      store_manager_->SetPmid(packet->name());
+//    if (packet_type == passport::PMID)
+//      packet_manager_->SetPmid(packet->name());
   } else {
     DLOG(WARNING) << "Authentication::SignaturePacketStoreCbk (" << packet_type
                   << "): Failed to store." << std::endl;
@@ -497,11 +497,11 @@ void Authentication::SaveSession(const std::string &serialised_master_datamap,
                                         this, _1, save_session_data->smid,
                                         save_session_data);
   if (smid_old_value.empty()) {
-    store_manager_->StorePacket(save_session_data->smid->name(),
+    packet_manager_->StorePacket(save_session_data->smid->name(),
                                 save_session_data->smid->value(),
                                 passport::SMID, PRIVATE, "", callback);
   } else if (smid_old_value != save_session_data->smid->value()) {
-    store_manager_->UpdatePacket(save_session_data->smid->name(),
+    packet_manager_->UpdatePacket(save_session_data->smid->name(),
                                  smid_old_value,
                                  save_session_data->smid->value(),
                                  passport::SMID, PRIVATE, "", callback);
@@ -514,14 +514,14 @@ void Authentication::SaveSession(const std::string &serialised_master_datamap,
   // Update MID
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                          save_session_data->mid, save_session_data);
-  store_manager_->UpdatePacket(save_session_data->mid->name(), mid_old_value,
+  packet_manager_->UpdatePacket(save_session_data->mid->name(), mid_old_value,
                                save_session_data->mid->value(),
                                passport::MID, PRIVATE, "", callback);
 
   // Store new TMID
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                          save_session_data->tmid, save_session_data);
-  store_manager_->StorePacket(save_session_data->tmid->name(),
+  packet_manager_->StorePacket(save_session_data->tmid->name(),
                               save_session_data->tmid->value(), passport::TMID,
                               PRIVATE, "", callback);
 
@@ -531,7 +531,7 @@ void Authentication::SaveSession(const std::string &serialised_master_datamap,
     callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                            save_session_data->stmid, save_session_data);
     std::vector<std::string> values(1, save_session_data->stmid->value());
-    store_manager_->DeletePacket(save_session_data->stmid->name(), values,
+    packet_manager_->DeletePacket(save_session_data->stmid->name(), values,
                                  passport::TMID, PRIVATE, "", callback);
   } else {
     boost::mutex::scoped_lock lock(mutex_);
@@ -886,7 +886,7 @@ void Authentication::DeletePacket(const passport::PacketType &packet_type,
   VoidFuncOneInt functor = boost::bind(&Authentication::DeletePacketCallback,
                                        this, _1, packet_type, op_status);
   std::vector<std::string> values(1, packet->value());
-  store_manager_->DeletePacket(packet->name(), values, packet_type, PRIVATE, "",
+  packet_manager_->DeletePacket(packet->name(), values, packet_type, PRIVATE, "",
                                functor);
 }
 
@@ -950,19 +950,19 @@ int Authentication::ChangeUserData(const std::string &serialised_master_datamap,
   // Check new MID
   VoidFuncOneInt callback = boost::bind(&Authentication::SaveSessionCallback,
                             this, _1, save_new_packets->mid, save_new_packets);
-  store_manager_->KeyUnique(save_new_packets->mid->name(), false, callback);
+  packet_manager_->KeyUnique(save_new_packets->mid->name(), false, callback);
   // Check new SMID
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                          save_new_packets->smid, save_new_packets);
-  store_manager_->KeyUnique(save_new_packets->smid->name(), false, callback);
+  packet_manager_->KeyUnique(save_new_packets->smid->name(), false, callback);
   // Check new TMID
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                          save_new_packets->tmid, save_new_packets);
-  store_manager_->KeyUnique(save_new_packets->tmid->name(), false, callback);
+  packet_manager_->KeyUnique(save_new_packets->tmid->name(), false, callback);
   // Check new STMID
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                          save_new_packets->stmid, save_new_packets);
-  store_manager_->KeyUnique(save_new_packets->stmid->name(), false, callback);
+  packet_manager_->KeyUnique(save_new_packets->stmid->name(), false, callback);
 
   // Wait for checking to complete
   bool success(true);
@@ -1004,19 +1004,19 @@ int Authentication::ChangeUserData(const std::string &serialised_master_datamap,
   // Store new MID
   callback = boost::bind(&Authentication::SaveSessionCallback,
                          this, _1, save_new_packets->mid, save_new_packets);
-  store_manager_->StorePacket(save_new_packets->mid->name(),
+  packet_manager_->StorePacket(save_new_packets->mid->name(),
                               save_new_packets->mid->value(),
                               passport::MID, PRIVATE, "", callback);
   // Store new SMID
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                          save_new_packets->smid, save_new_packets);
-  store_manager_->StorePacket(save_new_packets->smid->name(),
+  packet_manager_->StorePacket(save_new_packets->smid->name(),
                               save_new_packets->smid->value(),
                               passport::SMID, PRIVATE, "", callback);
   // Store new TMID
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                          save_new_packets->tmid, save_new_packets);
-  store_manager_->StorePacket(save_new_packets->tmid->name(),
+  packet_manager_->StorePacket(save_new_packets->tmid->name(),
                               save_new_packets->tmid->value(),
                               passport::TMID, PRIVATE, "", callback);
   // Store new STMID
@@ -1027,7 +1027,7 @@ int Authentication::ChangeUserData(const std::string &serialised_master_datamap,
   } else {
     callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                            save_new_packets->stmid, save_new_packets);
-    store_manager_->StorePacket(save_new_packets->stmid->name(),
+    packet_manager_->StorePacket(save_new_packets->stmid->name(),
                                 save_new_packets->stmid->value(),
                                 passport::TMID, PRIVATE, "", callback);
   }
@@ -1058,25 +1058,25 @@ int Authentication::ChangeUserData(const std::string &serialised_master_datamap,
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                          delete_old_packets->mid, delete_old_packets);
   std::vector<std::string> values(1, delete_old_packets->mid->value());
-  store_manager_->DeletePacket(delete_old_packets->mid->name(), values,
+  packet_manager_->DeletePacket(delete_old_packets->mid->name(), values,
                                passport::MID, PRIVATE, "", callback);
   // Delete old SMID
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                          delete_old_packets->smid, delete_old_packets);
   values.assign(1, delete_old_packets->smid->value());
-  store_manager_->DeletePacket(delete_old_packets->smid->name(), values,
+  packet_manager_->DeletePacket(delete_old_packets->smid->name(), values,
                                passport::SMID, PRIVATE, "", callback);
   // Delete old TMID
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                          delete_old_packets->tmid, delete_old_packets);
   values.assign(1, delete_old_packets->tmid->value());
-  store_manager_->DeletePacket(delete_old_packets->tmid->name(), values,
+  packet_manager_->DeletePacket(delete_old_packets->tmid->name(), values,
                                passport::TMID, PRIVATE, "", callback);
   // Delete old STMID
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                          delete_old_packets->stmid, delete_old_packets);
   values.assign(1, delete_old_packets->stmid->value());
-  store_manager_->DeletePacket(delete_old_packets->stmid->name(), values,
+  packet_manager_->DeletePacket(delete_old_packets->stmid->name(), values,
                                passport::TMID, PRIVATE, "", callback);
 
   try {
@@ -1137,13 +1137,13 @@ int Authentication::ChangePassword(const std::string &serialised_master_datamap,
   // Update TMID
   VoidFuncOneInt callback = boost::bind(&Authentication::SaveSessionCallback,
                             this, _1, update_packets->tmid, update_packets);
-  store_manager_->UpdatePacket(update_packets->tmid->name(), tmid_old_value,
+  packet_manager_->UpdatePacket(update_packets->tmid->name(), tmid_old_value,
                                update_packets->tmid->value(), passport::TMID,
                                PRIVATE, "", callback);
   // Update STMID
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                          update_packets->stmid, update_packets);
-  store_manager_->UpdatePacket(update_packets->stmid->name(), stmid_old_value,
+  packet_manager_->UpdatePacket(update_packets->stmid->name(), stmid_old_value,
                                update_packets->stmid->value(), passport::TMID,
                                PRIVATE, "", callback);
 
@@ -1181,7 +1181,7 @@ int Authentication::PublicUsernamePublicKey(const std::string &public_username,
                                             std::string *public_key) {
   std::string packet_name = crypto::Hash<crypto::SHA512>(public_username);
   std::vector<std::string> packet_content;
-  int result = store_manager_->LoadPacket(packet_name, &packet_content);
+  int result = packet_manager_->LoadPacket(packet_name, &packet_content);
   if (result != kSuccess || packet_content.empty())
     return kUserDoesntExist;
   GenericPacket packet;
@@ -1247,7 +1247,7 @@ int Authentication::StorePacket(std::shared_ptr<pki::Packet> packet,
     msid = packet->name();
   }
 
-  store_manager_->StorePacket(packet->name(), packet->value(),
+  packet_manager_->StorePacket(packet->name(), packet->value(),
       static_cast<passport::PacketType>(packet->packet_type()), dir_type, msid,
       functor);
   bool success(true);
@@ -1283,7 +1283,7 @@ int Authentication::DeletePacket(std::shared_ptr<pki::Packet> packet) {
     dir_type = PRIVATE_SHARE;
     msid = packet->name();
   }
-  store_manager_->DeletePacket(packet->name(), values,
+  packet_manager_->DeletePacket(packet->name(), values,
       static_cast<passport::PacketType>(packet->packet_type()), dir_type, msid,
       functor);
   bool success(true);
@@ -1318,7 +1318,7 @@ int Authentication::PacketUnique(std::shared_ptr<pki::Packet> packet) {
     dir_type = PRIVATE_SHARE;
     msid = packet->name();
   }
-  store_manager_->KeyUnique(packet->name(), false, functor);
+  packet_manager_->KeyUnique(packet->name(), false, functor);
   bool success(true);
   try {
     boost::mutex::scoped_lock lock(mutex_);
