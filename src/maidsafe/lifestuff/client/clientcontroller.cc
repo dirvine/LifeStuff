@@ -145,17 +145,13 @@ int ClientController::Init(boost::uint8_t k) {
     DLOG(ERROR) << "CC::Init - Couldn't initialise SM" << std::endl;
     return -1;
   }
-//  auth_.Init(sm_);
-//  to_seh_file_update_ = seh_.ConnectToOnFileNetworkStatus(
-//                            boost::bind(&ClientController::FileUpdate,
-//                                        this, _1, _2));
   initialised_ = true;
   return 0;
 }
 
 bool ClientController::JoinKademlia() {
   CCCallback cb;
-  sm_->Init(boost::bind(&CCCallback::ReturnCodeCallback, &cb, _1), 0);
+  local_sm_->Init(boost::bind(&CCCallback::ReturnCodeCallback, &cb, _1), 0);
   return (cb.WaitForReturnCodeResult() == kSuccess);
 }
 
@@ -423,8 +419,8 @@ void ClientController::CloseConnection(bool clean_up_transport) {
     return;
   }
   CCCallback cb;
-  sm_->StopRvPing();
-  sm_->Close(boost::bind(&CCCallback::ReturnCodeCallback, &cb, _1), true);
+//  local_sm_->StopRvPing();
+  local_sm_->Close(boost::bind(&CCCallback::ReturnCodeCallback, &cb, _1), true);
   if (cb.WaitForReturnCodeResult() != kSuccess) {
 #ifdef DEBUG
     printf("ClientController::CloseConnection - Error leaving network.\n");
@@ -436,7 +432,7 @@ void ClientController::CloseConnection(bool clean_up_transport) {
   printf("ClientController::CloseConnection - Successfully left kademlia.\n");
 #endif
   if (clean_up_transport)
-    sm_->CleanUpTransport();
+//    local_sm_->CleanUpTransport();
   return;
 }
 
@@ -447,8 +443,8 @@ void ClientController::StopRvPing() {
 #endif
     return;
   }
-  if (sm_)
-    sm_->StopRvPing();
+//  if (local_sm_)
+//    local_sm_->StopRvPing();
 }
 
 bool ClientController::Logout() {

@@ -33,7 +33,7 @@
 #include "boost/filesystem.hpp"
 #include "boost/thread/mutex.hpp"
 #include "maidsafe/lifestuff/shared/cppsqlite3.h"
-#include "maidsafe/lifestuff/client/storemanager.h"
+#include "maidsafe/lifestuff/client/packet_manager.h"
 
 
 namespace fs3 = boost::filesystem3;
@@ -52,7 +52,7 @@ class LocalStoreManagerTest_BEH_MAID_AddRequestBufferPacketMessage_Test;
 
 class SessionSingleton;
 
-class LocalStoreManager : public StoreManagerInterface {
+class LocalStoreManager : public PacketManager {
  public:
   LocalStoreManager(std::shared_ptr<ChunkStore> client_chunkstore,
                     const boost::uint8_t &k,
@@ -60,7 +60,7 @@ class LocalStoreManager : public StoreManagerInterface {
   explicit LocalStoreManager(const fs3::path &db_directory);
   virtual ~LocalStoreManager();
   virtual void Init(VoidFuncOneInt callback, const boost::uint16_t &port);
-  virtual void SetPmid(const std::string &/*pmid_name*/) {}
+//  virtual void SetPmid(const std::string &/*pmid_name*/) {}
   virtual void Close(VoidFuncOneInt callback, bool cancel_pending_ops);
   virtual void CleanUpTransport() {}
   virtual void StopRvPing() {}

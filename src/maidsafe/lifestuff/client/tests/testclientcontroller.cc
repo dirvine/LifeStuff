@@ -68,22 +68,22 @@ class ClientControllerTest : public testing::Test {
       : test_dir_(maidsafe::test::CreateTestPath()),
         cc_(new ClientController()),
         ss_(SessionSingleton::getInstance()),
-        sm_(new LocalStoreManager(*test_dir_)),
+        local_sm_(new LocalStoreManager(*test_dir_)),
         vcp_() {}
  protected:
   void SetUp() {
     ss_->ResetSession();
-    sm_->Init(boost::bind(&ClientControllerTest::InitAndCloseCallback,
-                          this, _1),
+    local_sm_->Init(boost::bind(&ClientControllerTest::InitAndCloseCallback,
+                                this, _1),
               0);
-    cc_->auth_.Init(sm_);
-    cc_->sm_ = sm_;
+    cc_->auth_.Init(local_sm_);
+    cc_->local_sm_ = local_sm_;
     cc_->ss_ = ss_;
     cc_->initialised_ = true;
   }
   void TearDown() {
-    sm_->Close(boost::bind(&ClientControllerTest::InitAndCloseCallback,
-                           this, _1),
+    local_sm_->Close(boost::bind(&ClientControllerTest::InitAndCloseCallback,
+                                 this, _1),
                true);
     cc_->CloseConnection(true);
     ss_->passport_->StopCreatingKeyPairs();
@@ -95,7 +95,7 @@ class ClientControllerTest : public testing::Test {
   std::shared_ptr<fs::path> test_dir_;
   std::shared_ptr<ClientController> cc_;
   SessionSingleton *ss_;
-  std::shared_ptr<StoreManagerInterface> sm_;
+  std::shared_ptr<LocalStoreManager> local_sm_;
   VaultConfigParameters vcp_;
  private:
   ClientControllerTest(const ClientControllerTest&);
