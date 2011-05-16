@@ -93,65 +93,62 @@ void PacketOpCallback(const int &store_manager_result, boost::mutex *mutex,
 }
 
 
-// boost::scoped_ptr<ClientController> ClientController::single_;
-// boost::once_flag ClientController::flag_ = BOOST_ONCE_INIT;
-
 int ClientController::Init(boost::uint8_t k) {
-  if (initialised_)
+  if (initialised_) {
+    DLOG(INFO) << "CC::Init - Already initialised." << std::endl;
     return 0;
+  }
   K_ = k;
-  upper_threshold_ = static_cast<boost::uint16_t>
-                     (K_ * kMinSuccessfulPecentageStore);
-  fs::path client_path(file_system::ApplicationDataDir());
-  try {
-    // If main app dir isn't already there, create it
-    if (!fs::exists(client_path) && !fs::create_directories(client_path)) {
-#ifdef DEBUG
-      printf("CC::Init - Couldn't create app path (check permissions?): %s\n",
-             client_path.string().c_str());
-#endif
-      return -2;
-    }
-    client_path /= "client" + RandomAlphaNumericString(8);
-    while (fs::exists(client_path))
-      client_path = fs::path(client_path.string().substr(0,
-          client_path.string().size() - 8) + RandomAlphaNumericString(8));
-    client_store_ = client_path.string();
-    if (!fs::exists(client_path) && !fs::create_directories(client_path)) {
-#ifdef DEBUG
-      printf("CC::Init -Couldn't create client path (check permissions?): %s\n",
-             client_path.string().c_str());
-#endif
-      return -3;
-    }
-  }
-  catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("CC::Init - Couldn't create path (check permissions?): %s\n",
-           e.what());
-#endif
-    return -4;
-  }
+//    upper_threshold_ = static_cast<boost::uint16_t>
+//                       (K_ * kMinSuccessfulPecentageStore);
+//    fs::path client_path(file_system::ApplicationDataDir());
+//    try {
+//      // If main app dir isn't already there, create it
+//      if (!fs::exists(client_path) && !fs::create_directories(client_path)) {
+//  #ifdef DEBUG
+//        printf("CC::Init - Couldn't create app path (check permissions?): %s\n",
+//               client_path.string().c_str());
+//  #endif
+//        return -2;
+//      }
+//      client_path /= "client" + RandomAlphaNumericString(8);
+//      while (fs::exists(client_path))
+//        client_path = fs::path(client_path.string().substr(0,
+//            client_path.string().size() - 8) + RandomAlphaNumericString(8));
+//      client_store_ = client_path.string();
+//      if (!fs::exists(client_path) && !fs::create_directories(client_path)) {
+//  #ifdef DEBUG
+//        printf("CC::Init -Couldn't create client path (check permissions?): %s\n",
+//               client_path.string().c_str());
+//  #endif
+//        return -3;
+//      }
+//    }
+//    catch(const std::exception &e) {
+//  #ifdef DEBUG
+//      printf("CC::Init - Couldn't create path (check permissions?): %s\n",
+//             e.what());
+//  #endif
+//      return -4;
+//    }
 //  client_chunkstore_ = std::shared_ptr<ChunkStore>
 //      (new ChunkStore(client_path.string(), 0, 0));
 //  if (!client_chunkstore_->Init()) {
 //    return -5;
 //  }
-#ifdef LOCAL_LifeStuffVAULT
-  sm_.reset(new LocalStoreManager(client_chunkstore_, K_, ""));
-#else
-  sm_.reset(new MaidsafeStoreManager(client_chunkstore_, K_));
-#endif
+//  #ifdef LOCAL_LifeStuffVAULT
+//  sm_.reset(new LocalStoreManager(""));
+//  #else
+//    sm_.reset(new MaidsafeStoreManager(client_chunkstore_, K_));
+//  #endif
   if (!JoinKademlia()) {
-#ifdef DEBUG
-    printf("CC::Init - Couldn't join Kademlia!\n");
-#endif
+    DLOG(ERROR) << "CC::Init - Couldn't initialise SM" << std::endl;
     return -1;
   }
-  auth_.Init(sm_);
-  to_seh_file_update_ = seh_.ConnectToOnFileNetworkStatus(
-                            boost::bind(&ClientController::FileUpdate,
-                                        this, _1, _2));
+//  auth_.Init(sm_);
+//  to_seh_file_update_ = seh_.ConnectToOnFileNetworkStatus(
+//                            boost::bind(&ClientController::FileUpdate,
+//                                        this, _1, _2));
   initialised_ = true;
   return 0;
 }
@@ -164,44 +161,32 @@ bool ClientController::JoinKademlia() {
 
 int ClientController::ParseDa() {
   if (!initialised_) {
-#ifdef DEBUG
-    printf("CC::ParseDa - Not initialised.\n");
-#endif
+    DLOG(ERROR) << "CC::ParseDa - Not initialised." << std::endl;
     return kClientControllerNotInitialised;
   }
   DataAtlas data_atlas;
   if (ser_da_.empty()) {
-#ifdef DEBUG
-    printf("CC::ParseDa - TMID brought is \"\".\n");
-#endif
+    DLOG(ERROR) << "CC::ParseDa - TMID brought is empty." << std::endl;
     return -9000;
   }
   if (!data_atlas.ParseFromString(ser_da_)) {
-#ifdef DEBUG
-//    data_atlas.ParseFromString(ser_da_);
-    printf("CC::ParseDa AAAA - TMID brought doesn't parse as a DA.\n");
-#endif
+    DLOG(ERROR) << "CC::ParseDa - TMID doesn't parse." << std::endl;
     return -9000;
   }
   if (!data_atlas.has_root_db_key()) {
-#ifdef DEBUG
-    printf("CC::ParseDa - DA doesn't have a root db key.\n");
-#endif
+    DLOG(ERROR) << "CC::ParseDa - DA doesn't have a root db key." << std::endl;
     return -9001;
   }
   ss_->SetRootDbKey(data_atlas.root_db_key());
 
-  if (data_atlas.dms_size() != (kRootSubdirSize + 1)) {
-#ifdef DEBUG
-    printf("CC::ParseDa - Wrong number of datamaps in the DA.\n");
-#endif
-    return -9002;
-  }
+//  if (data_atlas.dms_size() != (kRootSubdirSize + 1)) {
+//    DLOG(ERROR) << "CC::ParseDa - Wrong # of datamaps in the DA."
+//                << std::endl;
+//    return -9002;
+//  }
 
   if (!data_atlas.has_serialised_keyring()) {
-#ifdef DEBUG
-    printf("CC::ParseDa - DA doesn't have a serialised keyring.\n");
-#endif
+    DLOG(ERROR) << "CC::ParseDa - Missing serialised keyring." << std::endl;
     return -9003;
   }
   ss_->ParseKeyring(data_atlas.serialised_keyring());
@@ -223,65 +208,55 @@ int ClientController::ParseDa() {
   if (data_atlas.has_pd())
     ss_->SetPd(data_atlas.pd());
 
-  encrypt::DataMap dm_root, other_dms;
-  ParseFromString(&dm_root, data_atlas.dms(0));
-
-  std::string ser_dm_root, other_ser_dms;
-  SerializeToString(&dm_root, ser_dm_root);
-  int i = seh_.DecryptDb(kRoot, PRIVATE, ser_dm_root, "", "", false, false);
-  if (i != 0)
-    return -1;
-
-  for (int n = 0; n < kRootSubdirSize; ++n) {
-    other_ser_dms = data_atlas.dms(n + 1);
-    i += seh_.DecryptDb(TidyPath(kRootSubdir[n][0]), PRIVATE, other_ser_dms,
-                        "", "", false, false);
-  }
-  return (i == 0) ? 0 : -1;
+  return 0;
+//  encrypt::DataMap dm_root, other_dms;
+//  ParseFromString(&dm_root, data_atlas.dms(0));
+//
+//  std::string ser_dm_root, other_ser_dms;
+//  SerializeToString(&dm_root, ser_dm_root);
+//  int i = seh_.DecryptDb(kRoot, PRIVATE, ser_dm_root, "", "", false, false);
+//  if (i != 0)
+//    return -1;
+//
+//  for (int n = 0; n < kRootSubdirSize; ++n) {
+//    other_ser_dms = data_atlas.dms(n + 1);
+//    i += seh_.DecryptDb(TidyPath(kRootSubdir[n][0]), PRIVATE, other_ser_dms,
+//                        "", "", false, false);
+//  }
+//  return (i == 0) ? 0 : -1;
 }
 
 int ClientController::SerialiseDa() {
   if (!initialised_) {
-#ifdef DEBUG
-    printf("CC::SerialiseDa - Not initialised.\n");
-#endif
+    DLOG(ERROR) << "CC::SerialiseDa - Not initialised." << std::endl;
     return kClientControllerNotInitialised;
   }
 
   DataAtlas data_atlas;
   data_atlas.set_root_db_key(ss_->RootDbKey());
-  encrypt::DataMap root_dm, subdirs_dm;
-  if (AddToPendingFiles(kRoot))
-    seh_.EncryptDb(kRoot, PRIVATE, "", "", false, &root_dm);
-  std::string *dm = data_atlas.add_dms();
-  SerializeToString(&root_dm, *dm);
+//  encrypt::DataMap root_dm, subdirs_dm;
+//  if (AddToPendingFiles(kRoot))
+//    seh_.EncryptDb(kRoot, PRIVATE, "", "", false, &root_dm);
+//  std::string *dm = data_atlas.add_dms();
+//  SerializeToString(&root_dm, *dm);
 
-  for (int i = 0; i < kRootSubdirSize; ++i) {
-//    subdirs_dm.Clear();
-    std::string tidy_path(TidyPath(kRootSubdir[i][0]));
-    if (AddToPendingFiles(tidy_path)) {
-#ifdef DEBUG
-      int n = seh_.EncryptDb(tidy_path, PRIVATE, "", "", false, &subdirs_dm);
-      printf("%s encrypted db result %d\n", tidy_path.c_str(), n);
-#else
-      seh_.EncryptDb(tidy_path, PRIVATE, "", "", false, &subdirs_dm);
-#endif
-      dm = data_atlas.add_dms();
-      SerializeToString(&subdirs_dm, *dm);
-    }
-  }
+//    for (int i = 0; i < kRootSubdirSize; ++i) {
+//      std::string tidy_path(TidyPath(kRootSubdir[i][0]));
+//      if (AddToPendingFiles(tidy_path)) {
+//        int n = seh_.EncryptDb(tidy_path, PRIVATE, "", "", false,
+//                               &subdirs_dm);
+//        DLOG(INFO) << tidy_path << " encrypted db result " << n << std::endl;
+//        dm = data_atlas.add_dms();
+//        SerializeToString(&subdirs_dm, *dm);
+//      }
+//    }
 
   std::string serialised_keyring = ss_->SerialiseKeyring();
   if (serialised_keyring.empty()) {
-#ifdef DEBUG
-    printf("ClientController::SerialiseDa() - Serialising keyring failed.\n");
-#endif
+    DLOG(ERROR) << "CC::SerialiseDa - Serialising keyring failed." << std::endl;
     return -1;
   }
   data_atlas.set_serialised_keyring(serialised_keyring);
-#ifdef DEBUG
-  printf("ClientController::SerialiseDa() - Finished with Keys.\n");
-#endif
 
   std::vector<mi_contact> contacts;
   ss_->GetContactList(&contacts);
@@ -302,9 +277,6 @@ int ClientController::SerialiseDa() {
     pc->set_rank(contacts[n].rank_);
     pc->set_last_contact(contacts[n].last_contact_);
   }
-#ifdef DEBUG
-  printf("ClientController::SerialiseDa() - Finished with Contacts.\n");
-#endif
 
   std::list<PrivateShare> ps_list;
   ss_->GetFullShareList(ALPHA, kAll, &ps_list);
@@ -329,23 +301,15 @@ int ClientController::SerialiseDa() {
     }
     ps_list.pop_front();
   }
-#ifdef DEBUG
-  printf("ClientController::SerialiseDa() - Finished with Shares.\n");
-#endif
 
   PersonalDetails *pd = data_atlas.mutable_pd();
   *pd = ss_->Pd();
 
   ser_da_.clear();
-  ser_dm_.clear();
   data_atlas.SerializeToString(&ser_da_);
 
-  std::string file_hash(EncodeToHex(crypto::Hash<crypto::SHA512>(ser_da_)));
-  seh_.EncryptString(ser_da_, &ser_dm_);
-
-#ifdef DEBUG
-  printf("ClientController::SerialiseDa() - Serialised.\n");
-#endif
+//  std::string file_hash(EncodeToHex(crypto::Hash<crypto::SHA512>(ser_da_)));
+//  seh_.EncryptString(ser_da_, &ser_dm_);
 
   return 0;
 }
@@ -382,27 +346,6 @@ bool ClientController::CreateUser(const std::string &username,
                 << std::endl;
   }
 
-/*
-  client_chunkstore_->Init();
-  seh_.Init(sm_, client_chunkstore_);
-
-  std::string hashed(crypto::Hash<crypto::SHA512>(ser_da));
-  std::string ser_dm;
-  result = seh_.EncryptString(ser_da, &ser_dm);
-
-  if (result != 0) {
-#ifdef DEBUG
-    printf("In CC::CreateUser - Cannot SelfEncrypt DA - %i.\n", result);
-#endif
-    ss_->ResetSession();
-    return false;
-  } else {
-#ifdef DEBUG
-    printf("In CC::CreateUser - seh_.EncryptString of DA DONE.\n");
-#endif
-  }
-*/
-
   std::string ser_da(ss_->SerialiseKeyring());
   result = auth_.CreateTmidPacket(username, pin, password, ser_da);
   if (result != kSuccess) {
@@ -414,128 +357,6 @@ bool ClientController::CreateUser(const std::string &username,
   }
 
   ss_->SetSessionName(false);
-/*
-  std::string root_db_key;
-  int res = seh_.GenerateUniqueKey(&root_db_key);
-  if (res != kSuccess) {
-#ifdef DEBUG
-    printf("In ClientController::CreateUser - Bombing out, no root_db_key.\n");
-#endif
-    return false;
-  } else {
-#ifdef DEBUG
-    printf("In CC::CreateUser - seh_.GenerateUniqueKey DONE.\n");
-#endif
-  }
-  ss_->SetRootDbKey(root_db_key);
-  if (file_system::Mount(ss_->SessionName(), ss_->DefConLevel()) != kSuccess) {
-#ifdef DEBUG
-    printf("In CC::CreateUser - cannot mount filesystem.\n");
-#endif
-    return false;
-  }
-  // Create the mount point directory
-  res += file_system::FuseMountPoint(ss_->SessionName());
-  boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
-  DataAtlas da;
-
-  res += dah->Init(true);
-
-  // set up root subdirs
-  for (int i = 0; i < kRootSubdirSize; ++i) {
-    MetaDataMap mdm;
-    encrypt::DataMap dm;
-    std::string ser_mdm, key;
-    mdm.set_id(-2);
-    mdm.set_display_name(TidyPath(kRootSubdir[i][0]));
-    mdm.set_type(EMPTY_DIRECTORY);
-    mdm.set_stats("");
-    mdm.set_tag("");
-    mdm.set_file_size_high(0);
-    mdm.set_file_size_low(0);
-    boost::uint32_t current_time = 0;  // GetDurationSinceEpoch();
-    mdm.set_creation_time(current_time);
-    mdm.SerializeToString(&ser_mdm);
-    if (kRootSubdir[i][1].empty()) {
-      seh_.GenerateUniqueKey(&key);
-    } else {
-      key = DecodeFromHex(kRootSubdir[i][1]);
-    }
-    res += dah->AddElement(TidyPath(kRootSubdir[i][0]), ser_mdm, "", key, true);
-
-    if (AddToPendingFiles(TidyPath(kRootSubdir[i][0])))
-      res += seh_.EncryptDb(TidyPath(kRootSubdir[i][0]), PRIVATE, key, "", true,
-                            &dm);
-    else
-      res += -1;
-#ifdef DEBUG
-    printf("In ClientController::CreateUser %s - %d - %d\n",
-           kRootSubdir[i][0].c_str(), res, dm.chunks.size());
-#endif
-  }
-
-  if (0 != res) {
-#ifdef DEBUG
-    printf("In ClientController::CreateUser error creating First layer DBs.\n");
-#endif
-    return false;
-  }
-
-#ifdef DEBUG
-  printf("In CC::CreateUser - %s and Shares DONE.\n",
-         TidyPath(kRootSubdir[0][0]).c_str());
-#endif
-
-  // set up share subdirs
-  for (int i = 0; i < kSharesSubdirSize; ++i) {
-    fs::path subdir(kSharesSubdir[i][0]);
-    std::string subdir_name = subdir.filename().string();
-    MetaDataMap mdm;
-    encrypt::DataMap dm;
-    std::string ser_mdm, key;
-    mdm.set_id(-2);
-    mdm.set_display_name(subdir_name);
-    mdm.set_type(EMPTY_DIRECTORY);
-    mdm.set_stats("");
-    mdm.set_tag("");
-    mdm.set_file_size_high(0);
-    mdm.set_file_size_low(0);
-    boost::uint32_t current_time = // GetDurationSinceEpoch();
-    mdm.set_creation_time(current_time);
-    mdm.SerializeToString(&ser_mdm);
-    if (kSharesSubdir[i][1].empty()) {  // ie no preassigned key so not public
-      seh_.GenerateUniqueKey(&key);
-      res += dah->AddElement(TidyPath(kSharesSubdir[i][0]), ser_mdm, "", key,
-                             true);
-      if (AddToPendingFiles(TidyPath(kSharesSubdir[i][0])))
-        seh_.EncryptDb(TidyPath(kSharesSubdir[i][0]), PRIVATE, key, "", true,
-                       &dm);
-      else
-        res += -1;
-    } else {
-      key = kSharesSubdir[i][1];
-      res += dah->AddElement(TidyPath(kSharesSubdir[i][0]), ser_mdm, "", key,
-                             true);
-      if (seh_.DecryptDb(TidyPath(kSharesSubdir[i][0]), ANONYMOUS, "", key, "",
-                         true, true)) {
-        // ie Public and Anon have never been saved before on the network
-        if (AddToPendingFiles(TidyPath(kSharesSubdir[i][0])))
-          res += seh_.EncryptDb(TidyPath(kSharesSubdir[i][0]), ANONYMOUS,
-                                kSharesSubdir[i][1], "", true, &dm);
-        else
-          res += -1;
-      }
-    }
-  }
-
-  if (0 != res) {
-#ifdef DEBUG
-    printf("In ClientController::CreateUser error creating Share DBs.\n");
-#endif
-    return false;
-  }
-*/
-
   logged_in_ = true;
   return true;
 }
@@ -554,6 +375,7 @@ bool ClientController::ValidateUser(const std::string &password) {
                                    serialised_master_datamap,
                                    surrogate_serialised_master_datamap);
   if (res != 0) {
+    DLOG(ERROR) << "CC::ValidateUser - Failed retrieving DA." << std::endl;
     return false;
   }
 
@@ -571,20 +393,9 @@ bool ClientController::ValidateUser(const std::string &password) {
                << std::endl;
     return false;
   }
-//  client_chunkstore_->Init();
-//  seh_.Init(sm_, client_chunkstore_);
-//  if (seh_.DecryptString(ser_dm_, &ser_da_) != 0) {
-//    ss_->ResetSession();
-//    return false;
-//  }
 
   ss_->SetConnectionStatus(0);
   ss_->SetSessionName(false);
-//  if (file_system::Mount(ss_->SessionName(),
-//                         ss_->DefConLevel()) != kSuccess) {
-//    ss_->ResetSession();
-//    return false;
-//  }
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
   if (ParseDa() != 0) {
     DLOG(INFO) << "ClientController::ValidateUser - Cannot parse DA"
@@ -599,34 +410,6 @@ bool ClientController::ValidateUser(const std::string &password) {
     ss_->ResetSession();
     return false;
   }
-
-  // Create the mount point directory
-//  file_system::FuseMountPoint(ss_->SessionName());
-
-  // setting endpoint in session
-//  sm_->SetSessionEndPoint();
-
-  // Do BP operations if need be
-//  if (!ss_->PublicUsername().empty()) {
-    // Getting presense of contacts
-//    std::list<LivePresence> presence_msgs;
-//    if (sm_->LoadBPPresence(&presence_msgs) > 0) {
-//      std::list<LivePresence>::const_iterator it = presence_msgs.begin();
-//      for (; it != presence_msgs.end(); ++it) {
-//        EndPoint ep;
-//        if (ep.ParseFromString(it->end_point())) {
-//          ss_->AddLiveContact(it->contact_id(), ep, 0);
-//          sm_->SendPresence(it->contact_id());
-//        }
-//      }
-//    }
-//    std::vector<std::string> offline_ctcs = GetOffLineContacts();
-//    std::map<std::string, ReturnCode> results;
-//    sm_->AddBPPresence(offline_ctcs, &results);
-
-//    clear_messages_thread_ = boost::thread(
-//                             &ClientController::ClearStaleMessages, this);
-//  }
 
   logged_in_ = true;
   return true;
@@ -670,9 +453,7 @@ void ClientController::StopRvPing() {
 
 bool ClientController::Logout() {
   if (!initialised_) {
-#ifdef DEBUG
-    printf("CC::Logout - Not initialised.\n");
-#endif
+    DLOG(ERROR) << "CC::Logout: Not initialised." << std::endl;
     return false;
   }
   logging_out_ = true;
@@ -680,84 +461,35 @@ bool ClientController::Logout() {
 
   int result = SaveSession();
   if (result != kSuccess) {
-#ifdef DEBUG
-    printf("ClientController::Logout - Failed to save session %d.\n", result);
-#endif
+    DLOG(ERROR) << "CC::Logout: Failed to save session " << result << std::endl;
     return false;
   }
 
-  // Sending logout messages to online contacts
-//  std::map<std::string, ConnectionDetails> livectcs;
-//  ss_->LiveContactMap(&livectcs);
-//  for (std::map<std::string, ConnectionDetails>::iterator it =
-//       livectcs.begin(); it != livectcs.end(); ++it) {
-//    sm_->SendLogOutMessage(it->first);
-//  }
-
-  while (sm_->NotDoneWithUploading()) {
-    boost::this_thread::sleep(boost::posix_time::seconds(1));
-  }
-#ifdef DEBUG
-  printf("ClientController::Logout - After threads done.\n");
-#endif
-
-  bool t(false);
-  while (!t) {
-    {
-      boost::mutex::scoped_lock loch_ba(pending_files_mutex_);
-      t = pending_files_.empty();
-#ifdef DEBUG
-      std::multimap<std::string, int>::iterator it = pending_files_.begin();
-      for (; it != pending_files_.end(); ++it) {
-        printf("ClientController::Logout - %s pending\n",
-               ((*it).first).c_str());
-      }
-#endif
-    }
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  }
-  seh_.ClearPendingChunks();
-
-#ifdef DEBUG
-  printf("ClientController::Logout - After all files done.\n");
-#endif
-
-  file_system::UnMount(ss_->SessionName(), ss_->DefConLevel());
-  ss_->ResetSession();
-//  instant_messages_.clear();
-  {
-    boost::mutex::scoped_lock loch(rec_msg_mutex_);
-    received_messages_.clear();
-  }
-  client_chunkstore_->Clear();
   ser_da_.clear();
-  ser_dm_.clear();
   logging_out_ = false;
   logged_in_ = false;
+  ss_->ResetSession();
   return true;
 }
 
 int ClientController::SaveSession() {
   if (!initialised_) {
-#ifdef DEBUG
-    printf("CC::SaveSession - Not initialised.\n");
-#endif
+    DLOG(ERROR) << "CC::SaveSession: Not initialised." << std::endl;
     return kClientControllerNotInitialised;
   }
 
   int n = SerialiseDa();
   if (n != 0) {
-#ifdef DEBUG
-    printf("ClientController::SaveSession - Failed to serialise DA.\n");
-#endif
+    DLOG(ERROR) << "CC::SaveSession: Failed to serialise DA." << std::endl;
     return n;
   }
+
   n = kPendingResult;
   boost::mutex mutex;
   boost::condition_variable cond_var;
   VoidFuncOneInt func = boost::bind(&PacketOpCallback, _1, &mutex,
                                     &cond_var, &n);
-  auth_.SaveSession(ser_dm_, func);
+  auth_.SaveSession(ser_da_, func);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (n == kPendingResult)
@@ -766,14 +498,11 @@ int ClientController::SaveSession() {
 
   if (n != kSuccess) {
     if (n == kFailedToDeleteOldPacket) {
-#ifdef DEBUG
-      printf("ClientController::SaveSession - Failed to delete old TMID, "
-             "otherwise saved session OK.\n");
-#endif
+      DLOG(ERROR) << "ClientController::SaveSession - Failed to delete old TMID"
+                     ", otherwise saved session OK." << std::endl;
     } else {
-#ifdef DEBUG
-      printf("ClientController::SaveSession - Failed to Save Session.\n");
-#endif
+      DLOG(ERROR) << "ClientController::SaveSession - Failed to Save Session."
+                  << std::endl;
       return n;
     }
   }
@@ -857,16 +586,17 @@ bool ClientController::ChangePin(const std::string &new_pin) {
 
 bool ClientController::ChangePassword(const std::string &new_password) {
   if (!initialised_) {
-#ifdef DEBUG
-    printf("CC::ChangePassword - Not initialised.\n");
-#endif
+    DLOG(ERROR) << "CC::ChangePassword - Not initialised." << std::endl;
     return false;
   }
   SerialiseDa();
 
   int result = auth_.ChangePassword(ser_dm_, new_password);
-  if (result == kSuccess)
+  if (result == kSuccess) {
+    DLOG(ERROR) << "CC::ChangePassword - Authentication failed: " << result
+                << std::endl;
     return true;
+  }
   return false;
 }
 

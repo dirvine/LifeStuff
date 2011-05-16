@@ -149,15 +149,11 @@ class ClientController : public lifestuff::UserCredentials {
                        to_seh_file_update_(),
                        pending_files_(),
                        pending_files_mutex_() {
-    Init(K_);  //  Todo prakash: is K_ needed in the API?
+//    Init(K_);  //  Todo prakash: is K_ needed in the API?
   }
   ClientController &operator=(const ClientController&);
   ClientController(const ClientController&);
 
-// static ClientController* getInstance() {
-//  boost::call_once(InitPtr, flag_);
-//  return single_.get();
-// }
   ~ClientController() {}
   int Init(boost::uint8_t k);
   // Close connection to kademlia/stub storage.  Currently with UDT, if
@@ -375,8 +371,6 @@ class ClientController : public lifestuff::UserCredentials {
   bs2::connection to_seh_file_update_;
   std::multimap<std::string, int> pending_files_;
   boost::mutex pending_files_mutex_;
-//  static boost::once_flag flag_;
-//  static boost::scoped_ptr<ClientController> single_;
 };
 
 }  // namespace lifestuff

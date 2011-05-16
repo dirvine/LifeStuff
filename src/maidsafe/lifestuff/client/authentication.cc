@@ -102,6 +102,8 @@ int Authentication::GetUserInfo(const std::string &username,
     }
   }
   if (tmid_op_status_ == kSucceeded || stmid_op_status_ == kSuccess) {
+    session_singleton_->SetUsername(username);
+    session_singleton_->SetPin(pin);
     return kUserExists;
   }
   return kUserDoesntExist;
@@ -650,46 +652,6 @@ int Authentication::GetMasterDataMap(
                   << res << std::endl;
     return kPasswordFailure;
   }
-
-/*
-  // Wait for and recover the STMID
-  bool success(false);
-  try {
-    boost::mutex::scoped_lock lock(mutex_);
-    tmid_op_status_ = kFailed;
-    encrypted_tmid_.clear();
-    success = cond_var_.timed_wait(lock,
-              boost::posix_time::milliseconds(2 * kSingleOpTimeout_),
-              boost::bind(&Authentication::StmidOpDone, this));
-  }
-  catch(const std::exception &e) {
-    DLOG(WARNING) << "Authentication::GetMasterDataMap: " << e.what()
-                  << std::endl;
-  }
-#ifdef DEBUG
-  if (!success)
-    DLOG(WARNING) << "Authentication::GetMasterDataMap: timed out on STMID"
-                  << std::endl;
-#endif
-  if (stmid_op_status_ == kSucceeded) {
-    res = passport_->GetUserData(password, true, encrypted_stmid_,
-                                 surrogate_serialised_master_datamap.get());
-    if (res == kSuccess) {
-      session_singleton_->SetPassword(password);
-      return res;
-    } else {
-      DLOG(WARNING) << "Authentication::GetMasterDataMap - STMID error "
-                    << *result << std::endl;
-      boost::mutex::scoped_lock lock(mutex_);
-      stmid_op_status_ = kFailed;
-      encrypted_stmid_.clear();
-      return kPasswordFailure;
-    }
-  } else {
-    return kPasswordFailure;
-  }
-//  login_cond_var->notify_one();
-*/
 }
 
 int Authentication::CreateMsidPacket(std::string *msid_name,
