@@ -58,8 +58,8 @@ namespace lifestuff {
 //  transport_handler_ = trans_hdler;
 //  message_notifier_ = msg_notifier;
 //  conn_notifier_ = conn_notifier;
-//  timer_.async_wait(strand_.wrap(boost::bind(&dummy_timeout_func, _1)));
-//  worker_.reset(new boost::thread(boost::bind(
+//  timer_.async_wait(strand_.wrap(std::bind(&dummy_timeout_func, arg::_1)));
+//  worker_.reset(new boost::thread(std::bind(
 //      &boost::asio::io_service::run, &io_)));
 //  started_ = true;
 //  return kSuccess;
@@ -93,9 +93,9 @@ namespace lifestuff {
 //  if (p.second) {
 //    conn_info.timer->expires_from_now(boost::posix_time::seconds(
 //        kConnectionTimeout));
-//    conn_info.timer->async_wait(strand_.wrap(boost::bind(
+//    conn_info.timer->async_wait(strand_.wrap(std::bind(
 //        &IMConnectionHandler::ConnectionTimesOut, this, trans_id, conn_id,
-//        _1)));
+//        arg::_1)));
 //    return kSuccess;
 //  }
 //  return kConnectionAlreadyExists;
@@ -116,9 +116,9 @@ namespace lifestuff {
 //    }
 //    conn_info.timer->expires_from_now(boost::posix_time::seconds(
 //        kConnectionTimeout));
-//    conn_info.timer->async_wait(strand_.wrap(boost::bind(
+//    conn_info.timer->async_wait(strand_.wrap(std::bind(
 //        &IMConnectionHandler::ConnectionTimesOut, this, trans_id,
-//        *conn_id, _1)));
+//        *conn_id, arg::_1)));
 //    return kSuccess;
 //  }
 //  return kFailedToConnect;
@@ -161,9 +161,9 @@ namespace lifestuff {
 //    connections_.replace(it, info);
 //    info.timer->expires_from_now(
 //        boost::posix_time::seconds(kConnectionTimeout));
-//    info.timer->async_wait(strand_.wrap(boost::bind(
+//    info.timer->async_wait(strand_.wrap(std::bind(
 //        &IMConnectionHandler::ConnectionTimesOut, this, trans_id,
-//        conn_id, _1)));
+//        conn_id, arg::_1)));
 //    while (!timer_restarted) {
 //      send_finished_.wait(guard);
 //      connections_container::iterator it1 = connections_.find(
@@ -198,9 +198,9 @@ namespace lifestuff {
 //      info.timer->expires_from_now(
 //          boost::posix_time::seconds(kConnectionTimeout));
 //      connections_.replace(it, info);
-//      info.timer->async_wait(strand_.wrap(boost::bind(
+//      info.timer->async_wait(strand_.wrap(std::bind(
 //          &IMConnectionHandler::ConnectionTimesOut, this, trans_id,
-//          conn_id, _1)));
+//          conn_id, arg::_1)));
 //    }
 //    message_notifier_(msg);
 //  }

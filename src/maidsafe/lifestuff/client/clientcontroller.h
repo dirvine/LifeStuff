@@ -182,7 +182,7 @@ class ClientController : public lifestuff::UserCredentials {
   virtual bool LeaveMaidsafeNetwork();
 
   // Messages
-//  typedef boost::function<void(const InstantMessage&)> IMNotifier;
+//  typedef std::function<void(const InstantMessage&)> IMNotifier;
 //  bool GetMessages();
 //  int HandleMessages(
 //      std::list<ValidatedBufferPacketMessage> *valid_messages);
@@ -290,8 +290,9 @@ class ClientController : public lifestuff::UserCredentials {
   static int ftruncate();
   static int fgetattr(const std::string &path);
 
-  void RegisterImNotifiers(boost::function<void(const std::string&)> msg_not,
-      boost::function<void(const std::string&, const int&)> conn_not);
+  void RegisterImNotifiers(std::function<void(const std::string&)> msg_not,
+                           std::function<void(const std::string&,
+                           const int&)> conn_not);
 
   bs2::connection ConnectToOnFileNetworkStatus(
       const OnFileNetworkStatus::slot_type &slot);

@@ -41,7 +41,7 @@
 #include "boost/archive/text_iarchive.hpp"
 #include "maidsafe/encrypt/config.h"
 
-
+namespace arg = std::placeholders;
 namespace fs = boost::filesystem;
 
 namespace test_seh {
@@ -186,8 +186,8 @@ class SEHandlerTest : public testing::Test {
 //    }
     sm_.reset(new LocalStoreManager(client_chunkstore_, test_seh::K,
                                     test_root_dir_));
-    sm_->Init(boost::bind(&test::CallbackObject::ReturnCodeCallback, &cb_, _1),
-              0);
+    sm_->Init(std::bind(&test::CallbackObject::ReturnCodeCallback, &cb_,
+                        arg::_1), 0);
     if (cb_.WaitForReturnCodeResult() != kSuccess) {
       FAIL();
       return;
@@ -226,8 +226,8 @@ class SEHandlerTest : public testing::Test {
 
   void TearDown() {
     cb_.Reset();
-    sm_->Close(boost::bind(&test::CallbackObject::ReturnCodeCallback, &cb_, _1),
-               true);
+    sm_->Close(std::bind(&test::CallbackObject::ReturnCodeCallback, &cb_,
+                         arg::_1), true);
     if (cb_.WaitForReturnCodeResult() == kSuccess) {}
     try {
       if (fs::exists(test_root_dir_))
@@ -371,8 +371,8 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptFile) {
   int res(0), res2(res);
   boost::mutex m;
   boost::signals2::connection c =
-      seh_->ConnectToOnFileNetworkStatus(boost::bind(&test_seh::FileUpdate, _1,
-                                                     _2, &res, &m));
+      seh_->ConnectToOnFileNetworkStatus(std::bind(&test_seh::FileUpdate,
+                                                   arg::_1,  arg::_2, &res, &m));
 
   fs::path rel_path(kRootSubdir[0][0]);
   rel_path /= "file1";
@@ -409,8 +409,8 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptString) {
   int res(0), res2(res);
   boost::mutex m;
   boost::signals2::connection c =
-      seh_->ConnectToOnFileNetworkStatus(boost::bind(&test_seh::FileUpdate, _1,
-                                                     _2, &res, &m));
+      seh_->ConnectToOnFileNetworkStatus(std::bind(&test_seh::FileUpdate,
+                                                   arg::_1, arg::_2, &res, &m));
 
   std::string data(RandomString(2048)), ser_dm;
   int result = seh_->EncryptString(data, &ser_dm);
@@ -440,8 +440,8 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_DecryptStringWithChunksPrevLoaded) {
   int res(0), res2(res);
   boost::mutex m;
   boost::signals2::connection c =
-      seh_->ConnectToOnFileNetworkStatus(boost::bind(&test_seh::FileUpdate, _1,
-                                                     _2, &res, &m));
+      seh_->ConnectToOnFileNetworkStatus(std::bind(&test_seh::FileUpdate,
+          arg::_1, arg::_2, &res, &m));
   std::string data(RandomString(19891)), ser_dm;
 
   int result = seh_->EncryptString(data, &ser_dm);
@@ -469,8 +469,8 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_DecryptStringWithLoadChunks) {
   int res(0), res2(res);
   boost::mutex m;
   boost::signals2::connection c =
-      seh_->ConnectToOnFileNetworkStatus(boost::bind(&test_seh::FileUpdate, _1,
-                                                     _2, &res, &m));
+      seh_->ConnectToOnFileNetworkStatus(std::bind(&test_seh::FileUpdate,
+                                                   arg::_1, arg::_2, &res, &m));
 
   ss_->SetDefConLevel(kDefCon2);
   std::string data(RandomString(2048)), ser_dm;
@@ -523,8 +523,8 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_DecryptWithChunksPrevLoaded) {
   int res(0), res2(res);
   boost::mutex m;
   boost::signals2::connection c =
-      seh_->ConnectToOnFileNetworkStatus(boost::bind(&test_seh::FileUpdate, _1,
-                                                     _2, &res, &m));
+      seh_->ConnectToOnFileNetworkStatus(std::bind(&test_seh::FileUpdate,
+                                         arg::_1, arg::_2, &res, &m));
 
   fs::path rel_path(kRootSubdir[0][0]);
   rel_path /= "file1";
@@ -563,8 +563,8 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_DecryptWithLoadChunks) {
   int res(0), res2(res);
   boost::mutex m;
   boost::signals2::connection c =
-      seh_->ConnectToOnFileNetworkStatus(boost::bind(&test_seh::FileUpdate, _1,
-                                                     _2, &res, &m));
+      seh_->ConnectToOnFileNetworkStatus(std::bind(&test_seh::FileUpdate,
+                                                   arg::_1, arg::_2, &res, &m));
 
   fs::path rel_path(kRootSubdir[0][0]);
   rel_path /= "file1";
@@ -622,8 +622,8 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptAndDecryptPrivateDb) {
   int res(0), res2(res);
   boost::mutex m;
   boost::signals2::connection c =
-      seh_->ConnectToOnFileNetworkStatus(boost::bind(&test_seh::FileUpdate, _1,
-                                                     _2, &res, &m));
+      seh_->ConnectToOnFileNetworkStatus(std::bind(&test_seh::FileUpdate,
+                                                   arg::_1, arg::_2, &res, &m));
 
   fs::path db_path(db_str1_);
   std::string key = crypto::Hash<crypto::SHA512>("somekey");
@@ -708,8 +708,8 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_FailureOfChunkEncryptingFile) {
   const encrypt::SelfEncryptionParams sep;
   boost::mutex m;
   boost::signals2::connection c =
-      seh_->ConnectToOnFileNetworkStatus(boost::bind(&test_seh::FileUpdate, _1,
-                                                    _2, &res, &m));
+      seh_->ConnectToOnFileNetworkStatus(std::bind(&test_seh::FileUpdate,
+                                                   arg::_1, arg::_2, &res, &m));
   fs::path rel_path(kRootSubdir[0][0]);
   rel_path /= "file1";
   std::string rel_entry(TidyPath(rel_path.string()));
@@ -804,8 +804,8 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_MultipleFileEncryption) {
   int received_chunks(1);
   boost::signals2::connection c =
       seh_->ConnectToOnFileNetworkStatus(
-          boost::bind(&test_seh::MultipleFileUpdate, _1, _2, &fileage, &m,
-                      &done, &received_chunks));
+          std::bind(&test_seh::MultipleFileUpdate, arg::_1, arg::_2, &fileage,
+                    &m, &done, &received_chunks));
   printf("Connected\n");
   for (int a = 0; a < total_files; ++a) {
     int result = seh_->EncryptAFile(filenames[a], PRIVATE, "");
@@ -851,8 +851,8 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_MultipleEqualFiles) {
   int received_chunks(0), received_chunks2(received_chunks);
   boost::signals2::connection c =
       seh_->ConnectToOnFileNetworkStatus(
-          boost::bind(&test_seh::MultipleEqualFileUpdate, _1, _2, &m,
-                      &received_chunks));
+          std::bind(&test_seh::MultipleEqualFileUpdate, arg::_1, arg::_2, &m,
+                    &received_chunks));
 //  printf("Connected\n");
   for (int a = 0; a < total_files; ++a) {
     int result = seh_->EncryptAFile(filenames[a], PRIVATE, "");
@@ -940,8 +940,8 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_FailureSteppedMultipleEqualFiles) {
   int received_chunks(1);
   boost::signals2::connection c =
       seh_->ConnectToOnFileNetworkStatus(
-          boost::bind(&test_seh::MultipleFileUpdate, _1, _2, &fileage, &m,
-                      &done, &received_chunks));
+          std::bind(&test_seh::MultipleFileUpdate, arg::_1, arg::_2, &fileage,
+                    &m, &done, &received_chunks));
 
 //  printf("Before seh->StoreChunks\n");
   for (int y = 0; y < total_files; ++y) {
@@ -976,7 +976,8 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_OneFileModifiedAndSavedAgain) {
   boost::mutex m;
   boost::signals2::connection c =
       seh_->ConnectToOnFileNetworkStatus(
-          boost::bind(&test_seh::SamePathDifferentContent, _1, _2, &res, &m));
+          std::bind(&test_seh::SamePathDifferentContent, arg::_1, arg::_2, &res,
+          &m));
 
   fs::path rel_path(kRootSubdir[0][0]);
   rel_path /= "file1";

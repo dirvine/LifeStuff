@@ -44,6 +44,7 @@
 #include "boost/serialization/serialization.hpp"
 
 // using namespace maidsafe::encrypt;
+namespace arg = std::placeholders;
 
 namespace maidsafe {
 
@@ -89,7 +90,7 @@ void SEHandler::Init(std::shared_ptr<PacketManager> packet_manager,
 //  if (!connection_to_chunk_uploads_.connected())
 //    connection_to_chunk_uploads_ =
 //        store_manager_->ConnectToOnChunkUploaded(
-//            boost::bind(&SEHandler::ChunkDone, this, _1, _2));
+//            std::bind(&SEHandler::ChunkDone, this, arg::_1, arg::_2));
 }
 
 ItemType SEHandler::CheckEntry(const fs::path &absolute_path,
@@ -561,8 +562,8 @@ int SEHandler::EncryptDb(const fs::path &dir_path,
   boost::mutex mutex;
   boost::condition_variable cond_var;
   int result(kPendingResult);
-  VoidFuncOneInt functor = boost::bind(&SEHandler::PacketOpCallback, this, _1,
-                                       &mutex, &cond_var, &result);
+  VoidFuncOneInt functor = std::bind(&SEHandler::PacketOpCallback, this,
+                                     arg::_1, &mutex, &cond_var, &result);
   if (previous_encrypted_data_map.empty()) {
     packet_manager_->StorePacket(dir_key, encrypted_data_map, passport::PD_DIR,
                                 dir_type, msid, functor);

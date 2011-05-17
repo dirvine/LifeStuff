@@ -32,6 +32,7 @@
 #include "maidsafe/lifestuff/sharedtest/mocksessionsingleton.h"
 #include "maidsafe/lifestuff/sharedtest/testcallback.h"
 
+namespace arg = std::placeholders;
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
@@ -120,7 +121,7 @@ class LocalStoreManagerTest : public testing::Test {
 //      count += 10;
 //    }
     sm_ = new LocalStoreManager(test_root_dir_);
-    sm_->Init(boost::bind(&CallbackObject::ReturnCodeCallback, &cb_, _1), 0);
+    sm_->Init(std::bind(&CallbackObject::ReturnCodeCallback, &cb_, arg::_1), 0);
     if (cb_.WaitForReturnCodeResult() != kSuccess) {
       FAIL();
       return;
@@ -133,7 +134,7 @@ class LocalStoreManagerTest : public testing::Test {
     ss_->ResetSession();
     ss_->CreateTestPackets("Me");
     cb_.Reset();
-    functor_ = boost::bind(&CallbackObject::ReturnCodeCallback, &cb_, _1);
+    functor_ = std::bind(&CallbackObject::ReturnCodeCallback, &cb_, arg::_1);
     anmaid_private_key_ = ss_->PrivateKey(passport::ANMAID, true);
     mpid_public_key_ = ss_->PublicKey(passport::MPID, true);
   }
@@ -160,7 +161,7 @@ class LocalStoreManagerTest : public testing::Test {
   LocalStoreManager *sm_;
   test::CallbackObject cb_;
   SessionSingleton *ss_;
-  boost::function<void(const ReturnCode &)> functor_;
+  std::function<void(const ReturnCode &)> functor_;
   std::string anmaid_private_key_, mpid_public_key_;
 
  private:
@@ -381,8 +382,8 @@ TEST_F(LocalStoreManagerTest, DISABLED_BEH_MAID_StoreChunk) {
   std::string chunk_name = crypto::Hash<crypto::SHA512>(chunk_content);
   chunkies[chunk_name] = chunk_content;
   boost::signals2::connection c =
-      sm_->ConnectToOnChunkUploaded(boost::bind(&ChunkDone, _1, _2,
-                                                &chunkies, &count, &m));
+      sm_->ConnectToOnChunkUploaded(std::bind(&ChunkDone, arg::_1, arg::_2,
+                                              &chunkies, &count, &m));
 
   std::string hex_chunk_name = EncodeToHex(chunk_name);
   fs::path chunk_path(test_root_dir_ / hex_chunk_name);
@@ -415,8 +416,8 @@ TEST_F(LocalStoreManagerTest, DISABLED_FUNC_MAID_StoreSeveralChunksWithSignals) 
   int count(50), count2(count);
   boost::mutex m;
   boost::signals2::connection c =
-      sm_->ConnectToOnChunkUploaded(boost::bind(&ChunkDone, _1, _2,
-                                                &chunkies, &count, &m));
+      sm_->ConnectToOnChunkUploaded(std::bind(&ChunkDone, arg::_1, arg::_2,
+                                              &chunkies, &count, &m));
   // Store the chunks
   {
     boost::mutex::scoped_lock loch_juan(m);

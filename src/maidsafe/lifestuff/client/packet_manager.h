@@ -25,8 +25,10 @@
 #ifndef MAIDSAFE_LIFESTUFF_CLIENT_PACKET_MANAGER_H_
 #define MAIDSAFE_LIFESTUFF_CLIENT_PACKET_MANAGER_H_
 
+#include <functional>
 #include <list>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -46,8 +48,8 @@ enum IfPacketExists {
   kAppend
 };
 
-typedef boost::function<void(const std::vector<std::string>&,
-                             const ReturnCode&)>
+typedef std::function<void(const std::vector<std::string>&,
+                           const ReturnCode&)>
         LoadPacketFunctor;
 
 class PacketManager {

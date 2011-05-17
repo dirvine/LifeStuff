@@ -31,7 +31,7 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-typedef boost::function<void(const std::string&)> VoidFunctorOneString;
+typedef std::function<void(const std::string&)> VoidFunctorOneString;
 
 void ExecuteSuccessCallback(const VoidFunctorOneString &cb,
                             boost::mutex *mutex) {
@@ -185,8 +185,8 @@ int LocalStoreManager::StoreChunk(const std::string &chunk_name,
 //      signal_mutex_.lock();
 //      chunks_pending_.insert(chunk_name);
 //      signal_mutex_.unlock();
-//      boost::thread thr(boost::bind(&LocalStoreManager::ExecuteReturnSignal,
-//                                    this, chunk_name, kSendChunkFailure));
+//      boost::thread thr(std::bind(&LocalStoreManager::ExecuteReturnSignal,
+//                                  this, chunk_name, kSendChunkFailure));
 //      return kChunkStorePending;
 //    }
 //  }
@@ -194,8 +194,8 @@ int LocalStoreManager::StoreChunk(const std::string &chunk_name,
 //    signal_mutex_.lock();
 //    chunks_pending_.insert(chunk_name);
 //    signal_mutex_.unlock();
-//    boost::thread thr(boost::bind(&LocalStoreManager::ExecuteReturnSignal, this,
-//                                  chunk_name, kSendChunkFailure));
+//    boost::thread thr(std::bind(&LocalStoreManager::ExecuteReturnSignal, this,
+//                                chunk_name, kSendChunkFailure));
 //    return kChunkStorePending;
 //  }
 //
@@ -207,7 +207,7 @@ int LocalStoreManager::StoreChunk(const std::string &chunk_name,
 //  signal_mutex_.lock();
 //  chunks_pending_.insert(chunk_name);
 //  signal_mutex_.unlock();
-//  boost::thread thr(boost::bind(&LocalStoreManager::ExecuteReturnSignal, this,
+//  boost::thread thr(std::bind(&LocalStoreManager::ExecuteReturnSignal, this,
 //                                chunk_name, kSuccess));
 */
   return kChunkStorePending;
