@@ -81,10 +81,10 @@ class LocalStoreManager : public PacketManager {
                           const std::string &msid);
 
   // Packets
-  virtual int LoadPacket(const std::string &packet_name,
-                         std::vector<std::string> *results);
-  virtual void LoadPacket(const std::string &packet_name,
-                          const LoadPacketFunctor &lpf);
+  virtual int GetPacket(const std::string &packet_name,
+                        std::vector<std::string> *results);
+  virtual void GetPacket(const std::string &packet_name,
+                         const GetPacketFunctor &lpf);
   virtual void StorePacket(const std::string &packet_name,
                            const std::string &value,
                            passport::PacketType system_packet_type,
@@ -176,7 +176,7 @@ class LocalStoreManager : public PacketManager {
                           MaidsafeRpcResult result);
   void ExecuteReturnSignal(const std::string &chunkname, ReturnCode rc);
   void ExecReturnCodeCallback(VoidFuncOneInt cb, ReturnCode rc);
-  void ExecReturnLoadPacketCallback(LoadPacketFunctor cb,
+  void ExecReturnLoadPacketCallback(GetPacketFunctor cb,
                                     std::vector<std::string> results,
                                     ReturnCode rc);
 

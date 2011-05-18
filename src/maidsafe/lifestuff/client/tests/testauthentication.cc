@@ -332,7 +332,7 @@ TEST_F(AuthenticationTest, DISABLED_FUNC_MAID_CreateMSIDPacket) {
 
   // Check the packet exits
   std::vector<std::string> packet_content;
-  ASSERT_EQ(kSuccess, sm_->LoadPacket(msid_name, &packet_content));
+  ASSERT_EQ(kSuccess, sm_->GetPacket(msid_name, &packet_content));
   ASSERT_EQ(size_t(1), packet_content.size());
   GenericPacket gp;
   ASSERT_TRUE(gp.ParseFromString(packet_content[0]));

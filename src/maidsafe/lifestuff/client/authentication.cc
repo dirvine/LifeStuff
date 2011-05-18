@@ -83,10 +83,10 @@ int Authentication::GetUserInfo(const std::string &username,
     stmid_op_status_ = kPending;
   }
 
-  packet_manager_->LoadPacket(mid_name,
+  packet_manager_->GetPacket(mid_name,
                              std::bind(&Authentication::GetMidCallback, this,
                                        arg::_1, arg::_2));
-  packet_manager_->LoadPacket(smid_name,
+  packet_manager_->GetPacket(smid_name,
                              std::bind(&Authentication::GetSmidCallback, this,
                                        arg::_1, arg::_2));
 
@@ -149,7 +149,7 @@ void Authentication::GetMidCallback(const std::vector<std::string> &values,
     return;
   }
 
-  packet_manager_->LoadPacket(tmid_name,
+  packet_manager_->GetPacket(tmid_name,
                               std::bind(&Authentication::GetTmidCallback,
                                         this, arg::_1, arg::_2));
 }
@@ -192,7 +192,7 @@ void Authentication::GetSmidCallback(const std::vector<std::string> &values,
     return;
   }
 
-  packet_manager_->LoadPacket(stmid_name,
+  packet_manager_->GetPacket(stmid_name,
                               std::bind(&Authentication::GetStmidCallback,
                                         this, arg::_1, arg::_2));
 }
@@ -1147,7 +1147,7 @@ int Authentication::PublicUsernamePublicKey(const std::string &public_username,
                                             std::string *public_key) {
   std::string packet_name = crypto::Hash<crypto::SHA512>(public_username);
   std::vector<std::string> packet_content;
-  int result = packet_manager_->LoadPacket(packet_name, &packet_content);
+  int result = packet_manager_->GetPacket(packet_name, &packet_content);
   if (result != kSuccess || packet_content.empty())
     return kUserDoesntExist;
   GenericPacket packet;

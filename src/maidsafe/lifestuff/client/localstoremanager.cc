@@ -58,7 +58,7 @@ void ExecReturnCodeCallback(const VoidFuncOneInt &cb,
   cb(rc);
 }
 
-void ExecReturnLoadPacketCallback(const LoadPacketFunctor &cb,
+void ExecReturnLoadPacketCallback(const GetPacketFunctor &cb,
                                   std::vector<std::string> results,
                                   const ReturnCode rc) {
   cb(results, rc);
@@ -300,13 +300,13 @@ void LocalStoreManager::KeyUnique(const std::string &key, bool check_local,
     ExecReturnCodeCallback(cb, kKeyNotUnique);
 }
 
-int LocalStoreManager::LoadPacket(const std::string &packet_name,
-                                  std::vector<std::string> *results) {
+int LocalStoreManager::GetPacket(const std::string &packet_name,
+                                 std::vector<std::string> *results) {
   return GetValue_FromDB(packet_name, results);
 }
 
-void LocalStoreManager::LoadPacket(const std::string &packetname,
-                                   const LoadPacketFunctor &lpf) {
+void LocalStoreManager::GetPacket(const std::string &packetname,
+                                  const GetPacketFunctor &lpf) {
   std::vector<std::string> results;
   ReturnCode rc(static_cast<ReturnCode>(GetValue_FromDB(packetname, &results)));
   ExecReturnLoadPacketCallback(lpf, results, rc);
@@ -975,7 +975,7 @@ void LocalStoreManager::ExecReturnCodeCallback(VoidFuncOneInt cb,
 }
 
 void LocalStoreManager::ExecReturnLoadPacketCallback(
-    LoadPacketFunctor cb,
+    GetPacketFunctor cb,
     std::vector<std::string> results,
     ReturnCode rc) {
   boost::thread t(cb, results, rc);

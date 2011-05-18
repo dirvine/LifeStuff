@@ -605,7 +605,7 @@ int SEHandler::DecryptDb(const fs::path &dir_path,
       return kSuccess;
     }
     std::vector<std::string> packet_content;
-    int result = packet_manager_->LoadPacket(dir_key, &packet_content);
+    int result = packet_manager_->GetPacket(dir_key, &packet_content);
     if (result != kSuccess || packet_content.empty() ||
         packet_content[0].empty()) {
 #ifdef DEBUG
