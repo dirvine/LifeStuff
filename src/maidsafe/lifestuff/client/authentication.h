@@ -162,6 +162,10 @@ class Authentication {
       const ReturnCode &return_code,
       std::shared_ptr<pki::Packet> packet,
       std::shared_ptr<SaveSessionData> save_session_data);
+  void NewSaveSessionCallback(
+      const ReturnCode &return_code,
+      std::shared_ptr<pki::Packet> packet,
+      std::shared_ptr<SaveSessionData> save_session_data);
   void DeletePacket(const passport::PacketType &packet_type,
                     OpStatus *op_status,
                     OpStatus *dependent_op_status);

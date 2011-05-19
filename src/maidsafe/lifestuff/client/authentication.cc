@@ -436,12 +436,13 @@ int Authentication::CreateTmidPacket(const std::string &username,
   std::shared_ptr<passport::MidPacket> mid(new passport::MidPacket);
   std::shared_ptr<passport::MidPacket> smid(new passport::MidPacket);
   std::shared_ptr<passport::TmidPacket> tmid(new passport::TmidPacket);
+  std::shared_ptr<passport::TmidPacket> stmid(new passport::TmidPacket);
   int result(kPendingResult);
   const boost::uint8_t kMaxAttempts(3);
   boost::uint8_t attempt(0);
   while ((result != kSuccess) && (attempt < kMaxAttempts)) {
     result = passport_->SetNewUserData(password, serialised_datamap, mid, smid,
-                                       tmid);
+                                       tmid, stmid);
     if (result != kSuccess) {
       DLOG(ERROR) << "Authentication::CreateTmidPacket: Failed init."
                   << std::endl;
@@ -449,35 +450,41 @@ int Authentication::CreateTmidPacket(const std::string &username,
     }
     bool unique((PacketUnique(mid) == kKeyUnique) &&
                 (PacketUnique(smid) == kKeyUnique) &&
-                (PacketUnique(tmid) == kKeyUnique));
+                (PacketUnique(tmid) == kKeyUnique) &&
+                (PacketUnique(stmid) == kKeyUnique));
     if (!unique) {
-      DLOG(ERROR) << "Authentication::CreateTmidPacket: MID/SMID/TMID exists."
-                  << std::endl;
+      DLOG(ERROR) << "Authentication::CreateTmidPacket: MID/SMID/TMID/STMID "
+                     "exists." << std::endl;
       ++attempt;
       result = kKeyNotUnique;
       continue;
     }
   }
   result = StorePacket(mid, false);
-  if (result == kSuccess)
+  if (result == kSuccess) {
     result = StorePacket(smid, false);
-  if (result == kSuccess)
-    result = StorePacket(tmid, false);
-
+    if (result == kSuccess) {
+      result = StorePacket(tmid, false);
+      if (result == kSuccess)
+        result = StorePacket(stmid, false);
+    }
+  }
   if (result != kSuccess) {
     DLOG(ERROR) << "Authentication::CreateTmidPacket: Failed." << std::endl;
     return kAuthenticationError;
   } else {
-    passport_->ConfirmNewUserData(mid, smid, tmid);
+    passport_->ConfirmNewUserData(mid, smid, tmid, stmid);
     session_singleton_->SetPassword(password);
     return kSuccess;
   }
+
 }
 
 void Authentication::SaveSession(const std::string &serialised_master_datamap,
                                  const VoidFuncOneInt &functor) {
   std::shared_ptr<SaveSessionData>
       save_session_data(new SaveSessionData(functor, kRegular));
+  save_session_data->stmid->SetToSurrogate();
 
   std::string mid_old_value, smid_old_value;
   int result(passport_->UpdateMasterData(serialised_master_datamap,
@@ -495,50 +502,34 @@ void Authentication::SaveSession(const std::string &serialised_master_datamap,
   }
 
   // Update or store SMID
-  VoidFuncOneInt callback = boost::bind(&Authentication::SaveSessionCallback,
+  VoidFuncOneInt callback = boost::bind(&Authentication::NewSaveSessionCallback,
                                         this, _1, save_session_data->smid,
                                         save_session_data);
-  if (smid_old_value.empty()) {
-    packet_manager_->StorePacket(save_session_data->smid->name(),
+  packet_manager_->UpdatePacket(save_session_data->smid->name(),
+                                smid_old_value,
                                 save_session_data->smid->value(),
                                 passport::SMID, PRIVATE, "", callback);
-  } else if (smid_old_value != save_session_data->smid->value()) {
-    packet_manager_->UpdatePacket(save_session_data->smid->name(),
-                                 smid_old_value,
-                                 save_session_data->smid->value(),
-                                 passport::SMID, PRIVATE, "", callback);
-  } else {
-    // Only time where old val == new val is first ever SaveSession as MID and
-    // SMID are both created with the same RID.
-    save_session_data->process_smid = kSucceeded;
-  }
 
   // Update MID
-  callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
+  callback = boost::bind(&Authentication::NewSaveSessionCallback, this, _1,
                          save_session_data->mid, save_session_data);
   packet_manager_->UpdatePacket(save_session_data->mid->name(), mid_old_value,
                                save_session_data->mid->value(),
                                passport::MID, PRIVATE, "", callback);
 
   // Store new TMID
-  callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
+  callback = boost::bind(&Authentication::NewSaveSessionCallback, this, _1,
                          save_session_data->tmid, save_session_data);
   packet_manager_->StorePacket(save_session_data->tmid->name(),
                               save_session_data->tmid->value(), passport::TMID,
                               PRIVATE, "", callback);
 
   // Delete old STMID
-  if (save_session_data->stmid &&
-      !save_session_data->stmid->username().empty()) {
-    callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
-                           save_session_data->stmid, save_session_data);
-    std::vector<std::string> values(1, save_session_data->stmid->value());
-    packet_manager_->DeletePacket(save_session_data->stmid->name(), values,
-                                 passport::TMID, PRIVATE, "", callback);
-  } else {
-    boost::mutex::scoped_lock lock(mutex_);
-    save_session_data->process_stmid = kSucceeded;
-  }
+  callback = boost::bind(&Authentication::NewSaveSessionCallback, this, _1,
+                         save_session_data->stmid, save_session_data);
+  std::vector<std::string> values(1, save_session_data->stmid->value());
+  packet_manager_->DeletePacket(save_session_data->stmid->name(), values,
+                                passport::STMID, PRIVATE, "", callback);
 }
 
 void Authentication::SaveSessionCallback(
@@ -548,23 +539,29 @@ void Authentication::SaveSessionCallback(
   OpStatus op_status(kSucceeded);
   if ((save_session_data->op_type == kIsUnique && return_code != kKeyUnique) ||
       (save_session_data->op_type != kIsUnique && return_code != kSuccess)) {
-    DLOG(WARNING) << "Authentication::SaveSessionCallback ("
-                  << packet->packet_type() << "): Return Code " << return_code
-                  << std::endl;
     op_status = kFailed;
   }
+
   boost::mutex::scoped_lock lock(mutex_);
   switch (packet->packet_type()) {
     case passport::MID:
+      DLOG(WARNING) << "Authentication::SaveSessionCallback MID: Return Code "
+                    << return_code << std::endl;
       save_session_data->process_mid = op_status;
       break;
     case passport::SMID:
+      DLOG(WARNING) << "Authentication::SaveSessionCallback SMID: Return Code "
+                    << return_code << std::endl;
       save_session_data->process_smid = op_status;
       break;
     case passport::TMID:
+      DLOG(WARNING) << "Authentication::SaveSessionCallback TMID: Return Code "
+                    << return_code << std::endl;
       save_session_data->process_tmid = op_status;
       break;
     case passport::STMID:
+      DLOG(WARNING) << "Authentication::SaveSessionCallback STMID: Return Code "
+                    << return_code << std::endl;
       save_session_data->process_stmid = op_status;
       break;
     default:
@@ -577,28 +574,94 @@ void Authentication::SaveSessionCallback(
     return;
   if ((save_session_data->process_mid == kFailed) ||
       (save_session_data->process_smid == kFailed) ||
-      (save_session_data->process_tmid == kFailed)) {
+      (save_session_data->process_tmid == kFailed) ||
+      (save_session_data->process_stmid == kFailed)) {
     lock.unlock();
     passport_->RevertMasterDataUpdate();
     save_session_data->functor(kAuthenticationError);
     return;
   }
-  if ((save_session_data->process_stmid == kFailed)) {
+//  if ((save_session_data->process_stmid == kFailed)) {
+//    lock.unlock();
+//    if (save_session_data->op_type == kRegular) {
+//      passport_->ConfirmMasterDataUpdate(save_session_data->mid,
+//                                         save_session_data->smid,
+//                                         save_session_data->tmid,
+//                                         save_session_data->stmid);
+//      save_session_data->functor(kFailedToDeleteOldPacket);
+//    } else if (save_session_data->op_type != kDeleteOld) {
+//      passport_->RevertMasterDataUpdate();
+//      save_session_data->functor(kAuthenticationError);
+//    }
+//    return;
+//  }
+  lock.unlock();
+//  if (save_session_data->op_type == kRegular)
+  passport_->ConfirmMasterDataUpdate(save_session_data->mid,
+                                     save_session_data->smid,
+                                     save_session_data->tmid);
+  save_session_data->functor(kSuccess);
+}
+
+void Authentication::NewSaveSessionCallback(
+    const ReturnCode &return_code,
+    std::shared_ptr<pki::Packet> packet,
+    std::shared_ptr<SaveSessionData> save_session_data) {
+  OpStatus op_status(kSucceeded);
+  if (return_code != kSuccess)
+    op_status = kFailed;
+
+  boost::mutex::scoped_lock lock(mutex_);
+  switch (packet->packet_type()) {
+    case passport::MID:
+      DLOG(WARNING) << "Authentication::SaveSessionCallback MID: Return Code "
+                    << return_code << std::endl;
+      save_session_data->process_mid = op_status;
+      break;
+    case passport::SMID:
+      DLOG(WARNING) << "Authentication::SaveSessionCallback SMID: Return Code "
+                    << return_code << std::endl;
+      save_session_data->process_smid = op_status;
+      break;
+    case passport::TMID:
+      DLOG(WARNING) << "Authentication::SaveSessionCallback TMID: Return Code "
+                    << return_code << std::endl;
+      save_session_data->process_tmid = op_status;
+      break;
+    case passport::STMID:
+      DLOG(WARNING) << "Authentication::SaveSessionCallback STMID: Return Code "
+                    << return_code << std::endl;
+      save_session_data->process_stmid = op_status;
+      break;
+    default:
+      break;
+  }
+
+  // If anything is still pending, we're not done
+  if ((save_session_data->process_mid == kPending) ||
+      (save_session_data->process_smid == kPending) ||
+      (save_session_data->process_tmid == kPending) ||
+      (save_session_data->process_stmid == kPending))
+    return;
+
+  // All ops have finished, check if any have failed
+  if ((save_session_data->process_mid == kFailed) ||
+      (save_session_data->process_smid == kFailed) ||
+      (save_session_data->process_tmid == kFailed) ||
+      (save_session_data->process_stmid == kFailed)) {
     lock.unlock();
-    if (save_session_data->op_type == kRegular) {
-      passport_->ConfirmMasterDataUpdate(save_session_data->mid,
-          save_session_data->smid, save_session_data->tmid);
-      save_session_data->functor(kFailedToDeleteOldPacket);
-    } else if (save_session_data->op_type != kDeleteOld) {
-      passport_->RevertMasterDataUpdate();
-      save_session_data->functor(kAuthenticationError);
-    }
+    passport_->RevertMasterDataUpdate();
+    DLOG(WARNING) << "Authentication::SaveSessionCallback - One op failed"
+                  << std::endl;
+    save_session_data->functor(kAuthenticationError);
     return;
   }
   lock.unlock();
-  if (save_session_data->op_type == kRegular)
-    passport_->ConfirmMasterDataUpdate(save_session_data->mid,
-        save_session_data->smid, save_session_data->tmid);
+
+  // It's all good, confirm to passport
+  passport_->ConfirmMasterDataUpdate(save_session_data->mid,
+                                     save_session_data->smid,
+                                     save_session_data->tmid);
   save_session_data->functor(kSuccess);
 }
 
@@ -636,6 +699,8 @@ int Authentication::GetMasterDataMap(
                                    serialised_master_datamap.get());
   if (res == kSuccess) {
     session_singleton_->SetPassword(password);
+    passport_->GetUserData(password, true, encrypted_stmid_,
+                           surrogate_serialised_master_datamap.get());
     return res;
   } else {
     DLOG(WARNING) << "Authentication::GetMasterDataMap - TMID error "
@@ -870,14 +935,16 @@ void Authentication::DeletePacketCallback(
 
 int Authentication::ChangeUsername(const std::string &serialised_master_datamap,
                                    const std::string &new_username) {
-  return ChangeUserData(serialised_master_datamap, new_username,
+  return ChangeUserData(serialised_master_datamap,
+                        new_username,
                         session_singleton_->Pin());
 }
 
 int Authentication::ChangePin(const std::string &serialised_master_datamap,
                               const std::string &new_pin) {
   return ChangeUserData(serialised_master_datamap,
-                        session_singleton_->Username(), new_pin);
+                        session_singleton_->Username(),
+                        new_pin);
 }
 
 int Authentication::ChangeUserData(const std::string &serialised_master_datamap,
@@ -892,7 +959,7 @@ int Authentication::ChangeUserData(const std::string &serialised_master_datamap,
 
   int delete_result(kPendingResult);
   VoidFuncOneInt delete_functor = boost::bind(&Authentication::PacketOpCallback,
-                                             this, _1, &delete_result);
+                                              this, _1, &delete_result);
   std::shared_ptr<SaveSessionData>
       delete_old_packets(new SaveSessionData(delete_functor, kDeleteOld));
 
@@ -1050,7 +1117,7 @@ int Authentication::ChangeUserData(const std::string &serialised_master_datamap,
                               &delete_result));
   }
   catch(const std::exception &e) {
-    DLOG(ERROR) << "Authentication::ChangeUserData: deleting:" << e.what()
+    DLOG(ERROR) << "Authentication::ChangeUserData - deleting: " << e.what()
                 << std::endl;
     success = false;
   }
@@ -1098,16 +1165,17 @@ int Authentication::ChangePassword(const std::string &serialised_master_datamap,
 
   // Update TMID
   VoidFuncOneInt callback = boost::bind(&Authentication::SaveSessionCallback,
-                            this, _1, update_packets->tmid, update_packets);
+                                        this, _1, update_packets->tmid,
+                                        update_packets);
   packet_manager_->UpdatePacket(update_packets->tmid->name(), tmid_old_value,
-                               update_packets->tmid->value(), passport::TMID,
-                               PRIVATE, "", callback);
+                                update_packets->tmid->value(), passport::TMID,
+                                PRIVATE, "", callback);
   // Update STMID
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                          update_packets->stmid, update_packets);
   packet_manager_->UpdatePacket(update_packets->stmid->name(), stmid_old_value,
-                               update_packets->stmid->value(), passport::TMID,
-                               PRIVATE, "", callback);
+                                update_packets->stmid->value(), passport::TMID,
+                                PRIVATE, "", callback);
 
   // Wait for update to complete
   bool success(true);
@@ -1123,8 +1191,8 @@ int Authentication::ChangePassword(const std::string &serialised_master_datamap,
     success = false;
   }
   if (result != kSuccess || !success) {
-    DLOG(ERROR) << "Authentication::ChangePassword: timed out updating."
-                << std::endl;
+    DLOG(ERROR) << "Authentication::ChangePassword: timed out updating - "
+                << (result != kSuccess) << " - " << (!success) << std::endl;
     passport_->RevertPasswordChange();
     return kAuthenticationError;
   }

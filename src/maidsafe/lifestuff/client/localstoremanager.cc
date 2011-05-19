@@ -21,6 +21,7 @@
 #include "maidsafe/pki/maidsafevalidator.h"
 #include "maidsafe/common/chunk_store.h"
 #include "maidsafe/common/crypto.h"
+#include "maidsafe/common/utils.h"
 #include "maidsafe/lifestuff/client/sessionsingleton.h"
 #include "maidsafe/lifestuff/client/clientutils.h"
 #include "maidsafe/lifestuff/client/lifestuff_messages.pb.h"
@@ -30,6 +31,27 @@ namespace fs3 = boost::filesystem3;
 namespace maidsafe {
 
 namespace lifestuff {
+
+namespace {
+
+void PrintDebugInfo(const std::string &packet_name,
+                    const std::string &value1,
+                    const std::string &value2,
+                    const std::string &op_type,
+                    passport::PacketType system_packet_type) {
+  std::string packet_type(maidsafe::passport::DebugString(system_packet_type));
+  if (value2.empty())
+    DLOG(WARNING) << "LSM::" << op_type << " - " << packet_type
+                  << " - <key, value>(" << HexSubstr(packet_name) << ", "
+                  << HexSubstr(value1) << ")" << std::endl;
+  else
+    DLOG(WARNING) << "LSM::" << op_type << " - " << packet_type << " - <key>("
+                  << HexSubstr(packet_name) << ") value("
+                  << HexSubstr(value1) << " --> " << HexSubstr(value2)
+                  << ")" << std::endl;
+}
+
+}
 
 typedef boost::function<void(const std::string&)> VoidFunctorOneString;
 
@@ -317,6 +339,8 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
                                      passport::PacketType system_packet_type,
                                      DirType dir_type, const std::string &msid,
                                      const VoidFuncOneInt &cb) {
+  PrintDebugInfo(packet_name, values.at(0), "", "DeletePacket",
+                 system_packet_type);
   std::string key_id, public_key, public_key_signature, private_key;
   ClientUtils client_utils;
   client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
@@ -422,9 +446,9 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
         if (a == 1) {
           --deleted;
         } else {
-          DLOG(WARNING) << "LSM::DeletePacket_DeleteFromDb - failure to delete "
-                           "<key, value>(" << hex_key.substr(0, 10) << ", "
-                        << HexSubstr(values[n]) << ")" << std::endl;
+          DLOG(WARNING) << "LSM::DeletePacket_DeleteFromDb - failure to delete("
+                        << a << ") <key, value>(" << hex_key.substr(0, 10)
+                        << ", " << HexSubstr(values[n]) << ")" << std::endl;
           return kDeletePacketFailure;
         }
       }
@@ -444,6 +468,10 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
                                     passport::PacketType system_packet_type,
                                     DirType dir_type, const std::string& msid,
                                     const VoidFuncOneInt &cb) {
+
+  PrintDebugInfo(packet_name, value, "", "StorePacket", system_packet_type);
+
+//  std::cout << "AAAAAA: " << value.size() << std::endl;
   std::string key_id, public_key, public_key_signature, private_key;
   ClientUtils client_utils;
   client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
@@ -538,10 +566,13 @@ void LocalStoreManager::UpdatePacket(const std::string &packet_name,
                                      passport::PacketType system_packet_type,
                                      DirType dir_type, const std::string &msid,
                                      const VoidFuncOneInt &cb) {
+  PrintDebugInfo(packet_name, old_value, new_value, "UpdatePacket",
+                 system_packet_type);
   std::string key_id, public_key, public_key_signature, private_key;
   ClientUtils client_utils;
   client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
-      &key_id, &public_key, &public_key_signature, &private_key);
+                                      &key_id, &public_key,
+                                      &public_key_signature, &private_key);
 //  pki::MaidsafeValidator msv;
 //  if (!msv.ValidateSignerId(key_id, public_key, public_key_signature)) {
 //    ExecReturnCodeCallback(cb, kUpdatePacketFailure);
@@ -587,9 +618,12 @@ void LocalStoreManager::UpdatePacket(const std::string &packet_name,
 
   std::set<std::string> the_values(values.begin(), values.end());
   std::set<std::string>::iterator it = the_values.find(old_ser_gp);
+  std::string s(values.at(0));
   if (it == the_values.end()) {
     ExecReturnCodeCallback(cb, kStoreManagerError);
-    DLOG(WARNING) << "LSM::UpdatePacket - Old value not there" << std::endl;
+    DLOG(WARNING) << "LSM::UpdatePacket - Old value not there: "
+                  << s.size() /*<< std::endl << std::endl*/  <<  " - "
+                  << old_ser_gp.size() << std::endl;
     return;
   }
   it = the_values.find(new_ser_gp);

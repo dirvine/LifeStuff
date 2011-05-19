@@ -132,7 +132,7 @@ class ClientController : public lifestuff::UserCredentials {
                        auth_(),
                        ss_(SessionSingleton::getInstance()),
                        ser_da_(),
-                       ser_dm_(),
+//                       ser_dm_(),
                        db_enc_queue_(),
                        seh_(),
 //                       instant_messages_(),
@@ -354,7 +354,7 @@ class ClientController : public lifestuff::UserCredentials {
   std::shared_ptr<PacketManager> local_sm_;
   Authentication auth_;
   SessionSingleton *ss_;
-  std::string ser_da_, ser_dm_;
+  std::string ser_da_;  // , ser_dm_;
   std::map<std::string, std::pair<std::string, std::string> > db_enc_queue_;
   SEHandler seh_;
 //  std::list<InstantMessage> instant_messages_;

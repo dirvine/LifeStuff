@@ -109,20 +109,18 @@ TEST_F(ClientControllerTest, FUNC_MAID_LoginSequence) {
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
   ASSERT_TRUE(ss_->Password().empty());
-  printf("Preconditions fulfilled.\n");
+  printf("Preconditions fulfilled.");
+
+  printf("\n\n");
 
   ASSERT_NE(kUserExists, cc_->CheckUserExists(username, pin));
+  ASSERT_TRUE(cc_->CreateUser(username, pin, password));
+  ASSERT_EQ(username, ss_->Username());
+  ASSERT_EQ(pin, ss_->Pin());
+  ASSERT_EQ(password, ss_->Password());
+  printf("User created.");
 
-  {
-    boost::progress_timer t;
-    ASSERT_TRUE(cc_->CreateUser(username, pin, password));
-    ASSERT_EQ(username, ss_->Username());
-    ASSERT_EQ(pin, ss_->Pin());
-    ASSERT_EQ(password, ss_->Password());
-    printf("User created, time: ");
-  }
-
-//  boost::this_thread::sleep(boost::posix_time::seconds(15));
+  printf("\n\n");
 
   ASSERT_TRUE(cc_->Logout());
   ASSERT_TRUE(ss_->Username().empty());
@@ -131,7 +129,6 @@ TEST_F(ClientControllerTest, FUNC_MAID_LoginSequence) {
   printf("Logged out.");
 
   printf("\n\n");
-//  boost::this_thread::sleep(boost::posix_time::seconds(15));
 
   ASSERT_EQ(kUserExists, cc_->CheckUserExists(username, pin));
 
@@ -142,7 +139,6 @@ TEST_F(ClientControllerTest, FUNC_MAID_LoginSequence) {
   printf("Logged in.");
 
   printf("\n\n");
-//  boost::this_thread::sleep(boost::posix_time::seconds(15));
 
   ASSERT_TRUE(cc_->Logout());
   ASSERT_TRUE(ss_->Username().empty());
@@ -151,7 +147,6 @@ TEST_F(ClientControllerTest, FUNC_MAID_LoginSequence) {
   printf("Logged out.");
 
   printf("\n\n");
-//  boost::this_thread::sleep(boost::posix_time::seconds(15));
 
   ASSERT_NE(kUserExists, cc_->CheckUserExists("juan.smer", pin));
   printf("Can't log in with fake details.\n");
@@ -223,42 +218,42 @@ TEST_F(ClientControllerTest, FUNC_MAID_ChangeDetails) {
   ASSERT_EQ(password, ss_->Password());
   printf("Logged in.\n");
 
-//  ASSERT_TRUE(cc_->ChangePassword("elpasguor"));
-//  ASSERT_EQ("juan.smer", ss_->Username());
-//  ASSERT_EQ("2207", ss_->Pin());
-//  ASSERT_EQ("elpasguor", ss_->Password());
-//  printf("Changed password.\n");
-//
-//  ASSERT_TRUE(cc_->Logout());
-//  ASSERT_TRUE(ss_->Username().empty());
-//  ASSERT_TRUE(ss_->Pin().empty());
-//  ASSERT_TRUE(ss_->Password().empty());
-//  printf("Logged out.\n");
-//
-//  ASSERT_EQ(kUserExists, cc_->CheckUserExists("juan.smer", "2207"));
-//  std::string new_pwd("elpasguor");
-//  ASSERT_TRUE(cc_->ValidateUser(new_pwd));
-//  ASSERT_EQ("juan.smer", ss_->Username());
-//  ASSERT_EQ("2207", ss_->Pin());
-//  ASSERT_EQ("elpasguor", ss_->Password());
-//  printf("Logged in. New u/p/w.\n");
-//
-//  ASSERT_TRUE(cc_->Logout());
-//  ASSERT_TRUE(ss_->Username().empty());
-//  ASSERT_TRUE(ss_->Pin().empty());
-//  ASSERT_TRUE(ss_->Password().empty());
-//  printf("Logged out.\n");
+  ASSERT_TRUE(cc_->ChangePassword("elpasguor"));
+  ASSERT_EQ("juan.smer", ss_->Username());
+  ASSERT_EQ("2207", ss_->Pin());
+  ASSERT_EQ("elpasguor", ss_->Password());
+  printf("Changed password.\n");
+
+  ASSERT_TRUE(cc_->Logout());
+  ASSERT_TRUE(ss_->Username().empty());
+  ASSERT_TRUE(ss_->Pin().empty());
+  ASSERT_TRUE(ss_->Password().empty());
+  printf("Logged out.\n");
+
+  ASSERT_EQ(kUserExists, cc_->CheckUserExists("juan.smer", "2207"));
+  std::string new_pwd("elpasguor");
+  ASSERT_TRUE(cc_->ValidateUser(new_pwd));
+  ASSERT_EQ("juan.smer", ss_->Username());
+  ASSERT_EQ("2207", ss_->Pin());
+  ASSERT_EQ(new_pwd, ss_->Password());
+  printf("Logged in. New u/p/w.\n");
+
+  ASSERT_TRUE(cc_->Logout());
+  ASSERT_TRUE(ss_->Username().empty());
+  ASSERT_TRUE(ss_->Pin().empty());
+  ASSERT_TRUE(ss_->Password().empty());
+  printf("Logged out.\n");
 
   ASSERT_NE(kUserExists, cc_->CheckUserExists(username, pin));
   ASSERT_NE(kUserExists, cc_->CheckUserExists("juan.smer", pin));
   ASSERT_NE(kUserExists, cc_->CheckUserExists(username, "2207"));
-//  ASSERT_FALSE(cc_->ValidateUser(password))
-//               << "old details still work, damn it, damn the devil to hell";
-//  ss_->ResetSession();
-//  ASSERT_TRUE(ss_->Username().empty());
-//  ASSERT_TRUE(ss_->Pin().empty());
-//  ASSERT_TRUE(ss_->Password().empty());
-//  printf("Can't log in with old u/p/w.\n");
+  ASSERT_FALSE(cc_->ValidateUser(password))
+               << "old details still work, damn it, damn the devil to hell";
+  ss_->ResetSession();
+  ASSERT_TRUE(ss_->Username().empty());
+  ASSERT_TRUE(ss_->Pin().empty());
+  ASSERT_TRUE(ss_->Password().empty());
+  printf("Can't log in with old u/p/w.\n");
 }
 
 /*
@@ -443,7 +438,8 @@ TEST_F(ClientControllerTest, DISABLED_FUNC_MAID_BackupFile) {
 }
 */
 
-TEST_F(ClientControllerTest, FUNC_MAID_SaveSession) {
+/*
+TEST_F(ClientControllerTest, DISABLED_FUNC_MAID_SaveSession) {
   // Create a user
   std::string username("User5andAhalf");
   std::string pin("55678");
@@ -462,24 +458,6 @@ TEST_F(ClientControllerTest, FUNC_MAID_SaveSession) {
   printf("User created.\n");
   std::string pmid_name;
   ASSERT_EQ(kSuccess, ss_->ProxyMID(&pmid_name, NULL, NULL, NULL));
-  // Create a file
-  fs::create_directories(file_system::MaidsafeHomeDir(ss_->SessionName()) /
-                         kRootSubdir[0][0]);
-  fs::path rel_path(kRootSubdir[0][0]);
-  rel_path /= "testencryption.txt";
-  std::string rel_str = TidyPath(rel_path.string());
-
-  fs::path full_path(file_system::MaidsafeHomeDir(ss_->SessionName()));
-  full_path /= rel_path;
-  fs::ofstream testfile(full_path.string().c_str());
-  testfile << RandomAlphaNumericString(1024 * 1024);
-  testfile.close();
-  std::string hash_original_file = crypto::HashFile<crypto::SHA512>(full_path);
-  {
-    boost::progress_timer t;
-    ASSERT_EQ(0, cc_->write(rel_str));
-    printf("File backed up in ");
-  }
 
   // Save the session
   ASSERT_EQ(0, cc_->SaveSession());
@@ -539,6 +517,7 @@ TEST_F(ClientControllerTest, FUNC_MAID_SaveSession) {
   if (fs::exists(full_path))
       fs::remove(full_path);
 }
+*/
 
 /*
 TEST_F(ClientControllerTest, DISABLED_FUNC_MAID_ContactAddition) {

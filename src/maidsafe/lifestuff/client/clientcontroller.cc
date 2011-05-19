@@ -535,7 +535,7 @@ bool ClientController::ChangeUsername(const std::string &new_username) {
   }
   SerialiseDa();
 
-  int result = auth_.ChangeUsername(ser_dm_, new_username);
+  int result = auth_.ChangeUsername(ser_da_, new_username);
   if (result != kSuccess) {
     if (result == kFailedToDeleteOldPacket) {
 #ifdef DEBUG
@@ -562,7 +562,7 @@ bool ClientController::ChangePin(const std::string &new_pin) {
   }
   SerialiseDa();
 
-  int result = auth_.ChangePin(ser_dm_, new_pin);
+  int result = auth_.ChangePin(ser_da_, new_pin);
   if (result != kSuccess) {
     if (result == kFailedToDeleteOldPacket) {
 #ifdef DEBUG
@@ -587,13 +587,13 @@ bool ClientController::ChangePassword(const std::string &new_password) {
   }
   SerialiseDa();
 
-  int result = auth_.ChangePassword(ser_dm_, new_password);
-  if (result == kSuccess) {
+  int result = auth_.ChangePassword(ser_da_, new_password);
+  if (result != kSuccess) {
     DLOG(ERROR) << "CC::ChangePassword - Authentication failed: " << result
                 << std::endl;
-    return true;
+    return false;
   }
-  return false;
+  return true;
 }
 
 //////////////////////////////
