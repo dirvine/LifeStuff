@@ -42,7 +42,7 @@
 #include "maidsafe/lifestuff/sharedtest/testcallback.h"
 
 
-
+namespace arg = std::placeholders;
 namespace fs = boost::filesystem;
 
 namespace test_dah {
@@ -101,7 +101,7 @@ class DataAtlasHandlerTest : public testing::Test {
     std::shared_ptr<LocalStoreManager>
         sm(new LocalStoreManager(test_root_dir_));
     test::CallbackObject cb;
-    sm->Init(boost::bind(&test::CallbackObject::ReturnCodeCallback, &cb, _1),
+    sm->Init(std::bind(&test::CallbackObject::ReturnCodeCallback, &cb, arg::_1),
              0);
     if (cb.WaitForReturnCodeResult() != kSuccess) {
       FAIL();

@@ -42,6 +42,7 @@
 #include "maidsafe/lifestuff/sharedtest/mockclientcontroller.h"
 
 
+namespace arg = std::placeholders;
 namespace fs = boost::filesystem;
 
 namespace test_cc {
@@ -73,8 +74,8 @@ class ClientControllerTest : public testing::Test {
  protected:
   void SetUp() {
     ss_->ResetSession();
-    local_sm_->Init(boost::bind(&ClientControllerTest::InitAndCloseCallback,
-                                this, _1),
+    local_sm_->Init(std::bind(&ClientControllerTest::InitAndCloseCallback,
+                              this, arg::_1),
               0);
     cc_->auth_.Init(local_sm_);
     cc_->local_sm_ = local_sm_;
@@ -82,8 +83,8 @@ class ClientControllerTest : public testing::Test {
     cc_->initialised_ = true;
   }
   void TearDown() {
-    local_sm_->Close(boost::bind(&ClientControllerTest::InitAndCloseCallback,
-                                 this, _1),
+    local_sm_->Close(std::bind(&ClientControllerTest::InitAndCloseCallback,
+                               this, arg::_1),
                true);
     cc_->CloseConnection(true);
     ss_->passport_->StopCreatingKeyPairs();

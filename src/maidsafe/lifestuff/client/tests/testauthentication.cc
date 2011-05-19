@@ -33,6 +33,7 @@
 #include "maidsafe/lifestuff/client/filesystem/dataatlashandler.h"
 #include "maidsafe/lifestuff/sharedtest/testcallback.h"
 
+namespace arg = std::placeholders;
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
@@ -56,16 +57,16 @@ class AuthenticationTest : public testing::Test {
  protected:
   void SetUp() {
     ss_->ResetSession();
-    sm_->Init(boost::bind(&AuthenticationTest::InitAndCloseCallback, this, _1),
-              0);
+    sm_->Init(std::bind(&AuthenticationTest::InitAndCloseCallback, this,
+                        arg::_1), 0);
     authentication_.Init(sm_);
     ss_ = SessionSingleton::getInstance();
     ss_->ResetSession();
   }
 
   void TearDown() {
-    sm_->Close(boost::bind(&AuthenticationTest::InitAndCloseCallback, this, _1),
-               true);
+    sm_->Close(std::bind(&AuthenticationTest::InitAndCloseCallback, this,
+                         arg::_1), true);
   }
 
   int GetMasterDataMap(std::string *ser_dm_login) {
@@ -213,14 +214,14 @@ TEST_F(AuthenticationTest, FUNC_MAID_RepeatedSaveSessionCallbacks) {
   // on the network
   ser_dm_ = RandomString(1000);
   CallbackObject cb;
-  authentication_.SaveSession(ser_dm_, boost::bind(
-      &CallbackObject::ReturnCodeCallback, &cb, _1));
+  authentication_.SaveSession(ser_dm_, std::bind(
+      &CallbackObject::ReturnCodeCallback, &cb, arg::_1));
   ASSERT_EQ(kSuccess, cb.WaitForReturnCodeResult());
 
   ser_dm_ = RandomString(1000);
   cb.Reset();
-  authentication_.SaveSession(ser_dm_, boost::bind(
-      &CallbackObject::ReturnCodeCallback, &cb, _1));
+  authentication_.SaveSession(ser_dm_, std::bind(
+      &CallbackObject::ReturnCodeCallback, &cb, arg::_1));
   ASSERT_EQ(kSuccess, cb.WaitForReturnCodeResult());
   EXPECT_TRUE(sm_->KeyUnique(original_tmidname, false));
 }
@@ -331,7 +332,7 @@ TEST_F(AuthenticationTest, DISABLED_FUNC_MAID_CreateMSIDPacket) {
 
   // Check the packet exits
   std::vector<std::string> packet_content;
-  ASSERT_EQ(kSuccess, sm_->LoadPacket(msid_name, &packet_content));
+  ASSERT_EQ(kSuccess, sm_->GetPacket(msid_name, &packet_content));
   ASSERT_EQ(size_t(1), packet_content.size());
   GenericPacket gp;
   ASSERT_TRUE(gp.ParseFromString(packet_content[0]));

@@ -51,9 +51,9 @@ void PrintDebugInfo(const std::string &packet_name,
                   << ")" << std::endl;
 }
 
-}
+}  // namespace
 
-typedef boost::function<void(const std::string&)> VoidFunctorOneString;
+typedef std::function<void(const std::string&)> VoidFunctorOneString;
 
 void ExecuteSuccessCallback(const VoidFunctorOneString &cb,
                             boost::mutex *mutex) {
@@ -80,7 +80,7 @@ void ExecReturnCodeCallback(const VoidFuncOneInt &cb,
   cb(rc);
 }
 
-void ExecReturnLoadPacketCallback(const LoadPacketFunctor &cb,
+void ExecReturnLoadPacketCallback(const GetPacketFunctor &cb,
                                   std::vector<std::string> results,
                                   const ReturnCode rc) {
   cb(results, rc);
@@ -207,8 +207,8 @@ int LocalStoreManager::StoreChunk(const std::string &chunk_name,
 //      signal_mutex_.lock();
 //      chunks_pending_.insert(chunk_name);
 //      signal_mutex_.unlock();
-//      boost::thread thr(boost::bind(&LocalStoreManager::ExecuteReturnSignal,
-//                                    this, chunk_name, kSendChunkFailure));
+//      boost::thread thr(std::bind(&LocalStoreManager::ExecuteReturnSignal,
+//                                  this, chunk_name, kSendChunkFailure));
 //      return kChunkStorePending;
 //    }
 //  }
@@ -216,8 +216,8 @@ int LocalStoreManager::StoreChunk(const std::string &chunk_name,
 //    signal_mutex_.lock();
 //    chunks_pending_.insert(chunk_name);
 //    signal_mutex_.unlock();
-//    boost::thread thr(boost::bind(&LocalStoreManager::ExecuteReturnSignal, this,
-//                                  chunk_name, kSendChunkFailure));
+//    boost::thread thr(std::bind(&LocalStoreManager::ExecuteReturnSignal, this,
+//                                chunk_name, kSendChunkFailure));
 //    return kChunkStorePending;
 //  }
 //
@@ -229,7 +229,7 @@ int LocalStoreManager::StoreChunk(const std::string &chunk_name,
 //  signal_mutex_.lock();
 //  chunks_pending_.insert(chunk_name);
 //  signal_mutex_.unlock();
-//  boost::thread thr(boost::bind(&LocalStoreManager::ExecuteReturnSignal, this,
+//  boost::thread thr(std::bind(&LocalStoreManager::ExecuteReturnSignal, this,
 //                                chunk_name, kSuccess));
 */
   return kChunkStorePending;
@@ -322,13 +322,13 @@ void LocalStoreManager::KeyUnique(const std::string &key, bool check_local,
     ExecReturnCodeCallback(cb, kKeyNotUnique);
 }
 
-int LocalStoreManager::LoadPacket(const std::string &packet_name,
-                                  std::vector<std::string> *results) {
+int LocalStoreManager::GetPacket(const std::string &packet_name,
+                                 std::vector<std::string> *results) {
   return GetValue_FromDB(packet_name, results);
 }
 
-void LocalStoreManager::LoadPacket(const std::string &packetname,
-                                   const LoadPacketFunctor &lpf) {
+void LocalStoreManager::GetPacket(const std::string &packetname,
+                                  const GetPacketFunctor &lpf) {
   std::vector<std::string> results;
   ReturnCode rc(static_cast<ReturnCode>(GetValue_FromDB(packetname, &results)));
   ExecReturnLoadPacketCallback(lpf, results, rc);
@@ -468,7 +468,6 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
                                     passport::PacketType system_packet_type,
                                     DirType dir_type, const std::string& msid,
                                     const VoidFuncOneInt &cb) {
-
   PrintDebugInfo(packet_name, value, "", "StorePacket", system_packet_type);
 
 //  std::cout << "AAAAAA: " << value.size() << std::endl;
@@ -1009,7 +1008,7 @@ void LocalStoreManager::ExecReturnCodeCallback(VoidFuncOneInt cb,
 }
 
 void LocalStoreManager::ExecReturnLoadPacketCallback(
-    LoadPacketFunctor cb,
+    GetPacketFunctor cb,
     std::vector<std::string> results,
     ReturnCode rc) {
   boost::thread t(cb, results, rc);

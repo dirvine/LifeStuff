@@ -32,6 +32,7 @@
 #include "maidsafe/lifestuff/sharedtest/mocksessionsingleton.h"
 #include "maidsafe/lifestuff/sharedtest/testcallback.h"
 
+namespace arg = std::placeholders;
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
@@ -120,7 +121,7 @@ class LocalStoreManagerTest : public testing::Test {
 //      count += 10;
 //    }
     sm_ = new LocalStoreManager(test_root_dir_);
-    sm_->Init(boost::bind(&CallbackObject::ReturnCodeCallback, &cb_, _1), 0);
+    sm_->Init(std::bind(&CallbackObject::ReturnCodeCallback, &cb_, arg::_1), 0);
     if (cb_.WaitForReturnCodeResult() != kSuccess) {
       FAIL();
       return;
@@ -133,7 +134,7 @@ class LocalStoreManagerTest : public testing::Test {
     ss_->ResetSession();
     ss_->CreateTestPackets("Me");
     cb_.Reset();
-    functor_ = boost::bind(&CallbackObject::ReturnCodeCallback, &cb_, _1);
+    functor_ = std::bind(&CallbackObject::ReturnCodeCallback, &cb_, arg::_1);
     anmaid_private_key_ = ss_->PrivateKey(passport::ANMAID, true);
     mpid_public_key_ = ss_->PublicKey(passport::MPID, true);
   }
@@ -160,7 +161,7 @@ class LocalStoreManagerTest : public testing::Test {
   LocalStoreManager *sm_;
   test::CallbackObject cb_;
   SessionSingleton *ss_;
-  boost::function<void(const ReturnCode &)> functor_;
+  std::function<void(const ReturnCode &)> functor_;
   std::string anmaid_private_key_, mpid_public_key_;
 
  private:
@@ -203,7 +204,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_StoreSystemPacket) {
   ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
   ASSERT_FALSE(sm_->KeyUnique(gp_name, false));
   std::vector<std::string> res;
-  ASSERT_EQ(kSuccess, sm_->LoadPacket(gp_name, &res));
+  ASSERT_EQ(kSuccess, sm_->GetPacket(gp_name, &res));
   ASSERT_EQ(size_t(1), res.size());
   SignedValue gp_res;
   ASSERT_TRUE(gp_res.ParseFromString(res[0]));
@@ -270,7 +271,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_UpdatePacket) {
   ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
 
   std::vector<std::string> res;
-  ASSERT_EQ(kSuccess, sm_->LoadPacket(gp_name, &res));
+  ASSERT_EQ(kSuccess, sm_->GetPacket(gp_name, &res));
   ASSERT_EQ(size_t(1), res.size());
   ASSERT_EQ(gp.SerializeAsString(), res[0]);
 
@@ -283,7 +284,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_UpdatePacket) {
                     PRIVATE, "", functor_);
   ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
   res.clear();
-  ASSERT_EQ(kSuccess, sm_->LoadPacket(gp_name, &res));
+  ASSERT_EQ(kSuccess, sm_->GetPacket(gp_name, &res));
   ASSERT_EQ(size_t(1), res.size());
   ASSERT_EQ(new_gp.SerializeAsString(), res[0]);
 
@@ -294,7 +295,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_UpdatePacket) {
   sm_->StorePacket(gp_name, gp.value(), passport::MAID, PRIVATE, "", functor_);
   ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
   res.clear();
-  ASSERT_EQ(kSuccess, sm_->LoadPacket(gp_name, &res));
+  ASSERT_EQ(kSuccess, sm_->GetPacket(gp_name, &res));
   ASSERT_EQ(size_t(2), res.size());
   for (size_t n = 0; n < res.size(); ++n)
     ASSERT_TRUE(res[n] == gp.SerializeAsString() ||
@@ -309,7 +310,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_UpdatePacket) {
                     PRIVATE, "", functor_);
   ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
   res.clear();
-  ASSERT_EQ(kSuccess, sm_->LoadPacket(gp_name, &res));
+  ASSERT_EQ(kSuccess, sm_->GetPacket(gp_name, &res));
   ASSERT_EQ(size_t(2), res.size());
   std::set<std::string> all_values;
   for (size_t n = 0; n < res.size(); ++n) {
@@ -329,7 +330,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_UpdatePacket) {
     all_values.insert(gp.SerializeAsString());
   }
   res.clear();
-  ASSERT_EQ(kSuccess, sm_->LoadPacket(gp_name, &res));
+  ASSERT_EQ(kSuccess, sm_->GetPacket(gp_name, &res));
   ASSERT_EQ(all_values.size(), res.size());
   std::set<std::string>::iterator it;
   for (size_t n = 0; n < res.size(); ++n) {
@@ -343,7 +344,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_UpdatePacket) {
                     functor_);
   ASSERT_EQ(kStoreManagerError, cb_.WaitForReturnCodeResult());
   res.clear();
-  ASSERT_EQ(kSuccess, sm_->LoadPacket(gp_name, &res));
+  ASSERT_EQ(kSuccess, sm_->GetPacket(gp_name, &res));
   ASSERT_EQ(all_values.size(), res.size());
   for (size_t n = 0; n < res.size(); ++n) {
     it = all_values.find(res[n]);
@@ -361,7 +362,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_UpdatePacket) {
                     PRIVATE, "", functor_);
   ASSERT_EQ(kStoreManagerError, cb_.WaitForReturnCodeResult());
   res.clear();
-  ASSERT_EQ(kSuccess, sm_->LoadPacket(gp_name, &res));
+  ASSERT_EQ(kSuccess, sm_->GetPacket(gp_name, &res));
   ASSERT_EQ(all_values.size(), res.size());
   for (size_t n = 0; n < res.size(); ++n) {
     it = all_values.find(res[n]);
@@ -381,8 +382,8 @@ TEST_F(LocalStoreManagerTest, DISABLED_BEH_MAID_StoreChunk) {
   std::string chunk_name = crypto::Hash<crypto::SHA512>(chunk_content);
   chunkies[chunk_name] = chunk_content;
   boost::signals2::connection c =
-      sm_->ConnectToOnChunkUploaded(boost::bind(&ChunkDone, _1, _2,
-                                                &chunkies, &count, &m));
+      sm_->ConnectToOnChunkUploaded(std::bind(&ChunkDone, arg::_1, arg::_2,
+                                              &chunkies, &count, &m));
 
   std::string hex_chunk_name = EncodeToHex(chunk_name);
   fs::path chunk_path(test_root_dir_ / hex_chunk_name);
@@ -415,8 +416,8 @@ TEST_F(LocalStoreManagerTest, DISABLED_FUNC_MAID_StoreSeveralChunksWithSignals) 
   int count(50), count2(count);
   boost::mutex m;
   boost::signals2::connection c =
-      sm_->ConnectToOnChunkUploaded(boost::bind(&ChunkDone, _1, _2,
-                                                &chunkies, &count, &m));
+      sm_->ConnectToOnChunkUploaded(std::bind(&ChunkDone, arg::_1, arg::_2,
+                                              &chunkies, &count, &m));
   // Store the chunks
   {
     boost::mutex::scoped_lock loch_juan(m);

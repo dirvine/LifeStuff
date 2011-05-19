@@ -45,13 +45,14 @@ class IMConnectionHandlerTest : public testing::Test {
   }
   void SetUp() {
     trans_hndlr.Register(trans.get(), &trans_id);
-    ASSERT_TRUE(trans_hndlr.RegisterOnSend(boost::bind(
-       &IMConnectionHandlerTest::SendNotifier, this, _1, _2)));
-    ASSERT_TRUE(trans_hndlr.RegisterOnServerDown(boost::bind(
-       &IMConnectionHandlerTest::OnServerDown, this, _1, _2, _3)));
-    ASSERT_TRUE(trans_hndlr.RegisterOnMessage(boost::bind(
-       &maidsafe::IMConnectionHandler::OnMessageArrive, &im_hdlr, _1, _2, _3,
-       _4)));
+    ASSERT_TRUE(trans_hndlr.RegisterOnSend(std::bind(
+       &IMConnectionHandlerTest::SendNotifier, this, arg::_1, arg::_2)));
+    ASSERT_TRUE(trans_hndlr.RegisterOnServerDown(std::bind(
+       &IMConnectionHandlerTest::OnServerDown, this, arg::_1, arg::_2,
+         arg::_3)));
+    ASSERT_TRUE(trans_hndlr.RegisterOnMessage(std::bind(
+       &maidsafe::IMConnectionHandler::OnMessageArrive, &im_hdlr, arg::_1,
+         arg::_2, arg::_3, arg::_4)));
     ASSERT_EQ(0, trans_hndlr.Start(0, trans_id));
     ASSERT_TRUE(trans_hndlr.listening_port(trans_id, &port));
     ASSERT_FALSE(trans->is_stopped());
@@ -114,19 +115,23 @@ TEST_MS_NET(IMConnectionHandlerTest, BEH, MAID, IMHdlrNotStarted) {
 
 TEST_MS_NET(IMConnectionHandlerTest, BEH, MAID, IMHdlrSendMessage) {
   ASSERT_EQ(maidsafe::kSuccess, im_hdlr.Start(&trans_hndlr,
-      boost::bind(&IMConnectionHandlerTest::NewMsgNotifier, this, _1),
-      boost::bind(&IMConnectionHandlerTest::NewConnMsg, this, _1, _2, _3)));
+      std::bind(&IMConnectionHandlerTest::NewMsgNotifier, this, arg::_1),
+      std::bind(&IMConnectionHandlerTest::NewConnMsg, this, arg::_1, arg::_2,
+                arg::_3)));
   ASSERT_EQ(maidsafe::kHandlerAlreadyStarted, im_hdlr.Start(&trans_hndlr,
-      boost::bind(&IMConnectionHandlerTest::NewMsgNotifier, this, _1),
-      boost::bind(&IMConnectionHandlerTest::NewConnMsg, this, _1, _2, _3)));
+      std::bind(&IMConnectionHandlerTest::NewMsgNotifier, this, arg::_1),
+      std::bind(&IMConnectionHandlerTest::NewConnMsg, this, arg::_1, arg::_2,
+                arg::_3)));
   boost::scoped_ptr<transport::Transport> udt_trans(
       new transport::TransportUDT);
-  ASSERT_TRUE(udt_trans->RegisterOnSend(boost::bind(
-        &IMConnectionHandlerTest::SendNotifier, this, _1, _2)));
-  ASSERT_TRUE(udt_trans->RegisterOnServerDown(boost::bind(
-        &IMConnectionHandlerTest::OnServerDown, this, _1, _2, _3)));
-  ASSERT_TRUE(udt_trans->RegisterOnMessage(boost::bind(
-        &IMConnectionHandlerTest::UDTTransMsgArrived, this, _1, _2, _3, _4)));
+  ASSERT_TRUE(udt_trans->RegisterOnSend(std::bind(
+        &IMConnectionHandlerTest::SendNotifier, this, arg::_1, arg::_2)));
+  ASSERT_TRUE(udt_trans->RegisterOnServerDown(std::bind(
+        &IMConnectionHandlerTest::OnServerDown, this, arg::_1, arg::_2,
+          arg::_3)));
+  ASSERT_TRUE(udt_trans->RegisterOnMessage(std::bind(
+        &IMConnectionHandlerTest::UDTTransMsgArrived, this, arg::_1, arg::_2,
+          arg::_3, arg::_4)));
   ASSERT_EQ(0, udt_trans->Start(0));
   boost::uint16_t udt_port(udt_trans->listening_port());
   maidsafe::EndPoint endpoint;
@@ -150,16 +155,19 @@ TEST_MS_NET(IMConnectionHandlerTest, BEH, MAID, IMHdlrSendMessage) {
 
 TEST_MS_NET(IMConnectionHandlerTest, FUNC, MAID, IMHdlrConnTimeout) {
   ASSERT_EQ(maidsafe::kSuccess, im_hdlr.Start(&trans_hndlr,
-      boost::bind(&IMConnectionHandlerTest::NewMsgNotifier, this, _1),
-      boost::bind(&IMConnectionHandlerTest::NewConnMsg, this, _1, _2, _3)));
+      std::bind(&IMConnectionHandlerTest::NewMsgNotifier, this, arg::_1),
+      std::bind(&IMConnectionHandlerTest::NewConnMsg, this, arg::_1, arg::_2,
+                arg::_3)));
   boost::scoped_ptr<transport::Transport> udt_trans(
       new transport::TransportUDT);
-  ASSERT_TRUE(udt_trans->RegisterOnSend(boost::bind(
-        &IMConnectionHandlerTest::SendNotifier, this, _1, _2)));
-  ASSERT_TRUE(udt_trans->RegisterOnServerDown(boost::bind(
-        &IMConnectionHandlerTest::OnServerDown, this, _1, _2, _3)));
-  ASSERT_TRUE(udt_trans->RegisterOnMessage(boost::bind(
-        &IMConnectionHandlerTest::UDTTransMsgArrived, this, _1, _2, _3, _4)));
+  ASSERT_TRUE(udt_trans->RegisterOnSend(std::bind(
+        &IMConnectionHandlerTest::SendNotifier, this, arg::_1, arg::_2)));
+  ASSERT_TRUE(udt_trans->RegisterOnServerDown(std::bind(
+        &IMConnectionHandlerTest::OnServerDown, this, arg::_1, arg::_2,
+          arg::_3)));
+  ASSERT_TRUE(udt_trans->RegisterOnMessage(std::bind(
+        &IMConnectionHandlerTest::UDTTransMsgArrived, this, arg::_1, arg::_2,
+          arg::_3, arg::_4)));
   ASSERT_EQ(0, udt_trans->Start(0));
   boost::uint16_t udt_port(udt_trans->listening_port());
   maidsafe::EndPoint endpoint;
@@ -183,16 +191,19 @@ TEST_MS_NET(IMConnectionHandlerTest, FUNC, MAID, IMHdlrConnTimeout) {
 
 TEST_MS_NET(IMConnectionHandlerTest, FUNC, MAID, IMHdlrResetConnTimeout) {
   ASSERT_EQ(maidsafe::kSuccess, im_hdlr.Start(&trans_hndlr,
-      boost::bind(&IMConnectionHandlerTest::NewMsgNotifier, this, _1),
-      boost::bind(&IMConnectionHandlerTest::NewConnMsg, this, _1, _2, _3)));
+      std::bind(&IMConnectionHandlerTest::NewMsgNotifier, this, arg::_1),
+      std::bind(&IMConnectionHandlerTest::NewConnMsg, this, arg::_1, arg::_2,
+                arg::_3)));
   boost::scoped_ptr<transport::Transport> udt_trans(
       new transport::TransportUDT);
-  ASSERT_TRUE(udt_trans->RegisterOnSend(boost::bind(
-        &IMConnectionHandlerTest::SendNotifier, this, _1, _2)));
-  ASSERT_TRUE(udt_trans->RegisterOnServerDown(boost::bind(
-        &IMConnectionHandlerTest::OnServerDown, this, _1, _2, _3)));
-  ASSERT_TRUE(udt_trans->RegisterOnMessage(boost::bind(
-        &IMConnectionHandlerTest::UDTTransMsgArrived, this, _1, _2, _3, _4)));
+  ASSERT_TRUE(udt_trans->RegisterOnSend(std::bind(
+        &IMConnectionHandlerTest::SendNotifier, this, arg::_1, arg::_2)));
+  ASSERT_TRUE(udt_trans->RegisterOnServerDown(std::bind(
+        &IMConnectionHandlerTest::OnServerDown, this, arg::_1, arg::_2,
+          arg::_3)));
+  ASSERT_TRUE(udt_trans->RegisterOnMessage(std::bind(
+        &IMConnectionHandlerTest::UDTTransMsgArrived, this, arg::_1, arg::_2,
+          arg::_3, arg::_4)));
   ASSERT_EQ(0, udt_trans->Start(0));
   boost::uint16_t udt_port(udt_trans->listening_port());
   maidsafe::EndPoint endpoint;
@@ -227,16 +238,19 @@ TEST_MS_NET(IMConnectionHandlerTest, FUNC, MAID, IMHdlrResetConnTimeout) {
 
 TEST_MS_NET(IMConnectionHandlerTest, FUNC, MAID, IMHdlrRemotePeerClosesConn) {
   ASSERT_EQ(maidsafe::kSuccess, im_hdlr.Start(&trans_hndlr,
-      boost::bind(&IMConnectionHandlerTest::NewMsgNotifier, this, _1),
-      boost::bind(&IMConnectionHandlerTest::NewConnMsg, this, _1, _2, _3)));
+      std::bind(&IMConnectionHandlerTest::NewMsgNotifier, this, arg::_1),
+      std::bind(&IMConnectionHandlerTest::NewConnMsg, this, arg::_1, arg::_2,
+                arg::_3)));
   boost::scoped_ptr<transport::Transport> udt_trans(
       new transport::TransportUDT);
-  ASSERT_TRUE(udt_trans->RegisterOnSend(boost::bind(
-        &IMConnectionHandlerTest::SendNotifier, this, _1, _2)));
-  ASSERT_TRUE(udt_trans->RegisterOnServerDown(boost::bind(
-        &IMConnectionHandlerTest::OnServerDown, this, _1, _2, _3)));
-  ASSERT_TRUE(udt_trans->RegisterOnMessage(boost::bind(
-        &IMConnectionHandlerTest::UDTTransMsgArrived, this, _1, _2, _3, _4)));
+  ASSERT_TRUE(udt_trans->RegisterOnSend(std::bind(
+        &IMConnectionHandlerTest::SendNotifier, this, arg::_1, arg::_2)));
+  ASSERT_TRUE(udt_trans->RegisterOnServerDown(std::bind(
+        &IMConnectionHandlerTest::OnServerDown, this, arg::_1, arg::_2,
+          arg::_3)));
+  ASSERT_TRUE(udt_trans->RegisterOnMessage(std::bind(
+        &IMConnectionHandlerTest::UDTTransMsgArrived, this, arg::_1, arg::_2,
+          arg::_3, arg::_4)));
   ASSERT_EQ(0, udt_trans->Start(0));
   boost::uint16_t udt_port(udt_trans->listening_port());
   maidsafe::EndPoint endpoint;
@@ -268,16 +282,19 @@ TEST_MS_NET(IMConnectionHandlerTest, FUNC, MAID, IMHdlrRemotePeerClosesConn) {
 
 TEST_MS_NET(IMConnectionHandlerTest, BEH, MAID, IMHdlrAcceptConnection) {
   ASSERT_EQ(maidsafe::kSuccess, im_hdlr.Start(&trans_hndlr,
-      boost::bind(&IMConnectionHandlerTest::NewMsgNotifier, this, _1),
-      boost::bind(&IMConnectionHandlerTest::NewConnMsg, this, _1, _2, _3)));
+      std::bind(&IMConnectionHandlerTest::NewMsgNotifier, this, arg::_1),
+      std::bind(&IMConnectionHandlerTest::NewConnMsg, this, arg::_1, arg::_2,
+                arg::_3)));
   boost::scoped_ptr<transport::Transport> udt_trans(
       new transport::TransportUDT);
-  ASSERT_TRUE(udt_trans->RegisterOnSend(boost::bind(
-        &IMConnectionHandlerTest::SendNotifier, this, _1, _2)));
-  ASSERT_TRUE(udt_trans->RegisterOnServerDown(boost::bind(
-        &IMConnectionHandlerTest::OnServerDown, this, _1, _2, _3)));
-  ASSERT_TRUE(udt_trans->RegisterOnMessage(boost::bind(
-        &IMConnectionHandlerTest::UDTTransMsgArrived, this, _1, _2, _3, _4)));
+  ASSERT_TRUE(udt_trans->RegisterOnSend(std::bind(
+        &IMConnectionHandlerTest::SendNotifier, this, arg::_1, arg::_2)));
+  ASSERT_TRUE(udt_trans->RegisterOnServerDown(std::bind(
+        &IMConnectionHandlerTest::OnServerDown, this, arg::_1, arg::_2,
+          arg::_3)));
+  ASSERT_TRUE(udt_trans->RegisterOnMessage(std::bind(
+        &IMConnectionHandlerTest::UDTTransMsgArrived, this, arg::_1, arg::_2,
+          arg::_3, arg::_4)));
   ASSERT_EQ(0, udt_trans->Start(0));
 
   boost::uint32_t id(0);
@@ -301,24 +318,29 @@ TEST_MS_NET(IMConnectionHandlerTest, BEH, MAID, IMHdlrAcceptConnection) {
 
 TEST_MS_NET(IMConnectionHandlerTest, FUNC, MAID, IMHdlrMultipleConnections) {
   ASSERT_EQ(maidsafe::kSuccess, im_hdlr.Start(&trans_hndlr,
-      boost::bind(&IMConnectionHandlerTest::NewMsgNotifier, this, _1),
-      boost::bind(&IMConnectionHandlerTest::NewConnMsg, this, _1, _2, _3)));
+      std::bind(&IMConnectionHandlerTest::NewMsgNotifier, this, arg::_1),
+      std::bind(&IMConnectionHandlerTest::NewConnMsg, this, arg::_1, arg::_2,
+                arg::_3)));
   boost::scoped_ptr<transport::Transport> udt_trans1(
       new transport::TransportUDT),
       udt_trans2(new transport::TransportUDT);
-  ASSERT_TRUE(udt_trans1->RegisterOnSend(boost::bind(
-        &IMConnectionHandlerTest::SendNotifier, this, _1, _2)));
-  ASSERT_TRUE(udt_trans1->RegisterOnServerDown(boost::bind(
-        &IMConnectionHandlerTest::OnServerDown, this, _1, _2, _3)));
-  ASSERT_TRUE(udt_trans1->RegisterOnMessage(boost::bind(
-        &IMConnectionHandlerTest::UDTTransMsgArrived, this, _1, _2, _3, _4)));
+  ASSERT_TRUE(udt_trans1->RegisterOnSend(std::bind(
+        &IMConnectionHandlerTest::SendNotifier, this, arg::_1, arg::_2)));
+  ASSERT_TRUE(udt_trans1->RegisterOnServerDown(std::bind(
+        &IMConnectionHandlerTest::OnServerDown, this, arg::_1, arg::_2,
+          arg::_3)));
+  ASSERT_TRUE(udt_trans1->RegisterOnMessage(std::bind(
+        &IMConnectionHandlerTest::UDTTransMsgArrived, this, arg::_1, arg::_2,
+          arg::_3, arg::_4)));
   ASSERT_EQ(0, udt_trans1->Start(0));
-  ASSERT_TRUE(udt_trans2->RegisterOnSend(boost::bind(
-        &IMConnectionHandlerTest::SendNotifier, this, _1, _2)));
-  ASSERT_TRUE(udt_trans2->RegisterOnServerDown(boost::bind(
-        &IMConnectionHandlerTest::OnServerDown, this, _1, _2, _3)));
-  ASSERT_TRUE(udt_trans2->RegisterOnMessage(boost::bind(
-        &IMConnectionHandlerTest::UDTTransMsgArrived, this, _1, _2, _3, _4)));
+  ASSERT_TRUE(udt_trans2->RegisterOnSend(std::bind(
+        &IMConnectionHandlerTest::SendNotifier, this, arg::_1, arg::_2)));
+  ASSERT_TRUE(udt_trans2->RegisterOnServerDown(std::bind(
+        &IMConnectionHandlerTest::OnServerDown, this, arg::_1, arg::_2,
+          arg::_3)));
+  ASSERT_TRUE(udt_trans2->RegisterOnMessage(std::bind(
+        &IMConnectionHandlerTest::UDTTransMsgArrived, this, arg::_1, arg::_2,
+          arg::_3, arg::_4)));
   ASSERT_EQ(0, udt_trans2->Start(0));
   boost::uint16_t port2(udt_trans2->listening_port());
   maidsafe::EndPoint endpoint;

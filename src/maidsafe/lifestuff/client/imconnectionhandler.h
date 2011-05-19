@@ -46,8 +46,8 @@ namespace lifestuff {
 
 class EndPoint;
 
-typedef boost::function<void(const std::string&)> new_message_notifier;
-typedef boost::function<void(const boost::int16_t&, const boost::uint32_t&,
+typedef  std::function<void(const std::string&)> new_message_notifier;
+typedef  std::function<void(const boost::int16_t&, const boost::uint32_t&,
     const std::string&)> new_connection_notifier;
 
 const boost::uint8_t kConnectionTimeout = 60;  // 60 seconds

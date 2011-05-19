@@ -45,6 +45,8 @@
 #include "maidsafe/lifestuff/client/maidstoremanager.h"
 #endif
 
+namespace arg = std::placeholders;
+
 namespace maidsafe {
 
 namespace lifestuff {
@@ -105,10 +107,6 @@ int ClientController::Init(boost::uint8_t k) {
 //    try {
 //      // If main app dir isn't already there, create it
 //      if (!fs::exists(client_path) && !fs::create_directories(client_path)) {
-//  #ifdef DEBUG
-//        printf("CC::Init - Couldn't create app path (check permissions?): %s\n",
-//               client_path.string().c_str());
-//  #endif
 //        return -2;
 //      }
 //      client_path /= "client" + RandomAlphaNumericString(8);
@@ -117,10 +115,6 @@ int ClientController::Init(boost::uint8_t k) {
 //            client_path.string().size() - 8) + RandomAlphaNumericString(8));
 //      client_store_ = client_path.string();
 //      if (!fs::exists(client_path) && !fs::create_directories(client_path)) {
-//  #ifdef DEBUG
-//        printf("CC::Init -Couldn't create client path (check permissions?): %s\n",
-//               client_path.string().c_str());
-//  #endif
 //        return -3;
 //      }
 //    }
@@ -151,7 +145,7 @@ int ClientController::Init(boost::uint8_t k) {
 
 bool ClientController::JoinKademlia() {
   CCCallback cb;
-  local_sm_->Init(boost::bind(&CCCallback::ReturnCodeCallback, &cb, _1), 0);
+  local_sm_->Init(std::bind(&CCCallback::ReturnCodeCallback, &cb, arg::_1), 0);
   return (cb.WaitForReturnCodeResult() == kSuccess);
 }
 
@@ -420,7 +414,8 @@ void ClientController::CloseConnection(bool clean_up_transport) {
   }
   CCCallback cb;
 //  local_sm_->StopRvPing();
-  local_sm_->Close(boost::bind(&CCCallback::ReturnCodeCallback, &cb, _1), true);
+  local_sm_->Close(std::bind(&CCCallback::ReturnCodeCallback, &cb, arg::_1),
+                   true);
   if (cb.WaitForReturnCodeResult() != kSuccess) {
 #ifdef DEBUG
     printf("ClientController::CloseConnection - Error leaving network.\n");
@@ -483,8 +478,8 @@ int ClientController::SaveSession() {
   n = kPendingResult;
   boost::mutex mutex;
   boost::condition_variable cond_var;
-  VoidFuncOneInt func = boost::bind(&PacketOpCallback, _1, &mutex,
-                                    &cond_var, &n);
+  VoidFuncOneInt func = std::bind(&PacketOpCallback, arg::_1, &mutex,
+                                  &cond_var, &n);
   auth_.SaveSession(ser_da_, func);
   {
     boost::mutex::scoped_lock lock(mutex);
@@ -637,7 +632,7 @@ int ClientController::ChangeConnectionStatus(int status) {
     return -3;
   CCCallback cb;
   cbph_->ChangeStatus(status,
-                      boost::bind(&CCCallback::StringCallback, &cb, _1),
+                      std::bind(&CCCallback::StringCallback, &cb, arg::_1),
                       MPID);
   UpdateResponse change_connection_status;
   if (!change_connection_status.ParseFromString(cb.WaitForStringResult()))
@@ -1846,9 +1841,9 @@ OwnLocalVaultResult ClientController::SetLocalVaultOwned(
   }
   sm_->SetLocalVaultOwned(pmid_private_key, pmid_public_key,
       pmid_public_key_signature, port, vault_dir, space,
-      boost::bind(&ClientController::SetLocalVaultOwnedCallback,
-                  const_cast<ClientController*>(this), _1, _2,
-                  &callback_arrived, &result));
+      std::bind(&ClientController::SetLocalVaultOwnedCallback,
+                 const_cast<ClientController*>(this), arg::_1, arg::_2,
+                 &callback_arrived, &result));
   while (!callback_arrived)
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   return result;
@@ -1887,8 +1882,8 @@ bool ClientController::IsLocalVaultOwned() {
 VaultOwnershipStatus ClientController::LocalVaultOwned() const {
   VaultOwnershipStatus result;
   bool callback_arrived = false;
-  sm_->LocalVaultOwned(boost::bind(&ClientController::LocalVaultOwnedCallback,
-      const_cast<ClientController*>(this), _1, &callback_arrived, &result));
+  sm_->LocalVaultOwned(std::bind(&ClientController::LocalVaultOwnedCallback,
+      const_cast<ClientController*>(this), arg::_1, &callback_arrived, &result));
   while (!callback_arrived)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   return result;
@@ -2951,8 +2946,8 @@ int ClientController::create(const std::string &path) {
 
 // IM notifiers registration
 void ClientController::RegisterImNotifiers(
-      boost::function<void(const std::string&)> msg_not,
-      boost::function<void(const std::string&, const int&)> conn_not) {
+       std::function<void(const std::string&)> msg_not,
+       std::function<void(const std::string&, const int&)> conn_not) {
 //  sm_->SetInstantMessageNotifier(msg_not, conn_not);
 }
 

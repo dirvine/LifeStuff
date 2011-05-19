@@ -222,8 +222,8 @@ void CreateUserLoginMount(maidsafe::ClientController *cc,
   ASSERT_EQ("", ss->Password());
   boost::mutex mutex;
   TestCallback cb(&mutex);
-  maidsafe::exitcode result = cc->CheckUserExists(user, pin, boost::bind(
-      &TestCallback::CallbackFunc, &cb, _1), maidsafe::DEFCON3);
+  maidsafe::exitcode result = cc->CheckUserExists(user, pin, std::bind(
+      &TestCallback::CallbackFunc, &cb, arg::_1), maidsafe::DEFCON3);
 
   if (ss->Username() == user) {
     ASSERT_EQ(maidsafe::USER_EXISTS, result);

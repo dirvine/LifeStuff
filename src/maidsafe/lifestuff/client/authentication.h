@@ -192,24 +192,24 @@ class Authentication {
   // Designed to be called as functor in timed_wait - user_info mutex locked
   bool SignerDone(OpStatus *op_status) { return *op_status != kPending; }
   // Designed to be called as functor in timed_wait - user_info mutex locked
-  bool SystemPacketsOpDone(OpStatus *op_status1, OpStatus *op_status2) {
+  bool TwoSystemPacketsOpDone(OpStatus *op_status1, OpStatus *op_status2) {
     return (*op_status1 != kPending) && (*op_status2 != kPending);
   }
   // Designed to be called as functor in timed_wait - user_info mutex locked
-  bool SystemPacketsOpDone(OpStatus *op_status1,
-                           OpStatus *op_status2,
-                           OpStatus *op_status3) {
-    return SystemPacketsOpDone(op_status1, op_status2) &&
+  bool ThreeSystemPacketsOpDone(OpStatus *op_status1,
+                                OpStatus *op_status2,
+                                OpStatus *op_status3) {
+    return TwoSystemPacketsOpDone(op_status1, op_status2) &&
            (*op_status3 != kPending);
   }
   // Designed to be called as functor in timed_wait - user_info mutex locked
-  bool SystemPacketsOpDone(OpStatus *op_status1,
-                           OpStatus *op_status2,
-                           OpStatus *op_status3,
-                           OpStatus *op_status4,
-                           OpStatus *op_status5) {
-    return SystemPacketsOpDone(op_status1, op_status2, op_status3) &&
-           SystemPacketsOpDone(op_status4, op_status5);
+  bool FiveSystemPacketsOpDone(OpStatus *op_status1,
+                               OpStatus *op_status2,
+                               OpStatus *op_status3,
+                               OpStatus *op_status4,
+                               OpStatus *op_status5) {
+    return ThreeSystemPacketsOpDone(op_status1, op_status2, op_status3) &&
+           TwoSystemPacketsOpDone(op_status4, op_status5);
   }
   // Designed to be called as functor in timed_wait - user_info mutex locked
   bool PacketOpDone(int *return_code) { return *return_code != kPendingResult; }
