@@ -302,9 +302,11 @@ int Authentication::CreateUserSysPackets(const std::string &username,
   try {
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(lock,
-              boost::posix_time::milliseconds(5 * kSingleOpTimeout_),
-              std::bind(&Authentication::SystemPacketsOpDone, this,
-                        &pmid_status, &anmid_status, &antmid_status));
+                boost::posix_time::milliseconds(5 * kSingleOpTimeout_),
+                std::bind((bool(Authentication::*)
+							            (OpStatus*, OpStatus*, OpStatus*))           
+								          &Authentication::SystemPacketsOpDone, this,
+                          &pmid_status, &anmid_status, &antmid_status));
   }
   catch(const std::exception &e) {
     DLOG(WARNING) << "Authentication::CreateUserSysPackets: " << e.what()
@@ -400,7 +402,7 @@ void Authentication::SignaturePacketUniqueCallback(
       std::bind(&Authentication::SignaturePacketStoreCallback,
                 this, arg::_1, packet, op_status);
   packet_manager_->StorePacket(packet->name(), packet->value(), packet_type,
-                              PRIVATE, "", functor);
+                               PRIVATE, "", functor);
 }
 
 void Authentication::SignaturePacketStoreCallback(
@@ -438,12 +440,13 @@ int Authentication::CreateTmidPacket(const std::string &username,
   std::shared_ptr<passport::MidPacket> mid(new passport::MidPacket);
   std::shared_ptr<passport::MidPacket> smid(new passport::MidPacket);
   std::shared_ptr<passport::TmidPacket> tmid(new passport::TmidPacket);
+  std::shared_ptr<passport::TmidPacket> stmid(new passport::TmidPacket);	
   int result(kPendingResult);
   const boost::uint8_t kMaxAttempts(3);
   boost::uint8_t attempt(0);
   while ((result != kSuccess) && (attempt < kMaxAttempts)) {
     result = passport_->SetNewUserData(password, serialised_datamap, mid, smid,
-                                       tmid);
+                                       tmid, stmid);
     if (result != kSuccess) {
       DLOG(ERROR) << "Authentication::CreateTmidPacket: Failed init."
                   << std::endl;
@@ -470,7 +473,7 @@ int Authentication::CreateTmidPacket(const std::string &username,
     DLOG(ERROR) << "Authentication::CreateTmidPacket: Failed." << std::endl;
     return kAuthenticationError;
   } else {
-    passport_->ConfirmNewUserData(mid, smid, tmid);
+    passport_->ConfirmNewUserData(mid, smid, tmid, stmid);
     session_singleton_->SetPassword(password);
     return kSuccess;
   }
@@ -728,7 +731,7 @@ int Authentication::CreatePublicName(const std::string &public_name) {
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(lock,
               boost::posix_time::milliseconds(2 * kSingleOpTimeout_),
-              std::bind(&Authentication::SystemPacketsOpDone, this,
+              std::bind((bool(Authentication::*)(OpStatus*, OpStatus*))&Authentication::SystemPacketsOpDone, this,
                         &mpid_status, &anmpid_status));
   }
   catch(const std::exception &e) {
@@ -785,7 +788,9 @@ int Authentication::RemoveMe() {
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(lock,
               boost::posix_time::milliseconds(12 * kSingleOpTimeout_),
-              std::bind(&Authentication::SystemPacketsOpDone, this,
+              std::bind((bool(Authentication::*)
+							          (OpStatus*, OpStatus*, OpStatus*, OpStatus*, OpStatus*))
+							          &Authentication::SystemPacketsOpDone, this,
                         &anmaid_status, &antmid_status, &anmid_status,
                         &ansmid_status, &anmpid_status));
   }
@@ -850,8 +855,8 @@ void Authentication::DeletePacket(const passport::PacketType &packet_type,
   VoidFuncOneInt functor = std::bind(&Authentication::DeletePacketCallback,
                                      this, arg::_1, packet_type, op_status);
   std::vector<std::string> values(1, packet->value());
-  packet_manager_->DeletePacket(packet->name(), values, packet_type, PRIVATE, "",
-                               functor);
+  packet_manager_->DeletePacket(packet->name(), values, packet_type, PRIVATE, 
+																"", functor);
 }
 
 void Authentication::DeletePacketCallback(
