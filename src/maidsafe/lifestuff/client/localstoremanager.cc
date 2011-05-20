@@ -339,8 +339,8 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
                                      passport::PacketType system_packet_type,
                                      DirType dir_type, const std::string &msid,
                                      const VoidFuncOneInt &cb) {
-  PrintDebugInfo(packet_name, values.at(0), "", "DeletePacket",
-                 system_packet_type);
+  PrintDebugInfo(packet_name, values.empty() ? "" : values.at(0), "",
+                 "DeletePacket", system_packet_type);
   std::string key_id, public_key, public_key_signature, private_key;
   ClientUtils client_utils;
   client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,

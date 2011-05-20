@@ -20,6 +20,7 @@
 *
 * ============================================================================
 */
+
 #include "gtest/gtest.h"
 #include "boost/signals2/connection.hpp"
 #include "maidsafe/common/chunk_store.h"
