@@ -41,6 +41,7 @@ namespace maidsafe {
 
 namespace lifestuff {
 
+typedef std::function<void(std::vector<bool>)> DeleteFunctor;                                 	
 
 class NetworkStoreManager : public PacketManager {
  public:
@@ -53,13 +54,8 @@ class NetworkStoreManager : public PacketManager {
   void Close(VoidFuncOneInt callback,
         std::vector<dht::kademlia::Contact> *bootstrap_contacts);
 
-  virtual bool KeyUnique(const std::string &key, bool check_local);
-
   virtual void KeyUnique(const std::string &key, bool check_local,
                          const dht::kademlia::FindValueFunctor &cb);
-
-  virtual int GetPacket(const std::string &packet_name,
-                         std::vector<std::string> *results);
 
   virtual void GetPacket(const std::string &packet_name,
                          const dht::kademlia::FindValueFunctor &lpf);
@@ -76,7 +72,25 @@ class NetworkStoreManager : public PacketManager {
                             passport::PacketType system_packet_type,
                             DirType dir_type,
                             const std::string &msid,
-                            const VoidFuncOneInt &cb);
+                            const DeleteFunctor &cb);
+  void DeletePacketImpl(const dht::kademlia::Key& key,
+                        const std::vector<std::string> values,
+                        dht::kademlia::SecurifierPtr securifier,
+                        const DeleteFunctor &cb);	
+  void DeletePacketCallback(int result);
+
+  void FindValueCallback(int results,
+                         std::vector<std::string> values,
+                         std::vector<dht::kademlia::Contact> contacts, 
+                         dht::kademlia::Contact node,
+                         dht::kademlia::Contact cache,
+                         const dht::kademlia::Key& key,
+                         const dht::kademlia::SecurifierPtr securifier,
+                         const DeleteFunctor &cb);
+
+  void PopulateValues(const dht::kademlia::Key &key,
+                      const dht::kademlia::SecurifierPtr securifier,
+                      const DeleteFunctor &cb);
 
   virtual void UpdatePacket(const std::string &packet_name,
                             const std::string &old_value,
@@ -95,6 +109,7 @@ class NetworkStoreManager : public PacketManager {
   std::shared_ptr<dht::kademlia::Node> node_;
   dht::kademlia::NodeId node_id_;
   bptime::seconds mean_refresh_interval_;
+	std::vector<bool> delete_results_;
 };
 
 }  // namespace lifestuff
