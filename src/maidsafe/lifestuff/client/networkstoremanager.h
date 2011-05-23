@@ -41,20 +41,24 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-typedef std::function<void(std::vector<bool>)> DeleteFunctor;                                 	
+typedef std::function<void(std::vector<bool>)> DeleteFunctor;
 
 class NetworkStoreManager : public PacketManager {
  public:
-  NetworkStoreManager(const boost::uint16_t &k, const boost::uint16_t &alpha,
-                      const boost::uint16_t beta, 
+  NetworkStoreManager(const boost::uint16_t &k,
+                      const boost::uint16_t &alpha,
+                      const boost::uint16_t beta,
                       const bptime::seconds &mean_refresh_interval);
-  virtual void Init(const std::vector<dht::kademlia::Contact> &bootstrap_contacts, 
-                    const dht::kademlia::JoinFunctor callback, const boost::uint16_t &port);
+  virtual void Init(
+      const std::vector<dht::kademlia::Contact> &bootstrap_contacts,
+      const dht::kademlia::JoinFunctor callback,
+      const boost::uint16_t &port);
 
   void Close(VoidFuncOneInt callback,
-        std::vector<dht::kademlia::Contact> *bootstrap_contacts);
+             std::vector<dht::kademlia::Contact> *bootstrap_contacts);
 
-  virtual void KeyUnique(const std::string &key, bool check_local,
+  virtual void KeyUnique(const std::string &key,
+                         bool check_local,
                          const dht::kademlia::FindValueFunctor &cb);
 
   virtual void GetPacket(const std::string &packet_name,
@@ -73,15 +77,24 @@ class NetworkStoreManager : public PacketManager {
                             DirType dir_type,
                             const std::string &msid,
                             const DeleteFunctor &cb);
-  void DeletePacketImpl(const dht::kademlia::Key& key,
+  virtual void UpdatePacket(const std::string &packet_name,
+                            const std::string &old_value,
+                            const std::string &new_value,
+                            passport::PacketType system_packet_type,
+                            DirType dir_type,
+                            const std::string &msid,
+                            const dht::kademlia::UpdateFunctor &cb);
+
+ private:
+  void DeletePacketImpl(const dht::kademlia::Key &key,
                         const std::vector<std::string> values,
                         dht::kademlia::SecurifierPtr securifier,
-                        const DeleteFunctor &cb);	
+                        const DeleteFunctor &cb);
   void DeletePacketCallback(int result);
 
   void FindValueCallback(int results,
                          std::vector<std::string> values,
-                         std::vector<dht::kademlia::Contact> contacts, 
+                         std::vector<dht::kademlia::Contact> contacts,
                          dht::kademlia::Contact node,
                          dht::kademlia::Contact cache,
                          const dht::kademlia::Key& key,
@@ -92,14 +105,6 @@ class NetworkStoreManager : public PacketManager {
                       const dht::kademlia::SecurifierPtr securifier,
                       const DeleteFunctor &cb);
 
-  virtual void UpdatePacket(const std::string &packet_name,
-                            const std::string &old_value,
-                            const std::string &new_value,
-                            passport::PacketType system_packet_type,
-                            DirType dir_type,
-                            const std::string &msid,
-                            const dht::kademlia::UpdateFunctor &cb);
- private:
   boost::uint16_t k_;
   boost::uint16_t alpha_;
   boost::uint16_t beta_;
