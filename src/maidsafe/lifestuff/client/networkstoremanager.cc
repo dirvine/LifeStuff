@@ -21,10 +21,8 @@
 */
 
 #include "maidsafe/lifestuff/client/networkstoremanager.h"
-
 #include <functional>
 #include <memory>
-
 #include "maidsafe/dht/transport/transport.h"
 #include "maidsafe/lifestuff/client/clientutils.h"
 
@@ -68,7 +66,7 @@ void NetworkStoreManager::Close(VoidFuncOneInt callback,
 }
 
 void NetworkStoreManager::KeyUnique(const std::string &key, bool check_local,
-                                    const dht::kademlia::FindValueFunctor &cb){
+                                    const dht::kademlia::FindValueFunctor &cb) {
   dht::kademlia::Key node_id(key);
   node_->FindValue(node_id, securifier_, cb);
 }
@@ -113,7 +111,7 @@ void NetworkStoreManager::DeletePacket(const std::string &packet_name,
   securifier.reset(new dht::Securifier(key_id, public_key, private_key));
   if (values.empty())
     PopulateValues(key, securifier, cb);
-	else
+  else
     DeletePacketImpl(key, values, securifier, cb);
 }
 
@@ -122,20 +120,24 @@ void NetworkStoreManager::DeletePacketImpl(
     const std::vector<std::string> values,
     const dht::kademlia::SecurifierPtr securifier,
     const DeleteFunctor &cb) {
+  std::shared_ptr<std::vector<bool> > delete_results;
+  delete_results->resize(values.size());
+  std::shared_ptr<boost::mutex> mutex;
+  mutex.reset(new boost::mutex);
   dht::kademlia::DeleteFunctor delete_functor;
-  delete_functor = std::bind(&NetworkStoreManager::DeletePacketCallback, this,
-                             arg::_1);
-  std::for_each(values.begin(), values.end(),
-                std::bind(&dht::kademlia::Node::Delete, node_, key, arg::_1,
-                          "", securifier, delete_functor));
- cb(delete_results_);
+  for (int index = 0; index < values.size(); ++index) {
+    delete_functor = std::bind(&NetworkStoreManager::DeletePacketCallback, this,
+                               arg::_1, index, delete_results, mutex);
+    node_->Delete(key, values[index], "", securifier, delete_functor);
+  }
+  cb(delete_results);
 }
 
 void NetworkStoreManager::PopulateValues(const dht::kademlia::Key &key,
     const dht::kademlia::SecurifierPtr securifier,
     const DeleteFunctor &cb) {
   node_->FindValue(key, securifier, std::bind(
-                   &NetworkStoreManager::FindValueCallback,this, arg::_1,
+                   &NetworkStoreManager::FindValueCallback, this, arg::_1,
                    arg::_2, arg::_3, arg::_4, arg::_5, key, securifier, cb));
 }
 
@@ -151,8 +153,11 @@ void NetworkStoreManager::FindValueCallback(int result,
     DeletePacketImpl(key, values, securifier, cb);
 }
 
-void NetworkStoreManager::DeletePacketCallback(int result) {
-	delete_results_.push_back((result == dht::transport::kSuccess)?true:false);
+void NetworkStoreManager::DeletePacketCallback(int result, int index,
+  std::shared_ptr<std::vector<bool> > delete_results,
+  std::shared_ptr<boost::mutex> mutex) {
+  boost::mutex::scoped_lock lock(*mutex.get());
+  delete_results->at(index) = (result == dht::transport::kSuccess);
 }
 
 void NetworkStoreManager::UpdatePacket(const std::string &packet_name,
@@ -162,16 +167,16 @@ void NetworkStoreManager::UpdatePacket(const std::string &packet_name,
                             DirType dir_type,
                             const std::string &msid,
                             const dht::kademlia::UpdateFunctor &cb) {
-	dht::kademlia::Key key(packet_name);
+  dht::kademlia::Key key(packet_name);
   std::string key_id, public_key, public_key_signature, private_key;
   maidsafe::lifestuff::ClientUtils client_utils;
   client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
                                       &key_id, &public_key,
                                       &public_key_signature, &private_key);
-	boost::posix_time::seconds ttl(boost::posix_time::pos_infin);
+  boost::posix_time::seconds ttl(boost::posix_time::pos_infin);
   dht::kademlia::SecurifierPtr securifier;
-	securifier.reset(new dht::Securifier(key_id, public_key, private_key));
-	node_->Update(key, new_value, "", old_value, "", securifier, ttl, cb);
+  securifier.reset(new dht::Securifier(key_id, public_key, private_key));
+  node_->Update(key, new_value, "", old_value, "", securifier, ttl, cb);
 }
 
 }  // namespace lifestuff

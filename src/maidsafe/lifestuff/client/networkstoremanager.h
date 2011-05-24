@@ -23,13 +23,14 @@
 #ifndef MAIDSAFE_LIFESTUFF_CLIENT_NETWORKSTOREMANAGER_H_
 #define MAIDSAFE_LIFESTUFF_CLIENT_NETWORKSTOREMANAGER_H_
 
-#include "maidsafe/lifestuff/client/packet_manager.h"
-
 #include <functional>
 #include <memory>
+#include <string>
+#include <vector>
+
 #include "boost/asio/ip/address.hpp"
 #include "boost/asio/io_service.hpp"
-
+#include "maidsafe/lifestuff/client/packet_manager.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/dht/kademlia/config.h"
 #include "maidsafe/dht/kademlia/contact.h"
@@ -41,7 +42,7 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-typedef std::function<void(std::vector<bool>)> DeleteFunctor;
+typedef std::function<void(std::shared_ptr<std::vector<bool> >)> DeleteFunctor;
 
 class NetworkStoreManager : public PacketManager {
  public:
@@ -90,7 +91,9 @@ class NetworkStoreManager : public PacketManager {
                         const std::vector<std::string> values,
                         dht::kademlia::SecurifierPtr securifier,
                         const DeleteFunctor &cb);
-  void DeletePacketCallback(int result);
+  void DeletePacketCallback(int result, int index,
+      std::shared_ptr<std::vector<bool> > delete_results,
+      std::shared_ptr<boost::mutex> mutex);
 
   void FindValueCallback(int results,
                          std::vector<std::string> values,
@@ -114,7 +117,6 @@ class NetworkStoreManager : public PacketManager {
   std::shared_ptr<dht::kademlia::Node> node_;
   dht::kademlia::NodeId node_id_;
   bptime::seconds mean_refresh_interval_;
-	std::vector<bool> delete_results_;
 };
 
 }  // namespace lifestuff
