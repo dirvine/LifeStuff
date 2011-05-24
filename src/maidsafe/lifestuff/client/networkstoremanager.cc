@@ -115,7 +115,6 @@ void NetworkStoreManager::DeletePacket(const std::string &packet_name,
     PopulateValues(key, securifier, cb);
 	else 
     DeletePacketImpl(key, values, securifier, cb);
-  }
 }
 
 void NetworkStoreManager::DeletePacketImpl(const dht::kademlia::Key& key,
