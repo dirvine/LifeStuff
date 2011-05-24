@@ -75,7 +75,7 @@ void NetworkStoreManager::KeyUnique(const std::string &key, bool check_local,
 
 void NetworkStoreManager::GetPacket(const std::string &packet_name,
     const dht::kademlia::FindValueFunctor &lpf) {
-  dht::kademlia::Key key(packet_name);  
+  dht::kademlia::Key key(packet_name);
   node_->FindValue(key, securifier_, lpf);
 }
 
@@ -93,7 +93,7 @@ void NetworkStoreManager::StorePacket(const std::string &packet_name,
   client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
                                       &key_id, &public_key,
                                       &public_key_signature, &private_key);
-  securifier.reset(new dht::Securifier(key_id, public_key, private_key));	
+  securifier.reset(new dht::Securifier(key_id, public_key, private_key));
   node_->Store(key, value, "", ttl, securifier, cb);
 }
 
@@ -111,21 +111,22 @@ void NetworkStoreManager::DeletePacket(const std::string &packet_name,
                                       &public_key_signature, &private_key);
   dht::kademlia::SecurifierPtr securifier;
   securifier.reset(new dht::Securifier(key_id, public_key, private_key));
-  if (values.empty()) 
+  if (values.empty())
     PopulateValues(key, securifier, cb);
-	else 
+	else
     DeletePacketImpl(key, values, securifier, cb);
 }
 
-void NetworkStoreManager::DeletePacketImpl(const dht::kademlia::Key& key,
+void NetworkStoreManager::DeletePacketImpl(
+    const dht::kademlia::Key &key,
     const std::vector<std::string> values,
     const dht::kademlia::SecurifierPtr securifier,
     const DeleteFunctor &cb) {
   dht::kademlia::DeleteFunctor delete_functor;
-  delete_functor = std::bind(&NetworkStoreManager::DeletePacketCallback, this, 
+  delete_functor = std::bind(&NetworkStoreManager::DeletePacketCallback, this,
                              arg::_1);
   std::for_each(values.begin(), values.end(),
-                std::bind(&dht::kademlia::Node::Delete, node_, key, arg::_1, 
+                std::bind(&dht::kademlia::Node::Delete, node_, key, arg::_1,
                           "", securifier, delete_functor));
  cb(delete_results_);
 }
@@ -134,7 +135,7 @@ void NetworkStoreManager::PopulateValues(const dht::kademlia::Key &key,
     const dht::kademlia::SecurifierPtr securifier,
     const DeleteFunctor &cb) {
   node_->FindValue(key, securifier, std::bind(
-                   &NetworkStoreManager::FindValueCallback,this, arg::_1, 
+                   &NetworkStoreManager::FindValueCallback,this, arg::_1,
                    arg::_2, arg::_3, arg::_4, arg::_5, key, securifier, cb));
 }
 
