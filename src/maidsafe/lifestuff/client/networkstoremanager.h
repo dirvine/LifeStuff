@@ -32,7 +32,6 @@
 #include "boost/asio/io_service.hpp"
 
 #include "maidsafe/lifestuff/client/packet_manager.h"
-
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/dht/kademlia/config.h"
 #include "maidsafe/dht/kademlia/contact.h"
@@ -44,7 +43,7 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-typedef std::function<void(std::vector<bool>)> DeleteFunctor;
+typedef std::function<void(std::shared_ptr<std::vector<bool> >)> DeleteFunctor;
 
 class NetworkStoreManager : public PacketManager {
  public:
@@ -80,6 +79,7 @@ class NetworkStoreManager : public PacketManager {
                             DirType dir_type,
                             const std::string &msid,
                             const DeleteFunctor &cb);
+
   virtual void UpdatePacket(const std::string &packet_name,
                             const std::string &old_value,
                             const std::string &new_value,
@@ -93,7 +93,10 @@ class NetworkStoreManager : public PacketManager {
                         const std::vector<std::string> values,
                         dht::kademlia::SecurifierPtr securifier,
                         const DeleteFunctor &cb);
-  void DeletePacketCallback(int result);
+  void DeletePacketCallback(int result,
+                            int index,
+                            std::shared_ptr<std::vector<bool>> delete_results,
+                            std::shared_ptr<boost::mutex> mutex);
 
   void FindValueCallback(int results,
                          std::vector<std::string> values,

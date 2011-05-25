@@ -128,24 +128,25 @@ void NetworkStoreManager::DeletePacketImpl(
     const std::vector<std::string> values,
     const dht::kademlia::SecurifierPtr securifier,
     const DeleteFunctor &cb) {
+  std::shared_ptr<std::vector<bool> > delete_results;
+  delete_results->resize(values.size());
+  std::shared_ptr<boost::mutex> mutex;
+  mutex.reset(new boost::mutex);
   dht::kademlia::DeleteFunctor delete_functor;
-  delete_functor = std::bind(&NetworkStoreManager::DeletePacketCallback, this,
-                             arg::_1);
-  std::for_each(values.begin(), values.end(),
-                std::bind(&dht::kademlia::Node::Delete, node_, key, arg::_1,
-                          "", securifier, delete_functor));
-  cb(delete_results_);
+  for (int index = 0; index < values.size(); ++index) {
+    delete_functor = std::bind(&NetworkStoreManager::DeletePacketCallback, this,
+                               arg::_1, index, delete_results, mutex);
+    node_->Delete(key, values[index], "", securifier, delete_functor);
+  }
+  cb(delete_results);
 }
 
-void NetworkStoreManager::PopulateValues(
-    const dht::kademlia::Key &key,
+void NetworkStoreManager::PopulateValues(const dht::kademlia::Key &key,
     const dht::kademlia::SecurifierPtr securifier,
     const DeleteFunctor &cb) {
-  node_->FindValue(key,
-                   securifier,
-                   std::bind(&NetworkStoreManager::FindValueCallback, this,
-                             arg::_1, arg::_2, arg::_3, arg::_4, arg::_5, key,
-                             securifier, cb));
+  node_->FindValue(key, securifier, std::bind(
+                   &NetworkStoreManager::FindValueCallback, this, arg::_1,
+                   arg::_2, arg::_3, arg::_4, arg::_5, key, securifier, cb));
 }
 
 void NetworkStoreManager::FindValueCallback(int result,
@@ -160,18 +161,20 @@ void NetworkStoreManager::FindValueCallback(int result,
     DeletePacketImpl(key, values, securifier, cb);
 }
 
-void NetworkStoreManager::DeletePacketCallback(int result) {
-  delete_results_.push_back(result == dht::transport::kSuccess ? true : false);
+void NetworkStoreManager::DeletePacketCallback(int result, int index,
+  std::shared_ptr<std::vector<bool> > delete_results,
+  std::shared_ptr<boost::mutex> mutex) {
+  boost::mutex::scoped_lock lock(*mutex.get());
+  delete_results->at(index) = (result == dht::transport::kSuccess);
 }
 
-void NetworkStoreManager::UpdatePacket(
-    const std::string &packet_name,
-    const std::string &old_value,
-    const std::string &new_value,
-    passport::PacketType system_packet_type,
-    DirType dir_type,
-    const std::string &msid,
-    const dht::kademlia::UpdateFunctor &cb) {
+void NetworkStoreManager::UpdatePacket(const std::string &packet_name,
+                            const std::string &old_value,
+                            const std::string &new_value,
+                            passport::PacketType system_packet_type,
+                            DirType dir_type,
+                            const std::string &msid,
+                            const dht::kademlia::UpdateFunctor &cb) {
   dht::kademlia::Key key(packet_name);
   std::string key_id, public_key, public_key_signature, private_key;
   maidsafe::lifestuff::ClientUtils client_utils;
