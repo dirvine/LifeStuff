@@ -346,6 +346,10 @@ TEST_SUMMARY_OUTPUT()
 ###################################################################################################
 FINAL_MESSAGE()
 
+IF(NOT WIN32)
+  SET (PACKAGE_BUILD true)
+ENDIF()
+
 IF(PACKAGE_BUILD MATCHES "true")
   IF(CMAKE_BUILD_TYPE MATCHES "Release")
     SET(CPACK_PACKAGE_VENDOR "MaidSafe.net")
@@ -359,13 +363,15 @@ IF(PACKAGE_BUILD MATCHES "true")
     SET(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/licence.txt")
     SET(CPACK_PACKAGE_EXECUTABLES "ClientDemo", "Life Stuff Client")
     SET(CPACK_STRIP_FILES "true")
-    IF(UNIX)
+    IF(UNIX AND NOT APPLE)
       # Linux requires lower case package names
       SET(CPACK_PACKAGE_NAME "lifestuff_client")
       SET(CMAKE_INSTALL_PREFIX /opt/maidsafe/lifestuff)
       SET(CPACK_TOPLEVEL_TAG ${CMAKE_INSTALL_PREFIX})
       SET(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
-      INSTALL(TARGETS ClientDemo RUNTIME DESTINATION .)
+     INSTALL(TARGETS ClientDemo EXPORT ClientDemo 
+             BUNDLE DESTINATION /Application/LifeStuff/ClientDemo COMPONENT Runtime  
+             RUNTIME DESTINATION ${MAIDSAFE_COMMON_INSTALL_DIR}/bin/)
       INSTALL(FILES ${PROJECT_SOURCE_DIR}/installer/linux/scripts/lifestuff_client.desktop DESTINATION .)
       INSTALL(FILES ${PROJECT_SOURCE_DIR}/installer/common/icons/WinLinux/installer.ico DESTINATION .)
       EXECUTE_PROCESS(
@@ -384,10 +390,16 @@ IF(PACKAGE_BUILD MATCHES "true")
         SET(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${PROJECT_SOURCE_DIR}/installer/linux/scripts/postinst;${PROJECT_SOURCE_DIR}/installer/linux/scripts/prerm") # postinstall and before remove
         SET(CPACK_DEBIAN_PACKAGE_SECTION "Network")
         SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
-        SET(CPACK_GENERATOR DEB;TGZ)
+        SET(CPACK_GENERATOR DEB;TGZ; RPM)
       ENDIF()
       #MESSAGE("Package install directory is set to \"${CPACK_PACKAGE_INSTALL_DIRECTORY}\"")
       MESSAGE("================================================================================")
+    ELSEIF(APPLE)
+     INSTALL(TARGETS ClientDemo EXPORT ClientDemo 
+             BUNDLE DESTINATION ${MAIDSAFE_COMMON_INSTALL_DIR}/bin/ClientDemo COMPONENT Runtime  
+             RUNTIME DESTINATION ${MAIDSAFE_COMMON_INSTALL_DIR}/bin/)
+      SET(CPACK_SET_DESTDIR TRUE)
+      SET(CPACK_GENERATOR PackageMaker)
     ELSEIF(WIN32)
       INSTALL(TARGETS ClientDemo RUNTIME DESTINATION bin)
       SET(CPACK_PACKAGE_NAME "LifeStuffClient")
