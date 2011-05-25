@@ -34,7 +34,7 @@
 #endif
 
 #include "maidsafe/encrypt/version.h"
-#define THIS_NEEDS_MAIDSAFE_ENCRYPT_VERSION 7
+#define THIS_NEEDS_MAIDSAFE_ENCRYPT_VERSION 8
 #if MAIDSAFE_ENCRYPT_VERSION < THIS_NEEDS_MAIDSAFE_ENCRYPT_VERSION
 #error This API is not compatible with the installed library.\
   Please update the MaidSafe-Encrypt library.

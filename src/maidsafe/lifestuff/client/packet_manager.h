@@ -56,34 +56,34 @@ class PacketManager {
  public:
   virtual ~PacketManager() {}
 
-  virtual void Init(VoidFuncOneInt callback, const boost::uint16_t &port)=0;
+  virtual void Init(VoidFuncOneInt callback, const boost::uint16_t &port) = 0;
 
-  virtual void Close(VoidFuncOneInt callback, bool cancel_pending_ops)=0;
+  virtual void Close(VoidFuncOneInt callback, bool cancel_pending_ops) = 0;
 
-  virtual bool KeyUnique(const std::string &key, bool check_local)=0;
+  virtual bool KeyUnique(const std::string &key, bool check_local) = 0;
 
   virtual void KeyUnique(const std::string &key, bool check_local,
-                         const VoidFuncOneInt &cb)=0;
+                         const VoidFuncOneInt &cb) = 0;
 
   virtual int GetPacket(const std::string &packet_name,
-                        std::vector<std::string> *results)=0;
+                        std::vector<std::string> *results) = 0;
 
   virtual void GetPacket(const std::string &packet_name,
-                         const GetPacketFunctor &lpf)=0;
+                         const GetPacketFunctor &lpf) = 0;
 
   virtual void StorePacket(const std::string &packet_name,
                            const std::string &value,
                            passport::PacketType system_packet_type,
                            DirType dir_type,
                            const std::string &msid,
-                           const VoidFuncOneInt &cb)=0;
+                           const VoidFuncOneInt &cb) = 0;
 
   virtual void DeletePacket(const std::string &packet_name,
                             const std::vector<std::string> values,
                             passport::PacketType system_packet_type,
                             DirType dir_type,
                             const std::string &msid,
-                            const VoidFuncOneInt &cb)=0;
+                            const VoidFuncOneInt &cb) = 0;
 
   virtual void UpdatePacket(const std::string &packet_name,
                             const std::string &old_value,
@@ -91,7 +91,7 @@ class PacketManager {
                             passport::PacketType system_packet_type,
                             DirType dir_type,
                             const std::string &msid,
-                            const VoidFuncOneInt &cb)=0;
+                            const VoidFuncOneInt &cb) = 0;
 
  protected:
   PacketManager() {}

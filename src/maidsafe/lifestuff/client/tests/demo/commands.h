@@ -30,7 +30,7 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-namespace lifestuff_demo {
+namespace commandline_demo {
 
 class Commands {
  public:
@@ -49,9 +49,10 @@ class Commands {
   bool logged_in_;
 };
 
-}  // namespace lifestuff_demo
+}  // namespace commandline_demo
 
 }  // namespace lifestuff
 
 }  // namespace maidsafe
+
 #endif  // MAIDSAFE_LIFESTUFF_CLIENT_TESTS_DEMO_COMMANDS_H_

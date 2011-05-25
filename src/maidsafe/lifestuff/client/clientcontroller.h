@@ -38,7 +38,6 @@
 
 #include "maidsafe/lifestuff/shared/filesystem.h"
 #include "maidsafe/lifestuff/shared/maidsafe.h"
-//  #include "maidsafe/lifestuff/shared/maidsafe_service_messages.pb.h"
 #include "maidsafe/lifestuff/shared/returncodes.h"
 #include "maidsafe/lifestuff/client/authentication.h"
 #include "maidsafe/lifestuff/client/sessionsingleton.h"
@@ -132,10 +131,8 @@ class ClientController : public lifestuff::UserCredentials {
                        auth_(),
                        ss_(SessionSingleton::getInstance()),
                        ser_da_(),
-//                       ser_dm_(),
                        db_enc_queue_(),
                        seh_(),
-//                       instant_messages_(),
                        received_messages_(),
                        rec_msg_mutex_(),
                        clear_messages_thread_(),
@@ -143,18 +140,15 @@ class ClientController : public lifestuff::UserCredentials {
                        initialised_(false),
                        logging_out_(false),
                        logged_in_(false),
-//                       imn_(),
                        K_(0),
                        upper_threshold_(0),
                        to_seh_file_update_(),
                        pending_files_(),
-                       pending_files_mutex_() {
-//    Init(K_);  //  Todo prakash: is K_ needed in the API?
-  }
+                       pending_files_mutex_() { Init(0); }
   ClientController &operator=(const ClientController&);
   ClientController(const ClientController&);
 
-  ~ClientController() {}
+  ~ClientController();
   int Init(boost::uint8_t k);
   // Close connection to kademlia/stub storage.  Currently with UDT, if
   // clean_up_transport is true, UDT cannot be restarted, so this is a
@@ -355,7 +349,7 @@ class ClientController : public lifestuff::UserCredentials {
   std::shared_ptr<PacketManager> local_sm_;
   Authentication auth_;
   SessionSingleton *ss_;
-  std::string ser_da_;  // , ser_dm_;
+  std::string ser_da_;
   std::map<std::string, std::pair<std::string, std::string> > db_enc_queue_;
   SEHandler seh_;
 //  std::list<InstantMessage> instant_messages_;

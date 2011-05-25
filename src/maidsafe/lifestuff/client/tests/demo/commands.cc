@@ -23,22 +23,30 @@
 
 #include <string>
 #include <iostream>  //NOLINT
+#include <stdio.h>
+#include <termios.h>
+#include <unistd.h>
 
 #include "boost/format.hpp"
 #include "boost/thread.hpp"
 #include "boost/tokenizer.hpp"
 
+#include "maidsafe/common/utils.h"
 #include "maidsafe/lifestuff/shared/returncodes.h"
 
 namespace maidsafe {
 
 namespace lifestuff {
 
-namespace lifestuff_demo {
+namespace commandline_demo {
 
 Commands::Commands(UserCredentialPtr user_credential)
-    : result_arrived_(false), finish_(false), user_credential_(user_credential),
-      username_(), pin_(), logged_in_(false) {}
+    : result_arrived_(false),
+      finish_(false),
+      user_credential_(user_credential),
+      username_(),
+      pin_(),
+      logged_in_(false) {}
 
 void Commands::Run() {
   if (!LoginUser())
@@ -57,6 +65,40 @@ void Commands::Run() {
   }
 }
 
+int mygetch() {
+  struct termios oldt, newt;
+  int ch;
+  tcgetattr(STDIN_FILENO, &oldt);
+  newt = oldt;
+  newt.c_lflag &= ~(ICANON | ECHO);
+  tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+  ch = getchar();
+  tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+  return ch;
+}
+
+std::string GetLineWithAsterisks() {
+  std::vector<char> pword;
+  char a;
+  while ((a = mygetch()) != '\n' && a != '\r') {
+    pword.push_back(a);
+    std::string s(1, a);
+    std::cout << '*';  // << "(" << EncodeToHex(s) << ")";
+  }
+  std::cout << std::endl;
+  return std::string(pword.begin(), pword.end());
+}
+
+bool VerifyPinness(const std::string &pin) {
+  try {
+    boost::uint32_t numerical_pin = boost::lexical_cast<boost::uint32_t>(pin);
+  }
+  catch (const boost::bad_lexical_cast&) {
+    return false;
+  }
+  return true;
+}
+
 bool Commands::LoginUser() {
   std::string username, pin, password;
   bool success(false);
@@ -64,31 +106,34 @@ bool Commands::LoginUser() {
   std::string create_new("n");
 
   while (!success && (no_of_attempts < 5)) {
-    std::cout << "Enter User Name:";
+    std::cout << "Enter User Name: ";
     std::getline(std::cin, username);
-    std::cout << "Enter Pin:";
-    std::getline(std::cin, pin);
+
+    while (!VerifyPinness(pin)) {
+      std::cout << "Enter PIN: ";
+      pin = GetLineWithAsterisks();
+    }
 
     int return_value = user_credential_->CheckUserExists(username, pin);
 
     // ValidateUser
     if (return_value == kUserExists) {
-      std::cout << "Enter Password:";
-      std::getline(std::cin, password);
+      std::cout << "Enter Password: ";
+      password = GetLineWithAsterisks();
       success = user_credential_->ValidateUser(password);
       if (success)
         std::cout << " Logged in successfully." << std::endl;
       else
-        std::cout << " Login failed !" << std::endl;
+        std::cout << " Login failed!" << std::endl;
 
     // CreateUser
     } else if (return_value == kUserDoesntExist) {
-      std::cout << "User doesn't exists! Do u want to create new (y/n):";
+      std::cout << "User doesn't exist! Do u want to create new (y/n): ";
       std::getline(std::cin, create_new);
 
       if (create_new == "y") {
-        std::cout << std::endl << "Chose a password:";
-        std::getline(std::cin, password);
+        std::cout << std::endl << "Chose a password: ";
+        password = GetLineWithAsterisks();
 
         success = user_credential_->CreateUser(username, pin, password);
         if (success) {
@@ -161,6 +206,13 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
     return;
 
   } else if ((cmd == "exit") || (cmd == "q")) {
+    return_value = user_credential_->SaveSession();
+    if (return_value == kSuccess) {
+      std::cout << "Saved Session successfully" << std::endl;
+    } else {
+      std::cout << boost::format("savesession returned <%1%>")
+                 % return_value << std::endl;
+    }
     printf("Exiting application...\n");
     finish_ = true;
     return;
@@ -180,52 +232,63 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
     if (cmd == "savesession") {
       return_value = user_credential_->SaveSession();
       if (return_value == kSuccess) {
-        std::cout<< "Saved Session successfully" << std::endl;
+        std::cout << "Saved Session successfully" << std::endl;
       } else {
         std::cout << boost::format("savesession returned <%1%>")
                    % return_value << std::endl;
       }
 
     } else if (cmd == "changeuname") {
-      bool ret = user_credential_->ChangeUsername(args[0]);
-      if (ret) {
-        std::cout<< "Changed user name successfully" << std::endl;
+      if (args.empty() || args.size() > 1) {
+        std::cout << "Change username correct usage: changeuname new_uname"
+                  << std::endl;
       } else {
-        std::cout<< "Change user name Failed" << std::endl;
+        bool ret = user_credential_->ChangeUsername(args[0]);
+        if (ret) {
+          std::cout << "Changed user name successfully" << std::endl;
+        } else {
+          std::cout << "Change user name Failed" << std::endl;
+        }
       }
-
     } else if (cmd == "changepin") {
-      bool ret = user_credential_->ChangePin(args[0]);
-      if (ret) {
-        std::cout<< "Changed pin successfully" << std::endl;
+      if (args.empty() || args.size() > 1) {
+        std::cout << "Change pin correct usage: changepin new_pin" << std::endl;
       } else {
-        std::cout<< "Change pin Failed" << std::endl;
+        bool ret = user_credential_->ChangePin(args[0]);
+        if (ret) {
+          std::cout << "Changed pin successfully" << std::endl;
+        } else {
+          std::cout << "Change pin Failed" << std::endl;
+        }
       }
-
     } else if (cmd == "changepwd") {
-      bool ret = user_credential_->ChangePassword(args[0]);
-      if (ret) {
-        std::cout<< "Changed password successfully" << std::endl;
+      if (args.empty() || args.size() > 1) {
+        std::cout << "Change password correct usage: changepwd new_password"
+                  << std::endl;
       } else {
-        std::cout<< "Change password Failed" << std::endl;
+        bool ret = user_credential_->ChangePassword(args[0]);
+        if (ret) {
+          std::cout << "Changed password successfully" << std::endl;
+        } else {
+          std::cout << "Change password Failed" << std::endl;
+        }
       }
-
     } else if (cmd == "logout") {
       bool ret = user_credential_->Logout();
       if (ret) {
         logged_in_ = false;
-        std::cout<< "Logged out Successfully" << std::endl;
+        std::cout << "Logged out Successfully" << std::endl;
         PrintUsage();
       } else {
-        std::cout<< "Log out Failed" << std::endl;
+        std::cout << "Log out Failed" << std::endl;
       }
 
     } else if (cmd == "leave") {
       bool ret = user_credential_->LeaveMaidsafeNetwork();
       if (ret) {
-        std::cout<< "Leave Maidsafe Network Successfull" << std::endl;
+        std::cout << "Leave Maidsafe Network Successfull" << std::endl;
       } else {
-        std::cout<< "Leave Maidsafe Network failed" << std::endl;
+        std::cout << "Leave Maidsafe Network failed" << std::endl;
       }
     } else {
       printf("Invalid command %s\n", cmd.c_str());
@@ -233,7 +296,7 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
   }
 }
 
-}  // namespace lifestuff_demo
+}  // namespace commandline_demo
 
 }  // namespace lifestuff
 

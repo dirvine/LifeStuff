@@ -36,6 +36,7 @@
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/common/chunk_store.h"
 #include "maidsafe/common/crypto.h"
+#include "maidsafe/common/utils.h"
 #include "maidsafe/lifestuff/client/filesystem/dataatlashandler.h"
 #include "maidsafe/lifestuff/client/clientutils.h"
 
@@ -95,50 +96,25 @@ void PacketOpCallback(const int &store_manager_result, boost::mutex *mutex,
 }
 
 
+ClientController::~ClientController() {}
+
 int ClientController::Init(boost::uint8_t k) {
   if (initialised_) {
     DLOG(INFO) << "CC::Init - Already initialised." << std::endl;
     return 0;
   }
-  K_ = k;
-//    upper_threshold_ = static_cast<boost::uint16_t>
-//                       (K_ * kMinSuccessfulPecentageStore);
-//    fs::path client_path(file_system::ApplicationDataDir());
-//    try {
-//      // If main app dir isn't already there, create it
-//      if (!fs::exists(client_path) && !fs::create_directories(client_path)) {
-//        return -2;
-//      }
-//      client_path /= "client" + RandomAlphaNumericString(8);
-//      while (fs::exists(client_path))
-//        client_path = fs::path(client_path.string().substr(0,
-//            client_path.string().size() - 8) + RandomAlphaNumericString(8));
-//      client_store_ = client_path.string();
-//      if (!fs::exists(client_path) && !fs::create_directories(client_path)) {
-//        return -3;
-//      }
-//    }
-//    catch(const std::exception &e) {
-//  #ifdef DEBUG
-//      printf("CC::Init - Couldn't create path (check permissions?): %s\n",
-//             e.what());
-//  #endif
-//      return -4;
-//    }
-//  client_chunkstore_ = std::shared_ptr<ChunkStore>
-//      (new ChunkStore(client_path.string(), 0, 0));
-//  if (!client_chunkstore_->Init()) {
-//    return -5;
-//  }
-//  #ifdef LOCAL_LifeStuffVAULT
-//  sm_.reset(new LocalStoreManager(""));
+#ifdef LOCAL_LifeStuffVAULT
+//  db_dir_.reset(new fs::path());
+//  db_dir_ = maidsafe::test::CreateTestPath();
+  local_sm_.reset(new LocalStoreManager("/tmp/LocalUserCredentials"));
 //  #else
 //    sm_.reset(new MaidsafeStoreManager(client_chunkstore_, K_));
-//  #endif
+#endif
   if (!JoinKademlia()) {
     DLOG(ERROR) << "CC::Init - Couldn't initialise SM" << std::endl;
     return -1;
   }
+  auth_.Init(local_sm_);
   initialised_ = true;
   return 0;
 }
@@ -426,8 +402,9 @@ void ClientController::CloseConnection(bool clean_up_transport) {
 #ifdef DEBUG
   printf("ClientController::CloseConnection - Successfully left kademlia.\n");
 #endif
-  if (clean_up_transport)
+//  if (clean_up_transport)
 //    local_sm_->CleanUpTransport();
+  initialised_ = false;
   return;
 }
 

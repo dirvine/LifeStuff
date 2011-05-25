@@ -23,12 +23,15 @@
 #ifndef MAIDSAFE_LIFESTUFF_CLIENT_NETWORKSTOREMANAGER_H_
 #define MAIDSAFE_LIFESTUFF_CLIENT_NETWORKSTOREMANAGER_H_
 
-#include "maidsafe/lifestuff/client/packet_manager.h"
-
 #include <functional>
 #include <memory>
+#include <string>
+#include <vector>
+
 #include "boost/asio/ip/address.hpp"
 #include "boost/asio/io_service.hpp"
+
+#include "maidsafe/lifestuff/client/packet_manager.h"
 
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/dht/kademlia/config.h"
@@ -114,7 +117,7 @@ class NetworkStoreManager : public PacketManager {
   std::shared_ptr<dht::kademlia::Node> node_;
   dht::kademlia::NodeId node_id_;
   bptime::seconds mean_refresh_interval_;
-	std::vector<bool> delete_results_;
+  std::vector<bool> delete_results_;
 };
 
 }  // namespace lifestuff
