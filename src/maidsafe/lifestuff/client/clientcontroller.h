@@ -175,6 +175,8 @@ class ClientController : public lifestuff::UserCredentials {
   virtual bool ChangePassword(const std::string &new_password);
   virtual bool LeaveMaidsafeNetwork();
 
+  virtual std::string Password();
+  
   // Messages
 //  typedef std::function<void(const InstantMessage&)> IMNotifier;
 //  bool GetMessages();

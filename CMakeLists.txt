@@ -398,9 +398,9 @@ IF(PACKAGE_BUILD MATCHES "true")
       #MESSAGE("Package install directory is set to \"${CPACK_PACKAGE_INSTALL_DIRECTORY}\"")
       MESSAGE("================================================================================")
     ELSEIF(APPLE)
-     INSTALL(TARGETS ClientDemo EXPORT ClientDemo 
-             BUNDLE DESTINATION ${MAIDSAFE_COMMON_INSTALL_DIR}/bin/ClientDemo COMPONENT Runtime  
-             RUNTIME DESTINATION ${MAIDSAFE_COMMON_INSTALL_DIR}/bin/)
+      INSTALL(TARGETS ClientDemo EXPORT ClientDemo 
+              BUNDLE DESTINATION ${MAIDSAFE_COMMON_INSTALL_DIR}/bin/ClientDemo COMPONENT Runtime  
+              RUNTIME DESTINATION ${MAIDSAFE_COMMON_INSTALL_DIR}/bin/)
       SET(CPACK_SET_DESTDIR TRUE)
       SET(CPACK_GENERATOR PackageMaker)
     ELSEIF(WIN32)

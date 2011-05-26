@@ -568,6 +568,10 @@ bool ClientController::ChangePassword(const std::string &new_password) {
   return true;
 }
 
+std::string ClientController::Password() {
+  return ss_->Password();
+}
+
 //////////////////////////////
 // Buffer Packet Operations //
 //////////////////////////////
