@@ -49,7 +49,6 @@ namespace bs2 = boost::signals2;
 
 namespace maidsafe {
 
-
 namespace dht {
 namespace kademlia {
   class Contact;
@@ -176,7 +175,7 @@ class ClientController : public lifestuff::UserCredentials {
   virtual bool LeaveMaidsafeNetwork();
 
   virtual std::string Password();
-  
+
   // Messages
 //  typedef std::function<void(const InstantMessage&)> IMNotifier;
 //  bool GetMessages();
