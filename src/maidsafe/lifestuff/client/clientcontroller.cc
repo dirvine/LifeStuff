@@ -39,6 +39,7 @@
 #include "maidsafe/common/utils.h"
 #include "maidsafe/lifestuff/client/filesystem/dataatlashandler.h"
 #include "maidsafe/lifestuff/client/clientutils.h"
+#include "maidsafe/lifestuff/log.h"
 
 #if defined LOCAL_LifeStuffVAULT && !defined MS_NETWORK_TEST
 #include "maidsafe/lifestuff/client/localstoremanager.h"

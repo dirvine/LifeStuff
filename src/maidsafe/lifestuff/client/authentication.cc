@@ -24,6 +24,7 @@
 #include "maidsafe/lifestuff/client/authentication.h"
 #include "boost/regex.hpp"
 #include "maidsafe/common/crypto.h"
+#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/client/lifestuff_messages.pb.h"
 #include "maidsafe/lifestuff/client/sessionsingleton.h"
 #include "maidsafe/lifestuff/client/packet_manager.h"

@@ -31,6 +31,7 @@
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/encrypt/self_encryption.h"
 
+#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/client/filesystem/dataatlashandler.h"
 #include "maidsafe/lifestuff/client/filesystem/pddir.h"
 #include "maidsafe/lifestuff/client/filesystem/sehandler.h"
