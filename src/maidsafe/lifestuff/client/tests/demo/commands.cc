@@ -21,11 +21,13 @@
 
 #include "maidsafe/lifestuff/client/tests/demo/commands.h"
 
-#include <string>
-#include <iostream>  //NOLINT
 #include <stdio.h>
 #include <termios.h>
 #include <unistd.h>
+
+#include <iostream>  //NOLINT
+#include <string>
+#include <vector>
 
 #include "boost/format.hpp"
 #include "boost/thread.hpp"
@@ -95,7 +97,7 @@ bool VerifyPinness(const std::string &pin) {
   try {
     boost::uint32_t numerical_pin = boost::lexical_cast<boost::uint32_t>(pin);
   }
-  catch (const boost::bad_lexical_cast&) {
+  catch(const boost::bad_lexical_cast&) {
     return false;
   }
   return true;
@@ -135,37 +137,41 @@ bool Commands::LoginUser() {
 
       if (create_new == "y") {
         do {
-          std::cout << "Confirm pin:";
+          std::cout << "Confirm pin: ";
           confirm = GetLineWithAsterisks();
           success = (pin.compare(confirm) == 0);
-          if (!success) 
+          if (!success)
             std::cout << "Pin confirmation mismatch" << std::endl;
         } while (!success &&  (++count < _MAX_TRY));
 
         count = 0;
-        
+
         if (success) {
           do {
             std::cout << std::endl << "Choose a password: ";
             password = GetLineWithAsterisks();
-            std::cout << "Confirm password:";
+            std::cout << "Confirm password: ";
             confirm = GetLineWithAsterisks();
             success = (password.compare(confirm) == 0);
-            if (!success) 
-              std::cout << "Password confirmation mismatch"<< std::endl;            
-          } while (!success &&  (++count < _MAX_TRY));        
+            if (!success)
+              std::cout << "Password confirmation mismatch" << std::endl;
+          } while (!success &&  (++count < _MAX_TRY));
         }
         if (success) {
           success = user_credential_->CreateUser(username, pin, password);
         }
         if (success) {
-          std::cout << std::endl
-                    << "Successfully created user and logged in" << std::endl;
+          std::cout << std::endl << "Successfully created user and logged in"
+                    << std::endl;
         } else {
           std::cout << std::endl  << "Failed to create user" << std::endl;
         }
       } else if (create_new == "n") {
         std::cout << "Retry again .." << std::endl;
+        username.clear();
+        pin.clear();
+        confirm.clear();
+        password.clear();
       } else {
         std::cout << "Behave !!!" << std::endl;
         // return false;
@@ -193,9 +199,9 @@ void Commands::PrintUsage() {
   } else {
     printf("\thelp                         Print help.\n");
     printf("\tsavesession                  Save Session.\n");
-    printf("\tchangeuname newname          Change username.\n");
-    printf("\tchangepin newpin             Change pin.\n");
-    printf("\tchangepwd newpasswd          Change password.\n");
+    printf("\tchangeuname                  Change username.\n");
+    printf("\tchangepin                    Change pin.\n");
+    printf("\tchangepwd                    Change password.\n");
     printf("\tlogout                       Logout.\n");
     printf("\tleave                        Leave Maidsafe Network.\n");
     printf("\texit  or 'q'                 Exit the application.\n");
@@ -266,12 +272,12 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
                   << std::endl;
       } else {
         bool success(false);
-        std::string string, confirm;
+        std::string pword, confirm;
         int count = 0;
         do {
-          std::cout << "Enter password:";
-          string = GetLineWithAsterisks();
-          if (string.compare(user_credential_->Password()) == 0) {
+          std::cout << "Enter password: ";
+          pword = GetLineWithAsterisks();
+          if (pword.compare(user_credential_->Password()) == 0) {
             success = user_credential_->ChangeUsername(args[0]);
               if (success) {
                 std::cout << "Changed user name successfully" << std::endl;
@@ -283,7 +289,7 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
           } else {
             std::cout << "Invalid password." << std::endl;
           }
-        } while (!success && (++count < _MAX_TRY));				
+        } while (!success && (++count < _MAX_TRY));
       }
     } else if (cmd == "changepin") {
       if (!args.empty()) {
@@ -293,13 +299,13 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
         std::string string, confirm;
         int count = 0;
         do {
-          std::cout << "\nEnter password:";
+          std::cout << "Enter password: ";
           string = GetLineWithAsterisks();
           if (string.compare(user_credential_->Password()) == 0) {
             while (string.compare(confirm) != 0) {
-              std::cout << "New pin:";
+              std::cout << "New pin: ";
               string = GetLineWithAsterisks();
-              std::cout << "Confirm pin:";
+              std::cout << "Confirm pin: ";
               confirm = GetLineWithAsterisks();
               success = false;
               if (string.compare(confirm) == 0) {
@@ -309,14 +315,14 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
                 } else {
                   std::cout << "Changing pin failed" << std::endl;
                   count = _MAX_TRY;
-                  break;                      
+                  break;
                 }
               } else {
-                std::cout << "Pin confirmation mismatch.:"<<std::endl;
+                std::cout << "Pin confirmation mismatch" << std::endl;
               }
             }
           } else {
-            std::cout << "Invalid password." << std::endl;
+            std::cout << "Invalid password" << std::endl;
           }
         } while (!success && (++count < _MAX_TRY));
       }
@@ -329,13 +335,13 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
         std::string password, confirm_password;
         int count = 0;
         do {
-          std::cout << "Current password:";
+          std::cout << "Current password: ";
           password = GetLineWithAsterisks();
           if (password.compare(user_credential_->Password()) == 0) {
             while (password.compare(confirm_password) != 0) {
-              std::cout << "New password:";
+              std::cout << "New password: ";
               password = GetLineWithAsterisks();
-              std::cout << "Confirm new password:";
+              std::cout << "Confirm new password: ";
               confirm_password = GetLineWithAsterisks();
               success = false;
               if (password.compare(confirm_password) == 0) {
@@ -345,14 +351,14 @@ void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
                 } else {
                    std::cout << "Change password Failed" << std::endl;
                    count = _MAX_TRY;
-                    break;                      
+                    break;
                 }
               } else {
-                std::cout << "Password confirmation mismatch.:"<< std::endl;
+                std::cout << "Password confirmation mismatch"<< std::endl;
               }
             }
           } else {
-            std::cout << "Invalid password." << std::endl;
+            std::cout << "Invalid password" << std::endl;
           }
         } while (!success && (count++ < _MAX_TRY));
       }
