@@ -22,8 +22,12 @@
 #include "maidsafe/lifestuff/client/tests/demo/commands.h"
 
 #include <stdio.h>
+#ifndef LifeStuff_WIN32
 #include <termios.h>
 #include <unistd.h>
+#else
+#include <conio.h>
+#endif
 
 #include <iostream>  //NOLINT
 #include <string>
@@ -70,14 +74,18 @@ void Commands::Run() {
 }
 
 int mygetch() {
-  struct termios oldt, newt;
   int ch;
+#ifdef LifeStuff_WIN32
+  ch = getch();
+#else
+  struct termios oldt, newt;
   tcgetattr(STDIN_FILENO, &oldt);
   newt = oldt;
   newt.c_lflag &= ~(ICANON | ECHO);
   tcsetattr(STDIN_FILENO, TCSANOW, &newt);
   ch = getchar();
   tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+#endif
   return ch;
 }
 
