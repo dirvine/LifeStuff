@@ -48,11 +48,25 @@ ELSE()
 ENDIF()
 OPTION (BUILD_SHARED_LIBS "Build shared libraries." OFF)
 
+IF(WIN32)
+  IF(${PACKAGE_BUILD})
+    #Check if project open in MSVC - if so send a fatal_error message
+    FIND_FILE(PROJECT_OPENSDF_FILE NAMES  "${PROJECT_NAME}.opensdf" PATHS ${CMAKE_BINARY_DIR})
+    IF(EXISTS "${PROJECT_OPENSDF_FILE}")
+      MESSAGE(FATAL_ERROR "Please close the MSVC solution and run cmake again for package build")
+    ENDIF()
+    SET(CMAKE_CONFIGURATION_TYPES Release)
+    SET(CMAKE_CONFIGURATION_TYPES ${CMAKE_CONFIGURATION_TYPES} CACHE STRING "Semicolon separated list of supported configuration types, only supports Release, anything else will be ignored." FORCE)
+    UNSET(PROJECT_FILE CACHE)
+  ELSE()
+    SET(CMAKE_CONFIGURATION_TYPES Debug Release RelWithDebInfo MinSizeRel)
+    SET(CMAKE_CONFIGURATION_TYPES ${CMAKE_CONFIGURATION_TYPES} CACHE STRING "Semicolon separated list of supported configuration types, only supports Release, anything else will be ignored." FORCE)
+  ENDIF()
+ENDIF()
 
 # This call resets CMAKE_BUILD_TYPE, hence it's copied from CMAKE_BUILD_TYPE_DIR which is set above.
 PROJECT(${PROJECT_NAME})
 SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_DIR} CACHE INTERNAL "Except for MSVC, the build type is set by running cmake from the appropriate build subdirectory e.g. for a Debug build, \"cd build/Linux/Debug && cmake ../../..\"." FORCE)
-
 ###################################################################################################
 # MaidSafe Common, DHT, Encrypt, Passport and PKI library search                                  #
 ###################################################################################################
@@ -345,17 +359,11 @@ TEST_SUMMARY_OUTPUT()
 # Install details                                                                                 #
 ###################################################################################################
 FINAL_MESSAGE()
+#Removing the previous CPackConfig.cmake & CPackSourceConfig.cmake files
+FIND_FILE(CPACK_CONFIG_CMAKE_FILES NAMES  CPackConfig.cmake CPackSourceConfig.cmake PATHS ${CMAKE_BINARY_DIR})
+FILE(REMOVE ${CPACK_CONFIG_CMAKE_FILES})
 
-IF(NOT WIN32)
-  SET (PACKAGE_BUILD true)
-  IF (NOT APPLE)
-    INSTALL(TARGETS ClientDemo EXPORT ClientDemo
-            BUNDLE DESTINATION ${MAIDSAFE_COMMON_INSTALL_DIR}/bin/CleintDemo COMPONENT Runtime
-            RUNTIME DESTINATION ${MAIDSAFE_COMMON_INSTALL_DIR}/bin/)
-   ENDIF()
-ENDIF()
-
-IF(PACKAGE_BUILD MATCHES "true")
+IF(${PACKAGE_BUILD})
   IF(CMAKE_BUILD_TYPE MATCHES "Release")
     SET(CPACK_PACKAGE_VENDOR "MaidSafe.net")
     SET(CPACK_PACKAGE_VERSION_MAJOR "0")
@@ -364,11 +372,11 @@ IF(PACKAGE_BUILD MATCHES "true")
     SET(CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})
     SET(CPACK_PACKAGE_CONTACT "support@maidsafe.net")
     SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY " LifeStuff Client")
-    SET(CPACK_RESOURCE_FILE_README "${PROJECT_SOURCE_DIR}/README")
-    IF (NOT APPLE)
+    IF(NOT APPLE)
+      SET(CPACK_RESOURCE_FILE_README "${PROJECT_SOURCE_DIR}/README")
       SET(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/licence.txt")
-      SET(CPACK_PACKAGE_EXECUTABLES "ClientDemo", "Life Stuff Client")
     ENDIF()
+    SET(CPACK_PACKAGE_EXECUTABLES "ClientDemo", "Life Stuff Client")
     SET(CPACK_STRIP_FILES "true")
     IF(UNIX AND NOT APPLE)
       # Linux requires lower case package names
@@ -376,9 +384,7 @@ IF(PACKAGE_BUILD MATCHES "true")
       SET(CMAKE_INSTALL_PREFIX /opt/maidsafe/lifestuff)
       SET(CPACK_TOPLEVEL_TAG ${CMAKE_INSTALL_PREFIX})
       SET(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
-      INSTALL(TARGETS ClientDemo EXPORT ClientDemo
-              BUNDLE DESTINATION ${CMAKE_INSTALL_PREFIX}/bin/CleintDemo COMPONENT Runtime
-              RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin/)
+      INSTALL(TARGETS ClientDemo RUNTIME DESTINATION .)
       INSTALL(FILES ${PROJECT_SOURCE_DIR}/installer/linux/scripts/lifestuff_client.desktop DESTINATION .)
       INSTALL(FILES ${PROJECT_SOURCE_DIR}/installer/common/icons/WinLinux/installer.ico DESTINATION .)
       EXECUTE_PROCESS(
@@ -397,22 +403,23 @@ IF(PACKAGE_BUILD MATCHES "true")
         SET(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${PROJECT_SOURCE_DIR}/installer/linux/scripts/postinst;${PROJECT_SOURCE_DIR}/installer/linux/scripts/prerm") # postinstall and before remove
         SET(CPACK_DEBIAN_PACKAGE_SECTION "Network")
         SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
-        SET(CPACK_GENERATOR DEB;TGZ; RPM)
+        SET(CPACK_GENERATOR DEB;TGZ)
       ENDIF()
       #MESSAGE("Package install directory is set to \"${CPACK_PACKAGE_INSTALL_DIRECTORY}\"")
       MESSAGE("================================================================================")
     ELSEIF(APPLE)
       INSTALL(TARGETS ClientDemo EXPORT ClientDemo
               BUNDLE DESTINATION /Applications/ COMPONENT Runtime
-              RUNTIME DESTINATION /Applications/)
+              RUNTIME DESTINATION /Applications/
+              CONFIGURATIONS Release)
       SET(CPACK_SET_DESTDIR TRUE)
       SET(CPACK_GENERATOR PackageMaker)
     ELSEIF(WIN32)
-      INSTALL(TARGETS ClientDemo RUNTIME DESTINATION bin)
+      INSTALL(TARGETS ClientDemo RUNTIME DESTINATION bin CONFIGURATIONS Release)
       SET(CPACK_PACKAGE_NAME "LifeStuffClient")
       INSTALL(DIRECTORY ${PROJECT_SOURCE_DIR}/installer/windows/cbfs DESTINATION drivers)
-      SET(CPACK_PACKAGE_INSTALL_DIRECTORY "LifeStuff")
-      SET(CPACK_GENERATOR "NSIS")
+      SET(CPACK_PACKAGE_INSTALL_DIRECTORY "MaidSafe\\\\LifeStuff")
+      SET(CPACK_GENERATOR NSIS)
       SET(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "LifeStuff ${CPACK_PACKAGE_VERSION}")
       SET(CPACK_NSIS_MUI_ICON "${PROJECT_SOURCE_DIR}/installer/common/icons/WinLinux/installer.ico")
       SET(CPACK_NSIS_MUI_UNIICON "${PROJECT_SOURCE_DIR}/installer/common/icons/WinLinux/uninstaller.ico")
@@ -488,7 +495,6 @@ ELSE() # Installing the library
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/version.h)
 
   SET(EXPORT_NAME lifestuff_client)
-#  INSTALL(TARGETS LifeStufflsmclientlib LifeStuffsharedlib LifeStuffclientfilesystemlib LifeStufffuselib EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
   INSTALL(TARGETS LifeStufflsmclientlib LifeStuffsharedlib LifeStuffclientfilesystemlib LifeStufffuselib EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
   INSTALL(FILES ${LIFESTUFF_CLIENT_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff/client)
 #  INSTALL(FILES ${LIFESTUFF_CLIENT_FILESYSTEM_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff/client/filesystem)
