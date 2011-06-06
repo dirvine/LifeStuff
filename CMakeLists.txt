@@ -50,14 +50,13 @@ OPTION (BUILD_SHARED_LIBS "Build shared libraries." OFF)
 
 IF(WIN32)
   IF(${PACKAGE_BUILD})
-    #Check if project open in MSVC - if so send a fatal_error message
+    #Check if project open in MSVC - not allowing package build configuration if solution is open in MVSC
     FIND_FILE(PROJECT_OPENSDF_FILE NAMES  "${PROJECT_NAME}.opensdf" PATHS ${CMAKE_BINARY_DIR})
     IF(EXISTS "${PROJECT_OPENSDF_FILE}")
       MESSAGE(FATAL_ERROR "Please close the MSVC solution and run cmake again for package build")
     ENDIF()
     SET(CMAKE_CONFIGURATION_TYPES Release)
     SET(CMAKE_CONFIGURATION_TYPES ${CMAKE_CONFIGURATION_TYPES} CACHE STRING "Semicolon separated list of supported configuration types, only supports Release, anything else will be ignored." FORCE)
-    UNSET(PROJECT_FILE CACHE)
   ELSE()
     SET(CMAKE_CONFIGURATION_TYPES Debug Release RelWithDebInfo MinSizeRel)
     SET(CMAKE_CONFIGURATION_TYPES ${CMAKE_CONFIGURATION_TYPES} CACHE STRING "Semicolon separated list of supported configuration types, only supports Release, anything else will be ignored." FORCE)
