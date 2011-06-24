@@ -23,6 +23,13 @@
 #define MAIDSAFE_LIFESTUFF_CLIENT_USER_CREDENTIALS_API_H_
 
 #include <string>
+#include "maidsafe/lifestuff/shared/version.h"
+
+#if MAIDSAFE_LIFESTUFF_CLIENT_VERSION != 100
+#  error This API is not compatible with the installed library.\
+    Please update the maidsafe-lifestuff library.
+#endif
+
 
 namespace maidsafe {
 

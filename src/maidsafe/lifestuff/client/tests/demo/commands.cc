@@ -22,7 +22,7 @@
 #include "maidsafe/lifestuff/client/tests/demo/commands.h"
 
 #include <stdio.h>
-#ifndef LifeStuff_WIN32
+#ifndef MAIDSAFE_WIN32
 #include <termios.h>
 #include <unistd.h>
 #else
@@ -75,7 +75,7 @@ void Commands::Run() {
 
 int mygetch() {
   int ch;
-#ifdef LifeStuff_WIN32
+#ifdef MAIDSAFE_WIN32
   ch = getch();
 #else
   struct termios oldt, newt;

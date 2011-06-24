@@ -24,7 +24,7 @@
 
 #include "maidsafe/lifestuff/client/clientcontroller.h"
 
-#ifdef LifeStuff_WIN32
+#ifdef MAIDSAFE_WIN32
 #include <shlwapi.h>
 #endif
 

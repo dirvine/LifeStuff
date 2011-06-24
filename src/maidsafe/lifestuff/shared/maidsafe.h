@@ -31,17 +31,14 @@
 #include "boost/function.hpp"
 #include "maidsafe/dht/version.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/lifestuff/shared/returncodes.h"
+#include "maidsafe/lifestuff/shared/version.h"
 
-#define THIS_MAIDSAFE_DHT_VERSION 29
-#if MAIDSAFE_DHT_VERSION < THIS_MAIDSAFE_DHT_VERSION
-#error This API is not compatible with the installed library.\
-  Please update the maidsafe-dht library.
-#elif MAIDSAFE_DHT_VERSION > THIS_MAIDSAFE_DHT_VERSION
-#error This API uses a newer version of the maidsafe-dht library.\
-  Please update this project.
+#if MAIDSAFE_LIFESTUFF_CLIENT_VERSION != 100
+#  error This API is not compatible with the installed library.\
+    Please update the maidsafe-lifestuff library.
 #endif
 
-#include "maidsafe/lifestuff/shared/returncodes.h"
 
 namespace kad { class Contact; }
 

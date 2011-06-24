@@ -30,7 +30,7 @@
 
 #include "maidsafe/lifestuff/shared/filesystem.h"
 #include <stdio.h>
-#ifdef LifeStuff_WIN32
+#ifdef MAIDSAFE_WIN32
 #include <shlwapi.h>
 #include <shlobj.h>
 #include <sstream>
@@ -54,9 +54,9 @@ fs::path HomeDir() {
 }
 
 fs::path ApplicationDataDir() {
-#if defined(LifeStuff_POSIX)
+#if defined(MAIDSAFE_LINUX)
   return fs::path("/var/cache/maidsafe/");
-#elif defined(LifeStuff_WIN32)
+#elif defined(MAIDSAFE_WIN32)
   fs::path app_path("");
   TCHAR szpth[MAX_PATH];
   if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_COMMON_APPDATA, NULL, 0,
@@ -70,14 +70,14 @@ fs::path ApplicationDataDir() {
     app_path /= "maidsafe";
   }
   return app_path;
-#elif defined(LifeStuff_APPLE)
+#elif defined(MAIDSAFE_APPLE)
   return fs::path("/Library/maidsafe/");
 #endif
 return fs::path("/tmp");
 }
 
 fs::path TempDir() {
-#if defined(LifeStuff_WIN32)
+#if defined(MAIDSAFE_WIN32)
   fs::path temp_dir("");
   if (std::getenv("TEMP"))
     temp_dir = std::getenv("TEMP");
