@@ -42,6 +42,13 @@
 #include "maidsafe/lifestuff/shared/maidsafe.h"
 #include "maidsafe/lifestuff/shared/returncodes.h"
 #include "maidsafe/lifestuff/client/filesystem/distributed_filesystem.pb.h"
+#include "maidsafe/lifestuff/shared/version.h"
+
+#if MAIDSAFE_LIFESTUFF_CLIENT_VERSION != 101
+#  error This API is not compatible with the installed library.\
+    Please update the maidsafe-lifestuff library.
+#endif
+
 
 namespace bs2 = boost::signals2;
 namespace fs = boost::filesystem;
