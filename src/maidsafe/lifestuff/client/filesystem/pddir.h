@@ -56,9 +56,20 @@
 #include <string>
 #include <vector>
 
-#include "maidsafe/lifestuff/shared/maidsafe.h"
-#include "maidsafe/lifestuff/client/filesystem/distributed_filesystem.pb.h"
 #include "maidsafe/encrypt/data_map.h"
+
+#include "maidsafe/lifestuff/shared/maidsafe.h"
+
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4127 4244 4267)
+#endif
+
+#include "maidsafe/lifestuff/client/filesystem/distributed_filesystem.pb.h"
+
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
 
 class CppSQLite3DB;
 

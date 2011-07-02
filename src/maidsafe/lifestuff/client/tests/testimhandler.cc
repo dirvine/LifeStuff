@@ -22,7 +22,7 @@
 * ============================================================================
 */
 
-#include "gtest/gtest.h"
+#include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/lifestuff/shared/maidsafe.h"
 #include "maidsafe/lifestuff/client/imhandler.h"

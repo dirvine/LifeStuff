@@ -283,7 +283,7 @@ int PdDir::AddElement(const std::string &ser_mdm,
         stmt2.bind(1, mdm.type());
         stmt2.bind(2, mdm.stats().c_str());
         stmt2.bind(3, mdm.tag().c_str());
-        boost::uint32_t current_time/* = GetDurationSinceEpoch()*/;
+        boost::uint32_t current_time/* = GetDurationSinceEpoch()*/(0);
         stmt2.bind(4, static_cast<int>(current_time));
         stmt2.bind(5, static_cast<int>(current_time));
         stmt2.bind(6, mdm.id());
@@ -307,7 +307,6 @@ int PdDir::AddElement(const std::string &ser_mdm,
     DLOG(ERROR) << "PdDir::AddElement - " << e.what() << std::endl;
     return kDBReadWriteException;
   }
-  return kSuccess;
 }
 
 int PdDir::ModifyMetaDataMap(const std::string &ser_mdm,
@@ -570,7 +569,7 @@ int PdDir::ChangeTime(const fs::path &file_name, char time_type) {
   }
 
   try {
-    boost::uint32_t current_time/* = GetDurationSinceEpoch()*/;
+    boost::uint32_t current_time/* = GetDurationSinceEpoch()*/(0);
     std::string s = "update mdm set " + time_field + " = ? where id = ?;";
     CppSQLite3Statement stmt = db_->compileStatement(s.c_str());
     // stmt.bind(1, (const unsigned char)current_time);

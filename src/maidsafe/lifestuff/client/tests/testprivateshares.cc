@@ -26,7 +26,7 @@
 
 #include "boost/filesystem.hpp"
 #include "boost/thread.hpp"
-#include "gtest/gtest.h"
+#include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/lifestuff/client/privateshares.h"
 
@@ -698,7 +698,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_TouchShare) {
   ASSERT_NE(boost::uint32_t(0), by_name.LastViewed()) << "Wrong timestamp.";
   boost::uint32_t last_view(by_name.LastViewed());
 
-  boost::this_thread::sleep(boost::posix_time::seconds(1));
+  Sleep(boost::posix_time::seconds(1));
   ASSERT_EQ(0 , psh_->MI_TouchShare(attributes[1], 1));
   ASSERT_EQ(0, psh_->MI_GetShareInfo(attributes[0], 0, &by_name)) <<
             "Failed to locate share by name";
@@ -738,7 +738,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_ListByRank) {
     for (int n = 0; n < r; ++n) {
       ASSERT_EQ(0 , psh_->MI_TouchShare(atts[0], 0));
     }
-    boost::this_thread::sleep(boost::posix_time::seconds(1));
+    Sleep(boost::posix_time::seconds(1));
   }
 
   ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, RANK,
@@ -779,7 +779,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_ListByLastViewed) {
   }
   for (int nn = 9; nn > -1; --nn) {
     ASSERT_EQ(0 , psh_->MI_TouchShare("NAME_" + IntToString(nn), 0));
-    boost::this_thread::sleep(boost::posix_time::seconds(1));
+    Sleep(boost::posix_time::seconds(1));
   }
 
   ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, LAST,

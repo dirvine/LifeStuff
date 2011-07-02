@@ -30,21 +30,33 @@
 #include <string>
 #include <vector>
 
+#ifdef __MSVC__
+#  pragma warning(disable: 4996)
+#  pragma warning(push)
+#  pragma warning(disable: 4127 4244 4267)
+#endif
+
 #include "boost/filesystem.hpp"
 #include "boost/multi_index_container.hpp"
 #include "boost/multi_index/composite_key.hpp"
 #include "boost/multi_index/member.hpp"
 #include "boost/multi_index/ordered_index.hpp"
+
 #include "boost/signals2.hpp"
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
+#include "maidsafe/lifestuff/client/filesystem/distributed_filesystem.pb.h"
+
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
 
 #include "maidsafe/lifestuff/shared/maidsafe.h"
 #include "maidsafe/lifestuff/shared/returncodes.h"
-#include "maidsafe/lifestuff/client/filesystem/distributed_filesystem.pb.h"
+
 #include "maidsafe/lifestuff/shared/version.h"
 
-#if MAIDSAFE_LIFESTUFF_CLIENT_VERSION != 101
+#if MAIDSAFE_LIFESTUFF_CLIENT_VERSION != 102
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-lifestuff library.
 #endif
@@ -76,9 +88,7 @@ void ModifyUpToDateDms(ModificationType modification_type,
 
 namespace maidsafe {
 
-namespace encrypt { 
-  class DataMap;
-}  // namespace encrypt
+namespace encrypt { struct DataMap; }
 
 class ChunkStore;
 
@@ -207,19 +217,15 @@ class SEHandler {
   bs2::connection ConnectToOnFileNetworkStatus(
       const OnFileNetworkStatus::slot_type &slot);
   bs2::connection ConnectToOnFileAdded(const OnFileAdded::slot_type &slot);
-  void ClearPendingChunks() {
-    boost::mutex::scoped_lock loch_lll(chunkmap_mutex_);
-    pending_chunks_.clear();
-    path_count_ = 0;
-  }
-int EncryptDataMap(maidsafe::encrypt::DataMap *data_map,
-                   const std::string &this_directory_key,
-                   const std::string &parent_directory_key,
-                   std::string *encrypted_data_map);
-int DecryptDataMap(const std::string &encrypted_data_map,
-                   const std::string &this_directory_key,
-                   const std::string &parent_directory_key,
-                   maidsafe::encrypt::DataMap *data_map);
+  void ClearPendingChunks();
+  int EncryptDataMap(maidsafe::encrypt::DataMap *data_map,
+                     const std::string &this_directory_key,
+                     const std::string &parent_directory_key,
+                     std::string *encrypted_data_map);
+  int DecryptDataMap(const std::string &encrypted_data_map,
+                     const std::string &this_directory_key,
+                     const std::string &parent_directory_key,
+                     maidsafe::encrypt::DataMap *data_map);
 
  private:
   SEHandler &operator=(const SEHandler &);

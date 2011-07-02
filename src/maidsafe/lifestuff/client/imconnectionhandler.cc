@@ -24,8 +24,8 @@
 
 #include "maidsafe/lifestuff/client/imconnectionhandler.h"
 
-#include <utility>
-#include "boost/bind.hpp"
+// #include <utility>
+// #include "boost/bind.hpp"
 //  #include "maidsafe/lifestuff/shared/packet.pb.h"
 
 namespace maidsafe {

@@ -53,7 +53,7 @@ NetworkStoreManager::NetworkStoreManager(
 void NetworkStoreManager::Init(
      const std::vector<dht::kademlia::Contact> &bootstrap_contacts,
      const dht::kademlia::JoinFunctor callback,
-     const boost::uint16_t &port) {
+     const boost::uint16_t &/*port*/) {
   dht::kademlia::TransportPtr transport;
   dht::kademlia::MessageHandlerPtr message_handler;
   dht::kademlia::AlternativeStorePtr alternative_store;
@@ -70,7 +70,7 @@ void NetworkStoreManager::Close(
 }
 
 void NetworkStoreManager::KeyUnique(const std::string &key,
-                                    bool check_local,
+                                    bool /*check_local*/,
                                     const dht::kademlia::FindValueFunctor &cb) {
   dht::kademlia::Key node_id(key);
   node_->FindValue(node_id, securifier_, cb);

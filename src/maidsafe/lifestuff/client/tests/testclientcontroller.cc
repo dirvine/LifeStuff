@@ -28,7 +28,7 @@
 
 #include "boost/filesystem/fstream.hpp"
 #include "boost/progress.hpp"
-#include "gtest/gtest.h"
+#include "maidsafe/common/test.h"
 //  #include <maidsafe/base/utils.h>
 #include "maidsafe/encrypt/self_encryption.h"
 #include "maidsafe/encrypt/data_map.h"
@@ -49,7 +49,7 @@ namespace test_cc {
 
 #ifdef MS_NETWORK_TEST
 void Sleep(const int &millisecs) {
-  boost::this_thread::sleep(boost::posix_time::milliseconds(millisecs));
+  Sleep(boost::posix_time::milliseconds(millisecs));
 #else
 void Sleep(const int&) {
 #endif
@@ -463,7 +463,7 @@ TEST_F(ClientControllerTest, DISABLED_FUNC_MAID_SaveSession) {
   // Save the session
   ASSERT_EQ(0, cc_->SaveSession());
   printf("\n\n\nSaved the session\n\n\n");
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
 //  network_test_.chunkstore()->Clear();
   printf("\n\n\nCleared the chunkstore\n\n\n");
   ss_->ResetSession();
@@ -971,7 +971,7 @@ TEST_F(ClientControllerTest, FUNC_MAID_ClearStaleMessages) {
   ASSERT_EQ(total_msgs, cc_->instant_messages_.size());
   ASSERT_EQ(total_msgs, cc_->received_messages_.size());
   printf("Before sleep to wait for message clear.\n");
-  boost::this_thread::sleep(boost::posix_time::seconds(21));
+  Sleep(boost::posix_time::seconds(21));
   printf("After sleep to wait for message clear.\n");
   ASSERT_EQ(size_t(0), cc_->received_messages_.size());
   cc_->logging_out_ = true;

@@ -18,7 +18,7 @@
 #include "boost/filesystem.hpp"
 #include "boost/scoped_ptr.hpp"
 #include "maidsafe/dht/kademlia/contact.h"
-#include "maidsafe/pki/maidsafevalidator.h"
+#include "maidsafe/pki/maidsafe_validator.h"
 #include "maidsafe/common/chunk_store.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
@@ -118,14 +118,14 @@ LocalStoreManager::~LocalStoreManager() {
       t = chunks_pending_.empty();
     }
     if (!t)
-      boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+      Sleep(boost::posix_time::milliseconds(100));
   }
 }
 
 void LocalStoreManager::Init(VoidFuncOneInt callback, const boost::uint16_t&) {
 #ifdef LOCAL_LifeStuffVAULT
   // Simulate knode join
-//  boost::this_thread::sleep(boost::posix_time::seconds(3));
+//  Sleep(boost::posix_time::seconds(3));
 #endif
   if (local_sm_dir_.empty())
     local_sm_dir_ = file_system::LocalStoreManagerDir().string();
@@ -158,11 +158,11 @@ void LocalStoreManager::Close(VoidFuncOneInt callback, bool) {
       t = chunks_pending_.empty();
     }
     if (!t)
-      boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+      Sleep(boost::posix_time::milliseconds(100));
   }
 #ifdef LOCAL_LifeStuffVAULT
   // Simulate chunk threadpool join and knode leave
-//  boost::this_thread::sleep(boost::posix_time::seconds(3));
+//  Sleep(boost::posix_time::seconds(3));
 #endif
   try {
     boost::mutex::scoped_lock loch(mutex_);
@@ -188,7 +188,7 @@ int LocalStoreManager::StoreChunk(const std::string &chunk_name,
                                   const std::string&) {
 //  #ifdef LOCAL_LifeStuffVAULT
 //  // Simulate knode lookup in AddToWatchList
-//  boost::this_thread::sleep(boost::posix_time::seconds(2));
+//  Sleep(boost::posix_time::seconds(2));
 //  #endif
   std::string hex_chunk_name(EncodeToHex(chunk_name));
   fs3::path file_path(local_sm_dir_ + "/StoreChunks");
@@ -236,12 +236,12 @@ int LocalStoreManager::StoreChunk(const std::string &chunk_name,
   return kChunkStorePending;
 }
 
-int LocalStoreManager::DeleteChunk(const std::string &chunk_name,
-                                   const boost::uint64_t &chunk_size,
+int LocalStoreManager::DeleteChunk(const std::string &/*chunk_name*/,
+                                   const boost::uint64_t &/*chunk_size*/,
                                    DirType, const std::string&) {
 #ifdef LOCAL_LifeStuffVAULT
   // Simulate knode lookup in RemoveFromWatchList
-//  boost::this_thread::sleep(boost::posix_time::seconds(2));
+//  Sleep(boost::posix_time::seconds(2));
 #endif
 /*
 //  ChunkType chunk_type = client_chunkstore_->chunk_type(chunk_name);
@@ -280,7 +280,7 @@ int LocalStoreManager::DeleteChunk(const std::string &chunk_name,
 bool LocalStoreManager::KeyUnique(const std::string &key, bool) {
 #ifdef LOCAL_LifeStuffVAULT
   // Simulate knode findvalue in AddToWatchList
-//  boost::this_thread::sleep(boost::posix_time::seconds(2));
+//  Sleep(boost::posix_time::seconds(2));
 #endif
   bool result = false;
   std::string hex_key(EncodeToHex(key));
@@ -398,7 +398,7 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
     const std::string &public_key) {
 #ifdef LOCAL_LifeStuffVAULT
   // Simulate knode lookup
-//  boost::this_thread::sleep(boost::posix_time::seconds(2));
+//  Sleep(boost::posix_time::seconds(2));
 #endif
   std::string hex_key(EncodeToHex(key));
   boost::mutex::scoped_lock loch(mutex_);
@@ -427,7 +427,8 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
     return kStoreManagerError;
   }
 
-  int deleted(values.size()), a(0);
+  size_t deleted(values.size());
+  int a(0);
   if (0 == values.size()) {
     try {
       std::string s("delete from network where key='" + hex_key + "';");
@@ -516,7 +517,7 @@ ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
                                                      const bool &append) {
 #ifdef LOCAL_LifeStuffVAULT
   // Simulate knode lookup
-//  boost::this_thread::sleep(boost::posix_time::seconds(2));
+//  Sleep(boost::posix_time::seconds(2));
 #endif
   try {
     if (key.length() != kKeySize) {
@@ -817,7 +818,7 @@ int LocalStoreManager::FindAndLoadChunk(const std::string &chunkname,
                                         std::string *data) {
 #ifdef LOCAL_LifeStuffVAULT
   // Simulate knode lookup
-//  boost::this_thread::sleep(boost::posix_time::seconds(2));
+//  Sleep(boost::posix_time::seconds(2));
 #endif
 
 //  if (client_chunkstore_->Load(chunkname, data) == kSuccess)
@@ -921,7 +922,7 @@ int LocalStoreManager::GetValue_FromDB(const std::string &key,
                                        std::vector<std::string> *results) {
 #ifdef LOCAL_LifeStuffVAULT
   // Simulate knode lookup
-//  boost::this_thread::sleep(boost::posix_time::seconds(2));
+//  Sleep(boost::posix_time::seconds(2));
 #endif
   results->clear();
   std::string hex_key = EncodeToHex(key);
@@ -986,16 +987,16 @@ void LocalStoreManager::CreateSerialisedSignedValue(
 }
 
 void LocalStoreManager::ExecuteReturnSignal(const std::string &chunkname,
-                                            ReturnCode rc) {
+                                            ReturnCode /*rc*/) {
   int sleep_seconds((RandomInt32() % 5) + 1);
-  boost::this_thread::sleep(boost::posix_time::seconds(sleep_seconds));
+  Sleep(boost::posix_time::seconds(sleep_seconds));
 //  sig_chunk_uploaded_(chunkname, rc);
 //  boost::mutex::scoped_lock loch_laggan(signal_mutex_);
   chunks_pending_.erase(chunkname);
 }
 
 void LocalStoreManager::ExecStringCallback(VoidFunctorOneString cb,
-                                           MaidsafeRpcResult result) {
+                                           MaidsafeRpcResult /*result*/) {
   std::string ser_result;
 //  GenericResponse response;
 //  response.set_result(result);

@@ -32,7 +32,18 @@
 #include "boost/filesystem.hpp"
 
 #include "maidsafe/lifestuff/shared/maidsafe.h"
+
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4127 4244 4267)
+#endif
+
 #include "maidsafe/lifestuff/client/filesystem/distributed_filesystem.pb.h"
+
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
+
 
 namespace fs = boost::filesystem;
 

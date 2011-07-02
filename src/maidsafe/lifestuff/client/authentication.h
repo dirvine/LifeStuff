@@ -27,7 +27,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "boost/cstdint.hpp"
 #include "maidsafe/passport/passport.h"
 #include "maidsafe/lifestuff/shared/maidsafe.h"
 #include "maidsafe/lifestuff/shared/returncodes.h"
@@ -73,10 +72,10 @@ class Authentication {
                        const std::string &password,
                        const std::string &serialised_datamap);
 
-  int CreateUserCredentials(const std::string &username,
-                            const std::string &pin,
-                            const std::string &password,
-                            const std::string &serialised_datamap) {}
+  int CreateUserCredentials(const std::string &/*username*/,
+                            const std::string &/*pin*/,
+                            const std::string &/*password*/,
+                            const std::string &/*serialised_datamap*/) {}
 
   void SaveSession(const std::string &serialised_master_datamap,
                    const VoidFuncOneInt &functor);

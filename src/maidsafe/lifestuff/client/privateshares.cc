@@ -172,7 +172,7 @@ int PrivateShareHandler::MI_DeleteContactsFromPrivateShare(
   if (private_share_participant_index.size() == 0)
     return -2013;
 
-  int deleted = participants->size();
+  size_t deleted = participants->size();
   while (!participants->empty()) {
     std::string public_name(participants->front());
     private_share_participant_set_key::iterator it =
@@ -180,7 +180,7 @@ int PrivateShareHandler::MI_DeleteContactsFromPrivateShare(
         boost::make_tuple(public_name, msid));
     if (it != private_share_participant_index.end()) {
       private_share_participant_index.erase(it);
-      deleted--;
+      --deleted;
     }
     participants->pop_front();
   }

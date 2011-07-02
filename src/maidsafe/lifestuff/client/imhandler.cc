@@ -24,9 +24,9 @@
 
 //  #include <maidsafe/maidsafe-dht_config.h>
 
-#include "maidsafe/common/crypto.h"
-#include "maidsafe/lifestuff/client/imhandler.h"
-#include "maidsafe/lifestuff/client/sessionsingleton.h"
+//  #include "maidsafe/common/crypto.h"
+//  #include "maidsafe/lifestuff/client/imhandler.h"
+//  #include "maidsafe/lifestuff/client/sessionsingleton.h"
 
 namespace maidsafe {
 

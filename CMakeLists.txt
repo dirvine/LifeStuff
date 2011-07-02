@@ -293,7 +293,15 @@ IF(UNIX)
                               PROPERTIES COMPILE_FLAGS "-w")
 
 ELSEIF(MSVC)
+  # Disabling C4512 'assignment operator could not be generated' caused by boost signals2 as per advice at http://lists.boost.org/boost-users/2009/01/44368.php
+  # Also disabling C4503 'decorated name length exceeded' caused by boost multi-index's and others' high template depth.
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4512 /wd4503 /WX")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /D \"QT_NO_DEBUG_OUTPUT\" /D \"QT_NO_WARNING_OUTPUT\" /D \"QT_NO_DEBUG_STREAM\"")
+  SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/filesystem/distributed_filesystem.pb.cc
+                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/lifestuff_messages.pb.cc
+                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/cppsqlite3.cc
+                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/sqlite3.c
+                              PROPERTIES COMPILE_FLAGS "/W0")
   SET_TARGET_PROPERTIES(${ALL_EXECUTABLES} PROPERTIES
                             LINK_FLAGS "/STACK:1048576"
                             LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${LINKER_LIBS_DIRS_RELEASE}"

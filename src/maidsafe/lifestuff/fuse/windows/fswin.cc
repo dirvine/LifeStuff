@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-
+/*
 #include "maidsafe/lifestuff/fuse/windows/fswin.h"
 
 #include <winbase.h>
@@ -37,7 +37,7 @@ THE SOFTWARE.
 #include "maidsafe/lifestuff/client/sessionsingleton.h"
 
 namespace fs = boost::filesystem;
-/*
+
 namespace fs_w_fuse {
 
 #ifdef __MSVC__
@@ -1347,7 +1347,7 @@ void Mount(char drive) {
   mounted_drive += ":";
   try {
     while (!fs::exists(mounted_drive)) {
-      boost::this_thread::sleep(boost::posix_time::milliseconds(50));
+      Sleep(boost::posix_time::milliseconds(50));
     }
     maidsafe::SessionSingleton::getInstance()->SetMounted(0);
 #ifdef DEBUG

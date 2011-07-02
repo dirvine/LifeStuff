@@ -25,6 +25,10 @@
 #ifndef MAIDSAFE_LIFESTUFF_CLIENT_PRIVATESHARES_H_
 #define MAIDSAFE_LIFESTUFF_CLIENT_PRIVATESHARES_H_
 
+#ifdef __MSVC__
+#  pragma warning(disable: 4503)
+#endif
+
 #include <string>
 #include <list>
 #include <vector>

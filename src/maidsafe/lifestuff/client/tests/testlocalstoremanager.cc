@@ -21,14 +21,24 @@
 * ============================================================================
 */
 
-#include "gtest/gtest.h"
-#include "boost/signals2/connection.hpp"
+#include "maidsafe/common/test.h"
 #include "maidsafe/common/chunk_store.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/crypto.h"
+
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4127 4244 4267)
+#endif
+#include "boost/signals2/connection.hpp"
+#include "maidsafe/lifestuff/client/lifestuff_messages.pb.h"
+
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
+
 #include "maidsafe/lifestuff/shared/filesystem.h"
 #include "maidsafe/lifestuff/client/localstoremanager.h"
-#include "maidsafe/lifestuff/client/lifestuff_messages.pb.h"
 #include "maidsafe/lifestuff/sharedtest/cachepassport.h"
 #include "maidsafe/lifestuff/sharedtest/mocksessionsingleton.h"
 #include "maidsafe/lifestuff/sharedtest/testcallback.h"
@@ -118,7 +128,7 @@ class LocalStoreManagerTest : public testing::Test {
 //    ASSERT_TRUE(client_chunkstore_->Init());
 //    int count(0);
 //    while (!client_chunkstore_->is_initialised() && count < 10000) {
-//      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+//      Sleep(boost::posix_time::milliseconds(10));
 //      count += 10;
 //    }
     sm_ = new LocalStoreManager(test_root_dir_);
@@ -321,7 +331,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_UpdatePacket) {
   }
 
   // Store several values with that same key
-  for (size_t a = 0; a < 5; ++a) {
+  for (int a = 0; a < 5; ++a) {
     gp.set_value("value" + IntToString(a));
     gp.set_value_signature(crypto::AsymSign(gp.value(), anmaid_private_key_));
     cb_.Reset();
@@ -397,7 +407,7 @@ TEST_F(LocalStoreManagerTest, DISABLED_BEH_MAID_StoreChunk) {
 
   sm_->StoreChunk(chunk_name, PRIVATE, "");
   while (count2 != 0) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    Sleep(boost::posix_time::milliseconds(500));
     {
       boost::mutex::scoped_lock loch_juan(m);
       count2 = count;
@@ -432,7 +442,7 @@ TEST_F(LocalStoreManagerTest, DISABLED_FUNC_MAID_StoreSeveralChunksWithSignals) 
   printf("Done adding chunks.\n");
 
   while (count2 != 0) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    Sleep(boost::posix_time::milliseconds(500));
     {
       boost::mutex::scoped_lock loch_juan(m);
       count2 = count;

@@ -14,7 +14,7 @@
 
 #include "boost/filesystem.hpp"
 #include "boost/thread.hpp"
-#include "gtest/gtest.h"
+#include "maidsafe/common/test.h"
 //  #include "maidsafe/maidsafe-dht.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/lifestuff/client/contacts.h"
@@ -348,7 +348,7 @@ TEST_F(ContactsTest, BEH_MAID_LastContact_Rank_Contacts) {
   boost::uint32_t time = mic.last_contact_;
   ASSERT_EQ(1, mic.rank_) << "Rank did not update";
 
-  boost::this_thread::sleep(boost::posix_time::seconds(1));
+  Sleep(boost::posix_time::seconds(1));
   ASSERT_EQ(0, sch_->SetLastContactRank(msc.PublicName())) <<
             "Problem modifying contact";
   ASSERT_EQ(0, sch_->GetContactInfo(msc.PublicName(), &mic)) <<

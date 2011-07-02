@@ -31,14 +31,24 @@
 #include <string>
 #include <vector>
 
+#include "maidsafe/passport/passport.h"
+
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4127 4244 4267)
+#endif
+
 #include "boost/utility.hpp"
 #include "boost/thread/once.hpp"
 #include "boost/scoped_ptr.hpp"
-#include "maidsafe/passport/passport.h"
+#include "maidsafe/lifestuff/client/filesystem/distributed_filesystem.pb.h"
+
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
 
 #include "maidsafe/lifestuff/client/contacts.h"
 #include "maidsafe/lifestuff/client/privateshares.h"
-#include "maidsafe/lifestuff/client/filesystem/distributed_filesystem.pb.h"
 #include "maidsafe/lifestuff/shared/filesystem.h"
 #include "maidsafe/lifestuff/shared/maidsafe.h"
 

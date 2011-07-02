@@ -31,8 +31,9 @@
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include "boost/filesystem/fstream.hpp"
 #include "maidsafe/common/crypto.h"
+#include "maidsafe/common/utils.h"
 #include "maidsafe/passport/passport.h"
-#include "maidsafe/passport/signaturepacket.pb.h"
+#include "maidsafe/passport/signature_packet.pb.h"
 
 #include "maidsafe/lifestuff/shared/filesystem.h"
 
@@ -76,8 +77,8 @@ inline void MakeKeys(const int &key_count,
   int need_keys = key_count - static_cast<int>(keys->size());
   if (need_keys > 0) {
     maidsafe::passport::CryptoKeyPairs kps(4096, 5);
-    kps.StartToCreateKeyPairs(need_keys);
-    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+    kps.StartToCreateKeyPairs(static_cast<int16_t>(need_keys));
+    maidsafe::Sleep(boost::posix_time::milliseconds(100));
     for (int i = 0; i < need_keys; ++i) {
       maidsafe::crypto::RsaKeyPair rsakp;
       if (!kps.GetKeyPair(&rsakp))

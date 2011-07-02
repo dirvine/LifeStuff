@@ -27,7 +27,7 @@
 #include "boost/filesystem.hpp"
 #include "boost/archive/text_oarchive.hpp"
 #include "boost/archive/text_iarchive.hpp"
-#include "gtest/gtest.h"
+#include "maidsafe/common/test.h"
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/encrypt/self_encryption.h"
 
@@ -96,7 +96,7 @@ class DataAtlasHandlerTest : public testing::Test {
 //    ASSERT_TRUE(client_chunkstore_->Init());
 //    int count(0);
 //    while (!client_chunkstore_->is_initialised() && count < 10000) {
-//      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+//      Sleep(boost::posix_time::milliseconds(10));
 //      count += 10;
 //    }
     std::shared_ptr<LocalStoreManager>

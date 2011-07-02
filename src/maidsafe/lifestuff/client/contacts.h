@@ -28,10 +28,21 @@
 #include <functional>
 #include <string>
 #include <vector>
+
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4127 4244 4267)
+#endif
+
 #include "boost/multi_index_container.hpp"
 #include "boost/multi_index/ordered_index.hpp"
 #include "boost/multi_index/identity.hpp"
 #include "boost/multi_index/member.hpp"
+
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
+
 
 namespace maidsafe {
 

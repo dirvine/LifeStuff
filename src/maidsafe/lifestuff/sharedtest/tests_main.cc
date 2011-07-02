@@ -24,7 +24,7 @@
 
 //  #include <maidsafe/base/log.h>
 #include "boost/filesystem.hpp"
-#include "gtest/gtest.h"
+#include "maidsafe/common/test.h"
 //  #include "maidsafe/lifestuff/sharedtest/networktest.h"
 
 int main(int argc, char **argv) {

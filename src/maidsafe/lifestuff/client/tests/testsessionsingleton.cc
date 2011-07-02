@@ -22,7 +22,7 @@
 * ============================================================================
 */
 
-#include "gtest/gtest.h"
+#include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/lifestuff/client/sessionsingleton.h"
 #include "maidsafe/lifestuff/sharedtest/cachepassport.h"
@@ -368,7 +368,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionPrivateSharesIO) {
 }
 
 TEST_F(SessionSingletonTest, BEH_MAID_PubUsernameList) {
-  for (size_t n = 0; n < 10; n++) {
+  for (int n = 0; n < 10; n++) {
     ASSERT_EQ(0, ss_->AddContact("pub_name_" + IntToString(n),
               "pub_key_" + IntToString(n),
               "full_name_" + IntToString(n),
@@ -379,12 +379,12 @@ TEST_F(SessionSingletonTest, BEH_MAID_PubUsernameList) {
   std::vector<std::string> publicusernames;
   ASSERT_EQ(0, ss_->GetPublicUsernameList(&publicusernames));
   ASSERT_EQ(size_t(10), publicusernames.size());
-  for (size_t a = 0; a < publicusernames.size(); ++a)
+  for (int a = 0; a < static_cast<int>(publicusernames.size()); ++a)
     ASSERT_EQ("pub_name_" + IntToString(a), publicusernames[a]);
 }
 
 TEST_F(SessionSingletonTest, BEH_MAID_ContactPublicKey) {
-  for (size_t n = 0; n < 10; n++) {
+  for (int n = 0; n < 10; n++) {
     ASSERT_EQ(0, ss_->AddContact("pub_name_" + IntToString(n),
               "pub_key_" + IntToString(n),
               "full_name_" + IntToString(n),
@@ -392,7 +392,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_ContactPublicKey) {
               "birthday_" + IntToString(n),
               'M', n, n, "city_" + IntToString(n), 'C', 0, 0));
   }
-  for (size_t a = 0; a < 10; ++a)
+  for (int a = 0; a < 10; ++a)
     ASSERT_EQ("pub_key_" + IntToString(a),
               ss_->GetContactPublicKey("pub_name_" + IntToString(a)));
 }

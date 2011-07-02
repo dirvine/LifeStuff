@@ -39,9 +39,9 @@
 
 namespace fs_w_fuse {
 
-void Mount(char drive) {}
+void Mount(char /*drive*/) {}
 
-bool UnMount(char drive) { return true;}
+bool UnMount(char /*drive*/) { return true;}
 
 }  // namespace fs_w_fuse
 

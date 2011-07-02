@@ -23,10 +23,10 @@
 */
 
 
-#include "gtest/gtest.h"
 #include "boost/bind.hpp"
 #include "boost/scoped_ptr.hpp"
 //  #include "maidsafe/transport/transportudt.h"
+#include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/lifestuff/client/imconnectionhandler.h"
 //  #include "maidsafe/common/packet.pb.h"
@@ -147,7 +147,7 @@ TEST_MS_NET(IMConnectionHandlerTest, BEH, MAID, IMHdlrSendMessage) {
       endpoint, &new_conn));
   std::string msg("Hello World!!");
   ASSERT_EQ(maidsafe::kSuccess, im_hdlr.SendMessage(trans_id, new_conn, msg));
-  boost::this_thread::sleep(boost::posix_time::seconds(2));
+  Sleep(boost::posix_time::seconds(2));
   ASSERT_EQ(msg, msgs_sent);
   ASSERT_EQ(maidsafe::kSuccess, im_hdlr.CloseConnection(trans_id, new_conn));
   udt_trans->Stop();
@@ -180,7 +180,7 @@ TEST_MS_NET(IMConnectionHandlerTest, FUNC, MAID, IMHdlrConnTimeout) {
   boost::uint32_t new_conn;
   ASSERT_EQ(maidsafe::kSuccess, im_hdlr.CreateConnection(trans_id,
       endpoint, &new_conn));
-  boost::this_thread::sleep(boost::posix_time::seconds(
+  Sleep(boost::posix_time::seconds(
       maidsafe::kConnectionTimeout + 1));
   ASSERT_EQ(maidsafe::kConnectionNotExists,
       im_hdlr.SendMessage(trans_id, new_conn, "abcd"));
@@ -216,19 +216,19 @@ TEST_MS_NET(IMConnectionHandlerTest, FUNC, MAID, IMHdlrResetConnTimeout) {
   boost::uint32_t new_conn;
   ASSERT_EQ(maidsafe::kSuccess, im_hdlr.CreateConnection(trans_id,
       endpoint, &new_conn));
-  boost::this_thread::sleep(boost::posix_time::seconds(
+  Sleep(boost::posix_time::seconds(
       maidsafe::kConnectionTimeout - 1));
   std::string msg("Hello World!!");
   ASSERT_EQ(maidsafe::kSuccess, im_hdlr.SendMessage(trans_id, new_conn, msg));
-  boost::this_thread::sleep(boost::posix_time::seconds(
+  Sleep(boost::posix_time::seconds(
       maidsafe::kConnectionTimeout - 1));
   ASSERT_EQ(msg, msgs_sent);
   msg = "Goodbye";
   ASSERT_EQ(maidsafe::kSuccess, im_hdlr.SendMessage(trans_id, new_conn, msg));
-  boost::this_thread::sleep(boost::posix_time::seconds(2));
+  Sleep(boost::posix_time::seconds(2));
   std::string reply_msg("See you");
   udt_trans->Send(reply_msg, ext_conn_id, false);
-  boost::this_thread::sleep(boost::posix_time::seconds(
+  Sleep(boost::posix_time::seconds(
       maidsafe::kConnectionTimeout - 3));
   ASSERT_EQ(maidsafe::kSuccess, im_hdlr.CloseConnection(trans_id, new_conn));
   ASSERT_EQ(msg, msgs_sent);
@@ -263,15 +263,15 @@ TEST_MS_NET(IMConnectionHandlerTest, FUNC, MAID, IMHdlrRemotePeerClosesConn) {
   boost::uint32_t new_conn;
   ASSERT_EQ(maidsafe::kSuccess, im_hdlr.CreateConnection(trans_id,
       endpoint, &new_conn));
-  boost::this_thread::sleep(boost::posix_time::seconds(
+  Sleep(boost::posix_time::seconds(
       maidsafe::kConnectionTimeout - 1));
   std::string msg("Hello World!!");
   ASSERT_EQ(maidsafe::kSuccess, im_hdlr.SendMessage(trans_id, new_conn, msg));
-  boost::this_thread::sleep(boost::posix_time::seconds(2));
+  Sleep(boost::posix_time::seconds(2));
   ASSERT_EQ(msg, msgs_sent);
   udt_trans->CloseConnection(ext_conn_id);
   msg = "Goodbye";
-  boost::this_thread::sleep(boost::posix_time::seconds(2));
+  Sleep(boost::posix_time::seconds(2));
   ASSERT_EQ(maidsafe::kConnectionDown,
       im_hdlr.SendMessage(trans_id, new_conn, msg));
   ASSERT_NE(msg, msgs_sent);
@@ -301,7 +301,7 @@ TEST_MS_NET(IMConnectionHandlerTest, BEH, MAID, IMHdlrAcceptConnection) {
   ASSERT_EQ(0, udt_trans->ConnectToSend(ip, port, "", 0, "", 0, true, &id));
   std::string msg("Hello");
   ASSERT_EQ(0, udt_trans->Send(msg, id, false));
-  boost::this_thread::sleep(boost::posix_time::seconds(2));
+  Sleep(boost::posix_time::seconds(2));
   ASSERT_EQ(msg, msgs_rec);
   ASSERT_NE(0, new_conn_accepted);
   ASSERT_EQ(maidsafe::kSuccess,
@@ -309,7 +309,7 @@ TEST_MS_NET(IMConnectionHandlerTest, BEH, MAID, IMHdlrAcceptConnection) {
   msg = "Goodbye";
   ASSERT_EQ(maidsafe::kSuccess,
       im_hdlr.SendMessage(trans_id, new_conn_accepted, msg));
-  boost::this_thread::sleep(boost::posix_time::seconds(2));
+  Sleep(boost::posix_time::seconds(2));
   ASSERT_EQ(msg, msgs_sent);
   ASSERT_EQ(maidsafe::kSuccess,
       im_hdlr.CloseConnection(trans_id, new_conn_accepted));
@@ -358,7 +358,7 @@ TEST_MS_NET(IMConnectionHandlerTest, FUNC, MAID, IMHdlrMultipleConnections) {
   ASSERT_EQ(0, udt_trans1->ConnectToSend(ip, port, "", 0, "", 0, true, &id));
   std::string msg("Hello -- from node1");
   ASSERT_EQ(0, udt_trans1->Send(msg, id, false));
-  boost::this_thread::sleep(boost::posix_time::seconds(2));
+  Sleep(boost::posix_time::seconds(2));
   ASSERT_EQ(msg, msgs_rec);
   boost::uint32_t conn_to_node1 = new_conn_accepted;
   ASSERT_EQ(maidsafe::kSuccess,
@@ -366,21 +366,21 @@ TEST_MS_NET(IMConnectionHandlerTest, FUNC, MAID, IMHdlrMultipleConnections) {
 
   msg = "Hello node2!!";
   ASSERT_EQ(maidsafe::kSuccess, im_hdlr.SendMessage(trans_id, new_conn, msg));
-  boost::this_thread::sleep(boost::posix_time::seconds(2));
+  Sleep(boost::posix_time::seconds(2));
   ASSERT_EQ(msg, msgs_sent);
   boost::uint32_t conn_hdlr_to_node2 = ext_conn_id;
 
   msg = "Hello node1";
   ASSERT_EQ(maidsafe::kSuccess,
       im_hdlr.SendMessage(trans_id, conn_to_node1, msg));
-  boost::this_thread::sleep(boost::posix_time::seconds(2));
+  Sleep(boost::posix_time::seconds(2));
   ASSERT_EQ(msg, msgs_sent);
 
   msg = "Hello Handler -- from node2";
   ASSERT_EQ(0, udt_trans2->Send(msg, conn_hdlr_to_node2, false));
-  boost::this_thread::sleep(boost::posix_time::seconds(2));
+  Sleep(boost::posix_time::seconds(2));
   ASSERT_EQ(msg, msgs_rec);
-  boost::this_thread::sleep(boost::posix_time::seconds(
+  Sleep(boost::posix_time::seconds(
       maidsafe::kConnectionTimeout - 3));
   ASSERT_EQ(maidsafe::kConnectionNotExists,
       im_hdlr.CloseConnection(trans_id, conn_to_node1));
@@ -388,7 +388,7 @@ TEST_MS_NET(IMConnectionHandlerTest, FUNC, MAID, IMHdlrMultipleConnections) {
   msg = "Goodbye";
   ASSERT_EQ(maidsafe::kSuccess,
       im_hdlr.SendMessage(trans_id, new_conn, msg));
-  boost::this_thread::sleep(boost::posix_time::seconds(2));
+  Sleep(boost::posix_time::seconds(2));
   ASSERT_EQ(msg, msgs_sent);
   ASSERT_EQ(maidsafe::kSuccess,
       im_hdlr.CloseConnection(trans_id, new_conn));

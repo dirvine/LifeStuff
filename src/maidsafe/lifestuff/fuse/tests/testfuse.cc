@@ -22,7 +22,7 @@
 * ============================================================================
 */
 
-#include <gtest/gtest.h>
+#include "maidsafe/common/test.h"
 
 //#include "maidsafe/lifestuff/sharedtest/localvaults.h"
 
@@ -104,7 +104,7 @@ class TestCallback {
           }
         }
       }
-      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+      Sleep(boost::posix_time::milliseconds(10));
     }
     {
       boost::mutex::scoped_lock lock_(*mutex_);
@@ -185,7 +185,7 @@ void UnmountAndLogout(maidsafe::ClientController *cc,
 #endif
   // Logout
   bool success = cc->Logout();
-  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  Sleep(boost::posix_time::seconds(60));
   ASSERT_TRUE(success);
   logged_in_ = false;
 }
@@ -227,16 +227,16 @@ void CreateUserLoginMount(maidsafe::ClientController *cc,
 
   if (ss->Username() == user) {
     ASSERT_EQ(maidsafe::USER_EXISTS, result);
-    boost::this_thread::sleep(boost::posix_time::seconds(5));
+    Sleep(boost::posix_time::seconds(5));
     ASSERT_TRUE(cc->ValidateUser(pw));
     logged_in_ = true;
-    boost::this_thread::sleep(boost::posix_time::seconds(5));
+    Sleep(boost::posix_time::seconds(5));
   } else {  // If user not logged in and session not started, create user
     ASSERT_EQ(maidsafe::NON_EXISTING_USER, result);
     ASSERT_TRUE(cc->CreateUser(user, pin, pw));
     ASSERT_TRUE(cc->CreatePublicUsername(public_name));
     logged_in_ = true;
-    boost::this_thread::sleep(boost::posix_time::seconds(10));
+    Sleep(boost::posix_time::seconds(10));
   }
   // Mount drive
   ASSERT_TRUE(ss->SetMounted(0));
@@ -260,9 +260,9 @@ void CreateUserLoginMount(maidsafe::ClientController *cc,
   std::string debug_mode("-d");
   ASSERT_TRUE(fsm.Mount(mount_point, debug_mode));
 #endif
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
+  Sleep(boost::posix_time::seconds(5));
   ASSERT_EQ(0, ss->Mounted());
-  boost::this_thread::sleep(boost::posix_time::seconds(20));
+  Sleep(boost::posix_time::seconds(20));
 }
 
 }  // namespace fs_?_fuse::fuse_test
@@ -350,9 +350,9 @@ TEST_F(FuseTest, FUNC_FUSE_RepeatedMount) {
     ASSERT_FALSE(fs::exists(mount_path_));
     printf("Logged out (%i)\n-------------------------------------\n\n", i+1);
   }
-//  //  boost::this_thread::sleep(boost::posix_time::seconds(5));
+//  //  Sleep(boost::posix_time::seconds(5));
 //  cc_->CloseConnection();
-//  boost::this_thread::sleep(boost::posix_time::seconds(5));
+//  Sleep(boost::posix_time::seconds(5));
 }
 
 TEST_F(FuseTest, FUNC_FUSE_MyFiles) {
@@ -454,7 +454,7 @@ TEST_F(FuseTest, FUNC_FUSE_MyFiles) {
         test_dir_0;
     ASSERT_TRUE(fs::create_directory(test_dir_1)) << "Couldn't create " <<
         test_dir_1;
-    boost::this_thread::sleep(boost::posix_time::seconds(30));
+    Sleep(boost::posix_time::seconds(30));
     success = (fs::exists(test_dir_0) && fs::exists(test_dir_1));
   }
   catch(const std::exception &e) {
@@ -464,25 +464,25 @@ TEST_F(FuseTest, FUNC_FUSE_MyFiles) {
   printf("Trying to create %s\n", fuse_test::test_myfile_[0].string().c_str());
   success = fuse_test::CreateRandomFile(fuse_test::test_myfile_[0].string(), 2,
                                         &fuse_test::pre_hash_myfile_[0]);
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
+  Sleep(boost::posix_time::seconds(5));
   ASSERT_TRUE(success);
   success = fuse_test::CreateRandomFile(fuse_test::test_myfile_[1].string(), 10,
                                         &fuse_test::pre_hash_myfile_[1]);
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
+  Sleep(boost::posix_time::seconds(5));
   success = fuse_test::CreateRandomFile(fuse_test::test_myfile_[2].string(),
                                         100, &fuse_test::pre_hash_myfile_[2]);
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
   success = fuse_test::CreateRandomFile(fuse_test::test_myfile_[3].string(),
                                         100, &fuse_test::pre_hash_myfile_[3]);
-  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  Sleep(boost::posix_time::seconds(60));
   success = fuse_test::CreateRandomFile(fuse_test::test_myfile_[4].string(),
                                         100, &fuse_test::pre_hash_myfile_[4]);
-  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  Sleep(boost::posix_time::seconds(60));
   maidsafe::SelfEncryption self_encryption;
   for (int i = 0; i < 5; ++i) {
     ASSERT_EQ(fuse_test::pre_hash_myfile_[i],
               self_encryption.SHA512(fuse_test::test_myfile_[i]));
-    boost::this_thread::sleep(boost::posix_time::seconds(5));
+    Sleep(boost::posix_time::seconds(5));
   }
 
   // 03. Logout, then login again.
@@ -508,7 +508,7 @@ TEST_F(FuseTest, FUNC_FUSE_MyFiles) {
                                   public_username1_, fsm_, &mount_path_);
 #endif
   printf("User 1 logged in.\n");
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
   ASSERT_TRUE(fs::exists(mount_path_)) << "Drive " << mount_path_ <<
       "didn't mount." << std::endl;
   printf("Mount path = %s\n", mount_path_.string().c_str());
@@ -520,7 +520,7 @@ TEST_F(FuseTest, FUNC_FUSE_MyFiles) {
     ASSERT_TRUE(fs::exists(fuse_test::test_myfile_[i]));
     ASSERT_EQ(fuse_test::pre_hash_myfile_[i],
               self_encryption.SHA512(fuse_test::test_myfile_[i]));
-    boost::this_thread::sleep(boost::posix_time::seconds(5));
+    Sleep(boost::posix_time::seconds(5));
   }
 
   // 05. Check a subdir can be renamed.
@@ -530,7 +530,7 @@ TEST_F(FuseTest, FUNC_FUSE_MyFiles) {
   fs::rename(test_dir_1, new_test_dir_1);
   fs::path new_file_4(new_test_dir_1);
   new_file_4 /= "test4.txt";
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
+  Sleep(boost::posix_time::seconds(5));
   ASSERT_FALSE(fs::exists(test_dir_1));
   ASSERT_TRUE(fs::exists(new_test_dir_1));
   ASSERT_TRUE(fs::exists(new_file_4));
@@ -559,7 +559,7 @@ TEST_F(FuseTest, FUNC_FUSE_MyFiles) {
                                   public_username2_, fsm_, &mount_path_);
 #endif
   printf("User 2 logged in.\n");
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
   ASSERT_TRUE(fs::exists(mount_path_)) << "Drive " << mount_path_ <<
       "didn't mount." << std::endl;
   printf("Mount path = %s\n", mount_path_.string().c_str());
@@ -571,14 +571,14 @@ TEST_F(FuseTest, FUNC_FUSE_MyFiles) {
   for (int i = 0; i < 5; ++i) {
     printf("Checking file %i\n", i);
     ASSERT_FALSE(fs::exists(fuse_test::test_myfile_[i]));
-    boost::this_thread::sleep(boost::posix_time::seconds(5));
+    Sleep(boost::posix_time::seconds(5));
   }
 // TODO(Fraser#5#): 2009-07-05 - Find out why directory_itr causes segfault
 //  fs::directory_iterator end_itr;
 //  int file_count(0);
 //  for (fs::directory_iterator itr(test_root); itr != end_itr; ++itr) {
 //    ++file_count;
-//    boost::this_thread::sleep(boost::posix_time::seconds(10));
+//    Sleep(boost::posix_time::seconds(10));
 //  }
 //  printf("In My Files, file count = %i\n", file_count);
 //  ASSERT_EQ(0, file_count);
@@ -627,10 +627,10 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
                                   public_username1_, fsm_, &mount_path_);
 #endif
   printf("User 1 logged in.\n");
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
   ASSERT_TRUE(fs::exists(mount_path_)) << "Drive " << mount_path_ <<
       "didn't mount." << std::endl;
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
   printf("Mount path = %s\n", mount_path_.string().c_str());
 
 #ifdef MAIDSAFE_WIN32
@@ -654,10 +654,10 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
                                   public_username2_, fsm_, &mount_path_);
 #endif
   printf("User 2 logged in.\n");
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
   ASSERT_TRUE(fs::exists(mount_path_)) << "Drive " << mount_path_ <<
       "didn't mount." << std::endl;
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
   printf("Mount path = %s\n", mount_path_.string().c_str());
 
 #ifdef MAIDSAFE_WIN32
@@ -681,10 +681,10 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
                                   public_username3_, fsm_, &mount_path_);
 #endif
   printf("User 3 logged in.\n");
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
   ASSERT_TRUE(fs::exists(mount_path_)) << "Drive " << mount_path_ <<
       "didn't mount." << std::endl;
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
   printf("Mount path = %s\n", mount_path_.string().c_str());
   ASSERT_EQ(0, cc_->AddContact(public_username1_));
   ASSERT_EQ(0, cc_->AddContact(public_username2_));
@@ -710,10 +710,10 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
                                   public_username2_, fsm_, &mount_path_);
 #endif
   printf("User 2 logged in.\n");
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
   ASSERT_TRUE(fs::exists(mount_path_)) << "Drive " << mount_path_ <<
       "didn't mount." << std::endl;
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
   printf("Mount path = %s\n", mount_path_.string().c_str());
   ASSERT_EQ(0, cc_->AddContact(public_username1_));
   ASSERT_EQ(0, cc_->AddContact(public_username3_));
@@ -739,10 +739,10 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
                                   public_username1_, fsm_, &mount_path_);
 #endif
   printf("User 1 logged in.\n");
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
   ASSERT_TRUE(fs::exists(mount_path_)) << "Drive " << mount_path_ <<
       "didn't mount." << std::endl;
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
   printf("Mount path = %s\n", mount_path_.string().c_str());
   ASSERT_EQ(0, cc_->AddContact(public_username2_));
   ASSERT_EQ(0, cc_->AddContact(public_username3_));
@@ -792,7 +792,7 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
 //        test_dir_0;
 //    ASSERT_TRUE(fs::create_directory(test_dir_1)) << "Couldn't create " <<
 //        test_dir_1;
-//    boost::this_thread::sleep(boost::posix_time::seconds(30));
+//    Sleep(boost::posix_time::seconds(30));
 //    success = (fs::exists(test_dir_0) && fs::exists(test_dir_1));
 //  }
 //  catch(const std::exception &e) {
@@ -802,23 +802,23 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
 //  printf("Trying to create %s\n", fuse_test::test_share_[0].string().c_str());
 //  success = fuse_test::CreateRandomFile(fuse_test::test_share_[0].string(),
 //                                        2, &fuse_test::pre_hash_share_[0]);
-//  boost::this_thread::sleep(boost::posix_time::seconds(5));
+//  Sleep(boost::posix_time::seconds(5));
 //  success = fuse_test::CreateRandomFile(fuse_test::test_share_[1].string(),
 //                                        10, &fuse_test::pre_hash_share_[1]);
-//  boost::this_thread::sleep(boost::posix_time::seconds(5));
+//  Sleep(boost::posix_time::seconds(5));
 //  success = fuse_test::CreateRandomFile(fuse_test::test_share_[2].string(),
 //                                        100, &fuse_test::pre_hash_share_[2]);
-//  boost::this_thread::sleep(boost::posix_time::seconds(10));
+//  Sleep(boost::posix_time::seconds(10));
 //  success = fuse_test::CreateRandomFile(fuse_test::test_share_[3].string(),
 //                                        100, &fuse_test::pre_hash_share_[3]);
-//  boost::this_thread::sleep(boost::posix_time::seconds(60));
+//  Sleep(boost::posix_time::seconds(60));
 //  success = fuse_test::CreateRandomFile(fuse_test::test_share_[4].string(),
 //                                        100, &fuse_test::pre_hash_share_[4]);
-//  boost::this_thread::sleep(boost::posix_time::seconds(60));
+//  Sleep(boost::posix_time::seconds(60));
 //  for (int i = 0; i < 5; ++i) {
 //    ASSERT_EQ(fuse_test::pre_hash_share_[i],
 //              self_encryption.SHA512(fuse_test::test_share_[i]));
-//    boost::this_thread::sleep(boost::posix_time::seconds(5));
+//    Sleep(boost::posix_time::seconds(5));
 //  }
 
 
@@ -845,7 +845,7 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
                                   public_username2_, fsm_, &mount_path_);
 #endif
   printf("User 2 logged in.\n");
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
   ASSERT_TRUE(fs::exists(mount_path_)) << "Drive " << mount_path_ <<
       "didn't mount." << std::endl;
   printf("Mount path = %s\n", mount_path_.string().c_str());
@@ -861,7 +861,7 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
 //  for (fs::directory_iterator itr(test_root); itr != end_itr; ++itr) {
 //    printf("Here 5\n");
 //    ++file_count;
-//    boost::this_thread::sleep(boost::posix_time::seconds(10));
+//    Sleep(boost::posix_time::seconds(10));
 //  }
 //  printf("In My Files, file count = %i\n", file_count);
 //  ASSERT_EQ(0, file_count);
@@ -879,7 +879,7 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
 //  for (int i = 0; i < 5; ++i) {
 //    printf("Checking file %i\n", i);
 //    ASSERT_TRUE(fs::exists(fuse_test::test_share_[i]));
-//    boost::this_thread::sleep(boost::posix_time::seconds(10));
+//    Sleep(boost::posix_time::seconds(10));
 //    printf("pre_hash[%i] = %s\n", i, fuse_test::pre_hash_share_[i].c_str());
 //    std::string hash = self_encryption.SHA512(fuse_test::test_share_[i]);
 //    printf("self_encryption.SHA512(fuse_test::test_share_[%i]) = %s\n",
@@ -905,7 +905,7 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
 //    printf("Trying to create %s\n", test_dir_.string().c_str());
 //    ASSERT_TRUE(fs::exists(test_root)) << test_root << " doesn't exist.";
 //    fs::create_directory(test_dir_);
-//    boost::this_thread::sleep(boost::posix_time::seconds(30));
+//    Sleep(boost::posix_time::seconds(30));
 //  }
 //  catch(const std::exception &e) {
 //    printf("%s\n", e.what());
@@ -917,16 +917,16 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
 //  catch(const std::exception &e) {
 //    printf("%s\n", e.what());
 //  }
-//  boost::this_thread::sleep(boost::posix_time::seconds(30));
+//  Sleep(boost::posix_time::seconds(30));
 //  ASSERT_FALSE(success);
 //  printf("Trying to create %s\n", test_txt_.string().c_str());
 //  std::string file_hash_("");
 //  success = fuse_test::CreateRandomFile(test_txt_.string(), 2, &file_hash_);
-//  boost::this_thread::sleep(boost::posix_time::seconds(10));
+//  Sleep(boost::posix_time::seconds(10));
 // // TODO(Fraser#5#): 2009-07-03 - Uncomment following line
 // //  ASSERT_FALSE(success);
 
-  boost::this_thread::sleep(boost::posix_time::seconds(20));
+  Sleep(boost::posix_time::seconds(20));
   std::string share_name = "TestShare";
   std::set<std::string> admins, readonlys;
   admins.insert(public_username1_);
@@ -936,12 +936,12 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
   test_root = kRoot;
   test_root /= kSharesSubdir[0][0];  // /Shares/Private/
   ASSERT_TRUE(fs::exists(test_root)) << test_root << " doesn't exist.";
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  Sleep(boost::posix_time::seconds(30));
   ASSERT_EQ(0, cc_->CreateNewShare(share_name, admins, readonlys));
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  Sleep(boost::posix_time::seconds(30));
   test_root /= share_name;  // /Shares/Private/TestShare/
   ASSERT_TRUE(fs::exists(test_root)) << test_root << " doesn't exist.";
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  Sleep(boost::posix_time::seconds(30));
 
 
   // 06. Save 5 files to 2 subdirs in new share.
@@ -965,7 +965,7 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
   try {
     ASSERT_TRUE(fs::create_directory(test_dir_0)) << "Couldn't create " <<
         test_dir_0;
-    boost::this_thread::sleep(boost::posix_time::seconds(30));
+    Sleep(boost::posix_time::seconds(30));
     success = (fs::exists(test_dir_0));
   }
   catch(const std::exception &e) {
@@ -976,7 +976,7 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
   try {
     ASSERT_TRUE(fs::create_directory(test_dir_1)) << "Couldn't create " <<
         test_dir_1;
-    boost::this_thread::sleep(boost::posix_time::seconds(30));
+    Sleep(boost::posix_time::seconds(30));
     success = (fs::exists(test_dir_1));
   }
   catch(const std::exception &e) {
@@ -987,25 +987,25 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
   printf("Trying to create %s\n", fuse_test::test_share_[5].string().c_str());
   success = fuse_test::CreateRandomFile(fuse_test::test_share_[5].string(),
                                          2, &fuse_test::pre_hash_share_[5]);
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
+  Sleep(boost::posix_time::seconds(5));
   success = fuse_test::CreateRandomFile(fuse_test::test_share_[6].string(),
                                          10, &fuse_test::pre_hash_share_[6]);
-  boost::this_thread::sleep(boost::posix_time::seconds(5));
+  Sleep(boost::posix_time::seconds(5));
   success = fuse_test::CreateRandomFile(fuse_test::test_share_[7].string(),
                                          100, &fuse_test::pre_hash_share_[7]);
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
   success = fuse_test::CreateRandomFile(fuse_test::test_share_[8].string(),
                                          100, &fuse_test::pre_hash_share_[8]);
-  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  Sleep(boost::posix_time::seconds(60));
   success = fuse_test::CreateRandomFile(fuse_test::test_share_[9].string(),
                                          100, &fuse_test::pre_hash_share_[9]);
-  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  Sleep(boost::posix_time::seconds(60));
 
   maidsafe::SelfEncryption self_encryption;
   for (int i = 5; i < 10; ++i) {
     ASSERT_EQ(fuse_test::pre_hash_share_[i],
               self_encryption.SHA512(fuse_test::test_share_[i]));
-    boost::this_thread::sleep(boost::posix_time::seconds(5));
+    Sleep(boost::posix_time::seconds(5));
   }
 
 
@@ -1032,13 +1032,13 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
                                   public_username3_, fsm_, &mount_path_);
 #endif
   printf("User 3 logged in.\n");
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
   ASSERT_TRUE(fs::exists(mount_path_)) << "Drive " << mount_path_ <<
       "didn't mount." << std::endl;
   printf("Mount path = %s\n", mount_path_.string().c_str());
   // Get messages to add share
   ASSERT_TRUE(cc_->GetMessages());
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  Sleep(boost::posix_time::seconds(30));
   std::list<packethandler::InstantMessage> messages;
   packethandler::InstantMessage im;
   ASSERT_EQ(0, cc_->GetInstantMessages(&messages));
@@ -1059,9 +1059,9 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
   test_root = kRoot;
   test_root /= kSharesSubdir[0][0];  // /Shares/Private/
   ASSERT_TRUE(fs::exists(test_root)) << test_root << " doesn't exist.";
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  Sleep(boost::posix_time::seconds(30));
   ASSERT_EQ(0, cc_->HandleReceivedShare(im.privateshare_notification(), ""));
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  Sleep(boost::posix_time::seconds(30));
 
 
   // 08. Check /Shares/Private has files and that they are read-only.
@@ -1069,7 +1069,7 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
   for (int i = 5; i < 10; ++i) {
     printf("Checking file %i\n", i);
     ASSERT_TRUE(fs::exists(fuse_test::test_share_[i]));
-    boost::this_thread::sleep(boost::posix_time::seconds(10));
+    Sleep(boost::posix_time::seconds(10));
     printf("pre_hash[%i] = %s\n", i, fuse_test::pre_hash_share_[i].c_str());
     std::string hash = self_encryption.SHA512(fuse_test::test_share_[i]);
     printf("self_encryption.SHA512(fuse_test::test_share_[%i]) = %s\n",
@@ -1111,13 +1111,13 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
                                   public_username1_, fsm_, &mount_path_);
 #endif
   printf("User 1 logged in.\n");
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
   ASSERT_TRUE(fs::exists(mount_path_)) << "Drive " << mount_path_ <<
       "didn't mount." << std::endl;
   printf("Mount path = %s\n", mount_path_.string().c_str());
   // Get messages to add share
   ASSERT_TRUE(cc_->GetMessages());
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  Sleep(boost::posix_time::seconds(30));
   messages.clear();
   ASSERT_EQ(0, cc_->GetInstantMessages(&messages));
   ASSERT_EQ(static_cast<unsigned int>(3), messages.size());
@@ -1140,9 +1140,9 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
   test_root = kRoot;
   test_root /= kSharesSubdir[0][0];  // /Shares/Private/
   ASSERT_TRUE(fs::exists(test_root)) << test_root << " doesn't exist.";
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  Sleep(boost::posix_time::seconds(30));
   ASSERT_EQ(0, cc_->HandleReceivedShare(im.privateshare_notification(), ""));
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  Sleep(boost::posix_time::seconds(30));
 
 
   // 10. Check /Shares/Private has files and that they can be modified.
@@ -1150,7 +1150,7 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
   for (int i = 5; i < 10; ++i) {
     printf("Checking file %i\n", i);
     ASSERT_TRUE(fs::exists(fuse_test::test_share_[i]));
-    boost::this_thread::sleep(boost::posix_time::seconds(10));
+    Sleep(boost::posix_time::seconds(10));
     printf("pre_hash[%i] = %s\n", i, fuse_test::pre_hash_share_[i].c_str());
     std::string hash = self_encryption.SHA512(fuse_test::test_share_[i]);
     printf("self_encryption.SHA512(fuse_test::test_share_[%i]) = %s\n",
@@ -1181,7 +1181,7 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
   success = false;
   try {
     fs::rename(fuse_test::test_share_[5], new_test_file_5);
-    boost::this_thread::sleep(boost::posix_time::seconds(30));
+    Sleep(boost::posix_time::seconds(30));
     success = true;
   }
   catch(const std::exception&) {}
@@ -1193,7 +1193,7 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
     printf("%s exists OK.\n", fuse_test::test_share_[6].string().c_str());
     // TODO(Fraser#5#): 2009-07-23 - Uncomment lines below
 //    fs::remove(fuse_test::test_share_[6]);
-//    boost::this_thread::sleep(boost::posix_time::seconds(30));
+//    Sleep(boost::posix_time::seconds(30));
     success = true;
   }
   catch(const std::exception&) {}
@@ -1213,10 +1213,10 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
   recs.push_back(public_username2_);
   ASSERT_EQ(0, cc_->SendInstantFile(&test_file,
                                     kTestMessage, recs));
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  Sleep(boost::posix_time::seconds(30));
   ASSERT_EQ(0, cc_->SendInstantMessage(fuse_test::pre_hash_share_[7],
                                        recs));
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  Sleep(boost::posix_time::seconds(30));
 
 
   // 12. Logout then login as user 2.
@@ -1242,7 +1242,7 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
                                   public_username2_, fsm_, &mount_path_);
 #endif
   printf("User 2 logged in.\n");
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
   ASSERT_TRUE(fs::exists(mount_path_)) << "Drive " << mount_path_ <<
       "didn't mount." << std::endl;
   printf("Mount path = %s\n", mount_path_.string().c_str());
@@ -1254,15 +1254,15 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
   test_root = kRoot;
   test_root /= kSharesSubdir[0][0];  // /Shares/Private/
   ASSERT_TRUE(fs::exists(test_root)) << test_root << " doesn't exist.";
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  Sleep(boost::posix_time::seconds(30));
   test_root /= share_name;  // /Shares/Private/TestShare/
   ASSERT_TRUE(fs::exists(test_root)) << test_root << " doesn't exist.";
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  Sleep(boost::posix_time::seconds(30));
   printf("Checking modified file 5 (%s)\n", new_test_file_5.string().c_str());
   ASSERT_FALSE(fs::exists(fuse_test::test_share_[5]));
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
   ASSERT_TRUE(fs::exists(new_test_file_5));
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
   printf("pre_hash[5] = %s\n", fuse_test::pre_hash_share_[5].c_str());
   hash = self_encryption.SHA512(new_test_file_5);
   printf("self_encryption.SHA512(new_test_file_5) = %s\n", hash.c_str());
@@ -1272,12 +1272,12 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
   printf("Checking modified file 6\n");
   // TODO(Fraser#5#): 2009-07-23 - Uncomment lines below
 //  ASSERT_FALSE(fs::exists(fuse_test::test_share_[6]));
-//  boost::this_thread::sleep(boost::posix_time::seconds(10));
+//  Sleep(boost::posix_time::seconds(10));
 
   // Check file 7 is unmodified
   printf("Checking file 7\n");
   ASSERT_TRUE(fs::exists(fuse_test::test_share_[7]));
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
   printf("pre_hash[7] = %s\n", fuse_test::pre_hash_share_[7].c_str());
   hash = self_encryption.SHA512(fuse_test::test_share_[7]);
   printf("self_encryption.SHA512(fuse_test::test_share_[7]) = %s\n", hash.c_str());
@@ -1286,7 +1286,7 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
   // Check file 8 is unmodified
   printf("Checking file 8\n");
   ASSERT_TRUE(fs::exists(fuse_test::test_share_[8]));
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
   printf("pre_hash[8] = %s\n", fuse_test::pre_hash_share_[8].c_str());
   hash = self_encryption.SHA512(fuse_test::test_share_[8]);
   printf("self_encryption.SHA512(fuse_test::test_share_[8]) = %s\n", hash.c_str());
@@ -1295,9 +1295,9 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
   // Check modifications to "TestDir1" affecting file 9
   printf("Checking modified file 9\n");
   ASSERT_FALSE(fs::exists(fuse_test::test_share_[9]));
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
   ASSERT_TRUE(fs::exists(new_test_file_9));
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(10));
   printf("pre_hash[9] = %s\n", fuse_test::pre_hash_share_[9].c_str());
   hash = self_encryption.SHA512(new_test_file_9);
   printf("self_encryption.SHA512(new_test_file_9) = %s\n", hash.c_str());
@@ -1309,7 +1309,7 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
   printf("Gettimg messages.\n");
   // Get messages to add share
   ASSERT_TRUE(cc_->GetMessages());
-  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  Sleep(boost::posix_time::seconds(30));
   messages.clear();
   ASSERT_EQ(0, cc_->GetInstantMessages(&messages));
   ASSERT_EQ(static_cast<unsigned int>(4), messages.size());

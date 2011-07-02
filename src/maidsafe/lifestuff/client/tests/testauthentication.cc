@@ -22,8 +22,7 @@
 * ============================================================================
 */
 
-#include "gtest/gtest.h"
-
+#include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/lifestuff/shared/filesystem.h"
 #include "maidsafe/lifestuff/client/authentication.h"
@@ -160,7 +159,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserOnce) {
                                                        password_, ser_dm_));
   ASSERT_EQ(username_, ss_->Username());
   ASSERT_EQ(pin_, ss_->Pin());
-//  boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+//  Sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(password_, ss_->Password());
 }
 

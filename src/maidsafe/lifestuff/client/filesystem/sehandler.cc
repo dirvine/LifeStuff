@@ -22,28 +22,41 @@
 *
 * ============================================================================
 */
+
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4996)
+#endif
+
+#include "maidsafe/lifestuff/client/filesystem/sehandler.h"
+
 #include <cstdint>
 #include <iostream>  // NOLINT
 #include <memory>
 #include <sstream>
 
-#include "maidsafe/lifestuff/client/filesystem/sehandler.h"
 #include "boost/archive/text_oarchive.hpp"
 #include "boost/archive/text_iarchive.hpp"
 #include "boost/filesystem.hpp"
 #include "boost/filesystem/fstream.hpp"
+#include "boost/serialization/serialization.hpp"
+
+#ifdef __MSVC__
+#  pragma warning(pop)
+#  pragma warning(disable: 4505)
+#endif
+
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/self_encryption.h"
 #include "maidsafe/encrypt/data_map.h"
-#include "maidsafe/common/crypto.h"
 #include "maidsafe/common/chunk_store.h"
+#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/client/filesystem/dataatlashandler.h"
 #include "maidsafe/lifestuff/client/clientutils.h"
 #include "maidsafe/lifestuff/client/sessionsingleton.h"
 #include "maidsafe/lifestuff/client/packet_manager.h"
-#include "boost/serialization/serialization.hpp"
 
-// using namespace maidsafe::encrypt;
+
 namespace arg = std::placeholders;
 
 namespace maidsafe {
@@ -71,7 +84,7 @@ SEHandler::~SEHandler() {
 //      }
     }
     if (!pendings_done)
-      boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+      Sleep(boost::posix_time::milliseconds(100));
   }
   connection_to_chunk_uploads_.disconnect();
 }
@@ -118,9 +131,7 @@ ItemType SEHandler::CheckEntry(const fs::path &absolute_path,
     is_empty = fs::is_empty(absolute_path);
   }
   catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("In SEHandler::CheckEntry, %s\n", e.what());
-#endif
+    DLOG(ERROR) << "In SEHandler::CheckEntry: " << e.what();
     return UNKNOWN;
   }
 
@@ -132,9 +143,7 @@ ItemType SEHandler::CheckEntry(const fs::path &absolute_path,
       test.close();
     }
     catch(const std::exception &e) {
-#ifdef DEBUG
-      printf("In SEHandler::CheckEntry, %s\n", e.what());
-#endif
+      DLOG(ERROR) << "In SEHandler::CheckEntry: " << e.what();
       return LOCKED_FILE;
     }
     // TODO(Fraser#5#): 2010-03-08 - This fails in Windows - fix.
@@ -490,9 +499,7 @@ int SEHandler::EncryptDb(const fs::path &dir_path,
       return kEncryptionDbMissing;
   }
   catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("SEHandler::EncryptDb - Can't check DB path - %s\n", e.what());
-#endif
+    DLOG(ERROR) << "In SEHandler::EncryptDb: Can't check DB path: " << e.what();
     return kEncryptionDbMissing;
   }
   std::string file_hash(crypto::HashFile<crypto::SHA512>(db_path));
@@ -586,7 +593,7 @@ int SEHandler::DecryptDb(const fs::path &dir_path,
                          const std::string &dir_key,
                          const std::string &msid,
                          bool data_map_encrypted,
-                         bool overwrite) {
+                         bool /*overwrite*/) {
 #ifdef DEBUG
 //  printf("SEHandler::DecryptDb - dir_path(%s) type(%i) encrypted(%i) key(%s)",
 //         dir_path.string().c_str(), dir_type, data_map_encrypted,
@@ -654,9 +661,7 @@ int SEHandler::DecryptDb(const fs::path &dir_path,
       ParseFromString(&data_map, retrieved_encrypted_data_map);
     }
     catch(const std::exception &e) {
-#ifdef DEBUG
-      printf("DecryptDb: Can't parse data_map - %s\n", e.what());
-#endif
+      DLOG(ERROR) << "DecryptDb: Can't parse data_map - " << e.what();
       return kDecryptDbFailure;
     }
   }
@@ -682,16 +687,16 @@ int SEHandler::DecryptDb(const fs::path &dir_path,
 //    return kDecryptDbFailure;
 //  } else {
 //    AddToUpToDateDms(dir_key, retrieved_encrypted_data_map);
-//    return kSuccess;
+    return kSuccess;
 //  }
 }
 
 int SEHandler::LoadChunks(const encrypt::DataMap &data_map,
-                          std::vector<fs::path> *chunk_paths) {
+                          std::vector<fs::path> * /*chunk_paths*/) {
   int result(kSuccess);
   for (int i = 0; i < data_map.chunks.size(); ++i) {
     std::string data;
-    int n/* = store_manager_->LoadChunk(data_map.chunks[i].hash, &data)*/;
+    int n(0)/* = store_manager_->LoadChunk(data_map.chunks[i].hash, &data)*/;
 #ifdef DEBUG
 //    printf("SEHandler::LoadChunks %d of %d, chunk(%s): result(%d)\n",
 //           i + 1, data_map.encrypted_chunk_name_size(),
@@ -744,16 +749,14 @@ int SEHandler::AddChunksToChunkstore(const encrypt::DataMap &data_map) {
     // If this succeeds, chunk is moved to chunkstore.  If not, clean up temp.
     fs::path temp_chunk(file_system::TempDir() /
                         EncodeToHex(data_map.chunks[j].hash));
-    int res/* = client_chunkstore_->AddChunkToOutgoing(
+    int res(0)/* = client_chunkstore_->AddChunkToOutgoing(
               data_map.chunks[j].hash, temp_chunk)*/;
     if (res != kSuccess) {
       try {
         fs::remove(temp_chunk);
       }
       catch(const std::exception &e) {
-#ifdef DEBUG
-        printf("SEHandler::AddChunksToChunkstore: %s\n", e.what());
-#endif
+        DLOG(ERROR) << "SEHandler::AddChunksToChunkstore: " << e.what();
       }
       if (res != kChunkExistsInChunkstore)
         result = kChunkstoreError;
@@ -811,9 +814,9 @@ void SEHandler::ChunksToMultiIndex(const encrypt::DataMap &data_map,
   }
 }
 
-void SEHandler::StoreChunksToNetwork(const encrypt::DataMap &data_map,
-                                     const DirType &dir_type,
-                                     const std::string &msid) {
+void SEHandler::StoreChunksToNetwork(const encrypt::DataMap &/*data_map*/,
+                                     const DirType &/*dir_type*/,
+                                     const std::string &/*msid*/) {
 //  for (int j = 0; j < data_map.chunks.size(); ++j)
 //  store_manager_->StoreChunk(data_map.chunks[j].hash, dir_type,
 //                             msid);
@@ -947,6 +950,12 @@ bs2::connection SEHandler::ConnectToOnFileAdded(
   return file_added_.connect(slot);
 }
 
+void SEHandler::ClearPendingChunks() {
+  boost::mutex::scoped_lock loch_lll(chunkmap_mutex_);
+  pending_chunks_.clear();
+  path_count_ = 0;
+}
+
 bool SEHandler::SerializeToString(maidsafe::encrypt::DataMap *data_map,
                                   std::string& serialized) {
   std::stringstream string_stream;
@@ -1024,7 +1033,6 @@ int SEHandler::DecryptDataMap(const std::string &encrypted_data_map,
   }
   return kSuccess;
 }
-
 
 bool SEHandler::ResizeObfuscationHash(const std::string &input,
                            const size_t &required_size,

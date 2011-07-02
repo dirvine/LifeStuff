@@ -25,7 +25,7 @@
 #include "maidsafe/lifestuff/client/clientcontroller.h"
 
 #ifdef MAIDSAFE_WIN32
-#include <shlwapi.h>
+#  include <shlwapi.h>
 #endif
 
 #include "boost/archive/text_oarchive.hpp"
@@ -37,14 +37,15 @@
 #include "maidsafe/common/chunk_store.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/client/filesystem/dataatlashandler.h"
 #include "maidsafe/lifestuff/client/clientutils.h"
 #include "maidsafe/lifestuff/log.h"
 
 #if defined LOCAL_LifeStuffVAULT && !defined MS_NETWORK_TEST
-#include "maidsafe/lifestuff/client/localstoremanager.h"
+#  include "maidsafe/lifestuff/client/localstoremanager.h"
 #else
-#include "maidsafe/lifestuff/client/maidstoremanager.h"
+#  include "maidsafe/lifestuff/client/maidstoremanager.h"
 #endif
 
 namespace arg = std::placeholders;
@@ -99,7 +100,7 @@ void PacketOpCallback(const int &store_manager_result, boost::mutex *mutex,
 
 ClientController::~ClientController() {}
 
-int ClientController::Init(boost::uint8_t k) {
+int ClientController::Init(boost::uint8_t /*k*/) {
   if (initialised_) {
     DLOG(INFO) << "CC::Init - Already initialised." << std::endl;
     return 0;
@@ -382,7 +383,7 @@ bool ClientController::ValidateUser(const std::string &password) {
   return true;
 }
 
-void ClientController::CloseConnection(bool clean_up_transport) {
+void ClientController::CloseConnection(bool /*clean_up_transport*/) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::CloseConnection - Not initialised.\n");
@@ -706,7 +707,7 @@ void ClientController::ClearStaleMessages() {
     int round(0);
     while (round < 2) {
       if (!logging_out_) {
-        boost::this_thread::sleep(boost::posix_time::seconds(5));
+        Sleep(boost::posix_time::seconds(5));
         ++round;
       } else {
         return;
@@ -1827,7 +1828,7 @@ OwnLocalVaultResult ClientController::SetLocalVaultOwned(
                  const_cast<ClientController*>(this), arg::_1, arg::_2,
                  &callback_arrived, &result));
   while (!callback_arrived)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
+    Sleep(boost::posix_time::milliseconds(50));
   return result;
 }
 
@@ -1867,7 +1868,7 @@ VaultOwnershipStatus ClientController::LocalVaultOwned() const {
   sm_->LocalVaultOwned(std::bind(&ClientController::LocalVaultOwnedCallback,
       const_cast<ClientController*>(this), arg::_1, &callback_arrived, &result));
   while (!callback_arrived)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    Sleep(boost::posix_time::milliseconds(500));
   return result;
 }
 
@@ -1933,10 +1934,7 @@ int ClientController::RemoveElement(const std::string &element_path) {
       fs::remove_all(full_path);
   }
   catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("ClientController::RemoveElement - Failed to remove: %s.\n",
-           e.what());
-#endif
+    DLOG(ERROR) << "CC::RemoveElement - Failed to remove: " << e.what();
   }
   return 0;
 }
@@ -1988,8 +1986,8 @@ int ClientController::PathDistinction(const std::string &path,
         return 0;
       }
       share = path_loc.substr(search.length() + 1);
-      std::string share_name("");
-      for (unsigned int nn = 0; nn < share.length(); nn++) {
+      std::string share_name;
+      for (size_t nn = 0; nn != share.length(); ++nn) {
         if (share.at(nn) == '/' || share.at(nn) == '\\')
           nn = share.length();
         else
@@ -2066,10 +2064,7 @@ int ClientController::GetDb(const std::string &orig_path,
     }
   }
   catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("ClientController::GetDb - Problems with the db path: %s\n",
-           e.what());
-#endif
+    DLOG(ERROR) << "CC::GetDb - Problems with the db path: " << e.what();
   }
   if (dah->GetDirKey(parent_path, &dir_key)) {
 #ifdef DEBUG
@@ -2152,9 +2147,7 @@ int ClientController::RemoveDb(const std::string &path) {
     fs::remove_all(dbpath);
   }
   catch(const std::exception &exception) {
-#ifdef DEBUG
-    printf("%s\n", exception.what());
-#endif
+    DLOG(ERROR) << exception.what();
   }
   db_enc_queue_.erase(path);
   RemoveFromPendingFiles(path);
@@ -2334,9 +2327,7 @@ char ClientController::DriveLetter() {
       exists = fs::exists(dr);
     }
     catch(const std::exception &exception) {
-#ifdef DEBUG
-      printf("Error: %s\n", exception.what());
-#endif
+      DLOG(ERROR) << exception.what();
     }
     if (!exists) {
       return drive;

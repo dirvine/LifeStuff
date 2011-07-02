@@ -23,6 +23,9 @@
 */
 
 #include "maidsafe/lifestuff/client/clientutils.h"
+#include <algorithm>
+#include <cctype>
+#include <functional>
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/lifestuff/client/sessionsingleton.h"
 
@@ -45,12 +48,10 @@ std::string TidyPath(const std::string &original_path) {
   return amended_path;
 }
 
-std::string StringToLowercase(const std::string &str) {
-  std::string lowercase;
-  for (size_t i = 0; i < str.length(); ++i) {
-    lowercase += tolower(str.at(i));
-  }
-  return lowercase;
+std::string StringToLowercase(std::string str) {
+  std::transform(str.begin(), str.end(), str.begin(),
+                 std::ptr_fun<int, int>(std::tolower));
+  return str;
 }
 
 ClientUtils::ClientUtils() : ss_(SessionSingleton::getInstance()) {}

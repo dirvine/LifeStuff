@@ -22,10 +22,10 @@
 * ============================================================================
 */
 
-#include "gtest/gtest.h"
 #include "boost/filesystem.hpp"
 #include "boost/thread.hpp"
 #include "boost/scoped_ptr.hpp"
+#include "maidsafe/common/test.h"
 #include "maidsafe/encrypt/self_encryption.h"
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/lifestuff/client/filesystem/pddir.h"
@@ -1021,7 +1021,7 @@ TEST_F(PdDirTest, BEH_MAID_ChangeMtime) {
   // wait 2 seconds
   // std::cout << "Waiting";
   for (int i = 0; i < 20; ++i) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+    Sleep(boost::posix_time::milliseconds(100));
     // std::cout << ".";
   }
   // std::cout << std::endl;
@@ -1104,7 +1104,7 @@ TEST_F(PdDirTest, BEH_MAID_ChangeAtime) {
   // wait 2 seconds
   // std::cout << "Waiting";
   for (int i = 0; i < 20; ++i) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+    Sleep(boost::posix_time::milliseconds(100));
     // std::cout << ".";
   }
   // std::cout << std::endl;

@@ -24,11 +24,11 @@
 
 #include "boost/filesystem.hpp"
 #include "boost/filesystem/fstream.hpp"
-#include "gtest/gtest.h"
-#include "maidsafe/encrypt/data_map.h"
-#include "maidsafe/encrypt/self_encryption.h"
+#include "maidsafe/common/test.h"
 #include "maidsafe/common/chunk_store.h"
 #include "maidsafe/common/crypto.h"
+#include "maidsafe/encrypt/data_map.h"
+#include "maidsafe/encrypt/self_encryption.h"
 #include "maidsafe/lifestuff/shared/filesystem.h"
 #include "maidsafe/lifestuff/client/filesystem/dataatlashandler.h"
 #include "maidsafe/lifestuff/client/filesystem/sehandler.h"
@@ -179,9 +179,9 @@ class SEHandlerTest : public testing::Test {
 //    client_chunkstore_ = std::shared_ptr<ChunkStore>(
 //                             new ChunkStore(test_root_dir_.string(), 0, 0));
 //    ASSERT_TRUE(client_chunkstore_->Init());
-    int count(0);
+//    int count(0);
 //    while (!client_chunkstore_->is_initialised() && count < 10000) {
-//      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+//      Sleep(boost::posix_time::milliseconds(10));
 //      count += 10;
 //    }
     sm_.reset(new LocalStoreManager(client_chunkstore_, test_seh::K,
@@ -384,7 +384,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptFile) {
 
   // Wait for signal that file has been succesfully uploaded
   while (!(res2 == -1 || res2 == 100)) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    Sleep(boost::posix_time::milliseconds(500));
     {
       boost::mutex::scoped_lock loch_tulla(m);
       res2 = res;
@@ -418,7 +418,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptString) {
 
   // Wait for signal that file has been succesfully uploaded
   while (!(res2 == -1 || res2 == 100)) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    Sleep(boost::posix_time::milliseconds(500));
     {
       boost::mutex::scoped_lock loch_tulla(m);
       res2 = res;
@@ -449,7 +449,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_DecryptStringWithChunksPrevLoaded) {
 
   // Wait for signal that file has been succesfully uploaded
   while (!(res2 == -1 || res2 == 100)) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    Sleep(boost::posix_time::milliseconds(500));
     {
       boost::mutex::scoped_lock loch_tulla(m);
       res2 = res;
@@ -480,7 +480,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_DecryptStringWithLoadChunks) {
 
   // Wait for signal that file has been succesfully uploaded
   while (!(res2 == -1 || res2 == 100)) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    Sleep(boost::posix_time::milliseconds(500));
     {
       boost::mutex::scoped_lock loch_tulla(m);
       res2 = res;
@@ -512,7 +512,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_DecryptStringWithLoadChunks) {
   }
   std::string dec_string;
   result = seh_->DecryptString(ser_dm, &dec_string);
-  boost::this_thread::sleep(boost::posix_time::seconds(1));
+  Sleep(boost::posix_time::seconds(1));
   ASSERT_EQ(0, result);
 
   ASSERT_EQ(data, dec_string);
@@ -538,7 +538,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_DecryptWithChunksPrevLoaded) {
 
   // Wait for signal that file has been succesfully uploaded
   while (!(res2 == -1 || res2 == 100)) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    Sleep(boost::posix_time::milliseconds(500));
     {
       boost::mutex::scoped_lock loch_tulla(m);
       res2 = res;
@@ -550,7 +550,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_DecryptWithChunksPrevLoaded) {
   fs::remove(full_str);
   ASSERT_FALSE(fs::exists(full_str));
 
-  boost::this_thread::sleep(boost::posix_time::seconds(1));
+  Sleep(boost::posix_time::seconds(1));
   result = seh_->DecryptAFile(rel_str);
   ASSERT_EQ(0, result);
   ASSERT_TRUE(fs::exists(full_str));
@@ -579,7 +579,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_DecryptWithLoadChunks) {
 
   // Wait for signal that file has been succesfully uploaded
   while (!(res2 == -1 || res2 == 100)) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    Sleep(boost::posix_time::milliseconds(500));
     {
       boost::mutex::scoped_lock loch_tulla(m);
       res2 = res;
@@ -611,7 +611,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_DecryptWithLoadChunks) {
     printf("%s\n", e.what());
   }
   result = seh_->DecryptAFile(rel_str);
-  boost::this_thread::sleep(boost::posix_time::seconds(1));
+  Sleep(boost::posix_time::seconds(1));
   ASSERT_EQ(0, result);
   ASSERT_TRUE(fs::exists(full_str));
   hash_after = crypto::HashFile<crypto::SHA512>(fs::path(full_str));
@@ -637,7 +637,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptAndDecryptPrivateDb) {
 
   // Wait for signal that file has been succesfully uploaded
   while (!(res2 == -1 || res2 == 100)) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    Sleep(boost::posix_time::milliseconds(500));
     {
       boost::mutex::scoped_lock loch_tulla(m);
       res2 = res;
@@ -763,7 +763,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_FailureOfChunkEncryptingFile) {
 
   // Wait for signal that file has been succesfully uploaded
   while (!(res2 == -1 || res2 == 100)) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    Sleep(boost::posix_time::milliseconds(500));
     {
       boost::mutex::scoped_lock loch_tulla(m);
       res2 = res;
@@ -814,7 +814,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_MultipleFileEncryption) {
 
   printf("EncryptFile run and about to wait\n");
   while (!done2) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    Sleep(boost::posix_time::milliseconds(500));
     {
       boost::mutex::scoped_lock loch_muick(m);
       done2 = done;
@@ -861,7 +861,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_MultipleEqualFiles) {
 
 //  printf("EncryptFile run and about to wait: %d\n", (total_files) * 3);
   while (received_chunks2 != (total_files) * 3) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    Sleep(boost::posix_time::milliseconds(500));
     {
       boost::mutex::scoped_lock loch_muick(m);
       received_chunks2 = received_chunks;
@@ -956,7 +956,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_FailureSteppedMultipleEqualFiles) {
 
   printf("\n\nEncryptFile run and about to wait\n");
   while (!done2) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    Sleep(boost::posix_time::milliseconds(500));
     {
       boost::mutex::scoped_lock loch_muick(m);
       done2 = done;
@@ -993,7 +993,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_OneFileModifiedAndSavedAgain) {
 
   // Wait for signal that file has been succesfully uploaded
   while (res2 != 2) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    Sleep(boost::posix_time::milliseconds(500));
     {
       boost::mutex::scoped_lock loch_tulla(m);
       res2 = res;

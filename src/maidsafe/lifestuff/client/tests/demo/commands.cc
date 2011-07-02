@@ -33,9 +33,18 @@
 #include <string>
 #include <vector>
 
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4127 4244 4267)
+#endif
+
 #include "boost/format.hpp"
 #include "boost/thread.hpp"
 #include "boost/tokenizer.hpp"
+
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
 
 #include "maidsafe/common/utils.h"
 #include "maidsafe/lifestuff/shared/returncodes.h"
@@ -67,7 +76,7 @@ void Commands::Run() {
     ProcessCommand(cmdline, &wait);
     if (wait) {
       while (!result_arrived_)
-        boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+        Sleep(boost::posix_time::milliseconds(500));
       result_arrived_ = false;
     }
   }
@@ -76,7 +85,7 @@ void Commands::Run() {
 int mygetch() {
   int ch;
 #ifdef MAIDSAFE_WIN32
-  ch = getch();
+  ch = _getch();
 #else
   struct termios oldt, newt;
   tcgetattr(STDIN_FILENO, &oldt);
@@ -92,7 +101,7 @@ int mygetch() {
 std::string GetLineWithAsterisks() {
   std::vector<char> pword;
   char a;
-  while ((a = mygetch()) != '\n' && a != '\r') {
+  while ((a = static_cast<char>(mygetch())) != '\n' && a != '\r') {
     pword.push_back(a);
     std::string s(1, a);
     std::cout << '*';  // << "(" << EncodeToHex(s) << ")";
@@ -103,7 +112,7 @@ std::string GetLineWithAsterisks() {
 
 bool VerifyPinness(const std::string &pin) {
   try {
-    boost::uint32_t numerical_pin = boost::lexical_cast<boost::uint32_t>(pin);
+    boost::lexical_cast<boost::uint32_t>(pin);
   }
   catch(const boost::bad_lexical_cast&) {
     return false;
@@ -216,7 +225,8 @@ void Commands::PrintUsage() {
   }
 }
 
-void Commands::ProcessCommand(const std::string &cmdline, bool *wait_for_cb) {
+void Commands::ProcessCommand(const std::string &cmdline,
+                              bool * /*wait_for_cb*/) {
   std::string cmd;
   std::vector<std::string> args;
   try {

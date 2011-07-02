@@ -53,7 +53,7 @@ class SessionSingleton;
 
 std::string TidyPath(const std::string &original_path);
 
-std::string StringToLowercase(const std::string &str);
+std::string StringToLowercase(std::string str);
 
 class ClientUtils {
  public:

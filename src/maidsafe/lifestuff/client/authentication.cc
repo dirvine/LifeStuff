@@ -24,10 +24,22 @@
 #include "maidsafe/lifestuff/client/authentication.h"
 #include "boost/regex.hpp"
 #include "maidsafe/common/crypto.h"
+#include "maidsafe/common/utils.h"
 #include "maidsafe/lifestuff/log.h"
-#include "maidsafe/lifestuff/client/lifestuff_messages.pb.h"
 #include "maidsafe/lifestuff/client/sessionsingleton.h"
 #include "maidsafe/lifestuff/client/packet_manager.h"
+
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4127 4244 4267)
+#endif
+
+#include "maidsafe/lifestuff/client/lifestuff_messages.pb.h"
+
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
+
 
 namespace arg = std::placeholders;
 
@@ -37,7 +49,7 @@ namespace lifestuff {
 
 Authentication::~Authentication() {
   passport_->StopCreatingKeyPairs();
-  bool tmid_success, stmid_success;
+  bool tmid_success(false), stmid_success(false);
   try {
     boost::mutex::scoped_lock lock(mutex_);
     tmid_success = cond_var_.timed_wait(lock,
@@ -94,7 +106,7 @@ int Authentication::GetUserInfo(const std::string &username,
   // Wait until both ops are finished here
   bool mid_finished(false), smid_finished(false);
   while (!(mid_finished && smid_finished)) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    Sleep(boost::posix_time::milliseconds(500));
     {
       boost::mutex::scoped_lock lochly(mid_mutex_);
       mid_finished = tmid_op_status_ != kPending;

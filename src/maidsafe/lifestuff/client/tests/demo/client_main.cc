@@ -29,7 +29,7 @@
 #include "maidsafe/lifestuff/client/user_credentials_api.h"
 
 
-int main(int argc, char *argv[]) {
+int main(int /*argc*/, char *argv[]) {
   // Initialising logging
   google::InitGoogleLogging(argv[0]);
   // Choose to direct output to stderr or not.

@@ -12,6 +12,10 @@
  *      Author: Team
  */
 
+#ifdef __MSVC__
+#  pragma warning(disable: 4503)
+#endif
+
 #include "maidsafe/lifestuff/client/contacts.h"
 
 #include "boost/filesystem.hpp"

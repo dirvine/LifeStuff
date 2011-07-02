@@ -29,18 +29,25 @@
  */
 
 #include "maidsafe/lifestuff/shared/filesystem.h"
-#include <stdio.h>
+#include <cstdio>
 #ifdef MAIDSAFE_WIN32
-#include <shlwapi.h>
-#include <shlobj.h>
-#include <sstream>
+#  include <shlwapi.h>
+#  include <shlobj.h>
+#  include <sstream>
 #endif
 #include "boost/thread.hpp"
+#include "maidsafe/common/utils.h"
+#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/shared/returncodes.h"
 
 namespace fs = boost::filesystem;
 
 namespace file_system {
+
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4996)
+#endif
 
 fs::path HomeDir() {
   fs::path dirname;
@@ -51,21 +58,23 @@ fs::path HomeDir() {
   else if (std::getenv("HOME"))
     dirname = std::getenv("HOME");
   return dirname;
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
 }
 
 fs::path ApplicationDataDir() {
 #if defined(MAIDSAFE_LINUX)
   return fs::path("/var/cache/maidsafe/");
 #elif defined(MAIDSAFE_WIN32)
-  fs::path app_path("");
+  fs::path app_path;
   TCHAR szpth[MAX_PATH];
-  if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_COMMON_APPDATA, NULL, 0,
-      szpth))) {
+  if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_COMMON_APPDATA, NULL, 0, szpth))) {
     std::ostringstream stm;
     const std::ctype<char> &ctfacet =
         std::use_facet< std::ctype<char> >(stm.getloc());
     for (size_t i = 0; i < wcslen(szpth); ++i)
-      stm << ctfacet.narrow(szpth[i], 0);
+      stm << ctfacet.narrow(static_cast<std::ctype<char>::_Elem>(szpth[i]), 0);
     app_path = fs::path(stm.str());
     app_path /= "maidsafe";
   }
@@ -73,8 +82,13 @@ fs::path ApplicationDataDir() {
 #elif defined(MAIDSAFE_APPLE)
   return fs::path("/Library/maidsafe/");
 #endif
-return fs::path("/tmp");
 }
+
+
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4996)
+#endif
 
 fs::path TempDir() {
 #if defined(MAIDSAFE_WIN32)
@@ -83,6 +97,9 @@ fs::path TempDir() {
     temp_dir = std::getenv("TEMP");
   else if (std::getenv("TMP"))
     temp_dir = std::getenv("TMP");
+#  ifdef __MSVC__
+#    pragma warning(pop)
+#  endif
 #elif defined(P_tmpdir)
   fs::path temp_dir(P_tmpdir);
 #else
@@ -96,9 +113,7 @@ fs::path TempDir() {
         temp_dir.clear();
     }
     catch(const std::exception &e) {
-#ifdef DEBUG
-      printf("In file_system::TempDir: %s\n", e.what());
-#endif
+      DLOG(ERROR) << "In file_system::TempDir: " << e.what();
       temp_dir.clear();
     }
   }
@@ -182,9 +197,7 @@ int Mount(const std::string &session_name,
     return mount_result ?  maidsafe::lifestuff::kSuccess :  maidsafe::lifestuff::kFileSystemMountError;  //NOLINT
   }
   catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("In file_system::CreateDirs: %s\n", e.what());
-#endif
+    DLOG(ERROR) << "In file_system::CreateDirs: " << e.what();
     return  maidsafe::lifestuff::kFileSystemException;
   }
 }
@@ -225,9 +238,7 @@ int FuseMountPoint(const std::string &session_name) {
     }
   }
   catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("In file_system::FuseMountPoint: %s\n", e.what());
-#endif
+    DLOG(ERROR) << "In file_system::FuseMountPoint: " << e.what();
     return  maidsafe::lifestuff::kFileSystemException;
   }
 }
@@ -240,16 +251,16 @@ bool RemoveDir(const fs::path &dir, const boost::uint8_t &max_attempts) {
         fs::remove_all(dir);
     }
     catch(const std::exception& e) {
-      printf("In RemoveDir A (%i) %s\n", i, e.what());
+      DLOG(ERROR) << "In RemoveDir A (" << i << ") " << e.what();
     }
     try {
       removed = !fs::exists(dir);
     }
     catch(const std::exception& e) {
-      printf("In RemoveDir B (%i) %s\n", i, e.what());
+      DLOG(ERROR) << "In RemoveDir B (" << i << ") " << e.what();
     }
     if (!removed)
-      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+      maidsafe::Sleep(boost::posix_time::milliseconds(10));
   }
   return removed;
 }
