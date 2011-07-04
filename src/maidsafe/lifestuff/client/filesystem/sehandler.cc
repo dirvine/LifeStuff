@@ -25,7 +25,7 @@
 
 #ifdef __MSVC__
 #  pragma warning(push)
-#  pragma warning(disable: 4996)
+#  pragma warning(disable: 4308 4996)
 #endif
 
 #include "maidsafe/lifestuff/client/filesystem/sehandler.h"
@@ -694,7 +694,7 @@ int SEHandler::DecryptDb(const fs::path &dir_path,
 int SEHandler::LoadChunks(const encrypt::DataMap &data_map,
                           std::vector<fs::path> * /*chunk_paths*/) {
   int result(kSuccess);
-  for (int i = 0; i < data_map.chunks.size(); ++i) {
+  for (int i = 0; i != static_cast<int>(data_map.chunks.size()); ++i) {
     std::string data;
     int n(0)/* = store_manager_->LoadChunk(data_map.chunks[i].hash, &data)*/;
 #ifdef DEBUG
@@ -745,7 +745,7 @@ int SEHandler::LoadChunks(const encrypt::DataMap &data_map,
 
 int SEHandler::AddChunksToChunkstore(const encrypt::DataMap &data_map) {
   int result(kSuccess);
-  for (int j = 0; j < data_map.chunks.size(); ++j) {
+  for (int j = 0; j != static_cast<int>(data_map.chunks.size()); ++j) {
     // If this succeeds, chunk is moved to chunkstore.  If not, clean up temp.
     fs::path temp_chunk(file_system::TempDir() /
                         EncodeToHex(data_map.chunks[j].hash));
@@ -786,7 +786,7 @@ void SEHandler::ChunksToMultiIndex(const encrypt::DataMap &data_map,
   {
     int n(0);
     boost::mutex::scoped_lock loch_eigheach(chunkmap_mutex_);
-    for (int i = 0; i < data_map.chunks.size(); ++i) {
+    for (int i = 0; i != static_cast<int>(data_map.chunks.size()); ++i) {
       PendingChunks pc(data_map.chunks[i].hash, path, msid,
                        path_count_);
       std::pair<PendingChunksSet::iterator, bool> p =
@@ -806,7 +806,7 @@ void SEHandler::ChunksToMultiIndex(const encrypt::DataMap &data_map,
 #endif
       }
     }
-    if (n == data_map.chunks.size())
+    if (n == static_cast<int>(data_map.chunks.size()))
       file_added_(path.string());
     else
       printf("SEHandler::StoreChunks: No notification\n");

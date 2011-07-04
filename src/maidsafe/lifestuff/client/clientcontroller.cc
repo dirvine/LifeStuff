@@ -28,9 +28,17 @@
 #  include <shlwapi.h>
 #endif
 
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4308)
+#endif
 #include "boost/archive/text_oarchive.hpp"
 #include "boost/archive/text_iarchive.hpp"
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
 #include "boost/foreach.hpp"
+
 #include "maidsafe/dht/kademlia/contact.h"
 #include "maidsafe/encrypt/self_encryption.h"
 #include "maidsafe/encrypt/data_map.h"

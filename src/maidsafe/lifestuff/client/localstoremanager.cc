@@ -834,12 +834,13 @@ int LocalStoreManager::FindAndLoadChunk(const std::string &chunkname,
       return -1;
     }
     boost::uintmax_t size = fs3::file_size(file_path);
-    boost::scoped_ptr<char> temp(new char[size]);
+    boost::scoped_ptr<char> temp(new char[static_cast<unsigned int>(size)]);
     fs3::ifstream fstr;
     fstr.open(file_path, std::ios_base::binary);
     fstr.read(temp.get(), size);
     fstr.close();
-    *data = std::string((const char*)temp.get(), size);
+    *data = std::string(reinterpret_cast<const char*>(temp.get()),
+                        static_cast<unsigned int>(size));
   }
   catch(const std::exception &e) {
     DLOG(ERROR) << "LocalStoreManager::FindAndLoadChunk - " << e.what()

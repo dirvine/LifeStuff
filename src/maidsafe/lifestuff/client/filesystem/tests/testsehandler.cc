@@ -22,6 +22,15 @@
 * ============================================================================
 */
 
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4308)
+#endif
+#include "boost/archive/text_oarchive.hpp"
+#include "boost/archive/text_iarchive.hpp"
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
 #include "boost/filesystem.hpp"
 #include "boost/filesystem/fstream.hpp"
 #include "maidsafe/common/test.h"
@@ -37,8 +46,6 @@
 #include "maidsafe/lifestuff/client/sessionsingleton.h"
 #include "maidsafe/lifestuff/sharedtest/cachepassport.h"
 #include "maidsafe/lifestuff/sharedtest/testcallback.h"
-#include "boost/archive/text_oarchive.hpp"
-#include "boost/archive/text_iarchive.hpp"
 #include "maidsafe/encrypt/config.h"
 
 namespace arg = std::placeholders;

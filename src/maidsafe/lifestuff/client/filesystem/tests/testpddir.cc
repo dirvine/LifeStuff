@@ -22,6 +22,15 @@
 * ============================================================================
 */
 
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4308)
+#endif
+#include "boost/archive/text_oarchive.hpp"
+#include "boost/archive/text_iarchive.hpp"
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
 #include "boost/filesystem.hpp"
 #include "boost/thread.hpp"
 #include "boost/scoped_ptr.hpp"
@@ -29,8 +38,6 @@
 #include "maidsafe/encrypt/self_encryption.h"
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/lifestuff/client/filesystem/pddir.h"
-#include "boost/archive/text_oarchive.hpp"
-#include "boost/archive/text_iarchive.hpp"
 
 namespace fs = boost::filesystem;
 

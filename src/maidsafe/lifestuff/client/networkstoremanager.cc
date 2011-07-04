@@ -133,7 +133,7 @@ void NetworkStoreManager::DeletePacketImpl(
   std::shared_ptr<boost::mutex> mutex;
   mutex.reset(new boost::mutex);
   dht::kademlia::DeleteFunctor delete_functor;
-  for (int index = 0; index < values.size(); ++index) {
+  for (int index = 0; index != static_cast<int>(values.size()); ++index) {
     delete_functor = std::bind(&NetworkStoreManager::DeletePacketCallback, this,
                                arg::_1, index, delete_results, mutex);
     node_->Delete(key, values[index], "", securifier, delete_functor);

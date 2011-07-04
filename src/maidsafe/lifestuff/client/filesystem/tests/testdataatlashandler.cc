@@ -24,9 +24,16 @@
 #include <string>
 #include <vector>
 
-#include "boost/filesystem.hpp"
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4308)
+#endif
 #include "boost/archive/text_oarchive.hpp"
 #include "boost/archive/text_iarchive.hpp"
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
+#include "boost/filesystem.hpp"
 #include "maidsafe/common/test.h"
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/encrypt/self_encryption.h"
@@ -295,7 +302,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDetail) {
   ASSERT_EQ(dm.chunks.size(), recovered_dm.chunks.size());
 
   // check each recovered DM chunk name = each origional DM chunk name
-  for (int i = 0; i < dm.chunks.size(); i++) {
+  for (int i = 0; i != static_cast<int>(dm.chunks.size()); i++) {
     EXPECT_EQ(dm.chunks[i].hash, recovered_dm.chunks[i].hash);
   }
 
@@ -305,7 +312,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDetail) {
 
   // check each recovered encrypted DM chunk name = each origional
   // encrypted DM chunk name
-  for (int i = 0; i < dm.chunks.size(); i++) {
+  for (int i = 0; i != static_cast<int>(dm.chunks.size()); i++) {
       EXPECT_EQ(dm.chunks[i].hash,
                 recovered_dm.chunks[i].hash);
   }
@@ -422,7 +429,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDAH) {
   ASSERT_EQ(dm.chunks.size(), recovered_dm.chunks.size());
 
   // check each recovered DM chunk name = each origional DM chunk name
-  for (int i = 0; i < dm.chunks.size(); i++) {
+  for (int i = 0; i != static_cast<int>(dm.chunks.size()); i++) {
     EXPECT_EQ(dm.chunks[i].hash, recovered_dm.chunks[i].hash);
   }
 
@@ -432,7 +439,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDAH) {
 
   // check each recovered encrypted DM chunk name =
   // each origional encrypted DM chunk name
-  for (int i = 0; i < dm.chunks.size(); i++) {
+  for (int i = 0; i != static_cast<int>(dm.chunks.size()); i++) {
     EXPECT_EQ(dm.chunks[i].hash, recovered_dm.chunks[i].hash);
   }
 }
@@ -546,7 +553,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_ObscureFilename) {
   ASSERT_EQ(dm.chunks.size(), recovered_dm.chunks.size());
 
   // check each recovered DM chunk name = each origional DM chunk name
-  for (int i = 0; i < dm.chunks.size(); i++) {
+  for (int i = 0; i != static_cast<int>(dm.chunks.size()); i++) {
     EXPECT_EQ(dm.chunks[i].hash, recovered_dm.chunks[i].hash);
   }
 
@@ -555,7 +562,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_ObscureFilename) {
 
   // check each recovered encrypted DM chunk name =
   // each origional encrypted DM chunk name
-  for (int i = 0; i < dm.chunks.size(); i++) {
+  for (int i = 0; i != static_cast<int>(dm.chunks.size()); i++) {
     EXPECT_EQ(dm.chunks[i].hash, recovered_dm.chunks[i].hash);
   }
 }
@@ -1270,12 +1277,12 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddRepeatedDataMap) {
   EXPECT_TRUE(ParseFromString(&recovered_dm, ser_dm_recovered1));
   EXPECT_EQ(dm.content, recovered_dm.content);
   ASSERT_EQ(dm.chunks.size(), recovered_dm.chunks.size());
-  for (int i = 0; i < dm.chunks.size(); i++) {
+  for (int i = 0; i != static_cast<int>(dm.chunks.size()); i++) {
       EXPECT_EQ(dm.chunks[i].pre_hash, recovered_dm.chunks[i].pre_hash);
   }
   ASSERT_EQ(dm.chunks.size(),
             recovered_dm.chunks.size());
-  for (int i = 0; i < dm.chunks.size(); i++) {
+  for (int i = 0; i != static_cast<int>(dm.chunks.size()); i++) {
     EXPECT_EQ(dm.chunks[i].hash, recovered_dm.chunks[i].hash);
   }
 
