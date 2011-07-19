@@ -142,10 +142,12 @@ bool Commands::LoginUser() {
       std::cout << "Enter Password: ";
       password = GetLineWithAsterisks();
       success = user_credential_->ValidateUser(password);
-      if (success)
+      if (success) {
+        // TODO(Smer): Mount the drive
         std::cout << " Logged in successfully." << std::endl;
-      else
+      } else {
         std::cout << " Login failed!" << std::endl;
+      }
 
     // CreateUser
     } else if (return_value == kUserDoesntExist) {
@@ -171,20 +173,21 @@ bool Commands::LoginUser() {
             confirm = GetLineWithAsterisks();
             success = (password.compare(confirm) == 0);
             if (!success)
-              std::cout << "Password confirmation mismatch" << std::endl;
+              std::cout << "Password confirmation mismatch." << std::endl;
           } while (!success &&  (++count < _MAX_TRY));
         }
         if (success) {
           success = user_credential_->CreateUser(username, pin, password);
         }
         if (success) {
+          // TODO(Smer): Mount the drive
           std::cout << std::endl << "Successfully created user and logged in"
                     << std::endl;
         } else {
           std::cout << std::endl  << "Failed to create user" << std::endl;
         }
       } else if (create_new == "n") {
-        std::cout << "Retry again .." << std::endl;
+        std::cout << "Retry again ..." << std::endl;
         username.clear();
         pin.clear();
         confirm.clear();

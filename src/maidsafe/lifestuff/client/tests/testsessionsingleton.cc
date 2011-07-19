@@ -77,22 +77,23 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ(size_t(0), ps_list.size());
 
   // Modify session
-  ASSERT_TRUE(ss_->SetDaModified(true));
-  ASSERT_TRUE(ss_->SetDefConLevel(kDefCon1));
-  ASSERT_TRUE(ss_->SetUsername("aaa"));
-  ASSERT_TRUE(ss_->SetPin("bbb"));
-  ASSERT_TRUE(ss_->SetPassword("ccc"));
+  ss_->SetDaModified(true);
+  ss_->SetDefConLevel(kDefCon1);
+  ss_->SetUsername("aaa");
+  ss_->SetPin("bbb");
+  ss_->SetPassword("ccc");
   ASSERT_TRUE(ss_->SetSessionName(false));
-  ASSERT_TRUE(ss_->SetRootDbKey("ddd"));
+  ss_->SetRootDbKey("ddd");
   std::set<std::string> non_empty_set;
   non_empty_set.insert("eee");
-  ASSERT_TRUE(ss_->SetAuthorisedUsers(non_empty_set));
+  ss_->SetAuthorisedUsers(non_empty_set);
   non_empty_set.insert("fff");
-  ASSERT_TRUE(ss_->SetMaidAuthorisedUsers(non_empty_set));
-  ASSERT_TRUE(ss_->SetMounted(1));
-  ASSERT_TRUE(ss_->SetWinDrive('N'));
+  ss_->SetMaidAuthorisedUsers(non_empty_set);
+  ss_->SetMounted(1);
+  ss_->SetWinDrive('N');
   ASSERT_EQ(0, ss_->AddContact("pub_name", "pub_key", "full_name",
-            "office_phone", "birthday", 'M', 18, 6, "city", 'C', 0, 0));
+                               "office_phone", "birthday", 'M', 18, 6, "city",
+                               'C', 0, 0));
   std::vector<std::string> attributes;
   attributes.push_back("name");
   attributes.push_back("msid");
@@ -186,15 +187,15 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionName) {
                                                                     username));
 
   // Set the session values
-  ASSERT_TRUE(ss_->SetUsername(username));
-  ASSERT_TRUE(ss_->SetPin(pin));
+  ss_->SetUsername(username);
+  ss_->SetPin(pin);
   ASSERT_TRUE(ss_->SetSessionName(false));
 
   // Check session name
   ASSERT_EQ(session_name, ss_->SessionName());
 
   // Reset value and check empty again
-  ASSERT_TRUE(ss_->SetSessionName(true));
+  ss_->SetSessionName(true);
   ASSERT_EQ("", ss_->SessionName());
 }
 
@@ -202,11 +203,13 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionContactsIO) {
   // Add contacts to the session
   for (int n = 0; n < 10; n++) {
     ASSERT_EQ(0, ss_->AddContact("pub_name_" + IntToString(n),
-              "pub_key_" + IntToString(n),
-              "full_name_" + IntToString(n),
-              "office_phone_" + IntToString(n),
-              "birthday_" + IntToString(n),
-              'M', n, n, "city_" + IntToString(n), 'C', 0, 0));
+                                 "pub_key_" + IntToString(n),
+                                 "full_name_" + IntToString(n),
+                                 "office_phone_" + IntToString(n),
+                                 "birthday_" + IntToString(n),
+                                 'M', n, n,
+                                 "city_" + IntToString(n),
+                                 'C', 0, 0));
   }
 
   // Check contacts are in session

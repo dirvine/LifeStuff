@@ -171,20 +171,20 @@ class SessionSingleton {
   PersonalDetails Pd();
 
   // Mutators
-  bool SetDefConLevel(DefConLevels defconlevel);
-  bool SetDaModified(bool da_modified);
+  void SetDefConLevel(DefConLevels defconlevel);
+  void SetDaModified(bool da_modified);
   bool SetSessionName(bool clear);
-  bool SetRootDbKey(const std::string &root_db_key);
-  bool SetSelfEncrypting(bool self_encrypting);
-  bool SetAuthorisedUsers(
+  void SetRootDbKey(const std::string &root_db_key);
+  void SetSelfEncrypting(bool self_encrypting);
+  void SetAuthorisedUsers(
       const std::set<std::string> &authorised_users);
-  bool SetMaidAuthorisedUsers(
+  void SetMaidAuthorisedUsers(
       const std::set<std::string> &maid_authorised_users);
-  bool SetMounted(int mounted);
-  bool SetWinDrive(char win_drive);
-  bool SetConnectionStatus(int status);
-//  bool SetEp(const EndPoint &ep);
-  bool SetPd(const PersonalDetails &pd);
+  void SetMounted(int mounted);
+  void SetWinDrive(char win_drive);
+  void SetConnectionStatus(int status);
+//  void SetEp(const EndPoint &ep);
+  void SetPd(const PersonalDetails &pd);
 
   ///////////////////////////
   //// Key Ring Handling ////
@@ -333,9 +333,9 @@ class SessionSingleton {
                        lc_mutex_() {}
   // Following three mutators should only be called by Authentication once
   // associated packets are confirmed as stored.
-  bool SetUsername(const std::string &username);
-  bool SetPin(const std::string &pin);
-  bool SetPassword(const std::string &password);
+  void SetUsername(const std::string &username);
+  void SetPin(const std::string &pin);
+  void SetPassword(const std::string &password);
   // Creates ANMAID, MAID, PMID.  Also ANMPID & MPID if public_username not "".
   bool CreateTestPackets(const std::string &public_username);
   std::string Id(const passport::PacketType &packet_type,

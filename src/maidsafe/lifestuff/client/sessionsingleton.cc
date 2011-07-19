@@ -87,66 +87,50 @@ int SessionSingleton::ConnectionStatus() { return ud_.connection_status; }
 PersonalDetails SessionSingleton::Pd() { return ud_.pd; }
 
 // Mutators
-bool SessionSingleton::SetDefConLevel(DefConLevels defconlevel) {
+void SessionSingleton::SetDefConLevel(DefConLevels defconlevel) {
   ud_.defconlevel = defconlevel;
-  return true;
 }
-bool SessionSingleton::SetDaModified(bool da_modified) {
+void SessionSingleton::SetDaModified(bool da_modified) {
   ud_.da_modified = da_modified;
-  return true;
 }
-bool SessionSingleton::SetUsername(const std::string &username) {
+void SessionSingleton::SetUsername(const std::string &username) {
   ud_.username = username;
-  return true;
 }
-bool SessionSingleton::SetPin(const std::string &pin) {
-  ud_.pin = pin;
-  return true;
-}
-bool SessionSingleton::SetPassword(const std::string &password) {
+void SessionSingleton::SetPin(const std::string &pin) { ud_.pin = pin; }
+void SessionSingleton::SetPassword(const std::string &password) {
   ud_.password = password;
-  return true;
 }
 bool SessionSingleton::SetSessionName(bool clear) {
   if (clear) {
-    ud_.session_name = "";
+    ud_.session_name.clear();
   } else {
-    if (Username() == "" || Pin() == "")
+    if (Username().empty() || Pin().empty())
       return false;
     ud_.session_name = EncodeToHex(crypto::Hash<crypto::SHA1>(Pin() +
                                                               Username()));
   }
   return true;
 }
-bool SessionSingleton::SetRootDbKey(const std::string &root_db_key) {
+void SessionSingleton::SetRootDbKey(const std::string &root_db_key) {
   ud_.root_db_key = root_db_key;
-  return true;
 }
-bool SessionSingleton::SetSelfEncrypting(bool self_encrypting) {
+void SessionSingleton::SetSelfEncrypting(bool self_encrypting) {
   ud_.self_encrypting = self_encrypting;
-  return true;
 }
-bool SessionSingleton::SetAuthorisedUsers(
+void SessionSingleton::SetAuthorisedUsers(
     const std::set<std::string> &authorised_users) {
   ud_.authorised_users = authorised_users;
-  return true;
 }
-bool SessionSingleton::SetMaidAuthorisedUsers(
+void SessionSingleton::SetMaidAuthorisedUsers(
     const std::set<std::string> &maid_authorised_users) {
   ud_.maid_authorised_users = maid_authorised_users;
-  return true;
 }
-bool SessionSingleton::SetMounted(int mounted) {
-  ud_.mounted = mounted;
-  return true;
-}
-bool SessionSingleton::SetWinDrive(char win_drive) {
+void SessionSingleton::SetMounted(int mounted) { ud_.mounted = mounted; }
+void SessionSingleton::SetWinDrive(char win_drive) {
   ud_.win_drive = win_drive;
-  return true;
 }
-bool SessionSingleton::SetConnectionStatus(int status) {
+void SessionSingleton::SetConnectionStatus(int status) {
   ud_.connection_status = status;
-  return true;
 }
 /*
 bool SessionSingleton::SetEp(const EndPoint &ep) {
@@ -154,10 +138,7 @@ bool SessionSingleton::SetEp(const EndPoint &ep) {
   return true;
 }
 */
-bool SessionSingleton::SetPd(const PersonalDetails &pd) {
-  ud_.pd = pd;
-  return true;
-}
+void SessionSingleton::SetPd(const PersonalDetails &pd) { ud_.pd = pd; }
 
 /////////////////////////
 // Key ring operations //
