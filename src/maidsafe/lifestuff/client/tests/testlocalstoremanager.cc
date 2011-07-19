@@ -59,7 +59,7 @@ namespace test {
 
 void CreateChunkage(std::map<std::string, std::string> *chunks_map,
                     int chunk_number,  fs::path test_root_dir_,
-                    std::shared_ptr<ChunkStore> client_chunkstore) {
+                    std::shared_ptr<ChunkStore>) {
   chunks_map->clear();
   while (chunks_map->size() < size_t(chunk_number)) {
     std::string chunk(RandomString(256 * 1024));

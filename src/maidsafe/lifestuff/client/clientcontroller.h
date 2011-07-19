@@ -92,7 +92,8 @@ class CCCallback {
 
 class BPCallback {
  public:
-  BPCallback() : result(kGeneralError), /*end_point(), */status(0) {}
+  BPCallback()
+      : result(kGeneralError), personal_details(), /*end_point(), */status(0) {}
   void ContactInfoCallback(const ReturnCode &res,
 //                           const std::list<EndPoint> &ep,
                            const PersonalDetails &pd,

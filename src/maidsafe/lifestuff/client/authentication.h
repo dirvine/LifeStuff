@@ -52,6 +52,8 @@ class Authentication {
                      session_singleton_(),
                      passport_(),
                      mutex_(),
+                     mid_mutex_(),
+                     smid_mutex_(),
                      cond_var_(),
                      tmid_op_status_(kPendingMid),
                      stmid_op_status_(kPendingMid),
@@ -75,7 +77,9 @@ class Authentication {
   int CreateUserCredentials(const std::string &/*username*/,
                             const std::string &/*pin*/,
                             const std::string &/*password*/,
-                            const std::string &/*serialised_datamap*/) {}
+                            const std::string &/*serialised_datamap*/) {
+    return -1;
+  }
 
   void SaveSession(const std::string &serialised_master_datamap,
                    const VoidFuncOneInt &functor);

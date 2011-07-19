@@ -1000,7 +1000,8 @@ int SEHandler::EncryptDataMap(maidsafe::encrypt::DataMap *data_map,
                                                         xor_hash_extended),
                                             encrypt_hash,
                                             "");
-  return encrypted_data_map->empty() ? encrypt::kEncryptError : kSuccess;
+  return encrypted_data_map->empty() ? encrypt::kEncryptError :
+                                       encrypt::kSuccess;
 }
 
 int SEHandler::DecryptDataMap(const std::string &encrypted_data_map,

@@ -2927,8 +2927,8 @@ int ClientController::create(const std::string &path) {
 
 // IM notifiers registration
 void ClientController::RegisterImNotifiers(
-       std::function<void(const std::string&)> msg_not,
-       std::function<void(const std::string&, const int&)> conn_not) {
+       std::function<void(const std::string&)>,
+       std::function<void(const std::string&, const int&)>) {
 //  sm_->SetInstantMessageNotifier(msg_not, conn_not);
 }
 

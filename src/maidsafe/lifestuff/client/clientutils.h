@@ -35,20 +35,6 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-namespace vault {
-class RunPDVaults;
-namespace test {
-class PDVaultTest;
-}  // namespace test
-}  // namespace vault
-
-}  // namespace lifestuff
-}  // namespace maidsafe
-
-namespace maidsafe {
-
-namespace lifestuff {
-
 class SessionSingleton;
 
 std::string TidyPath(const std::string &original_path);
@@ -73,8 +59,8 @@ class ClientUtils {
                               std::string *public_key_sig,
                               std::string *private_key);
  private:
-  friend class vault::test::PDVaultTest;
-  friend class vault::RunPDVaults;
+  ClientUtils &operator=(const ClientUtils&);
+  ClientUtils(const ClientUtils&);
   SessionSingleton *ss_;
 };
 

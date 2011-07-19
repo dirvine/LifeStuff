@@ -56,13 +56,6 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-namespace vault {
-namespace test {
-class RunPDVaults;
-class PDVaultTest;
-}  // namespace test
-}  // namespace vault
-
 namespace test {
 class SessionSingletonTest;
 class ClientControllerTest;
@@ -137,7 +130,8 @@ struct UserDetails {
 };
 
 struct ConnectionDetails {
-  ConnectionDetails() {}
+  ConnectionDetails()
+      : transport(0), connection_id(0), status(0), init_timestamp(0) {}
 //  EndPoint ep;
   boost::uint16_t transport;
   boost::uint32_t connection_id;
@@ -360,8 +354,6 @@ class SessionSingleton {
   friend class test::SessionSingletonTest;
   friend class test::ClientControllerTest;
   friend class test::RunPDClient;
-  friend class vault::test::RunPDVaults;
-  friend class vault::test::PDVaultTest;
   friend class test::DataAtlasHandlerTest;
   friend class test::ImHandlerTest;
   friend class test::MultiImHandlerTest;

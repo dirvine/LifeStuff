@@ -116,7 +116,7 @@ int Authentication::GetUserInfo(const std::string &username,
       smid_finished = stmid_op_status_ != kPending;
     }
   }
-  if (tmid_op_status_ == kSucceeded || stmid_op_status_ == kSuccess) {
+  if (tmid_op_status_ == kSucceeded || stmid_op_status_ == kSucceeded) {
     session_singleton_->SetUsername(username);
     session_singleton_->SetPin(pin);
     return kUserExists;

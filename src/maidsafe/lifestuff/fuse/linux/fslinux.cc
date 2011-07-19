@@ -322,7 +322,7 @@ int FSLinux::ms_link(const char *o_path, const char *n_path) {
   // if path is not in an authorised dirs, return error "Permission denied"
   // TODO(Fraser): set bool gui_private_share to true if gui has
   //               requested a private share be set up.
-  bool gui_private_share(false);
+//  bool gui_private_share(false);
 //  if (maidsafe::lifestuff::ClientController::getInstance()->ReadOnly(
 //      maidsafe::lifestuff::TidyPath(ln_path), gui_private_share))
     return -13;
@@ -525,12 +525,13 @@ int FSLinux::ms_fgetattr(const char *path, struct stat *stbuf,
 #endif
 
   std::string ser_mdm;
-  int n;  // maidsafe::lifestuff::ClientController::getInstance()->getattr(
-          //  maidsafe::lifestuff::TidyPath(lpath), &ser_mdm);
+  int n(0);  // maidsafe::lifestuff::ClientController::getInstance()->getattr(
+             //  maidsafe::lifestuff::TidyPath(lpath), &ser_mdm);
   maidsafe::lifestuff::MetaDataMap mdm;
   mdm.ParseFromString(ser_mdm);
 
-  bool ro;  // maidsafe::lifestuff::ClientController::getInstance()->ReadOnly(
+  bool ro(true);
+            // maidsafe::lifestuff::ClientController::getInstance()->ReadOnly(
             // maidsafe::lifestuff::TidyPath(lpath), false);
 
   if (ro)
@@ -591,7 +592,7 @@ int FSLinux::ms_mkdir(const char *path, mode_t) {
   // if path is not in an authorised dirs, return error "Permission denied"
   // TODO(Fraser): set bool gui_private_share to true if gui has
   //               requested a private share be set up.
-  bool gui_private_share(false);
+//  bool gui_private_share(false);
 //  if (maidsafe::lifestuff::ClientController::getInstance()->ReadOnly(
 //      maidsafe::lifestuff::TidyPath(lpath1), gui_private_share))
     return -13;
@@ -624,7 +625,7 @@ int FSLinux::ms_rename(const char *o_path, const char *n_path) {
   // if path is not in an authorised dirs, return error "Permission denied"
   // TODO(Fraser): set bool gui_private_share to true if gui has
   //               requested a private share be set up.
-  bool gui_private_share(false);
+//  bool gui_private_share(false);
 //  if (maidsafe::lifestuff::ClientController::getInstance()->ReadOnly(
 //      maidsafe::lifestuff::TidyPath(lo_path), gui_private_share))
 //    return -13;
@@ -682,7 +683,7 @@ int FSLinux::ms_mknod(const char *path, mode_t mode, dev_t) {
   // if path is not in an authorised dirs, return error "Permission denied"
   // TODO(Fraser): set bool gui_private_share to true if gui has
   //               requested a private share be set up.
-  bool gui_private_share(false);
+//  bool gui_private_share(false);
   // if (maidsafe::lifestuff::ClientController::getInstance()->ReadOnly(
   //     maidsafe::lifestuff::TidyPath(lpath), gui_private_share))
   //   return -13;
@@ -709,7 +710,7 @@ int FSLinux::ms_create(const char *path,
   // if path is not in an authorised dirs, return error "Permission denied"
   // TODO(Fraser): set bool gui_private_share to true if gui has
   //               requested a private share be set up.
-  bool gui_private_share(false);
+//  bool gui_private_share(false);
 //  if (maidsafe::lifestuff::ClientController::getInstance()->ReadOnly(
 //     maidsafe::lifestuff::TidyPath(lpath1), gui_private_share))
     return -13;
@@ -754,7 +755,7 @@ int FSLinux::ms_rmdir(const char *path) {
   // if path is not in an authorised dirs, return error "Permission denied"
   // TODO(Fraser): set bool gui_private_share to true if gui has
   //               requested a private share be set up.
-  bool gui_private_share(false);
+//  bool gui_private_share(false);
 //  if (maidsafe::lifestuff::ClientController::getInstance()->ReadOnly(
 //     maidsafe::lifestuff::TidyPath(lpath), gui_private_share))
     return -13;
@@ -780,7 +781,7 @@ int FSLinux::ms_unlink(const char *path) {
   // if path is not in an authorised dirs, return error "Permission denied"
   // TODO(Fraser): set bool gui_private_share to true if gui has
   //               requested a private share be set up.
-  bool gui_private_share(false);
+//  bool gui_private_share(false);
 //  if (maidsafe::lifestuff::ClientController::getInstance()->ReadOnly(
 //      maidsafe::lifestuff::TidyPath(lpath), gui_private_share))
     return -13;

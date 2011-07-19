@@ -40,15 +40,16 @@ NetworkStoreManager::NetworkStoreManager(
     const boost::uint16_t &alpha,
     const boost::uint16_t beta,
     const bptime::seconds &mean_refresh_interval)
-  : k_(k),
-    alpha_(alpha),
-    beta_(beta),
-    asio_service_(),
-    work_(),
-    securifier_(),
-    node_(),
-    node_id_(dht::kademlia::NodeId::kRandomId),
-    mean_refresh_interval_(mean_refresh_interval) {}
+    : k_(k),
+      alpha_(alpha),
+      beta_(beta),
+      asio_service_(),
+      work_(),
+      securifier_(),
+      node_(),
+      node_id_(dht::kademlia::NodeId::kRandomId),
+      mean_refresh_interval_(mean_refresh_interval),
+      delete_results_() {}
 
 void NetworkStoreManager::Init(
      const std::vector<dht::kademlia::Contact> &bootstrap_contacts,
@@ -64,7 +65,7 @@ void NetworkStoreManager::Init(
 }
 
 void NetworkStoreManager::Close(
-    VoidFuncOneInt callback,
+    VoidFuncOneInt,
     std::vector<dht::kademlia::Contact> *bootstrap_contacts) {
   node_->Leave(bootstrap_contacts);
 }
@@ -151,9 +152,9 @@ void NetworkStoreManager::PopulateValues(const dht::kademlia::Key &key,
 
 void NetworkStoreManager::FindValueCallback(int result,
     std::vector<std::string> values,
-    std::vector<dht::kademlia::Contact> contacts,
-    dht::kademlia::Contact node,
-    dht::kademlia::Contact cache,
+    std::vector<dht::kademlia::Contact>,
+    dht::kademlia::Contact,
+    dht::kademlia::Contact,
     const dht::kademlia::Key& key,
     const dht::kademlia::SecurifierPtr securifier,
     const DeleteFunctor &cb) {
