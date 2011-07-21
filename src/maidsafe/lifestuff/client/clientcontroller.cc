@@ -153,7 +153,7 @@ int ClientController::ParseDa() {
     DLOG(ERROR) << "CC::ParseDa - DA doesn't have a root db key." << std::endl;
     return -9001;
   }
-  ss_->SetRootDbKey(data_atlas.root_db_key());
+  ss_->set_root_db_key(data_atlas.root_db_key());
 
 //  if (data_atlas.dms_size() != (kRootSubdirSize + 1)) {
 //    DLOG(ERROR) << "CC::ParseDa - Wrong # of datamaps in the DA."
@@ -182,7 +182,7 @@ int ClientController::ParseDa() {
   ss_->LoadShares(&shares);
 
   if (data_atlas.has_pd())
-    ss_->SetPd(data_atlas.pd());
+    ss_->set_pd(data_atlas.pd());
 
   return 0;
 //  encrypt::DataMap dm_root, other_dms;
@@ -209,7 +209,7 @@ int ClientController::SerialiseDa() {
   }
 
   DataAtlas data_atlas;
-  data_atlas.set_root_db_key(ss_->RootDbKey());
+  data_atlas.set_root_db_key(ss_->root_db_key());
 //  encrypt::DataMap root_dm, subdirs_dm;
 //  if (AddToPendingFiles(kRoot))
 //    seh_.EncryptDb(kRoot, PRIVATE, "", "", false, &root_dm);
@@ -279,7 +279,7 @@ int ClientController::SerialiseDa() {
   }
 
   PersonalDetails *pd = data_atlas.mutable_pd();
-  *pd = ss_->Pd();
+  *pd = ss_->pd();
 
   ser_da_.clear();
   data_atlas.SerializeToString(&ser_da_);
@@ -297,7 +297,7 @@ int ClientController::CheckUserExists(const std::string &username,
     return kClientControllerNotInitialised;
   }
   ss_->ResetSession();
-  ss_->SetDefConLevel(kDefCon1);
+  ss_->set_def_con_level(kDefCon1);
   return auth_.GetUserInfo(username, pin);
 }
 
@@ -310,7 +310,7 @@ bool ClientController::CreateUser(const std::string &username,
   }
 
   ss_->ResetSession();
-  ss_->SetConnectionStatus(0);
+  ss_->set_connection_status(0);
   int result = auth_.CreateUserSysPackets(username, pin);
   if (result != kSuccess) {
     DLOG(ERROR) << "CC::CreateUser - Failed to create user system packets."
@@ -332,7 +332,7 @@ bool ClientController::CreateUser(const std::string &username,
     DLOG(ERROR) << "CC::CreateUser - auth_.CreateTmidPacket DONE." << std::endl;
   }
 
-  ss_->SetSessionName(false);
+  ss_->set_session_name(false);
   logged_in_ = true;
   return true;
 }
@@ -370,8 +370,8 @@ bool ClientController::ValidateUser(const std::string &password) {
     return false;
   }
 
-  ss_->SetConnectionStatus(0);
-  ss_->SetSessionName(false);
+  ss_->set_connection_status(0);
+  ss_->set_session_name(false);
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
   if (ParseDa() != 0) {
     DLOG(INFO) << "ClientController::ValidateUser - Cannot parse DA"
@@ -579,7 +579,7 @@ bool ClientController::ChangePassword(const std::string &new_password) {
 }
 
 std::string ClientController::Password() {
-  return ss_->Password();
+  return ss_->password();
 }
 
 //////////////////////////////
@@ -593,7 +593,7 @@ bool ClientController::CreatePublicUsername(const std::string &pub_username) {
 #endif
     return false;
   }
-  if (!ss_->PublicUsername().empty()) {
+  if (!ss_->public_username().empty()) {
 #ifdef DEBUG
     printf("CC::CreatePublicUsername - Already have public username.\n");
 #endif
@@ -1313,7 +1313,7 @@ int ClientController::SendInstantFile(
   ifm->set_ser_mdm(ser_mdm);
   ifm->set_ser_dm(ser_dm);
   ifm->set_filename(p_filename.filename().string());
-  im.set_sender(SessionSingleton::getInstance()->PublicUsername());
+  im.set_sender(ss_->PublicUsername());
   im.set_date(0);
   im.set_conversation(conversation);
   std::string message;
@@ -1371,8 +1371,7 @@ void ClientController::onInstantMessage(const std::string &message,
   }
 
   std::string mpid_private_key;
-  if (SessionSingleton::getInstance()->MPublicID(NULL, NULL, &mpid_private_key,
-                                                 NULL) != kSuccess) {
+  if (ss_->MPublicID(NULL, NULL, &mpid_private_key, NULL) != kSuccess) {
     return;
   }
   std::string aes_key(RSADecrypt(bpm.rsaenc_key(), mpid_private_key));
@@ -1643,7 +1642,7 @@ int ClientController::CreateNewShare(const std::string &name,
 #endif
     return kClientControllerNotInitialised;
   }
-  if (ss_->ConnectionStatus() == 1) {
+  if (ss_->connection_status() == 1) {
 #ifdef DEBUG
     printf("Can't send a message while off-line.\n");
 #endif
@@ -1935,7 +1934,7 @@ int ClientController::RemoveElement(const std::string &element_path) {
   if (dah->RemoveElement(element_path))
     return -1;
   fs::path full_path =
-      file_system::FullMSPathFromRelPath(element_path, ss_->SessionName());
+      file_system::FullMSPathFromRelPath(element_path, ss_->session_name());
 
   try {
     if (fs::exists(full_path))
@@ -2001,7 +2000,7 @@ int ClientController::PathDistinction(const std::string &path,
         else
           share_name += share.at(nn);
       }
-      fs::path newDb(file_system::MaidsafeHomeDir(ss_->SessionName()));
+      fs::path newDb(file_system::MaidsafeHomeDir(ss_->session_name()));
       newDb /= ".shares";
       std::string dbNameNew(newDb.string());
 

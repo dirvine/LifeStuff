@@ -125,17 +125,17 @@ TEST_F(AuthenticationTest, FUNC_MAID_GoodLogin) {
   std::string ser_dm_login;
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
   ASSERT_EQ(ser_dm_, ser_dm_login);
-  ASSERT_EQ(username_, ss_->Username());
-  ASSERT_EQ(pin_, ss_->Pin());
-  ASSERT_EQ(password_, ss_->Password());
+  ASSERT_EQ(username_, ss_->username());
+  ASSERT_EQ(pin_, ss_->pin());
+  ASSERT_EQ(password_, ss_->password());
 
   ASSERT_EQ(kSuccess, authentication_.SaveSession(ser_dm_));
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
   ser_dm_login.clear();
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
   ASSERT_EQ(ser_dm_, ser_dm_login);
-  ASSERT_EQ(username_, ss_->Username());
-  ASSERT_EQ(pin_, ss_->Pin());
+  ASSERT_EQ(username_, ss_->username());
+  ASSERT_EQ(pin_, ss_->pin());
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_LoginNoUser) {
@@ -157,10 +157,10 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserOnce) {
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,
                                                        password_, ser_dm_));
-  ASSERT_EQ(username_, ss_->Username());
-  ASSERT_EQ(pin_, ss_->Pin());
+  ASSERT_EQ(username_, ss_->username());
+  ASSERT_EQ(pin_, ss_->pin());
 //  Sleep(boost::posix_time::milliseconds(100));
-  ASSERT_EQ(password_, ss_->Password());
+  ASSERT_EQ(password_, ss_->password());
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
@@ -240,7 +240,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
   EXPECT_FALSE(original_stmidname.empty());
 
   ASSERT_EQ(kSuccess, authentication_.ChangeUsername(ser_dm_, "el iuserneim"));
-  ASSERT_EQ("el iuserneim", ss_->Username());
+  ASSERT_EQ("el iuserneim", ss_->username());
 
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo("el iuserneim", pin_));
   std::string ser_dm_login;
@@ -268,7 +268,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {
   EXPECT_FALSE(original_stmidname.empty());
 
   ASSERT_EQ(kSuccess, authentication_.ChangePin(ser_dm_, "7894"));
-  ASSERT_EQ("7894", ss_->Pin());
+  ASSERT_EQ("7894", ss_->pin());
 
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, "7894"));
   std::string ser_dm_login;
@@ -291,7 +291,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
   std::string original_tmidname, original_stmidname;
 
   ASSERT_EQ(kSuccess, authentication_.ChangePassword(ser_dm_, "password_new"));
-  ASSERT_EQ("password_new", ss_->Password());
+  ASSERT_EQ("password_new", ss_->password());
 
   std::string ser_dm_login;
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
@@ -355,7 +355,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterLeaveRegister) {
   //  Remove user.
   ASSERT_EQ(kSuccess, authentication_.RemoveMe());
   try {
-    fs::remove_all(file_system::MaidsafeDir(ss_->SessionName()));
+    fs::remove_all(file_system::MaidsafeDir(ss_->session_name()));
   }
   catch(const std::exception &e) {
     FAIL() << e.what();

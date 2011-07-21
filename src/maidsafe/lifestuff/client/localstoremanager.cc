@@ -882,7 +882,7 @@ std::string LocalStoreManager::BufferPacketName() {
   std::string mpid_public;
   if (ss_->MPublicID(NULL, &mpid_public, NULL, NULL) != kSuccess)
     return "";
-  return BufferPacketName(ss_->PublicUsername(), mpid_public);
+  return BufferPacketName(ss_->public_username(), mpid_public);
 }
 
 std::string LocalStoreManager::BufferPacketName(const std::string &pub_username,

@@ -57,18 +57,18 @@ class SessionSingletonTest : public testing::Test {
 
 TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   // Check session is clean originally
-  ASSERT_FALSE(ss_->DaModified());
-  ASSERT_EQ(kDefCon3, ss_->DefConLevel());
-  ASSERT_EQ("", ss_->Username());
-  ASSERT_EQ("", ss_->Pin());
-  ASSERT_EQ("", ss_->Password());
-  ASSERT_EQ("", ss_->PublicUsername());
-  ASSERT_EQ("", ss_->SessionName());
-  ASSERT_EQ("", ss_->RootDbKey());
-  ASSERT_EQ(size_t(0), ss_->AuthorisedUsers().size());
-  ASSERT_EQ(size_t(0), ss_->MaidAuthorisedUsers().size());
-  ASSERT_EQ(0, ss_->Mounted());
-  ASSERT_EQ('\0', ss_->WinDrive());
+  ASSERT_FALSE(ss_->da_modified());
+  ASSERT_EQ(kDefCon3, ss_->def_con_level());
+  ASSERT_EQ("", ss_->username());
+  ASSERT_EQ("", ss_->pin());
+  ASSERT_EQ("", ss_->password());
+  ASSERT_EQ("", ss_->public_username());
+  ASSERT_EQ("", ss_->session_name());
+  ASSERT_EQ("", ss_->root_db_key());
+  ASSERT_EQ(size_t(0), ss_->authorised_users().size());
+  ASSERT_EQ(size_t(0), ss_->maid_authorised_users().size());
+  ASSERT_EQ(0, ss_->mounted());
+  ASSERT_EQ('\0', ss_->win_drive());
   std::vector<mi_contact> list;
   ASSERT_EQ(0, ss_->GetContactList(&list));
   ASSERT_EQ(size_t(0), list.size());
@@ -77,20 +77,20 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ(size_t(0), ps_list.size());
 
   // Modify session
-  ss_->SetDaModified(true);
-  ss_->SetDefConLevel(kDefCon1);
-  ss_->SetUsername("aaa");
-  ss_->SetPin("bbb");
-  ss_->SetPassword("ccc");
-  ASSERT_TRUE(ss_->SetSessionName(false));
-  ss_->SetRootDbKey("ddd");
+  ss_->set_da_modified(true);
+  ss_->set_def_con_level(kDefCon1);
+  ss_->set_username("aaa");
+  ss_->set_pin("bbb");
+  ss_->set_password("ccc");
+  ASSERT_TRUE(ss_->set_session_name(false));
+  ss_->set_root_db_key("ddd");
   std::set<std::string> non_empty_set;
   non_empty_set.insert("eee");
-  ss_->SetAuthorisedUsers(non_empty_set);
+  ss_->set_authorised_users(non_empty_set);
   non_empty_set.insert("fff");
-  ss_->SetMaidAuthorisedUsers(non_empty_set);
-  ss_->SetMounted(1);
-  ss_->SetWinDrive('N');
+  ss_->set_maid_authorised_users(non_empty_set);
+  ss_->set_mounted(1);
+  ss_->set_win_drive('N');
   ASSERT_EQ(0, ss_->AddContact("pub_name", "pub_key", "full_name",
                                "office_phone", "birthday", 'M', 18, 6, "city",
                                'C', 0, 0));
@@ -105,24 +105,24 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ(0, ss_->AddPrivateShare(attributes, share_stats, &participants));
 
   // Verify modifications
-  ASSERT_TRUE(ss_->DaModified());
-  ASSERT_EQ(kDefCon1, ss_->DefConLevel());
-  ASSERT_EQ("aaa", ss_->Username());
-  ASSERT_EQ("bbb", ss_->Pin());
-  ASSERT_EQ("ccc", ss_->Password());
-  ASSERT_EQ("", ss_->PublicUsername());
-  ASSERT_NE("", ss_->SessionName());
-  ASSERT_EQ("ddd", ss_->RootDbKey());
-  ASSERT_EQ(size_t(1), ss_->AuthorisedUsers().size());
-  std::set<std::string>::const_iterator it = ss_->AuthorisedUsers().find("eee");
-  ASSERT_FALSE(ss_->AuthorisedUsers().end() == it);
-  ASSERT_EQ(size_t(2), ss_->MaidAuthorisedUsers().size());
-  it = ss_->MaidAuthorisedUsers().find("eee");
-  ASSERT_FALSE(ss_->MaidAuthorisedUsers().end() == it);
-  it = ss_->MaidAuthorisedUsers().find("fff");
-  ASSERT_FALSE(ss_->MaidAuthorisedUsers().end() == it);
-  ASSERT_EQ(1, ss_->Mounted());
-  ASSERT_EQ('N', ss_->WinDrive());
+  ASSERT_TRUE(ss_->da_modified());
+  ASSERT_EQ(kDefCon1, ss_->def_con_level());
+  ASSERT_EQ("aaa", ss_->username());
+  ASSERT_EQ("bbb", ss_->pin());
+  ASSERT_EQ("ccc", ss_->password());
+  ASSERT_EQ("", ss_->public_username());
+  ASSERT_NE("", ss_->session_name());
+  ASSERT_EQ("ddd", ss_->root_db_key());
+  ASSERT_EQ(size_t(1), ss_->authorised_users().size());
+  std::set<std::string>::const_iterator it = ss_->authorised_users().find("eee");
+  ASSERT_FALSE(ss_->authorised_users().end() == it);
+  ASSERT_EQ(size_t(2), ss_->maid_authorised_users().size());
+  it = ss_->maid_authorised_users().find("eee");
+  ASSERT_FALSE(ss_->maid_authorised_users().end() == it);
+  it = ss_->maid_authorised_users().find("fff");
+  ASSERT_FALSE(ss_->maid_authorised_users().end() == it);
+  ASSERT_EQ(1, ss_->mounted());
+  ASSERT_EQ('N', ss_->win_drive());
   ASSERT_EQ(0, ss_->GetContactList(&list));
   ASSERT_EQ(size_t(1), list.size());
   ASSERT_EQ("pub_name", list[0].pub_name_);
@@ -153,18 +153,18 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_TRUE(ss_->ResetSession());
 
   // Check session is clean again
-  ASSERT_FALSE(ss_->DaModified());
-  ASSERT_EQ(kDefCon3, ss_->DefConLevel());
-  ASSERT_EQ("", ss_->Username());
-  ASSERT_EQ("", ss_->Pin());
-  ASSERT_EQ("", ss_->Password());
-  ASSERT_EQ("", ss_->PublicUsername());
-  ASSERT_EQ("", ss_->SessionName());
-  ASSERT_EQ("", ss_->RootDbKey());
-  ASSERT_EQ(size_t(0), ss_->AuthorisedUsers().size());
-  ASSERT_EQ(size_t(0), ss_->MaidAuthorisedUsers().size());
-  ASSERT_EQ(0, ss_->Mounted());
-  ASSERT_EQ('\0', ss_->WinDrive());
+  ASSERT_FALSE(ss_->da_modified());
+  ASSERT_EQ(kDefCon3, ss_->def_con_level());
+  ASSERT_EQ("", ss_->username());
+  ASSERT_EQ("", ss_->pin());
+  ASSERT_EQ("", ss_->password());
+  ASSERT_EQ("", ss_->public_username());
+  ASSERT_EQ("", ss_->session_name());
+  ASSERT_EQ("", ss_->root_db_key());
+  ASSERT_EQ(size_t(0), ss_->authorised_users().size());
+  ASSERT_EQ(size_t(0), ss_->maid_authorised_users().size());
+  ASSERT_EQ(0, ss_->mounted());
+  ASSERT_EQ('\0', ss_->win_drive());
   ASSERT_EQ(0, ss_->GetContactList(&list));
   ASSERT_EQ(size_t(0), list.size());
   ASSERT_EQ(0, ss_->GetFullShareList(ALPHA, kAll, &ps_list));
@@ -173,13 +173,13 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
 
 TEST_F(SessionSingletonTest, BEH_MAID_SessionName) {
   // Check session is empty
-  ASSERT_EQ("", ss_->SessionName());
-  ASSERT_EQ("", ss_->Username());
-  ASSERT_EQ("", ss_->Pin());
+  ASSERT_EQ("", ss_->session_name());
+  ASSERT_EQ("", ss_->username());
+  ASSERT_EQ("", ss_->pin());
 
   // Check username and pin are needed
-  ASSERT_FALSE(ss_->SetSessionName(false));
-  ASSERT_EQ("", ss_->SessionName());
+  ASSERT_FALSE(ss_->set_session_name(false));
+  ASSERT_EQ("", ss_->session_name());
 
   std::string username("user1");
   std::string pin("1234");
@@ -187,16 +187,16 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionName) {
                                                                     username));
 
   // Set the session values
-  ss_->SetUsername(username);
-  ss_->SetPin(pin);
-  ASSERT_TRUE(ss_->SetSessionName(false));
+  ss_->set_username(username);
+  ss_->set_pin(pin);
+  ASSERT_TRUE(ss_->set_session_name(false));
 
   // Check session name
-  ASSERT_EQ(session_name, ss_->SessionName());
+  ASSERT_EQ(session_name, ss_->session_name());
 
   // Reset value and check empty again
-  ss_->SetSessionName(true);
-  ASSERT_EQ("", ss_->SessionName());
+  ss_->set_session_name(true);
+  ASSERT_EQ("", ss_->session_name());
 }
 
 TEST_F(SessionSingletonTest, BEH_MAID_SessionContactsIO) {

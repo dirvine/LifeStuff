@@ -58,7 +58,8 @@ static const boost::uint8_t K(4);
 std::string CreateSetFile(const std::string &filename,
                           const std::string &file_content) {
   fs::path file_path(file_system::MaidsafeHomeDir(
-      maidsafe::lifestuff::SessionSingleton::getInstance()->SessionName()) / filename);  //NOLINT
+      maidsafe::lifestuff::SessionSingleton::getInstance()->session_name()) /
+                     filename);  //NOLINT
   fs::ofstream ofs;
   ofs.open(file_path, std::ofstream::binary | std::ofstream::ate);
   ofs.write(file_content.data(), file_content.size());
@@ -167,18 +168,18 @@ class SEHandlerTest : public testing::Test {
     ss_->passport_ = passport;
     ss_->ResetSession();
     ss_->CreateTestPackets("PublicName");
-    ss_->SetUsername("user1");
-    ss_->SetPin("1234");
-    ss_->SetPassword("password1");
-    ss_->SetSessionName(false);
-    ss_->SetRootDbKey("whatever");
+    ss_->set_username("user1");
+    ss_->set_pin("1234");
+    ss_->set_password("password1");
+    ss_->set_session_name(false);
+    ss_->set_root_db_key("whatever");
     try {
       if (fs::exists(test_root_dir_))
         fs::remove_all(test_root_dir_);
       if (fs::exists(file_system::LocalStoreManagerDir()))
         fs::remove_all(file_system::LocalStoreManagerDir());
-      if (fs::exists(file_system::MaidsafeDir(ss_->SessionName())))
-        fs::remove_all(file_system::MaidsafeDir(ss_->SessionName()));
+      if (fs::exists(file_system::MaidsafeDir(ss_->session_name())))
+        fs::remove_all(file_system::MaidsafeDir(ss_->session_name()));
     }
     catch(const std::exception& e) {
       printf("%s\n", e.what());
@@ -199,7 +200,7 @@ class SEHandlerTest : public testing::Test {
       FAIL();
       return;
     }
-    ASSERT_EQ(0, file_system::Mount(ss_->SessionName(), ss_->DefConLevel()));
+    ASSERT_EQ(0, file_system::Mount(ss_->session_name(), ss_->def_con_level()));
     dah_.reset(new DataAtlasHandler());
     seh_.reset(new SEHandler());
     seh_->Init(sm_, client_chunkstore_);
@@ -223,7 +224,7 @@ class SEHandlerTest : public testing::Test {
         seh_->GenerateUniqueKey(&key);
       else
         key = kRootSubdir[i][1];
-      fs::create_directories(file_system::MaidsafeHomeDir(ss_->SessionName()) /
+      fs::create_directories(file_system::MaidsafeHomeDir(ss_->session_name()) /
                                                           kRootSubdir[i][0]);
       dah_->AddElement(TidyPath(kRootSubdir[i][0]), ser_mdm, "", key, true);
     }
@@ -241,8 +242,8 @@ class SEHandlerTest : public testing::Test {
         fs::remove_all(test_root_dir_);
       if (fs::exists(file_system::LocalStoreManagerDir()))
         fs::remove_all(file_system::LocalStoreManagerDir());
-      if (fs::exists(file_system::MaidsafeDir(ss_->SessionName())))
-        fs::remove_all(file_system::MaidsafeDir(ss_->SessionName()));
+      if (fs::exists(file_system::MaidsafeDir(ss_->session_name())))
+        fs::remove_all(file_system::MaidsafeDir(ss_->session_name()));
     }
     catch(const std::exception& e) {
       printf("%s\n", e.what());
@@ -316,9 +317,9 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_Check_Entry) {
   fs::path full_path3(test_seh::CreateRandomFile(rel_str3, size3));
   fs::path full_path4(test_seh::CreateRandomFile(rel_str4, size4));
   fs::path full_path5(test_seh::CreateRandomFile(rel_str5, size5));
-  fs::path full_path6(file_system::MaidsafeHomeDir(ss_->SessionName()) /
+  fs::path full_path6(file_system::MaidsafeHomeDir(ss_->session_name()) /
                       rel_str6);
-  fs::path full_path7(file_system::MaidsafeHomeDir(ss_->SessionName()) /
+  fs::path full_path7(file_system::MaidsafeHomeDir(ss_->session_name()) /
                       rel_str7);
   fs::create_directories(full_path7);
   fs::path full_path8 = test_seh::CreateRandomFile(rel_str8, size8);
@@ -479,7 +480,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_DecryptStringWithLoadChunks) {
       seh_->ConnectToOnFileNetworkStatus(std::bind(&test_seh::FileUpdate,
                                                    arg::_1, arg::_2, &res, &m));
 
-  ss_->SetDefConLevel(kDefCon2);
+  ss_->set_def_con_level(kDefCon2);
   std::string data(RandomString(2048)), ser_dm;
 
   int result = seh_->EncryptString(data, &ser_dm);
@@ -497,7 +498,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_DecryptStringWithLoadChunks) {
 
   // All dirs are removed on fsys_.Mount() below.  We need to temporarily rename
   // DbDir (which contains dir's db files) to avoid deletion.
-  fs::path db_dir_original = file_system::DbDir(ss_->SessionName());
+  fs::path db_dir_original = file_system::DbDir(ss_->session_name());
   std::string db_dir_new = "./W";
   try {
     fs::remove_all(db_dir_new);
@@ -506,9 +507,9 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_DecryptStringWithLoadChunks) {
   catch(const std::exception &e) {
     printf("%s\n", e.what());
   }
-  ASSERT_EQ(0, file_system::Mount(ss_->SessionName(), ss_->DefConLevel()));
+  ASSERT_EQ(0, file_system::Mount(ss_->session_name(), ss_->DefConLevel()));
 
-  fs::create_directories(file_system::MaidsafeHomeDir(ss_->SessionName()) /
+  fs::create_directories(file_system::MaidsafeHomeDir(ss_->session_name()) /
                                                       kRootSubdir[0][0]);
   try {
     fs::remove_all(db_dir_original);
@@ -566,7 +567,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_DecryptWithChunksPrevLoaded) {
 }
 
 TEST_F(SEHandlerTest, DISABLED_BEH_MAID_DecryptWithLoadChunks) {
-  ss_->SetDefConLevel(kDefCon2);
+  ss_->set_def_con_level(kDefCon2);
   int res(0), res2(res);
   boost::mutex m;
   boost::signals2::connection c =
@@ -597,7 +598,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_DecryptWithLoadChunks) {
 
   // All dirs are removed on fsys.Mount() below.  We need to temporarily rename
   // DbDir (which contains dir's db files) to avoid deletion.
-  fs::path db_dir_original = file_system::DbDir(ss_->SessionName());
+  fs::path db_dir_original = file_system::DbDir(ss_->session_name());
   std::string db_dir_new = "./W";
   try {
     fs::remove_all(db_dir_new);
@@ -606,9 +607,9 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_DecryptWithLoadChunks) {
   catch(const std::exception &e) {
     printf("%s\n", e.what());
   }
-  ASSERT_EQ(0, file_system::Mount(ss_->SessionName(), ss_->DefConLevel()));
+  ASSERT_EQ(0, file_system::Mount(ss_->session_name(), ss_->DefConLevel()));
   ASSERT_FALSE(fs::exists(full_str));
-  fs::create_directories(file_system::MaidsafeHomeDir(ss_->SessionName()) /
+  fs::create_directories(file_system::MaidsafeHomeDir(ss_->session_name()) /
                                                       kRootSubdir[0][0]);
   try {
     fs::remove_all(db_dir_original);
@@ -679,7 +680,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptAndDecryptPrivateDb) {
                                ser_dm, key, "", true, false));
   ASSERT_TRUE(fs::exists(db_path));
   ASSERT_EQ(hash_before, crypto::HashFile<crypto::SHA512>(db_path));
-  fs::remove(file_system::MaidsafeDir(ss_->SessionName()) / key);
+  fs::remove(file_system::MaidsafeDir(ss_->session_name()) / key);
 }
 
 TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptAndDecryptAnonDb) {
@@ -706,7 +707,7 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptAndDecryptAnonDb) {
 //    ANONYMOUS, "", key, "", false, false));
   ASSERT_TRUE(fs::exists(db_path));
   ASSERT_EQ(hash_before, crypto::HashFile<crypto::SHA512>(db_path));
-  fs::remove(file_system::MaidsafeDir(ss_->SessionName()) / key);
+  fs::remove(file_system::MaidsafeDir(ss_->session_name()) / key);
 }
 
 TEST_F(SEHandlerTest, DISABLED_BEH_MAID_FailureOfChunkEncryptingFile) {

@@ -79,17 +79,17 @@ class DataAtlasHandlerTest : public testing::Test {
     ss->passport_ = passport;
     ss->ResetSession();
     ss->CreateTestPackets("PublicName");
-    ss->SetUsername("user1");
-    ss->SetPin("1234");
-    ss->SetPassword("password1");
-    ss->SetSessionName(false);
-    ss->SetRootDbKey("whatever");
+    ss->set_username("user1");
+    ss->set_pin("1234");
+    ss->set_password("password1");
+    ss->set_session_name(false);
+    ss->set_root_db_key("whatever");
     try {
       if (fs::exists(test_root_dir_))
         fs::remove_all(test_root_dir_);
       if (fs::exists(file_system::LocalStoreManagerDir()))
         fs::remove_all(file_system::LocalStoreManagerDir());
-      std::string session_name = ss->SessionName();
+      std::string session_name = ss->session_name();
       if (fs::exists(file_system::MaidsafeDir(session_name)))
         fs::remove_all(file_system::MaidsafeDir(session_name));
       fs::create_directories(test_root_dir_);
@@ -115,7 +115,7 @@ class DataAtlasHandlerTest : public testing::Test {
       FAIL();
       return;
     }
-    ASSERT_EQ(0, file_system::Mount(ss->SessionName(), ss->DefConLevel()));
+    ASSERT_EQ(0, file_system::Mount(ss->session_name(), ss->def_con_level()));
     boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
     std::shared_ptr<SEHandler> seh(new SEHandler());
     seh->Init(sm, client_chunkstore_);
@@ -141,7 +141,7 @@ class DataAtlasHandlerTest : public testing::Test {
       else
         key = kRootSubdir[i][1];
       fs::create_directories(file_system::MaidsafeHomeDir(
-          ss->SessionName()) / kRootSubdir[i][0]);
+          ss->session_name()) / kRootSubdir[i][0]);
       dah->AddElement(TidyPath(kRootSubdir[i][0]), ser_mdm, "", key, true);
     }
   }
@@ -152,7 +152,7 @@ class DataAtlasHandlerTest : public testing::Test {
         fs::remove_all(test_root_dir_);
       if (fs::exists(file_system::LocalStoreManagerDir()))
         fs::remove_all(file_system::LocalStoreManagerDir());
-      std::string session_name = SessionSingleton::getInstance()->SessionName();
+      std::string session_name(SessionSingleton::getInstance()->session_name());
       if (fs::exists(file_system::MaidsafeDir(session_name)))
         fs::remove_all(file_system::MaidsafeDir(session_name));
     }

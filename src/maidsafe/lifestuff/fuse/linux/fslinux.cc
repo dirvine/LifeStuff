@@ -66,7 +66,7 @@ void fuse_loop_session(struct fuse *fuse, int multithreaded) {
   else
     res = fuse_loop(fuse);
   if (res == -1)
-    maidsafe::lifestuff::SessionSingleton::getInstance()->SetMounted(-1);
+    maidsafe::lifestuff::SessionSingleton::getInstance()->set_mounted(-1);
 }
 
 FSLinux::FSLinux() : fuse_dispatcher_(NULL), fuse_(NULL), mountpoint_('\0'),
@@ -341,7 +341,7 @@ int FSLinux::ms_open(const char *path, struct fuse_file_info *fi) {
 #endif
   std::string rel_path(path);
   lpath = (file_system::MaidsafeHomeDir(
-          maidsafe::lifestuff::SessionSingleton::getInstance()->SessionName())
+          maidsafe::lifestuff::SessionSingleton::getInstance()->session_name())
           / lpath).string();
 
   fs::path some_path(lpath);
@@ -379,7 +379,7 @@ int FSLinux::ms_read(const char *path, char *data, size_t size, off_t offset,
   printf("ms_read: %s\tfile handle: %llu", path, fi->fh);
 #endif
   lpath = (file_system::MaidsafeHomeDir(
-          maidsafe::lifestuff::SessionSingleton::getInstance()->SessionName())
+          maidsafe::lifestuff::SessionSingleton::getInstance()->session_name())
           / lpath).string();
 
   int res;
@@ -399,7 +399,7 @@ int FSLinux::ms_release(const char *path, struct fuse_file_info *fi) {
 #endif
   std::string lpath(path);
   lpath = (file_system::MaidsafeHomeDir(
-          maidsafe::lifestuff::SessionSingleton::getInstance()->SessionName())
+          maidsafe::lifestuff::SessionSingleton::getInstance()->session_name())
           / lpath).string();
   std::string original_path(path);
   close(fi->fh);
@@ -426,7 +426,7 @@ int FSLinux::ms_write(const char *path, const char *data, size_t size,
                       off_t offset, struct fuse_file_info *fi) {
   std::string lpath(path);
   lpath = (file_system::MaidsafeHomeDir(
-          maidsafe::lifestuff::SessionSingleton::getInstance()->SessionName())
+          maidsafe::lifestuff::SessionSingleton::getInstance()->session_name())
           / lpath).string();
 #ifdef DEBUG
   printf("ms_write PATH: %s\n", path);
@@ -598,7 +598,7 @@ int FSLinux::ms_mkdir(const char *path, mode_t) {
     return -13;
 
   lpath = (file_system::MaidsafeHomeDir(
-          maidsafe::lifestuff::SessionSingleton::getInstance()->SessionName())
+          maidsafe::lifestuff::SessionSingleton::getInstance()->session_name())
           / lpath).string();
   fs::path full_path(lpath);
   try {
@@ -642,7 +642,7 @@ int FSLinux::ms_rename(const char *o_path, const char *n_path) {
 //      maidsafe::lifestuff::TidyPath(ln_path)) != 0)
     return -errno;
   std::string s_name =
-      maidsafe::lifestuff::SessionSingleton::getInstance()->SessionName();
+      maidsafe::lifestuff::SessionSingleton::getInstance()->session_name();
 
   try {
     if (fs::exists(file_system::MaidsafeHomeDir(s_name) / ln_path))
@@ -716,7 +716,7 @@ int FSLinux::ms_create(const char *path,
     return -13;
 
   lpath = (file_system::MaidsafeHomeDir(
-          maidsafe::lifestuff::SessionSingleton::getInstance()->SessionName())
+          maidsafe::lifestuff::SessionSingleton::getInstance()->session_name())
           / lpath).string();
   fs::path full_path(lpath);
   fs::path branch_path = full_path.parent_path();
@@ -790,7 +790,7 @@ int FSLinux::ms_unlink(const char *path) {
 //      maidsafe::lifestuff::TidyPath(lpath)) != 0)
     return -errno;
   lpath = (file_system::MaidsafeHomeDir(
-          maidsafe::lifestuff::SessionSingleton::getInstance()->SessionName())
+          maidsafe::lifestuff::SessionSingleton::getInstance()->session_name())
           / lpath).string();
   try {
     if (fs::exists(lpath))

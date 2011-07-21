@@ -39,8 +39,8 @@ namespace lifestuff {
 
 DataAtlasHandler::DataAtlasHandler() : db_dir_() {
   SessionSingleton *ss = SessionSingleton::getInstance();
-  if (!ss->SessionName().empty()) {
-    db_dir_ = file_system::DbDir(ss->SessionName());
+  if (!ss->session_name().empty()) {
+    db_dir_ = file_system::DbDir(ss->session_name());
   } else {
     std::string username("user1");
     std::string pin("1234");
@@ -352,7 +352,7 @@ int DataAtlasHandler::GetDirKey(const std::string &element_path,
                                 std::string *dir_key) {
   int result = kDataAtlasError;
   if (element_path == "" || element_path == "/" || element_path == "\\") {
-    *dir_key = SessionSingleton::getInstance()->RootDbKey();
+    *dir_key = SessionSingleton::getInstance()->root_db_key();
     return kSuccess;
   }
   std::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));

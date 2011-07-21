@@ -117,8 +117,8 @@ int Authentication::GetUserInfo(const std::string &username,
     }
   }
   if (tmid_op_status_ == kSucceeded || stmid_op_status_ == kSucceeded) {
-    session_singleton_->SetUsername(username);
-    session_singleton_->SetPin(pin);
+    session_singleton_->set_username(username);
+    session_singleton_->set_pin(pin);
     return kUserExists;
   }
   return kUserDoesntExist;
@@ -289,8 +289,8 @@ int Authentication::CreateUserSysPackets(const std::string &username,
                   << std::endl;
     return kAuthenticationError;
   }
-  session_singleton_->SetUsername(username);
-  session_singleton_->SetPin(pin);
+  session_singleton_->set_username(username);
+  session_singleton_->set_pin(pin);
 
   OpStatus anmaid_status(kPending);
   CreateSignaturePacket(passport::ANMAID, "", &anmaid_status, NULL);
@@ -441,8 +441,8 @@ int Authentication::CreateTmidPacket(const std::string &username,
                                      const std::string &pin,
                                      const std::string &password,
                                      const std::string &serialised_datamap) {
-  if ((username != session_singleton_->Username()) ||
-      (pin != session_singleton_->Pin())) {
+  if ((username != session_singleton_->username()) ||
+      (pin != session_singleton_->pin())) {
     DLOG(ERROR) << "Authentication::CreateTmidPacket: username/pin error."
                 << std::endl;
     return kAuthenticationError;
@@ -489,7 +489,7 @@ int Authentication::CreateTmidPacket(const std::string &username,
     return kAuthenticationError;
   } else {
     passport_->ConfirmNewUserData(mid, smid, tmid, stmid);
-    session_singleton_->SetPassword(password);
+    session_singleton_->set_password(password);
     return kSuccess;
   }
 }
@@ -712,7 +712,7 @@ int Authentication::GetMasterDataMap(
   int res = passport_->GetUserData(password, false, encrypted_tmid_,
                                    serialised_master_datamap.get());
   if (res == kSuccess) {
-    session_singleton_->SetPassword(password);
+    session_singleton_->set_password(password);
     passport_->GetUserData(password, true, encrypted_stmid_,
                            surrogate_serialised_master_datamap.get());
     return res;
@@ -724,7 +724,7 @@ int Authentication::GetMasterDataMap(
   res = passport_->GetUserData(password, true, encrypted_stmid_,
                                surrogate_serialised_master_datamap.get());
   if (res == kSuccess) {
-    session_singleton_->SetPassword(password);
+    session_singleton_->set_password(password);
     return res;
   } else {
     DLOG(WARNING) << "Authentication::GetMasterDataMap - STMID error "
@@ -784,7 +784,7 @@ int Authentication::CreateMsidPacket(std::string *msid_name,
 }
 
 int Authentication::CreatePublicName(const std::string &public_name) {
-  if (!session_singleton_->PublicUsername().empty()) {
+  if (!session_singleton_->public_username().empty()) {
     DLOG(ERROR) << "Authentication::CreatePublicName: Already set" << std::endl;
     return kPublicUsernameAlreadySet;
   }
@@ -951,13 +951,13 @@ int Authentication::ChangeUsername(const std::string &serialised_master_datamap,
                                    const std::string &new_username) {
   return ChangeUserData(serialised_master_datamap,
                         new_username,
-                        session_singleton_->Pin());
+                        session_singleton_->pin());
 }
 
 int Authentication::ChangePin(const std::string &serialised_master_datamap,
                               const std::string &new_pin) {
   return ChangeUserData(serialised_master_datamap,
-                        session_singleton_->Username(),
+                        session_singleton_->username(),
                         new_pin);
 }
 
@@ -1151,8 +1151,8 @@ int Authentication::ChangeUserData(const std::string &serialised_master_datamap,
     passport_->RevertUserDataChange();
     return kAuthenticationError;
   }
-  session_singleton_->SetUsername(new_username);
-  session_singleton_->SetPin(new_pin);
+  session_singleton_->set_username(new_username);
+  session_singleton_->set_pin(new_pin);
   return kSuccess;
 }
 
@@ -1218,7 +1218,7 @@ int Authentication::ChangePassword(const std::string &serialised_master_datamap,
     passport_->RevertPasswordChange();
     return kAuthenticationError;
   }
-  session_singleton_->SetPassword(new_password);
+  session_singleton_->set_password(new_password);
   return kSuccess;
 }
 
@@ -1241,7 +1241,7 @@ bool Authentication::CheckUsername(const std::string &username) {
     return UtilsTrim(username).size() >= 4;
   }
   catch(const std::exception &e) {
-    DLOG(ERROR) << "Authentication::CheckUsername: " << e.what() << std::endl;
+    DLOG(ERROR) << "Authentication::Checkusername: " << e.what() << std::endl;
     return false;
   }
 }
@@ -1255,7 +1255,7 @@ bool Authentication::CheckPin(std::string pin) {
     return boost::regex_match(pin, reg_ex);
   }
   catch(const std::exception &e) {
-    DLOG(ERROR) << "Authentication::CheckPin: " << e.what() << std::endl;
+    DLOG(ERROR) << "Authentication::Checkpin: " << e.what() << std::endl;
     return false;
   }
 }

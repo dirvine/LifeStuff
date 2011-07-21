@@ -176,7 +176,7 @@ int SEHandler::EncryptAFile(const fs::path &relative_entry,
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler);
   fs::path absolute_entry =
       file_system::FullMSPathFromRelPath(relative_entry.string(),
-                                         session_singleton_->SessionName());
+                                         session_singleton_->session_name());
   boost::uint64_t file_size(0);
   std::string file_hash;
   ItemType item_type = CheckEntry(absolute_entry, &file_size, &file_hash);
@@ -336,7 +336,7 @@ int SEHandler::DecryptAFile(const fs::path &relative_entry) {
   }
 
   //  Get full path
-  std::string session(session_singleton_->SessionName());
+  std::string session(session_singleton_->session_name());
   fs::path absolute_path(fs::system_complete(
       file_system::FullMSPathFromRelPath(relative_entry.string(), session)));
   std::string decrypted_path(absolute_path.string());
