@@ -43,7 +43,7 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-typedef std::function<void(std::shared_ptr<std::vector<bool> >)> DeleteFunctor;
+typedef std::function<void(std::shared_ptr<std::vector<int>>)> DeleteFunctor;
 
 class NetworkStoreManager : public PacketManager {
  public:
@@ -95,14 +95,10 @@ class NetworkStoreManager : public PacketManager {
                         const DeleteFunctor &cb);
   void DeletePacketCallback(int result,
                             int index,
-                            std::shared_ptr<std::vector<bool>> delete_results,
+                            std::shared_ptr<std::vector<int>> delete_results,
                             std::shared_ptr<boost::mutex> mutex);
 
-  void FindValueCallback(int results,
-                         std::vector<std::string> values,
-                         std::vector<dht::kademlia::Contact> contacts,
-                         dht::kademlia::Contact node,
-                         dht::kademlia::Contact cache,
+  void FindValueCallback(dht::kademlia::FindValueReturns fvr,
                          const dht::kademlia::Key& key,
                          const dht::kademlia::SecurifierPtr securifier,
                          const DeleteFunctor &cb);
@@ -114,7 +110,7 @@ class NetworkStoreManager : public PacketManager {
   boost::uint16_t k_;
   boost::uint16_t alpha_;
   boost::uint16_t beta_;
-  std::shared_ptr<boost::asio::io_service> asio_service_;
+  boost::asio::io_service asio_service_;
   std::shared_ptr<boost::asio::io_service::work> work_;
   std::shared_ptr<dht::Securifier> securifier_;
   std::shared_ptr<dht::kademlia::Node> node_;
