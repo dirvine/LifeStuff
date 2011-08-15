@@ -578,6 +578,14 @@ bool ClientController::ChangePassword(const std::string &new_password) {
   return true;
 }
 
+std::string ClientController::Username() {
+  return ss_->username();
+}
+
+std::string ClientController::Pin() {
+  return ss_->pin();
+}
+
 std::string ClientController::Password() {
   return ss_->password();
 }
