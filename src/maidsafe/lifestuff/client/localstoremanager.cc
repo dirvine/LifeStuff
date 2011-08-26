@@ -92,9 +92,9 @@ LocalStoreManager::LocalStoreManager(
     const boost::uint8_t &k,
     const fs3::path &db_directory)
         : K_(k),
-          kUpperThreshold_(
-              static_cast<boost::uint16_t>(K_ * kMinSuccessfulPecentageStore)),
-          db_(), /*vbph_(), */mutex_(),
+          kUpperThreshold_(0),
+          db_(),
+          mutex_(),
           local_sm_dir_(db_directory.string()),
           client_chunkstore_(client_chunkstore),
           ss_(SessionSingleton::getInstance()),
@@ -994,15 +994,6 @@ void LocalStoreManager::ExecuteReturnSignal(const std::string &chunkname,
 //  sig_chunk_uploaded_(chunkname, rc);
 //  boost::mutex::scoped_lock loch_laggan(signal_mutex_);
   chunks_pending_.erase(chunkname);
-}
-
-void LocalStoreManager::ExecStringCallback(VoidFunctorOneString cb,
-                                           MaidsafeRpcResult /*result*/) {
-  std::string ser_result;
-//  GenericResponse response;
-//  response.set_result(result);
-//  response.SerializeToString(&ser_result);
-  boost::thread t(cb, ser_result);
 }
 
 void LocalStoreManager::ExecReturnCodeCallback(VoidFuncOneInt cb,

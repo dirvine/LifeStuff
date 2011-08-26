@@ -79,7 +79,11 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-namespace test { class DataAtlasHandlerTest_BEH_MAID_AddGetDataMapDetail_Test; }
+namespace test {
+class DataAtlasHandlerTest_BEH_MAID_AddGetDataMapDetail_Test;
+}  // namespace test
+
+enum DbInitFlag { CONNECT, CREATE, DISCONNECT };
 
 class PdDir {
  public:

@@ -48,18 +48,19 @@ class SessionSingleton;
 
 class Authentication {
  public:
-  Authentication() : packet_manager_(),
-                     session_singleton_(),
-                     passport_(),
-                     mutex_(),
-                     mid_mutex_(),
-                     smid_mutex_(),
-                     cond_var_(),
-                     tmid_op_status_(kPendingMid),
-                     stmid_op_status_(kPendingMid),
-                     encrypted_tmid_(),
-                     encrypted_stmid_(),
-                     kSingleOpTimeout_(10000) {}
+  Authentication()
+      : packet_manager_(),
+        session_singleton_(),
+        passport_(),
+        mutex_(),
+        mid_mutex_(),
+        smid_mutex_(),
+        cond_var_(),
+        tmid_op_status_(kPendingMid),
+        stmid_op_status_(kPendingMid),
+        encrypted_tmid_(),
+        encrypted_stmid_(),
+        kSingleOpTimeout_(10000) {}
   ~Authentication();
   // Used to intialise passport_ in all cases.
   void Init(std::shared_ptr<PacketManager> packet_manager);

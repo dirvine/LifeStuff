@@ -449,6 +449,7 @@ IF(${PACKAGE_BUILD})
 
 ELSE() # Installing the library
   SET(LIFESTUFF_CLIENT_INSTALL_FILES
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/clientcontroller.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/user_credentials_api.h)
   FOREACH(LIFESTUFF_CLIENT_INSTALL_FILE ${LIFESTUFF_CLIENT_INSTALL_FILES})
     CHECK_INSTALL_HEADER_HAS_VERSION_GUARD(${LIFESTUFF_CLIENT_INSTALL_FILE})
@@ -477,7 +478,6 @@ ELSE() # Installing the library
 #  ENDFOREACH()
 
   SET(LIFESTUFF_SHARED_INSTALL_FILES
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/config.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/maidsafe.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/returncodes.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/version.h)

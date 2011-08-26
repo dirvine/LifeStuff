@@ -32,6 +32,13 @@
 #include "boost/filesystem.hpp"
 #include <string>
 
+#include "maidsafe/lifestuff/shared/version.h"
+
+#if MAIDSAFE_LIFESTUFF_CLIENT_VERSION != 106
+#  error This API is not compatible with the installed library.\
+    Please update the maidsafe-lifestuff library.
+#endif
+
 namespace fs = boost::filesystem;
 
 namespace maidsafe {

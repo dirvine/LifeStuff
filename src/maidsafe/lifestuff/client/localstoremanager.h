@@ -172,8 +172,6 @@ class LocalStoreManager : public PacketManager {
   void CreateSerialisedSignedValue(const std::string &value,
                                    const std::string &private_key,
                                    std::string *ser_gp);
-  void ExecStringCallback(std::function<void(const std::string&)> cb,
-                          MaidsafeRpcResult result);
   void ExecuteReturnSignal(const std::string &chunkname, ReturnCode rc);
   void ExecReturnCodeCallback(VoidFuncOneInt cb, ReturnCode rc);
   void ExecReturnLoadPacketCallback(GetPacketFunctor cb,

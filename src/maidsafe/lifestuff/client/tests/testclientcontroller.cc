@@ -35,6 +35,7 @@
 
 #include "maidsafe/common/chunk_store.h"
 #include "maidsafe/common/crypto.h"
+#include "maidsafe/lifestuff/client/authentication.h"
 #include "maidsafe/lifestuff/client/clientutils.h"
 #include "maidsafe/lifestuff/client/clientcontroller.h"
 #include "maidsafe/lifestuff/client/localstoremanager.h"
@@ -69,15 +70,16 @@ class ClientControllerTest : public testing::Test {
       : test_dir_(maidsafe::test::CreateTestPath()),
         cc_(new ClientController()),
         ss_(SessionSingleton::getInstance()),
-        local_sm_(new LocalStoreManager(*test_dir_)),
-        vcp_() {}
+        local_sm_(new LocalStoreManager(*test_dir_)) {}
+
  protected:
   void SetUp() {
     ss_->ResetSession();
     local_sm_->Init(std::bind(&ClientControllerTest::InitAndCloseCallback,
                               this, arg::_1),
-              0);
-    cc_->auth_.Init(local_sm_);
+                    0);
+    cc_->auth_.reset(new Authentication);
+    cc_->auth_->Init(local_sm_);
     cc_->local_sm_ = local_sm_;
     cc_->ss_ = ss_;
     cc_->initialised_ = true;
@@ -86,7 +88,6 @@ class ClientControllerTest : public testing::Test {
     local_sm_->Close(std::bind(&ClientControllerTest::InitAndCloseCallback,
                                this, arg::_1),
                true);
-    cc_->CloseConnection(true);
     ss_->passport_->StopCreatingKeyPairs();
     cc_->initialised_ = false;
   }
@@ -97,7 +98,7 @@ class ClientControllerTest : public testing::Test {
   std::shared_ptr<ClientController> cc_;
   SessionSingleton *ss_;
   std::shared_ptr<LocalStoreManager> local_sm_;
-  VaultConfigParameters vcp_;
+
  private:
   ClientControllerTest(const ClientControllerTest&);
   ClientControllerTest &operator=(const ClientControllerTest&);

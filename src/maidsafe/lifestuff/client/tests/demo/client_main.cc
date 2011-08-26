@@ -49,5 +49,4 @@ int main(int /*argc*/, char *argv[]) {
   maidsafe::lifestuff::commandline_demo::Commands commands(user_credentials);
 
   commands.Run();
-  cc->CloseConnection(false);
 }

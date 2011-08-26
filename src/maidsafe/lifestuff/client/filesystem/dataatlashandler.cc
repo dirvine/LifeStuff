@@ -27,7 +27,6 @@
 #include "boost/filesystem.hpp"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/lifestuff/log.h"
-#include "maidsafe/lifestuff/client/filesystem/pddir.h"
 #include "maidsafe/lifestuff/client/clientutils.h"
 #include "maidsafe/lifestuff/client/sessionsingleton.h"
 

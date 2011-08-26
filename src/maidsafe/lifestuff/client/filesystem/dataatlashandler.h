@@ -39,6 +39,7 @@
 #endif
 
 #include "maidsafe/lifestuff/client/filesystem/distributed_filesystem.pb.h"
+#include "maidsafe/lifestuff/client/filesystem/pddir.h"
 
 #ifdef __MSVC__
 #  pragma warning(pop)
@@ -51,7 +52,6 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-class PdDir;
 class KeyAtlas;
 
 class DataAtlasHandler {

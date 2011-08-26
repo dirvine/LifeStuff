@@ -111,13 +111,13 @@ ItemType SEHandler::CheckEntry(const fs::path &absolute_path,
                                std::string *file_hash) {
   *file_size = 0;
   file_hash->clear();
-  if (absolute_path.string().size() > kMaxPath) {
-#ifdef DEBUG
-    printf("File name too long to process: %s\n",
-           absolute_path.string().c_str());
-#endif
-    return NOT_FOR_PROCESSING;
-  }
+//    if (absolute_path.string().size() > kMaxPath) {
+//  #ifdef DEBUG
+//      printf("File name too long to process: %s\n",
+//             absolute_path.string().c_str());
+//  #endif
+//      return NOT_FOR_PROCESSING;
+//    }
   bool exists(false);
   bool is_directory(false);
   bool is_symlink(false);
@@ -160,8 +160,8 @@ ItemType SEHandler::CheckEntry(const fs::path &absolute_path,
     }
     if (*file_size == 0)
       return EMPTY_FILE;
-    if (*file_size < kMinRegularFileSize)
-      return SMALL_FILE;
+//    if (*file_size < kMinRegularFileSize)
+//      return SMALL_FILE;
     return REGULAR_FILE;
   } else if (is_directory && !is_symlink && exists) {
     return EMPTY_DIRECTORY;
@@ -560,11 +560,11 @@ int SEHandler::EncryptDb(const fs::path &dir_path,
 //    }
     return kSuccess;
   }
-  ValueType pd_dir_type;
-  if (dir_type == ANONYMOUS)
-    pd_dir_type = PDDIR_NOTSIGNED;
-  else
-    pd_dir_type = PDDIR_SIGNED;
+//  ValueType pd_dir_type;
+//  if (dir_type == ANONYMOUS)
+//    pd_dir_type = PDDIR_NOTSIGNED;
+//  else
+//    pd_dir_type = PDDIR_SIGNED;
 
   boost::mutex mutex;
   boost::condition_variable cond_var;

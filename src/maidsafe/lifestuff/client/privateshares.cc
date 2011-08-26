@@ -25,16 +25,25 @@ namespace maidsafe {
 namespace lifestuff {
 
 // PrivateShare
-PrivateShare::PrivateShare() : name_(),
-    msid_(), msid_pub_key_(), msid_priv_key_(),
-    rank_(0), last_view_(0), participants_(0) {
+PrivateShare::PrivateShare()
+    : name_(),
+      msid_(),
+      msid_pub_key_(),
+      msid_priv_key_(),
+      rank_(0),
+      last_view_(0),
+      participants_(0) {
 }
 
 PrivateShare::PrivateShare(const std::vector<std::string> &attributes,
-    std::list<ShareParticipants> participants) : name_(attributes[0]),
-    msid_(attributes[1]), msid_pub_key_(attributes[2]),
-    msid_priv_key_(attributes[3]), rank_(0), last_view_(0),
-    participants_(participants) {
+                           std::list<ShareParticipants> participants)
+    : name_(attributes[0]),
+      msid_(attributes[1]),
+      msid_pub_key_(attributes[2]),
+      msid_priv_key_(attributes[3]),
+      rank_(0),
+      last_view_(0),
+      participants_(participants) {
 }
 
 void PrivateShare::Construct(const std::vector<std::string> &attributes,
@@ -82,8 +91,8 @@ int PrivateShareHandler::MI_AddPrivateShare(
   return 0;
 }
 
-int PrivateShareHandler::MI_DeletePrivateShare(
-    const std::string &value, const int &field) {
+int PrivateShareHandler::MI_DeletePrivateShare(const std::string &value,
+                                               const int &field) {
   if (field < 0 || field > 1)
     return -2011;
   std::string msid(value);
@@ -122,7 +131,8 @@ int PrivateShareHandler::MI_DeletePrivateShare(
 }
 
 int PrivateShareHandler::MI_AddContactsToPrivateShare(
-    const std::string &value, const int &field,
+    const std::string &value,
+    const int &field,
     std::list<ShareParticipants> *participants) {
   if (field < 0 || field > 1)
     return -2012;
@@ -149,7 +159,8 @@ int PrivateShareHandler::MI_AddContactsToPrivateShare(
 }
 
 int PrivateShareHandler::MI_DeleteContactsFromPrivateShare(
-    const std::string &value, const int &field,
+    const std::string &value,
+    const int &field,
     std::list<std::string> *participants) {
   if (field < 0 || field > 1)
     return -2013;
@@ -222,7 +233,8 @@ int PrivateShareHandler::MI_TouchShare(const std::string &value,
 }
 
 int PrivateShareHandler::MI_GetShareInfo(const std::string &value,
-    const int &field, PrivateShare *ps) {
+                                         const int &field,
+                                         PrivateShare *ps) {
   if (field < 0 || field > 1)
     return -2014;
   std::string msid(value);
@@ -281,9 +293,9 @@ int PrivateShareHandler::MI_GetShareInfo(const std::string &value,
   return 0;
 }
 
-int PrivateShareHandler::MI_GetShareList(
-    std::list<private_share> *ps_list,
-    const SortingMode &sm, const ShareFilter &sf) {
+int PrivateShareHandler::MI_GetShareList(std::list<private_share> *ps_list,
+                                         const SortingMode &sm,
+                                         const ShareFilter &sf) {
   ps_list->clear();
   switch (sm) {
     case ALPHA:
@@ -342,7 +354,7 @@ int PrivateShareHandler::MI_GetShareList(
 }
 
 int PrivateShareHandler::MI_GetFullShareList(const SortingMode &sm,
-                                              const ShareFilter &sf,
+                                             const ShareFilter &sf,
                                              std::list<PrivateShare> *ps_list) {
   ps_list->clear();
   std::list<private_share> share_list;
@@ -356,8 +368,10 @@ int PrivateShareHandler::MI_GetFullShareList(const SortingMode &sm,
   return 0;
 }
 
-int PrivateShareHandler::MI_GetParticipantsList(const std::string &value,
-    const int &field, std::list<share_participant> *sp_list) {
+int PrivateShareHandler::MI_GetParticipantsList(
+    const std::string &value,
+    const int &field,
+    std::list<share_participant> *sp_list) {
   sp_list->clear();
   if (field < 0 || field > 1)
     return -2015;
