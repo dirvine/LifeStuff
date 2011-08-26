@@ -43,7 +43,7 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-typedef std::function<void(std::shared_ptr<std::vector<int>>)> DeleteFunctor;
+typedef std::function<void(std::shared_ptr<std::vector<int>>)> DeleteFunctor;  // NOLINT (Dan)
 
 class NetworkStoreManager : public PacketManager {
  public:

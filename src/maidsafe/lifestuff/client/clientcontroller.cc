@@ -53,7 +53,6 @@
 #include "maidsafe/lifestuff/client/clientutils.h"
 #include "maidsafe/lifestuff/client/distributed_filesystem.pb.h"
 #include "maidsafe/lifestuff/client/sessionsingleton.h"
-#include "maidsafe/lifestuff/log.h"
 
 #if defined LOCAL_LifeStuffVAULT && !defined MS_NETWORK_TEST
 #  include "maidsafe/lifestuff/client/localstoremanager.h"
@@ -115,17 +114,16 @@ void PacketOpCallback(const int &store_manager_result,
 
 int ClientController::Init(boost::uint8_t /*k*/) {
   if (initialised_) {
-    DLOG(INFO) << "CC::Init - Already initialised." << std::endl;
+    DLOG(INFO) << "Already initialised." << std::endl;
     return 0;
   }
   auth_.reset(new Authentication);
 #ifdef LOCAL_LifeStuffVAULT
   local_sm_.reset(new LocalStoreManager("/tmp/LocalUserCredentials"));
-//  #else
-//    sm_.reset(new MaidsafeStoreManager(client_chunkstore_, K_));
 #endif
+
   if (!JoinKademlia()) {
-    DLOG(ERROR) << "CC::Init - Couldn't initialise SM" << std::endl;
+    DLOG(ERROR) << "Couldn't initialise SM" << std::endl;
     return -1;
   }
   auth_->Init(local_sm_);
@@ -141,26 +139,26 @@ bool ClientController::JoinKademlia() {
 
 int ClientController::ParseDa() {
   if (!initialised_) {
-    DLOG(ERROR) << "CC::ParseDa - Not initialised." << std::endl;
+    DLOG(ERROR) << "Not initialised." << std::endl;
     return kClientControllerNotInitialised;
   }
   DataAtlas data_atlas;
   if (ser_da_.empty()) {
-    DLOG(ERROR) << "CC::ParseDa - TMID brought is empty." << std::endl;
+    DLOG(ERROR) << "TMID brought is empty." << std::endl;
     return -9000;
   }
   if (!data_atlas.ParseFromString(ser_da_)) {
-    DLOG(ERROR) << "CC::ParseDa - TMID doesn't parse." << std::endl;
+    DLOG(ERROR) << "TMID doesn't parse." << std::endl;
     return -9000;
   }
   if (!data_atlas.has_root_db_key()) {
-    DLOG(ERROR) << "CC::ParseDa - DA doesn't have a root db key." << std::endl;
+    DLOG(ERROR) << "DA doesn't have a root db key." << std::endl;
     return -9001;
   }
   ss_->set_root_db_key(data_atlas.root_db_key());
 
   if (!data_atlas.has_serialised_keyring()) {
-    DLOG(ERROR) << "CC::ParseDa - Missing serialised keyring." << std::endl;
+    DLOG(ERROR) << "Missing serialised keyring." << std::endl;
     return -9003;
   }
   ss_->ParseKeyring(data_atlas.serialised_keyring());
@@ -182,7 +180,7 @@ int ClientController::ParseDa() {
 
 int ClientController::SerialiseDa() {
   if (!initialised_) {
-    DLOG(ERROR) << "CC::SerialiseDa - Not initialised." << std::endl;
+    DLOG(ERROR) << "Not initialised." << std::endl;
     return kClientControllerNotInitialised;
   }
 
@@ -191,7 +189,7 @@ int ClientController::SerialiseDa() {
 
   std::string serialised_keyring = ss_->SerialiseKeyring();
   if (serialised_keyring.empty()) {
-    DLOG(ERROR) << "CC::SerialiseDa - Serialising keyring failed." << std::endl;
+    DLOG(ERROR) << "Serialising keyring failed." << std::endl;
     return -1;
   }
   data_atlas.set_serialised_keyring(serialised_keyring);
@@ -250,7 +248,7 @@ int ClientController::SerialiseDa() {
 int ClientController::CheckUserExists(const std::string &username,
                                       const std::string &pin) {
   if (!initialised_) {
-    DLOG(ERROR) << "CC::CheckUserExists - Not initialised." << std::endl;
+    DLOG(ERROR) << "Not initialised." << std::endl;
     return kClientControllerNotInitialised;
   }
   ss_->ResetSession();
@@ -262,7 +260,7 @@ bool ClientController::CreateUser(const std::string &username,
                                   const std::string &pin,
                                   const std::string &password) {
   if (!initialised_) {
-    DLOG(ERROR) << "CC::CreateUser - Not initialised." << std::endl;
+    DLOG(ERROR) << "Not initialised." << std::endl;
     return false;
   }
 
@@ -270,23 +268,23 @@ bool ClientController::CreateUser(const std::string &username,
   ss_->set_connection_status(0);
   int result = auth_->CreateUserSysPackets(username, pin);
   if (result != kSuccess) {
-    DLOG(ERROR) << "CC::CreateUser - Failed to create user system packets."
+    DLOG(ERROR) << "Failed to create user system packets."
                 << std::endl;
     ss_->ResetSession();
     return false;
   } else {
-    DLOG(ERROR) << "CC::CreateUser - auth_->CreateUserSysPackets DONE."
+    DLOG(ERROR) << "auth_->CreateUserSysPackets DONE."
                 << std::endl;
   }
 
   std::string ser_da(ss_->SerialiseKeyring());
   result = auth_->CreateTmidPacket(username, pin, password, ser_da);
   if (result != kSuccess) {
-    DLOG(ERROR) << "CC::CreateUser - Cannot create tmid packet." << std::endl;
+    DLOG(ERROR) << "Cannot create tmid packet." << std::endl;
     ss_->ResetSession();
     return false;
   } else {
-    DLOG(ERROR) << "CC::CreateUser - auth_->CreateTmidPacket DONE." << std::endl;
+    DLOG(ERROR) << "auth_->CreateTmidPacket DONE." << std::endl;
   }
 
   ss_->set_session_name(false);
@@ -342,7 +340,7 @@ bool ClientController::ValidateUser(const std::string &password) {
 
 bool ClientController::Logout() {
   if (!initialised_) {
-    DLOG(ERROR) << "CC::Logout: Not initialised." << std::endl;
+    DLOG(ERROR) << "Not initialised." << std::endl;
     return false;
   }
   logging_out_ = true;
@@ -350,7 +348,7 @@ bool ClientController::Logout() {
 
   int result = SaveSession();
   if (result != kSuccess) {
-    DLOG(ERROR) << "CC::Logout: Failed to save session " << result << std::endl;
+    DLOG(ERROR) << "Failed to save session " << result << std::endl;
     return false;
   }
 
@@ -363,13 +361,13 @@ bool ClientController::Logout() {
 
 int ClientController::SaveSession() {
   if (!initialised_) {
-    DLOG(ERROR) << "CC::SaveSession: Not initialised." << std::endl;
+    DLOG(ERROR) << "Not initialised." << std::endl;
     return kClientControllerNotInitialised;
   }
 
   int n = SerialiseDa();
   if (n != 0) {
-    DLOG(ERROR) << "CC::SaveSession: Failed to serialise DA." << std::endl;
+    DLOG(ERROR) << "Failed to serialise DA." << std::endl;
     return n;
   }
 
@@ -387,11 +385,10 @@ int ClientController::SaveSession() {
 
   if (n != kSuccess) {
     if (n == kFailedToDeleteOldPacket) {
-      DLOG(ERROR) << "ClientController::SaveSession - Failed to delete old TMID"
-                     ", otherwise saved session OK." << std::endl;
-    } else {
-      DLOG(ERROR) << "ClientController::SaveSession - Failed to Save Session."
+      DLOG(ERROR) << "Failed to delete old TMID otherwise saved session OK."
                   << std::endl;
+    } else {
+      DLOG(ERROR) << "Failed to Save Session." << std::endl;
       return n;
     }
   }
@@ -400,30 +397,19 @@ int ClientController::SaveSession() {
 
 bool ClientController::LeaveMaidsafeNetwork() {
   if (!initialised_) {
-#ifdef DEBUG
-    printf("CC::LeaveMaidsafeNetwork - Not initialised.\n");
-#endif
+    DLOG(ERROR) << "Not initialised.";
     return false;
   }
-  if (auth_->RemoveMe() == kSuccess) {
-//      try {
-//        fs::remove_all(file_system::MaidsafeDir(ss_->SessionName()));
-//      }
-//      catch(const std::exception &e) {
-//  #ifdef DEBUG
-//        printf("ClientController::LeaveMaidsafeNetwork - %s\n", e.what());
-//  #endif
-//      }
+
+  if (auth_->RemoveMe() == kSuccess)
     return true;
-  }
+
   return false;
 }
 
 bool ClientController::ChangeUsername(const std::string &new_username) {
   if (!initialised_) {
-#ifdef DEBUG
-    printf("CC::ChangeUsername - Not initialised.\n");
-#endif
+    DLOG(ERROR) << "Not initialised.";
     return false;
   }
   SerialiseDa();
@@ -431,15 +417,10 @@ bool ClientController::ChangeUsername(const std::string &new_username) {
   int result = auth_->ChangeUsername(ser_da_, new_username);
   if (result != kSuccess) {
     if (result == kFailedToDeleteOldPacket) {
-#ifdef DEBUG
-      printf("ClientController::SaveSession - Failed to delete old packets, "
-             "otherwise changed username OK.\n");
-#endif
+      DLOG(ERROR) << "Failed to delete old packets, changed username OK.";
       return true;
     } else {
-#ifdef DEBUG
-      printf("ClientController::SaveSession - Failed to change username.\n");
-#endif
+      DLOG(ERROR) << "Failed to change username.";
       return false;
     }
   }
@@ -448,9 +429,7 @@ bool ClientController::ChangeUsername(const std::string &new_username) {
 
 bool ClientController::ChangePin(const std::string &new_pin) {
   if (!initialised_) {
-#ifdef DEBUG
-    printf("CC::ChangePin - Not initialised.\n");
-#endif
+    DLOG(ERROR) << "Not initialised.";
     return false;
   }
   SerialiseDa();
@@ -458,15 +437,10 @@ bool ClientController::ChangePin(const std::string &new_pin) {
   int result = auth_->ChangePin(ser_da_, new_pin);
   if (result != kSuccess) {
     if (result == kFailedToDeleteOldPacket) {
-#ifdef DEBUG
-      printf("ClientController::SaveSession - Failed to delete old packets, "
-             "otherwise changed PIN OK.\n");
-#endif
+      DLOG(ERROR) << "Failed to delete old packets, otherwise changed PIN OK.";
       return true;
     } else {
-#ifdef DEBUG
-      printf("ClientController::SaveSession - Failed to change PIN.\n");
-#endif
+      DLOG(ERROR) << "Failed to change PIN.";
       return false;
     }
   }
@@ -475,15 +449,14 @@ bool ClientController::ChangePin(const std::string &new_pin) {
 
 bool ClientController::ChangePassword(const std::string &new_password) {
   if (!initialised_) {
-    DLOG(ERROR) << "CC::ChangePassword - Not initialised." << std::endl;
+    DLOG(ERROR) << " Not initialised." << std::endl;
     return false;
   }
   SerialiseDa();
 
   int result = auth_->ChangePassword(ser_da_, new_password);
   if (result != kSuccess) {
-    DLOG(ERROR) << "CC::ChangePassword - Authentication failed: " << result
-                << std::endl;
+    DLOG(ERROR) << " Authentication failed: " << result << std::endl;
     return false;
   }
   return true;

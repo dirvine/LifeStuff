@@ -303,47 +303,6 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePassword) {
   ASSERT_EQ(ser_dm_, ser_dm_login);
 }
 
-TEST_F(AuthenticationTest, DISABLED_FUNC_MAID_CreatePublicName) {
-/*
-  username_ += "11";
-  ASSERT_EQ(kSuccess, authentication_.CreatePublicName("el public iuserneim"));
-  ASSERT_EQ(kPublicUsernameAlreadySet,
-            authentication_.CreatePublicName("el public iuserneim"));
-  // Reset PublicUsername to allow attempt to save same public name to network.
-//  ASSERT_TRUE(ss_->SetPublicUsername(""));
-//  ASSERT_EQ(kPublicUsernameExists,
-//            authentication_.CreatePublicName("el public iuserneim"));
-  authentication_.tmid_op_status_ = Authentication::kFailed;
-  authentication_.stmid_op_status_ = Authentication::kFailed;
-*/
-}
-
-TEST_F(AuthenticationTest, DISABLED_FUNC_MAID_CreateMSIDPacket) {
-/*
-  username_ += "12";
-  std::string msid_name, pub_key, priv_key;
-  ASSERT_EQ(kSuccess,
-            authentication_.CreateMsidPacket(&msid_name, &pub_key, &priv_key));
-  ASSERT_FALSE(msid_name.empty());
-  ASSERT_FALSE(priv_key.empty());
-  ASSERT_FALSE(pub_key.empty());
-
-  // Check the packet exits
-  std::vector<std::string> packet_content;
-  ASSERT_EQ(kSuccess, sm_->GetPacket(msid_name, &packet_content));
-  ASSERT_EQ(size_t(1), packet_content.size());
-  GenericPacket gp;
-  ASSERT_TRUE(gp.ParseFromString(packet_content[0]));
-
-  // Check packet is correct and signed
-  ASSERT_EQ(pub_key, gp.data());
-  ASSERT_TRUE(crypto::AsymCheckSig(gp.data(), gp.signature(), pub_key));
-  ASSERT_EQ(crypto::Hash<crypto::SHA512>(pub_key + gp.signature()), msid_name);
-  authentication_.tmid_op_status_ = Authentication::kFailed;
-  authentication_.stmid_op_status_ = Authentication::kFailed;
-*/
-}
-
 TEST_F(AuthenticationTest, FUNC_MAID_RegisterLeaveRegister) {
   username_ += "13";
   EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
