@@ -30,12 +30,11 @@
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include "boost/filesystem/fstream.hpp"
+
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/passport/passport.h"
 #include "maidsafe/passport/signature_packet.pb.h"
-
-#include "maidsafe/lifestuff/shared/filesystem.h"
 
 namespace fs = boost::filesystem;
 
@@ -46,12 +45,13 @@ inline void MakeKeys(const int &key_count,
                      bool for_passport = false) {
   keys->clear();
   fs::path key_file;
+  boost::system::error_code error_code;
   if (for_passport) {
-    key_file = fs::path(file_system::TempDir() /
+    key_file = fs::path(fs::temp_directory_path(error_code) /
       ("maidsafe_CachedTestPassportKeys" + boost::posix_time::to_simple_string(
       boost::posix_time::second_clock::local_time()).substr(0, 11) + ".tmp"));
   } else {
-    key_file = fs::path(file_system::TempDir() /
+    key_file = fs::path(fs::temp_directory_path(error_code) /
       ("maidsafe_CachedTestCryptoKeys" + boost::posix_time::to_simple_string(
       boost::posix_time::second_clock::local_time()).substr(0, 11) + ".tmp"));
   }
@@ -64,9 +64,8 @@ inline void MakeKeys(const int &key_count,
         maidsafe::crypto::RsaKeyPair keypair;
         keypair.set_public_key(keyring.key(i).public_key());
         keypair.set_private_key(keyring.key(i).private_key());
-        if (!keypair.public_key().empty() && !keypair.private_key().empty()) {
+        if (!keypair.public_key().empty() && !keypair.private_key().empty())
           keys->push_back(keypair);
-        }
       }
     }
   }

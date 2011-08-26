@@ -81,11 +81,13 @@ const std::string kSharesSubdir[kSharesSubdirSize][2] = {
 //  }
 };
 
-enum DirType {ANONYMOUS, PRIVATE, PRIVATE_SHARE, PUBLIC_SHARE};
+enum DirType { ANONYMOUS, PRIVATE, PRIVATE_SHARE, PUBLIC_SHARE };
 
-enum SortingMode { ALPHA, RANK, LAST };
+enum SortingMode { kAlpha, kRank, kLast };
 
 enum ShareFilter { kAll, kRo, kAdmin };
+
+enum DefConLevels { kDefCon1 = 1, kDefCon2, kDefCon3 };
 
 typedef std::function<void(const ReturnCode&)> VoidFuncOneInt;
 typedef std::function<void(const ReturnCode&, const kad::Contact&)>

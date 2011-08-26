@@ -41,7 +41,6 @@
 #include "boost/utility.hpp"
 #include "boost/thread/once.hpp"
 #include "boost/scoped_ptr.hpp"
-#include "maidsafe/lifestuff/client/filesystem/distributed_filesystem.pb.h"
 
 #ifdef __MSVC__
 #  pragma warning(pop)
@@ -49,7 +48,7 @@
 
 #include "maidsafe/lifestuff/client/contacts.h"
 #include "maidsafe/lifestuff/client/privateshares.h"
-#include "maidsafe/lifestuff/shared/filesystem.h"
+//  #include "maidsafe/lifestuff/shared/filesystem.h"
 #include "maidsafe/lifestuff/shared/maidsafe.h"
 
 namespace maidsafe {
@@ -59,12 +58,7 @@ namespace lifestuff {
 namespace test {
 class SessionSingletonTest;
 class ClientControllerTest;
-class RunPDClient;
 class DataAtlasHandlerTest;
-class ImHandlerTest;
-class MultiImHandlerTest;
-class ImMessagingTest;
-class CCImMessagingTest;
 class LocalStoreManagerTest;
 class MaidStoreManagerTest;
 class SEHandlerTest;
@@ -81,15 +75,6 @@ class AuthenticationTest_FUNC_MAID_NET_RepeatedSaveSessionCallbacks_Test;
 class AuthenticationTest_FUNC_MAID_NET_ChangeUsername_Test;
 class AuthenticationTest_FUNC_MAID_NET_ChangePin_Test;
 class AuthenticationTest_FUNC_MAID_NET_CreatePublicName_Test;
-class ImMessagingTest_FUNC_MAID_SendReceiveMessages_Test;
-class ImMessagingTest_FUNC_MAID_ReceiveEndPointMsg_Test;
-class ImMessagingTest_FUNC_MAID_ReceiveLogOutMsg_Test;
-class ImMessagingTest_FUNC_MAID_HandleTwoConverstions_Test;
-class ImMessagingTest_FUNC_MAID_NET_SendReceiveMessages_Test;
-class ImMessagingTest_FUNC_MAID_NET_ReceiveEndPointMsg_Test;
-class ImMessagingTest_FUNC_MAID_NET_ReceiveLogOutMsg_Test;
-class ImMessagingTest_FUNC_MAID_NET_HandleTwoConverstions_Test;
-class ImHandlerTest_BEH_MAID_Create_ValidateMsg_Test;
 class LocalStoreManagerTest_BEH_MAID_DeleteSystemPacketNotOwner_Test;
 class LocalStoreManagerTest_BEH_MAID_UpdatePacket_Test;
 class LocalStoreManagerTest_BEH_MAID_AddAndGetBufferPacketMessages_Test;
@@ -112,9 +97,7 @@ struct UserDetails {
                   maid_authorised_users(),
                   mounted(0),
                   win_drive('\0'),
-                  connection_status(0),
-//                  ep(),
-                  pd() {}
+                  connection_status(0) {}
   DefConLevels defconlevel;
   bool da_modified;
   std::string username, pin, password, session_name;
@@ -125,8 +108,6 @@ struct UserDetails {
   int mounted;
   char win_drive;
   int connection_status;
-//  EndPoint ep;
-  PersonalDetails pd;
 };
 
 struct ConnectionDetails {
@@ -167,7 +148,6 @@ class SessionSingleton {
   int mounted();
   char win_drive();
   int connection_status();
-  PersonalDetails pd();
 
   // Mutators
   void set_def_con_level(DefConLevels defconlevel);
@@ -182,8 +162,6 @@ class SessionSingleton {
   void set_mounted(int mounted);
   void set_win_drive(char win_drive);
   void set_connection_status(int status);
-//  void SetEp(const EndPoint &ep);
-  void set_pd(const PersonalDetails &pd);
 
   ///////////////////////////
   //// Key Ring Handling ////
@@ -204,7 +182,7 @@ class SessionSingleton {
   //// Contacts Handling ////
   ///////////////////////////
 
-  int LoadContacts(std::list<PublicContact> *contacts);
+//  int LoadContacts(std::list<PublicContact> *contacts);
   int AddContact(const std::string &pub_name,
                  const std::string &pub_key,
                  const std::string &full_name,
@@ -253,7 +231,7 @@ class SessionSingleton {
   //// Private Share Handling ////
   ////////////////////////////////
 
-  int LoadShares(std::list<Share> *shares);
+//  int LoadShares(std::list<Share> *shares);
   int AddPrivateShare(const std::vector<std::string> &attributes,
                       const std::vector<boost::uint32_t> &share_stats,
                       std::list<ShareParticipants> *participants);
@@ -352,15 +330,9 @@ class SessionSingleton {
   friend class MockSessionSingleton;
   friend class test::SessionSingletonTest;
   friend class test::ClientControllerTest;
-  friend class test::RunPDClient;
   friend class test::DataAtlasHandlerTest;
-  friend class test::ImHandlerTest;
-  friend class test::MultiImHandlerTest;
-  friend class test::ImMessagingTest;
   friend class test::LocalStoreManagerTest;
   friend class test::MaidStoreManagerTest;
-  friend class test::SEHandlerTest;
-  friend class test::CCImMessagingTest;
   friend class test::SessionSingletonTest_BEH_MAID_SetsGetsAndResetSession_Test;
   friend class test::SessionSingletonTest_BEH_MAID_SessionName_Test;
   friend class
@@ -378,15 +350,6 @@ class SessionSingleton {
   friend class test::AuthenticationTest_FUNC_MAID_NET_ChangeUsername_Test;
   friend class test::AuthenticationTest_FUNC_MAID_NET_ChangePin_Test;
   friend class test::AuthenticationTest_FUNC_MAID_NET_CreatePublicName_Test;
-  friend class test::ImMessagingTest_FUNC_MAID_SendReceiveMessages_Test;
-  friend class test::ImMessagingTest_FUNC_MAID_ReceiveEndPointMsg_Test;
-  friend class test::ImMessagingTest_FUNC_MAID_ReceiveLogOutMsg_Test;
-  friend class test::ImMessagingTest_FUNC_MAID_HandleTwoConverstions_Test;
-  friend class test::ImMessagingTest_FUNC_MAID_NET_SendReceiveMessages_Test;
-  friend class test::ImMessagingTest_FUNC_MAID_NET_ReceiveEndPointMsg_Test;
-  friend class test::ImMessagingTest_FUNC_MAID_NET_ReceiveLogOutMsg_Test;
-  friend class test::ImMessagingTest_FUNC_MAID_NET_HandleTwoConverstions_Test;
-  friend class test::ImHandlerTest_BEH_MAID_Create_ValidateMsg_Test;
   friend class
       test::LocalStoreManagerTest_BEH_MAID_DeleteSystemPacketNotOwner_Test;
   friend class test::LocalStoreManagerTest_BEH_MAID_UpdatePacket_Test;
@@ -394,6 +357,7 @@ class SessionSingleton {
       test::LocalStoreManagerTest_BEH_MAID_AddAndGetBufferPacketMessages_Test;
   friend class
       test::LocalStoreManagerTest_BEH_MAID_AddRequestBufferPacketMessage_Test;
+
   SessionSingleton &operator=(const SessionSingleton&);
   SessionSingleton(const SessionSingleton&);
   static void Init() { single_.reset(new SessionSingleton()); }

@@ -39,16 +39,19 @@
 #endif
 #include "boost/foreach.hpp"
 
-#include "maidsafe/dht/kademlia/contact.h"
-#include "maidsafe/encrypt/self_encryption.h"
-#include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/common/chunk_store.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
+
+#include "maidsafe/dht/kademlia/contact.h"
+
+#include "maidsafe/encrypt/self_encryption.h"
+#include "maidsafe/encrypt/data_map.h"
+
 #include "maidsafe/lifestuff/log.h"
-#include "maidsafe/lifestuff/client/filesystem/dataatlashandler.h"
 #include "maidsafe/lifestuff/client/authentication.h"
 #include "maidsafe/lifestuff/client/clientutils.h"
+#include "maidsafe/lifestuff/client/distributed_filesystem.pb.h"
 #include "maidsafe/lifestuff/client/sessionsingleton.h"
 #include "maidsafe/lifestuff/log.h"
 
@@ -156,12 +159,6 @@ int ClientController::ParseDa() {
   }
   ss_->set_root_db_key(data_atlas.root_db_key());
 
-//  if (data_atlas.dms_size() != (kRootSubdirSize + 1)) {
-//    DLOG(ERROR) << "CC::ParseDa - Wrong # of datamaps in the DA."
-//                << std::endl;
-//    return -9002;
-//  }
-
   if (!data_atlas.has_serialised_keyring()) {
     DLOG(ERROR) << "CC::ParseDa - Missing serialised keyring." << std::endl;
     return -9003;
@@ -173,34 +170,14 @@ int ClientController::ParseDa() {
     PublicContact pc = data_atlas.contacts(n);
     contacts.push_back(pc);
   }
-  ss_->LoadContacts(&contacts);
 
   std::list<Share> shares;
   for (int n = 0; n < data_atlas.shares_size(); ++n) {
     Share sh = data_atlas.shares(n);
     shares.push_back(sh);
   }
-  ss_->LoadShares(&shares);
-
-  if (data_atlas.has_pd())
-    ss_->set_pd(data_atlas.pd());
 
   return 0;
-//  encrypt::DataMap dm_root, other_dms;
-//  ParseFromString(&dm_root, data_atlas.dms(0));
-//
-//  std::string ser_dm_root, other_ser_dms;
-//  SerializeToString(&dm_root, ser_dm_root);
-//  int i = seh_.DecryptDb(kRoot, PRIVATE, ser_dm_root, "", "", false, false);
-//  if (i != 0)
-//    return -1;
-//
-//  for (int n = 0; n < kRootSubdirSize; ++n) {
-//    other_ser_dms = data_atlas.dms(n + 1);
-//    i += seh_.DecryptDb(TidyPath(kRootSubdir[n][0]), PRIVATE, other_ser_dms,
-//                        "", "", false, false);
-//  }
-//  return (i == 0) ? 0 : -1;
 }
 
 int ClientController::SerialiseDa() {
@@ -211,22 +188,6 @@ int ClientController::SerialiseDa() {
 
   DataAtlas data_atlas;
   data_atlas.set_root_db_key(ss_->root_db_key());
-//  encrypt::DataMap root_dm, subdirs_dm;
-//  if (AddToPendingFiles(kRoot))
-//    seh_.EncryptDb(kRoot, PRIVATE, "", "", false, &root_dm);
-//  std::string *dm = data_atlas.add_dms();
-//  SerializeToString(&root_dm, *dm);
-
-//    for (int i = 0; i < kRootSubdirSize; ++i) {
-//      std::string tidy_path(TidyPath(kRootSubdir[i][0]));
-//      if (AddToPendingFiles(tidy_path)) {
-//        int n = seh_.EncryptDb(tidy_path, PRIVATE, "", "", false,
-//                               &subdirs_dm);
-//        DLOG(INFO) << tidy_path << " encrypted db result " << n << std::endl;
-//        dm = data_atlas.add_dms();
-//        SerializeToString(&subdirs_dm, *dm);
-//      }
-//    }
 
   std::string serialised_keyring = ss_->SerialiseKeyring();
   if (serialised_keyring.empty()) {
@@ -256,7 +217,7 @@ int ClientController::SerialiseDa() {
   }
 
   std::list<PrivateShare> ps_list;
-  ss_->GetFullShareList(ALPHA, kAll, &ps_list);
+  ss_->GetFullShareList(kAlpha, kAll, &ps_list);
   while (!ps_list.empty()) {
     PrivateShare this_ps = ps_list.front();
     Share *sh = data_atlas.add_shares();
@@ -279,14 +240,9 @@ int ClientController::SerialiseDa() {
     ps_list.pop_front();
   }
 
-  PersonalDetails *pd = data_atlas.mutable_pd();
-  *pd = ss_->pd();
 
   ser_da_.clear();
   data_atlas.SerializeToString(&ser_da_);
-
-//  std::string file_hash(EncodeToHex(crypto::Hash<crypto::SHA512>(ser_da_)));
-//  seh_.EncryptString(ser_da_, &ser_dm_);
 
   return 0;
 }
@@ -373,16 +329,8 @@ bool ClientController::ValidateUser(const std::string &password) {
 
   ss_->set_connection_status(0);
   ss_->set_session_name(false);
-  boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
   if (ParseDa() != 0) {
     DLOG(INFO) << "ClientController::ValidateUser - Cannot parse DA"
-               << std::endl;
-    ss_->ResetSession();
-    return false;
-  }
-
-  if (dah->Init(false)) {
-    DLOG(INFO) << "ClientController::ValidateUser - Cannot initialise DAH"
                << std::endl;
     ss_->ResetSession();
     return false;

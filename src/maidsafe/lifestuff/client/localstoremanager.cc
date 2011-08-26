@@ -127,8 +127,8 @@ void LocalStoreManager::Init(VoidFuncOneInt callback, const boost::uint16_t&) {
   // Simulate knode join
 //  Sleep(boost::posix_time::seconds(3));
 #endif
-  if (local_sm_dir_.empty())
-    local_sm_dir_ = file_system::LocalStoreManagerDir().string();
+//  if (local_sm_dir_.empty())
+//    local_sm_dir_ = file_system::LocalStoreManagerDir().string();
   try {
     if (!fs3::exists(local_sm_dir_ + "/StoreChunks")) {
       fs3::create_directories(local_sm_dir_ + "/StoreChunks");

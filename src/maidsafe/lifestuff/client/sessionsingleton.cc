@@ -47,7 +47,6 @@ bool SessionSingleton::ResetSession() {
   ud_.mounted = 0;
   ud_.win_drive = '\0';
   ud_.connection_status = 1;
-  ud_.pd.Clear();
   passport_->ClearKeyring();
   ch_.ClearContacts();
   psh_.MI_ClearPrivateShares();
@@ -82,8 +81,6 @@ const std::set<std::string> &SessionSingleton::maid_authorised_users() {
 int SessionSingleton::mounted() { return ud_.mounted; }
 char SessionSingleton::win_drive() { return ud_.win_drive; }
 int SessionSingleton::connection_status() { return ud_.connection_status; }
-//  EndPoint SessionSingleton::Ep() { return ud_.ep; }
-PersonalDetails SessionSingleton::pd() { return ud_.pd; }
 
 // Mutators
 void SessionSingleton::set_def_con_level(DefConLevels defconlevel) {
@@ -131,13 +128,6 @@ void SessionSingleton::set_win_drive(char win_drive) {
 void SessionSingleton::set_connection_status(int status) {
   ud_.connection_status = status;
 }
-/*
-bool SessionSingleton::SetEp(const EndPoint &ep) {
-  ud_.ep = ep;
-  return true;
-}
-*/
-void SessionSingleton::set_pd(const PersonalDetails &pd) { ud_.pd = pd; }
 
 /////////////////////////
 // Key ring operations //
@@ -259,6 +249,7 @@ std::string SessionSingleton::PublicKeySignature(
 // Contact operations //
 ////////////////////////
 
+/*
 int SessionSingleton::LoadContacts(std::list<PublicContact> *contacts) {
   int n = 0;
   while (!contacts->empty()) {
@@ -271,6 +262,7 @@ int SessionSingleton::LoadContacts(std::list<PublicContact> *contacts) {
   }
   return n;
 }
+*/
 
 int SessionSingleton::AddContact(const std::string &pub_name,
                                  const std::string &pub_key,
@@ -368,6 +360,7 @@ int SessionSingleton::ClearContacts() {
 // Private Share operations //
 //////////////////////////////
 
+/*
 int SessionSingleton::LoadShares(std::list<Share> *shares) {
   int a = 0;
   while (!shares->empty()) {
@@ -394,6 +387,7 @@ int SessionSingleton::LoadShares(std::list<Share> *shares) {
   }
   return a;
 }
+*/
 int SessionSingleton::AddPrivateShare(
     const std::vector<std::string> &attributes,
     const std::vector<boost::uint32_t> &share_stats,

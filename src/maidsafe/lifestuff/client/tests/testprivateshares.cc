@@ -83,14 +83,14 @@ class PrivateSharesTest : public testing::Test {
 TEST_F(PrivateSharesTest, BEH_MAID_MI_Create_ListShares) {
   // Test share list to be empty
   std::list<private_share> share_list;
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, ALPHA,
-            kAll)) << "Failed getting list.";
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, kAlpha, kAll))
+            << "Failed getting list.";
   ASSERT_EQ(size_t(0), share_list.size()) <<
             "Share container not empty on creation.";
 
   // Test full share list to be empty
   std::list<PrivateShare> full_share_list;
-  ASSERT_EQ(0, psh_->MI_GetFullShareList(ALPHA, kAll, &full_share_list)) <<
+  ASSERT_EQ(0, psh_->MI_GetFullShareList(kAlpha, kAll, &full_share_list)) <<
             "Failed getting full list";
   ASSERT_EQ(size_t(0), full_share_list.size()) <<
             "Share container not empty on creation.";
@@ -159,7 +159,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_Create_ListShares) {
 TEST_F(PrivateSharesTest, BEH_MAID_MI_AddShare) {
   // Test share list to be empty
   std::list<private_share> share_list;
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, ALPHA,
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, kAlpha,
             kAll)) << "Failed getting list.";
   ASSERT_EQ(size_t(0), share_list.size()) <<
             "Share container not empty on creation.";
@@ -197,7 +197,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddShare) {
             "Participant lists different in size.";
 
   // Check with GetShareList
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, ALPHA,
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, kAlpha,
             kAll)) << "Failed getting list.";
   ASSERT_EQ(size_t(1), share_list.size()) <<
             "Share container empty on selection.";
@@ -266,7 +266,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddShare) {
   ASSERT_EQ(-2010, psh_->MI_AddPrivateShare(attributes, share_stats, &cp)) <<
             "Failed to add share";
   // Check with GetShareList
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, ALPHA,
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, kAlpha,
             kAll)) << "Failed getting list.";
   ASSERT_EQ(size_t(1), share_list.size()) <<
             "Share container empty or with > 1 element.";
@@ -275,7 +275,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddShare) {
 TEST_F(PrivateSharesTest, BEH_MAID_MI_AddMultipleShares) {
   // Test share list to be empty
   std::list<private_share> share_list;
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, ALPHA,
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, kAlpha,
             kAll)) << "Failed getting list.";
   ASSERT_EQ(size_t(0), share_list.size()) <<
             "Share container not empty on creation.";
@@ -310,7 +310,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddMultipleShares) {
 
   // Test full share list
   std::list<PrivateShare> full_share_list;
-  ASSERT_EQ(0, psh_->MI_GetFullShareList(ALPHA, kAll, &full_share_list)) <<
+  ASSERT_EQ(0, psh_->MI_GetFullShareList(kAlpha, kAll, &full_share_list)) <<
             "Failed getting full list";
   ASSERT_EQ(size_t(10), full_share_list.size()) <<
             "Failed to get all share elements.";
@@ -371,7 +371,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddMultipleShares) {
 TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteShare) {
   // Test share list to be empty
   std::list<private_share> share_list;
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, ALPHA,
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, kAlpha,
             kAll)) << "Failed getting list.";
   ASSERT_EQ(size_t(0), share_list.size()) <<
             "Share container not empty on creation.";
@@ -406,7 +406,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteShare) {
 
   // Test full share list
   std::list<PrivateShare> full_share_list;
-  ASSERT_EQ(0, psh_->MI_GetFullShareList(ALPHA, kAll, &full_share_list)) <<
+  ASSERT_EQ(0, psh_->MI_GetFullShareList(kAlpha, kAll, &full_share_list)) <<
             "Failed getting full list";
   ASSERT_EQ(size_t(10), full_share_list.size()) <<
             "Share container not empty on creation.";
@@ -416,7 +416,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteShare) {
   ASSERT_EQ(0, psh_->MI_DeletePrivateShare("NAME_" + IntToString(l), 0));
 
   // Full share list
-  ASSERT_EQ(0, psh_->MI_GetFullShareList(ALPHA, kAll, &full_share_list)) <<
+  ASSERT_EQ(0, psh_->MI_GetFullShareList(kAlpha, kAll, &full_share_list)) <<
             "Failed getting full list";
   ASSERT_EQ(size_t(9), full_share_list.size()) <<
             "Share container not empty on creation.";
@@ -442,7 +442,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteShare) {
   ASSERT_EQ(0, psh_->MI_DeletePrivateShare("MSID_" + IntToString(e), 1));
 
   // Full share list
-  ASSERT_EQ(0, psh_->MI_GetFullShareList(ALPHA, kAll, &full_share_list)) <<
+  ASSERT_EQ(0, psh_->MI_GetFullShareList(kAlpha, kAll, &full_share_list)) <<
             "Failed getting full list";
   ASSERT_EQ(size_t(8), full_share_list.size()) <<
             "Share container not empty on creation.";
@@ -461,7 +461,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteShare) {
 TEST_F(PrivateSharesTest, BEH_MAID_MI_AddContactToShare) {
   // Test share list to be empty
   std::list<private_share> share_list;
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, ALPHA,
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, kAlpha,
             kAll)) << "Failed getting list.";
   ASSERT_EQ(size_t(0), share_list.size()) <<
             "Share container not empty on creation.";
@@ -558,7 +558,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddContactToShare) {
 TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteContactFromShare) {
   // Test share list to be empty
   std::list<private_share> share_list;
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, ALPHA,
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, kAlpha,
             kAll)) << "Failed getting list.";
   ASSERT_EQ(size_t(0), share_list.size()) <<
             "Share container not empty on creation.";
@@ -630,7 +630,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteContactFromShare) {
   // Add private share
   ASSERT_EQ(0, psh_->MI_AddPrivateShare(attributes, share_stats, &sps)) <<
             "Failed to add share";
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, ALPHA,
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, kAlpha,
             kAll)) << "Failed getting list.";
   ASSERT_EQ(size_t(2), share_list.size()) <<
             "Share container empty after insertions.";
@@ -669,7 +669,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteContactFromShare) {
 TEST_F(PrivateSharesTest, BEH_MAID_MI_TouchShare) {
   // Test share list to be empty
   std::list<private_share> share_list;
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, ALPHA,
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, kAlpha,
             kAll)) << "Failed getting list.";
   ASSERT_EQ(size_t(0), share_list.size()) <<
             "Share container not empty on creation.";
@@ -681,7 +681,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_TouchShare) {
   std::vector<boost::uint32_t> share_stats(2, 0);
   ASSERT_EQ(0, psh_->MI_AddPrivateShare(attributes, share_stats, &cp)) <<
             "Failed to add share";
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, ALPHA,
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, kAlpha,
             kAll)) << "Failed getting list.";
   ASSERT_EQ(size_t(1), share_list.size()) <<
             "Share container empty or with > 1 element.";
@@ -713,7 +713,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_TouchShare) {
 TEST_F(PrivateSharesTest, BEH_MAID_MI_ListByRank) {
   // Test share list to be empty
   std::list<private_share> share_list;
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, ALPHA,
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, kAlpha,
             kAll)) << "Failed getting list.";
   ASSERT_EQ(size_t(0), share_list.size()) <<
             "Share container not empty on creation.";
@@ -741,7 +741,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_ListByRank) {
     Sleep(boost::posix_time::seconds(1));
   }
 
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, RANK,
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, kRank,
             kAll)) << "Failed getting list.";
   ASSERT_EQ(size_t(10), share_list.size());
 
@@ -756,7 +756,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_ListByRank) {
 TEST_F(PrivateSharesTest, BEH_MAID_MI_ListByLastViewed) {
   // Test share list to be empty
   std::list<private_share> share_list;
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, ALPHA,
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, kAlpha,
             kAll)) << "Failed getting list.";
   ASSERT_EQ(size_t(0), share_list.size()) <<
             "Share container not empty on creation.";
@@ -782,7 +782,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_ListByLastViewed) {
     Sleep(boost::posix_time::seconds(1));
   }
 
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, LAST,
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, kLast,
             kAll)) << "Failed getting list.";
   ASSERT_EQ(size_t(10), share_list.size());
 
@@ -824,7 +824,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DecideInclusion) {
 TEST_F(PrivateSharesTest, BEH_MAID_MI_ShareFilter) {
   // Test share list to be empty
   std::list<private_share> share_list;
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, ALPHA,
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, kAlpha,
             kAll)) << "Failed getting list.";
   ASSERT_EQ(size_t(0), share_list.size()) <<
             "Share container not empty on creation.";
@@ -848,15 +848,15 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_ShareFilter) {
     ASSERT_EQ(0, psh_->MI_AddPrivateShare(atts, share_stats, &cp)) <<
               "Failed to add share";
   }
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, ALPHA,
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, kAlpha,
             kRo)) << "Failed getting list.";
   ASSERT_EQ(size_t(5), share_list.size()) <<
             "Wrong number back on RO.";
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, ALPHA,
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, kAlpha,
             kAdmin)) << "Failed getting list.";
   ASSERT_EQ(size_t(5), share_list.size()) <<
             "Wrong number back on ADMIN.";
-  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, ALPHA,
+  ASSERT_EQ(0, psh_->MI_GetShareList(&share_list, kAlpha,
             kAll)) << "Failed getting list.";
   ASSERT_EQ(size_t(10), share_list.size()) <<
             "Wrong number back on ALL.";

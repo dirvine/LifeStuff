@@ -24,12 +24,11 @@
 
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/lifestuff/shared/filesystem.h"
+
 #include "maidsafe/lifestuff/client/authentication.h"
 #include "maidsafe/lifestuff/client/localstoremanager.h"
 #include "maidsafe/lifestuff/client/sessionsingleton.h"
 #include "maidsafe/lifestuff/client/lifestuff_messages.pb.h"
-#include "maidsafe/lifestuff/client/filesystem/dataatlashandler.h"
 #include "maidsafe/lifestuff/sharedtest/testcallback.h"
 
 namespace arg = std::placeholders;
@@ -354,12 +353,6 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterLeaveRegister) {
 
   //  Remove user.
   ASSERT_EQ(kSuccess, authentication_.RemoveMe());
-  try {
-    fs::remove_all(file_system::MaidsafeDir(ss_->session_name()));
-  }
-  catch(const std::exception &e) {
-    FAIL() << e.what();
-  }
 
   //  Check user no longer registered.
   ss_->ResetSession();

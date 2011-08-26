@@ -298,7 +298,7 @@ int PrivateShareHandler::MI_GetShareList(std::list<private_share> *ps_list,
                                          const ShareFilter &sf) {
   ps_list->clear();
   switch (sm) {
-    case ALPHA:
+    case kAlpha:
       {
         typedef private_share_set::index<private_share_name>::type
                 private_share_set_name;
@@ -315,7 +315,7 @@ int PrivateShareHandler::MI_GetShareList(std::list<private_share> *ps_list,
         }
       }
       break;
-    case RANK:
+    case kRank:
       {
         typedef private_share_set::index<private_share_rank>::type
                 private_share_set_rank;
@@ -332,7 +332,7 @@ int PrivateShareHandler::MI_GetShareList(std::list<private_share> *ps_list,
         }
       }
       break;
-    case LAST:
+    case kLast:
       {
         typedef private_share_set::index<private_share_view>::type
                 private_share_set_view;
