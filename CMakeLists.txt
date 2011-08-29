@@ -106,7 +106,7 @@ ENDIF()
 SET(PROTO_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
 FILE(GLOB_RECURSE PROTO_FILES RELATIVE ${PROTO_SOURCE_DIR} "${PROTO_SOURCE_DIR}/maidsafe/*.proto")
 INCLUDE(maidsafe_standard_setup)
-HANDLE_VERSIONS(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/version.h)
+HANDLE_VERSIONS(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/version.h)
 
 ###################################################################################################
 # Set up all files as GLOBs                                                                       #
@@ -114,36 +114,36 @@ HANDLE_VERSIONS(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/version.h)
 SET(SRC_MAIDSAFE "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff")
 
 ####    CODE    ####
-FILE(GLOB SOURCE_FILES_CLIENT_DIR "${SRC_MAIDSAFE}/client/*.cc")
-FILE(GLOB HEADER_FILES_CLIENT_DIR "${SRC_MAIDSAFE}/client/*.h")
+FILE(GLOB SOURCE_FILES_CLIENT_DIR "${SRC_MAIDSAFE}/*.cc")
+FILE(GLOB HEADER_FILES_CLIENT_DIR "${SRC_MAIDSAFE}/*.h")
 SET(ALL_FILES_CLIENT_DIR ${SOURCE_FILES_CLIENT_DIR} ${HEADER_FILES_CLIENT_DIR})
 SET(STYLE_CLIENT ${ALL_FILES_CLIENT_DIR})
-LIST(REMOVE_ITEM STYLE_CLIENT "${SRC_MAIDSAFE}/client/lifestuff_messages.pb.h"
-                              "${SRC_MAIDSAFE}/client/lifestuff_messages.pb.cc"
-                              "${SRC_MAIDSAFE}/client/distributed_filesystem.pb.h"
-                              "${SRC_MAIDSAFE}/client/distributed_filesystem.pb.cc")
+LIST(REMOVE_ITEM STYLE_CLIENT "${SRC_MAIDSAFE}/lifestuff_messages.pb.h"
+                              "${SRC_MAIDSAFE}/lifestuff_messages.pb.cc"
+                              "${SRC_MAIDSAFE}/data_atlas.pb.h"
+                              "${SRC_MAIDSAFE}/data_atlas.pb.cc")
 SET(ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR ${ALL_FILES_CLIENT_DIR})
 SOURCE_GROUP("client Source Files" FILES ${SOURCE_FILES_CLIENT_DIR})
 SOURCE_GROUP("client Header Files" FILES ${HEADER_FILES_CLIENT_DIR})
 
-FILE(GLOB SOURCE_FILES_SHARED_DIR "${SRC_MAIDSAFE}/shared/*.cc" "${SRC_MAIDSAFE}/shared/sqlite3.c")
-FILE(GLOB HEADER_FILES_SHARED_DIR "${SRC_MAIDSAFE}/shared/*.h")
+FILE(GLOB SOURCE_FILES_SHARED_DIR "${SRC_MAIDSAFE}/sqlutils/*.cc" "${SRC_MAIDSAFE}/sqlutils/sqlite3.c")
+FILE(GLOB HEADER_FILES_SHARED_DIR "${SRC_MAIDSAFE}/sqlutils/*.h")
 SET(ALL_FILES_SHARED_DIR ${SOURCE_FILES_SHARED_DIR} ${HEADER_FILES_SHARED_DIR})
 SET(STYLE_SHARED ${ALL_FILES_SHARED_DIR})
-LIST(REMOVE_ITEM STYLE_SHARED "${SRC_MAIDSAFE}/shared/sqlite3.h")
-SOURCE_GROUP("shared Source Files" FILES ${SOURCE_FILES_SHARED_DIR})
-SOURCE_GROUP("shared Header Files" FILES ${HEADER_FILES_SHARED_DIR})
+LIST(REMOVE_ITEM STYLE_SHARED "${SRC_MAIDSAFE}/sqlutils/sqlite3.h")
+SOURCE_GROUP("sqlutils Source Files" FILES ${SOURCE_FILES_SHARED_DIR})
+SOURCE_GROUP("sqlutils Header Files" FILES ${HEADER_FILES_SHARED_DIR})
 
 ####    TESTS    ####
-FILE(GLOB ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/*.cc" "${SRC_MAIDSAFE}/client/tests/*.h")
-LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/client_main.cc")
-LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/testclientcontroller.cc")
-LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/testauthentication.cc")
+FILE(GLOB ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/tests/*.cc" "${SRC_MAIDSAFE}/tests/*.h")
+LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/tests/client_main.cc")
+LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/tests/testclientcontroller.cc")
+LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/tests/testauthentication.cc")
 
-SET(TEST_MAIN "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
+SET(TEST_MAIN "${SRC_MAIDSAFE}/tests/tests_main.cc")
 
-FILE(GLOB ALL_FILES_CLIENT_DEMO_DIR "${SRC_MAIDSAFE}/client/tests/demo/*.cc"
-                                    "${SRC_MAIDSAFE}/client/tests/demo/*.h")
+FILE(GLOB ALL_FILES_CLIENT_DEMO_DIR "${SRC_MAIDSAFE}/demo/*.cc"
+                                    "${SRC_MAIDSAFE}/demo/*.h")
 
 ###################################################################################################
 # All Platforms:  Add exes and Create all LifeStuff libs                                          #
@@ -158,18 +158,18 @@ SET(NETWORK_SYSTEM_TEST_TIMEOUT 3600)
 ADD_EXECUTABLE(TESTclient
                   ${ALL_FILES_CLIENT_TESTS_DIR}
                   ${TEST_MAIN}
-                  "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
-                  "${SRC_MAIDSAFE}/sharedtest/cachepassport.h"
-                  "${SRC_MAIDSAFE}/sharedtest/mocksessionsingleton.h")
+                  "${SRC_MAIDSAFE}/tests/cached_keys.h"
+                  "${SRC_MAIDSAFE}/tests/cachepassport.h"
+                  "${SRC_MAIDSAFE}/tests/mocksessionsingleton.h")
 
 ADD_EXECUTABLE(TESTauthentication_net
                  ${TEST_MAIN}
-                 "${SRC_MAIDSAFE}/client/tests/testauthentication.cc")
+                 "${SRC_MAIDSAFE}/tests/testauthentication.cc")
 ADD_EXECUTABLE(TESTclientcontroller_local
                  ${TEST_MAIN}
-                 "${SRC_MAIDSAFE}/sharedtest/mockclientcontroller.h"
-                 "${SRC_MAIDSAFE}/sharedtest/mocksessionsingleton.h"
-                 "${SRC_MAIDSAFE}/client/tests/testclientcontroller.cc")
+                 "${SRC_MAIDSAFE}/tests/mockclientcontroller.h"
+                 "${SRC_MAIDSAFE}/tests/mocksessionsingleton.h"
+                 "${SRC_MAIDSAFE}/tests/testclientcontroller.cc")
 
 SET(ALL_EXECUTABLES TESTclient TESTauthentication_net TESTclientcontroller_local ClientDemo)
 RENAME_EXECUTABLE(ClientDemo)
@@ -177,34 +177,34 @@ RENAME_EXECUTABLE(TESTclient)
 RENAME_EXECUTABLE(TESTauthentication_net)
 RENAME_EXECUTABLE(TESTclientcontroller_local)
 
-ADD_LIBRARY(LifeStufflsmclientlib STATIC ${ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR})
-ADD_LIBRARY(LifeStuffsharedlib STATIC ${ALL_FILES_SHARED_DIR})
+ADD_LIBRARY(LifeStuffSqlUtilslib STATIC ${ALL_FILES_SHARED_DIR})
+ADD_LIBRARY(LifeStuffLocallib STATIC ${ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR})
 
 ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTclientcontroller_local TESTclient TESTauthentication_net)
 
 IF(UNIX)
-  TARGET_LINK_LIBRARIES(LifeStuffsharedlib passport_static boost_filesystem dl)
+  TARGET_LINK_LIBRARIES(LifeStuffSqlUtilslib boost_filesystem dl)
 ELSE()
-  TARGET_LINK_LIBRARIES(LifeStuffsharedlib passport_static boost_filesystem)
+  TARGET_LINK_LIBRARIES(LifeStuffSqlUtilslib boost_filesystem)
 ENDIF()
-TARGET_LINK_LIBRARIES(LifeStufflsmclientlib LifeStuffsharedlib encrypt_static pki_static boost_date_time ${QT_LIBRARIES} boost_regex)
-TARGET_LINK_LIBRARIES(TESTclient LifeStufflsmclientlib gtest_static gmock_static)
-TARGET_LINK_LIBRARIES(TESTauthentication_net LifeStufflsmclientlib gtest_static)
-TARGET_LINK_LIBRARIES(TESTclientcontroller_local LifeStufflsmclientlib gtest_static)
-TARGET_LINK_LIBRARIES(ClientDemo LifeStufflsmclientlib)
+TARGET_LINK_LIBRARIES(LifeStuffLocallib LifeStuffSqlUtilslib encrypt_static pki_static passport_static boost_date_time ${QT_LIBRARIES} boost_regex)
+TARGET_LINK_LIBRARIES(TESTclient LifeStuffLocallib gtest_static gmock_static)
+TARGET_LINK_LIBRARIES(TESTauthentication_net LifeStuffLocallib gtest_static)
+TARGET_LINK_LIBRARIES(TESTclientcontroller_local LifeStuffLocallib gtest_static)
+TARGET_LINK_LIBRARIES(ClientDemo LifeStuffLocallib)
 
 ###################################################################################################
 # Builds                                                                                          #
 ###################################################################################################
 INCLUDE(maidsafe_standard_flags)
 
-SET_TARGET_PROPERTIES(LifeStufflsmclientlib PROPERTIES COMPILE_FLAGS -DLOCAL_LifeStuffVAULT)
+SET_TARGET_PROPERTIES(LifeStuffLocallib PROPERTIES COMPILE_FLAGS -DLOCAL_LifeStuffVAULT)
 SET_TARGET_PROPERTIES(TESTclientcontroller_local PROPERTIES COMPILE_FLAGS -DLOCAL_LifeStuffVAULT)
 IF(UNIX)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DQT_NO_DEBUG_OUTPUT -DQT_NO_WARNING_OUTPUT -DQT_NO_DEBUG_STREAM")
-  SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/distributed_filesystem.pb.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/lifestuff_messages.pb.cc
+  SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.cc
+                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_messages.pb.cc
                               PROPERTIES COMPILE_FLAGS "-w")
 
 ELSEIF(MSVC)
@@ -212,10 +212,10 @@ ELSEIF(MSVC)
   # Also disabling C4503 'decorated name length exceeded' caused by boost multi-index's and others' high template depth.
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4512 /wd4503 /WX")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /D \"QT_NO_DEBUG_OUTPUT\" /D \"QT_NO_WARNING_OUTPUT\" /D \"QT_NO_DEBUG_STREAM\"")
-  SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/distributed_filesystem.pb.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/lifestuff_messages.pb.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/cppsqlite3.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/sqlite3.c
+  SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.cc
+                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_messages.pb.cc
+                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/sqlutils/cppsqlite3.cc
+                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/sqlutils/sqlite3.c
                               PROPERTIES COMPILE_FLAGS "/W0")
   SET_TARGET_PROPERTIES(${ALL_EXECUTABLES} PROPERTIES
                             LINK_FLAGS "/STACK:1048576"
@@ -362,24 +362,18 @@ IF(${PACKAGE_BUILD})
 
 ELSE() # Installing the library
   SET(LIFESTUFF_CLIENT_INSTALL_FILES
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/clientcontroller.h
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client/user_credentials_api.h)
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/clientcontroller.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/user_credentials_api.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/maidsafe.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/returncodes.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/version.h)
   FOREACH(LIFESTUFF_CLIENT_INSTALL_FILE ${LIFESTUFF_CLIENT_INSTALL_FILES})
     CHECK_INSTALL_HEADER_HAS_VERSION_GUARD(${LIFESTUFF_CLIENT_INSTALL_FILE})
   ENDFOREACH()
 
-  SET(LIFESTUFF_SHARED_INSTALL_FILES
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/maidsafe.h
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/returncodes.h
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/shared/version.h)
-  FOREACH(LIFESTUFF_SHARED_INSTALL_FILE ${LIFESTUFF_SHARED_INSTALL_FILES})
-    CHECK_INSTALL_HEADER_HAS_VERSION_GUARD(${LIFESTUFF_SHARED_INSTALL_FILE})
-  ENDFOREACH()
-
   SET(EXPORT_NAME lifestuff_client)
-  INSTALL(TARGETS LifeStufflsmclientlib LifeStuffsharedlib EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
-  INSTALL(FILES ${LIFESTUFF_CLIENT_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff/client)
-  INSTALL(FILES ${LIFESTUFF_SHARED_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff/shared)
+  INSTALL(TARGETS LifeStuffLocallib LifeStuffSqlUtilslib EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
+  INSTALL(FILES ${LIFESTUFF_CLIENT_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff)
   INSTALL(EXPORT ${EXPORT_NAME} DESTINATION share/maidsafe)
   ADD_VERSION_INFO_TO_INSTALLED_FILE()
 ENDIF()
