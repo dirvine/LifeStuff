@@ -117,6 +117,7 @@ int ClientController::Init(boost::uint8_t /*k*/) {
     DLOG(INFO) << "Already initialised." << std::endl;
     return 0;
   }
+  ss_ = SessionSingleton::getInstance();
   auth_.reset(new Authentication);
 #ifdef LOCAL_LifeStuffVAULT
   local_sm_.reset(new LocalStoreManager("/tmp/LocalUserCredentials"));

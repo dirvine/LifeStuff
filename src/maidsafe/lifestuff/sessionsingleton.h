@@ -86,19 +86,20 @@ class PublicContact;
 class Share;
 
 struct UserDetails {
-  UserDetails() : defconlevel(kDefCon3),
-                  da_modified(false),
-                  username(),
-                  pin(),
-                  password(),
-                  session_name(),
-                  root_db_key(),
-                  self_encrypting(true),
-                  authorised_users(),
-                  maid_authorised_users(),
-                  mounted(0),
-                  win_drive('\0'),
-                  connection_status(0) {}
+  UserDetails()
+      : defconlevel(kDefCon3),
+        da_modified(false),
+        username(),
+        pin(),
+        password(),
+        session_name(),
+        root_db_key(),
+        self_encrypting(true),
+        authorised_users(),
+        maid_authorised_users(),
+        mounted(0),
+        win_drive('\0'),
+        connection_status(0) {}
   DefConLevels defconlevel;
   bool da_modified;
   std::string username, pin, password, session_name;
