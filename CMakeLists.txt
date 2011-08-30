@@ -162,7 +162,7 @@ ADD_EXECUTABLE(TESTclient
                   "${SRC_MAIDSAFE}/tests/cachepassport.h"
                   "${SRC_MAIDSAFE}/tests/mocksessionsingleton.h")
 
-ADD_EXECUTABLE(TESTauthentication_net
+ADD_EXECUTABLE(TESTauthentication_local
                  ${TEST_MAIN}
                  "${SRC_MAIDSAFE}/tests/testauthentication.cc")
 ADD_EXECUTABLE(TESTclientcontroller_local
@@ -171,16 +171,16 @@ ADD_EXECUTABLE(TESTclientcontroller_local
                  "${SRC_MAIDSAFE}/tests/mocksessionsingleton.h"
                  "${SRC_MAIDSAFE}/tests/testclientcontroller.cc")
 
-SET(ALL_EXECUTABLES TESTclient TESTauthentication_net TESTclientcontroller_local ClientDemo)
+SET(ALL_EXECUTABLES TESTclient TESTauthentication_local TESTclientcontroller_local ClientDemo)
 RENAME_EXECUTABLE(ClientDemo)
 RENAME_EXECUTABLE(TESTclient)
-RENAME_EXECUTABLE(TESTauthentication_net)
+RENAME_EXECUTABLE(TESTauthentication_local)
 RENAME_EXECUTABLE(TESTclientcontroller_local)
 
 ADD_LIBRARY(LifeStuffSqlUtilslib STATIC ${ALL_FILES_SHARED_DIR})
 ADD_LIBRARY(LifeStuffLocallib STATIC ${ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR})
 
-ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTclientcontroller_local TESTclient TESTauthentication_net)
+ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTclientcontroller_local TESTclient TESTauthentication_local)
 
 IF(UNIX)
   TARGET_LINK_LIBRARIES(LifeStuffSqlUtilslib boost_filesystem dl)
@@ -189,7 +189,7 @@ ELSE()
 ENDIF()
 TARGET_LINK_LIBRARIES(LifeStuffLocallib LifeStuffSqlUtilslib encrypt_static pki_static passport_static boost_date_time ${QT_LIBRARIES} boost_regex)
 TARGET_LINK_LIBRARIES(TESTclient LifeStuffLocallib gtest_static gmock_static)
-TARGET_LINK_LIBRARIES(TESTauthentication_net LifeStuffLocallib gtest_static)
+TARGET_LINK_LIBRARIES(TESTauthentication_local LifeStuffLocallib gtest_static)
 TARGET_LINK_LIBRARIES(TESTclientcontroller_local LifeStuffLocallib gtest_static)
 TARGET_LINK_LIBRARIES(ClientDemo LifeStuffLocallib)
 
@@ -241,7 +241,7 @@ IF(PYTHONINTERP_FOUND)
 ENDIF()
 
 ADD_GTESTS(TESTclient)
-ADD_GTESTS(TESTauthentication_net)
+ADD_GTESTS(TESTauthentication_local)
 ADD_GTESTS(TESTclientcontroller_local)
 
 TEST_SUMMARY_OUTPUT()
