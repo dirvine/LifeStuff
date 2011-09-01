@@ -38,7 +38,6 @@
 #endif
 
 #include "maidsafe/lifestuff/localstoremanager.h"
-#include "maidsafe/lifestuff/tests/cachepassport.h"
 #include "maidsafe/lifestuff/tests/mocksessionsingleton.h"
 #include "maidsafe/lifestuff/tests/testcallback.h"
 
@@ -65,10 +64,7 @@ class LocalStoreManagerTest : public testing::Test {
         cb_(),
         functor_(),
         anmaid_private_key_(),
-        mpid_public_key_(),
-        io_service_(),
-        work_(new boost::asio::io_service::work(io_service_)),
-        threads_() {}
+        mpid_public_key_() {}
 
   ~LocalStoreManagerTest() {
     try {
@@ -82,11 +78,6 @@ class LocalStoreManagerTest : public testing::Test {
 
  protected:
   void SetUp() {
-    for (int i(0); i != 5; ++i) {
-      threads_.create_thread(
-          std::bind(static_cast<size_t(boost::asio::io_service::*)()>(
-              &boost::asio::io_service::run), &io_service_));
-    }
     ss_->ResetSession();
     try {
       if (fs::exists(test_root_dir_))
@@ -102,10 +93,6 @@ class LocalStoreManagerTest : public testing::Test {
       return;
     }
 
-    std::shared_ptr<passport::test::CachePassport> passport(
-        new passport::test::CachePassport(kRsaKeySize, 10, io_service_));
-    passport->Init();
-    ss_->passport_ = passport;
     ss_->ResetSession();
     ss_->CreateTestPackets("Me");
     cb_.Reset();
@@ -128,7 +115,6 @@ class LocalStoreManagerTest : public testing::Test {
       }
     }
     ss_->passport_->StopCreatingKeyPairs();
-    work_.reset();
   }
 
   fs::path test_root_dir_;
@@ -138,9 +124,6 @@ class LocalStoreManagerTest : public testing::Test {
   test::CallbackObject cb_;
   std::function<void(const ReturnCode &)> functor_;
   std::string anmaid_private_key_, mpid_public_key_;
-  boost::asio::io_service io_service_;
-  std::shared_ptr<boost::asio::io_service::work> work_;
-  boost::thread_group threads_;
 
  private:
   LocalStoreManagerTest(const LocalStoreManagerTest&);
@@ -227,9 +210,9 @@ TEST_F(LocalStoreManagerTest, BEH_DeleteSystemPacketNotOwner) {
   std::vector<std::string> values(1, gp.value());
 
   // Overwrite original signature packets
-  ss_->passport_ = std::shared_ptr<passport::Passport>(
-                       new passport::Passport(io_service_, kRsaKeySize));
-  ss_->passport_->Init();
+//  ss_->passport_ = std::shared_ptr<passport::Passport>(
+//                       new passport::Passport(io_service_, kRsaKeySize));
+//  ss_->passport_->Init();
   ss_->CreateTestPackets("");
 
   cb_.Reset();
@@ -333,9 +316,9 @@ TEST_F(LocalStoreManagerTest, BEH_UpdatePacket) {
   }
 
   // Try to update with different keys
-  ss_->passport_ = std::shared_ptr<passport::Passport>(
-                       new passport::Passport(io_service_, kRsaKeySize));
-  ss_->passport_->Init();
+//  ss_->passport_ = std::shared_ptr<passport::Passport>(
+//                       new passport::Passport(io_service_, kRsaKeySize));
+//  ss_->passport_->Init();
   ss_->CreateTestPackets("");
 
   cb_.Reset();

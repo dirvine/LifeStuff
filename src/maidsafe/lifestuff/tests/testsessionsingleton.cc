@@ -27,7 +27,6 @@
 
 #include "maidsafe/lifestuff/data_atlas.pb.h"
 #include "maidsafe/lifestuff/sessionsingleton.h"
-#include "maidsafe/lifestuff/tests/cachepassport.h"
 
 namespace maidsafe {
 
@@ -37,38 +36,18 @@ namespace test {
 
 class SessionSingletonTest : public testing::Test {
  public:
-  SessionSingletonTest()
-      : ss_(new SessionSingleton),
-        io_service_(),
-        work_(new boost::asio::io_service::work(io_service_)),
-        threads_() {}
+  SessionSingletonTest() : ss_(new SessionSingleton) {}
 
  protected:
   void SetUp() {
-    for (int i(0); i != 5; ++i) {
-      threads_.create_thread(
-          std::bind(static_cast<size_t(boost::asio::io_service::*)()>(
-              &boost::asio::io_service::run), &io_service_));
-    }
-    std::shared_ptr<passport::test::CachePassport> passport(
-        new passport::test::CachePassport(kRsaKeySize, 10, io_service_));
-    passport->Init();
-    ss_->passport_ = passport;
     ss_->ResetSession();
   }
-  void TearDown() {
-    ss_->ResetSession();
-    work_.reset();
-  }
+
   std::shared_ptr<SessionSingleton> ss_;
 
  private:
   explicit SessionSingletonTest(const SessionSingletonTest&);
   SessionSingletonTest &operator=(const SessionSingletonTest&);
-
-  boost::asio::io_service io_service_;
-  std::shared_ptr<boost::asio::io_service::work> work_;
-  boost::thread_group threads_;
 };
 
 TEST_F(SessionSingletonTest, BEH_SetsGetsAndResetSession) {

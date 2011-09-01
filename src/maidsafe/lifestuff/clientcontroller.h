@@ -115,7 +115,7 @@ class ClientController : public lifestuff::UserCredentials {
   ClientController &operator=(const ClientController&);
   ClientController(const ClientController&);
 
-  ~ClientController() {}
+  ~ClientController();
   int Init(boost::uint8_t k);
   inline bool initialised() { return initialised_; }
 
@@ -148,8 +148,8 @@ class ClientController : public lifestuff::UserCredentials {
 
   // Variables
   std::shared_ptr<ChunkStore> client_chunkstore_;
-  std::shared_ptr<PacketManager> local_sm_;
   std::shared_ptr<Authentication> auth_;
+  std::shared_ptr<PacketManager> local_sm_;
   std::shared_ptr<SessionSingleton> ss_;
   std::string ser_da_;
   std::string client_store_;

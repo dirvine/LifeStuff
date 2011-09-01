@@ -157,10 +157,7 @@ SET(NETWORK_SYSTEM_TEST_TIMEOUT 3600)
 
 ADD_EXECUTABLE(TESTclient
                   ${ALL_FILES_CLIENT_TESTS_DIR}
-                  ${TEST_MAIN}
-                  "${SRC_MAIDSAFE}/tests/cached_keys.h"
-                  "${SRC_MAIDSAFE}/tests/cachepassport.h"
-                  "${SRC_MAIDSAFE}/tests/mocksessionsingleton.h")
+                  ${TEST_MAIN})
 
 ADD_EXECUTABLE(TESTauthentication_local
                  ${TEST_MAIN}
@@ -183,11 +180,9 @@ ADD_LIBRARY(LifeStuffLocallib STATIC ${ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR})
 ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTclientcontroller_local TESTclient TESTauthentication_local)
 
 IF(UNIX)
-  TARGET_LINK_LIBRARIES(LifeStuffSqlUtilslib boost_filesystem dl)
-ELSE()
-  TARGET_LINK_LIBRARIES(LifeStuffSqlUtilslib boost_filesystem)
+  TARGET_LINK_LIBRARIES(LifeStuffSqlUtilslib dl)
 ENDIF()
-TARGET_LINK_LIBRARIES(LifeStuffLocallib LifeStuffSqlUtilslib encrypt_static pki_static passport_static boost_date_time ${QT_LIBRARIES} boost_regex)
+TARGET_LINK_LIBRARIES(LifeStuffLocallib LifeStuffSqlUtilslib encrypt_static passport_static boost_date_time ${QT_LIBRARIES} boost_regex)
 TARGET_LINK_LIBRARIES(TESTclient LifeStuffLocallib gtest_static gmock_static)
 TARGET_LINK_LIBRARIES(TESTauthentication_local LifeStuffLocallib gtest_static)
 TARGET_LINK_LIBRARIES(TESTclientcontroller_local LifeStuffLocallib gtest_static)

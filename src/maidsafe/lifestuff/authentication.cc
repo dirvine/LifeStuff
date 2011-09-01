@@ -48,40 +48,47 @@ namespace maidsafe {
 namespace lifestuff {
 
 Authentication::~Authentication() {
-  passport_->StopCreatingKeyPairs();
-  bool tmid_success(false), stmid_success(false);
-  try {
-    boost::mutex::scoped_lock lock(mutex_);
-    tmid_success = cond_var_.timed_wait(lock,
-                   boost::posix_time::milliseconds(4 * kSingleOpTimeout_),
-                   std::bind(&Authentication::TmidOpDone, this));
-    stmid_success = cond_var_.timed_wait(lock,
-                    boost::posix_time::milliseconds(2 * kSingleOpTimeout_),
-                    std::bind(&Authentication::StmidOpDone, this));
-  }
-  catch(const std::exception &e) {
-    DLOG(WARNING) << "Authentication dtor: " << e.what() << std::endl;
-  }
+  DLOG(INFO) << "tmid_op_status_ = " << tmid_op_status_
+             << ", stmid_op_status_ = " << stmid_op_status_;
+  if (tmid_op_status_ != kPendingMid || stmid_op_status_ != kPendingMid) {
+    bool tmid_success(false), stmid_success(false);
+    try {
+      boost::mutex::scoped_lock lock(mutex_);
+      tmid_success = cond_var_.timed_wait(
+                         lock,
+                         boost::posix_time::milliseconds(4 * kSingleOpTimeout_),
+                         std::bind(&Authentication::TmidOpDone, this));
+      stmid_success = cond_var_.timed_wait(
+                          lock,
+                          boost::posix_time::milliseconds(2 * kSingleOpTimeout_),
+                          std::bind(&Authentication::StmidOpDone, this));
+    }
+    catch(const std::exception &e) {
+      DLOG(WARNING) << "Authentication dtor: " << e.what() << std::endl;
+    }
 #ifdef DEBUG
-  if (!tmid_success)
-    DLOG(WARNING) << "Authentication dtor: timed out waiting for TMID"
-                  << std::endl;
-  if (!stmid_success)
-    DLOG(WARNING) << "Authentication dtor: timed out waiting for STMID"
-                  << std::endl;
+    if (!tmid_success)
+      DLOG(WARNING) << "Authentication dtor: timed out waiting for TMID - "
+                    << tmid_op_status_;
+    if (!stmid_success)
+      DLOG(WARNING) << "Authentication dtor: timed out waiting for STMID - "
+                    << stmid_op_status_;
 #endif
+  }
+  DLOG(INFO) << "In and out";
 }
 
 void Authentication::Init(std::shared_ptr<PacketManager> packet_manager) {
   packet_manager_ = packet_manager;
   passport_ = session_singleton_->passport_;
-  passport_->Init();
 }
 
 int Authentication::GetUserInfo(const std::string &username,
                                 const std::string &pin) {
   std::string mid_name, smid_name;
-  int result = passport_->SetInitialDetails(username, pin, &mid_name,
+  int result = passport_->SetInitialDetails(username,
+                                            pin,
+                                            &mid_name,
                                             &smid_name);
 
   if (result != kSuccess) {

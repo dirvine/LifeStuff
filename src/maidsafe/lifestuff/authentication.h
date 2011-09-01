@@ -60,7 +60,7 @@ class Authentication {
         stmid_op_status_(kPendingMid),
         encrypted_tmid_(),
         encrypted_stmid_(),
-        kSingleOpTimeout_(10000) {}
+        kSingleOpTimeout_(5000) {}
   ~Authentication();
   // Used to intialise passport_ in all cases.
   void Init(std::shared_ptr<PacketManager> packet_manager);
@@ -185,12 +185,14 @@ class Authentication {
 
   // Designed to be called as functor in timed_wait - user_info mutex locked
   bool TmidOpDone() {
-    return (tmid_op_status_ == kSucceeded || tmid_op_status_ == kNoUser ||
+    return (tmid_op_status_ == kSucceeded ||
+            tmid_op_status_ == kNoUser ||
             tmid_op_status_ == kFailed);
   }
   // Designed to be called as functor in timed_wait - user_info mutex locked
   bool StmidOpDone() {
-    return (stmid_op_status_ == kSucceeded || stmid_op_status_ == kNoUser ||
+    return (stmid_op_status_ == kSucceeded ||
+            stmid_op_status_ == kNoUser ||
             stmid_op_status_ == kFailed);
   }
   // Designed to be called as functor in timed_wait - user_info mutex locked
