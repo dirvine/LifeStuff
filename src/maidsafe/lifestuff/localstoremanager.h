@@ -56,8 +56,10 @@ class LocalStoreManager : public PacketManager {
  public:
   LocalStoreManager(std::shared_ptr<ChunkStore> client_chunkstore,
                     const boost::uint8_t &k,
-                    const fs3::path &db_directory);
-  explicit LocalStoreManager(const fs3::path &db_directory);
+                    const fs3::path &db_directory,
+                    std::shared_ptr<SessionSingleton> ss);
+  explicit LocalStoreManager(const fs3::path &db_directory,
+                             std::shared_ptr<SessionSingleton> ss);
   virtual ~LocalStoreManager();
   virtual void Init(VoidFuncOneInt callback, const boost::uint16_t &port);
 //  virtual void SetPmid(const std::string &/*pmid_name*/) {}
@@ -181,11 +183,10 @@ class LocalStoreManager : public PacketManager {
   const boost::uint8_t K_;
   const boost::uint16_t kUpperThreshold_;
   CppSQLite3DB db_;
-//  VaultBufferPacketHandler vbph_;
   boost::mutex mutex_;
   std::string local_sm_dir_;
   std::shared_ptr<ChunkStore> client_chunkstore_;
-  SessionSingleton *ss_;
+  std::shared_ptr<SessionSingleton> ss_;
   std::set<std::string> chunks_pending_;
 };
 

@@ -60,12 +60,15 @@ class LocalStoreManagerTest : public testing::Test {
                        ("maidsafe_TestStoreManager_" +
                        RandomAlphaNumericString(6))),
         client_chunkstore_(),
-        sm_(new LocalStoreManager(test_root_dir_)),
+        ss_(new SessionSingleton),
+        sm_(new LocalStoreManager(test_root_dir_, ss_)),
         cb_(),
-        ss_(SessionSingleton::getInstance()),
         functor_(),
         anmaid_private_key_(),
-        mpid_public_key_() {}
+        mpid_public_key_(),
+        io_service_(),
+        work_(new boost::asio::io_service::work(io_service_)),
+        threads_() {}
 
   ~LocalStoreManagerTest() {
     try {
@@ -79,6 +82,11 @@ class LocalStoreManagerTest : public testing::Test {
 
  protected:
   void SetUp() {
+    for (int i(0); i != 5; ++i) {
+      threads_.create_thread(
+          std::bind(static_cast<size_t(boost::asio::io_service::*)()>(
+              &boost::asio::io_service::run), &io_service_));
+    }
     ss_->ResetSession();
     try {
       if (fs::exists(test_root_dir_))
@@ -94,9 +102,8 @@ class LocalStoreManagerTest : public testing::Test {
       return;
     }
 
-    ss_ = SessionSingleton::getInstance();
     std::shared_ptr<passport::test::CachePassport> passport(
-        new passport::test::CachePassport(kRsaKeySize, 5, 10));
+        new passport::test::CachePassport(kRsaKeySize, 10, io_service_));
     passport->Init();
     ss_->passport_ = passport;
     ss_->ResetSession();
@@ -121,15 +128,19 @@ class LocalStoreManagerTest : public testing::Test {
       }
     }
     ss_->passport_->StopCreatingKeyPairs();
+    work_.reset();
   }
 
   fs::path test_root_dir_;
   std::shared_ptr<ChunkStore> client_chunkstore_;
+  std::shared_ptr<SessionSingleton> ss_;
   std::shared_ptr<LocalStoreManager> sm_;
   test::CallbackObject cb_;
-  SessionSingleton *ss_;
   std::function<void(const ReturnCode &)> functor_;
   std::string anmaid_private_key_, mpid_public_key_;
+  boost::asio::io_service io_service_;
+  std::shared_ptr<boost::asio::io_service::work> work_;
+  boost::thread_group threads_;
 
  private:
   LocalStoreManagerTest(const LocalStoreManagerTest&);
@@ -217,7 +228,7 @@ TEST_F(LocalStoreManagerTest, BEH_DeleteSystemPacketNotOwner) {
 
   // Overwrite original signature packets
   ss_->passport_ = std::shared_ptr<passport::Passport>(
-      new passport::Passport(kRsaKeySize, 5));
+                       new passport::Passport(io_service_, kRsaKeySize));
   ss_->passport_->Init();
   ss_->CreateTestPackets("");
 
@@ -323,7 +334,7 @@ TEST_F(LocalStoreManagerTest, BEH_UpdatePacket) {
 
   // Try to update with different keys
   ss_->passport_ = std::shared_ptr<passport::Passport>(
-      new passport::Passport(kRsaKeySize, 5));
+                       new passport::Passport(io_service_, kRsaKeySize));
   ss_->passport_->Init();
   ss_->CreateTestPackets("");
 

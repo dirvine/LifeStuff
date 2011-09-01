@@ -46,13 +46,15 @@ namespace maidsafe {
 namespace lifestuff {
 
 typedef std::function<void(std::shared_ptr<std::vector<int>>)> DeleteFunctor;  // NOLINT (Dan)
+class SessionSingleton;
 
 class NetworkStoreManager : public PacketManager {
  public:
   NetworkStoreManager(const boost::uint16_t &k,
                       const boost::uint16_t &alpha,
                       const boost::uint16_t beta,
-                      const bptime::seconds &mean_refresh_interval);
+                      const bptime::seconds &mean_refresh_interval,
+                      std::shared_ptr<SessionSingleton> ss);
   virtual void Init(
       const std::vector<dht::kademlia::Contact> &bootstrap_contacts,
       const dht::kademlia::JoinFunctor callback,
@@ -119,6 +121,7 @@ class NetworkStoreManager : public PacketManager {
   dht::kademlia::NodeId node_id_;
   bptime::seconds mean_refresh_interval_;
   std::vector<bool> delete_results_;
+  std::shared_ptr<SessionSingleton> session_singleton_;
 };
 
 }  // namespace lifestuff

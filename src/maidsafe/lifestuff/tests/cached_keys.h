@@ -41,6 +41,7 @@ namespace fs = boost::filesystem;
 namespace cached_keys {
 
 inline void MakeKeys(const int &key_count,
+                     boost::asio::io_service &io_service,
                      std::vector<maidsafe::crypto::RsaKeyPair> *keys,
                      bool for_passport = false) {
   keys->clear();
@@ -75,8 +76,8 @@ inline void MakeKeys(const int &key_count,
   }
   int need_keys = key_count - static_cast<int>(keys->size());
   if (need_keys > 0) {
-    maidsafe::passport::CryptoKeyPairs kps(4096, 5);
-    kps.StartToCreateKeyPairs(static_cast<int16_t>(need_keys));
+    maidsafe::passport::CryptoKeyPairs kps(io_service, 4096);
+    kps.CreateKeyPairs(static_cast<int16_t>(need_keys));
     maidsafe::Sleep(boost::posix_time::milliseconds(100));
     for (int i = 0; i < need_keys; ++i) {
       maidsafe::crypto::RsaKeyPair rsakp;

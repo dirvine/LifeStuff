@@ -124,12 +124,28 @@ struct ConnectionDetails {
 
 class SessionSingleton {
  public:
-  static SessionSingleton* getInstance() {
-    boost::call_once(Init, flag_);
-    return single_.get();
+  SessionSingleton()
+    : ud_(),
+      io_service_(),
+      work_(new boost::asio::io_service::work(io_service_)),
+      threads_(),
+      passport_(new passport::Passport(io_service_, kRsaKeySize)),
+      ch_(),
+      psh_(),
+      conversations_(),
+      live_contacts_(),
+      lc_mutex_() {
+    for (int i(0); i != 5; ++i) {
+      threads_.create_thread(
+          std::bind(static_cast<size_t(boost::asio::io_service::*)()>(
+              &boost::asio::io_service::run), &io_service_));
+    }
   }
+  virtual ~SessionSingleton() {
+    work_.reset();
+  }
+
   bool ResetSession();
-  virtual ~SessionSingleton() {}
 
   ///////////////////////////////
   //// User Details Handling ////
@@ -303,13 +319,6 @@ class SessionSingleton {
 //  void ClearLiveContacts();
 
  protected:
-  SessionSingleton() : ud_(),
-                       passport_(new passport::Passport(kRsaKeySize, 5)),
-                       ch_(),
-                       psh_(),
-                       conversations_(),
-                       live_contacts_(),
-                       lc_mutex_() {}
   // Following three mutators should only be called by Authentication once
   // associated packets are confirmed as stored.
   void set_username(const std::string &username);
@@ -332,9 +341,7 @@ class SessionSingleton {
   friend class MockSessionSingleton;
   friend class test::SessionSingletonTest;
   friend class test::ClientControllerTest;
-  friend class test::DataAtlasHandlerTest;
   friend class test::LocalStoreManagerTest;
-  friend class test::MaidStoreManagerTest;
   friend class test::SessionSingletonTest_BEH_SetsGetsAndResetSession_Test;
   friend class test::SessionSingletonTest_BEH_SessionName_Test;
   friend class
@@ -362,15 +369,17 @@ class SessionSingleton {
 
   SessionSingleton &operator=(const SessionSingleton&);
   SessionSingleton(const SessionSingleton&);
-  static void Init() { single_.reset(new SessionSingleton()); }
+//  void Init() { single_.reset(new SessionSingleton()); }
   int GetKey(const passport::PacketType &packet_type,
              std::string *id,
              std::string *public_key,
              std::string *private_key,
              std::string *public_key_signature);
-  static boost::scoped_ptr<SessionSingleton> single_;
-  static boost::once_flag flag_;
+
   UserDetails ud_;
+  boost::asio::io_service io_service_;
+  std::shared_ptr<boost::asio::io_service::work> work_;
+  boost::thread_group threads_;
   std::shared_ptr<passport::Passport> passport_;
   ContactsHandler ch_;
   PrivateShareHandler psh_;

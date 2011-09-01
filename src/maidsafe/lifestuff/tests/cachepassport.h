@@ -35,20 +35,23 @@ namespace test {
 class CachePassport : public Passport {
  public:
   CachePassport(const boost::uint16_t &rsa_key_size,
-                const boost::int8_t &max_crypto_thread_count,
-                const boost::uint16_t &key_count)
-      : Passport(rsa_key_size, max_crypto_thread_count),
-        kKeyCount_(key_count) {}
+                const boost::uint16_t &key_count,
+                boost::asio::io_service &io_service)
+      : Passport(io_service, rsa_key_size),
+        kKeyCount_(key_count),
+        io_service_(io_service) {}
   virtual void Init() {
     std::vector<crypto::RsaKeyPair> keys;
-    cached_keys::MakeKeys(kKeyCount_, &keys, true);
+    cached_keys::MakeKeys(kKeyCount_, io_service_, &keys, true);
     crypto_key_pairs_.keypairs_.assign(keys.begin(), keys.end());
   }
   ~CachePassport() {}
  private:
   CachePassport &operator=(const CachePassport&);
   CachePassport(const CachePassport&);
+
   const boost::uint16_t kKeyCount_;
+  boost::asio::io_service &io_service_;
 };
 
 }  // namespace test

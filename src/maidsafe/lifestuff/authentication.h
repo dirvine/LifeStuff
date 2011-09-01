@@ -48,9 +48,9 @@ class SessionSingleton;
 
 class Authentication {
  public:
-  Authentication()
+  explicit Authentication(std::shared_ptr<SessionSingleton> ss)
       : packet_manager_(),
-        session_singleton_(),
+        session_singleton_(ss),
         passport_(),
         mutex_(),
         mid_mutex_(),
@@ -226,7 +226,7 @@ class Authentication {
   char *UtilsTrimLeft(char *szSource);
   std::string UtilsTrim(std::string source);
   std::shared_ptr<PacketManager> packet_manager_;
-  SessionSingleton *session_singleton_;
+  std::shared_ptr<SessionSingleton> session_singleton_;
   std::shared_ptr<passport::Passport> passport_;
   boost::mutex mutex_, mid_mutex_, smid_mutex_;
   boost::condition_variable cond_var_;

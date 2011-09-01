@@ -31,10 +31,10 @@ namespace lifestuff {
 class MockClientController : public ClientController {
  public:
   MockClientController() : ClientController() {
-    ss_ = new MockSessionSingleton;
+    ss_ = std::shared_ptr<SessionSingleton>(new MockSessionSingleton);
   }
   ~MockClientController() {
-    delete ss_;
+    ss_.reset();
   }
 };
 

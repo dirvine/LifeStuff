@@ -74,7 +74,6 @@ Authentication::~Authentication() {
 
 void Authentication::Init(std::shared_ptr<PacketManager> packet_manager) {
   packet_manager_ = packet_manager;
-  session_singleton_ = SessionSingleton::getInstance();
   passport_ = session_singleton_->passport_;
   passport_->Init();
 }

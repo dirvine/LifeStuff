@@ -34,9 +34,6 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-boost::scoped_ptr<SessionSingleton> SessionSingleton::single_;
-boost::once_flag SessionSingleton::flag_ = BOOST_ONCE_INIT;
-
 bool SessionSingleton::ResetSession() {
   ud_.defconlevel = kDefCon3;
   ud_.da_modified = false;

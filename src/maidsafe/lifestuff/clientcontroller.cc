@@ -111,16 +111,28 @@ void PacketOpCallback(const int &store_manager_result,
   cond_var->notify_one();
 }
 
+ClientController::ClientController()
+    : client_chunkstore_(),
+      local_sm_(),
+      auth_(),
+      ss_(new SessionSingleton()),
+      ser_da_(),
+      client_store_(),
+      initialised_(false),
+      logging_out_(false),
+      logged_in_(false),
+      K_(0),
+      upper_threshold_(0) {}
+
 
 int ClientController::Init(boost::uint8_t /*k*/) {
   if (initialised_) {
     DLOG(INFO) << "Already initialised." << std::endl;
     return 0;
   }
-  ss_ = SessionSingleton::getInstance();
-  auth_.reset(new Authentication);
+  auth_.reset(new Authentication(ss_));
 #ifdef LOCAL_LifeStuffVAULT
-  local_sm_.reset(new LocalStoreManager("/tmp/LocalUserCredentials"));
+  local_sm_.reset(new LocalStoreManager("/tmp/LocalUserCredentials", ss_));
 #endif
 
   if (!JoinKademlia()) {

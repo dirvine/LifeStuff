@@ -70,8 +70,8 @@ class ClientControllerTest : public testing::Test {
   ClientControllerTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
         cc_(new ClientController()),
-        ss_(SessionSingleton::getInstance()),
-        local_sm_(new LocalStoreManager(*test_dir_)) {}
+        ss_(cc_->ss_),
+        local_sm_(new LocalStoreManager(*test_dir_, ss_)) {}
 
  protected:
   void SetUp() {
@@ -79,10 +79,9 @@ class ClientControllerTest : public testing::Test {
     local_sm_->Init(std::bind(&ClientControllerTest::InitAndCloseCallback,
                               this, arg::_1),
                     0);
-    cc_->auth_.reset(new Authentication);
+    cc_->auth_.reset(new Authentication(ss_));
     cc_->auth_->Init(local_sm_);
     cc_->local_sm_ = local_sm_;
-    cc_->ss_ = ss_;
     cc_->initialised_ = true;
   }
   void TearDown() {
@@ -97,7 +96,7 @@ class ClientControllerTest : public testing::Test {
 
   std::shared_ptr<fs::path> test_dir_;
   std::shared_ptr<ClientController> cc_;
-  SessionSingleton *ss_;
+  std::shared_ptr<SessionSingleton> ss_;
   std::shared_ptr<LocalStoreManager> local_sm_;
 
  private:
@@ -159,7 +158,6 @@ TEST_F(ClientControllerTest, FUNC_ChangeDetails) {
   std::string username("User2");
   std::string pin("2345");
   std::string password("The axolotl has landed.");
-  ss_ = SessionSingleton::getInstance();
   ASSERT_TRUE(ss_->username().empty());
   ASSERT_TRUE(ss_->pin().empty());
   ASSERT_TRUE(ss_->password().empty());
@@ -263,7 +261,6 @@ TEST_F(ClientControllerTest, FUNC_LeaveNetwork) {
   std::string username("User4");
   std::string pin("4567");
   std::string password("The chubster has landed.");
-  ss_ = SessionSingleton::getInstance();
   ASSERT_TRUE(ss_->username().empty());
   ASSERT_TRUE(ss_->pin().empty());
   ASSERT_TRUE(ss_->password().empty());

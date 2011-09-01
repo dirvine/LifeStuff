@@ -39,7 +39,8 @@ NetworkStoreManager::NetworkStoreManager(
     const boost::uint16_t &k,
     const boost::uint16_t &alpha,
     const boost::uint16_t beta,
-    const bptime::seconds &mean_refresh_interval)
+    const bptime::seconds &mean_refresh_interval,
+    std::shared_ptr<SessionSingleton> ss)
     : k_(k),
       alpha_(alpha),
       beta_(beta),
@@ -49,7 +50,8 @@ NetworkStoreManager::NetworkStoreManager(
       node_(),
       node_id_(dht::kademlia::NodeId::kRandomId),
       mean_refresh_interval_(mean_refresh_interval),
-      delete_results_() {}
+      delete_results_(),
+      session_singleton_(ss) {}
 
 void NetworkStoreManager::Init(
      const std::vector<dht::kademlia::Contact> &bootstrap_contacts,
@@ -95,7 +97,7 @@ void NetworkStoreManager::StorePacket(
   dht::kademlia::SecurifierPtr securifier;
   dht::kademlia::Key key(packet_name);
   std::string key_id, public_key, public_key_signature, private_key;
-  maidsafe::lifestuff::ClientUtils client_utils;
+  maidsafe::lifestuff::ClientUtils client_utils(session_singleton_);
   client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
                                       &key_id, &public_key,
                                       &public_key_signature, &private_key);
@@ -112,7 +114,7 @@ void NetworkStoreManager::DeletePacket(
     const DeleteFunctor &cb) {
   dht::kademlia::Key key(packet_name);
   std::string key_id, public_key, public_key_signature, private_key;
-  maidsafe::lifestuff::ClientUtils client_utils;
+  maidsafe::lifestuff::ClientUtils client_utils(session_singleton_);
   client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
                                       &key_id, &public_key,
                                       &public_key_signature, &private_key);
@@ -179,7 +181,7 @@ void NetworkStoreManager::UpdatePacket(
     const dht::kademlia::UpdateFunctor &cb) {
   dht::kademlia::Key key(packet_name);
   std::string key_id, public_key, public_key_signature, private_key;
-  maidsafe::lifestuff::ClientUtils client_utils;
+  maidsafe::lifestuff::ClientUtils client_utils(session_singleton_);
   client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
                                       &key_id, &public_key,
                                       &public_key_signature, &private_key);

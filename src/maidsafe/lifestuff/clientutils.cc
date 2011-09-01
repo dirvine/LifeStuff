@@ -33,29 +33,6 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-std::string TidyPath(const std::string &original_path) {
-  //  if path is root, don't change it
-  if (original_path.size() == 1)
-    return original_path;
-  std::string amended_path = original_path;
-  //  if path has training slash, remove it
-  if (amended_path.at(amended_path.size() - 1) == '/' ||
-      amended_path.at(amended_path.size() - 1) == '\\')
-    amended_path = amended_path.substr(0, amended_path.size() - 1);
-  //  if path has leading slash, remove it
-  if (amended_path.at(0) == '/' || amended_path.at(0) == '\\')
-    amended_path = amended_path.substr(1, amended_path.size() - 1);
-  return amended_path;
-}
-
-std::string StringToLowercase(std::string str) {
-  std::transform(str.begin(), str.end(), str.begin(),
-                 std::ptr_fun<int, int>(std::tolower));
-  return str;
-}
-
-ClientUtils::ClientUtils() : ss_(SessionSingleton::getInstance()) {}
-
 void ClientUtils::GetChunkSignatureKeys(DirType dir_type,
                                     const std::string &msid,
                                     std::string *key_id,

@@ -108,28 +108,9 @@ class BPCallback {
   boost::uint32_t status;
 };
 
-struct VaultConfigParameters {
-  VaultConfigParameters() : vault_type(0), space(0), port(0), directory() {}
-  int vault_type;
-  boost::uint32_t space;
-  boost::uint32_t port;
-  std::string directory;
-};
-
 class ClientController : public lifestuff::UserCredentials {
  public:
-  ClientController()
-      : client_chunkstore_(),
-        local_sm_(),
-        auth_(),
-        ss_(),
-        ser_da_(),
-        client_store_(),
-        initialised_(false),
-        logging_out_(false),
-        logged_in_(false),
-        K_(0),
-        upper_threshold_(0) {}
+  ClientController();
 
   ClientController &operator=(const ClientController&);
   ClientController(const ClientController&);
@@ -169,7 +150,7 @@ class ClientController : public lifestuff::UserCredentials {
   std::shared_ptr<ChunkStore> client_chunkstore_;
   std::shared_ptr<PacketManager> local_sm_;
   std::shared_ptr<Authentication> auth_;
-  SessionSingleton *ss_;
+  std::shared_ptr<SessionSingleton> ss_;
   std::string ser_da_;
   std::string client_store_;
   bool initialised_;

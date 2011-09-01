@@ -37,13 +37,10 @@ namespace lifestuff {
 
 class SessionSingleton;
 
-std::string TidyPath(const std::string &original_path);
-
-std::string StringToLowercase(std::string str);
-
 class ClientUtils {
  public:
-  ClientUtils();
+  explicit ClientUtils(std::shared_ptr<SessionSingleton> ss)
+      : ss_(ss) {}
   ~ClientUtils() {}
   void GetChunkSignatureKeys(DirType dir_type,
                              const std::string &msid,
@@ -61,7 +58,8 @@ class ClientUtils {
  private:
   ClientUtils &operator=(const ClientUtils&);
   ClientUtils(const ClientUtils&);
-  SessionSingleton *ss_;
+
+  std::shared_ptr<SessionSingleton> ss_;
 };
 
 }  // namespace lifestuff

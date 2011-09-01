@@ -90,24 +90,26 @@ void ExecReturnLoadPacketCallback(const GetPacketFunctor &cb,
 LocalStoreManager::LocalStoreManager(
     std::shared_ptr<ChunkStore> client_chunkstore,
     const boost::uint8_t &k,
-    const fs3::path &db_directory)
+    const fs3::path &db_directory,
+    std::shared_ptr<SessionSingleton> ss)
         : K_(k),
           kUpperThreshold_(0),
           db_(),
           mutex_(),
           local_sm_dir_(db_directory.string()),
           client_chunkstore_(client_chunkstore),
-          ss_(SessionSingleton::getInstance()),
+          ss_(ss),
           chunks_pending_() {}
 
-LocalStoreManager::LocalStoreManager(const fs3::path &db_directory)
+LocalStoreManager::LocalStoreManager(const fs3::path &db_directory,
+                                     std::shared_ptr<SessionSingleton> ss)
     : K_(0),
       kUpperThreshold_(0),
       db_(),
       mutex_(),
       local_sm_dir_(db_directory.string()),
       client_chunkstore_(),
-      ss_(SessionSingleton::getInstance()),
+      ss_(ss),
       chunks_pending_() {}
 
 LocalStoreManager::~LocalStoreManager() {
@@ -343,7 +345,7 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
   PrintDebugInfo(packet_name, values.empty() ? "" : values.at(0), "",
                  "DeletePacket", system_packet_type);
   std::string key_id, public_key, public_key_signature, private_key;
-  ClientUtils client_utils;
+  ClientUtils client_utils(ss_);
   client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
       &key_id, &public_key, &public_key_signature, &private_key);
 //  pki::MaidsafeValidator msv;
@@ -474,7 +476,7 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
 
 //  std::cout << "AAAAAA: " << value.size() << std::endl;
   std::string key_id, public_key, public_key_signature, private_key;
-  ClientUtils client_utils;
+  ClientUtils client_utils(ss_);
   client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
                                       &key_id, &public_key,
                                       &public_key_signature, &private_key);
@@ -570,7 +572,7 @@ void LocalStoreManager::UpdatePacket(const std::string &packet_name,
   PrintDebugInfo(packet_name, old_value, new_value, "UpdatePacket",
                  system_packet_type);
   std::string key_id, public_key, public_key_signature, private_key;
-  ClientUtils client_utils;
+  ClientUtils client_utils(ss_);
   client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
                                       &key_id, &public_key,
                                       &public_key_signature, &private_key);

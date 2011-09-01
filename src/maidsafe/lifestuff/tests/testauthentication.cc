@@ -44,27 +44,28 @@ class AuthenticationTest : public testing::Test {
  public:
   AuthenticationTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
-        ss_(SessionSingleton::getInstance()),
-        sm_(new LocalStoreManager(*test_dir_)),
-        authentication_(),
+        ss_(new SessionSingleton),
+        sm_(new LocalStoreManager(*test_dir_, ss_)),
+        authentication_(ss_),
         username_("user"),
         pin_("1234"),
         password_("password1"),
         ser_dm_(RandomString(10000)),
         test_keys_() {}
+
  protected:
   void SetUp() {
     ss_->ResetSession();
     sm_->Init(std::bind(&AuthenticationTest::InitAndCloseCallback, this,
-                        arg::_1), 0);
+                        arg::_1),
+              0);
     authentication_.Init(sm_);
-    ss_ = SessionSingleton::getInstance();
-    ss_->ResetSession();
   }
 
   void TearDown() {
     sm_->Close(std::bind(&AuthenticationTest::InitAndCloseCallback, this,
-                         arg::_1), true);
+                         arg::_1),
+               true);
   }
 
   int GetMasterDataMap(std::string *ser_dm_login) {
@@ -97,7 +98,7 @@ class AuthenticationTest : public testing::Test {
   void InitAndCloseCallback(const ReturnCode&) {}
 
   std::shared_ptr<fs::path> test_dir_;
-  SessionSingleton *ss_;
+  std::shared_ptr<SessionSingleton> ss_;
   std::shared_ptr<LocalStoreManager> sm_;
   Authentication authentication_;
   std::string username_, pin_, password_, ser_dm_;

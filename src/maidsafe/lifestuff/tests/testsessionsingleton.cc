@@ -37,24 +37,38 @@ namespace test {
 
 class SessionSingletonTest : public testing::Test {
  public:
-  SessionSingletonTest() : ss_(SessionSingleton::getInstance()) {}
+  SessionSingletonTest()
+      : ss_(new SessionSingleton),
+        io_service_(),
+        work_(new boost::asio::io_service::work(io_service_)),
+        threads_() {}
 
  protected:
   void SetUp() {
+    for (int i(0); i != 5; ++i) {
+      threads_.create_thread(
+          std::bind(static_cast<size_t(boost::asio::io_service::*)()>(
+              &boost::asio::io_service::run), &io_service_));
+    }
     std::shared_ptr<passport::test::CachePassport> passport(
-        new passport::test::CachePassport(kRsaKeySize, 5, 10));
+        new passport::test::CachePassport(kRsaKeySize, 10, io_service_));
     passport->Init();
     ss_->passport_ = passport;
     ss_->ResetSession();
   }
   void TearDown() {
     ss_->ResetSession();
+    work_.reset();
   }
-  SessionSingleton *ss_;
+  std::shared_ptr<SessionSingleton> ss_;
 
  private:
   explicit SessionSingletonTest(const SessionSingletonTest&);
   SessionSingletonTest &operator=(const SessionSingletonTest&);
+
+  boost::asio::io_service io_service_;
+  std::shared_ptr<boost::asio::io_service::work> work_;
+  boost::thread_group threads_;
 };
 
 TEST_F(SessionSingletonTest, BEH_SetsGetsAndResetSession) {
@@ -138,7 +152,7 @@ TEST_F(SessionSingletonTest, BEH_SetsGetsAndResetSession) {
   ASSERT_EQ("city", list[0].city_);
   ASSERT_EQ('C', list[0].confirmed_);
   ASSERT_EQ(0, list[0].rank_);
-//  ASSERT_NE(0, list[0].last_contact_);
+  ASSERT_NE(0, list[0].last_contact_);
   ASSERT_EQ(0, ss_->GetFullShareList(kAlpha, kAll, &ps_list));
   ASSERT_EQ(size_t(1), ps_list.size());
   ASSERT_EQ("name", ps_list.front().Name());
