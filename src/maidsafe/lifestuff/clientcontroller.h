@@ -148,9 +148,9 @@ class ClientController : public lifestuff::UserCredentials {
 
   // Variables
   std::shared_ptr<ChunkStore> client_chunkstore_;
-  std::shared_ptr<Authentication> auth_;
-  std::shared_ptr<PacketManager> local_sm_;
   std::shared_ptr<SessionSingleton> ss_;
+  std::shared_ptr<PacketManager> local_sm_;
+  std::shared_ptr<Authentication> auth_;
   std::string ser_da_;
   std::string client_store_;
   bool initialised_;

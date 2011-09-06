@@ -48,8 +48,6 @@ namespace maidsafe {
 namespace lifestuff {
 
 Authentication::~Authentication() {
-  DLOG(INFO) << "tmid_op_status_ = " << tmid_op_status_
-             << ", stmid_op_status_ = " << stmid_op_status_;
   if (tmid_op_status_ != kPendingMid || stmid_op_status_ != kPendingMid) {
     bool tmid_success(false), stmid_success(false);
     try {
@@ -75,7 +73,6 @@ Authentication::~Authentication() {
                     << stmid_op_status_;
 #endif
   }
-  DLOG(INFO) << "In and out";
 }
 
 void Authentication::Init(std::shared_ptr<PacketManager> packet_manager) {
@@ -169,8 +166,8 @@ void Authentication::GetMidCallback(const std::vector<std::string> &values,
   }
 
   packet_manager_->GetPacket(tmid_name,
-                              std::bind(&Authentication::GetTmidCallback,
-                                        this, arg::_1, arg::_2));
+                             std::bind(&Authentication::GetTmidCallback,
+                                       this, arg::_1, arg::_2));
 }
 
 void Authentication::GetSmidCallback(const std::vector<std::string> &values,
@@ -541,8 +538,8 @@ void Authentication::SaveSession(const std::string &serialised_master_datamap,
   callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
                        save_session_data->tmid, save_session_data);
   packet_manager_->StorePacket(save_session_data->tmid->name(),
-                              save_session_data->tmid->value(), passport::TMID,
-                              PRIVATE, "", callback);
+                               save_session_data->tmid->value(),
+                               passport::TMID, PRIVATE, "", callback);
 
   // Delete old STMID
   callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
@@ -1242,40 +1239,6 @@ int Authentication::PublicUsernamePublicKey(const std::string &public_username,
   return kSuccess;
 }
 
-bool Authentication::CheckUsername(const std::string &username) {
-  try {
-    return UtilsTrim(username).size() >= 4;
-  }
-  catch(const std::exception &e) {
-    DLOG(ERROR) << "Authentication::Checkusername: " << e.what() << std::endl;
-    return false;
-  }
-}
-
-bool Authentication::CheckPin(std::string pin) {
-  try {
-    pin = UtilsTrim(pin);
-    if (pin == "0000")
-      return false;
-    boost::regex reg_ex("\\d{4}");
-    return boost::regex_match(pin, reg_ex);
-  }
-  catch(const std::exception &e) {
-    DLOG(ERROR) << "Authentication::Checkpin: " << e.what() << std::endl;
-    return false;
-  }
-}
-
-bool Authentication::CheckPassword(const std::string &password) {
-  try {
-    return UtilsTrim(password).size() >= 4;
-  }
-  catch(const std::exception &e) {
-    DLOG(ERROR) << "Authentication::CheckPassword: " << e.what() << std::endl;
-    return false;
-  }
-}
-
 int Authentication::StorePacket(std::shared_ptr<pki::Packet> packet,
                                 bool check_uniqueness) {
   int result(kPendingResult);
@@ -1393,30 +1356,6 @@ void Authentication::PacketOpCallback(const ReturnCode &return_code,
   boost::mutex::scoped_lock lock(mutex_);
   *op_result = return_code;
   cond_var_.notify_all();
-}
-
-char *Authentication::UtilsTrimRight(char *szSource) {
-  char *pszEOS = NULL;
-  //  Set pointer to character before terminating NULL
-  pszEOS = szSource + strlen(szSource) - 1;
-  //  iterate backwards until non '_' is found
-  while ((pszEOS >= szSource) && (*pszEOS == ' '))
-    --*pszEOS = '\0';
-  return szSource;
-}
-
-char *Authentication::UtilsTrimLeft(char *szSource) {
-  char *pszBOS = NULL;
-  //  Set pointer to first character
-  pszBOS = szSource;
-  //  iterate forwards until non '_' is found
-  while (*pszBOS == ' ')
-    ++*pszBOS;
-  return pszBOS;
-}
-
-std::string Authentication::UtilsTrim(std::string source) {
-  return UtilsTrimLeft(UtilsTrimRight(UtilsTrimLeft(&source.at(0))));
 }
 
 }  // namespace lifestuff

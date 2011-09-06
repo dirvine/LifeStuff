@@ -179,9 +179,6 @@ class Authentication {
   int ChangeUserData(const std::string &serialised_master_datamap,
                      const std::string &new_username,
                      const std::string &new_pin);
-  bool CheckUsername(const std::string &username);
-  bool CheckPin(std::string pin);
-  bool CheckPassword(const std::string &password);
 
   // Designed to be called as functor in timed_wait - user_info mutex locked
   bool TmidOpDone() {
@@ -224,9 +221,7 @@ class Authentication {
   int DeletePacket(std::shared_ptr<pki::Packet> packet);
   int PacketUnique(std::shared_ptr<pki::Packet> packet);
   void PacketOpCallback(const ReturnCode &return_code, int *op_result);
-  char *UtilsTrimRight(char *szSource);
-  char *UtilsTrimLeft(char *szSource);
-  std::string UtilsTrim(std::string source);
+
   std::shared_ptr<PacketManager> packet_manager_;
   std::shared_ptr<SessionSingleton> session_singleton_;
   std::shared_ptr<passport::Passport> passport_;

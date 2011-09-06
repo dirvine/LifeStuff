@@ -113,9 +113,9 @@ void PacketOpCallback(const int &store_manager_result,
 
 ClientController::ClientController()
     : client_chunkstore_(),
-      auth_(),
-      local_sm_(),
       ss_(new SessionSingleton()),
+      local_sm_(),
+      auth_(),
       ser_da_(),
       client_store_(),
       initialised_(false),
@@ -145,14 +145,12 @@ int ClientController::Init(boost::uint8_t /*k*/) {
 }
 
 ClientController::~ClientController() {
-  DLOG(INFO) << "JJJJJJJJJJJJJJJJJJJJJJJJJJJ";
 #ifdef LOCAL_LifeStuffVAULT
   CCCallback cb;
   std::static_pointer_cast<LocalStoreManager>(local_sm_)->Close(
       std::bind(&CCCallback::ReturnCodeCallback, &cb, arg::_1), false);
   cb.WaitForReturnCodeResult();
 #endif
-  DLOG(INFO) << "TTTTTTTTTTTTTTTTTTTTTTTTTTT";
 }
 
 bool ClientController::JoinKademlia() {

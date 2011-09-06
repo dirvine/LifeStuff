@@ -112,18 +112,7 @@ LocalStoreManager::LocalStoreManager(const fs3::path &db_directory,
       ss_(ss),
       chunks_pending_() {}
 
-LocalStoreManager::~LocalStoreManager() {
-//    bool t(false);
-//    while (!t) {
-//      {
-//  //      boost::mutex::scoped_lock loch_etive(signal_mutex_);
-//        t = chunks_pending_.empty();
-//      }
-//      if (!t)
-//        Sleep(boost::posix_time::milliseconds(100));
-//    }
-  DLOG(INFO) << "FFFFFFFFFFFFFFFFFFFFFFFFFFFFf";
-}
+LocalStoreManager::~LocalStoreManager() {}
 
 void LocalStoreManager::Init(VoidFuncOneInt callback, const boost::uint16_t&) {
 #ifdef LOCAL_LifeStuffVAULT

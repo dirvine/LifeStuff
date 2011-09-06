@@ -136,26 +136,19 @@ class SessionSingleton {
       conversations_(),
       live_contacts_(),
       lc_mutex_() {
-    DLOG(INFO) << "-----------";
     for (int i(0); i != 5; ++i) {
       threads_.create_thread(
           std::bind(static_cast<size_t(boost::asio::io_service::*)()>(
               &boost::asio::io_service::run), &io_service_));
     }
-    DLOG(INFO) << "+++++++++++";
     passport_->Init();
-    DLOG(INFO) << "***********";
   }
+
   virtual ~SessionSingleton() {
-    DLOG(INFO) << "11111111111";
     passport_->StopCreatingKeyPairs();
-    DLOG(INFO) << "22222222222";
     io_service_.stop();
-    DLOG(INFO) << "33333333333";
     work_.reset();
-    DLOG(INFO) << "44444444444";
     threads_.join_all();
-    DLOG(INFO) << "55555555555";
   }
 
   bool ResetSession();
