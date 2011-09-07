@@ -40,7 +40,7 @@
 #include "maidsafe/lifestuff/returncodes.h"
 #include "maidsafe/lifestuff/user_credentials_api.h"
 
-#if MAIDSAFE_LIFESTUFF_VERSION != 107
+#if MAIDSAFE_LIFESTUFF_VERSION != 108
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-lifestuff library.
 #endif
