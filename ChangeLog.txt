@@ -1,0 +1,12 @@
+v0.01.08 (WIP)
+--------------
+
+
+v0.01.07
+--------
+* Restructured tree, removing shared, shared_test, client and fuse in favour
+of only sqlutils.
+* Two libraries are installed: LifeStuff and SqlUtils
+* Added password to the user credentials API
+* Exposed clientcontroller.h
+* Text-based demo available with underlying database

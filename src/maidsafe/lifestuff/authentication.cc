@@ -56,10 +56,11 @@ Authentication::~Authentication() {
                          lock,
                          boost::posix_time::milliseconds(4 * kSingleOpTimeout_),
                          std::bind(&Authentication::TmidOpDone, this));
-      stmid_success = cond_var_.timed_wait(
-                          lock,
-                          boost::posix_time::milliseconds(2 * kSingleOpTimeout_),
-                          std::bind(&Authentication::StmidOpDone, this));
+      stmid_success =
+          cond_var_.timed_wait(
+              lock,
+              boost::posix_time::milliseconds(2 * kSingleOpTimeout_),
+              std::bind(&Authentication::StmidOpDone, this));
     }
     catch(const std::exception &e) {
       DLOG(WARNING) << "Authentication dtor: " << e.what() << std::endl;

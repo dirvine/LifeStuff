@@ -3709,7 +3709,7 @@ SQLITE_API int sqlite3_collation_needed16(
   void(*)(void*, sqlite3*, int eTextRep, const void*)
 );
 
-#if SQLITE_HAS_CODEC
+#ifdef SQLITE_HAS_CODEC
 /*
 ** Specify the key for an encrypted database.  This routine should be
 ** called right after sqlite3_open().
