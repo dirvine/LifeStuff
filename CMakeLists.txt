@@ -174,26 +174,28 @@ RENAME_EXECUTABLE(TESTclient)
 RENAME_EXECUTABLE(TESTauthentication_local)
 RENAME_EXECUTABLE(TESTclientcontroller_local)
 
-ADD_LIBRARY(LifeStuffSqlUtilslib STATIC ${ALL_FILES_SHARED_DIR})
-ADD_LIBRARY(LifeStuffLocallib STATIC ${ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR})
+ADD_LIBRARY(lifestuff_sql_utils_static STATIC ${ALL_FILES_SHARED_DIR})
+ADD_LIBRARY(lifestuff_local_static STATIC ${ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR})
+SET_TARGET_PROPERTIES(lifestuff_sql_utils_static PROPERTIES OUTPUT_NAME lifestuff_sql_utils)
+SET_TARGET_PROPERTIES(lifestuff_local_static PROPERTIES OUTPUT_NAME lifestuff_local)
 
 ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTclientcontroller_local TESTclient TESTauthentication_local)
 
 IF(UNIX)
-  TARGET_LINK_LIBRARIES(LifeStuffSqlUtilslib dl)
+  TARGET_LINK_LIBRARIES(lifestuff_sql_utils_static dl)
 ENDIF()
-TARGET_LINK_LIBRARIES(LifeStuffLocallib LifeStuffSqlUtilslib encrypt_static passport_static boost_date_time ${QT_LIBRARIES} boost_regex)
-TARGET_LINK_LIBRARIES(TESTclient LifeStuffLocallib gtest_static gmock_static)
-TARGET_LINK_LIBRARIES(TESTauthentication_local LifeStuffLocallib gtest_static)
-TARGET_LINK_LIBRARIES(TESTclientcontroller_local LifeStuffLocallib gtest_static)
-TARGET_LINK_LIBRARIES(ClientDemo LifeStuffLocallib)
+TARGET_LINK_LIBRARIES(lifestuff_local_static lifestuff_sql_utils_static encrypt_static passport_static boost_date_time ${QT_LIBRARIES} boost_regex)
+TARGET_LINK_LIBRARIES(TESTclient lifestuff_local_static gtest_static gmock_static)
+TARGET_LINK_LIBRARIES(TESTauthentication_local lifestuff_local_static gtest_static)
+TARGET_LINK_LIBRARIES(TESTclientcontroller_local lifestuff_local_static gtest_static)
+TARGET_LINK_LIBRARIES(ClientDemo lifestuff_local_static)
 
 ###################################################################################################
 # Builds                                                                                          #
 ###################################################################################################
 INCLUDE(maidsafe_standard_flags)
 
-SET_TARGET_PROPERTIES(LifeStuffLocallib PROPERTIES COMPILE_FLAGS -DLOCAL_LifeStuffVAULT)
+SET_TARGET_PROPERTIES(lifestuff_local_static PROPERTIES COMPILE_FLAGS -DLOCAL_LifeStuffVAULT)
 SET_TARGET_PROPERTIES(TESTclientcontroller_local PROPERTIES COMPILE_FLAGS -DLOCAL_LifeStuffVAULT)
 IF(UNIX)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
@@ -367,7 +369,7 @@ ELSE() # Installing the library
   ENDFOREACH()
 
   SET(EXPORT_NAME lifestuff_client)
-  INSTALL(TARGETS LifeStuffLocallib LifeStuffSqlUtilslib EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
+  INSTALL(TARGETS lifestuff_local_static lifestuff_sql_utils_static EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
   INSTALL(FILES ${LIFESTUFF_CLIENT_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff)
   INSTALL(EXPORT ${EXPORT_NAME} DESTINATION share/maidsafe)
   ADD_VERSION_INFO_TO_INSTALLED_FILE()
