@@ -35,47 +35,36 @@ namespace test {
 
 class CallbackObject {
  public:
-  CallbackObject() : result_(), return_code_(kPendingResult), mutex_(), cv_() {}
-  void StringCallback(const std::string &result) {
+  CallbackObject()
+    : return_int_(kPendingResult),
+      mutex_(),
+      cv_() {}
+
+  void IntCallback(int return_code) {
     boost::mutex::scoped_lock lock(mutex_);
-    result_ = result;
+    return_int_ = return_code;
     cv_.notify_one();
   }
-  void ReturnCodeCallback(const ReturnCode &return_code) {
-    boost::mutex::scoped_lock lock(mutex_);
-    return_code_ = return_code;
-    cv_.notify_one();
-  }
-  std::string WaitForStringResult() {
-    std::string result;
+
+  int WaitForIntResult() {
+    int result;
     {
       boost::mutex::scoped_lock lock(mutex_);
-      while (result_.empty())
+      while (return_int_ == kPendingResult)
         cv_.wait(lock);
-      result = result_;
-      result_.clear();
+      result = return_int_;
+      return_int_ = kPendingResult;
     }
     return result;
   }
-  ReturnCode WaitForReturnCodeResult() {
-    ReturnCode result;
-    {
-      boost::mutex::scoped_lock lock(mutex_);
-      while (return_code_ == kPendingResult)
-        cv_.wait(lock);
-      result = return_code_;
-      return_code_ = kPendingResult;
-    }
-    return result;
-  }
+
   void Reset() {
     boost::mutex::scoped_lock lock(mutex_);
-    result_.clear();
-    return_code_ = kPendingResult;
+    return_int_ = kPendingResult;
   }
+
  private:
-  std::string result_;
-  ReturnCode return_code_;
+  int return_int_;
   boost::mutex mutex_;
   boost::condition_variable cv_;
 };

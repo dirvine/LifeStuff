@@ -38,8 +38,6 @@ namespace lifestuff {
 namespace test {
 class AuthenticationTest_FUNC_CreatePublicName_Test;
 class AuthenticationTest_FUNC_CreateMSIDPacket_Test;
-class AuthenticationTest_FUNC_NET_CreatePublicName_Test;
-class AuthenticationTest_FUNC_NET_CreateMSIDPacket_Test;
 class ClientControllerTest;
 }  // namespace test
 
@@ -129,24 +127,22 @@ class Authentication {
   };
   friend class test::AuthenticationTest_FUNC_CreatePublicName_Test;
   friend class test::AuthenticationTest_FUNC_CreateMSIDPacket_Test;
-  friend class test::AuthenticationTest_FUNC_NET_CreatePublicName_Test;
-  friend class test::AuthenticationTest_FUNC_NET_CreateMSIDPacket_Test;
   friend class test::ClientControllerTest;
 
   Authentication &operator=(const Authentication&);
   Authentication(const Authentication&);
 
   void GetMidCallback(const std::vector<std::string> &values,
-                      const ReturnCode &return_code);
+                      int return_code);
   void GetSmidCallback(const std::vector<std::string> &values,
-                       const ReturnCode &return_code);
+                       int return_code);
   void GetTmidCallback(const std::vector<std::string> &values,
-                       const ReturnCode &return_code);
+                       int return_code);
   void GetStmidCallback(const std::vector<std::string> &values,
-                        const ReturnCode &return_code);
+                        int return_code);
 
   void GetMidTmidCallback(const std::vector<std::string> &values,
-                          const ReturnCode &return_code,
+                          int return_code,
                           bool surrogate);
   // Function waits until dependent_op_status != kPending or timeout before
   // starting
@@ -155,15 +151,15 @@ class Authentication {
                              OpStatus *op_status,
                              OpStatus *dependent_op_status);
   void SignaturePacketUniqueCallback(
-      const ReturnCode &return_code,
+      int return_code,
       std::shared_ptr<passport::SignaturePacket> packet,
       OpStatus *op_status);
   void SignaturePacketStoreCallback(
-      const ReturnCode &return_code,
+      int return_code,
       std::shared_ptr<passport::SignaturePacket> packet,
       OpStatus *op_status);
   void SaveSessionCallback(
-      const ReturnCode &return_code,
+      int return_code,
       std::shared_ptr<pki::Packet> packet,
       std::shared_ptr<SaveSessionData> save_session_data);
   void NewSaveSessionCallback(
@@ -173,7 +169,7 @@ class Authentication {
   void DeletePacket(const passport::PacketType &packet_type,
                     OpStatus *op_status,
                     OpStatus *dependent_op_status);
-  void DeletePacketCallback(const ReturnCode &return_code,
+  void DeletePacketCallback(int return_code,
                             const passport::PacketType &packet_type,
                             OpStatus *op_status);
   int ChangeUserData(const std::string &serialised_master_datamap,
@@ -220,7 +216,7 @@ class Authentication {
                   bool check_uniqueness);
   int DeletePacket(std::shared_ptr<pki::Packet> packet);
   int PacketUnique(std::shared_ptr<pki::Packet> packet);
-  void PacketOpCallback(const ReturnCode &return_code, int *op_result);
+  void PacketOpCallback(int return_code, int *op_result);
 
   std::shared_ptr<PacketManager> packet_manager_;
   std::shared_ptr<SessionSingleton> session_singleton_;

@@ -87,8 +87,8 @@ class LocalStoreManagerTest : public testing::Test {
       printf("%s\n", e.what());
     }
 
-    sm_->Init(std::bind(&CallbackObject::ReturnCodeCallback, &cb_, arg::_1), 0);
-    if (cb_.WaitForReturnCodeResult() != kSuccess) {
+    sm_->Init(std::bind(&CallbackObject::IntCallback, &cb_, arg::_1), 0);
+    if (cb_.WaitForIntResult() != kSuccess) {
       FAIL();
       return;
     }
@@ -96,7 +96,7 @@ class LocalStoreManagerTest : public testing::Test {
     ss_->ResetSession();
     ss_->CreateTestPackets("Me");
     cb_.Reset();
-    functor_ = std::bind(&CallbackObject::ReturnCodeCallback, &cb_, arg::_1);
+    functor_ = std::bind(&CallbackObject::IntCallback, &cb_, arg::_1);
     anmaid_private_key_ = ss_->PrivateKey(passport::ANMAID, true);
     mpid_public_key_ = ss_->PublicKey(passport::MPID, true);
   }
@@ -104,15 +104,13 @@ class LocalStoreManagerTest : public testing::Test {
   void TearDown() {
     ss_->ResetSession();
     cb_.Reset();
-    sm_->Close(functor_, true);
-    if (cb_.WaitForReturnCodeResult() == kSuccess) {
-      try {
-        if (fs::exists(test_root_dir_))
-          fs::remove_all(test_root_dir_);
-      }
-      catch(const std::exception &e) {
-        printf("%s\n", e.what());
-      }
+    sm_->Close(true);
+    try {
+      if (fs::exists(test_root_dir_))
+        fs::remove_all(test_root_dir_);
+    }
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
     }
     ss_->passport_->StopCreatingKeyPairs();
   }
@@ -122,7 +120,7 @@ class LocalStoreManagerTest : public testing::Test {
   std::shared_ptr<SessionSingleton> ss_;
   std::shared_ptr<LocalStoreManager> sm_;
   test::CallbackObject cb_;
-  std::function<void(const ReturnCode &)> functor_;
+  std::function<void(int)> functor_;
   std::string anmaid_private_key_, mpid_public_key_;
 
  private:
@@ -142,14 +140,14 @@ TEST_F(LocalStoreManagerTest, BEH_RemoveAllPacketsFromKey) {
     cb_.Reset();
     sm_->StorePacket(gp_name, gp.value(), passport::MAID, PRIVATE, "",
                      functor_);
-    ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
+    ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
   }
 
   // Remove said packets
   cb_.Reset();
   sm_->DeletePacket(gp_name, std::vector<std::string>(), passport::MAID,
                     PRIVATE, "", functor_);
-  ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
+  ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
   // Ensure they're all gone
   ASSERT_TRUE(sm_->KeyUnique(gp_name, false));
 }
@@ -163,7 +161,7 @@ TEST_F(LocalStoreManagerTest, BEH_StoreSystemPacket) {
   ASSERT_TRUE(sm_->KeyUnique(gp_name, false));
   cb_.Reset();
   sm_->StorePacket(gp_name, gp.value(), passport::MAID, PRIVATE, "", functor_);
-  ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
+  ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
   ASSERT_FALSE(sm_->KeyUnique(gp_name, false));
   std::vector<std::string> res;
   ASSERT_EQ(kSuccess, sm_->GetPacket(gp_name, &res));
@@ -183,14 +181,14 @@ TEST_F(LocalStoreManagerTest, BEH_DeleteSystemPacketOwner) {
 
   cb_.Reset();
   sm_->StorePacket(gp_name, gp.value(), passport::MAID, PRIVATE, "", functor_);
-  ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
+  ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
 
   ASSERT_FALSE(sm_->KeyUnique(gp_name, false));
 
   std::vector<std::string> values(1, gp.value());
   cb_.Reset();
   sm_->DeletePacket(gp_name, values, passport::MAID, PRIVATE, "", functor_);
-  ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
+  ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
 
   ASSERT_TRUE(sm_->KeyUnique(gp_name, false));
 }
@@ -204,7 +202,7 @@ TEST_F(LocalStoreManagerTest, BEH_DeleteSystemPacketNotOwner) {
 
   cb_.Reset();
   sm_->StorePacket(gp_name, gp.value(), passport::MAID, PRIVATE, "", functor_);
-  ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
+  ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
   ASSERT_FALSE(sm_->KeyUnique(gp_name, false));
 
   std::vector<std::string> values(1, gp.value());
@@ -217,7 +215,7 @@ TEST_F(LocalStoreManagerTest, BEH_DeleteSystemPacketNotOwner) {
 
   cb_.Reset();
   sm_->DeletePacket(gp_name, values, passport::MAID, PRIVATE, "", functor_);
-  ASSERT_NE(kSuccess, cb_.WaitForReturnCodeResult());
+  ASSERT_NE(kSuccess, cb_.WaitForIntResult());
   ASSERT_FALSE(sm_->KeyUnique(gp_name, false));
 }
 
@@ -231,7 +229,7 @@ TEST_F(LocalStoreManagerTest, BEH_UpdatePacket) {
 
   cb_.Reset();
   sm_->StorePacket(gp_name, gp.value(), passport::MAID, PRIVATE, "", functor_);
-  ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
+  ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
 
   std::vector<std::string> res;
   ASSERT_EQ(kSuccess, sm_->GetPacket(gp_name, &res));
@@ -246,7 +244,7 @@ TEST_F(LocalStoreManagerTest, BEH_UpdatePacket) {
   cb_.Reset();
   sm_->UpdatePacket(gp_name, gp.value(), new_gp.value(), passport::MAID,
                     PRIVATE, "", functor_);
-  ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
+  ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
   res.clear();
   ASSERT_EQ(kSuccess, sm_->GetPacket(gp_name, &res));
   ASSERT_EQ(size_t(1), res.size());
@@ -257,7 +255,7 @@ TEST_F(LocalStoreManagerTest, BEH_UpdatePacket) {
   gp.set_value_signature(crypto::AsymSign(gp.value(), anmaid_private_key_));
   cb_.Reset();
   sm_->StorePacket(gp_name, gp.value(), passport::MAID, PRIVATE, "", functor_);
-  ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
+  ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
   res.clear();
   ASSERT_EQ(kSuccess, sm_->GetPacket(gp_name, &res));
   ASSERT_EQ(size_t(2), res.size());
@@ -272,7 +270,7 @@ TEST_F(LocalStoreManagerTest, BEH_UpdatePacket) {
   cb_.Reset();
   sm_->UpdatePacket(gp_name, new_gp.value(), gp.value(), passport::MAID,
                     PRIVATE, "", functor_);
-  ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
+  ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
   res.clear();
   ASSERT_EQ(kSuccess, sm_->GetPacket(gp_name, &res));
   ASSERT_EQ(size_t(2), res.size());
@@ -290,7 +288,7 @@ TEST_F(LocalStoreManagerTest, BEH_UpdatePacket) {
     cb_.Reset();
     sm_->StorePacket(gp_name, gp.value(), passport::MAID, PRIVATE, "",
                      functor_);
-    ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
+    ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
     all_values.insert(gp.SerializeAsString());
   }
   res.clear();
@@ -306,7 +304,7 @@ TEST_F(LocalStoreManagerTest, BEH_UpdatePacket) {
   cb_.Reset();
   sm_->UpdatePacket(gp_name, "value0", "value2", passport::MAID, PRIVATE, "",
                     functor_);
-  ASSERT_EQ(kStoreManagerError, cb_.WaitForReturnCodeResult());
+  ASSERT_EQ(kStoreManagerError, cb_.WaitForIntResult());
   res.clear();
   ASSERT_EQ(kSuccess, sm_->GetPacket(gp_name, &res));
   ASSERT_EQ(all_values.size(), res.size());
@@ -324,7 +322,7 @@ TEST_F(LocalStoreManagerTest, BEH_UpdatePacket) {
   cb_.Reset();
   sm_->UpdatePacket(gp_name, gp.value(), new_gp.value(), passport::MAID,
                     PRIVATE, "", functor_);
-  ASSERT_EQ(kStoreManagerError, cb_.WaitForReturnCodeResult());
+  ASSERT_EQ(kStoreManagerError, cb_.WaitForIntResult());
   res.clear();
   ASSERT_EQ(kSuccess, sm_->GetPacket(gp_name, &res));
   ASSERT_EQ(all_values.size(), res.size());

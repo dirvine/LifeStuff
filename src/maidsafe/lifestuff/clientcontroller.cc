@@ -57,7 +57,7 @@
 #if defined LOCAL_LifeStuffVAULT && !defined MS_NETWORK_TEST
 #  include "maidsafe/lifestuff/localstoremanager.h"
 #else
-#  include "maidsafe/lifestuff/maidstoremanager.h"
+#  include "maidsafe/lifestuff/networkstoremanager.h"
 #endif
 
 namespace arg = std::placeholders;
@@ -66,38 +66,20 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-void CCCallback::StringCallback(const std::string &result) {
+void CCCallback::IntCallback(int return_code) {
   boost::mutex::scoped_lock lock(mutex_);
-  result_ = result;
+  return_int_ = return_code;
   cv_.notify_one();
 }
 
-void CCCallback::ReturnCodeCallback(const ReturnCode &return_code) {
-  boost::mutex::scoped_lock lock(mutex_);
-  return_code_ = return_code;
-  cv_.notify_one();
-}
-
-std::string CCCallback::WaitForStringResult() {
-  std::string result;
+int CCCallback::WaitForIntResult() {
+  int result;
   {
     boost::mutex::scoped_lock lock(mutex_);
-    while (result_.empty())
+    while (return_int_ == kPendingResult)
       cv_.wait(lock);
-    result = result_;
-    result_.clear();
-  }
-  return result;
-}
-
-ReturnCode CCCallback::WaitForReturnCodeResult() {
-  ReturnCode result;
-  {
-    boost::mutex::scoped_lock lock(mutex_);
-    while (return_code_ == kPendingResult)
-      cv_.wait(lock);
-    result = return_code_;
-    return_code_ = kPendingResult;
+    result = return_int_;
+    return_int_ = kPendingResult;
   }
   return result;
 }
@@ -124,7 +106,6 @@ ClientController::ClientController()
       K_(0),
       upper_threshold_(0) {}
 
-
 int ClientController::Init(boost::uint8_t /*k*/) {
   if (initialised_) {
     DLOG(INFO) << "Already initialised." << std::endl;
@@ -133,6 +114,10 @@ int ClientController::Init(boost::uint8_t /*k*/) {
   auth_.reset(new Authentication(ss_));
 #ifdef LOCAL_LifeStuffVAULT
   local_sm_.reset(new LocalStoreManager("/tmp/LocalUserCredentials", ss_));
+#else
+  local_sm_.reset(new NetworkStoreManager(std::vector<dht::kademlia::Contact>(),
+                                          8, 3, 2,
+                                          boost::posix_time::seconds(60), ss_));
 #endif
 
   if (!JoinKademlia()) {
@@ -145,18 +130,13 @@ int ClientController::Init(boost::uint8_t /*k*/) {
 }
 
 ClientController::~ClientController() {
-#ifdef LOCAL_LifeStuffVAULT
-  CCCallback cb;
-  std::static_pointer_cast<LocalStoreManager>(local_sm_)->Close(
-      std::bind(&CCCallback::ReturnCodeCallback, &cb, arg::_1), false);
-  cb.WaitForReturnCodeResult();
-#endif
+  local_sm_->Close(false);
 }
 
 bool ClientController::JoinKademlia() {
   CCCallback cb;
-  local_sm_->Init(std::bind(&CCCallback::ReturnCodeCallback, &cb, arg::_1), 0);
-  return (cb.WaitForReturnCodeResult() == kSuccess);
+  local_sm_->Init(std::bind(&CCCallback::IntCallback, &cb, arg::_1), 0);
+  return (cb.WaitForIntResult() == kSuccess);
 }
 
 int ClientController::ParseDa() {

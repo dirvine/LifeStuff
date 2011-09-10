@@ -48,8 +48,7 @@ enum IfPacketExists {
   kAppend
 };
 
-typedef std::function<void(const std::vector<std::string>&,
-                           const ReturnCode&)>
+typedef std::function<void(const std::vector<std::string>&, int)>
         GetPacketFunctor;
 
 class PacketManager {
@@ -58,18 +57,19 @@ class PacketManager {
 
   virtual void Init(VoidFuncOneInt callback, const boost::uint16_t &port) = 0;
 
-  virtual void Close(VoidFuncOneInt callback, bool cancel_pending_ops) = 0;
+  virtual int Close(bool cancel_pending_ops) = 0;
 
   virtual bool KeyUnique(const std::string &key, bool check_local) = 0;
 
-  virtual void KeyUnique(const std::string &key, bool check_local,
+  virtual void KeyUnique(const std::string &key,
+                         bool check_local,
                          const VoidFuncOneInt &cb) = 0;
 
   virtual int GetPacket(const std::string &packet_name,
                         std::vector<std::string> *results) = 0;
 
   virtual void GetPacket(const std::string &packet_name,
-                         const GetPacketFunctor &lpf) = 0;
+                         const GetPacketFunctor &cb) = 0;
 
   virtual void StorePacket(const std::string &packet_name,
                            const std::string &value,

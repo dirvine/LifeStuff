@@ -136,34 +136,21 @@ void LocalStoreManager::Init(VoidFuncOneInt callback, const boost::uint16_t&) {
     }
     ExecReturnCodeCallback(callback, kSuccess);
   }
-  catch(CppSQLite3Exception &e) {  // NOLINT
+  catch(CppSQLite3Exception &e) {  // NOLINT (Dan)
     std::cerr << e.errorCode() << ":" << e.errorMessage() << std::endl;
     ExecReturnCodeCallback(callback, kStoreManagerInitError);
   }
 }
 
-void LocalStoreManager::Close(VoidFuncOneInt callback, bool) {
-  bool t(false);
-  while (!t) {
-    {
-//      boost::mutex::scoped_lock loch_etive(signal_mutex_);
-      t = chunks_pending_.empty();
-    }
-    if (!t)
-      Sleep(boost::posix_time::milliseconds(100));
-  }
-#ifdef LOCAL_LifeStuffVAULT
-  // Simulate chunk threadpool join and knode leave
-//  Sleep(boost::posix_time::seconds(3));
-#endif
+int LocalStoreManager::Close(bool /*cancel_pending_ops*/) {
   try {
     boost::mutex::scoped_lock loch(mutex_);
     db_.close();
-    ExecReturnCodeCallback(callback, kSuccess);
+    return kSuccess;
   }
-  catch(CppSQLite3Exception &e) {  // NOLINT
+  catch(CppSQLite3Exception &e) {  // NOLINT (Dan)
     std::cerr << e.errorCode() << ":" << e.errorMessage() << std::endl;
-    ExecReturnCodeCallback(callback, kStoreManagerError);
+    return kStoreManagerError;
   }
 }
 
@@ -288,7 +275,7 @@ bool LocalStoreManager::KeyUnique(const std::string &key, bool) {
         q.nextRow();
       }
   }
-  catch(CppSQLite3Exception &e) {  // NOLINT
+  catch(CppSQLite3Exception &e) {  // NOLINT (Dan)
     std::cerr << e.errorCode() << ":" << e.errorMessage() << std::endl;
     result = false;
   }
@@ -546,7 +533,7 @@ ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
     }
     return kSuccess;
   }
-  catch(CppSQLite3Exception &e) {  // NOLINT
+  catch(CppSQLite3Exception &e) {  // NOLINT (Dan)
     DLOG(WARNING) << "LSM::StorePacket_InsertToDb - " << e.errorCode()
                   << ": " << e.errorMessage() << std::endl;
     return kStoreManagerError;
@@ -653,7 +640,7 @@ ReturnCode LocalStoreManager::UpdatePacketInDb(const std::string &key,
     }
     return kSuccess;
   }
-  catch(CppSQLite3Exception &e) {  // NOLINT
+  catch(CppSQLite3Exception &e) {  // NOLINT (Dan)
     DLOG(WARNING) << "LSM::UpdatePacketInDb - " << e.errorCode() << ": "
                   << e.errorMessage() << std::endl;
     return kStoreManagerError;
@@ -928,7 +915,7 @@ int LocalStoreManager::GetValue_FromDB(const std::string &key,
       q.nextRow();
     }
   }
-  catch(CppSQLite3Exception &e) {  // NOLINT
+  catch(CppSQLite3Exception &e) {  // NOLINT (Dan)
     DLOG(WARNING) << "LSM::GetValue_FromDB - " << e.errorCode() << ": "
                   << e.errorMessage() << std::endl;
     return kFindValueError;

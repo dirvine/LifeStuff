@@ -34,6 +34,25 @@ namespace maidsafe {
 
 namespace lifestuff {
 
+SessionSingleton::SessionSingleton()
+    : ud_(),
+      io_service_(),
+      work_(new boost::asio::io_service::work(io_service_)),
+      threads_(),
+      passport_(new passport::Passport(io_service_, kRsaKeySize)),
+      ch_(),
+      psh_(),
+      conversations_(),
+      live_contacts_(),
+      lc_mutex_() {
+  for (int i(0); i != 10; ++i) {
+    threads_.create_thread(
+        std::bind(static_cast<size_t(boost::asio::io_service::*)()>(
+            &boost::asio::io_service::run), &io_service_));
+  }
+  passport_->Init();
+}
+
 bool SessionSingleton::ResetSession() {
   ud_.defconlevel = kDefCon3;
   ud_.da_modified = false;
@@ -82,6 +101,7 @@ const std::set<std::string> &SessionSingleton::maid_authorised_users() {
 int SessionSingleton::mounted() { return ud_.mounted; }
 char SessionSingleton::win_drive() { return ud_.win_drive; }
 int SessionSingleton::connection_status() { return ud_.connection_status; }
+boost::asio::io_service& SessionSingleton::io_service() { return io_service_; }
 
 // Mutators
 void SessionSingleton::set_def_con_level(DefConLevels defconlevel) {
@@ -392,22 +412,27 @@ int SessionSingleton::AddPrivateShare(
   return psh_.AddPrivateShare(attributes, share_stats, participants);
 }
 int SessionSingleton::DeletePrivateShare(const std::string &value,
-    const int &field) {
+                                         const int &field) {
   return psh_.DeletePrivateShare(value, field);
 }
-int SessionSingleton::AddContactsToPrivateShare(const std::string &value,
-    const int &field, std::list<ShareParticipants> *participants) {
+int SessionSingleton::AddContactsToPrivateShare(
+    const std::string &value,
+    const int &field,
+    std::list<ShareParticipants> *participants) {
   return psh_.AddContactsToPrivateShare(value, field, participants);
 }
-int SessionSingleton::DeleteContactsFromPrivateShare(const std::string &value,
-    const int &field, std::list<std::string> *participants) {
+int SessionSingleton::DeleteContactsFromPrivateShare(
+    const std::string &value,
+    const int &field,
+    std::list<std::string> *participants) {
   return psh_.DeleteContactsFromPrivateShare(value, field, participants);
 }
 int SessionSingleton::TouchShare(const std::string &value, const int &field) {
   return psh_.TouchShare(value, field);
 }
-int SessionSingleton::GetShareInfo(const std::string &value, const int &field,
-    PrivateShare *ps) {
+int SessionSingleton::GetShareInfo(const std::string &value,
+                                   const int &field,
+                                   PrivateShare *ps) {
   return psh_.GetShareInfo(value, field, ps);
 }
 int SessionSingleton::GetShareKeys(const std::string &msid,
@@ -434,8 +459,10 @@ int SessionSingleton::GetFullShareList(const SortingMode &sm,
                                        std::list<PrivateShare> *ps_list) {
   return psh_.GetFullShareList(sm, sf, ps_list);
 }
-int SessionSingleton::GetParticipantsList(const std::string &value,
-    const int &field, std::list<share_participant> *sp_list) {
+int SessionSingleton::GetParticipantsList(
+    const std::string &value,
+    const int &field,
+    std::list<share_participant> *sp_list) {
   return psh_.GetParticipantsList(value, field, sp_list);
 }
 void SessionSingleton::ClearPrivateShares() {

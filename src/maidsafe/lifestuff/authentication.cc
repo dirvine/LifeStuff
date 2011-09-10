@@ -129,7 +129,7 @@ int Authentication::GetUserInfo(const std::string &username,
 }
 
 void Authentication::GetMidCallback(const std::vector<std::string> &values,
-                                    const ReturnCode &return_code) {
+                                    int return_code) {
   if (return_code != kSuccess || values.empty()) {
     DLOG(INFO) << "Auth::GetMidCallback: No MID" << std::endl;
     {
@@ -172,7 +172,7 @@ void Authentication::GetMidCallback(const std::vector<std::string> &values,
 }
 
 void Authentication::GetSmidCallback(const std::vector<std::string> &values,
-                                     const ReturnCode &return_code) {
+                                     int return_code) {
   if (return_code != kSuccess || values.empty()) {
     DLOG(INFO) << "Auth::GetSmidCallback: No SMID" << std::endl;
     {
@@ -215,7 +215,7 @@ void Authentication::GetSmidCallback(const std::vector<std::string> &values,
 }
 
 void Authentication::GetTmidCallback(const std::vector<std::string> &values,
-                                        const ReturnCode &return_code) {
+                                     int return_code) {
   if (return_code != kSuccess || values.empty()) {
     DLOG(INFO) << "Auth::GetTmidCallback: No TMID" << std::endl;
     {
@@ -245,7 +245,7 @@ void Authentication::GetTmidCallback(const std::vector<std::string> &values,
 }
 
 void Authentication::GetStmidCallback(const std::vector<std::string> &values,
-                                      const ReturnCode &return_code) {
+                                      int return_code) {
   if (return_code != kSuccess || values.empty()) {
     DLOG(INFO) << "Auth::GetStmidCallback: No TMID" << std::endl;
     {
@@ -397,7 +397,7 @@ void Authentication::CreateSignaturePacket(
 }
 
 void Authentication::SignaturePacketUniqueCallback(
-    const ReturnCode &return_code,
+    int return_code,
     std::shared_ptr<passport::SignaturePacket> packet,
     OpStatus *op_status) {
   passport::PacketType packet_type =
@@ -421,7 +421,7 @@ void Authentication::SignaturePacketUniqueCallback(
 }
 
 void Authentication::SignaturePacketStoreCallback(
-    const ReturnCode &return_code,
+    int return_code,
     std::shared_ptr<passport::SignaturePacket> packet,
     OpStatus *op_status) {
   passport::PacketType packet_type =
@@ -551,7 +551,7 @@ void Authentication::SaveSession(const std::string &serialised_master_datamap,
 }
 
 void Authentication::SaveSessionCallback(
-    const ReturnCode &return_code,
+    int return_code,
     std::shared_ptr<pki::Packet> packet,
     std::shared_ptr<SaveSessionData> save_session_data) {
   OpStatus op_status(kSucceeded);
@@ -936,7 +936,7 @@ void Authentication::DeletePacket(const passport::PacketType &packet_type,
 }
 
 void Authentication::DeletePacketCallback(
-    const ReturnCode &return_code,
+    int return_code,
     const passport::PacketType &packet_type,
     OpStatus *op_status) {
   boost::mutex::scoped_lock lock(mutex_);
@@ -1298,9 +1298,10 @@ int Authentication::DeletePacket(std::shared_ptr<pki::Packet> packet) {
     dir_type = PRIVATE_SHARE;
     msid = packet->name();
   }
-  packet_manager_->DeletePacket(packet->name(), values,
-      static_cast<passport::PacketType>(packet->packet_type()), dir_type, msid,
-      functor);
+  packet_manager_->DeletePacket(
+      packet->name(), values,
+      static_cast<passport::PacketType>(packet->packet_type()),
+      dir_type, msid, functor);
   bool success(true);
   try {
     boost::mutex::scoped_lock lock(mutex_);
@@ -1352,8 +1353,7 @@ int Authentication::PacketUnique(std::shared_ptr<pki::Packet> packet) {
   return result;
 }
 
-void Authentication::PacketOpCallback(const ReturnCode &return_code,
-                                      int *op_result) {
+void Authentication::PacketOpCallback(int return_code, int *op_result) {
   boost::mutex::scoped_lock lock(mutex_);
   *op_result = return_code;
   cond_var_.notify_all();

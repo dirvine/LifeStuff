@@ -62,8 +62,7 @@ class LocalStoreManager : public PacketManager {
                              std::shared_ptr<SessionSingleton> ss);
   virtual ~LocalStoreManager();
   virtual void Init(VoidFuncOneInt callback, const boost::uint16_t &port);
-//  virtual void SetPmid(const std::string &/*pmid_name*/) {}
-  virtual void Close(VoidFuncOneInt callback, bool cancel_pending_ops);
+  virtual int Close(bool cancel_pending_ops);
   virtual void CleanUpTransport() {}
   virtual void StopRvPing() {}
   virtual bool NotDoneWithUploading();
@@ -107,46 +106,10 @@ class LocalStoreManager : public PacketManager {
                             DirType dir_type,
                             const std::string &msid,
                             const VoidFuncOneInt &cb);
-
-  // Buffer packet
-//  virtual int CreateBP();
-//  virtual int ModifyBPInfo(const std::string &info);
-//  virtual int LoadBPMessages(
-//      std::list<ValidatedBufferPacketMessage> *messages);
-//  virtual int SendAMessage(const std::vector<std::string> &receivers,
-//                           const std::string &message,
-//                           const MessageType &m_type,
-//                           std::map<std::string, ReturnCode> *add_results);
-//  virtual int LoadBPPresence(std::list<LivePresence> *messages);
-//  virtual int AddBPPresence(
-//      const std::vector<std::string> &receivers,
-//      std::map<std::string, ReturnCode> *add_results);
-
-  // Vault
-//  virtual bool VaultStoreInfo(boost::uint64_t *offered_space,
-//                              boost::uint64_t *free_space);
-//  virtual bool VaultContactInfo(dht::kademlia::Contact *contact);
-//  virtual void SetLocalVaultOwned(const std::string &priv_key,
-//                                  const std::string &pub_key,
-//                                  const std::string &signed_pub_key,
-//                                  const boost::uint32_t &port,
-//                                  const std::string &vault_dir,
-//                                  const boost::uint64_t &space,
-//                                  const SetLocalVaultOwnedFunctor &functor);
-//  virtual void LocalVaultOwned(const LocalVaultOwnedFunctor &functor);
-//  virtual int CreateAccount(const boost::uint64_t&) { return kSuccess; }
-//  bool SendPresence(const std::string &) { return false; }
-//  void SendLogOutMessage(const std::string &) {}
-//  void SetSessionEndPoint() {}
-//  void SetInstantMessageNotifier(IMNotifier, IMStatusNotifier) {}
  private:
-  friend class
-      test::LocalStoreManagerTest_BEH_AddAndGetBufferPacketMessages_Test;
-  friend class
-      test::LocalStoreManagerTest_BEH_AddRequestBufferPacketMessage_Test;
   LocalStoreManager &operator=(const LocalStoreManager&);
   LocalStoreManager(const LocalStoreManager&);
-  friend class test::CCImMessagingTest;
+
   bool ValidateGenericPacket(std::string ser_gp, std::string public_key);
   ReturnCode StorePacket_InsertToDb(const std::string &key,
                                     const std::string &value,
@@ -167,10 +130,6 @@ class LocalStoreManager : public PacketManager {
   std::string BufferPacketName();
   std::string BufferPacketName(const std::string &publicusername,
                                const std::string &public_key);
-//  std::string CreateMessage(const std::string &message,
-//                            const std::string &rec_public_key,
-//                            const MessageType &m_type,
-//                            const boost::uint32_t &timestamp);
   void CreateSerialisedSignedValue(const std::string &value,
                                    const std::string &private_key,
                                    std::string *ser_gp);

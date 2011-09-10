@@ -75,37 +75,16 @@ struct private_share;
 class CCCallback {
  public:
   CCCallback()
-      : result_(),
-        return_code_(kPendingResult),
+      : return_int_(kPendingResult),
         mutex_(),
         cv_() {}
-  void StringCallback(const std::string &result);
-  void ReturnCodeCallback(const ReturnCode &return_code);
-  std::string WaitForStringResult();
-  ReturnCode WaitForReturnCodeResult();
+  void IntCallback(int return_code);
+  int WaitForIntResult();
 
  private:
-  std::string result_;
-  ReturnCode return_code_;
+  int return_int_;
   boost::mutex mutex_;
   boost::condition_variable cv_;
-};
-
-class BPCallback {
- public:
-  BPCallback()
-      : result(kGeneralError),
-        status(0) {}
-  void ContactInfoCallback(const ReturnCode &res,
-                           const boost::uint32_t &st) {
-    result = res;
-    status = st;
-  }
-
-  void Reset() { result = kGeneralError; }
-
-  ReturnCode result;
-  boost::uint32_t status;
 };
 
 class ClientController : public lifestuff::UserCredentials {

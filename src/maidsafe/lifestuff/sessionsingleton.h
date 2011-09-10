@@ -31,8 +31,6 @@
 #include <string>
 #include <vector>
 
-#include "maidsafe/passport/passport.h"
-
 #ifdef __MSVC__
 #  pragma warning(push)
 #  pragma warning(disable: 4127 4244 4267)
@@ -41,10 +39,13 @@
 #include "boost/utility.hpp"
 #include "boost/thread/once.hpp"
 #include "boost/scoped_ptr.hpp"
+#include "boost/asio/io_service.hpp"
 
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
+
+#include "maidsafe/passport/passport.h"
 
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/contacts.h"
@@ -58,10 +59,7 @@ namespace lifestuff {
 namespace test {
 class SessionSingletonTest;
 class ClientControllerTest;
-class DataAtlasHandlerTest;
 class LocalStoreManagerTest;
-class MaidStoreManagerTest;
-class SEHandlerTest;
 class SessionSingletonTest_BEH_SetsGetsAndResetSession_Test;
 class SessionSingletonTest_BEH_SessionName_Test;
 class AuthenticationTest_FUNC_RepeatedSaveSessionBlocking_Test;
@@ -70,11 +68,6 @@ class AuthenticationTest_FUNC_ChangeUsername_Test;
 class AuthenticationTest_FUNC_ChangePin_Test;
 class AuthenticationTest_FUNC_ChangePassword_Test;
 class AuthenticationTest_FUNC_CreatePublicName_Test;
-class AuthenticationTest_FUNC_NET_RepeatedSaveSessionBlocking_Test;
-class AuthenticationTest_FUNC_NET_RepeatedSaveSessionCallbacks_Test;
-class AuthenticationTest_FUNC_NET_ChangeUsername_Test;
-class AuthenticationTest_FUNC_NET_ChangePin_Test;
-class AuthenticationTest_FUNC_NET_CreatePublicName_Test;
 class LocalStoreManagerTest_BEH_DeleteSystemPacketNotOwner_Test;
 class LocalStoreManagerTest_BEH_UpdatePacket_Test;
 class LocalStoreManagerTest_BEH_AddAndGetBufferPacketMessages_Test;
@@ -125,24 +118,7 @@ struct ConnectionDetails {
 
 class SessionSingleton {
  public:
-  SessionSingleton()
-    : ud_(),
-      io_service_(),
-      work_(new boost::asio::io_service::work(io_service_)),
-      threads_(),
-      passport_(new passport::Passport(io_service_, kRsaKeySize)),
-      ch_(),
-      psh_(),
-      conversations_(),
-      live_contacts_(),
-      lc_mutex_() {
-    for (int i(0); i != 5; ++i) {
-      threads_.create_thread(
-          std::bind(static_cast<size_t(boost::asio::io_service::*)()>(
-              &boost::asio::io_service::run), &io_service_));
-    }
-    passport_->Init();
-  }
+  SessionSingleton();
 
   virtual ~SessionSingleton() {
     passport_->StopCreatingKeyPairs();
@@ -167,11 +143,12 @@ class SessionSingleton {
   std::string session_name();
   std::string root_db_key();
   bool self_encrypting();
-  const std::set<std::string> &authorised_users();
-  const std::set<std::string> &maid_authorised_users();
+  const std::set<std::string>& authorised_users();
+  const std::set<std::string>& maid_authorised_users();
   int mounted();
   char win_drive();
   int connection_status();
+  boost::asio::io_service& io_service();
 
   // Mutators
   void set_def_con_level(DefConLevels defconlevel);
@@ -260,22 +237,27 @@ class SessionSingleton {
                       const std::vector<boost::uint32_t> &share_stats,
                       std::list<ShareParticipants> *participants);
   int DeletePrivateShare(const std::string &value, const int &field);
-  int AddContactsToPrivateShare(const std::string &value, const int &field,
+  int AddContactsToPrivateShare(const std::string &value,
+                                const int &field,
                                 std::list<ShareParticipants> *participants);
   int DeleteContactsFromPrivateShare(const std::string &value,
                                      const int &field,
                                      std::list<std::string> *participants);
   int TouchShare(const std::string &value, const int &field);
-  int GetShareInfo(const std::string &value, const int &field,
+  int GetShareInfo(const std::string &value,
+                   const int &field,
                    PrivateShare *ps);
   int GetShareKeys(const std::string &msid,
                    std::string *public_key,
                    std::string *private_key);
   int GetShareList(std::list<private_share> *ps_list,
-                   const SortingMode &sm, const ShareFilter &sf);
-  int GetFullShareList(const SortingMode &sm, const ShareFilter &sf,
-                        std::list<PrivateShare> *ps_list);
-  int GetParticipantsList(const std::string &value, const int &field,
+                   const SortingMode &sm,
+                   const ShareFilter &sf);
+  int GetFullShareList(const SortingMode &sm,
+                       const ShareFilter &sf,
+                       std::list<PrivateShare> *ps_list);
+  int GetParticipantsList(const std::string &value,
+                          const int &field,
                           std::list<share_participant> *sp_list);
   void ClearPrivateShares();
 
@@ -359,23 +341,11 @@ class SessionSingleton {
   friend class test::AuthenticationTest_FUNC_ChangePassword_Test;
   friend class test::AuthenticationTest_FUNC_CreatePublicName_Test;
   friend class
-      test::AuthenticationTest_FUNC_NET_RepeatedSaveSessionBlocking_Test;
-  friend class
-      test::AuthenticationTest_FUNC_NET_RepeatedSaveSessionCallbacks_Test;
-  friend class test::AuthenticationTest_FUNC_NET_ChangeUsername_Test;
-  friend class test::AuthenticationTest_FUNC_NET_ChangePin_Test;
-  friend class test::AuthenticationTest_FUNC_NET_CreatePublicName_Test;
-  friend class
       test::LocalStoreManagerTest_BEH_DeleteSystemPacketNotOwner_Test;
   friend class test::LocalStoreManagerTest_BEH_UpdatePacket_Test;
-  friend class
-      test::LocalStoreManagerTest_BEH_AddAndGetBufferPacketMessages_Test;
-  friend class
-      test::LocalStoreManagerTest_BEH_AddRequestBufferPacketMessage_Test;
 
   SessionSingleton &operator=(const SessionSingleton&);
   SessionSingleton(const SessionSingleton&);
-//  void Init() { single_.reset(new SessionSingleton()); }
   int GetKey(const passport::PacketType &packet_type,
              std::string *id,
              std::string *public_key,

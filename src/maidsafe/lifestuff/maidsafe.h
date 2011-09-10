@@ -89,7 +89,8 @@ enum ShareFilter { kAll, kRo, kAdmin };
 
 enum DefConLevels { kDefCon1 = 1, kDefCon2, kDefCon3 };
 
-typedef std::function<void(const ReturnCode&)> VoidFuncOneInt;
+//  typedef std::function<void(int)> OneIntFunction;
+typedef std::function<void(int)> VoidFuncOneInt;  // NOLINT (Dan)
 typedef std::function<void(const ReturnCode&, const kad::Contact&)>
         VoidFuncIntContact;
 typedef std::function<void(const ReturnCode&,

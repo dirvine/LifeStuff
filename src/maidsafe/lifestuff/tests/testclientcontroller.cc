@@ -85,14 +85,12 @@ class ClientControllerTest : public testing::Test {
     cc_->initialised_ = true;
   }
   void TearDown() {
-    local_sm_->Close(std::bind(&ClientControllerTest::InitAndCloseCallback,
-                               this, arg::_1),
-               true);
+    local_sm_->Close(true);
     ss_->passport_->StopCreatingKeyPairs();
     cc_->initialised_ = false;
   }
 
-  void InitAndCloseCallback(const ReturnCode&) {}
+  void InitAndCloseCallback(int) {}
 
   std::shared_ptr<fs::path> test_dir_;
   std::shared_ptr<ClientController> cc_;

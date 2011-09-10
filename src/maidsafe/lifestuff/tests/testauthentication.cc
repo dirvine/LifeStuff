@@ -63,9 +63,7 @@ class AuthenticationTest : public testing::Test {
   }
 
   void TearDown() {
-    sm_->Close(std::bind(&AuthenticationTest::InitAndCloseCallback, this,
-                         arg::_1),
-               true);
+    sm_->Close(true);
   }
 
   int GetMasterDataMap(std::string *ser_dm_login) {
@@ -95,7 +93,7 @@ class AuthenticationTest : public testing::Test {
     return kSuccess;
   }
 
-  void InitAndCloseCallback(const ReturnCode&) {}
+  void InitAndCloseCallback(int) {}
 
   std::shared_ptr<fs::path> test_dir_;
   std::shared_ptr<SessionSingleton> ss_;
@@ -213,15 +211,15 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionCallbacks) {
   // on the network
   ser_dm_ = RandomString(1000);
   CallbackObject cb;
-  authentication_.SaveSession(ser_dm_, std::bind(
-      &CallbackObject::ReturnCodeCallback, &cb, arg::_1));
-  ASSERT_EQ(kSuccess, cb.WaitForReturnCodeResult());
+  authentication_.SaveSession(ser_dm_, std::bind(&CallbackObject::IntCallback,
+                                                 &cb, arg::_1));
+  ASSERT_EQ(kSuccess, cb.WaitForIntResult());
 
   ser_dm_ = RandomString(1000);
   cb.Reset();
-  authentication_.SaveSession(ser_dm_, std::bind(
-      &CallbackObject::ReturnCodeCallback, &cb, arg::_1));
-  ASSERT_EQ(kSuccess, cb.WaitForReturnCodeResult());
+  authentication_.SaveSession(ser_dm_, std::bind(&CallbackObject::IntCallback,
+                                                 &cb, arg::_1));
+  ASSERT_EQ(kSuccess, cb.WaitForIntResult());
   EXPECT_TRUE(sm_->KeyUnique(original_tmidname, false));
 }
 
