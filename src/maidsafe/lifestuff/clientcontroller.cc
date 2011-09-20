@@ -51,7 +51,14 @@
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/clientutils.h"
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4244)
+#endif
 #include "maidsafe/lifestuff/data_atlas.pb.h"
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
 #include "maidsafe/lifestuff/sessionsingleton.h"
 
 #if defined LOCAL_LifeStuffVAULT && !defined MS_NETWORK_TEST

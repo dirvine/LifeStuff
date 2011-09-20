@@ -27,9 +27,14 @@
 #include <memory>
 
 #include "maidsafe/common/crypto.h"
-
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4244 4127)
+#endif
 #include "maidsafe/lifestuff/data_atlas.pb.h"
-
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
 namespace maidsafe {
 
 namespace lifestuff {
@@ -76,9 +81,9 @@ bool SessionSingleton::ResetSession() {
 }
 
 
-///////////////////////////////
-//// User Details Handling ////
-///////////////////////////////
+// // / // / // / // / // / // / // / // / // / //
+// // User Details Handling // //
+// // / // / // / // / // / // / // / // / // / //
 
 // Accessors
 DefConLevels SessionSingleton::def_con_level() { return ud_.defconlevel; }
@@ -150,9 +155,9 @@ void SessionSingleton::set_connection_status(int status) {
   ud_.connection_status = status;
 }
 
-/////////////////////////
+// // / // / // / // / // / // / // / //
 // Key ring operations //
-/////////////////////////
+// // / // / // / // / // / // / // / //
 
 int SessionSingleton::ParseKeyring(const std::string &serialised_keyring) {
   return passport_->ParseKeyring(serialised_keyring);
@@ -266,9 +271,9 @@ std::string SessionSingleton::PublicKeySignature(
                                                       confirmed_as_stored);
 }
 
-////////////////////////
+// // / // / // / // / // / // / // / /
 // Contact operations //
-////////////////////////
+// // / // / // / // / // / // / // / /
 
 int SessionSingleton::LoadContacts(std::list<PublicContact> *contacts) {
   int n = 0;
@@ -375,9 +380,9 @@ int SessionSingleton::ClearContacts() {
   return ch_.ClearContacts();
 }
 
-//////////////////////////////
+// // / // / // / // / // / // / // / // / // / /
 // Private Share operations //
-//////////////////////////////
+// // / // / // / // / // / // / // / // / // / /
 
 int SessionSingleton::LoadShares(std::list<Share> *shares) {
   int a = 0;
@@ -469,9 +474,9 @@ void SessionSingleton::ClearPrivateShares() {
   return psh_.ClearPrivateShares();
 }
 
-///////////////////////////////
-//// Conversation Handling ////
-///////////////////////////////
+// // / // / // / // / // / // / // / // / // / //
+// // Conversation Handling // //
+// // / // / // / // / // / // / // / // / // / //
 
 int SessionSingleton::ConversationList(std::list<std::string> *conversations) {
   conversations->clear();
@@ -515,9 +520,9 @@ void SessionSingleton::ClearConversations() {
   conversations_.clear();
 }
 
-///////////////////////////////
-//// Live Contact Handling ////
-///////////////////////////////
+// // / // / // / // / // / // / // / // / // / //
+// // Live Contact Handling // //
+// // / // / // / // / // / // / // / // / // / //
 
 /*
 int SessionSingleton::AddLiveContact(const std::string &contact,

@@ -28,7 +28,14 @@
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/localstoremanager.h"
 #include "maidsafe/lifestuff/sessionsingleton.h"
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4244 4127)
+#endif
 #include "maidsafe/lifestuff/lifestuff_messages.pb.h"
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
 #include "maidsafe/lifestuff/tests/testcallback.h"
 
 namespace arg = std::placeholders;
@@ -93,7 +100,7 @@ class AuthenticationTest : public testing::Test {
     return kSuccess;
   }
 
-  void InitAndCloseCallback(int) {}
+  void InitAndCloseCallback(int /*i*/) {}
 
   std::shared_ptr<fs::path> test_dir_;
   std::shared_ptr<SessionSingleton> ss_;

@@ -226,7 +226,8 @@ int PrivateShareHandler::TouchShare(const std::string &value,
     return -2024;
   private_share p_s = *it;
   ++p_s.rank_;
-  p_s.last_view_ = GetDurationSinceEpoch().total_milliseconds();
+  p_s.last_view_ =
+      static_cast<uint32_t>(GetDurationSinceEpoch().total_milliseconds());
   pss_.replace(it, p_s);
 
   return 0;

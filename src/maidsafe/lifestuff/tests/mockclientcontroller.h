@@ -18,8 +18,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_SHAREDTEST_MOCKCLIENTCONTROLLER_H_
-#define MAIDSAFE_SHAREDTEST_MOCKCLIENTCONTROLLER_H_
+#ifndef MAIDSAFE_LIFESTUFF_TESTS_MOCKCLIENTCONTROLLER_H_
+#define MAIDSAFE_LIFESTUFF_TESTS_MOCKCLIENTCONTROLLER_H_
 
 #include "maidsafe/lifestuff/clientcontroller.h"
 #include "maidsafe/lifestuff/tests/mocksessionsingleton.h"
@@ -42,4 +42,4 @@ class MockClientController : public ClientController {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_SHAREDTEST_MOCKCLIENTCONTROLLER_H_
+#endif  // MAIDSAFE_LIFESTUFF_TESTS_MOCKCLIENTCONTROLLER_H_
