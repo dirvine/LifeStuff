@@ -25,6 +25,7 @@
 #ifndef MAIDSAFE_LIFESTUFF_CONTACTS_H_
 #define MAIDSAFE_LIFESTUFF_CONTACTS_H_
 
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <vector>

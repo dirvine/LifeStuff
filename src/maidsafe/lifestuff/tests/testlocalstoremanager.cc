@@ -120,7 +120,7 @@ class LocalStoreManagerTest : public testing::Test {
   std::shared_ptr<SessionSingleton> ss_;
   std::shared_ptr<LocalStoreManager> sm_;
   test::CallbackObject cb_;
-  std::function<void(int)> functor_;
+  std::function<void(int)> functor_;  // NOLINT
   std::string anmaid_private_key_, mpid_public_key_;
 
  private:

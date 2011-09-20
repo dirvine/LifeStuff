@@ -18,8 +18,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_SHAREDTEST_TESTCALLBACK_H_
-#define MAIDSAFE_SHAREDTEST_TESTCALLBACK_H_
+#ifndef MAIDSAFE_LIFESTUFF_TESTS_TESTCALLBACK_H_
+#define MAIDSAFE_LIFESTUFF_TESTS_TESTCALLBACK_H_
 
 #include <string>
 
@@ -75,4 +75,4 @@ class CallbackObject {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_SHAREDTEST_TESTCALLBACK_H_
+#endif  // MAIDSAFE_LIFESTUFF_TESTS_TESTCALLBACK_H_

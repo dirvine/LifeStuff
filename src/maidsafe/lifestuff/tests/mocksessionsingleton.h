@@ -18,8 +18,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_SHAREDTEST_MOCKSESSIONSINGLETON_H_
-#define MAIDSAFE_SHAREDTEST_MOCKSESSIONSINGLETON_H_
+#ifndef MAIDSAFE_LIFESTUFF_TESTS_MOCKSESSIONSINGLETON_H_
+#define MAIDSAFE_LIFESTUFF_TESTS_MOCKSESSIONSINGLETON_H_
 
 #include "maidsafe/lifestuff/sessionsingleton.h"
 
@@ -37,4 +37,4 @@ class MockSessionSingleton : public SessionSingleton {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_SHAREDTEST_MOCKSESSIONSINGLETON_H_
+#endif  // MAIDSAFE_LIFESTUFF_TESTS_MOCKSESSIONSINGLETON_H_

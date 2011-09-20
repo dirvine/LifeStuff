@@ -90,7 +90,7 @@ class ClientControllerTest : public testing::Test {
     cc_->initialised_ = false;
   }
 
-  void InitAndCloseCallback(int) {}
+  void InitAndCloseCallback(int /*i*/) {}
 
   std::shared_ptr<fs::path> test_dir_;
   std::shared_ptr<ClientController> cc_;

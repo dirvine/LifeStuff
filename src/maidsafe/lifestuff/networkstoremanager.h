@@ -67,7 +67,7 @@ class NetworkStoreManager : public PacketManager {
       const bptime::seconds &mean_refresh_interval,
       std::shared_ptr<SessionSingleton> ss);
 
-  virtual void Init(const dht::kademlia::JoinFunctor callback,
+  virtual void Init(dht::kademlia::JoinFunctor callback,
                     const boost::uint16_t &port);
 
   int Close(bool cancel_pending_ops);

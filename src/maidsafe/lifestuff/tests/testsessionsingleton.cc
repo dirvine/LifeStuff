@@ -24,8 +24,14 @@
 
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
-
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4244)
+#endif
 #include "maidsafe/lifestuff/data_atlas.pb.h"
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
 #include "maidsafe/lifestuff/sessionsingleton.h"
 
 namespace maidsafe {

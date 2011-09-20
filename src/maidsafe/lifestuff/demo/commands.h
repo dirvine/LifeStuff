@@ -55,4 +55,4 @@ class Commands {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_TESTS_DEMO_COMMANDS_H_
+#endif  // MAIDSAFE_LIFESTUFF_DEMO_COMMANDS_H_

@@ -25,8 +25,14 @@
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/sessionsingleton.h"
 #include "maidsafe/lifestuff/clientutils.h"
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4244)
+#endif
 #include "maidsafe/lifestuff/lifestuff_messages.pb.h"
-
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
 namespace fs3 = boost::filesystem3;
 
 namespace maidsafe {
@@ -655,7 +661,7 @@ bool LocalStoreManager::ValidateGenericPacket(std::string ser_gp,
   return crypto::AsymCheckSig(gp.data(), gp.signature(), public_key);
 }
 
-////////////// BUFFER PACKET //////////////
+// /// /// /// /// BUFFER PACKET // /// /// /// ///
 
 /*
 int LocalStoreManager::CreateBP() {
@@ -754,7 +760,7 @@ int LocalStoreManager::SendAMessage(
 
   std::string bp_in_chunk, ser_gp;
   int successes = 0;
-  boost::uint32_t timestamp = 0;  //GetDurationSinceEpoch();
+  boost::uint32_t timestamp = 0;  // GetDurationSinceEpoch();
   for (size_t n = 0; n < recs.size(); ++n) {
     std::string rec_pub_key(ss_->GetContactPublicKey(recs[n]));
     std::string bufferpacketname(BufferPacketName(recs[n], rec_pub_key));
@@ -791,7 +797,7 @@ int LocalStoreManager::AddBPPresence(const std::vector<std::string> &receivers,
 }
 */
 
-////////////// END BUFFER PACKET //////////////
+// /// /// /// /// END BUFFER PACKET // /// /// /// ///
 
 int LocalStoreManager::FindAndLoadChunk(const std::string &chunkname,
                                         std::string *data) {

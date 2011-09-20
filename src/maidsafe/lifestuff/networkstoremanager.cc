@@ -92,7 +92,7 @@ NetworkStoreManager::NetworkStoreManager(
       delete_results_(),
       session_singleton_(ss) {}
 
-void NetworkStoreManager::Init(const dht::kademlia::JoinFunctor callback,
+void NetworkStoreManager::Init(dht::kademlia::JoinFunctor callback,
                                const boost::uint16_t& /*port*/) {
   dht::kademlia::AlternativeStorePtr alternative_store;
   dht::kademlia::MessageHandlerPtr message_handler;
@@ -267,14 +267,23 @@ void NetworkStoreManager::FindValueCallback(dht::kademlia::FindValueReturns fvr,
         parameters.cb(fvr.return_code);
         return;
     case kValues:
-        parameters.functor(fvr.values, kSuccess);  // fvr.return_code);
+      {
+        std::vector<std::string> values;
+        for (size_t n = 0; n < fvr.values_and_signatures.size(); ++n)
+          values.push_back(fvr.values_and_signatures[n].first);
+        parameters.functor(values, kSuccess);
         return;
+      }
     case kDelete:
-        if (fvr.return_code == 0)
+        if (fvr.return_code == 0) {
+          std::vector<std::string> values;
+          for (size_t n = 0; n < fvr.values_and_signatures.size(); ++n)
+            values.push_back(fvr.values_and_signatures[n].first);
           DeletePacketImpl(parameters.key,
-                           fvr.values,
+                           values,
                            parameters.securifier,
                            parameters.cb);
+        }
   }
 }
 
