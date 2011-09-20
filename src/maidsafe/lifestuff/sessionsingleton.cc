@@ -81,6 +81,7 @@ bool SessionSingleton::ResetSession() {
 }
 
 
+
 // // / // / // / // / // / // / // / // / // / //
 // // User Details Handling // //
 // // / // / // / // / // / // / // / // / // / //
@@ -154,6 +155,7 @@ void SessionSingleton::set_win_drive(char win_drive) {
 void SessionSingleton::set_connection_status(int status) {
   ud_.connection_status = status;
 }
+
 
 // // / // / // / // / // / // / // / //
 // Key ring operations //
@@ -271,6 +273,7 @@ std::string SessionSingleton::PublicKeySignature(
                                                       confirmed_as_stored);
 }
 
+
 // // / // / // / // / // / // / // / /
 // Contact operations //
 // // / // / // / // / // / // / // / /
@@ -380,6 +383,7 @@ int SessionSingleton::ClearContacts() {
   return ch_.ClearContacts();
 }
 
+
 // // / // / // / // / // / // / // / // / // / /
 // Private Share operations //
 // // / // / // / // / // / // / // / // / // / /
@@ -474,6 +478,7 @@ void SessionSingleton::ClearPrivateShares() {
   return psh_.ClearPrivateShares();
 }
 
+
 // // / // / // / // / // / // / // / // / // / //
 // // Conversation Handling // //
 // // / // / // / // / // / // / // / // / // / //
@@ -519,6 +524,7 @@ int SessionSingleton::ConversationExits(const std::string &id) {
 void SessionSingleton::ClearConversations() {
   conversations_.clear();
 }
+
 
 // // / // / // / // / // / // / // / // / // / //
 // // Live Contact Handling // //
