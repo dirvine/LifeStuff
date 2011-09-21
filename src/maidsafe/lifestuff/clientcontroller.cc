@@ -120,7 +120,15 @@ int ClientController::Init(boost::uint8_t /*k*/) {
   }
   auth_.reset(new Authentication(ss_));
 #ifdef LOCAL_LifeStuffVAULT
-  local_sm_.reset(new LocalStoreManager("/tmp/LocalUserCredentials", ss_));
+  boost::system::error_code error_code;
+  fs3::path temp_dir(fs3::temp_directory_path(error_code));
+  if (error_code) {
+    DLOG(ERROR) << "Failed to get temporary directory";
+    return -1;
+  }
+
+  local_sm_.reset(new LocalStoreManager(temp_dir / "LocalUserCredentials",
+                                        ss_));
 #else
   local_sm_.reset(new NetworkStoreManager(std::vector<dht::kademlia::Contact>(),
                                           8, 3, 2,
