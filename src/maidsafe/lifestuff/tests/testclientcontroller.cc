@@ -92,6 +92,22 @@ class ClientControllerTest : public testing::Test {
 
   void InitAndCloseCallback(int /*i*/) {}
 
+  std::shared_ptr<ClientController> CreateSecondClientController() {
+    std::shared_ptr<ClientController> cc2(new ClientController());
+    std::shared_ptr<SessionSingleton> ss2 = cc2->ss_;
+    std::shared_ptr<LocalStoreManager>
+        local_sm2(new LocalStoreManager(*test_dir_, ss2));
+    ss2->ResetSession();
+    local_sm2->Init(std::bind(&ClientControllerTest::InitAndCloseCallback,
+                              this, arg::_1),
+                    0);
+    cc2->auth_.reset(new Authentication(ss2));
+    cc2->auth_->Init(local_sm2);
+    cc2->local_sm_ = local_sm2;
+    cc2->initialised_ = true;
+    return cc2;
+  }
+
   std::shared_ptr<fs::path> test_dir_;
   std::shared_ptr<ClientController> cc_;
   std::shared_ptr<SessionSingleton> ss_;
@@ -307,6 +323,34 @@ TEST_F(ClientControllerTest, FUNC_LeaveNetwork) {
   ASSERT_TRUE(ss_->pin().empty());
   ASSERT_TRUE(ss_->password().empty());
   printf("Logged out.\n===========\n\n");
+}
+
+TEST_F(ClientControllerTest, FUNC_ParallelLogin) {
+  std::string username("User1");
+  std::string pin("1234");
+  std::string password("The beagle has landed.");
+  ASSERT_TRUE(ss_->username().empty());
+  ASSERT_TRUE(ss_->pin().empty());
+  ASSERT_TRUE(ss_->password().empty());
+  printf("Preconditions fulfilled.");
+
+  printf("\n\n");
+
+  ASSERT_NE(kUserExists, cc_->CheckUserExists(username, pin));
+  ASSERT_TRUE(cc_->CreateUser(username, pin, password));
+  ASSERT_EQ(username, ss_->username());
+  ASSERT_EQ(pin, ss_->pin());
+  ASSERT_EQ(password, ss_->password());
+  printf("User created.");
+
+  printf("\n\n");
+
+  std::shared_ptr<ClientController> cc2 = CreateSecondClientController();
+  ASSERT_EQ(kUserExists, cc2->CheckUserExists(username, pin));
+  ASSERT_TRUE(cc2->ValidateUser(password));
+  printf("Successful Parallel Log in.");
+
+  printf("\n\n");
 }
 
 }  // namespace test

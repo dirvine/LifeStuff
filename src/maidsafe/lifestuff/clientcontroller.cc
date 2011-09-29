@@ -294,8 +294,14 @@ bool ClientController::CreateUser(const std::string &username,
                 << std::endl;
   }
 
-  std::string ser_da(ss_->SerialiseKeyring());
-  result = auth_->CreateTmidPacket(username, pin, password, ser_da);
+  // std::string ser_da(ss_->SerialiseKeyring());
+  int n = SerialiseDa();
+  if (n != 0) {
+    DLOG(ERROR) << "Failed to serialise DA." << std::endl;
+    return false;
+  }
+
+  result = auth_->CreateTmidPacket(username, pin, password, ser_da_);
   if (result != kSuccess) {
     DLOG(ERROR) << "Cannot create tmid packet." << std::endl;
     ss_->ResetSession();
