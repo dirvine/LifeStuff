@@ -52,6 +52,7 @@ class UserCredentials {
   virtual bool ChangePin(const std::string &new_pin) = 0;
   virtual bool ChangePassword(const std::string &new_password) = 0;
   virtual bool LeaveMaidsafeNetwork() = 0;
+  virtual std::string SessionName() = 0;
 
   virtual std::string Username() = 0;
   virtual std::string Pin() = 0;

@@ -111,6 +111,7 @@ class ClientController : public lifestuff::UserCredentials {
   virtual bool ChangePin(const std::string &new_pin);
   virtual bool ChangePassword(const std::string &new_password);
   virtual bool LeaveMaidsafeNetwork();
+  virtual std::string SessionName();
 
   virtual std::string Username();
   virtual std::string Pin();

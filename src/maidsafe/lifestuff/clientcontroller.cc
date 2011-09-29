@@ -430,6 +430,14 @@ bool ClientController::LeaveMaidsafeNetwork() {
   return false;
 }
 
+std::string ClientController::SessionName() {
+  if (!initialised_) {
+    DLOG(ERROR) << "Not initialised.";
+    return "";
+  }
+  return ss_->session_name();
+}
+
 bool ClientController::ChangeUsername(const std::string &new_username) {
   if (!initialised_) {
     DLOG(ERROR) << "Not initialised.";
