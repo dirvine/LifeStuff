@@ -1,6 +1,10 @@
-v0.01.08 (WIP)
+v0.01.09 (WIP)
 --------------
 
+v0.01.08
+--------
+* Fixed bug in user creation in clientcontroller
+* Exposed session name in user credentials API
 
 v0.01.07
 --------
