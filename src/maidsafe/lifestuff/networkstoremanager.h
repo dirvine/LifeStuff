@@ -31,8 +31,8 @@
 #include "boost/asio/ip/address.hpp"
 #include "boost/asio/io_service.hpp"
 
-#include "maidsafe/dht/kademlia/config.h"
-#include "maidsafe/dht/kademlia/node_id.h"
+#include "maidsafe/dht/config.h"
+#include "maidsafe/dht/node_id.h"
 
 #include "maidsafe/lifestuff/packet_manager.h"
 
@@ -40,34 +40,31 @@ namespace bptime = boost::posix_time;
 
 namespace maidsafe {
 
-namespace dht {
-
 class Securifier;
 
-namespace kademlia {
+namespace dht {
 class Contact;
 class Node;
-}  // namespace kademlia
-
 }  // namespace dht
 
 namespace lifestuff {
 
 typedef std::function<void(std::shared_ptr<std::vector<int>>)> DeleteFunctor;  // NOLINT (Dan)
+
 class SessionSingleton;
 struct FindValueParameters;
 
 class NetworkStoreManager : public PacketManager {
  public:
   NetworkStoreManager(
-      const std::vector<dht::kademlia::Contact> &bootstrap_contacts,
+      const std::vector<dht::Contact> &bootstrap_contacts,
       const boost::uint16_t &k,
       const boost::uint16_t &alpha,
       const boost::uint16_t beta,
       const bptime::seconds &mean_refresh_interval,
       std::shared_ptr<SessionSingleton> ss);
 
-  virtual void Init(dht::kademlia::JoinFunctor callback,
+  virtual void Init(dht::JoinFunctor callback,
                     const boost::uint16_t &port);
 
   int Close(bool cancel_pending_ops);
@@ -105,9 +102,9 @@ class NetworkStoreManager : public PacketManager {
                             const VoidFuncOneInt &cb);
 
  private:
-  void DeletePacketImpl(const dht::kademlia::Key &key,
+  void DeletePacketImpl(const dht::Key &key,
                         const std::vector<std::string> values,
-                        dht::kademlia::SecurifierPtr securifier,
+                        std::shared_ptr<Securifier> securifier,
                         const VoidFuncOneInt &cb);
 
   void DeletePacketCallback(int result,
@@ -115,11 +112,11 @@ class NetworkStoreManager : public PacketManager {
                             std::shared_ptr<std::vector<int>> delete_results,
                             std::shared_ptr<boost::mutex> mutex);
 
-  void FindValueCallback(dht::kademlia::FindValueReturns fvr,
+  void FindValueCallback(dht::FindValueReturns fvr,
                          FindValueParameters parameters);
 
-  void PopulateValues(const dht::kademlia::Key &key,
-                      const dht::kademlia::SecurifierPtr securifier,
+  void PopulateValues(const dht::Key &key,
+                      const std::shared_ptr<Securifier> securifier,
                       const VoidFuncOneInt &cb);
 
   void KeyUniqueBlockCallback(int result,
@@ -134,15 +131,15 @@ class NetworkStoreManager : public PacketManager {
                               int *expected_result,
                               std::vector<std::string> *expected_values);
 
-  std::vector<dht::kademlia::Contact> bootstrap_contacts_;
+  std::vector<dht::Contact> bootstrap_contacts_;
   boost::uint16_t k_;
   boost::uint16_t alpha_;
   boost::uint16_t beta_;
   boost::asio::io_service &asio_service_;
   std::shared_ptr<boost::asio::io_service::work> work_;
-  std::shared_ptr<dht::Securifier> securifier_;
-  std::shared_ptr<dht::kademlia::Node> node_;
-  dht::kademlia::NodeId node_id_;
+  std::shared_ptr<Securifier> securifier_;
+  std::shared_ptr<dht::Node> node_;
+  dht::NodeId node_id_;
   bptime::seconds mean_refresh_interval_;
   std::vector<bool> delete_results_;
   std::shared_ptr<SessionSingleton> session_singleton_;

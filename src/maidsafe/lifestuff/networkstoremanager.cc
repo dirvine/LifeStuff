@@ -25,10 +25,10 @@
 #include <functional>
 #include <memory>
 
-#include "maidsafe/dht/kademlia/contact.h"
-#include "maidsafe/dht/kademlia/node-api.h"
-#include "maidsafe/dht/kademlia/securifier.h"
-#include "maidsafe/dht/transport/transport.h"
+#include "maidsafe/common/securifier.h"
+#include "maidsafe/dht/contact.h"
+#include "maidsafe/dht/node-api.h"
+#include "maidsafe/transport/transport.h"
 
 #include "maidsafe/lifestuff/clientutils.h"
 #include "maidsafe/lifestuff/sessionsingleton.h"
@@ -50,8 +50,8 @@ struct FindValueParameters {
         securifier() {}
   FindValueParameters(VoidFuncOneInt one_int,
                       FindOperation fo,
-                      dht::kademlia::Key k,
-                      dht::kademlia::SecurifierPtr sec)
+                      dht::Key k,
+                      std::shared_ptr<Securifier> sec)
       : cb(one_int),
         functor(),
         operation(fo),
@@ -59,7 +59,7 @@ struct FindValueParameters {
         securifier(sec) {}
   FindValueParameters(GetPacketFunctor gpf,
                       FindOperation fo,
-                      dht::kademlia::Key k)
+                      dht::Key k)
       : cb(),
         functor(gpf),
         operation(fo),
@@ -68,12 +68,12 @@ struct FindValueParameters {
   VoidFuncOneInt cb;
   GetPacketFunctor functor;
   FindOperation operation;
-  dht::kademlia::Key key;
-  dht::kademlia::SecurifierPtr securifier;
+  dht::Key key;
+  std::shared_ptr<Securifier> securifier;
 };
 
 NetworkStoreManager::NetworkStoreManager(
-    const std::vector<dht::kademlia::Contact> &bootstrap_contacts,
+    const std::vector<dht::Contact> &bootstrap_contacts,
     const boost::uint16_t &k,
     const boost::uint16_t &alpha,
     const boost::uint16_t beta,
@@ -87,26 +87,26 @@ NetworkStoreManager::NetworkStoreManager(
       work_(),
       securifier_(),
       node_(),
-      node_id_(dht::kademlia::NodeId::kRandomId),
+      node_id_(dht::NodeId::kRandomId),
       mean_refresh_interval_(mean_refresh_interval),
       delete_results_(),
       session_singleton_(ss) {}
 
-void NetworkStoreManager::Init(dht::kademlia::JoinFunctor callback,
+void NetworkStoreManager::Init(dht::JoinFunctor callback,
                                const boost::uint16_t& /*port*/) {
-  dht::kademlia::AlternativeStorePtr alternative_store;
-  dht::kademlia::MessageHandlerPtr message_handler;
-  dht::kademlia::TransportPtr transport;
-  node_.reset(new dht::kademlia::Node(asio_service_,
-                                      transport,
-                                      message_handler,
-                                      securifier_,
-                                      alternative_store,
-                                      true,  // client node
-                                      k_,
-                                      alpha_,
-                                      beta_,
-                                      mean_refresh_interval_));
+  dht::AlternativeStorePtr alternative_store;
+  dht::MessageHandlerPtr message_handler;
+  std::shared_ptr<transport::Transport> transport;
+  node_.reset(new dht::Node(asio_service_,
+                            transport,
+                            message_handler,
+                            securifier_,
+                            alternative_store,
+                            true,  // client node
+                            k_,
+                            alpha_,
+                            beta_,
+                            mean_refresh_interval_));
   node_->Join(node_id_, bootstrap_contacts_, callback);
 }
 
@@ -129,7 +129,7 @@ bool NetworkStoreManager::KeyUnique(const std::string &key,
       cv.wait(loch_migdale);
   }
 
-  return (expected_result == dht::kademlia::kFailedToFindValue);
+  return (expected_result == dht::kFailedToFindValue);
 }
 
 void NetworkStoreManager::KeyUniqueBlockCallback(
@@ -145,9 +145,9 @@ void NetworkStoreManager::KeyUniqueBlockCallback(
 void NetworkStoreManager::KeyUnique(const std::string &key,
                                     bool /*check_local*/,
                                     const VoidFuncOneInt &cb) {
-  dht::kademlia::Key node_id(key);
+  dht::Key node_id(key);
   FindValueParameters fvp(cb, kUnique, node_id, securifier_);
-  dht::kademlia::FindValueFunctor fvf(
+  dht::FindValueFunctor fvf(
       std::bind(&NetworkStoreManager::FindValueCallback, this, arg::_1, fvp));
   node_->FindValue(node_id, securifier_, fvf);
 }
@@ -184,9 +184,9 @@ void NetworkStoreManager::GetPacketBlockCallback(
 
 void NetworkStoreManager::GetPacket(const std::string &packet_name,
                                     const GetPacketFunctor &cb) {
-  dht::kademlia::Key key(packet_name);
+  dht::Key key(packet_name);
   FindValueParameters fvp(cb, kValues, key);
-  dht::kademlia::FindValueFunctor fvf(
+  dht::FindValueFunctor fvf(
       std::bind(&NetworkStoreManager::FindValueCallback, this, arg::_1, fvp));
   node_->FindValue(key, securifier_, fvf);
 }
@@ -199,14 +199,14 @@ void NetworkStoreManager::StorePacket(
     const std::string &msid,
     const VoidFuncOneInt &cb) {
   boost::posix_time::seconds ttl(boost::posix_time::pos_infin);
-  dht::kademlia::SecurifierPtr securifier;
-  dht::kademlia::Key key(packet_name);
+  std::shared_ptr<Securifier> securifier;
+  dht::Key key(packet_name);
   std::string key_id, public_key, public_key_signature, private_key;
   maidsafe::lifestuff::ClientUtils client_utils(session_singleton_);
   client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
                                       &key_id, &public_key,
                                       &public_key_signature, &private_key);
-  securifier.reset(new dht::Securifier(key_id, public_key, private_key));
+  securifier.reset(new Securifier(key_id, public_key, private_key));
   node_->Store(key, value, "", ttl, securifier, cb);
 }
 
@@ -217,14 +217,15 @@ void NetworkStoreManager::DeletePacket(
     DirType dir_type,
     const std::string &msid,
     const VoidFuncOneInt &cb) {
-  dht::kademlia::Key key(packet_name);
+  dht::Key key(packet_name);
   std::string key_id, public_key, public_key_signature, private_key;
   maidsafe::lifestuff::ClientUtils client_utils(session_singleton_);
   client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
                                       &key_id, &public_key,
                                       &public_key_signature, &private_key);
-  dht::kademlia::SecurifierPtr securifier;
-  securifier.reset(new dht::Securifier(key_id, public_key, private_key));
+  std::shared_ptr<Securifier> securifier(new Securifier(key_id,
+                                                        public_key,
+                                                        private_key));
   if (values.empty())
     PopulateValues(key, securifier, cb);
   else
@@ -233,15 +234,15 @@ void NetworkStoreManager::DeletePacket(
 
 // TODO(Team): Decide on multiple value result
 void NetworkStoreManager::DeletePacketImpl(
-    const dht::kademlia::Key &key,
+    const dht::Key &key,
     const std::vector<std::string> values,
-    const dht::kademlia::SecurifierPtr securifier,
+    const std::shared_ptr<Securifier> securifier,
     const VoidFuncOneInt &/*cb*/) {
   std::shared_ptr<std::vector<int>> delete_results;
   delete_results->resize(values.size());
   std::shared_ptr<boost::mutex> mutex;
   mutex.reset(new boost::mutex);
-  dht::kademlia::DeleteFunctor delete_functor;
+  dht::DeleteFunctor delete_functor;
   for (int index = 0; index != static_cast<int>(values.size()); ++index) {
     delete_functor = std::bind(&NetworkStoreManager::DeletePacketCallback, this,
                                arg::_1, index, delete_results, mutex);
@@ -250,8 +251,8 @@ void NetworkStoreManager::DeletePacketImpl(
 }
 
 void NetworkStoreManager::PopulateValues(
-    const dht::kademlia::Key &key,
-    const dht::kademlia::SecurifierPtr securifier,
+    const dht::Key &key,
+    const std::shared_ptr<Securifier> securifier,
     const VoidFuncOneInt &cb) {
   FindValueParameters fvp(cb, kDelete, key, securifier);
   node_->FindValue(key,
@@ -260,7 +261,7 @@ void NetworkStoreManager::PopulateValues(
                              this, arg::_1, fvp));
 }
 
-void NetworkStoreManager::FindValueCallback(dht::kademlia::FindValueReturns fvr,
+void NetworkStoreManager::FindValueCallback(dht::FindValueReturns fvr,
                                             FindValueParameters parameters) {
   switch (parameters.operation) {
     case kUnique:
@@ -293,7 +294,7 @@ void NetworkStoreManager::DeletePacketCallback(
     std::shared_ptr<std::vector<int>> delete_results,
     std::shared_ptr<boost::mutex> mutex) {
   boost::mutex::scoped_lock lock(*mutex.get());
-  delete_results->at(index) = (result == dht::transport::kSuccess);
+  delete_results->at(index) = (result == transport::kSuccess);
 }
 
 void NetworkStoreManager::UpdatePacket(
@@ -304,15 +305,16 @@ void NetworkStoreManager::UpdatePacket(
     DirType dir_type,
     const std::string &msid,
     const VoidFuncOneInt &cb) {
-  dht::kademlia::Key key(packet_name);
+  dht::Key key(packet_name);
   std::string key_id, public_key, public_key_signature, private_key;
   maidsafe::lifestuff::ClientUtils client_utils(session_singleton_);
   client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
                                       &key_id, &public_key,
                                       &public_key_signature, &private_key);
   boost::posix_time::seconds ttl(boost::posix_time::pos_infin);
-  dht::kademlia::SecurifierPtr securifier;
-  securifier.reset(new dht::Securifier(key_id, public_key, private_key));
+  std::shared_ptr<Securifier> securifier(new Securifier(key_id,
+                                                        public_key,
+                                                        private_key));
   node_->Update(key, new_value, "", old_value, "", ttl, securifier, cb);
 }
 

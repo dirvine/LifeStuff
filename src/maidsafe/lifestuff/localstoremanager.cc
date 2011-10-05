@@ -17,11 +17,15 @@
 #include "boost/filesystem/fstream.hpp"
 #include "boost/filesystem.hpp"
 #include "boost/scoped_ptr.hpp"
-#include "maidsafe/dht/kademlia/contact.h"
-#include "maidsafe/pki/maidsafe_validator.h"
+
 #include "maidsafe/common/chunk_store.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
+
+#include "maidsafe/dht/contact.h"
+
+#include "maidsafe/pki/maidsafe_validator.h"
+
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/sessionsingleton.h"
 #include "maidsafe/lifestuff/clientutils.h"
@@ -937,8 +941,8 @@ bool LocalStoreManager::VaultStoreInfo(boost::uint64_t *offered_space,
   return true;
 }
 
-bool LocalStoreManager::VaultContactInfo(dht::kademlia::Contact *contact) {
-  dht::kademlia::Contact ctc;
+bool LocalStoreManager::VaultContactInfo(dht::Contact *contact) {
+  dht::Contact ctc;
   *contact = ctc;
   return true;
 }

@@ -43,7 +43,7 @@
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/dht/kademlia/contact.h"
+#include "maidsafe/dht/contact.h"
 
 #include "maidsafe/encrypt/self_encryption.h"
 #include "maidsafe/encrypt/data_map.h"
@@ -130,7 +130,7 @@ int ClientController::Init(boost::uint8_t /*k*/) {
   local_sm_.reset(new LocalStoreManager(temp_dir / "LocalUserCredentials",
                                         ss_));
 #else
-  local_sm_.reset(new NetworkStoreManager(std::vector<dht::kademlia::Contact>(),
+  local_sm_.reset(new NetworkStoreManager(std::vector<dht::Contact>(),
                                           8, 3, 2,
                                           boost::posix_time::seconds(60), ss_));
 #endif

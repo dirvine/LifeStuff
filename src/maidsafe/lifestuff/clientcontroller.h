@@ -51,9 +51,7 @@ namespace bs2 = boost::signals2;
 namespace maidsafe {
 
 namespace dht {
-namespace kademlia {
 class Contact;
-}  // namespace kademlia
 }  // namespace dht
 
 class ChunkStore;
