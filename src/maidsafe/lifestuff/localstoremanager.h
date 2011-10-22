@@ -30,9 +30,10 @@
 #include <set>
 #include <string>
 #include <vector>
+
 #include "boost/filesystem.hpp"
 #include "boost/thread/mutex.hpp"
-#include "maidsafe/lifestuff/sqlutils/cppsqlite3.h"
+
 #include "maidsafe/lifestuff/packet_manager.h"
 
 
@@ -40,7 +41,7 @@ namespace fs3 = boost::filesystem3;
 
 namespace maidsafe {
 
-class ChunkStore;
+class FileChunkStore;
 
 namespace lifestuff {
 
@@ -54,10 +55,6 @@ class SessionSingleton;
 
 class LocalStoreManager : public PacketManager {
  public:
-  LocalStoreManager(std::shared_ptr<ChunkStore> client_chunkstore,
-                    const boost::uint8_t &k,
-                    const fs3::path &db_directory,
-                    std::shared_ptr<SessionSingleton> ss);
   explicit LocalStoreManager(const fs3::path &db_directory,
                              std::shared_ptr<SessionSingleton> ss);
   virtual ~LocalStoreManager();
@@ -70,16 +67,6 @@ class LocalStoreManager : public PacketManager {
   virtual void KeyUnique(const std::string &key,
                          bool check_local,
                          const VoidFuncOneInt &cb);
-
-  // Chunks
-  virtual int LoadChunk(const std::string &chunk_name, std::string *data);
-  virtual int StoreChunk(const std::string &chunk_name,
-                         DirType dir_type,
-                         const std::string &msid);
-  virtual int DeleteChunk(const std::string &chunk_name,
-                          const boost::uint64_t &chunk_size,
-                          DirType dir_type,
-                          const std::string &msid);
 
   // Packets
   virtual int GetPacket(const std::string &packet_name,
@@ -111,25 +98,6 @@ class LocalStoreManager : public PacketManager {
   LocalStoreManager(const LocalStoreManager&);
 
   bool ValidateGenericPacket(std::string ser_gp, std::string public_key);
-  ReturnCode StorePacket_InsertToDb(const std::string &key,
-                                    const std::string &value,
-                                    const std::string &public_key,
-                                    const bool &append);
-  ReturnCode DeletePacket_DeleteFromDb(const std::string &key,
-                                       const std::vector<std::string> &values,
-                                       const std::string &public_key);
-  int GetValue_FromDB(const std::string &key,
-                      std::vector<std::string> *results);
-  ReturnCode UpdatePacketInDb(const std::string &key,
-                              const std::string &old_value,
-                              const std::string &new_value);
-  int FindAndLoadChunk(const std::string &chunkname, std::string *data);
-  int FlushDataIntoChunk(const std::string &chunkname,
-                         const std::string &data,
-                         const bool &overwrite);
-  std::string BufferPacketName();
-  std::string BufferPacketName(const std::string &publicusername,
-                               const std::string &public_key);
   void CreateSerialisedSignedValue(const std::string &value,
                                    const std::string &private_key,
                                    std::string *ser_gp);
@@ -141,10 +109,9 @@ class LocalStoreManager : public PacketManager {
 
   const boost::uint8_t K_;
   const boost::uint16_t kUpperThreshold_;
-  CppSQLite3DB db_;
   boost::mutex mutex_;
   std::string local_sm_dir_;
-  std::shared_ptr<ChunkStore> client_chunkstore_;
+  std::shared_ptr<FileChunkStore> client_chunkstore_;
   std::shared_ptr<SessionSingleton> ss_;
   std::set<std::string> chunks_pending_;
 };

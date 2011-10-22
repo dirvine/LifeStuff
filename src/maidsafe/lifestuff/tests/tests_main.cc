@@ -22,42 +22,28 @@
 * ============================================================================
 */
 
-//  #include <maidsafe/base/log.h>
 #include "boost/filesystem.hpp"
+
 #include "maidsafe/common/test.h"
-//  #include "maidsafe/lifestuff/tests/networktest.h"
+
+#include "maidsafe/lifestuff/log.h"
 
 int main(int argc, char **argv) {
-//  google::InitGoogleLogging(argv[0]);
-  // setting output to be stderr
-//  #ifndef HAVE_GLOG
-//    bool FLAGS_logtostderr;
-//  #endif
-//  FLAGS_logtostderr = true;
+  // Initialise logging
+  google::InitGoogleLogging(argv[0]);
+  // Choose to direct output to stderr or not.
+  FLAGS_logtostderr = true;
+  // If Google logging is linked in, log messages at or above this level.
+  // Severity levels are INFO, WARNING, ERROR, and FATAL (0 to 3 respectively).
+  FLAGS_minloglevel = google::ERROR;
+  FLAGS_ms_logging_common = false;
+  FLAGS_ms_logging_pki = false;
+  FLAGS_ms_logging_passport = false;
+  FLAGS_ms_logging_lifestuff = true;
+
   testing::InitGoogleTest(&argc, argv);
-#ifdef MS_NETWORK_TEST
-  try {
-    if (boost::filesystem::exists(".kadconfig"))
-      boost::filesystem::remove(".kadconfig");
-  }
-  catch(const std::exception& e) {
-    printf("%s\n", e.what());
-  }
-  testing::AddGlobalTestEnvironment(new maidsafe::test::localvaults::Env(
-      maidsafe::test::K(), maidsafe::test::kNetworkSize(),
-      maidsafe::test::pdvaults(), maidsafe::test::kadconfig()));
-#endif
 
   int result(RUN_ALL_TESTS());
-#ifdef MS_NETWORK_TEST
-  try {
-    if (boost::filesystem::exists(".kadconfig"))
-      boost::filesystem::remove(".kadconfig");
-  }
-  catch(const std::exception& e) {
-    printf("%s\n", e.what());
-  }
-#endif
   int test_count = testing::UnitTest::GetInstance()->test_to_run_count();
   return (test_count == 0) ? -1 : result;
 }

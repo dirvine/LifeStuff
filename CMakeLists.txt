@@ -77,6 +77,7 @@ ADD_MAIDSAFE_LIBRARY(MaidSafe-DHT)
 ADD_MAIDSAFE_LIBRARY(Encrypt)
 ADD_MAIDSAFE_LIBRARY(PKI)
 ADD_MAIDSAFE_LIBRARY(Passport)
+ADD_MAIDSAFE_LIBRARY(MaidSafe-PD)
 
 ###################################################################################################
 # Callback File System / Fuse library search                                                      #
@@ -134,14 +135,6 @@ LIST(REMOVE_ITEM ALL_FILES_NETWORKSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/local
 SOURCE_GROUP("client Source Files" FILES ${SOURCE_FILES_CLIENT_DIR})
 SOURCE_GROUP("client Header Files" FILES ${HEADER_FILES_CLIENT_DIR})
 
-FILE(GLOB SOURCE_FILES_SHARED_DIR "${SRC_MAIDSAFE}/sqlutils/*.cc" "${SRC_MAIDSAFE}/sqlutils/sqlite3.c")
-FILE(GLOB HEADER_FILES_SHARED_DIR "${SRC_MAIDSAFE}/sqlutils/*.h")
-SET(ALL_FILES_SHARED_DIR ${SOURCE_FILES_SHARED_DIR} ${HEADER_FILES_SHARED_DIR})
-SET(STYLE_SHARED ${ALL_FILES_SHARED_DIR})
-LIST(REMOVE_ITEM STYLE_SHARED "${SRC_MAIDSAFE}/sqlutils/sqlite3.h")
-SOURCE_GROUP("sqlutils Source Files" FILES ${SOURCE_FILES_SHARED_DIR})
-SOURCE_GROUP("sqlutils Header Files" FILES ${HEADER_FILES_SHARED_DIR})
-
 ####    TESTS    ####
 FILE(GLOB ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/tests/*.cc" "${SRC_MAIDSAFE}/tests/*.h")
 LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/tests/client_main.cc")
@@ -182,21 +175,19 @@ RENAME_EXECUTABLE(TESTclient)
 RENAME_EXECUTABLE(TESTauthentication_local)
 RENAME_EXECUTABLE(TESTclientcontroller_local)
 
-ADD_LIBRARY(lifestuff_sql_utils_static STATIC ${ALL_FILES_SHARED_DIR})
 ADD_LIBRARY(lifestuff_local_static STATIC ${ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR})
 ADD_LIBRARY(lifestuff_network_static STATIC ${ALL_FILES_NETWORKSTOREMANAGER_CLIENT_DIR})
 
-SET_TARGET_PROPERTIES(lifestuff_sql_utils_static PROPERTIES OUTPUT_NAME lifestuff_sql_utils)
 SET_TARGET_PROPERTIES(lifestuff_local_static PROPERTIES OUTPUT_NAME lifestuff_local)
 SET_TARGET_PROPERTIES(lifestuff_network_static PROPERTIES OUTPUT_NAME lifestuff_network)
 
 ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTclientcontroller_local TESTclient TESTauthentication_local)
 
-IF(UNIX)
-  TARGET_LINK_LIBRARIES(lifestuff_sql_utils_static dl)
-ENDIF()
-TARGET_LINK_LIBRARIES(lifestuff_local_static lifestuff_sql_utils_static encrypt_static passport_static boost_date_time ${QT_LIBRARIES} boost_regex)
-TARGET_LINK_LIBRARIES(lifestuff_network_static lifestuff_sql_utils_static encrypt_static passport_static boost_date_time ${QT_LIBRARIES} boost_regex)
+# IF(UNIX)
+#   TARGET_LINK_LIBRARIES(lifestuff_sql_utils_static dl)
+# ENDIF()
+TARGET_LINK_LIBRARIES(lifestuff_local_static encrypt_static passport_static maidsafe_pd_static boost_date_time ${QT_LIBRARIES} boost_regex)
+TARGET_LINK_LIBRARIES(lifestuff_network_static encrypt_static passport_static maidsafe_pd_static boost_date_time ${QT_LIBRARIES} boost_regex)
 TARGET_LINK_LIBRARIES(TESTclient lifestuff_local_static gtest_static gmock_static)
 TARGET_LINK_LIBRARIES(TESTauthentication_local lifestuff_local_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTclientcontroller_local lifestuff_local_static gtest_static)
@@ -223,8 +214,6 @@ ELSEIF(MSVC)
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /D \"QT_NO_DEBUG_OUTPUT\" /D \"QT_NO_WARNING_OUTPUT\" /D \"QT_NO_DEBUG_STREAM\"")
   SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.cc
                               ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_messages.pb.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/sqlutils/cppsqlite3.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/sqlutils/sqlite3.c
                               PROPERTIES COMPILE_FLAGS "/W0")
   SET_TARGET_PROPERTIES(${ALL_EXECUTABLES} PROPERTIES
                             LINK_FLAGS "/STACK:1048576"
@@ -240,7 +229,7 @@ ENDIF()
 ###################################################################################################
 IF(PYTHONINTERP_FOUND)
   IF(UNIX)
-    SET(STYLE_ALL ${STYLE_CLIENT} ${STYLE_SHARED} ${STYLE_FUSE})
+    SET(STYLE_ALL ${STYLE_CLIENT} ${STYLE_FUSE})
     ADD_TEST(STYLE_CHECK python ${MaidSafeCommon_TOOLS_DIR}/cpplint.py ${STYLE_ALL})
   ELSE()
     STRING(REPLACE "/" "\\\\" STYLE_CHECK_SOURCE ${PROJECT_SOURCE_DIR})
@@ -381,7 +370,7 @@ ELSE() # Installing the library
   ENDFOREACH()
 
   SET(EXPORT_NAME lifestuff_client)
-  INSTALL(TARGETS lifestuff_local_static lifestuff_network_static lifestuff_sql_utils_static EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
+  INSTALL(TARGETS lifestuff_local_static lifestuff_network_static EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
   INSTALL(FILES ${LIFESTUFF_CLIENT_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff)
   INSTALL(EXPORT ${EXPORT_NAME} DESTINATION share/maidsafe)
   ADD_VERSION_INFO_TO_INSTALLED_FILE()
