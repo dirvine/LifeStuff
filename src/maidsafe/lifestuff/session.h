@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_SESSIONSINGLETON_H_
-#define MAIDSAFE_LIFESTUFF_SESSIONSINGLETON_H_
+#ifndef MAIDSAFE_LIFESTUFF_SESSION_H_
+#define MAIDSAFE_LIFESTUFF_SESSION_H_
 
 #include <list>
 #include <map>
@@ -57,11 +57,11 @@ namespace maidsafe {
 namespace lifestuff {
 
 namespace test {
-class SessionSingletonTest;
+class SessionTest;
 class ClientControllerTest;
 class LocalStoreManagerTest;
-class SessionSingletonTest_BEH_SetsGetsAndResetSession_Test;
-class SessionSingletonTest_BEH_SessionName_Test;
+class SessionTest_BEH_SetsGetsAndResetSession_Test;
+class SessionTest_BEH_SessionName_Test;
 class AuthenticationTest_FUNC_RepeatedSaveSessionBlocking_Test;
 class AuthenticationTest_FUNC_RepeatedSaveSessionCallbacks_Test;
 class AuthenticationTest_FUNC_ChangeUsername_Test;
@@ -69,9 +69,8 @@ class AuthenticationTest_FUNC_ChangePin_Test;
 class AuthenticationTest_FUNC_ChangePassword_Test;
 class AuthenticationTest_FUNC_CreatePublicName_Test;
 class LocalStoreManagerTest_BEH_DeleteSystemPacketNotOwner_Test;
-class LocalStoreManagerTest_BEH_UpdatePacket_Test;
-class LocalStoreManagerTest_BEH_AddAndGetBufferPacketMessages_Test;
-class LocalStoreManagerTest_BEH_AddRequestBufferPacketMessage_Test;
+class LocalStoreManagerTest_BEH_UpdateSystemPacket_Test;
+class LocalStoreManagerTest_BEH_UpdateSystemPacketNotOwner_Test;
 }  // namespace test
 
 class Authentication;
@@ -116,11 +115,11 @@ struct ConnectionDetails {
   boost::uint32_t init_timestamp;
 };
 
-class SessionSingleton {
+class Session {
  public:
-  SessionSingleton();
+  Session();
 
-  virtual ~SessionSingleton() {
+  virtual ~Session() {
     passport_->StopCreatingKeyPairs();
     io_service_.stop();
     work_.reset();
@@ -326,12 +325,11 @@ class SessionSingleton {
  private:
   friend class Authentication;
   friend class ClientUtils;
-  friend class MockSessionSingleton;
-  friend class test::SessionSingletonTest;
+  friend class test::SessionTest;
   friend class test::ClientControllerTest;
   friend class test::LocalStoreManagerTest;
-  friend class test::SessionSingletonTest_BEH_SetsGetsAndResetSession_Test;
-  friend class test::SessionSingletonTest_BEH_SessionName_Test;
+  friend class test::SessionTest_BEH_SetsGetsAndResetSession_Test;
+  friend class test::SessionTest_BEH_SessionName_Test;
   friend class
       test::AuthenticationTest_FUNC_RepeatedSaveSessionBlocking_Test;
   friend class
@@ -342,10 +340,12 @@ class SessionSingleton {
   friend class test::AuthenticationTest_FUNC_CreatePublicName_Test;
   friend class
       test::LocalStoreManagerTest_BEH_DeleteSystemPacketNotOwner_Test;
-  friend class test::LocalStoreManagerTest_BEH_UpdatePacket_Test;
+  friend class test::LocalStoreManagerTest_BEH_UpdateSystemPacket_Test;
+  friend class
+      test::LocalStoreManagerTest_BEH_UpdateSystemPacketNotOwner_Test;
 
-  SessionSingleton &operator=(const SessionSingleton&);
-  SessionSingleton(const SessionSingleton&);
+  Session &operator=(const Session&);
+  Session(const Session&);
   int GetKey(const passport::PacketType &packet_type,
              std::string *id,
              std::string *public_key,
@@ -368,4 +368,4 @@ class SessionSingleton {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_SESSIONSINGLETON_H_
+#endif  // MAIDSAFE_LIFESTUFF_SESSION_H_

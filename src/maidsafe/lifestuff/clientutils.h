@@ -35,11 +35,11 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-class SessionSingleton;
+class Session;
 
 class ClientUtils {
  public:
-  explicit ClientUtils(std::shared_ptr<SessionSingleton> ss)
+  explicit ClientUtils(std::shared_ptr<Session> ss)
       : ss_(ss) {}
   ~ClientUtils() {}
   void GetChunkSignatureKeys(DirType dir_type,
@@ -59,7 +59,7 @@ class ClientUtils {
   ClientUtils &operator=(const ClientUtils&);
   ClientUtils(const ClientUtils&);
 
-  std::shared_ptr<SessionSingleton> ss_;
+  std::shared_ptr<Session> ss_;
 };
 
 }  // namespace lifestuff

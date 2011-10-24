@@ -66,8 +66,7 @@ class Authentication;
 class Contact;
 class PacketManager;
 class PrivateShare;
-class SessionSingleton;
-class MockClientController;
+class Session;
 struct private_share;
 
 class CCCallback {
@@ -116,7 +115,6 @@ class ClientController : public lifestuff::UserCredentials {
   virtual std::string Password();
 
  private:
-  friend class MockClientController;
   friend class test::ClientControllerTest;
 
   // Functions
@@ -126,7 +124,7 @@ class ClientController : public lifestuff::UserCredentials {
 
   // Variables
   std::shared_ptr<ChunkStore> client_chunkstore_;
-  std::shared_ptr<SessionSingleton> ss_;
+  std::shared_ptr<Session> ss_;
   std::shared_ptr<PacketManager> local_sm_;
   std::shared_ptr<Authentication> auth_;
   std::string ser_da_;

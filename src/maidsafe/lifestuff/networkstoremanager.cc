@@ -31,7 +31,7 @@
 #include "maidsafe/transport/transport.h"
 
 #include "maidsafe/lifestuff/clientutils.h"
-#include "maidsafe/lifestuff/sessionsingleton.h"
+#include "maidsafe/lifestuff/session.h"
 
 namespace arg = std::placeholders;
 namespace bptime = boost::posix_time;
@@ -78,7 +78,7 @@ NetworkStoreManager::NetworkStoreManager(
     const boost::uint16_t &alpha,
     const boost::uint16_t beta,
     const bptime::seconds &mean_refresh_interval,
-    std::shared_ptr<SessionSingleton> ss)
+    std::shared_ptr<Session> ss)
     : bootstrap_contacts_(bootstrap_contacts),
       k_(k),
       alpha_(alpha),

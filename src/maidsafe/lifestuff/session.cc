@@ -22,7 +22,7 @@
 * ============================================================================
 */
 
-#include "maidsafe/lifestuff/sessionsingleton.h"
+#include "maidsafe/lifestuff/session.h"
 
 #include <memory>
 
@@ -35,11 +35,12 @@
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
+
 namespace maidsafe {
 
 namespace lifestuff {
 
-SessionSingleton::SessionSingleton()
+Session::Session()
     : ud_(),
       io_service_(),
       work_(new boost::asio::io_service::work(io_service_)),
@@ -58,7 +59,7 @@ SessionSingleton::SessionSingleton()
   passport_->Init();
 }
 
-bool SessionSingleton::ResetSession() {
+bool Session::ResetSession() {
   ud_.defconlevel = kDefCon3;
   ud_.da_modified = false;
   ud_.username.clear();
@@ -87,43 +88,43 @@ bool SessionSingleton::ResetSession() {
 // // / // / // / // / // / // / // / // / // / //
 
 // Accessors
-DefConLevels SessionSingleton::def_con_level() { return ud_.defconlevel; }
-bool SessionSingleton::da_modified() { return ud_.da_modified; }
-std::string SessionSingleton::username() { return ud_.username; }
-std::string SessionSingleton::pin() { return ud_.pin; }
-std::string SessionSingleton::password() { return ud_.password; }
-std::string SessionSingleton::public_username() {
+DefConLevels Session::def_con_level() { return ud_.defconlevel; }
+bool Session::da_modified() { return ud_.da_modified; }
+std::string Session::username() { return ud_.username; }
+std::string Session::pin() { return ud_.pin; }
+std::string Session::password() { return ud_.password; }
+std::string Session::public_username() {
     return passport_->public_name();
 }
-std::string SessionSingleton::session_name() { return ud_.session_name; }
-std::string SessionSingleton::root_db_key() { return ud_.root_db_key; }
-bool SessionSingleton::self_encrypting() { return ud_.self_encrypting; }
-const std::set<std::string> &SessionSingleton::authorised_users() {
+std::string Session::session_name() { return ud_.session_name; }
+std::string Session::root_db_key() { return ud_.root_db_key; }
+bool Session::self_encrypting() { return ud_.self_encrypting; }
+const std::set<std::string> &Session::authorised_users() {
   return ud_.authorised_users;
 }
-const std::set<std::string> &SessionSingleton::maid_authorised_users() {
+const std::set<std::string> &Session::maid_authorised_users() {
   return ud_.maid_authorised_users;
 }
-int SessionSingleton::mounted() { return ud_.mounted; }
-char SessionSingleton::win_drive() { return ud_.win_drive; }
-int SessionSingleton::connection_status() { return ud_.connection_status; }
-boost::asio::io_service& SessionSingleton::io_service() { return io_service_; }
+int Session::mounted() { return ud_.mounted; }
+char Session::win_drive() { return ud_.win_drive; }
+int Session::connection_status() { return ud_.connection_status; }
+boost::asio::io_service& Session::io_service() { return io_service_; }
 
 // Mutators
-void SessionSingleton::set_def_con_level(DefConLevels defconlevel) {
+void Session::set_def_con_level(DefConLevels defconlevel) {
   ud_.defconlevel = defconlevel;
 }
-void SessionSingleton::set_da_modified(bool da_modified) {
+void Session::set_da_modified(bool da_modified) {
   ud_.da_modified = da_modified;
 }
-void SessionSingleton::set_username(const std::string &username) {
+void Session::set_username(const std::string &username) {
   ud_.username = username;
 }
-void SessionSingleton::set_pin(const std::string &pin) { ud_.pin = pin; }
-void SessionSingleton::set_password(const std::string &password) {
+void Session::set_pin(const std::string &pin) { ud_.pin = pin; }
+void Session::set_password(const std::string &password) {
   ud_.password = password;
 }
-bool SessionSingleton::set_session_name(bool clear) {
+bool Session::set_session_name(bool clear) {
   if (clear) {
     ud_.session_name.clear();
   } else {
@@ -134,25 +135,25 @@ bool SessionSingleton::set_session_name(bool clear) {
   }
   return true;
 }
-void SessionSingleton::set_root_db_key(const std::string &root_db_key) {
+void Session::set_root_db_key(const std::string &root_db_key) {
   ud_.root_db_key = root_db_key;
 }
-void SessionSingleton::set_self_encrypting(bool self_encrypting) {
+void Session::set_self_encrypting(bool self_encrypting) {
   ud_.self_encrypting = self_encrypting;
 }
-void SessionSingleton::set_authorised_users(
+void Session::set_authorised_users(
     const std::set<std::string> &authorised_users) {
   ud_.authorised_users = authorised_users;
 }
-void SessionSingleton::set_maid_authorised_users(
+void Session::set_maid_authorised_users(
     const std::set<std::string> &maid_authorised_users) {
   ud_.maid_authorised_users = maid_authorised_users;
 }
-void SessionSingleton::set_mounted(int mounted) { ud_.mounted = mounted; }
-void SessionSingleton::set_win_drive(char win_drive) {
+void Session::set_mounted(int mounted) { ud_.mounted = mounted; }
+void Session::set_win_drive(char win_drive) {
   ud_.win_drive = win_drive;
 }
-void SessionSingleton::set_connection_status(int status) {
+void Session::set_connection_status(int status) {
   ud_.connection_status = status;
 }
 
@@ -161,15 +162,15 @@ void SessionSingleton::set_connection_status(int status) {
 // Key ring operations //
 // // / // / // / // / // / // / // / //
 
-int SessionSingleton::ParseKeyring(const std::string &serialised_keyring) {
+int Session::ParseKeyring(const std::string &serialised_keyring) {
   return passport_->ParseKeyring(serialised_keyring);
 }
 
-std::string SessionSingleton::SerialiseKeyring() {
+std::string Session::SerialiseKeyring() {
   return passport_->SerialiseKeyring();
 }
 
-int SessionSingleton::ProxyMID(std::string *id,
+int Session::ProxyMID(std::string *id,
                                std::string *public_key,
                                std::string *private_key,
                                std::string *public_key_signature) {
@@ -177,7 +178,7 @@ int SessionSingleton::ProxyMID(std::string *id,
                 public_key_signature);
 }
 
-int SessionSingleton::MPublicID(std::string *id,
+int Session::MPublicID(std::string *id,
                                 std::string *public_key,
                                 std::string *private_key,
                                 std::string *public_key_signature) {
@@ -185,7 +186,7 @@ int SessionSingleton::MPublicID(std::string *id,
                 public_key_signature);
 }
 
-int SessionSingleton::GetKey(const passport::PacketType &packet_type,
+int Session::GetKey(const passport::PacketType &packet_type,
                              std::string *id,
                              std::string *public_key,
                              std::string *private_key,
@@ -221,7 +222,7 @@ int SessionSingleton::GetKey(const passport::PacketType &packet_type,
   return result;
 }
 
-bool SessionSingleton::CreateTestPackets(const std::string &public_username) {
+bool Session::CreateTestPackets(const std::string &public_username) {
   passport_->Init();
   std::shared_ptr<passport::SignaturePacket>
       pkt(new passport::SignaturePacket);
@@ -250,23 +251,23 @@ bool SessionSingleton::CreateTestPackets(const std::string &public_username) {
   return true;
 }
 
-std::string SessionSingleton::Id(const passport::PacketType &packet_type,
+std::string Session::Id(const passport::PacketType &packet_type,
                                  bool confirmed_as_stored) {
   return passport_->SignaturePacketName(packet_type, confirmed_as_stored);
 }
 
-std::string SessionSingleton::PublicKey(const passport::PacketType &packet_type,
+std::string Session::PublicKey(const passport::PacketType &packet_type,
                                         bool confirmed_as_stored) {
   return passport_->SignaturePacketPublicKey(packet_type, confirmed_as_stored);
 }
 
-std::string SessionSingleton::PrivateKey(
+std::string Session::PrivateKey(
     const passport::PacketType &packet_type,
     bool confirmed_as_stored) {
   return passport_->SignaturePacketPrivateKey(packet_type, confirmed_as_stored);
 }
 
-std::string SessionSingleton::PublicKeySignature(
+std::string Session::PublicKeySignature(
     const passport::PacketType &packet_type,
     bool confirmed_as_stored) {
   return passport_->SignaturePacketPublicKeySignature(packet_type,
@@ -278,7 +279,7 @@ std::string SessionSingleton::PublicKeySignature(
 // Contact operations //
 // // / // / // / // / // / // / // / /
 
-int SessionSingleton::LoadContacts(std::list<PublicContact> *contacts) {
+int Session::LoadContacts(std::list<PublicContact> *contacts) {
   int n = 0;
   while (!contacts->empty()) {
     PublicContact pc = contacts->front();
@@ -291,7 +292,7 @@ int SessionSingleton::LoadContacts(std::list<PublicContact> *contacts) {
   return n;
 }
 
-int SessionSingleton::AddContact(const std::string &pub_name,
+int Session::AddContact(const std::string &pub_name,
                                  const std::string &pub_key,
                                  const std::string &full_name,
                                  const std::string &office_phone,
@@ -307,56 +308,56 @@ int SessionSingleton::AddContact(const std::string &pub_name,
                            gender, language, country, city, confirmed, rank,
                            last_contact);
 }
-int SessionSingleton::DeleteContact(const std::string &pub_name) {
+int Session::DeleteContact(const std::string &pub_name) {
   return ch_.DeleteContact(pub_name);
 }
-int SessionSingleton::UpdateContact(const mi_contact &mic) {
+int Session::UpdateContact(const mi_contact &mic) {
   return ch_.UpdateContact(mic);
 }
-int SessionSingleton::UpdateContactKey(const std::string &pub_name,
+int Session::UpdateContactKey(const std::string &pub_name,
                                        const std::string &value) {
   return ch_.UpdateContactKey(pub_name, value);
 }
-int SessionSingleton::UpdateContactFullName(const std::string &pub_name,
+int Session::UpdateContactFullName(const std::string &pub_name,
                                             const std::string &value) {
   return ch_.UpdateContactFullName(pub_name, value);
 }
-int SessionSingleton::UpdateContactOfficePhone(const std::string &pub_name,
+int Session::UpdateContactOfficePhone(const std::string &pub_name,
                                                const std::string &value) {
   return ch_.UpdateContactOfficePhone(pub_name, value);
 }
-int SessionSingleton::UpdateContactBirthday(const std::string &pub_name,
+int Session::UpdateContactBirthday(const std::string &pub_name,
                                             const std::string &value) {
   return ch_.UpdateContactBirthday(pub_name, value);
 }
-int SessionSingleton::UpdateContactGender(const std::string &pub_name,
+int Session::UpdateContactGender(const std::string &pub_name,
                                           const char &value) {
   return ch_.UpdateContactGender(pub_name, value);
 }
-int SessionSingleton::UpdateContactLanguage(const std::string &pub_name,
+int Session::UpdateContactLanguage(const std::string &pub_name,
                                             const int &value) {
   return ch_.UpdateContactLanguage(pub_name, value);
 }
-int SessionSingleton::UpdateContactCountry(const std::string &pub_name,
+int Session::UpdateContactCountry(const std::string &pub_name,
                                            const int &value) {
   return ch_.UpdateContactCountry(pub_name, value);
 }
-int SessionSingleton::UpdateContactCity(const std::string &pub_name,
+int Session::UpdateContactCity(const std::string &pub_name,
                                         const std::string &value) {
   return ch_.UpdateContactCity(pub_name, value);
 }
-int SessionSingleton::UpdateContactConfirmed(const std::string &pub_name,
+int Session::UpdateContactConfirmed(const std::string &pub_name,
                                              const char &value) {
   return ch_.UpdateContactConfirmed(pub_name, value);
 }
-int SessionSingleton::SetLastContactRank(const std::string &pub_name) {
+int Session::SetLastContactRank(const std::string &pub_name) {
   return ch_.SetLastContactRank(pub_name);
 }
-int SessionSingleton::GetContactInfo(const std::string &pub_name,
+int Session::GetContactInfo(const std::string &pub_name,
                                      mi_contact *mic) {
   return ch_.GetContactInfo(pub_name, mic);
 }
-std::string SessionSingleton::GetContactPublicKey(const std::string &pub_name) {
+std::string Session::GetContactPublicKey(const std::string &pub_name) {
   mi_contact mic;
   if (ch_.GetContactInfo(pub_name, &mic) != 0)
     return "";
@@ -366,11 +367,11 @@ std::string SessionSingleton::GetContactPublicKey(const std::string &pub_name) {
 // type:  1  - for most contacted
 //        2  - for most recent
 //        0  - (default) alphabetical
-int SessionSingleton::GetContactList(std::vector<mi_contact> *list,
+int Session::GetContactList(std::vector<mi_contact> *list,
                                      int type) {
   return ch_.GetContactList(list, type);
 }
-int SessionSingleton::GetPublicUsernameList(std::vector<std::string> *list) {
+int Session::GetPublicUsernameList(std::vector<std::string> *list) {
   list->clear();
   std::vector<mi_contact> mic_list;
   if (ch_.GetContactList(&mic_list, 0) != 0)
@@ -379,7 +380,7 @@ int SessionSingleton::GetPublicUsernameList(std::vector<std::string> *list) {
     list->push_back(mic_list[n].pub_name_);
   return 0;
 }
-int SessionSingleton::ClearContacts() {
+int Session::ClearContacts() {
   return ch_.ClearContacts();
 }
 
@@ -388,7 +389,7 @@ int SessionSingleton::ClearContacts() {
 // Private Share operations //
 // // / // / // / // / // / // / // / // / // / /
 
-int SessionSingleton::LoadShares(std::list<Share> *shares) {
+int Session::LoadShares(std::list<Share> *shares) {
   int a = 0;
   while (!shares->empty()) {
     Share sh = shares->front();
@@ -414,37 +415,37 @@ int SessionSingleton::LoadShares(std::list<Share> *shares) {
   }
   return a;
 }
-int SessionSingleton::AddPrivateShare(
+int Session::AddPrivateShare(
     const std::vector<std::string> &attributes,
     const std::vector<boost::uint32_t> &share_stats,
     std::list<ShareParticipants> *participants) {
   return psh_.AddPrivateShare(attributes, share_stats, participants);
 }
-int SessionSingleton::DeletePrivateShare(const std::string &value,
+int Session::DeletePrivateShare(const std::string &value,
                                          const int &field) {
   return psh_.DeletePrivateShare(value, field);
 }
-int SessionSingleton::AddContactsToPrivateShare(
+int Session::AddContactsToPrivateShare(
     const std::string &value,
     const int &field,
     std::list<ShareParticipants> *participants) {
   return psh_.AddContactsToPrivateShare(value, field, participants);
 }
-int SessionSingleton::DeleteContactsFromPrivateShare(
+int Session::DeleteContactsFromPrivateShare(
     const std::string &value,
     const int &field,
     std::list<std::string> *participants) {
   return psh_.DeleteContactsFromPrivateShare(value, field, participants);
 }
-int SessionSingleton::TouchShare(const std::string &value, const int &field) {
+int Session::TouchShare(const std::string &value, const int &field) {
   return psh_.TouchShare(value, field);
 }
-int SessionSingleton::GetShareInfo(const std::string &value,
+int Session::GetShareInfo(const std::string &value,
                                    const int &field,
                                    PrivateShare *ps) {
   return psh_.GetShareInfo(value, field, ps);
 }
-int SessionSingleton::GetShareKeys(const std::string &msid,
+int Session::GetShareKeys(const std::string &msid,
                                    std::string *public_key,
                                    std::string *private_key) {
   PrivateShare ps;
@@ -458,23 +459,23 @@ int SessionSingleton::GetShareKeys(const std::string &msid,
   *private_key = ps.MsidPriKey();
   return 0;
 }
-int SessionSingleton::GetShareList(std::list<private_share> *ps_list,
+int Session::GetShareList(std::list<private_share> *ps_list,
                                    const SortingMode &sm,
                                    const ShareFilter &sf) {
   return psh_.GetShareList(ps_list, sm, sf);
 }
-int SessionSingleton::GetFullShareList(const SortingMode &sm,
+int Session::GetFullShareList(const SortingMode &sm,
                                        const ShareFilter &sf,
                                        std::list<PrivateShare> *ps_list) {
   return psh_.GetFullShareList(sm, sf, ps_list);
 }
-int SessionSingleton::GetParticipantsList(
+int Session::GetParticipantsList(
     const std::string &value,
     const int &field,
     std::list<share_participant> *sp_list) {
   return psh_.GetParticipantsList(value, field, sp_list);
 }
-void SessionSingleton::ClearPrivateShares() {
+void Session::ClearPrivateShares() {
   return psh_.ClearPrivateShares();
 }
 
@@ -483,13 +484,13 @@ void SessionSingleton::ClearPrivateShares() {
 // // Conversation Handling // //
 // // / // / // / // / // / // / // / // / // / //
 
-int SessionSingleton::ConversationList(std::list<std::string> *conversations) {
+int Session::ConversationList(std::list<std::string> *conversations) {
   conversations->clear();
   *conversations = std::list<std::string>(conversations_.begin(),
                                           conversations_.end());
   return 0;
 }
-int SessionSingleton::AddConversation(const std::string &id) {
+int Session::AddConversation(const std::string &id) {
   if (id.empty())
     return kEmptyConversationId;
 
@@ -501,7 +502,7 @@ int SessionSingleton::AddConversation(const std::string &id) {
 
   return 0;
 }
-int SessionSingleton::RemoveConversation(const std::string &id) {
+int Session::RemoveConversation(const std::string &id) {
   if (id.empty())
     return kEmptyConversationId;
 
@@ -511,7 +512,7 @@ int SessionSingleton::RemoveConversation(const std::string &id) {
 
   return 0;
 }
-int SessionSingleton::ConversationExits(const std::string &id) {
+int Session::ConversationExits(const std::string &id) {
   if (id.empty())
     return kEmptyConversationId;
 
@@ -521,7 +522,7 @@ int SessionSingleton::ConversationExits(const std::string &id) {
 
   return 0;
 }
-void SessionSingleton::ClearConversations() {
+void Session::ClearConversations() {
   conversations_.clear();
 }
 
@@ -531,7 +532,7 @@ void SessionSingleton::ClearConversations() {
 // // / // / // / // / // / // / // / // / // / //
 
 /*
-int SessionSingleton::AddLiveContact(const std::string &contact,
+int Session::AddLiveContact(const std::string &contact,
                                      const EndPoint &end_points,
                                      int status) {
   ConnectionDetails cd;
@@ -553,7 +554,7 @@ int SessionSingleton::AddLiveContact(const std::string &contact,
   return kSuccess;
 }
 
-int SessionSingleton::LivePublicUsernameList(std::list<std::string> *contacts) {
+int Session::LivePublicUsernameList(std::list<std::string> *contacts) {
   contacts->clear();
   {
     boost::mutex::scoped_lock loch_awe(lc_mutex_);
@@ -564,7 +565,7 @@ int SessionSingleton::LivePublicUsernameList(std::list<std::string> *contacts) {
   return kSuccess;
 }
 
-int SessionSingleton::LiveContactMap(
+int Session::LiveContactMap(
     std::map<std::string, ConnectionDetails> *live_contacts) {
   {
     boost::mutex::scoped_lock loch_awe(lc_mutex_);
@@ -573,7 +574,7 @@ int SessionSingleton::LiveContactMap(
   return kSuccess;
 }
 
-int SessionSingleton::LiveContactDetails(const std::string &contact,
+int Session::LiveContactDetails(const std::string &contact,
                                          EndPoint *end_points,
                                          boost::uint16_t *transport_id,
                                          boost::uint32_t *connection_id,
@@ -598,7 +599,7 @@ int SessionSingleton::LiveContactDetails(const std::string &contact,
   return kSuccess;
 }
 
-int SessionSingleton::LiveContactTransportConnection(
+int Session::LiveContactTransportConnection(
     const std::string &contact,
     boost::uint16_t *transport_id,
     boost::uint32_t *connection_id) {
@@ -615,7 +616,7 @@ int SessionSingleton::LiveContactTransportConnection(
   return kSuccess;
 }
 
-int SessionSingleton::LiveContactStatus(const std::string &contact,
+int Session::LiveContactStatus(const std::string &contact,
                                         int *status) {
   *status = -1;
   {
@@ -628,7 +629,7 @@ int SessionSingleton::LiveContactStatus(const std::string &contact,
   return kSuccess;
 }
 
-int SessionSingleton::StartLiveConnection(const std::string &contact,
+int Session::StartLiveConnection(const std::string &contact,
                                           boost::uint16_t transport_id,
                                           const boost::uint32_t &conn_id) {
   {
@@ -643,7 +644,7 @@ int SessionSingleton::StartLiveConnection(const std::string &contact,
   return kSuccess;
 }
 
-int SessionSingleton::ModifyTransportId(const std::string &contact,
+int Session::ModifyTransportId(const std::string &contact,
                                         boost::uint16_t transport_id) {
   {
     boost::mutex::scoped_lock loch_awe(lc_mutex_);
@@ -655,7 +656,7 @@ int SessionSingleton::ModifyTransportId(const std::string &contact,
   return kSuccess;
 }
 
-int SessionSingleton::ModifyConnectionId(const std::string &contact,
+int Session::ModifyConnectionId(const std::string &contact,
                                          const boost::uint32_t &connection_id) {
   {
     boost::mutex::scoped_lock loch_awe(lc_mutex_);
@@ -667,7 +668,7 @@ int SessionSingleton::ModifyConnectionId(const std::string &contact,
   return kSuccess;
 }
 
-int SessionSingleton::ModifyEndPoint(const std::string &contact,
+int Session::ModifyEndPoint(const std::string &contact,
                                      const std::string &ip,
                                      const boost::uint16_t &port,
                                      int which) {
@@ -687,7 +688,7 @@ int SessionSingleton::ModifyEndPoint(const std::string &contact,
   return kSuccess;
 }
 
-int SessionSingleton::ModifyEndPoint(const std::string &contact,
+int Session::ModifyEndPoint(const std::string &contact,
                                      const EndPoint end_point) {
   {
     boost::mutex::scoped_lock loch_awe(lc_mutex_);
@@ -699,7 +700,7 @@ int SessionSingleton::ModifyEndPoint(const std::string &contact,
   return kSuccess;
 }
 
-int SessionSingleton::ModifyStatus(const std::string &contact, int status) {
+int Session::ModifyStatus(const std::string &contact, int status) {
   {
     boost::mutex::scoped_lock loch_awe(lc_mutex_);
     live_map::iterator it = live_contacts_.find(contact);
@@ -710,7 +711,7 @@ int SessionSingleton::ModifyStatus(const std::string &contact, int status) {
   return kSuccess;
 }
 
-int SessionSingleton::DeleteLiveContact(const std::string &contact) {
+int Session::DeleteLiveContact(const std::string &contact) {
   size_t n(0);
   {
     boost::mutex::scoped_lock loch_awe(lc_mutex_);
@@ -719,7 +720,7 @@ int SessionSingleton::DeleteLiveContact(const std::string &contact) {
   return n;
 }
 
-void SessionSingleton::ClearLiveContacts() {
+void Session::ClearLiveContacts() {
   {
     boost::mutex::scoped_lock loch_awe(lc_mutex_);
     live_contacts_.clear();

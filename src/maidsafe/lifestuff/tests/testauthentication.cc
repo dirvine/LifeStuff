@@ -27,7 +27,7 @@
 
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/localstoremanager.h"
-#include "maidsafe/lifestuff/sessionsingleton.h"
+#include "maidsafe/lifestuff/session.h"
 #ifdef __MSVC__
 #  pragma warning(push)
 #  pragma warning(disable: 4244 4127)
@@ -51,7 +51,7 @@ class AuthenticationTest : public testing::Test {
  public:
   AuthenticationTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
-        ss_(new SessionSingleton),
+        ss_(new Session),
         sm_(new LocalStoreManager(*test_dir_, ss_)),
         authentication_(ss_),
         username_("user"),
@@ -103,7 +103,7 @@ class AuthenticationTest : public testing::Test {
   void InitAndCloseCallback(int /*i*/) {}
 
   std::shared_ptr<fs::path> test_dir_;
-  std::shared_ptr<SessionSingleton> ss_;
+  std::shared_ptr<Session> ss_;
   std::shared_ptr<LocalStoreManager> sm_;
   Authentication authentication_;
   std::string username_, pin_, password_, ser_dm_;

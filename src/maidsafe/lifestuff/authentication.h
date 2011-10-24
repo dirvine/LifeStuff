@@ -42,11 +42,11 @@ class ClientControllerTest;
 }  // namespace test
 
 class PacketManager;
-class SessionSingleton;
+class Session;
 
 class Authentication {
  public:
-  explicit Authentication(std::shared_ptr<SessionSingleton> ss)
+  explicit Authentication(std::shared_ptr<Session> ss)
       : packet_manager_(),
         session_singleton_(ss),
         passport_(),
@@ -219,7 +219,7 @@ class Authentication {
   void PacketOpCallback(int return_code, int *op_result);
 
   std::shared_ptr<PacketManager> packet_manager_;
-  std::shared_ptr<SessionSingleton> session_singleton_;
+  std::shared_ptr<Session> session_singleton_;
   std::shared_ptr<passport::Passport> passport_;
   boost::mutex mutex_, mid_mutex_, smid_mutex_;
   boost::condition_variable cond_var_;

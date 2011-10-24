@@ -51,7 +51,7 @@ namespace lifestuff {
 
 typedef std::function<void(std::shared_ptr<std::vector<int>>)> DeleteFunctor;  // NOLINT (Dan)
 
-class SessionSingleton;
+class Session;
 struct FindValueParameters;
 
 class NetworkStoreManager : public PacketManager {
@@ -62,7 +62,7 @@ class NetworkStoreManager : public PacketManager {
       const boost::uint16_t &alpha,
       const boost::uint16_t beta,
       const bptime::seconds &mean_refresh_interval,
-      std::shared_ptr<SessionSingleton> ss);
+      std::shared_ptr<Session> ss);
 
   virtual void Init(dht::JoinFunctor callback,
                     const boost::uint16_t &port);
@@ -142,7 +142,7 @@ class NetworkStoreManager : public PacketManager {
   dht::NodeId node_id_;
   bptime::seconds mean_refresh_interval_;
   std::vector<bool> delete_results_;
-  std::shared_ptr<SessionSingleton> session_singleton_;
+  std::shared_ptr<Session> session_singleton_;
 };
 
 }  // namespace lifestuff

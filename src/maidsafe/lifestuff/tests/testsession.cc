@@ -3,7 +3,7 @@
 *
 * Copyright [2009] maidsafe.net limited
 *
-* Description:  Unit tests for SessionSingleton
+* Description:  Unit tests for Session
 * Version:      1.0
 * Created:      2009-07-23
 * Revision:     none
@@ -24,6 +24,7 @@
 
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
+
 #ifdef __MSVC__
 #  pragma warning(push)
 #  pragma warning(disable: 4244 4127)
@@ -32,7 +33,7 @@
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
-#include "maidsafe/lifestuff/sessionsingleton.h"
+#include "maidsafe/lifestuff/session.h"
 
 namespace maidsafe {
 
@@ -40,23 +41,23 @@ namespace lifestuff {
 
 namespace test {
 
-class SessionSingletonTest : public testing::Test {
+class SessionTest : public testing::Test {
  public:
-  SessionSingletonTest() : ss_(new SessionSingleton) {}
+  SessionTest() : ss_(new Session) {}
 
  protected:
   void SetUp() {
     ss_->ResetSession();
   }
 
-  std::shared_ptr<SessionSingleton> ss_;
+  std::shared_ptr<Session> ss_;
 
  private:
-  explicit SessionSingletonTest(const SessionSingletonTest&);
-  SessionSingletonTest &operator=(const SessionSingletonTest&);
+  explicit SessionTest(const SessionTest&);
+  SessionTest &operator=(const SessionTest&);
 };
 
-TEST_F(SessionSingletonTest, BEH_SetsGetsAndResetSession) {
+TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   // Check session is clean originally
   ASSERT_FALSE(ss_->da_modified());
   ASSERT_EQ(kDefCon3, ss_->def_con_level());
@@ -172,7 +173,7 @@ TEST_F(SessionSingletonTest, BEH_SetsGetsAndResetSession) {
   ASSERT_EQ(size_t(0), ps_list.size());
 }
 
-TEST_F(SessionSingletonTest, BEH_SessionName) {
+TEST_F(SessionTest, BEH_SessionName) {
   // Check session is empty
   ASSERT_EQ("", ss_->session_name());
   ASSERT_EQ("", ss_->username());
@@ -200,7 +201,7 @@ TEST_F(SessionSingletonTest, BEH_SessionName) {
   ASSERT_EQ("", ss_->session_name());
 }
 
-TEST_F(SessionSingletonTest, BEH_SessionContactsIO) {
+TEST_F(SessionTest, BEH_SessionContactsIO) {
   // Add contacts to the session
   for (int n = 0; n < 10; n++) {
     ASSERT_EQ(0, ss_->AddContact("pub_name_" + IntToString(n),
@@ -271,7 +272,7 @@ TEST_F(SessionSingletonTest, BEH_SessionContactsIO) {
   }
 }
 
-TEST_F(SessionSingletonTest, BEH_SessionPrivateSharesIO) {
+TEST_F(SessionTest, BEH_SessionPrivateSharesIO) {
   // Add shares to the session
   std::vector<boost::uint32_t> share_stats(2, 2);
   for (int n = 0; n < 10; n++) {
@@ -371,7 +372,7 @@ TEST_F(SessionSingletonTest, BEH_SessionPrivateSharesIO) {
   }
 }
 
-TEST_F(SessionSingletonTest, BEH_PubUsernameList) {
+TEST_F(SessionTest, BEH_PubUsernameList) {
   for (int n = 0; n < 10; n++) {
     ASSERT_EQ(0, ss_->AddContact("pub_name_" + IntToString(n),
               "pub_key_" + IntToString(n),
@@ -387,7 +388,7 @@ TEST_F(SessionSingletonTest, BEH_PubUsernameList) {
     ASSERT_EQ("pub_name_" + IntToString(a), publicusernames[a]);
 }
 
-TEST_F(SessionSingletonTest, BEH_ContactPublicKey) {
+TEST_F(SessionTest, BEH_ContactPublicKey) {
   for (int n = 0; n < 10; n++) {
     ASSERT_EQ(0, ss_->AddContact("pub_name_" + IntToString(n),
               "pub_key_" + IntToString(n),
@@ -401,7 +402,7 @@ TEST_F(SessionSingletonTest, BEH_ContactPublicKey) {
               ss_->GetContactPublicKey("pub_name_" + IntToString(a)));
 }
 
-TEST_F(SessionSingletonTest, BEH_Conversations) {
+TEST_F(SessionTest, BEH_Conversations) {
   std::list<std::string> conv;
   ASSERT_EQ(0, ss_->ConversationList(&conv));
   ASSERT_EQ(size_t(0), conv.size());

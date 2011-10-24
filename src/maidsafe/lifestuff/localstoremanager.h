@@ -41,22 +41,17 @@ namespace fs3 = boost::filesystem3;
 
 namespace maidsafe {
 
-class FileChunkStore;
+class BufferedChunkStore;
+class ChunkValidation;
 
 namespace lifestuff {
 
-namespace test {
-class CCImMessagingTest;
-class LocalStoreManagerTest_BEH_AddAndGetBufferPacketMessages_Test;
-class LocalStoreManagerTest_BEH_AddRequestBufferPacketMessage_Test;
-}  // namespace test
-
-class SessionSingleton;
+class Session;
 
 class LocalStoreManager : public PacketManager {
  public:
   explicit LocalStoreManager(const fs3::path &db_directory,
-                             std::shared_ptr<SessionSingleton> ss);
+                             std::shared_ptr<Session> ss);
   virtual ~LocalStoreManager();
   virtual void Init(VoidFuncOneInt callback, const boost::uint16_t &port);
   virtual int Close(bool cancel_pending_ops);
@@ -111,8 +106,12 @@ class LocalStoreManager : public PacketManager {
   const boost::uint16_t kUpperThreshold_;
   boost::mutex mutex_;
   std::string local_sm_dir_;
-  std::shared_ptr<FileChunkStore> client_chunkstore_;
-  std::shared_ptr<SessionSingleton> ss_;
+  boost::asio::io_service service_;
+  std::shared_ptr<boost::asio::io_service::work> work_;
+  boost::thread_group thread_group_;
+  std::shared_ptr<ChunkValidation> chunk_validation_;
+  std::shared_ptr<BufferedChunkStore> client_chunkstore_;
+  std::shared_ptr<Session> ss_;
   std::set<std::string> chunks_pending_;
 };
 

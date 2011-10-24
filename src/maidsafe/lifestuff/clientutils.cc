@@ -23,11 +23,14 @@
 */
 
 #include "maidsafe/lifestuff/clientutils.h"
+
 #include <algorithm>
 #include <cctype>
 #include <functional>
+
 #include "maidsafe/common/crypto.h"
-#include "maidsafe/lifestuff/sessionsingleton.h"
+
+#include "maidsafe/lifestuff/session.h"
 
 namespace maidsafe {
 

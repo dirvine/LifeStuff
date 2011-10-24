@@ -59,7 +59,7 @@
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
-#include "maidsafe/lifestuff/sessionsingleton.h"
+#include "maidsafe/lifestuff/session.h"
 
 #if defined LOCAL_LifeStuffVAULT && !defined MS_NETWORK_TEST
 #  include "maidsafe/lifestuff/localstoremanager.h"
@@ -102,7 +102,7 @@ void PacketOpCallback(const int &store_manager_result,
 
 ClientController::ClientController()
     : client_chunkstore_(),
-      ss_(new SessionSingleton()),
+      ss_(new Session()),
       local_sm_(),
       auth_(),
       ser_da_(),

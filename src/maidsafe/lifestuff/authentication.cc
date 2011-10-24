@@ -22,11 +22,14 @@
 */
 
 #include "maidsafe/lifestuff/authentication.h"
+
 #include "boost/regex.hpp"
+
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
+
 #include "maidsafe/lifestuff/log.h"
-#include "maidsafe/lifestuff/sessionsingleton.h"
+#include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/packet_manager.h"
 
 #ifdef __MSVC__

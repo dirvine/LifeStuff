@@ -14,22 +14,21 @@
 
 #include "maidsafe/lifestuff/localstoremanager.h"
 
-#include "boost/filesystem/fstream.hpp"
 #include "boost/filesystem.hpp"
 #include "boost/scoped_ptr.hpp"
 
 #include "maidsafe/common/buffered_chunk_store.h"
-#include "maidsafe/common/chunk_store.h"
 #include "maidsafe/common/crypto.h"
+#include "maidsafe/common/hashable_chunk_validation.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/dht/contact.h"
 
 #include "maidsafe/pki/maidsafe_validator.h"
 
-#include "maidsafe/lifestuff/log.h"
-#include "maidsafe/lifestuff/sessionsingleton.h"
 #include "maidsafe/lifestuff/clientutils.h"
+#include "maidsafe/lifestuff/log.h"
+#include "maidsafe/lifestuff/session.h"
 #ifdef __MSVC__
 #  pragma warning(push)
 #  pragma warning(disable: 4244)
@@ -99,18 +98,33 @@ void ExecReturnLoadPacketCallback(const GetPacketFunctor &cb,
 }
 
 LocalStoreManager::LocalStoreManager(const fs3::path &db_directory,
-                                     std::shared_ptr<SessionSingleton> ss)
+                                     std::shared_ptr<Session> ss)
     : K_(0),
       kUpperThreshold_(0),
       mutex_(),
       local_sm_dir_(db_directory.string()),
-      client_chunkstore_(
-          new FileChunkStore(true, std::bind(&crypto::HashFile<crypto::SHA512>,
-                                             arg::_1))),
+      service_(),
+      work_(),
+      thread_group_(),
+      chunk_validation_(new HashableChunkValidation<crypto::SHA512>()),
+      client_chunkstore_(new BufferedChunkStore(true,
+                                                chunk_validation_,
+                                                service_)),
       ss_(ss),
-      chunks_pending_() {}
+      chunks_pending_() {
+  work_.reset(new boost::asio::io_service::work(service_));
+  for (int i = 0; i < 3; ++i) {
+    thread_group_.create_thread(
+        std::bind(static_cast<std::size_t(boost::asio::io_service::*)()>
+                      (&boost::asio::io_service::run), &service_));
+  }
+}
 
-LocalStoreManager::~LocalStoreManager() {}
+LocalStoreManager::~LocalStoreManager() {
+  work_.reset();
+  service_.stop();
+  thread_group_.join_all();
+}
 
 void LocalStoreManager::Init(VoidFuncOneInt callback, const boost::uint16_t&) {
   boost::system::error_code ec;
@@ -294,6 +308,12 @@ void LocalStoreManager::UpdatePacket(const std::string &packet_name,
   if (!sv.ParseFromString(current_packet) || sv.value() != old_value) {
     ExecReturnCodeCallback(cb, kStoreManagerError);
     DLOG(WARNING) << "LSM::UpdatePacket - Different current" << std::endl;
+    return;
+  } else if (!crypto::AsymCheckSig(sv.value(),
+                                   sv.value_signature(),
+                                   public_key)) {
+    ExecReturnCodeCallback(cb, kStoreManagerError);
+    DLOG(WARNING) << "LSM::UpdatePacket - Not owner" << std::endl;
     return;
   }
 

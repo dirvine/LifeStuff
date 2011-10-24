@@ -165,8 +165,6 @@ ADD_EXECUTABLE(TESTauthentication_local
                  "${SRC_MAIDSAFE}/tests/testauthentication.cc")
 ADD_EXECUTABLE(TESTclientcontroller_local
                  ${TEST_MAIN}
-                 "${SRC_MAIDSAFE}/tests/mockclientcontroller.h"
-                 "${SRC_MAIDSAFE}/tests/mocksessionsingleton.h"
                  "${SRC_MAIDSAFE}/tests/testclientcontroller.cc")
 
 SET(ALL_EXECUTABLES TESTclient TESTauthentication_local TESTclientcontroller_local ClientDemo)

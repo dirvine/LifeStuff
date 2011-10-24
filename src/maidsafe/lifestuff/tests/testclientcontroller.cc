@@ -40,8 +40,7 @@
 #include "maidsafe/lifestuff/clientutils.h"
 #include "maidsafe/lifestuff/clientcontroller.h"
 #include "maidsafe/lifestuff/localstoremanager.h"
-#include "maidsafe/lifestuff/sessionsingleton.h"
-#include "maidsafe/lifestuff/tests/mockclientcontroller.h"
+#include "maidsafe/lifestuff/session.h"
 
 
 namespace arg = std::placeholders;
@@ -83,7 +82,7 @@ class ClientControllerTest : public testing::Test {
 
   std::shared_ptr<ClientController> CreateSecondClientController() {
     std::shared_ptr<ClientController> cc2(new ClientController());
-    std::shared_ptr<SessionSingleton> ss2 = cc2->ss_;
+    std::shared_ptr<Session> ss2 = cc2->ss_;
     std::shared_ptr<LocalStoreManager>
         local_sm2(new LocalStoreManager(*test_dir_, ss2));
     ss2->ResetSession();
@@ -99,7 +98,7 @@ class ClientControllerTest : public testing::Test {
 
   std::shared_ptr<fs::path> test_dir_;
   std::shared_ptr<ClientController> cc_;
-  std::shared_ptr<SessionSingleton> ss_;
+  std::shared_ptr<Session> ss_;
   std::shared_ptr<LocalStoreManager> local_sm_;
 
  private:
