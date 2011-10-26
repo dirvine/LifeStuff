@@ -174,6 +174,10 @@ class LocalStoreManagerTest : public testing::Test {
     ASSERT_TRUE(ss_->CreateTestPackets("Me"));
     cb_.Reset();
     functor_ = std::bind(&CallbackObject::IntCallback, &cb_, arg::_1);
+    getfunctor_ = std::bind(&CallbackObject::GetPacketCallback,
+                            &cb_,
+                            arg::_1,
+                            arg::_2);
     anmaid_private_key_ = ss_->PrivateKey(passport::ANMAID, true);
     anmaid_public_key_ = ss_->PublicKey(passport::ANMAID, true);
     mpid_public_key_ = ss_->PublicKey(passport::MPID, true);
@@ -191,6 +195,7 @@ class LocalStoreManagerTest : public testing::Test {
   std::shared_ptr<LocalStoreManager> sm_;
   test::CallbackObject cb_;
   std::function<void(int)> functor_;  // NOLINT
+  std::function<void(const std::vector<std::string>&, int)> getfunctor_;
   std::string anmaid_private_key_, anmaid_public_key_, mpid_public_key_;
 
  private:
@@ -414,6 +419,42 @@ TEST_F(LocalStoreManagerTest, FUNC_ThreadedLocalStoreManager) {
     ASSERT_FALSE(*threads_fail_state[i]) <<
         "Error in Section " << threads_result[i];
   }
+}
+
+TEST_F(LocalStoreManagerTest, BEH_GetPacket) {
+  SignedValue gp;
+  gp.set_value("Generic System Packet Data");
+  gp.set_value_signature(crypto::AsymSign(gp.value(), anmaid_private_key_));
+  std::string gp_name = crypto::Hash<crypto::SHA512>(gp.value() +
+                                                     gp.value_signature());
+  ASSERT_TRUE(sm_->KeyUnique(gp_name, false));
+  cb_.Reset();
+  sm_->StorePacket(gp_name, gp.value(), passport::MAID, PRIVATE, "", functor_);
+  ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
+  ASSERT_FALSE(sm_->KeyUnique(gp_name, false));
+  std::vector<std::string> res;
+
+  // Test Blocking GetPacket Func
+  ASSERT_EQ(kSuccess, sm_->GetPacket(gp_name, &res));
+  ASSERT_EQ(size_t(1), res.size());
+  SignedValue gp_res;
+  ASSERT_TRUE(gp_res.ParseFromString(res[0]));
+  ASSERT_EQ(gp.value(), gp_res.value());
+  ASSERT_TRUE(crypto::AsymCheckSig(gp.value(),
+                                   gp_res.value_signature(),
+                                   anmaid_public_key_));
+
+  // Test Non-Blocking GetPacket Func
+  sm_->GetPacket(gp_name, getfunctor_);
+  ASSERT_EQ(kSuccess, cb_.WaitForGetPacketCallbackResult());
+  std::vector<std::string> results(cb_.GetPacketResults());
+  ASSERT_EQ(size_t(1), results.size());
+  SignedValue gp_res2;
+  ASSERT_TRUE(gp_res2.ParseFromString(results[0]));
+  ASSERT_EQ(gp.value(), gp_res2.value());
+  ASSERT_TRUE(crypto::AsymCheckSig(gp.value(),
+                                   gp_res2.value_signature(),
+                                   anmaid_public_key_));
 }
 
 }  // namespace test
