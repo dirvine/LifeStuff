@@ -38,8 +38,8 @@ class CallbackObject {
  public:
   CallbackObject()
     : return_int_(kPendingResult),
-      getpacket_return_(kPendingResult),
-      results_(),
+      get_packet_return_(kPendingResult),
+      get_packet_results_(),
       mutex_(),
       cv_() {}
 
@@ -63,8 +63,8 @@ class CallbackObject {
 
   void GetPacketCallback(const std::vector<std::string>& results, int rc) {
     boost::mutex::scoped_lock lock(mutex_);
-    getpacket_return_ = rc;
-    results_ = results;
+    get_packet_return_ = rc;
+    get_packet_results_ = results;
     cv_.notify_one();
   }
 
@@ -72,28 +72,25 @@ class CallbackObject {
     int result;
     {
       boost::mutex::scoped_lock lock(mutex_);
-      while (getpacket_return_ == kPendingResult)
+      while (get_packet_return_ == kPendingResult)
         cv_.wait(lock);
-      result = getpacket_return_;
-      getpacket_return_ = kPendingResult;
+      result = get_packet_return_;
+      get_packet_return_ = kPendingResult;
     }
     return result;
   }
 
-  std::vector<std::string> GetPacketResults() {
-    return results_;
-  }
+  std::vector<std::string> get_packet_results() { return get_packet_results_; }
 
   void Reset() {
     boost::mutex::scoped_lock lock(mutex_);
     return_int_ = kPendingResult;
-    getpacket_return_ = kPendingResult;
+    get_packet_return_ = kPendingResult;
   }
 
  private:
-  int return_int_;
-  int getpacket_return_;
-  std::vector<std::string> results_;
+  int return_int_, get_packet_return_;
+  std::vector<std::string> get_packet_results_;
   boost::mutex mutex_;
   boost::condition_variable cv_;
 };

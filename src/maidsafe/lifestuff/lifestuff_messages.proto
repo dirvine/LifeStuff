@@ -5,7 +5,8 @@ message GenericPacket {
   required bytes signature = 2;
 }
 
-message SignedValue {
-  required bytes value = 1;
-  required bytes value_signature = 2;
+message DataWrapper {
+  required int32 data_type = 1;
+  optional GenericPacket non_hashable_signed = 2;
+  optional GenericPacket hashable_signed = 3;
 }
