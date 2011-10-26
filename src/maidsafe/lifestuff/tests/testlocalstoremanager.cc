@@ -50,8 +50,6 @@ namespace lifestuff {
 
 namespace test {
 
-boost::system::error_code error_code;
-
 class LocalStoreManagerTest : public testing::Test {
  public:
   LocalStoreManagerTest()
@@ -62,34 +60,31 @@ class LocalStoreManagerTest : public testing::Test {
         functor_(),
         anmaid_private_key_(),
         anmaid_public_key_(),
-        mpid_public_key_() {
-    DLOG(INFO) << "-1";
-  }
+        mpid_public_key_() {}
 
   ~LocalStoreManagerTest() {}
 
-  void LocalStoreManagerSim(const std::string& gp_value,
-                            const std::string& new_gp_value,
-                            std::shared_ptr<CallbackObject> cb,
-                            std::shared_ptr<bool> thread_fail,
-                            std::shared_ptr<std::string> res_msg) {
-    std::function<void(int)> functor;                            // NOLINT - Viv
-    functor = std::bind(&CallbackObject::IntCallback, cb, arg::_1);
-    SignedValue gp;
-    gp.set_value(gp_value);
-    gp.set_value_signature(crypto::AsymSign(gp.value(), anmaid_private_key_));
-    std::string gp_name = crypto::Hash<crypto::SHA512>(gp.value() +
-                                                       gp.value_signature());
+  void OperationLine(const std::string& gp_value,
+                     const std::string& new_gp_value,
+                     std::shared_ptr<CallbackObject> cb,
+                     std::shared_ptr<bool> thread_fail,
+                     std::shared_ptr<std::string> res_msg) {
+    std::function<void(int)> functor(std::bind(&CallbackObject::IntCallback,  // NOLINT (Viv)
+                                               cb, arg::_1));
+    GenericPacket gp;
+    gp.set_data(gp_value);
+    gp.set_signature(crypto::AsymSign(gp.data(), anmaid_private_key_));
+    std::string gp_name(crypto::Hash<crypto::SHA512>(gp.data() +
+                                                     gp.signature()));
     // Section 1 - Check For Unique Key
     if (!sm_->KeyUnique(gp_name, false)) {
       *res_msg = "1 - Not Unique Key";
       *thread_fail = true;
       return;
     }
-    // cb->Reset();
 
     // Section 2 - Store Packet
-    sm_->StorePacket(gp_name, gp.value(), passport::MAID, PRIVATE, "", functor);
+    sm_->StorePacket(gp_name, gp.data(), passport::MAID, PRIVATE, "", functor);
     if ((kSuccess != cb->WaitForIntResult()) ||
         (sm_->KeyUnique(gp_name, false))) {
       *res_msg = "2 - Store Packet Unsuccessful";
@@ -105,24 +100,22 @@ class LocalStoreManagerTest : public testing::Test {
       *thread_fail = true;
       return;
     }
-    SignedValue gp_res;
+    GenericPacket gp_res;
     if (!gp_res.ParseFromString(res[0]) ||
-        gp.value() != gp_res.value() ||
-        !crypto::AsymCheckSig(gp.value(),
-                               gp_res.value_signature(),
-                               anmaid_public_key_)) {
+        gp.data() != gp_res.data() ||
+        !crypto::AsymCheckSig(gp.data(),
+                              gp_res.signature(),
+                              anmaid_public_key_)) {
       *res_msg = "2 - Validation on Retrieved Packet Unsuccessful";
       *thread_fail = true;
       return;
     }
 
     // Section 3 - Update Packet as Owner and Check val
-    SignedValue new_gp;
-    new_gp.set_value(new_gp_value);
-    new_gp.set_value_signature(crypto::AsymSign(new_gp.value(),
-                                                anmaid_private_key_));
-    // cb->Reset();
-    sm_->UpdatePacket(gp_name, gp.value(), new_gp.value(), passport::MAID,
+    GenericPacket new_gp;
+    new_gp.set_data(new_gp_value);
+    new_gp.set_signature(crypto::AsymSign(new_gp.data(), anmaid_private_key_));
+    sm_->UpdatePacket(gp_name, gp.data(), new_gp.data(), passport::MAID,
                       PRIVATE, "", functor);
     res.clear();
     gp_res.Clear();
@@ -134,9 +127,9 @@ class LocalStoreManagerTest : public testing::Test {
     if ((kSuccess != sm_->GetPacket(gp_name, &res)) ||
         (size_t(1) != res.size()) ||
         (!gp_res.ParseFromString(res[0])) ||
-        (new_gp.value() != gp_res.value()) ||
-        (!crypto::AsymCheckSig(new_gp.value(),
-                                gp_res.value_signature(),
+        (new_gp.data() != gp_res.data()) ||
+        (!crypto::AsymCheckSig(new_gp.data(),
+                                gp_res.signature(),
                                 anmaid_public_key_))) {
       *res_msg = "3 - Packet Update Validation Unsuccessful";
       *thread_fail = true;
@@ -144,7 +137,7 @@ class LocalStoreManagerTest : public testing::Test {
     }
 
     // Secion 4 - Delete Packet as Owner and Check val
-    std::vector<std::string> values(1, gp.value());
+    std::vector<std::string> values(1, gp.data());
     sm_->DeletePacket(gp_name, values, passport::MAID, PRIVATE, "", functor);
     if  (kSuccess != cb->WaitForIntResult()) {
       *res_msg = "4 - Packet Delete Failed as Owner";
@@ -162,13 +155,11 @@ class LocalStoreManagerTest : public testing::Test {
   void SetUp() {
     ss_->ResetSession();
 
-    DLOG(INFO) << "00000000";
     sm_->Init(std::bind(&CallbackObject::IntCallback, &cb_, arg::_1), 0);
     if (cb_.WaitForIntResult() != kSuccess) {
       FAIL();
       return;
     }
-    DLOG(INFO) << "11111111";
 
     ss_->ResetSession();
     ASSERT_TRUE(ss_->CreateTestPackets("Me"));
@@ -190,7 +181,7 @@ class LocalStoreManagerTest : public testing::Test {
   std::shared_ptr<Session> ss_;
   std::shared_ptr<LocalStoreManager> sm_;
   CallbackObject cb_;
-  std::function<void(int)> functor_;  // NOLINT
+  std::function<void(int)> functor_;  // NOLINT (Dan)
   std::string anmaid_private_key_, anmaid_public_key_, mpid_public_key_;
 
  private:
@@ -200,15 +191,14 @@ class LocalStoreManagerTest : public testing::Test {
 
 TEST_F(LocalStoreManagerTest, BEH_KeyUnique) {
   GenericPacket gp;
-  std::string gp_name(crypto::Hash<crypto::SHA512>("aaa"));
+  std::string gp_name(crypto::Hash<crypto::SHA512>(RandomString(10)));
   ASSERT_TRUE(sm_->KeyUnique(gp_name, false));
   sm_->KeyUnique(gp_name, false, functor_);
   ASSERT_EQ(kKeyUnique, cb_.WaitForIntResult());
 
-  gp.set_data("Generic System Packet Data");
+  gp.set_data(RandomString(16));
   cb_.Reset();
-  sm_->StorePacket(gp_name, gp.data(), passport::MAID, PRIVATE, "",
-                   functor_);
+  sm_->StorePacket(gp_name, gp.data(), passport::MAID, PRIVATE, "", functor_);
   ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
 
   ASSERT_FALSE(sm_->KeyUnique(gp_name, false));
@@ -218,11 +208,11 @@ TEST_F(LocalStoreManagerTest, BEH_KeyUnique) {
 
 TEST_F(LocalStoreManagerTest, BEH_StoreSystemPacket) {
   GenericPacket gp;
-  gp.set_data("Generic System Packet Data");
+  gp.set_data(RandomString(16));
   gp.set_signature(crypto::AsymSign(gp.data(), anmaid_private_key_));
-  std::string gp_name = crypto::Hash<crypto::SHA512>(gp.data() +
-                                                     gp.signature());
+  std::string gp_name(crypto::Hash<crypto::SHA512>(gp.data() + gp.signature()));
   ASSERT_TRUE(sm_->KeyUnique(gp_name, false));
+
   cb_.Reset();
   sm_->StorePacket(gp_name, gp.data(), passport::MAID, PRIVATE, "", functor_);
   ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
@@ -241,10 +231,9 @@ TEST_F(LocalStoreManagerTest, BEH_StoreSystemPacket) {
 
 TEST_F(LocalStoreManagerTest, BEH_DeleteSystemPacketOwner) {
   GenericPacket gp;
-  gp.set_data("Generic System Packet Data");
+  gp.set_data(RandomString(16));
   gp.set_signature(crypto::AsymSign(gp.data(), anmaid_private_key_));
-  std::string gp_name = crypto::Hash<crypto::SHA512>(gp.data() +
-                                                     gp.signature());
+  std::string gp_name(crypto::Hash<crypto::SHA512>(gp.data() + gp.signature()));
 
   cb_.Reset();
   sm_->StorePacket(gp_name, gp.data(), passport::MAID, PRIVATE, "", functor_);
@@ -262,10 +251,9 @@ TEST_F(LocalStoreManagerTest, BEH_DeleteSystemPacketOwner) {
 
 TEST_F(LocalStoreManagerTest, BEH_DeleteSystemPacketNotOwner) {
   GenericPacket gp;
-  gp.set_data("Generic System Packet Data");
+  gp.set_data(RandomString(16));
   gp.set_signature(crypto::AsymSign(gp.data(), anmaid_private_key_));
-  std::string gp_name = crypto::Hash<crypto::SHA512>(gp.data() +
-                                                     gp.signature());
+  std::string gp_name(crypto::Hash<crypto::SHA512>(gp.data() + gp.signature()));
 
   cb_.Reset();
   sm_->StorePacket(gp_name, gp.data(), passport::MAID, PRIVATE, "", functor_);
@@ -275,9 +263,6 @@ TEST_F(LocalStoreManagerTest, BEH_DeleteSystemPacketNotOwner) {
   std::vector<std::string> values(1, gp.data());
 
   // Overwrite original signature packets
-//  ss_->passport_ = std::shared_ptr<passport::Passport>(
-//                       new passport::Passport(io_service_, kRsaKeySize));
-//  ss_->passport_->Init();
   ss_->CreateTestPackets("");
 
   cb_.Reset();
@@ -289,10 +274,9 @@ TEST_F(LocalStoreManagerTest, BEH_DeleteSystemPacketNotOwner) {
 TEST_F(LocalStoreManagerTest, BEH_UpdateSystemPacket) {
   // Store one packet
   GenericPacket gp;
-  gp.set_data("Generic System Packet Data");
+  gp.set_data(RandomString(16));
   gp.set_signature(crypto::AsymSign(gp.data(), anmaid_private_key_));
-  std::string gp_name(crypto::Hash<crypto::SHA512>(gp.data() +
-                                                   gp.signature()));
+  std::string gp_name(crypto::Hash<crypto::SHA512>(gp.data() + gp.signature()));
 
   cb_.Reset();
   sm_->StorePacket(gp_name, gp.data(), passport::MAID, PRIVATE, "", functor_);
@@ -309,15 +293,15 @@ TEST_F(LocalStoreManagerTest, BEH_UpdateSystemPacket) {
                                    anmaid_public_key_));
 
   // Update the packet
-  GenericPacket new_gp;
-  new_gp.set_data("First value change");
-  new_gp.set_signature(crypto::AsymSign(new_gp.data(),
-                                              anmaid_private_key_));
   cb_.Reset();
+  GenericPacket new_gp;
+  new_gp.set_data(gp.data() + RandomString(16));
+  new_gp.set_signature(crypto::AsymSign(new_gp.data(), anmaid_private_key_));
   sm_->UpdatePacket(gp_name, gp.data(), new_gp.data(), passport::MAID,
                     PRIVATE, "", functor_);
   ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
   res.clear();
+
   ASSERT_EQ(kSuccess, sm_->GetPacket(gp_name, &res));
   ASSERT_EQ(size_t(1), res.size());
   gp_res.Clear();
@@ -331,10 +315,9 @@ TEST_F(LocalStoreManagerTest, BEH_UpdateSystemPacket) {
 TEST_F(LocalStoreManagerTest, BEH_UpdateSystemPacketNotOwner) {
   // Store one packet
   GenericPacket gp;
-  gp.set_data("Generic System Packet Data");
+  gp.set_data(RandomString(16));
   gp.set_signature(crypto::AsymSign(gp.data(), anmaid_private_key_));
-  std::string gp_name(crypto::Hash<crypto::SHA512>(gp.data() +
-                                                   gp.signature()));
+  std::string gp_name(crypto::Hash<crypto::SHA512>(gp.data() + gp.signature()));
 
   cb_.Reset();
   sm_->StorePacket(gp_name, gp.data(), passport::MAID, PRIVATE, "", functor_);
@@ -355,9 +338,8 @@ TEST_F(LocalStoreManagerTest, BEH_UpdateSystemPacketNotOwner) {
 
   // Update the packet
   GenericPacket new_gp;
-  new_gp.set_data("First value change");
-  new_gp.set_signature(crypto::AsymSign(new_gp.data(),
-                                              anmaid_private_key_));
+  new_gp.set_data(gp.data() + RandomString(16));
+  new_gp.set_signature(crypto::AsymSign(new_gp.data(), anmaid_private_key_));
   cb_.Reset();
   sm_->UpdatePacket(gp_name, gp.data(), new_gp.data(), passport::MAID,
                     PRIVATE, "", functor_);
@@ -377,8 +359,9 @@ TEST_F(LocalStoreManagerTest, BEH_UpdateSystemPacketNotOwner) {
 TEST_F(LocalStoreManagerTest, FUNC_ThreadedLocalStoreManager) {
   const size_t kNumThreads(7);
   std::set<std::string> gp_values;
-  while (gp_values.size() < kNumThreads*2)
+  while (gp_values.size() < kNumThreads * 2)
     gp_values.insert(maidsafe::RandomAlphaNumericString(kNumThreads));
+
   std::set<std::string>::iterator gp_values_terminal(gp_values.begin());
   std::advance(gp_values_terminal, kNumThreads);
   std::vector<std::shared_ptr<CallbackObject>> cbo;
@@ -400,20 +383,19 @@ TEST_F(LocalStoreManagerTest, FUNC_ThreadedLocalStoreManager) {
        ++it, ++thread_num) {
     std::set<std::string>::iterator itr = it;
     std::advance(itr, kNumThreads);
-    worker_group.create_thread(
-        std::bind(&LocalStoreManagerTest::LocalStoreManagerSim,
-                  this,
-                  *it,
-                  *itr,
-                  cbo[thread_num],
-                  threads_fail_state[thread_num],
-                  threads_result[thread_num]));
+    worker_group.create_thread(std::bind(&LocalStoreManagerTest::OperationLine,
+                                         this,
+                                         *it,
+                                         *itr,
+                                         cbo[thread_num],
+                                         threads_fail_state[thread_num],
+                                         threads_result[thread_num]));
   }
   worker_group.join_all();
   for (size_t i = 0; i < kNumThreads; ++i) {
     DLOG(INFO) << "Checking Exit Status of Thread: " << i + 1;
-    ASSERT_FALSE(*threads_fail_state[i]) <<
-        "Error in Section " << threads_result[i];
+    ASSERT_FALSE(*threads_fail_state[i]) << "Error in Section "
+                                         << threads_result[i];
   }
 }
 
