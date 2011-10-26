@@ -58,6 +58,7 @@ class LocalStoreManagerTest : public testing::Test {
         sm_(new LocalStoreManager(*test_root_dir_, ss_)),
         cb_(),
         functor_(),
+        get_functor_(),
         anmaid_private_key_(),
         anmaid_public_key_(),
         mpid_public_key_() {}
@@ -165,6 +166,10 @@ class LocalStoreManagerTest : public testing::Test {
     ASSERT_TRUE(ss_->CreateTestPackets("Me"));
     cb_.Reset();
     functor_ = std::bind(&CallbackObject::IntCallback, &cb_, arg::_1);
+    get_functor_ = std::bind(&CallbackObject::GetPacketCallback,
+                             &cb_,
+                             arg::_1,
+                             arg::_2);
     anmaid_private_key_ = ss_->PrivateKey(passport::ANMAID, true);
     anmaid_public_key_ = ss_->PublicKey(passport::ANMAID, true);
     mpid_public_key_ = ss_->PublicKey(passport::MPID, true);
@@ -182,6 +187,7 @@ class LocalStoreManagerTest : public testing::Test {
   std::shared_ptr<LocalStoreManager> sm_;
   CallbackObject cb_;
   std::function<void(int)> functor_;  // NOLINT (Dan)
+  std::function<void(const std::vector<std::string>&, int)> get_functor_;
   std::string anmaid_private_key_, anmaid_public_key_, mpid_public_key_;
 
  private:
@@ -204,6 +210,42 @@ TEST_F(LocalStoreManagerTest, BEH_KeyUnique) {
   ASSERT_FALSE(sm_->KeyUnique(gp_name, false));
   sm_->KeyUnique(gp_name, false, functor_);
   ASSERT_EQ(kKeyNotUnique, cb_.WaitForIntResult());
+}
+
+TEST_F(LocalStoreManagerTest, BEH_GetPacket) {
+  GenericPacket gp;
+  gp.set_data(RandomString(16));
+  gp.set_signature(crypto::AsymSign(gp.data(), anmaid_private_key_));
+  std::string gp_name(crypto::Hash<crypto::SHA512>(gp.data() + gp.signature()));
+  ASSERT_TRUE(sm_->KeyUnique(gp_name, false));
+
+  cb_.Reset();
+  sm_->StorePacket(gp_name, gp.data(), passport::MAID, PRIVATE, "", functor_);
+  ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
+  ASSERT_FALSE(sm_->KeyUnique(gp_name, false));
+  std::vector<std::string> res;
+
+  // Test Blocking GetPacket Func
+  ASSERT_EQ(kSuccess, sm_->GetPacket(gp_name, &res));
+  ASSERT_EQ(size_t(1), res.size());
+  GenericPacket gp_res;
+  ASSERT_TRUE(gp_res.ParseFromString(res[0]));
+  ASSERT_EQ(gp.data(), gp_res.data());
+  ASSERT_TRUE(crypto::AsymCheckSig(gp.data(),
+                                   gp_res.signature(),
+                                   anmaid_public_key_));
+
+  // Test Non-Blocking GetPacket Func
+  sm_->GetPacket(gp_name, get_functor_);
+  ASSERT_EQ(kSuccess, cb_.WaitForGetPacketCallbackResult());
+  std::vector<std::string> results(cb_.get_packet_results());
+  ASSERT_EQ(size_t(1), results.size());
+  GenericPacket gp_res2;
+  ASSERT_TRUE(gp_res2.ParseFromString(results[0]));
+  ASSERT_EQ(gp.data(), gp_res2.data());
+  ASSERT_TRUE(crypto::AsymCheckSig(gp.data(),
+                                   gp_res2.signature(),
+                                   anmaid_public_key_));
 }
 
 TEST_F(LocalStoreManagerTest, BEH_StoreSystemPacket) {

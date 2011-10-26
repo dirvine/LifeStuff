@@ -22,6 +22,7 @@
 #define MAIDSAFE_LIFESTUFF_TESTS_TESTCALLBACK_H_
 
 #include <string>
+#include <vector>
 
 #include "boost/thread/condition.hpp"
 #include "boost/thread/mutex.hpp"
@@ -37,6 +38,8 @@ class CallbackObject {
  public:
   CallbackObject()
     : return_int_(kPendingResult),
+      get_packet_return_(kPendingResult),
+      get_packet_results_(),
       mutex_(),
       cv_() {}
 
@@ -58,13 +61,36 @@ class CallbackObject {
     return result;
   }
 
+  void GetPacketCallback(const std::vector<std::string>& results, int rc) {
+    boost::mutex::scoped_lock lock(mutex_);
+    get_packet_return_ = rc;
+    get_packet_results_ = results;
+    cv_.notify_one();
+  }
+
+  int WaitForGetPacketCallbackResult() {
+    int result;
+    {
+      boost::mutex::scoped_lock lock(mutex_);
+      while (get_packet_return_ == kPendingResult)
+        cv_.wait(lock);
+      result = get_packet_return_;
+      get_packet_return_ = kPendingResult;
+    }
+    return result;
+  }
+
+  std::vector<std::string> get_packet_results() { return get_packet_results_; }
+
   void Reset() {
     boost::mutex::scoped_lock lock(mutex_);
     return_int_ = kPendingResult;
+    get_packet_return_ = kPendingResult;
   }
 
  private:
-  int return_int_;
+  int return_int_, get_packet_return_;
+  std::vector<std::string> get_packet_results_;
   boost::mutex mutex_;
   boost::condition_variable cv_;
 };
