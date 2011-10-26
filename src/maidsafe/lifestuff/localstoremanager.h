@@ -52,42 +52,39 @@ class LocalStoreManager : public PacketManager {
  public:
   explicit LocalStoreManager(const fs3::path &db_directory,
                              std::shared_ptr<Session> ss);
-  virtual ~LocalStoreManager();
-  virtual void Init(VoidFuncOneInt callback, const boost::uint16_t &port);
-  virtual int Close(bool cancel_pending_ops);
-  virtual void CleanUpTransport() {}
-  virtual void StopRvPing() {}
-  virtual bool NotDoneWithUploading();
-  virtual bool KeyUnique(const std::string &key, bool check_local);
-  virtual void KeyUnique(const std::string &key,
-                         bool check_local,
-                         const VoidFuncOneInt &cb);
+  ~LocalStoreManager();
+  void Init(VoidFuncOneInt callback, const boost::uint16_t &port);
+  int Close(bool cancel_pending_ops);
 
   // Packets
-  virtual int GetPacket(const std::string &packet_name,
-                        std::vector<std::string> *results);
-  virtual void GetPacket(const std::string &packet_name,
-                         const GetPacketFunctor &lpf);
-  virtual void StorePacket(const std::string &packet_name,
-                           const std::string &value,
-                           passport::PacketType system_packet_type,
-                           DirType dir_type,
-                           const std::string &msid,
-                           const VoidFuncOneInt &cb);
-  // Deletes all values for the specified key
-  virtual void DeletePacket(const std::string &packet_name,
-                            const std::vector<std::string> values,
-                            passport::PacketType system_packet_type,
-                            DirType dir_type,
-                            const std::string &msid,
-                            const VoidFuncOneInt &cb);
-  virtual void UpdatePacket(const std::string &packet_name,
-                            const std::string &old_value,
-                            const std::string &new_value,
-                            passport::PacketType system_packet_type,
-                            DirType dir_type,
-                            const std::string &msid,
-                            const VoidFuncOneInt &cb);
+  bool KeyUnique(const std::string &key, bool check_local);
+  void KeyUnique(const std::string &key,
+                 bool check_local,
+                 const VoidFuncOneInt &cb);
+  int GetPacket(const std::string &packet_name,
+                std::vector<std::string> *results);
+  void GetPacket(const std::string &packet_name,
+                 const GetPacketFunctor &lpf);
+  void StorePacket(const std::string &packet_name,
+                   const std::string &value,
+                   passport::PacketType system_packet_type,
+                   DirType dir_type,
+                   const std::string &msid,
+                   const VoidFuncOneInt &cb);
+  void DeletePacket(const std::string &packet_name,
+                    const std::vector<std::string> values,
+                    passport::PacketType system_packet_type,
+                    DirType dir_type,
+                    const std::string &msid,
+                    const VoidFuncOneInt &cb);
+  void UpdatePacket(const std::string &packet_name,
+                    const std::string &old_value,
+                    const std::string &new_value,
+                    passport::PacketType system_packet_type,
+                    DirType dir_type,
+                    const std::string &msid,
+                    const VoidFuncOneInt &cb);
+
  private:
   LocalStoreManager &operator=(const LocalStoreManager&);
   LocalStoreManager(const LocalStoreManager&);
@@ -96,15 +93,7 @@ class LocalStoreManager : public PacketManager {
   void CreateSerialisedSignedValue(const std::string &value,
                                    const std::string &private_key,
                                    std::string *ser_gp);
-  void ExecuteReturnSignal(const std::string &chunkname, ReturnCode rc);
-  void ExecReturnCodeCallback(VoidFuncOneInt cb, ReturnCode rc);
-  void ExecReturnLoadPacketCallback(GetPacketFunctor cb,
-                                    std::vector<std::string> results,
-                                    ReturnCode rc);
 
-  const boost::uint8_t K_;
-  const boost::uint16_t kUpperThreshold_;
-  boost::mutex mutex_;
   std::string local_sm_dir_;
   boost::asio::io_service service_;
   std::shared_ptr<boost::asio::io_service::work> work_;
@@ -112,7 +101,6 @@ class LocalStoreManager : public PacketManager {
   std::shared_ptr<ChunkValidation> chunk_validation_;
   std::shared_ptr<BufferedChunkStore> client_chunkstore_;
   std::shared_ptr<Session> ss_;
-  std::set<std::string> chunks_pending_;
 };
 
 }  // namespace lifestuff

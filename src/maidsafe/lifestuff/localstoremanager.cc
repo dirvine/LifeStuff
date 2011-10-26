@@ -62,47 +62,22 @@ void PrintDebugInfo(const std::string &packet_name,
                   << ")" << std::endl;
 }
 
+void ExecReturnCodeCallback(VoidFuncOneInt cb, ReturnCode rc) {
+  boost::thread t(cb, rc);
+}
+
+void ExecReturnLoadPacketCallback(GetPacketFunctor cb,
+                                  std::vector<std::string> results,
+                                  ReturnCode rc) {
+  boost::thread t(cb, results, rc);
+}
+
 }  // namespace
 
-typedef std::function<void(const std::string&)> VoidFunctorOneString;
-
-void ExecuteSuccessCallback(const VoidFunctorOneString &cb,
-                            boost::mutex *mutex) {
-  boost::mutex::scoped_lock gaurd(*mutex);
-  std::string ser_result;
-//  GenericResponse result;
-//  result.set_result(kAck);
-//  result.SerializeToString(&ser_result);
-  cb(ser_result);
-}
-
-void ExecuteFailureCallback(const VoidFunctorOneString &cb,
-                            boost::mutex *mutex) {
-  boost::mutex::scoped_lock gaurd(*mutex);
-  std::string ser_result;
-//  GenericResponse result;
-//  result.set_result(kNack);
-//  result.SerializeToString(&ser_result);
-  cb(ser_result);
-}
-
-void ExecReturnCodeCallback(const VoidFuncOneInt &cb,
-                            const ReturnCode rc) {
-  cb(rc);
-}
-
-void ExecReturnLoadPacketCallback(const GetPacketFunctor &cb,
-                                  std::vector<std::string> results,
-                                  const ReturnCode rc) {
-  cb(results, rc);
-}
 
 LocalStoreManager::LocalStoreManager(const fs3::path &db_directory,
                                      std::shared_ptr<Session> ss)
-    : K_(0),
-      kUpperThreshold_(0),
-      mutex_(),
-      local_sm_dir_(db_directory.string()),
+    : local_sm_dir_(db_directory.string()),
       service_(),
       work_(),
       thread_group_(),
@@ -110,8 +85,7 @@ LocalStoreManager::LocalStoreManager(const fs3::path &db_directory,
       client_chunkstore_(new BufferedChunkStore(true,
                                                 chunk_validation_,
                                                 service_)),
-      ss_(ss),
-      chunks_pending_() {
+      ss_(ss) {
   work_.reset(new boost::asio::io_service::work(service_));
   for (int i = 0; i < 3; ++i) {
     thread_group_.create_thread(
@@ -147,10 +121,6 @@ int LocalStoreManager::Close(bool /*cancel_pending_ops*/) {
 }
 
 bool LocalStoreManager::KeyUnique(const std::string &key, bool) {
-#ifdef LOCAL_LifeStuffVAULT
-  // Simulate knode findvalue in AddToWatchList
-//  Sleep(boost::posix_time::seconds(2));
-#endif
   return !client_chunkstore_->Has(key);
 }
 
@@ -203,13 +173,13 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
   if (current_packet.empty()) {  // packet doesn't exist on net
     ExecReturnCodeCallback(cb, kSuccess);
   } else {
-    SignedValue sv;
+    GenericPacket sv;
     if (!sv.ParseFromString(current_packet)) {
       DLOG(INFO) << "DeletePacket - Error parsing packet";
       ExecReturnCodeCallback(cb, kDeletePacketFailure);
       return;
     }
-    if (!crypto::AsymCheckSig(sv.value(), sv.value_signature(), public_key)) {
+    if (!crypto::AsymCheckSig(sv.data(), sv.signature(), public_key)) {
       DLOG(INFO) << "DeletePacket - Not owner of packet";
       ExecReturnCodeCallback(cb, kDeletePacketFailure);
       return;
@@ -248,11 +218,11 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
     return;
   }
 
-  SignedValue sv;
+  GenericPacket sv;
   if (sv.ParseFromString(ser_gp)) {
-    if (!crypto::AsymCheckSig(sv.value(), sv.value_signature(), public_key)) {
+    if (!crypto::AsymCheckSig(sv.data(), sv.signature(), public_key)) {
       ExecReturnCodeCallback(cb, kSendPacketFailure);
-      DLOG(WARNING) << "LSM::StorePacket - " << sv.value() << std::endl;
+      DLOG(WARNING) << "LSM::StorePacket - " << sv.data() << std::endl;
       return;
     }
   }
@@ -304,13 +274,13 @@ void LocalStoreManager::UpdatePacket(const std::string &packet_name,
     return;
   }
 
-  SignedValue sv;
-  if (!sv.ParseFromString(current_packet) || sv.value() != old_value) {
+  GenericPacket sv;
+  if (!sv.ParseFromString(current_packet) || sv.data() != old_value) {
     ExecReturnCodeCallback(cb, kStoreManagerError);
     DLOG(WARNING) << "LSM::UpdatePacket - Different current" << std::endl;
     return;
-  } else if (!crypto::AsymCheckSig(sv.value(),
-                                   sv.value_signature(),
+  } else if (!crypto::AsymCheckSig(sv.data(),
+                                   sv.signature(),
                                    public_key)) {
     ExecReturnCodeCallback(cb, kStoreManagerError);
     DLOG(WARNING) << "LSM::UpdatePacket - Not owner" << std::endl;
@@ -340,8 +310,6 @@ bool LocalStoreManager::ValidateGenericPacket(std::string ser_gp,
   return crypto::AsymCheckSig(gp.data(), gp.signature(), public_key);
 }
 
-bool LocalStoreManager::NotDoneWithUploading() { return false; }
-
 void LocalStoreManager::CreateSerialisedSignedValue(
     const std::string &value,
     const std::string &private_key,
@@ -351,27 +319,6 @@ void LocalStoreManager::CreateSerialisedSignedValue(
   gp.set_data(value);
   gp.set_signature(crypto::AsymSign(value, private_key));
   gp.SerializeToString(ser_gp);
-}
-
-void LocalStoreManager::ExecuteReturnSignal(const std::string &chunkname,
-                                            ReturnCode /*rc*/) {
-  int sleep_seconds((RandomInt32() % 5) + 1);
-  Sleep(boost::posix_time::seconds(sleep_seconds));
-//  sig_chunk_uploaded_(chunkname, rc);
-//  boost::mutex::scoped_lock loch_laggan(signal_mutex_);
-  chunks_pending_.erase(chunkname);
-}
-
-void LocalStoreManager::ExecReturnCodeCallback(VoidFuncOneInt cb,
-                                               ReturnCode rc) {
-  boost::thread t(cb, rc);
-}
-
-void LocalStoreManager::ExecReturnLoadPacketCallback(
-    GetPacketFunctor cb,
-    std::vector<std::string> results,
-    ReturnCode rc) {
-  boost::thread t(cb, results, rc);
 }
 
 }  // namespace lifestuff
