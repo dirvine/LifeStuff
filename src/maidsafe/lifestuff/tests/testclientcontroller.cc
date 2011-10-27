@@ -34,7 +34,6 @@
 #include "maidsafe/common/test.h"
 
 #include "maidsafe/encrypt/data_map.h"
-#include "maidsafe/encrypt/self_encryption.h"
 
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/clientutils.h"

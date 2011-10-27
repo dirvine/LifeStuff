@@ -48,6 +48,16 @@
     Please update this project.
 #endif
 
+#include "maidsafe/drive/version.h"
+#define THIS_NEEDS_MAIDSAFE_DRIVE_VERSION 122
+#if MAIDSAFE_DRIVE_VERSION < THIS_NEEDS_MAIDSAFE_DRIVE_VERSION
+#  error This API is not compatible with the installed library.\
+    Please update the MaidSafe-Encrypt library.
+#elif MAIDSAFE_DRIVE_VERSION > THIS_NEEDS_MAIDSAFE_DRIVE_VERSION
+#  error This API uses a newer version of the MaidSafe-Encrypt library.\
+    Please update this project.
+#endif
+
 #include "maidsafe/dht/version.h"
 #define THIS_NEEDS_MAIDSAFE_DHT_VERSION 3105
 #if MAIDSAFE_DHT_VERSION < THIS_NEEDS_MAIDSAFE_DHT_VERSION

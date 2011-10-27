@@ -68,13 +68,14 @@ PROJECT(${PROJECT_NAME})
 SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_DIR} CACHE INTERNAL "Except for MSVC, the build type is set by running cmake from the appropriate build subdirectory e.g. for a Debug build, \"cd build/Linux/Debug && cmake ../../..\"." FORCE)
 
 ###################################################################################################
-# MaidSafe Common, DHT, Encrypt, Passport and PKI library search                                  #
+# MaidSafe Common, DHT, Drive, Passport and PKI library search                                  #
 ###################################################################################################
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/build)
 INCLUDE(maidsafe_find_common)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-Transport)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-DHT)
 ADD_MAIDSAFE_LIBRARY(Encrypt)
+ADD_MAIDSAFE_LIBRARY(MaidSafe-Drive)
 ADD_MAIDSAFE_LIBRARY(PKI)
 ADD_MAIDSAFE_LIBRARY(Passport)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-PD)
@@ -184,8 +185,8 @@ ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTclientcontroller_local TESTclient
 # IF(UNIX)
 #   TARGET_LINK_LIBRARIES(lifestuff_sql_utils_static dl)
 # ENDIF()
-TARGET_LINK_LIBRARIES(lifestuff_local_static encrypt_static passport_static boost_date_time ${QT_LIBRARIES} boost_regex)
-TARGET_LINK_LIBRARIES(lifestuff_network_static encrypt_static passport_static boost_date_time ${QT_LIBRARIES} boost_regex)
+TARGET_LINK_LIBRARIES(lifestuff_local_static maidsafe_drive_static passport_static boost_date_time boost_regex)
+TARGET_LINK_LIBRARIES(lifestuff_network_static maidsafe_drive_static passport_static boost_date_time boost_regex)
 TARGET_LINK_LIBRARIES(TESTclient lifestuff_local_static gtest_static gmock_static)
 TARGET_LINK_LIBRARIES(TESTauthentication_local lifestuff_local_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTclientcontroller_local lifestuff_local_static gtest_static)
