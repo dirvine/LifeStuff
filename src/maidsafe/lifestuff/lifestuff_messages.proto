@@ -5,8 +5,12 @@ message GenericPacket {
   required bytes signature = 2;
 }
 
+
 message DataWrapper {
+  enum DataType {
+    HASHABLE_SIGNED = 0;
+    NON_HASHABLE_SIGNED = 1;
+  }
   required int32 data_type = 1;
-  optional GenericPacket non_hashable_signed = 2;
-  optional GenericPacket hashable_signed = 3;
+  optional GenericPacket signed_data = 2;
 }

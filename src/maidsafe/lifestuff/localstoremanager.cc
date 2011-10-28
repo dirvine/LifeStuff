@@ -18,8 +18,8 @@
 #include "boost/scoped_ptr.hpp"
 
 #include "maidsafe/common/buffered_chunk_store.h"
+#include "maidsafe/common/chunk_validation.h"
 #include "maidsafe/common/crypto.h"
-#include "maidsafe/common/hashable_chunk_validation.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/dht/contact.h"
@@ -27,8 +27,10 @@
 #include "maidsafe/pki/maidsafe_validator.h"
 
 #include "maidsafe/lifestuff/clientutils.h"
+#include "maidsafe/lifestuff/data_handler.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
+
 #ifdef __MSVC__
 #  pragma warning(push)
 #  pragma warning(disable: 4244)
@@ -37,7 +39,8 @@
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
-namespace fs3 = boost::filesystem3;
+
+namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
@@ -72,16 +75,35 @@ void ExecReturnLoadPacketCallback(GetPacketFunctor cb,
   boost::thread t(cb, results, rc);
 }
 
+class VeritasChunkValidation : public ChunkValidation {
+ public:
+  VeritasChunkValidation() : ChunkValidation() {}
+  ~VeritasChunkValidation() {}
+
+  bool ValidName(const std::string &/*name*/) { return true; }
+  bool Hashable(const std::string &/*name*/) { return true; }
+  bool ValidChunk(const std::string &/*name*/, const std::string &/*content*/) {
+    return true;
+  }
+  bool ValidChunk(const std::string &/*name*/, const fs::path &/*path*/) {
+    return true;
+  }
+
+ private:
+  VeritasChunkValidation(const VeritasChunkValidation&);
+  VeritasChunkValidation& operator=(const VeritasChunkValidation&);
+};
+
 }  // namespace
 
 
-LocalStoreManager::LocalStoreManager(const fs3::path &db_directory,
+LocalStoreManager::LocalStoreManager(const fs::path &db_directory,
                                      std::shared_ptr<Session> ss)
     : local_sm_dir_(db_directory.string()),
       service_(),
       work_(),
       thread_group_(),
-      chunk_validation_(new HashableChunkValidation<crypto::SHA512>()),
+      chunk_validation_(new VeritasChunkValidation()),
       client_chunkstore_(new BufferedChunkStore(true,
                                                 chunk_validation_,
                                                 service_)),
@@ -102,8 +124,8 @@ LocalStoreManager::~LocalStoreManager() {
 
 void LocalStoreManager::Init(VoidFuncOneInt callback, const boost::uint16_t&) {
   boost::system::error_code ec;
-  if (!fs3::exists(local_sm_dir_ + "/StoreChunks", ec)) {
-    fs3::create_directories(local_sm_dir_ + "/StoreChunks", ec);
+  if (!fs::exists(local_sm_dir_ + "/StoreChunks", ec)) {
+    fs::create_directories(local_sm_dir_ + "/StoreChunks", ec);
     if (ec) {
       DLOG(INFO) << "Init - Failed to create directory";
       ExecReturnCodeCallback(callback, kStoreManagerInitError);
@@ -116,9 +138,7 @@ void LocalStoreManager::Init(VoidFuncOneInt callback, const boost::uint16_t&) {
   ExecReturnCodeCallback(callback, kSuccess);
 }
 
-int LocalStoreManager::Close(bool /*cancel_pending_ops*/) {
-  return kSuccess;
-}
+int LocalStoreManager::Close(bool /*cancel_pending_ops*/) { return kSuccess; }
 
 bool LocalStoreManager::KeyUnique(const std::string &key, bool) {
   return !client_chunkstore_->Has(key);

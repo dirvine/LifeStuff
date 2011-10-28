@@ -46,6 +46,7 @@ class ChunkValidation;
 
 namespace lifestuff {
 
+class DataHandler;
 class Session;
 
 class LocalStoreManager : public PacketManager {
