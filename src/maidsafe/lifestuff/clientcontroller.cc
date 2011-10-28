@@ -531,12 +531,23 @@ void ClientController::MountDrive(fs::path mount_dir_path) {
   std::static_pointer_cast<BufferedChunkStore>(
       chunk_store_)->Init(chunkstore_dir);
 
-  g_mount_dir_ = mount_dir_path / SessionName();
-  fs::create_directories(g_mount_dir_);
 #ifdef WIN32
+  std::uint32_t drive_letters, mask = 0x4, count = 2;
+  drive_letters = GetLogicalDrives();
+  while ((drive_letters & mask) != 0) {
+    mask <<= 1;
+    ++count;
+  }
+  if (count > 25)
+    DLOG(ERROR) << "No available drive letters:";
+
+  char drive_name[3] = {'A' + static_cast<char>(count), ':', '\0'};
+  g_mount_dir_ = drive_name;
   std::static_pointer_cast<TestDriveInUserSpace>(drive_in_user_space_)->Init();
   drive_in_user_space_->Mount(g_mount_dir_, L"LifeStuff Drive");
 #else
+  g_mount_dir_ = mount_dir_path / SessionName();
+  fs::create_directories(g_mount_dir_);
   boost::thread(std::bind(&DriveInUserSpace::Mount, drive_in_user_space_,
                           g_mount_dir_, "LifeStuff Drive"));
   drive_in_user_space_->WaitUntilMounted();
