@@ -318,6 +318,7 @@ bool ClientController::CreateUser(const std::string &username,
 
   ss_->set_session_name(false);
   logged_in_ = true;
+  MountDrive(fs::initial_path() / "LifeStuff");
   return true;
 }
 
@@ -362,7 +363,7 @@ bool ClientController::ValidateUser(const std::string &password) {
     ss_->ResetSession();
     return false;
   }
-
+  MountDrive(fs::initial_path() / "LifeStuff");
   logged_in_ = true;
   return true;
 }
@@ -374,7 +375,7 @@ bool ClientController::Logout() {
   }
   logging_out_ = true;
 //  clear_messages_thread_.join();
-
+  UnMountDrive();
   int result = SaveSession();
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to save session " << result << std::endl;
@@ -429,7 +430,7 @@ bool ClientController::LeaveMaidsafeNetwork() {
     DLOG(ERROR) << "Not initialised.";
     return false;
   }
-
+  UnMountDrive();
   if (auth_->RemoveMe() == kSuccess)
     return true;
 
@@ -515,7 +516,7 @@ void ClientController::MountDrive(fs::path mount_dir_path) {
   if (!fs::exists(mount_dir_path))
     fs::create_directory(mount_dir_path);
   fs::path chunkstore_dir(mount_dir_path / "ChunkStore");
-  fs::path meta_data_dir(mount_dir_path / "MetaData");
+  fs::path meta_data_dir(mount_dir_path / "MetaData" / SessionName());
   work_.reset(new boost::asio::io_service::work(asio_service_));
   for (int i = 0; i < 3; ++i)
     thread_group_.create_thread(std::bind(static_cast<
