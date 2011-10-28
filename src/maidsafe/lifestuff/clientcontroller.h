@@ -33,9 +33,17 @@
 
 #include "boost/function.hpp"
 #include "boost/signals2.hpp"
+#include "boost/asio/io_service.hpp"
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
 
+#ifdef WIN32
+#  include "maidsafe/drive/win_drive.h"
+#else
+#  include "maidsafe/drive/unix_drive.h"
+#endif
+
+#include "maidsafe/drive/directory_listing_handler.h"
 #include "maidsafe/lifestuff/maidsafe.h"
 #include "maidsafe/lifestuff/returncodes.h"
 #include "maidsafe/lifestuff/user_credentials_api.h"
@@ -45,6 +53,11 @@
     Please update the maidsafe-lifestuff library.
 #endif
 
+#ifdef WIN32
+  typedef maidsafe::CbfsDriveInUserSpace TestDriveInUserSpace;
+#else
+  typedef maidsafe::FuseDriveInUserSpace TestDriveInUserSpace;
+#endif
 
 namespace bs2 = boost::signals2;
 
@@ -114,6 +127,10 @@ class ClientController : public lifestuff::UserCredentials {
   virtual std::string Pin();
   virtual std::string Password();
 
+  // User Drive Operations
+
+  virtual void MountDrive(fs::path mount_dir_path);
+  virtual void UnMountDrive();
  private:
   friend class test::ClientControllerTest;
 
@@ -134,6 +151,13 @@ class ClientController : public lifestuff::UserCredentials {
   bool logged_in_;
   boost::uint8_t K_;
   boost::uint16_t upper_threshold_;
+  boost::asio::io_service asio_service_;
+  std::shared_ptr<boost::asio::io_service::work> work_;
+  boost::thread_group thread_group_;
+  ChunkStorePtr chunk_store_;
+  std::shared_ptr<DirectoryListingHandler> listing_handler_;
+  std::shared_ptr<TestDriveInUserSpace> drive_in_user_space_;
+  fs::path g_mount_dir_;
 };
 
 }  // namespace lifestuff

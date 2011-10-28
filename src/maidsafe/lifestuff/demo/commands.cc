@@ -21,15 +21,16 @@
 
 #include "maidsafe/lifestuff/demo/commands.h"
 
-#include <stdio.h>
 #ifndef MAIDSAFE_WIN32
 #include <termios.h>
 #include <unistd.h>
 #else
 #include <conio.h>
 #endif
+#include <stdio.h>
+#include <cstdlib>
 
-#include <iostream>  //NOLINT (Dan)
+#include <iostream>  // NOLINT (Dan)
 #include <string>
 #include <vector>
 
@@ -144,6 +145,7 @@ bool Commands::LoginUser() {
       success = user_credential_->ValidateUser(password);
       if (success) {
         // TODO(Smer): Mount the drive
+        user_credential_->MountDrive(fs::initial_path() / "LifeStuff");
         std::cout << " Logged in successfully." << std::endl;
       } else {
         std::cout << " Login failed!" << std::endl;
@@ -181,6 +183,7 @@ bool Commands::LoginUser() {
         }
         if (success) {
           // TODO(Smer): Mount the drive
+          user_credential_->MountDrive(fs::initial_path() / "LifeStuff");
           std::cout << std::endl << "Successfully created user and logged in"
                     << std::endl;
         } else {
@@ -387,6 +390,7 @@ void Commands::ProcessCommand(const std::string &cmdline,
       bool ret = user_credential_->Logout();
       if (ret) {
         logged_in_ = false;
+        user_credential_->UnMountDrive();
         std::cout << "Logged out Successfully" << std::endl;
         PrintUsage();
       } else {
@@ -396,6 +400,7 @@ void Commands::ProcessCommand(const std::string &cmdline,
     } else if (cmd == "leave") {
       bool ret = user_credential_->LeaveMaidsafeNetwork();
       if (ret) {
+        user_credential_->UnMountDrive();
         std::cout << "Leave Maidsafe Network Successfull" << std::endl;
       } else {
         std::cout << "Leave Maidsafe Network failed" << std::endl;

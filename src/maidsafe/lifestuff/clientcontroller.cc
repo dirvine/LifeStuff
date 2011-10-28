@@ -40,13 +40,13 @@
 #include "boost/foreach.hpp"
 
 #include "maidsafe/common/chunk_store.h"
+#include "maidsafe/common/buffered_chunk_store.h"
+#include "maidsafe/common/hashable_chunk_validation.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/dht/contact.h"
-
 #include "maidsafe/encrypt/data_map.h"
-
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/clientutils.h"
@@ -110,7 +110,14 @@ ClientController::ClientController()
       logging_out_(false),
       logged_in_(false),
       K_(0),
-      upper_threshold_(0) {}
+      upper_threshold_(0),
+      asio_service_(),
+      work_(),
+      thread_group_(),
+      chunk_store_(),
+      listing_handler_(),
+      drive_in_user_space_(),
+      g_mount_dir_() {}
 
 int ClientController::Init(boost::uint8_t /*k*/) {
   if (initialised_) {
@@ -502,6 +509,50 @@ std::string ClientController::Pin() {
 
 std::string ClientController::Password() {
   return ss_->password();
+}
+
+void ClientController::MountDrive(fs::path mount_dir_path) {
+  if (!fs::exists(mount_dir_path))
+    fs::create_directory(mount_dir_path);
+  fs::path chunkstore_dir(mount_dir_path / "ChunkStore");
+  fs::path meta_data_dir(mount_dir_path / "MetaData");
+  work_.reset(new boost::asio::io_service::work(asio_service_));
+  for (int i = 0; i < 3; ++i)
+    thread_group_.create_thread(std::bind(static_cast<
+        std::size_t(boost::asio::io_service::*)()>
+            (&boost::asio::io_service::run), &asio_service_));
+  chunk_store_.reset(new BufferedChunkStore(
+      false, std::shared_ptr<ChunkValidation>(
+          new HashableChunkValidation<crypto::SHA512>), asio_service_));
+  listing_handler_.reset(new DirectoryListingHandler(meta_data_dir,
+                                                     chunk_store_));
+  drive_in_user_space_.reset(new TestDriveInUserSpace(chunk_store_,
+                                                      listing_handler_));
+  std::static_pointer_cast<BufferedChunkStore>(
+      chunk_store_)->Init(chunkstore_dir);
+
+  g_mount_dir_ = mount_dir_path / SessionName();
+  fs::create_directories(g_mount_dir_);
+#ifdef WIN32
+  std::static_pointer_cast<TestDriveInUserSpace>(drive_in_user_space_)->Init();
+  drive_in_user_space_->Mount(g_mount_dir_, L"LifeStuff Drive");
+#else
+  boost::thread(std::bind(&DriveInUserSpace::Mount, drive_in_user_space_,
+                          g_mount_dir_, "LifeStuff Drive"));
+  drive_in_user_space_->WaitUntilMounted();
+#endif
+}
+
+void ClientController::UnMountDrive() {
+#ifdef WIN32
+  std::static_pointer_cast<TestDriveInUserSpace>(
+      drive_in_user_space_)->CleanUp();
+#else
+  drive_in_user_space_->Unmount();
+  drive_in_user_space_->WaitUntilUnMounted();
+  boost::system::error_code error_code;
+  fs::remove_all(g_mount_dir_, error_code);
+#endif
 }
 
 }  // namespace lifestuff
