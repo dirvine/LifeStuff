@@ -93,6 +93,7 @@ class LocalStoreManager : public PacketManager {
   bool ValidateGenericPacket(std::string ser_gp, std::string public_key);
   void CreateSerialisedSignedValue(const std::string &value,
                                    const std::string &private_key,
+                                   const bool &hashable,
                                    std::string *ser_gp);
 
   std::string local_sm_dir_;

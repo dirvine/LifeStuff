@@ -94,8 +94,11 @@ class VeritasChunkValidation : public ChunkValidation {
   VeritasChunkValidation& operator=(const VeritasChunkValidation&);
 };
 
-}  // namespace
+void GetDataSlot(const std::string &signal_data, std::string *slot_data) {
+  *slot_data = signal_data;
+}
 
+}  // namespace
 
 LocalStoreManager::LocalStoreManager(const fs::path &db_directory,
                                      std::shared_ptr<Session> ss)
@@ -141,25 +144,52 @@ void LocalStoreManager::Init(VoidFuncOneInt callback, const boost::uint16_t&) {
 int LocalStoreManager::Close(bool /*cancel_pending_ops*/) { return kSuccess; }
 
 bool LocalStoreManager::KeyUnique(const std::string &key, bool) {
-  return !client_chunkstore_->Has(key);
+  DataHandler data_handler;
+  return data_handler.ProcessData(DataHandler::kHas,
+                                  key,
+                                  "",
+                                  "",
+                                  client_chunkstore_) == kKeyUnique;
 }
 
 void LocalStoreManager::KeyUnique(const std::string &key,
-                                  bool /*check_local*/,
+                                  bool,
                                   const VoidFuncOneInt &cb) {
-  if (!client_chunkstore_->Has(key))
-    ExecReturnCodeCallback(cb, kKeyUnique);
-  else
-    ExecReturnCodeCallback(cb, kKeyNotUnique);
+  DataHandler data_handler;
+  ReturnCode result(
+      static_cast<ReturnCode>(data_handler.ProcessData(DataHandler::kHas,
+                                                       key,
+                                                       "",
+                                                       "",
+                                                       client_chunkstore_)));
+  ExecReturnCodeCallback(cb, result);
 }
 
 int LocalStoreManager::GetPacket(const std::string &packet_name,
                                  std::vector<std::string> *results) {
-  std::string packet(client_chunkstore_->Get(packet_name));
-  if (packet.empty())
-    return kFindValueFailure;
+  DataHandler data_handler;
+  std::string data;
+  data_handler.get_data_signal()->connect(
+      DataHandler::GetDataSignalPtr::element_type::slot_type(
+          &GetDataSlot, _1, &data));
 
-  results->push_back(packet);
+  int result(data_handler.ProcessData(DataHandler::kGet,
+                                      packet_name,
+                                      "",
+                                      "",
+                                      client_chunkstore_));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "LSM::GetPacket - Failure in DH::ProcessData: "
+                << result << std::endl;
+    return kGetPacketFailure;
+  }
+
+  if (data.empty()) {
+    DLOG(ERROR) << "LSM::GetPacket - data empty" << std::endl;
+    return kGetPacketFailure;
+  }
+
+  results->push_back(data);
 
   return kSuccess;
 }
@@ -180,37 +210,32 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
                  "DeletePacket", system_packet_type);
   std::string key_id, public_key, public_key_signature, private_key;
   ClientUtils client_utils(ss_);
-  client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
-                                      &key_id, &public_key,
-                                      &public_key_signature, &private_key);
-//  pki::MaidsafeValidator msv;
-//  if (!msv.ValidateSignerId(key_id, public_key, public_key_signature)) {
-//    ExecReturnCodeCallback(cb, kDeletePacketFailure);
-//    return;
-//  }
+  bool hashable(true);
+  client_utils.GetPacketSignatureKeys(system_packet_type,
+                                      dir_type,
+                                      msid,
+                                      &key_id,
+                                      &public_key,
+                                      &public_key_signature,
+                                      &private_key,
+                                      &hashable);
 
-  std::string current_packet(client_chunkstore_->Get(packet_name));
-  if (current_packet.empty()) {  // packet doesn't exist on net
-    ExecReturnCodeCallback(cb, kSuccess);
-  } else {
-    GenericPacket sv;
-    if (!sv.ParseFromString(current_packet)) {
-      DLOG(INFO) << "DeletePacket - Error parsing packet";
-      ExecReturnCodeCallback(cb, kDeletePacketFailure);
-      return;
-    }
-    if (!crypto::AsymCheckSig(sv.data(), sv.signature(), public_key)) {
-      DLOG(INFO) << "DeletePacket - Not owner of packet";
-      ExecReturnCodeCallback(cb, kDeletePacketFailure);
-      return;
-    }
-    if (!client_chunkstore_->Delete(packet_name)) {
-      DLOG(INFO) << "DeletePacket - Error deleting packet";
-      ExecReturnCodeCallback(cb, kDeletePacketFailure);
-      return;
-    }
-    ExecReturnCodeCallback(cb, kSuccess);
+  std::string ser_gp;
+  CreateSerialisedSignedValue(values.at(0), private_key, hashable, &ser_gp);
+  DataHandler data_handler;
+  int result(data_handler.ProcessData(DataHandler::kDelete,
+                                      packet_name,
+                                      ser_gp,
+                                      public_key,
+                                      client_chunkstore_));
+  if (result != kSuccess) {
+    ExecReturnCodeCallback(cb, kDeletePacketFailure);
+    DLOG(ERROR) << "LSM::StorePacket - Failure in DH::ProcessData: "
+                << result << std::endl;
+    return;
   }
+
+  ExecReturnCodeCallback(cb, kSuccess);
 }
 
 void LocalStoreManager::StorePacket(const std::string &packet_name,
@@ -221,41 +246,38 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
   PrintDebugInfo(packet_name, value, "", "StorePacket", system_packet_type);
 
   std::string key_id, public_key, public_key_signature, private_key;
+  bool hashable(false);
   ClientUtils client_utils(ss_);
-  client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
-                                      &key_id, &public_key,
-                                      &public_key_signature, &private_key);
-//  pki::MaidsafeValidator msv;
-//  if (!msv.ValidateSignerId(key_id, public_key, public_key_signature)) {
-//    ExecReturnCodeCallback(cb, kSendPacketFailure);
-//    return;
-//  }
+  client_utils.GetPacketSignatureKeys(system_packet_type,
+                                      dir_type,
+                                      msid,
+                                      &key_id,
+                                      &public_key,
+                                      &public_key_signature,
+                                      &private_key,
+                                      &hashable);
 
   std::string ser_gp;
-  CreateSerialisedSignedValue(value, private_key, &ser_gp);
+  CreateSerialisedSignedValue(value, private_key, hashable, &ser_gp);
   if (ser_gp.empty()) {
-    ExecReturnCodeCallback(cb, kSendPacketFailure);
+    ExecReturnCodeCallback(cb, kStorePacketFailure);
     return;
   }
 
-  GenericPacket sv;
-  if (sv.ParseFromString(ser_gp)) {
-    if (!crypto::AsymCheckSig(sv.data(), sv.signature(), public_key)) {
-      ExecReturnCodeCallback(cb, kSendPacketFailure);
-      DLOG(WARNING) << "LSM::StorePacket - " << sv.data() << std::endl;
-      return;
-    }
-  }
-
-  if (client_chunkstore_->Has(packet_name)) {
-    ExecReturnCodeCallback(cb, kStoreChunkError);
+  DataHandler data_handler;
+  int result(data_handler.ProcessData(DataHandler::kStore,
+                                      packet_name,
+                                      ser_gp,
+                                      public_key,
+                                      client_chunkstore_));
+  if (result != kSuccess) {
+    ExecReturnCodeCallback(cb, kStorePacketFailure);
+    DLOG(ERROR) << "LSM::StorePacket - Failure in DH::ProcessData: "
+                << result << std::endl;
     return;
   }
 
-  if (client_chunkstore_->Store(packet_name, ser_gp))
-    ExecReturnCodeCallback(cb, kSuccess);
-  else
-    ExecReturnCodeCallback(cb, kStoreChunkError);
+  ExecReturnCodeCallback(cb, kSuccess);
 }
 
 void LocalStoreManager::UpdatePacket(const std::string &packet_name,
@@ -268,54 +290,36 @@ void LocalStoreManager::UpdatePacket(const std::string &packet_name,
                  system_packet_type);
   std::string key_id, public_key, public_key_signature, private_key;
   ClientUtils client_utils(ss_);
-  client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
-                                      &key_id, &public_key,
-                                      &public_key_signature, &private_key);
-//  pki::MaidsafeValidator msv;
-//  if (!msv.ValidateSignerId(key_id, public_key, public_key_signature)) {
-//    ExecReturnCodeCallback(cb, kUpdatePacketFailure);
-//    return;
-//  }
+  bool hashable(true);
+  client_utils.GetPacketSignatureKeys(system_packet_type,
+                                      dir_type,
+                                      msid,
+                                      &key_id,
+                                      &public_key,
+                                      &public_key_signature,
+                                      &private_key,
+                                      &hashable);
 
   std::string old_ser_gp;
-  CreateSerialisedSignedValue(old_value, private_key, &old_ser_gp);
+  CreateSerialisedSignedValue(old_value, private_key, hashable, &old_ser_gp);
   std::string new_ser_gp;
-  CreateSerialisedSignedValue(new_value, private_key, &new_ser_gp);
+  CreateSerialisedSignedValue(new_value, private_key, hashable, &new_ser_gp);
   if (old_ser_gp.empty() || new_ser_gp.empty()) {
     ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
-    DLOG(WARNING) << "LSM::UpdatePacket - Empty old or new" << std::endl;
+    DLOG(ERROR) << "LSM::UpdatePacket - Empty old or new" << std::endl;
     return;
   }
 
-  std::string current_packet(client_chunkstore_->Get(packet_name));
-  if (current_packet.empty()) {
-    ExecReturnCodeCallback(cb, kStoreManagerError);
-    DLOG(WARNING) << "LSM::UpdatePacket - Empty current" << std::endl;
-    return;
-  }
-
-  GenericPacket sv;
-  if (!sv.ParseFromString(current_packet) || sv.data() != old_value) {
-    ExecReturnCodeCallback(cb, kStoreManagerError);
-    DLOG(WARNING) << "LSM::UpdatePacket - Different current" << std::endl;
-    return;
-  } else if (!crypto::AsymCheckSig(sv.data(),
-                                   sv.signature(),
-                                   public_key)) {
-    ExecReturnCodeCallback(cb, kStoreManagerError);
-    DLOG(WARNING) << "LSM::UpdatePacket - Not owner" << std::endl;
-    return;
-  }
-
-  if (!client_chunkstore_->Delete(packet_name)) {
-    ExecReturnCodeCallback(cb, kStoreManagerError);
-    DLOG(WARNING) << "LSM::UpdatePacket - Failed delete old" << std::endl;
-    return;
-  }
-
-  if (!client_chunkstore_->Store(packet_name, new_ser_gp)) {
-    ExecReturnCodeCallback(cb, kStoreManagerError);
-    DLOG(WARNING) << "LSM::UpdatePacket - Failed store new" << std::endl;
+  DataHandler data_handler;
+  int result(data_handler.ProcessData(DataHandler::kUpdate,
+                                      packet_name,
+                                      new_ser_gp,
+                                      public_key,
+                                      client_chunkstore_));
+  if (result != kSuccess) {
+    ExecReturnCodeCallback(cb, kUpdatePacketFailure);
+    DLOG(ERROR) << "LSM::UpdatePacket - Failure in DH::ProcessData: "
+                << result << std::endl;
     return;
   }
 
@@ -327,18 +331,26 @@ bool LocalStoreManager::ValidateGenericPacket(std::string ser_gp,
   GenericPacket gp;
   if (!gp.ParseFromString(ser_gp))
     return false;
+
   return crypto::AsymCheckSig(gp.data(), gp.signature(), public_key);
 }
 
 void LocalStoreManager::CreateSerialisedSignedValue(
     const std::string &value,
     const std::string &private_key,
+    const bool &hashable,
     std::string *ser_gp) {
   ser_gp->clear();
-  GenericPacket gp;
-  gp.set_data(value);
-  gp.set_signature(crypto::AsymSign(value, private_key));
-  gp.SerializeToString(ser_gp);
+  DataWrapper data_wrapper;
+  if (hashable)
+    data_wrapper.set_data_type(DataWrapper::kHashableSigned);
+  else
+    data_wrapper.set_data_type(DataWrapper::kNonHashableSigned);
+  GenericPacket *gp = data_wrapper.mutable_signed_data();
+  gp->set_data(value);
+  gp->set_signature(crypto::AsymSign(value, private_key));
+  gp->set_hashable(hashable);
+  *ser_gp = data_wrapper.SerializeAsString();
 }
 
 }  // namespace lifestuff

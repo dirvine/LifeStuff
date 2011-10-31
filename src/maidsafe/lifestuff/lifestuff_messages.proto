@@ -3,14 +3,14 @@ package maidsafe.lifestuff;
 message GenericPacket {
   required bytes data = 1;
   required bytes signature = 2;
+  required bool hashable = 3;
 }
-
 
 message DataWrapper {
   enum DataType {
-    HASHABLE_SIGNED = 0;
-    NON_HASHABLE_SIGNED = 1;
+    kHashableSigned = 0;
+    kNonHashableSigned = 1;
   }
-  required int32 data_type = 1;
+  required DataType data_type = 1;
   optional GenericPacket signed_data = 2;
 }

@@ -37,11 +37,11 @@ namespace maidsafe {
 namespace lifestuff {
 
 void ClientUtils::GetChunkSignatureKeys(DirType dir_type,
-                                    const std::string &msid,
-                                    std::string *key_id,
-                                    std::string *public_key,
-                                    std::string *public_key_sig,
-                                    std::string *private_key) {
+                                        const std::string &msid,
+                                        std::string *key_id,
+                                        std::string *public_key,
+                                        std::string *public_key_sig,
+                                        std::string *private_key) {
   key_id->clear();
   public_key->clear();
   public_key_sig->clear();
@@ -50,7 +50,7 @@ void ClientUtils::GetChunkSignatureKeys(DirType dir_type,
     case PRIVATE_SHARE:
       if (kSuccess == ss_->GetShareKeys(msid, public_key, private_key)) {
         *key_id = msid;
-//        *public_key_sig = RSASign(*public_key, *private_key);
+        *public_key_sig = crypto::AsymSign(*public_key, *private_key);
       } else {
         key_id->clear();
         public_key->clear();
@@ -86,7 +86,8 @@ void ClientUtils::GetPacketSignatureKeys(passport::PacketType packet_type,
                                          std::string *key_id,
                                          std::string *public_key,
                                          std::string *public_key_sig,
-                                         std::string *private_key) {
+                                         std::string *private_key,
+                                         bool *hashable) {
   // For self-signers, signing packet will not be confirmed as stored.  For all
   // others, it must be.
   key_id->clear();
@@ -94,6 +95,7 @@ void ClientUtils::GetPacketSignatureKeys(passport::PacketType packet_type,
   public_key_sig->clear();
   private_key->clear();
   bool confirmed_as_stored(true);
+  *hashable = false;
   switch (packet_type) {
     case passport::ANMID:
       confirmed_as_stored = false;
@@ -103,6 +105,7 @@ void ClientUtils::GetPacketSignatureKeys(passport::PacketType packet_type,
       *public_key_sig = ss_->PublicKeySignature(passport::ANMID,
                                                 confirmed_as_stored);
       *private_key = ss_->PrivateKey(passport::ANMID, confirmed_as_stored);
+      *hashable = false;
       break;
     case passport::ANSMID:
       confirmed_as_stored = false;
@@ -112,6 +115,7 @@ void ClientUtils::GetPacketSignatureKeys(passport::PacketType packet_type,
       *public_key_sig = ss_->PublicKeySignature(passport::ANSMID,
                                                 confirmed_as_stored);
       *private_key = ss_->PrivateKey(passport::ANSMID, confirmed_as_stored);
+      *hashable = false;
       break;
     case passport::ANTMID:
       confirmed_as_stored = false;
@@ -122,6 +126,7 @@ void ClientUtils::GetPacketSignatureKeys(passport::PacketType packet_type,
       *public_key_sig = ss_->PublicKeySignature(passport::ANTMID,
                                                 confirmed_as_stored);
       *private_key = ss_->PrivateKey(passport::ANTMID, confirmed_as_stored);
+      *hashable = false;
       break;
     case passport::ANMPID:
       confirmed_as_stored = false;
@@ -151,6 +156,7 @@ void ClientUtils::GetPacketSignatureKeys(passport::PacketType packet_type,
     case passport::MSID:
       GetChunkSignatureKeys(dir_type, msid, key_id, public_key, public_key_sig,
                             private_key);
+      *hashable = false;
       break;
     default:
       break;

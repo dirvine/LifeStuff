@@ -43,11 +43,6 @@
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/dht/contact.h"
-
-#include "maidsafe/encrypt/self_encryption.h"
-#include "maidsafe/encrypt/data_map.h"
-
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/clientutils.h"
@@ -109,9 +104,7 @@ ClientController::ClientController()
       client_store_(),
       initialised_(false),
       logging_out_(false),
-      logged_in_(false),
-      K_(0),
-      upper_threshold_(0) {}
+      logged_in_(false) {}
 
 int ClientController::Init(boost::uint8_t /*k*/) {
   if (initialised_) {
@@ -129,10 +122,6 @@ int ClientController::Init(boost::uint8_t /*k*/) {
 
   local_sm_.reset(new LocalStoreManager(temp_dir / "LocalUserCredentials",
                                         ss_));
-#else
-  local_sm_.reset(new NetworkStoreManager(std::vector<dht::Contact>(),
-                                          8, 3, 2,
-                                          boost::posix_time::seconds(60), ss_));
 #endif
 
   if (!JoinKademlia()) {

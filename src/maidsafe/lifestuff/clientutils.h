@@ -54,7 +54,8 @@ class ClientUtils {
                               std::string *key_id,
                               std::string *public_key,
                               std::string *public_key_sig,
-                              std::string *private_key);
+                              std::string *private_key,
+                              bool *hashable);
  private:
   ClientUtils &operator=(const ClientUtils&);
   ClientUtils(const ClientUtils&);

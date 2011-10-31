@@ -40,7 +40,7 @@ namespace lifestuff {
 enum ReturnCode {
   // General
   kSuccess = 0,
-  kPendingResult = -4,
+  kPendingResult = -1,
 
   // Authentication
   kAuthenticationError = -1001,
@@ -52,31 +52,27 @@ enum ReturnCode {
   kFailedToDeleteOldPacket = -1007,
 
   // Client Controller
-  kClientControllerNotInitialised = -4002,
+  kClientControllerNotInitialised = -2001,
 
+  // Store Manager
+  kStoreManagerInitError = -7001,
+  kStorePacketFailure = -7002,
+  kDeletePacketFailure = -7003,
+  kGetPacketFailure = -7004,
+  kUpdatePacketFailure = -7005,
+  kNoPublicKeyToCheck = -7006,
+  kKeyUnique = -7007,
+  kKeyNotUnique = -7008,
 
-  // Store Managers
-  kStoreManagerError = -7001,
-  kStoreManagerInitError = -7002,
-  kStoreChunkError = -7005,
-  kFindValueFailure = -7024,
-  kSendPacketFailure = -7035,
-  kDeletePacketFailure = -7044,
-  kLoadPacketFailure = -7046,
-  kNoPublicKeyToCheck = -7054,
-  kKeyUnique = -7055,
-  kKeyNotUnique = -7056,
-  kUpdatePacketFailure = -7057,
-
-  // Session & FileSystem
+  // Session
   kEmptyConversationId = -11001,
   kNonExistentConversation = -11002,
   kExistingConversation = -11003,
-  kGetKeyFailure = -11005,
-  kContactListFailure = -11006,
-  kAddLiveContactFailure = -11012,
-  kLiveContactNotFound = -11013,
-  kLiveContactNoEp = -11014
+  kGetKeyFailure = -11004,
+  kContactListFailure = -11005,
+  kAddLiveContactFailure = -11006,
+  kLiveContactNotFound = -11007,
+  kLiveContactNoEp = -11008
 };
 
 }  // namespace lifestuff
