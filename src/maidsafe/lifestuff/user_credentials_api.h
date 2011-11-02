@@ -59,9 +59,6 @@ class UserCredentials {
   virtual std::string Username() = 0;
   virtual std::string Pin() = 0;
   virtual std::string Password() = 0;
-
-  virtual void MountDrive(fs::path mount_dir_path) = 0;
-  virtual void UnMountDrive() = 0;
 };
 
 }  // namespace lifestuff

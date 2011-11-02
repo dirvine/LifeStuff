@@ -361,6 +361,7 @@ ELSE() # Installing the library
   SET(LIFESTUFF_CLIENT_INSTALL_FILES
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/clientcontroller.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/user_credentials_api.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/user_storage.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/maidsafe.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/returncodes.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/version.h)
