@@ -33,8 +33,6 @@
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/test.h"
 
-#include "maidsafe/encrypt/data_map.h"
-
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/clientutils.h"
 #include "maidsafe/lifestuff/clientcontroller.h"

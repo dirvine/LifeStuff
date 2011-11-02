@@ -132,8 +132,6 @@ class ClientController : public lifestuff::UserCredentials {
   bool initialised_;
   bool logging_out_;
   bool logged_in_;
-  boost::uint8_t K_;
-  boost::uint16_t upper_threshold_;
 };
 
 }  // namespace lifestuff

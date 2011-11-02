@@ -129,9 +129,6 @@ LIST(REMOVE_ITEM STYLE_CLIENT "${SRC_MAIDSAFE}/lifestuff_messages.pb.h"
 SET(ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR ${ALL_FILES_CLIENT_DIR})
 LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/networkstoremanager.h"
                                                         "${SRC_MAIDSAFE}/networkstoremanager.cc")
-SET(ALL_FILES_NETWORKSTOREMANAGER_CLIENT_DIR ${ALL_FILES_CLIENT_DIR})
-LIST(REMOVE_ITEM ALL_FILES_NETWORKSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/localstoremanager.h"
-                                                          "${SRC_MAIDSAFE}/localstoremanager.cc")
 
 SOURCE_GROUP("client Source Files" FILES ${SOURCE_FILES_CLIENT_DIR})
 SOURCE_GROUP("client Header Files" FILES ${HEADER_FILES_CLIENT_DIR})
@@ -175,18 +172,15 @@ RENAME_EXECUTABLE(TESTauthentication_local)
 RENAME_EXECUTABLE(TESTclientcontroller_local)
 
 ADD_LIBRARY(lifestuff_local_static STATIC ${ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR})
-ADD_LIBRARY(lifestuff_network_static STATIC ${ALL_FILES_NETWORKSTOREMANAGER_CLIENT_DIR})
 
 SET_TARGET_PROPERTIES(lifestuff_local_static PROPERTIES OUTPUT_NAME lifestuff_local)
-SET_TARGET_PROPERTIES(lifestuff_network_static PROPERTIES OUTPUT_NAME lifestuff_network)
 
 ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTclientcontroller_local TESTclient TESTauthentication_local)
 
 # IF(UNIX)
 #   TARGET_LINK_LIBRARIES(lifestuff_sql_utils_static dl)
 # ENDIF()
-TARGET_LINK_LIBRARIES(lifestuff_local_static maidsafe_drive_static passport_static boost_date_time boost_regex)
-TARGET_LINK_LIBRARIES(lifestuff_network_static maidsafe_drive_static passport_static boost_date_time boost_regex)
+TARGET_LINK_LIBRARIES(lifestuff_local_static encrypt_static passport_static boost_date_time ${QT_LIBRARIES} boost_regex)
 TARGET_LINK_LIBRARIES(TESTclient lifestuff_local_static gtest_static gmock_static)
 TARGET_LINK_LIBRARIES(TESTauthentication_local lifestuff_local_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTclientcontroller_local lifestuff_local_static gtest_static)
@@ -207,9 +201,13 @@ IF(UNIX)
                               PROPERTIES COMPILE_FLAGS "-w")
 
 ELSEIF(MSVC)
-  # Disabling C4512 'assignment operator could not be generated' caused by boost signals2 as per advice at http://lists.boost.org/boost-users/2009/01/44368.php
-  # Also disabling C4503 'decorated name length exceeded' caused by boost multi-index's and others' high template depth.
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4512 /wd4503 /WX")
+  # C4503 'decorated name length exceeded' caused by boost multi-index and signals2
+  # Disabled as per advice at https://svn.boost.org/trac/boost/wiki/Guidelines/WarningsGuidelines
+  # C4512 'assignment operator could not be generated' caused by boost signals2
+  # Disabled as per advice at http://lists.boost.org/boost-users/2009/01/44368.php
+  # C4996 'Function call with parameters that may be unsafe' caused by boost signals2
+  # Disabled as per advice at https://svn.boost.org/trac/boost/wiki/Guidelines/WarningsGuidelines
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4503 /wd4512 /wd4996 /WX")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /D \"QT_NO_DEBUG_OUTPUT\" /D \"QT_NO_WARNING_OUTPUT\" /D \"QT_NO_DEBUG_STREAM\"")
   SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.cc
                               ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_messages.pb.cc
@@ -370,7 +368,7 @@ ELSE() # Installing the library
   ENDFOREACH()
 
   SET(EXPORT_NAME lifestuff_client)
-  INSTALL(TARGETS lifestuff_local_static lifestuff_network_static EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
+  INSTALL(TARGETS lifestuff_local_static EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
   INSTALL(FILES ${LIFESTUFF_CLIENT_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff)
   INSTALL(EXPORT ${EXPORT_NAME} DESTINATION share/maidsafe)
   ADD_VERSION_INFO_TO_INSTALLED_FILE()
