@@ -4,6 +4,7 @@ message GenericPacket {
   required bytes data = 1;
   required bytes signature = 2;
   required bool hashable = 3;
+  optional bytes signing_id = 4;
 }
 
 message DataWrapper {

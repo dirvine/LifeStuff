@@ -47,6 +47,7 @@ class ChunkValidation;
 namespace lifestuff {
 
 class DataHandler;
+class GenericPacket;
 class Session;
 
 class LocalStoreManager : public PacketManager {
@@ -54,13 +55,12 @@ class LocalStoreManager : public PacketManager {
   explicit LocalStoreManager(const fs3::path &db_directory,
                              std::shared_ptr<Session> ss);
   ~LocalStoreManager();
-  void Init(VoidFuncOneInt callback, const boost::uint16_t &port);
+  void Init(VoidFuncOneInt callback);
   int Close(bool cancel_pending_ops);
 
   // Packets
-  bool KeyUnique(const std::string &key, bool check_local);
+  bool KeyUnique(const std::string &key);
   void KeyUnique(const std::string &key,
-                 bool check_local,
                  const VoidFuncOneInt &cb);
   int GetPacket(const std::string &packet_name,
                 std::vector<std::string> *results);
@@ -68,22 +68,13 @@ class LocalStoreManager : public PacketManager {
                  const GetPacketFunctor &lpf);
   void StorePacket(const std::string &packet_name,
                    const std::string &value,
-                   passport::PacketType system_packet_type,
-                   DirType dir_type,
-                   const std::string &msid,
                    const VoidFuncOneInt &cb);
   void DeletePacket(const std::string &packet_name,
-                    const std::vector<std::string> values,
-                    passport::PacketType system_packet_type,
-                    DirType dir_type,
-                    const std::string &msid,
+                    const std::string &value,
                     const VoidFuncOneInt &cb);
   void UpdatePacket(const std::string &packet_name,
                     const std::string &old_value,
                     const std::string &new_value,
-                    passport::PacketType system_packet_type,
-                    DirType dir_type,
-                    const std::string &msid,
                     const VoidFuncOneInt &cb);
 
  private:
@@ -91,9 +82,7 @@ class LocalStoreManager : public PacketManager {
   LocalStoreManager(const LocalStoreManager&);
 
   bool ValidateGenericPacket(std::string ser_gp, std::string public_key);
-  void CreateSerialisedSignedValue(const std::string &value,
-                                   const std::string &private_key,
-                                   const bool &hashable,
+  void CreateSerialisedSignedValue(const GenericPacket &data,
                                    std::string *ser_gp);
 
   std::string local_sm_dir_;

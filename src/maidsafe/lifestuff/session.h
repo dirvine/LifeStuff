@@ -317,12 +317,15 @@ class Session {
                  bool confirmed_as_stored);
   std::string PublicKey(const passport::PacketType &packet_type,
                         bool confirmed_as_stored);
+  std::string PublicKey(const std::string &packet_id,
+                        bool confirmed_as_stored);
   std::string PrivateKey(const passport::PacketType &packet_type,
                          bool confirmed_as_stored);
   std::string PublicKeySignature(const passport::PacketType &packet_type,
                                  bool confirmed_as_stored);
 
  private:
+  friend std::string GetPublicKey(const std::string&, std::shared_ptr<Session>);
   friend class Authentication;
   friend class ClientUtils;
   friend class test::SessionTest;

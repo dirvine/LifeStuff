@@ -158,9 +158,9 @@ void Session::set_connection_status(int status) {
 }
 
 
-// // / // / // / // / // / // / // / //
+// // / // / // / // / //
 // Key ring operations //
-// // / // / // / // / // / // / // / //
+// // / // / // / // / //
 
 int Session::ParseKeyring(const std::string &serialised_keyring) {
   return passport_->ParseKeyring(serialised_keyring);
@@ -187,10 +187,10 @@ int Session::MPublicID(std::string *id,
 }
 
 int Session::GetKey(const passport::PacketType &packet_type,
-                             std::string *id,
-                             std::string *public_key,
-                             std::string *private_key,
-                             std::string *public_key_signature) {
+                    std::string *id,
+                    std::string *public_key,
+                    std::string *private_key,
+                    std::string *public_key_signature) {
   std::shared_ptr<passport::SignaturePacket> packet(
       std::static_pointer_cast<passport::SignaturePacket>(
           passport_->GetPacket(packet_type, true)));
@@ -252,24 +252,27 @@ bool Session::CreateTestPackets(const std::string &public_username) {
 }
 
 std::string Session::Id(const passport::PacketType &packet_type,
-                                 bool confirmed_as_stored) {
+                        bool confirmed_as_stored) {
   return passport_->SignaturePacketName(packet_type, confirmed_as_stored);
 }
 
 std::string Session::PublicKey(const passport::PacketType &packet_type,
-                                        bool confirmed_as_stored) {
+                               bool confirmed_as_stored) {
   return passport_->SignaturePacketPublicKey(packet_type, confirmed_as_stored);
 }
 
-std::string Session::PrivateKey(
-    const passport::PacketType &packet_type,
-    bool confirmed_as_stored) {
+std::string Session::PublicKey(const std::string &packet_id,
+                               bool confirmed_as_stored) {
+  return passport_->SignaturePacketPublicKey(packet_id, confirmed_as_stored);
+}
+
+std::string Session::PrivateKey(const passport::PacketType &packet_type,
+                                bool confirmed_as_stored) {
   return passport_->SignaturePacketPrivateKey(packet_type, confirmed_as_stored);
 }
 
-std::string Session::PublicKeySignature(
-    const passport::PacketType &packet_type,
-    bool confirmed_as_stored) {
+std::string Session::PublicKeySignature(const passport::PacketType &packet_type,
+                                        bool confirmed_as_stored) {
   return passport_->SignaturePacketPublicKeySignature(packet_type,
                                                       confirmed_as_stored);
 }

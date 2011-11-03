@@ -64,8 +64,7 @@ class AuthenticationTest : public testing::Test {
   void SetUp() {
     ss_->ResetSession();
     sm_->Init(std::bind(&AuthenticationTest::InitAndCloseCallback, this,
-                        arg::_1),
-              0);
+                        arg::_1));
     authentication_.Init(sm_);
   }
 
@@ -199,9 +198,9 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionBlocking) {
   ss_->GetKey(passport::TMID, &tmidname, NULL, NULL, NULL);
   ss_->GetKey(passport::STMID, &stmidname, NULL, NULL, NULL);
 
-  EXPECT_TRUE(sm_->KeyUnique(original_tmidname, false));
-  EXPECT_FALSE(sm_->KeyUnique(stmidname, false));
-  EXPECT_FALSE(sm_->KeyUnique(tmidname, false));
+  EXPECT_TRUE(sm_->KeyUnique(original_tmidname));
+  EXPECT_FALSE(sm_->KeyUnique(stmidname));
+  EXPECT_FALSE(sm_->KeyUnique(tmidname));
 }
 
 TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionCallbacks) {
@@ -227,7 +226,7 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionCallbacks) {
   authentication_.SaveSession(ser_dm_, std::bind(&CallbackObject::IntCallback,
                                                  &cb, arg::_1));
   ASSERT_EQ(kSuccess, cb.WaitForIntResult());
-  EXPECT_TRUE(sm_->KeyUnique(original_tmidname, false));
+  EXPECT_TRUE(sm_->KeyUnique(original_tmidname));
 }
 
 TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
@@ -253,8 +252,8 @@ TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
 
   // Check the TMIDs are gone
-  ASSERT_TRUE(sm_->KeyUnique(original_tmidname, false));
-  ASSERT_TRUE(sm_->KeyUnique(original_stmidname, false));
+  ASSERT_TRUE(sm_->KeyUnique(original_tmidname));
+  ASSERT_TRUE(sm_->KeyUnique(original_stmidname));
 }
 
 TEST_F(AuthenticationTest, FUNC_ChangePin) {
@@ -281,8 +280,8 @@ TEST_F(AuthenticationTest, FUNC_ChangePin) {
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
 
   // Check the TMIDs are gone
-  ASSERT_TRUE(sm_->KeyUnique(original_tmidname, false));
-  ASSERT_TRUE(sm_->KeyUnique(original_stmidname, false));
+  ASSERT_TRUE(sm_->KeyUnique(original_tmidname));
+  ASSERT_TRUE(sm_->KeyUnique(original_stmidname));
 }
 
 TEST_F(AuthenticationTest, FUNC_ChangePassword) {

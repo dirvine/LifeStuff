@@ -62,8 +62,7 @@ class ClientControllerTest : public testing::Test {
   void SetUp() {
     ss_->ResetSession();
     local_sm_->Init(std::bind(&ClientControllerTest::InitAndCloseCallback,
-                              this, arg::_1),
-                    0);
+                              this, arg::_1));
     cc_->auth_.reset(new Authentication(ss_));
     cc_->auth_->Init(local_sm_);
     cc_->local_sm_ = local_sm_;
@@ -84,8 +83,7 @@ class ClientControllerTest : public testing::Test {
         local_sm2(new LocalStoreManager(*test_dir_, ss2));
     ss2->ResetSession();
     local_sm2->Init(std::bind(&ClientControllerTest::InitAndCloseCallback,
-                              this, arg::_1),
-                    0);
+                              this, arg::_1));
     cc2->auth_.reset(new Authentication(ss2));
     cc2->auth_->Init(local_sm2);
     cc2->local_sm_ = local_sm2;

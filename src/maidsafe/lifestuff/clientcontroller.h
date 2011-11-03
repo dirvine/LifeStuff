@@ -92,7 +92,7 @@ class ClientController : public lifestuff::UserCredentials {
   ClientController(const ClientController&);
 
   ~ClientController();
-  int Init(boost::uint8_t k);
+  int Init();
   inline bool initialised() { return initialised_; }
 
   // User credential operations

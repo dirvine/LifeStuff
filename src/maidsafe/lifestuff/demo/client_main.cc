@@ -44,7 +44,7 @@ int main(int /*argc*/, char *argv[]) {
 
   std::shared_ptr<maidsafe::lifestuff::ClientController> cc(
       new maidsafe::lifestuff::ClientController);
-  cc->Init(0);
+  cc->Init();
   std::shared_ptr<maidsafe::lifestuff::UserCredentials> user_credentials = cc;
   maidsafe::lifestuff::commandline_demo::Commands commands(user_credentials);
 

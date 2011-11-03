@@ -106,7 +106,7 @@ ClientController::ClientController()
       logging_out_(false),
       logged_in_(false) {}
 
-int ClientController::Init(boost::uint8_t /*k*/) {
+int ClientController::Init() {
   if (initialised_) {
     DLOG(INFO) << "Already initialised." << std::endl;
     return 0;
@@ -139,7 +139,7 @@ ClientController::~ClientController() {
 
 bool ClientController::JoinKademlia() {
   CCCallback cb;
-  local_sm_->Init(std::bind(&CCCallback::IntCallback, &cb, arg::_1), 0);
+  local_sm_->Init(std::bind(&CCCallback::IntCallback, &cb, arg::_1));
   return (cb.WaitForIntResult() == kSuccess);
 }
 

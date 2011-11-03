@@ -55,14 +55,13 @@ class PacketManager {
  public:
   virtual ~PacketManager() {}
 
-  virtual void Init(VoidFuncOneInt callback, const boost::uint16_t &port) = 0;
+  virtual void Init(VoidFuncOneInt callback) = 0;
 
   virtual int Close(bool cancel_pending_ops) = 0;
 
-  virtual bool KeyUnique(const std::string &key, bool check_local) = 0;
+  virtual bool KeyUnique(const std::string &key) = 0;
 
   virtual void KeyUnique(const std::string &key,
-                         bool check_local,
                          const VoidFuncOneInt &cb) = 0;
 
   virtual int GetPacket(const std::string &packet_name,
@@ -73,24 +72,15 @@ class PacketManager {
 
   virtual void StorePacket(const std::string &packet_name,
                            const std::string &value,
-                           passport::PacketType system_packet_type,
-                           DirType dir_type,
-                           const std::string &msid,
                            const VoidFuncOneInt &cb) = 0;
 
   virtual void DeletePacket(const std::string &packet_name,
-                            const std::vector<std::string> values,
-                            passport::PacketType system_packet_type,
-                            DirType dir_type,
-                            const std::string &msid,
+                            const std::string &value,
                             const VoidFuncOneInt &cb) = 0;
 
   virtual void UpdatePacket(const std::string &packet_name,
                             const std::string &old_value,
                             const std::string &new_value,
-                            passport::PacketType system_packet_type,
-                            DirType dir_type,
-                            const std::string &msid,
                             const VoidFuncOneInt &cb) = 0;
 
  protected:

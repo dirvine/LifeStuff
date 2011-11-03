@@ -213,10 +213,16 @@ class Authentication {
   // Designed to be called as functor in timed_wait - user_info mutex locked
   bool PacketOpDone(int *return_code) { return *return_code != kPendingResult; }
   int StorePacket(std::shared_ptr<pki::Packet> packet,
-                  bool check_uniqueness);
-  int DeletePacket(std::shared_ptr<pki::Packet> packet);
+                  bool check_uniqueness,
+                  passport::PacketType packet_type);
+  int DeletePacket(std::shared_ptr<pki::Packet> packet,
+                   passport::PacketType packet_type);
   int PacketUnique(std::shared_ptr<pki::Packet> packet);
   void PacketOpCallback(int return_code, int *op_result);
+  std::string CreateGenericPacket(const std::string &value,
+                                  const std::string &signature,
+                                  passport::PacketType packet_type);
+
 
   std::shared_ptr<PacketManager> packet_manager_;
   std::shared_ptr<Session> session_singleton_;
