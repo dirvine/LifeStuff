@@ -78,7 +78,6 @@ ADD_MAIDSAFE_LIBRARY(Encrypt)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-Drive)
 ADD_MAIDSAFE_LIBRARY(PKI)
 ADD_MAIDSAFE_LIBRARY(Passport)
-ADD_MAIDSAFE_LIBRARY(MaidSafe-PD)
 
 ###################################################################################################
 # Callback File System / Fuse library search                                                      #
