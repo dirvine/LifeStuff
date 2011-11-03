@@ -68,13 +68,14 @@ PROJECT(${PROJECT_NAME})
 SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_DIR} CACHE INTERNAL "Except for MSVC, the build type is set by running cmake from the appropriate build subdirectory e.g. for a Debug build, \"cd build/Linux/Debug && cmake ../../..\"." FORCE)
 
 ###################################################################################################
-# MaidSafe Common, DHT, Encrypt, Passport and PKI library search                                  #
+# MaidSafe Common, DHT, Drive, Passport and PKI library search                                  #
 ###################################################################################################
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/build)
 INCLUDE(maidsafe_find_common)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-Transport)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-DHT)
 ADD_MAIDSAFE_LIBRARY(Encrypt)
+ADD_MAIDSAFE_LIBRARY(MaidSafe-Drive)
 ADD_MAIDSAFE_LIBRARY(PKI)
 ADD_MAIDSAFE_LIBRARY(Passport)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-PD)
@@ -200,9 +201,13 @@ IF(UNIX)
                               PROPERTIES COMPILE_FLAGS "-w")
 
 ELSEIF(MSVC)
-  # Disabling C4512 'assignment operator could not be generated' caused by boost signals2 as per advice at http://lists.boost.org/boost-users/2009/01/44368.php
-  # Also disabling C4503 'decorated name length exceeded' caused by boost multi-index's and others' high template depth.
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4512 /wd4503 /WX")
+  # C4503 'decorated name length exceeded' caused by boost multi-index and signals2
+  # Disabled as per advice at https://svn.boost.org/trac/boost/wiki/Guidelines/WarningsGuidelines
+  # C4512 'assignment operator could not be generated' caused by boost signals2
+  # Disabled as per advice at http://lists.boost.org/boost-users/2009/01/44368.php
+  # C4996 'Function call with parameters that may be unsafe' caused by boost signals2
+  # Disabled as per advice at https://svn.boost.org/trac/boost/wiki/Guidelines/WarningsGuidelines
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4503 /wd4512 /wd4996 /WX")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /D \"QT_NO_DEBUG_OUTPUT\" /D \"QT_NO_WARNING_OUTPUT\" /D \"QT_NO_DEBUG_STREAM\"")
   SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.cc
                               ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_messages.pb.cc
@@ -354,6 +359,7 @@ ELSE() # Installing the library
   SET(LIFESTUFF_CLIENT_INSTALL_FILES
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/clientcontroller.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/user_credentials_api.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/user_storage.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/maidsafe.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/returncodes.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/version.h)

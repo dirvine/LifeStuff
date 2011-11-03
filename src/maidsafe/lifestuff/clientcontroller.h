@@ -33,6 +33,7 @@
 
 #include "boost/function.hpp"
 #include "boost/signals2.hpp"
+#include "boost/asio/io_service.hpp"
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
 
@@ -44,7 +45,6 @@
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-lifestuff library.
 #endif
-
 
 namespace bs2 = boost::signals2;
 

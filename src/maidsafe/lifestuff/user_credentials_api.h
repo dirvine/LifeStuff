@@ -23,6 +23,7 @@
 #define MAIDSAFE_LIFESTUFF_USER_CREDENTIALS_API_H_
 
 #include <string>
+#include "boost/filesystem.hpp"
 #include "maidsafe/lifestuff/version.h"
 
 #if MAIDSAFE_LIFESTUFF_VERSION != 109
@@ -30,6 +31,7 @@
     Please update the maidsafe-lifestuff library.
 #endif
 
+namespace fs = boost::filesystem;
 
 namespace maidsafe {
 

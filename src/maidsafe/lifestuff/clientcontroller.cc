@@ -40,6 +40,8 @@
 #include "boost/foreach.hpp"
 
 #include "maidsafe/common/chunk_store.h"
+#include "maidsafe/common/buffered_chunk_store.h"
+#include "maidsafe/common/hashable_chunk_validation.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
 
@@ -345,7 +347,6 @@ bool ClientController::ValidateUser(const std::string &password) {
     ss_->ResetSession();
     return false;
   }
-
   logged_in_ = true;
   return true;
 }
@@ -357,7 +358,6 @@ bool ClientController::Logout() {
   }
   logging_out_ = true;
 //  clear_messages_thread_.join();
-
   int result = SaveSession();
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to save session " << result << std::endl;
@@ -412,7 +412,6 @@ bool ClientController::LeaveMaidsafeNetwork() {
     DLOG(ERROR) << "Not initialised.";
     return false;
   }
-
   if (auth_->RemoveMe() == kSuccess)
     return true;
 
@@ -493,7 +492,6 @@ std::string ClientController::Pin() {
 std::string ClientController::Password() {
   return ss_->password();
 }
-
 }  // namespace lifestuff
 
 }  // namespace maidsafe
