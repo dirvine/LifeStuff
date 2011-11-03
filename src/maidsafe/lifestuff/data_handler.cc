@@ -28,7 +28,7 @@
 
 #ifdef __MSVC__
 #  pragma warning(push)
-#  pragma warning(disable: 4244)
+#  pragma warning(disable: 4244 4127)
 #endif
 #include "maidsafe/lifestuff/lifestuff_messages.pb.h"
 #ifdef __MSVC__

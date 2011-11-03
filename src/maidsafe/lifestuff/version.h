@@ -49,7 +49,7 @@
 #endif
 
 #include "maidsafe/drive/version.h"
-#define THIS_NEEDS_MAIDSAFE_DRIVE_VERSION 122
+#define THIS_NEEDS_MAIDSAFE_DRIVE_VERSION 200
 #if MAIDSAFE_DRIVE_VERSION < THIS_NEEDS_MAIDSAFE_DRIVE_VERSION
 #  error This API is not compatible with the installed library.\
     Please update the MaidSafe-Encrypt library.
