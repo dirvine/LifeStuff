@@ -179,7 +179,7 @@ ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTclientcontroller_local TESTclient
 # IF(UNIX)
 #   TARGET_LINK_LIBRARIES(lifestuff_sql_utils_static dl)
 # ENDIF()
-TARGET_LINK_LIBRARIES(lifestuff_local_static encrypt_static passport_static boost_date_time ${QT_LIBRARIES} boost_regex)
+TARGET_LINK_LIBRARIES(lifestuff_local_static maidsafe_drive_static passport_static boost_date_time ${QT_LIBRARIES} boost_regex)
 TARGET_LINK_LIBRARIES(TESTclient lifestuff_local_static gtest_static gmock_static)
 TARGET_LINK_LIBRARIES(TESTauthentication_local lifestuff_local_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTclientcontroller_local lifestuff_local_static gtest_static)
