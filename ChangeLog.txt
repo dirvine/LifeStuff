@@ -1,5 +1,12 @@
-v0.01.09 (WIP)
+v0.01.10 (WIP)
 --------------
+
+v0.01.09
+--------
+* Removed Singleton From SessionComponent
+* Chunkstore Usage instead of DB for LocalStoreManager
+* Added MaidSafe-Drive into LifeStuff
+* Moved UserDrive Operations to UserStorage Class
 
 v0.01.08
 --------
