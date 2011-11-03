@@ -23,6 +23,7 @@
 
 #include "maidsafe/common/buffered_chunk_store.h"
 #include "maidsafe/common/hashable_chunk_validation.h"
+
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/version.h"
 
@@ -80,7 +81,7 @@ void UserStorage::MountDrive(fs::path mount_dir_path,
   std::static_pointer_cast<MaidDriveInUserSpace>(drive_in_user_space_)->Init();
   drive_in_user_space_->Mount(g_mount_dir_, L"LifeStuff Drive");
 #else
-  g_mount_dir_ = mount_dir_path / SessionName();
+  g_mount_dir_ = mount_dir_path / session_name;
   fs::create_directories(g_mount_dir_);
   boost::thread(std::bind(&MaidDriveInUserSpace::Mount, drive_in_user_space_,
                           g_mount_dir_, "LifeStuff Drive"));
