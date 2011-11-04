@@ -62,6 +62,7 @@ Commands::Commands(UserCredentialPtr user_credential)
     : result_arrived_(false),
       finish_(false),
       user_credential_(user_credential),
+      user_storage_(),
       username_(),
       pin_(),
       logged_in_(false) {}
@@ -144,8 +145,8 @@ bool Commands::LoginUser() {
       password = GetLineWithAsterisks();
       success = user_credential_->ValidateUser(password);
       if (success) {
-        // TODO(Smer): Mount the drive
-        // user_credential_->MountDrive(fs::initial_path() / "LifeStuff");
+        user_storage_.MountDrive(fs::initial_path() / "LifeStuff",
+                                  user_credential_->SessionName());
         std::cout << " Logged in successfully." << std::endl;
       } else {
         std::cout << " Login failed!" << std::endl;
@@ -182,8 +183,8 @@ bool Commands::LoginUser() {
           success = user_credential_->CreateUser(username, pin, password);
         }
         if (success) {
-          // TODO(Smer): Mount the drive
-          // user_credential_->MountDrive(fs::initial_path() / "LifeStuff");
+          user_storage_.MountDrive(fs::initial_path() / "LifeStuff",
+                                    user_credential_->SessionName());
           std::cout << std::endl << "Successfully created user and logged in"
                     << std::endl;
         } else {
@@ -390,7 +391,7 @@ void Commands::ProcessCommand(const std::string &cmdline,
       bool ret = user_credential_->Logout();
       if (ret) {
         logged_in_ = false;
-        // user_credential_->UnMountDrive();
+        user_storage_.UnMountDrive();
         std::cout << "Logged out Successfully" << std::endl;
         PrintUsage();
       } else {
@@ -400,7 +401,7 @@ void Commands::ProcessCommand(const std::string &cmdline,
     } else if (cmd == "leave") {
       bool ret = user_credential_->LeaveMaidsafeNetwork();
       if (ret) {
-        // user_credential_->UnMountDrive();
+        user_storage_.UnMountDrive();
         std::cout << "Leave Maidsafe Network Successfull" << std::endl;
       } else {
         std::cout << "Leave Maidsafe Network failed" << std::endl;

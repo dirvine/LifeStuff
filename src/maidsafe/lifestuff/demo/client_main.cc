@@ -19,7 +19,7 @@
 * ============================================================================
 */
 
-#include <iostream>  //NOLINT (Dan)
+#include <iostream>  // NOLINT (Dan)
 #include <memory>
 #include <string>
 
@@ -45,7 +45,7 @@ int main(int /*argc*/, char *argv[]) {
   std::shared_ptr<maidsafe::lifestuff::ClientController> cc(
       new maidsafe::lifestuff::ClientController);
   cc->Init();
-  std::shared_ptr<maidsafe::lifestuff::UserCredentials> user_credentials = cc;
+  std::shared_ptr<maidsafe::lifestuff::UserCredentials> user_credentials(cc);
   maidsafe::lifestuff::commandline_demo::Commands commands(user_credentials);
 
   commands.Run();
