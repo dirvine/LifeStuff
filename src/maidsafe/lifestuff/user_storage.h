@@ -61,7 +61,8 @@ class UserStorage {
   UserStorage();
   virtual ~UserStorage() {}
 
-  virtual void MountDrive(fs::path mount_dir_path, std::string session_name);
+  virtual void MountDrive(const fs::path &mount_dir_path,
+                          const std::string &session_name);
   virtual void UnMountDrive();
   virtual fs::path g_mount_dir();
   virtual bool mount_status();

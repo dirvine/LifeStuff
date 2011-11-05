@@ -43,8 +43,8 @@ UserStorage::UserStorage()
       drive_in_user_space_(),
       g_mount_dir_() {}
 
-void UserStorage::MountDrive(fs::path mount_dir_path,
-                             std::string session_name) {
+void UserStorage::MountDrive(const fs::path &mount_dir_path,
+                             const std::string &session_name) {
   if (mount_status_)
     return;
   if (!fs::exists(mount_dir_path))
@@ -57,8 +57,10 @@ void UserStorage::MountDrive(fs::path mount_dir_path,
         std::size_t(boost::asio::io_service::*)()>
             (&boost::asio::io_service::run), &asio_service_));
   chunk_store_.reset(new BufferedChunkStore(
-      false, std::shared_ptr<ChunkValidation>(
-          new HashableChunkValidation<crypto::SHA512>), asio_service_));
+      false,
+      std::shared_ptr<ChunkValidation>(
+          new HashableChunkValidation<crypto::SHA512>),
+          asio_service_));
   listing_handler_.reset(new DirectoryListingHandler(meta_data_dir,
                                                      chunk_store_));
   drive_in_user_space_.reset(new MaidDriveInUserSpace(chunk_store_,
@@ -115,6 +117,7 @@ fs::path UserStorage::g_mount_dir() {
 bool UserStorage::mount_status() {
   return mount_status_;
 }
+
 }  // namespace lifestuff
 
 }  // namespace maidsafe
