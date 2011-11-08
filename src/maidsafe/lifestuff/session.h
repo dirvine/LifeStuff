@@ -3,7 +3,7 @@
 *
 * Copyright [2009] maidsafe.net limited
 *
-* Description:  Singleton for setting/getting session info
+* Description:  setting/getting session info
 * Version:      1.0
 * Created:      2009-01-28-16.56.20
 * Revision:     none
@@ -128,9 +128,14 @@ class Session {
 
   bool ResetSession();
 
-  ///////////////////////////////
-  //// User Details Handling ////
-  ///////////////////////////////
+  // Member Variable Accessors
+
+  ContactsHandler& contacts_handler();
+  PrivateShareHandler& private_share_handler();
+
+  // // // // // // // // // // // /////////
+  // // User Details Handling // //
+  // // // // // // // // // // // /////////
 
   // Accessors
   DefConLevels def_con_level();
@@ -163,9 +168,9 @@ class Session {
   void set_win_drive(char win_drive);
   void set_connection_status(int status);
 
-  ///////////////////////////
-  //// Key Ring Handling ////
-  ///////////////////////////
+  // // // // // // // // // // // /////
+  // // Key Ring Handling // //
+  // // // // // // // // // // // /////
 
   int ParseKeyring(const std::string &serialised_keyring);
   std::string SerialiseKeyring();
@@ -178,91 +183,30 @@ class Session {
                 std::string *private_key,
                 std::string *public_key_signature);
 
-  ///////////////////////////
-  //// Contacts Handling ////
-  ///////////////////////////
+  // // // // // // // // // // // /////
+  // // Contacts Handling // //
+  // // // // // // // // // // // /////
 
   int LoadContacts(std::list<PublicContact> *contacts);
-  int AddContact(const std::string &pub_name,
-                 const std::string &pub_key,
-                 const std::string &full_name,
-                 const std::string &office_phone,
-                 const std::string &birthday,
-                 const char &gender,
-                 const int &language,
-                 const int &country,
-                 const std::string &city,
-                 const char &confirmed,
-                 const int &rank,
-                 const int &last_contact);
-  int DeleteContact(const std::string &pub_name);
-  int UpdateContact(const mi_contact &mic);
-  int UpdateContactKey(const std::string &pub_name,
-                       const std::string &value);
-  int UpdateContactFullName(const std::string &pub_name,
-                            const std::string &value);
-  int UpdateContactOfficePhone(const std::string &pub_name,
-                               const std::string &value);
-  int UpdateContactBirthday(const std::string &pub_name,
-                            const std::string &value);
-  int UpdateContactGender(const std::string &pub_name,
-                          const char &value);
-  int UpdateContactLanguage(const std::string &pub_name,
-                            const int &value);
-  int UpdateContactCountry(const std::string &pub_name,
-                           const int &value);
-  int UpdateContactCity(const std::string &pub_name,
-                        const std::string &value);
-  int UpdateContactConfirmed(const std::string &pub_name,
-                             const char &value);
-  int SetLastContactRank(const std::string &pub_name);
-  int GetContactInfo(const std::string &pub_name, mi_contact *mic);
   std::string GetContactPublicKey(const std::string &pub_name);
 
   // type:  1  - for most contacted
   //        2  - for most recent
   //        0  - (default) alphabetical
-  int GetContactList(std::vector<mi_contact> *list,
-                     int type = 0);
   int GetPublicUsernameList(std::vector<std::string> *list);
-  int ClearContacts();
 
-  ////////////////////////////////
-  //// Private Share Handling ////
-  ////////////////////////////////
+  // // // // // // // // // // // //////////
+  // // Private Share Handling // //
+  // // // // // // // // // // // //////////
 
   int LoadShares(std::list<Share> *shares);
-  int AddPrivateShare(const std::vector<std::string> &attributes,
-                      const std::vector<boost::uint32_t> &share_stats,
-                      std::list<ShareParticipants> *participants);
-  int DeletePrivateShare(const std::string &value, const int &field);
-  int AddContactsToPrivateShare(const std::string &value,
-                                const int &field,
-                                std::list<ShareParticipants> *participants);
-  int DeleteContactsFromPrivateShare(const std::string &value,
-                                     const int &field,
-                                     std::list<std::string> *participants);
-  int TouchShare(const std::string &value, const int &field);
-  int GetShareInfo(const std::string &value,
-                   const int &field,
-                   PrivateShare *ps);
   int GetShareKeys(const std::string &msid,
                    std::string *public_key,
                    std::string *private_key);
-  int GetShareList(std::list<private_share> *ps_list,
-                   const SortingMode &sm,
-                   const ShareFilter &sf);
-  int GetFullShareList(const SortingMode &sm,
-                       const ShareFilter &sf,
-                       std::list<PrivateShare> *ps_list);
-  int GetParticipantsList(const std::string &value,
-                          const int &field,
-                          std::list<share_participant> *sp_list);
-  void ClearPrivateShares();
 
-  ///////////////////////////////
-  //// Conversation Handling ////
-  ///////////////////////////////
+  // // // // // // // // // // // /////////
+  // // Conversation Handling // //
+  // // // // // // // // // // // /////////
 
   int ConversationList(std::list<std::string> *conversations);
   int AddConversation(const std::string &id);
@@ -270,9 +214,9 @@ class Session {
   int ConversationExits(const std::string &id);
   void ClearConversations();
 
-  ///////////////////////////////
-  //// Live Contact Handling ////
-  ///////////////////////////////
+  // // // // // // // // // // // /////////
+  // // Live Contact Handling // //
+  // // // // // // // // // // // /////////
 
 //  typedef std::map<std::string, ConnectionDetails> live_map;
 //  int AddLiveContact(const std::string &contact,
@@ -360,8 +304,8 @@ class Session {
   std::shared_ptr<boost::asio::io_service::work> work_;
   boost::thread_group threads_;
   std::shared_ptr<passport::Passport> passport_;
-  ContactsHandler ch_;
-  PrivateShareHandler psh_;
+  ContactsHandler contacts_handler_;
+  PrivateShareHandler private_share_handler_;
   std::set<std::string> conversations_;
   std::map<std::string, ConnectionDetails> live_contacts_;
   boost::mutex lc_mutex_;

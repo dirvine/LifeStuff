@@ -46,8 +46,8 @@ Session::Session()
       work_(new boost::asio::io_service::work(io_service_)),
       threads_(),
       passport_(new passport::Passport(io_service_, kRsaKeySize)),
-      ch_(),
-      psh_(),
+      contacts_handler_(),
+      private_share_handler_(),
       conversations_(),
       live_contacts_(),
       lc_mutex_() {
@@ -74,14 +74,21 @@ bool Session::ResetSession() {
   ud_.win_drive = '\0';
   ud_.connection_status = 1;
   passport_->ClearKeyring();
-  ch_.ClearContacts();
-  psh_.ClearPrivateShares();
+  contacts_handler_.ClearContacts();
+  private_share_handler_.ClearPrivateShares();
   conversations_.clear();
   live_contacts_.clear();
   return true;
 }
 
 
+ContactsHandler& Session::contacts_handler() {
+  return contacts_handler_;
+}
+
+PrivateShareHandler& Session::private_share_handler() {
+  return private_share_handler_;
+}
 
 // // / // / // / // / // / // / // / // / // / //
 // // User Details Handling // //
@@ -286,83 +293,20 @@ int Session::LoadContacts(std::list<PublicContact> *contacts) {
   int n = 0;
   while (!contacts->empty()) {
     PublicContact pc = contacts->front();
-    n += AddContact(pc.pub_name(), pc.pub_key(), pc.full_name(),
-                    pc.office_phone(), pc.birthday(), pc.gender().at(0),
-                    pc.language(), pc.country(), pc.city(),
-                    pc.confirmed().at(0), pc.rank(), pc.last_contact());
+    n += contacts_handler_.AddContact(pc.pub_name(), pc.pub_key(),
+                                      pc.full_name(), pc.office_phone(),
+                                      pc.birthday(), pc.gender().at(0),
+                                      pc.language(), pc.country(),
+                                      pc.city(), pc.confirmed().at(0),
+                                      pc.rank(), pc.last_contact());
     contacts->pop_front();
   }
   return n;
 }
 
-int Session::AddContact(const std::string &pub_name,
-                                 const std::string &pub_key,
-                                 const std::string &full_name,
-                                 const std::string &office_phone,
-                                 const std::string &birthday,
-                                 const char &gender,
-                                 const int &language,
-                                 const int &country,
-                                 const std::string &city,
-                                 const char &confirmed,
-                                 const int &rank,
-                                 const int &last_contact) {
-  return ch_.AddContact(pub_name, pub_key, full_name, office_phone, birthday,
-                           gender, language, country, city, confirmed, rank,
-                           last_contact);
-}
-int Session::DeleteContact(const std::string &pub_name) {
-  return ch_.DeleteContact(pub_name);
-}
-int Session::UpdateContact(const mi_contact &mic) {
-  return ch_.UpdateContact(mic);
-}
-int Session::UpdateContactKey(const std::string &pub_name,
-                                       const std::string &value) {
-  return ch_.UpdateContactKey(pub_name, value);
-}
-int Session::UpdateContactFullName(const std::string &pub_name,
-                                            const std::string &value) {
-  return ch_.UpdateContactFullName(pub_name, value);
-}
-int Session::UpdateContactOfficePhone(const std::string &pub_name,
-                                               const std::string &value) {
-  return ch_.UpdateContactOfficePhone(pub_name, value);
-}
-int Session::UpdateContactBirthday(const std::string &pub_name,
-                                            const std::string &value) {
-  return ch_.UpdateContactBirthday(pub_name, value);
-}
-int Session::UpdateContactGender(const std::string &pub_name,
-                                          const char &value) {
-  return ch_.UpdateContactGender(pub_name, value);
-}
-int Session::UpdateContactLanguage(const std::string &pub_name,
-                                            const int &value) {
-  return ch_.UpdateContactLanguage(pub_name, value);
-}
-int Session::UpdateContactCountry(const std::string &pub_name,
-                                           const int &value) {
-  return ch_.UpdateContactCountry(pub_name, value);
-}
-int Session::UpdateContactCity(const std::string &pub_name,
-                                        const std::string &value) {
-  return ch_.UpdateContactCity(pub_name, value);
-}
-int Session::UpdateContactConfirmed(const std::string &pub_name,
-                                             const char &value) {
-  return ch_.UpdateContactConfirmed(pub_name, value);
-}
-int Session::SetLastContactRank(const std::string &pub_name) {
-  return ch_.SetLastContactRank(pub_name);
-}
-int Session::GetContactInfo(const std::string &pub_name,
-                                     mi_contact *mic) {
-  return ch_.GetContactInfo(pub_name, mic);
-}
 std::string Session::GetContactPublicKey(const std::string &pub_name) {
   mi_contact mic;
-  if (ch_.GetContactInfo(pub_name, &mic) != 0)
+  if (contacts_handler_.GetContactInfo(pub_name, &mic) != 0)
     return "";
   return mic.pub_key_;
 }
@@ -370,21 +314,14 @@ std::string Session::GetContactPublicKey(const std::string &pub_name) {
 // type:  1  - for most contacted
 //        2  - for most recent
 //        0  - (default) alphabetical
-int Session::GetContactList(std::vector<mi_contact> *list,
-                                     int type) {
-  return ch_.GetContactList(list, type);
-}
 int Session::GetPublicUsernameList(std::vector<std::string> *list) {
   list->clear();
   std::vector<mi_contact> mic_list;
-  if (ch_.GetContactList(&mic_list, 0) != 0)
+  if (contacts_handler_.GetContactList(&mic_list, 0) != 0)
     return kContactListFailure;
   for (size_t n = 0; n < mic_list.size(); ++n)
     list->push_back(mic_list[n].pub_name_);
   return 0;
-}
-int Session::ClearContacts() {
-  return ch_.ClearContacts();
 }
 
 
@@ -414,45 +351,16 @@ int Session::LoadShares(std::list<Share> *shares) {
     share_stats.push_back(sh.rank());
     share_stats.push_back(sh.last_view());
     shares->pop_front();
-    a += AddPrivateShare(attributes, share_stats, &sp);
+    a += private_share_handler_.AddPrivateShare(attributes, share_stats, &sp);
   }
   return a;
 }
-int Session::AddPrivateShare(
-    const std::vector<std::string> &attributes,
-    const std::vector<boost::uint32_t> &share_stats,
-    std::list<ShareParticipants> *participants) {
-  return psh_.AddPrivateShare(attributes, share_stats, participants);
-}
-int Session::DeletePrivateShare(const std::string &value,
-                                         const int &field) {
-  return psh_.DeletePrivateShare(value, field);
-}
-int Session::AddContactsToPrivateShare(
-    const std::string &value,
-    const int &field,
-    std::list<ShareParticipants> *participants) {
-  return psh_.AddContactsToPrivateShare(value, field, participants);
-}
-int Session::DeleteContactsFromPrivateShare(
-    const std::string &value,
-    const int &field,
-    std::list<std::string> *participants) {
-  return psh_.DeleteContactsFromPrivateShare(value, field, participants);
-}
-int Session::TouchShare(const std::string &value, const int &field) {
-  return psh_.TouchShare(value, field);
-}
-int Session::GetShareInfo(const std::string &value,
-                                   const int &field,
-                                   PrivateShare *ps) {
-  return psh_.GetShareInfo(value, field, ps);
-}
+
 int Session::GetShareKeys(const std::string &msid,
                                    std::string *public_key,
                                    std::string *private_key) {
   PrivateShare ps;
-  if (GetShareInfo(msid, 1, &ps) != 0) {
+  if (private_share_handler_.GetShareInfo(msid, 1, &ps) != 0) {
     printf("Pelation en SS::GetShareKeys\n");
     *public_key = "";
     *private_key = "";
@@ -462,26 +370,6 @@ int Session::GetShareKeys(const std::string &msid,
   *private_key = ps.MsidPriKey();
   return 0;
 }
-int Session::GetShareList(std::list<private_share> *ps_list,
-                                   const SortingMode &sm,
-                                   const ShareFilter &sf) {
-  return psh_.GetShareList(ps_list, sm, sf);
-}
-int Session::GetFullShareList(const SortingMode &sm,
-                                       const ShareFilter &sf,
-                                       std::list<PrivateShare> *ps_list) {
-  return psh_.GetFullShareList(sm, sf, ps_list);
-}
-int Session::GetParticipantsList(
-    const std::string &value,
-    const int &field,
-    std::list<share_participant> *sp_list) {
-  return psh_.GetParticipantsList(value, field, sp_list);
-}
-void Session::ClearPrivateShares() {
-  return psh_.ClearPrivateShares();
-}
-
 
 // // / // / // / // / // / // / // / // / // / //
 // // Conversation Handling // //

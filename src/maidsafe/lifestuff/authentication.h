@@ -48,7 +48,7 @@ class Authentication {
  public:
   explicit Authentication(std::shared_ptr<Session> ss)
       : packet_manager_(),
-        session_singleton_(ss),
+        session_(ss),
         passport_(),
         mutex_(),
         mid_mutex_(),
@@ -225,7 +225,7 @@ class Authentication {
 
 
   std::shared_ptr<PacketManager> packet_manager_;
-  std::shared_ptr<Session> session_singleton_;
+  std::shared_ptr<Session> session_;
   std::shared_ptr<passport::Passport> passport_;
   boost::mutex mutex_, mid_mutex_, smid_mutex_;
   boost::condition_variable cond_var_;

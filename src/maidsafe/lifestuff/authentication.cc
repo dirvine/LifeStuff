@@ -81,7 +81,7 @@ Authentication::~Authentication() {
 
 void Authentication::Init(std::shared_ptr<PacketManager> packet_manager) {
   packet_manager_ = packet_manager;
-  passport_ = session_singleton_->passport_;
+  passport_ = session_->passport_;
 }
 
 int Authentication::GetUserInfo(const std::string &username,
@@ -124,8 +124,8 @@ int Authentication::GetUserInfo(const std::string &username,
     }
   }
   if (tmid_op_status_ == kSucceeded || stmid_op_status_ == kSucceeded) {
-    session_singleton_->set_username(username);
-    session_singleton_->set_pin(pin);
+    session_->set_username(username);
+    session_->set_pin(pin);
     return kUserExists;
   }
   return kUserDoesntExist;
@@ -296,8 +296,8 @@ int Authentication::CreateUserSysPackets(const std::string &username,
                   << std::endl;
     return kAuthenticationError;
   }
-  session_singleton_->set_username(username);
-  session_singleton_->set_pin(pin);
+  session_->set_username(username);
+  session_->set_pin(pin);
 
   OpStatus anmaid_status(kPending);
   CreateSignaturePacket(passport::ANMAID, "", &anmaid_status, NULL);
@@ -455,8 +455,8 @@ int Authentication::CreateTmidPacket(const std::string &username,
                                      const std::string &pin,
                                      const std::string &password,
                                      const std::string &serialised_datamap) {
-  if ((username != session_singleton_->username()) ||
-      (pin != session_singleton_->pin())) {
+  if ((username != session_->username()) ||
+      (pin != session_->pin())) {
     DLOG(ERROR) << "Authentication::CreateTmidPacket: username/pin error."
                 << std::endl;
     return kAuthenticationError;
@@ -503,7 +503,7 @@ int Authentication::CreateTmidPacket(const std::string &username,
     return kAuthenticationError;
   } else {
     passport_->ConfirmNewUserData(mid, smid, tmid, stmid);
-    session_singleton_->set_password(password);
+    session_->set_password(password);
     return kSuccess;
   }
 }
@@ -728,7 +728,7 @@ int Authentication::GetMasterDataMap(
   int res = passport_->GetUserData(password, false, encrypted_tmid_,
                                    serialised_master_datamap.get());
   if (res == kSuccess) {
-    session_singleton_->set_password(password);
+    session_->set_password(password);
     passport_->GetUserData(password, true, encrypted_stmid_,
                            surrogate_serialised_master_datamap.get());
     return res;
@@ -740,7 +740,7 @@ int Authentication::GetMasterDataMap(
   res = passport_->GetUserData(password, true, encrypted_stmid_,
                                surrogate_serialised_master_datamap.get());
   if (res == kSuccess) {
-    session_singleton_->set_password(password);
+    session_->set_password(password);
     return res;
   } else {
     DLOG(WARNING) << "Authentication::GetMasterDataMap - STMID error "
@@ -772,11 +772,13 @@ int Authentication::CreateMsidPacket(std::string *msid_name,
   attributes.push_back(msid->name());
   attributes.push_back(msid->value());  // msid->value == msid->public_key
   attributes.push_back(msid->private_key());
-  result = session_singleton_->AddPrivateShare(attributes, share_stats, NULL);
+  result = session_->private_share_handler().AddPrivateShare(
+              attributes, share_stats, NULL);
   if (result != kSuccess) {
     DLOG(ERROR) << "Authentication::CreateMsidPacket: failed adding to session"
                 << std::endl;
-    session_singleton_->DeletePrivateShare(msid->name(), 0);
+    session_->private_share_handler().DeletePrivateShare(
+        msid->name(), 0);
     return kAuthenticationError;
   }
   result = StorePacket(msid, true, passport::MSID);
@@ -786,7 +788,8 @@ int Authentication::CreateMsidPacket(std::string *msid_name,
                 << std::endl;
 #endif
   // Remove the share from the session again to allow CC to add it fully.
-  session_singleton_->DeletePrivateShare(msid->name(), 0);
+  session_->private_share_handler().DeletePrivateShare(
+      msid->name(), 0);
 
   if (result != kSuccess) {
     DLOG(ERROR) << "Authentication::CreateMsidPacket: Failed." << std::endl;
@@ -800,7 +803,7 @@ int Authentication::CreateMsidPacket(std::string *msid_name,
 }
 
 int Authentication::CreatePublicName(const std::string &public_name) {
-  if (!session_singleton_->public_username().empty()) {
+  if (!session_->public_username().empty()) {
     DLOG(ERROR) << "Authentication::CreatePublicName: Already set" << std::endl;
     return kPublicUsernameAlreadySet;
   }
@@ -968,13 +971,13 @@ int Authentication::ChangeUsername(const std::string &serialised_master_datamap,
                                    const std::string &new_username) {
   return ChangeUserData(serialised_master_datamap,
                         new_username,
-                        session_singleton_->pin());
+                        session_->pin());
 }
 
 int Authentication::ChangePin(const std::string &serialised_master_datamap,
                               const std::string &new_pin) {
   return ChangeUserData(serialised_master_datamap,
-                        session_singleton_->username(),
+                        session_->username(),
                         new_pin);
 }
 
@@ -1192,8 +1195,8 @@ int Authentication::ChangeUserData(const std::string &serialised_master_datamap,
     passport_->RevertUserDataChange();
     return kAuthenticationError;
   }
-  session_singleton_->set_username(new_username);
-  session_singleton_->set_pin(new_pin);
+  session_->set_username(new_username);
+  session_->set_pin(new_pin);
   return kSuccess;
 }
 
@@ -1273,7 +1276,7 @@ int Authentication::ChangePassword(const std::string &serialised_master_datamap,
     passport_->RevertPasswordChange();
     return kAuthenticationError;
   }
-  session_singleton_->set_password(new_password);
+  session_->set_password(new_password);
   return kSuccess;
 }
 
@@ -1425,78 +1428,78 @@ std::string Authentication::CreateGenericPacket(
   gp.set_hashable(true);
   switch (packet_type) {
     case passport::ANMID:
-        gp.set_signing_id(session_singleton_->Id(passport::ANMID, false));
+        gp.set_signing_id(session_->Id(passport::ANMID, false));
         if (signature.empty())
           gp.set_signature(
-              session_singleton_->PublicKeySignature(passport::ANMID, false));
+              session_->PublicKeySignature(passport::ANMID, false));
         break;
     case passport::MID:
-        gp.set_signing_id(session_singleton_->Id(passport::ANMID, true));
+        gp.set_signing_id(session_->Id(passport::ANMID, true));
         gp.set_hashable(false);
         if (signature.empty())
           gp.set_signature(
               crypto::AsymSign(gp.data(),
-                               session_singleton_->PrivateKey(passport::ANMID,
+                               session_->PrivateKey(passport::ANMID,
                                                               true)));
         break;
     case passport::ANSMID:
-        gp.set_signing_id(session_singleton_->Id(passport::ANSMID, false));
+        gp.set_signing_id(session_->Id(passport::ANSMID, false));
         if (signature.empty())
           gp.set_signature(
-              session_singleton_->PublicKeySignature(passport::ANSMID, false));
+              session_->PublicKeySignature(passport::ANSMID, false));
         break;
     case passport::SMID:
-        gp.set_signing_id(session_singleton_->Id(passport::ANSMID, true));
+        gp.set_signing_id(session_->Id(passport::ANSMID, true));
         gp.set_hashable(false);
         if (signature.empty())
           gp.set_signature(
               crypto::AsymSign(gp.data(),
-                               session_singleton_->PrivateKey(passport::ANSMID,
+                               session_->PrivateKey(passport::ANSMID,
                                                               true)));
         break;
     case passport::ANTMID:
-        gp.set_signing_id(session_singleton_->Id(passport::ANTMID, false));
+        gp.set_signing_id(session_->Id(passport::ANTMID, false));
         if (signature.empty())
           gp.set_signature(
-              session_singleton_->PublicKeySignature(passport::ANTMID, false));
+              session_->PublicKeySignature(passport::ANTMID, false));
         break;
     case passport::TMID:
     case passport::STMID:
-        gp.set_signing_id(session_singleton_->Id(passport::ANTMID, true));
+        gp.set_signing_id(session_->Id(passport::ANTMID, true));
         gp.set_hashable(false);
         if (signature.empty())
           gp.set_signature(
               crypto::AsymSign(gp.data(),
-                               session_singleton_->PrivateKey(passport::ANTMID,
-                                                              true)));
+                               session_->PrivateKey(passport::ANTMID,
+                                                    true)));
         break;
     case passport::ANMPID:
-        gp.set_signing_id(session_singleton_->Id(passport::ANMPID, false));
+        gp.set_signing_id(session_->Id(passport::ANMPID, false));
         if (signature.empty())
           gp.set_signature(
-              session_singleton_->PublicKeySignature(passport::ANMPID, false));
+              session_->PublicKeySignature(passport::ANMPID, false));
         break;
     case passport::MPID:
-        gp.set_signing_id(session_singleton_->Id(passport::ANMPID, true));
+        gp.set_signing_id(session_->Id(passport::ANMPID, true));
         gp.set_hashable(false);
         break;
     case passport::ANMAID:
-        gp.set_signing_id(session_singleton_->Id(passport::ANMAID, false));
+        gp.set_signing_id(session_->Id(passport::ANMAID, false));
         if (signature.empty())
           gp.set_signature(
-              session_singleton_->PublicKeySignature(passport::ANMAID, false));
+              session_->PublicKeySignature(passport::ANMAID, false));
         break;
     case passport::MAID:
-        gp.set_signing_id(session_singleton_->Id(passport::ANMAID, true));
+        gp.set_signing_id(session_->Id(passport::ANMAID, true));
         if (signature.empty())
           gp.set_signature(
-              session_singleton_->PublicKeySignature(passport::MAID, true));
+              session_->PublicKeySignature(passport::MAID, true));
         break;
     case passport::PMID:
-        gp.set_signing_id(session_singleton_->Id(passport::MAID, true));
+        gp.set_signing_id(session_->Id(passport::MAID, true));
         if (signature.empty())
           gp.set_signature(
-              session_singleton_->PublicKeySignature(passport::PMID, true));
+              session_->PublicKeySignature(passport::PMID, true));
         break;
     default: break;
   }

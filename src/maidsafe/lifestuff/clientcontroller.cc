@@ -3,7 +3,7 @@
 *
 * Copyright [2009] maidsafe.net limited
 *
-* Description:  Singleton class which controls all maidsafe client operations
+* Description:  class which controls all maidsafe client operations
 * Version:      1.0
 * Created:      2009-01-28-10.59.46
 * Revision:     none
@@ -203,7 +203,7 @@ int ClientController::SerialiseDa() {
   data_atlas.set_serialised_keyring(serialised_keyring);
 
   std::vector<mi_contact> contacts;
-  ss_->GetContactList(&contacts);
+  ss_->contacts_handler().GetContactList(&contacts);
   for (size_t n = 0; n < contacts.size(); ++n) {
     PublicContact *pc = data_atlas.add_contacts();
     pc->set_pub_name(contacts[n].pub_name_);
@@ -223,7 +223,7 @@ int ClientController::SerialiseDa() {
   }
 
   std::list<PrivateShare> ps_list;
-  ss_->GetFullShareList(kAlpha, kAll, &ps_list);
+  ss_->private_share_handler().GetFullShareList(kAlpha, kAll, &ps_list);
   while (!ps_list.empty()) {
     PrivateShare this_ps = ps_list.front();
     Share *sh = data_atlas.add_shares();
