@@ -22,7 +22,7 @@
 * ============================================================================
 */
 
-#include "maidsafe/lifestuff/clientcontroller.h"
+#include "maidsafe/lifestuff/client_controller.h"
 
 #ifdef MAIDSAFE_WIN32
 #  include <shlwapi.h>
@@ -47,7 +47,7 @@
 
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/authentication.h"
-#include "maidsafe/lifestuff/clientutils.h"
+#include "maidsafe/lifestuff/client_utils.h"
 #ifdef __MSVC__
 #  pragma warning(push)
 #  pragma warning(disable: 4244 4127)
@@ -59,7 +59,7 @@
 #include "maidsafe/lifestuff/session.h"
 
 #if defined LOCAL_LifeStuffVAULT && !defined MS_NETWORK_TEST
-#  include "maidsafe/lifestuff/localstoremanager.h"
+#  include "maidsafe/lifestuff/local_store_manager.h"
 #else
 #  include "maidsafe/lifestuff/networkstoremanager.h"
 #endif

@@ -34,9 +34,9 @@
 #include "maidsafe/common/test.h"
 
 #include "maidsafe/lifestuff/authentication.h"
-#include "maidsafe/lifestuff/clientutils.h"
-#include "maidsafe/lifestuff/clientcontroller.h"
-#include "maidsafe/lifestuff/localstoremanager.h"
+#include "maidsafe/lifestuff/client_utils.h"
+#include "maidsafe/lifestuff/client_controller.h"
+#include "maidsafe/lifestuff/local_store_manager.h"
 #include "maidsafe/lifestuff/session.h"
 
 

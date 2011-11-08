@@ -26,7 +26,7 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/lifestuff/authentication.h"
-#include "maidsafe/lifestuff/localstoremanager.h"
+#include "maidsafe/lifestuff/local_store_manager.h"
 #include "maidsafe/lifestuff/session.h"
 #ifdef __MSVC__
 #  pragma warning(push)
@@ -36,7 +36,7 @@
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
-#include "maidsafe/lifestuff/tests/testcallback.h"
+#include "maidsafe/lifestuff/tests/test_callback.h"
 
 namespace arg = std::placeholders;
 namespace fs = boost::filesystem;

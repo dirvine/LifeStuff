@@ -29,7 +29,7 @@
 #include <vector>
 #include "maidsafe/passport/passport.h"
 #include "maidsafe/lifestuff/maidsafe.h"
-#include "maidsafe/lifestuff/returncodes.h"
+#include "maidsafe/lifestuff/return_codes.h"
 
 namespace maidsafe {
 

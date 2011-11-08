@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_RETURNCODES_H_
-#define MAIDSAFE_LIFESTUFF_RETURNCODES_H_
+#ifndef MAIDSAFE_LIFESTUFF_RETURN_CODES_H_
+#define MAIDSAFE_LIFESTUFF_RETURN_CODES_H_
 
 #include "maidsafe/lifestuff/version.h"
 
@@ -79,4 +79,4 @@ enum ReturnCode {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_RETURNCODES_H_
+#endif  // MAIDSAFE_LIFESTUFF_RETURN_CODES_H_

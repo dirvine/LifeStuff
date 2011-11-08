@@ -48,7 +48,7 @@
 #endif
 
 #include "maidsafe/common/utils.h"
-#include "maidsafe/lifestuff/returncodes.h"
+#include "maidsafe/lifestuff/return_codes.h"
 
 namespace maidsafe {
 

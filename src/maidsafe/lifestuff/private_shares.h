@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_PRIVATESHARES_H_
-#define MAIDSAFE_LIFESTUFF_PRIVATESHARES_H_
+#ifndef MAIDSAFE_LIFESTUFF_PRIVATE_SHARES_H_
+#define MAIDSAFE_LIFESTUFF_PRIVATE_SHARES_H_
 
 #ifdef __MSVC__
 #  pragma warning(disable: 4503)
@@ -216,4 +216,4 @@ class PrivateShareHandler {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_PRIVATESHARES_H_
+#endif  // MAIDSAFE_LIFESTUFF_PRIVATE_SHARES_H_

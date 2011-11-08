@@ -22,7 +22,7 @@
 * ============================================================================
 */
 
-#include "maidsafe/lifestuff/clientutils.h"
+#include "maidsafe/lifestuff/client_utils.h"
 
 #include <algorithm>
 #include <cctype>

@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_LOCALSTOREMANAGER_H_
-#define MAIDSAFE_LIFESTUFF_LOCALSTOREMANAGER_H_
+#ifndef MAIDSAFE_LIFESTUFF_LOCAL_STORE_MANAGER_H_
+#define MAIDSAFE_LIFESTUFF_LOCAL_STORE_MANAGER_H_
 
 #include <list>
 #include <map>
@@ -98,4 +98,4 @@ class LocalStoreManager : public PacketManager {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_LOCALSTOREMANAGER_H_
+#endif  // MAIDSAFE_LIFESTUFF_LOCAL_STORE_MANAGER_H_

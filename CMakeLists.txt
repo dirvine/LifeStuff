@@ -126,8 +126,6 @@ LIST(REMOVE_ITEM STYLE_CLIENT "${SRC_MAIDSAFE}/lifestuff_messages.pb.h"
                               "${SRC_MAIDSAFE}/data_atlas.pb.cc")
 
 SET(ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR ${ALL_FILES_CLIENT_DIR})
-LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/networkstoremanager.h"
-                                                        "${SRC_MAIDSAFE}/networkstoremanager.cc")
 
 SOURCE_GROUP("client Source Files" FILES ${SOURCE_FILES_CLIENT_DIR})
 SOURCE_GROUP("client Header Files" FILES ${HEADER_FILES_CLIENT_DIR})
@@ -135,8 +133,8 @@ SOURCE_GROUP("client Header Files" FILES ${HEADER_FILES_CLIENT_DIR})
 ####    TESTS    ####
 FILE(GLOB ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/tests/*.cc" "${SRC_MAIDSAFE}/tests/*.h")
 LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/tests/client_main.cc")
-LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/tests/testclientcontroller.cc")
-LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/tests/testauthentication.cc")
+LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/tests/client_controller_test.cc")
+LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/tests/authentication_test.cc")
 
 SET(TEST_MAIN "${SRC_MAIDSAFE}/tests/tests_main.cc")
 
@@ -159,10 +157,10 @@ ADD_EXECUTABLE(TESTclient
 
 ADD_EXECUTABLE(TESTauthentication_local
                  ${TEST_MAIN}
-                 "${SRC_MAIDSAFE}/tests/testauthentication.cc")
+                 "${SRC_MAIDSAFE}/tests/authentication_test.cc")
 ADD_EXECUTABLE(TESTclientcontroller_local
                  ${TEST_MAIN}
-                 "${SRC_MAIDSAFE}/tests/testclientcontroller.cc")
+                 "${SRC_MAIDSAFE}/tests/client_controller_test.cc")
 
 SET(ALL_EXECUTABLES TESTclient TESTauthentication_local TESTclientcontroller_local ClientDemo)
 RENAME_EXECUTABLE(ClientDemo)
@@ -356,11 +354,11 @@ IF(${PACKAGE_BUILD})
 
 ELSE() # Installing the library
   SET(LIFESTUFF_CLIENT_INSTALL_FILES
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/clientcontroller.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client_controller.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/user_credentials_api.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/user_storage.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/maidsafe.h
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/returncodes.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/return_codes.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/version.h)
   FOREACH(LIFESTUFF_CLIENT_INSTALL_FILE ${LIFESTUFF_CLIENT_INSTALL_FILES})
     CHECK_INSTALL_HEADER_HAS_VERSION_GUARD(${LIFESTUFF_CLIENT_INSTALL_FILE})

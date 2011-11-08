@@ -49,7 +49,7 @@
 
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/contacts.h"
-#include "maidsafe/lifestuff/privateshares.h"
+#include "maidsafe/lifestuff/private_shares.h"
 #include "maidsafe/lifestuff/maidsafe.h"
 
 namespace maidsafe {
@@ -133,9 +133,9 @@ class Session {
   ContactsHandler& contacts_handler();
   PrivateShareHandler& private_share_handler();
 
-  // // // // // // // // // // // /////////
+  // // // // // // // // // // // // ///////
   // // User Details Handling // //
-  // // // // // // // // // // // /////////
+  // // // // // // // // // // // // ///////
 
   // Accessors
   DefConLevels def_con_level();
@@ -168,9 +168,9 @@ class Session {
   void set_win_drive(char win_drive);
   void set_connection_status(int status);
 
-  // // // // // // // // // // // /////
+  // // // // // // // // // // // // ///
   // // Key Ring Handling // //
-  // // // // // // // // // // // /////
+  // // // // // // // // // // // // ///
 
   int ParseKeyring(const std::string &serialised_keyring);
   std::string SerialiseKeyring();
@@ -183,9 +183,9 @@ class Session {
                 std::string *private_key,
                 std::string *public_key_signature);
 
-  // // // // // // // // // // // /////
+  // // // // // // // // // // // // ///
   // // Contacts Handling // //
-  // // // // // // // // // // // /////
+  // // // // // // // // // // // // ///
 
   int LoadContacts(std::list<PublicContact> *contacts);
   std::string GetContactPublicKey(const std::string &pub_name);
@@ -195,18 +195,18 @@ class Session {
   //        0  - (default) alphabetical
   int GetPublicUsernameList(std::vector<std::string> *list);
 
-  // // // // // // // // // // // //////////
+  // // // // // // // // // // // // ////////
   // // Private Share Handling // //
-  // // // // // // // // // // // //////////
+  // // // // // // // // // // // // ////////
 
   int LoadShares(std::list<Share> *shares);
   int GetShareKeys(const std::string &msid,
                    std::string *public_key,
                    std::string *private_key);
 
-  // // // // // // // // // // // /////////
+  // // // // // // // // // // // // ///////
   // // Conversation Handling // //
-  // // // // // // // // // // // /////////
+  // // // // // // // // // // // // ///////
 
   int ConversationList(std::list<std::string> *conversations);
   int AddConversation(const std::string &id);
@@ -214,9 +214,9 @@ class Session {
   int ConversationExits(const std::string &id);
   void ClearConversations();
 
-  // // // // // // // // // // // /////////
+  // // // // // // // // // // // // ///////
   // // Live Contact Handling // //
-  // // // // // // // // // // // /////////
+  // // // // // // // // // // // // ///////
 
 //  typedef std::map<std::string, ConnectionDetails> live_map;
 //  int AddLiveContact(const std::string &contact,

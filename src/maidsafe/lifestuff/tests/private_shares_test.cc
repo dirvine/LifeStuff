@@ -28,7 +28,7 @@
 #include "boost/thread.hpp"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/lifestuff/privateshares.h"
+#include "maidsafe/lifestuff/private_shares.h"
 
 namespace maidsafe {
 

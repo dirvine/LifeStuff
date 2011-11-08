@@ -24,7 +24,7 @@
 #include <string>
 
 #include "maidsafe/lifestuff/log.h"
-#include "maidsafe/lifestuff/clientcontroller.h"
+#include "maidsafe/lifestuff/client_controller.h"
 #include "maidsafe/lifestuff/demo/commands.h"
 #include "maidsafe/lifestuff/user_credentials_api.h"
 
