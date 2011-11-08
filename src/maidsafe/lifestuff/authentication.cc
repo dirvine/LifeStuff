@@ -772,12 +772,12 @@ int Authentication::CreateMsidPacket(std::string *msid_name,
   attributes.push_back(msid->name());
   attributes.push_back(msid->value());  // msid->value == msid->public_key
   attributes.push_back(msid->private_key());
-  result = session_->private_share_handler().AddPrivateShare(
+  result = session_->private_share_handler()->AddPrivateShare(
               attributes, share_stats, NULL);
   if (result != kSuccess) {
     DLOG(ERROR) << "Authentication::CreateMsidPacket: failed adding to session"
                 << std::endl;
-    session_->private_share_handler().DeletePrivateShare(
+    session_->private_share_handler()->DeletePrivateShare(
         msid->name(), 0);
     return kAuthenticationError;
   }
@@ -788,7 +788,7 @@ int Authentication::CreateMsidPacket(std::string *msid_name,
                 << std::endl;
 #endif
   // Remove the share from the session again to allow CC to add it fully.
-  session_->private_share_handler().DeletePrivateShare(
+  session_->private_share_handler()->DeletePrivateShare(
       msid->name(), 0);
 
   if (result != kSuccess) {

@@ -46,8 +46,8 @@ Session::Session()
       work_(new boost::asio::io_service::work(io_service_)),
       threads_(),
       passport_(new passport::Passport(io_service_, kRsaKeySize)),
-      contacts_handler_(),
-      private_share_handler_(),
+      contacts_handler_(new ContactsHandler()),
+      private_share_handler_(new PrivateShareHandler()),
       conversations_(),
       live_contacts_(),
       lc_mutex_() {
@@ -74,19 +74,19 @@ bool Session::ResetSession() {
   ud_.win_drive = '\0';
   ud_.connection_status = 1;
   passport_->ClearKeyring();
-  contacts_handler_.ClearContacts();
-  private_share_handler_.ClearPrivateShares();
+  contacts_handler_->ClearContacts();
+  private_share_handler_->ClearPrivateShares();
   conversations_.clear();
   live_contacts_.clear();
   return true;
 }
 
 
-ContactsHandler& Session::contacts_handler() {
+std::shared_ptr<ContactsHandler> Session::contacts_handler() {
   return contacts_handler_;
 }
 
-PrivateShareHandler& Session::private_share_handler() {
+std::shared_ptr<PrivateShareHandler> Session::private_share_handler() {
   return private_share_handler_;
 }
 
@@ -293,12 +293,12 @@ int Session::LoadContacts(std::list<PublicContact> *contacts) {
   int n = 0;
   while (!contacts->empty()) {
     PublicContact pc = contacts->front();
-    n += contacts_handler_.AddContact(pc.pub_name(), pc.pub_key(),
-                                      pc.full_name(), pc.office_phone(),
-                                      pc.birthday(), pc.gender().at(0),
-                                      pc.language(), pc.country(),
-                                      pc.city(), pc.confirmed().at(0),
-                                      pc.rank(), pc.last_contact());
+    n += contacts_handler_->AddContact(pc.pub_name(), pc.pub_key(),
+                                       pc.full_name(), pc.office_phone(),
+                                       pc.birthday(), pc.gender().at(0),
+                                       pc.language(), pc.country(),
+                                       pc.city(), pc.confirmed().at(0),
+                                       pc.rank(), pc.last_contact());
     contacts->pop_front();
   }
   return n;
@@ -306,7 +306,7 @@ int Session::LoadContacts(std::list<PublicContact> *contacts) {
 
 std::string Session::GetContactPublicKey(const std::string &pub_name) {
   mi_contact mic;
-  if (contacts_handler_.GetContactInfo(pub_name, &mic) != 0)
+  if (contacts_handler_->GetContactInfo(pub_name, &mic) != 0)
     return "";
   return mic.pub_key_;
 }
@@ -317,7 +317,7 @@ std::string Session::GetContactPublicKey(const std::string &pub_name) {
 int Session::GetPublicUsernameList(std::vector<std::string> *list) {
   list->clear();
   std::vector<mi_contact> mic_list;
-  if (contacts_handler_.GetContactList(&mic_list, 0) != 0)
+  if (contacts_handler_->GetContactList(&mic_list, 0) != 0)
     return kContactListFailure;
   for (size_t n = 0; n < mic_list.size(); ++n)
     list->push_back(mic_list[n].pub_name_);
@@ -351,7 +351,7 @@ int Session::LoadShares(std::list<Share> *shares) {
     share_stats.push_back(sh.rank());
     share_stats.push_back(sh.last_view());
     shares->pop_front();
-    a += private_share_handler_.AddPrivateShare(attributes, share_stats, &sp);
+    a += private_share_handler_->AddPrivateShare(attributes, share_stats, &sp);
   }
   return a;
 }
@@ -360,7 +360,7 @@ int Session::GetShareKeys(const std::string &msid,
                                    std::string *public_key,
                                    std::string *private_key) {
   PrivateShare ps;
-  if (private_share_handler_.GetShareInfo(msid, 1, &ps) != 0) {
+  if (private_share_handler_->GetShareInfo(msid, 1, &ps) != 0) {
     printf("Pelation en SS::GetShareKeys\n");
     *public_key = "";
     *private_key = "";
