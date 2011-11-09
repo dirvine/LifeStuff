@@ -25,6 +25,7 @@
 #include <string>
 
 #include "maidsafe/lifestuff/user_credentials_api.h"
+#include "maidsafe/lifestuff/user_storage.h"
 
 namespace maidsafe {
 
@@ -45,6 +46,7 @@ class Commands {
  private:
   bool result_arrived_, finish_;
   UserCredentialPtr user_credential_;
+  UserStorage user_storage_;
   std::string username_, pin_;
   bool logged_in_;
 };

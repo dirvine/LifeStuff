@@ -18,15 +18,15 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_TESTS_TESTCALLBACK_H_
-#define MAIDSAFE_LIFESTUFF_TESTS_TESTCALLBACK_H_
+#ifndef MAIDSAFE_LIFESTUFF_TESTS_TEST_CALLBACK_H_
+#define MAIDSAFE_LIFESTUFF_TESTS_TEST_CALLBACK_H_
 
 #include <string>
 #include <vector>
 
 #include "boost/thread/condition.hpp"
 #include "boost/thread/mutex.hpp"
-#include "maidsafe/lifestuff/returncodes.h"
+#include "maidsafe/lifestuff/return_codes.h"
 
 namespace maidsafe {
 
@@ -101,4 +101,4 @@ class CallbackObject {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_TESTS_TESTCALLBACK_H_
+#endif  // MAIDSAFE_LIFESTUFF_TESTS_TEST_CALLBACK_H_

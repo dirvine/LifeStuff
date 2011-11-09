@@ -24,7 +24,7 @@
 #include "maidsafe/common/crypto.h"
 
 #include "maidsafe/lifestuff/log.h"
-#include "maidsafe/lifestuff/returncodes.h"
+#include "maidsafe/lifestuff/return_codes.h"
 
 #ifdef __MSVC__
 #  pragma warning(push)

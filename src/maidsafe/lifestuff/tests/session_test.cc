@@ -72,10 +72,11 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_EQ(0, ss_->mounted());
   ASSERT_EQ('\0', ss_->win_drive());
   std::vector<mi_contact> list;
-  ASSERT_EQ(0, ss_->GetContactList(&list));
+  ASSERT_EQ(0, ss_->contacts_handler()->GetContactList(&list));
   ASSERT_EQ(size_t(0), list.size());
   std::list<PrivateShare> ps_list;
-  ASSERT_EQ(0, ss_->GetFullShareList(kAlpha, kAll, &ps_list));
+  ASSERT_EQ(0, ss_->private_share_handler()->GetFullShareList(
+                  kAlpha, kAll, &ps_list));
   ASSERT_EQ(size_t(0), ps_list.size());
 
   // Modify session
@@ -93,9 +94,9 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ss_->set_maid_authorised_users(non_empty_set);
   ss_->set_mounted(1);
   ss_->set_win_drive('N');
-  ASSERT_EQ(0, ss_->AddContact("pub_name", "pub_key", "full_name",
-                               "office_phone", "birthday", 'M', 18, 6, "city",
-                               'C', 0, 0));
+  ASSERT_EQ(0, ss_->contacts_handler()->AddContact("pub_name", "pub_key",
+                               "full_name", "office_phone", "birthday", 'M',
+                               18, 6, "city", 'C', 0, 0));
   std::vector<std::string> attributes;
   attributes.push_back("name");
   attributes.push_back("msid");
@@ -104,7 +105,8 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   std::list<ShareParticipants> participants;
   participants.push_back(ShareParticipants("id", "id_pub_key", 'A'));
   std::vector<boost::uint32_t> share_stats(2, 0);
-  ASSERT_EQ(0, ss_->AddPrivateShare(attributes, share_stats, &participants));
+  ASSERT_EQ(0, ss_->private_share_handler()->AddPrivateShare(
+                  attributes, share_stats, &participants));
 
   // Verify modifications
   ASSERT_TRUE(ss_->da_modified());
@@ -125,7 +127,7 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_FALSE(ss_->maid_authorised_users().end() == it);
   ASSERT_EQ(1, ss_->mounted());
   ASSERT_EQ('N', ss_->win_drive());
-  ASSERT_EQ(0, ss_->GetContactList(&list));
+  ASSERT_EQ(0, ss_->contacts_handler()->GetContactList(&list));
   ASSERT_EQ(size_t(1), list.size());
   ASSERT_EQ("pub_name", list[0].pub_name_);
   ASSERT_EQ("pub_key", list[0].pub_key_);
@@ -139,7 +141,8 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_EQ('C', list[0].confirmed_);
   ASSERT_EQ(0, list[0].rank_);
   ASSERT_NE(0, list[0].last_contact_);
-  ASSERT_EQ(0, ss_->GetFullShareList(kAlpha, kAll, &ps_list));
+  ASSERT_EQ(0, ss_->private_share_handler()->GetFullShareList(
+                  kAlpha, kAll, &ps_list));
   ASSERT_EQ(size_t(1), ps_list.size());
   ASSERT_EQ("name", ps_list.front().Name());
   ASSERT_EQ("msid", ps_list.front().Msid());
@@ -167,9 +170,10 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_EQ(size_t(0), ss_->maid_authorised_users().size());
   ASSERT_EQ(0, ss_->mounted());
   ASSERT_EQ('\0', ss_->win_drive());
-  ASSERT_EQ(0, ss_->GetContactList(&list));
+  ASSERT_EQ(0, ss_->contacts_handler()->GetContactList(&list));
   ASSERT_EQ(size_t(0), list.size());
-  ASSERT_EQ(0, ss_->GetFullShareList(kAlpha, kAll, &ps_list));
+  ASSERT_EQ(0, ss_->private_share_handler()->GetFullShareList(
+                  kAlpha, kAll, &ps_list));
   ASSERT_EQ(size_t(0), ps_list.size());
 }
 
@@ -204,7 +208,8 @@ TEST_F(SessionTest, BEH_SessionName) {
 TEST_F(SessionTest, BEH_SessionContactsIO) {
   // Add contacts to the session
   for (int n = 0; n < 10; n++) {
-    ASSERT_EQ(0, ss_->AddContact("pub_name_" + IntToString(n),
+    ASSERT_EQ(0, ss_->contacts_handler()->AddContact(
+                                 "pub_name_" + IntToString(n),
                                  "pub_key_" + IntToString(n),
                                  "full_name_" + IntToString(n),
                                  "office_phone_" + IntToString(n),
@@ -216,7 +221,7 @@ TEST_F(SessionTest, BEH_SessionContactsIO) {
 
   // Check contacts are in session
   std::vector<mi_contact> list;
-  ASSERT_EQ(0, ss_->GetContactList(&list));
+  ASSERT_EQ(0, ss_->contacts_handler()->GetContactList(&list));
   ASSERT_EQ(size_t(10), list.size());
 
   // Move contacts to a DA
@@ -252,7 +257,7 @@ TEST_F(SessionTest, BEH_SessionContactsIO) {
 
   // Get values from session again
   std::vector<mi_contact> second_list;
-  ASSERT_EQ(0, ss_->GetContactList(&second_list));
+  ASSERT_EQ(0, ss_->contacts_handler()->GetContactList(&second_list));
   ASSERT_EQ(size_t(10), second_list.size());
 
   // Check the initial values against the seconda values
@@ -295,13 +300,15 @@ TEST_F(SessionTest, BEH_SessionPrivateSharesIO) {
     }
 
     // Add private share
-    ASSERT_EQ(0, ss_->AddPrivateShare(atts, share_stats, &cp)) <<
+    ASSERT_EQ(0, ss_->private_share_handler()->AddPrivateShare(
+                    atts, share_stats, &cp)) <<
               "Failed to add share";
   }
 
   // Check shares are in session
   std::list<PrivateShare> ps_list;
-  ASSERT_EQ(0, ss_->GetFullShareList(kAlpha, kAll, &ps_list));
+  ASSERT_EQ(0, ss_->private_share_handler()->GetFullShareList(
+                  kAlpha, kAll, &ps_list));
   ASSERT_EQ(size_t(10), ps_list.size());
   std::list<PrivateShare> ps_list1 = ps_list;
 
@@ -342,7 +349,8 @@ TEST_F(SessionTest, BEH_SessionPrivateSharesIO) {
 
   // Get values from session again
   std::list<PrivateShare> ps_list2;
-  ASSERT_EQ(0, ss_->GetFullShareList(kAlpha, kAll, &ps_list2));
+  ASSERT_EQ(0, ss_->private_share_handler()->GetFullShareList(
+                  kAlpha, kAll, &ps_list2));
   ASSERT_EQ(size_t(10), ps_list2.size());
 
   // Check the initial values against the seconda values
@@ -374,7 +382,8 @@ TEST_F(SessionTest, BEH_SessionPrivateSharesIO) {
 
 TEST_F(SessionTest, BEH_PubUsernameList) {
   for (int n = 0; n < 10; n++) {
-    ASSERT_EQ(0, ss_->AddContact("pub_name_" + IntToString(n),
+    ASSERT_EQ(0, ss_->contacts_handler()->AddContact(
+              "pub_name_" + IntToString(n),
               "pub_key_" + IntToString(n),
               "full_name_" + IntToString(n),
               "office_phone_" + IntToString(n),
@@ -390,7 +399,8 @@ TEST_F(SessionTest, BEH_PubUsernameList) {
 
 TEST_F(SessionTest, BEH_ContactPublicKey) {
   for (int n = 0; n < 10; n++) {
-    ASSERT_EQ(0, ss_->AddContact("pub_name_" + IntToString(n),
+    ASSERT_EQ(0, ss_->contacts_handler()->AddContact(
+              "pub_name_" + IntToString(n),
               "pub_key_" + IntToString(n),
               "full_name_" + IntToString(n),
               "office_phone_" + IntToString(n),

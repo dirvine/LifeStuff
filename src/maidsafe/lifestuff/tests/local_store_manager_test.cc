@@ -38,9 +38,9 @@
 #endif
 
 #include "maidsafe/lifestuff/data_handler.h"
-#include "maidsafe/lifestuff/localstoremanager.h"
+#include "maidsafe/lifestuff/local_store_manager.h"
 #include "maidsafe/lifestuff/session.h"
-#include "maidsafe/lifestuff/tests/testcallback.h"
+#include "maidsafe/lifestuff/tests/test_callback.h"
 
 namespace arg = std::placeholders;
 namespace fs = boost::filesystem;

@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_CLIENTCONTROLLER_H_
-#define MAIDSAFE_LIFESTUFF_CLIENTCONTROLLER_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_CONTROLLER_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_CONTROLLER_H_
 
 #include <list>
 #include <map>
@@ -38,7 +38,7 @@
 #include "boost/thread/mutex.hpp"
 
 #include "maidsafe/lifestuff/maidsafe.h"
-#include "maidsafe/lifestuff/returncodes.h"
+#include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/user_credentials_api.h"
 
 #if MAIDSAFE_LIFESTUFF_VERSION != 110
@@ -138,4 +138,4 @@ class ClientController : public lifestuff::UserCredentials {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_CLIENTCONTROLLER_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_CONTROLLER_H_

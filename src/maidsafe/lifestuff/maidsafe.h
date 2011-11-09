@@ -31,7 +31,7 @@
 #include "boost/function.hpp"
 #include "maidsafe/dht/version.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/lifestuff/returncodes.h"
+#include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/version.h"
 
 #if MAIDSAFE_LIFESTUFF_VERSION != 110

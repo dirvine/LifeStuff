@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "maidsafe/lifestuff/localstoremanager.h"
+#include "maidsafe/lifestuff/local_store_manager.h"
 
 #include "boost/filesystem.hpp"
 #include "boost/scoped_ptr.hpp"
@@ -26,7 +26,7 @@
 
 #include "maidsafe/pki/maidsafe_validator.h"
 
-#include "maidsafe/lifestuff/clientutils.h"
+#include "maidsafe/lifestuff/client_utils.h"
 #include "maidsafe/lifestuff/data_handler.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"

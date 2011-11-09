@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_CLIENTUTILS_H_
-#define MAIDSAFE_LIFESTUFF_CLIENTUTILS_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_UTILS_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_UTILS_H_
 
 #include <string>
 #include "maidsafe/passport/passport.h"
@@ -67,4 +67,4 @@ class ClientUtils {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_CLIENTUTILS_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_UTILS_H_

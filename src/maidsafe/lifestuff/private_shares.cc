@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "maidsafe/lifestuff/privateshares.h"
+#include "maidsafe/lifestuff/private_shares.h"
 
 #include <utility>
 
