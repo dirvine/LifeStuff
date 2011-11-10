@@ -26,19 +26,11 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
-#ifdef __MSVC__
-#  pragma warning(push)
-#  pragma warning(disable: 4127 4244 4267)
-#endif
 #include "boost/signals2/connection.hpp"
-#include "maidsafe/lifestuff/lifestuff_messages.pb.h"
 
-#ifdef __MSVC__
-#  pragma warning(pop)
-#endif
-
+#include "maidsafe/lifestuff/lifestuff_messages_pb.h"
 #include "maidsafe/lifestuff/data_handler.h"
-#include "maidsafe/lifestuff/local_store_manager.h"
+#include "maidsafe/lifestuff/store_components/local_store_manager.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/tests/test_callback.h"
 
@@ -55,8 +47,8 @@ class LocalStoreManagerTest : public testing::Test {
  public:
   LocalStoreManagerTest()
       : test_root_dir_(maidsafe::test::CreateTestPath()),
-        ss_(new Session),
-        sm_(new LocalStoreManager(*test_root_dir_, ss_)),
+        session_(new Session),
+        sm_(new LocalStoreManager(session_, test_root_dir_->string())),
         cb_(),
         functor_(),
         get_functor_(),
@@ -77,7 +69,7 @@ class LocalStoreManagerTest : public testing::Test {
     gp.set_data(gp_value);
     gp.set_signature(crypto::AsymSign(gp.data(), anmaid_private_key_));
     gp.set_hashable(false);
-    gp.set_signing_id(ss_->Id(passport::ANMAID, true));
+    gp.set_signing_id(session_->Id(passport::ANMAID, true));
     std::string gp_name(crypto::Hash<crypto::SHA512>(gp.data() +
                                                      gp.signature()));
     // Section 1 - Check For Unique Key
@@ -120,7 +112,7 @@ class LocalStoreManagerTest : public testing::Test {
     new_gp.set_data(new_gp_value);
     new_gp.set_signature(crypto::AsymSign(new_gp.data(), anmaid_private_key_));
     new_gp.set_hashable(false);
-    new_gp.set_signing_id(ss_->Id(passport::ANMAID, true));
+    new_gp.set_signing_id(session_->Id(passport::ANMAID, true));
     sm_->UpdatePacket(gp_name,
                       gp.SerializeAsString(),
                       new_gp.SerializeAsString(),
@@ -160,7 +152,7 @@ class LocalStoreManagerTest : public testing::Test {
 
  protected:
   void SetUp() {
-    ss_->ResetSession();
+    session_->ResetSession();
 
     sm_->Init(std::bind(&CallbackObject::IntCallback, &cb_, arg::_1));
     if (cb_.WaitForIntResult() != kSuccess) {
@@ -168,36 +160,36 @@ class LocalStoreManagerTest : public testing::Test {
       return;
     }
 
-    ss_->ResetSession();
-    ASSERT_TRUE(ss_->CreateTestPackets("Me"));
+    session_->ResetSession();
+    ASSERT_TRUE(session_->CreateTestPackets("Me"));
     cb_.Reset();
     functor_ = std::bind(&CallbackObject::IntCallback, &cb_, arg::_1);
     get_functor_ = std::bind(&CallbackObject::GetPacketCallback,
                              &cb_,
                              arg::_1,
                              arg::_2);
-    anmaid_private_key_ = ss_->PrivateKey(passport::ANMAID, true);
-    anmaid_public_key_ = ss_->PublicKey(passport::ANMAID, true);
-    mpid_public_key_ = ss_->PublicKey(passport::MPID, true);
+    anmaid_private_key_ = session_->PrivateKey(passport::ANMAID, true);
+    anmaid_public_key_ = session_->PublicKey(passport::ANMAID, true);
+    mpid_public_key_ = session_->PublicKey(passport::MPID, true);
   }
 
   void TearDown() {
-    ss_->ResetSession();
+    session_->ResetSession();
     cb_.Reset();
     sm_->Close(true);
-    ss_->passport_->StopCreatingKeyPairs();
+    session_->passport_->StopCreatingKeyPairs();
   }
 
   void GeneratePacket(bool hashable, std::string *name, GenericPacket *gp) {
     gp->set_data(anmaid_public_key_);
-    gp->set_signature(ss_->PublicKeySignature(passport::ANMAID, true));
+    gp->set_signature(session_->PublicKeySignature(passport::ANMAID, true));
     gp->set_hashable(hashable);
     *name = crypto::Hash<crypto::SHA512>(gp->data() + gp->signature());
-    gp->set_signing_id(ss_->Id(passport::ANMAID, true));
+    gp->set_signing_id(session_->Id(passport::ANMAID, true));
   }
 
   std::shared_ptr<fs::path> test_root_dir_;
-  std::shared_ptr<Session> ss_;
+  std::shared_ptr<Session> session_;
   std::shared_ptr<LocalStoreManager> sm_;
   CallbackObject cb_;
   std::function<void(int)> functor_;  // NOLINT (Dan)
@@ -316,7 +308,7 @@ TEST_F(LocalStoreManagerTest, BEH_DeleteSystemPacketNotOwner) {
   std::vector<std::string> values(1, gp.data());
 
   // Overwrite original signature packets
-  ss_->CreateTestPackets("");
+  session_->CreateTestPackets("");
 
   cb_.Reset();
   sm_->DeletePacket(gp_name, gp.SerializeAsString(), functor_);
@@ -387,7 +379,7 @@ TEST_F(LocalStoreManagerTest, BEH_UpdateSystemPacketNotOwner) {
                                    anmaid_public_key_));
 
   // Create different credentials
-  ss_->CreateTestPackets("");
+  session_->CreateTestPackets("");
 
   // Update the packet
   GenericPacket new_gp;

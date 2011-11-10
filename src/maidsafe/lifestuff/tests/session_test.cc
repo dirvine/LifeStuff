@@ -25,14 +25,7 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
-#ifdef __MSVC__
-#  pragma warning(push)
-#  pragma warning(disable: 4244 4127)
-#endif
-#include "maidsafe/lifestuff/data_atlas.pb.h"
-#ifdef __MSVC__
-#  pragma warning(pop)
-#endif
+#include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/session.h"
 
 namespace maidsafe {
@@ -43,14 +36,14 @@ namespace test {
 
 class SessionTest : public testing::Test {
  public:
-  SessionTest() : ss_(new Session) {}
+  SessionTest() : session_(new Session) {}
 
  protected:
   void SetUp() {
-    ss_->ResetSession();
+    session_->ResetSession();
   }
 
-  std::shared_ptr<Session> ss_;
+  std::shared_ptr<Session> session_;
 
  private:
   explicit SessionTest(const SessionTest&);
@@ -59,42 +52,42 @@ class SessionTest : public testing::Test {
 
 TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   // Check session is clean originally
-  ASSERT_FALSE(ss_->da_modified());
-  ASSERT_EQ(kDefCon3, ss_->def_con_level());
-  ASSERT_EQ("", ss_->username());
-  ASSERT_EQ("", ss_->pin());
-  ASSERT_EQ("", ss_->password());
-  ASSERT_EQ("", ss_->public_username());
-  ASSERT_EQ("", ss_->session_name());
-  ASSERT_EQ("", ss_->root_db_key());
-  ASSERT_EQ(size_t(0), ss_->authorised_users().size());
-  ASSERT_EQ(size_t(0), ss_->maid_authorised_users().size());
-  ASSERT_EQ(0, ss_->mounted());
-  ASSERT_EQ('\0', ss_->win_drive());
+  ASSERT_FALSE(session_->da_modified());
+  ASSERT_EQ(kDefCon3, session_->def_con_level());
+  ASSERT_EQ("", session_->username());
+  ASSERT_EQ("", session_->pin());
+  ASSERT_EQ("", session_->password());
+  ASSERT_EQ("", session_->public_username());
+  ASSERT_EQ("", session_->session_name());
+  ASSERT_EQ("", session_->root_db_key());
+  ASSERT_EQ(size_t(0), session_->authorised_users().size());
+  ASSERT_EQ(size_t(0), session_->maid_authorised_users().size());
+  ASSERT_EQ(0, session_->mounted());
+  ASSERT_EQ('\0', session_->win_drive());
   std::vector<mi_contact> list;
-  ASSERT_EQ(0, ss_->contacts_handler()->GetContactList(&list));
+  ASSERT_EQ(0, session_->contacts_handler()->GetContactList(&list));
   ASSERT_EQ(size_t(0), list.size());
   std::list<PrivateShare> ps_list;
-  ASSERT_EQ(0, ss_->private_share_handler()->GetFullShareList(
+  ASSERT_EQ(0, session_->private_share_handler()->GetFullShareList(
                   kAlpha, kAll, &ps_list));
   ASSERT_EQ(size_t(0), ps_list.size());
 
   // Modify session
-  ss_->set_da_modified(true);
-  ss_->set_def_con_level(kDefCon1);
-  ss_->set_username("aaa");
-  ss_->set_pin("bbb");
-  ss_->set_password("ccc");
-  ASSERT_TRUE(ss_->set_session_name(false));
-  ss_->set_root_db_key("ddd");
+  session_->set_da_modified(true);
+  session_->set_def_con_level(kDefCon1);
+  session_->set_username("aaa");
+  session_->set_pin("bbb");
+  session_->set_password("ccc");
+  ASSERT_TRUE(session_->set_session_name(false));
+  session_->set_root_db_key("ddd");
   std::set<std::string> non_empty_set;
   non_empty_set.insert("eee");
-  ss_->set_authorised_users(non_empty_set);
+  session_->set_authorised_users(non_empty_set);
   non_empty_set.insert("fff");
-  ss_->set_maid_authorised_users(non_empty_set);
-  ss_->set_mounted(1);
-  ss_->set_win_drive('N');
-  ASSERT_EQ(0, ss_->contacts_handler()->AddContact("pub_name", "pub_key",
+  session_->set_maid_authorised_users(non_empty_set);
+  session_->set_mounted(1);
+  session_->set_win_drive('N');
+  ASSERT_EQ(0, session_->contacts_handler()->AddContact("pub_name", "pub_key",
                                "full_name", "office_phone", "birthday", 'M',
                                18, 6, "city", 'C', 0, 0));
   std::vector<std::string> attributes;
@@ -105,29 +98,29 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   std::list<ShareParticipants> participants;
   participants.push_back(ShareParticipants("id", "id_pub_key", 'A'));
   std::vector<boost::uint32_t> share_stats(2, 0);
-  ASSERT_EQ(0, ss_->private_share_handler()->AddPrivateShare(
+  ASSERT_EQ(0, session_->private_share_handler()->AddPrivateShare(
                   attributes, share_stats, &participants));
 
   // Verify modifications
-  ASSERT_TRUE(ss_->da_modified());
-  ASSERT_EQ(kDefCon1, ss_->def_con_level());
-  ASSERT_EQ("aaa", ss_->username());
-  ASSERT_EQ("bbb", ss_->pin());
-  ASSERT_EQ("ccc", ss_->password());
-  ASSERT_EQ("", ss_->public_username());
-  ASSERT_NE("", ss_->session_name());
-  ASSERT_EQ("ddd", ss_->root_db_key());
-  ASSERT_EQ(size_t(1), ss_->authorised_users().size());
-  auto it(ss_->authorised_users().find("eee"));
-  ASSERT_FALSE(ss_->authorised_users().end() == it);
-  ASSERT_EQ(size_t(2), ss_->maid_authorised_users().size());
-  it = ss_->maid_authorised_users().find("eee");
-  ASSERT_FALSE(ss_->maid_authorised_users().end() == it);
-  it = ss_->maid_authorised_users().find("fff");
-  ASSERT_FALSE(ss_->maid_authorised_users().end() == it);
-  ASSERT_EQ(1, ss_->mounted());
-  ASSERT_EQ('N', ss_->win_drive());
-  ASSERT_EQ(0, ss_->contacts_handler()->GetContactList(&list));
+  ASSERT_TRUE(session_->da_modified());
+  ASSERT_EQ(kDefCon1, session_->def_con_level());
+  ASSERT_EQ("aaa", session_->username());
+  ASSERT_EQ("bbb", session_->pin());
+  ASSERT_EQ("ccc", session_->password());
+  ASSERT_EQ("", session_->public_username());
+  ASSERT_NE("", session_->session_name());
+  ASSERT_EQ("ddd", session_->root_db_key());
+  ASSERT_EQ(size_t(1), session_->authorised_users().size());
+  auto it(session_->authorised_users().find("eee"));
+  ASSERT_FALSE(session_->authorised_users().end() == it);
+  ASSERT_EQ(size_t(2), session_->maid_authorised_users().size());
+  it = session_->maid_authorised_users().find("eee");
+  ASSERT_FALSE(session_->maid_authorised_users().end() == it);
+  it = session_->maid_authorised_users().find("fff");
+  ASSERT_FALSE(session_->maid_authorised_users().end() == it);
+  ASSERT_EQ(1, session_->mounted());
+  ASSERT_EQ('N', session_->win_drive());
+  ASSERT_EQ(0, session_->contacts_handler()->GetContactList(&list));
   ASSERT_EQ(size_t(1), list.size());
   ASSERT_EQ("pub_name", list[0].pub_name_);
   ASSERT_EQ("pub_key", list[0].pub_key_);
@@ -141,7 +134,7 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_EQ('C', list[0].confirmed_);
   ASSERT_EQ(0, list[0].rank_);
   ASSERT_NE(0, list[0].last_contact_);
-  ASSERT_EQ(0, ss_->private_share_handler()->GetFullShareList(
+  ASSERT_EQ(0, session_->private_share_handler()->GetFullShareList(
                   kAlpha, kAll, &ps_list));
   ASSERT_EQ(size_t(1), ps_list.size());
   ASSERT_EQ("name", ps_list.front().Name());
@@ -155,37 +148,37 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_EQ('A', sp_list.front().role);
 
   // Resetting the session
-  ASSERT_TRUE(ss_->ResetSession());
+  ASSERT_TRUE(session_->ResetSession());
 
   // Check session is clean again
-  ASSERT_FALSE(ss_->da_modified());
-  ASSERT_EQ(kDefCon3, ss_->def_con_level());
-  ASSERT_EQ("", ss_->username());
-  ASSERT_EQ("", ss_->pin());
-  ASSERT_EQ("", ss_->password());
-  ASSERT_EQ("", ss_->public_username());
-  ASSERT_EQ("", ss_->session_name());
-  ASSERT_EQ("", ss_->root_db_key());
-  ASSERT_EQ(size_t(0), ss_->authorised_users().size());
-  ASSERT_EQ(size_t(0), ss_->maid_authorised_users().size());
-  ASSERT_EQ(0, ss_->mounted());
-  ASSERT_EQ('\0', ss_->win_drive());
-  ASSERT_EQ(0, ss_->contacts_handler()->GetContactList(&list));
+  ASSERT_FALSE(session_->da_modified());
+  ASSERT_EQ(kDefCon3, session_->def_con_level());
+  ASSERT_EQ("", session_->username());
+  ASSERT_EQ("", session_->pin());
+  ASSERT_EQ("", session_->password());
+  ASSERT_EQ("", session_->public_username());
+  ASSERT_EQ("", session_->session_name());
+  ASSERT_EQ("", session_->root_db_key());
+  ASSERT_EQ(size_t(0), session_->authorised_users().size());
+  ASSERT_EQ(size_t(0), session_->maid_authorised_users().size());
+  ASSERT_EQ(0, session_->mounted());
+  ASSERT_EQ('\0', session_->win_drive());
+  ASSERT_EQ(0, session_->contacts_handler()->GetContactList(&list));
   ASSERT_EQ(size_t(0), list.size());
-  ASSERT_EQ(0, ss_->private_share_handler()->GetFullShareList(
+  ASSERT_EQ(0, session_->private_share_handler()->GetFullShareList(
                   kAlpha, kAll, &ps_list));
   ASSERT_EQ(size_t(0), ps_list.size());
 }
 
 TEST_F(SessionTest, BEH_SessionName) {
   // Check session is empty
-  ASSERT_EQ("", ss_->session_name());
-  ASSERT_EQ("", ss_->username());
-  ASSERT_EQ("", ss_->pin());
+  ASSERT_EQ("", session_->session_name());
+  ASSERT_EQ("", session_->username());
+  ASSERT_EQ("", session_->pin());
 
   // Check username and pin are needed
-  ASSERT_FALSE(ss_->set_session_name(false));
-  ASSERT_EQ("", ss_->session_name());
+  ASSERT_FALSE(session_->set_session_name(false));
+  ASSERT_EQ("", session_->session_name());
 
   std::string username("user1");
   std::string pin("1234");
@@ -193,22 +186,22 @@ TEST_F(SessionTest, BEH_SessionName) {
                                                                     username));
 
   // Set the session values
-  ss_->set_username(username);
-  ss_->set_pin(pin);
-  ASSERT_TRUE(ss_->set_session_name(false));
+  session_->set_username(username);
+  session_->set_pin(pin);
+  ASSERT_TRUE(session_->set_session_name(false));
 
   // Check session name
-  ASSERT_EQ(session_name, ss_->session_name());
+  ASSERT_EQ(session_name, session_->session_name());
 
   // Reset value and check empty again
-  ss_->set_session_name(true);
-  ASSERT_EQ("", ss_->session_name());
+  session_->set_session_name(true);
+  ASSERT_EQ("", session_->session_name());
 }
 
 TEST_F(SessionTest, BEH_SessionContactsIO) {
   // Add contacts to the session
   for (int n = 0; n < 10; n++) {
-    ASSERT_EQ(0, ss_->contacts_handler()->AddContact(
+    ASSERT_EQ(0, session_->contacts_handler()->AddContact(
                                  "pub_name_" + IntToString(n),
                                  "pub_key_" + IntToString(n),
                                  "full_name_" + IntToString(n),
@@ -221,7 +214,7 @@ TEST_F(SessionTest, BEH_SessionContactsIO) {
 
   // Check contacts are in session
   std::vector<mi_contact> list;
-  ASSERT_EQ(0, ss_->contacts_handler()->GetContactList(&list));
+  ASSERT_EQ(0, session_->contacts_handler()->GetContactList(&list));
   ASSERT_EQ(size_t(10), list.size());
 
   // Move contacts to a DA
@@ -245,7 +238,7 @@ TEST_F(SessionTest, BEH_SessionContactsIO) {
   }
 
   // Clear the values from the session
-  ASSERT_TRUE(ss_->ResetSession());
+  ASSERT_TRUE(session_->ResetSession());
 
   // Load the values from the DA
   std::list<PublicContact> contacts;
@@ -253,11 +246,11 @@ TEST_F(SessionTest, BEH_SessionContactsIO) {
     PublicContact pc = da.contacts(y);
     contacts.push_back(pc);
   }
-  ASSERT_EQ(0, ss_->LoadContacts(&contacts));
+  ASSERT_EQ(0, session_->LoadContacts(&contacts));
 
   // Get values from session again
   std::vector<mi_contact> second_list;
-  ASSERT_EQ(0, ss_->contacts_handler()->GetContactList(&second_list));
+  ASSERT_EQ(0, session_->contacts_handler()->GetContactList(&second_list));
   ASSERT_EQ(size_t(10), second_list.size());
 
   // Check the initial values against the seconda values
@@ -300,14 +293,14 @@ TEST_F(SessionTest, BEH_SessionPrivateSharesIO) {
     }
 
     // Add private share
-    ASSERT_EQ(0, ss_->private_share_handler()->AddPrivateShare(
+    ASSERT_EQ(0, session_->private_share_handler()->AddPrivateShare(
                     atts, share_stats, &cp)) <<
               "Failed to add share";
   }
 
   // Check shares are in session
   std::list<PrivateShare> ps_list;
-  ASSERT_EQ(0, ss_->private_share_handler()->GetFullShareList(
+  ASSERT_EQ(0, session_->private_share_handler()->GetFullShareList(
                   kAlpha, kAll, &ps_list));
   ASSERT_EQ(size_t(10), ps_list.size());
   std::list<PrivateShare> ps_list1 = ps_list;
@@ -337,7 +330,7 @@ TEST_F(SessionTest, BEH_SessionPrivateSharesIO) {
   }
 
   // Clear the values from the session
-  ASSERT_TRUE(ss_->ResetSession());
+  ASSERT_TRUE(session_->ResetSession());
 
   // Load the values from the DA
   std::list<Share> shares;
@@ -345,11 +338,11 @@ TEST_F(SessionTest, BEH_SessionPrivateSharesIO) {
     Share sh = da.shares(n);
     shares.push_back(sh);
   }
-  ss_->LoadShares(&shares);
+  session_->LoadShares(&shares);
 
   // Get values from session again
   std::list<PrivateShare> ps_list2;
-  ASSERT_EQ(0, ss_->private_share_handler()->GetFullShareList(
+  ASSERT_EQ(0, session_->private_share_handler()->GetFullShareList(
                   kAlpha, kAll, &ps_list2));
   ASSERT_EQ(size_t(10), ps_list2.size());
 
@@ -382,7 +375,7 @@ TEST_F(SessionTest, BEH_SessionPrivateSharesIO) {
 
 TEST_F(SessionTest, BEH_PubUsernameList) {
   for (int n = 0; n < 10; n++) {
-    ASSERT_EQ(0, ss_->contacts_handler()->AddContact(
+    ASSERT_EQ(0, session_->contacts_handler()->AddContact(
               "pub_name_" + IntToString(n),
               "pub_key_" + IntToString(n),
               "full_name_" + IntToString(n),
@@ -391,7 +384,7 @@ TEST_F(SessionTest, BEH_PubUsernameList) {
               'M', n, n, "city_" + IntToString(n), 'C', 0, 0));
   }
   std::vector<std::string> publicusernames;
-  ASSERT_EQ(0, ss_->GetPublicUsernameList(&publicusernames));
+  ASSERT_EQ(0, session_->GetPublicUsernameList(&publicusernames));
   ASSERT_EQ(size_t(10), publicusernames.size());
   for (int a = 0; a < static_cast<int>(publicusernames.size()); ++a)
     ASSERT_EQ("pub_name_" + IntToString(a), publicusernames[a]);
@@ -399,7 +392,7 @@ TEST_F(SessionTest, BEH_PubUsernameList) {
 
 TEST_F(SessionTest, BEH_ContactPublicKey) {
   for (int n = 0; n < 10; n++) {
-    ASSERT_EQ(0, ss_->contacts_handler()->AddContact(
+    ASSERT_EQ(0, session_->contacts_handler()->AddContact(
               "pub_name_" + IntToString(n),
               "pub_key_" + IntToString(n),
               "full_name_" + IntToString(n),
@@ -409,60 +402,60 @@ TEST_F(SessionTest, BEH_ContactPublicKey) {
   }
   for (int a = 0; a < 10; ++a)
     ASSERT_EQ("pub_key_" + IntToString(a),
-              ss_->GetContactPublicKey("pub_name_" + IntToString(a)));
+              session_->GetContactPublicKey("pub_name_" + IntToString(a)));
 }
 
 TEST_F(SessionTest, BEH_Conversations) {
   std::list<std::string> conv;
-  ASSERT_EQ(0, ss_->ConversationList(&conv));
+  ASSERT_EQ(0, session_->ConversationList(&conv));
   ASSERT_EQ(size_t(0), conv.size());
   conv.push_back("a");
   ASSERT_EQ(size_t(1), conv.size());
-  ASSERT_EQ(0, ss_->ConversationList(&conv));
+  ASSERT_EQ(0, session_->ConversationList(&conv));
   ASSERT_EQ(size_t(0), conv.size());
-  ASSERT_EQ(kNonExistentConversation, ss_->ConversationExits("a"));
-  ASSERT_EQ(kNonExistentConversation, ss_->RemoveConversation("a"));
+  ASSERT_EQ(kNonExistentConversation, session_->ConversationExits("a"));
+  ASSERT_EQ(kNonExistentConversation, session_->RemoveConversation("a"));
 
-  ASSERT_EQ(0, ss_->AddConversation("a"));
-  ASSERT_EQ(0, ss_->ConversationExits("a"));
-  ASSERT_EQ(0, ss_->ConversationList(&conv));
+  ASSERT_EQ(0, session_->AddConversation("a"));
+  ASSERT_EQ(0, session_->ConversationExits("a"));
+  ASSERT_EQ(0, session_->ConversationList(&conv));
   ASSERT_EQ(size_t(1), conv.size());
   ASSERT_EQ("a", conv.front());
-  ASSERT_EQ(kExistingConversation, ss_->AddConversation("a"));
-  ASSERT_EQ(0, ss_->RemoveConversation("a"));
-  ASSERT_EQ(kNonExistentConversation, ss_->ConversationExits("a"));
-  ASSERT_EQ(kNonExistentConversation, ss_->RemoveConversation("a"));
-  ASSERT_EQ(0, ss_->ConversationList(&conv));
+  ASSERT_EQ(kExistingConversation, session_->AddConversation("a"));
+  ASSERT_EQ(0, session_->RemoveConversation("a"));
+  ASSERT_EQ(kNonExistentConversation, session_->ConversationExits("a"));
+  ASSERT_EQ(kNonExistentConversation, session_->RemoveConversation("a"));
+  ASSERT_EQ(0, session_->ConversationList(&conv));
   ASSERT_EQ(size_t(0), conv.size());
 
   for (int n = 0; n < 10; ++n)
-    ASSERT_EQ(0, ss_->AddConversation(IntToString(n)));
-  ASSERT_EQ(0, ss_->ConversationList(&conv));
+    ASSERT_EQ(0, session_->AddConversation(IntToString(n)));
+  ASSERT_EQ(0, session_->ConversationList(&conv));
   ASSERT_EQ(size_t(10), conv.size());
 
   std::string remove = IntToString(RandomUint32() % 10);
-  ASSERT_EQ(0, ss_->RemoveConversation(remove));
-  ASSERT_EQ(0, ss_->ConversationList(&conv));
+  ASSERT_EQ(0, session_->RemoveConversation(remove));
+  ASSERT_EQ(0, session_->ConversationList(&conv));
   ASSERT_EQ(size_t(9), conv.size());
   std::list<std::string>::iterator it;
   for (it = conv.begin(); it != conv.end(); ++it) {
     int a = boost::lexical_cast<int>(*it);
     ASSERT_TRUE(a > -1 && a < 10);
-    ASSERT_EQ(0, ss_->RemoveConversation(*it));
+    ASSERT_EQ(0, session_->RemoveConversation(*it));
   }
   for (int y = 0; y < 10; ++y)
     ASSERT_EQ(kNonExistentConversation,
-              ss_->ConversationExits(IntToString(y)));
+              session_->ConversationExits(IntToString(y)));
 
   for (int e = 0; e < 10; ++e)
-    ASSERT_EQ(0, ss_->AddConversation(IntToString(e)));
-  ASSERT_EQ(0, ss_->ConversationList(&conv));
+    ASSERT_EQ(0, session_->AddConversation(IntToString(e)));
+  ASSERT_EQ(0, session_->ConversationList(&conv));
   ASSERT_EQ(size_t(10), conv.size());
-  ss_->ClearConversations();
+  session_->ClearConversations();
   for (int l = 0; l < 10; ++l)
     ASSERT_EQ(kNonExistentConversation,
-              ss_->ConversationExits(IntToString(l)));
-  ASSERT_EQ(0, ss_->ConversationList(&conv));
+              session_->ConversationExits(IntToString(l)));
+  ASSERT_EQ(0, session_->ConversationList(&conv));
   ASSERT_EQ(size_t(0), conv.size());
 }
 

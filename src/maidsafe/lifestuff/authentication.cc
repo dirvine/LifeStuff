@@ -30,18 +30,8 @@
 
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
-#include "maidsafe/lifestuff/packet_manager.h"
-
-#ifdef __MSVC__
-#  pragma warning(push)
-#  pragma warning(disable: 4127 4244 4267)
-#endif
-
-#include "maidsafe/lifestuff/lifestuff_messages.pb.h"
-
-#ifdef __MSVC__
-#  pragma warning(pop)
-#endif
+#include "maidsafe/lifestuff/store_components/packet_manager.h"
+#include "maidsafe/lifestuff/lifestuff_messages_pb.h"
 
 
 namespace arg = std::placeholders;

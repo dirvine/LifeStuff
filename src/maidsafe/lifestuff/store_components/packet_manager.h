@@ -26,14 +26,8 @@
 #define MAIDSAFE_LIFESTUFF_PACKET_MANAGER_H_
 
 #include <functional>
-#include <list>
-#include <map>
-#include <memory>
 #include <string>
 #include <vector>
-
-#include "boost/function.hpp"
-#include "maidsafe/passport/passport.h"
 
 #include "maidsafe/lifestuff/maidsafe.h"
 

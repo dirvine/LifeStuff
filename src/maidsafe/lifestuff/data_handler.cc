@@ -25,15 +25,7 @@
 
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
-
-#ifdef __MSVC__
-#  pragma warning(push)
-#  pragma warning(disable: 4244 4127)
-#endif
-#include "maidsafe/lifestuff/lifestuff_messages.pb.h"
-#ifdef __MSVC__
-#  pragma warning(pop)
-#endif
+#include "maidsafe/lifestuff/lifestuff_messages_pb.h"
 
 namespace maidsafe {
 

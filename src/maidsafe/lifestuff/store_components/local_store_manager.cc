@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "maidsafe/lifestuff/local_store_manager.h"
+#include "maidsafe/lifestuff/store_components/local_store_manager.h"
 
 #include "boost/filesystem.hpp"
 #include "boost/scoped_ptr.hpp"
@@ -30,15 +30,7 @@
 #include "maidsafe/lifestuff/data_handler.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
-
-#ifdef __MSVC__
-#  pragma warning(push)
-#  pragma warning(disable: 4244)
-#endif
-#include "maidsafe/lifestuff/lifestuff_messages.pb.h"
-#ifdef __MSVC__
-#  pragma warning(pop)
-#endif
+#include "maidsafe/lifestuff/lifestuff_messages_pb.h"
 
 namespace fs = boost::filesystem;
 
@@ -98,16 +90,16 @@ void GetDataSlot(const std::string &signal_data, std::string *slot_data) {
 }  // namespace
 
 std::string GetPublicKey(const std::string &packet_name,
-                         std::shared_ptr<Session> ss) {
-  std::string public_key(ss->PublicKey(packet_name, false));
+                         std::shared_ptr<Session> session) {
+  std::string public_key(session->PublicKey(packet_name, false));
   if (public_key.empty())
-    return ss->PublicKey(packet_name, true);
+    return session->PublicKey(packet_name, true);
   return public_key;
 }
 
-LocalStoreManager::LocalStoreManager(const fs::path &db_directory,
-                                     std::shared_ptr<Session> ss)
-    : local_sm_dir_(db_directory.string()),
+LocalStoreManager::LocalStoreManager(std::shared_ptr<Session> session,
+                                     const std::string &db_directory)
+    : local_sm_dir_(db_directory),
       service_(),
       work_(),
       thread_group_(),
@@ -115,12 +107,20 @@ LocalStoreManager::LocalStoreManager(const fs::path &db_directory,
       client_chunkstore_(new BufferedChunkStore(true,
                                                 chunk_validation_,
                                                 service_)),
-      ss_(ss) {
+      session_(session) {
   work_.reset(new boost::asio::io_service::work(service_));
   for (int i = 0; i < 3; ++i) {
     thread_group_.create_thread(
         std::bind(static_cast<std::size_t(boost::asio::io_service::*)()>
                       (&boost::asio::io_service::run), &service_));
+  }
+  if (local_sm_dir_.empty()) {
+    boost::system::error_code error_code;
+    fs::path temp_dir(fs::temp_directory_path(error_code));
+    if (error_code) {
+      DLOG(ERROR) << "Failed to get temporary directory";
+    }
+    local_sm_dir_ = (temp_dir / "LocalUserCredentials").string();
   }
 }
 
@@ -217,7 +217,7 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
     return;
   }
 
-  std::string public_key(GetPublicKey(gp.signing_id(), ss_));
+  std::string public_key(GetPublicKey(gp.signing_id(), session_));
   if (public_key.empty()) {
     ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
     DLOG(ERROR) << "LSM::StorePacket - No public key" << std::endl;
@@ -254,7 +254,7 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
     return;
   }
 
-  std::string public_key(GetPublicKey(gp.signing_id(), ss_));
+  std::string public_key(GetPublicKey(gp.signing_id(), session_));
   if (public_key.empty()) {
     ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
     DLOG(ERROR) << "LSM::StorePacket - No public key - ID: "
@@ -301,7 +301,7 @@ void LocalStoreManager::UpdatePacket(const std::string &packet_name,
 
   // TODO(Team): Compare both signing ids?
 
-  std::string public_key(GetPublicKey(old_gp.signing_id(), ss_));
+  std::string public_key(GetPublicKey(old_gp.signing_id(), session_));
   if (public_key.empty()) {
     ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
     DLOG(ERROR) << "LSM::StorePacket - No public key" << std::endl;

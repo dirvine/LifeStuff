@@ -29,6 +29,7 @@
 #  pragma warning(disable: 4503)
 #endif
 
+#include <cstdint>
 #include <string>
 #include <list>
 #include <vector>
@@ -69,8 +70,8 @@ class PrivateShare {
   std::string msid_;
   std::string msid_pub_key_;
   std::string msid_priv_key_;
-  boost::uint32_t rank_;
-  boost::uint32_t last_view_;
+  uint32_t rank_;
+  uint32_t last_view_;
   std::list<ShareParticipants> participants_;
 
  public:
@@ -79,7 +80,7 @@ class PrivateShare {
   PrivateShare(const std::vector<std::string> &attributes,
                std::list<ShareParticipants> participants);
   void Construct(const std::vector<std::string> &attributes,
-                 const std::vector<boost::uint32_t> &share_stats,
+                 const std::vector<uint32_t> &share_stats,
                  std::list<ShareParticipants> participants);
 
   //  Getters
@@ -88,8 +89,8 @@ class PrivateShare {
   inline std::string MsidPubKey() { return msid_pub_key_; }
   inline std::string MsidPriKey() { return msid_priv_key_; }
   inline std::list<ShareParticipants> Participants() { return participants_; }
-  inline boost::uint32_t Rank() { return rank_; }
-  inline boost::uint32_t LastViewed() { return last_view_; }
+  inline uint32_t Rank() { return rank_; }
+  inline uint32_t LastViewed() { return last_view_; }
   // Setters
 };
 
@@ -98,8 +99,8 @@ struct private_share {
   std::string msid_;
   std::string msid_pub_key_;
   std::string msid_priv_key_;
-  boost::uint32_t rank_;
-  boost::uint32_t last_view_;
+  uint32_t rank_;
+  uint32_t last_view_;
 
   private_share() : name_(), msid_(), msid_pub_key_(), msid_priv_key_(),
                     rank_(0), last_view_(0) {}
@@ -143,11 +144,11 @@ typedef boost::multi_index::multi_index_container<
     >,
     boost::multi_index::ordered_non_unique<
       boost::multi_index::tag<private_share_rank>,
-      BOOST_MULTI_INDEX_MEMBER(private_share, boost::uint32_t, rank_)
+      BOOST_MULTI_INDEX_MEMBER(private_share, uint32_t, rank_)
     >,
     boost::multi_index::ordered_non_unique<
       boost::multi_index::tag<private_share_view>,
-      BOOST_MULTI_INDEX_MEMBER(private_share, boost::uint32_t, last_view_)
+      BOOST_MULTI_INDEX_MEMBER(private_share, uint32_t, last_view_)
     >
   >
 > private_share_set;
@@ -179,7 +180,7 @@ class PrivateShareHandler {
   PrivateShareHandler() : pss_(), psps_() { }
   // Multi Index
   int AddPrivateShare(const std::vector<std::string> &attributes,
-                      const std::vector<boost::uint32_t> &share_stats,
+                      const std::vector<uint32_t> &share_stats,
                       std::list<ShareParticipants> *participants);
   int DeletePrivateShare(const std::string &value, const int &field);
   int AddContactsToPrivateShare(const std::string &value,

@@ -1,15 +1,7 @@
 /*
 * ============================================================================
 *
-* Copyright [2009] maidsafe.net limited
-*
-* Description:  Manages data storage to local database (for testing)
-* Version:      1.0
-* Created:      2009-01-29-00.06.15
-* Revision:     none
-* Compiler:     gcc
-* Author:       Fraser Hutchison (fh), fraser.hutchison@maidsafe.net
-* Company:      maidsafe.net limited
+* Copyright [2011] maidsafe.net limited
 *
 * The following source code is property of maidsafe.net limited and is not
 * meant for external use.  The use of this code is governed by the license
@@ -22,43 +14,28 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_LOCAL_STORE_MANAGER_H_
-#define MAIDSAFE_LIFESTUFF_LOCAL_STORE_MANAGER_H_
 
-#include <list>
-#include <map>
-#include <set>
+#ifndef MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_AWS_STORE_MANAGER_H_
+#define MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_AWS_STORE_MANAGER_H_
+
 #include <string>
 #include <vector>
 
-#include "boost/filesystem.hpp"
-#include "boost/thread/mutex.hpp"
+#include "maidsafe/lifestuff/store_components/packet_manager.h"
 
-#include "maidsafe/lifestuff/packet_manager.h"
-
-
-namespace fs3 = boost::filesystem3;
 
 namespace maidsafe {
 
-class BufferedChunkStore;
-class ChunkValidation;
-
 namespace lifestuff {
 
-class DataHandler;
-class GenericPacket;
 class Session;
 
-class LocalStoreManager : public PacketManager {
+class AWSStoreManager : public PacketManager {
  public:
-  explicit LocalStoreManager(const fs3::path &db_directory,
-                             std::shared_ptr<Session> ss);
-  ~LocalStoreManager();
+  explicit AWSStoreManager(std::shared_ptr<Session> session);
+  ~AWSStoreManager();
   void Init(VoidFuncOneInt callback);
   int Close(bool cancel_pending_ops);
-
-  // Packets
   bool KeyUnique(const std::string &key);
   void KeyUnique(const std::string &key,
                  const VoidFuncOneInt &cb);
@@ -78,24 +55,14 @@ class LocalStoreManager : public PacketManager {
                     const VoidFuncOneInt &cb);
 
  private:
-  LocalStoreManager &operator=(const LocalStoreManager&);
-  LocalStoreManager(const LocalStoreManager&);
+  AWSStoreManager &operator=(const AWSStoreManager&);
+  AWSStoreManager(const AWSStoreManager&);
 
-  bool ValidateGenericPacket(std::string ser_gp, std::string public_key);
-  void CreateSerialisedSignedValue(const GenericPacket &data,
-                                   std::string *ser_gp);
-
-  std::string local_sm_dir_;
-  boost::asio::io_service service_;
-  std::shared_ptr<boost::asio::io_service::work> work_;
-  boost::thread_group thread_group_;
-  std::shared_ptr<ChunkValidation> chunk_validation_;
-  std::shared_ptr<BufferedChunkStore> client_chunkstore_;
-  std::shared_ptr<Session> ss_;
+  std::shared_ptr<Session> session_;
 };
 
 }  // namespace lifestuff
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_LOCAL_STORE_MANAGER_H_
+#endif  // MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_AWS_STORE_MANAGER_H_

@@ -25,12 +25,11 @@
 #ifndef MAIDSAFE_LIFESTUFF_MAIDSAFE_H_
 #define MAIDSAFE_LIFESTUFF_MAIDSAFE_H_
 
+#include <cstdint>
+#include <functional>
 #include <string>
 #include <vector>
-#include "boost/cstdint.hpp"
-#include "boost/function.hpp"
-#include "maidsafe/dht/version.h"
-#include "maidsafe/common/utils.h"
+
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/version.h"
 
@@ -48,9 +47,9 @@ namespace lifestuff {
 
 // This is the size in bytes of the NON-HEX format strings used as keys.  When
 // encoded to hex the string size is doubled.
-const boost::uint32_t kKeySize = 64;
+const uint32_t kKeySize = 64;
 
-const boost::uint16_t kRsaKeySize = 4096;
+const uint16_t kRsaKeySize = 4096;
 // const crypto::hashtype kHashSize(crypto::SHA_512);
 
 const std::string kAnonymousRequestSignature(2 * kKeySize, 'f');
@@ -96,15 +95,6 @@ typedef std::function<void(const ReturnCode&, const kad::Contact&)>
 typedef std::function<void(const ReturnCode&,
                            const std::vector<kad::Contact>&)>
         VoidFuncIntContacts;
-
-
-inline std::string HexSubstr(const std::string &non_hex) {
-  std::string hex(EncodeToHex(non_hex));
-  if (hex.size() > 16)
-    return (hex.substr(0, 7) + ".." + hex.substr(hex.size() - 7));
-  else
-    return hex;
-}
 
 }  // namespace lifestuff
 

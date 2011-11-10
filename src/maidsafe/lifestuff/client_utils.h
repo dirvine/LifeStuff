@@ -39,8 +39,8 @@ class Session;
 
 class ClientUtils {
  public:
-  explicit ClientUtils(std::shared_ptr<Session> ss)
-      : ss_(ss) {}
+  explicit ClientUtils(std::shared_ptr<Session> session)
+      : session_(session) {}
   ~ClientUtils() {}
   void GetChunkSignatureKeys(DirType dir_type,
                              const std::string &msid,
@@ -60,7 +60,7 @@ class ClientUtils {
   ClientUtils &operator=(const ClientUtils&);
   ClientUtils(const ClientUtils&);
 
-  std::shared_ptr<Session> ss_;
+  std::shared_ptr<Session> session_;
 };
 
 }  // namespace lifestuff

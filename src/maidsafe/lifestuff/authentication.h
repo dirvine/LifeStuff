@@ -46,9 +46,9 @@ class Session;
 
 class Authentication {
  public:
-  explicit Authentication(std::shared_ptr<Session> ss)
+  explicit Authentication(std::shared_ptr<Session> session)
       : packet_manager_(),
-        session_(ss),
+        session_(session),
         passport_(),
         mutex_(),
         mid_mutex_(),

@@ -48,21 +48,8 @@
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/client_utils.h"
-#ifdef __MSVC__
-#  pragma warning(push)
-#  pragma warning(disable: 4244 4127)
-#endif
-#include "maidsafe/lifestuff/data_atlas.pb.h"
-#ifdef __MSVC__
-#  pragma warning(pop)
-#endif
+#include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/session.h"
-
-#if defined LOCAL_LifeStuffVAULT && !defined MS_NETWORK_TEST
-#  include "maidsafe/lifestuff/local_store_manager.h"
-#else
-#  include "maidsafe/lifestuff/networkstoremanager.h"
-#endif
 
 namespace arg = std::placeholders;
 
@@ -99,77 +86,57 @@ void PacketOpCallback(const int &store_manager_result,
 
 ClientController::ClientController()
     : client_chunkstore_(),
-      ss_(new Session()),
-      local_sm_(),
-      auth_(),
+      session_(new Session()),
+      packet_manager_(),
+      auth_(new Authentication(session_)),
       ser_da_(),
       client_store_(),
       initialised_(false),
       logging_out_(false),
       logged_in_(false) {}
 
-int ClientController::Init() {
-  if (initialised_) {
-    DLOG(INFO) << "Already initialised." << std::endl;
-    return 0;
-  }
-  auth_.reset(new Authentication(ss_));
-#ifdef LOCAL_LifeStuffVAULT
-  boost::system::error_code error_code;
-  fs3::path temp_dir(fs3::temp_directory_path(error_code));
-  if (error_code) {
-    DLOG(ERROR) << "Failed to get temporary directory";
-    return -1;
-  }
-
-  local_sm_.reset(new LocalStoreManager(temp_dir / "LocalUserCredentials",
-                                        ss_));
-#endif
-
-  if (!JoinKademlia()) {
-    DLOG(ERROR) << "Couldn't initialise SM" << std::endl;
-    return -1;
-  }
-  auth_->Init(local_sm_);
-  initialised_ = true;
-  return 0;
-}
-
 ClientController::~ClientController() {
-  local_sm_->Close(false);
+  packet_manager_->Close(false);
 }
 
-bool ClientController::JoinKademlia() {
+int ClientController::Initialise() {
   CCCallback cb;
-  local_sm_->Init(std::bind(&CCCallback::IntCallback, &cb, arg::_1));
-  return (cb.WaitForIntResult() == kSuccess);
+  packet_manager_->Init(std::bind(&CCCallback::IntCallback, &cb, arg::_1));
+  int result(cb.WaitForIntResult());
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to initialise packet_manager_.";
+    return result;
+  }
+  auth_->Init(packet_manager_);
+  initialised_ = true;
+  return kSuccess;
 }
 
 int ClientController::ParseDa() {
   if (!initialised_) {
-    DLOG(ERROR) << "Not initialised." << std::endl;
+    DLOG(ERROR) << "Not initialised.";
     return kClientControllerNotInitialised;
   }
   DataAtlas data_atlas;
   if (ser_da_.empty()) {
-    DLOG(ERROR) << "TMID brought is empty." << std::endl;
+    DLOG(ERROR) << "TMID brought is empty.";
     return -9000;
   }
   if (!data_atlas.ParseFromString(ser_da_)) {
-    DLOG(ERROR) << "TMID doesn't parse." << std::endl;
+    DLOG(ERROR) << "TMID doesn't parse.";
     return -9000;
   }
   if (!data_atlas.has_root_db_key()) {
-    DLOG(ERROR) << "DA doesn't have a root db key." << std::endl;
+    DLOG(ERROR) << "DA doesn't have a root db key.";
     return -9001;
   }
-  ss_->set_root_db_key(data_atlas.root_db_key());
+  session_->set_root_db_key(data_atlas.root_db_key());
 
   if (!data_atlas.has_serialised_keyring()) {
-    DLOG(ERROR) << "Missing serialised keyring." << std::endl;
+    DLOG(ERROR) << "Missing serialised keyring.";
     return -9003;
   }
-  ss_->ParseKeyring(data_atlas.serialised_keyring());
+  session_->ParseKeyring(data_atlas.serialised_keyring());
 
   std::list<PublicContact> contacts;
   for (int n = 0; n < data_atlas.contacts_size(); ++n) {
@@ -188,22 +155,22 @@ int ClientController::ParseDa() {
 
 int ClientController::SerialiseDa() {
   if (!initialised_) {
-    DLOG(ERROR) << "Not initialised." << std::endl;
+    DLOG(ERROR) << "Not initialised.";
     return kClientControllerNotInitialised;
   }
 
   DataAtlas data_atlas;
-  data_atlas.set_root_db_key(ss_->root_db_key());
+  data_atlas.set_root_db_key(session_->root_db_key());
 
-  std::string serialised_keyring = ss_->SerialiseKeyring();
+  std::string serialised_keyring = session_->SerialiseKeyring();
   if (serialised_keyring.empty()) {
-    DLOG(ERROR) << "Serialising keyring failed." << std::endl;
+    DLOG(ERROR) << "Serialising keyring failed.";
     return -1;
   }
   data_atlas.set_serialised_keyring(serialised_keyring);
 
   std::vector<mi_contact> contacts;
-  ss_->contacts_handler()->GetContactList(&contacts);
+  session_->contacts_handler()->GetContactList(&contacts);
   for (size_t n = 0; n < contacts.size(); ++n) {
     PublicContact *pc = data_atlas.add_contacts();
     pc->set_pub_name(contacts[n].pub_name_);
@@ -223,7 +190,7 @@ int ClientController::SerialiseDa() {
   }
 
   std::list<PrivateShare> ps_list;
-  ss_->private_share_handler()->GetFullShareList(kAlpha, kAll, &ps_list);
+  session_->private_share_handler()->GetFullShareList(kAlpha, kAll, &ps_list);
   while (!ps_list.empty()) {
     PrivateShare this_ps = ps_list.front();
     Share *sh = data_atlas.add_shares();
@@ -256,11 +223,11 @@ int ClientController::SerialiseDa() {
 int ClientController::CheckUserExists(const std::string &username,
                                       const std::string &pin) {
   if (!initialised_) {
-    DLOG(ERROR) << "Not initialised." << std::endl;
+    DLOG(ERROR) << "Not initialised.";
     return kClientControllerNotInitialised;
   }
-  ss_->ResetSession();
-  ss_->set_def_con_level(kDefCon1);
+  session_->ResetSession();
+  session_->set_def_con_level(kDefCon1);
   return auth_->GetUserInfo(username, pin);
 }
 
@@ -268,47 +235,45 @@ bool ClientController::CreateUser(const std::string &username,
                                   const std::string &pin,
                                   const std::string &password) {
   if (!initialised_) {
-    DLOG(ERROR) << "Not initialised." << std::endl;
+    DLOG(ERROR) << "Not initialised.";
     return false;
   }
 
-  ss_->ResetSession();
-  ss_->set_connection_status(0);
+  session_->ResetSession();
+  session_->set_connection_status(0);
   int result = auth_->CreateUserSysPackets(username, pin);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to create user system packets."
-                << std::endl;
-    ss_->ResetSession();
+    DLOG(ERROR) << "Failed to create user system packets.";
+    session_->ResetSession();
     return false;
   } else {
-    DLOG(ERROR) << "auth_->CreateUserSysPackets DONE."
-                << std::endl;
+    DLOG(ERROR) << "auth_->CreateUserSysPackets DONE.";
   }
 
-  // std::string ser_da(ss_->SerialiseKeyring());
+  // std::string ser_da(session_->SerialiseKeyring());
   int n = SerialiseDa();
   if (n != 0) {
-    DLOG(ERROR) << "Failed to serialise DA." << std::endl;
+    DLOG(ERROR) << "Failed to serialise DA.";
     return false;
   }
 
   result = auth_->CreateTmidPacket(username, pin, password, ser_da_);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Cannot create tmid packet." << std::endl;
-    ss_->ResetSession();
+    DLOG(ERROR) << "Cannot create tmid packet.";
+    session_->ResetSession();
     return false;
   } else {
-    DLOG(ERROR) << "auth_->CreateTmidPacket DONE." << std::endl;
+    DLOG(ERROR) << "auth_->CreateTmidPacket DONE.";
   }
 
-  ss_->set_session_name(false);
+  session_->set_session_name(false);
   logged_in_ = true;
   return true;
 }
 
 bool ClientController::ValidateUser(const std::string &password) {
   if (!initialised_) {
-    DLOG(ERROR) << "CC::ValidateUser - Not initialised." << std::endl;
+    DLOG(ERROR) << "CC::ValidateUser - Not initialised.";
     return false;
   }
   ser_da_.clear();
@@ -320,31 +285,29 @@ bool ClientController::ValidateUser(const std::string &password) {
                                    serialised_master_datamap,
                                    surrogate_serialised_master_datamap);
   if (res != 0) {
-    DLOG(ERROR) << "CC::ValidateUser - Failed retrieving DA." << std::endl;
+    DLOG(ERROR) << "CC::ValidateUser - Failed retrieving DA.";
     return false;
   }
 
   if (!serialised_master_datamap->empty()) {
-    DLOG(INFO) << "ClientController::ValidateUser - Using TMID" << std::endl;
+    DLOG(INFO) << "ClientController::ValidateUser - Using TMID";
     ser_da_ = *serialised_master_datamap;
   } else if (!surrogate_serialised_master_datamap->empty()) {
-    DLOG(INFO) << "ClientController::ValidateUser - Using STMID" << std::endl;
+    DLOG(INFO) << "ClientController::ValidateUser - Using STMID";
     ser_da_ = *surrogate_serialised_master_datamap;
   } else {
     // Password validation failed
     ser_da_.clear();
-    ss_->ResetSession();
-    DLOG(INFO) << "ClientController::ValidateUser - Invalid password"
-               << std::endl;
+    session_->ResetSession();
+    DLOG(INFO) << "ClientController::ValidateUser - Invalid password";
     return false;
   }
 
-  ss_->set_connection_status(0);
-  ss_->set_session_name(false);
+  session_->set_connection_status(0);
+  session_->set_session_name(false);
   if (ParseDa() != 0) {
-    DLOG(INFO) << "ClientController::ValidateUser - Cannot parse DA"
-               << std::endl;
-    ss_->ResetSession();
+    DLOG(INFO) << "ClientController::ValidateUser - Cannot parse DA";
+    session_->ResetSession();
     return false;
   }
   logged_in_ = true;
@@ -353,33 +316,33 @@ bool ClientController::ValidateUser(const std::string &password) {
 
 bool ClientController::Logout() {
   if (!initialised_) {
-    DLOG(ERROR) << "Not initialised." << std::endl;
+    DLOG(ERROR) << "Not initialised.";
     return false;
   }
   logging_out_ = true;
 //  clear_messages_thread_.join();
   int result = SaveSession();
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to save session " << result << std::endl;
+    DLOG(ERROR) << "Failed to save session " << result;
     return false;
   }
 
   ser_da_.clear();
   logging_out_ = false;
   logged_in_ = false;
-  ss_->ResetSession();
+  session_->ResetSession();
   return true;
 }
 
 int ClientController::SaveSession() {
   if (!initialised_) {
-    DLOG(ERROR) << "Not initialised." << std::endl;
+    DLOG(ERROR) << "Not initialised.";
     return kClientControllerNotInitialised;
   }
 
   int n = SerialiseDa();
   if (n != 0) {
-    DLOG(ERROR) << "Failed to serialise DA." << std::endl;
+    DLOG(ERROR) << "Failed to serialise DA.";
     return n;
   }
 
@@ -397,10 +360,9 @@ int ClientController::SaveSession() {
 
   if (n != kSuccess) {
     if (n == kFailedToDeleteOldPacket) {
-      DLOG(ERROR) << "Failed to delete old TMID otherwise saved session OK."
-                  << std::endl;
+      DLOG(ERROR) << "Failed to delete old TMID otherwise saved session OK.";
     } else {
-      DLOG(ERROR) << "Failed to Save Session." << std::endl;
+      DLOG(ERROR) << "Failed to Save Session.";
       return n;
     }
   }
@@ -423,7 +385,7 @@ std::string ClientController::SessionName() {
     DLOG(ERROR) << "Not initialised.";
     return "";
   }
-  return ss_->session_name();
+  return session_->session_name();
 }
 
 bool ClientController::ChangeUsername(const std::string &new_username) {
@@ -468,29 +430,29 @@ bool ClientController::ChangePin(const std::string &new_pin) {
 
 bool ClientController::ChangePassword(const std::string &new_password) {
   if (!initialised_) {
-    DLOG(ERROR) << " Not initialised." << std::endl;
+    DLOG(ERROR) << " Not initialised.";
     return false;
   }
   SerialiseDa();
 
   int result = auth_->ChangePassword(ser_da_, new_password);
   if (result != kSuccess) {
-    DLOG(ERROR) << " Authentication failed: " << result << std::endl;
+    DLOG(ERROR) << " Authentication failed: " << result;
     return false;
   }
   return true;
 }
 
 std::string ClientController::Username() {
-  return ss_->username();
+  return session_->username();
 }
 
 std::string ClientController::Pin() {
-  return ss_->pin();
+  return session_->pin();
 }
 
 std::string ClientController::Password() {
-  return ss_->password();
+  return session_->password();
 }
 }  // namespace lifestuff
 
