@@ -18,11 +18,9 @@
 #ifndef MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_AWS_STORE_MANAGER_H_
 #define MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_AWS_STORE_MANAGER_H_
 
-#include <string>
-#include <vector>
+#include <memory>
 
-#include "maidsafe/lifestuff/store_components/packet_manager.h"
-
+#include "maidsafe/lifestuff/store_components/fake_store_manager.h"
 
 namespace maidsafe {
 
@@ -30,35 +28,14 @@ namespace lifestuff {
 
 class Session;
 
-class AWSStoreManager : public PacketManager {
+class AWSStoreManager : public FakeStoreManager {
  public:
   explicit AWSStoreManager(std::shared_ptr<Session> session);
   ~AWSStoreManager();
   void Init(VoidFuncOneInt callback);
-  int Close(bool cancel_pending_ops);
-  bool KeyUnique(const std::string &key);
-  void KeyUnique(const std::string &key,
-                 const VoidFuncOneInt &cb);
-  int GetPacket(const std::string &packet_name,
-                std::vector<std::string> *results);
-  void GetPacket(const std::string &packet_name,
-                 const GetPacketFunctor &lpf);
-  void StorePacket(const std::string &packet_name,
-                   const std::string &value,
-                   const VoidFuncOneInt &cb);
-  void DeletePacket(const std::string &packet_name,
-                    const std::string &value,
-                    const VoidFuncOneInt &cb);
-  void UpdatePacket(const std::string &packet_name,
-                    const std::string &old_value,
-                    const std::string &new_value,
-                    const VoidFuncOneInt &cb);
-
  private:
   AWSStoreManager &operator=(const AWSStoreManager&);
   AWSStoreManager(const AWSStoreManager&);
-
-  std::shared_ptr<Session> session_;
 };
 
 }  // namespace lifestuff

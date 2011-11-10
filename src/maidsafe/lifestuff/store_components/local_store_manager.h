@@ -22,78 +22,34 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_LOCAL_STORE_MANAGER_H_
-#define MAIDSAFE_LIFESTUFF_LOCAL_STORE_MANAGER_H_
+#ifndef MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_LOCAL_STORE_MANAGER_H_
+#define MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_LOCAL_STORE_MANAGER_H_
 
-#include <list>
-#include <map>
-#include <set>
+#include <memory>
 #include <string>
-#include <vector>
 
-#include "boost/asio/io_service.hpp"
-#include "boost/thread.hpp"
-#include "boost/thread/mutex.hpp"
-
-#include "maidsafe/lifestuff/store_components/packet_manager.h"
+#include "maidsafe/lifestuff/store_components/fake_store_manager.h"
 
 namespace maidsafe {
 
-class BufferedChunkStore;
-class ChunkValidation;
-
 namespace lifestuff {
 
-class DataHandler;
-class GenericPacket;
 class Session;
 
-class LocalStoreManager : public PacketManager {
+class LocalStoreManager : public FakeStoreManager {
  public:
   LocalStoreManager(std::shared_ptr<Session> session,
                     const std::string &db_directory = "");
   ~LocalStoreManager();
   void Init(VoidFuncOneInt callback);
-  int Close(bool cancel_pending_ops);
-
-  // Packets
-  bool KeyUnique(const std::string &key);
-  void KeyUnique(const std::string &key,
-                 const VoidFuncOneInt &cb);
-  int GetPacket(const std::string &packet_name,
-                std::vector<std::string> *results);
-  void GetPacket(const std::string &packet_name,
-                 const GetPacketFunctor &lpf);
-  void StorePacket(const std::string &packet_name,
-                   const std::string &value,
-                   const VoidFuncOneInt &cb);
-  void DeletePacket(const std::string &packet_name,
-                    const std::string &value,
-                    const VoidFuncOneInt &cb);
-  void UpdatePacket(const std::string &packet_name,
-                    const std::string &old_value,
-                    const std::string &new_value,
-                    const VoidFuncOneInt &cb);
-
  private:
   LocalStoreManager &operator=(const LocalStoreManager&);
   LocalStoreManager(const LocalStoreManager&);
-
-  bool ValidateGenericPacket(std::string ser_gp, std::string public_key);
-  void CreateSerialisedSignedValue(const GenericPacket &data,
-                                   std::string *ser_gp);
-
   std::string local_sm_dir_;
-  boost::asio::io_service service_;
-  std::shared_ptr<boost::asio::io_service::work> work_;
-  boost::thread_group thread_group_;
-  std::shared_ptr<ChunkValidation> chunk_validation_;
-  std::shared_ptr<BufferedChunkStore> client_chunkstore_;
-  std::shared_ptr<Session> session_;
 };
 
 }  // namespace lifestuff
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_LOCAL_STORE_MANAGER_H_
+#endif  // MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_LOCAL_STORE_MANAGER_H_

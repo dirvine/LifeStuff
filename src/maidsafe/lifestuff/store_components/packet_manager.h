@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_PACKET_MANAGER_H_
-#define MAIDSAFE_LIFESTUFF_PACKET_MANAGER_H_
+#ifndef MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_PACKET_MANAGER_H_
+#define MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_PACKET_MANAGER_H_
 
 #include <functional>
 #include <string>
@@ -89,4 +89,4 @@ class PacketManager {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_PACKET_MANAGER_H_
+#endif  // MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_PACKET_MANAGER_H_
