@@ -152,11 +152,11 @@ class Authentication {
                              OpStatus *dependent_op_status);
   void SignaturePacketUniqueCallback(
       int return_code,
-      std::shared_ptr<passport::SignaturePacket> packet,
+      std::shared_ptr<pki::SignaturePacket> packet,
       OpStatus *op_status);
   void SignaturePacketStoreCallback(
       int return_code,
-      std::shared_ptr<passport::SignaturePacket> packet,
+      std::shared_ptr<pki::SignaturePacket> packet,
       OpStatus *op_status);
   void SaveSessionCallback(
       int return_code,

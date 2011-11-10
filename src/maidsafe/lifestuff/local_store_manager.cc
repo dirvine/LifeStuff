@@ -24,8 +24,6 @@
 
 #include "maidsafe/dht/contact.h"
 
-#include "maidsafe/pki/maidsafe_validator.h"
-
 #include "maidsafe/lifestuff/client_utils.h"
 #include "maidsafe/lifestuff/data_handler.h"
 #include "maidsafe/lifestuff/log.h"

@@ -377,8 +377,7 @@ void Authentication::CreateSignaturePacket(
   }
 
   // Create packet
-  std::shared_ptr<passport::SignaturePacket>
-      sig_packet(new passport::SignaturePacket);
+  std::shared_ptr<pki::SignaturePacket> sig_packet(new pki::SignaturePacket);
   int result(kPendingResult);
   if (packet_type == passport::MPID)
     result = passport_->InitialiseMpid(public_name, sig_packet);
@@ -403,7 +402,7 @@ void Authentication::CreateSignaturePacket(
 
 void Authentication::SignaturePacketUniqueCallback(
     int return_code,
-    std::shared_ptr<passport::SignaturePacket> packet,
+    std::shared_ptr<pki::SignaturePacket> packet,
     OpStatus *op_status) {
   passport::PacketType packet_type =
       static_cast<passport::PacketType>(packet->packet_type());
@@ -423,16 +422,15 @@ void Authentication::SignaturePacketUniqueCallback(
                 this, arg::_1, packet, op_status);
 
   packet_manager_->StorePacket(packet->name(),
-                               CreateGenericPacket(
-                                   packet->value(),
-                                   packet->public_key_signature(),
-                                   packet_type),
+                               CreateGenericPacket(packet->value(),
+                                                   packet->signature(),
+                                                   packet_type),
                                functor);
 }
 
 void Authentication::SignaturePacketStoreCallback(
     int return_code,
-    std::shared_ptr<passport::SignaturePacket> packet,
+    std::shared_ptr<pki::SignaturePacket> packet,
     OpStatus *op_status) {
   passport::PacketType packet_type =
       static_cast<passport::PacketType>(packet->packet_type());
@@ -758,8 +756,8 @@ int Authentication::CreateMsidPacket(std::string *msid_name,
   msid_public_key->clear();
   msid_private_key->clear();
 
-  std::shared_ptr<passport::SignaturePacket>
-      msid(new passport::SignaturePacket);
+  std::shared_ptr<pki::SignaturePacket>
+      msid(new pki::SignaturePacket);
   std::vector<boost::uint32_t> share_stats(2, 0);
   int result = passport_->InitialiseSignaturePacket(passport::MSID, msid);
   if (result != kSuccess) {

@@ -198,8 +198,8 @@ int Session::GetKey(const passport::PacketType &packet_type,
                     std::string *public_key,
                     std::string *private_key,
                     std::string *public_key_signature) {
-  std::shared_ptr<passport::SignaturePacket> packet(
-      std::static_pointer_cast<passport::SignaturePacket>(
+  std::shared_ptr<pki::SignaturePacket> packet(
+      std::static_pointer_cast<pki::SignaturePacket>(
           passport_->GetPacket(packet_type, true)));
   int result(packet ? kSuccess : kGetKeyFailure);
   if (id) {
@@ -222,7 +222,7 @@ int Session::GetKey(const passport::PacketType &packet_type,
   }
   if (public_key_signature) {
     if (result == kSuccess)
-      *public_key_signature = packet->public_key_signature();
+      *public_key_signature = packet->signature();
     else
       public_key_signature->clear();
   }
@@ -231,8 +231,8 @@ int Session::GetKey(const passport::PacketType &packet_type,
 
 bool Session::CreateTestPackets(const std::string &public_username) {
   passport_->Init();
-  std::shared_ptr<passport::SignaturePacket>
-      pkt(new passport::SignaturePacket);
+  std::shared_ptr<pki::SignaturePacket>
+      pkt(new pki::SignaturePacket);
   if (passport_->InitialiseSignaturePacket(passport::ANMAID, pkt) != kSuccess)
     return false;
   if (passport_->ConfirmSignaturePacket(pkt) != kSuccess)
