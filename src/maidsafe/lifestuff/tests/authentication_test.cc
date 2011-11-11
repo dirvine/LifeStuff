@@ -29,10 +29,10 @@
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/lifestuff_messages_pb.h"
 #include "maidsafe/lifestuff/tests/test_callback.h"
-#if defined LOCAL_STORE
-#  include "maidsafe/lifestuff/store_components/local_store_manager.h"
-#elif defined AMAZON_WEB_SERVICE_STORE
+#if defined AMAZON_WEB_SERVICE_STORE
 #  include "maidsafe/lifestuff/store_components/aws_store_manager.h"
+#else
+#  include "maidsafe/lifestuff/store_components/local_store_manager.h"
 #endif
 
 namespace arg = std::placeholders;
@@ -49,10 +49,10 @@ class AuthenticationTest : public testing::Test {
   AuthenticationTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
         session_(new Session),
-#if defined LOCAL_STORE
-        packet_manager_(new LocalStoreManager(session_, test_dir_->string())),
-#elif defined AMAZON_WEB_SERVICE_STORE
+#if defined AMAZON_WEB_SERVICE_STORE
         packet_manager_(new AWSStoreManager(session_)),
+#else
+        packet_manager_(new LocalStoreManager(session_, test_dir_->string())),
 #endif
         authentication_(session_),
         username_("user"),

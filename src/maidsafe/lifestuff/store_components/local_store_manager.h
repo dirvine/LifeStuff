@@ -28,6 +28,8 @@
 #include <memory>
 #include <string>
 
+#include "boost/filesystem/path.hpp"
+
 #include "maidsafe/lifestuff/store_components/fake_store_manager.h"
 
 namespace maidsafe {
@@ -45,7 +47,7 @@ class LocalStoreManager : public FakeStoreManager {
  private:
   LocalStoreManager &operator=(const LocalStoreManager&);
   LocalStoreManager(const LocalStoreManager&);
-  std::string local_sm_dir_;
+  boost::filesystem::path local_store_manager_dir_;
 };
 
 }  // namespace lifestuff

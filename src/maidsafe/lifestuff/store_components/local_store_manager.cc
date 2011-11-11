@@ -29,32 +29,24 @@ namespace lifestuff {
 LocalStoreManager::LocalStoreManager(std::shared_ptr<Session> session,
                                      const std::string &db_directory)
     : FakeStoreManager(session),
-      local_sm_dir_(db_directory) {
-  if (local_sm_dir_.empty()) {
-    boost::system::error_code error_code;
-    fs::path temp_dir(fs::temp_directory_path(error_code));
-    if (error_code) {
-      DLOG(ERROR) << "Failed to get temporary directory";
-    }
-    local_sm_dir_ = (temp_dir / "LocalUserCredentials").string();
-  }
-}
+      local_store_manager_dir_(!db_directory.empty() ? db_directory :
+                               temp_directory_path_ / "LocalUserCredentials") {}
 
 LocalStoreManager::~LocalStoreManager() {}
 
 void LocalStoreManager::Init(VoidFuncOneInt callback) {
-  boost::system::error_code ec;
-  if (!fs::exists(local_sm_dir_ + "/StoreChunks", ec)) {
-    fs::create_directories(local_sm_dir_ + "/StoreChunks", ec);
-    if (ec) {
-      DLOG(INFO) << "Init - Failed to create directory";
-      ExecReturnCodeCallback(callback, kStoreManagerInitError);
-    }
+  fs::path buffered_chunk_store_dir(local_store_manager_dir_ / "StoreChunks");
+  ReturnCode result = FakeStoreManager::Init(buffered_chunk_store_dir);
+  if (result != kSuccess)
+    return ExecReturnCodeCallback(callback, result);
+
+  std::shared_ptr<BufferedChunkStore> buffered_chunk_store(new
+      BufferedChunkStore(true, chunk_validation_, asio_service_));
+  if (!buffered_chunk_store->Init(buffered_chunk_store_dir.string())) {
+    DLOG(ERROR) << "Failed to initialise client_chunk_store_";
+    return ExecReturnCodeCallback(callback, kStoreManagerInitError);
   }
-
-  if (!client_chunkstore_->Init(local_sm_dir_ + "/StoreChunks"))
-    ExecReturnCodeCallback(callback, kStoreManagerInitError);
-
+  client_chunk_store_ = buffered_chunk_store;
   ExecReturnCodeCallback(callback, kSuccess);
 }
 

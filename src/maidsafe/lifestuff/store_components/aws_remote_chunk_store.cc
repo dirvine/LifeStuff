@@ -33,9 +33,9 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-/// Default maximum number of operations to be processed in parallel.
+// Default maximum number of operations to be processed in parallel.
 const int kMaxActiveOps(4);
-/// Time to wait in WaitForCompletion before failing.
+// Time to wait in WaitForCompletion before failing.
 const bptime::time_duration KCompletionWaitTimeout(bptime::minutes(3));
 
 const std::string AWSRemoteChunkStore::kOpName[] = { "get", "store", "delete" };
@@ -43,28 +43,28 @@ const std::string AWSRemoteChunkStore::kOpName[] = { "get", "store", "delete" };
 AWSRemoteChunkStore::AWSRemoteChunkStore(
     std::shared_ptr<BufferedChunkStore> chunk_store,
     std::shared_ptr<pd::ChunkManager> chunk_manager)
-    : ChunkStore(false),
-      sig_chunk_got_(new pd::ChunkManager::ChunkGot::element_type),
-      sig_chunk_stored_(new pd::ChunkManager::ChunkStored::element_type),
-      sig_chunk_deleted_(new pd::ChunkManager::ChunkDeleted::element_type),
-      chunk_store_(chunk_store),
-      chunk_manager_(chunk_manager),
-      mutex_(),
-      cond_var_(),
-      max_active_ops_(kMaxActiveOps),
-      active_ops_count_(0),
-      active_get_ops_(),
-      active_mod_ops_(),
-      pending_mod_ops_(),
-      failed_ops_(),
-      get_op_count_(0),
-      store_op_count_(0),
-      delete_op_count_(0),
-      get_success_count_(0),
-      store_success_count_(0),
-      delete_success_count_(0),
-      get_total_size_(0),
-      store_total_size_(0) {
+        : ChunkStore(false),
+          sig_chunk_got_(new pd::ChunkManager::ChunkGot::element_type),
+          sig_chunk_stored_(new pd::ChunkManager::ChunkStored::element_type),
+          sig_chunk_deleted_(new pd::ChunkManager::ChunkDeleted::element_type),
+          chunk_store_(chunk_store),
+          chunk_manager_(chunk_manager),
+          mutex_(),
+          cond_var_(),
+          max_active_ops_(kMaxActiveOps),
+          active_ops_count_(0),
+          active_get_ops_(),
+          active_mod_ops_(),
+          pending_mod_ops_(),
+          failed_ops_(),
+          get_op_count_(0),
+          store_op_count_(0),
+          delete_op_count_(0),
+          get_success_count_(0),
+          store_success_count_(0),
+          delete_success_count_(0),
+          get_total_size_(0),
+          store_total_size_(0) {
   boost::mutex::scoped_lock lock(mutex_);
 
 //   chunk_manager_->sig_chunk_got()->connect(

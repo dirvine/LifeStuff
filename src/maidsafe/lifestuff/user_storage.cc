@@ -49,7 +49,7 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
     return;
   if (!fs::exists(mount_dir_path))
     fs::create_directory(mount_dir_path);
-  fs::path chunkstore_dir(mount_dir_path / "ChunkStore");
+  fs::path chunk_store_dir(mount_dir_path / "ChunkStore");
   fs::path meta_data_dir(mount_dir_path / "MetaData" / session_name);
   work_.reset(new boost::asio::io_service::work(asio_service_));
   for (int i = 0; i < 3; ++i)
@@ -66,7 +66,7 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
   drive_in_user_space_.reset(new MaidDriveInUserSpace(chunk_store_,
                                                       listing_handler_));
   std::static_pointer_cast<BufferedChunkStore>(
-      chunk_store_)->Init(chunkstore_dir);
+      chunk_store_)->Init(chunk_store_dir);
 
 #ifdef WIN32
   std::uint32_t drive_letters, mask = 0x4, count = 2;

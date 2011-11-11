@@ -85,7 +85,7 @@ void PacketOpCallback(const int &store_manager_result,
 }
 
 ClientController::ClientController()
-    : client_chunkstore_(),
+    : client_chunk_store_(),
       session_(new Session()),
       packet_manager_(),
       auth_(new Authentication(session_)),

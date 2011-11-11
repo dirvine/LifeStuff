@@ -21,7 +21,11 @@
 #include <memory>
 #include <string>
 
+#include "boost/asio/io_service.hpp"
+
 #include "maidsafe/pd/client/chunk_manager.h"
+
+#include "maidsafe/aws_transporter/aws_transporter.h"
 
 namespace maidsafe {
 
@@ -40,6 +44,7 @@ class AWSChunkManager : public pd::ChunkManager {
  private:
   AWSChunkManager(const AWSChunkManager&);
   AWSChunkManager& operator=(const AWSChunkManager&);
+  std::shared_ptr<aws_transporter::AWSTransporter> amazon_web_service_;
 };
 
 }  // namespace lifestuff

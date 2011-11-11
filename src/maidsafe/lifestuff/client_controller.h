@@ -127,7 +127,7 @@ class ClientController : public lifestuff::UserCredentials {
   int ParseDa();
   int SerialiseDa();
 
-  std::shared_ptr<ChunkStore> client_chunkstore_;
+  std::shared_ptr<ChunkStore> client_chunk_store_;
   std::shared_ptr<Session> session_;
   std::shared_ptr<PacketManager> packet_manager_;
   std::shared_ptr<Authentication> auth_;

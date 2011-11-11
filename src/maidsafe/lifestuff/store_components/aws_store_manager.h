@@ -24,6 +24,10 @@
 
 namespace maidsafe {
 
+class BufferedChunkStore;
+
+namespace pd { class ChunkManager; }
+
 namespace lifestuff {
 
 class Session;
@@ -36,6 +40,8 @@ class AWSStoreManager : public FakeStoreManager {
  private:
   AWSStoreManager &operator=(const AWSStoreManager&);
   AWSStoreManager(const AWSStoreManager&);
+  std::shared_ptr<BufferedChunkStore> buffered_chunk_store_;
+  std::shared_ptr<pd::ChunkManager> chunk_manager_;
 };
 
 }  // namespace lifestuff

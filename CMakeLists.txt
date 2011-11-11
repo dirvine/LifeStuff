@@ -233,9 +233,7 @@ TARGET_LINK_LIBRARIES(LifestuffDemoAWS lifestuff_static lifestuff_aws_store_stat
 ###################################################################################################
 INCLUDE(maidsafe_standard_flags)
 
-SET_TARGET_PROPERTIES(TESTauthentication_local TESTclientcontroller_local LifestuffDemoLocal
-                        PROPERTIES COMPILE_DEFINITIONS LOCAL_STORE)
-SET_TARGET_PROPERTIES(TESTauthentication_aws TESTclientcontroller_aws LifestuffDemoAWS
+SET_TARGET_PROPERTIES(TESTauthentication_aws TESTclientcontroller_aws LifestuffDemoAWS lifestuff_aws_store_static
                         PROPERTIES COMPILE_DEFINITIONS AMAZON_WEB_SERVICE_STORE)
 IF(UNIX)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")

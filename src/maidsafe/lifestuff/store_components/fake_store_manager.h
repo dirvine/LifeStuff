@@ -22,13 +22,14 @@
 #include <vector>
 
 #include "boost/asio/io_service.hpp"
+#include "boost/filesystem/path.hpp"
 #include "boost/thread.hpp"
 
 #include "maidsafe/lifestuff/store_components/packet_manager.h"
 
 namespace maidsafe {
 
-class BufferedChunkStore;
+class ChunkStore;
 class ChunkValidation;
 
 namespace lifestuff {
@@ -39,7 +40,7 @@ class Session;
 
 class FakeStoreManager : public PacketManager {
  public:
-  explicit FakeStoreManager(std::shared_ptr<Session> session);
+  FakeStoreManager(std::shared_ptr<Session> session);
   virtual ~FakeStoreManager();
   int Close(bool cancel_pending_ops);
   bool KeyUnique(const std::string &key);
@@ -61,6 +62,7 @@ class FakeStoreManager : public PacketManager {
                     const VoidFuncOneInt &cb);
 
  protected:
+  ReturnCode Init(const boost::filesystem::path &buffered_chunk_store_dir);
   void ExecReturnCodeCallback(VoidFuncOneInt callback, ReturnCode return_code);
   void ExecReturnLoadPacketCallback(GetPacketFunctor callback,
                                     std::vector<std::string> results,
@@ -73,8 +75,9 @@ class FakeStoreManager : public PacketManager {
   std::shared_ptr<boost::asio::io_service::work> work_;
   boost::thread_group thread_group_;
   std::shared_ptr<ChunkValidation> chunk_validation_;
-  std::shared_ptr<BufferedChunkStore> client_chunkstore_;
+  std::shared_ptr<ChunkStore> client_chunk_store_;
   std::shared_ptr<Session> session_;
+  boost::filesystem::path temp_directory_path_;
 
  private:
   FakeStoreManager &operator=(const FakeStoreManager&);

@@ -19,7 +19,6 @@
 
 #include "boost/filesystem.hpp"
 
-#include "maidsafe/common/buffered_chunk_store.h"
 #include "maidsafe/common/chunk_validation.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
@@ -90,19 +89,37 @@ std::string GetPublicKey(const std::string &packet_name,
 
 FakeStoreManager::FakeStoreManager(std::shared_ptr<Session> session)
     : asio_service_(),
-      work_(),
+      work_(new boost::asio::io_service::work(asio_service_)),
       thread_group_(),
       chunk_validation_(new VeritasChunkValidation()),
-      client_chunkstore_(new BufferedChunkStore(true,
-                                                chunk_validation_,
-                                                asio_service_)),
-      session_(session) {
-  work_.reset(new boost::asio::io_service::work(asio_service_));
+      client_chunk_store_(),
+      session_(session),
+      temp_directory_path_() {}
+
+ReturnCode FakeStoreManager::Init(const fs::path &buffered_chunk_store_dir) {
   for (int i = 0; i < 3; ++i) {
     thread_group_.create_thread(
         std::bind(static_cast<std::size_t(boost::asio::io_service::*)()>
                       (&boost::asio::io_service::run), &asio_service_));
   }
+
+  boost::system::error_code error_code;
+  fs::path temp_directory_path_(fs::temp_directory_path(error_code));
+  if (error_code) {
+    DLOG(ERROR) << "Failed to get temp directory: " << error_code.message();
+    return kStoreManagerInitError;
+  }
+
+  if (!fs::exists(buffered_chunk_store_dir, error_code)) {
+    fs::create_directories(buffered_chunk_store_dir, error_code);
+    if (error_code) {
+      DLOG(ERROR) << "Failed to create " << buffered_chunk_store_dir
+                  << ": " << error_code.message();
+      return kStoreManagerInitError;
+    }
+  }
+
+  return kSuccess;
 }
 
 FakeStoreManager::~FakeStoreManager() {
@@ -119,7 +136,7 @@ bool FakeStoreManager::KeyUnique(const std::string &key) {
                                   key,
                                   "",
                                   "",
-                                  client_chunkstore_) == kKeyUnique;
+                                  client_chunk_store_) == kKeyUnique;
 }
 
 void FakeStoreManager::KeyUnique(const std::string &key,
@@ -130,7 +147,7 @@ void FakeStoreManager::KeyUnique(const std::string &key,
                                                        key,
                                                        "",
                                                        "",
-                                                       client_chunkstore_)));
+                                                       client_chunk_store_)));
   ExecReturnCodeCallback(cb, result);
 }
 
@@ -146,7 +163,7 @@ int FakeStoreManager::GetPacket(const std::string &packet_name,
                                       packet_name,
                                       "",
                                       "",
-                                      client_chunkstore_));
+                                      client_chunk_store_));
   if (result != kSuccess) {
     DLOG(ERROR) << "FakeStoreManager::GetPacket - Failure in DH::ProcessData: "
                 << result;
@@ -196,7 +213,7 @@ void FakeStoreManager::DeletePacket(const std::string &packet_name,
                                       packet_name,
                                       data,
                                       public_key,
-                                      client_chunkstore_));
+                                      client_chunk_store_));
   if (result != kSuccess) {
     ExecReturnCodeCallback(cb, kDeletePacketFailure);
     DLOG(ERROR) << "FakeStoreManager::DeletePacket - Failure in "
@@ -234,7 +251,7 @@ void FakeStoreManager::StorePacket(const std::string &packet_name,
                                       packet_name,
                                       data,
                                       public_key,
-                                      client_chunkstore_));
+                                      client_chunk_store_));
   if (result != kSuccess) {
     ExecReturnCodeCallback(cb, kStorePacketFailure);
     DLOG(ERROR) << "FakeStoreManager::StorePacket - Failure in "
@@ -281,7 +298,7 @@ void FakeStoreManager::UpdatePacket(const std::string &packet_name,
                                       packet_name,
                                       new_data,
                                       public_key,
-                                      client_chunkstore_));
+                                      client_chunk_store_));
   if (result != kSuccess) {
     ExecReturnCodeCallback(cb, kUpdatePacketFailure);
     DLOG(ERROR) << "FakeStoreManager::UpdatePacket - Failure in "
