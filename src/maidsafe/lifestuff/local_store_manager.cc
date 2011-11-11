@@ -78,12 +78,21 @@ class VeritasChunkValidation : public ChunkValidation {
   ~VeritasChunkValidation() {}
 
   bool ValidName(const std::string &/*name*/) { return true; }
-  bool Hashable(const std::string &/*name*/) { return true; }
+  bool Hashable(const std::string &/*name*/) { return false; }
   bool ValidChunk(const std::string &/*name*/, const std::string &/*content*/) {
     return true;
   }
   bool ValidChunk(const std::string &/*name*/, const fs::path &/*path*/) {
     return true;
+  }
+  bool Modifiable(const std::string &/*name*/) { return true; }
+  std::string Version(const std::string &/*name*/,
+                      const std::string &/*content*/) {
+    return "";
+  }
+  std::string Version(const std::string &/*name*/,
+                      const fs::path &/*path*/) {
+    return "";
   }
 
  private:

@@ -40,39 +40,54 @@ namespace lifestuff {
 enum ReturnCode {
   // General
   kSuccess = 0,
-  kPendingResult = -1,
+  kPendingResult = -201,
 
   // Authentication
-  kAuthenticationError = -1001,
-  kPasswordFailure = -1002,
-  kUserDoesntExist = -1003,
-  kUserExists = -1004,
-  kPublicUsernameExists = -1005,
-  kPublicUsernameAlreadySet = -1006,
-  kFailedToDeleteOldPacket = -1007,
+  kAuthenticationError = -201001,
+  kPasswordFailure = -201002,
+  kUserDoesntExist = -201003,
+  kUserExists = -201004,
+  kPublicUsernameExists = -201005,
+  kPublicUsernameAlreadySet = -201006,
+  kFailedToDeleteOldPacket = -201007,
 
   // Client Controller
-  kClientControllerNotInitialised = -2001,
+  kClientControllerNotInitialised = -202001,
 
   // Store Manager
-  kStoreManagerInitError = -7001,
-  kStorePacketFailure = -7002,
-  kDeletePacketFailure = -7003,
-  kGetPacketFailure = -7004,
-  kUpdatePacketFailure = -7005,
-  kNoPublicKeyToCheck = -7006,
-  kKeyUnique = -7007,
-  kKeyNotUnique = -7008,
+  kStoreManagerInitError = -203001,
+  kStorePacketFailure = -203002,
+  kDeletePacketFailure = -203003,
+  kGetPacketFailure = -203004,
+  kUpdatePacketFailure = -203005,
+  kNoPublicKeyToCheck = -203006,
+  kKeyUnique = -203007,
+  kKeyNotUnique = -203008,
 
   // Session
-  kEmptyConversationId = -11001,
-  kNonExistentConversation = -11002,
-  kExistingConversation = -11003,
-  kGetKeyFailure = -11004,
-  kContactListFailure = -11005,
-  kAddLiveContactFailure = -11006,
-  kLiveContactNotFound = -11007,
-  kLiveContactNoEp = -11008
+  kEmptyConversationId = -204001,
+  kNonExistentConversation = -204002,
+  kExistingConversation = -204003,
+  kGetKeyFailure = -204004,
+  kContactListFailure = -204005,
+  kAddLiveContactFailure = -204006,
+  kLiveContactNotFound = -204007,
+  kLiveContactNoEp = -204008,
+
+  // Data-Handler
+  kParseFailure = -205001,
+  kPreOperationCheckFailure = -205002,
+  kDuplicateNameFailure = -205003,
+  kStoreFailure = -205004,
+  kVerifyDataFailure = -205005,
+  kDeleteFailure = -205006,
+  kModifyFailure = -205007,
+  kMissingSignedData = -205008,
+  kInvalidUpdate = -205009,
+  kSignatureVerificationFailure =  -205010,
+  kNotHashable = -205011,
+  kNotOwner = -205012,
+  kUnknownFailure = -205013
 };
 
 }  // namespace lifestuff
