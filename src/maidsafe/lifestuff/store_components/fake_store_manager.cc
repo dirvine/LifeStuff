@@ -94,7 +94,12 @@ FakeStoreManager::FakeStoreManager(std::shared_ptr<Session> session)
       chunk_validation_(new VeritasChunkValidation()),
       client_chunk_store_(),
       session_(session),
-      temp_directory_path_() {}
+      temp_directory_path_() {
+  boost::system::error_code error_code;
+  temp_directory_path_ = fs::temp_directory_path(error_code);
+  if (error_code)
+    DLOG(ERROR) << "Failed to get temp directory: " << error_code.message();
+}
 
 ReturnCode FakeStoreManager::Init(const fs::path &buffered_chunk_store_dir) {
   for (int i = 0; i < 3; ++i) {
@@ -104,12 +109,6 @@ ReturnCode FakeStoreManager::Init(const fs::path &buffered_chunk_store_dir) {
   }
 
   boost::system::error_code error_code;
-  fs::path temp_directory_path_(fs::temp_directory_path(error_code));
-  if (error_code) {
-    DLOG(ERROR) << "Failed to get temp directory: " << error_code.message();
-    return kStoreManagerInitError;
-  }
-
   if (!fs::exists(buffered_chunk_store_dir, error_code)) {
     fs::create_directories(buffered_chunk_store_dir, error_code);
     if (error_code) {

@@ -40,7 +40,7 @@ class Session;
 
 class FakeStoreManager : public PacketManager {
  public:
-  FakeStoreManager(std::shared_ptr<Session> session);
+  explicit FakeStoreManager(std::shared_ptr<Session> session);
   virtual ~FakeStoreManager();
   int Close(bool cancel_pending_ops);
   bool KeyUnique(const std::string &key);
