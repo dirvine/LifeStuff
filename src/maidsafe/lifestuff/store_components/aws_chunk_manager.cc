@@ -38,7 +38,7 @@ void AWSChunkManager::GetChunk(const std::string &name) {
   }
 
   std::string content;
-  if (amazon_web_service_->Download(EncodeToBase32(name), &content) !=
+  if (amazon_web_service_->Download(EncodeToHex(name), &content) !=
       aws_transporter::AWSTransporter::kSuccess) {
     DLOG(ERROR) << "Failed to get chunk " << HexSubstr(name) << " from AWS";
     (*sig_chunk_got_)(name, pd::kGeneralError);
@@ -65,7 +65,7 @@ void AWSChunkManager::StoreChunk(const std::string &name) {
     return;
   }
 
-  std::string encoded_name(EncodeToBase32(name));
+  std::string encoded_name(EncodeToHex(name));
   uintmax_t instance_count(0);
   if (amazon_web_service_->GetInstanceCount(encoded_name, &instance_count) !=
       aws_transporter::AWSTransporter::kSuccess) {
@@ -96,7 +96,7 @@ void AWSChunkManager::StoreChunk(const std::string &name) {
 
 void AWSChunkManager::DeleteChunk(const std::string &name) {
   uintmax_t instance_count(0);
-  std::string encoded_name(EncodeToBase32(name));
+  std::string encoded_name(EncodeToHex(name));
   if (amazon_web_service_->GetInstanceCount(encoded_name, &instance_count) !=
       aws_transporter::AWSTransporter::kSuccess) {
     DLOG(ERROR) << "Failed to get instance count while deleting chunk "

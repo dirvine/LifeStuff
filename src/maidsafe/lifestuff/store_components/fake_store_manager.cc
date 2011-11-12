@@ -190,7 +190,8 @@ void FakeStoreManager::GetPacket(const std::string &packetname,
 void FakeStoreManager::DeletePacket(const std::string &packet_name,
                                     const std::string &value,
                                     const VoidFuncOneInt &cb) {
-  PrintDebugInfo(packet_name, value, "", "DeletePacket");
+  DLOG(INFO) << "Deleting <" << HexSubstr(packet_name) << ", "
+             << HexSubstr(value) << ">";
 
   GenericPacket gp;
   if (!gp.ParseFromString(value)) {
@@ -227,7 +228,8 @@ void FakeStoreManager::DeletePacket(const std::string &packet_name,
 void FakeStoreManager::StorePacket(const std::string &packet_name,
                                    const std::string &value,
                                    const VoidFuncOneInt &cb) {
-  PrintDebugInfo(packet_name, value, "", "StorePacket");
+  DLOG(INFO) << "Storing <" << HexSubstr(packet_name) << ", "
+             << HexSubstr(value) << ">";
 
   GenericPacket gp;
   if (!gp.ParseFromString(value)) {
@@ -266,6 +268,9 @@ void FakeStoreManager::UpdatePacket(const std::string &packet_name,
                                     const std::string &old_value,
                                     const std::string &new_value,
                                     const VoidFuncOneInt &cb) {
+  DLOG(INFO) << "Updating <" << HexSubstr(packet_name) << ", "
+             << HexSubstr(old_value) << "> to <" << HexSubstr(packet_name)
+             << ", " << HexSubstr(new_value) << ">";
   PrintDebugInfo(packet_name, old_value, new_value, "UpdatePacket");
 
   GenericPacket old_gp, new_gp;
