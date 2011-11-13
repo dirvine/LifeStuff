@@ -50,14 +50,10 @@ void PrintDebugInfo(const std::string &packet_name,
                     const std::string &value1,
                     const std::string &value2,
                     const std::string &op_type) {
-  if (value2.empty())
-    DLOG(WARNING) << "LSM::" << op_type << " - <key, value>("
-                  << HexSubstr(packet_name) << ", " << HexSubstr(value1)
-                  << ")" << std::endl;
-  else
-    DLOG(WARNING) << "LSM::" << op_type << " - <key>(" << HexSubstr(packet_name)
-                  << ") value(" << HexSubstr(value1) << " --> "
-                  << HexSubstr(value2) << ")" << std::endl;
+  DLOG(WARNING) << "LSM::" << op_type << " - <key>(" << HexSubstr(packet_name)
+                << ") value(" << (value1.empty() ? "" : HexSubstr(value1))
+                << (value2.empty() ? "" : " --> " + HexSubstr(value2))
+                << ")" << std::endl;
 }
 
 void ExecReturnCodeCallback(VoidFuncOneInt cb, ReturnCode rc) {
@@ -169,6 +165,7 @@ void LocalStoreManager::KeyUnique(const std::string &key,
 
 int LocalStoreManager::GetPacket(const std::string &packet_name,
                                  std::vector<std::string> *results) {
+  PrintDebugInfo(packet_name, "", "", "GetPacket");
   DataHandler data_handler;
   std::string data;
   data_handler.get_data_signal()->connect(

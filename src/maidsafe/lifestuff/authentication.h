@@ -71,7 +71,8 @@ class Authentication {
   int CreateTmidPacket(const std::string &username,
                        const std::string &pin,
                        const std::string &password,
-                       const std::string &serialised_datamap);
+                       const std::string &serialised_datamap,
+                       const std::string &s_serialised_datamap);
 
   int CreateUserCredentials(const std::string &/*username*/,
                             const std::string &/*pin*/,
@@ -113,12 +114,19 @@ class Authentication {
   };
   enum SaveSessionOpType { kRegular, kSaveNew, kDeleteOld, kUpdate, kIsUnique };
   struct SaveSessionData {
-    SaveSessionData(VoidFuncOneInt func, SaveSessionOpType op_t)
-        : mid(new passport::MidPacket), smid(new passport::MidPacket),
-          tmid(new passport::TmidPacket), stmid(new passport::TmidPacket),
-          process_mid(kPending), process_smid(kPending),
-          process_tmid(kPending), process_stmid(kPending),
-          functor(func), op_type(op_t) {}
+    SaveSessionData(VoidFuncOneInt func,
+                    SaveSessionOpType op_t,
+                    int succeed = 0)
+        : mid(new passport::MidPacket),
+          smid(new passport::MidPacket),
+          tmid(new passport::TmidPacket),
+          stmid(new passport::TmidPacket),
+          process_mid(kPending),
+          process_smid(kPending),
+          process_tmid(kPending),
+          process_stmid(succeed == 2 ? kSucceeded : kPending),
+          functor(func),
+          op_type(op_t) {}
     std::shared_ptr<passport::MidPacket> mid, smid;
     std::shared_ptr<passport::TmidPacket> tmid, stmid;
     OpStatus process_mid, process_smid, process_tmid, process_stmid;

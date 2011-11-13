@@ -39,10 +39,10 @@
 #endif
 #include "boost/foreach.hpp"
 
-#include "maidsafe/common/chunk_store.h"
 #include "maidsafe/common/buffered_chunk_store.h"
-#include "maidsafe/common/hashable_chunk_validation.h"
+#include "maidsafe/common/chunk_store.h"
 #include "maidsafe/common/crypto.h"
+#include "maidsafe/common/hashable_chunk_validation.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/lifestuff/log.h"
@@ -159,6 +159,10 @@ int ClientController::ParseDa() {
     DLOG(ERROR) << "TMID doesn't parse." << std::endl;
     return -9000;
   }
+  if (!data_atlas.has_timestamp()) {
+    DLOG(ERROR) << "DA doesn't have a timestamp." << std::endl;
+    return -9001;
+  }
   if (!data_atlas.has_root_db_key()) {
     DLOG(ERROR) << "DA doesn't have a root db key." << std::endl;
     return -9001;
@@ -194,6 +198,8 @@ int ClientController::SerialiseDa() {
 
   DataAtlas data_atlas;
   data_atlas.set_root_db_key(ss_->root_db_key());
+  data_atlas.set_timestamp(boost::lexical_cast<std::string>(
+      GetDurationSinceEpoch().total_microseconds()));
 
   std::string serialised_keyring = ss_->SerialiseKeyring();
   if (serialised_keyring.empty()) {
@@ -291,8 +297,19 @@ bool ClientController::CreateUser(const std::string &username,
     DLOG(ERROR) << "Failed to serialise DA." << std::endl;
     return false;
   }
+  std::string ser_da(ser_da_);
 
-  result = auth_->CreateTmidPacket(username, pin, password, ser_da_);
+  n = SerialiseDa();
+  if (n != 0) {
+    DLOG(ERROR) << "Failed to serialise DA." << std::endl;
+    return false;
+  }
+  std::string surrogate_ser_da(ser_da_);
+
+  ser_da_ = ser_da;
+
+  result = auth_->CreateTmidPacket(username, pin, password, ser_da,
+                                   surrogate_ser_da);
   if (result != kSuccess) {
     DLOG(ERROR) << "Cannot create tmid packet." << std::endl;
     ss_->ResetSession();

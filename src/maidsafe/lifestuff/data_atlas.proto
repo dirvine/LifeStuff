@@ -1,18 +1,5 @@
 package maidsafe.lifestuff;
 
-enum ItemType {
-  REGULAR_FILE = 0;
-  SMALL_FILE = 1;
-  EMPTY_FILE = 2;
-  LOCKED_FILE = 3;
-  DIRECTORY = 4;
-  EMPTY_DIRECTORY = 5;
-  LINK = 6;
-  MAIDSAFE_CHUNK = 7;
-  NOT_FOR_PROCESSING = 8;
-  UNKNOWN = 9;
-}
-
 message PublicContact {
   required bytes pub_name = 1;
   required bytes pub_key = 2;
@@ -44,20 +31,6 @@ message Share {
   repeated ShareParticipant participants = 7;
 }
 
-message MetaDataMap {
-  required int32 id = 1;
-  required bytes display_name = 2;
-  required ItemType type = 3;
-  repeated bytes file_hash = 4;
-  optional bytes stats = 5;
-  optional bytes tag = 6;
-  optional int32 file_size_high = 7;
-  optional int32 file_size_low = 8;
-  optional int32 creation_time = 9;
-  optional int32 last_modified = 10;
-  optional int32 last_access = 11;
-}
-
 message PersonalDetails {
   optional bytes full_name = 1;
   optional bytes phone_number = 2;
@@ -71,7 +44,7 @@ message PersonalDetails {
 message DataAtlas {
   optional bytes root_db_key = 1;
   optional bytes serialised_keyring = 2;
-  repeated MetaDataMap mdms = 3;
+  optional bytes timestamp = 3;
   repeated bytes dms = 4;
   repeated PublicContact contacts = 5;
   repeated Share shares = 6;

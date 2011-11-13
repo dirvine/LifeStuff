@@ -196,7 +196,7 @@ int DataHandler::VerifyCurrentData(const std::string &name,
                                    std::string *current_data) {
   *current_data = chunk_store->Get(name);
   if (current_data->empty()) {
-    DLOG(ERROR) << "VerifyCurrentData - ChunkStore Store failure.";
+    DLOG(ERROR) << "VerifyCurrentData - Failure to get data";
     return -1;
   }
 

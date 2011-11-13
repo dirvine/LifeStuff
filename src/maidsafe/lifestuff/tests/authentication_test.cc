@@ -57,7 +57,8 @@ class AuthenticationTest : public testing::Test {
         username_("user"),
         pin_("1234"),
         password_("password1"),
-        ser_dm_(RandomString(10000)),
+        ser_dm_(RandomString(1000)),
+        surrogate_ser_dm_(RandomString(1000)),
         test_keys_() {}
 
  protected:
@@ -105,7 +106,7 @@ class AuthenticationTest : public testing::Test {
   std::shared_ptr<Session> ss_;
   std::shared_ptr<LocalStoreManager> sm_;
   Authentication authentication_;
-  std::string username_, pin_, password_, ser_dm_;
+  std::string username_, pin_, password_, ser_dm_, surrogate_ser_dm_;
   std::vector<crypto::RsaKeyPair> test_keys_;
 
  private:
@@ -123,8 +124,12 @@ TEST_F(AuthenticationTest, FUNC_GoodLogin) {
   username_ += "02";
   EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,
-                                                       password_, ser_dm_));
+  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_,
+                                                       pin_,
+                                                       password_,
+                                                       ser_dm_,
+                                                       surrogate_ser_dm_));
+  DLOG(ERROR) << "\n\n\n";
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
   std::string ser_dm_login;
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
@@ -133,11 +138,16 @@ TEST_F(AuthenticationTest, FUNC_GoodLogin) {
   ASSERT_EQ(pin_, ss_->pin());
   ASSERT_EQ(password_, ss_->password());
 
-  ASSERT_EQ(kSuccess, authentication_.SaveSession(ser_dm_));
+  DLOG(ERROR) << "\n\n\n";
+  ASSERT_EQ(kSuccess, authentication_.SaveSession(ser_dm_ + "1"));
+
+  DLOG(ERROR) << "\n\n\n";
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
+
+  DLOG(ERROR) << "\n\n\n";
   ser_dm_login.clear();
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
-  ASSERT_EQ(ser_dm_, ser_dm_login);
+  ASSERT_EQ(ser_dm_ + "1", ser_dm_login);
   ASSERT_EQ(username_, ss_->username());
   ASSERT_EQ(pin_, ss_->pin());
 }
@@ -146,8 +156,11 @@ TEST_F(AuthenticationTest, FUNC_LoginNoUser) {
   username_ += "03";
   EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,
-                                                       password_, ser_dm_));
+  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_,
+                                                       pin_,
+                                                       password_,
+                                                       ser_dm_,
+                                                       surrogate_ser_dm_));
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
   std::string ser_dm_login;
   password_ = "password_tonto";
@@ -159,8 +172,11 @@ TEST_F(AuthenticationTest, FUNC_RegisterUserOnce) {
   username_ += "04";
   EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,
-                                                       password_, ser_dm_));
+  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_,
+                                                       pin_,
+                                                       password_,
+                                                       ser_dm_,
+                                                       surrogate_ser_dm_));
   ASSERT_EQ(username_, ss_->username());
   ASSERT_EQ(pin_, ss_->pin());
 //  Sleep(boost::posix_time::milliseconds(100));
@@ -171,8 +187,11 @@ TEST_F(AuthenticationTest, FUNC_RegisterUserTwice) {
   username_ += "05";
   EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,
-                                                       password_, ser_dm_));
+  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_,
+                                                       pin_,
+                                                       password_,
+                                                       ser_dm_,
+                                                       surrogate_ser_dm_));
   ss_->ResetSession();
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
 }
@@ -181,8 +200,11 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionBlocking) {
   username_ += "06";
   EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,
-                                                       password_, ser_dm_));
+  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_,
+                                                       pin_,
+                                                       password_,
+                                                       ser_dm_,
+                                                       surrogate_ser_dm_));
   std::string original_tmidname;
   ss_->GetKey(passport::TMID, &original_tmidname, NULL, NULL, NULL);
   EXPECT_FALSE(original_tmidname.empty());
@@ -207,8 +229,11 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionCallbacks) {
   username_ += "07";
   EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,
-                                                       password_, ser_dm_));
+  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_,
+                                                       pin_,
+                                                       password_,
+                                                       ser_dm_,
+                                                       surrogate_ser_dm_));
   std::string original_tmidname;
   ss_->GetKey(passport::TMID, &original_tmidname, NULL, NULL, NULL);
   EXPECT_FALSE(original_tmidname.empty());
@@ -233,26 +258,26 @@ TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
   username_ += "08";
   EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,
-                                                       password_, ser_dm_));
-  // Save the session to create different TMIDs for MID and SMID
-  ASSERT_EQ(kSuccess, authentication_.SaveSession(ser_dm_));
+  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_,
+                                                       pin_,
+                                                       password_,
+                                                       ser_dm_,
+                                                       surrogate_ser_dm_));
+
   std::string original_tmidname, original_stmidname;
   ss_->GetKey(passport::TMID, &original_tmidname, NULL, NULL, NULL);
   ss_->GetKey(passport::STMID, &original_stmidname, NULL, NULL, NULL);
   EXPECT_FALSE(original_tmidname.empty());
   EXPECT_FALSE(original_stmidname.empty());
 
-  ASSERT_EQ(kSuccess, authentication_.ChangeUsername(ser_dm_, "el iuserneim"));
+  ASSERT_EQ(kSuccess, authentication_.ChangeUsername(ser_dm_ + "2",
+                                                     "el iuserneim"));
   ASSERT_EQ("el iuserneim", ss_->username());
 
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo("el iuserneim", pin_));
   std::string ser_dm_login;
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
-
-  // Check the TMIDs are gone
-  ASSERT_TRUE(sm_->KeyUnique(original_tmidname));
   ASSERT_TRUE(sm_->KeyUnique(original_stmidname));
 }
 
@@ -260,27 +285,25 @@ TEST_F(AuthenticationTest, FUNC_ChangePin) {
   username_ += "09";
   EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,
-                                                       password_, ser_dm_));
+  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_,
+                                                       pin_,
+                                                       password_,
+                                                       ser_dm_,
+                                                       surrogate_ser_dm_));
 
-  // Save the session to create different TMIDs for MID and SMID
-  ASSERT_EQ(kSuccess, authentication_.SaveSession(ser_dm_));
   std::string original_tmidname, original_stmidname;
   ss_->GetKey(passport::TMID, &original_tmidname, NULL, NULL, NULL);
   ss_->GetKey(passport::STMID, &original_stmidname, NULL, NULL, NULL);
   EXPECT_FALSE(original_tmidname.empty());
   EXPECT_FALSE(original_stmidname.empty());
 
-  ASSERT_EQ(kSuccess, authentication_.ChangePin(ser_dm_, "7894"));
+  ASSERT_EQ(kSuccess, authentication_.ChangePin(ser_dm_ + "2", "7894"));
   ASSERT_EQ("7894", ss_->pin());
 
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, "7894"));
   std::string ser_dm_login;
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
-
-  // Check the TMIDs are gone
-  ASSERT_TRUE(sm_->KeyUnique(original_tmidname));
   ASSERT_TRUE(sm_->KeyUnique(original_stmidname));
 }
 
@@ -288,32 +311,39 @@ TEST_F(AuthenticationTest, FUNC_ChangePassword) {
   username_ += "10";
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,
-                                                       password_, ser_dm_));
-  // Save the session
-  ASSERT_EQ(kSuccess, authentication_.SaveSession(ser_dm_));
-  std::string original_tmidname, original_stmidname;
+  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_,
+                                                       pin_,
+                                                       password_,
+                                                       ser_dm_,
+                                                       surrogate_ser_dm_));
 
-  ASSERT_EQ(kSuccess, authentication_.ChangePassword(ser_dm_, "password_new"));
+  DLOG(ERROR) << "\n\n\n";
+  ASSERT_EQ(kSuccess, authentication_.ChangePassword(ser_dm_ + "2",
+                                                     "password_new"));
   ASSERT_EQ("password_new", ss_->password());
 
+  DLOG(ERROR) << "\n\n\n";
   std::string ser_dm_login;
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
   ASSERT_NE(ser_dm_, ser_dm_login);
 
+  DLOG(ERROR) << "\n\n\n";
   ser_dm_login.clear();
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login, "password_new"));
-  ASSERT_EQ(ser_dm_, ser_dm_login);
+  ASSERT_NE(ser_dm_, ser_dm_login);
 }
 
 TEST_F(AuthenticationTest, FUNC_RegisterLeaveRegister) {
   username_ += "13";
   EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,
-                                                       password_, ser_dm_));
+  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_,
+                                                       pin_,
+                                                       password_,
+                                                       ser_dm_,
+                                                       surrogate_ser_dm_));
 
   //  Remove user.
   ASSERT_EQ(kSuccess, authentication_.RemoveMe());
@@ -324,8 +354,11 @@ TEST_F(AuthenticationTest, FUNC_RegisterLeaveRegister) {
 
   ss_->ResetSession();
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,
-                                                       password_, ser_dm_));
+  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_,
+                                                       pin_,
+                                                       password_,
+                                                       ser_dm_,
+                                                       surrogate_ser_dm_));
 }
 
 }  // namespace test
