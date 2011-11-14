@@ -406,13 +406,21 @@ ELSE() # Installing the library
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/maidsafe.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/return_codes.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/version.h)
+  SET(LIFESTUFF_LIFESTUFF_STORE_COMPONENTS_INSTALL_FILES
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/packet_manager.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/fake_store_manager.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_store_manager.h)
   FOREACH(LIFESTUFF_LIFESTUFF_INSTALL_FILE ${LIFESTUFF_LIFESTUFF_INSTALL_FILES})
     CHECK_INSTALL_HEADER_HAS_VERSION_GUARD(${LIFESTUFF_LIFESTUFF_INSTALL_FILE})
+  ENDFOREACH()
+  FOREACH(LIFESTUFF_LIFESTUFF_STORE_COMPONENTS_INSTALL_FILE ${LIFESTUFF_LIFESTUFF_STORE_COMPONENTS_INSTALL_FILES})
+    CHECK_INSTALL_HEADER_HAS_VERSION_GUARD(${LIFESTUFF_LIFESTUFF_STORE_COMPONENTS_INSTALL_FILE})
   ENDFOREACH()
 
   SET(EXPORT_NAME lifestuff_client)
   INSTALL(TARGETS lifestuff_static lifestuff_local_store_static lifestuff_aws_store_static EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
   INSTALL(FILES ${LIFESTUFF_LIFESTUFF_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff)
+  INSTALL(FILES ${LIFESTUFF_LIFESTUFF_STORE_COMPONENTS_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff/store_components)
   INSTALL(EXPORT ${EXPORT_NAME} DESTINATION share/maidsafe)
   ADD_VERSION_INFO_TO_INSTALLED_FILE()
 ENDIF()
