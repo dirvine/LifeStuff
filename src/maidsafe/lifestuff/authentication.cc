@@ -330,8 +330,7 @@ int Authentication::CreateUserSysPackets(const std::string &username,
   }
 #ifdef DEBUG
   if (!success)
-    DLOG(WARNING) << "Authentication::CreateUserSysPackets: timed out."
-                 ;
+    DLOG(WARNING) << "Authentication::CreateUserSysPackets: timed out.";
 #endif
   if ((anmaid_status == kSucceeded) && (anmid_status == kSucceeded) &&
       (antmid_status == kSucceeded) && (maid_status == kSucceeded) &&
@@ -578,7 +577,6 @@ void Authentication::SaveSessionCallback(
     int return_code,
     std::shared_ptr<pki::Packet> packet,
     std::shared_ptr<SaveSessionData> save_session_data) {
-//  DLOG(WARNING) << "Authentication::SaveSessionCallback " << packet->packet_type();
   OpStatus op_status(kSucceeded);
   if ((save_session_data->op_type == kIsUnique && return_code != kKeyUnique) ||
       (save_session_data->op_type != kIsUnique && return_code != kSuccess)) {
@@ -1128,7 +1126,6 @@ int Authentication::ChangeUserData(const std::string &serialised_master_datamap,
 
   // Prepare to delete old packets
   // Delete old MID
-  DLOG(ERROR) << "\t\t\tAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
   callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
                        delete_old_packets->mid, delete_old_packets);
   packet_manager_->DeletePacket(delete_old_packets->mid->name(),
@@ -1203,13 +1200,17 @@ int Authentication::ChangePassword(const std::string &serialised_master_datamap,
                                      arg::_1, &result);
   std::shared_ptr<SaveSessionData>
       update_packets(new SaveSessionData(functor, kUpdate));
+  std::shared_ptr<SaveSessionData>
+      delete_packets(new SaveSessionData(functor, kDeleteOld));
   update_packets->process_mid = kSucceeded;
   update_packets->process_smid = kSucceeded;
   std::string tmid_old_value, stmid_old_value;
   int res = passport_->ChangePassword(new_password,
                                       serialised_master_datamap,
-                                      &tmid_old_value,
-                                      &stmid_old_value,
+                                      update_packets->mid,
+                                      update_packets->smid,
+                                      delete_packets->tmid,
+                                      delete_packets->stmid,
                                       update_packets->tmid,
                                       update_packets->stmid);
   if (res != kSuccess) {
@@ -1262,7 +1263,9 @@ int Authentication::ChangePassword(const std::string &serialised_master_datamap,
     passport_->RevertPasswordChange();
     return kAuthenticationError;
   }
-  if (passport_->ConfirmPasswordChange(update_packets->tmid,
+  if (passport_->ConfirmUserDataChange(update_packets->mid,
+                                       update_packets->smid,
+                                       update_packets->tmid,
                                        update_packets->stmid) != kSuccess) {
     DLOG(ERROR) << "Authentication::ChangePassword: failed to confirm change.";
     passport_->RevertPasswordChange();
