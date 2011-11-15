@@ -1023,10 +1023,6 @@ int Authentication::ChangeUserData(const std::string &serialised_master_datamap,
   callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
                        save_new_packets->tmid, save_new_packets);
   packet_manager_->KeyUnique(save_new_packets->tmid->name(), callback);
-  // Check new STMID
-//  callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
-//                       save_new_packets->stmid, save_new_packets);
-//  packet_manager_->KeyUnique(save_new_packets->stmid->name(), callback);
 
   // Wait for checking to complete
   bool success(true);
@@ -1089,21 +1085,6 @@ int Authentication::ChangeUserData(const std::string &serialised_master_datamap,
                                    "",
                                    passport::TMID),
                                callback);
-  // Store new STMID
-//  if (save_new_packets->stmid->name() == save_new_packets->tmid->name()) {
-//    // This should only be the case for a new user where only one SaveSession
-//    // has been done.
-//    save_new_packets->process_stmid = kSucceeded;
-//  } else {
-//    callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
-//                         save_new_packets->stmid, save_new_packets);
-//    packet_manager_->StorePacket(save_new_packets->stmid->name(),
-//                                 CreateGenericPacket(
-//                                     save_new_packets->stmid->value(),
-//                                     "",
-//                                     passport::STMID),
-//                                 callback);
-//  }
 
   // Wait for storing to complete
   success = true;
@@ -1143,15 +1124,6 @@ int Authentication::ChangeUserData(const std::string &serialised_master_datamap,
                                     "",
                                     passport::SMID),
                                 callback);
-  // Delete old TMID
-//  callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
-//                       delete_old_packets->tmid, delete_old_packets);
-//  packet_manager_->DeletePacket(delete_old_packets->tmid->name(),
-//                                CreateGenericPacket(
-//                                    delete_old_packets->tmid->value(),
-//                                    "",
-//                                    passport::TMID),
-//                                callback);
   // Delete old STMID
   callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
                        delete_old_packets->stmid, delete_old_packets);
@@ -1219,38 +1191,57 @@ int Authentication::ChangePassword(const std::string &serialised_master_datamap,
     return kAuthenticationError;
   }
 
-  // Update TMID
+  // Update MID & SMID
   VoidFuncOneInt callback =
       std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
-                update_packets->tmid, update_packets);
-  packet_manager_->UpdatePacket(update_packets->tmid->name(),
-                                CreateGenericPacket(tmid_old_value,
-                                                    "",
-                                                    passport::TMID),
+                update_packets->mid, update_packets);
+  packet_manager_->UpdatePacket(update_packets->mid->name(),
                                 CreateGenericPacket(
-                                    update_packets->tmid->value(),
+                                    delete_packets->tmid->name(),
                                     "",
-                                    passport::STMID),
+                                    passport::MID),
+                                CreateGenericPacket(
+                                    update_packets->mid->value(),
+                                    "",
+                                    passport::MID),
                                 callback);
-  // Update STMID
+  callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
+                       update_packets->mid, update_packets);
+  packet_manager_->UpdatePacket(update_packets->smid->name(),
+                                CreateGenericPacket(
+                                    delete_packets->stmid->name(),
+                                    "",
+                                    passport::SMID),
+                                CreateGenericPacket(
+                                    update_packets->smid->value(),
+                                    "",
+                                    passport::SMID),
+                                callback);
+
+  // Store new TMID & STMID
+  callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
+                       update_packets->tmid, update_packets);
+  packet_manager_->StorePacket(update_packets->tmid->name(),
+                               CreateGenericPacket(
+                                   update_packets->tmid->value(),
+                                   "",
+                                   passport::TMID),
+                               callback);
   callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
                        update_packets->stmid, update_packets);
-  packet_manager_->UpdatePacket(update_packets->stmid->name(),
-                                CreateGenericPacket(stmid_old_value,
-                                                    "",
-                                                    passport::STMID),
-                                CreateGenericPacket(
-                                    update_packets->stmid->value(),
-                                    "",
-                                    passport::STMID),
-                                callback);
+  packet_manager_->StorePacket(update_packets->stmid->name(),
+                               CreateGenericPacket(
+                                   update_packets->stmid->value(),
+                                   "",
+                                   passport::STMID),
+                               callback);
 
   // Wait for update to complete
   bool success(true);
   try {
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(lock,
-              boost::posix_time::milliseconds(2 * kSingleOpTimeout_),
+              boost::posix_time::milliseconds(4 * kSingleOpTimeout_),
               std::bind(&Authentication::PacketOpDone, this, &result));
   }
   catch(const std::exception &e) {
@@ -1263,6 +1254,44 @@ int Authentication::ChangePassword(const std::string &serialised_master_datamap,
     passport_->RevertPasswordChange();
     return kAuthenticationError;
   }
+
+  // Delete old TMID & STMID
+  callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
+                       delete_packets->tmid, delete_packets);
+  packet_manager_->DeletePacket(delete_packets->tmid->name(),
+                                CreateGenericPacket(
+                                    update_packets->tmid->value(),
+                                    "",
+                                    passport::TMID),
+                                callback);
+  callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
+                       delete_packets->stmid, delete_packets);
+  packet_manager_->DeletePacket(delete_packets->stmid->name(),
+                                CreateGenericPacket(
+                                    delete_packets->stmid->value(),
+                                    "",
+                                    passport::STMID),
+                                callback);
+
+  // Wait for deletion to complete
+  success = true;
+  try {
+    boost::mutex::scoped_lock lock(mutex_);
+    success = cond_var_.timed_wait(lock,
+              boost::posix_time::milliseconds(4 * kSingleOpTimeout_),
+              std::bind(&Authentication::PacketOpDone, this, &result));
+  }
+  catch(const std::exception &e) {
+    DLOG(ERROR) << "Authentication::ChangePassword: deleting: " << e.what();
+    success = false;
+  }
+  if (result != kSuccess || !success) {
+    DLOG(ERROR) << "Authentication::ChangePassword: timed out deleting - "
+                << (result != kSuccess) << " - " << (!success);
+    passport_->RevertPasswordChange();
+    return kAuthenticationError;
+  }
+
   if (passport_->ConfirmUserDataChange(update_packets->mid,
                                        update_packets->smid,
                                        update_packets->tmid,

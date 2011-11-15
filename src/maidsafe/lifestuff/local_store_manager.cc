@@ -73,11 +73,19 @@ class VeritasChunkValidation : public ChunkValidation {
 
   bool ValidName(const std::string &/*name*/) { return true; }
   bool Hashable(const std::string &/*name*/) { return true; }
+  bool Modifiable(const std::string &/*name*/) { return true; }
   bool ValidChunk(const std::string &/*name*/, const std::string &/*content*/) {
     return true;
   }
   bool ValidChunk(const std::string &/*name*/, const fs::path &/*path*/) {
     return true;
+  }
+  std::string Version(const std::string &/*name*/,
+                      const std::string &/*content*/) {
+    return "1";
+  }
+  std::string Version(const std::string &/*name*/, const fs::path &/*path*/) {
+    return "1";
   }
 
  private:
@@ -106,9 +114,7 @@ LocalStoreManager::LocalStoreManager(const fs::path &db_directory,
       work_(),
       thread_group_(),
       chunk_validation_(new VeritasChunkValidation()),
-      client_chunkstore_(new BufferedChunkStore(true,
-                                                chunk_validation_,
-                                                service_)),
+      client_chunkstore_(new BufferedChunkStore(chunk_validation_, service_)),
       ss_(ss) {
   work_.reset(new boost::asio::io_service::work(service_));
   for (int i = 0; i < 3; ++i) {
