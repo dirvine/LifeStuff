@@ -27,11 +27,21 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "maidsafe/passport/passport.h"
+
+#include "boost/thread/mutex.hpp"
+#include "boost/thread/condition_variable.hpp"
+
+#include "maidsafe/passport/passport_config.h"
+
 #include "maidsafe/lifestuff/maidsafe.h"
 #include "maidsafe/lifestuff/return_codes.h"
 
 namespace maidsafe {
+
+namespace pki {
+class Packet;
+class SignaturePacket;
+}  // namespace pki
 
 namespace lifestuff {
 
@@ -46,10 +56,9 @@ class Session;
 
 class Authentication {
  public:
-  explicit Authentication(std::shared_ptr<Session> ss)
+  explicit Authentication(std::shared_ptr<Session> session)
       : packet_manager_(),
-        session_(ss),
-        passport_(),
+        session_(session),
         mutex_(),
         mid_mutex_(),
         smid_mutex_(),
@@ -58,7 +67,7 @@ class Authentication {
         stmid_op_status_(kPendingMid),
         encrypted_tmid_(),
         encrypted_stmid_(),
-        kSingleOpTimeout_(5000) {}
+        kSingleOpTimeout_(boost::posix_time::seconds(5)) {}
   ~Authentication();
   // Used to intialise passport_ in all cases.
   void Init(std::shared_ptr<PacketManager> packet_manager);
@@ -113,22 +122,26 @@ class Authentication {
     kNoUser
   };
   enum SaveSessionOpType { kRegular, kSaveNew, kDeleteOld, kUpdate, kIsUnique };
+  struct SerialisedPacket {
+    passport::PacketType type;
+    std::string name, value, signature;
+  };
+
   struct SaveSessionData {
     SaveSessionData(VoidFuncOneInt func,
                     SaveSessionOpType op_t,
                     int succeed = 0)
-        : mid(new passport::MidPacket),
-          smid(new passport::MidPacket),
-          tmid(new passport::TmidPacket),
-          stmid(new passport::TmidPacket),
+        : mid(),
+          smid(),
+          tmid(),
+          stmid(),
           process_mid(kPending),
           process_smid(kPending),
           process_tmid(kPending),
           process_stmid(succeed == 2 ? kSucceeded : kPending),
           functor(func),
           op_type(op_t) {}
-    std::shared_ptr<passport::MidPacket> mid, smid;
-    std::shared_ptr<passport::TmidPacket> tmid, stmid;
+    SerialisedPacket mid, smid, tmid, stmid;
     OpStatus process_mid, process_smid, process_tmid, process_stmid;
     VoidFuncOneInt functor;
     SaveSessionOpType op_type;
@@ -154,10 +167,10 @@ class Authentication {
                           bool surrogate);
   // Function waits until dependent_op_status != kPending or timeout before
   // starting
-  void CreateSignaturePacket(const passport::PacketType &packet_type,
-                             const std::string &public_name,
-                             OpStatus *op_status,
-                             OpStatus *dependent_op_status);
+  void StoreSignaturePacket(const passport::PacketType &packet_t,
+                            const std::string &public_name,
+                            OpStatus *op_status,
+                            OpStatus *dependent_op_status);
   void SignaturePacketUniqueCallback(
       int return_code,
       std::shared_ptr<pki::SignaturePacket> packet,
@@ -234,12 +247,11 @@ class Authentication {
 
   std::shared_ptr<PacketManager> packet_manager_;
   std::shared_ptr<Session> session_;
-  std::shared_ptr<passport::Passport> passport_;
   boost::mutex mutex_, mid_mutex_, smid_mutex_;
   boost::condition_variable cond_var_;
   OpStatus tmid_op_status_, stmid_op_status_;
   std::string encrypted_tmid_, encrypted_stmid_;
-  const int kSingleOpTimeout_;
+  const boost::posix_time::time_duration kSingleOpTimeout_;
 };
 
 }  // namespace lifestuff

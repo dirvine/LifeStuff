@@ -72,10 +72,10 @@ void ClientUtils::GetChunkSignatureKeys(DirType dir_type,
       break;
     case PRIVATE:
     default:
-      *key_id = ss_->Id(passport::PMID, true);
-      *public_key = ss_->PublicKey(passport::PMID, true);
-      *public_key_sig = ss_->PublicKeySignature(passport::PMID, true);
-      *private_key = ss_->PrivateKey(passport::PMID, true);
+      *key_id = ss_->Id(passport::kPmid, true);
+      *public_key = ss_->PublicKey(passport::kPmid, true);
+      *public_key_sig = ss_->PublicKeySignature(passport::kPmid, true);
+      *private_key = ss_->PrivateKey(passport::kPmid, true);
       break;
   }
 }
@@ -97,35 +97,35 @@ void ClientUtils::GetPacketSignatureKeys(passport::PacketType packet_type,
   bool confirmed_as_stored(true);
   *hashable = false;
   switch (packet_type) {
-    case passport::ANMID:
+    case passport::kAnmid:
       confirmed_as_stored = false;
     case passport::MID:
-      *key_id = ss_->Id(passport::ANMID, confirmed_as_stored);
-      *public_key = ss_->PublicKey(passport::ANMID, confirmed_as_stored);
-      *public_key_sig = ss_->PublicKeySignature(passport::ANMID,
+      *key_id = ss_->Id(passport::kAnmid, confirmed_as_stored);
+      *public_key = ss_->PublicKey(passport::kAnmid, confirmed_as_stored);
+      *public_key_sig = ss_->PublicKeySignature(passport::kAnmid,
                                                 confirmed_as_stored);
-      *private_key = ss_->PrivateKey(passport::ANMID, confirmed_as_stored);
+      *private_key = ss_->PrivateKey(passport::kAnmid, confirmed_as_stored);
       *hashable = false;
       break;
-    case passport::ANSMID:
+    case passport::kAnsmid:
       confirmed_as_stored = false;
     case passport::SMID:
-      *key_id = ss_->Id(passport::ANSMID, confirmed_as_stored);
-      *public_key = ss_->PublicKey(passport::ANSMID, confirmed_as_stored);
-      *public_key_sig = ss_->PublicKeySignature(passport::ANSMID,
+      *key_id = ss_->Id(passport::kAnsmid, confirmed_as_stored);
+      *public_key = ss_->PublicKey(passport::kAnsmid, confirmed_as_stored);
+      *public_key_sig = ss_->PublicKeySignature(passport::kAnsmid,
                                                 confirmed_as_stored);
-      *private_key = ss_->PrivateKey(passport::ANSMID, confirmed_as_stored);
+      *private_key = ss_->PrivateKey(passport::kAnsmid, confirmed_as_stored);
       *hashable = false;
       break;
-    case passport::ANTMID:
+    case passport::kAntmid:
       confirmed_as_stored = false;
     case passport::TMID:
     case passport::STMID:
-      *key_id = ss_->Id(passport::ANTMID, confirmed_as_stored);
-      *public_key = ss_->PublicKey(passport::ANTMID, confirmed_as_stored);
-      *public_key_sig = ss_->PublicKeySignature(passport::ANTMID,
+      *key_id = ss_->Id(passport::kAntmid, confirmed_as_stored);
+      *public_key = ss_->PublicKey(passport::kAntmid, confirmed_as_stored);
+      *public_key_sig = ss_->PublicKeySignature(passport::kAntmid,
                                                 confirmed_as_stored);
-      *private_key = ss_->PrivateKey(passport::ANTMID, confirmed_as_stored);
+      *private_key = ss_->PrivateKey(passport::kAntmid, confirmed_as_stored);
       *hashable = false;
       break;
     case passport::ANMPID:
@@ -137,20 +137,20 @@ void ClientUtils::GetPacketSignatureKeys(passport::PacketType packet_type,
                                                 confirmed_as_stored);
       *private_key = ss_->PrivateKey(passport::ANMPID, confirmed_as_stored);
       break;
-    case passport::ANMAID:
+    case passport::kAnmaid:
       confirmed_as_stored = false;
-    case passport::MAID:
-      *key_id = ss_->Id(passport::ANMAID, confirmed_as_stored);
-      *public_key = ss_->PublicKey(passport::ANMAID, confirmed_as_stored);
-      *public_key_sig = ss_->PublicKeySignature(passport::ANMAID,
+    case passport::kMaid:
+      *key_id = ss_->Id(passport::kAnmaid, confirmed_as_stored);
+      *public_key = ss_->PublicKey(passport::kAnmaid, confirmed_as_stored);
+      *public_key_sig = ss_->PublicKeySignature(passport::kAnmaid,
                                                 confirmed_as_stored);
-      *private_key = ss_->PrivateKey(passport::ANMAID, confirmed_as_stored);
+      *private_key = ss_->PrivateKey(passport::kAnmaid, confirmed_as_stored);
       break;
-    case passport::PMID:
-      *key_id = ss_->Id(passport::MAID, true);
-      *public_key = ss_->PublicKey(passport::MAID, true);
-      *public_key_sig = ss_->PublicKeySignature(passport::MAID, true);
-      *private_key = ss_->PrivateKey(passport::MAID, true);
+    case passport::kPmid:
+      *key_id = ss_->Id(passport::kMaid, true);
+      *public_key = ss_->PublicKey(passport::kMaid, true);
+      *public_key_sig = ss_->PublicKeySignature(passport::kMaid, true);
+      *private_key = ss_->PrivateKey(passport::kMaid, true);
       break;
     case passport::PD_DIR:
     case passport::MSID:

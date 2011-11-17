@@ -86,192 +86,52 @@ struct UserDetails {
         pin(),
         password(),
         session_name(),
+        public_username(),
         root_db_key(),
-        self_encrypting(true),
-        authorised_users(),
-        maid_authorised_users(),
         mounted(0),
         win_drive('\0'),
         connection_status(0) {}
   DefConLevels defconlevel;
   bool da_modified;
-  std::string username, pin, password, session_name;
+  std::string username, pin, password, session_name, public_username;
   std::string root_db_key;
-  bool self_encrypting;
-  std::set<std::string> authorised_users;
-  std::set<std::string> maid_authorised_users;
   int mounted;
   char win_drive;
   int connection_status;
 };
 
-struct ConnectionDetails {
-  ConnectionDetails()
-      : transport(0), connection_id(0), status(0), init_timestamp(0) {}
-//  EndPoint ep;
-  boost::uint16_t transport;
-  boost::uint32_t connection_id;
-  int status;
-  boost::uint32_t init_timestamp;
-};
-
 class Session {
  public:
   Session();
-
-  virtual ~Session() {
-    passport_->StopCreatingKeyPairs();
-    io_service_.stop();
-    work_.reset();
-    threads_.join_all();
-  }
-
+  ~Session();
   bool ResetSession();
 
-  // Member Variable Accessors
+  std::shared_ptr<ContactsHandler> contacts_handler() const;
+  std::shared_ptr<PrivateShareHandler> private_share_handler() const;
 
-  std::shared_ptr<ContactsHandler> contacts_handler();
-  std::shared_ptr<PrivateShareHandler> private_share_handler();
+  DefConLevels def_con_level() const;
+  bool da_modified() const;
+  std::string username() const;
+  std::string pin() const;
+  std::string password() const;
+  std::string public_username() const;
+  std::string session_name() const;
+  std::string root_db_key() const;
+  int mounted() const;
+  char win_drive() const;
+  int connection_status() const;
 
-  // // // // // // // // // // // // // // ///
-  // // User Details Handling // //
-  // // // // // // // // // // // // // // ///
-
-  // Accessors
-  DefConLevels def_con_level();
-  bool da_modified();
-  std::string username();
-  std::string pin();
-  std::string password();
-  std::string public_username();
-  std::string session_name();
-  std::string root_db_key();
-  bool self_encrypting();
-  const std::set<std::string>& authorised_users();
-  const std::set<std::string>& maid_authorised_users();
-  int mounted();
-  char win_drive();
-  int connection_status();
-  boost::asio::io_service& io_service();
-
-  // Mutators
   void set_def_con_level(DefConLevels defconlevel);
   void set_da_modified(bool da_modified);
   bool set_session_name(bool clear);
   void set_root_db_key(const std::string &root_db_key);
-  void set_self_encrypting(bool self_encrypting);
-  void set_authorised_users(
-      const std::set<std::string> &authorised_users);
-  void set_maid_authorised_users(
-      const std::set<std::string> &maid_authorised_users);
   void set_mounted(int mounted);
   void set_win_drive(char win_drive);
   void set_connection_status(int status);
 
-  // // // // // // // // // // // // // /
-  // // Key Ring Handling // //
-  // // // // // // // // // // // // // /
-
-  int ParseKeyring(const std::string &serialised_keyring);
-  std::string SerialiseKeyring();
-  int ProxyMID(std::string *id,
-               std::string *public_key,
-               std::string *private_key,
-               std::string *public_key_signature);
-  int MPublicID(std::string *id,
-                std::string *public_key,
-                std::string *private_key,
-                std::string *public_key_signature);
-
-  // // // // // // // // // // // // // /
-  // // Contacts Handling // //
-  // // // // // // // // // // // // // /
-
-  int LoadContacts(std::list<PublicContact> *contacts);
-  std::string GetContactPublicKey(const std::string &pub_name);
-
-  // type:  1  - for most contacted
-  //        2  - for most recent
-  //        0  - (default) alphabetical
-  int GetPublicUsernameList(std::vector<std::string> *list);
-
-  // // // // // // // // // // // // // // ////
-  // // Private Share Handling // //
-  // // // // // // // // // // // // // // ////
-
-  int LoadShares(std::list<Share> *shares);
-  int GetShareKeys(const std::string &msid,
-                   std::string *public_key,
-                   std::string *private_key);
-
-  // // // // // // // // // // // // // // ///
-  // // Conversation Handling // //
-  // // // // // // // // // // // // // // ///
-
-  int ConversationList(std::list<std::string> *conversations);
-  int AddConversation(const std::string &id);
-  int RemoveConversation(const std::string &id);
-  int ConversationExits(const std::string &id);
-  void ClearConversations();
-
-  // // // // // // // // // // // // // // ///
-  // // Live Contact Handling // //
-  // // // // // // // // // // // // // // ///
-
-//  typedef std::map<std::string, ConnectionDetails> live_map;
-//  int AddLiveContact(const std::string &contact,
-//                     const EndPoint &end_points,
-//                     int status);
-//  int LivePublicUsernameList(std::list<std::string> *contacts);
-//  int LiveContactMap(std::map<std::string, ConnectionDetails> *live_contacts);
-//  int LiveContactDetails(const std::string &contact,
-//                         EndPoint *end_points,
-//                         boost::uint16_t *transport_id,
-//                         boost::uint32_t *connection_id,
-//                         int *status,
-//                         boost::uint32_t *init_timestamp);
-//  int LiveContactTransportConnection(const std::string &contact,
-//                                     boost::uint16_t *transport_id,
-//                                     boost::uint32_t *connection_id);
-//  int LiveContactStatus(const std::string &contact, int *status);
-//  int StartLiveConnection(const std::string &contact,
-//                          boost::uint16_t transport_id,
-//                          const boost::uint32_t &connection_id);
-//  int ModifyTransportId(const std::string &contact,
-//                        boost::uint16_t transport_id);
-//  int ModifyConnectionId(const std::string &contact,
-//                         const boost::uint32_t &connection_id);
-//  int ModifyEndPoint(const std::string &contact, const std::string &ip,
-//                     const boost::uint16_t &port, int which);
-//  int ModifyEndPoint(const std::string &contact, const EndPoint end_point);
-//  int ModifyStatus(const std::string &contact,
-//                   int status);
-//  int DeleteLiveContact(const std::string &contact);
-//  void ClearLiveContacts();
-
- protected:
-  // Following three mutators should only be called by Authentication once
-  // associated packets are confirmed as stored.
-  void set_username(const std::string &username);
-  void set_pin(const std::string &pin);
-  void set_password(const std::string &password);
-  // Creates ANMAID, MAID, PMID.  Also ANMPID & MPID if public_username not "".
-  bool CreateTestPackets(const std::string &public_username);
-  std::string Id(const passport::PacketType &packet_type,
-                 bool confirmed_as_stored);
-  std::string PublicKey(const passport::PacketType &packet_type,
-                        bool confirmed_as_stored);
-  std::string PublicKey(const std::string &packet_id,
-                        bool confirmed_as_stored);
-  std::string PrivateKey(const passport::PacketType &packet_type,
-                         bool confirmed_as_stored);
-  std::string PublicKeySignature(const passport::PacketType &packet_type,
-                                 bool confirmed_as_stored);
-
- private:
   friend std::string GetPublicKey(const std::string&, std::shared_ptr<Session>);
   friend class Authentication;
-  friend class ClientUtils;
+//  friend class ClientUtils;
   friend class test::SessionTest;
   friend class test::ClientControllerTest;
   friend class test::LocalStoreManagerTest;
@@ -291,24 +151,21 @@ class Session {
   friend class
       test::LocalStoreManagerTest_BEH_UpdateSystemPacketNotOwner_Test;
 
+ private:
   Session &operator=(const Session&);
   Session(const Session&);
-  int GetKey(const passport::PacketType &packet_type,
-             std::string *id,
-             std::string *public_key,
-             std::string *private_key,
-             std::string *public_key_signature);
+  // Following three mutators should only be called by Authentication once
+  // associated packets are confirmed as stored.
+  void set_username(const std::string &username);
+  void set_pin(const std::string &pin);
+  void set_password(const std::string &password);
+  // Creates signature packets.
+  bool CreateTestPackets();
 
-  UserDetails ud_;
-  boost::asio::io_service io_service_;
-  std::shared_ptr<boost::asio::io_service::work> work_;
-  boost::thread_group threads_;
+  UserDetails user_details_;
   std::shared_ptr<passport::Passport> passport_;
   std::shared_ptr<ContactsHandler> contacts_handler_;
   std::shared_ptr<PrivateShareHandler> private_share_handler_;
-  std::set<std::string> conversations_;
-  std::map<std::string, ConnectionDetails> live_contacts_;
-  boost::mutex lc_mutex_;
 };
 
 }  // namespace lifestuff

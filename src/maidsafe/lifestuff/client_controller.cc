@@ -200,6 +200,7 @@ int ClientController::SerialiseDa() {
   data_atlas.set_root_db_key(ss_->root_db_key());
   data_atlas.set_timestamp(boost::lexical_cast<std::string>(
       GetDurationSinceEpoch().total_microseconds()));
+  DLOG(WARNING) << "data_atlas.set_timestamp: " << data_atlas.timestamp();
 
   std::string serialised_keyring = ss_->SerialiseKeyring();
   if (serialised_keyring.empty()) {
@@ -334,8 +335,8 @@ bool ClientController::ValidateUser(const std::string &password) {
   std::shared_ptr<std::string> surrogate_serialised_master_datamap(
       new std::string);
   int res = auth_->GetMasterDataMap(password,
-                                   serialised_master_datamap,
-                                   surrogate_serialised_master_datamap);
+                                    serialised_master_datamap,
+                                    surrogate_serialised_master_datamap);
   if (res != 0) {
     DLOG(ERROR) << "CC::ValidateUser - Failed retrieving DA." << std::endl;
     return false;

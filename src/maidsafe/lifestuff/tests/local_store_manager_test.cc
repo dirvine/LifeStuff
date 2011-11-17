@@ -77,7 +77,7 @@ class LocalStoreManagerTest : public testing::Test {
     gp.set_data(gp_value);
     gp.set_signature(crypto::AsymSign(gp.data(), anmaid_private_key_));
     gp.set_hashable(false);
-    gp.set_signing_id(ss_->Id(passport::ANMAID, true));
+    gp.set_signing_id(ss_->Id(passport::kAnmaid, true));
     std::string gp_name(crypto::Hash<crypto::SHA512>(gp.data() +
                                                      gp.signature()));
     // Section 1 - Check For Unique Key
@@ -120,7 +120,7 @@ class LocalStoreManagerTest : public testing::Test {
     new_gp.set_data(new_gp_value);
     new_gp.set_signature(crypto::AsymSign(new_gp.data(), anmaid_private_key_));
     new_gp.set_hashable(false);
-    new_gp.set_signing_id(ss_->Id(passport::ANMAID, true));
+    new_gp.set_signing_id(ss_->Id(passport::kAnmaid, true));
     sm_->UpdatePacket(gp_name,
                       gp.SerializeAsString(),
                       new_gp.SerializeAsString(),
@@ -176,8 +176,8 @@ class LocalStoreManagerTest : public testing::Test {
                              &cb_,
                              arg::_1,
                              arg::_2);
-    anmaid_private_key_ = ss_->PrivateKey(passport::ANMAID, true);
-    anmaid_public_key_ = ss_->PublicKey(passport::ANMAID, true);
+    anmaid_private_key_ = ss_->PrivateKey(passport::kAnmaid, true);
+    anmaid_public_key_ = ss_->PublicKey(passport::kAnmaid, true);
     mpid_public_key_ = ss_->PublicKey(passport::MPID, true);
   }
 
@@ -190,10 +190,10 @@ class LocalStoreManagerTest : public testing::Test {
 
   void GeneratePacket(bool hashable, std::string *name, GenericPacket *gp) {
     gp->set_data(anmaid_public_key_);
-    gp->set_signature(ss_->PublicKeySignature(passport::ANMAID, true));
+    gp->set_signature(ss_->PublicKeySignature(passport::kAnmaid, true));
     gp->set_hashable(hashable);
     *name = crypto::Hash<crypto::SHA512>(gp->data() + gp->signature());
-    gp->set_signing_id(ss_->Id(passport::ANMAID, true));
+    gp->set_signing_id(ss_->Id(passport::kAnmaid, true));
   }
 
   std::shared_ptr<fs::path> test_root_dir_;

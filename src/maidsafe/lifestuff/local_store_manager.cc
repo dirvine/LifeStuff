@@ -50,10 +50,16 @@ void PrintDebugInfo(const std::string &packet_name,
                     const std::string &value1,
                     const std::string &value2,
                     const std::string &op_type) {
-  DLOG(WARNING) << "LSM::" << op_type << " - <key>(" << HexSubstr(packet_name)
-                << ") value(" << (value1.empty() ? "" : HexSubstr(value1))
-                << (value2.empty() ? "" : " --> " + HexSubstr(value2))
-                << ")" << std::endl;
+  if (op_type == "UpdatePacket")
+    DLOG(WARNING) << "LSM::" << op_type << " - <key>(" << HexSubstr(packet_name)
+                  << ") value(" << (value1.empty() ? "" : HexSubstr(value1))
+                  << (value2.empty() ? "" : " --> " + HexSubstr(value2))
+                  << ")" << std::endl;
+  else
+    DLOG(WARNING) << "LSM::" << op_type << " - <key>(" << HexSubstr(packet_name)
+                  << ") value(" << (value1.empty() ? "" : HexSubstr(value1))
+                  << (value2.empty() ? "" : " --> " + HexSubstr(value2))
+                  << ")" << std::endl;
 }
 
 void ExecReturnCodeCallback(VoidFuncOneInt cb, ReturnCode rc) {
