@@ -72,8 +72,6 @@ SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_DIR} CACHE INTERNAL "Except for MSVC, th
 ###################################################################################################
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/build)
 INCLUDE(maidsafe_find_common)
-ADD_MAIDSAFE_LIBRARY(MaidSafe-Transport)
-ADD_MAIDSAFE_LIBRARY(MaidSafe-DHT)
 ADD_MAIDSAFE_LIBRARY(Encrypt)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-Drive)
 ADD_MAIDSAFE_LIBRARY(PKI)
@@ -177,7 +175,7 @@ ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTclientcontroller_local TESTclient
 # IF(UNIX)
 #   TARGET_LINK_LIBRARIES(lifestuff_sql_utils_static dl)
 # ENDIF()
-TARGET_LINK_LIBRARIES(lifestuff_local_static maidsafe_drive_static passport_static boost_date_time ${QT_LIBRARIES} boost_regex)
+TARGET_LINK_LIBRARIES(lifestuff_local_static passport_static maidsafe_drive_static boost_date_time boost_regex)
 TARGET_LINK_LIBRARIES(TESTclient lifestuff_local_static gtest_static gmock_static)
 TARGET_LINK_LIBRARIES(TESTauthentication_local lifestuff_local_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTclientcontroller_local lifestuff_local_static gtest_static)

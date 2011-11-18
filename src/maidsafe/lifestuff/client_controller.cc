@@ -47,7 +47,6 @@
 
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/authentication.h"
-#include "maidsafe/lifestuff/client_utils.h"
 #ifdef __MSVC__
 #  pragma warning(push)
 #  pragma warning(disable: 4127 4244 4267)
@@ -309,8 +308,7 @@ bool ClientController::CreateUser(const std::string &username,
 
   ser_da_ = ser_da;
 
-  result = auth_->CreateTmidPacket(username, pin, password, ser_da,
-                                   surrogate_ser_da);
+  result = auth_->CreateTmidPacket(password, ser_da, surrogate_ser_da);
   if (result != kSuccess) {
     DLOG(ERROR) << "Cannot create tmid packet." << std::endl;
     ss_->ResetSession();
@@ -331,23 +329,21 @@ bool ClientController::ValidateUser(const std::string &password) {
   }
   ser_da_.clear();
 
-  std::shared_ptr<std::string> serialised_data_atlas(new std::string);
-  std::shared_ptr<std::string> surrogate_serialised_data_atlas(
-      new std::string);
+  std::string serialised_data_atlas, surrogate_serialised_data_atlas;
   int res = auth_->GetMasterDataMap(password,
-                                    serialised_data_atlas,
-                                    surrogate_serialised_data_atlas);
+                                    &serialised_data_atlas,
+                                    &surrogate_serialised_data_atlas);
   if (res != 0) {
     DLOG(ERROR) << "CC::ValidateUser - Failed retrieving DA." << std::endl;
     return false;
   }
 
-  if (!serialised_data_atlas->empty()) {
+  if (!serialised_data_atlas.empty()) {
     DLOG(INFO) << "ClientController::ValidateUser - Using TMID" << std::endl;
-    ser_da_ = *serialised_data_atlas;
-  } else if (!surrogate_serialised_data_atlas->empty()) {
+    ser_da_ = serialised_data_atlas;
+  } else if (!surrogate_serialised_data_atlas.empty()) {
     DLOG(INFO) << "ClientController::ValidateUser - Using STMID" << std::endl;
-    ser_da_ = *surrogate_serialised_data_atlas;
+    ser_da_ = surrogate_serialised_data_atlas;
   } else {
     // Password validation failed
     ser_da_.clear();

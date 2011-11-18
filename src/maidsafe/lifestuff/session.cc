@@ -126,6 +126,14 @@ void Session::set_connection_status(int status) {
   user_details_.connection_status = status;
 }
 
+int Session::ParseKeyring(const std::string &serialised_keyring) {
+  return passport_->ParseKeyring(serialised_keyring);
+}
+
+std::string Session::SerialiseKeyring() {
+  return passport_->SerialiseKeyring();
+}
+
 bool Session::CreateTestPackets() {
   if (passport_->CreateSigningPackets() != kSuccess)
     return false;

@@ -23,6 +23,7 @@
 
 #include "maidsafe/lifestuff/authentication.h"
 
+#include "boost/date_time.hpp"
 #include "boost/regex.hpp"
 
 #include "maidsafe/common/crypto.h"
@@ -73,12 +74,12 @@ Authentication::~Authentication() {
       boost::mutex::scoped_lock lock(mutex_);
       tmid_success = cond_var_.timed_wait(
                          lock,
-                         4 * kSingleOpTimeout_.total_milliseconds(),
+                         kSingleOpTimeout_ * 4,
                          std::bind(&Authentication::TmidOpDone, this));
       stmid_success =
           cond_var_.timed_wait(
               lock,
-              2 * kSingleOpTimeout_.total_milliseconds(),
+              kSingleOpTimeout_ * 2,
               std::bind(&Authentication::StmidOpDone, this));
     }
     catch(const std::exception &e) {
@@ -343,7 +344,7 @@ int Authentication::CreateUserSysPackets(const std::string &username,
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(
                   lock,
-                  6 * kSingleOpTimeout_.total_milliseconds(),
+                  kSingleOpTimeout_ * 6,
                   std::bind(&Authentication::ThreeSystemPacketsOpDone, this,
                             &pmid_status, &anmid_status, &antmid_status));
   }
@@ -649,7 +650,7 @@ int Authentication::SaveSession(const std::string &serialised_data_atlas) {
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(
                   lock,
-                  4 * kSingleOpTimeout_.total_milliseconds(),
+                  kSingleOpTimeout_ * 4,
                   std::bind(&Authentication::PacketOpDone, this, &result));
   }
   catch(const std::exception &e) {
@@ -664,38 +665,38 @@ int Authentication::SaveSession(const std::string &serialised_data_atlas) {
 }
 
 int Authentication::GetMasterDataMap(
-    const std::string &password,
-    std::shared_ptr<std::string> serialised_data_atlas,
-    std::shared_ptr<std::string> surrogate_serialised_data_atlas) {
+    const std::string &/*password*/,
+    std::string *serialised_data_atlas,
+    std::string *surrogate_serialised_data_atlas) {
   serialised_data_atlas->clear();
   surrogate_serialised_data_atlas->clear();
   // Still have not recovered the TMID
-  int res = session_->passport_->GetUserData(password, false, encrypted_tmid_,
-                                   serialised_data_atlas.get());
-  if (res == kSuccess) {
-    session_->set_password(password);
-    session_->passport_->GetUserData(password, true, encrypted_stmid_,
-                           surrogate_serialised_data_atlas.get());
-    return res;
-  } else {
-    DLOG(WARNING) << "Authentication::GetMasterDataMap - TMID error " << res;
-  }
-
-  res = session_->passport_->GetUserData(password, true, encrypted_stmid_,
-                               surrogate_serialised_data_atlas.get());
-  if (res == kSuccess) {
-    session_->set_password(password);
-    return res;
-  } else {
-    DLOG(WARNING) << "Authentication::GetMasterDataMap - STMID error " << res;
+//  int res = session_->passport_->GetUserData(password, false, encrypted_tmid_,
+//                                   serialised_data_atlas.get());
+//  if (res == kSuccess) {
+//    session_->set_password(password);
+//    session_->passport_->GetUserData(password, true, encrypted_stmid_,
+//                           surrogate_serialised_data_atlas.get());
+//    return res;
+//  } else {
+//    DLOG(WARNING) << "Authentication::GetMasterDataMap - TMID error " << res;
+//  }
+//
+//  res = session_->passport_->GetUserData(password, true, encrypted_stmid_,
+//                               surrogate_serialised_data_atlas.get());
+//  if (res == kSuccess) {
+//    session_->set_password(password);
+//    return res;
+//  } else {
+//    DLOG(WARNING) << "Authentication::GetMasterDataMap - STMID error " << res;
     return kPasswordFailure;
-  }
+//  }
 }
 
 int Authentication::CreateMsidPacket(std::string *msid_name,
                                      std::string *msid_public_key,
                                      std::string *msid_private_key) {
-//  if (!msid_name || !msid_public_key || !msid_private_key)
+  if (!msid_name || !msid_public_key || !msid_private_key)
     return kAuthenticationError;
 //  msid_name->clear();
 //  msid_public_key->clear();
@@ -721,7 +722,7 @@ int Authentication::CreateMsidPacket(std::string *msid_name,
 //    DLOG(ERROR) << "Authentication::CreateMsidPacket: failed adding to session";
 //    session_->private_share_handler()->DeletePrivateShare(
 //        msid->name(), 0);
-//    return kAuthenticationError;
+    return kAuthenticationError;
 //  }
 //  result = StorePacket(msid, true, passport::MSID);
 //#ifdef DEBUG
@@ -743,7 +744,7 @@ int Authentication::CreateMsidPacket(std::string *msid_name,
 //  }
 }
 
-int Authentication::CreatePublicName(const std::string &public_name) {
+int Authentication::CreatePublicName(const std::string &/*public_name*/) {
   if (!session_->public_username().empty()) {
     DLOG(ERROR) << "Authentication::CreatePublicName: Already set";
     return kPublicUsernameAlreadySet;
@@ -763,7 +764,7 @@ int Authentication::CreatePublicName(const std::string &public_name) {
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(
                   lock,
-                  2 * kSingleOpTimeout_.total_milliseconds(),
+                  kSingleOpTimeout_ * 2,
                   std::bind(&Authentication::TwoSystemPacketsOpDone, this,
                             &mpid_status, &anmpid_status));
   }
@@ -819,7 +820,7 @@ int Authentication::RemoveMe() {
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(
                   lock,
-                  12 * kSingleOpTimeout_.total_microseconds(),
+                  kSingleOpTimeout_ * 12,
                   std::bind(&Authentication::FiveSystemPacketsOpDone, this,
                             &anmaid_status, &antmid_status, &anmid_status,
                             &ansmid_status, &anmpid_status));
@@ -965,7 +966,7 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(
                   lock,
-                  3 * kSingleOpTimeout_.total_milliseconds(),
+                  kSingleOpTimeout_ * 3,
                   std::bind(&Authentication::PacketOpDone, this, &result));
   }
   catch(const std::exception &e) {
@@ -1021,7 +1022,7 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(
                   lock,
-                  3 * kSingleOpTimeout_.total_milliseconds(),
+                  kSingleOpTimeout_ * 3,
                   std::bind(&Authentication::PacketOpDone, this, &result));
   }
   catch(const std::exception &e) {
@@ -1074,7 +1075,7 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(
                   lock,
-                  3 * kSingleOpTimeout_.total_milliseconds(),
+                  kSingleOpTimeout_ * 3,
                   std::bind(&Authentication::PacketOpDone, this, &result));
   }
   catch(const std::exception &e) {
@@ -1109,7 +1110,7 @@ int Authentication::ChangePassword(const std::string &serialised_data_atlas,
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(
                   lock,
-                  4 * kSingleOpTimeout_.total_milliseconds(),
+                  kSingleOpTimeout_ * 4,
                   std::bind(&Authentication::PacketOpDone, this, &result));
   }
   catch(const std::exception &e) {

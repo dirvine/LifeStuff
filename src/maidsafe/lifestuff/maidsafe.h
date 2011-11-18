@@ -29,7 +29,6 @@
 #include <vector>
 #include "boost/cstdint.hpp"
 #include "boost/function.hpp"
-#include "maidsafe/dht/version.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/version.h"

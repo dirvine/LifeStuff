@@ -70,7 +70,7 @@ class Authentication {
         encrypted_tmid_(),
         encrypted_stmid_(),
         serialised_data_atlas_(),
-        kSingleOpTimeout_(boost::posix_time::seconds(5)) {}
+        kSingleOpTimeout_(5000) {}
   ~Authentication();
   // Used to intialise passport_ in all cases.
   void Init(std::shared_ptr<PacketManager> packet_manager);
@@ -95,10 +95,9 @@ class Authentication {
                    const VoidFuncOneInt &functor);
   int SaveSession(const std::string &serialised_data_atlas);
   // Used when logging in.
-  int GetMasterDataMap(
-      const std::string &password,
-      std::shared_ptr<std::string> serialised_data_atlas,
-      std::shared_ptr<std::string> surrogate_serialised_data_atlas);
+  int GetMasterDataMap(const std::string &password,
+                       std::string *serialised_data_atlas,
+                       std::string *surrogate_serialised_data_atlas);
   int CreateMsidPacket(std::string *msid_name,
                        std::string *msid_public_key,
                        std::string *msid_private_key);
@@ -246,7 +245,7 @@ class Authentication {
   boost::condition_variable cond_var_;
   OpStatus tmid_op_status_, stmid_op_status_;
   std::string encrypted_tmid_, encrypted_stmid_, serialised_data_atlas_;
-  const boost::posix_time::time_duration kSingleOpTimeout_;
+  const boost::posix_time::milliseconds kSingleOpTimeout_;
 };
 
 }  // namespace lifestuff

@@ -22,9 +22,6 @@
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/dht/contact.h"
-
-#include "maidsafe/lifestuff/client_utils.h"
 #include "maidsafe/lifestuff/data_handler.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
@@ -105,12 +102,13 @@ void GetDataSlot(const std::string &signal_data, std::string *slot_data) {
 
 }  // namespace
 
-std::string GetPublicKey(const std::string &packet_name,
-                         std::shared_ptr<Session> ss) {
-  std::string public_key(ss->PublicKey(packet_name, false));
-  if (public_key.empty())
-    return ss->PublicKey(packet_name, true);
-  return public_key;
+std::string GetPublicKey(const std::string &/*packet_name*/,
+                         std::shared_ptr<Session> /*ss*/) {
+//  std::string public_key(ss->PublicKey(packet_name, false));
+//  if (public_key.empty())
+//    return ss->PublicKey(packet_name, true);
+//  return public_key;
+                           return "";
 }
 
 LocalStoreManager::LocalStoreManager(const fs::path &db_directory,

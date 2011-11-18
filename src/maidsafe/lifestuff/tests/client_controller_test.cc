@@ -34,7 +34,6 @@
 #include "maidsafe/common/test.h"
 
 #include "maidsafe/lifestuff/authentication.h"
-#include "maidsafe/lifestuff/client_utils.h"
 #include "maidsafe/lifestuff/client_controller.h"
 #include "maidsafe/lifestuff/local_store_manager.h"
 #include "maidsafe/lifestuff/session.h"
@@ -70,7 +69,6 @@ class ClientControllerTest : public testing::Test {
   }
   void TearDown() {
     local_sm_->Close(true);
-    ss_->passport_->StopCreatingKeyPairs();
     cc_->initialised_ = false;
   }
 

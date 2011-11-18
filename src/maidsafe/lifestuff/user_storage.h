@@ -55,7 +55,6 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-// Credentials operation interface
 class UserStorage {
  public:
   UserStorage();

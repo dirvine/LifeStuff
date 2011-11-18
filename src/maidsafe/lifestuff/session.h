@@ -128,6 +128,8 @@ class Session {
   void set_mounted(int mounted);
   void set_win_drive(char win_drive);
   void set_connection_status(int status);
+  int ParseKeyring(const std::string &serialised_keyring);
+  std::string SerialiseKeyring();
 
   friend std::string GetPublicKey(const std::string&, std::shared_ptr<Session>);
   friend class Authentication;
