@@ -40,6 +40,7 @@
 #include "maidsafe/lifestuff/maidsafe.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/user_credentials_api.h"
+#include "maidsafe/lifestuff/store_components/packet_manager.h"
 
 #if MAIDSAFE_LIFESTUFF_VERSION != 110
 #  error This API is not compatible with the installed library.\
@@ -64,7 +65,6 @@ class ClientControllerTest;
 
 class Authentication;
 class Contact;
-class PacketManager;
 class PrivateShare;
 class Session;
 struct private_share;
@@ -92,8 +92,14 @@ class ClientController : public lifestuff::UserCredentials {
   ClientController(const ClientController&);
 
   ~ClientController();
-  int Init();
-  inline bool initialised() { return initialised_; }
+  template <typename T>
+  int Init() {
+    if (initialised_)
+      return kSuccess;
+    packet_manager_.reset(new T(session_));
+    return Initialise();
+  }
+  bool initialised() const { return initialised_; }
 
   // User credential operations
   virtual int CheckUserExists(const std::string &username,
@@ -114,18 +120,16 @@ class ClientController : public lifestuff::UserCredentials {
   virtual std::string Pin();
   virtual std::string Password();
 
- private:
   friend class test::ClientControllerTest;
 
-  // Functions
-  bool JoinKademlia();
+ private:
+  int Initialise();
   int ParseDa();
   int SerialiseDa();
 
-  // Variables
-  std::shared_ptr<ChunkStore> client_chunkstore_;
-  std::shared_ptr<Session> ss_;
-  std::shared_ptr<PacketManager> local_sm_;
+  std::shared_ptr<ChunkStore> client_chunk_store_;
+  std::shared_ptr<Session> session_;
+  std::shared_ptr<PacketManager> packet_manager_;
   std::shared_ptr<Authentication> auth_;
   std::string ser_da_;
   std::string client_store_;

@@ -22,20 +22,20 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_PACKET_MANAGER_H_
-#define MAIDSAFE_LIFESTUFF_PACKET_MANAGER_H_
+#ifndef MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_PACKET_MANAGER_H_
+#define MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_PACKET_MANAGER_H_
 
 #include <functional>
-#include <list>
-#include <map>
-#include <memory>
 #include <string>
 #include <vector>
 
-#include "boost/function.hpp"
-#include "maidsafe/passport/passport.h"
-
 #include "maidsafe/lifestuff/maidsafe.h"
+#include "maidsafe/lifestuff/version.h"
+
+#if MAIDSAFE_LIFESTUFF_VERSION != 110
+#  error This API is not compatible with the installed library.\
+    Please update the maidsafe-lifestuff library.
+#endif
 
 namespace maidsafe {
 
@@ -95,4 +95,4 @@ class PacketManager {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_PACKET_MANAGER_H_
+#endif  // MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_PACKET_MANAGER_H_

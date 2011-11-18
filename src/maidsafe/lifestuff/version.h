@@ -68,4 +68,14 @@
     Please update this project.
 #endif
 
+#include "maidsafe/pd/version.h"
+#define THIS_NEEDS_MAIDSAFE_PD_VERSION 600
+#if MAIDSAFE_PD_VERSION < THIS_NEEDS_MAIDSAFE_PD_VERSION
+#  error This API is not compatible with the installed library.\
+    Please update the MaidSafe-PD library.
+#elif MAIDSAFE_PD_VERSION > THIS_NEEDS_MAIDSAFE_PD_VERSION
+#  error This API uses a newer version of the MaidSafe-PD library.\
+    Please update this project.
+#endif
+
 #endif  // MAIDSAFE_LIFESTUFF_VERSION_H_

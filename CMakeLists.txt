@@ -67,6 +67,7 @@ ENDIF()
 PROJECT(${PROJECT_NAME})
 SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_DIR} CACHE INTERNAL "Except for MSVC, the build type is set by running cmake from the appropriate build subdirectory e.g. for a Debug build, \"cd build/Linux/Debug && cmake ../../..\"." FORCE)
 
+
 ###################################################################################################
 # MaidSafe Common, DHT, Drive, Passport and PKI library search                                  #
 ###################################################################################################
@@ -76,6 +77,9 @@ ADD_MAIDSAFE_LIBRARY(Encrypt)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-Drive)
 ADD_MAIDSAFE_LIBRARY(PKI)
 ADD_MAIDSAFE_LIBRARY(Passport)
+ADD_MAIDSAFE_LIBRARY(MaidSafe-PD)
+ADD_MAIDSAFE_LIBRARY(MaidSafe-AWS-Transporter)
+
 
 ###################################################################################################
 # Callback File System / Fuse library search                                                      #
@@ -100,6 +104,7 @@ ELSE()
   ENDIF()
 ENDIF()
 
+
 ###################################################################################################
 # Standard setup                                                                                  #
 ###################################################################################################
@@ -108,93 +113,136 @@ FILE(GLOB_RECURSE PROTO_FILES RELATIVE ${PROTO_SOURCE_DIR} "${PROTO_SOURCE_DIR}/
 INCLUDE(maidsafe_standard_setup)
 HANDLE_VERSIONS(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/version.h)
 
+
 ###################################################################################################
 # Set up all files as GLOBs                                                                       #
 ###################################################################################################
-SET(SRC_MAIDSAFE "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff")
-
 ####    CODE    ####
-FILE(GLOB SOURCE_FILES_CLIENT_DIR "${SRC_MAIDSAFE}/*.cc")
-FILE(GLOB HEADER_FILES_CLIENT_DIR "${SRC_MAIDSAFE}/*.h")
-SET(ALL_FILES_CLIENT_DIR ${SOURCE_FILES_CLIENT_DIR} ${HEADER_FILES_CLIENT_DIR})
-SET(STYLE_CLIENT ${ALL_FILES_CLIENT_DIR})
-LIST(REMOVE_ITEM STYLE_CLIENT "${SRC_MAIDSAFE}/lifestuff_messages.pb.h"
-                              "${SRC_MAIDSAFE}/lifestuff_messages.pb.cc"
-                              "${SRC_MAIDSAFE}/data_atlas.pb.h"
-                              "${SRC_MAIDSAFE}/data_atlas.pb.cc")
+FILE(GLOB SOURCE_FILES_LIFESTUFF_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/*.cc")
+FILE(GLOB HEADER_FILES_LIFESTUFF_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/*.h")
+SET(ALL_FILES_LIFESTUFF_DIR ${SOURCE_FILES_LIFESTUFF_DIR} ${HEADER_FILES_LIFESTUFF_DIR})
+SET(STYLE_ALL ${ALL_FILES_LIFESTUFF_DIR})
+LIST(REMOVE_ITEM STYLE_ALL "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_messages.pb.h"
+                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_messages.pb.cc"
+                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.h"
+                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.cc")
+SOURCE_GROUP("LifeStuff Source Files" FILES ${SOURCE_FILES_LIFESTUFF_DIR})
+SOURCE_GROUP("LifeStuff Header Files" FILES ${HEADER_FILES_LIFESTUFF_DIR})
 
-SET(ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR ${ALL_FILES_CLIENT_DIR})
-
-SOURCE_GROUP("client Source Files" FILES ${SOURCE_FILES_CLIENT_DIR})
-SOURCE_GROUP("client Header Files" FILES ${HEADER_FILES_CLIENT_DIR})
+SET(SOURCE_FILES_LOCAL_STORE "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/fake_store_manager.cc"
+                             "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_handler.cc"
+                             "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/local_store_manager.cc")
+SET(HEADER_FILES_LOCAL_STORE "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/packet_manager.h"
+                             "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/fake_store_manager.h"
+                             "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_handler.h"
+                             "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/local_store_manager.h")
+SET(ALL_FILES_LOCAL_STORE ${SOURCE_FILES_LOCAL_STORE} ${HEADER_FILES_LOCAL_STORE})
+SET(SOURCE_FILES_AWS_STORE "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/fake_store_manager.cc"
+                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_store_manager.cc"
+                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_handler.cc"
+                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_remote_chunk_store.cc"
+                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_chunk_manager.cc")
+SET(HEADER_FILES_AWS_STORE "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/packet_manager.h"
+                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/fake_store_manager.h"
+                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_handler.h"
+                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_store_manager.h"
+                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_remote_chunk_store.h"
+                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_chunk_manager.h")
+SET(ALL_FILES_AWS_STORE ${SOURCE_FILES_AWS_STORE} ${HEADER_FILES_AWS_STORE})
+SET(STYLE_ALL ${ALL_FILES_LOCAL_STORE} ${ALL_FILES_AWS_STORE})
+SOURCE_GROUP("Store Components Source Files" FILES ${SOURCE_FILES_LOCAL_STORE} ${SOURCE_FILES_AWS_STORE})
+SOURCE_GROUP("Store Components Header Files" FILES ${HEADER_FILES_LOCAL_STORE} ${HEADER_FILES_AWS_STORE})
 
 ####    TESTS    ####
-FILE(GLOB ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/tests/*.cc" "${SRC_MAIDSAFE}/tests/*.h")
-LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/tests/client_main.cc")
-LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/tests/client_controller_test.cc")
-LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/tests/authentication_test.cc")
+FILE(GLOB SOURCE_FILES_LIFESTUFF_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/*.cc")
+FILE(GLOB HEADER_FILES_LIFESTUFF_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/*.h")
+SET(ALL_FILES_LIFESTUFF_TESTS_DIR ${SOURCE_FILES_LIFESTUFF_TESTS_DIR} ${HEADER_FILES_LIFESTUFF_TESTS_DIR})
+SOURCE_GROUP("Test Source Files" FILES ${SOURCE_FILES_LIFESTUFF_TESTS_DIR})
+SOURCE_GROUP("Test Header Files" FILES ${HEADER_FILES_LIFESTUFF_TESTS_DIR})
 
-SET(TEST_MAIN "${SRC_MAIDSAFE}/tests/tests_main.cc")
+SET(TESTS_MAIN_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/tests_main.cc")
+SET(CLIENT_MAIN_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/client_main.cc")
+SET(AUTHENTICATION_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/authentication_test.cc")
+SET(CLIENT_CONTROLLER_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/client_controller_test.cc")
 
-FILE(GLOB ALL_FILES_CLIENT_DEMO_DIR "${SRC_MAIDSAFE}/demo/*.cc"
-                                    "${SRC_MAIDSAFE}/demo/*.h")
+LIST(REMOVE_ITEM ALL_FILES_LIFESTUFF_TESTS_DIR ${CLIENT_MAIN_CC} ${AUTHENTICATION_TEST_CC} ${CLIENT_CONTROLLER_TEST_CC})
+
+####    DEMO    ####
+FILE(GLOB SOURCE_FILES_LIFESTUFF_DEMO_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/demo/*.cc")
+FILE(GLOB HEADER_FILES_LIFESTUFF_DEMO_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/demo/*.h")
+SET(ALL_FILES_LIFESTUFF_DEMO_DIR ${SOURCE_FILES_LIFESTUFF_DEMO_DIR} ${HEADER_FILES_LIFESTUFF_DEMO_DIR})
+SOURCE_GROUP("Demo Source Files" FILES ${SOURCE_FILES_LIFESTUFF_DEMO_DIR})
+SOURCE_GROUP("Demo Header Files" FILES ${HEADER_FILES_LIFESTUFF_DEMO_DIR})
+
 
 ###################################################################################################
 # All Platforms:  Add exes and Create all LifeStuff libs                                          #
 ###################################################################################################
+ADD_EXECUTABLE(TESTlifestuff ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${TESTS_MAIN_CC})
+ADD_EXECUTABLE(TESTauthentication_local ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
+ADD_EXECUTABLE(TESTclientcontroller_local ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
+ADD_EXECUTABLE(TESTauthentication_aws ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
+ADD_EXECUTABLE(TESTclientcontroller_aws ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
 
-ADD_EXECUTABLE(ClientDemo ${ALL_FILES_CLIENT_DEMO_DIR})
+ADD_EXECUTABLE(LifestuffDemoLocal ${ALL_FILES_LIFESTUFF_DEMO_DIR})
+ADD_EXECUTABLE(LifestuffDemoAWS ${ALL_FILES_LIFESTUFF_DEMO_DIR})
 
+SET(TEST_EXECUTABLES
+      TESTlifestuff
+      TESTauthentication_local
+      TESTclientcontroller_local
+      TESTauthentication_aws
+      TESTclientcontroller_aws)
+SET(DEMO_EXECUTABLES
+      LifestuffDemoLocal
+      LifestuffDemoAWS)
+SET(ALL_EXECUTABLES ${TEST_EXECUTABLES} ${DEMO_EXECUTABLES})
 
-SET(LOCAL_SYSTEM_TEST_TIMEOUT 1800)
-SET(NETWORK_SYSTEM_TEST_TIMEOUT 3600)
+FOREACH(EXE ${ALL_EXECUTABLES})
+  RENAME_EXECUTABLE(${EXE})
+ENDFOREACH()
 
-ADD_EXECUTABLE(TESTclient
-                  ${ALL_FILES_CLIENT_TESTS_DIR}
-                  ${TEST_MAIN})
+SET_TARGET_PROPERTIES(${TEST_EXECUTABLES} PROPERTIES FOLDER "Tests")
+SET_TARGET_PROPERTIES(${DEMO_EXECUTABLES} PROPERTIES FOLDER "Demos")
 
-ADD_EXECUTABLE(TESTauthentication_local
-                 ${TEST_MAIN}
-                 "${SRC_MAIDSAFE}/tests/authentication_test.cc")
-ADD_EXECUTABLE(TESTclientcontroller_local
-                 ${TEST_MAIN}
-                 "${SRC_MAIDSAFE}/tests/client_controller_test.cc")
+ADD_LIBRARY(lifestuff_static STATIC ${ALL_FILES_LIFESTUFF_DIR})
+ADD_LIBRARY(lifestuff_local_store_static STATIC ${ALL_FILES_LOCAL_STORE})
+ADD_LIBRARY(lifestuff_aws_store_static STATIC ${ALL_FILES_AWS_STORE})
 
-SET(ALL_EXECUTABLES TESTclient TESTauthentication_local TESTclientcontroller_local ClientDemo)
-RENAME_EXECUTABLE(ClientDemo)
-RENAME_EXECUTABLE(TESTclient)
-RENAME_EXECUTABLE(TESTauthentication_local)
-RENAME_EXECUTABLE(TESTclientcontroller_local)
+SET_TARGET_PROPERTIES(lifestuff_static PROPERTIES OUTPUT_NAME lifestuff FOLDER "MaidSafe Libraries")
+SET_TARGET_PROPERTIES(lifestuff_local_store_static PROPERTIES OUTPUT_NAME lifestuff_local_store FOLDER "MaidSafe Libraries")
+SET_TARGET_PROPERTIES(lifestuff_aws_store_static PROPERTIES OUTPUT_NAME lifestuff_aws_store FOLDER "MaidSafe Libraries")
 
-ADD_LIBRARY(lifestuff_local_static STATIC ${ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR})
-
-SET_TARGET_PROPERTIES(lifestuff_local_static PROPERTIES OUTPUT_NAME lifestuff_local)
-
-ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTclientcontroller_local TESTclient TESTauthentication_local)
+ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS ${TEST_EXECUTABLES})
 
 # IF(UNIX)
 #   TARGET_LINK_LIBRARIES(lifestuff_sql_utils_static dl)
 # ENDIF()
-TARGET_LINK_LIBRARIES(lifestuff_local_static passport_static maidsafe_drive_static boost_date_time boost_regex)
-TARGET_LINK_LIBRARIES(TESTclient lifestuff_local_static gtest_static gmock_static)
-TARGET_LINK_LIBRARIES(TESTauthentication_local lifestuff_local_static gtest_static)
-TARGET_LINK_LIBRARIES(TESTclientcontroller_local lifestuff_local_static gtest_static)
-TARGET_LINK_LIBRARIES(ClientDemo lifestuff_local_static)
+TARGET_LINK_LIBRARIES(lifestuff_static maidsafe_drive_static passport_static boost_date_time ${QT_LIBRARIES} boost_regex)
+TARGET_LINK_LIBRARIES(lifestuff_aws_store_static maidsafe_aws_transporter_static)
+
+TARGET_LINK_LIBRARIES(TESTlifestuff lifestuff_static lifestuff_local_store_static gtest_static gmock_static)
+TARGET_LINK_LIBRARIES(TESTauthentication_local lifestuff_static lifestuff_local_store_static gtest_static)
+TARGET_LINK_LIBRARIES(TESTclientcontroller_local lifestuff_static lifestuff_local_store_static gtest_static)
+TARGET_LINK_LIBRARIES(TESTauthentication_aws lifestuff_static lifestuff_aws_store_static gtest_static)
+TARGET_LINK_LIBRARIES(TESTclientcontroller_aws lifestuff_static lifestuff_aws_store_static gtest_static)
+TARGET_LINK_LIBRARIES(LifestuffDemoLocal lifestuff_static lifestuff_local_store_static)
+TARGET_LINK_LIBRARIES(LifestuffDemoAWS lifestuff_static lifestuff_aws_store_static)
+
 
 ###################################################################################################
 # Builds                                                                                          #
 ###################################################################################################
 INCLUDE(maidsafe_standard_flags)
 
-SET_TARGET_PROPERTIES(lifestuff_local_static PROPERTIES COMPILE_FLAGS -DLOCAL_LifeStuffVAULT)
-SET_TARGET_PROPERTIES(TESTclientcontroller_local PROPERTIES COMPILE_FLAGS -DLOCAL_LifeStuffVAULT)
+SET_TARGET_PROPERTIES(TESTauthentication_aws TESTclientcontroller_aws LifestuffDemoAWS lifestuff_aws_store_static
+                        PROPERTIES COMPILE_DEFINITIONS AMAZON_WEB_SERVICE_STORE)
 IF(UNIX)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DQT_NO_DEBUG_OUTPUT -DQT_NO_WARNING_OUTPUT -DQT_NO_DEBUG_STREAM")
   SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.cc
                               ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_messages.pb.cc
-                              PROPERTIES COMPILE_FLAGS "-w")
-
+                                PROPERTIES COMPILE_FLAGS "-w")
 ELSEIF(MSVC)
   # C4503 'decorated name length exceeded' caused by boost multi-index and signals2
   # Disabled as per advice at https://svn.boost.org/trac/boost/wiki/Guidelines/WarningsGuidelines
@@ -202,26 +250,29 @@ ELSEIF(MSVC)
   # Disabled as per advice at http://lists.boost.org/boost-users/2009/01/44368.php
   # C4996 'Function call with parameters that may be unsafe' caused by boost signals2
   # Disabled as per advice at https://svn.boost.org/trac/boost/wiki/Guidelines/WarningsGuidelines
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4503 /wd4512 /wd4996 /WX")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4503 /wd4512 /wd4996")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /D \"QT_NO_DEBUG_OUTPUT\" /D \"QT_NO_WARNING_OUTPUT\" /D \"QT_NO_DEBUG_STREAM\"")
   SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.cc
                               ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_messages.pb.cc
-                              PROPERTIES COMPILE_FLAGS "/W0")
+                                PROPERTIES COMPILE_FLAGS "/W0")
   SET_TARGET_PROPERTIES(${ALL_EXECUTABLES} PROPERTIES
-                            LINK_FLAGS "/STACK:1048576"
-                            LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${LINKER_LIBS_DIRS_RELEASE}"
-                            LINK_FLAGS_DEBUG "${LINKER_LIBS_DIRS_DEBUG}"
-                            LINK_FLAGS_RELWITHDEBINFO "${LINKER_LIBS_DIRS_DEBUG}"
-                            LINK_FLAGS_MINSIZEREL "${LINKER_LIBS_DIRS_DEBUG}")
+                          LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${LINKER_LIBS_DIRS_RELEASE}"
+                          LINK_FLAGS_DEBUG "${LINKER_LIBS_DIRS_DEBUG}"
+                          LINK_FLAGS_RELWITHDEBINFO "${LINKER_LIBS_DIRS_DEBUG}"
+                          LINK_FLAGS_MINSIZEREL "${LINKER_LIBS_DIRS_DEBUG}")
+  SET_TARGET_PROPERTIES(lifestuff_static lifestuff_local_store_static lifestuff_aws_store_static
+                          PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
 ENDIF()
 
 
 ###################################################################################################
 # Tests                                                                                           #
 ###################################################################################################
+SET(LOCAL_SYSTEM_TEST_TIMEOUT 1800)
+SET(NETWORK_SYSTEM_TEST_TIMEOUT 3600)
+
 IF(PYTHONINTERP_FOUND)
   IF(UNIX)
-    SET(STYLE_ALL ${STYLE_CLIENT} ${STYLE_FUSE})
     ADD_TEST(STYLE_CHECK python ${MaidSafeCommon_TOOLS_DIR}/cpplint.py ${STYLE_ALL})
   ELSE()
     STRING(REPLACE "/" "\\\\" STYLE_CHECK_SOURCE ${PROJECT_SOURCE_DIR})
@@ -230,10 +281,9 @@ IF(PYTHONINTERP_FOUND)
   SET_PROPERTY(TEST STYLE_CHECK PROPERTY LABELS Functional CodingStyle)
 ENDIF()
 
-ADD_GTESTS(TESTclient)
-ADD_GTESTS(TESTauthentication_local)
-ADD_GTESTS(TESTclientcontroller_local)
-
+FOREACH(TEST_EXE ${TEST_EXECUTABLES})
+  ADD_GTESTS(${TEST_EXE})
+ENDFOREACH()
 TEST_SUMMARY_OUTPUT()
 
 ###################################################################################################
@@ -257,7 +307,7 @@ IF(${PACKAGE_BUILD})
       SET(CPACK_RESOURCE_FILE_README "${PROJECT_SOURCE_DIR}/README")
       SET(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/licence.txt")
     ENDIF()
-    SET(CPACK_PACKAGE_EXECUTABLES "ClientDemo", "Life Stuff Client")
+    SET(CPACK_PACKAGE_EXECUTABLES "LifestuffDemo", "LifeStuff Client")
     SET(CPACK_STRIP_FILES "true")
     IF(UNIX AND NOT APPLE)
       # Linux requires lower case package names
@@ -265,7 +315,7 @@ IF(${PACKAGE_BUILD})
       SET(CMAKE_INSTALL_PREFIX /opt/maidsafe/lifestuff)
       SET(CPACK_TOPLEVEL_TAG ${CMAKE_INSTALL_PREFIX})
       SET(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
-      INSTALL(TARGETS ClientDemo RUNTIME DESTINATION .)
+      INSTALL(TARGETS LifestuffDemo RUNTIME DESTINATION .)
       INSTALL(FILES ${PROJECT_SOURCE_DIR}/installer/linux/scripts/lifestuff_client.desktop DESTINATION .)
       INSTALL(FILES ${PROJECT_SOURCE_DIR}/installer/common/icons/WinLinux/installer.ico DESTINATION .)
       EXECUTE_PROCESS(
@@ -289,14 +339,14 @@ IF(${PACKAGE_BUILD})
       #MESSAGE("Package install directory is set to \"${CPACK_PACKAGE_INSTALL_DIRECTORY}\"")
       MESSAGE("================================================================================")
     ELSEIF(APPLE)
-      INSTALL(TARGETS ClientDemo EXPORT ClientDemo
+      INSTALL(TARGETS LifestuffDemo EXPORT LifestuffDemo
               BUNDLE DESTINATION /Applications/ COMPONENT Runtime
               RUNTIME DESTINATION /Applications/
               CONFIGURATIONS Release)
       SET(CPACK_SET_DESTDIR TRUE)
       SET(CPACK_GENERATOR PackageMaker)
     ELSEIF(WIN32)
-      INSTALL(TARGETS ClientDemo RUNTIME DESTINATION bin CONFIGURATIONS Release)
+      INSTALL(TARGETS LifestuffDemo RUNTIME DESTINATION bin CONFIGURATIONS Release)
       SET(CPACK_PACKAGE_NAME "LifeStuffClient")
       INSTALL(DIRECTORY ${PROJECT_SOURCE_DIR}/installer/windows/cbfs DESTINATION drivers)
       SET(CPACK_PACKAGE_INSTALL_DIRECTORY "MaidSafe\\\\LifeStuff")
@@ -336,7 +386,7 @@ IF(${PACKAGE_BUILD})
       SET(CPACK_NSIS_MODIFY_PATH ON)
       SET(CPACK_NSIS_DISPLAY_NAME "LifeStuff Client")
       SET(CPACK_NSIS_PACKAGE_NAME "LifeStuff Client")
-      SET(CPACK_NSIS_INSTALLED_ICON_NAME "bin\\\\ClientDemo.exe")
+      SET(CPACK_NSIS_INSTALLED_ICON_NAME "bin\\\\LifestuffDemo.exe")
       SET(CPACK_NSIS_EXECUTABLES_DIRECTORY "bin")
       SET(CPACK_NSIS_HELP_LINK "http://www.maidsafe.net")
       SET(CPACK_NSIS_URL_INFO_ABOUT "http://maidsafe.net/lifestuff.asp")
@@ -346,25 +396,33 @@ IF(${PACKAGE_BUILD})
     ENDIF()
     SET(CPACK_STRIP_FILES ON)
     SET(CPACK_PACKAGE_CONTACT "support@maidsafe.net")
-    SET(CPACK_PACKAGE_EXECUTABLES "ClientDemo" "LifeStuff Client")
+    SET(CPACK_PACKAGE_EXECUTABLES "LifestuffDemo" "LifeStuff Client")
     INCLUDE(CPack)
   ENDIF()
 
 ELSE() # Installing the library
-  SET(LIFESTUFF_CLIENT_INSTALL_FILES
+  SET(LIFESTUFF_LIFESTUFF_INSTALL_FILES
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client_controller.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/user_credentials_api.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/user_storage.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/maidsafe.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/return_codes.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/version.h)
-  FOREACH(LIFESTUFF_CLIENT_INSTALL_FILE ${LIFESTUFF_CLIENT_INSTALL_FILES})
-    CHECK_INSTALL_HEADER_HAS_VERSION_GUARD(${LIFESTUFF_CLIENT_INSTALL_FILE})
+  SET(LIFESTUFF_LIFESTUFF_STORE_COMPONENTS_INSTALL_FILES
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/packet_manager.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/fake_store_manager.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_store_manager.h)
+  FOREACH(LIFESTUFF_LIFESTUFF_INSTALL_FILE ${LIFESTUFF_LIFESTUFF_INSTALL_FILES})
+    CHECK_INSTALL_HEADER_HAS_VERSION_GUARD(${LIFESTUFF_LIFESTUFF_INSTALL_FILE})
+  ENDFOREACH()
+  FOREACH(LIFESTUFF_LIFESTUFF_STORE_COMPONENTS_INSTALL_FILE ${LIFESTUFF_LIFESTUFF_STORE_COMPONENTS_INSTALL_FILES})
+    CHECK_INSTALL_HEADER_HAS_VERSION_GUARD(${LIFESTUFF_LIFESTUFF_STORE_COMPONENTS_INSTALL_FILE})
   ENDFOREACH()
 
   SET(EXPORT_NAME lifestuff_client)
-  INSTALL(TARGETS lifestuff_local_static EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
-  INSTALL(FILES ${LIFESTUFF_CLIENT_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff)
+  INSTALL(TARGETS lifestuff_static lifestuff_local_store_static lifestuff_aws_store_static EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
+  INSTALL(FILES ${LIFESTUFF_LIFESTUFF_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff)
+  INSTALL(FILES ${LIFESTUFF_LIFESTUFF_STORE_COMPONENTS_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff/store_components)
   INSTALL(EXPORT ${EXPORT_NAME} DESTINATION share/maidsafe)
   ADD_VERSION_INFO_TO_INSTALLED_FILE()
 ENDIF()

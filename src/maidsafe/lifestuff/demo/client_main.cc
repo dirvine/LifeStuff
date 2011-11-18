@@ -27,7 +27,11 @@
 #include "maidsafe/lifestuff/client_controller.h"
 #include "maidsafe/lifestuff/demo/commands.h"
 #include "maidsafe/lifestuff/user_credentials_api.h"
-
+#if defined AMAZON_WEB_SERVICE_STORE
+#  include "maidsafe/lifestuff/store_components/aws_store_manager.h"
+#else
+#  include "maidsafe/lifestuff/store_components/local_store_manager.h"
+#endif
 
 int main(int /*argc*/, char *argv[]) {
   // Initialising logging
@@ -44,7 +48,11 @@ int main(int /*argc*/, char *argv[]) {
 
   std::shared_ptr<maidsafe::lifestuff::ClientController> cc(
       new maidsafe::lifestuff::ClientController);
-  cc->Init();
+#if defined AMAZON_WEB_SERVICE_STORE
+  cc->Init<maidsafe::lifestuff::AWSStoreManager>();
+#else
+  cc->Init<maidsafe::lifestuff::LocalStoreManager>();
+#endif
   std::shared_ptr<maidsafe::lifestuff::UserCredentials> user_credentials(cc);
   maidsafe::lifestuff::commandline_demo::Commands commands(user_credentials);
 

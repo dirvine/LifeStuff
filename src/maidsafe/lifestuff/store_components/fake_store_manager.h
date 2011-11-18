@@ -1,15 +1,7 @@
 /*
 * ============================================================================
 *
-* Copyright [2009] maidsafe.net limited
-*
-* Description:  Manages data storage to local database (for testing)
-* Version:      1.0
-* Created:      2009-01-29-00.06.15
-* Revision:     none
-* Compiler:     gcc
-* Author:       Fraser Hutchison (fh), fraser.hutchison@maidsafe.net
-* Company:      maidsafe.net limited
+* Copyright [2011] maidsafe.net limited
 *
 * The following source code is property of maidsafe.net limited and is not
 * meant for external use.  The use of this code is governed by the license
@@ -22,28 +14,30 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_LOCAL_STORE_MANAGER_H_
-#define MAIDSAFE_LIFESTUFF_LOCAL_STORE_MANAGER_H_
+#ifndef MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_FAKE_STORE_MANAGER_H_
+#define MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_FAKE_STORE_MANAGER_H_
 
-#include <list>
-#include <map>
-#include <set>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "boost/asio/io_service.hpp"
-#include "boost/filesystem.hpp"
+#include "boost/filesystem/path.hpp"
 #include "boost/thread/thread.hpp"
 #include "boost/thread/mutex.hpp"
 
-#include "maidsafe/lifestuff/packet_manager.h"
+#include "maidsafe/lifestuff/store_components/packet_manager.h"
+#include "maidsafe/lifestuff/version.h"
 
+#if MAIDSAFE_LIFESTUFF_VERSION != 110
+#  error This API is not compatible with the installed library.\
+    Please update the maidsafe-lifestuff library.
+#endif
 
-namespace fs3 = boost::filesystem3;
 
 namespace maidsafe {
 
-class BufferedChunkStore;
+class ChunkStore;
 class ChunkValidation;
 
 namespace lifestuff {
@@ -52,15 +46,11 @@ class DataHandler;
 class GenericPacket;
 class Session;
 
-class LocalStoreManager : public PacketManager {
+class FakeStoreManager : public PacketManager {
  public:
-  explicit LocalStoreManager(const fs3::path &db_directory,
-                             std::shared_ptr<Session> ss);
-  ~LocalStoreManager();
-  void Init(VoidFuncOneInt callback);
+  explicit FakeStoreManager(std::shared_ptr<Session> session);
+  virtual ~FakeStoreManager();
   int Close(bool cancel_pending_ops);
-
-  // Packets
   bool KeyUnique(const std::string &key);
   void KeyUnique(const std::string &key,
                  const VoidFuncOneInt &cb);
@@ -79,25 +69,31 @@ class LocalStoreManager : public PacketManager {
                     const std::string &new_value,
                     const VoidFuncOneInt &cb);
 
- private:
-  LocalStoreManager &operator=(const LocalStoreManager&);
-  LocalStoreManager(const LocalStoreManager&);
-
+ protected:
+  ReturnCode Init(const boost::filesystem::path &buffered_chunk_store_dir);
+  void ExecReturnCodeCallback(VoidFuncOneInt callback, ReturnCode return_code);
+  void ExecReturnLoadPacketCallback(GetPacketFunctor callback,
+                                    std::vector<std::string> results,
+                                    ReturnCode return_code);
   bool ValidateGenericPacket(std::string ser_gp, std::string public_key);
   void CreateSerialisedSignedValue(const GenericPacket &data,
                                    std::string *ser_gp);
 
-  std::string local_sm_dir_;
-  boost::asio::io_service service_;
+  boost::asio::io_service asio_service_;
   std::shared_ptr<boost::asio::io_service::work> work_;
   boost::thread_group thread_group_;
   std::shared_ptr<ChunkValidation> chunk_validation_;
-  std::shared_ptr<BufferedChunkStore> client_chunkstore_;
-  std::shared_ptr<Session> ss_;
+  std::shared_ptr<ChunkStore> client_chunk_store_;
+  std::shared_ptr<Session> session_;
+  boost::filesystem::path temp_directory_path_;
+
+ private:
+  FakeStoreManager &operator=(const FakeStoreManager&);
+  FakeStoreManager(const FakeStoreManager&);
 };
 
 }  // namespace lifestuff
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_LOCAL_STORE_MANAGER_H_
+#endif  // MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_FAKE_STORE_MANAGER_H_

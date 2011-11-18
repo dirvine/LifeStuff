@@ -26,17 +26,14 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/lifestuff/authentication.h"
-#include "maidsafe/lifestuff/local_store_manager.h"
 #include "maidsafe/lifestuff/session.h"
-#ifdef __MSVC__
-#  pragma warning(push)
-#  pragma warning(disable: 4244 4127)
-#endif
-#include "maidsafe/lifestuff/lifestuff_messages.pb.h"
-#ifdef __MSVC__
-#  pragma warning(pop)
-#endif
+#include "maidsafe/lifestuff/lifestuff_messages_pb.h"
 #include "maidsafe/lifestuff/tests/test_callback.h"
+#if defined AMAZON_WEB_SERVICE_STORE
+#  include "maidsafe/lifestuff/store_components/aws_store_manager.h"
+#else
+#  include "maidsafe/lifestuff/store_components/local_store_manager.h"
+#endif
 
 namespace arg = std::placeholders;
 namespace fs = boost::filesystem;
@@ -51,9 +48,13 @@ class AuthenticationTest : public testing::Test {
  public:
   AuthenticationTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
-        ss_(new Session),
-        sm_(new LocalStoreManager(*test_dir_, ss_)),
-        authentication_(ss_),
+        session_(new Session),
+#if defined AMAZON_WEB_SERVICE_STORE
+        packet_manager_(new AWSStoreManager(session_)),
+#else
+        packet_manager_(new LocalStoreManager(session_, test_dir_->string())),
+#endif
+        authentication_(session_),
         username_("user"),
         pin_("1234"),
         password_("password1"),
@@ -63,14 +64,14 @@ class AuthenticationTest : public testing::Test {
 
  protected:
   void SetUp() {
-    ss_->ResetSession();
-    sm_->Init(std::bind(&AuthenticationTest::InitAndCloseCallback, this,
-                        arg::_1));
-    authentication_.Init(sm_);
+    session_->ResetSession();
+    packet_manager_->Init(std::bind(&AuthenticationTest::InitAndCloseCallback,
+                                    this, arg::_1));
+    authentication_.Init(packet_manager_);
   }
 
   void TearDown() {
-    sm_->Close(true);
+    packet_manager_->Close(true);
   }
 
   int GetMasterDataMap(std::string *ser_dm_login) {
@@ -101,8 +102,8 @@ class AuthenticationTest : public testing::Test {
   void InitAndCloseCallback(int /*i*/) {}
 
   std::shared_ptr<fs::path> test_dir_;
-  std::shared_ptr<Session> ss_;
-  std::shared_ptr<LocalStoreManager> sm_;
+  std::shared_ptr<Session> session_;
+  std::shared_ptr<PacketManager> packet_manager_;
   Authentication authentication_;
   std::string username_, pin_, password_, ser_dm_, surrogate_ser_dm_;
   std::vector<crypto::RsaKeyPair> test_keys_;
@@ -130,9 +131,9 @@ TEST_F(AuthenticationTest, FUNC_GoodLogin) {
   std::string ser_dm_login;
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
   ASSERT_EQ(ser_dm_, ser_dm_login);
-  ASSERT_EQ(username_, ss_->username());
-  ASSERT_EQ(pin_, ss_->pin());
-  ASSERT_EQ(password_, ss_->password());
+  ASSERT_EQ(username_, session_->username());
+  ASSERT_EQ(pin_, session_->pin());
+  ASSERT_EQ(password_, session_->password());
 
   DLOG(ERROR) << "\n\n\n";
   ASSERT_EQ(kSuccess, authentication_.SaveSession(ser_dm_ + "1"));
@@ -144,8 +145,8 @@ TEST_F(AuthenticationTest, FUNC_GoodLogin) {
   ser_dm_login.clear();
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
   ASSERT_EQ(ser_dm_ + "1", ser_dm_login);
-  ASSERT_EQ(username_, ss_->username());
-  ASSERT_EQ(pin_, ss_->pin());
+  ASSERT_EQ(username_, session_->username());
+  ASSERT_EQ(pin_, session_->pin());
 }
 
 TEST_F(AuthenticationTest, FUNC_LoginNoUser) {
@@ -169,10 +170,10 @@ TEST_F(AuthenticationTest, FUNC_RegisterUserOnce) {
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
                                                        ser_dm_,
                                                        surrogate_ser_dm_));
-  ASSERT_EQ(username_, ss_->username());
-  ASSERT_EQ(pin_, ss_->pin());
+  ASSERT_EQ(username_, session_->username());
+  ASSERT_EQ(pin_, session_->pin());
 //  Sleep(boost::posix_time::milliseconds(100));
-  ASSERT_EQ(password_, ss_->password());
+  ASSERT_EQ(password_, session_->password());
 }
 
 TEST_F(AuthenticationTest, FUNC_RegisterUserTwice) {
@@ -182,7 +183,7 @@ TEST_F(AuthenticationTest, FUNC_RegisterUserTwice) {
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
                                                        ser_dm_,
                                                        surrogate_ser_dm_));
-  ss_->ResetSession();
+  session_->ResetSession();
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
 }
 
@@ -207,9 +208,9 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionBlocking) {
   std::string tmidname(ss_->passport_->PacketName(passport::kTmid, true));
   std::string stmidname(ss_->passport_->PacketName(passport::kStmid, true));
 
-  EXPECT_TRUE(sm_->KeyUnique(original_tmidname));
-  EXPECT_FALSE(sm_->KeyUnique(stmidname));
-  EXPECT_FALSE(sm_->KeyUnique(tmidname));
+  EXPECT_TRUE(packet_manager_->KeyUnique(original_tmidname));
+  EXPECT_FALSE(packet_manager_->KeyUnique(stmidname));
+  EXPECT_FALSE(packet_manager_->KeyUnique(tmidname));
 }
 
 TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionCallbacks) {
@@ -236,7 +237,7 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionCallbacks) {
   authentication_.SaveSession(ser_dm_, std::bind(&CallbackObject::IntCallback,
                                                  &cb, arg::_1));
   ASSERT_EQ(kSuccess, cb.WaitForIntResult());
-  EXPECT_TRUE(sm_->KeyUnique(original_tmidname));
+  EXPECT_TRUE(packet_manager_->KeyUnique(original_tmidname));
 }
 
 TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
@@ -256,7 +257,7 @@ TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
 
   ASSERT_EQ(kSuccess, authentication_.ChangeUsername(ser_dm_ + "2",
                                                      "el iuserneim"));
-  ASSERT_EQ("el iuserneim", ss_->username());
+  ASSERT_EQ("el iuserneim", session_->username());
 
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo("el iuserneim", pin_));
   std::string ser_dm_login;
@@ -281,7 +282,7 @@ TEST_F(AuthenticationTest, FUNC_ChangePin) {
   EXPECT_FALSE(original_stmidname.empty());
 
   ASSERT_EQ(kSuccess, authentication_.ChangePin(ser_dm_ + "2", "7894"));
-  ASSERT_EQ("7894", ss_->pin());
+  ASSERT_EQ("7894", session_->pin());
 
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, "7894"));
   std::string ser_dm_login;
@@ -301,7 +302,7 @@ TEST_F(AuthenticationTest, FUNC_ChangePassword) {
   DLOG(ERROR) << "\n\n\n";
   ASSERT_EQ(kSuccess, authentication_.ChangePassword(ser_dm_ + "2",
                                                      "password_new"));
-  ASSERT_EQ("password_new", ss_->password());
+  ASSERT_EQ("password_new", session_->password());
 
   DLOG(ERROR) << "\n\n\n";
   std::string ser_dm_login;
@@ -328,10 +329,10 @@ TEST_F(AuthenticationTest, FUNC_RegisterLeaveRegister) {
   ASSERT_EQ(kSuccess, authentication_.RemoveMe());
 
   //  Check user no longer registered.
-  ss_->ResetSession();
+  session_->ResetSession();
   ASSERT_NE(kUserExists, authentication_.GetUserInfo(username_, pin_));
 
-  ss_->ResetSession();
+  session_->ResetSession();
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
                                                        ser_dm_,

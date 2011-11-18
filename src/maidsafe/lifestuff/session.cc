@@ -27,14 +27,9 @@
 #include <memory>
 
 #include "maidsafe/common/crypto.h"
-#ifdef __MSVC__
-#  pragma warning(push)
-#  pragma warning(disable: 4244 4127)
-#endif
-#include "maidsafe/lifestuff/data_atlas.pb.h"
-#ifdef __MSVC__
-#  pragma warning(pop)
-#endif
+#include "maidsafe/common/utils.h"
+
+#include "maidsafe/lifestuff/data_atlas_pb.h"
 
 namespace maidsafe {
 
