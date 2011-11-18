@@ -195,7 +195,7 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionBlocking) {
                                                        ser_dm_,
                                                        surrogate_ser_dm_));
   std::string original_tmidname =
-      ss_->passport_->PacketName(passport::kTmid, true);
+      session_->passport_->PacketName(passport::kTmid, true);
   EXPECT_FALSE(original_tmidname.empty());
 
   // store current mid, smid and tmid details to check later whether they remain
@@ -205,8 +205,9 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionBlocking) {
 
   ser_dm_ = RandomString(1000);
   ASSERT_EQ(kSuccess, authentication_.SaveSession(ser_dm_));
-  std::string tmidname(ss_->passport_->PacketName(passport::kTmid, true));
-  std::string stmidname(ss_->passport_->PacketName(passport::kStmid, true));
+  std::string tmidname(session_->passport_->PacketName(passport::kTmid, true));
+  std::string stmidname(
+      session_->passport_->PacketName(passport::kStmid, true));
 
   EXPECT_TRUE(packet_manager_->KeyUnique(original_tmidname));
   EXPECT_FALSE(packet_manager_->KeyUnique(stmidname));
@@ -221,7 +222,7 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionCallbacks) {
                                                        ser_dm_,
                                                        surrogate_ser_dm_));
   std::string original_tmidname =
-      ss_->passport_->PacketName(passport::kTmid, true);
+      session_->passport_->PacketName(passport::kTmid, true);
   EXPECT_FALSE(original_tmidname.empty());
 
   // store current mid, smid and tmid details to check later whether they remain
@@ -249,9 +250,9 @@ TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
                                                        surrogate_ser_dm_));
 
   std::string original_tmidname =
-      ss_->passport_->PacketName(passport::kTmid, true);
+      session_->passport_->PacketName(passport::kTmid, true);
   std::string original_stmidname =
-      ss_->passport_->PacketName(passport::kStmid, true);
+      session_->passport_->PacketName(passport::kStmid, true);
   EXPECT_FALSE(original_tmidname.empty());
   EXPECT_FALSE(original_stmidname.empty());
 
@@ -263,7 +264,7 @@ TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
   std::string ser_dm_login;
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
-  ASSERT_TRUE(sm_->KeyUnique(original_stmidname));
+  ASSERT_TRUE(packet_manager_->KeyUnique(original_stmidname));
 }
 
 TEST_F(AuthenticationTest, FUNC_ChangePin) {
@@ -275,9 +276,9 @@ TEST_F(AuthenticationTest, FUNC_ChangePin) {
                                                        surrogate_ser_dm_));
 
   std::string original_tmidname =
-      ss_->passport_->PacketName(passport::kTmid, true);
+      session_->passport_->PacketName(passport::kTmid, true);
   std::string original_stmidname =
-      ss_->passport_->PacketName(passport::kStmid, true);
+      session_->passport_->PacketName(passport::kStmid, true);
   EXPECT_FALSE(original_tmidname.empty());
   EXPECT_FALSE(original_stmidname.empty());
 
@@ -288,7 +289,7 @@ TEST_F(AuthenticationTest, FUNC_ChangePin) {
   std::string ser_dm_login;
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
-  ASSERT_TRUE(sm_->KeyUnique(original_stmidname));
+  ASSERT_TRUE(packet_manager_->KeyUnique(original_stmidname));
 }
 
 TEST_F(AuthenticationTest, FUNC_ChangePassword) {

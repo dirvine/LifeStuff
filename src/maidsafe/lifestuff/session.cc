@@ -84,7 +84,9 @@ std::string Session::session_name() const { return user_details_.session_name; }
 std::string Session::root_db_key() const { return user_details_.root_db_key; }
 int Session::mounted() const { return user_details_.mounted; }
 char Session::win_drive() const { return user_details_.win_drive; }
-int Session::connection_status() const { return user_details_.connection_status; }
+int Session::connection_status() const {
+  return user_details_.connection_status;
+}
 
 void Session::set_def_con_level(DefConLevels defconlevel) {
   user_details_.defconlevel = defconlevel;

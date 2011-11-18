@@ -78,7 +78,6 @@ class ClientControllerTest : public testing::Test {
   }
   void TearDown() {
     packet_manager_->Close(true);
-    session_->passport_->StopCreatingKeyPairs();
     cc_->initialised_ = false;
   }
 

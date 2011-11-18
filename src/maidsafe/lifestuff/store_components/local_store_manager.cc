@@ -41,7 +41,7 @@ void LocalStoreManager::Init(VoidFuncOneInt callback) {
     return ExecReturnCodeCallback(callback, result);
 
   std::shared_ptr<BufferedChunkStore> buffered_chunk_store(new
-      BufferedChunkStore(true, chunk_validation_, asio_service_));
+      BufferedChunkStore(chunk_validation_, asio_service_));
   if (!buffered_chunk_store->Init(buffered_chunk_store_dir.string())) {
     DLOG(ERROR) << "Failed to initialise client_chunk_store_";
     return ExecReturnCodeCallback(callback, kStoreManagerInitError);

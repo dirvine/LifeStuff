@@ -25,9 +25,6 @@
 
 #include "maidsafe/dht/contact.h"
 
-#include "maidsafe/pki/maidsafe_validator.h"
-
-#include "maidsafe/lifestuff/client_utils.h"
 #include "maidsafe/lifestuff/data_handler.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
@@ -61,11 +58,18 @@ class VeritasChunkValidation : public ChunkValidation {
 
   bool ValidName(const std::string &/*name*/) { return true; }
   bool Hashable(const std::string &/*name*/) { return true; }
+  bool Modifiable(const std::string &/*name*/) { return true; }
   bool ValidChunk(const std::string &/*name*/, const std::string &/*content*/) {
     return true;
   }
   bool ValidChunk(const std::string &/*name*/, const fs::path &/*path*/) {
     return true;
+  }
+  std::string Version(const std::string &/*name*/, const std::string &/*content*/) {
+    return "";
+  }
+  std::string Version(const std::string &/*name*/, const fs::path &/*path*/) {
+    return "";
   }
 
  private:
@@ -79,19 +83,20 @@ void GetDataSlot(const std::string &signal_data, std::string *slot_data) {
 
 }  // namespace
 
-std::string GetPublicKey(const std::string &packet_name,
-                         std::shared_ptr<Session> session) {
-  std::string public_key(session->PublicKey(packet_name, false));
-  if (public_key.empty())
-    return session->PublicKey(packet_name, true);
-  return public_key;
+std::string GetPublicKey(const std::string &/*packet_name*/,
+                         std::shared_ptr<Session> /*session*/) {
+//  std::string public_key(session->PublicKey(packet_name, false));
+//  if (public_key.empty())
+//    return session->PublicKey(packet_name, true);
+//  return public_key;
+                           return "";
 }
 
 FakeStoreManager::FakeStoreManager(std::shared_ptr<Session> session)
     : asio_service_(),
       work_(new boost::asio::io_service::work(asio_service_)),
       thread_group_(),
-      chunk_validation_(new VeritasChunkValidation()),
+      chunk_validation_(new VeritasChunkValidation),
       client_chunk_store_(),
       session_(session),
       temp_directory_path_() {

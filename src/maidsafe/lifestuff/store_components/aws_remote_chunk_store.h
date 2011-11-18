@@ -72,6 +72,12 @@ class AWSRemoteChunkStore : public ChunkStore {
 
   bool Delete(const std::string &name);
 
+  bool Modify(const std::string &name, const std::string &content);
+
+  bool Modify(const std::string &name,
+              const fs::path &source_file_name,
+              bool delete_source_file);
+
   bool MoveTo(const std::string&, ChunkStore*) {
     return false;
   }
@@ -82,6 +88,10 @@ class AWSRemoteChunkStore : public ChunkStore {
 
   bool Validate(const std::string &name) const {
     return chunk_store_->Validate(name);
+  }
+
+  std::string Version(const std::string &name) const {
+    return chunk_store_->Version(name);
   }
 
   std::uintmax_t Size(const std::string &name) const {

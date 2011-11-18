@@ -37,7 +37,7 @@ void AWSStoreManager::Init(VoidFuncOneInt callback) {
     return ExecReturnCodeCallback(callback, result);
 
   std::shared_ptr<BufferedChunkStore> buffered_chunk_store(
-      new BufferedChunkStore(true, chunk_validation_, asio_service_));
+      new BufferedChunkStore(chunk_validation_, asio_service_));
   if (!buffered_chunk_store->Init(buffered_chunk_store_dir.string())) {
     DLOG(ERROR) << "Failed to initialise buffered_chunk_store";
     return ExecReturnCodeCallback(callback, kStoreManagerInitError);

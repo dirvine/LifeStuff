@@ -43,7 +43,7 @@ const std::string AWSRemoteChunkStore::kOpName[] = { "get", "store", "delete" };
 AWSRemoteChunkStore::AWSRemoteChunkStore(
     std::shared_ptr<BufferedChunkStore> chunk_store,
     std::shared_ptr<pd::ChunkManager> chunk_manager)
-        : ChunkStore(false),
+        : ChunkStore(),
           sig_chunk_got_(new pd::ChunkManager::ChunkGot::element_type),
           sig_chunk_stored_(new pd::ChunkManager::ChunkStored::element_type),
           sig_chunk_deleted_(new pd::ChunkManager::ChunkDeleted::element_type),
@@ -199,6 +199,19 @@ bool AWSRemoteChunkStore::Delete(const std::string &name) {
                   << " locally.";
   EnqueueModOp(kOpDelete, name);
   return result;
+}
+
+bool AWSRemoteChunkStore::Modify(const std::string &name,
+                                 const std::string &content) {
+  DLOG(INFO) << "Modify - " << HexSubstr(name);
+  return Delete(name) && Store(name, content);
+}
+
+bool AWSRemoteChunkStore::Modify(const std::string &name,
+                                 const fs::path &source_file_name,
+                                 bool delete_source_file) {
+  DLOG(INFO) << "Modify - " << HexSubstr(name);
+  return Delete(name) && Store(name, source_file_name, delete_source_file);
 }
 
 bool AWSRemoteChunkStore::WaitForCompletion() {
