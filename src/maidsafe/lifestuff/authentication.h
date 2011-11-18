@@ -43,6 +43,8 @@ class Packet;
 class SignaturePacket;
 }  // namespace pki
 
+namespace passport { class Passport; }
+
 namespace lifestuff {
 
 namespace test {
@@ -67,6 +69,7 @@ class Authentication {
         stmid_op_status_(kPendingMid),
         encrypted_tmid_(),
         encrypted_stmid_(),
+        serialised_data_atlas_(),
         kSingleOpTimeout_(boost::posix_time::seconds(5)) {}
   ~Authentication();
   // Used to intialise passport_ in all cases.
@@ -77,40 +80,42 @@ class Authentication {
   int CreateUserSysPackets(const std::string &username,
                            const std::string &pin);
   // Used when creating a new user.
-  int CreateTmidPacket(const std::string &username,
-                       const std::string &pin,
-                       const std::string &password,
-                       const std::string &serialised_datamap,
-                       const std::string &s_serialised_datamap);
+  int CreateTmidPacket(const std::string &password,
+                       const std::string &serialised_data_atlas,
+                       const std::string &surrogate_serialised_data_atlas);
 
   int CreateUserCredentials(const std::string &/*username*/,
                             const std::string &/*pin*/,
                             const std::string &/*password*/,
-                            const std::string &/*serialised_datamap*/) {
+                            const std::string &/*serialised_data_atlas*/) {
     return -1;
   }
 
-  void SaveSession(const std::string &serialised_master_datamap,
+  void SaveSession(const std::string &serialised_data_atlas,
                    const VoidFuncOneInt &functor);
-  int SaveSession(const std::string &serialised_master_datamap);
+  int SaveSession(const std::string &serialised_data_atlas);
   // Used when logging in.
   int GetMasterDataMap(
       const std::string &password,
-      std::shared_ptr<std::string> serialised_master_datamap,
-      std::shared_ptr<std::string> surrogate_serialised_master_datamap);
+      std::shared_ptr<std::string> serialised_data_atlas,
+      std::shared_ptr<std::string> surrogate_serialised_data_atlas);
   int CreateMsidPacket(std::string *msid_name,
                        std::string *msid_public_key,
                        std::string *msid_private_key);
   int CreatePublicName(const std::string &public_name);
   int RemoveMe();
-  int ChangeUsername(const std::string &serialised_master_datamap,
+  int ChangeUsername(const std::string &serialised_data_atlas,
                      const std::string &new_username);
-  int ChangePin(const std::string &serialised_master_datamap,
+  int ChangePin(const std::string &serialised_data_atlas,
                 const std::string &new_pin);
-  int ChangePassword(const std::string &serialised_master_datamap,
+  int ChangePassword(const std::string &serialised_data_atlas,
                      const std::string &new_password);
   int PublicUsernamePublicKey(const std::string &public_username,
                               std::string *public_key);
+  friend class test::AuthenticationTest_FUNC_CreatePublicName_Test;
+  friend class test::AuthenticationTest_FUNC_CreateMSIDPacket_Test;
+  friend class test::ClientControllerTest;
+
  private:
   enum OpStatus {
     kSucceeded,
@@ -121,8 +126,14 @@ class Authentication {
     kPendingTmid,
     kNoUser
   };
+
   enum SaveSessionOpType { kRegular, kSaveNew, kDeleteOld, kUpdate, kIsUnique };
+
   struct SerialisedPacket {
+    SerialisedPacket();
+    SerialisedPacket(const passport::PacketType &packet_type,
+                     std::shared_ptr<passport::Passport> passport,
+                     bool confirmed);
     passport::PacketType type;
     std::string name, value, signature;
   };
@@ -130,25 +141,21 @@ class Authentication {
   struct SaveSessionData {
     SaveSessionData(VoidFuncOneInt func,
                     SaveSessionOpType op_t,
-                    int succeed = 0)
-        : mid(),
-          smid(),
-          tmid(),
-          stmid(),
-          process_mid(kPending),
+                    const std::string &serialised_data_atlas_in)
+        : process_mid(kPending),
           process_smid(kPending),
           process_tmid(kPending),
-          process_stmid(succeed == 2 ? kSucceeded : kPending),
+          process_stmid(kPending),
           functor(func),
-          op_type(op_t) {}
-    SerialisedPacket mid, smid, tmid, stmid;
+          op_type(op_t),
+          serialised_data_atlas(serialised_data_atlas_in) {}
     OpStatus process_mid, process_smid, process_tmid, process_stmid;
     VoidFuncOneInt functor;
     SaveSessionOpType op_type;
+    std::string serialised_data_atlas;
   };
-  friend class test::AuthenticationTest_FUNC_CreatePublicName_Test;
-  friend class test::AuthenticationTest_FUNC_CreateMSIDPacket_Test;
-  friend class test::ClientControllerTest;
+
+  typedef std::shared_ptr<SaveSessionData> SaveSessionDataPtr;
 
   Authentication &operator=(const Authentication&);
   Authentication(const Authentication&);
@@ -167,33 +174,25 @@ class Authentication {
                           bool surrogate);
   // Function waits until dependent_op_status != kPending or timeout before
   // starting
-  void StoreSignaturePacket(const passport::PacketType &packet_t,
-                            const std::string &public_name,
+  void StoreSignaturePacket(const passport::PacketType &packet_type,
                             OpStatus *op_status,
                             OpStatus *dependent_op_status);
-  void SignaturePacketUniqueCallback(
-      int return_code,
-      std::shared_ptr<pki::SignaturePacket> packet,
-      OpStatus *op_status);
-  void SignaturePacketStoreCallback(
-      int return_code,
-      std::shared_ptr<pki::SignaturePacket> packet,
-      OpStatus *op_status);
-  void SaveSessionCallback(
-      int return_code,
-      std::shared_ptr<pki::Packet> packet,
-      std::shared_ptr<SaveSessionData> save_session_data);
-  void NewSaveSessionCallback(
-      const ReturnCode &return_code,
-      std::shared_ptr<pki::Packet> packet,
-      std::shared_ptr<SaveSessionData> save_session_data);
+  void SignaturePacketUniqueCallback(int return_code,
+                                     passport::PacketType packet_type,
+                                     OpStatus *op_status);
+  void SignaturePacketStoreCallback(int return_code,
+                                    passport::PacketType packet_type,
+                                    OpStatus *op_status);
+  void SaveSessionCallback(int return_code,
+                           passport::PacketType packet_type,
+                           SaveSessionDataPtr save_session_data);
   void DeletePacket(const passport::PacketType &packet_type,
                     OpStatus *op_status,
                     OpStatus *dependent_op_status);
   void DeletePacketCallback(int return_code,
                             const passport::PacketType &packet_type,
                             OpStatus *op_status);
-  int ChangeUserData(const std::string &serialised_master_datamap,
+  int ChangeUserData(const std::string &serialised_data_atlas,
                      const std::string &new_username,
                      const std::string &new_pin);
 
@@ -233,16 +232,12 @@ class Authentication {
   }
   // Designed to be called as functor in timed_wait - user_info mutex locked
   bool PacketOpDone(int *return_code) { return *return_code != kPendingResult; }
-  int StorePacket(std::shared_ptr<pki::Packet> packet,
-                  bool check_uniqueness,
-                  passport::PacketType packet_type);
-  int DeletePacket(std::shared_ptr<pki::Packet> packet,
-                   passport::PacketType packet_type);
-  int PacketUnique(std::shared_ptr<pki::Packet> packet);
+  int StorePacket(const SerialisedPacket &packet, bool check_uniqueness);
+  int DeletePacket(const SerialisedPacket &packet);
+  int PacketUnique(const SerialisedPacket &packet);
   void PacketOpCallback(int return_code, int *op_result);
-  std::string CreateGenericPacket(const std::string &value,
-                                  const std::string &signature,
-                                  passport::PacketType packet_type);
+  std::string CreateGenericPacket(const SerialisedPacket &packet);
+  std::string DebugStr(const passport::PacketType &packet_type);
 
 
   std::shared_ptr<PacketManager> packet_manager_;
@@ -250,7 +245,7 @@ class Authentication {
   boost::mutex mutex_, mid_mutex_, smid_mutex_;
   boost::condition_variable cond_var_;
   OpStatus tmid_op_status_, stmid_op_status_;
-  std::string encrypted_tmid_, encrypted_stmid_;
+  std::string encrypted_tmid_, encrypted_stmid_, serialised_data_atlas_;
   const boost::posix_time::time_duration kSingleOpTimeout_;
 };
 

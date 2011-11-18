@@ -50,7 +50,7 @@
 #include "maidsafe/lifestuff/client_utils.h"
 #ifdef __MSVC__
 #  pragma warning(push)
-#  pragma warning(disable: 4244 4127)
+#  pragma warning(disable: 4127 4244 4267)
 #endif
 #include "maidsafe/lifestuff/data_atlas.pb.h"
 #ifdef __MSVC__
@@ -331,23 +331,23 @@ bool ClientController::ValidateUser(const std::string &password) {
   }
   ser_da_.clear();
 
-  std::shared_ptr<std::string> serialised_master_datamap(new std::string);
-  std::shared_ptr<std::string> surrogate_serialised_master_datamap(
+  std::shared_ptr<std::string> serialised_data_atlas(new std::string);
+  std::shared_ptr<std::string> surrogate_serialised_data_atlas(
       new std::string);
   int res = auth_->GetMasterDataMap(password,
-                                    serialised_master_datamap,
-                                    surrogate_serialised_master_datamap);
+                                    serialised_data_atlas,
+                                    surrogate_serialised_data_atlas);
   if (res != 0) {
     DLOG(ERROR) << "CC::ValidateUser - Failed retrieving DA." << std::endl;
     return false;
   }
 
-  if (!serialised_master_datamap->empty()) {
+  if (!serialised_data_atlas->empty()) {
     DLOG(INFO) << "ClientController::ValidateUser - Using TMID" << std::endl;
-    ser_da_ = *serialised_master_datamap;
-  } else if (!surrogate_serialised_master_datamap->empty()) {
+    ser_da_ = *serialised_data_atlas;
+  } else if (!surrogate_serialised_data_atlas->empty()) {
     DLOG(INFO) << "ClientController::ValidateUser - Using STMID" << std::endl;
-    ser_da_ = *surrogate_serialised_master_datamap;
+    ser_da_ = *surrogate_serialised_data_atlas;
   } else {
     // Password validation failed
     ser_da_.clear();

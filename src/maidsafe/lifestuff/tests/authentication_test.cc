@@ -78,21 +78,21 @@ class AuthenticationTest : public testing::Test {
   }
 
   int GetMasterDataMap(std::string *ser_dm_login, const std::string &password) {
-    std::shared_ptr<std::string> serialised_master_datamap(new std::string);
-    std::shared_ptr<std::string> surrogate_serialised_master_datamap(
+    std::shared_ptr<std::string> serialised_data_atlas(new std::string);
+    std::shared_ptr<std::string> surrogate_serialised_data_atlas(
         new std::string);
     int res =
         authentication_.GetMasterDataMap(password,
-                                         serialised_master_datamap,
-                                         surrogate_serialised_master_datamap);
+                                         serialised_data_atlas,
+                                         surrogate_serialised_data_atlas);
     if (res != 0) {
       return kPasswordFailure;
     }
 
-    if (!serialised_master_datamap->empty()) {
-      *ser_dm_login = *serialised_master_datamap;
-    } else if (!surrogate_serialised_master_datamap->empty()) {
-      *ser_dm_login = *surrogate_serialised_master_datamap;
+    if (!serialised_data_atlas->empty()) {
+      *ser_dm_login = *serialised_data_atlas;
+    } else if (!surrogate_serialised_data_atlas->empty()) {
+      *ser_dm_login = *surrogate_serialised_data_atlas;
     } else {
       ser_dm_login->clear();
       return kPasswordFailure;
@@ -206,7 +206,7 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionBlocking) {
                                                        ser_dm_,
                                                        surrogate_ser_dm_));
   std::string original_tmidname;
-  ss_->GetKey(passport::TMID, &original_tmidname, NULL, NULL, NULL);
+  ss_->GetKey(passport::kTmid, &original_tmidname, NULL, NULL, NULL);
   EXPECT_FALSE(original_tmidname.empty());
 
   // store current mid, smid and tmid details to check later whether they remain
@@ -217,8 +217,8 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionBlocking) {
   ser_dm_ = RandomString(1000);
   ASSERT_EQ(kSuccess, authentication_.SaveSession(ser_dm_));
   std::string tmidname, stmidname;
-  ss_->GetKey(passport::TMID, &tmidname, NULL, NULL, NULL);
-  ss_->GetKey(passport::STMID, &stmidname, NULL, NULL, NULL);
+  ss_->GetKey(passport::kTmid, &tmidname, NULL, NULL, NULL);
+  ss_->GetKey(passport::kStmid, &stmidname, NULL, NULL, NULL);
 
   EXPECT_TRUE(sm_->KeyUnique(original_tmidname));
   EXPECT_FALSE(sm_->KeyUnique(stmidname));
@@ -235,7 +235,7 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionCallbacks) {
                                                        ser_dm_,
                                                        surrogate_ser_dm_));
   std::string original_tmidname;
-  ss_->GetKey(passport::TMID, &original_tmidname, NULL, NULL, NULL);
+  ss_->GetKey(passport::kTmid, &original_tmidname, NULL, NULL, NULL);
   EXPECT_FALSE(original_tmidname.empty());
 
   // store current mid, smid and tmid details to check later whether they remain
@@ -265,8 +265,8 @@ TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
                                                        surrogate_ser_dm_));
 
   std::string original_tmidname, original_stmidname;
-  ss_->GetKey(passport::TMID, &original_tmidname, NULL, NULL, NULL);
-  ss_->GetKey(passport::STMID, &original_stmidname, NULL, NULL, NULL);
+  ss_->GetKey(passport::kTmid, &original_tmidname, NULL, NULL, NULL);
+  ss_->GetKey(passport::kStmid, &original_stmidname, NULL, NULL, NULL);
   EXPECT_FALSE(original_tmidname.empty());
   EXPECT_FALSE(original_stmidname.empty());
 
@@ -292,8 +292,8 @@ TEST_F(AuthenticationTest, FUNC_ChangePin) {
                                                        surrogate_ser_dm_));
 
   std::string original_tmidname, original_stmidname;
-  ss_->GetKey(passport::TMID, &original_tmidname, NULL, NULL, NULL);
-  ss_->GetKey(passport::STMID, &original_stmidname, NULL, NULL, NULL);
+  ss_->GetKey(passport::kTmid, &original_tmidname, NULL, NULL, NULL);
+  ss_->GetKey(passport::kStmid, &original_stmidname, NULL, NULL, NULL);
   EXPECT_FALSE(original_tmidname.empty());
   EXPECT_FALSE(original_stmidname.empty());
 
