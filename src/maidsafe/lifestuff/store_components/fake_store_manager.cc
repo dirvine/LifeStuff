@@ -65,7 +65,8 @@ class VeritasChunkValidation : public ChunkValidation {
   bool ValidChunk(const std::string &/*name*/, const fs::path &/*path*/) {
     return true;
   }
-  std::string Version(const std::string &/*name*/, const std::string &/*content*/) {
+  std::string Version(const std::string &/*name*/,
+                      const std::string &/*content*/) {
     return "";
   }
   std::string Version(const std::string &/*name*/, const fs::path &/*path*/) {
@@ -83,13 +84,17 @@ void GetDataSlot(const std::string &signal_data, std::string *slot_data) {
 
 }  // namespace
 
-std::string GetPublicKey(const std::string &/*packet_name*/,
-                         std::shared_ptr<Session> /*session*/) {
-//  std::string public_key(session->PublicKey(packet_name, false));
-//  if (public_key.empty())
-//    return session->PublicKey(packet_name, true);
-//  return public_key;
-                           return "";
+std::string GetPublicKey(const std::string &packet_name,
+                         std::shared_ptr<Session> session) {
+  std::shared_ptr<passport::Passport> pprt(session->passport_);
+  for (int i(passport::kAnmid); i != passport::kMid; ++i) {
+    passport::PacketType packet_type(static_cast<passport::PacketType>(i));
+    if (pprt->PacketName(packet_type, false) == packet_name)
+      return pprt->PacketValue(packet_type, false);
+    if (pprt->PacketName(packet_type, true) == packet_name)
+      return pprt->PacketValue(packet_type, true);
+  }
+  return "";
 }
 
 FakeStoreManager::FakeStoreManager(std::shared_ptr<Session> session)

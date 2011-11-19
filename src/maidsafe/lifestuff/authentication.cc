@@ -93,7 +93,8 @@ int Authentication::GetUserInfo(const std::string &username,
                                 const std::string &pin) {
   std::string mid_name(passport::MidName(username, pin, false)),
               smid_name(passport::MidName(username, pin, true));
-  if (mid_name.empty() || smid_name.empty()) {    tmid_op_status_ = kFailed;
+  if (mid_name.empty() || smid_name.empty()) {
+    tmid_op_status_ = kFailed;
     stmid_op_status_ = kFailed;
     DLOG(ERROR) << "Failed to get MID/SMID name";
     return kAuthenticationError;
@@ -128,8 +129,8 @@ int Authentication::GetUserInfo(const std::string &username,
   }
   session_->set_username("");
   session_->set_pin("");
-  tmid_op_status_ = kUserDoesntExist;
-  stmid_op_status_ = kUserDoesntExist;
+  tmid_op_status_ = kNoUser;
+  stmid_op_status_ = kNoUser;
   return kUserDoesntExist;
 }
 
@@ -673,7 +674,8 @@ int Authentication::CreateMsidPacket(std::string *msid_name,
 //  std::shared_ptr<pki::SignaturePacket>
 //      msid(new pki::SignaturePacket);
 //  std::vector<boost::uint32_t> share_stats(2, 0);
-//  int result = session_->passport_->InitialiseSignaturePacket(passport::MSID, msid);
+//  int result = session_->passport_->InitialiseSignaturePacket(passport::MSID,
+//                                                              msid);
 //  if (result != kSuccess) {
 //    DLOG(ERROR) << "Authentication::CreateMsidPacket: failed init";
 //    return kAuthenticationError;
@@ -1207,7 +1209,7 @@ std::string Authentication::CreateGenericPacket(
       break;
     case passport::kMid:
       generic_packet.set_signing_id(
-          session_->passport_->PacketName(passport::kAnmid, true));
+          session_->passport_->PacketName(passport::kAnmid, false));
       generic_packet.set_hashable(false);
       break;
     case passport::kAnsmid:
@@ -1215,7 +1217,7 @@ std::string Authentication::CreateGenericPacket(
       break;
     case passport::kSmid:
       generic_packet.set_signing_id(
-          session_->passport_->PacketName(passport::kAnsmid, true));
+          session_->passport_->PacketName(passport::kAnsmid, false));
       generic_packet.set_hashable(false);
       break;
     case passport::kAntmid:
@@ -1224,7 +1226,7 @@ std::string Authentication::CreateGenericPacket(
     case passport::kTmid:
     case passport::kStmid:
       generic_packet.set_signing_id(
-          session_->passport_->PacketName(passport::kAntmid, true));
+          session_->passport_->PacketName(passport::kAntmid, false));
       generic_packet.set_hashable(false);
       break;
     case passport::kAnmpid:
@@ -1232,7 +1234,7 @@ std::string Authentication::CreateGenericPacket(
       break;
     case passport::kMpid:
       generic_packet.set_signing_id(
-          session_->passport_->PacketName(passport::kAnmpid, true));
+          session_->passport_->PacketName(passport::kAnmpid, false));
       generic_packet.set_hashable(false);
       break;
     case passport::kAnmaid:
@@ -1240,11 +1242,11 @@ std::string Authentication::CreateGenericPacket(
       break;
     case passport::kMaid:
       generic_packet.set_signing_id(
-          session_->passport_->PacketName(passport::kAnmaid, true));
+          session_->passport_->PacketName(passport::kAnmaid, false));
       break;
     case passport::kPmid:
       generic_packet.set_signing_id(
-          session_->passport_->PacketName(passport::kMaid, true));
+          session_->passport_->PacketName(passport::kMaid, false));
       break;
     default:
       break;

@@ -168,7 +168,8 @@ class LocalStoreManagerTest : public testing::Test {
                              &cb_,
                              arg::_1,
                              arg::_2);
-    anmaid_private_key_ = session_->passport_->PacketValue(passport::kAnmaid, true);
+    anmaid_private_key_ = session_->passport_->PacketValue(passport::kAnmaid,
+                                                           true);
 //    anmaid_public_key_ = session_->PublicKey(passport::kAnmaid, true);
 //    mpid_public_key_ = session_->PublicKey(passport::MPID, true);
   }
@@ -181,10 +182,12 @@ class LocalStoreManagerTest : public testing::Test {
 
   void GeneratePacket(bool hashable, std::string *name, GenericPacket *gp) {
     gp->set_data(anmaid_public_key_);
-    gp->set_signature(session_->passport_->PacketSignature(passport::kAnmaid, true));
+    gp->set_signature(session_->passport_->PacketSignature(passport::kAnmaid,
+                                                           true));
     gp->set_hashable(hashable);
     *name = crypto::Hash<crypto::SHA512>(gp->data() + gp->signature());
-    gp->set_signing_id(session_->passport_->PacketName(passport::kAnmaid, true));
+    gp->set_signing_id(session_->passport_->PacketName(passport::kAnmaid,
+                                                       true));
   }
 
   std::shared_ptr<fs::path> test_root_dir_;
