@@ -1209,7 +1209,7 @@ std::string Authentication::CreateGenericPacket(
       break;
     case passport::kMid:
       generic_packet.set_signing_id(
-          session_->passport_->PacketName(passport::kAnmid, false));
+          session_->passport_->PacketName(passport::kAnmid, true));
       generic_packet.set_hashable(false);
       break;
     case passport::kAnsmid:
@@ -1217,7 +1217,7 @@ std::string Authentication::CreateGenericPacket(
       break;
     case passport::kSmid:
       generic_packet.set_signing_id(
-          session_->passport_->PacketName(passport::kAnsmid, false));
+          session_->passport_->PacketName(passport::kAnsmid, true));
       generic_packet.set_hashable(false);
       break;
     case passport::kAntmid:
@@ -1226,7 +1226,7 @@ std::string Authentication::CreateGenericPacket(
     case passport::kTmid:
     case passport::kStmid:
       generic_packet.set_signing_id(
-          session_->passport_->PacketName(passport::kAntmid, false));
+          session_->passport_->PacketName(passport::kAntmid, true));
       generic_packet.set_hashable(false);
       break;
     case passport::kAnmpid:
