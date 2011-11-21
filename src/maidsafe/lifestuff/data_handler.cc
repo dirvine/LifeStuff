@@ -56,7 +56,7 @@ int DataHandler::ProcessData(const OperationType &op_type,
   if (op_type != DataHandler::kGet) {
     if (!data_wrapper.ParseFromString(data)) {
       DLOG(WARNING) << "Failed to parse data. Could be chunk.";
-      return -1;
+      return kParseFailure;
     }
   }
 
@@ -67,7 +67,7 @@ int DataHandler::ProcessData(const OperationType &op_type,
     case DataWrapper::kNonHashableSigned:
         return ProcessSignedData(op_type, name, data_wrapper, public_key, false,
                                  chunk_store);
-    default: return -1;
+    default: return kUnknownFailure;
   }
 }
 
@@ -80,7 +80,7 @@ int DataHandler::ProcessSignedData(const OperationType &op_type,
   if (PreOperationChecks(op_type, name, data_wrapper, public_key, hashable) !=
       kSuccess) {
     DLOG(ERROR) << "ProcessSignedData - PreOperationChecks failure.";
-    return -1;
+    return kPreOperationCheckFailure;
   }
 
   std::string current_data;
@@ -88,11 +88,11 @@ int DataHandler::ProcessSignedData(const OperationType &op_type,
     case kStore: {
         if (chunk_store->Has(name)) {
           DLOG(ERROR) << "ProcessSignedData - Name of data exists. Use update.";
-          return -1;
+          return kDuplicateNameFailure;
         }
         if (!chunk_store->Store(name, data_wrapper.SerializeAsString())) {
           DLOG(ERROR) << "ProcessSignedData - ChunkStore Store failure.";
-          return -1;
+          return kStoreFailure;
         }
         break;
     }
@@ -100,12 +100,12 @@ int DataHandler::ProcessSignedData(const OperationType &op_type,
         if (VerifyCurrentData(name, public_key, chunk_store, &current_data) !=
             kSuccess) {
           DLOG(ERROR) << "ProcessSignedData - VerifyCurrentData failure.";
-          return -1;
+          return kVerifyDataFailure;
         }
 
         if (!chunk_store->Delete(name)) {
           DLOG(ERROR) << "ProcessSignedData - Error deleting packet";
-          return -1;
+          return kDeleteFailure;
         }
 
         break;
@@ -114,26 +114,19 @@ int DataHandler::ProcessSignedData(const OperationType &op_type,
         if (VerifyCurrentData(name, public_key, chunk_store, &current_data) !=
             kSuccess) {
           DLOG(ERROR) << "ProcessSignedData - VerifyCurrentData failure.";
-          return -1;
+          return kVerifyDataFailure;
         }
-
-        if (!chunk_store->Delete(name)) {
-          DLOG(ERROR) << "ProcessSignedData - Error deleting packet";
-          return -1;
+        if (!chunk_store->Modify(name, data_wrapper.SerializeAsString())) {
+          DLOG(ERROR) << "ProcessSignedData - Error Modifying packet";
+          return kModifyFailure;
         }
-
-        if (!chunk_store->Store(name, data_wrapper.SerializeAsString())) {
-          DLOG(ERROR) << "ProcessSignedData - Error deleting packet";
-          return -1;
-        }
-
         break;
     }
     case kGet: {
         if (VerifyCurrentData(name, public_key, chunk_store, &current_data) !=
             kSuccess) {
           DLOG(ERROR) << "ProcessSignedData - VerifyCurrentData failure.";
-          return -1;
+          return kVerifyDataFailure;
         }
 
         (*get_data_signal_)(current_data);
@@ -155,12 +148,12 @@ int DataHandler::PreOperationChecks(const OperationType &op_type,
 
   if (!data_wrapper.has_signed_data()) {
     DLOG(ERROR) << "ProcessSignedData - No signed data passed";
-    return -1;
+    return kMissingSignedData;
   }
 
   if (hashable && op_type == kUpdate) {
     DLOG(ERROR) << "ProcessSignedData - No update of hashable data allowed";
-    return -1;
+    return kInvalidUpdate;
   }
 
 
@@ -168,7 +161,7 @@ int DataHandler::PreOperationChecks(const OperationType &op_type,
                             data_wrapper.signed_data().signature(),
                             public_key)) {
     DLOG(ERROR) << "ProcessSignedData - Signature verification failed";
-    return -1;
+    return kSignatureVerificationFailure;
   }
 
   if (hashable &&
@@ -176,7 +169,7 @@ int DataHandler::PreOperationChecks(const OperationType &op_type,
                                    data_wrapper.signed_data().signature()) !=
       name) {
     DLOG(ERROR) << "ProcessSignedData - Marked hashable, doesn't hash";
-    return -1;
+    return kNotHashable;
   }
 
   return kSuccess;
@@ -189,13 +182,13 @@ int DataHandler::VerifyCurrentData(const std::string &name,
   *current_data = chunk_store->Get(name);
   if (current_data->empty()) {
     DLOG(ERROR) << "VerifyCurrentData - Failure to get data";
-    return -1;
+    return kVerifyDataFailure;
   }
 
   DataWrapper dw;
   if (!dw.ParseFromString(*current_data)) {
     DLOG(ERROR) << "VerifyCurrentData - Error parsing packet";
-    return -1;
+    return kParseFailure;
   }
 
   if (!public_key.empty() &&
@@ -204,7 +197,7 @@ int DataHandler::VerifyCurrentData(const std::string &name,
                             dw.signed_data().signature(),
                             public_key)) {
     DLOG(ERROR) << "VerifyCurrentData - Not owner of packet";
-    return -1;
+    return kNotOwner;
   }
 
   *current_data = dw.signed_data().SerializeAsString();
