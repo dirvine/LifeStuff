@@ -928,7 +928,7 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(
                   lock,
-                  kSingleOpTimeout_ * 3,
+                  kSingleOpTimeout_ * 4,
                   std::bind(&Authentication::PacketOpDone, this, &result));
   }
   catch(const std::exception &e) {
@@ -947,13 +947,12 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
   }
 
   result = kPendingResult;
-  VoidFuncOneInt store_functor =
-      std::bind(&Authentication::PacketOpCallback, this, arg::_1, &result);
   save_session_data->process_mid = kPending;
   save_session_data->process_smid = kPending;
   save_session_data->process_tmid = kPending;
   save_session_data->process_stmid = kPending;
-  save_session_data->functor = store_functor;
+  save_session_data->functor =
+      std::bind(&Authentication::PacketOpCallback, this, arg::_1, &result);
   save_session_data->op_type = kSaveNew;
   // Store new MID
 //  DLOG(ERROR) << "Store " << DebugStr(passport::kMid) << "\t" << HexSubstr(mid.name) << "\t" << HexSubstr(mid.value);
@@ -982,7 +981,7 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(
                   lock,
-                  kSingleOpTimeout_ * 3,
+                  kSingleOpTimeout_ * 4,
                   std::bind(&Authentication::PacketOpDone, this, &result));
   }
   catch(const std::exception &e) {
@@ -994,16 +993,14 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
 //    session_->passport_->RevertUserDataChange();
     return kAuthenticationError;
   }
-
   // Prepare to delete old packets
   result = kPendingResult;
-  VoidFuncOneInt delete_functor =
-      std::bind(&Authentication::PacketOpCallback, this, arg::_1, &result);
   save_session_data->process_mid = kPending;
   save_session_data->process_smid = kPending;
   save_session_data->process_tmid = kPending;
   save_session_data->process_stmid = kPending;
-  save_session_data->functor = delete_functor;
+  save_session_data->functor =
+      std::bind(&Authentication::PacketOpCallback, this, arg::_1, &result);
   save_session_data->op_type = kDeleteOld;  // Delete old MID
 //  DLOG(ERROR) << "Delete old MID " << HexSubstr(old_mid.name) << "\t" << HexSubstr(old_mid.value);
   callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
@@ -1033,7 +1030,7 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(
                   lock,
-                  kSingleOpTimeout_ * 3,
+                  kSingleOpTimeout_ * 4,
                   std::bind(&Authentication::PacketOpDone, this, &result));
   }
   catch(const std::exception &e) {

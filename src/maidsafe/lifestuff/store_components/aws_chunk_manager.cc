@@ -38,9 +38,9 @@ void AWSChunkManager::GetChunk(const std::string &name) {
   }
 
   std::string content;
-  if (amazon_web_service_->Download(EncodeToHex(name), &content) !=
+  if (amazon_web_service_->Download(EncodeToBase32(name), &content) !=
       aws_transporter::AWSTransporter::kSuccess) {
-    DLOG(ERROR) << "Failed to get chunk " << HexSubstr(name) << " from AWS";
+    DLOG(ERROR) << "Failed to get chunk " << Base32Substr(name) << " from AWS";
     (*sig_chunk_got_)(name, pd::kGeneralError);
     return;
   }
@@ -50,10 +50,10 @@ void AWSChunkManager::GetChunk(const std::string &name) {
       (*sig_chunk_got_)(name, pd::kSuccess);
     } else {
       chunk_store_->Delete(name);
-      DLOG(ERROR) << "Failed to validate " << HexSubstr(name);
+      DLOG(ERROR) << "Failed to validate " << Base32Substr(name);
     }
   } else {
-    DLOG(ERROR) << "Failed to store locally " << HexSubstr(name);
+    DLOG(ERROR) << "Failed to store locally " << Base32Substr(name);
     (*sig_chunk_got_)(name, pd::kGeneralError);
   }
 }
@@ -65,12 +65,12 @@ void AWSChunkManager::StoreChunk(const std::string &name) {
     return;
   }
 
-  std::string encoded_name(EncodeToHex(name));
+  std::string encoded_name(EncodeToBase32(name));
   uintmax_t instance_count(0);
   if (amazon_web_service_->GetInstanceCount(encoded_name, &instance_count) !=
       aws_transporter::AWSTransporter::kSuccess) {
     DLOG(ERROR) << "Failed to get instance count while storing chunk "
-                << HexSubstr(name) << " in AWS";
+                << Base32Substr(name) << " in AWS";
     (*sig_chunk_stored_)(name, pd::kGeneralError);
     return;
   }
@@ -78,7 +78,7 @@ void AWSChunkManager::StoreChunk(const std::string &name) {
   if (instance_count == 0) {
     if (amazon_web_service_->Upload(encoded_name, content) !=
         aws_transporter::AWSTransporter::kSuccess) {
-      DLOG(ERROR) << "Failed to put chunk " << HexSubstr(name) << " to AWS";
+      DLOG(ERROR) << "Failed to put chunk " << Base32Substr(name) << " to AWS";
       (*sig_chunk_stored_)(name, pd::kGeneralError);
       return;
     }
@@ -86,7 +86,7 @@ void AWSChunkManager::StoreChunk(const std::string &name) {
     if (amazon_web_service_->SetInstanceCount(encoded_name, ++instance_count) !=
         aws_transporter::AWSTransporter::kSuccess) {
       DLOG(ERROR) << "Failed to increase instance count of chunk "
-                  << HexSubstr(name) << " to " << instance_count << " in AWS";
+                  << Base32Substr(name) << " to " << instance_count << " in AWS";
       (*sig_chunk_stored_)(name, pd::kGeneralError);
       return;
     }
@@ -96,11 +96,11 @@ void AWSChunkManager::StoreChunk(const std::string &name) {
 
 void AWSChunkManager::DeleteChunk(const std::string &name) {
   uintmax_t instance_count(0);
-  std::string encoded_name(EncodeToHex(name));
+  std::string encoded_name(EncodeToBase32(name));
   if (amazon_web_service_->GetInstanceCount(encoded_name, &instance_count) !=
       aws_transporter::AWSTransporter::kSuccess) {
     DLOG(ERROR) << "Failed to get instance count while deleting chunk "
-                << HexSubstr(name) << " in AWS";
+                << Base32Substr(name) << " in AWS";
     (*sig_chunk_deleted_)(name, pd::kGeneralError);
     return;
   }
@@ -108,7 +108,7 @@ void AWSChunkManager::DeleteChunk(const std::string &name) {
   if (instance_count == 1) {
     if (amazon_web_service_->Delete(encoded_name) !=
         aws_transporter::AWSTransporter::kSuccess) {
-      DLOG(ERROR) << "Failed to del chunk " << HexSubstr(name) << " from AWS";
+      DLOG(ERROR) << "Failed to del chunk " << Base32Substr(name) << " from AWS";
       (*sig_chunk_deleted_)(name, pd::kGeneralError);
       return;
     }
@@ -116,7 +116,7 @@ void AWSChunkManager::DeleteChunk(const std::string &name) {
     if (amazon_web_service_->SetInstanceCount(encoded_name, --instance_count) !=
         aws_transporter::AWSTransporter::kSuccess) {
       DLOG(ERROR) << "Failed to decrease instance count of chunk "
-                  << HexSubstr(name) << " to " << instance_count << " in AWS";
+                  << Base32Substr(name) << " to " << instance_count << " in AWS";
       (*sig_chunk_deleted_)(name, pd::kGeneralError);
       return;
     }

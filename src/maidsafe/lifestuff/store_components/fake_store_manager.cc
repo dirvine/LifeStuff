@@ -44,11 +44,11 @@ void PrintDebugInfo(const std::string &packet_name,
                     const std::string &op_type) {
   if (value2.empty())
     DLOG(WARNING) << "FakeStoreManager::" << op_type << " - <key, value>("
-                  << HexSubstr(packet_name) << ", " << HexSubstr(value1) << ")";
+                  << Base32Substr(packet_name) << ", " << Base32Substr(value1) << ")";
   else
     DLOG(WARNING) << "FakeStoreManager::" << op_type << " - <key>("
-                  << HexSubstr(packet_name) << ") value(" << HexSubstr(value1)
-                  << " --> " << HexSubstr(value2) << ")";
+                  << Base32Substr(packet_name) << ") value(" << Base32Substr(value1)
+                  << " --> " << Base32Substr(value2) << ")";
 }
 
 class VeritasChunkValidation : public ChunkValidation {
@@ -89,10 +89,22 @@ std::string GetPublicKey(const std::string &packet_name,
   std::shared_ptr<passport::Passport> pprt(session->passport_);
   for (int i(passport::kAnmid); i != passport::kMid; ++i) {
     passport::PacketType packet_type(static_cast<passport::PacketType>(i));
-    if (pprt->PacketName(packet_type, false) == packet_name)
+#ifdef DEBUG
+    int previous(FLAGS_ms_logging_passport);
+    FLAGS_ms_logging_passport = google::FATAL;
+#endif
+    if (pprt->PacketName(packet_type, false) == packet_name) {
+#ifdef DEBUG
+      FLAGS_ms_logging_passport = previous;
+#endif
       return pprt->PacketValue(packet_type, false);
-    if (pprt->PacketName(packet_type, true) == packet_name)
+    }
+    if (pprt->PacketName(packet_type, true) == packet_name) {
+#ifdef DEBUG
+      FLAGS_ms_logging_passport = previous;
+#endif
       return pprt->PacketValue(packet_type, true);
+    }
   }
   return "";
 }
@@ -199,8 +211,8 @@ void FakeStoreManager::GetPacket(const std::string &packetname,
 void FakeStoreManager::DeletePacket(const std::string &packet_name,
                                     const std::string &value,
                                     const VoidFuncOneInt &cb) {
-  DLOG(INFO) << "Deleting <" << HexSubstr(packet_name) << ", "
-             << HexSubstr(value) << ">";
+  DLOG(INFO) << "Deleting <" << Base32Substr(packet_name) << ", "
+             << Base32Substr(value) << ">";
 
   GenericPacket gp;
   if (!gp.ParseFromString(value)) {
@@ -237,8 +249,8 @@ void FakeStoreManager::DeletePacket(const std::string &packet_name,
 void FakeStoreManager::StorePacket(const std::string &packet_name,
                                    const std::string &value,
                                    const VoidFuncOneInt &cb) {
-  DLOG(INFO) << "Storing <" << HexSubstr(packet_name) << ", "
-             << HexSubstr(value) << ">";
+  DLOG(INFO) << "Storing <" << Base32Substr(packet_name) << ", "
+             << Base32Substr(value) << ">";
 
   GenericPacket gp;
   if (!gp.ParseFromString(value)) {
@@ -251,7 +263,7 @@ void FakeStoreManager::StorePacket(const std::string &packet_name,
   if (public_key.empty()) {
     ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
     DLOG(ERROR) << "FakeStoreManager::StorePacket - No public key - ID: "
-                << HexSubstr(gp.signing_id());
+                << Base32Substr(gp.signing_id());
     return;
   }
 
@@ -277,9 +289,9 @@ void FakeStoreManager::UpdatePacket(const std::string &packet_name,
                                     const std::string &old_value,
                                     const std::string &new_value,
                                     const VoidFuncOneInt &cb) {
-  DLOG(INFO) << "Updating <" << HexSubstr(packet_name) << ", "
-             << HexSubstr(old_value) << "> to <" << HexSubstr(packet_name)
-             << ", " << HexSubstr(new_value) << ">";
+  DLOG(INFO) << "Updating <" << Base32Substr(packet_name) << ", "
+             << Base32Substr(old_value) << "> to <" << Base32Substr(packet_name)
+             << ", " << Base32Substr(new_value) << ">";
   PrintDebugInfo(packet_name, old_value, new_value, "UpdatePacket");
 
   GenericPacket old_gp, new_gp;

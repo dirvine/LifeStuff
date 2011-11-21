@@ -106,23 +106,23 @@ AWSRemoteChunkStore::~AWSRemoteChunkStore() {
 
   std::string output;
   for (auto it = failed_ops_.begin(); it != failed_ops_.end(); ++it)
-    output += "\n\t" + HexSubstr(it->first) + " (" + kOpName[it->second] + ")";
+    output += "\n\t" + Base32Substr(it->first) + " (" + kOpName[it->second] + ")";
   if (!output.empty())
     DLOG(WARNING) << "~AWSRemoteChunkStore() - " << failed_ops_.size()
                   << " failed operations:" << output;
 
   output.clear();
   for (auto it = pending_mod_ops_.begin(); it != pending_mod_ops_.end(); ++it)
-    output += "\n\t" + HexSubstr(it->first) + " (" + kOpName[it->second] + ")";
+    output += "\n\t" + Base32Substr(it->first) + " (" + kOpName[it->second] + ")";
   if (!output.empty())
     DLOG(WARNING) << "~AWSRemoteChunkStore() - " << pending_mod_ops_.size()
                   << " pending operations:" << output;
 
   output.clear();
   for (auto it = active_mod_ops_.begin(); it != active_mod_ops_.end(); ++it)
-    output += "\n\t" + HexSubstr(*it) + " (store or delete)";
+    output += "\n\t" + Base32Substr(*it) + " (store or delete)";
   for (auto it = active_get_ops_.begin(); it != active_get_ops_.end(); ++it)
-    output += "\n\t" + HexSubstr(*it) + " (get)";
+    output += "\n\t" + Base32Substr(*it) + " (get)";
   if (!output.empty())
     DLOG(WARNING) << "~AWSRemoteChunkStore() - " << active_ops_count_
                   << " active operations:" << output;
@@ -135,34 +135,34 @@ AWSRemoteChunkStore::~AWSRemoteChunkStore() {
 
 
 std::string AWSRemoteChunkStore::Get(const std::string &name) const {
-  DLOG(INFO) << "Get - " << HexSubstr(name);
+  DLOG(INFO) << "Get - " << Base32Substr(name);
   DoGet(name);
   std::string result(chunk_store_->Get(name));
   if (result.empty())
-    DLOG(ERROR) << "Get - Could not retrieve " << HexSubstr(name);
+    DLOG(ERROR) << "Get - Could not retrieve " << Base32Substr(name);
   return result;
 }
 
 bool AWSRemoteChunkStore::Get(const std::string &name,
                               const fs::path &sink_file_name) const {
-  DLOG(INFO) << "Get - " << HexSubstr(name);
+  DLOG(INFO) << "Get - " << Base32Substr(name);
   DoGet(name);
   bool result(chunk_store_->Get(name, sink_file_name));
   if (!result)
-    DLOG(ERROR) << "Get - Could not retrieve " << HexSubstr(name);
+    DLOG(ERROR) << "Get - Could not retrieve " << Base32Substr(name);
   return result;
 }
 
 bool AWSRemoteChunkStore::Store(const std::string &name,
                                 const std::string &content) {
-  DLOG(INFO) << "Store - " << HexSubstr(name);
+  DLOG(INFO) << "Store - " << Base32Substr(name);
   {
     boost::mutex::scoped_lock lock(mutex_);
     while (active_get_ops_.count(name) > 0)
       cond_var_.wait(lock);
   }
   if (!chunk_store_->Store(name, content)) {
-    DLOG(ERROR) << "Store - Could not store " << HexSubstr(name) << " locally.";
+    DLOG(ERROR) << "Store - Could not store " << Base32Substr(name) << " locally.";
     return false;
   }
   EnqueueModOp(kOpStore, name);
@@ -172,14 +172,14 @@ bool AWSRemoteChunkStore::Store(const std::string &name,
 bool AWSRemoteChunkStore::Store(const std::string &name,
                                 const fs::path &source_file_name,
                                 bool delete_source_file) {
-  DLOG(INFO) << "Store - " << HexSubstr(name);
+  DLOG(INFO) << "Store - " << Base32Substr(name);
   {
     boost::mutex::scoped_lock lock(mutex_);
     while (active_get_ops_.count(name) > 0)
       cond_var_.wait(lock);
   }
   if (!chunk_store_->Store(name, source_file_name, delete_source_file)) {
-    DLOG(ERROR) << "Store - Could not store " << HexSubstr(name) << " locally.";
+    DLOG(ERROR) << "Store - Could not store " << Base32Substr(name) << " locally.";
     return false;
   }
   EnqueueModOp(kOpStore, name);
@@ -187,7 +187,7 @@ bool AWSRemoteChunkStore::Store(const std::string &name,
 }
 
 bool AWSRemoteChunkStore::Delete(const std::string &name) {
-  DLOG(INFO) << "Delete - " << HexSubstr(name);
+  DLOG(INFO) << "Delete - " << Base32Substr(name);
   {
     boost::mutex::scoped_lock lock(mutex_);
     while (active_get_ops_.count(name) > 0)
@@ -195,7 +195,7 @@ bool AWSRemoteChunkStore::Delete(const std::string &name) {
   }
   bool result(chunk_store_->Delete(name));
   if (!result)
-    DLOG(WARNING) << "Delete - Could not delete " << HexSubstr(name)
+    DLOG(WARNING) << "Delete - Could not delete " << Base32Substr(name)
                   << " locally.";
   EnqueueModOp(kOpDelete, name);
   return result;
@@ -203,14 +203,14 @@ bool AWSRemoteChunkStore::Delete(const std::string &name) {
 
 bool AWSRemoteChunkStore::Modify(const std::string &name,
                                  const std::string &content) {
-  DLOG(INFO) << "Modify - " << HexSubstr(name);
+  DLOG(INFO) << "Modify - " << Base32Substr(name);
   return Delete(name) && Store(name, content);
 }
 
 bool AWSRemoteChunkStore::Modify(const std::string &name,
                                  const fs::path &source_file_name,
                                  bool delete_source_file) {
-  DLOG(INFO) << "Modify - " << HexSubstr(name);
+  DLOG(INFO) << "Modify - " << Base32Substr(name);
   return Delete(name) && Store(name, source_file_name, delete_source_file);
 }
 
@@ -243,7 +243,7 @@ void AWSRemoteChunkStore::OnOpResult(OperationType op_type,
     } else {
       failed_ops_.push_back(std::make_pair(name, op_type));
       DLOG(ERROR) << "OnOpResult - Op '" << kOpName[op_type] << "' for "
-                  << HexSubstr(name) << " failed. (" << result << ")";
+                  << Base32Substr(name) << " failed. (" << result << ")";
       // TODO(Steve) re-enqueue op for retry, but needs counter
     }
 
@@ -336,7 +336,7 @@ void AWSRemoteChunkStore::EnqueueModOp(OperationType op_type,
             pending_mod_ops_.erase(--rit.base());
             --store_op_count_;
             DLOG(INFO) << "EnqueueModOp - Ignored delete and removed pending "
-                      << "store for " << HexSubstr(name);
+                      << "store for " << Base32Substr(name);
             return;
           }
         }
