@@ -189,10 +189,10 @@ ADD_EXECUTABLE(LifestuffDemoAWS ${ALL_FILES_LIFESTUFF_DEMO_DIR})
 
 SET(TEST_EXECUTABLES
       TESTlifestuff
-      TESTauthentication_local
-      TESTclientcontroller_local
       TESTauthentication_aws
-      TESTclientcontroller_aws)
+      TESTclientcontroller_aws
+      TESTauthentication_local
+      TESTclientcontroller_local)
 SET(DEMO_EXECUTABLES
       LifestuffDemoLocal
       LifestuffDemoAWS)

@@ -115,13 +115,13 @@ class AuthenticationTest : public testing::Test {
 
 TEST_F(AuthenticationTest, FUNC_CreateUserSysPackets) {
   username_ += "01";
-  EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
+  ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
 }
 
 TEST_F(AuthenticationTest, FUNC_GoodLogin) {
   username_ += "02";
-  EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
+  ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
                                                        ser_dm_,
@@ -151,7 +151,7 @@ TEST_F(AuthenticationTest, FUNC_GoodLogin) {
 
 TEST_F(AuthenticationTest, FUNC_LoginNoUser) {
   username_ += "03";
-  EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
+  ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
                                                        ser_dm_,
@@ -165,7 +165,7 @@ TEST_F(AuthenticationTest, FUNC_LoginNoUser) {
 
 TEST_F(AuthenticationTest, FUNC_RegisterUserOnce) {
   username_ += "04";
-  EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
+  ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
                                                        ser_dm_,
@@ -178,7 +178,7 @@ TEST_F(AuthenticationTest, FUNC_RegisterUserOnce) {
 
 TEST_F(AuthenticationTest, FUNC_RegisterUserTwice) {
   username_ += "05";
-  EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
+  ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
                                                        ser_dm_,
@@ -189,14 +189,14 @@ TEST_F(AuthenticationTest, FUNC_RegisterUserTwice) {
 
 TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionBlocking) {
   username_ += "06";
-  EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
+  ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
                                                        ser_dm_,
                                                        surrogate_ser_dm_));
   std::string original_tmidname =
       session_->passport_->PacketName(passport::kTmid, true);
-  EXPECT_FALSE(original_tmidname.empty());
+  ASSERT_FALSE(original_tmidname.empty());
 
   // store current mid, smid and tmid details to check later whether they remain
   // on the network
@@ -209,21 +209,21 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionBlocking) {
   std::string stmidname(
       session_->passport_->PacketName(passport::kStmid, true));
 
-  EXPECT_TRUE(packet_manager_->KeyUnique(original_tmidname));
-  EXPECT_FALSE(packet_manager_->KeyUnique(stmidname));
-  EXPECT_FALSE(packet_manager_->KeyUnique(tmidname));
+  ASSERT_TRUE(packet_manager_->KeyUnique(original_tmidname));
+  ASSERT_FALSE(packet_manager_->KeyUnique(stmidname));
+  ASSERT_FALSE(packet_manager_->KeyUnique(tmidname));
 }
 
 TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionCallbacks) {
   username_ += "07";
-  EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
+  ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
                                                        ser_dm_,
                                                        surrogate_ser_dm_));
   std::string original_tmidname =
       session_->passport_->PacketName(passport::kTmid, true);
-  EXPECT_FALSE(original_tmidname.empty());
+  ASSERT_FALSE(original_tmidname.empty());
 
   // store current mid, smid and tmid details to check later whether they remain
   // on the network
@@ -238,12 +238,12 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionCallbacks) {
   authentication_.SaveSession(ser_dm_, std::bind(&CallbackObject::IntCallback,
                                                  &cb, arg::_1));
   ASSERT_EQ(kSuccess, cb.WaitForIntResult());
-  EXPECT_TRUE(packet_manager_->KeyUnique(original_tmidname));
+  ASSERT_TRUE(packet_manager_->KeyUnique(original_tmidname));
 }
 
 TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
   username_ += "08";
-  EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
+  ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
                                                        ser_dm_,
@@ -253,8 +253,8 @@ TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
       session_->passport_->PacketName(passport::kTmid, true);
   std::string original_stmidname =
       session_->passport_->PacketName(passport::kStmid, true);
-  EXPECT_FALSE(original_tmidname.empty());
-  EXPECT_FALSE(original_stmidname.empty());
+  ASSERT_FALSE(original_tmidname.empty());
+  ASSERT_FALSE(original_stmidname.empty());
 
   ASSERT_EQ(kSuccess, authentication_.ChangeUsername(ser_dm_ + "2",
                                                      "el iuserneim"));
@@ -269,7 +269,7 @@ TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
 
 TEST_F(AuthenticationTest, FUNC_ChangePin) {
   username_ += "09";
-  EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
+  ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
                                                        ser_dm_,
@@ -279,8 +279,8 @@ TEST_F(AuthenticationTest, FUNC_ChangePin) {
       session_->passport_->PacketName(passport::kTmid, true);
   std::string original_stmidname =
       session_->passport_->PacketName(passport::kStmid, true);
-  EXPECT_FALSE(original_tmidname.empty());
-  EXPECT_FALSE(original_stmidname.empty());
+  ASSERT_FALSE(original_tmidname.empty());
+  ASSERT_FALSE(original_stmidname.empty());
 
   ASSERT_EQ(kSuccess, authentication_.ChangePin(ser_dm_ + "2", "7894"));
   ASSERT_EQ("7894", session_->pin());
@@ -320,7 +320,7 @@ TEST_F(AuthenticationTest, FUNC_ChangePassword) {
 
 TEST_F(AuthenticationTest, FUNC_RegisterLeaveRegister) {
   username_ += "13";
-  EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
+  ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
                                                        ser_dm_,

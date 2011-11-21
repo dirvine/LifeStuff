@@ -52,9 +52,7 @@ class LocalStoreManagerTest : public testing::Test {
         cb_(),
         functor_(),
         get_functor_(),
-        anmaid_private_key_(),
-        anmaid_public_key_(),
-        mpid_public_key_() {}
+        anmaid_public_key_() {}
 
   ~LocalStoreManagerTest() {}
 
@@ -67,7 +65,7 @@ class LocalStoreManagerTest : public testing::Test {
                                                cb, arg::_1));
     GenericPacket gp;
     gp.set_data(gp_value);
-    gp.set_signature(crypto::AsymSign(gp.data(), anmaid_private_key_));
+//    gp.set_signature(crypto::AsymSign(gp.data(), anmaid_private_key_));
     gp.set_hashable(false);
     gp.set_signing_id(session_->passport_->PacketName(passport::kAnmaid, true));
     std::string gp_name(crypto::Hash<crypto::SHA512>(gp.data() +
@@ -168,10 +166,8 @@ class LocalStoreManagerTest : public testing::Test {
                              &cb_,
                              arg::_1,
                              arg::_2);
-    anmaid_private_key_ = session_->passport_->PacketValue(passport::kAnmaid,
-                                                           true);
-//    anmaid_public_key_ = session_->PublicKey(passport::kAnmaid, true);
-//    mpid_public_key_ = session_->PublicKey(passport::MPID, true);
+    anmaid_public_key_ = session_->passport_->PacketValue(passport::kAnmaid,
+                                                          true);
   }
 
   void TearDown() {
@@ -196,7 +192,7 @@ class LocalStoreManagerTest : public testing::Test {
   CallbackObject cb_;
   std::function<void(int)> functor_;  // NOLINT (Dan)
   std::function<void(const std::vector<std::string>&, int)> get_functor_;
-  std::string anmaid_private_key_, anmaid_public_key_, mpid_public_key_;
+  std::string anmaid_public_key_;
 
  private:
   LocalStoreManagerTest(const LocalStoreManagerTest&);
@@ -206,7 +202,7 @@ class LocalStoreManagerTest : public testing::Test {
 TEST_F(LocalStoreManagerTest, BEH_KeyUnique) {
   GenericPacket gp;
   std::string gp_name;
-  GeneratePacket(true, &gp_name, &gp);
+  GeneratePacket(false, &gp_name, &gp);
 
   ASSERT_TRUE(sm_->KeyUnique(gp_name));
   sm_->KeyUnique(gp_name, functor_);
@@ -224,7 +220,7 @@ TEST_F(LocalStoreManagerTest, BEH_KeyUnique) {
 TEST_F(LocalStoreManagerTest, BEH_GetPacket) {
   GenericPacket gp;
   std::string gp_name;
-  GeneratePacket(true, &gp_name, &gp);
+  GeneratePacket(false, &gp_name, &gp);
   ASSERT_TRUE(sm_->KeyUnique(gp_name));
 
   cb_.Reset();
@@ -259,7 +255,7 @@ TEST_F(LocalStoreManagerTest, BEH_GetPacket) {
 TEST_F(LocalStoreManagerTest, BEH_StoreSystemPacket) {
   GenericPacket gp;
   std::string gp_name;
-  GeneratePacket(true, &gp_name, &gp);
+  GeneratePacket(false, &gp_name, &gp);
   ASSERT_TRUE(sm_->KeyUnique(gp_name));
 
   cb_.Reset();
@@ -281,7 +277,7 @@ TEST_F(LocalStoreManagerTest, BEH_StoreSystemPacket) {
 TEST_F(LocalStoreManagerTest, BEH_DeleteSystemPacketOwner) {
   GenericPacket gp;
   std::string gp_name;
-  GeneratePacket(true, &gp_name, &gp);
+  GeneratePacket(false, &gp_name, &gp);
 
   cb_.Reset();
   sm_->StorePacket(gp_name, gp.SerializeAsString(), functor_);
@@ -300,7 +296,7 @@ TEST_F(LocalStoreManagerTest, BEH_DeleteSystemPacketOwner) {
 TEST_F(LocalStoreManagerTest, BEH_DeleteSystemPacketNotOwner) {
   GenericPacket gp;
   std::string gp_name;
-  GeneratePacket(true, &gp_name, &gp);
+  GeneratePacket(false, &gp_name, &gp);
 
   cb_.Reset();
   sm_->StorePacket(gp_name, gp.SerializeAsString(), functor_);
@@ -405,7 +401,7 @@ TEST_F(LocalStoreManagerTest, BEH_UpdateSystemPacketNotOwner) {
                                    anmaid_public_key_));
 }
 
-TEST_F(LocalStoreManagerTest, FUNC_ThreadedLocalStoreManager) {
+TEST_F(LocalStoreManagerTest, DISABLED_FUNC_ThreadedLocalStoreManager) {
   const size_t kNumThreads(7);
   std::set<std::string> gp_values;
   while (gp_values.size() < kNumThreads * 2)

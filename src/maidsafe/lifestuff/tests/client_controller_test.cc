@@ -209,6 +209,7 @@ TEST_F(ClientControllerTest, FUNC_ChangeDetails) {
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Logged out.";
+  std::cout << "\n\n\n\n\n";
 
   ASSERT_EQ(kUserExists, cc_->CheckUserExists("juan.smer", pin));
   ASSERT_TRUE(cc_->ValidateUser(password));
@@ -216,17 +217,21 @@ TEST_F(ClientControllerTest, FUNC_ChangeDetails) {
   ASSERT_EQ(pin, session_->pin());
   ASSERT_EQ(password, session_->password());
   DLOG(INFO) << "Logged in.";
+  std::cout << "\n\n\n\n\n";
+
   ASSERT_TRUE(cc_->ChangePin("2207"));
   ASSERT_EQ("juan.smer", session_->username());
   ASSERT_EQ("2207", session_->pin());
   ASSERT_EQ(password, session_->password());
   DLOG(INFO) << "Changed pin.";
+  std::cout << "\n\n\n\n\n";
 
   ASSERT_TRUE(cc_->Logout());
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Logged out.";
+  std::cout << "\n\n\n\n\n";
 
   ASSERT_EQ(kUserExists, cc_->CheckUserExists("juan.smer", "2207"));
   ASSERT_TRUE(cc_->ValidateUser(password));
@@ -234,18 +239,21 @@ TEST_F(ClientControllerTest, FUNC_ChangeDetails) {
   ASSERT_EQ("2207", session_->pin());
   ASSERT_EQ(password, session_->password());
   DLOG(INFO) << "Logged in.";
+  std::cout << "\n\n\n\n\n";
 
   ASSERT_TRUE(cc_->ChangePassword("elpasguor"));
   ASSERT_EQ("juan.smer", session_->username());
   ASSERT_EQ("2207", session_->pin());
   ASSERT_EQ("elpasguor", session_->password());
   DLOG(INFO) << "Changed password.";
+  std::cout << "\n\n\n\n\n";
 
   ASSERT_TRUE(cc_->Logout());
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Logged out.";
+  std::cout << "\n\n\n\n\n";
 
   ASSERT_EQ(kUserExists, cc_->CheckUserExists("juan.smer", "2207"));
   std::string new_pwd("elpasguor");
@@ -254,12 +262,14 @@ TEST_F(ClientControllerTest, FUNC_ChangeDetails) {
   ASSERT_EQ("2207", session_->pin());
   ASSERT_EQ(new_pwd, session_->password());
   DLOG(INFO) << "Logged in. New u/p/w.";
+  std::cout << "\n\n\n\n\n";
 
   ASSERT_TRUE(cc_->Logout());
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Logged out.";
+  std::cout << "\n\n\n\n\n";
 
   ASSERT_NE(kUserExists, cc_->CheckUserExists(username, pin));
   ASSERT_NE(kUserExists, cc_->CheckUserExists("juan.smer", pin));

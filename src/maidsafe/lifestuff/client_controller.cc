@@ -264,6 +264,8 @@ bool ClientController::CreateUser(const std::string &username,
   }
   std::string ser_da(ser_da_);
 
+  // Need different timestamps
+  Sleep(boost::posix_time::milliseconds(1));
   n = SerialiseDa();
   if (n != 0) {
     DLOG(ERROR) << "Failed to serialise DA." << std::endl;

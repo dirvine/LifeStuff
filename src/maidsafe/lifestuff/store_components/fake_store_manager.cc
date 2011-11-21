@@ -211,15 +211,15 @@ void FakeStoreManager::GetPacket(const std::string &packetname,
 void FakeStoreManager::DeletePacket(const std::string &packet_name,
                                     const std::string &value,
                                     const VoidFuncOneInt &cb) {
-  DLOG(INFO) << "Deleting <" << Base32Substr(packet_name) << ", "
-             << Base32Substr(value) << ">";
-
   GenericPacket gp;
   if (!gp.ParseFromString(value)) {
     ExecReturnCodeCallback(cb, kDeletePacketFailure);
     DLOG(ERROR) << "FakeStoreManager::DeletePacket - Failure to parse value";
     return;
   }
+
+  DLOG(INFO) << "Deleting <" << Base32Substr(packet_name) << ", "
+             << Base32Substr(gp.data()) << ">";
 
   std::string public_key(GetPublicKey(gp.signing_id(), session_));
   if (public_key.empty()) {
@@ -249,15 +249,15 @@ void FakeStoreManager::DeletePacket(const std::string &packet_name,
 void FakeStoreManager::StorePacket(const std::string &packet_name,
                                    const std::string &value,
                                    const VoidFuncOneInt &cb) {
-  DLOG(INFO) << "Storing <" << Base32Substr(packet_name) << ", "
-             << Base32Substr(value) << ">";
-
   GenericPacket gp;
   if (!gp.ParseFromString(value)) {
     ExecReturnCodeCallback(cb, kStorePacketFailure);
     DLOG(ERROR) << "FakeStoreManager::StorePacket - Failure to parse value";
     return;
   }
+
+  DLOG(INFO) << "Storing <" << Base32Substr(packet_name) << ", "
+             << Base32Substr(gp.data()) << ">";
 
   std::string public_key(GetPublicKey(gp.signing_id(), session_));
   if (public_key.empty()) {
