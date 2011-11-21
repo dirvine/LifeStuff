@@ -415,7 +415,10 @@ void Authentication::SignaturePacketUniqueCallback(
       std::bind(&Authentication::SignaturePacketStoreCallback,
                 this, arg::_1, packet_type, op_status);
   SerialisedPacket packet(packet_type, session_->passport_, false);
-  packet_manager_->StorePacket(packet.name, CreateGenericPacket(packet),
+  bool confirmed(packet_type != passport::kMaid &&
+                 packet_type != passport::kPmid);
+  packet_manager_->StorePacket(packet.name,
+                               CreateGenericPacket(packet, confirmed),
                                functor);
 }
 
@@ -775,19 +778,19 @@ int Authentication::RemoveMe() {
   DeletePacket(passport::kSmid, &smid_status, NULL);
   OpStatus ansmid_status(kPending);
   DeletePacket(passport::kAnsmid, &ansmid_status, &smid_status);
-  OpStatus mpid_status(kPending);
-  DeletePacket(passport::kMpid, &mpid_status, NULL);
-  OpStatus anmpid_status(kPending);
-  DeletePacket(passport::kAnmpid, &anmpid_status, &mpid_status);
+//  OpStatus mpid_status(kPending);
+//  DeletePacket(passport::kMpid, &mpid_status, NULL);
+//  OpStatus anmpid_status(kPending);
+//  DeletePacket(passport::kAnmpid, &anmpid_status, &mpid_status);
   bool success(true);
   try {
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(
                   lock,
                   kSingleOpTimeout_ * 12,
-                  std::bind(&Authentication::FiveSystemPacketsOpDone, this,
+                  std::bind(&Authentication::FourSystemPacketsOpDone, this,
                             &anmaid_status, &antmid_status, &anmid_status,
-                            &ansmid_status, &anmpid_status));
+                            &ansmid_status));
   }
   catch(const std::exception &e) {
     DLOG(WARNING) << "Authentication::RemoveMe: " << e.what();
@@ -798,13 +801,11 @@ int Authentication::RemoveMe() {
     DLOG(INFO) << "Authentication::RemoveMe: timed out.";
 #endif
   // Really only need these to be deleted
-  if ((pmid_status == kSucceeded) && (maid_status == kSucceeded) &&
-      (tmid_status == kSucceeded) && (stmid_status == kSucceeded) &&
-      (mpid_status == kSucceeded)) {
+  if (pmid_status == kSucceeded && maid_status == kSucceeded &&
+      tmid_status == kSucceeded && stmid_status == kSucceeded) {
     return kSuccess;
-  } else {
-    return kAuthenticationError;
   }
+  return kAuthenticationError;
 }
 
 void Authentication::DeletePacket(const passport::PacketType &packet_type,
@@ -1108,7 +1109,10 @@ int Authentication::StorePacket(const SerialisedPacket &packet,
   result = kPendingResult;
   VoidFuncOneInt functor = std::bind(&Authentication::PacketOpCallback, this,
                                      arg::_1, &result);
-  packet_manager_->StorePacket(packet.name, CreateGenericPacket(packet),
+  bool confirmed(packet.type != passport::kMaid &&
+                 packet.type != passport::kPmid);
+  packet_manager_->StorePacket(packet.name,
+                               CreateGenericPacket(packet, confirmed),
                                functor);
   bool success(true);
   try {
@@ -1137,7 +1141,8 @@ int Authentication::DeletePacket(const SerialisedPacket &packet) {
   int result(kPendingResult);
   VoidFuncOneInt functor = std::bind(&Authentication::PacketOpCallback, this,
                                      arg::_1, &result);
-  packet_manager_->DeletePacket(packet.name, CreateGenericPacket(packet),
+  packet_manager_->DeletePacket(packet.name,
+                                CreateGenericPacket(packet),
                                 functor);
   bool success(true);
   try {
@@ -1193,7 +1198,8 @@ void Authentication::PacketOpCallback(int return_code, int *op_result) {
 }
 
 std::string Authentication::CreateGenericPacket(
-    const SerialisedPacket &packet) {
+    const SerialisedPacket &packet,
+    bool signing_packet_confirmed) {
   GenericPacket generic_packet;
   BOOST_ASSERT(!packet.name.empty());
   BOOST_ASSERT(!packet.value.empty());
@@ -1207,7 +1213,8 @@ std::string Authentication::CreateGenericPacket(
       break;
     case passport::kMid:
       generic_packet.set_signing_id(
-          session_->passport_->PacketName(passport::kAnmid, true));
+          session_->passport_->PacketName(passport::kAnmid,
+                                          signing_packet_confirmed));
       generic_packet.set_hashable(false);
       break;
     case passport::kAnsmid:
@@ -1215,7 +1222,8 @@ std::string Authentication::CreateGenericPacket(
       break;
     case passport::kSmid:
       generic_packet.set_signing_id(
-          session_->passport_->PacketName(passport::kAnsmid, true));
+          session_->passport_->PacketName(passport::kAnsmid,
+                                          signing_packet_confirmed));
       generic_packet.set_hashable(false);
       break;
     case passport::kAntmid:
@@ -1224,7 +1232,8 @@ std::string Authentication::CreateGenericPacket(
     case passport::kTmid:
     case passport::kStmid:
       generic_packet.set_signing_id(
-          session_->passport_->PacketName(passport::kAntmid, true));
+          session_->passport_->PacketName(passport::kAntmid,
+                                          signing_packet_confirmed));
       generic_packet.set_hashable(false);
       break;
     case passport::kAnmpid:
@@ -1232,7 +1241,8 @@ std::string Authentication::CreateGenericPacket(
       break;
     case passport::kMpid:
       generic_packet.set_signing_id(
-          session_->passport_->PacketName(passport::kAnmpid, false));
+          session_->passport_->PacketName(passport::kAnmpid,
+                                          signing_packet_confirmed));
       generic_packet.set_hashable(false);
       break;
     case passport::kAnmaid:
@@ -1240,11 +1250,13 @@ std::string Authentication::CreateGenericPacket(
       break;
     case passport::kMaid:
       generic_packet.set_signing_id(
-          session_->passport_->PacketName(passport::kAnmaid, false));
+          session_->passport_->PacketName(passport::kAnmaid,
+                                          signing_packet_confirmed));
       break;
     case passport::kPmid:
       generic_packet.set_signing_id(
-          session_->passport_->PacketName(passport::kMaid, false));
+          session_->passport_->PacketName(passport::kMaid,
+                                          signing_packet_confirmed));
       break;
     default:
       break;

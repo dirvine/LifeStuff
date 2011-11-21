@@ -221,13 +221,12 @@ class Authentication {
            (*op_status3 != kPending);
   }
   // Designed to be called as functor in timed_wait - user_info mutex locked
-  bool FiveSystemPacketsOpDone(OpStatus *op_status1,
+  bool FourSystemPacketsOpDone(OpStatus *op_status1,
                                OpStatus *op_status2,
                                OpStatus *op_status3,
-                               OpStatus *op_status4,
-                               OpStatus *op_status5) {
-    return ThreeSystemPacketsOpDone(op_status1, op_status2, op_status3) &&
-           TwoSystemPacketsOpDone(op_status4, op_status5);
+                               OpStatus *op_status4) {
+    return TwoSystemPacketsOpDone(op_status1, op_status2) &&
+           TwoSystemPacketsOpDone(op_status3, op_status4);
   }
   // Designed to be called as functor in timed_wait - user_info mutex locked
   bool PacketOpDone(int *return_code) { return *return_code != kPendingResult; }
@@ -235,7 +234,8 @@ class Authentication {
   int DeletePacket(const SerialisedPacket &packet);
   int PacketUnique(const SerialisedPacket &packet);
   void PacketOpCallback(int return_code, int *op_result);
-  std::string CreateGenericPacket(const SerialisedPacket &packet);
+  std::string CreateGenericPacket(const SerialisedPacket &packet,
+                                  bool signing_packet_confirmed = true);
   std::string DebugStr(const passport::PacketType &packet_type);
 
 
