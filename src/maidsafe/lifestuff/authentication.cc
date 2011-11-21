@@ -993,6 +993,7 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
 //    session_->passport_->RevertUserDataChange();
     return kAuthenticationError;
   }
+
   // Prepare to delete old packets
   result = kPendingResult;
   save_session_data->process_mid = kPending;
@@ -1016,8 +1017,8 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
   // Delete old TMID
 //  DLOG(ERROR) << "Delete old TMID " << HexSubstr(old_tmid.name) << "\t" << HexSubstr(old_tmid.value);
   callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
-                       passport::kSmid, save_session_data);
-  packet_manager_->DeletePacket(old_smid.name, CreateGenericPacket(old_smid),
+                       passport::kTmid, save_session_data);
+  packet_manager_->DeletePacket(old_tmid.name, CreateGenericPacket(old_tmid),
                                 callback);
   // Delete old STMID
 //  DLOG(ERROR) << "Delete old STMID " << HexSubstr(old_stmid.name) << "\t" << HexSubstr(old_stmid.value);
