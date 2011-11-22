@@ -311,12 +311,12 @@ IF(${PACKAGE_BUILD})
     SET(CPACK_STRIP_FILES "true")
     IF(UNIX AND NOT APPLE)
       # Linux requires lower case package names
-      SET(CPACK_PACKAGE_NAME "lifestuff_client")
+      SET(CPACK_PACKAGE_NAME "LifeStuff")
       SET(CMAKE_INSTALL_PREFIX /opt/maidsafe/lifestuff)
       SET(CPACK_TOPLEVEL_TAG ${CMAKE_INSTALL_PREFIX})
       SET(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
       INSTALL(TARGETS LifestuffDemo RUNTIME DESTINATION .)
-      INSTALL(FILES ${PROJECT_SOURCE_DIR}/installer/linux/scripts/lifestuff_client.desktop DESTINATION .)
+      INSTALL(FILES ${PROJECT_SOURCE_DIR}/installer/linux/scripts/lifestuff.desktop DESTINATION .)
       INSTALL(FILES ${PROJECT_SOURCE_DIR}/installer/common/icons/WinLinux/installer.ico DESTINATION .)
       EXECUTE_PROCESS(
         COMMAND /usr/bin/dpkg --print-architecture
@@ -419,7 +419,7 @@ ELSE() # Installing the library
     CHECK_INSTALL_HEADER_HAS_VERSION_GUARD(${LIFESTUFF_LIFESTUFF_STORE_COMPONENTS_INSTALL_FILE})
   ENDFOREACH()
 
-  SET(EXPORT_NAME lifestuff_client)
+  SET(EXPORT_NAME lifestuff)
   INSTALL(TARGETS lifestuff_static lifestuff_local_store_static lifestuff_aws_store_static EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
   INSTALL(FILES ${LIFESTUFF_LIFESTUFF_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff)
   INSTALL(FILES ${LIFESTUFF_LIFESTUFF_STORE_COMPONENTS_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff/store_components)
