@@ -96,7 +96,7 @@ class ClientController : public lifestuff::UserCredentials {
   int Init() {
     if (initialised_)
       return kSuccess;
-    packet_manager_.reset(new T(session_));
+    packet_manager_.reset(new T(session_, ""));
     return Initialise();
   }
   bool initialised() const { return initialised_; }

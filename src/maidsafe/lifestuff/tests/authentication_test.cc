@@ -50,7 +50,7 @@ class AuthenticationTest : public testing::Test {
       : test_dir_(maidsafe::test::CreateTestPath()),
         session_(new Session),
 #if defined AMAZON_WEB_SERVICE_STORE
-        packet_manager_(new AWSStoreManager(session_)),
+        packet_manager_(new AWSStoreManager(session_, *test_dir_)),
 #else
         packet_manager_(new LocalStoreManager(session_, test_dir_->string())),
 #endif

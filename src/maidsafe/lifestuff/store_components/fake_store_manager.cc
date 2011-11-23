@@ -44,11 +44,13 @@ void PrintDebugInfo(const std::string &packet_name,
                     const std::string &op_type) {
   if (value2.empty())
     DLOG(WARNING) << "FakeStoreManager::" << op_type << " - <key, value>("
-                  << Base32Substr(packet_name) << ", " << Base32Substr(value1) << ")";
+                  << Base32Substr(packet_name) << ", " << Base32Substr(value1)
+                  << ")";
   else
     DLOG(WARNING) << "FakeStoreManager::" << op_type << " - <key>("
-                  << Base32Substr(packet_name) << ") value(" << Base32Substr(value1)
-                  << " --> " << Base32Substr(value2) << ")";
+                  << Base32Substr(packet_name) << ") value("
+                  << Base32Substr(value1) << " --> " << Base32Substr(value2)
+                  << ")";
 }
 
 class VeritasChunkValidation : public ChunkValidation {

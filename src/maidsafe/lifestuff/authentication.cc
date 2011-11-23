@@ -527,24 +527,20 @@ void Authentication::SaveSession(const std::string &serialised_data_atlas,
   VoidFuncOneInt callback = std::bind(&Authentication::SaveSessionCallback,
                                       this, arg::_1, passport::kSmid,
                                       save_session_data);
-//                                                DLOG(ERROR) << "Update " << DebugStr(passport::kSmid) << "\t" << Base32Substr(save_session_data->smid.name) << "\t" << Base32Substr(save_session_data->smid.value);
   packet_manager_->UpdatePacket(smid.name, old_smid_gp, smid_gp, callback);
 
   // Update MID
   callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
                        passport::kMid, save_session_data);
-//                                                DLOG(ERROR) << "Update " << DebugStr(passport::kMid) << "\t" << Base32Substr(save_session_data->mid->name()) << "\t" << Base32Substr(save_session_data->mid->value());
   packet_manager_->UpdatePacket(mid.name, old_mid_gp, mid_gp, callback);
 
   // Store new TMID
   callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
                        passport::kTmid, save_session_data);
-//                                                DLOG(ERROR) << "Store " << DebugStr(passport::kTmid) << "\t" << Base32Substr(save_session_data->tmid->name()) << "\t" << Base32Substr(save_session_data->tmid->value());
   packet_manager_->StorePacket(tmid.name, tmid_gp, callback);
   // Delete old STMID
   callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
                        passport::kStmid, save_session_data);
-//                                                DLOG(ERROR) << "Delete " << DebugStr(passport::kStmid) << "\t" << Base32Substr(save_session_data->stmid->name()) << "\t" << Base32Substr(save_session_data->stmid->value());
   packet_manager_->DeletePacket(old_stmid.name, old_stmid_gp, callback);
 }
 
@@ -560,23 +556,15 @@ void Authentication::SaveSessionCallback(int return_code,
   boost::mutex::scoped_lock lock(mutex_);
   switch (packet_type) {
     case passport::kMid:
-//      DLOG(WARNING) << "Authentication::SaveSessionCallback MID: Return Code "
-//                    << return_code << " - " << Base32Substr(packet->name());
       save_session_data->process_mid = op_status;
       break;
     case passport::kSmid:
-//      DLOG(WARNING) << "Authentication::SaveSessionCallback SMID: Return Code "
-//                    << return_code << " - " << Base32Substr(packet->name());
       save_session_data->process_smid = op_status;
       break;
     case passport::kTmid:
-//      DLOG(WARNING) << "Authentication::SaveSessionCallback TMID: Return Code "
-//                    << return_code << " - " << Base32Substr(packet->name());
       save_session_data->process_tmid = op_status;
       break;
     case passport::kStmid:
-//      DLOG(WARNING) << "Authentication::SaveSessionCallback STMID: Return Code "
-//                    << return_code << " - " << Base32Substr(packet->name());
       save_session_data->process_stmid = op_status;
       break;
     default:
@@ -693,16 +681,16 @@ int Authentication::CreateMsidPacket(std::string *msid_name,
 //  result = session_->private_share_handler()->AddPrivateShare(
 //              attributes, share_stats, NULL);
 //  if (result != kSuccess) {
-//    DLOG(ERROR) << "Authentication::CreateMsidPacket: failed adding to session";
+//  DLOG(ERROR) << "Authentication::CreateMsidPacket: failed adding to session";
 //    session_->private_share_handler()->DeletePrivateShare(
 //        msid->name(), 0);
     return kAuthenticationError;
 //  }
 //  result = StorePacket(msid, true, passport::MSID);
-//#ifdef DEBUG
+// #ifdef DEBUG
 //  if (result != kSuccess)
 //    DLOG(ERROR) << "Authentication::CreateMsidPacket: Failed storing MSID";
-//#endif
+// #endif
 //  // Remove the share from the session again to allow CC to add it fully.
 //  session_->private_share_handler()->DeletePrivateShare(
 //      msid->name(), 0);
@@ -902,11 +890,6 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
                    tmid(passport::kTmid, session_->passport_, false),
                    stmid(passport::kStmid, session_->passport_, false);
 
-  std::cout << "\n\n\n\tOLD TMID: " << Base32Substr(old_tmid.name) << ", " << Base32Substr(old_tmid.value);
-  std::cout << "\tNEW TMID: " << Base32Substr(tmid.name) << ", " << Base32Substr(tmid.value) << std::endl;
-  std::cout << "\n\n\n\tOLD STMID: " << Base32Substr(old_stmid.name) << ", " << Base32Substr(old_stmid.value);
-  std::cout << "\tNEW STMID: " << Base32Substr(stmid.name) << ", " << Base32Substr(stmid.value) << std::endl;
-
   result = kPendingResult;
   VoidFuncOneInt uniqueness_functor =
       std::bind(&Authentication::PacketOpCallback, this, arg::_1, &result);
@@ -963,22 +946,18 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
       std::bind(&Authentication::PacketOpCallback, this, arg::_1, &result);
   save_session_data->op_type = kSaveNew;
   // Store new MID
-//  DLOG(ERROR) << "Store " << DebugStr(passport::kMid) << "\t" << Base32Substr(mid.name) << "\t" << Base32Substr(mid.value);
   callback = std::bind(&Authentication::SaveSessionCallback,
                        this, arg::_1, passport::kMid, save_session_data);
   packet_manager_->StorePacket(mid.name, CreateGenericPacket(mid), callback);
   // Store new SMID
-//  DLOG(ERROR) << "Store " << DebugStr(passport::kSmid) << "\t" << Base32Substr(smid.name) << "\t" << Base32Substr(smid.value);
   callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
                        passport::kSmid, save_session_data);
   packet_manager_->StorePacket(smid.name, CreateGenericPacket(smid), callback);
   // Store new TMID
-//  DLOG(ERROR) << "Store " << DebugStr(passport::kTmid) << "\t" << Base32Substr(tmid.name) << "\t" << Base32Substr(tmid.value);
   callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
                        passport::kTmid, save_session_data);
   packet_manager_->StorePacket(tmid.name, CreateGenericPacket(tmid), callback);
   // Store new STMID
-  DLOG(ERROR) << "\n\n\nStore " << DebugStr(passport::kStmid) << "\t" << Base32Substr(stmid.name) << "\t" << Base32Substr(stmid.value) << "\n\n\n";
   callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
                        passport::kStmid, save_session_data);
   packet_manager_->StorePacket(stmid.name, CreateGenericPacket(stmid),
@@ -1011,25 +990,21 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
   save_session_data->functor =
       std::bind(&Authentication::PacketOpCallback, this, arg::_1, &result);
   save_session_data->op_type = kDeleteOld;  // Delete old MID
-//  DLOG(ERROR) << "Delete old MID " << Base32Substr(old_mid.name) << "\t" << Base32Substr(old_mid.value);
   callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
                         passport::kMid, save_session_data);
   packet_manager_->DeletePacket(old_mid.name, CreateGenericPacket(old_mid),
                                 callback);
   // Delete old SMID
-//  DLOG(ERROR) << "Delete old SMID " << Base32Substr(old_smid.name) << "\t" << Base32Substr(old_smid.value);
   callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
                         passport::kSmid, save_session_data);
   packet_manager_->DeletePacket(old_smid.name, CreateGenericPacket(old_smid),
                                 callback);
   // Delete old TMID
-//  DLOG(ERROR) << "Delete old TMID " << Base32Substr(old_tmid.name) << "\t" << Base32Substr(old_tmid.value);
   callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
                        passport::kTmid, save_session_data);
   packet_manager_->DeletePacket(old_tmid.name, CreateGenericPacket(old_tmid),
                                 callback);
   // Delete old STMID
-//  DLOG(ERROR) << "Delete old STMID " << Base32Substr(old_stmid.name) << "\t" << Base32Substr(old_stmid.value);
   callback = std::bind(&Authentication::SaveSessionCallback, this, arg::_1,
                        passport::kStmid, save_session_data);
   packet_manager_->DeletePacket(old_stmid.name, CreateGenericPacket(old_stmid),

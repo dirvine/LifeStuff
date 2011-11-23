@@ -35,7 +35,9 @@ namespace lifestuff {
 
 class AWSChunkManager : public pd::ChunkManager {
  public:
-  explicit AWSChunkManager(std::shared_ptr<ChunkStore> chunk_store);
+  AWSChunkManager(std::shared_ptr<ChunkStore> chunk_store,
+                  const std::string &bucket_name);
+  ~AWSChunkManager();
 
   void GetChunk(const std::string &name);
   void StoreChunk(const std::string &name);

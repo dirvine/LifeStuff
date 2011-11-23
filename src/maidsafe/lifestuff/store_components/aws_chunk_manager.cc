@@ -27,9 +27,19 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-AWSChunkManager::AWSChunkManager(std::shared_ptr<ChunkStore> chunk_store)
+AWSChunkManager::AWSChunkManager(std::shared_ptr<ChunkStore> chunk_store,
+                                 const std::string &bucket_name)
     : ChunkManager(chunk_store),
-      amazon_web_service_(new aws_transporter::AWSTransporter) {}
+      amazon_web_service_() {
+  std::string lowercase(bucket_name);
+  boost::algorithm::to_lower(lowercase);
+  amazon_web_service_ = std::shared_ptr<aws_transporter::AWSTransporter>(
+      new aws_transporter::AWSTransporter(lowercase));
+}
+
+AWSChunkManager::~AWSChunkManager() {
+  amazon_web_service_->DeleteBucket();
+}
 
 void AWSChunkManager::GetChunk(const std::string &name) {
   if (chunk_store_->Has(name)) {

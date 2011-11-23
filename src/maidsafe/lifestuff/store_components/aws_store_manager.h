@@ -20,6 +20,8 @@
 
 #include <memory>
 
+#include "boost/filesystem/path.hpp"
+
 #include "maidsafe/lifestuff/store_components/fake_store_manager.h"
 #include "maidsafe/lifestuff/version.h"
 
@@ -41,7 +43,8 @@ class Session;
 
 class AWSStoreManager : public FakeStoreManager {
  public:
-  explicit AWSStoreManager(std::shared_ptr<Session> session);
+  AWSStoreManager(std::shared_ptr<Session> session,
+                  const boost::filesystem::path &buffered_chunk_store_dir);
   ~AWSStoreManager();
   void Init(VoidFuncOneInt callback);
  private:
@@ -49,6 +52,7 @@ class AWSStoreManager : public FakeStoreManager {
   AWSStoreManager(const AWSStoreManager&);
   std::shared_ptr<BufferedChunkStore> buffered_chunk_store_;
   std::shared_ptr<pd::ChunkManager> chunk_manager_;
+  boost::filesystem::path buffered_chunk_store_dir_;
 };
 
 }  // namespace lifestuff

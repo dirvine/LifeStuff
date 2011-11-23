@@ -108,9 +108,11 @@ class LocalStoreManagerTest : public testing::Test {
     // Section 3 - Update Packet as Owner and Check val
 //    GenericPacket new_gp;
 //    new_gp.set_data(new_gp_value);
-//    new_gp.set_signature(crypto::AsymSign(new_gp.data(), anmaid_private_key_));
+//    new_gp.set_signature(crypto::AsymSign(new_gp.data(),
+//                                          anmaid_private_key_));
 //    new_gp.set_hashable(false);
-//    new_gp.set_signing_id(session_->passport_->PacketName(passport::kAnmaid, true));
+//    new_gp.set_signing_id(session_->passport_->PacketName(passport::kAnmaid,
+//                                                          true));
 //    sm_->UpdatePacket(gp_name,
 //                      gp.SerializeAsString(),
 //                      new_gp.SerializeAsString(),
