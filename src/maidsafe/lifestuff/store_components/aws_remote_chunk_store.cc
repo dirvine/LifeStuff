@@ -49,6 +49,9 @@ AWSRemoteChunkStore::AWSRemoteChunkStore(
           sig_chunk_deleted_(new pd::ChunkManager::ChunkDeleted::element_type),
           chunk_store_(chunk_store),
           chunk_manager_(chunk_manager),
+          cm_get_conn_(),
+          cm_store_conn_(),
+          cm_delete_conn_(),
           mutex_(),
           cond_var_(),
           max_active_ops_(kMaxActiveOps),
@@ -60,9 +63,11 @@ AWSRemoteChunkStore::AWSRemoteChunkStore(
           get_op_count_(0),
           store_op_count_(0),
           delete_op_count_(0),
+          modify_op_count_(0),
           get_success_count_(0),
           store_success_count_(0),
           delete_success_count_(0),
+          modify_success_count_(0),
           get_total_size_(0),
           store_total_size_(0) {
   boost::mutex::scoped_lock lock(mutex_);
@@ -82,17 +87,21 @@ AWSRemoteChunkStore::AWSRemoteChunkStore(
 //           &AWSRemoteChunkStore::OnOpResult, this, kOpDelete, arg::_1,
 //           arg::_2)).track_foreign(shared_from_this()));
 
-  chunk_manager_->sig_chunk_got()->connect(std::bind(
+  cm_get_conn_ = chunk_manager_->sig_chunk_got()->connect(std::bind(
       &AWSRemoteChunkStore::OnOpResult, this, kOpGet, arg::_1, arg::_2));
 
-  chunk_manager_->sig_chunk_stored()->connect(std::bind(
+  cm_store_conn_ = chunk_manager_->sig_chunk_stored()->connect(std::bind(
       &AWSRemoteChunkStore::OnOpResult, this, kOpStore, arg::_1, arg::_2));
 
-  chunk_manager_->sig_chunk_deleted()->connect(std::bind(
+  cm_delete_conn_ = chunk_manager_->sig_chunk_deleted()->connect(std::bind(
       &AWSRemoteChunkStore::OnOpResult, this, kOpDelete, arg::_1, arg::_2));
 }
 
 AWSRemoteChunkStore::~AWSRemoteChunkStore() {
+  cm_get_conn_.disconnect();
+  cm_store_conn_.disconnect();
+  cm_delete_conn_.disconnect();
+
   boost::mutex::scoped_lock lock(mutex_);
 
   DLOG(INFO) << "~AWSRemoteChunkStore() - Retrieved " << get_success_count_
@@ -103,24 +112,26 @@ AWSRemoteChunkStore::~AWSRemoteChunkStore() {
              << BytesToBinarySiUnits(store_total_size_) << ").";
   DLOG(INFO) << "~AWSRemoteChunkStore() - Deleted " << delete_success_count_
              << " of " << delete_op_count_ << " chunks.";
+  DLOG(INFO) << "~AWSRemoteChunkStore() - Modified " << modify_success_count_
+             << " of " << modify_op_count_ << " chunks.";
 
   std::string output;
   for (auto it = failed_ops_.begin(); it != failed_ops_.end(); ++it)
-    output += "\n\t" + Base32Substr(it->first) + " (" + kOpName[it->second] + ")";
+    output += "\n\t" + Base32Substr(it->first) + " (" + kOpName[it->second]+")";
   if (!output.empty())
     DLOG(WARNING) << "~AWSRemoteChunkStore() - " << failed_ops_.size()
                   << " failed operations:" << output;
 
   output.clear();
   for (auto it = pending_mod_ops_.begin(); it != pending_mod_ops_.end(); ++it)
-    output += "\n\t" + Base32Substr(it->first) + " (" + kOpName[it->second] + ")";
+    output += "\n\t" + Base32Substr(it->first) + " (" + kOpName[it->second]+")";
   if (!output.empty())
     DLOG(WARNING) << "~AWSRemoteChunkStore() - " << pending_mod_ops_.size()
                   << " pending operations:" << output;
 
   output.clear();
   for (auto it = active_mod_ops_.begin(); it != active_mod_ops_.end(); ++it)
-    output += "\n\t" + Base32Substr(*it) + " (store or delete)";
+    output += "\n\t" + Base32Substr(*it) + " (store, delete or modify)";
   for (auto it = active_get_ops_.begin(); it != active_get_ops_.end(); ++it)
     output += "\n\t" + Base32Substr(*it) + " (get)";
   if (!output.empty())
@@ -162,7 +173,8 @@ bool AWSRemoteChunkStore::Store(const std::string &name,
       cond_var_.wait(lock);
   }
   if (!chunk_store_->Store(name, content)) {
-    DLOG(ERROR) << "Store - Could not store " << Base32Substr(name) << " locally.";
+    DLOG(ERROR) << "Store - Could not store " << Base32Substr(name)
+                << " locally.";
     return false;
   }
   EnqueueModOp(kOpStore, name);
@@ -179,7 +191,8 @@ bool AWSRemoteChunkStore::Store(const std::string &name,
       cond_var_.wait(lock);
   }
   if (!chunk_store_->Store(name, source_file_name, delete_source_file)) {
-    DLOG(ERROR) << "Store - Could not store " << Base32Substr(name) << " locally.";
+    DLOG(ERROR) << "Store - Could not store " << Base32Substr(name)
+                << " locally.";
     return false;
   }
   EnqueueModOp(kOpStore, name);
@@ -204,14 +217,34 @@ bool AWSRemoteChunkStore::Delete(const std::string &name) {
 bool AWSRemoteChunkStore::Modify(const std::string &name,
                                  const std::string &content) {
   DLOG(INFO) << "Modify - " << Base32Substr(name);
-  return Delete(name) && Store(name, content);
+  {
+    boost::mutex::scoped_lock lock(mutex_);
+    while (active_get_ops_.count(name) > 0)
+      cond_var_.wait(lock);
+  }
+  bool result(chunk_store_->Modify(name, content));
+  if (!result)
+    DLOG(WARNING) << "Modify - Could not modify " << Base32Substr(name)
+                  << " locally.";
+  EnqueueModOp(kOpModify, name);
+  return result;
 }
 
 bool AWSRemoteChunkStore::Modify(const std::string &name,
                                  const fs::path &source_file_name,
                                  bool delete_source_file) {
   DLOG(INFO) << "Modify - " << Base32Substr(name);
-  return Delete(name) && Store(name, source_file_name, delete_source_file);
+  {
+    boost::mutex::scoped_lock lock(mutex_);
+    while (active_get_ops_.count(name) > 0)
+      cond_var_.wait(lock);
+  }
+  bool result(chunk_store_->Modify(name, source_file_name, delete_source_file));
+  if (!result)
+    DLOG(WARNING) << "Modify - Could not modify " << Base32Substr(name)
+                  << " locally.";
+  EnqueueModOp(kOpModify, name);
+  return result;
 }
 
 bool AWSRemoteChunkStore::WaitForCompletion() {
@@ -267,6 +300,11 @@ void AWSRemoteChunkStore::OnOpResult(OperationType op_type,
         if (result == kSuccess)
           ++delete_success_count_;
         break;
+      case kOpModify:
+        active_mod_ops_.erase(name);
+        if (result == kSuccess)
+          ++modify_success_count_;
+        break;
     }
 
     cond_var_.notify_all();
@@ -283,6 +321,9 @@ void AWSRemoteChunkStore::OnOpResult(OperationType op_type,
       (*sig_chunk_stored_)(name, result);
       break;
     case kOpDelete:
+      (*sig_chunk_deleted_)(name, result);
+      break;
+    case kOpModify:
       (*sig_chunk_deleted_)(name, result);
       break;
   }
@@ -317,7 +358,7 @@ void AWSRemoteChunkStore::DoGet(const std::string &name) const {
 
 void AWSRemoteChunkStore::EnqueueModOp(OperationType op_type,
                                        const std::string &name) {
-  if (op_type != kOpStore && op_type != kOpDelete) {
+  if (op_type != kOpStore && op_type != kOpDelete && op_type != kOpModify) {
     DLOG(ERROR) << "EnqueueModOp - Invalid operation type passed: " << op_type;
     return;
   }
@@ -336,11 +377,14 @@ void AWSRemoteChunkStore::EnqueueModOp(OperationType op_type,
             pending_mod_ops_.erase(--rit.base());
             --store_op_count_;
             DLOG(INFO) << "EnqueueModOp - Ignored delete and removed pending "
-                      << "store for " << Base32Substr(name);
+                       << "store for " << Base32Substr(name);
             return;
           }
         }
         ++delete_op_count_;
+        break;
+      case kOpModify:
+        ++modify_op_count_;
         break;
       default:
         break;
@@ -377,6 +421,10 @@ void AWSRemoteChunkStore::ProcessPendingOps() {
         break;
       case kOpDelete:
         chunk_manager_->DeleteChunk(name);
+        break;
+      case kOpModify:
+        std::static_pointer_cast<AWSChunkManager>(chunk_manager_)->
+            ModifyChunk(name);
         break;
       default:
         // Get is handled separately

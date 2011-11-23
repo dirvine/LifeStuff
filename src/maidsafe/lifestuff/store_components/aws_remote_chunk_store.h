@@ -49,7 +49,8 @@ class AWSRemoteChunkStore : public ChunkStore {
   enum OperationType {
     kOpGet = 0,
     kOpStore = 1,
-    kOpDelete = 2
+    kOpDelete = 2,
+    kOpModify = 3
   };
   static const std::string kOpName[];  // see implementation
 
@@ -108,10 +109,6 @@ class AWSRemoteChunkStore : public ChunkStore {
     return 0;  // chunk_store_->Capacity();
   }
 
-  void SetCapacity(const std::uintmax_t&) {
-    // chunk_store_->SetCapacity(capacity);
-  }
-
   bool Vacant(const std::uintmax_t&) const {
     return true;  // return chunk_store_->Vacant(size);
   }
@@ -166,14 +163,16 @@ class AWSRemoteChunkStore : public ChunkStore {
   pd::ChunkManager::ChunkDeleted sig_chunk_deleted_;
   std::shared_ptr<BufferedChunkStore> chunk_store_;
   std::shared_ptr<pd::ChunkManager> chunk_manager_;
+  bs2::connection cm_get_conn_, cm_store_conn_, cm_delete_conn_;
   mutable boost::mutex mutex_;
   mutable boost::condition_variable cond_var_;
   mutable int max_active_ops_, active_ops_count_;
   mutable std::set<std::string> active_get_ops_, active_mod_ops_;
   mutable std::list<Operation> pending_mod_ops_, failed_ops_;
-  mutable std::uintmax_t get_op_count_, store_op_count_, delete_op_count_;
+  mutable std::uintmax_t get_op_count_, store_op_count_, delete_op_count_,
+                         modify_op_count_;
   std::uintmax_t get_success_count_, store_success_count_,
-                 delete_success_count_;
+                 delete_success_count_, modify_success_count_;
   std::uintmax_t get_total_size_, store_total_size_;
 };
 

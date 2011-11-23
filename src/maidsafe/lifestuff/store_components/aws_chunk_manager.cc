@@ -66,16 +66,16 @@ void AWSChunkManager::StoreChunk(const std::string &name) {
   }
 
   std::string encoded_name(EncodeToBase32(name));
-  uintmax_t instance_count(0);
-  if (amazon_web_service_->GetInstanceCount(encoded_name, &instance_count) !=
+  uintmax_t reference_count(0);
+  if (amazon_web_service_->GetReferenceCount(encoded_name, &reference_count) !=
       aws_transporter::AWSTransporter::kSuccess) {
-    DLOG(ERROR) << "Failed to get instance count while storing chunk "
+    DLOG(ERROR) << "Failed to get reference count while storing chunk "
                 << Base32Substr(name) << " in AWS";
     (*sig_chunk_stored_)(name, pd::kGeneralError);
     return;
   }
 
-  if (instance_count == 0) {
+  if (reference_count == 0) {
     if (amazon_web_service_->Upload(encoded_name, content) !=
         aws_transporter::AWSTransporter::kSuccess) {
       DLOG(ERROR) << "Failed to put chunk " << Base32Substr(name) << " to AWS";
@@ -83,10 +83,11 @@ void AWSChunkManager::StoreChunk(const std::string &name) {
       return;
     }
   } else {
-    if (amazon_web_service_->SetInstanceCount(encoded_name, ++instance_count) !=
-        aws_transporter::AWSTransporter::kSuccess) {
-      DLOG(ERROR) << "Failed to increase instance count of chunk "
-                  << Base32Substr(name) << " to " << instance_count << " in AWS";
+    if (amazon_web_service_->SetReferenceCount(encoded_name, ++reference_count)
+        != aws_transporter::AWSTransporter::kSuccess) {
+      DLOG(ERROR) << "Failed to increase reference count of chunk "
+                  << Base32Substr(name) << " to " << reference_count
+                  << " in AWS";
       (*sig_chunk_stored_)(name, pd::kGeneralError);
       return;
     }
@@ -95,33 +96,54 @@ void AWSChunkManager::StoreChunk(const std::string &name) {
 }
 
 void AWSChunkManager::DeleteChunk(const std::string &name) {
-  uintmax_t instance_count(0);
+  uintmax_t reference_count(0);
   std::string encoded_name(EncodeToBase32(name));
-  if (amazon_web_service_->GetInstanceCount(encoded_name, &instance_count) !=
+  if (amazon_web_service_->GetReferenceCount(encoded_name, &reference_count) !=
       aws_transporter::AWSTransporter::kSuccess) {
-    DLOG(ERROR) << "Failed to get instance count while deleting chunk "
+    DLOG(ERROR) << "Failed to get reference count while deleting chunk "
                 << Base32Substr(name) << " in AWS";
     (*sig_chunk_deleted_)(name, pd::kGeneralError);
     return;
   }
 
-  if (instance_count == 1) {
+  if (reference_count == 1) {
     if (amazon_web_service_->Delete(encoded_name) !=
         aws_transporter::AWSTransporter::kSuccess) {
-      DLOG(ERROR) << "Failed to del chunk " << Base32Substr(name) << " from AWS";
+      DLOG(ERROR) << "Failed to delete chunk " << Base32Substr(name)
+                  << " from AWS";
       (*sig_chunk_deleted_)(name, pd::kGeneralError);
       return;
     }
-  } else if (instance_count != 0) {
-    if (amazon_web_service_->SetInstanceCount(encoded_name, --instance_count) !=
-        aws_transporter::AWSTransporter::kSuccess) {
-      DLOG(ERROR) << "Failed to decrease instance count of chunk "
-                  << Base32Substr(name) << " to " << instance_count << " in AWS";
+  } else if (reference_count != 0) {
+    if (amazon_web_service_->SetReferenceCount(encoded_name, --reference_count)
+        != aws_transporter::AWSTransporter::kSuccess) {
+      DLOG(ERROR) << "Failed to decrease reference count of chunk "
+                  << Base32Substr(name) << " to " << reference_count
+                  << " in AWS";
       (*sig_chunk_deleted_)(name, pd::kGeneralError);
       return;
     }
   }
   (*sig_chunk_deleted_)(name, pd::kSuccess);
+}
+
+
+void AWSChunkManager::ModifyChunk(const std::string &name) {
+  std::string content(chunk_store_->Get(name));
+  if (content.empty()) {
+    (*sig_chunk_stored_)(name, pd::kGeneralError);
+    return;
+  }
+
+  std::string encoded_name(EncodeToBase32(name));
+  if (amazon_web_service_->Modify(encoded_name, content) !=
+      aws_transporter::AWSTransporter::kSuccess) {
+    DLOG(ERROR) << "Failed to modify chunk " << Base32Substr(name) << " in AWS";
+    (*sig_chunk_stored_)(name, pd::kGeneralError);
+    return;
+  }
+
+  (*sig_chunk_stored_)(name, pd::kSuccess);
 }
 
 }  // namespace pd

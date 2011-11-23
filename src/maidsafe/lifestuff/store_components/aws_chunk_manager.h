@@ -40,6 +40,7 @@ class AWSChunkManager : public pd::ChunkManager {
   void GetChunk(const std::string &name);
   void StoreChunk(const std::string &name);
   void DeleteChunk(const std::string &name);
+  void ModifyChunk(const std::string &name);
 
  private:
   AWSChunkManager(const AWSChunkManager&);
