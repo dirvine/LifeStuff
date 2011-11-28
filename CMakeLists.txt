@@ -411,6 +411,7 @@ ELSE() # Installing the library
   SET(LIFESTUFF_LIFESTUFF_STORE_COMPONENTS_INSTALL_FILES
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/packet_manager.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/fake_store_manager.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/local_store_manager.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_store_manager.h)
   FOREACH(LIFESTUFF_LIFESTUFF_INSTALL_FILE ${LIFESTUFF_LIFESTUFF_INSTALL_FILES})
     CHECK_INSTALL_HEADER_HAS_VERSION_GUARD(${LIFESTUFF_LIFESTUFF_INSTALL_FILE})
