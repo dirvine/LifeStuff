@@ -43,7 +43,7 @@ DataHandler::GetDataSignalPtr DataHandler::get_data_signal() {
 int DataHandler::ProcessData(const OperationType &op_type,
                              const std::string &name,
                              const std::string &data,
-                             const std::string &public_key,
+                             const rsa::PublicKey &public_key,
                              std::shared_ptr<ChunkStore> chunk_store) {
   if (op_type == DataHandler::kHas) {
     if (chunk_store->Has(name))
@@ -74,7 +74,7 @@ int DataHandler::ProcessData(const OperationType &op_type,
 int DataHandler::ProcessSignedData(const OperationType &op_type,
                                    const std::string &name,
                                    const DataWrapper &data_wrapper,
-                                   const std::string &public_key,
+                                   const rsa::PublicKey &public_key,
                                    const bool &hashable,
                                    std::shared_ptr<ChunkStore> chunk_store) {
   if (PreOperationChecks(op_type, name, data_wrapper, public_key, hashable) !=
@@ -141,7 +141,7 @@ int DataHandler::ProcessSignedData(const OperationType &op_type,
 int DataHandler::PreOperationChecks(const OperationType &op_type,
                                     const std::string &name,
                                     const DataWrapper &data_wrapper,
-                                    const std::string &public_key,
+                                    const rsa::PublicKey &public_key,
                                     const bool &hashable) {
   if (op_type == kGet)
     return kSuccess;
@@ -157,9 +157,9 @@ int DataHandler::PreOperationChecks(const OperationType &op_type,
   }
 
 
-  if (!crypto::AsymCheckSig(data_wrapper.signed_data().data(),
-                            data_wrapper.signed_data().signature(),
-                            public_key)) {
+  if (rsa::CheckSignature(data_wrapper.signed_data().data(),
+                          data_wrapper.signed_data().signature(),
+                          public_key) != 0) {
     DLOG(ERROR) << "ProcessSignedData - Signature verification failed";
     return kSignatureVerificationFailure;
   }
@@ -176,7 +176,7 @@ int DataHandler::PreOperationChecks(const OperationType &op_type,
 }
 
 int DataHandler::VerifyCurrentData(const std::string &name,
-                                   const std::string &public_key,
+                                   const rsa::PublicKey &public_key,
                                    std::shared_ptr<ChunkStore> chunk_store,
                                    std::string *current_data) {
   *current_data = chunk_store->Get(name);
@@ -191,11 +191,11 @@ int DataHandler::VerifyCurrentData(const std::string &name,
     return kParseFailure;
   }
 
-  if (!public_key.empty() &&
+  if (rsa::ValidateKey(public_key) &&
       dw.has_signed_data() &&
-      !crypto::AsymCheckSig(dw.signed_data().data(),
-                            dw.signed_data().signature(),
-                            public_key)) {
+      rsa::CheckSignature(dw.signed_data().data(),
+                          dw.signed_data().signature(),
+                          public_key) != 0) {
     DLOG(ERROR) << "VerifyCurrentData - Not owner of packet";
     return kNotOwner;
   }

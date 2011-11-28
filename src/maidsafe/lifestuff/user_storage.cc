@@ -60,8 +60,8 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
       std::shared_ptr<ChunkValidation>(
           new HashableChunkValidation<crypto::SHA512, crypto::Tiger>),
           asio_service_));
-  listing_handler_.reset(new DirectoryListingHandler(meta_data_dir,
-                                                     chunk_store_));
+//  listing_handler_.reset(new DirectoryListingHandler(meta_data_dir,
+//                                                     chunk_store_));
   drive_in_user_space_.reset(new MaidDriveInUserSpace(chunk_store_,
                                                       listing_handler_));
   std::static_pointer_cast<BufferedChunkStore>(

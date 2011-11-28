@@ -26,6 +26,8 @@
 
 #include "boost/signals2/signal.hpp"
 
+#include "maidsafe/common/rsa.h"
+
 namespace bs2 = boost::signals2;
 
 namespace maidsafe {
@@ -49,8 +51,8 @@ class DataHandler {
 
   int ProcessData(const OperationType &op_type,
                   const std::string &name,
-                  const std::string &public_key,
                   const std::string &data,
+                  const rsa::PublicKey &public_key,
                   std::shared_ptr<ChunkStore> chunk_store);
 
  private:
@@ -60,18 +62,18 @@ class DataHandler {
   int ProcessSignedData(const OperationType &op_type,
                         const std::string &name,
                         const DataWrapper &data,
-                        const std::string &public_key,
+                        const rsa::PublicKey &public_key,
                         const bool &hashable,
                         std::shared_ptr<ChunkStore> chunk_store);
 
   int PreOperationChecks(const OperationType &op_type,
                          const std::string &name,
                          const DataWrapper &data_wrapper,
-                         const std::string &public_key,
+                         const rsa::PublicKey &public_key,
                          const bool &hashable);
 
   int VerifyCurrentData(const std::string &name,
-                        const std::string &public_key,
+                        const rsa::PublicKey &public_key,
                         std::shared_ptr<ChunkStore> chunk_store,
                         std::string *current_data);
 

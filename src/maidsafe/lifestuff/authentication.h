@@ -31,6 +31,8 @@
 #include "boost/thread/mutex.hpp"
 #include "boost/thread/condition_variable.hpp"
 
+#include "maidsafe/common/rsa.h"
+
 #include "maidsafe/passport/passport_config.h"
 
 #include "maidsafe/lifestuff/maidsafe.h"
@@ -135,6 +137,7 @@ class Authentication {
                      bool confirmed);
     passport::PacketType type;
     std::string name, value, signature;
+    rsa::PublicKey public_key;
   };
 
   struct SaveSessionData {

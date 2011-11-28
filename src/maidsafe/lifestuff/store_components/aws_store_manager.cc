@@ -16,6 +16,8 @@
 
 #include "maidsafe/lifestuff/store_components/aws_store_manager.h"
 
+#include <string>
+
 #include "maidsafe/common/buffered_chunk_store.h"
 #include "maidsafe/common/utils.h"
 
@@ -30,6 +32,8 @@ AWSStoreManager::AWSStoreManager(
     std::shared_ptr<Session> session,
     const boost::filesystem::path &buffered_chunk_store_dir)
         : FakeStoreManager(session),
+          buffered_chunk_store_(),
+          chunk_manager_(),
           buffered_chunk_store_dir_(buffered_chunk_store_dir) {}
 
 AWSStoreManager::~AWSStoreManager() {}

@@ -271,7 +271,7 @@ void AWSRemoteChunkStore::OnOpResult(OperationType op_type,
     boost::mutex::scoped_lock lock(mutex_);
     --active_ops_count_;
 
-    if (result == kSuccess) {
+    if (result == pd::kSuccess) {
       chunk_store_->MarkForDeletion(name);
     } else {
       failed_ops_.push_back(std::make_pair(name, op_type));
@@ -283,26 +283,26 @@ void AWSRemoteChunkStore::OnOpResult(OperationType op_type,
     switch (op_type) {
       case kOpGet:
         active_get_ops_.erase(name);
-        if (result == kSuccess) {
+        if (result == pd::kSuccess) {
           ++get_success_count_;
           get_total_size_ += chunk_store_->Size(name);
         }
         break;
       case kOpStore:
         active_mod_ops_.erase(name);
-        if (result == kSuccess) {
+        if (result == pd::kSuccess) {
           ++store_success_count_;
           store_total_size_ += chunk_store_->Size(name);
         }
         break;
       case kOpDelete:
         active_mod_ops_.erase(name);
-        if (result == kSuccess)
+        if (result == pd::kSuccess)
           ++delete_success_count_;
         break;
       case kOpModify:
         active_mod_ops_.erase(name);
-        if (result == kSuccess)
+        if (result == pd::kSuccess)
           ++modify_success_count_;
         break;
     }

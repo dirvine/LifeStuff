@@ -26,6 +26,8 @@
 #include "boost/thread/thread.hpp"
 #include "boost/thread/mutex.hpp"
 
+#include "maidsafe/common/rsa.h"
+
 #include "maidsafe/lifestuff/store_components/packet_manager.h"
 #include "maidsafe/lifestuff/version.h"
 
@@ -75,7 +77,8 @@ class FakeStoreManager : public PacketManager {
   void ExecReturnLoadPacketCallback(GetPacketFunctor callback,
                                     std::vector<std::string> results,
                                     ReturnCode return_code);
-  bool ValidateGenericPacket(std::string ser_gp, std::string public_key);
+  bool ValidateGenericPacket(const std::string &ser_gp,
+                             const rsa::PublicKey &public_key);
   void CreateSerialisedSignedValue(const GenericPacket &data,
                                    std::string *ser_gp);
 

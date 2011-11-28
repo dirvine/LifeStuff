@@ -131,9 +131,10 @@ class Session {
   int ParseKeyring(const std::string &serialised_keyring);
   std::string SerialiseKeyring();
 
-  friend std::string GetPublicKey(const std::string&, std::shared_ptr<Session>);
+  friend void GetPublicKey(const std::string&,
+                           std::shared_ptr<Session>,
+                           rsa::PublicKey*);
   friend class Authentication;
-//  friend class ClientUtils;
   friend class test::SessionTest;
   friend class test::ClientControllerTest;
   friend class test::LocalStoreManagerTest;

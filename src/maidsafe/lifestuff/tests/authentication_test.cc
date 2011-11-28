@@ -59,8 +59,7 @@ class AuthenticationTest : public testing::Test {
         pin_("1234"),
         password_("password1"),
         ser_dm_(RandomString(1000)),
-        surrogate_ser_dm_(RandomString(1000)),
-        test_keys_() {}
+        surrogate_ser_dm_(RandomString(1000)) {}
 
  protected:
   void SetUp() {
@@ -106,7 +105,6 @@ class AuthenticationTest : public testing::Test {
   std::shared_ptr<PacketManager> packet_manager_;
   Authentication authentication_;
   std::string username_, pin_, password_, ser_dm_, surrogate_ser_dm_;
-  std::vector<crypto::RsaKeyPair> test_keys_;
 
  private:
   explicit AuthenticationTest(const AuthenticationTest&);

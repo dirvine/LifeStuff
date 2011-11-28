@@ -124,11 +124,13 @@ void Session::set_connection_status(int status) {
 }
 
 int Session::ParseKeyring(const std::string &serialised_keyring) {
-  return passport_->ParseKeyring(serialised_keyring);
+  return passport_->ParseKeyChain(serialised_keyring, "");
 }
 
 std::string Session::SerialiseKeyring() {
-  return passport_->SerialiseKeyring();
+  std::string a, b;
+  passport_->SerialiseKeyChain(&a, &b);
+  return a;
 }
 
 bool Session::CreateTestPackets() {

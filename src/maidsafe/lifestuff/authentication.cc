@@ -28,7 +28,9 @@
 
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
+
 #include "maidsafe/passport/passport.h"
+
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/store_components/packet_manager.h"
@@ -40,8 +42,66 @@ namespace maidsafe {
 
 namespace lifestuff {
 
+namespace {
+
+std::string DebugString(const int &packet_type) {
+  switch (packet_type) {
+    case passport::kUnknown:
+      return "unknown";
+    case passport::kMid:
+      return "MID";
+    case passport::kSmid:
+      return "SMID";
+    case passport::kTmid:
+      return "TMID";
+    case passport::kStmid:
+      return "STMID";
+    case passport::kMpid:
+      return "MPID";
+    case passport::kPmid:
+      return "PMID";
+    case passport::kMaid:
+      return "MAID";
+    case passport::kAnmid:
+      return "ANMID";
+    case passport::kAnsmid:
+      return "ANSMID";
+    case passport::kAntmid:
+      return "ANTMID";
+    case passport::kAnmpid:
+      return "ANMPID";
+    case passport::kAnmaid:
+      return "ANMAID";
+    default:
+      return "error";
+  }
+}
+
+bool IsSignature(const int &packet_type) {
+  switch (packet_type) {
+    case passport::kMid:
+    case passport::kSmid:
+    case passport::kTmid:
+    case passport::kStmid: return false; break;
+    case passport::kPmid:
+    case passport::kMaid:
+    case passport::kAnmid:
+    case passport::kAnsmid:
+    case passport::kAntmid:
+    case passport::kAnmpid:
+    case passport::kAnmaid: return true;
+    default: return false;
+  }
+}
+
+}
+
 Authentication::SerialisedPacket::SerialisedPacket()
-    : type(passport::kUnknown), name(), value(), signature() {}
+    : type(passport::kUnknown),
+      name(),
+      value(),
+      signature(),
+      public_key() {}
 
 Authentication::SerialisedPacket::SerialisedPacket(
     const passport::PacketType &packet_type,
@@ -49,10 +109,17 @@ Authentication::SerialisedPacket::SerialisedPacket(
     bool confirmed)
         : type(packet_type),
           name(passport->PacketName(type, confirmed)),
-          value(passport->PacketValue(packet_type, confirmed)),
-          signature(passport->PacketSignature(packet_type, confirmed)) {
+          value(),
+          signature(passport->PacketSignature(packet_type, confirmed)),
+          public_key() {
+  if (IsSignature(packet_type)) {
+    public_key = passport->SignaturePacketValue(packet_type, confirmed);
+    BOOST_ASSERT(rsa::ValidateKey(public_key));
+  } else {
+    value = passport->IdentityPacketValue(packet_type, confirmed);
+    BOOST_ASSERT(!value.empty());
+  }
   BOOST_ASSERT(!name.empty());
-  BOOST_ASSERT(!value.empty());
   BOOST_ASSERT(!signature.empty());
 }
 
@@ -1268,9 +1335,16 @@ std::string Authentication::CreateGenericPacket(
     bool signing_packet_confirmed) {
   GenericPacket generic_packet;
   BOOST_ASSERT(!packet.name.empty());
-  BOOST_ASSERT(!packet.value.empty());
   BOOST_ASSERT(!packet.signature.empty());
-  generic_packet.set_data(packet.value);
+  if (packet.value.empty()) {
+    std::string encoded_public_key;
+    rsa::EncodePublicKey(packet.public_key, &encoded_public_key);
+    BOOST_ASSERT(!encoded_public_key.empty());
+    generic_packet.set_data(encoded_public_key);
+  } else {
+    BOOST_ASSERT(!packet.value.empty());
+    generic_packet.set_data(packet.value);
+  }
   generic_packet.set_signature(packet.signature);
   generic_packet.set_hashable(true);
   switch (packet.type) {
