@@ -21,8 +21,6 @@
 
 #include "maidsafe/lifestuff/user_storage.h"
 
-#include "maidsafe/common/buffered_chunk_store.h"
-#include "maidsafe/common/hashable_chunk_validation.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/lifestuff/log.h"
@@ -35,12 +33,9 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-UserStorage::UserStorage()
+UserStorage::UserStorage(ChunkStorePtr chunk_store)
     : mount_status_(false),
-      asio_service_(),
-      work_(),
-      thread_group_(),
-      chunk_store_(),
+      chunk_store_(chunk_store),
       listing_handler_(),
       drive_in_user_space_(),
       g_mount_dir_() {}
@@ -53,21 +48,11 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
     return;
   if (!fs::exists(mount_dir_path))
     fs::create_directory(mount_dir_path);
-  fs::path chunk_store_dir(mount_dir_path / "ChunkStore");
-  fs::path meta_data_dir(mount_dir_path / "MetaData" / session_name);
-  work_.reset(new boost::asio::io_service::work(asio_service_));
-  for (int i = 0; i < 3; ++i)
-    thread_group_.create_thread(std::bind(static_cast<
-        std::size_t(boost::asio::io_service::*)()>
-            (&boost::asio::io_service::run), &asio_service_));
-  chunk_store_.reset(new BufferedChunkStore(
-      std::shared_ptr<ChunkValidation>(
-          new HashableChunkValidation<crypto::SHA512, crypto::Tiger>),
-          asio_service_));
   listing_handler_.reset(new DirectoryListingHandler(chunk_store_));
+
   int n(0);
   if (creation) {
-    session->set_unique_user_id(RandomString(64));
+    session->set_unique_user_id(crypto::Hash<crypto::SHA512>(session_name));
     n = listing_handler_->Initialise(session->unique_user_id(), "");
     session->set_root_parent_id(listing_handler_->root_parent_id());
   } else {
@@ -78,9 +63,6 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
 
   drive_in_user_space_.reset(new MaidDriveInUserSpace(chunk_store_,
                                                       listing_handler_));
-  std::static_pointer_cast<BufferedChunkStore>(
-      chunk_store_)->Init(chunk_store_dir);
-
 #ifdef WIN32
   std::uint32_t drive_letters, mask = 0x4, count = 2;
   drive_letters = GetLogicalDrives();
@@ -117,9 +99,6 @@ void UserStorage::UnMountDrive() {
   boost::system::error_code error_code;
   fs::remove_all(g_mount_dir_, error_code);
 #endif
-  work_.reset();
-  asio_service_.stop();
-  thread_group_.join_all();
   mount_status_ = false;
 }
 

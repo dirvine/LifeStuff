@@ -100,8 +100,7 @@ void PacketOpCallback(const int &store_manager_result,
 }
 
 ClientController::ClientController(std::shared_ptr<Session> session)
-    : client_chunk_store_(),
-      session_(session),
+    : session_(session),
       packet_manager_(),
       auth_(new Authentication(session)),
       ser_da_(),
@@ -486,6 +485,11 @@ std::string ClientController::Pin() {
 std::string ClientController::Password() {
   return session_->password();
 }
+
+std::shared_ptr<ChunkStore> ClientController::client_chunk_store() const {
+  return packet_manager_->chunk_store();
+}
+
 }  // namespace lifestuff
 
 }  // namespace maidsafe

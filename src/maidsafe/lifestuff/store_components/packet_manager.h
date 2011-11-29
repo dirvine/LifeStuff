@@ -39,6 +39,8 @@
 
 namespace maidsafe {
 
+class ChunkStore;
+
 namespace lifestuff {
 
 enum IfPacketExists {
@@ -82,6 +84,8 @@ class PacketManager {
                             const std::string &old_value,
                             const std::string &new_value,
                             const VoidFuncOneInt &cb) = 0;
+
+  virtual std::shared_ptr<ChunkStore> chunk_store() const = 0;
 
  protected:
   PacketManager() {}

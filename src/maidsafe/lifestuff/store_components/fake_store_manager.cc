@@ -376,6 +376,11 @@ void FakeStoreManager::CreateSerialisedSignedValue(const GenericPacket &data,
   *ser_gp = data_wrapper.SerializeAsString();
 }
 
+std::shared_ptr<ChunkStore> FakeStoreManager::chunk_store() const {
+  return client_chunk_store_;
+}
+
+
 }  // namespace lifestuff
 
 }  // namespace maidsafe

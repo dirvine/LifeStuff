@@ -48,6 +48,7 @@
 #endif
 
 #include "maidsafe/common/utils.h"
+
 #include "maidsafe/lifestuff/return_codes.h"
 
 namespace maidsafe {
@@ -64,7 +65,7 @@ Commands::Commands(SessionPtr session,
       finish_(false),
       session_(session),
       user_credential_(user_credential),
-      user_storage_(),
+      user_storage_(user_credential->chunk_store()),
       username_(),
       pin_(),
       logged_in_(false) {}

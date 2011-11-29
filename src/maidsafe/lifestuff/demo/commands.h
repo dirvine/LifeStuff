@@ -38,7 +38,8 @@ class Commands {
  public:
   typedef std::shared_ptr<ClientController> UserCredentialPtr;
   typedef std::shared_ptr<Session> SessionPtr;
-  Commands(SessionPtr session, UserCredentialPtr user_credential);
+  Commands(SessionPtr session,
+           UserCredentialPtr user_credential);
   virtual ~Commands() {}
   void Run();
   bool LoginUser();

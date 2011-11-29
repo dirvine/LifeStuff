@@ -40,10 +40,11 @@ int main(int /*argc*/, char *argv[]) {
   FLAGS_logtostderr = true;
   // If Google logging is linked in, log messages at or above this level.
   // Severity levels are INFO, WARNING, ERROR, and FATAL (0 to 3 respectively).
-  FLAGS_minloglevel = google::INFO;
-  FLAGS_ms_logging_common = false;
-  FLAGS_ms_logging_pki = false;
-  FLAGS_ms_logging_passport = false;
+  FLAGS_ms_logging_common = google::FATAL;
+  FLAGS_ms_logging_pki = google::FATAL;
+  FLAGS_ms_logging_passport = google::FATAL;
+  FLAGS_ms_logging_encrypt = google::INFO;
+  FLAGS_ms_logging_lifestuff = google::INFO;
   std::cout << "LifeStuff Demo" << std::endl;
 
   std::shared_ptr<maidsafe::lifestuff::Session> session(
@@ -58,4 +59,5 @@ int main(int /*argc*/, char *argv[]) {
   maidsafe::lifestuff::commandline_demo::Commands commands(session, cc);
 
   commands.Run();
+  return 0;
 }

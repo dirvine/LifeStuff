@@ -59,7 +59,7 @@ class Session;
 
 class UserStorage {
  public:
-  UserStorage();
+  explicit UserStorage(ChunkStorePtr chunk_store);
   virtual ~UserStorage() {}
 
   virtual void MountDrive(const fs::path &mount_dir_path,
@@ -72,9 +72,6 @@ class UserStorage {
 
  private:
   bool mount_status_;
-  boost::asio::io_service asio_service_;
-  std::shared_ptr<boost::asio::io_service::work> work_;
-  boost::thread_group thread_group_;
   ChunkStorePtr chunk_store_;
   std::shared_ptr<DirectoryListingHandler> listing_handler_;
   std::shared_ptr<MaidDriveInUserSpace> drive_in_user_space_;

@@ -70,6 +70,7 @@ class FakeStoreManager : public PacketManager {
                     const std::string &old_value,
                     const std::string &new_value,
                     const VoidFuncOneInt &cb);
+  std::shared_ptr<ChunkStore> chunk_store() const;
 
  protected:
   ReturnCode Init(const boost::filesystem::path &buffered_chunk_store_dir);

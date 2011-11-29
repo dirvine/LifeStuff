@@ -100,6 +100,7 @@ class ClientController {
   std::string Username();
   std::string Pin();
   std::string Password();
+  std::shared_ptr<ChunkStore> client_chunk_store() const;
 
   friend class test::ClientControllerTest;
 
@@ -108,7 +109,6 @@ class ClientController {
   int ParseDa();
   int SerialiseDa();
 
-  std::shared_ptr<ChunkStore> client_chunk_store_;
   std::shared_ptr<Session> session_;
   std::shared_ptr<PacketManager> packet_manager_;
   std::shared_ptr<Authentication> auth_;
