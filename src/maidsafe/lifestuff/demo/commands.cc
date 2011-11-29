@@ -65,7 +65,7 @@ Commands::Commands(SessionPtr session,
       finish_(false),
       session_(session),
       user_credential_(user_credential),
-      user_storage_(user_credential->chunk_store()),
+      user_storage_(user_credential->client_chunk_store()),
       username_(),
       pin_(),
       logged_in_(false) {}
