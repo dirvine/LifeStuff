@@ -47,7 +47,9 @@
 
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/authentication.h"
+#include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/data_atlas_pb.h"
+#include "maidsafe/lifestuff/private_shares.h"
 #include "maidsafe/lifestuff/session.h"
 
 namespace arg = std::placeholders;
@@ -56,23 +58,37 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-void CCCallback::IntCallback(int return_code) {
-  boost::mutex::scoped_lock lock(mutex_);
-  return_int_ = return_code;
-  cv_.notify_one();
-}
+class CCCallback {
+ public:
+  CCCallback()
+      : return_int_(kPendingResult),
+        mutex_(),
+        cv_() {}
 
-int CCCallback::WaitForIntResult() {
-  int result;
-  {
+  void IntCallback(int return_code) {
     boost::mutex::scoped_lock lock(mutex_);
-    while (return_int_ == kPendingResult)
-      cv_.wait(lock);
-    result = return_int_;
-    return_int_ = kPendingResult;
+    return_int_ = return_code;
+    cv_.notify_one();
   }
-  return result;
-}
+
+  int WaitForIntResult() {
+    int result;
+    {
+      boost::mutex::scoped_lock lock(mutex_);
+      while (return_int_ == kPendingResult)
+        cv_.wait(lock);
+      result = return_int_;
+      return_int_ = kPendingResult;
+    }
+    return result;
+  }
+
+ private:
+  int return_int_;
+  boost::mutex mutex_;
+  boost::condition_variable cv_;
+};
+
 
 void PacketOpCallback(const int &store_manager_result,
                       boost::mutex *mutex,
@@ -83,11 +99,11 @@ void PacketOpCallback(const int &store_manager_result,
   cond_var->notify_one();
 }
 
-ClientController::ClientController()
+ClientController::ClientController(std::shared_ptr<Session> session)
     : client_chunk_store_(),
-      session_(new Session()),
+      session_(session),
       packet_manager_(),
-      auth_(new Authentication(session_)),
+      auth_(new Authentication(session)),
       ser_da_(),
       client_store_(),
       initialised_(false),
@@ -129,17 +145,18 @@ int ClientController::ParseDa() {
     DLOG(ERROR) << "DA doesn't have a timestamp." << std::endl;
     return -9001;
   }
-  if (!data_atlas.has_root_db_key()) {
+  if (!data_atlas.has_unique_user_id()) {
     DLOG(ERROR) << "DA doesn't have a root db key.";
     return -9001;
   }
-  session_->set_root_db_key(data_atlas.root_db_key());
+  session_->set_unique_user_id(data_atlas.unique_user_id());
 
   if (!data_atlas.has_serialised_keyring()) {
     DLOG(ERROR) << "Missing serialised keyring.";
     return -9003;
   }
-  session_->ParseKeyring(data_atlas.serialised_keyring());
+  session_->ParseKeyChain(data_atlas.serialised_keyring(),
+                          data_atlas.serialised_selectables());
 
   std::list<PublicContact> contacts;
   for (int n = 0; n < data_atlas.contacts_size(); ++n) {
@@ -163,17 +180,19 @@ int ClientController::SerialiseDa() {
   }
 
   DataAtlas data_atlas;
-  data_atlas.set_root_db_key(session_->root_db_key());
+  data_atlas.set_unique_user_id(session_->unique_user_id());
   data_atlas.set_timestamp(boost::lexical_cast<std::string>(
       GetDurationSinceEpoch().total_microseconds()));
   DLOG(WARNING) << "data_atlas.set_timestamp: " << data_atlas.timestamp();
 
-  std::string serialised_keyring = session_->SerialiseKeyring();
+  std::string serialised_keyring, serialised_selectables;
+  session_->SerialiseKeyChain(&serialised_keyring, &serialised_selectables);
   if (serialised_keyring.empty()) {
     DLOG(ERROR) << "Serialising keyring failed.";
     return -1;
   }
   data_atlas.set_serialised_keyring(serialised_keyring);
+  data_atlas.set_serialised_selectables(serialised_selectables);
 
   std::vector<mi_contact> contacts;
   session_->contacts_handler()->GetContactList(&contacts);
@@ -226,17 +245,6 @@ int ClientController::SerialiseDa() {
   return 0;
 }
 
-int ClientController::CheckUserExists(const std::string &username,
-                                      const std::string &pin) {
-  if (!initialised_) {
-    DLOG(ERROR) << "Not initialised.";
-    return kClientControllerNotInitialised;
-  }
-  session_->ResetSession();
-  session_->set_def_con_level(kDefCon1);
-  return auth_->GetUserInfo(username, pin);
-}
-
 bool ClientController::CreateUser(const std::string &username,
                                   const std::string &pin,
                                   const std::string &password) {
@@ -246,7 +254,6 @@ bool ClientController::CreateUser(const std::string &username,
   }
 
   session_->ResetSession();
-  session_->set_connection_status(0);
   int result = auth_->CreateUserSysPackets(username, pin);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to create user system packets.";
@@ -256,7 +263,6 @@ bool ClientController::CreateUser(const std::string &username,
     DLOG(ERROR) << "auth_->CreateUserSysPackets DONE.";
   }
 
-  // std::string ser_da(session_->SerialiseKeyring());
   int n = SerialiseDa();
   if (n != 0) {
     DLOG(ERROR) << "Failed to serialise DA.";
@@ -289,6 +295,17 @@ bool ClientController::CreateUser(const std::string &username,
   return true;
 }
 
+int ClientController::CheckUserExists(const std::string &username,
+                                      const std::string &pin) {
+  if (!initialised_) {
+    DLOG(ERROR) << "Not initialised.";
+    return kClientControllerNotInitialised;
+  }
+  session_->ResetSession();
+  session_->set_def_con_level(kDefCon1);
+  return auth_->GetUserInfo(username, pin);
+}
+
 bool ClientController::ValidateUser(const std::string &password) {
   if (!initialised_) {
     DLOG(ERROR) << "CC::ValidateUser - Not initialised.";
@@ -319,7 +336,6 @@ bool ClientController::ValidateUser(const std::string &password) {
     return false;
   }
 
-  session_->set_connection_status(0);
   session_->set_session_name(false);
   if (ParseDa() != 0) {
     DLOG(INFO) << "ClientController::ValidateUser - Cannot parse DA";

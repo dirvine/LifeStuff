@@ -360,7 +360,7 @@ bool FakeStoreManager::ValidateGenericPacket(const std::string &ser_gp,
   if (!gp.ParseFromString(ser_gp))
     return false;
 
-  return rsa::CheckSignature(gp.data(), gp.signature(), public_key);
+  return rsa::CheckSignature(gp.data(), gp.signature(), public_key) == kSuccess;
 }
 
 void FakeStoreManager::CreateSerialisedSignedValue(const GenericPacket &data,

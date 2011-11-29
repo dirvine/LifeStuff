@@ -23,8 +23,10 @@
 
 #include "maidsafe/common/buffered_chunk_store.h"
 #include "maidsafe/common/hashable_chunk_validation.h"
+#include "maidsafe/common/utils.h"
 
 #include "maidsafe/lifestuff/log.h"
+#include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/version.h"
 
 namespace fs = boost::filesystem;
@@ -44,7 +46,9 @@ UserStorage::UserStorage()
       g_mount_dir_() {}
 
 void UserStorage::MountDrive(const fs::path &mount_dir_path,
-                             const std::string &session_name) {
+                             const std::string &session_name,
+                             std::shared_ptr<Session> session,
+                             bool creation) {
   if (mount_status_)
     return;
   if (!fs::exists(mount_dir_path))
@@ -60,8 +64,18 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
       std::shared_ptr<ChunkValidation>(
           new HashableChunkValidation<crypto::SHA512, crypto::Tiger>),
           asio_service_));
-//  listing_handler_.reset(new DirectoryListingHandler(meta_data_dir,
-//                                                     chunk_store_));
+  listing_handler_.reset(new DirectoryListingHandler(chunk_store_));
+  int n(0);
+  if (creation) {
+    session->set_unique_user_id(RandomString(64));
+    n = listing_handler_->Initialise(session->unique_user_id(), "");
+    session->set_root_parent_id(listing_handler_->root_parent_id());
+  } else {
+    n = listing_handler_->Initialise(session->unique_user_id(),
+                                     session->root_parent_id());
+  }
+  DLOG(ERROR) << "DLH Init: " << n;
+
   drive_in_user_space_.reset(new MaidDriveInUserSpace(chunk_store_,
                                                       listing_handler_));
   std::static_pointer_cast<BufferedChunkStore>(

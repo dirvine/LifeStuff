@@ -55,13 +55,17 @@ namespace maidsafe {
 
 namespace lifestuff {
 
+class Session;
+
 class UserStorage {
  public:
   UserStorage();
   virtual ~UserStorage() {}
 
   virtual void MountDrive(const fs::path &mount_dir_path,
-                          const std::string &session_name);
+                          const std::string &session_name,
+                          std::shared_ptr<Session> session,
+                          bool creation);
   virtual void UnMountDrive();
   virtual fs::path g_mount_dir();
   virtual bool mount_status();

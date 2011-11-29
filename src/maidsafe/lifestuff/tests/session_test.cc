@@ -26,6 +26,8 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/lifestuff/data_atlas_pb.h"
+#include "maidsafe/lifestuff/contacts.h"
+#include "maidsafe/lifestuff/private_shares.h"
 #include "maidsafe/lifestuff/session.h"
 
 namespace maidsafe {
@@ -39,8 +41,14 @@ class SessionTest : public testing::Test {
   SessionTest() : session_(new Session) {}
 
  protected:
-  void SetUp() {
-    session_->ResetSession();
+  void SetUp() { session_->ResetSession(); }
+
+  void SetUnamePinWord(const std::string &uname,
+                       const std::string &pin,
+                       const std::string &word) {
+    session_->set_username(uname);
+    session_->set_pin(pin);
+    session_->set_password(word);
   }
 
   std::shared_ptr<Session> session_;
@@ -52,14 +60,14 @@ class SessionTest : public testing::Test {
 
 TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   // Check session is clean originally
-  ASSERT_FALSE(session_->da_modified());
   ASSERT_EQ(kDefCon3, session_->def_con_level());
   ASSERT_EQ("", session_->username());
   ASSERT_EQ("", session_->pin());
   ASSERT_EQ("", session_->password());
   ASSERT_EQ("", session_->public_username());
   ASSERT_EQ("", session_->session_name());
-  ASSERT_EQ("", session_->root_db_key());
+  ASSERT_EQ("", session_->unique_user_id());
+  ASSERT_EQ("", session_->root_parent_id());
   ASSERT_EQ(0, session_->mounted());
   std::vector<mi_contact> list;
   ASSERT_EQ(0, session_->contacts_handler()->GetContactList(&list));
@@ -70,18 +78,21 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_EQ(size_t(0), ps_list.size());
 
   // Modify session
-  session_->set_da_modified(true);
   session_->set_def_con_level(kDefCon1);
-  session_->set_username("aaa");
-  session_->set_pin("bbb");
-  session_->set_password("ccc");
+  SetUnamePinWord("aaa", "bbb", "ccc");
   ASSERT_TRUE(session_->set_session_name(false));
-  session_->set_root_db_key("ddd");
+  session_->set_unique_user_id("ddd1");
+  session_->set_root_parent_id("ddd2");
   session_->set_mounted(1);
   session_->set_win_drive('N');
-  ASSERT_EQ(0, session_->contacts_handler()->AddContact("pub_name", "pub_key",
-                               "full_name", "office_phone", "birthday", 'M',
-                               18, 6, "city", 'C', 0, 0));
+  ASSERT_EQ(0, session_->contacts_handler()->AddContact("pub_name",
+                                                        "pub_key",
+                                                        "full_name",
+                                                        "office_phone",
+                                                        "birthday",
+                                                        'M', 18, 6,
+                                                        "city",
+                                                        'C', 0, 0));
   std::vector<std::string> attributes;
   attributes.push_back("name");
   attributes.push_back("msid");
@@ -90,18 +101,20 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   std::list<ShareParticipants> participants;
   participants.push_back(ShareParticipants("id", "id_pub_key", 'A'));
   std::vector<boost::uint32_t> share_stats(2, 0);
-  ASSERT_EQ(0, session_->private_share_handler()->AddPrivateShare(
-                  attributes, share_stats, &participants));
+  ASSERT_EQ(0,
+            session_->private_share_handler()->AddPrivateShare(attributes,
+                                                               share_stats,
+                                                               &participants));
 
   // Verify modifications
-  ASSERT_TRUE(session_->da_modified());
   ASSERT_EQ(kDefCon1, session_->def_con_level());
   ASSERT_EQ("aaa", session_->username());
   ASSERT_EQ("bbb", session_->pin());
   ASSERT_EQ("ccc", session_->password());
   ASSERT_EQ("", session_->public_username());
   ASSERT_NE("", session_->session_name());
-  ASSERT_EQ("ddd", session_->root_db_key());
+  ASSERT_EQ("ddd1", session_->unique_user_id());
+  ASSERT_EQ("ddd2", session_->root_parent_id());
   ASSERT_EQ(1, session_->mounted());
   ASSERT_EQ('N', session_->win_drive());
   ASSERT_EQ(0, session_->contacts_handler()->GetContactList(&list));
@@ -118,8 +131,9 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_EQ('C', list[0].confirmed_);
   ASSERT_EQ(0, list[0].rank_);
   ASSERT_NE(0, list[0].last_contact_);
-  ASSERT_EQ(0, session_->private_share_handler()->GetFullShareList(
-                  kAlpha, kAll, &ps_list));
+  ASSERT_EQ(0, session_->private_share_handler()->GetFullShareList(kAlpha,
+                                                                   kAll,
+                                                                   &ps_list));
   ASSERT_EQ(size_t(1), ps_list.size());
   ASSERT_EQ("name", ps_list.front().Name());
   ASSERT_EQ("msid", ps_list.front().Msid());
@@ -135,20 +149,21 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_TRUE(session_->ResetSession());
 
   // Check session is clean again
-  ASSERT_FALSE(session_->da_modified());
   ASSERT_EQ(kDefCon3, session_->def_con_level());
   ASSERT_EQ("", session_->username());
   ASSERT_EQ("", session_->pin());
   ASSERT_EQ("", session_->password());
   ASSERT_EQ("", session_->public_username());
   ASSERT_EQ("", session_->session_name());
-  ASSERT_EQ("", session_->root_db_key());
+  ASSERT_EQ("", session_->unique_user_id());
+  ASSERT_EQ("", session_->root_parent_id());
   ASSERT_EQ(0, session_->mounted());
   ASSERT_EQ('\0', session_->win_drive());
   ASSERT_EQ(0, session_->contacts_handler()->GetContactList(&list));
   ASSERT_EQ(size_t(0), list.size());
-  ASSERT_EQ(0, session_->private_share_handler()->GetFullShareList(
-                  kAlpha, kAll, &ps_list));
+  ASSERT_EQ(0, session_->private_share_handler()->GetFullShareList(kAlpha,
+                                                                   kAll,
+                                                                   &ps_list));
   ASSERT_EQ(size_t(0), ps_list.size());
 }
 
@@ -162,14 +177,13 @@ TEST_F(SessionTest, BEH_SessionName) {
   ASSERT_FALSE(session_->set_session_name(false));
   ASSERT_EQ("", session_->session_name());
 
-  std::string username("user1");
+  std::string username(RandomAlphaNumericString(6));
   std::string pin("1234");
   std::string session_name = EncodeToHex(crypto::Hash<crypto::SHA1>(pin +
                                                                     username));
 
   // Set the session values
-  session_->set_username(username);
-  session_->set_pin(pin);
+  SetUnamePinWord(username, pin, "ccc");
   ASSERT_TRUE(session_->set_session_name(false));
 
   // Check session name

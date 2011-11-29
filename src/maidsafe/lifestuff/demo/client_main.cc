@@ -25,8 +25,8 @@
 
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/client_controller.h"
+#include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/demo/commands.h"
-#include "maidsafe/lifestuff/user_credentials_api.h"
 #if defined AMAZON_WEB_SERVICE_STORE
 #  include "maidsafe/lifestuff/store_components/aws_store_manager.h"
 #else
@@ -46,15 +46,16 @@ int main(int /*argc*/, char *argv[]) {
   FLAGS_ms_logging_passport = false;
   std::cout << "LifeStuff Demo" << std::endl;
 
+  std::shared_ptr<maidsafe::lifestuff::Session> session(
+      new maidsafe::lifestuff::Session);
   std::shared_ptr<maidsafe::lifestuff::ClientController> cc(
-      new maidsafe::lifestuff::ClientController);
+      new maidsafe::lifestuff::ClientController(session));
 #if defined AMAZON_WEB_SERVICE_STORE
   cc->Init<maidsafe::lifestuff::AWSStoreManager>();
 #else
   cc->Init<maidsafe::lifestuff::LocalStoreManager>();
 #endif
-  std::shared_ptr<maidsafe::lifestuff::UserCredentials> user_credentials(cc);
-  maidsafe::lifestuff::commandline_demo::Commands commands(user_credentials);
+  maidsafe::lifestuff::commandline_demo::Commands commands(session, cc);
 
   commands.Run();
 }

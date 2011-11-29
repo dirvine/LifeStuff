@@ -42,12 +42,13 @@ message PersonalDetails {
 }
 
 message DataAtlas {
-  optional bytes root_db_key = 1;
-  optional bytes serialised_keyring = 2;
-  optional bytes timestamp = 3;
-  repeated bytes dms = 4;
-  repeated PublicContact contacts = 5;
-  repeated Share shares = 6;
-  optional PersonalDetails pd = 7;
+  optional bytes unique_user_id = 1;
+  optional bytes root_parent_id = 2;
+  optional bytes serialised_keyring = 3;
+  optional bytes serialised_selectables = 4;
+  optional bytes timestamp = 5;
+  repeated PublicContact contacts = 6;
+  repeated Share shares = 7;
+  optional PersonalDetails pd = 8;
 }
 

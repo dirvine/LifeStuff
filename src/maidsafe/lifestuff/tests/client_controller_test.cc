@@ -58,8 +58,8 @@ class ClientControllerTest : public testing::Test {
  public:
   ClientControllerTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
-        cc_(new ClientController()),
-        session_(cc_->session_),
+        session_(new Session),
+        cc_(new ClientController(session_)),
 #if defined AMAZON_WEB_SERVICE_STORE
         packet_manager_(new AWSStoreManager(session_, *test_dir_)) {}
 #else
@@ -84,8 +84,8 @@ class ClientControllerTest : public testing::Test {
   void InitAndCloseCallback(int /*i*/) {}
 
   std::shared_ptr<ClientController> CreateSecondClientController() {
-    std::shared_ptr<ClientController> cc2(new ClientController());
-    std::shared_ptr<Session> ss2 = cc2->session_;
+    std::shared_ptr<Session> ss2(new Session);
+    std::shared_ptr<ClientController> cc2(new ClientController(ss2));
 #if defined AMAZON_WEB_SERVICE_STORE
     std::shared_ptr<PacketManager>
         packet_manager2(new AWSStoreManager(ss2, *test_dir_));
@@ -104,8 +104,8 @@ class ClientControllerTest : public testing::Test {
   }
 
   std::shared_ptr<fs::path> test_dir_;
-  std::shared_ptr<ClientController> cc_;
   std::shared_ptr<Session> session_;
+  std::shared_ptr<ClientController> cc_;
   std::shared_ptr<PacketManager> packet_manager_;
 
  private:

@@ -100,6 +100,11 @@ class AuthenticationTest : public testing::Test {
 
   void InitAndCloseCallback(int /*i*/) {}
 
+  std::string PacketValueFromSession(passport::PacketType packet_type,
+                                     bool confirmed) {
+    return session_->passport_->PacketName(packet_type, confirmed);
+  }
+
   std::shared_ptr<fs::path> test_dir_;
   std::shared_ptr<Session> session_;
   std::shared_ptr<PacketManager> packet_manager_;
@@ -192,8 +197,7 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionBlocking) {
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
                                                        ser_dm_,
                                                        surrogate_ser_dm_));
-  std::string original_tmidname =
-      session_->passport_->PacketName(passport::kTmid, true);
+  std::string original_tmidname(PacketValueFromSession(passport::kTmid, true));
   ASSERT_FALSE(original_tmidname.empty());
 
   // store current mid, smid and tmid details to check later whether they remain
@@ -203,9 +207,8 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionBlocking) {
 
   ser_dm_ = RandomString(1000);
   ASSERT_EQ(kSuccess, authentication_.SaveSession(ser_dm_));
-  std::string tmidname(session_->passport_->PacketName(passport::kTmid, true));
-  std::string stmidname(
-      session_->passport_->PacketName(passport::kStmid, true));
+  std::string tmidname(PacketValueFromSession(passport::kTmid, true));
+  std::string stmidname(PacketValueFromSession(passport::kStmid, true));
 
   ASSERT_TRUE(packet_manager_->KeyUnique(original_tmidname));
   ASSERT_FALSE(packet_manager_->KeyUnique(stmidname));
@@ -219,8 +222,7 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionCallbacks) {
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
                                                        ser_dm_,
                                                        surrogate_ser_dm_));
-  std::string original_tmidname =
-      session_->passport_->PacketName(passport::kTmid, true);
+  std::string original_tmidname(PacketValueFromSession(passport::kTmid, true));
   ASSERT_FALSE(original_tmidname.empty());
 
   // store current mid, smid and tmid details to check later whether they remain
@@ -247,10 +249,9 @@ TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
                                                        ser_dm_,
                                                        surrogate_ser_dm_));
 
-  std::string original_tmidname =
-      session_->passport_->PacketName(passport::kTmid, true);
-  std::string original_stmidname =
-      session_->passport_->PacketName(passport::kStmid, true);
+  std::string original_tmidname(PacketValueFromSession(passport::kTmid, true));
+  std::string original_stmidname(PacketValueFromSession(passport::kStmid,
+                                                        true));
   ASSERT_FALSE(original_tmidname.empty());
   ASSERT_FALSE(original_stmidname.empty());
 
@@ -273,10 +274,9 @@ TEST_F(AuthenticationTest, FUNC_ChangePin) {
                                                        ser_dm_,
                                                        surrogate_ser_dm_));
 
-  std::string original_tmidname =
-      session_->passport_->PacketName(passport::kTmid, true);
-  std::string original_stmidname =
-      session_->passport_->PacketName(passport::kStmid, true);
+  std::string original_tmidname(PacketValueFromSession(passport::kTmid, true));
+  std::string original_stmidname(PacketValueFromSession(passport::kStmid,
+                                                        true));
   ASSERT_FALSE(original_tmidname.empty());
   ASSERT_FALSE(original_stmidname.empty());
 

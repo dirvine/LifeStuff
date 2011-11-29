@@ -58,9 +58,11 @@ namespace commandline_demo {
 
 const int _MAX_TRY = 3;
 
-Commands::Commands(UserCredentialPtr user_credential)
+Commands::Commands(SessionPtr session,
+                   UserCredentialPtr user_credential)
     : result_arrived_(false),
       finish_(false),
+      session_(session),
       user_credential_(user_credential),
       user_storage_(),
       username_(),
@@ -146,7 +148,9 @@ bool Commands::LoginUser() {
       success = user_credential_->ValidateUser(password);
       if (success) {
         user_storage_.MountDrive(fs::initial_path() / "LifeStuff",
-                                  user_credential_->SessionName());
+                                 user_credential_->SessionName(),
+                                 session_,
+                                 false);
         std::cout << " Logged in successfully." << std::endl;
       } else {
         std::cout << " Login failed!" << std::endl;
@@ -184,7 +188,9 @@ bool Commands::LoginUser() {
         }
         if (success) {
           user_storage_.MountDrive(fs::initial_path() / "LifeStuff",
-                                    user_credential_->SessionName());
+                                   user_credential_->SessionName(),
+                                   session_,
+                                   true);
           std::cout << std::endl << "Successfully created user and logged in"
                     << std::endl;
         } else {

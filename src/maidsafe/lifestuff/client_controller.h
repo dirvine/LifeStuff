@@ -39,7 +39,6 @@
 
 #include "maidsafe/lifestuff/maidsafe.h"
 #include "maidsafe/lifestuff/return_codes.h"
-#include "maidsafe/lifestuff/user_credentials_api.h"
 #include "maidsafe/lifestuff/store_components/packet_manager.h"
 
 #if MAIDSAFE_LIFESTUFF_VERSION != 110
@@ -64,29 +63,11 @@ class ClientControllerTest;
 }  // namespace test
 
 class Authentication;
-class Contact;
-class PrivateShare;
 class Session;
-struct private_share;
 
-class CCCallback {
+class ClientController {
  public:
-  CCCallback()
-      : return_int_(kPendingResult),
-        mutex_(),
-        cv_() {}
-  void IntCallback(int return_code);
-  int WaitForIntResult();
-
- private:
-  int return_int_;
-  boost::mutex mutex_;
-  boost::condition_variable cv_;
-};
-
-class ClientController : public lifestuff::UserCredentials {
- public:
-  ClientController();
+  ClientController(std::shared_ptr<Session> session);
 
   ClientController &operator=(const ClientController&);
   ClientController(const ClientController&);
@@ -102,23 +83,23 @@ class ClientController : public lifestuff::UserCredentials {
   bool initialised() const { return initialised_; }
 
   // User credential operations
-  virtual int CheckUserExists(const std::string &username,
-                              const std::string &pin);
-  virtual bool ValidateUser(const std::string &password);
-  virtual bool CreateUser(const std::string &username,
+  int CheckUserExists(const std::string &username,
+                      const std::string &pin);
+  bool ValidateUser(const std::string &password);
+  bool CreateUser(const std::string &username,
                           const std::string &pin,
                           const std::string &password);
-  virtual bool Logout();
-  virtual int SaveSession();
-  virtual bool ChangeUsername(const std::string &new_username);
-  virtual bool ChangePin(const std::string &new_pin);
-  virtual bool ChangePassword(const std::string &new_password);
-  virtual bool LeaveMaidsafeNetwork();
-  virtual std::string SessionName();
+  bool Logout();
+  int SaveSession();
+  bool ChangeUsername(const std::string &new_username);
+  bool ChangePin(const std::string &new_pin);
+  bool ChangePassword(const std::string &new_password);
+  bool LeaveMaidsafeNetwork();
+  std::string SessionName();
 
-  virtual std::string Username();
-  virtual std::string Pin();
-  virtual std::string Password();
+  std::string Username();
+  std::string Pin();
+  std::string Password();
 
   friend class test::ClientControllerTest;
 

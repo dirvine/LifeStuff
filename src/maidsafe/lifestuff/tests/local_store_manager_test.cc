@@ -97,6 +97,8 @@ class LocalStoreManagerTest : public testing::Test {
                                                        true));
   }
 
+  void CreateTestPacketsInSession() { session_->CreateTestPackets(); }
+
   std::shared_ptr<fs::path> test_root_dir_;
   std::shared_ptr<Session> session_;
   std::shared_ptr<LocalStoreManager> sm_;
@@ -218,7 +220,7 @@ TEST_F(LocalStoreManagerTest, BEH_DeleteSystemPacketNotOwner) {
   std::vector<std::string> values(1, gp.data());
 
   // Overwrite original signature packets
-  session_->CreateTestPackets();
+  CreateTestPacketsInSession();
 
   cb_.Reset();
   sm_->DeletePacket(gp_name, gp.SerializeAsString(), functor_);
@@ -289,7 +291,7 @@ TEST_F(LocalStoreManagerTest, BEH_UpdateSystemPacketNotOwner) {
                                           anmaid_public_key_));
 
   // Create different credentials
-  session_->CreateTestPackets();
+  CreateTestPacketsInSession();
 
   // Update the packet
   GenericPacket new_gp;

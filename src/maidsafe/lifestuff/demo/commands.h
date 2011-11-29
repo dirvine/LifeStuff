@@ -24,7 +24,8 @@
 #include <memory>
 #include <string>
 
-#include "maidsafe/lifestuff/user_credentials_api.h"
+#include "maidsafe/lifestuff/client_controller.h"
+#include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/user_storage.h"
 
 namespace maidsafe {
@@ -35,8 +36,9 @@ namespace commandline_demo {
 
 class Commands {
  public:
-  typedef std::shared_ptr<UserCredentials> UserCredentialPtr;
-  explicit Commands(UserCredentialPtr user_credential);
+  typedef std::shared_ptr<ClientController> UserCredentialPtr;
+  typedef std::shared_ptr<Session> SessionPtr;
+  Commands(SessionPtr session, UserCredentialPtr user_credential);
   virtual ~Commands() {}
   void Run();
   bool LoginUser();
@@ -45,6 +47,7 @@ class Commands {
 
  private:
   bool result_arrived_, finish_;
+  SessionPtr session_;
   UserCredentialPtr user_credential_;
   UserStorage user_storage_;
   std::string username_, pin_;

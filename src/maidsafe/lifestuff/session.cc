@@ -30,13 +30,34 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/lifestuff/data_atlas_pb.h"
+#include "maidsafe/lifestuff/contacts.h"
+#include "maidsafe/lifestuff/private_shares.h"
 
 namespace maidsafe {
 
 namespace lifestuff {
 
+struct UserDetails {
+  UserDetails()
+      : defconlevel(kDefCon3),
+        username(),
+        pin(),
+        password(),
+        session_name(),
+        public_username(),
+        unique_user_id(),
+        root_parent_id(),
+        mounted(0),
+        win_drive('\0') {}
+  DefConLevels defconlevel;
+  std::string username, pin, password, session_name, public_username;
+  std::string unique_user_id, root_parent_id;
+  int mounted;
+  char win_drive;
+};
+
 Session::Session()
-    : user_details_(),
+    : user_details_(new UserDetails),
       passport_(new passport::Passport),
       contacts_handler_(new ContactsHandler),
       private_share_handler_(new PrivateShareHandler) {}
@@ -44,16 +65,15 @@ Session::Session()
 Session::~Session() {}
 
 bool Session::ResetSession() {
-  user_details_.defconlevel = kDefCon3;
-  user_details_.da_modified = false;
-  user_details_.username.clear();
-  user_details_.pin.clear();
-  user_details_.password.clear();
-  user_details_.session_name.clear();
-  user_details_.root_db_key.clear();
-  user_details_.mounted = 0;
-  user_details_.win_drive = '\0';
-  user_details_.connection_status = 1;
+  user_details_->defconlevel = kDefCon3;
+  user_details_->username.clear();
+  user_details_->pin.clear();
+  user_details_->password.clear();
+  user_details_->session_name.clear();
+  user_details_->unique_user_id.clear();
+  user_details_->root_parent_id.clear();
+  user_details_->mounted = 0;
+  user_details_->win_drive = '\0';
   // TODO(Fraser#5#): 2011-11-17 - Implement in passport
 //  passport_->ClearKeyring();
   contacts_handler_->ClearContacts();
@@ -71,66 +91,65 @@ std::shared_ptr<PrivateShareHandler> Session::private_share_handler() const {
 }
 
 DefConLevels Session::def_con_level() const {
-  return user_details_.defconlevel;
+  return user_details_->defconlevel;
 }
-bool Session::da_modified() const { return user_details_.da_modified; }
-std::string Session::username() const { return user_details_.username; }
-std::string Session::pin() const { return user_details_.pin; }
-std::string Session::password() const { return user_details_.password; }
+std::string Session::username() const { return user_details_->username; }
+std::string Session::pin() const { return user_details_->pin; }
+std::string Session::password() const { return user_details_->password; }
 std::string Session::public_username() const {
-  return user_details_.public_username;
+  return user_details_->public_username;
 }
-std::string Session::session_name() const { return user_details_.session_name; }
-std::string Session::root_db_key() const { return user_details_.root_db_key; }
-int Session::mounted() const { return user_details_.mounted; }
-char Session::win_drive() const { return user_details_.win_drive; }
-int Session::connection_status() const {
-  return user_details_.connection_status;
+std::string Session::session_name() const {
+  return user_details_->session_name;
 }
+std::string Session::unique_user_id() const {
+  return user_details_->unique_user_id;
+}
+std::string Session::root_parent_id() const {
+  return user_details_->root_parent_id;
+}
+int Session::mounted() const { return user_details_->mounted; }
+char Session::win_drive() const { return user_details_->win_drive; }
 
 void Session::set_def_con_level(DefConLevels defconlevel) {
-  user_details_.defconlevel = defconlevel;
-}
-void Session::set_da_modified(bool da_modified) {
-  user_details_.da_modified = da_modified;
+  user_details_->defconlevel = defconlevel;
 }
 void Session::set_username(const std::string &username) {
-  user_details_.username = username;
+  user_details_->username = username;
 }
-void Session::set_pin(const std::string &pin) { user_details_.pin = pin; }
+void Session::set_pin(const std::string &pin) { user_details_->pin = pin; }
 void Session::set_password(const std::string &password) {
-  user_details_.password = password;
+  user_details_->password = password;
 }
 bool Session::set_session_name(bool clear) {
   if (clear) {
-    user_details_.session_name.clear();
+    user_details_->session_name.clear();
   } else {
     if (username().empty() || pin().empty())
       return false;
-    user_details_.session_name = EncodeToHex(crypto::Hash<crypto::SHA1>(pin() +
+    user_details_->session_name = EncodeToHex(crypto::Hash<crypto::SHA1>(pin() +
                                                               username()));
   }
   return true;
 }
-void Session::set_root_db_key(const std::string &root_db_key) {
-  user_details_.root_db_key = root_db_key;
+void Session::set_unique_user_id(const std::string &unique_user_id) {
+  user_details_->unique_user_id = unique_user_id;
 }
-void Session::set_mounted(int mounted) { user_details_.mounted = mounted; }
+void Session::set_root_parent_id(const std::string &root_parent_id) {
+  user_details_->root_parent_id = root_parent_id;
+}
+void Session::set_mounted(int mounted) { user_details_->mounted = mounted; }
 void Session::set_win_drive(char win_drive) {
-  user_details_.win_drive = win_drive;
-}
-void Session::set_connection_status(int status) {
-  user_details_.connection_status = status;
+  user_details_->win_drive = win_drive;
 }
 
-int Session::ParseKeyring(const std::string &serialised_keyring) {
-  return passport_->ParseKeyChain(serialised_keyring, "");
+int Session::ParseKeyChain(const std::string &serialised_keyring,
+                           const std::string &serialised_selectables) {
+  return passport_->ParseKeyChain(serialised_keyring, serialised_selectables);
 }
-
-std::string Session::SerialiseKeyring() {
-  std::string a, b;
-  passport_->SerialiseKeyChain(&a, &b);
-  return a;
+void Session::SerialiseKeyChain(std::string *serialised_keyring,
+                                std::string *serialised_selectables) {
+  passport_->SerialiseKeyChain(serialised_keyring, serialised_selectables);
 }
 
 bool Session::CreateTestPackets() {
