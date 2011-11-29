@@ -144,11 +144,12 @@ int ClientController::ParseDa() {
     DLOG(ERROR) << "DA doesn't have a timestamp." << std::endl;
     return -9001;
   }
-  if (!data_atlas.has_unique_user_id()) {
-    DLOG(ERROR) << "DA doesn't have a root db key.";
+  if (!data_atlas.has_unique_user_id() || !data_atlas.has_root_parent_id()) {
+    DLOG(ERROR) << "DA doesn't have keys for root directory.";
     return -9001;
   }
   session_->set_unique_user_id(data_atlas.unique_user_id());
+  session_->set_root_parent_id(data_atlas.root_parent_id());
 
   if (!data_atlas.has_serialised_keyring()) {
     DLOG(ERROR) << "Missing serialised keyring.";
@@ -180,6 +181,7 @@ int ClientController::SerialiseDa() {
 
   DataAtlas data_atlas;
   data_atlas.set_unique_user_id(session_->unique_user_id());
+  data_atlas.set_root_parent_id(session_->root_parent_id());
   data_atlas.set_timestamp(boost::lexical_cast<std::string>(
       GetDurationSinceEpoch().total_microseconds()));
   DLOG(WARNING) << "data_atlas.set_timestamp: " << data_atlas.timestamp();

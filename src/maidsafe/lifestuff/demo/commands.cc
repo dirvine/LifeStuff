@@ -273,6 +273,7 @@ void Commands::ProcessCommand(const std::string &cmdline,
       std::cout << boost::format("savesession returned <%1%>")
                  % return_value << std::endl;
     }
+    user_storage_.UnMountDrive();
     printf("Exiting application...\n");
     finish_ = true;
     return;
