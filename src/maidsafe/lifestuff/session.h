@@ -41,7 +41,6 @@
 
 #include "maidsafe/passport/passport.h"
 
-#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/maidsafe.h"
 
 #if MAIDSAFE_LIFESTUFF_VERSION != 110
