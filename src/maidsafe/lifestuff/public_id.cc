@@ -144,6 +144,12 @@ void PublicId::StopCheckingForNewContacts() {
 
 int PublicId::CreatePublicId(const std::string &public_username,
                              bool accepts_new_contacts) {
+  // Check chosen name is available
+  if (!packet_manager_->KeyUnique(MsidName(public_username))) {
+    DLOG(ERROR) << "Public ID with name " << public_username << " unavailable";
+    return kPublicIdExists;
+  }
+
   // Create packets (pending) in passport
   int result(session_->passport_->CreateSelectableIdentity(public_username));
   if (result != kSuccess) {
@@ -381,7 +387,9 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
     }
     // Delete MCID from network - do nothing in callback
     packet_manager_->DeletePacket(
-        crypto::Hash<crypto::SHA512>(std::get<0>(data)), *it, [](int){});  // NOLINT (Fraser)
+        crypto::Hash<crypto::SHA512>(std::get<0>(data)),
+        *it,
+        [](int /*result*/) {});
   }
 }
 

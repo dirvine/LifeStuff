@@ -166,8 +166,9 @@ SET(TESTS_MAIN_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/tests_main
 SET(CLIENT_MAIN_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/client_main.cc")
 SET(AUTHENTICATION_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/authentication_test.cc")
 SET(CLIENT_CONTROLLER_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/client_controller_test.cc")
+SET(PUBLIC_ID_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/public_id_test.cc")
 
-LIST(REMOVE_ITEM ALL_FILES_LIFESTUFF_TESTS_DIR ${CLIENT_MAIN_CC} ${AUTHENTICATION_TEST_CC} ${CLIENT_CONTROLLER_TEST_CC})
+LIST(REMOVE_ITEM ALL_FILES_LIFESTUFF_TESTS_DIR ${CLIENT_MAIN_CC} ${AUTHENTICATION_TEST_CC} ${CLIENT_CONTROLLER_TEST_CC} ${PUBLIC_ID_TEST_CC})
 
 ####    DEMO    ####
 FILE(GLOB SOURCE_FILES_LIFESTUFF_DEMO_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/demo/*.cc")
@@ -183,8 +184,10 @@ SOURCE_GROUP("Demo Header Files" FILES ${HEADER_FILES_LIFESTUFF_DEMO_DIR})
 ADD_EXECUTABLE(TESTlifestuff ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${TESTS_MAIN_CC})
 ADD_EXECUTABLE(TESTauthentication_local ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
 ADD_EXECUTABLE(TESTclientcontroller_local ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
+ADD_EXECUTABLE(TESTpublic_id_local ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
 ADD_EXECUTABLE(TESTauthentication_aws ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
 ADD_EXECUTABLE(TESTclientcontroller_aws ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
+ADD_EXECUTABLE(TESTpublic_id_aws ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
 
 ADD_EXECUTABLE(LifestuffDemoLocal ${ALL_FILES_LIFESTUFF_DEMO_DIR})
 ADD_EXECUTABLE(LifestuffDemoAWS ${ALL_FILES_LIFESTUFF_DEMO_DIR})
@@ -193,8 +196,10 @@ SET(TEST_EXECUTABLES
       TESTlifestuff
       TESTauthentication_aws
       TESTclientcontroller_aws
+      TESTpublic_id_aws
       TESTauthentication_local
-      TESTclientcontroller_local)
+      TESTclientcontroller_local
+      TESTpublic_id_local)
 SET(DEMO_EXECUTABLES
       LifestuffDemoLocal
       LifestuffDemoAWS)
@@ -226,8 +231,10 @@ TARGET_LINK_LIBRARIES(lifestuff_aws_store_static maidsafe_aws_transporter_static
 TARGET_LINK_LIBRARIES(TESTlifestuff lifestuff_static lifestuff_local_store_static gtest_static gmock_static)
 TARGET_LINK_LIBRARIES(TESTauthentication_local lifestuff_static lifestuff_local_store_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTclientcontroller_local lifestuff_static lifestuff_local_store_static gtest_static)
+TARGET_LINK_LIBRARIES(TESTpublic_id_local lifestuff_local_store_static lifestuff_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTauthentication_aws lifestuff_static lifestuff_aws_store_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTclientcontroller_aws lifestuff_static lifestuff_aws_store_static gtest_static)
+TARGET_LINK_LIBRARIES(TESTpublic_id_aws lifestuff_aws_store_static lifestuff_static gtest_static)
 TARGET_LINK_LIBRARIES(LifestuffDemoLocal lifestuff_static lifestuff_local_store_static)
 TARGET_LINK_LIBRARIES(LifestuffDemoAWS lifestuff_static lifestuff_aws_store_static)
 
@@ -237,7 +244,7 @@ TARGET_LINK_LIBRARIES(LifestuffDemoAWS lifestuff_static lifestuff_aws_store_stat
 ###################################################################################################
 INCLUDE(maidsafe_standard_flags)
 
-SET_TARGET_PROPERTIES(TESTauthentication_aws TESTclientcontroller_aws LifestuffDemoAWS lifestuff_aws_store_static
+SET_TARGET_PROPERTIES(TESTauthentication_aws TESTclientcontroller_aws TESTpublic_id_aws LifestuffDemoAWS lifestuff_aws_store_static
                         PROPERTIES COMPILE_DEFINITIONS AMAZON_WEB_SERVICE_STORE)
 IF(UNIX)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")

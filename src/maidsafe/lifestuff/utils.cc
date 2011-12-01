@@ -46,8 +46,7 @@ int GetValidatedPublicKey(const std::string &public_username,
   }
 
   GenericPacket packet;
-                                            // TODO(Fraser#5#): 2011-12-01 - Check if this could throw
-                                            if (!packet.ParseFromString(packet_values.at(0))) {
+  if (!packet.ParseFromString(packet_values.at(0))) {
     DLOG(ERROR) << "Failed to parse public key packet for " << public_username;
     *public_key = asymm::PublicKey();
     return kGetPublicKeyFailure;
@@ -77,8 +76,7 @@ int GetValidatedPublicKey(const std::string &public_username,
   }
 
   packet.Clear();
-                                            // TODO(Fraser#5#): 2011-12-01 - Check if this could throw
-                                            if (!packet.ParseFromString(packet_values.at(0))) {
+  if (!packet.ParseFromString(packet_values.at(0))) {
     DLOG(ERROR) << "Failed to parse MPID packet for " << public_username;
     *public_key = asymm::PublicKey();
     return kGetMpidFailure;
