@@ -354,23 +354,12 @@ void FakeStoreManager::ExecReturnLoadPacketCallback(
   asio_service_.post(std::bind(callback, results, return_code));
 }
 
-bool FakeStoreManager::ValidateGenericPacket(const std::string &ser_gp,
-                                             const rsa::PublicKey &public_key) {
-  GenericPacket gp;
-  if (!gp.ParseFromString(ser_gp))
-    return false;
-
-  return rsa::CheckSignature(gp.data(), gp.signature(), public_key) == kSuccess;
-}
 
 void FakeStoreManager::CreateSerialisedSignedValue(const GenericPacket &data,
                                                    std::string *ser_gp) {
   ser_gp->clear();
   DataWrapper data_wrapper;
-  if (data.hashable())
-    data_wrapper.set_data_type(DataWrapper::kHashableSigned);
-  else
-    data_wrapper.set_data_type(DataWrapper::kNonHashableSigned);
+  data_wrapper.set_data_type(static_cast<DataWrapper::DataType>(data.type()));
   GenericPacket *gp = data_wrapper.mutable_signed_data();
   *gp = data;
   *ser_gp = data_wrapper.SerializeAsString();

@@ -1346,7 +1346,7 @@ std::string Authentication::CreateGenericPacket(
     generic_packet.set_data(packet.value);
   }
   generic_packet.set_signature(packet.signature);
-  generic_packet.set_hashable(true);
+  generic_packet.set_type(DataWrapper::kHashableSigned);
   switch (packet.type) {
     case passport::kAnmid:
       generic_packet.set_signing_id(packet.name);
@@ -1355,7 +1355,7 @@ std::string Authentication::CreateGenericPacket(
       generic_packet.set_signing_id(
           session_->passport_->PacketName(passport::kAnmid,
                                           signing_packet_confirmed));
-      generic_packet.set_hashable(false);
+      generic_packet.set_type(DataWrapper::kNonHashableSigned);
       break;
     case passport::kAnsmid:
       generic_packet.set_signing_id(packet.name);
@@ -1364,7 +1364,7 @@ std::string Authentication::CreateGenericPacket(
       generic_packet.set_signing_id(
           session_->passport_->PacketName(passport::kAnsmid,
                                           signing_packet_confirmed));
-      generic_packet.set_hashable(false);
+      generic_packet.set_type(DataWrapper::kNonHashableSigned);
       break;
     case passport::kAntmid:
       generic_packet.set_signing_id(packet.name);
@@ -1374,7 +1374,7 @@ std::string Authentication::CreateGenericPacket(
       generic_packet.set_signing_id(
           session_->passport_->PacketName(passport::kAntmid,
                                           signing_packet_confirmed));
-      generic_packet.set_hashable(false);
+      generic_packet.set_type(DataWrapper::kNonHashableSigned);
       break;
     case passport::kAnmpid:
       generic_packet.set_signing_id(packet.name);
@@ -1383,7 +1383,7 @@ std::string Authentication::CreateGenericPacket(
       generic_packet.set_signing_id(
           session_->passport_->PacketName(passport::kAnmpid,
                                           signing_packet_confirmed));
-      generic_packet.set_hashable(false);
+      generic_packet.set_type(DataWrapper::kNonHashableSigned);
       break;
     case passport::kAnmaid:
       generic_packet.set_signing_id(packet.name);

@@ -60,6 +60,7 @@ std::string AnmpidValue(const passport::SelectableIdentityData &data) {
   GenericPacket packet;
   packet.set_data(public_key);
   packet.set_signature(std::get<2>(data.at(0)));
+  packet.set_type(DataWrapper::kHashableSigned);
   return packet.SerializeAsString();
 }
 
@@ -73,6 +74,7 @@ std::string MpidValue(const passport::SelectableIdentityData &data) {
   GenericPacket packet;
   packet.set_data(public_key);
   packet.set_signature(std::get<2>(data.at(1)));
+  packet.set_type(DataWrapper::kHashableSigned);
   return packet.SerializeAsString();
 }
 
@@ -86,7 +88,11 @@ std::string MmidValue(const passport::SelectableIdentityData &data) {
   MMID mmid;
   mmid.set_public_key(public_key);
   mmid.set_signature(std::get<2>(data.at(2)));
-  return mmid.SerializeAsString();
+  GenericPacket gp;
+  gp.set_data(mmid.SerializeAsString());
+  gp.set_signature(mmid.signature());
+  gp.set_type(DataWrapper::kMmid);
+  return gp.SerializeAsString();
 }
 
 std::string MsidName(const std::string &public_username) {
@@ -101,7 +107,11 @@ std::string MsidValue(const passport::SelectableIdentityData &data,
   msid.set_public_key(public_key);
   msid.set_signature(std::get<2>(data.at(1)));
   msid.set_accepts_new_contacts(accepts_new_contacts);
-  return msid.SerializeAsString();
+  GenericPacket gp;
+  gp.set_data(msid.SerializeAsString());
+  gp.set_signature(msid.signature());
+  gp.set_type(DataWrapper::kMsid);
+  return gp.SerializeAsString();
 }
 
 }  // namespace
@@ -274,10 +284,14 @@ int PublicId::SendContactInfo(const std::string &public_username,
   result = kPendingResult;
   VoidFuncOneInt callback(std::bind(&SendContactInfoCallback, arg::_1, &mutex,
                                     &cond_var, &result));
-  // TODO(Fraser#5#): 2011-12-01 - Replace "Store" with "Append"?
+
+  GenericPacket gp;
+  gp.set_data(encrypted_mcid);
+  gp.set_signature(sig);
+  gp.set_type(4);
   packet_manager_->StorePacket(
       crypto::Hash<crypto::SHA512>(recipient_public_username),
-      encrypted_mcid,
+      gp.SerializeAsString(),
       callback);
 
   try {

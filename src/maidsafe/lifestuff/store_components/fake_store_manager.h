@@ -78,8 +78,6 @@ class FakeStoreManager : public PacketManager {
   void ExecReturnLoadPacketCallback(GetPacketFunctor callback,
                                     std::vector<std::string> results,
                                     ReturnCode return_code);
-  bool ValidateGenericPacket(const std::string &ser_gp,
-                             const rsa::PublicKey &public_key);
   void CreateSerialisedSignedValue(const GenericPacket &data,
                                    std::string *ser_gp);
 

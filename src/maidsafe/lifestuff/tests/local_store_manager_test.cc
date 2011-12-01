@@ -91,7 +91,10 @@ class LocalStoreManagerTest : public testing::Test {
     gp->set_data(encoded_anmaid_public_key_);
     gp->set_signature(session_->passport_->PacketSignature(passport::kAnmaid,
                                                            true));
-    gp->set_hashable(hashable);
+    if (hashable)
+      gp->set_type(0);
+    else
+      gp->set_type(1);
     *name = session_->passport_->PacketName(passport::kAnmaid, true);
     gp->set_signing_id(session_->passport_->PacketName(passport::kAnmaid,
                                                        true));
