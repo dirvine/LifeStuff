@@ -65,8 +65,7 @@ class PublicId {
   void StartCheckingForNewContacts(boost::posix_time::seconds interval);
   void StopCheckingForNewContacts();
 
-  // Creates and stores to the network a new Public ID packet, the MPID, the
-  // ANMPID and the MMID.
+  // Creates and stores to the network a new MSID, MPID, ANMPID and MMID.
   int CreatePublicId(const std::string &public_username,
                      bool accepts_new_contacts);
   // Appends our info as an MCID to the recipient's MPID packet.

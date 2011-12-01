@@ -3,7 +3,7 @@ package maidsafe.lifestuff;
 message GenericPacket {
   required bytes data = 1;
   required bytes signature = 2;
-  required bool hashable = 3;
+  required int32 type = 3;
   optional bytes signing_id = 4;
 }
 
@@ -11,6 +11,8 @@ message DataWrapper {
   enum DataType {
     kHashableSigned = 0;
     kNonHashableSigned = 1;
+    kMsid = 2;
+    kMmid = 3;
   }
   required DataType data_type = 1;
   optional GenericPacket signed_data = 2;

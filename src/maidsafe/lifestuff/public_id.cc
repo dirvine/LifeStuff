@@ -83,25 +83,25 @@ std::string MmidName(const passport::SelectableIdentityData &data) {
 std::string MmidValue(const passport::SelectableIdentityData &data) {
   std::string public_key;
   asymm::EncodePublicKey(std::get<1>(data.at(2)), &public_key);
-  GenericPacket packet;
-  packet.set_data(public_key);
-  packet.set_signature(std::get<2>(data.at(2)));
-  return packet.SerializeAsString();
+  MMID mmid;
+  mmid.set_public_key(public_key);
+  mmid.set_signature(std::get<2>(data.at(2)));
+  return mmid.SerializeAsString();
 }
 
-std::string PublicIdName(const std::string &public_username) {
+std::string MsidName(const std::string &public_username) {
   return crypto::Hash<crypto::SHA512>(public_username);
 }
 
-std::string PublicIdValue(const passport::SelectableIdentityData &data,
-                          bool accepts_new_contacts) {
+std::string MsidValue(const passport::SelectableIdentityData &data,
+                      bool accepts_new_contacts) {
   std::string public_key;
   asymm::EncodePublicKey(std::get<1>(data.at(1)), &public_key);
-  PublicID public_id_packet;
-  public_id_packet.set_public_key(public_key);
-  public_id_packet.set_signature(std::get<2>(data.at(1)));
-  public_id_packet.set_accepts_new_contacts(accepts_new_contacts);
-  return public_id_packet.SerializeAsString();
+  MSID msid;
+  msid.set_public_key(public_key);
+  msid.set_signature(std::get<2>(data.at(1)));
+  msid.set_accepts_new_contacts(accepts_new_contacts);
+  return msid.SerializeAsString();
 }
 
 }  // namespace
@@ -156,7 +156,7 @@ int PublicId::CreatePublicId(const std::string &public_username,
   boost::mutex mutex;
   boost::condition_variable cond_var;
   int anmpid_result(kPendingResult), mpid_result(kPendingResult),
-      mmid_result(kPendingResult), public_id_result(kPendingResult);
+      mmid_result(kPendingResult), msid_result(kPendingResult);
   packet_manager_->StorePacket(AnmpidName(data),
                                AnmpidValue(data),
                                std::bind(&SendContactInfoCallback, arg::_1,
@@ -169,10 +169,10 @@ int PublicId::CreatePublicId(const std::string &public_username,
                                MmidValue(data),
                                std::bind(&SendContactInfoCallback, arg::_1,
                                          &mutex, &cond_var, &mmid_result));
-  packet_manager_->StorePacket(PublicIdName(public_username),
-                               PublicIdValue(data, accepts_new_contacts),
+  packet_manager_->StorePacket(MsidName(public_username),
+                               MsidValue(data, accepts_new_contacts),
                                std::bind(&SendContactInfoCallback, arg::_1,
-                                         &mutex, &cond_var, &public_id_result));
+                                         &mutex, &cond_var, &msid_result));
 
   try {
     boost::mutex::scoped_lock lock(mutex);
@@ -182,7 +182,7 @@ int PublicId::CreatePublicId(const std::string &public_username,
                                return anmpid_result != kPendingResult &&
                                       mpid_result != kPendingResult &&
                                       mmid_result != kPendingResult &&
-                                      public_id_result != kPendingResult;
+                                      msid_result != kPendingResult;
                              })) {
       DLOG(ERROR) << "Timed out storing packets.";
       return kPublicIdTimeout;
@@ -193,10 +193,10 @@ int PublicId::CreatePublicId(const std::string &public_username,
     return kPublicIdException;
   }
   if (anmpid_result != kSuccess || mpid_result != kSuccess ||
-      mmid_result != kSuccess || public_id_result != kSuccess) {
+      mmid_result != kSuccess || msid_result != kSuccess) {
     DLOG(ERROR) << "Failed to store packets.  ANMPID: " << anmpid_result
                 << "   MPID: " << mpid_result << "   MMID: " << mmid_result
-                << "   Public ID: " << public_id_result;
+                << "   MSID: " << msid_result;
     return kStorePublicIdFailure;
   }
 

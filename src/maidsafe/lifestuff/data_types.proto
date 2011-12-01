@@ -6,8 +6,22 @@ message MCID {
   required bytes signature = 3;
 }
 
-message PublicID {
+message MMID {
+  message Message {
+    required bytes id = 1;
+    optional bytes parent_id = 2;
+    optional bytes subject = 3;
+    required bytes content = 4;
+    required bytes signature = 5;
+  }
+  required bytes public_key = 1;
+  required bytes signature = 2;
+  repeated bytes encrypted_message = 3;
+}
+
+message MSID {
   required bytes public_key = 1;
   required bytes signature = 2;
   required bool accepts_new_contacts = 3;
+  repeated bytes encrypted_mcid = 4;
 }
