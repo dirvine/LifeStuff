@@ -23,9 +23,10 @@
 #include "maidsafe/common/chunk_store.h"
 #include "maidsafe/common/crypto.h"
 
+#include "maidsafe/lifestuff/data_types_pb.h"
+#include "maidsafe/lifestuff/lifestuff_messages_pb.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
-#include "maidsafe/lifestuff/lifestuff_messages_pb.h"
 
 namespace maidsafe {
 
@@ -67,6 +68,12 @@ int DataHandler::ProcessData(const OperationType &op_type,
     case DataWrapper::kNonHashableSigned:
         return ProcessSignedData(op_type, name, data_wrapper, public_key, false,
                                  chunk_store);
+    case DataWrapper::kMsid:
+        return ProcessMsidData(op_type, name, data_wrapper, public_key,
+                               chunk_store);
+    case DataWrapper::kMmid:
+        return ProcessMmidData(op_type, name, data_wrapper, public_key,
+                               chunk_store);
     default: return kUnknownFailure;
   }
 }
@@ -201,6 +208,155 @@ int DataHandler::VerifyCurrentData(const std::string &name,
   }
 
   *current_data = dw.signed_data().SerializeAsString();
+
+  return kSuccess;
+}
+
+int DataHandler::ProcessMsidData(const OperationType &op_type,
+                                 const std::string &name,
+                                 const DataWrapper &data,
+                                 const rsa::PublicKey &public_key,
+                                 std::shared_ptr<ChunkStore> chunk_store) {
+  std::string current_data(chunk_store->Get(name));
+  bool already_exists(true);
+  if (current_data.empty()) {
+    DLOG(ERROR) << "No such MSID";
+    already_exists = false;
+  }
+
+  if (already_exists) {
+    MSID current_msid;
+    if (!current_msid.ParseFromString(current_data)) {
+      DLOG(ERROR) << "current MSID corrupted";
+      return kParseFailure;
+    }
+
+    if (!asymm::CheckSignature(current_msid.public_key(),
+                               current_msid.signature(),
+                               public_key)) {
+      DLOG(INFO) << "Not owner, can only store MCID or get keys from MSID";
+      if (op_type == kStore) {
+        current_msid.add_encrypted_mcid(data.signed_data().data());
+        if (!chunk_store->Modify(name, current_msid.SerializeAsString())) {
+          DLOG(ERROR) << "Failed to add MCID";
+          return kModifyFailure;
+        }
+      } else if (op_type == kGet) {
+        GenericPacket gp;
+        gp.set_data(current_msid.public_key());
+        gp.set_signature(current_msid.signature());
+        (*get_data_signal_)(gp.SerializeAsString());
+      } else {
+        DLOG(ERROR) << "Forbidden operation";
+        return kUnknownFailure;
+      }
+    } else {
+      switch (op_type) {
+        case kGet:
+            (*get_data_signal_)(current_data);
+            break;
+        case kUpdate:
+            /***
+             * If owner, change the allowance of storage.
+             * Other ops in the future?
+             ***/
+             break;
+        case kDelete:
+            // Delete the whole thing
+            if (!chunk_store->Delete(name)) {
+              DLOG(ERROR) << "Failure to delete value";
+              return kDeleteFailure;
+            }
+            /************** or all messages
+            MSID mmid;
+            msid.Parse(current_data);
+            msid.clear_encrypted_mcid();
+            ******************************/
+        default: return kUnknownFailure;
+      }
+    }
+  } else {
+    // Storing the whole thing
+    MSID wrapper_msid;
+    if (!wrapper_msid.ParseFromString(data.signed_data().data())) {
+      DLOG(ERROR) << "Data doesn't parse";
+      return kStoreFailure;
+    }
+
+    if (!asymm::CheckSignature(wrapper_msid.public_key(),
+                               wrapper_msid.signature(),
+                               public_key)) {
+      DLOG(ERROR) << "Failed validation of data";
+      return kStoreFailure;
+    }
+
+    if (!chunk_store->Store(name, data.signed_data().data())) {
+      DLOG(ERROR) << "Failed committing to chunk store";
+      return kStoreFailure;
+    }
+  }
+
+
+  return kSuccess;
+}
+
+int DataHandler::ProcessMmidData(const OperationType &op_type,
+                                 const std::string &name,
+                                 const DataWrapper &data,
+                                 const rsa::PublicKey &public_key,
+                                 std::shared_ptr<ChunkStore> chunk_store) {
+  // Check existance
+  std::string current_data(chunk_store->Get(name));
+  bool already_exists(true);
+  if (current_data.empty()) {
+    DLOG(ERROR) << "No such MMID";
+    already_exists = false;
+  }
+
+  // Check ownership
+    // not owner, store message, no checks
+    // owner, get messages, delete, store initially
+  if (already_exists) {
+    MMID current_mmid;
+    if (!current_mmid.ParseFromString(current_data)) {
+      DLOG(ERROR) << "current MSID corrupted";
+      return kParseFailure;
+    }
+
+    if (!asymm::CheckSignature(current_mmid.public_key(),
+                               current_mmid.signature(),
+                               public_key)) {
+      DLOG(INFO) << "Not owner, can only store MCID or get keys from MSID";
+      if (op_type == kStore) {
+        current_mmid.add_encrypted_message(data.signed_data().data());
+        if (!chunk_store->Modify(name, current_mmid.SerializeAsString())) {
+          DLOG(ERROR) << "Failed to add MCID";
+          return kModifyFailure;
+        }
+      } else {
+        DLOG(ERROR) << "Forbidden operation";
+        return kUnknownFailure;
+      }
+    } else {
+      switch (op_type) {
+        case kGet:
+            (*get_data_signal_)(current_data);
+            break;
+        case kDelete:
+            // Delete the whole thing
+            if (!chunk_store->Delete(name)) {
+              DLOG(ERROR) << "Failure to delete value";
+              return kDeleteFailure;
+            }
+            /************** or all messages
+            MMID mmid;
+            mmid.Parse(current_data);
+            mmid.clear_encrypted_message();
+            ******************************/
+        default: return kUnknownFailure;
+      }
+    }
+  }
 
   return kSuccess;
 }

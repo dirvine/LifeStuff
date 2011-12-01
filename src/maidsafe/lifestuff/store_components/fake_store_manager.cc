@@ -88,7 +88,8 @@ void GetDataSlot(const std::string &signal_data, std::string *slot_data) {
 
 void GetPublicKey(const std::string &packet_name,
                   std::shared_ptr<Session> session,
-                  rsa::PublicKey *public_key) {
+                  rsa::PublicKey *public_key,
+                  int type) {
   std::shared_ptr<passport::Passport> pprt(session->passport_);
   for (int i(passport::kAnmid); i != passport::kMid; ++i) {
     passport::PacketType packet_type(static_cast<passport::PacketType>(i));
@@ -110,6 +111,26 @@ void GetPublicKey(const std::string &packet_name,
       *public_key = pprt->SignaturePacketValue(packet_type, true);
       return;
     }
+  }
+
+  if (type == DataWrapper::kMmid) {
+    *public_key = pprt->SignaturePacketValue(passport::kMmid,
+                                             false,
+                                             packet_name);
+    if (asymm::ValidateKey(*public_key))
+      return;
+    *public_key = pprt->SignaturePacketValue(passport::kMmid,
+                                             true,
+                                             packet_name);
+  } else if (type == DataWrapper::kMsid) {
+    *public_key = pprt->SignaturePacketValue(passport::kMpid,
+                                             false,
+                                             packet_name);
+    if (asymm::ValidateKey(*public_key))
+      return;
+    *public_key = pprt->SignaturePacketValue(passport::kMpid,
+                                             true,
+                                             packet_name);
   }
 }
 
@@ -226,7 +247,7 @@ void FakeStoreManager::DeletePacket(const std::string &packet_name,
              << Base32Substr(gp.data()) << ">";
 
   rsa::PublicKey public_key;
-  GetPublicKey(gp.signing_id(), session_, &public_key);
+  GetPublicKey(gp.signing_id(), session_, &public_key, gp.type());
   if (!rsa::ValidateKey(public_key)) {
     ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
     DLOG(ERROR) << "FakeStoreManager::StorePacket - No public key";
@@ -265,7 +286,7 @@ void FakeStoreManager::StorePacket(const std::string &packet_name,
              << Base32Substr(gp.data()) << ">";
 
   rsa::PublicKey public_key;
-  GetPublicKey(gp.signing_id(), session_, &public_key);
+  GetPublicKey(gp.signing_id(), session_, &public_key, gp.type());
   if (!rsa::ValidateKey(public_key)) {
     ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
     DLOG(ERROR) << "FakeStoreManager::StorePacket - No public key - ID: "
@@ -315,7 +336,7 @@ void FakeStoreManager::UpdatePacket(const std::string &packet_name,
   // TODO(Team): Compare both signing ids?
 
   rsa::PublicKey public_key;
-  GetPublicKey(old_gp.signing_id(), session_, &public_key);
+  GetPublicKey(old_gp.signing_id(), session_, &public_key, old_gp.type());
   if (!rsa::ValidateKey(public_key)) {
     ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
     DLOG(ERROR) << "FakeStoreManager::StorePacket - No public key";

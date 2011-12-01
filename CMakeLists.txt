@@ -223,13 +223,13 @@ ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS ${TEST_EXECUTABLES})
 TARGET_LINK_LIBRARIES(lifestuff_static maidsafe_drive_static passport_static boost_date_time ${QT_LIBRARIES} boost_regex)
 TARGET_LINK_LIBRARIES(lifestuff_aws_store_static maidsafe_aws_transporter_static)
 
-TARGET_LINK_LIBRARIES(TESTlifestuff lifestuff_static lifestuff_local_store_static gtest_static gmock_static)
-TARGET_LINK_LIBRARIES(TESTauthentication_local lifestuff_static lifestuff_local_store_static gtest_static)
-TARGET_LINK_LIBRARIES(TESTclientcontroller_local lifestuff_static lifestuff_local_store_static gtest_static)
-TARGET_LINK_LIBRARIES(TESTauthentication_aws lifestuff_static lifestuff_aws_store_static gtest_static)
-TARGET_LINK_LIBRARIES(TESTclientcontroller_aws lifestuff_static lifestuff_aws_store_static gtest_static)
-TARGET_LINK_LIBRARIES(LifestuffDemoLocal lifestuff_static lifestuff_local_store_static)
-TARGET_LINK_LIBRARIES(LifestuffDemoAWS lifestuff_static lifestuff_aws_store_static)
+TARGET_LINK_LIBRARIES(TESTlifestuff lifestuff_local_store_static lifestuff_static gtest_static gmock_static)
+TARGET_LINK_LIBRARIES(TESTauthentication_local lifestuff_local_store_static lifestuff_static gtest_static)
+TARGET_LINK_LIBRARIES(TESTclientcontroller_local lifestuff_local_store_static lifestuff_static gtest_static)
+TARGET_LINK_LIBRARIES(TESTauthentication_aws lifestuff_aws_store_static lifestuff_static gtest_static)
+TARGET_LINK_LIBRARIES(TESTclientcontroller_aws lifestuff_aws_store_static lifestuff_static gtest_static)
+TARGET_LINK_LIBRARIES(LifestuffDemoLocal lifestuff_local_store_static lifestuff_static)
+TARGET_LINK_LIBRARIES(LifestuffDemoAWS lifestuff_aws_store_static lifestuff_static)
 
 
 ###################################################################################################

@@ -90,7 +90,8 @@ enum ReturnCode {
   kSignatureVerificationFailure =  -205010,
   kNotHashable = -205011,
   kNotOwner = -205012,
-  kUnknownFailure = -205013,
+  kNonExistent = -205013,
+  kUnknownFailure = -205014,
 
   // PublicId
   kGetPublicIdError = -206001,

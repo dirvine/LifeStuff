@@ -77,6 +77,18 @@ class DataHandler {
                         std::shared_ptr<ChunkStore> chunk_store,
                         std::string *current_data);
 
+  int ProcessMsidData(const OperationType &op_type,
+                      const std::string &name,
+                      const DataWrapper &data,
+                      const rsa::PublicKey &public_key,
+                      std::shared_ptr<ChunkStore> chunk_store);
+
+  int ProcessMmidData(const OperationType &op_type,
+                      const std::string &name,
+                      const DataWrapper &data,
+                      const rsa::PublicKey &public_key,
+                      std::shared_ptr<ChunkStore> chunk_store);
+
   GetDataSignalPtr get_data_signal_;
 };
 
