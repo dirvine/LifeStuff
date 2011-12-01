@@ -62,6 +62,7 @@ class AuthenticationTest;
 class Authentication;
 class ContactsHandler;
 class PrivateShareHandler;
+class PublicId;
 struct UserDetails;
 
 class Session {
@@ -99,6 +100,7 @@ class Session {
                            std::shared_ptr<Session>,
                            rsa::PublicKey*);
   friend class Authentication;
+  friend class PublicId;
   friend class test::SessionTest;
   friend class test::ClientControllerTest;
   friend class test::LocalStoreManagerTest;

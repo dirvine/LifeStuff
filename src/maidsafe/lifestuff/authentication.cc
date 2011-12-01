@@ -94,7 +94,7 @@ bool IsSignature(const int &packet_type) {
   }
 }
 
-}
+}  // unnamed namespace
 
 Authentication::SerialisedPacket::SerialisedPacket()
     : type(passport::kUnknown),

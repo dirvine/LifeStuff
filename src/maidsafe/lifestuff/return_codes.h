@@ -41,6 +41,9 @@ enum ReturnCode {
   // General
   kSuccess = 0,
   kPendingResult = -201,
+  kGetPublicKeyFailure = -202,
+  kGetMpidFailure = -203,
+  kInvalidPublicKey = -204,
 
   // Authentication
   kAuthenticationError = -201001,
@@ -87,7 +90,15 @@ enum ReturnCode {
   kSignatureVerificationFailure =  -205010,
   kNotHashable = -205011,
   kNotOwner = -205012,
-  kUnknownFailure = -205013
+  kUnknownFailure = -205013,
+
+  // PublicId
+  kGetPublicIdError = -206001,
+  kSigningError = -206002,
+  kPublicIdException = -206003,
+  kPublicIdTimeout = -206004,
+  kSendContactInfoFailure = -206005,
+  kStorePublicIdFailure = -206006
 };
 
 }  // namespace lifestuff

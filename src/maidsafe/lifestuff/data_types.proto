@@ -1,0 +1,13 @@
+package maidsafe.lifestuff;
+
+message MCID {
+  required bytes mmid = 1;
+  required bytes public_username = 2;
+  required bytes signature = 3;
+}
+
+message PublicID {
+  required bytes public_key = 1;
+  required bytes signature = 2;
+  required bool accepts_new_contacts = 3;
+}

@@ -67,7 +67,7 @@ class Session;
 
 class ClientController {
  public:
-  ClientController(std::shared_ptr<Session> session);
+  explicit ClientController(std::shared_ptr<Session> session);
 
   ClientController &operator=(const ClientController&);
   ClientController(const ClientController&);
