@@ -101,7 +101,8 @@ enum ReturnCode {
   kPublicIdTimeout = -206005,
   kSendContactInfoFailure = -206006,
   kStorePublicIdFailure = -206007,
-  kPublicIdempty = -206008
+  kPublicIdEmpty = -206008,
+  kNoPublicIds = -206009
 };
 
 }  // namespace lifestuff

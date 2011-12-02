@@ -148,11 +148,19 @@ void GetPublicKey(const std::string &packet_name,
   }
 
   switch (type) {
-    case DataWrapper::kMmid: packet_type = passport::kMmid; break;
-    case DataWrapper::kMpid: packet_type = passport::kAnmpid; break;
-    case DataWrapper::kAnmpid: packet_type = passport::kAnmpid; break;
+    case DataWrapper::kMmid:
+      packet_type = passport::kMmid;
+      break;
+    case DataWrapper::kMpid:
+      packet_type = passport::kAnmpid;
+      break;
+    case DataWrapper::kAnmpid:
+      packet_type = passport::kAnmpid;
+      break;
     case DataWrapper::kMsid:
       packet_type = passport::kAnmpid;
+      break;
+    default: packet_type = passport::kUnknown;
       break;
   }
   *public_key = pprt->SignaturePacketValue(packet_type, false, packet_name);

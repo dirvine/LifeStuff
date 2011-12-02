@@ -140,13 +140,19 @@ PublicId::~PublicId() {
   StopCheckingForNewContacts();
 }
 
-void PublicId::StartCheckingForNewContacts(bptime::seconds interval) {
-  // TODO(Fraser#5#): 2011-11-30 - Check if 'tis running
+int PublicId::StartCheckingForNewContacts(bptime::seconds interval) {
+  std::vector<passport::SelectableIdData> selectables;
+  session_->passport_->SelectableIdentitiesList(&selectables);
+  if (selectables.empty()) {
+    DLOG(ERROR) << "No public username set";
+    return kNoPublicIds;
+  }
   get_new_contacts_timer_.expires_from_now(interval);
   get_new_contacts_timer_.async_wait(std::bind(&PublicId::GetNewContacts,
                                                this,
                                                interval,
                                                std::placeholders::_1));
+  return kSuccess;
 }
 
 void PublicId::StopCheckingForNewContacts() {
@@ -157,7 +163,7 @@ int PublicId::CreatePublicId(const std::string &public_username,
                              bool accepts_new_contacts) {
   if (public_username.empty()) {
     DLOG(ERROR) << "Public ID name empty";
-    return kPublicIdempty;
+    return kPublicIdEmpty;
   }
 
   // Check chosen name is available

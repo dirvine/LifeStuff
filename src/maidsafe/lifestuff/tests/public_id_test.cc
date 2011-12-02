@@ -106,8 +106,10 @@ class PublicIdTest : public testing::Test {
 };
 
 TEST_F(PublicIdTest, FUNC_CreateInvalidId) {
-  EXPECT_EQ(kPublicIdempty, public_id1_.CreatePublicId("", false));
-  EXPECT_EQ(kPublicIdempty, public_id1_.CreatePublicId("", true));
+  EXPECT_EQ(kPublicIdEmpty, public_id1_.CreatePublicId("", false));
+  EXPECT_EQ(kPublicIdEmpty, public_id1_.CreatePublicId("", true));
+
+  EXPECT_EQ(kNoPublicIds, public_id1_.StartCheckingForNewContacts(interval_));
 
   EXPECT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, false));
 
@@ -126,8 +128,8 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdAntiSocial) {
   EXPECT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, false));
   EXPECT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
 //  std::cout << "\n\n" << std::endl;
-//  public_id1_.StartCheckingForNewContacts(interval_);
-//  public_id2_.StartCheckingForNewContacts(interval_);
+  EXPECT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
+  EXPECT_EQ(kSuccess, public_id2_.StartCheckingForNewContacts(interval_));
 //  std::cout << "\n\n" << std::endl;
 //  public_id1_.new_contact_signal()->connect(
 //      std::bind(&PublicIdTest::NewContactSlot, this, arg::_1, true));

@@ -61,8 +61,9 @@ class PublicId {
 
   // Periodically retrieves saved MCIDs from MPID and fires new_contact_signal_
   // for each valid MCID retrieved.  After the signal is fired, the MCID(s) are
-  // deleted from the network.
-  void StartCheckingForNewContacts(boost::posix_time::seconds interval);
+  // deleted from the network.  Checking will only succeed if at least one
+  // public username has been successfully created.
+  int StartCheckingForNewContacts(boost::posix_time::seconds interval);
   void StopCheckingForNewContacts();
 
   // Creates and stores to the network a new MSID, MPID, ANMPID and MMID.
