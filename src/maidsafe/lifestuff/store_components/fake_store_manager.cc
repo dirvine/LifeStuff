@@ -80,7 +80,8 @@ class VeritasChunkValidation : public ChunkValidation {
   VeritasChunkValidation& operator=(const VeritasChunkValidation&);
 };
 
-void GetDataSlot(const std::string &signal_data, std::string *slot_data) {
+template <typename T>
+void GetDataSlot(const T &signal_data, T *slot_data) {
   *slot_data = signal_data;
 }
 
@@ -121,7 +122,7 @@ std::string DebugString(const int &packet_type) {
 
 void GetPublicKey(const std::string &packet_name,
                   std::shared_ptr<Session> session,
-                  rsa::PublicKey *public_key,
+                  asymm::PublicKey *public_key,
                   int type) {
   std::shared_ptr<passport::Passport> pprt(session->passport_);
   passport::PacketType packet_type;
@@ -148,25 +149,28 @@ void GetPublicKey(const std::string &packet_name,
   }
 
   switch (type) {
-    case DataWrapper::kMmid:
-      packet_type = passport::kMmid;
-      break;
-    case DataWrapper::kMpid:
-      packet_type = passport::kAnmpid;
-      break;
-    case DataWrapper::kAnmpid:
-      packet_type = passport::kAnmpid;
-      break;
-    case DataWrapper::kMsid:
-      packet_type = passport::kAnmpid;
-      break;
-    default: packet_type = passport::kUnknown;
-      break;
+    case kMmid:
+        packet_type = passport::kMmid;
+        break;
+    case kMpid:
+        packet_type = passport::kAnmpid;
+        break;
+    case kAnmpid:
+        packet_type = passport::kAnmpid;
+        break;
+    case kMsid:
+        packet_type = passport::kAnmpid;
+        break;
+    default:
+        packet_type = passport::kUnknown;
+        break;
   }
   *public_key = pprt->SignaturePacketValue(packet_type, false, packet_name);
   if (asymm::ValidateKey(*public_key))
     return;
   *public_key = pprt->SignaturePacketValue(packet_type, true, packet_name);
+  if (!asymm::ValidateKey(*public_key))
+    DLOG(ERROR) << "Failed to validate confirmed public key";
 }
 
 FakeStoreManager::FakeStoreManager(std::shared_ptr<Session> session)
@@ -216,7 +220,7 @@ bool FakeStoreManager::KeyUnique(const std::string &key) {
   return data_handler.ProcessData(DataHandler::kHas,
                                   key,
                                   "",
-                                  rsa::PublicKey(),
+                                  asymm::PublicKey(),
                                   client_chunk_store_) == kKeyUnique;
 }
 
@@ -227,23 +231,36 @@ void FakeStoreManager::KeyUnique(const std::string &key,
       static_cast<ReturnCode>(data_handler.ProcessData(DataHandler::kHas,
                                                        key,
                                                        "",
-                                                       rsa::PublicKey(),
+                                                       asymm::PublicKey(),
                                                        client_chunk_store_)));
   ExecReturnCodeCallback(cb, result);
 }
 
 int FakeStoreManager::GetPacket(const std::string &packet_name,
-                                std::vector<std::string> *results) {
+                                std::vector<std::string> *results,
+                                const asymm::Identity &public_key_id) {
+  DLOG(INFO) << "Searching <" << Base32Substr(packet_name) << ">";
+
+  BOOST_ASSERT(results);
+  results->clear();
+
+  asymm::PublicKey public_key;
+  if (!public_key_id.empty())
+    GetPublicKey(public_key_id, session_, &public_key, kMpid);
+
   DataHandler data_handler;
   std::string data;
-  data_handler.get_data_signal()->connect(
-      DataHandler::GetDataSignalPtr::element_type::slot_type(
-          &GetDataSlot, _1, &data));
+  data_handler.get_string_signal()->connect(
+      DataHandler::GetStringSignalPtr::element_type::slot_type(
+          &GetDataSlot<std::string>, _1, &data));
+  data_handler.get_vector_signal()->connect(
+      DataHandler::GetVectorSignalPtr::element_type::slot_type(
+          &GetDataSlot<std::vector<std::string>>, _1, results));  //  NOLINT (Fraser)
 
   int result(data_handler.ProcessData(DataHandler::kGet,
                                       packet_name,
                                       "",
-                                      rsa::PublicKey(),
+                                      public_key,
                                       client_chunk_store_));
   if (result != kSuccess) {
     DLOG(ERROR) << "FakeStoreManager::GetPacket - Failure in DH::ProcessData: "
@@ -252,11 +269,13 @@ int FakeStoreManager::GetPacket(const std::string &packet_name,
   }
 
   if (data.empty()) {
-    DLOG(ERROR) << "FakeStoreManager::GetPacket - data empty";
-    return kGetPacketFailure;
+    if (results->empty()) {
+      DLOG(ERROR) << "FakeStoreManager::GetPacket - data empty";
+      return kGetPacketFailure;
+    }
+  } else {
+    results->push_back(data);
   }
-
-  results->push_back(data);
 
   return kSuccess;
 }
@@ -281,9 +300,9 @@ void FakeStoreManager::DeletePacket(const std::string &packet_name,
   DLOG(INFO) << "Deleting <" << Base32Substr(packet_name) << ", "
              << Base32Substr(gp.data()) << ">";
 
-  rsa::PublicKey public_key;
+  asymm::PublicKey public_key;
   GetPublicKey(gp.signing_id(), session_, &public_key, gp.type());
-  if (!rsa::ValidateKey(public_key)) {
+  if (!asymm::ValidateKey(public_key)) {
     ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
     DLOG(ERROR) << "FakeStoreManager::StorePacket - No public key";
     return;
@@ -317,25 +336,24 @@ void FakeStoreManager::StorePacket(const std::string &packet_name,
     return;
   }
 
-  DLOG(INFO) << "Storing <" << Base32Substr(packet_name) << ", "
-             << Base32Substr(gp.data()) << ">";
-
-  rsa::PublicKey public_key;
+  asymm::PublicKey public_key;
   if (gp.has_signing_id()) {
     GetPublicKey(gp.signing_id(), session_, &public_key, gp.type());
-    if (!rsa::ValidateKey(public_key)) {
+    if (!asymm::ValidateKey(public_key)) {
       ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
       DLOG(ERROR) << "FakeStoreManager::StorePacket - No public key - ID: "
                   << Base32Substr(gp.signing_id());
       return;
     }
-  } else {
-    DLOG(INFO) << "NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO " << DebugString(gp.type());
   }
 
   std::string data;
   CreateSerialisedSignedValue(gp, &data);
   DataHandler data_handler;
+
+  DLOG(INFO) << "Storing <" << Base32Substr(packet_name) << ", "
+             << Base32Substr(data) << ">";
+
   int result(data_handler.ProcessData(DataHandler::kStore,
                                       packet_name,
                                       data,
@@ -374,9 +392,9 @@ void FakeStoreManager::UpdatePacket(const std::string &packet_name,
 
   // TODO(Team): Compare both signing ids?
 
-  rsa::PublicKey public_key;
+  asymm::PublicKey public_key;
   GetPublicKey(old_gp.signing_id(), session_, &public_key, old_gp.type());
-  if (!rsa::ValidateKey(public_key)) {
+  if (!asymm::ValidateKey(public_key)) {
     ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
     DLOG(ERROR) << "FakeStoreManager::StorePacket - No public key";
     return;
@@ -419,7 +437,7 @@ void FakeStoreManager::CreateSerialisedSignedValue(const GenericPacket &data,
                                                    std::string *ser_gp) {
   ser_gp->clear();
   DataWrapper data_wrapper;
-  data_wrapper.set_data_type(static_cast<DataWrapper::DataType>(data.type()));
+  data_wrapper.set_data_type(data.type());
   GenericPacket *gp = data_wrapper.mutable_signed_data();
   *gp = data;
   *ser_gp = data_wrapper.SerializeAsString();

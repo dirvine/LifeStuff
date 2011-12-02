@@ -92,17 +92,19 @@ enum ReturnCode {
   kNotOwner = -205012,
   kNonExistent = -205013,
   kUnknownFailure = -205014,
+  kWontAcceptContact = -205015,
 
   // PublicId
   kPublicIdExists = -206001,
   kGetPublicIdError = -206002,
   kSigningError = -206003,
-  kPublicIdException = -206004,
-  kPublicIdTimeout = -206005,
-  kSendContactInfoFailure = -206006,
-  kStorePublicIdFailure = -206007,
-  kPublicIdEmpty = -206008,
-  kNoPublicIds = -206009
+  kEncryptingError = -206004,
+  kPublicIdException = -206005,
+  kPublicIdTimeout = -206006,
+  kSendContactInfoFailure = -206007,
+  kStorePublicIdFailure = -206008,
+  kPublicIdEmpty = -206009,
+  kNoPublicIds = -206010
 };
 
 }  // namespace lifestuff

@@ -31,6 +31,8 @@
 
 #include "maidsafe/passport/passport.h"
 
+// TODO(Fraser#5#): 2011-12-02 - remove this once DataType enum is moved.
+#include "maidsafe/lifestuff/data_handler.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/store_components/packet_manager.h"
@@ -114,7 +116,7 @@ Authentication::SerialisedPacket::SerialisedPacket(
           public_key() {
   if (IsSignature(packet_type)) {
     public_key = passport->SignaturePacketValue(packet_type, confirmed);
-    BOOST_ASSERT(rsa::ValidateKey(public_key));
+    BOOST_ASSERT(asymm::ValidateKey(public_key));
   } else {
     value = passport->IdentityPacketValue(packet_type, confirmed);
     BOOST_ASSERT(!value.empty());
@@ -1338,7 +1340,7 @@ std::string Authentication::CreateGenericPacket(
   BOOST_ASSERT(!packet.signature.empty());
   if (packet.value.empty()) {
     std::string encoded_public_key;
-    rsa::EncodePublicKey(packet.public_key, &encoded_public_key);
+    asymm::EncodePublicKey(packet.public_key, &encoded_public_key);
     BOOST_ASSERT(!encoded_public_key.empty());
     generic_packet.set_data(encoded_public_key);
   } else {
@@ -1346,7 +1348,7 @@ std::string Authentication::CreateGenericPacket(
     generic_packet.set_data(packet.value);
   }
   generic_packet.set_signature(packet.signature);
-  generic_packet.set_type(DataWrapper::kHashableSigned);
+  generic_packet.set_type(kHashableSigned);
   switch (packet.type) {
     case passport::kAnmid:
       generic_packet.set_signing_id(packet.name);
@@ -1355,7 +1357,7 @@ std::string Authentication::CreateGenericPacket(
       generic_packet.set_signing_id(
           session_->passport_->PacketName(passport::kAnmid,
                                           signing_packet_confirmed));
-      generic_packet.set_type(DataWrapper::kNonHashableSigned);
+      generic_packet.set_type(kNonHashableSigned);
       break;
     case passport::kAnsmid:
       generic_packet.set_signing_id(packet.name);
@@ -1364,7 +1366,7 @@ std::string Authentication::CreateGenericPacket(
       generic_packet.set_signing_id(
           session_->passport_->PacketName(passport::kAnsmid,
                                           signing_packet_confirmed));
-      generic_packet.set_type(DataWrapper::kNonHashableSigned);
+      generic_packet.set_type(kNonHashableSigned);
       break;
     case passport::kAntmid:
       generic_packet.set_signing_id(packet.name);
@@ -1374,7 +1376,7 @@ std::string Authentication::CreateGenericPacket(
       generic_packet.set_signing_id(
           session_->passport_->PacketName(passport::kAntmid,
                                           signing_packet_confirmed));
-      generic_packet.set_type(DataWrapper::kNonHashableSigned);
+      generic_packet.set_type(kNonHashableSigned);
       break;
     case passport::kAnmpid:
       generic_packet.set_signing_id(packet.name);
@@ -1383,7 +1385,7 @@ std::string Authentication::CreateGenericPacket(
       generic_packet.set_signing_id(
           session_->passport_->PacketName(passport::kAnmpid,
                                           signing_packet_confirmed));
-      generic_packet.set_type(DataWrapper::kNonHashableSigned);
+      generic_packet.set_type(kNonHashableSigned);
       break;
     case passport::kAnmaid:
       generic_packet.set_signing_id(packet.name);

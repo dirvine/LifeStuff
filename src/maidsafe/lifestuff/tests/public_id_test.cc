@@ -127,19 +127,16 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdAntiSocial) {
   // Create user1 who doesn't accept new contacts, and user2 who does
   EXPECT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, false));
   EXPECT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
-//  std::cout << "\n\n" << std::endl;
+
+  public_id1_.new_contact_signal()->connect(
+      std::bind(&PublicIdTest::NewContactSlot, this, arg::_1, true));
   EXPECT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
-  EXPECT_EQ(kSuccess, public_id2_.StartCheckingForNewContacts(interval_));
-//  std::cout << "\n\n" << std::endl;
-//  public_id1_.new_contact_signal()->connect(
-//      std::bind(&PublicIdTest::NewContactSlot, this, arg::_1, true));
-  std::cout << "\n\n" << std::endl;
+
   EXPECT_EQ(kSendContactInfoFailure,
             public_id2_.SendContactInfo(public_username2_, public_username1_));
-//  std::cout << "\n\n" << std::endl;
-//  Sleep(interval_);
-//  std::cout << "\n\n" << std::endl;
-//  EXPECT_TRUE(received_public_username_.empty());
+
+  Sleep(interval_ * 2);
+  EXPECT_TRUE(received_public_username_.empty());
 }
 
 TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
@@ -152,7 +149,9 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
       std::bind(&PublicIdTest::NewContactSlot, this, arg::_1, false)));
   EXPECT_EQ(kSuccess,
             public_id2_.SendContactInfo(public_username2_, public_username1_));
-  Sleep(interval_);
+
+  EXPECT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
+  Sleep(interval_ * 2);
   EXPECT_EQ(public_username2_, received_public_username_);
   mi_contact received_contact;
   EXPECT_EQ(-1913, session1_->contacts_handler()->GetContactInfo(
@@ -166,7 +165,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
       std::bind(&PublicIdTest::NewContactSlot, this, arg::_1, true));
   EXPECT_EQ(kSuccess,
             public_id2_.SendContactInfo(public_username2_, public_username1_));
-  Sleep(interval_);
+  Sleep(interval_ * 2);
   EXPECT_EQ(public_username2_, received_public_username_);
   EXPECT_EQ(kSuccess,
             session1_->contacts_handler()->GetContactInfo(

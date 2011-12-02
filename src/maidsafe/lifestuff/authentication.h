@@ -137,7 +137,7 @@ class Authentication {
                      bool confirmed);
     passport::PacketType type;
     std::string name, value, signature;
-    rsa::PublicKey public_key;
+    asymm::PublicKey public_key;
   };
 
   struct SaveSessionData {

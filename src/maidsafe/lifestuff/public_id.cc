@@ -24,6 +24,8 @@
 #include "maidsafe/passport/passport.h"
 
 #include "maidsafe/lifestuff/contacts.h"
+// TODO(Fraser#5#): 2011-12-02 - remove this once DataType enum is moved.
+#include "maidsafe/lifestuff/data_handler.h"
 #include "maidsafe/lifestuff/data_types_pb.h"
 #include "maidsafe/lifestuff/lifestuff_messages_pb.h"
 #include "maidsafe/lifestuff/log.h"
@@ -63,7 +65,7 @@ std::string AnmpidValue(const passport::SelectableIdentityData &data,
   GenericPacket packet;
   packet.set_data(public_key);
   packet.set_signature(std::get<2>(data.at(0)));
-  packet.set_type(DataWrapper::kAnmpid);
+  packet.set_type(kAnmpid);
   packet.set_signing_id(public_username);
   return packet.SerializeAsString();
 }
@@ -79,7 +81,7 @@ std::string MpidValue(const passport::SelectableIdentityData &data,
   GenericPacket packet;
   packet.set_data(public_key);
   packet.set_signature(std::get<2>(data.at(1)));
-  packet.set_type(DataWrapper::kMpid);
+  packet.set_type(kMpid);
   packet.set_signing_id(public_username);
   return packet.SerializeAsString();
 }
@@ -98,7 +100,7 @@ std::string MmidValue(const passport::SelectableIdentityData &data,
   GenericPacket packet;
   packet.set_data(mmid.SerializeAsString());
   packet.set_signature(mmid.signature());
-  packet.set_type(DataWrapper::kMmid);
+  packet.set_type(kMmid);
   packet.set_signing_id(public_username);
   return packet.SerializeAsString();
 }
@@ -119,8 +121,11 @@ std::string MsidValue(const passport::SelectableIdentityData &data,
   msid.set_accepts_new_contacts(accepts_new_contacts);
   GenericPacket packet;
   packet.set_data(msid.SerializeAsString());
+  // TODO(Fraser#5#): 2011-12-02 - Chnage this to sign data with MPID private
+  //                               key.  Also change
+  //                               FakeStoreManager::GetPublicKey switch.
   packet.set_signature(msid.signature());
-  packet.set_type(DataWrapper::kMsid);
+  packet.set_type(kMsid);
   packet.set_signing_id(public_username);
   return packet.SerializeAsString();
 }
@@ -289,10 +294,29 @@ int PublicId::SendContactInfo(const std::string &public_username,
   }
 
   // Create MCID, encrypted for recipient
-  MCID mcid;
   std::string mmid_name(std::get<0>(data.at(2)));
-  mcid.set_mmid(mmid_name);
-  mcid.set_public_username(public_username);
+  std::string encrypted_mmid_name;
+  result = asymm::Encrypt(mmid_name,
+                          recipient_public_key,
+                          &encrypted_mmid_name);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to encrypt MCID's MMID name: " << result;
+    return kEncryptingError;
+  }
+
+  std::string encrypted_public_username;
+  result = asymm::Encrypt(public_username,
+                          recipient_public_key,
+                          &encrypted_public_username);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to encrypt MCID's public username: " << result;
+    return kEncryptingError;
+  }
+
+  MCID mcid;
+  mcid.set_encrypted_mmid(encrypted_mmid_name);
+  mcid.set_encrypted_public_username(encrypted_public_username);
+
   asymm::Signature sig;
   result = asymm::Sign(mmid_name + public_username, std::get<2>(*it), &sig);
   if (result != kSuccess) {
@@ -303,11 +327,6 @@ int PublicId::SendContactInfo(const std::string &public_username,
 
   BOOST_ASSERT(!mcid.SerializeAsString().empty());
 
-  std::string encrypted_mcid;
-  result = asymm::Encrypt(mcid.SerializeAsString(),
-                          recipient_public_key,
-                          &encrypted_mcid);
-
   // Store encrypted MCID at recipient's MPID's name
   boost::mutex mutex;
   boost::condition_variable cond_var;
@@ -316,9 +335,9 @@ int PublicId::SendContactInfo(const std::string &public_username,
                                     &cond_var, &result));
 
   GenericPacket gp;
-  gp.set_data(encrypted_mcid);
+  gp.set_data(mcid.SerializeAsString());
   gp.set_signature(sig);
-  gp.set_type(DataWrapper::kMsid);
+  gp.set_type(kMsid);
   packet_manager_->StorePacket(
       crypto::Hash<crypto::SHA512>(recipient_public_username),
       gp.SerializeAsString(),
@@ -371,11 +390,13 @@ void PublicId::GetNewContacts(const bptime::seconds &interval,
     std::vector<std::string> mpid_values;
     int result(packet_manager_->GetPacket(
                    crypto::Hash<crypto::SHA512>(std::get<0>(*it)),
-                   &mpid_values));
+                   &mpid_values,
+                   std::get<0>(*it)));
     if (result == kSuccess) {
       ProcessRequests(*it, mpid_values);
     } else {
-      DLOG(ERROR) << "Failed to get MPID contents for " << std::get<0>(*it);
+      DLOG(ERROR) << "Failed to get MPID contents for " << std::get<0>(*it)
+                  << ": " << result;
     }
   }
 
@@ -390,30 +411,40 @@ void PublicId::GetNewContacts(const bptime::seconds &interval,
 void PublicId::ProcessRequests(const passport::SelectableIdData &data,
                                const std::vector<std::string> &mpid_values) {
   for (auto it(mpid_values.begin()); it != mpid_values.end(); ++it) {
-    std::string decrypted_mcid;
-    int n(asymm::Decrypt(*it, std::get<2>(data), &decrypted_mcid));
-    if (n != kSuccess || decrypted_mcid.empty()) {
-      DLOG(ERROR) << "Failed to decrypt message: " << n;
-      continue;
-    }
-
     MCID mcid;
-    if (!mcid.ParseFromString(decrypted_mcid)) {
+    if (!mcid.ParseFromString(*it)) {
       DLOG(ERROR) << "Failed to parse MCID";
       continue;
     }
 
-    if ((*new_contact_signal_)(mcid.public_username())) {
-      // add contact to contacts
-      session_->contacts_handler()->AddContact(mcid.public_username(), "", "",
-                                               "", "", '\0', 0, 0, "", '\0', 0,
-                                               0);
+    std::string mmid_name;
+    int n(asymm::Decrypt(mcid.encrypted_mmid(), std::get<2>(data), &mmid_name));
+    if (n != kSuccess || mmid_name.empty()) {
+      DLOG(ERROR) << "Failed to decrypt MMID name: " << n;
+      continue;
     }
-    // Delete MCID from network - do nothing in callback
-    packet_manager_->DeletePacket(
-        crypto::Hash<crypto::SHA512>(std::get<0>(data)),
-        *it,
-        [](int /*result*/) {});
+    std::string public_username;
+    n = asymm::Decrypt(mcid.encrypted_public_username(),
+                       std::get<2>(data),
+                       &public_username);
+    if (n != kSuccess || public_username.empty()) {
+      DLOG(ERROR) << "Failed to decrypt public username: " << n;
+      continue;
+    }
+
+    // TODO(Fraser#5#): 2011-12-02 - Validate signature of MCID
+
+    bool signal_return(*(*new_contact_signal_)(public_username));
+    if (signal_return) {
+      // add contact to contacts
+      session_->contacts_handler()->AddContact(public_username, "", "", "", "",
+                                               '\0', 0, 0, "", '\0', 0, 0);
+    }
+//    // Delete MCID from network - do nothing in callback
+//    packet_manager_->DeletePacket(
+//        crypto::Hash<crypto::SHA512>(std::get<0>(data)),
+//        *it,
+//        [](int /*result*/) {});
   }
 }
 

@@ -23,6 +23,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "boost/signals2/signal.hpp"
 
@@ -34,6 +35,16 @@ namespace maidsafe {
 
 class ChunkStore;
 
+enum DataType {
+  kUnknown = -1,
+  kHashableSigned,
+  kNonHashableSigned,
+  kAnmpid,
+  kMpid,
+  kMsid,
+  kMmid
+};
+
 namespace lifestuff {
 
 class DataWrapper;
@@ -42,17 +53,20 @@ class DataHandler {
  public:
   enum OperationType { kStore, kDelete, kUpdate, kGet, kHas };
   typedef std::shared_ptr<bs2::signal<void(const std::string&)>>
-          GetDataSignalPtr;
+          GetStringSignalPtr;
+  typedef std::shared_ptr<bs2::signal<void(const std::vector<std::string>&)>>
+          GetVectorSignalPtr;
 
   DataHandler();
   ~DataHandler();
 
-  GetDataSignalPtr get_data_signal();
+  GetStringSignalPtr get_string_signal() const;
+  GetVectorSignalPtr get_vector_signal() const;
 
   int ProcessData(const OperationType &op_type,
                   const std::string &name,
                   const std::string &data,
-                  const rsa::PublicKey &public_key,
+                  const asymm::PublicKey &public_key,
                   std::shared_ptr<ChunkStore> chunk_store);
 
  private:
@@ -62,34 +76,38 @@ class DataHandler {
   int ProcessSignedData(const OperationType &op_type,
                         const std::string &name,
                         const DataWrapper &data,
-                        const rsa::PublicKey &public_key,
+                        const asymm::PublicKey &public_key,
                         const bool &hashable,
                         std::shared_ptr<ChunkStore> chunk_store);
 
   int PreOperationChecks(const OperationType &op_type,
                          const std::string &name,
                          const DataWrapper &data_wrapper,
-                         const rsa::PublicKey &public_key,
+                         const asymm::PublicKey &public_key,
                          const bool &hashable);
 
   int VerifyCurrentData(const std::string &name,
-                        const rsa::PublicKey &public_key,
+                        const asymm::PublicKey &public_key,
                         std::shared_ptr<ChunkStore> chunk_store,
                         std::string *current_data);
 
   int ProcessMsidData(const OperationType &op_type,
                       const std::string &name,
                       const DataWrapper &data,
-                      const rsa::PublicKey &public_key,
+                      const asymm::PublicKey &public_key,
                       std::shared_ptr<ChunkStore> chunk_store);
 
   int ProcessMmidData(const OperationType &op_type,
                       const std::string &name,
                       const DataWrapper &data,
-                      const rsa::PublicKey &public_key,
+                      const asymm::PublicKey &public_key,
                       std::shared_ptr<ChunkStore> chunk_store);
 
-  GetDataSignalPtr get_data_signal_;
+  DataType GetDataType(const std::string &name,
+                       std::shared_ptr<ChunkStore> chunk_store) const;
+
+  GetStringSignalPtr get_string_signal_;
+  GetVectorSignalPtr get_vector_signal_;
 };
 
 }  // namespace lifestuff

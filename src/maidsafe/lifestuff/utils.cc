@@ -93,14 +93,6 @@ int GetValidatedPublicKey(const std::string &public_username,
     return kInvalidPublicKey;
   }
 
-  if (asymm::CheckSignature(serialised_public_key,
-                            public_key_signature,
-                            *public_key) != kSuccess) {
-    DLOG(ERROR) << "Invalid public key signature for " << public_username;
-    *public_key = asymm::PublicKey();
-    return kInvalidPublicKey;
-  }
-
   return kSuccess;
 }
 

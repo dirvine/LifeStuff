@@ -141,7 +141,7 @@ int ClientController::ParseDa() {
     return -9000;
   }
   if (!data_atlas.has_timestamp()) {
-    DLOG(ERROR) << "DA doesn't have a timestamp." << std::endl;
+    DLOG(ERROR) << "DA doesn't have a timestamp.";
     return -9001;
   }
   if (!data_atlas.has_unique_user_id() || !data_atlas.has_root_parent_id()) {
@@ -275,7 +275,7 @@ bool ClientController::CreateUser(const std::string &username,
   Sleep(boost::posix_time::milliseconds(1));
   n = SerialiseDa();
   if (n != 0) {
-    DLOG(ERROR) << "Failed to serialise DA." << std::endl;
+    DLOG(ERROR) << "Failed to serialise DA.";
     return false;
   }
   std::string surrogate_ser_da(ser_da_);

@@ -40,12 +40,17 @@ void LocalStoreManager::Init(VoidFuncOneInt callback) {
   if (result != kSuccess)
     return ExecReturnCodeCallback(callback, result);
 
-  std::shared_ptr<BufferedChunkStore> buffered_chunk_store(new
-      BufferedChunkStore(chunk_validation_, asio_service_));
-  if (!buffered_chunk_store->Init(buffered_chunk_store_dir.string())) {
-    DLOG(ERROR) << "Failed to initialise client_chunk_store_";
-    return ExecReturnCodeCallback(callback, kStoreManagerInitError);
-  }
+  std::shared_ptr<FileChunkStore> cstore(new FileChunkStore(chunk_validation_));
+  cstore->Init(buffered_chunk_store_dir);
+
+  std::shared_ptr<ThreadsafeChunkStore> buffered_chunk_store(new
+      ThreadsafeChunkStore(cstore));
+//  std::shared_ptr<BufferedChunkStore> buffered_chunk_store(new
+//      BufferedChunkStore(chunk_validation_, asio_service_));
+//  if (!buffered_chunk_store->Init(buffered_chunk_store_dir.string())) {
+//    DLOG(ERROR) << "Failed to initialise client_chunk_store_";
+//    return ExecReturnCodeCallback(callback, kStoreManagerInitError);
+//  }
   client_chunk_store_ = buffered_chunk_store;
   ExecReturnCodeCallback(callback, kSuccess);
 }

@@ -77,7 +77,7 @@ class LocalStoreManagerTest : public testing::Test {
                              arg::_2);
     anmaid_public_key_ =
         session_->passport_->SignaturePacketValue(passport::kAnmaid, true);
-    rsa::EncodePublicKey(anmaid_public_key_, &encoded_anmaid_public_key_);
+    asymm::EncodePublicKey(anmaid_public_key_, &encoded_anmaid_public_key_);
     ASSERT_FALSE(encoded_anmaid_public_key_.empty());
   }
 
@@ -108,7 +108,7 @@ class LocalStoreManagerTest : public testing::Test {
   CallbackObject cb_;
   std::function<void(int)> functor_;  // NOLINT (Dan)
   std::function<void(const std::vector<std::string>&, int)> get_functor_;
-  rsa::PublicKey anmaid_public_key_;
+  asymm::PublicKey anmaid_public_key_;
   std::string encoded_anmaid_public_key_;
 
  private:
@@ -152,7 +152,7 @@ TEST_F(LocalStoreManagerTest, BEH_GetPacket) {
   GenericPacket gp_res;
   ASSERT_TRUE(gp_res.ParseFromString(res[0]));
   ASSERT_EQ(gp.data(), gp_res.data());
-  ASSERT_EQ(kSuccess, rsa::CheckSignature(gp.data(),
+  ASSERT_EQ(kSuccess, asymm::CheckSignature(gp.data(),
                                           gp_res.signature(),
                                           anmaid_public_key_));
 
@@ -164,7 +164,7 @@ TEST_F(LocalStoreManagerTest, BEH_GetPacket) {
   GenericPacket gp_res2;
   ASSERT_TRUE(gp_res2.ParseFromString(results[0]));
   ASSERT_EQ(gp.data(), gp_res2.data());
-  ASSERT_EQ(kSuccess, rsa::CheckSignature(gp.data(),
+  ASSERT_EQ(kSuccess, asymm::CheckSignature(gp.data(),
                                           gp_res2.signature(),
                                           anmaid_public_key_));
 }
@@ -186,7 +186,7 @@ TEST_F(LocalStoreManagerTest, BEH_StoreSystemPacket) {
   GenericPacket gp_res;
   ASSERT_TRUE(gp_res.ParseFromString(res[0]));
   ASSERT_EQ(gp.data(), gp_res.data());
-  ASSERT_EQ(kSuccess, rsa::CheckSignature(gp.data(),
+  ASSERT_EQ(kSuccess, asymm::CheckSignature(gp.data(),
                                           gp_res.signature(),
                                           anmaid_public_key_));
 }
@@ -247,7 +247,7 @@ TEST_F(LocalStoreManagerTest, BEH_UpdateSystemPacket) {
   GenericPacket gp_res;
   ASSERT_TRUE(gp_res.ParseFromString(res[0]));
   ASSERT_EQ(gp.data(), gp_res.data());
-  ASSERT_EQ(kSuccess, rsa::CheckSignature(gp.data(),
+  ASSERT_EQ(kSuccess, asymm::CheckSignature(gp.data(),
                                           gp_res.signature(),
                                           anmaid_public_key_));
 
@@ -268,7 +268,7 @@ TEST_F(LocalStoreManagerTest, BEH_UpdateSystemPacket) {
   gp_res.Clear();
   ASSERT_TRUE(gp_res.ParseFromString(res[0]));
   ASSERT_EQ(new_gp.data(), gp_res.data());
-  ASSERT_EQ(kSuccess, rsa::CheckSignature(new_gp.data(),
+  ASSERT_EQ(kSuccess, asymm::CheckSignature(new_gp.data(),
                                           gp_res.signature(),
                                           anmaid_public_key_));
 }
@@ -289,7 +289,7 @@ TEST_F(LocalStoreManagerTest, BEH_UpdateSystemPacketNotOwner) {
   GenericPacket gp_res;
   ASSERT_TRUE(gp_res.ParseFromString(res[0]));
   ASSERT_EQ(gp.data(), gp_res.data());
-  ASSERT_EQ(kSuccess, rsa::CheckSignature(gp.data(),
+  ASSERT_EQ(kSuccess, asymm::CheckSignature(gp.data(),
                                           gp_res.signature(),
                                           anmaid_public_key_));
 
@@ -313,7 +313,7 @@ TEST_F(LocalStoreManagerTest, BEH_UpdateSystemPacketNotOwner) {
   gp_res.Clear();
   ASSERT_TRUE(gp_res.ParseFromString(res[0]));
   ASSERT_EQ(gp.data(), gp_res.data());
-  ASSERT_EQ(kSuccess, rsa::CheckSignature(gp.data(),
+  ASSERT_EQ(kSuccess, asymm::CheckSignature(gp.data(),
                                           gp_res.signature(),
                                           anmaid_public_key_));
 }

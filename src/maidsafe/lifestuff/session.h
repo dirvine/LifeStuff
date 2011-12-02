@@ -98,7 +98,7 @@ class Session {
 
   friend void GetPublicKey(const std::string&,
                            std::shared_ptr<Session>,
-                           rsa::PublicKey*,
+                           asymm::PublicKey*,
                            int type);
   friend class Authentication;
   friend class PublicId;

@@ -57,7 +57,8 @@ class FakeStoreManager : public PacketManager {
   void KeyUnique(const std::string &key,
                  const VoidFuncOneInt &cb);
   int GetPacket(const std::string &packet_name,
-                std::vector<std::string> *results);
+                std::vector<std::string> *results,
+                const std::string &public_key_id = "");
   void GetPacket(const std::string &packet_name,
                  const GetPacketFunctor &lpf);
   void StorePacket(const std::string &packet_name,

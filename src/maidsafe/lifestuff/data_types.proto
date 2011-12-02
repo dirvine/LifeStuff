@@ -1,8 +1,8 @@
 package maidsafe.lifestuff;
 
 message MCID {
-  required bytes mmid = 1;
-  required bytes public_username = 2;
+  required bytes encrypted_mmid = 1;
+  required bytes encrypted_public_username = 2;
   required bytes signature = 3;
 }
 
