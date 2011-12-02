@@ -84,6 +84,39 @@ void GetDataSlot(const std::string &signal_data, std::string *slot_data) {
   *slot_data = signal_data;
 }
 
+std::string DebugString(const int &packet_type) {
+  switch (packet_type) {
+    case passport::kUnknown:
+      return "unknown";
+    case passport::kMid:
+      return "MID";
+    case passport::kSmid:
+      return "SMID";
+    case passport::kTmid:
+      return "TMID";
+    case passport::kStmid:
+      return "STMID";
+    case passport::kMpid:
+      return "MPID";
+    case passport::kPmid:
+      return "PMID";
+    case passport::kMaid:
+      return "MAID";
+    case passport::kAnmid:
+      return "ANMID";
+    case passport::kAnsmid:
+      return "ANSMID";
+    case passport::kAntmid:
+      return "ANTMID";
+    case passport::kAnmpid:
+      return "ANMPID";
+    case passport::kAnmaid:
+      return "ANMAID";
+    default:
+      return "error";
+  }
+}
+
 }  // namespace
 
 void GetPublicKey(const std::string &packet_name,
@@ -91,8 +124,9 @@ void GetPublicKey(const std::string &packet_name,
                   rsa::PublicKey *public_key,
                   int type) {
   std::shared_ptr<passport::Passport> pprt(session->passport_);
+  passport::PacketType packet_type;
   for (int i(passport::kAnmid); i != passport::kMid; ++i) {
-    passport::PacketType packet_type(static_cast<passport::PacketType>(i));
+    packet_type = static_cast<passport::PacketType>(i);
 #ifdef DEBUG
     int previous(FLAGS_ms_logging_passport);
     FLAGS_ms_logging_passport = google::FATAL;
@@ -113,25 +147,18 @@ void GetPublicKey(const std::string &packet_name,
     }
   }
 
-  if (type == DataWrapper::kMmid) {
-    *public_key = pprt->SignaturePacketValue(passport::kMmid,
-                                             false,
-                                             packet_name);
-    if (asymm::ValidateKey(*public_key))
-      return;
-    *public_key = pprt->SignaturePacketValue(passport::kMmid,
-                                             true,
-                                             packet_name);
-  } else if (type == DataWrapper::kMsid) {
-    *public_key = pprt->SignaturePacketValue(passport::kMpid,
-                                             false,
-                                             packet_name);
-    if (asymm::ValidateKey(*public_key))
-      return;
-    *public_key = pprt->SignaturePacketValue(passport::kMpid,
-                                             true,
-                                             packet_name);
+  switch (type) {
+    case DataWrapper::kMmid: packet_type = passport::kMmid; break;
+    case DataWrapper::kMpid: packet_type = passport::kAnmpid; break;
+    case DataWrapper::kAnmpid: packet_type = passport::kAnmpid; break;
+    case DataWrapper::kMsid:
+      packet_type = passport::kAnmpid;
+      break;
   }
+  *public_key = pprt->SignaturePacketValue(packet_type, false, packet_name);
+  if (asymm::ValidateKey(*public_key))
+    return;
+  *public_key = pprt->SignaturePacketValue(packet_type, true, packet_name);
 }
 
 FakeStoreManager::FakeStoreManager(std::shared_ptr<Session> session)
@@ -286,12 +313,16 @@ void FakeStoreManager::StorePacket(const std::string &packet_name,
              << Base32Substr(gp.data()) << ">";
 
   rsa::PublicKey public_key;
-  GetPublicKey(gp.signing_id(), session_, &public_key, gp.type());
-  if (!rsa::ValidateKey(public_key)) {
-    ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
-    DLOG(ERROR) << "FakeStoreManager::StorePacket - No public key - ID: "
-                << Base32Substr(gp.signing_id());
-    return;
+  if (gp.has_signing_id()) {
+    GetPublicKey(gp.signing_id(), session_, &public_key, gp.type());
+    if (!rsa::ValidateKey(public_key)) {
+      ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
+      DLOG(ERROR) << "FakeStoreManager::StorePacket - No public key - ID: "
+                  << Base32Substr(gp.signing_id());
+      return;
+    }
+  } else {
+    DLOG(INFO) << "NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO " << DebugString(gp.type());
   }
 
   std::string data;

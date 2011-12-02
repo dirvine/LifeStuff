@@ -19,6 +19,8 @@
 #include <vector>
 
 #include "maidsafe/common/crypto.h"
+#include "maidsafe/common/utils.h"
+
 #include "maidsafe/passport/passport.h"
 
 #include "maidsafe/lifestuff/contacts.h"
@@ -54,13 +56,15 @@ std::string AnmpidName(const passport::SelectableIdentityData &data) {
   return std::get<0>(data.at(0));
 }
 
-std::string AnmpidValue(const passport::SelectableIdentityData &data) {
+std::string AnmpidValue(const passport::SelectableIdentityData &data,
+                        const std::string &public_username) {
   std::string public_key;
   asymm::EncodePublicKey(std::get<1>(data.at(0)), &public_key);
   GenericPacket packet;
   packet.set_data(public_key);
   packet.set_signature(std::get<2>(data.at(0)));
-  packet.set_type(DataWrapper::kHashableSigned);
+  packet.set_type(DataWrapper::kAnmpid);
+  packet.set_signing_id(public_username);
   return packet.SerializeAsString();
 }
 
@@ -68,13 +72,15 @@ std::string MpidName(const passport::SelectableIdentityData &data) {
   return std::get<0>(data.at(1));
 }
 
-std::string MpidValue(const passport::SelectableIdentityData &data) {
+std::string MpidValue(const passport::SelectableIdentityData &data,
+                      const std::string &public_username) {
   std::string public_key;
   asymm::EncodePublicKey(std::get<1>(data.at(1)), &public_key);
   GenericPacket packet;
   packet.set_data(public_key);
   packet.set_signature(std::get<2>(data.at(1)));
-  packet.set_type(DataWrapper::kHashableSigned);
+  packet.set_type(DataWrapper::kMpid);
+  packet.set_signing_id(public_username);
   return packet.SerializeAsString();
 }
 
@@ -82,17 +88,19 @@ std::string MmidName(const passport::SelectableIdentityData &data) {
   return std::get<0>(data.at(2));
 }
 
-std::string MmidValue(const passport::SelectableIdentityData &data) {
+std::string MmidValue(const passport::SelectableIdentityData &data,
+                      const std::string &public_username) {
   std::string public_key;
   asymm::EncodePublicKey(std::get<1>(data.at(2)), &public_key);
   MMID mmid;
   mmid.set_public_key(public_key);
   mmid.set_signature(std::get<2>(data.at(2)));
-  GenericPacket gp;
-  gp.set_data(mmid.SerializeAsString());
-  gp.set_signature(mmid.signature());
-  gp.set_type(DataWrapper::kMmid);
-  return gp.SerializeAsString();
+  GenericPacket packet;
+  packet.set_data(mmid.SerializeAsString());
+  packet.set_signature(mmid.signature());
+  packet.set_type(DataWrapper::kMmid);
+  packet.set_signing_id(public_username);
+  return packet.SerializeAsString();
 }
 
 std::string MsidName(const std::string &public_username) {
@@ -100,18 +108,21 @@ std::string MsidName(const std::string &public_username) {
 }
 
 std::string MsidValue(const passport::SelectableIdentityData &data,
+                      const std::string &public_username,
                       bool accepts_new_contacts) {
   std::string public_key;
   asymm::EncodePublicKey(std::get<1>(data.at(1)), &public_key);
+//  DLOG(ERROR) << "PublicId: " << EncodeToBase32(public_key);
   MSID msid;
   msid.set_public_key(public_key);
   msid.set_signature(std::get<2>(data.at(1)));
   msid.set_accepts_new_contacts(accepts_new_contacts);
-  GenericPacket gp;
-  gp.set_data(msid.SerializeAsString());
-  gp.set_signature(msid.signature());
-  gp.set_type(DataWrapper::kMsid);
-  return gp.SerializeAsString();
+  GenericPacket packet;
+  packet.set_data(msid.SerializeAsString());
+  packet.set_signature(msid.signature());
+  packet.set_type(DataWrapper::kMsid);
+  packet.set_signing_id(public_username);
+  return packet.SerializeAsString();
 }
 
 }  // namespace
@@ -144,6 +155,17 @@ void PublicId::StopCheckingForNewContacts() {
 
 int PublicId::CreatePublicId(const std::string &public_username,
                              bool accepts_new_contacts) {
+  if (public_username.empty()) {
+    DLOG(ERROR) << "Public ID name empty";
+    return kPublicIdempty;
+  }
+
+  // Check chosen name is available
+  if (!packet_manager_->KeyUnique(MsidName(public_username))) {
+    DLOG(ERROR) << "Public ID with name " << public_username << " unavailable";
+    return kPublicIdExists;
+  }
+
   // Create packets (pending) in passport
   int result(session_->passport_->CreateSelectableIdentity(public_username));
   if (result != kSuccess) {
@@ -167,22 +189,24 @@ int PublicId::CreatePublicId(const std::string &public_username,
   boost::condition_variable cond_var;
   int anmpid_result(kPendingResult), mpid_result(kPendingResult),
       mmid_result(kPendingResult), msid_result(kPendingResult);
+  packet_manager_->StorePacket(MsidName(public_username),
+                               MsidValue(data,
+                                         public_username,
+                                         accepts_new_contacts),
+                               std::bind(&SendContactInfoCallback, arg::_1,
+                                         &mutex, &cond_var, &msid_result));
   packet_manager_->StorePacket(AnmpidName(data),
-                               AnmpidValue(data),
+                               AnmpidValue(data, public_username),
                                std::bind(&SendContactInfoCallback, arg::_1,
                                          &mutex, &cond_var, &anmpid_result));
   packet_manager_->StorePacket(MpidName(data),
-                               MpidValue(data),
+                               MpidValue(data, public_username),
                                std::bind(&SendContactInfoCallback, arg::_1,
                                          &mutex, &cond_var, &mpid_result));
   packet_manager_->StorePacket(MmidName(data),
-                               MmidValue(data),
+                               MmidValue(data, public_username),
                                std::bind(&SendContactInfoCallback, arg::_1,
                                          &mutex, &cond_var, &mmid_result));
-  packet_manager_->StorePacket(MsidName(public_username),
-                               MsidValue(data, accepts_new_contacts),
-                               std::bind(&SendContactInfoCallback, arg::_1,
-                                         &mutex, &cond_var, &msid_result));
 
   try {
     boost::mutex::scoped_lock lock(mutex);
@@ -288,7 +312,7 @@ int PublicId::SendContactInfo(const std::string &public_username,
   GenericPacket gp;
   gp.set_data(encrypted_mcid);
   gp.set_signature(sig);
-  gp.set_type(4);
+  gp.set_type(DataWrapper::kMsid);
   packet_manager_->StorePacket(
       crypto::Hash<crypto::SHA512>(recipient_public_username),
       gp.SerializeAsString(),
@@ -381,7 +405,9 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
     }
     // Delete MCID from network - do nothing in callback
     packet_manager_->DeletePacket(
-        crypto::Hash<crypto::SHA512>(std::get<0>(data)), *it, [](int){});  // NOLINT (Fraser)
+        crypto::Hash<crypto::SHA512>(std::get<0>(data)),
+        *it,
+        [](int /*result*/) {});
   }
 }
 

@@ -62,6 +62,8 @@ int DataHandler::ProcessData(const OperationType &op_type,
   }
 
   switch (data_wrapper.data_type()) {
+    case DataWrapper::kAnmpid:
+    case DataWrapper::kMpid:
     case DataWrapper::kHashableSigned:
         return ProcessSignedData(op_type, name, data_wrapper, public_key, true,
                                  chunk_store);
@@ -220,7 +222,7 @@ int DataHandler::ProcessMsidData(const OperationType &op_type,
   std::string current_data(chunk_store->Get(name));
   bool already_exists(true);
   if (current_data.empty()) {
-    DLOG(ERROR) << "No such MSID";
+    DLOG(INFO) << "No such MSID";
     already_exists = false;
   }
 
@@ -231,15 +233,17 @@ int DataHandler::ProcessMsidData(const OperationType &op_type,
       return kParseFailure;
     }
 
-    if (!asymm::CheckSignature(current_msid.public_key(),
-                               current_msid.signature(),
-                               public_key)) {
+    if (asymm::CheckSignature(current_msid.public_key(),
+                              current_msid.signature(),
+                              public_key) != 0) {
       DLOG(INFO) << "Not owner, can only store MCID or get keys from MSID";
       if (op_type == kStore) {
-        current_msid.add_encrypted_mcid(data.signed_data().data());
-        if (!chunk_store->Modify(name, current_msid.SerializeAsString())) {
-          DLOG(ERROR) << "Failed to add MCID";
-          return kModifyFailure;
+        if (current_msid.accepts_new_contacts()) {
+          current_msid.add_encrypted_mcid(data.signed_data().data());
+          if (!chunk_store->Modify(name, current_msid.SerializeAsString())) {
+            DLOG(ERROR) << "Failed to add MCID";
+            return kModifyFailure;
+          }
         }
       } else if (op_type == kGet) {
         GenericPacket gp;
@@ -253,7 +257,8 @@ int DataHandler::ProcessMsidData(const OperationType &op_type,
     } else {
       switch (op_type) {
         case kGet:
-            (*get_data_signal_)(current_data);
+            if (current_msid.encrypted_mcid_size() > 0)
+              (*get_data_signal_)(current_data);
             break;
         case kUpdate:
             /***
@@ -283,9 +288,9 @@ int DataHandler::ProcessMsidData(const OperationType &op_type,
       return kStoreFailure;
     }
 
-    if (!asymm::CheckSignature(wrapper_msid.public_key(),
-                               wrapper_msid.signature(),
-                               public_key)) {
+    if (asymm::CheckSignature(wrapper_msid.public_key(),
+                              wrapper_msid.signature(),
+                              public_key) != 0) {
       DLOG(ERROR) << "Failed validation of data";
       return kStoreFailure;
     }
@@ -309,7 +314,7 @@ int DataHandler::ProcessMmidData(const OperationType &op_type,
   std::string current_data(chunk_store->Get(name));
   bool already_exists(true);
   if (current_data.empty()) {
-    DLOG(ERROR) << "No such MMID";
+    DLOG(INFO) << "No such MMID";
     already_exists = false;
   }
 
@@ -323,9 +328,9 @@ int DataHandler::ProcessMmidData(const OperationType &op_type,
       return kParseFailure;
     }
 
-    if (!asymm::CheckSignature(current_mmid.public_key(),
-                               current_mmid.signature(),
-                               public_key)) {
+    if (asymm::CheckSignature(current_mmid.public_key(),
+                              current_mmid.signature(),
+                              public_key) != 0) {
       DLOG(INFO) << "Not owner, can only store MCID or get keys from MSID";
       if (op_type == kStore) {
         current_mmid.add_encrypted_message(data.signed_data().data());

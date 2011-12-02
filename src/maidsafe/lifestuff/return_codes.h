@@ -94,12 +94,14 @@ enum ReturnCode {
   kUnknownFailure = -205014,
 
   // PublicId
-  kGetPublicIdError = -206001,
-  kSigningError = -206002,
-  kPublicIdException = -206003,
-  kPublicIdTimeout = -206004,
-  kSendContactInfoFailure = -206005,
-  kStorePublicIdFailure = -206006
+  kPublicIdExists = -206001,
+  kGetPublicIdError = -206002,
+  kSigningError = -206003,
+  kPublicIdException = -206004,
+  kPublicIdTimeout = -206005,
+  kSendContactInfoFailure = -206006,
+  kStorePublicIdFailure = -206007,
+  kPublicIdempty = -206008
 };
 
 }  // namespace lifestuff
