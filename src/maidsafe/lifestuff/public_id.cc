@@ -394,6 +394,8 @@ void PublicId::GetNewContacts(const bptime::seconds &interval,
                    kMpid));
     if (result == kSuccess) {
       ProcessRequests(*it, mpid_values);
+    } else if (result == kGetPacketEmptyData) {
+      DLOG(INFO) << "No new messages for " << std::get<0>(*it);
     } else {
       DLOG(ERROR) << "Failed to get MPID contents for " << std::get<0>(*it)
                   << ": " << result;
@@ -434,7 +436,8 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
 
     // TODO(Fraser#5#): 2011-12-02 - Validate signature of MCID
 
-    bool signal_return(*(*new_contact_signal_)(public_username));
+    bool signal_return(*(*new_contact_signal_)(std::get<0>(data),
+                                               public_username));
     if (signal_return) {
       // add contact to contacts
       session_->contacts_handler()->AddContact(public_username,
@@ -450,6 +453,27 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
   }
 }
 
+std::vector<std::string> PublicId::ContactList() const {
+  std::vector<std::string> contacts;
+  std::vector<mi_contact> session_contacts;
+  int n(session_->contacts_handler()->GetContactList(&session_contacts, 2));
+  if (n != 0) {
+    DLOG(ERROR) << "Failed to retrive list";
+  } else {
+    for (auto it(session_contacts.begin()); it != session_contacts.end(); ++it)
+      contacts.push_back((*it).pub_name_);
+  }
+  return contacts;
+}
+
+std::vector<std::string> PublicId::PublicIdsList() const {
+  std::vector<std::string> public_ids;
+  std::vector<passport::SelectableIdData> selectables;
+  session_->passport_->SelectableIdentitiesList(&selectables);
+  for (auto it(selectables.begin()); it != selectables.end(); ++it)
+    public_ids.push_back(std::get<0>(*it));
+  return public_ids;
+}
 
 }  // namespace lifestuff
 

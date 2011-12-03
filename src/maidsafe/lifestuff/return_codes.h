@@ -66,6 +66,7 @@ enum ReturnCode {
   kNoPublicKeyToCheck = -203006,
   kKeyUnique = -203007,
   kKeyNotUnique = -203008,
+  kGetPacketEmptyData = -203009,
 
   // Session
   kEmptyConversationId = -204001,

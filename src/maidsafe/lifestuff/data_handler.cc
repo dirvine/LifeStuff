@@ -285,6 +285,15 @@ int DataHandler::ProcessMsidData(const OperationType &op_type,
               std::vector<std::string> mcids;
               for (int n(0); n != current_msid.encrypted_mcid_size(); ++n)
                 mcids.push_back(current_msid.encrypted_mcid(n));
+              current_msid.clear_encrypted_mcid();
+              current_data_wrapper.mutable_signed_data()->set_data(
+                  current_msid.SerializeAsString());
+              if (!chunk_store->Modify(
+                      name,
+                      current_data_wrapper.SerializeAsString())) {
+                DLOG(ERROR) << "Failed to modify after geting MCIDs";
+                return kModifyFailure;
+              }
               (*get_vector_signal_)(mcids);
             }
             break;

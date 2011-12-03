@@ -84,6 +84,13 @@ template <typename T>
 void GetDataSlot(const T &signal_data, T *slot_data) {
   *slot_data = signal_data;
 }
+void GetStringDataSlot(const std::string &signal_data, std::string *slot_data) {
+  *slot_data = signal_data;
+}
+void GetVectorDataSlot(const std::vector<std::string> &signal_data,
+                       std::vector<std::string> *slot_data) {
+  *slot_data = signal_data;
+}
 
 std::string DebugString(const int &packet_type) {
   switch (packet_type) {
@@ -253,10 +260,10 @@ int FakeStoreManager::GetPacket(const std::string &packet_name,
   std::string data;
   data_handler.get_string_signal()->connect(
       DataHandler::GetStringSignalPtr::element_type::slot_type(
-          &GetDataSlot<std::string>, _1, &data));
+          &GetStringDataSlot, _1, &data));
   data_handler.get_vector_signal()->connect(
       DataHandler::GetVectorSignalPtr::element_type::slot_type(
-          &GetDataSlot<std::vector<std::string>>, _1, results));  //  NOLINT (Fraser)
+          &GetVectorDataSlot, _1, results));  //  NOLINT (Fraser)
 
   int result(data_handler.ProcessData(DataHandler::kGet,
                                       packet_name,
@@ -272,7 +279,7 @@ int FakeStoreManager::GetPacket(const std::string &packet_name,
   if (data.empty()) {
     if (results->empty()) {
       DLOG(ERROR) << "FakeStoreManager::GetPacket - data empty";
-      return kGetPacketFailure;
+      return kGetPacketEmptyData;
     }
   } else {
     results->push_back(data);

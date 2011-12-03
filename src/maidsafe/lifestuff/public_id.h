@@ -52,7 +52,8 @@ class Session;
 
 class PublicId {
  public:
-  typedef bs2::signal<bool(const std::string&)> NewContactSignal;  // NOLINT (Fraser)
+  typedef bs2::signal<bool(const std::string&,
+                           const std::string&)> NewContactSignal;  // NOLINT (Fraser)
   typedef std::shared_ptr<NewContactSignal> NewContactSignalPtr;
   PublicId(std::shared_ptr<PacketManager> packet_manager,
            std::shared_ptr<Session> session,
@@ -75,6 +76,9 @@ class PublicId {
   // Removes from the network the packets created in CreatePublicId.
   int DeletePublicId(const std::string &public_username);
   NewContactSignalPtr new_contact_signal() const;
+
+  std::vector<std::string> ContactList() const;
+  std::vector<std::string> PublicIdsList() const;
 
  private:
   PublicId(const PublicId&);
