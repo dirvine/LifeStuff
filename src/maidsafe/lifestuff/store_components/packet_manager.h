@@ -68,7 +68,8 @@ class PacketManager {
 
   virtual int GetPacket(const std::string &packet_name,
                         std::vector<std::string> *results,
-                        const std::string &public_key_id = "") = 0;
+                        const std::string &public_key_id = "",
+                        const int &data_type = -1) = 0;
 
   virtual void GetPacket(const std::string &packet_name,
                          const GetPacketFunctor &cb) = 0;

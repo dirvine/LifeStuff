@@ -413,6 +413,8 @@ ELSE() # Installing the library
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/session.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/user_storage.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/maidsafe.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/message.h
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/message_handler.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/public_id.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/return_codes.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/version.h)

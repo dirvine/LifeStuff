@@ -64,7 +64,6 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_EQ("", session_->username());
   ASSERT_EQ("", session_->pin());
   ASSERT_EQ("", session_->password());
-  ASSERT_EQ("", session_->public_username());
   ASSERT_EQ("", session_->session_name());
   ASSERT_EQ("", session_->unique_user_id());
   ASSERT_EQ("", session_->root_parent_id());
@@ -111,7 +110,6 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_EQ("aaa", session_->username());
   ASSERT_EQ("bbb", session_->pin());
   ASSERT_EQ("ccc", session_->password());
-  ASSERT_EQ("", session_->public_username());
   ASSERT_NE("", session_->session_name());
   ASSERT_EQ("ddd1", session_->unique_user_id());
   ASSERT_EQ("ddd2", session_->root_parent_id());
@@ -153,7 +151,6 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_EQ("", session_->username());
   ASSERT_EQ("", session_->pin());
   ASSERT_EQ("", session_->password());
-  ASSERT_EQ("", session_->public_username());
   ASSERT_EQ("", session_->session_name());
   ASSERT_EQ("", session_->unique_user_id());
   ASSERT_EQ("", session_->root_parent_id());

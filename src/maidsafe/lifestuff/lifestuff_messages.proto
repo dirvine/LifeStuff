@@ -11,3 +11,8 @@ message DataWrapper {
   required int32 data_type = 1;
   optional GenericPacket signed_data = 2;
 }
+
+message Encrypted {
+  required bytes symm_encrypted_data = 1;
+  required bytes asymm_encrypted_symm_key = 2; 
+}

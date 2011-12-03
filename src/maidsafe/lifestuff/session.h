@@ -61,6 +61,7 @@ class AuthenticationTest;
 
 class Authentication;
 class ContactsHandler;
+class MessageHandler;
 class PrivateShareHandler;
 class PublicId;
 struct UserDetails;
@@ -78,7 +79,6 @@ class Session {
   std::string username() const;
   std::string pin() const;
   std::string password() const;
-  std::string public_username() const;
   std::string session_name() const;
   std::string unique_user_id() const;
   std::string root_parent_id() const;
@@ -101,6 +101,7 @@ class Session {
                            asymm::PublicKey*,
                            int type);
   friend class Authentication;
+  friend class MessageHandler;
   friend class PublicId;
   friend class test::SessionTest;
   friend class test::ClientControllerTest;

@@ -723,98 +723,6 @@ int Authentication::GetMasterDataMap(
   return kSuccess;
 }
 
-int Authentication::CreateMsidPacket(std::string *msid_name,
-                                     std::string *msid_public_key,
-                                     std::string *msid_private_key) {
-  if (!msid_name || !msid_public_key || !msid_private_key)
-    return kAuthenticationError;
-//  msid_name->clear();
-//  msid_public_key->clear();
-//  msid_private_key->clear();
-//
-//  std::shared_ptr<pki::SignaturePacket>
-//      msid(new pki::SignaturePacket);
-//  std::vector<boost::uint32_t> share_stats(2, 0);
-//  int result = session_->passport_->InitialiseSignaturePacket(passport::MSID,
-//                                                              msid);
-//  if (result != kSuccess) {
-//    DLOG(ERROR) << "Authentication::CreateMsidPacket: failed init";
-//    return kAuthenticationError;
-//  }
-//  // Add the share to the session to allow store_manager to retrieve the keys.
-//  std::vector<std::string> attributes;
-//  attributes.push_back(msid->name());
-//  attributes.push_back(msid->name());
-//  attributes.push_back(msid->value());  // msid->value == msid->public_key
-//  attributes.push_back(msid->private_key());
-//  result = session_->private_share_handler()->AddPrivateShare(
-//              attributes, share_stats, NULL);
-//  if (result != kSuccess) {
-//  DLOG(ERROR) << "Authentication::CreateMsidPacket: failed adding to session";
-//    session_->private_share_handler()->DeletePrivateShare(
-//        msid->name(), 0);
-    return kAuthenticationError;
-//  }
-//  result = StorePacket(msid, true, passport::MSID);
-// #ifdef DEBUG
-//  if (result != kSuccess)
-//    DLOG(ERROR) << "Authentication::CreateMsidPacket: Failed storing MSID";
-// #endif
-//  // Remove the share from the session again to allow CC to add it fully.
-//  session_->private_share_handler()->DeletePrivateShare(
-//      msid->name(), 0);
-//
-//  if (result != kSuccess) {
-//    DLOG(ERROR) << "Authentication::CreateMsidPacket: Failed.";
-//    return kAuthenticationError;
-//  } else {
-//    *msid_name = msid->name();
-//    *msid_public_key = msid->value();
-//    *msid_private_key = msid->private_key();
-//    return kSuccess;
-//  }
-}
-
-int Authentication::CreatePublicName(const std::string &/*public_name*/) {
-  if (!session_->public_username().empty()) {
-    DLOG(ERROR) << "Authentication::CreatePublicName: Already set";
-    return kPublicUsernameAlreadySet;
-  }
-
-  OpStatus anmpid_status(kSucceeded);
-  if (session_->passport_->PacketName(passport::kAnmpid, true).empty()) {
-    anmpid_status = kPending;
-    StoreSignaturePacket(passport::kAnmpid, &anmpid_status, NULL);
-  }
-
-  OpStatus mpid_status(kPending);
-  StoreSignaturePacket(passport::kMpid, &mpid_status, &anmpid_status);
-  bool success(true);
-  try {
-    boost::mutex::scoped_lock lock(mutex_);
-    success = cond_var_.timed_wait(
-                  lock,
-                  kSingleOpTimeout_ * 2,
-                  std::bind(&Authentication::TwoSystemPacketsOpDone, this,
-                  &mpid_status, &anmpid_status));
-  }
-  catch(const std::exception &e) {
-    DLOG(WARNING) << "Authentication::CreatePublicName: " << e.what();
-    success = false;
-  }
-#ifdef DEBUG
-  if (!success)
-    DLOG(INFO) << "Authentication::CreatePublicName: timed out";
-#endif
-  if ((anmpid_status == kSucceeded) && (mpid_status == kSucceeded)) {
-    return kSuccess;
-  } else if (mpid_status == kNotUnique) {
-    return kPublicUsernameExists;
-  } else {
-    return kAuthenticationError;
-  }
-}
-
 int Authentication::RemoveMe() {
   OpStatus pmid_status(kSucceeded);
   DeletePacket(passport::kPmid, &pmid_status, NULL);
@@ -1214,20 +1122,6 @@ int Authentication::ChangePassword(const std::string &serialised_data_atlas,
     return kAuthenticationError;
   }
   session_->set_password(new_password);
-  return kSuccess;
-}
-
-int Authentication::PublicUsernamePublicKey(const std::string &public_username,
-                                            std::string *public_key) {
-  std::string packet_name = crypto::Hash<crypto::SHA512>(public_username);
-  std::vector<std::string> packet_content;
-  int result = packet_manager_->GetPacket(packet_name, &packet_content);
-  if (result != kSuccess || packet_content.empty())
-    return kUserDoesntExist;
-  GenericPacket packet;
-  if (!packet.ParseFromString(packet_content.at(0)) || !public_key)
-    return kAuthenticationError;
-  *public_key = packet.data();
   return kSuccess;
 }
 

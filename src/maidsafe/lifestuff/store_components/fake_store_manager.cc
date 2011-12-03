@@ -238,7 +238,8 @@ void FakeStoreManager::KeyUnique(const std::string &key,
 
 int FakeStoreManager::GetPacket(const std::string &packet_name,
                                 std::vector<std::string> *results,
-                                const asymm::Identity &public_key_id) {
+                                const asymm::Identity &public_key_id,
+                                const int &data_type) {
   DLOG(INFO) << "Searching <" << Base32Substr(packet_name) << ">";
 
   BOOST_ASSERT(results);
@@ -246,7 +247,7 @@ int FakeStoreManager::GetPacket(const std::string &packet_name,
 
   asymm::PublicKey public_key;
   if (!public_key_id.empty())
-    GetPublicKey(public_key_id, session_, &public_key, kMpid);
+    GetPublicKey(public_key_id, session_, &public_key, data_type);
 
   DataHandler data_handler;
   std::string data;

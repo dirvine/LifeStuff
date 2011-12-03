@@ -49,11 +49,7 @@ namespace passport { class Passport; }
 
 namespace lifestuff {
 
-namespace test {
-class AuthenticationTest_FUNC_CreatePublicName_Test;
-class AuthenticationTest_FUNC_CreateMSIDPacket_Test;
-class ClientControllerTest;
-}  // namespace test
+namespace test { class ClientControllerTest; }
 
 class PacketManager;
 class Session;
@@ -86,13 +82,6 @@ class Authentication {
                        const std::string &serialised_data_atlas,
                        const std::string &surrogate_serialised_data_atlas);
 
-  int CreateUserCredentials(const std::string &/*username*/,
-                            const std::string &/*pin*/,
-                            const std::string &/*password*/,
-                            const std::string &/*serialised_data_atlas*/) {
-    return -1;
-  }
-
   void SaveSession(const std::string &serialised_data_atlas,
                    const VoidFuncOneInt &functor);
   int SaveSession(const std::string &serialised_data_atlas);
@@ -100,10 +89,6 @@ class Authentication {
   int GetMasterDataMap(const std::string &password,
                        std::string *serialised_data_atlas,
                        std::string *surrogate_serialised_data_atlas);
-  int CreateMsidPacket(std::string *msid_name,
-                       std::string *msid_public_key,
-                       std::string *msid_private_key);
-  int CreatePublicName(const std::string &public_name);
   int RemoveMe();
   int ChangeUsername(const std::string &serialised_data_atlas,
                      const std::string &new_username);
@@ -111,10 +96,6 @@ class Authentication {
                 const std::string &new_pin);
   int ChangePassword(const std::string &serialised_data_atlas,
                      const std::string &new_password);
-  int PublicUsernamePublicKey(const std::string &public_username,
-                              std::string *public_key);
-  friend class test::AuthenticationTest_FUNC_CreatePublicName_Test;
-  friend class test::AuthenticationTest_FUNC_CreateMSIDPacket_Test;
   friend class test::ClientControllerTest;
 
  private:

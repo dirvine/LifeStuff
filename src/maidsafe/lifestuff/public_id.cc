@@ -114,14 +114,13 @@ std::string MsidValue(const passport::SelectableIdentityData &data,
                       bool accepts_new_contacts) {
   std::string public_key;
   asymm::EncodePublicKey(std::get<1>(data.at(1)), &public_key);
-//  DLOG(ERROR) << "PublicId: " << EncodeToBase32(public_key);
   MSID msid;
   msid.set_public_key(public_key);
   msid.set_signature(std::get<2>(data.at(1)));
   msid.set_accepts_new_contacts(accepts_new_contacts);
   GenericPacket packet;
   packet.set_data(msid.SerializeAsString());
-  // TODO(Fraser#5#): 2011-12-02 - Chnage this to sign data with MPID private
+  // TODO(Fraser#5#): 2011-12-02 - Change this to sign data with MPID private
   //                               key.  Also change
   //                               FakeStoreManager::GetPublicKey switch.
   packet.set_signature(msid.signature());
@@ -391,7 +390,8 @@ void PublicId::GetNewContacts(const bptime::seconds &interval,
     int result(packet_manager_->GetPacket(
                    crypto::Hash<crypto::SHA512>(std::get<0>(*it)),
                    &mpid_values,
-                   std::get<0>(*it)));
+                   std::get<0>(*it),
+                   kMpid));
     if (result == kSuccess) {
       ProcessRequests(*it, mpid_values);
     } else {
@@ -437,8 +437,10 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
     bool signal_return(*(*new_contact_signal_)(public_username));
     if (signal_return) {
       // add contact to contacts
-      session_->contacts_handler()->AddContact(public_username, "", "", "", "",
-                                               '\0', 0, 0, "", '\0', 0, 0);
+      session_->contacts_handler()->AddContact(public_username,
+                                               mmid_name,
+                                               "", "", "", '\0', 0, 0, "", '\0',
+                                               0, 0);
     }
 //    // Delete MCID from network - do nothing in callback
 //    packet_manager_->DeletePacket(

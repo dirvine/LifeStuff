@@ -44,13 +44,12 @@ struct UserDetails {
         pin(),
         password(),
         session_name(),
-        public_username(),
         unique_user_id(),
         root_parent_id(),
         mounted(0),
         win_drive('\0') {}
   DefConLevels defconlevel;
-  std::string username, pin, password, session_name, public_username;
+  std::string username, pin, password, session_name;
   std::string unique_user_id, root_parent_id;
   int mounted;
   char win_drive;
@@ -96,9 +95,6 @@ DefConLevels Session::def_con_level() const {
 std::string Session::username() const { return user_details_->username; }
 std::string Session::pin() const { return user_details_->pin; }
 std::string Session::password() const { return user_details_->password; }
-std::string Session::public_username() const {
-  return user_details_->public_username;
-}
 std::string Session::session_name() const {
   return user_details_->session_name;
 }

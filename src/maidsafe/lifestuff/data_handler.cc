@@ -361,7 +361,8 @@ int DataHandler::ProcessMmidData(const OperationType &op_type,
                               public_key) != 0) {
       DLOG(INFO) << "Not owner, can only store MCID or get keys from MSID";
       if (op_type == kStore) {
-        current_mmid.add_encrypted_message(data.signed_data().data());
+        current_mmid.add_encrypted_message()->ParseFromString(
+            data.signed_data().data());
         if (!chunk_store->Modify(name, current_mmid.SerializeAsString())) {
           DLOG(ERROR) << "Failed to add MCID";
           return kModifyFailure;

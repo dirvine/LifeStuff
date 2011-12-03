@@ -104,7 +104,10 @@ enum ReturnCode {
   kSendContactInfoFailure = -206007,
   kStorePublicIdFailure = -206008,
   kPublicIdEmpty = -206009,
-  kNoPublicIds = -206010
+  kNoPublicIds = -206010,
+
+  // MessageHandler
+  kMessageHandlerException = -207001
 };
 
 }  // namespace lifestuff
