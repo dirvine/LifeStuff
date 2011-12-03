@@ -51,7 +51,6 @@ class AWSStoreManager : public FakeStoreManager {
   AWSStoreManager &operator=(const AWSStoreManager&);
   AWSStoreManager(const AWSStoreManager&);
   std::shared_ptr<BufferedChunkStore> buffered_chunk_store_;
-  std::shared_ptr<pd::ChunkManager> chunk_manager_;
   boost::filesystem::path buffered_chunk_store_dir_;
 };
 

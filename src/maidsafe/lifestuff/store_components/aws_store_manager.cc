@@ -33,7 +33,6 @@ AWSStoreManager::AWSStoreManager(
     const boost::filesystem::path &buffered_chunk_store_dir)
         : FakeStoreManager(session),
           buffered_chunk_store_(),
-          chunk_manager_(),
           buffered_chunk_store_dir_(buffered_chunk_store_dir) {}
 
 AWSStoreManager::~AWSStoreManager() {}
