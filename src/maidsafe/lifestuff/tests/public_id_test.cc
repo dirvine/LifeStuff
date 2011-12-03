@@ -64,9 +64,10 @@ class PublicIdTest : public testing::Test {
         received_public_username_(),
         interval_(3) {}
 
-  bool NewContactSlot(const std::string &public_username,
+  bool NewContactSlot(const std::string &/*own_public_username*/,
+                      const std::string &other_public_username,
                       bool accept_new_contact) {
-    received_public_username_ = public_username;
+    received_public_username_ = other_public_username;
     return accept_new_contact;
   }
 
@@ -106,55 +107,55 @@ class PublicIdTest : public testing::Test {
 };
 
 TEST_F(PublicIdTest, FUNC_CreateInvalidId) {
-  EXPECT_EQ(kPublicIdEmpty, public_id1_.CreatePublicId("", false));
-  EXPECT_EQ(kPublicIdEmpty, public_id1_.CreatePublicId("", true));
+  ASSERT_EQ(kPublicIdEmpty, public_id1_.CreatePublicId("", false));
+  ASSERT_EQ(kPublicIdEmpty, public_id1_.CreatePublicId("", true));
 
-  EXPECT_EQ(kNoPublicIds, public_id1_.StartCheckingForNewContacts(interval_));
+  ASSERT_EQ(kNoPublicIds, public_id1_.StartCheckingForNewContacts(interval_));
 
-  EXPECT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, false));
+  ASSERT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, false));
 
-  EXPECT_EQ(kPublicIdExists,
+  ASSERT_EQ(kPublicIdExists,
             public_id1_.CreatePublicId(public_username1_, false));
-  EXPECT_EQ(kPublicIdExists,
+  ASSERT_EQ(kPublicIdExists,
             public_id1_.CreatePublicId(public_username1_, true));
-  EXPECT_EQ(kPublicIdExists,
+  ASSERT_EQ(kPublicIdExists,
             public_id2_.CreatePublicId(public_username1_, false));
-  EXPECT_EQ(kPublicIdExists,
+  ASSERT_EQ(kPublicIdExists,
             public_id2_.CreatePublicId(public_username1_, true));
 }
 
 TEST_F(PublicIdTest, FUNC_CreatePublicIdAntiSocial) {
   // Create user1 who doesn't accept new contacts, and user2 who does
-  EXPECT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, false));
-  EXPECT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
+  ASSERT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, false));
+  ASSERT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
 
   public_id1_.new_contact_signal()->connect(
-      std::bind(&PublicIdTest::NewContactSlot, this, arg::_1, true));
-  EXPECT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
+      std::bind(&PublicIdTest::NewContactSlot, this, arg::_1, arg::_2, true));
+  ASSERT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
 
-  EXPECT_EQ(kSendContactInfoFailure,
+  ASSERT_EQ(kSendContactInfoFailure,
             public_id2_.SendContactInfo(public_username2_, public_username1_));
 
   Sleep(interval_ * 2);
-  EXPECT_TRUE(received_public_username_.empty());
+  ASSERT_TRUE(received_public_username_.empty());
 }
 
 TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
   // Create users who both accept new contacts
-  EXPECT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
-  EXPECT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
+  ASSERT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
+  ASSERT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
 
   // Connect a slot which will reject the new contact
   bs2::connection connection(public_id1_.new_contact_signal()->connect(
-      std::bind(&PublicIdTest::NewContactSlot, this, arg::_1, false)));
-  EXPECT_EQ(kSuccess,
+      std::bind(&PublicIdTest::NewContactSlot, this, arg::_1, arg::_2, false)));
+  ASSERT_EQ(kSuccess,
             public_id2_.SendContactInfo(public_username2_, public_username1_));
 
-  EXPECT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
+  ASSERT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
   Sleep(interval_ * 2);
-  EXPECT_EQ(public_username2_, received_public_username_);
+  ASSERT_EQ(public_username2_, received_public_username_);
   mi_contact received_contact;
-  EXPECT_EQ(-1913, session1_->contacts_handler()->GetContactInfo(
+  ASSERT_EQ(-1913, session1_->contacts_handler()->GetContactInfo(
                        received_public_username_, &received_contact));
 
   // Connect a slot which will accept the new contact
@@ -162,41 +163,95 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
   received_public_username_.clear();
   received_contact = mi_contact();
   public_id1_.new_contact_signal()->connect(
-      std::bind(&PublicIdTest::NewContactSlot, this, arg::_1, true));
-  EXPECT_EQ(kSuccess,
+      std::bind(&PublicIdTest::NewContactSlot, this, arg::_1, arg::_2, true));
+  ASSERT_EQ(kSuccess,
             public_id2_.SendContactInfo(public_username2_, public_username1_));
+
   Sleep(interval_ * 2);
-  EXPECT_EQ(public_username2_, received_public_username_);
-  EXPECT_EQ(kSuccess,
+
+  ASSERT_EQ(public_username2_, received_public_username_);
+  ASSERT_EQ(kSuccess,
             session1_->contacts_handler()->GetContactInfo(
                 received_public_username_, &received_contact));
-  // TODO(Fraser#5#): 2011-12-01 - Check contents of contact struct are correct
+//   TODO(Fraser#5#): 2011-12-01 - Check contents of contact struct are correct
+
+  std::string public_username3(public_username2_ + "1");
+  ASSERT_EQ(kSuccess,
+            public_id2_.CreatePublicId(public_username3, true));
+  ASSERT_EQ(kSuccess,
+            public_id2_.SendContactInfo(public_username3, public_username1_));
+  Sleep(interval_ * 2);
+  ASSERT_EQ(public_username3, received_public_username_);
 }
 
 TEST_F(PublicIdTest, FUNC_DeletePublicId) {
-  EXPECT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
-  EXPECT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
+  ASSERT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
+  ASSERT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
 
   // TODO(Fraser#5#): 2011-12-01 - Change kPendingResult for correct value
-  EXPECT_EQ(kPendingResult, public_id1_.DeletePublicId(""));
-  EXPECT_EQ(kPendingResult, public_id1_.DeletePublicId("Rubbish"));
+  ASSERT_EQ(kPendingResult, public_id1_.DeletePublicId(""));
+  ASSERT_EQ(kPendingResult, public_id1_.DeletePublicId("Rubbish"));
 
-  EXPECT_EQ(kSuccess, public_id1_.DeletePublicId(public_username1_));
+  ASSERT_EQ(kSuccess, public_id1_.DeletePublicId(public_username1_));
   // TODO(Fraser#5#): 2011-12-01 - Check user2 can't "send" message to user1's
   //                               MMID
 
   // Check a new user can't take this public username
-  EXPECT_EQ(kPublicIdExists,
+  ASSERT_EQ(kPublicIdExists,
             public_id2_.CreatePublicId(public_username1_, false));
-  EXPECT_EQ(kPublicIdExists,
+  ASSERT_EQ(kPublicIdExists,
             public_id2_.CreatePublicId(public_username1_, true));
 
   // Check the original user can re-take the public username
-  EXPECT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
+  ASSERT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
 }
 
 // TODO(Fraser#5#): 2011-12-01 - Test for multiple public usernames per user
 // TODO(Fraser#5#): 2011-12-01 - Test for moving MMID
+
+TEST_F(PublicIdTest, FUNC_ContactList) {
+  int n(5);
+  ASSERT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
+  std::vector<std::string> usernames;
+  for (int a(0); a < n; ++a) {
+    usernames.push_back(public_username2_ +
+                        boost::lexical_cast<std::string>(a));
+    ASSERT_EQ(kSuccess, public_id2_.CreatePublicId(usernames.at(a), true));
+  }
+
+  for (int y(0); y < n; ++y) {
+    ASSERT_EQ(kSuccess,
+              public_id2_.SendContactInfo(
+                  public_username2_ + boost::lexical_cast<std::string>(y),
+                  public_username1_));
+  }
+
+  public_id1_.new_contact_signal()->connect(
+      std::bind(&PublicIdTest::NewContactSlot, this, arg::_1, arg::_2, true));
+  ASSERT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
+  Sleep(interval_ * 3);
+
+  std::vector<std::string> contacts(public_id1_.ContactList());
+  ASSERT_EQ(size_t(n), contacts.size());
+  ASSERT_EQ(std::set<std::string>(usernames.begin(), usernames.end()),
+            std::set<std::string>(contacts.begin(), contacts.end()));
+}
+
+TEST_F(PublicIdTest, FUNC_PublicIdList) {
+  int n(10);
+  for (int a(0); a < n; ++a) {
+    std::string pub_name(public_username1_ +
+                         boost::lexical_cast<std::string>(a));
+    ASSERT_EQ(kSuccess, public_id1_.CreatePublicId(pub_name, a % 2));
+    DLOG(INFO) << "Created #" << a;
+  }
+
+  std::vector<std::string> public_ids(public_id1_.PublicIdsList());
+  ASSERT_EQ(size_t(n), public_ids.size());
+  for (int y(0); y < n; ++y)
+    ASSERT_EQ(public_username1_ + boost::lexical_cast<std::string>(y),
+              public_ids.at(y));
+}
 
 }  // namespace test
 
