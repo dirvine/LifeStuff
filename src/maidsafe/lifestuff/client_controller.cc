@@ -52,7 +52,7 @@
 #include "maidsafe/lifestuff/private_shares.h"
 #include "maidsafe/lifestuff/session.h"
 
-namespace arg = std::placeholders;
+namespace args = std::placeholders;
 
 namespace maidsafe {
 
@@ -115,7 +115,7 @@ ClientController::~ClientController() {
 
 int ClientController::Initialise() {
   CCCallback cb;
-  packet_manager_->Init(std::bind(&CCCallback::IntCallback, &cb, arg::_1));
+  packet_manager_->Init(std::bind(&CCCallback::IntCallback, &cb, args::_1));
   int result(cb.WaitForIntResult());
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to initialise packet_manager_.";
@@ -382,7 +382,7 @@ int ClientController::SaveSession() {
   n = kPendingResult;
   boost::mutex mutex;
   boost::condition_variable cond_var;
-  VoidFuncOneInt func = std::bind(&PacketOpCallback, arg::_1, &mutex,
+  VoidFuncOneInt func = std::bind(&PacketOpCallback, args::_1, &mutex,
                                   &cond_var, &n);
   auth_->SaveSession(ser_da_, func);
   {

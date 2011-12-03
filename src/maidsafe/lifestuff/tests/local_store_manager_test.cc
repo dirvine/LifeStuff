@@ -34,7 +34,7 @@
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/tests/test_callback.h"
 
-namespace arg = std::placeholders;
+namespace args = std::placeholders;
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
@@ -61,7 +61,7 @@ class LocalStoreManagerTest : public testing::Test {
   void SetUp() {
     session_->ResetSession();
 
-    sm_->Init(std::bind(&CallbackObject::IntCallback, &cb_, arg::_1));
+    sm_->Init(std::bind(&CallbackObject::IntCallback, &cb_, args::_1));
     if (cb_.WaitForIntResult() != kSuccess) {
       FAIL();
       return;
@@ -70,11 +70,11 @@ class LocalStoreManagerTest : public testing::Test {
     session_->ResetSession();
     ASSERT_TRUE(session_->CreateTestPackets());
     cb_.Reset();
-    functor_ = std::bind(&CallbackObject::IntCallback, &cb_, arg::_1);
+    functor_ = std::bind(&CallbackObject::IntCallback, &cb_, args::_1);
     get_functor_ = std::bind(&CallbackObject::GetPacketCallback,
                              &cb_,
-                             arg::_1,
-                             arg::_2);
+                             args::_1,
+                             args::_2);
     anmaid_public_key_ =
         session_->passport_->SignaturePacketValue(passport::kAnmaid, true);
     asymm::EncodePublicKey(anmaid_public_key_, &encoded_anmaid_public_key_);

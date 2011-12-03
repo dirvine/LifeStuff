@@ -32,7 +32,7 @@
 namespace ba = boost::asio;
 namespace bptime = boost::posix_time;
 namespace bs2 = boost::signals2;
-namespace arg = std::placeholders;
+namespace args = std::placeholders;
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
@@ -137,7 +137,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdAntiSocial) {
   EXPECT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
 
   public_id1_.new_contact_signal()->connect(
-      std::bind(&PublicIdTest::NewContactSlot, this, arg::_1, true));
+      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, true));
   EXPECT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
 
   EXPECT_EQ(kSendContactInfoFailure,
@@ -154,7 +154,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
 
   // Connect a slot which will reject the new contact
   bs2::connection connection(public_id1_.new_contact_signal()->connect(
-      std::bind(&PublicIdTest::NewContactSlot, this, arg::_1, false)));
+      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, false)));
   EXPECT_EQ(kSuccess,
             public_id2_.SendContactInfo(public_username2_, public_username1_));
 
@@ -170,7 +170,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
   received_public_username_.clear();
   received_contact = mi_contact();
   public_id1_.new_contact_signal()->connect(
-      std::bind(&PublicIdTest::NewContactSlot, this, arg::_1, true));
+      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, true));
   EXPECT_EQ(kSuccess,
             public_id2_.SendContactInfo(public_username2_, public_username1_));
   Sleep(interval_ * 2);

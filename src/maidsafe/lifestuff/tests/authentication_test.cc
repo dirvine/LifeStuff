@@ -35,7 +35,7 @@
 #  include "maidsafe/lifestuff/store_components/local_store_manager.h"
 #endif
 
-namespace arg = std::placeholders;
+namespace args = std::placeholders;
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
@@ -65,7 +65,7 @@ class AuthenticationTest : public testing::Test {
   void SetUp() {
     session_->ResetSession();
     packet_manager_->Init(std::bind(&AuthenticationTest::InitAndCloseCallback,
-                                    this, arg::_1));
+                                    this, args::_1));
     authentication_.Init(packet_manager_);
   }
 
@@ -230,13 +230,13 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionCallbacks) {
   ser_dm_ = RandomString(1000);
   CallbackObject cb;
   authentication_.SaveSession(ser_dm_, std::bind(&CallbackObject::IntCallback,
-                                                 &cb, arg::_1));
+                                                 &cb, args::_1));
   ASSERT_EQ(kSuccess, cb.WaitForIntResult());
 
   ser_dm_ = RandomString(1000);
   cb.Reset();
   authentication_.SaveSession(ser_dm_, std::bind(&CallbackObject::IntCallback,
-                                                 &cb, arg::_1));
+                                                 &cb, args::_1));
   ASSERT_EQ(kSuccess, cb.WaitForIntResult());
   ASSERT_TRUE(packet_manager_->KeyUnique(original_tmidname));
 }

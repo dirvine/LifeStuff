@@ -34,7 +34,7 @@
 #include "maidsafe/lifestuff/store_components/packet_manager.h"
 #include "maidsafe/lifestuff/utils.h"
 
-namespace arg = std::placeholders;
+namespace args = std::placeholders;
 
 
 namespace maidsafe {
@@ -204,19 +204,19 @@ int PublicId::CreatePublicId(const std::string &public_username,
                                MsidValue(data,
                                          public_username,
                                          accepts_new_contacts),
-                               std::bind(&SendContactInfoCallback, arg::_1,
+                               std::bind(&SendContactInfoCallback, args::_1,
                                          &mutex, &cond_var, &msid_result));
   packet_manager_->StorePacket(AnmpidName(data),
                                AnmpidValue(data, public_username),
-                               std::bind(&SendContactInfoCallback, arg::_1,
+                               std::bind(&SendContactInfoCallback, args::_1,
                                          &mutex, &cond_var, &anmpid_result));
   packet_manager_->StorePacket(MpidName(data),
                                MpidValue(data, public_username),
-                               std::bind(&SendContactInfoCallback, arg::_1,
+                               std::bind(&SendContactInfoCallback, args::_1,
                                          &mutex, &cond_var, &mpid_result));
   packet_manager_->StorePacket(MmidName(data),
                                MmidValue(data, public_username),
-                               std::bind(&SendContactInfoCallback, arg::_1,
+                               std::bind(&SendContactInfoCallback, args::_1,
                                          &mutex, &cond_var, &mmid_result));
 
   try {
@@ -331,7 +331,7 @@ int PublicId::SendContactInfo(const std::string &public_username,
   boost::mutex mutex;
   boost::condition_variable cond_var;
   result = kPendingResult;
-  VoidFuncOneInt callback(std::bind(&SendContactInfoCallback, arg::_1, &mutex,
+  VoidFuncOneInt callback(std::bind(&SendContactInfoCallback, args::_1, &mutex,
                                     &cond_var, &result));
 
   GenericPacket gp;

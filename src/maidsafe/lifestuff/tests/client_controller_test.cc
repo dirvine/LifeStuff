@@ -44,7 +44,7 @@
 #endif
 
 
-namespace arg = std::placeholders;
+namespace args = std::placeholders;
 namespace fs = boost::filesystem;
 
 
@@ -70,7 +70,7 @@ class ClientControllerTest : public testing::Test {
   void SetUp() {
     session_->ResetSession();
     packet_manager_->Init(std::bind(&ClientControllerTest::InitAndCloseCallback,
-                                    this, arg::_1));
+                                    this, args::_1));
     cc_->auth_.reset(new Authentication(session_));
     cc_->auth_->Init(packet_manager_);
     cc_->packet_manager_ = packet_manager_;
@@ -95,7 +95,7 @@ class ClientControllerTest : public testing::Test {
 #endif
     ss2->ResetSession();
     packet_manager2->Init(std::bind(&ClientControllerTest::InitAndCloseCallback,
-                                    this, arg::_1));
+                                    this, args::_1));
     cc2->auth_.reset(new Authentication(ss2));
     cc2->auth_->Init(packet_manager2);
     cc2->packet_manager_ = packet_manager2;

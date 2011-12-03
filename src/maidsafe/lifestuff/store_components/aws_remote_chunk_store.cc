@@ -26,7 +26,7 @@
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/maidsafe.h"
 
-namespace arg = std::placeholders;
+namespace args = std::placeholders;
 namespace bptime = boost::posix_time;
 
 namespace maidsafe {
@@ -74,27 +74,27 @@ AWSRemoteChunkStore::AWSRemoteChunkStore(
 
 //   chunk_manager_->sig_chunk_got()->connect(
 //       ChunkManager::ChunkGot::element_type::slot_type(std::bind(
-//           &AWSRemoteChunkStore::OnOpResult, this, kOpGet, arg::_1,
-//           arg::_2)).track_foreign(shared_from_this()));
+//           &AWSRemoteChunkStore::OnOpResult, this, kOpGet, args::_1,
+//           args::_2)).track_foreign(shared_from_this()));
 //
 //   chunk_manager_->sig_chunk_stored()->connect(
 //       ChunkManager::ChunkStored::element_type::slot_type(std::bind(
-//           &AWSRemoteChunkStore::OnOpResult, this, kOpStore, arg::_1,
-//           arg::_2)).track_foreign(shared_from_this()));
+//           &AWSRemoteChunkStore::OnOpResult, this, kOpStore, args::_1,
+//           args::_2)).track_foreign(shared_from_this()));
 //
 //   chunk_manager_->sig_chunk_deleted()->connect(
 //       ChunkManager::ChunkDeleted::element_type::slot_type(std::bind(
-//           &AWSRemoteChunkStore::OnOpResult, this, kOpDelete, arg::_1,
-//           arg::_2)).track_foreign(shared_from_this()));
+//           &AWSRemoteChunkStore::OnOpResult, this, kOpDelete, args::_1,
+//           args::_2)).track_foreign(shared_from_this()));
 
   cm_get_conn_ = chunk_manager_->sig_chunk_got()->connect(std::bind(
-      &AWSRemoteChunkStore::OnOpResult, this, kOpGet, arg::_1, arg::_2));
+      &AWSRemoteChunkStore::OnOpResult, this, kOpGet, args::_1, args::_2));
 
   cm_store_conn_ = chunk_manager_->sig_chunk_stored()->connect(std::bind(
-      &AWSRemoteChunkStore::OnOpResult, this, kOpStore, arg::_1, arg::_2));
+      &AWSRemoteChunkStore::OnOpResult, this, kOpStore, args::_1, args::_2));
 
   cm_delete_conn_ = chunk_manager_->sig_chunk_deleted()->connect(std::bind(
-      &AWSRemoteChunkStore::OnOpResult, this, kOpDelete, arg::_1, arg::_2));
+      &AWSRemoteChunkStore::OnOpResult, this, kOpDelete, args::_1, args::_2));
 }
 
 AWSRemoteChunkStore::~AWSRemoteChunkStore() {
