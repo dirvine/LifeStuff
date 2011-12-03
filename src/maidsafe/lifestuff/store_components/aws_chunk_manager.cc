@@ -85,6 +85,8 @@ void AWSChunkManager::StoreChunk(const std::string &name) {
     return;
   }
 
+  bool hashable(crypto::Hash<crypto::SHA512>(content) == name);
+
   if (reference_count == 0) {
     if (amazon_web_service_->Upload(encoded_name, content) !=
         aws_transporter::AWSTransporter::kSuccess) {
@@ -92,7 +94,7 @@ void AWSChunkManager::StoreChunk(const std::string &name) {
       (*sig_chunk_stored_)(name, pd::kGeneralError);
       return;
     }
-  } else {
+  } else if (hashable) {
     if (amazon_web_service_->SetReferenceCount(encoded_name, ++reference_count)
         != aws_transporter::AWSTransporter::kSuccess) {
       DLOG(ERROR) << "Failed to increase reference count of chunk "
@@ -101,7 +103,17 @@ void AWSChunkManager::StoreChunk(const std::string &name) {
       (*sig_chunk_stored_)(name, pd::kGeneralError);
       return;
     }
+  } else {
+    DLOG(ERROR) << "Chunk " << Base32Substr(name) << " is not hashable, so "
+                << " can't be modified.";
+    chunk_store_->Delete(name);
+    (*sig_chunk_stored_)(name, pd::kGeneralError);
+    return;
   }
+
+  if (!hashable)
+    chunk_store_->Delete(name);
+
   (*sig_chunk_stored_)(name, pd::kSuccess);
 }
 
@@ -153,6 +165,7 @@ void AWSChunkManager::ModifyChunk(const std::string &name) {
     return;
   }
 
+  chunk_store_->Delete(name);
   (*sig_chunk_stored_)(name, pd::kSuccess);
 }
 

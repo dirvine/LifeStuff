@@ -114,9 +114,17 @@ TEST_F(PublicIdTest, FUNC_CreateInvalidId) {
 
   ASSERT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, false));
 
-  ASSERT_EQ(kPublicIdExists,
+  // The remote chunkstore doesn't check on AWS during the Has operation, so
+  // this results in an attampt to store the ID packets again, hence the
+  // different failures below.
+#if defined AMAZON_WEB_SERVICE_STORE
+  EXPECT_EQ(kStorePublicIdFailure,
             public_id1_.CreatePublicId(public_username1_, false));
-  ASSERT_EQ(kPublicIdExists,
+#else
+  EXPECT_EQ(kPublicIdExists,
+            public_id1_.CreatePublicId(public_username1_, false));
+#endif
+  EXPECT_EQ(kPublicIdExists,
             public_id1_.CreatePublicId(public_username1_, true));
   ASSERT_EQ(kPublicIdExists,
             public_id2_.CreatePublicId(public_username1_, false));
