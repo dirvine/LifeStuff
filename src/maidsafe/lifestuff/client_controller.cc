@@ -492,6 +492,10 @@ std::shared_ptr<ChunkStore> ClientController::client_chunk_store() const {
   return packet_manager_->chunk_store();
 }
 
+std::shared_ptr<PacketManager> ClientController::packet_manager() const {
+  return packet_manager_;
+}
+
 }  // namespace lifestuff
 
 }  // namespace maidsafe

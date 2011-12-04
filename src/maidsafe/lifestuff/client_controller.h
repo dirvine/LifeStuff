@@ -101,6 +101,7 @@ class ClientController {
   std::string Pin();
   std::string Password();
   std::shared_ptr<ChunkStore> client_chunk_store() const;
+  std::shared_ptr<PacketManager> packet_manager() const;
 
   friend class test::ClientControllerTest;
 

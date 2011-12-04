@@ -113,6 +113,22 @@ class ClientControllerTest : public testing::Test {
   ClientControllerTest &operator=(const ClientControllerTest&);
 };
 
+TEST_F(ClientControllerTest, FUNC_DirectCreate) {
+  std::string username("User123456");
+  std::string pin("1234");
+  std::string password("The beagle has landed.");
+  ASSERT_TRUE(session_->username().empty());
+  ASSERT_TRUE(session_->pin().empty());
+  ASSERT_TRUE(session_->password().empty());
+  DLOG(INFO) << "Preconditions fulfilled.\n===================\n";
+
+  ASSERT_TRUE(cc_->CreateUser(username, pin, password));
+  ASSERT_EQ(username, session_->username());
+  ASSERT_EQ(pin, session_->pin());
+  ASSERT_EQ(password, session_->password());
+  DLOG(INFO) << "User created.\n===================\n";
+}
+
 TEST_F(ClientControllerTest, FUNC_LoginSequence) {
   std::string username("User1");
   std::string pin("1234");
