@@ -385,28 +385,11 @@ int DataHandler::ProcessMmidData(const OperationType &op_type,
         }
         current_data_wrapper.mutable_signed_data()->set_data(
             current_mmid.SerializeAsString());
-//        std::cout << "\n\n\n\t\t\t\t\t\t\tAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" << std::endl;
-        std::string s(current_data_wrapper.SerializeAsString());
-//        if (s.empty())
-//          std::cout << "\n\n\n\t\t\t\t\t\t\tBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB" << std::endl;
-        if (!chunk_store->Modify(name, s)) {
+        if (!chunk_store->Modify(name,
+                                 current_data_wrapper.SerializeAsString())) {
           DLOG(ERROR) << "Failed to add MCID";
           return kModifyFailure;
         }
-
-        std::string c(chunk_store->Get(name));
-        DataWrapper dw;
-        if (dw.ParseFromString(c)) {
-          MMID mm;
-          if (mm.ParseFromString(dw.signed_data().data())) {
-            DLOG(ERROR) << "\t\t\t\t\t\t\t\t\t size: " << mm.encrypted_message_size();
-          } else {
-            DLOG(ERROR) << "\t\t\t\t\t\t\t\t\tFuck 2";
-          }
-        } else {
-          DLOG(ERROR) << "\t\t\t\t\t\t\t\t\tFuck 1";
-        }
-
       } else if (op_type == kGet) {
         GenericPacket gp;
         gp.set_data(current_mmid.public_key());

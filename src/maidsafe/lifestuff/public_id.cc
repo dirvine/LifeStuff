@@ -98,8 +98,6 @@ std::string MmidValue(const passport::SelectableIdentityData &data,
   mmid.set_public_key(public_key);
   mmid.set_signature(std::get<2>(data.at(2)));
   GenericPacket packet;
-  if (mmid.SerializeAsString().empty())
-    std::cout << "\t\t\t\t\t\t\tAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" << std::endl;
   packet.set_data(mmid.SerializeAsString());
   packet.set_signature(mmid.signature());
   packet.set_type(kMmid);
@@ -446,14 +444,9 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
       // add contact to contacts
       session_->contacts_handler()->AddContact(public_username,
                                                mmid_name,
-                                               "", "", "", '\0', 0, 0, "", '\0',
-                                               0, 0);
+                                               "", "", "", '\0', 0,
+                                               0, "", '\0', 0, 0);
     }
-//    // Delete MCID from network - do nothing in callback
-//    packet_manager_->DeletePacket(
-//        crypto::Hash<crypto::SHA512>(std::get<0>(data)),
-//        *it,
-//        [](int /*result*/) {});
   }
 }
 

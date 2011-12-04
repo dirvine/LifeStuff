@@ -111,21 +111,6 @@ class MessageHandlerTest : public testing::Test {
            left.subject == right.subject;
   }
 
-  void Do(const Message &/*sent*/) {
-    std::cout << "\n\n\n\n" << std::endl;
-    std::vector<passport::SelectableIdData> selectables;
-    session2_->passport_->SelectableIdentitiesList(&selectables);
-    ASSERT_EQ(1U, selectables.size());
-    std::vector<std::string> mmid_values;
-    ASSERT_EQ(kSuccess,
-              packet_manager2_->GetPacket(std::get<1>(selectables.front()),
-                                          &mmid_values,
-                                          std::get<0>(selectables.front()),
-                                          kMmid));
-    ASSERT_EQ(1U, mmid_values.size());
-//    ASSERT_TRUE(MessagesEqual(sent, mmid_values.front()));
-  }
-
   std::shared_ptr<fs::path> test_dir_;
   std::shared_ptr<Session> session1_, session2_;
   std::shared_ptr<PacketManager> packet_manager1_, packet_manager2_;
@@ -145,19 +130,16 @@ class MessageHandlerTest : public testing::Test {
 TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
   // Create users who both accept new contacts
   ASSERT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
-  std::cout << "\n\n\n" << std::endl;
   ASSERT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
 
   // Connect a slot which will reject the new contact
   public_id1_.new_contact_signal()->connect(
       std::bind(&MessageHandlerTest::NewContactSlot,
                 this, args::_1, args::_2, true));
-  std::cout << "\n\n\n" << std::endl;
+  ASSERT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
   ASSERT_EQ(kSuccess,
             public_id2_.SendContactInfo(public_username2_, public_username1_));
 
-  std::cout << "\n\n\n" << std::endl;
-  ASSERT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
   Sleep(interval_ * 2);
   ASSERT_EQ(public_username2_, received_public_username_);
   mi_contact received_contact;
@@ -168,20 +150,18 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
   public_id1_.StopCheckingForNewContacts();
   Sleep(interval_ * 2);
 
-  std::cout << "\n\n\n" << std::endl;
   Message received;
   volatile bool invoked(false);
   message_handler2_.new_message_signal()->connect(
       std::bind(&MessageHandlerTest::NewMessagetSlot,
                 this, args::_1, &received, &invoked));
+  ASSERT_EQ(kSuccess,
+            message_handler2_.StartCheckingForNewMessages(interval_));
+
   Message sent("id", "parent_id", public_username1_, "subject", "content");
   ASSERT_EQ(kSuccess,
             message_handler1_.Send(public_username1_, public_username2_, sent));
 
-  std::cout << "\n\n\n" << std::endl;
-//  Do(sent);
-  ASSERT_EQ(kSuccess,
-            message_handler2_.StartCheckingForNewMessages(interval_));
   while (!invoked)
     Sleep(bptime::milliseconds(100));
 
