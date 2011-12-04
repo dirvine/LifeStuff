@@ -251,7 +251,7 @@ TEST_F(PublicIdTest, FUNC_PublicIdList) {
   for (int a(0); a < n; ++a) {
     std::string pub_name(public_username1_ +
                          boost::lexical_cast<std::string>(a));
-    ASSERT_EQ(kSuccess, public_id1_.CreatePublicId(pub_name, a % 2));
+    ASSERT_EQ(kSuccess, public_id1_.CreatePublicId(pub_name, (a % 2) == 0));
     DLOG(INFO) << "Created #" << a;
   }
 

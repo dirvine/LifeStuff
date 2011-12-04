@@ -172,10 +172,15 @@ bool AWSRemoteChunkStore::Store(const std::string &name,
     while (active_get_ops_.count(name) > 0)
       cond_var_.wait(lock);
   }
+
+  bool hashable(crypto::Hash<crypto::SHA512>(content) == name);
+
   if (!chunk_store_->Store(name, content)) {
-    DLOG(ERROR) << "Store - Could not store " << Base32Substr(name)
-                << " locally.";
-    return false;
+    if (!hashable) {
+      DLOG(ERROR) << "Store - Could not store " << Base32Substr(name)
+                  << " locally.";
+      return false;
+    }
   }
   EnqueueModOp(kOpStore, name);
   return true;

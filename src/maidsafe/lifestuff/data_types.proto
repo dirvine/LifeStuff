@@ -9,11 +9,15 @@ message MCID {
 
 message MMID {
   message Message {
+    message Content {
+      required int32 type = 1;
+      repeated bytes data = 2;
+    }
     required bytes id = 1;
     optional bytes parent_id = 2;
     required bytes sender_public_username = 3;
     optional bytes subject = 4;
-    required bytes content = 5;
+    required Content content = 5;
   }
   required bytes public_key = 1;
   required bytes signature = 2;
