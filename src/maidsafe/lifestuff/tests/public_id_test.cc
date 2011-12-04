@@ -192,7 +192,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
   ASSERT_EQ(kSuccess,
             session1_->contacts_handler()->GetContactInfo(
                 received_public_username_, &received_contact));
-//   TODO(Fraser#5#): 2011-12-01 - Check contents of contact struct are correct
+//  TODO(Fraser#5#): 2011-12-01 - Check contents of contact struct are correct
 
   std::string public_username3(public_username2_ + "1");
   ASSERT_EQ(kSuccess,

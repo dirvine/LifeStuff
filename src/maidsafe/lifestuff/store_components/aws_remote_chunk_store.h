@@ -25,6 +25,7 @@
 #include <string>
 #include <utility>
 
+#include "boost/asio/io_service.hpp"
 #include "boost/thread/mutex.hpp"
 #include "boost/thread/condition_variable.hpp"
 #include "boost/multi_index_container.hpp"
@@ -174,6 +175,9 @@ class AWSRemoteChunkStore : public ChunkStore {
   std::uintmax_t get_success_count_, store_success_count_,
                  delete_success_count_, modify_success_count_;
   std::uintmax_t get_total_size_, store_total_size_;
+  boost::asio::io_service asio_service_;
+  std::shared_ptr<boost::asio::io_service::work> work_;
+  boost::thread_group thread_group_;
 };
 
 }  // namespace lifestuff

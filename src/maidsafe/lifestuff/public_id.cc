@@ -433,7 +433,8 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
       DLOG(ERROR) << "Failed to decrypt MMID name: " << n;
       continue;
     } else {
-      DLOG(ERROR) << "MMID name received in contact: " << Base32Substr(mmid_name);
+      DLOG(ERROR) << "MMID name received in contact: "
+                  << Base32Substr(mmid_name);
     }
     std::string public_username;
     n = asymm::Decrypt(mcid.encrypted_public_username(),

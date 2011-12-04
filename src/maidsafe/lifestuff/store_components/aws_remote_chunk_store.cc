@@ -69,7 +69,10 @@ AWSRemoteChunkStore::AWSRemoteChunkStore(
           delete_success_count_(0),
           modify_success_count_(0),
           get_total_size_(0),
-          store_total_size_(0) {
+          store_total_size_(0),
+          asio_service_(),
+          work_(new boost::asio::io_service::work(asio_service_)),
+          thread_group_() {
   boost::mutex::scoped_lock lock(mutex_);
 
 //   chunk_manager_->sig_chunk_got()->connect(
@@ -95,9 +98,19 @@ AWSRemoteChunkStore::AWSRemoteChunkStore(
 
   cm_delete_conn_ = chunk_manager_->sig_chunk_deleted()->connect(std::bind(
       &AWSRemoteChunkStore::OnOpResult, this, kOpDelete, args::_1, args::_2));
+
+  for (int i = 0; i < 100; ++i) {
+    thread_group_.create_thread(
+        std::bind(static_cast<std::size_t(boost::asio::io_service::*)()>
+                      (&boost::asio::io_service::run), &asio_service_));
+  }
 }
 
 AWSRemoteChunkStore::~AWSRemoteChunkStore() {
+  work_.reset();
+  asio_service_.stop();
+  thread_group_.join_all();
+
   cm_get_conn_.disconnect();
   cm_store_conn_.disconnect();
   cm_delete_conn_.disconnect();
@@ -422,14 +435,18 @@ void AWSRemoteChunkStore::ProcessPendingOps() {
     lock.unlock();
     switch (op) {
       case kOpStore:
-        chunk_manager_->StoreChunk(name);
+        asio_service_.post(std::bind(&pd::ChunkManager::StoreChunk,
+                                     chunk_manager_, name));
         break;
       case kOpDelete:
-        chunk_manager_->DeleteChunk(name);
+        asio_service_.post(std::bind(&pd::ChunkManager::DeleteChunk,
+                                     chunk_manager_, name));
         break;
       case kOpModify:
-        std::static_pointer_cast<AWSChunkManager>(chunk_manager_)->
-            ModifyChunk(name);
+        asio_service_.post(std::bind(
+            &AWSChunkManager::ModifyChunk,
+            std::static_pointer_cast<AWSChunkManager>(chunk_manager_),
+            name));
         break;
       default:
         // Get is handled separately

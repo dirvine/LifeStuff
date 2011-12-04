@@ -19,6 +19,7 @@
 
 
 #include <string>
+#include <vector>
 
 #include "maidsafe/lifestuff/version.h"
 
