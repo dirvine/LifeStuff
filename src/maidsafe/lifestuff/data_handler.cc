@@ -376,7 +376,8 @@ int DataHandler::ProcessMmidData(const OperationType &op_type,
     if (asymm::CheckSignature(current_mmid.public_key(),
                               current_mmid.signature(),
                               public_key) != 0) {
-      DLOG(INFO) << "Not owner, can only store Encrypted or get keys from MMID " << Base32Substr(name);
+      DLOG(INFO) << "Not owner, can only store Encrypted or get keys from MMID "
+                 << Base32Substr(name);
       if (op_type == kStore) {
         if (!current_mmid.add_encrypted_message()->ParseFromString(
             data.signed_data().data())) {
