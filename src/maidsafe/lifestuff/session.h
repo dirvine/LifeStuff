@@ -53,10 +53,11 @@ namespace maidsafe {
 namespace lifestuff {
 
 namespace test {
-class SessionTest;
+class AuthenticationTest;
 class ClientControllerTest;
 class LocalStoreManagerTest;
-class AuthenticationTest;
+class MessageHandlerTest;
+class SessionTest;
 }  // namespace test
 
 class Authentication;
@@ -103,10 +104,11 @@ class Session {
   friend class Authentication;
   friend class MessageHandler;
   friend class PublicId;
-  friend class test::SessionTest;
+  friend class test::AuthenticationTest;
   friend class test::ClientControllerTest;
   friend class test::LocalStoreManagerTest;
-  friend class test::AuthenticationTest;
+  friend class test::MessageHandlerTest;
+  friend class test::SessionTest;
 
  private:
   Session &operator=(const Session&);

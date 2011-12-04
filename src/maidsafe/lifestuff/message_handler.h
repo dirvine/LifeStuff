@@ -54,7 +54,7 @@ class Session;
 
 class MessageHandler {
  public:
-  typedef bs2::signal<bool(const Message&)> NewMessageSignal;  // NOLINT (Fraser)
+  typedef bs2::signal<void(const Message&)> NewMessageSignal;  // NOLINT (Fraser)
   typedef std::shared_ptr<NewMessageSignal> NewMessageSignalPtr;
   MessageHandler(std::shared_ptr<PacketManager> packet_manager,
                  std::shared_ptr<Session> session,

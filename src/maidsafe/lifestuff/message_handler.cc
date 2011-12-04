@@ -92,24 +92,25 @@ void MessageHandler::StopCheckingForNewMessages() {
 int MessageHandler::Send(const std::string &public_username,
                          const std::string &recipient_public_username,
                          const Message &message) {
+  mi_contact recipient_contact;
+  int result(session_->contacts_handler()->GetContactInfo(
+                 recipient_public_username,
+                 &recipient_contact));
+  if (result != kSuccess || recipient_contact.pub_key_.empty()) {
+    DLOG(ERROR) << "Failed to get MMID for " << recipient_public_username;
+    return result;
+  }
+
   // Get recipient's public key
   asymm::PublicKey recipient_public_key;
-  int result(GetValidatedPublicKey(recipient_public_username,
-                                   packet_manager_,
-                                   &recipient_public_key));
+  result = GetValidatedMmidPublicKey(recipient_contact.pub_key_,
+                                     packet_manager_,
+                                     &recipient_public_key);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to get public key for " << recipient_public_username;
     return result;
   }
 
-  mi_contact recipient_contact;
-  result = session_->contacts_handler()->GetContactInfo(
-               recipient_public_username,
-               &recipient_contact);
-  if (result != kSuccess || recipient_contact.pub_key_.empty()) {
-    DLOG(ERROR) << "Failed to get MMID for " << recipient_public_username;
-    return result;
-  }
 
   MMID::Message mmid_message;
   // TODO(Fraser#5#): 2011-12-03 - Implement way to generate an ID unique
@@ -145,6 +146,9 @@ int MessageHandler::Send(const std::string &public_username,
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to get own public ID data: " << result;
     return kGetPublicIdError;
+  } else {
+    DLOG(ERROR) << "\t\t\t\t\t\t The MMID message is "
+                << Base32Substr(mmid_message.SerializeAsString());
   }
 
   Encrypted combined_encrypted_message;
@@ -171,10 +175,9 @@ int MessageHandler::Send(const std::string &public_username,
   VoidFuncOneInt callback(std::bind(&SendMessageCallback, args::_1, &mutex,
                                     &cond_var, &result));
 
-  packet_manager_->StorePacket(
-      crypto::Hash<crypto::SHA512>(recipient_public_username),
-      gp.SerializeAsString(),
-      callback);
+  packet_manager_->StorePacket(recipient_contact.pub_key_,
+                               gp.SerializeAsString(),
+                               callback);
 
   try {
     boost::mutex::scoped_lock lock(mutex);
@@ -242,6 +245,15 @@ void MessageHandler::ProcessRetrieved(
     const passport::SelectableIdData &data,
     const std::vector<std::string> &mmid_values) {
   for (auto it(mmid_values.begin()); it != mmid_values.end(); ++it) {
+    asymm::PublicKey mmid_pub_key(session_->passport_->SignaturePacketValue(
+                                      passport::kMmid,
+                                      true,
+                                      std::get<0>(data)));
+    std::string serialised_pub_key;
+    asymm::EncodePublicKey(mmid_pub_key, &serialised_pub_key);
+    DLOG(ERROR) << "\t\t\t\t The MMID public key is "
+                << Base32Substr(serialised_pub_key);
+
     asymm::PrivateKey mmid_private_key(session_->passport_->PacketPrivateKey(
                                            passport::kMmid,
                                            true,
@@ -251,7 +263,7 @@ void MessageHandler::ProcessRetrieved(
       DLOG(ERROR) << "Failed to parse encrypted message";
       continue;
     }
-    
+
     std::string decrypted_message;
     int n(crypto::CombinedDecrypt(encrypted.symm_encrypted_data(),
                                   encrypted.asymm_encrypted_symm_key(),
@@ -260,6 +272,9 @@ void MessageHandler::ProcessRetrieved(
     if (n != kSuccess) {
       DLOG(ERROR) << "Failed to decrypt message: " << n;
       continue;
+    } else {
+      DLOG(ERROR) << "\t\t\t\t\t\t The MMID message is "
+                  << Base32Substr(decrypted_message);
     }
 
     MMID::Message mmid_message;

@@ -22,6 +22,7 @@
 
 #include "maidsafe/common/chunk_store.h"
 #include "maidsafe/common/crypto.h"
+#include "maidsafe/common/utils.h"
 
 #include "maidsafe/lifestuff/data_types_pb.h"
 #include "maidsafe/lifestuff/lifestuff_messages_pb.h"
@@ -359,23 +360,59 @@ int DataHandler::ProcessMmidData(const OperationType &op_type,
     // not owner, store message, no checks
     // owner, get messages, delete, store initially
   if (already_exists) {
+    DataWrapper current_data_wrapper;
+    if (!current_data_wrapper.ParseFromString(current_data)) {
+      DLOG(ERROR) << "current MMID - DataWrapper corrupted";
+      return kParseFailure;
+    }
+
     MMID current_mmid;
-    if (!current_mmid.ParseFromString(current_data)) {
-      DLOG(ERROR) << "current MSID corrupted";
+    if (!current_mmid.ParseFromString(
+            current_data_wrapper.signed_data().data())) {
+      DLOG(ERROR) << "current MMID corrupted";
       return kParseFailure;
     }
 
     if (asymm::CheckSignature(current_mmid.public_key(),
                               current_mmid.signature(),
                               public_key) != 0) {
-      DLOG(INFO) << "Not owner, can only store MCID or get keys from MSID";
+      DLOG(INFO) << "Not owner, can only store Encrypted or get keys from MMID " << Base32Substr(name);
       if (op_type == kStore) {
-        current_mmid.add_encrypted_message()->ParseFromString(
-            data.signed_data().data());
-        if (!chunk_store->Modify(name, current_mmid.SerializeAsString())) {
+        if (!current_mmid.add_encrypted_message()->ParseFromString(
+            data.signed_data().data())) {
+          DLOG(ERROR) << "Failed to parse Encrypted";
+          return kModifyFailure;
+        }
+        current_data_wrapper.mutable_signed_data()->set_data(
+            current_mmid.SerializeAsString());
+//        std::cout << "\n\n\n\t\t\t\t\t\t\tAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" << std::endl;
+        std::string s(current_data_wrapper.SerializeAsString());
+//        if (s.empty())
+//          std::cout << "\n\n\n\t\t\t\t\t\t\tBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB" << std::endl;
+        if (!chunk_store->Modify(name, s)) {
           DLOG(ERROR) << "Failed to add MCID";
           return kModifyFailure;
         }
+
+        std::string c(chunk_store->Get(name));
+        DataWrapper dw;
+        if (dw.ParseFromString(c)) {
+          MMID mm;
+          if (mm.ParseFromString(dw.signed_data().data())) {
+            DLOG(ERROR) << "\t\t\t\t\t\t\t\t\t size: " << mm.encrypted_message_size();
+          } else {
+            DLOG(ERROR) << "\t\t\t\t\t\t\t\t\tFuck 2";
+          }
+        } else {
+          DLOG(ERROR) << "\t\t\t\t\t\t\t\t\tFuck 1";
+        }
+
+      } else if (op_type == kGet) {
+        GenericPacket gp;
+        gp.set_data(current_mmid.public_key());
+        gp.set_signature(current_mmid.signature());
+        gp.set_type(kMmid);
+        (*get_string_signal_)(gp.SerializeAsString());
       } else {
         DLOG(ERROR) << "Forbidden operation";
         return kUnknownFailure;
@@ -383,7 +420,23 @@ int DataHandler::ProcessMmidData(const OperationType &op_type,
     } else {
       switch (op_type) {
         case kGet:
-            (*get_string_signal_)(current_data);
+//            (*get_string_signal_)(current_data);
+            if (current_mmid.encrypted_message_size() > 0) {
+              std::vector<std::string> mmids;
+              for (int n(0); n != current_mmid.encrypted_message_size(); ++n)
+                mmids.push_back(
+                    current_mmid.encrypted_message(n).SerializeAsString());
+              current_mmid.clear_encrypted_message();
+              current_data_wrapper.mutable_signed_data()->set_data(
+                  current_mmid.SerializeAsString());
+              if (!chunk_store->Modify(
+                      name,
+                      current_data_wrapper.SerializeAsString())) {
+                DLOG(ERROR) << "Failed to modify after geting MCIDs";
+                return kModifyFailure;
+              }
+              (*get_vector_signal_)(mmids);
+            }
             break;
         case kDelete:
             // Delete the whole thing
@@ -399,6 +452,28 @@ int DataHandler::ProcessMmidData(const OperationType &op_type,
         default: return kUnknownFailure;
       }
     }
+  } else {
+    // Storing the whole thing
+    MMID wrapper_msid;
+    if (!wrapper_msid.ParseFromString(data.signed_data().data())) {
+      DLOG(ERROR) << "Data doesn't parse";
+      return kStoreFailure;
+    }
+
+    if (asymm::CheckSignature(wrapper_msid.public_key(),
+                              wrapper_msid.signature(),
+                              public_key) != 0) {
+      DLOG(ERROR) << "Failed validation of data";
+      return kStoreFailure;
+    }
+
+    std::string a(data.SerializeAsString());
+    if (!chunk_store->Store(name, a)) {
+      DLOG(ERROR) << "Failed committing to chunk store";
+      return kStoreFailure;
+    } else {
+      DLOG(ERROR) << "Stored MMID: " << Base32Substr(name);
+    }
   }
 
   return kSuccess;
@@ -409,7 +484,7 @@ DataType DataHandler::GetDataType(
     std::shared_ptr<ChunkStore> chunk_store) const {
   std::string data(chunk_store->Get(name));
   if (data.empty()) {
-    DLOG(INFO) << "No chunk found.";
+    DLOG(INFO) << "No chunk found: " << Base32Substr(name);
     return kUnknown;
   }
 

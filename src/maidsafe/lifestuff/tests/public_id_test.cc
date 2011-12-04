@@ -155,7 +155,8 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
 
   // Connect a slot which will reject the new contact
   bs2::connection connection(public_id1_.new_contact_signal()->connect(
-      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, args::_2, false)));
+      std::bind(&PublicIdTest::NewContactSlot,
+                this, args::_1, args::_2, false)));
   ASSERT_EQ(kSuccess,
             public_id2_.SendContactInfo(public_username2_, public_username1_));
 
@@ -235,7 +236,7 @@ TEST_F(PublicIdTest, FUNC_ContactList) {
   }
 
   public_id1_.new_contact_signal()->connect(
-      std::bind(&PublicIdTest::NewContactSlot, this, arg::_1, arg::_2, true));
+      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, args::_2, true));
   ASSERT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
   Sleep(interval_ * 3);
 

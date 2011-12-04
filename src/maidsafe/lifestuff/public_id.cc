@@ -98,6 +98,8 @@ std::string MmidValue(const passport::SelectableIdentityData &data,
   mmid.set_public_key(public_key);
   mmid.set_signature(std::get<2>(data.at(2)));
   GenericPacket packet;
+  if (mmid.SerializeAsString().empty())
+    std::cout << "\t\t\t\t\t\t\tAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" << std::endl;
   packet.set_data(mmid.SerializeAsString());
   packet.set_signature(mmid.signature());
   packet.set_type(kMmid);
@@ -257,9 +259,9 @@ int PublicId::SendContactInfo(const std::string &public_username,
                               const std::string &recipient_public_username) {
   // Get recipient's public key
   asymm::PublicKey recipient_public_key;
-  int result(GetValidatedPublicKey(recipient_public_username,
-                                   packet_manager_,
-                                   &recipient_public_key));
+  int result(GetValidatedMpidPublicKey(recipient_public_username,
+                                       packet_manager_,
+                                       &recipient_public_key));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to get public key for " << recipient_public_username;
     return result;
@@ -395,7 +397,7 @@ void PublicId::GetNewContacts(const bptime::seconds &interval,
     if (result == kSuccess) {
       ProcessRequests(*it, mpid_values);
     } else if (result == kGetPacketEmptyData) {
-      DLOG(INFO) << "No new messages for " << std::get<0>(*it);
+      DLOG(INFO) << "No new add requests for " << std::get<0>(*it);
     } else {
       DLOG(ERROR) << "Failed to get MPID contents for " << std::get<0>(*it)
                   << ": " << result;
@@ -424,6 +426,8 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
     if (n != kSuccess || mmid_name.empty()) {
       DLOG(ERROR) << "Failed to decrypt MMID name: " << n;
       continue;
+    } else {
+      DLOG(ERROR) << "MMID name received in contact: " << Base32Substr(mmid_name);
     }
     std::string public_username;
     n = asymm::Decrypt(mcid.encrypted_public_username(),

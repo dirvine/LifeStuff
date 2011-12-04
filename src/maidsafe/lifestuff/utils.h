@@ -30,9 +30,13 @@ namespace lifestuff {
 
 class PacketManager;
 
-int GetValidatedPublicKey(const std::string &public_username,
-                          std::shared_ptr<PacketManager> packet_manager,
-                          asymm::PublicKey *public_key);
+int GetValidatedMpidPublicKey(const std::string &public_username,
+                              std::shared_ptr<PacketManager> packet_manager,
+                              asymm::PublicKey *public_key);
+
+int GetValidatedMmidPublicKey(const std::string &mmid_name,
+                              std::shared_ptr<PacketManager> packet_manager,
+                              asymm::PublicKey *public_key);
 
 }  // namespace lifestuff
 
