@@ -40,10 +40,10 @@ namespace lifestuff {
 enum ReturnCode {
   // General
   kSuccess = 0,
-  kPendingResult = -201,
-  kGetPublicKeyFailure = -202,
-  kGetMpidFailure = -203,
-  kInvalidPublicKey = -204,
+  kPendingResult = -200001,
+  kGetPublicKeyFailure = -200002,
+  kGetMpidFailure = -200003,
+  kInvalidPublicKey = -200004,
 
   // Authentication
   kAuthenticationError = -201001,

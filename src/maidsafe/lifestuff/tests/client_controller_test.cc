@@ -153,6 +153,47 @@ TEST_F(ClientControllerTest, FUNC_LoginSequence) {
   DLOG(INFO) << "Can't log in with fake details.";
 }
 
+TEST_F(ClientControllerTest, FUNC_RepeatedValidateUser) {
+  std::string username("User1");
+  std::string pin("1234");
+  std::string password("The beagle has landed.");
+  ASSERT_TRUE(session_->username().empty());
+  ASSERT_TRUE(session_->pin().empty());
+  ASSERT_TRUE(session_->password().empty());
+  DLOG(INFO) << "Preconditions fulfilled.\n===================\n";
+
+  ASSERT_NE(kUserExists, cc_->CheckUserExists(username, pin));
+  ASSERT_TRUE(cc_->CreateUser(username, pin, password));
+  ASSERT_EQ(username, session_->username());
+  ASSERT_EQ(pin, session_->pin());
+  ASSERT_EQ(password, session_->password());
+  DLOG(INFO) << "User created.\n===================\n";
+
+  ASSERT_TRUE(cc_->Logout());
+  ASSERT_TRUE(session_->username().empty());
+  ASSERT_TRUE(session_->pin().empty());
+  ASSERT_TRUE(session_->password().empty());
+  DLOG(INFO) << "Logged out.\n===================\n";
+
+  ASSERT_EQ(kUserExists, cc_->CheckUserExists(username, pin));
+
+  std::cout << "\n\n\n\n" << std::endl;
+  ASSERT_FALSE(cc_->ValidateUser(password + "aaaa"));
+  std::cout << "\n\n\n\n" << std::endl;
+  ASSERT_TRUE(cc_->ValidateUser(password));
+  std::cout << "\n\n\n\n" << std::endl;
+  ASSERT_EQ(username, session_->username());
+  ASSERT_EQ(pin, session_->pin());
+  ASSERT_EQ(password, session_->password());
+  DLOG(INFO) << "Logged in.\n===================\n";
+
+  ASSERT_TRUE(cc_->Logout());
+  ASSERT_TRUE(session_->username().empty());
+  ASSERT_TRUE(session_->pin().empty());
+  ASSERT_TRUE(session_->password().empty());
+  DLOG(INFO) << "Logged out.\n===================\n";
+}
+
 TEST_F(ClientControllerTest, FUNC_ChangeDetails) {
   std::string username("User2");
   std::string pin("2345");

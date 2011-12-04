@@ -156,6 +156,8 @@ Authentication::~Authentication() {
 
 void Authentication::Init(std::shared_ptr<PacketManager> packet_manager) {
   packet_manager_ = packet_manager;
+  tmid_op_status_ = kNoUser;
+  stmid_op_status_ = kNoUser;
 }
 
 int Authentication::GetUserInfo(const std::string &username,

@@ -167,8 +167,20 @@ TEST_F(AuthenticationTest, FUNC_LoginNoUser) {
 }
 
 TEST_F(AuthenticationTest, FUNC_RegisterUserOnce) {
-  username_ += "04";
+  username_ += "041";
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
+                                                       ser_dm_,
+                                                       surrogate_ser_dm_));
+  ASSERT_EQ(username_, session_->username());
+  ASSERT_EQ(pin_, session_->pin());
+//  Sleep(boost::posix_time::milliseconds(100));
+  ASSERT_EQ(password_, session_->password());
+}
+
+TEST_F(AuthenticationTest, FUNC_RegisterUserWithoutNetworkCheck) {
+  username_ += "042";
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
                                                        ser_dm_,

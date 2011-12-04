@@ -304,6 +304,7 @@ int ClientController::CheckUserExists(const std::string &username,
   }
   session_->ResetSession();
   session_->set_def_con_level(kDefCon1);
+  ser_da_.clear();
   return auth_->GetUserInfo(username, pin);
 }
 
@@ -312,12 +313,12 @@ bool ClientController::ValidateUser(const std::string &password) {
     DLOG(ERROR) << "CC::ValidateUser - Not initialised.";
     return false;
   }
-  ser_da_.clear();
+//  ser_da_.clear();
 
   std::string serialised_data_atlas, surrogate_serialised_data_atlas;
-  int res = auth_->GetMasterDataMap(password,
-                                    &serialised_data_atlas,
-                                    &surrogate_serialised_data_atlas);
+  int res(auth_->GetMasterDataMap(password,
+                                  &serialised_data_atlas,
+                                  &surrogate_serialised_data_atlas));
   if (res != 0) {
     DLOG(ERROR) << "CC::ValidateUser - Failed retrieving DA.";
     return false;
@@ -331,8 +332,7 @@ bool ClientController::ValidateUser(const std::string &password) {
     ser_da_ = surrogate_serialised_data_atlas;
   } else {
     // Password validation failed
-    ser_da_.clear();
-    session_->ResetSession();
+//    session_->ResetSession();
     DLOG(INFO) << "ClientController::ValidateUser - Invalid password";
     return false;
   }
@@ -340,7 +340,7 @@ bool ClientController::ValidateUser(const std::string &password) {
   session_->set_session_name(false);
   if (ParseDa() != 0) {
     DLOG(INFO) << "ClientController::ValidateUser - Cannot parse DA";
-    session_->ResetSession();
+//    session_->ResetSession();
     return false;
   }
   logged_in_ = true;
