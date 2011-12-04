@@ -115,11 +115,13 @@ int MessageHandler::Send(const std::string &public_username,
   MMID::Message mmid_message;
   // TODO(Fraser#5#): 2011-12-03 - Implement way to generate an ID unique
   //                  betweeen sender and recipient
+  mmid_message.set_type(message.message_type);
   mmid_message.set_id(message.message_id);
   mmid_message.set_parent_id(message.parent_id);
   mmid_message.set_sender_public_username(message.sender_public_username);
   mmid_message.set_subject(message.subject);
-//  mmid_message.set_content(message.content);
+  for (size_t i(0); i != message.content.size(); ++i)
+    mmid_message.add_content(message.content.at(i));
 
   // Get PrivateKey for this user
   std::vector<passport::SelectableIdData> selectables;
@@ -283,11 +285,16 @@ void MessageHandler::ProcessRetrieved(
       continue;
     }
 
-    Message msg(mmid_message.id(),
+    std::vector<std::string> mmid_content;
+    for (int i(0); i != mmid_message.content_size(); ++i)
+      mmid_content.push_back(mmid_message.content(i));
+
+    Message msg(static_cast<MessageType>(mmid_message.type()),
+                mmid_message.id(),
                 mmid_message.has_parent_id() ? mmid_message.parent_id() : "",
                 mmid_message.sender_public_username(),
                 mmid_message.has_subject() ? mmid_message.subject() : "",
-                ""/*mmid_message.content()*/);
+                mmid_content);
     (*new_message_signal_)(msg);
   }
 }

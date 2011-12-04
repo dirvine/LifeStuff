@@ -32,24 +32,35 @@ namespace maidsafe {
 
 namespace lifestuff {
 
+enum MessageType {
+  kNormal,
+  kFileTransfer,
+  kSharedDirectory
+};
+
 struct Message {
   Message()
-      : message_id(),
+      : message_type(kNormal),
+        message_id(),
         parent_id(),
         sender_public_username(),
         subject(),
         content() {}
-  Message(const std::string &message_id_in,
+  Message(const MessageType &message_type_in,
+          const std::string &message_id_in,
           const std::string &parent_id_in,
           const std::string &sender_public_username_in,
           const std::string &subject_in,
-          const std::string &content_in)
-      : message_id(message_id_in),
+          const std::vector<std::string> &content_in)
+      : message_type(message_type_in),
+        message_id(message_id_in),
         parent_id(parent_id_in),
         sender_public_username(sender_public_username_in),
         subject(subject_in),
         content(content_in) {}
-  std::string message_id, parent_id, sender_public_username, subject, content;
+  MessageType message_type;
+  std::string message_id, parent_id, sender_public_username, subject;
+  std::vector<std::string> content;
 };
 
 }  // namespace lifestuff
