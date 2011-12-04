@@ -158,7 +158,8 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
   ASSERT_EQ(kSuccess,
             message_handler2_.StartCheckingForNewMessages(interval_));
 
-  Message sent("id", "parent_id", public_username1_, "subject", "content");
+  Message sent(kNormal, "id", "parent_id", public_username1_, "subject",
+               std::vector<std::string>(1, "content"));
   ASSERT_EQ(kSuccess,
             message_handler1_.Send(public_username1_, public_username2_, sent));
 
