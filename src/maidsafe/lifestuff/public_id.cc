@@ -138,7 +138,8 @@ PublicId::PublicId(std::shared_ptr<PacketManager> packet_manager,
       session_(session),
       asio_service_(asio_service),
       get_new_contacts_timer_(asio_service),
-      new_contact_signal_(new NewContactSignal) {}
+      new_contact_signal_(new NewContactSignal),
+      contact_confirmed_signal_(new ContactConfirmedSignal) {}
 
 PublicId::~PublicId() {
   StopCheckingForNewContacts();
@@ -362,6 +363,9 @@ int PublicId::SendContactInfo(const std::string &public_username,
     return kSendContactInfoFailure;
   }
 
+  session_->contacts_handler()->AddContact(recipient_public_username, "", "",
+                                           "", "", '\0', 0, 0, "", '\0', 0, 0);
+
   return kSuccess;
 }
 
@@ -371,6 +375,10 @@ int PublicId::DeletePublicId(const std::string &/*public_username*/) {
 
 PublicId::NewContactSignalPtr PublicId::new_contact_signal() const {
   return new_contact_signal_;
+}
+
+PublicId::ContactConfirmedSignalPtr PublicId::contact_confirmed_signal() const {
+  return contact_confirmed_signal_;
 }
 
 void PublicId::GetNewContacts(const bptime::seconds &interval,
@@ -438,14 +446,27 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
 
     // TODO(Fraser#5#): 2011-12-02 - Validate signature of MCID
 
-    bool signal_return(*(*new_contact_signal_)(std::get<0>(data),
-                                               public_username));
-    if (signal_return) {
-      // add contact to contacts
-      session_->contacts_handler()->AddContact(public_username,
-                                               mmid_name,
-                                               "", "", "", '\0', 0,
-                                               0, "", '\0', 0, 0);
+    mi_contact mic;
+    n = session_->contacts_handler()->GetContactInfo(public_username, &mic);
+    if (n == 0) {
+      n = session_->contacts_handler()->UpdateContactConfirmed(public_username,
+                                                               'C');
+      if (n == 0)
+        (*contact_confirmed_signal_)(public_username);
+    } else {
+      bool signal_return(*(*new_contact_signal_)(std::get<0>(data),
+                                                 public_username));
+      if (signal_return) {
+        // add contact to contacts
+        session_->contacts_handler()->AddContact(public_username,
+                                                 mmid_name,
+                                                 "", "", "", '\0', 0,
+                                                 0, "", '\0', 0, 0);
+        asio_service_.post(std::bind(&PublicId::SendContactInfo,
+                                     this,
+                                     std::get<0>(data),
+                                     public_username));
+      }
     }
   }
 }

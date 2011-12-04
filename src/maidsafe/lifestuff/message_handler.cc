@@ -119,7 +119,7 @@ int MessageHandler::Send(const std::string &public_username,
   mmid_message.set_parent_id(message.parent_id);
   mmid_message.set_sender_public_username(message.sender_public_username);
   mmid_message.set_subject(message.subject);
-  mmid_message.set_content(message.content);
+//  mmid_message.set_content(message.content);
 
   // Get PrivateKey for this user
   std::vector<passport::SelectableIdData> selectables;
@@ -287,7 +287,7 @@ void MessageHandler::ProcessRetrieved(
                 mmid_message.has_parent_id() ? mmid_message.parent_id() : "",
                 mmid_message.sender_public_username(),
                 mmid_message.has_subject() ? mmid_message.subject() : "",
-                mmid_message.content());
+                ""/*mmid_message.content()*/);
     (*new_message_signal_)(msg);
   }
 }

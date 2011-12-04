@@ -71,6 +71,13 @@ class PublicIdTest : public testing::Test {
     return accept_new_contact;
   }
 
+  void ContactConfirmedSlot(const std::string &signal_public_username,
+                            std::string *slot_public_username,
+                            volatile bool *invoked) {
+    *slot_public_username  = signal_public_username;
+    *invoked = true;
+  }
+
  protected:
   void SetUp() {
     session1_->ResetSession();
@@ -98,7 +105,10 @@ class PublicIdTest : public testing::Test {
   std::shared_ptr<ba::io_service::work> work_;
   boost::thread_group threads_;
   PublicId public_id1_, public_id2_;
-  std::string public_username1_, public_username2_, received_public_username_;
+  std::string public_username1_,
+              public_username2_,
+              received_public_username_/*,
+              received_public_username2_*/;
   bptime::seconds interval_;
 
  private:
@@ -191,6 +201,43 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
             public_id2_.SendContactInfo(public_username3, public_username1_));
   Sleep(interval_ * 2);
   ASSERT_EQ(public_username3, received_public_username_);
+}
+
+TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
+  // Create users who both accept new contacts
+  ASSERT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
+  ASSERT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
+
+  // Connect a slot which will reject the new contact
+  bs2::connection connection(public_id1_.new_contact_signal()->connect(
+      std::bind(&PublicIdTest::NewContactSlot,
+                this, args::_1, args::_2, true)));
+  volatile bool invoked(false);
+  std::string confirmed_contact;
+  bs2::connection connection2(public_id2_.contact_confirmed_signal()->connect(
+      std::bind(&PublicIdTest::ContactConfirmedSlot,
+                this, args::_1, &confirmed_contact, &invoked)));
+  ASSERT_EQ(kSuccess,
+            public_id2_.SendContactInfo(public_username2_, public_username1_));
+
+  ASSERT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
+  ASSERT_EQ(kSuccess, public_id2_.StartCheckingForNewContacts(interval_));
+
+  while (!invoked)
+    Sleep(bptime::milliseconds(100));
+
+  ASSERT_EQ(public_username2_, received_public_username_);
+  ASSERT_EQ(public_username1_, confirmed_contact);
+  mi_contact received_contact;
+  ASSERT_EQ(kSuccess,
+            session1_->contacts_handler()->GetContactInfo(
+                public_username2_,
+                &received_contact));
+  received_contact = mi_contact();
+  ASSERT_EQ(kSuccess,
+            session2_->contacts_handler()->GetContactInfo(
+                public_username1_,
+                &received_contact));
 }
 
 TEST_F(PublicIdTest, FUNC_DeletePublicId) {

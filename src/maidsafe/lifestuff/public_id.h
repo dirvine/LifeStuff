@@ -52,9 +52,11 @@ class Session;
 
 class PublicId {
  public:
-  typedef bs2::signal<bool(const std::string&,
-                           const std::string&)> NewContactSignal;  // NOLINT (Fraser)
+  typedef bs2::signal<bool(const std::string&,  // NOLINT (Fraser)
+                           const std::string&)> NewContactSignal;
   typedef std::shared_ptr<NewContactSignal> NewContactSignalPtr;
+  typedef bs2::signal<void(const std::string&)> ContactConfirmedSignal;  // NOLINT (Dan)
+  typedef std::shared_ptr<ContactConfirmedSignal> ContactConfirmedSignalPtr;
   PublicId(std::shared_ptr<PacketManager> packet_manager,
            std::shared_ptr<Session> session,
            ba::io_service &asio_service);  // NOLINT (Fraser)
@@ -75,7 +77,9 @@ class PublicId {
                       const std::string &recipient_public_username);
   // Removes from the network the packets created in CreatePublicId.
   int DeletePublicId(const std::string &public_username);
+
   NewContactSignalPtr new_contact_signal() const;
+  ContactConfirmedSignalPtr contact_confirmed_signal() const;
 
   std::vector<std::string> ContactList() const;
   std::vector<std::string> PublicIdsList() const;
@@ -93,6 +97,7 @@ class PublicId {
   ba::io_service &asio_service_;
   ba::deadline_timer get_new_contacts_timer_;
   NewContactSignalPtr new_contact_signal_;
+  ContactConfirmedSignalPtr contact_confirmed_signal_;
 };
 
 }  // namespace lifestuff
