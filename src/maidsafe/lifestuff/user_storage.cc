@@ -110,6 +110,34 @@ bool UserStorage::mount_status() {
   return mount_status_;
 }
 
+int UserStorage::GetDataMap(const fs::path &absolute_path,
+                            std::string *serialised_data_map) {
+  return drive_in_user_space_->GetDataMap(absolute_path,
+                                          serialised_data_map);
+}
+
+int UserStorage::InsertDataMap(const fs::path &absolute_path,
+                               const std::string &serialised_data_map) {
+  return drive_in_user_space_->InsertDataMap(absolute_path,
+                                             serialised_data_map);
+}
+
+int UserStorage::ShareExisting(const fs::path &absolute_path,
+                               std::string *directory_id,
+                               std::string *share_id) {
+  return drive_in_user_space_->ShareExisting(absolute_path,
+                                             directory_id,
+                                             share_id);
+}
+
+int UserStorage::InsertShare(const fs::path &absolute_path,
+                             const std::string &directory_id,
+                             const std::string &share_id) {
+  return drive_in_user_space_->InsertShare(absolute_path,
+                                           directory_id,
+                                           share_id);
+}
+
 }  // namespace lifestuff
 
 }  // namespace maidsafe

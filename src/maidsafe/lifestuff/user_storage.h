@@ -70,6 +70,17 @@ class UserStorage {
   virtual fs::path g_mount_dir();
   virtual bool mount_status();
 
+  int GetDataMap(const fs::path &absolute_path,
+                 std::string *serialised_data_map);
+  int InsertDataMap(const fs::path &absolute_path,
+                    const std::string &serialised_data_map);
+  int ShareExisting(const fs::path &absolute_path,
+                    std::string *directory_id,
+                    std::string *share_id);
+  int InsertShare(const fs::path &absolute_path,
+                  const std::string &directory_id,
+                  const std::string &share_id);
+
  private:
   bool mount_status_;
   ChunkStorePtr chunk_store_;

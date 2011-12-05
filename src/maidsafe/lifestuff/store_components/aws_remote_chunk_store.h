@@ -26,16 +26,13 @@
 #include <utility>
 
 #include "boost/asio/io_service.hpp"
-#include "boost/thread/mutex.hpp"
-#include "boost/thread/condition_variable.hpp"
 #include "boost/multi_index_container.hpp"
 #include "boost/multi_index/ordered_index.hpp"
 #include "boost/multi_index/composite_key.hpp"
 #include "boost/multi_index/member.hpp"
 #include "boost/multi_index/identity.hpp"
 #include "boost/multi_index/mem_fun.hpp"
-#include "boost/thread/shared_mutex.hpp"
-#include "boost/thread/locks.hpp"
+#include "boost/thread.hpp"
 
 #include "maidsafe/common/buffered_chunk_store.h"
 #include "maidsafe/lifestuff/store_components/aws_chunk_manager.h"
