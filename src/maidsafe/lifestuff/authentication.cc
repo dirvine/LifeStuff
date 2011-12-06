@@ -395,7 +395,7 @@ int Authentication::CreateUserSysPackets(const std::string &username,
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(
                   lock,
-                  kSingleOpTimeout_ * 6,
+                  kSingleOpTimeout_ * 10,
                   std::bind(&Authentication::ThreeSystemPacketsOpDone, this,
                             &pmid_status, &anmid_status, &antmid_status));
   }

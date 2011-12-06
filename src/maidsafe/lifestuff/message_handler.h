@@ -76,6 +76,8 @@ class MessageHandler {
  private:
   MessageHandler(const MessageHandler&);
   MessageHandler& operator=(const MessageHandler&);
+
+  bool ValidateMessage(const Message &message) const;
   void GetNewMessages(const bptime::seconds &interval,
                       const boost::system::error_code &error_code);
   void ProcessRetrieved(const passport::SelectableIdData &data,

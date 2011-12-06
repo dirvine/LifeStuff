@@ -92,6 +92,10 @@ void MessageHandler::StopCheckingForNewMessages() {
 int MessageHandler::Send(const std::string &public_username,
                          const std::string &recipient_public_username,
                          const Message &message) {
+  if (!ValidateMessage(message)) {
+    DLOG(ERROR) << "Invalid message. Won't send. Good day. I said good day!";
+    return -7;
+  }
   mi_contact recipient_contact;
   int result(session_->contacts_handler()->GetContactInfo(
                  recipient_public_username,
@@ -297,6 +301,23 @@ void MessageHandler::ProcessRetrieved(
                 mmid_content);
     (*new_message_signal_)(msg);
   }
+}
+
+bool MessageHandler::ValidateMessage(const Message &message) const {
+  if (message.message_id.empty() ||
+      message.sender_public_username.empty() ||
+      message.content.empty() ||
+      (message.message_type != kNormal &&
+       message.message_type != kFileTransfer &&
+       message.message_type != kSharedDirectory)) {
+    return false;
+  }
+
+  for (auto it(message.content.begin()); it != message.content.end(); ++it)
+    if (!(*it).empty())
+      return true;
+
+  return false;
 }
 
 
