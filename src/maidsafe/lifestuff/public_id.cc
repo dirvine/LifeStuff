@@ -450,10 +450,12 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
     mi_contact mic;
     n = session_->contacts_handler()->GetContactInfo(public_username, &mic);
     if (n == 0) {
-      n = session_->contacts_handler()->UpdateContactConfirmed(public_username,
-                                                               'C');
-      if (n == 0)
+      if (session_->contacts_handler()->UpdateContactConfirmed(public_username,
+                                                               'C') == 0 &&
+          session_->contacts_handler()->UpdateContactKey(public_username,
+                                                         mmid_name) == 0) {
         (*contact_confirmed_signal_)(public_username);
+      }
     } else {
       bool signal_return(*(*new_contact_signal_)(std::get<0>(data),
                                                  public_username));

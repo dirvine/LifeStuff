@@ -233,7 +233,7 @@ void MessageHandler::GetNewMessages(
                                           kMmid));
     if (result == kSuccess) {
       ProcessRetrieved(*it, mmid_values);
-    } else {
+    } else if (result != kGetPacketEmptyData) {
       DLOG(ERROR) << "Failed to get MPID contents for " << std::get<0>(*it)
                   << ": " << result;
     }

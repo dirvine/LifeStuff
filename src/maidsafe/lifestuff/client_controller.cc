@@ -150,6 +150,8 @@ int ClientController::ParseDa() {
   }
   session_->set_unique_user_id(data_atlas.unique_user_id());
   session_->set_root_parent_id(data_atlas.root_parent_id());
+  DLOG(ERROR) << "UUID: " << Base32Substr(session_->unique_user_id());
+  DLOG(ERROR) << "PID: " << Base32Substr(session_->root_parent_id());
 
   if (!data_atlas.has_serialised_keyring()) {
     DLOG(ERROR) << "Missing serialised keyring.";
@@ -182,6 +184,8 @@ int ClientController::SerialiseDa() {
   DataAtlas data_atlas;
   data_atlas.set_unique_user_id(session_->unique_user_id());
   data_atlas.set_root_parent_id(session_->root_parent_id());
+  DLOG(ERROR) << "UUID: " << Base32Substr(session_->unique_user_id());
+  DLOG(ERROR) << "PID: " << Base32Substr(session_->root_parent_id());
   data_atlas.set_timestamp(boost::lexical_cast<std::string>(
       GetDurationSinceEpoch().total_microseconds()));
   DLOG(WARNING) << "data_atlas.set_timestamp: " << data_atlas.timestamp();
