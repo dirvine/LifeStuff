@@ -87,8 +87,8 @@ class ClientController {
                       const std::string &pin);
   bool ValidateUser(const std::string &password);
   bool CreateUser(const std::string &username,
-                          const std::string &pin,
-                          const std::string &password);
+                  const std::string &pin,
+                  const std::string &password);
   bool Logout();
   int SaveSession();
   bool ChangeUsername(const std::string &new_username);
@@ -113,7 +113,7 @@ class ClientController {
   std::shared_ptr<Session> session_;
   std::shared_ptr<PacketManager> packet_manager_;
   std::shared_ptr<Authentication> auth_;
-  std::string ser_da_;
+  std::string ser_da_, surrogate_ser_da_;
   std::string client_store_;
   bool initialised_;
   bool logging_out_;

@@ -709,19 +709,40 @@ int Authentication::GetMasterDataMap(
                                                        session_->pin(),
                                                        password,
                                                        encrypted_tmid_);
+  *surrogate_serialised_data_atlas =
+      passport::DecryptMasterData(session_->username(),
+                                  session_->pin(),
+                                  password,
+                                  encrypted_stmid_);
   if (serialised_data_atlas->empty()) {
     DLOG(ERROR) << "TMID error.";
-    *surrogate_serialised_data_atlas =
-        passport::DecryptMasterData(session_->username(),
-                                    session_->pin(),
-                                    password,
-                                    encrypted_stmid_);
     if (surrogate_serialised_data_atlas->empty()) {
       DLOG(ERROR) << "STMID error.  Found neither.";
       return kPasswordFailure;
     }
   }
   session_->set_password(password);
+
+  return kSuccess;
+}
+
+int Authentication::SetLoggedInData(const std::string &ser_da,
+                                    const std::string &surrogate_ser_da) {
+  int n(session_->passport_->SetIdentityPackets(session_->username(),
+                                                session_->pin(),
+                                                session_->password(),
+                                                ser_da,
+                                                surrogate_ser_da));
+  if (n != kSuccess) {
+    DLOG(ERROR) << "Failed SetIdentityPackets: " << n;
+    return -9003;
+  }
+  n = session_->passport_->ConfirmIdentityPackets();
+  if (n != kSuccess) {
+    DLOG(ERROR) << "Failed ConfirmIdentityPackets: " << n;
+    return -9003;
+  }
+
   return kSuccess;
 }
 

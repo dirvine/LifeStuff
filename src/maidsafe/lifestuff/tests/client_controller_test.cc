@@ -136,37 +136,36 @@ TEST_F(ClientControllerTest, FUNC_LoginSequence) {
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
-  DLOG(INFO) << "Preconditions fulfilled.\n===================\n";
+  DLOG(ERROR) << "Preconditions fulfilled.\n===================\n";
 
   ASSERT_NE(kUserExists, cc_->CheckUserExists(username, pin));
   ASSERT_TRUE(cc_->CreateUser(username, pin, password));
   ASSERT_EQ(username, session_->username());
   ASSERT_EQ(pin, session_->pin());
   ASSERT_EQ(password, session_->password());
-  DLOG(INFO) << "User created.\n===================\n";
+  DLOG(ERROR) << "User created.\n===================\n";
 
   ASSERT_TRUE(cc_->Logout());
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
-  DLOG(INFO) << "Logged out.\n===================\n";
+  DLOG(ERROR) << "Logged out.\n===================\n";
 
   ASSERT_EQ(kUserExists, cc_->CheckUserExists(username, pin));
-
   ASSERT_TRUE(cc_->ValidateUser(password));
   ASSERT_EQ(username, session_->username());
   ASSERT_EQ(pin, session_->pin());
   ASSERT_EQ(password, session_->password());
-  DLOG(INFO) << "Logged in.\n===================\n";
+  DLOG(ERROR) << "Logged in.\n===================\n";
 
   ASSERT_TRUE(cc_->Logout());
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
-  DLOG(INFO) << "Logged out.\n===================\n";
+  DLOG(ERROR) << "Logged out.\n===================\n";
 
   ASSERT_NE(kUserExists, cc_->CheckUserExists("juan.smer", pin));
-  DLOG(INFO) << "Can't log in with fake details.";
+  DLOG(ERROR) << "Can't log in with fake details.";
 }
 
 TEST_F(ClientControllerTest, FUNC_RepeatedValidateUser) {

@@ -74,7 +74,7 @@ bool Session::ResetSession() {
   user_details_->mounted = 0;
   user_details_->win_drive = '\0';
   // TODO(Fraser#5#): 2011-11-17 - Implement in passport
-//  passport_->ClearKeyring();
+  passport_->ClearKeyChain(true, true, true);
   contacts_handler_->ClearContacts();
   private_share_handler_->ClearPrivateShares();
   return true;

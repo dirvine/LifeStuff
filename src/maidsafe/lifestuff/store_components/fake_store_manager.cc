@@ -135,21 +135,11 @@ void GetPublicKey(const std::string &packet_name,
   passport::PacketType packet_type;
   for (int i(passport::kAnmid); i != passport::kMid; ++i) {
     packet_type = static_cast<passport::PacketType>(i);
-#ifdef DEBUG
-    int previous(FLAGS_ms_logging_passport);
-    FLAGS_ms_logging_passport = google::FATAL;
-#endif
     if (pprt->PacketName(packet_type, false) == packet_name) {
-#ifdef DEBUG
-      FLAGS_ms_logging_passport = previous;
-#endif
       *public_key = pprt->SignaturePacketValue(packet_type, false);
       return;
     }
     if (pprt->PacketName(packet_type, true) == packet_name) {
-#ifdef DEBUG
-      FLAGS_ms_logging_passport = previous;
-#endif
       *public_key = pprt->SignaturePacketValue(packet_type, true);
       return;
     }

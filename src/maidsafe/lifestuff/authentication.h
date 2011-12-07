@@ -89,6 +89,8 @@ class Authentication {
   int GetMasterDataMap(const std::string &password,
                        std::string *serialised_data_atlas,
                        std::string *surrogate_serialised_data_atlas);
+  int SetLoggedInData(const std::string &ser_da,
+                      const std::string &surrogate_ser_da);
   int RemoveMe();
   int ChangeUsername(const std::string &serialised_data_atlas,
                      const std::string &new_username);

@@ -104,6 +104,7 @@ ClientController::ClientController(std::shared_ptr<Session> session)
       packet_manager_(),
       auth_(new Authentication(session)),
       ser_da_(),
+      surrogate_ser_da_(),
       client_store_(),
       initialised_(false),
       logging_out_(false),
@@ -132,7 +133,7 @@ int ClientController::ParseDa() {
     return kClientControllerNotInitialised;
   }
   DataAtlas data_atlas;
-  if (ser_da_.empty()) {
+  if (ser_da_.empty() && surrogate_ser_da_.empty()) {
     DLOG(ERROR) << "TMID brought is empty.";
     return -9000;
   }
@@ -157,8 +158,19 @@ int ClientController::ParseDa() {
     DLOG(ERROR) << "Missing serialised keyring.";
     return -9003;
   }
-  session_->ParseKeyChain(data_atlas.serialised_keyring(),
-                          data_atlas.serialised_selectables());
+
+  int n (session_->ParseKeyChain(data_atlas.serialised_keyring(),
+                                 data_atlas.serialised_selectables()));
+  if (n != kSuccess) {
+    DLOG(ERROR) << "Failed ParseKeyChain: " << n;
+    return -9003;
+  }
+
+  n = auth_->SetLoggedInData(ser_da_, surrogate_ser_da_);
+  if (n != kSuccess) {
+    DLOG(ERROR) << "Failed SetLoggedInData: " << n;
+    return -9003;
+  }
 
   std::list<PublicContact> contacts;
   for (int n = 0; n < data_atlas.contacts_size(); ++n) {
@@ -331,9 +343,10 @@ bool ClientController::ValidateUser(const std::string &password) {
   if (!serialised_data_atlas.empty()) {
     DLOG(INFO) << "ClientController::ValidateUser - Using TMID";
     ser_da_ = serialised_data_atlas;
+    surrogate_ser_da_ = surrogate_serialised_data_atlas;
   } else if (!surrogate_serialised_data_atlas.empty()) {
     DLOG(INFO) << "ClientController::ValidateUser - Using STMID";
-    ser_da_ = surrogate_serialised_data_atlas;
+    surrogate_ser_da_ = surrogate_serialised_data_atlas;
   } else {
     // Password validation failed
 //    session_->ResetSession();
@@ -356,6 +369,7 @@ bool ClientController::Logout() {
     DLOG(ERROR) << "Not initialised.";
     return false;
   }
+
   logging_out_ = true;
 //  clear_messages_thread_.join();
   int result = SaveSession();

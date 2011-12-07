@@ -42,7 +42,7 @@ int main(int /*argc*/, char *argv[]) {
   // Severity levels are INFO, WARNING, ERROR, and FATAL (0 to 3 respectively).
   FLAGS_ms_logging_common = google::FATAL;
   FLAGS_ms_logging_pki = google::FATAL;
-  FLAGS_ms_logging_passport = google::FATAL;
+  FLAGS_ms_logging_passport = google::INFO;
   FLAGS_ms_logging_encrypt = google::INFO;
   FLAGS_ms_logging_lifestuff = google::INFO;
   std::cout << "LifeStuff Demo" << std::endl;
