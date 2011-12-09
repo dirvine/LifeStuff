@@ -1,82 +1,57 @@
-# ============================================================================ #
+#==============================================================================#
 #                                                                              #
-# Copyright [2010] maidsafe.net limited                                        #
+#  Copyright (c) 2011 MaidSafe.net limited                                     #
 #                                                                              #
-# Description:  CMakeList for LifeStuff project.                               #
-# Version:      1.0                                                            #
-# Created:      2010-04-15-21.01.30                                            #
-# Revision:     none                                                           #
-# Compiler:     N/A                                                            #
-# Author:       Team                                                           #
-# Company:      maidsafe.net limited                                           #
+#  The following source code is property of MaidSafe.net limited and is not    #
+#  meant for external use.  The use of this code is governed by the license    #
+#  file licence.txt found in the root directory of this project and also on    #
+#  www.maidsafe.net.                                                           #
 #                                                                              #
-# The following source code is property of maidsafe.net limited and is not     #
-# meant for external use.  The use of this code is governed by the license     #
-# file LICENSE.TXT found in the root of this directory and also on             #
-# www.maidsafe.net.                                                            #
+#  You are not free to copy, amend or otherwise use this source code without   #
+#  the explicit written permission of the board of directors of MaidSafe.net.  #
 #                                                                              #
-# You are not free to copy, amend or otherwise use this source code without    #
-# the explicit written permission of the board of directors of maidsafe.net.   #
-#                                                                              #
-# ============================================================================ #
+#==============================================================================#
 
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8 FATAL_ERROR)
+SET(MS_PROJECT_NAME lifestuff)
+
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.4 FATAL_ERROR)
 MESSAGE("================================================================================\n")
 
-SET(ERROR_MESSAGE_CMAKE_PATH "cmake ../../..")
 GET_FILENAME_COMPONENT(CMAKE_BUILD_TYPE_DIR ${CMAKE_BINARY_DIR} NAME)
 
-# Variable MSVC is not set until after PROJECT command below
+# Variable MSVC is not set until after "PROJECT" command below
 IF(CMAKE_BUILD_TYPE_DIR MATCHES "Win_MSVC")
   SET(CMAKE_BUILD_TYPE_DIR Release)
-  SET(ERROR_MESSAGE_CMAKE_PATH "   cmake ..\\..")
 ELSEIF(CMAKE_BUILD_TYPE_DIR MATCHES "kdev")
   SET(CMAKE_BUILD_TYPE_DIR Debug)
   SET(KDEV 1)
 ENDIF()
 
-SET(ERROR_MESSAGE "No generator previously specified.\nTo see a full list of generators, run:\n\t${ERROR_MESSAGE_CMAKE_PATH} --help\n")
 IF(NOT ${CMAKE_C_COMPILER_WORKS})
-  MESSAGE(FATAL_ERROR ${ERROR_MESSAGE})
+  MESSAGE(FATAL_ERROR "No generator previously specified.\nTo see a full list of generators, run:\n\tcmake --help\n")
 ENDIF()
 
+# This "PROJECT" command resets CMAKE_BUILD_TYPE, hence it's copied from CMAKE_BUILD_TYPE_DIR which is set above.
 IF((CMAKE_BUILD_TYPE_DIR MATCHES "Release") OR (DEFINED ${KDEV}))
-  SET(PROJECT_NAME LifeStuff)
+  PROJECT(${MS_PROJECT_NAME})
 ELSE()
-  SET(PROJECT_NAME LifeStuff_${CMAKE_BUILD_TYPE_DIR})
-ENDIF()
-OPTION (BUILD_SHARED_LIBS "Build shared libraries." OFF)
-
-IF(WIN32)
-  IF(${PACKAGE_BUILD})
-    #Check if project open in MSVC - not allowing package build configuration if solution is open in MVSC
-    FIND_FILE(PROJECT_OPENSDF_FILE NAMES  "${PROJECT_NAME}.opensdf" PATHS ${CMAKE_BINARY_DIR})
-    IF(EXISTS "${PROJECT_OPENSDF_FILE}")
-      MESSAGE(FATAL_ERROR "Please close the MSVC solution and run cmake again for package build")
-    ENDIF()
-    SET(CMAKE_CONFIGURATION_TYPES Release)
-    SET(CMAKE_CONFIGURATION_TYPES ${CMAKE_CONFIGURATION_TYPES} CACHE STRING "Semicolon separated list of supported configuration types, only supports Release, anything else will be ignored." FORCE)
-  ELSE()
-    SET(CMAKE_CONFIGURATION_TYPES Debug Release RelWithDebInfo MinSizeRel)
-    SET(CMAKE_CONFIGURATION_TYPES ${CMAKE_CONFIGURATION_TYPES} CACHE STRING "Semicolon separated list of supported configuration types, only supports Release, anything else will be ignored." FORCE)
-  ENDIF()
+  STRING(TOLOWER ${CMAKE_BUILD_TYPE_DIR} MS_PROJECT_NAME_APPENDIX)
+  PROJECT(${MS_PROJECT_NAME}_${MS_PROJECT_NAME_APPENDIX})
 ENDIF()
 
-# This call resets CMAKE_BUILD_TYPE, hence it's copied from CMAKE_BUILD_TYPE_DIR which is set above.
-PROJECT(${PROJECT_NAME})
 SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_DIR} CACHE INTERNAL "Except for MSVC, the build type is set by running cmake from the appropriate build subdirectory e.g. for a Debug build, \"cd build/Linux/Debug && cmake ../../..\"." FORCE)
 
 
 ###################################################################################################
-# MaidSafe Common, DHT, Drive, Passport and PKI library search                                  #
+# MaidSafe Common, Encrypt, DHT, Drive, Passport and PKI library search                           #
 ###################################################################################################
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/build)
 INCLUDE(maidsafe_find_common)
-ADD_MAIDSAFE_LIBRARY(Encrypt)
+ADD_MAIDSAFE_LIBRARY(MaidSafe-Encrypt)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-Drive)
-ADD_MAIDSAFE_LIBRARY(PKI)
-ADD_MAIDSAFE_LIBRARY(Passport)
+ADD_MAIDSAFE_LIBRARY(MaidSafe-PKI)
+ADD_MAIDSAFE_LIBRARY(MaidSafe-Passport)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-PD)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-AWS-Transporter)
 
@@ -159,8 +134,8 @@ SOURCE_GROUP("Store Components Header Files" FILES ${HEADER_FILES_LOCAL_STORE} $
 FILE(GLOB SOURCE_FILES_LIFESTUFF_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/*.cc")
 FILE(GLOB HEADER_FILES_LIFESTUFF_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/*.h")
 SET(ALL_FILES_LIFESTUFF_TESTS_DIR ${SOURCE_FILES_LIFESTUFF_TESTS_DIR} ${HEADER_FILES_LIFESTUFF_TESTS_DIR})
-SOURCE_GROUP("Test Source Files" FILES ${SOURCE_FILES_LIFESTUFF_TESTS_DIR})
-SOURCE_GROUP("Test Header Files" FILES ${HEADER_FILES_LIFESTUFF_TESTS_DIR})
+SOURCE_GROUP("Tests Source Files" FILES ${SOURCE_FILES_LIFESTUFF_TESTS_DIR})
+SOURCE_GROUP("Tests Header Files" FILES ${HEADER_FILES_LIFESTUFF_TESTS_DIR})
 
 SET(TESTS_MAIN_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/tests_main.cc")
 SET(CLIENT_MAIN_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/client_main.cc")
@@ -180,50 +155,24 @@ SOURCE_GROUP("Demo Header Files" FILES ${HEADER_FILES_LIFESTUFF_DEMO_DIR})
 
 
 ###################################################################################################
-# All Platforms:  Add exes and Create all LifeStuff libs                                          #
+# Define MaidSafe libraries and executables                                                       #
 ###################################################################################################
-ADD_EXECUTABLE(TESTlifestuff ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${TESTS_MAIN_CC})
-ADD_EXECUTABLE(TESTauthentication_local ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
-ADD_EXECUTABLE(TESTclientcontroller_local ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
-ADD_EXECUTABLE(TESTpublic_id_local ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
-ADD_EXECUTABLE(TESTauthentication_aws ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
-ADD_EXECUTABLE(TESTclientcontroller_aws ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
-ADD_EXECUTABLE(TESTpublic_id_aws ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
+MS_ADD_STATIC_LIBRARY(${MS_PROJECT_NAME} ${ALL_FILES_LIFESTUFF_DIR})
+MS_ADD_STATIC_LIBRARY(lifestuff_local_store ${ALL_FILES_LOCAL_STORE})
+MS_ADD_STATIC_LIBRARY(lifestuff_aws_store ${ALL_FILES_AWS_STORE})
 
-ADD_EXECUTABLE(LifestuffDemoLocal ${ALL_FILES_LIFESTUFF_DEMO_DIR})
-ADD_EXECUTABLE(LifestuffDemoAWS ${ALL_FILES_LIFESTUFF_DEMO_DIR})
+MS_ADD_EXECUTABLE(TESTlifestuff Tests ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${TESTS_MAIN_CC})
+MS_ADD_EXECUTABLE(TESTauthentication_local Tests ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
+MS_ADD_EXECUTABLE(TESTclientcontroller_local Tests ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
+MS_ADD_EXECUTABLE(TESTpublic_id_local Tests ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
+MS_ADD_EXECUTABLE(TESTauthentication_aws Tests ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
+MS_ADD_EXECUTABLE(TESTclientcontroller_aws Tests ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
+MS_ADD_EXECUTABLE(TESTpublic_id_aws Tests ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
 
-SET(TEST_EXECUTABLES
-      TESTlifestuff
-      TESTauthentication_aws
-      TESTclientcontroller_aws
-      TESTpublic_id_aws
-      TESTauthentication_local
-      TESTclientcontroller_local
-      TESTpublic_id_local)
-SET(DEMO_EXECUTABLES
-      LifestuffDemoLocal
-      LifestuffDemoAWS)
-SET(ALL_EXECUTABLES ${TEST_EXECUTABLES} ${DEMO_EXECUTABLES})
+MS_ADD_EXECUTABLE(LifestuffDemoLocal Demo ${ALL_FILES_LIFESTUFF_DEMO_DIR})
+MS_ADD_EXECUTABLE(LifestuffDemoAWS Demo ${ALL_FILES_LIFESTUFF_DEMO_DIR})
 
-FOREACH(EXE ${ALL_EXECUTABLES})
-  RENAME_EXECUTABLE(${EXE})
-ENDFOREACH()
-
-SET_TARGET_PROPERTIES(${TEST_EXECUTABLES} PROPERTIES FOLDER "Tests")
-SET_TARGET_PROPERTIES(${DEMO_EXECUTABLES} PROPERTIES FOLDER "Demos")
-
-ADD_LIBRARY(lifestuff_static STATIC ${ALL_FILES_LIFESTUFF_DIR})
-ADD_LIBRARY(lifestuff_local_store_static STATIC ${ALL_FILES_LOCAL_STORE})
-ADD_LIBRARY(lifestuff_aws_store_static STATIC ${ALL_FILES_AWS_STORE})
-
-SET_TARGET_PROPERTIES(lifestuff_static PROPERTIES OUTPUT_NAME lifestuff FOLDER "MaidSafe Libraries")
-SET_TARGET_PROPERTIES(lifestuff_local_store_static PROPERTIES OUTPUT_NAME lifestuff_local_store FOLDER "MaidSafe Libraries")
-SET_TARGET_PROPERTIES(lifestuff_aws_store_static PROPERTIES OUTPUT_NAME lifestuff_aws_store FOLDER "MaidSafe Libraries")
-
-ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS ${TEST_EXECUTABLES})
-
-TARGET_LINK_LIBRARIES(lifestuff_static maidsafe_drive_static passport_static boost_date_time ${QT_LIBRARIES} boost_regex)
+TARGET_LINK_LIBRARIES(lifestuff_static maidsafe_drive_static maidsafe_passport_static ${QT_LIBRARIES} boost_regex)
 TARGET_LINK_LIBRARIES(lifestuff_aws_store_static maidsafe_aws_transporter_static)
 
 TARGET_LINK_LIBRARIES(TESTlifestuff lifestuff_local_store_static lifestuff_static gtest_static gmock_static)
@@ -236,68 +185,52 @@ TARGET_LINK_LIBRARIES(TESTpublic_id_aws lifestuff_aws_store_static lifestuff_sta
 TARGET_LINK_LIBRARIES(LifestuffDemoLocal lifestuff_local_store_static lifestuff_static)
 TARGET_LINK_LIBRARIES(LifestuffDemoAWS lifestuff_aws_store_static lifestuff_static)
 
+
 ###################################################################################################
-# Builds                                                                                          #
+# Set compiler and linker flags                                                                   #
 ###################################################################################################
 INCLUDE(maidsafe_standard_flags)
 
 SET_TARGET_PROPERTIES(TESTauthentication_aws TESTclientcontroller_aws TESTpublic_id_aws LifestuffDemoAWS lifestuff_aws_store_static
                         PROPERTIES COMPILE_DEFINITIONS AMAZON_WEB_SERVICE_STORE)
-IF(UNIX)
+IF(MSVC)
+  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /D \"QT_NO_DEBUG_OUTPUT\" /D \"QT_NO_WARNING_OUTPUT\" /D \"QT_NO_DEBUG_STREAM\"")
+  SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.cc
+                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_types.pb.cc
+                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_messages.pb.cc
+                                PROPERTIES COMPILE_FLAGS "/W0")
+ELSEIF(UNIX)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DQT_NO_DEBUG_OUTPUT -DQT_NO_WARNING_OUTPUT -DQT_NO_DEBUG_STREAM")
   SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.cc
                               ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_types.pb.cc
                               ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_messages.pb.cc
                                 PROPERTIES COMPILE_FLAGS "-w")
-ELSEIF(MSVC)
-  # C4503 'decorated name length exceeded' caused by boost multi-index and signals2
-  # Disabled as per advice at https://svn.boost.org/trac/boost/wiki/Guidelines/WarningsGuidelines
-  # C4512 'assignment operator could not be generated' caused by boost signals2
-  # Disabled as per advice at http://lists.boost.org/boost-users/2009/01/44368.php
-  # C4996 'Function call with parameters that may be unsafe' caused by boost signals2
-  # Disabled as per advice at https://svn.boost.org/trac/boost/wiki/Guidelines/WarningsGuidelines
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4503 /wd4512 /wd4996")
-  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /D \"QT_NO_DEBUG_OUTPUT\" /D \"QT_NO_WARNING_OUTPUT\" /D \"QT_NO_DEBUG_STREAM\"")
-  SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_types.pb.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_messages.pb.cc
-                                PROPERTIES COMPILE_FLAGS "/W0")
-  SET_TARGET_PROPERTIES(${ALL_EXECUTABLES} PROPERTIES
-                          LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${LINKER_LIBS_DIRS_RELEASE}"
-                          LINK_FLAGS_DEBUG "${LINKER_LIBS_DIRS_DEBUG}"
-                          LINK_FLAGS_RELWITHDEBINFO "${LINKER_LIBS_DIRS_DEBUG}"
-                          LINK_FLAGS_MINSIZEREL "${LINKER_LIBS_DIRS_DEBUG}")
-  SET_TARGET_PROPERTIES(lifestuff_static lifestuff_local_store_static lifestuff_aws_store_static
-                          PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
 ENDIF()
 
 
 ###################################################################################################
 # Tests                                                                                           #
 ###################################################################################################
-SET(LOCAL_SYSTEM_TEST_TIMEOUT 1800)
-SET(NETWORK_SYSTEM_TEST_TIMEOUT 3600)
+ADD_STYLE_TEST(${STYLE_ALL})
 
-IF(PYTHONINTERP_FOUND)
-  IF(UNIX)
-    ADD_TEST(STYLE_CHECK python ${MaidSafeCommon_TOOLS_DIR}/cpplint.py ${STYLE_ALL})
-  ELSE()
-    STRING(REPLACE "/" "\\\\" STYLE_CHECK_SOURCE ${PROJECT_SOURCE_DIR})
-    ADD_TEST(STYLE_CHECK ${MaidSafeCommon_TOOLS_DIR}/run_cpplint.bat ${STYLE_CHECK_SOURCE} ${MaidSafeCommon_TOOLS_DIR}/cpplint.py)
-  ENDIF()
-  SET_PROPERTY(TEST STYLE_CHECK PROPERTY LABELS Functional CodingStyle)
-ENDIF()
+ADD_GTESTS(TESTlifestuff)
+ADD_GTESTS(TESTauthentication_aws)
+ADD_GTESTS(TESTclientcontroller_aws)
+ADD_GTESTS(TESTpublic_id_aws)
+ADD_GTESTS(TESTauthentication_local)
+ADD_GTESTS(TESTclientcontroller_local)
+ADD_GTESTS(TESTpublic_id_local)
 
-FOREACH(TEST_EXE ${TEST_EXECUTABLES})
-  ADD_GTESTS(${TEST_EXE})
-ENDFOREACH()
 TEST_SUMMARY_OUTPUT()
+
 
 ###################################################################################################
 # Install details                                                                                 #
 ###################################################################################################
 FINAL_MESSAGE()
+RENAME_OUTDATED_BUILT_EXES()
+
 #Removing the previous CPackConfig.cmake & CPackSourceConfig.cmake files
 FIND_FILE(CPACK_CONFIG_CMAKE_FILES NAMES  CPackConfig.cmake CPackSourceConfig.cmake PATHS ${CMAKE_BINARY_DIR})
 FILE(REMOVE ${CPACK_CONFIG_CMAKE_FILES})
@@ -409,7 +342,7 @@ IF(${PACKAGE_BUILD})
   ENDIF()
 
 ELSE() # Installing the library
-  SET(LIFESTUFF_LIFESTUFF_INSTALL_FILES
+  SET(LIFESTUFF_INSTALL_FILES
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client_controller.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/session.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/user_storage.h
@@ -419,23 +352,15 @@ ELSE() # Installing the library
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/public_id.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/return_codes.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/version.h)
-  SET(LIFESTUFF_LIFESTUFF_STORE_COMPONENTS_INSTALL_FILES
+  SET(LIFESTUFF_STORE_COMPONENTS_INSTALL_FILES
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/packet_manager.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/fake_store_manager.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/local_store_manager.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_store_manager.h)
-  FOREACH(LIFESTUFF_LIFESTUFF_INSTALL_FILE ${LIFESTUFF_LIFESTUFF_INSTALL_FILES})
-    CHECK_INSTALL_HEADER_HAS_VERSION_GUARD(${LIFESTUFF_LIFESTUFF_INSTALL_FILE})
-  ENDFOREACH()
-  FOREACH(LIFESTUFF_LIFESTUFF_STORE_COMPONENTS_INSTALL_FILE ${LIFESTUFF_LIFESTUFF_STORE_COMPONENTS_INSTALL_FILES})
-    CHECK_INSTALL_HEADER_HAS_VERSION_GUARD(${LIFESTUFF_LIFESTUFF_STORE_COMPONENTS_INSTALL_FILE})
-  ENDFOREACH()
 
-  SET(EXPORT_NAME lifestuff)
-  INSTALL(TARGETS lifestuff_static lifestuff_local_store_static lifestuff_aws_store_static EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
-  INSTALL(FILES ${LIFESTUFF_LIFESTUFF_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff)
-  INSTALL(FILES ${LIFESTUFF_LIFESTUFF_STORE_COMPONENTS_INSTALL_FILES} DESTINATION include/maidsafe/lifestuff/store_components)
-  INSTALL(EXPORT ${EXPORT_NAME} DESTINATION share/maidsafe)
-  ADD_VERSION_INFO_TO_INSTALLED_FILE()
+  MS_INSTALL_LIBS(lifestuff_static lifestuff_local_store_static lifestuff_aws_store_static)
+  MS_INSTALL_HEADERS(lifestuff ${LIFESTUFF_INSTALL_FILES})
+  MS_INSTALL_HEADERS(lifestuff/store_components ${LIFESTUFF_STORE_COMPONENTS_INSTALL_FILES})
+  MS_INSTALL_EXPORT()
 ENDIF()
 UNSET(PACKAGE_BUILD CACHE)
