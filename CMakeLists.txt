@@ -172,7 +172,7 @@ MS_ADD_EXECUTABLE(TESTpublic_id_aws Tests ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
 MS_ADD_EXECUTABLE(LifestuffDemoLocal Demo ${ALL_FILES_LIFESTUFF_DEMO_DIR})
 MS_ADD_EXECUTABLE(LifestuffDemoAWS Demo ${ALL_FILES_LIFESTUFF_DEMO_DIR})
 
-TARGET_LINK_LIBRARIES(lifestuff_static maidsafe_drive_static maidsafe_passport_static ${QT_LIBRARIES} boost_regex)
+TARGET_LINK_LIBRARIES(lifestuff_static maidsafe_drive_static maidsafe_passport_static)
 TARGET_LINK_LIBRARIES(lifestuff_aws_store_static maidsafe_aws_transporter_static)
 
 TARGET_LINK_LIBRARIES(TESTlifestuff lifestuff_local_store_static lifestuff_static gtest_static gmock_static)
@@ -194,14 +194,12 @@ INCLUDE(maidsafe_standard_flags)
 SET_TARGET_PROPERTIES(TESTauthentication_aws TESTclientcontroller_aws TESTpublic_id_aws LifestuffDemoAWS lifestuff_aws_store_static
                         PROPERTIES COMPILE_DEFINITIONS AMAZON_WEB_SERVICE_STORE)
 IF(MSVC)
-  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /D \"QT_NO_DEBUG_OUTPUT\" /D \"QT_NO_WARNING_OUTPUT\" /D \"QT_NO_DEBUG_STREAM\"")
   SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.cc
                               ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_types.pb.cc
                               ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_messages.pb.cc
                                 PROPERTIES COMPILE_FLAGS "/W0")
 ELSEIF(UNIX)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
-  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DQT_NO_DEBUG_OUTPUT -DQT_NO_WARNING_OUTPUT -DQT_NO_DEBUG_STREAM")
   SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.cc
                               ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_types.pb.cc
                               ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_messages.pb.cc
