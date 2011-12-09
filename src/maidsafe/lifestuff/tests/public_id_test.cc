@@ -107,8 +107,7 @@ class PublicIdTest : public testing::Test {
   PublicId public_id1_, public_id2_;
   std::string public_username1_,
               public_username2_,
-              received_public_username_/*,
-              received_public_username2_*/;
+              received_public_username_/*, received_public_username2_*/;
   bptime::seconds interval_;
 
  private:

@@ -720,6 +720,9 @@ int Authentication::GetMasterDataMap(
       DLOG(ERROR) << "STMID error.  Found neither.";
       return kPasswordFailure;
     }
+    serialised_data_atlas_ = *surrogate_serialised_data_atlas;
+  } else {
+    serialised_data_atlas_ = *serialised_data_atlas;
   }
   session_->set_password(password);
 

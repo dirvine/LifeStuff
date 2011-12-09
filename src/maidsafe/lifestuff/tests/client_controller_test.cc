@@ -363,7 +363,29 @@ TEST_F(ClientControllerTest, FUNC_LeaveNetwork) {
   DLOG(INFO) << "Logged out.";
 }
 
-TEST_F(ClientControllerTest, FUNC_ParallelLoginandLogout) {
+TEST_F(ClientControllerTest, FUNC_ParallelLogin) {
+  std::string username("User1");
+  std::string pin("1234");
+  std::string password("The beagle has landed.");
+  ASSERT_TRUE(session_->username().empty());
+  ASSERT_TRUE(session_->pin().empty());
+  ASSERT_TRUE(session_->password().empty());
+  DLOG(INFO) << "Preconditions fulfilled.\n===================\n";
+
+  ASSERT_NE(kUserExists, cc_->CheckUserExists(username, pin));
+  ASSERT_TRUE(cc_->CreateUser(username, pin, password));
+  ASSERT_EQ(username, session_->username());
+  ASSERT_EQ(pin, session_->pin());
+  ASSERT_EQ(password, session_->password());
+  DLOG(INFO) << "User created.\n===================\n";
+
+  std::shared_ptr<ClientController> cc2 = CreateSecondClientController();
+  ASSERT_EQ(kUserExists, cc2->CheckUserExists(username, pin));
+  ASSERT_TRUE(cc2->ValidateUser(password));
+  DLOG(INFO) << "Successful parallel log in.";
+}
+
+TEST_F(ClientControllerTest, FUNC_MultiClientControllerLoginandLogout) {
   std::string username("User1");
   std::string pin("1234");
   std::string password("The beagle has landed.");
