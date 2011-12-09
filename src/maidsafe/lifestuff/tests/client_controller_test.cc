@@ -363,7 +363,7 @@ TEST_F(ClientControllerTest, FUNC_LeaveNetwork) {
   DLOG(INFO) << "Logged out.";
 }
 
-TEST_F(ClientControllerTest, FUNC_ParallelLogin) {
+TEST_F(ClientControllerTest, FUNC_ParallelLoginandLogout) {
   std::string username("User1");
   std::string pin("1234");
   std::string password("The beagle has landed.");
@@ -379,10 +379,21 @@ TEST_F(ClientControllerTest, FUNC_ParallelLogin) {
   ASSERT_EQ(password, session_->password());
   DLOG(INFO) << "User created.\n===================\n";
 
+  ASSERT_TRUE(cc_->Logout());
+  ASSERT_TRUE(session_->username().empty());
+  ASSERT_TRUE(session_->pin().empty());
+  ASSERT_TRUE(session_->password().empty());
+  DLOG(ERROR) << "Logged out.\n===================\n";
+
   std::shared_ptr<ClientController> cc2 = CreateSecondClientController();
   ASSERT_EQ(kUserExists, cc2->CheckUserExists(username, pin));
   ASSERT_TRUE(cc2->ValidateUser(password));
   DLOG(INFO) << "Successful parallel log in.";
+  ASSERT_TRUE(cc2->Logout());
+  ASSERT_TRUE(session_->username().empty());
+  ASSERT_TRUE(session_->pin().empty());
+  ASSERT_TRUE(session_->password().empty());
+  DLOG(ERROR) << "Logged out.\n===================\n";
 }
 
 }  // namespace test

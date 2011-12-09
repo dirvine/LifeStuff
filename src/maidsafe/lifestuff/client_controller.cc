@@ -159,8 +159,8 @@ int ClientController::ParseDa() {
     return -9003;
   }
 
-  int n (session_->ParseKeyChain(data_atlas.serialised_keyring(),
-                                 data_atlas.serialised_selectables()));
+  int n(session_->ParseKeyChain(data_atlas.serialised_keyring(),
+                                data_atlas.serialised_selectables()));
   if (n != kSuccess) {
     DLOG(ERROR) << "Failed ParseKeyChain: " << n;
     return -9003;

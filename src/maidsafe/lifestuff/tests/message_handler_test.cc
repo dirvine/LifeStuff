@@ -169,7 +169,7 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
   ASSERT_TRUE(MessagesEqual(sent, received));
 }
 
-//TEST_F(PublicIdTest, FUNC_CreatePublicIdAntiSocial) {
+// TEST_F(PublicIdTest, FUNC_CreatePublicIdAntiSocial) {
 //  // Create user1 who doesn't accept new contacts, and user2 who does
 //  EXPECT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, false));
 //  EXPECT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
@@ -179,13 +179,13 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
 //  EXPECT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
 //
 //  EXPECT_EQ(kSendContactInfoFailure,
-//            public_id2_.SendContactInfo(public_username2_, public_username1_));
+//           public_id2_.SendContactInfo(public_username2_, public_username1_));
 //
 //  Sleep(interval_ * 2);
 //  EXPECT_TRUE(received_public_username_.empty());
-//}
+// }
 //
-//TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
+// TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
 //  // Create users who both accept new contacts
 //  EXPECT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
 //  EXPECT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
@@ -194,7 +194,7 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
 //  bs2::connection connection(public_id1_.new_contact_signal()->connect(
 //      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, false)));
 //  EXPECT_EQ(kSuccess,
-//            public_id2_.SendContactInfo(public_username2_, public_username1_));
+//           public_id2_.SendContactInfo(public_username2_, public_username1_));
 //
 //  EXPECT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
 //  Sleep(interval_ * 2);
@@ -210,16 +210,16 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
 //  public_id1_.new_contact_signal()->connect(
 //      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, true));
 //  EXPECT_EQ(kSuccess,
-//            public_id2_.SendContactInfo(public_username2_, public_username1_));
+//           public_id2_.SendContactInfo(public_username2_, public_username1_));
 //  Sleep(interval_ * 2);
 //  EXPECT_EQ(public_username2_, received_public_username_);
 //  EXPECT_EQ(kSuccess,
 //            session1_->contacts_handler()->GetContactInfo(
 //                received_public_username_, &received_contact));
-//  // TODO(Fraser#5#): 2011-12-01 - Check contents of contact struct are correct
-//}
+// // TODO(Fraser#5#): 2011-12-01 - Check contents of contact struct are correct
+// }
 //
-//TEST_F(PublicIdTest, FUNC_DeletePublicId) {
+// TEST_F(PublicIdTest, FUNC_DeletePublicId) {
 //  EXPECT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
 //  EXPECT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
 //
@@ -239,7 +239,7 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
 //
 //  // Check the original user can re-take the public username
 //  EXPECT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
-//}
+// }
 //
 // TODO(Fraser#5#): 2011-12-01 - Test for multiple public usernames per user
 // TODO(Fraser#5#): 2011-12-01 - Test for moving MMID
