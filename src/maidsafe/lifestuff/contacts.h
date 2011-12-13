@@ -217,7 +217,7 @@ typedef boost::multi_index::multi_index_container<
 
 class ContactsHandler {
  private:
-//  TODO(Team): Change this to allow mapping different public usernames
+// TODO(Team): Change this to allow mapping different public usernames
   contact_set cs_;
 
  public:
