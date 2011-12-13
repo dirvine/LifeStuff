@@ -47,6 +47,7 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
     return;
   if (!fs::exists(mount_dir_path))
     fs::create_directory(mount_dir_path);
+
   drive_in_user_space_.reset(new MaidDriveInUserSpace(chunk_store_));
 
   int n(0);
@@ -137,4 +138,3 @@ int UserStorage::InsertShare(const fs::path &absolute_path,
 }  // namespace lifestuff
 
 }  // namespace maidsafe
-

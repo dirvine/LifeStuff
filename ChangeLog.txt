@@ -1,5 +1,48 @@
-v0.01.10 (WIP)
+v0.01.11 (WIP)
 --------------
+
+
+v0.01.10
+--------
+* Removed obsolete libs and flags.
+* Changed to match updated CMake modules.
+* Added code to input id packets on log in and clearing them in the session
+  reset
+* Updating contacts MMID on confirmation
+* Added message validation
+* Added drive functions to user storage api
+* Added asio service to AWS remote chunkstore in order to post slow ops to service.
+* Exposed packet manager from CC and added Direct Create test
+* Changed Message struct and added type enum.
+* Added confirmation logic when a request is received and a corresponding signal
+* Added initial message handling.
+* Added contact list and public id list to the pub name API.
+* Now clearing MCID requests after retrieval from repository.
+* Replaced namespace alias "arg" with "args".
+* Updated AWS chunk manager to only allow caching of non-hashable chunks.
+* Added check for existence of at least 1 public name in
+  PublicId::StartCheckingForNewContacts.
+* First draft of rules for MMID and MSID in DH (graduating in the future to CAA)
+* Added initial tests for PublicId.
+* Added initial Public ID handling
+* Added pointers to root directory to DA.
+* Exposed session to allow introduction of root parent id of drive to DA
+* Added local_store_manager to installable files
+* Done with RSA and changing structure of pki, passport and tmid timestamping
+* Modified AWS tests to use different AWS bucket and local chunkstore dir for
+  each test.
+* Implemented Modify by using new AWS Modify method.
+* Fixed install name.
+* Fixed timeouts in Authentication.
+* Changed Hex output to Base32.
+* Incorporated new Passport functionality.
+* Added Amazon Web Service functions.
+* Added Modify Func For Updating SystemPacket in DataHandler
+* Changed LifeStuff to match the new pki and passport API
+* Renamed Source Files To Match Filename Conventions
+* Modifying Session to expose Private Variable as Reference than expose each
+  individual member function
+* Added Drive Mounting to ClientDemo
 
 v0.01.09
 --------

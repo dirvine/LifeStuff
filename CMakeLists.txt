@@ -53,7 +53,7 @@ ADD_MAIDSAFE_LIBRARY(MaidSafe-Drive)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-PKI)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-Passport)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-PD)
-ADD_MAIDSAFE_LIBRARY(MaidSafe-AWS-Transporter)
+# ADD_MAIDSAFE_LIBRARY(MaidSafe-AWS-Transporter)
 
 
 ###################################################################################################
@@ -114,21 +114,21 @@ SET(HEADER_FILES_LOCAL_STORE "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store
                              "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_handler.h"
                              "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/local_store_manager.h")
 SET(ALL_FILES_LOCAL_STORE ${SOURCE_FILES_LOCAL_STORE} ${HEADER_FILES_LOCAL_STORE})
-SET(SOURCE_FILES_AWS_STORE "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/fake_store_manager.cc"
-                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_store_manager.cc"
-                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_handler.cc"
-                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_remote_chunk_store.cc"
-                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_chunk_manager.cc")
-SET(HEADER_FILES_AWS_STORE "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/packet_manager.h"
-                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/fake_store_manager.h"
-                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_handler.h"
-                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_store_manager.h"
-                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_remote_chunk_store.h"
-                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_chunk_manager.h")
-SET(ALL_FILES_AWS_STORE ${SOURCE_FILES_AWS_STORE} ${HEADER_FILES_AWS_STORE})
-SET(STYLE_ALL ${ALL_FILES_LOCAL_STORE} ${ALL_FILES_AWS_STORE})
-SOURCE_GROUP("Store Components Source Files" FILES ${SOURCE_FILES_LOCAL_STORE} ${SOURCE_FILES_AWS_STORE})
-SOURCE_GROUP("Store Components Header Files" FILES ${HEADER_FILES_LOCAL_STORE} ${HEADER_FILES_AWS_STORE})
+# SET(SOURCE_FILES_AWS_STORE "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/fake_store_manager.cc"
+#                            "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_store_manager.cc"
+#                            "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_handler.cc"
+#                            "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_remote_chunk_store.cc"
+#                            "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_chunk_manager.cc")
+# SET(HEADER_FILES_AWS_STORE "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/packet_manager.h"
+#                            "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/fake_store_manager.h"
+#                            "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_handler.h"
+#                            "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_store_manager.h"
+#                            "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_remote_chunk_store.h"
+#                            "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_chunk_manager.h")
+# SET(ALL_FILES_AWS_STORE ${SOURCE_FILES_AWS_STORE} ${HEADER_FILES_AWS_STORE})
+SET(STYLE_ALL ${ALL_FILES_LOCAL_STORE}) # ${ALL_FILES_AWS_STORE})
+SOURCE_GROUP("Store Components Source Files" FILES ${SOURCE_FILES_LOCAL_STORE}) # ${SOURCE_FILES_AWS_STORE})
+SOURCE_GROUP("Store Components Header Files" FILES ${HEADER_FILES_LOCAL_STORE}) # ${HEADER_FILES_AWS_STORE})
 
 ####    TESTS    ####
 FILE(GLOB SOURCE_FILES_LIFESTUFF_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/*.cc")
@@ -159,31 +159,31 @@ SOURCE_GROUP("Demo Header Files" FILES ${HEADER_FILES_LIFESTUFF_DEMO_DIR})
 ###################################################################################################
 MS_ADD_STATIC_LIBRARY(${MS_PROJECT_NAME} ${ALL_FILES_LIFESTUFF_DIR})
 MS_ADD_STATIC_LIBRARY(lifestuff_local_store ${ALL_FILES_LOCAL_STORE})
-MS_ADD_STATIC_LIBRARY(lifestuff_aws_store ${ALL_FILES_AWS_STORE})
+# MS_ADD_STATIC_LIBRARY(lifestuff_aws_store ${ALL_FILES_AWS_STORE})
 
 MS_ADD_EXECUTABLE(TESTlifestuff Tests ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${TESTS_MAIN_CC})
 MS_ADD_EXECUTABLE(TESTauthentication_local Tests ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
 MS_ADD_EXECUTABLE(TESTclientcontroller_local Tests ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
 MS_ADD_EXECUTABLE(TESTpublic_id_local Tests ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
-MS_ADD_EXECUTABLE(TESTauthentication_aws Tests ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
-MS_ADD_EXECUTABLE(TESTclientcontroller_aws Tests ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
-MS_ADD_EXECUTABLE(TESTpublic_id_aws Tests ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
+# MS_ADD_EXECUTABLE(TESTauthentication_aws Tests ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
+# MS_ADD_EXECUTABLE(TESTclientcontroller_aws Tests ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
+# MS_ADD_EXECUTABLE(TESTpublic_id_aws Tests ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
 
 MS_ADD_EXECUTABLE(LifestuffDemoLocal Demo ${ALL_FILES_LIFESTUFF_DEMO_DIR})
-MS_ADD_EXECUTABLE(LifestuffDemoAWS Demo ${ALL_FILES_LIFESTUFF_DEMO_DIR})
+# MS_ADD_EXECUTABLE(LifestuffDemoAWS Demo ${ALL_FILES_LIFESTUFF_DEMO_DIR})
 
 TARGET_LINK_LIBRARIES(lifestuff_static maidsafe_drive_static maidsafe_passport_static)
-TARGET_LINK_LIBRARIES(lifestuff_aws_store_static maidsafe_aws_transporter_static)
+# TARGET_LINK_LIBRARIES(lifestuff_aws_store_static maidsafe_aws_transporter_static)
 
 TARGET_LINK_LIBRARIES(TESTlifestuff lifestuff_local_store_static lifestuff_static gtest_static gmock_static)
 TARGET_LINK_LIBRARIES(TESTauthentication_local lifestuff_local_store_static lifestuff_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTclientcontroller_local lifestuff_local_store_static lifestuff_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTpublic_id_local lifestuff_local_store_static lifestuff_static gtest_static)
-TARGET_LINK_LIBRARIES(TESTauthentication_aws lifestuff_aws_store_static lifestuff_static gtest_static)
-TARGET_LINK_LIBRARIES(TESTclientcontroller_aws lifestuff_aws_store_static lifestuff_static gtest_static)
-TARGET_LINK_LIBRARIES(TESTpublic_id_aws lifestuff_aws_store_static lifestuff_static gtest_static)
+# TARGET_LINK_LIBRARIES(TESTauthentication_aws lifestuff_aws_store_static lifestuff_static gtest_static)
+# TARGET_LINK_LIBRARIES(TESTclientcontroller_aws lifestuff_aws_store_static lifestuff_static gtest_static)
+# TARGET_LINK_LIBRARIES(TESTpublic_id_aws lifestuff_aws_store_static lifestuff_static gtest_static)
 TARGET_LINK_LIBRARIES(LifestuffDemoLocal lifestuff_local_store_static lifestuff_static)
-TARGET_LINK_LIBRARIES(LifestuffDemoAWS lifestuff_aws_store_static lifestuff_static)
+# TARGET_LINK_LIBRARIES(LifestuffDemoAWS lifestuff_aws_store_static lifestuff_static)
 
 
 ###################################################################################################
@@ -191,8 +191,8 @@ TARGET_LINK_LIBRARIES(LifestuffDemoAWS lifestuff_aws_store_static lifestuff_stat
 ###################################################################################################
 INCLUDE(maidsafe_standard_flags)
 
-SET_TARGET_PROPERTIES(TESTauthentication_aws TESTclientcontroller_aws TESTpublic_id_aws LifestuffDemoAWS lifestuff_aws_store_static
-                        PROPERTIES COMPILE_DEFINITIONS AMAZON_WEB_SERVICE_STORE)
+# SET_TARGET_PROPERTIES(TESTauthentication_aws TESTclientcontroller_aws TESTpublic_id_aws LifestuffDemoAWS lifestuff_aws_store_static
+#                         PROPERTIES COMPILE_DEFINITIONS AMAZON_WEB_SERVICE_STORE)
 IF(MSVC)
   SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.cc
                               ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_types.pb.cc
@@ -213,9 +213,9 @@ ENDIF()
 ADD_STYLE_TEST(${STYLE_ALL})
 
 ADD_GTESTS(TESTlifestuff)
-ADD_GTESTS(TESTauthentication_aws)
-ADD_GTESTS(TESTclientcontroller_aws)
-ADD_GTESTS(TESTpublic_id_aws)
+# ADD_GTESTS(TESTauthentication_aws)
+# ADD_GTESTS(TESTclientcontroller_aws)
+# ADD_GTESTS(TESTpublic_id_aws)
 ADD_GTESTS(TESTauthentication_local)
 ADD_GTESTS(TESTclientcontroller_local)
 ADD_GTESTS(TESTpublic_id_local)
@@ -353,10 +353,10 @@ ELSE() # Installing the library
   SET(LIFESTUFF_STORE_COMPONENTS_INSTALL_FILES
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/packet_manager.h
         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/fake_store_manager.h
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/local_store_manager.h
-        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_store_manager.h)
+        ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/local_store_manager.h)
+#         ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_store_manager.h)
 
-  MS_INSTALL_LIBS(lifestuff_static lifestuff_local_store_static lifestuff_aws_store_static)
+  MS_INSTALL_LIBS(lifestuff_static lifestuff_local_store_static) # lifestuff_aws_store_static)
   MS_INSTALL_HEADERS(lifestuff ${LIFESTUFF_INSTALL_FILES})
   MS_INSTALL_HEADERS(lifestuff/store_components ${LIFESTUFF_STORE_COMPONENTS_INSTALL_FILES})
   MS_INSTALL_EXPORT()
