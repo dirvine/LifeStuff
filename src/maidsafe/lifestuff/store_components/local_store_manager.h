@@ -33,7 +33,7 @@
 #include "maidsafe/lifestuff/store_components/fake_store_manager.h"
 #include "maidsafe/lifestuff/version.h"
 
-#if MAIDSAFE_LIFESTUFF_VERSION != 110
+#if MAIDSAFE_LIFESTUFF_VERSION != 111
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-lifestuff library.
 #endif

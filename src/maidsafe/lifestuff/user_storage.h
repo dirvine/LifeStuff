@@ -28,7 +28,6 @@
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
 
-#include "maidsafe/drive/directory_listing_handler.h"
 #include "maidsafe/lifestuff/version.h"
 
 #ifdef WIN32
@@ -38,15 +37,15 @@
 #endif
 
 
-#if MAIDSAFE_LIFESTUFF_VERSION != 110
+#if MAIDSAFE_LIFESTUFF_VERSION != 111
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-lifestuff library.
 #endif
 
 #ifdef WIN32
-  typedef maidsafe::CbfsDriveInUserSpace MaidDriveInUserSpace;
+  typedef maidsafe::drive::CbfsDriveInUserSpace MaidDriveInUserSpace;
 #else
-  typedef maidsafe::FuseDriveInUserSpace MaidDriveInUserSpace;
+  typedef maidsafe::drive::FuseDriveInUserSpace MaidDriveInUserSpace;
 #endif
 
 namespace fs = boost::filesystem;
@@ -59,7 +58,7 @@ class Session;
 
 class UserStorage {
  public:
-  explicit UserStorage(ChunkStorePtr chunk_store);
+  explicit UserStorage(std::shared_ptr<ChunkStore> chunk_store);
   virtual ~UserStorage() {}
 
   virtual void MountDrive(const fs::path &mount_dir_path,
@@ -83,8 +82,7 @@ class UserStorage {
 
  private:
   bool mount_status_;
-  ChunkStorePtr chunk_store_;
-  std::shared_ptr<DirectoryListingHandler> listing_handler_;
+  std::shared_ptr<ChunkStore> chunk_store_;
   std::shared_ptr<MaidDriveInUserSpace> drive_in_user_space_;
   fs::path g_mount_dir_;
 };

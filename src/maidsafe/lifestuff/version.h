@@ -21,7 +21,7 @@
 #ifndef MAIDSAFE_LIFESTUFF_VERSION_H_
 #define MAIDSAFE_LIFESTUFF_VERSION_H_
 
-#define MAIDSAFE_LIFESTUFF_VERSION 110
+#define MAIDSAFE_LIFESTUFF_VERSION 111
 
 #if defined CMAKE_MAIDSAFE_LIFESTUFF_VERSION &&\
   MAIDSAFE_LIFESTUFF_VERSION != CMAKE_MAIDSAFE_LIFESTUFF_VERSION
@@ -29,7 +29,7 @@
 #endif
 
 #include "maidsafe/common/version.h"
-#define THIS_NEEDS_MAIDSAFE_COMMON_VERSION 1004
+#define THIS_NEEDS_MAIDSAFE_COMMON_VERSION 1005
 #if MAIDSAFE_COMMON_VERSION < THIS_NEEDS_MAIDSAFE_COMMON_VERSION
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-common library.
@@ -39,7 +39,7 @@
 #endif
 
 #include "maidsafe/encrypt/version.h"
-#define THIS_NEEDS_MAIDSAFE_ENCRYPT_VERSION 1001
+#define THIS_NEEDS_MAIDSAFE_ENCRYPT_VERSION 1002
 #if MAIDSAFE_ENCRYPT_VERSION < THIS_NEEDS_MAIDSAFE_ENCRYPT_VERSION
 #  error This API is not compatible with the installed library.\
     Please update the MaidSafe-Encrypt library.
@@ -49,7 +49,7 @@
 #endif
 
 #include "maidsafe/pki/version.h"
-#define THIS_NEEDS_MAIDSAFE_PKI_VERSION 110
+#define THIS_NEEDS_MAIDSAFE_PKI_VERSION 111
 #if MAIDSAFE_PKI_VERSION < THIS_NEEDS_MAIDSAFE_PKI_VERSION
 #  error This API is not compatible with the installed library.\
     Please update the MaidSafe-PKI library.
@@ -59,7 +59,7 @@
 #endif
 
 #include "maidsafe/passport/version.h"
-#define THIS_NEEDS_MAIDSAFE_PASSPORT_VERSION 109
+#define THIS_NEEDS_MAIDSAFE_PASSPORT_VERSION 110
 #if MAIDSAFE_PASSPORT_VERSION < THIS_NEEDS_MAIDSAFE_PASSPORT_VERSION
 #  error This API is not compatible with the installed library.\
     Please update the MaidSafe-Passport library.
@@ -69,7 +69,7 @@
 #endif
 
 #include "maidsafe/pd/version.h"
-#define THIS_NEEDS_MAIDSAFE_PD_VERSION 600
+#define THIS_NEEDS_MAIDSAFE_PD_VERSION 700
 #if MAIDSAFE_PD_VERSION < THIS_NEEDS_MAIDSAFE_PD_VERSION
 #  error This API is not compatible with the installed library.\
     Please update the MaidSafe-PD library.
