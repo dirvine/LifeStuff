@@ -33,10 +33,9 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-UserStorage::UserStorage(ChunkStorePtr chunk_store)
+UserStorage::UserStorage(std::shared_ptr<ChunkStore> chunk_store)
     : mount_status_(false),
       chunk_store_(chunk_store),
-      listing_handler_(),
       drive_in_user_space_(),
       g_mount_dir_() {}
 
@@ -48,21 +47,19 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
     return;
   if (!fs::exists(mount_dir_path))
     fs::create_directory(mount_dir_path);
-  listing_handler_.reset(new DirectoryListingHandler(chunk_store_));
+  drive_in_user_space_.reset(new MaidDriveInUserSpace(chunk_store_));
 
   int n(0);
   if (creation) {
     session->set_unique_user_id(crypto::Hash<crypto::SHA512>(session_name));
-    n = listing_handler_->Initialise(session->unique_user_id(), "");
-    session->set_root_parent_id(listing_handler_->root_parent_id());
+    n = drive_in_user_space_->Init(session->unique_user_id(), "");
+    session->set_root_parent_id(drive_in_user_space_->root_parent_id());
   } else {
-    n = listing_handler_->Initialise(session->unique_user_id(),
-                                     session->root_parent_id());
+    n = drive_in_user_space_->Init(session->unique_user_id(),
+                                   session->root_parent_id());
   }
   DLOG(ERROR) << "DLH Init: " << n;
 
-  drive_in_user_space_.reset(new MaidDriveInUserSpace(chunk_store_,
-                                                      listing_handler_));
 #ifdef WIN32
   std::uint32_t drive_letters, mask = 0x4, count = 2;
   drive_letters = GetLogicalDrives();
@@ -75,7 +72,6 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
 
   char drive_name[3] = {'A' + static_cast<char>(count), ':', '\0'};
   g_mount_dir_ = drive_name;
-  std::static_pointer_cast<MaidDriveInUserSpace>(drive_in_user_space_)->Init();
   drive_in_user_space_->Mount(g_mount_dir_, L"LifeStuff Drive");
 #else
   g_mount_dir_ = mount_dir_path / session_name;
