@@ -113,11 +113,11 @@ class Authentication {
 
   enum SaveSessionOpType { kRegular, kSaveNew, kDeleteOld, kUpdate, kIsUnique };
 
-  struct SerialisedPacket {
-    SerialisedPacket();
-    SerialisedPacket(const passport::PacketType &packet_type,
-                     std::shared_ptr<passport::Passport> passport,
-                     bool confirmed);
+  struct PacketData {
+    PacketData();
+    PacketData(const passport::PacketType &packet_type,
+               std::shared_ptr<passport::Passport> passport,
+               bool confirmed);
     passport::PacketType type;
     std::string name, value, signature;
     asymm::PublicKey public_key;
@@ -216,12 +216,20 @@ class Authentication {
   }
   // Designed to be called as functor in timed_wait - user_info mutex locked
   bool PacketOpDone(int *return_code) { return *return_code != kPendingResult; }
-  int StorePacket(const SerialisedPacket &packet, bool check_uniqueness);
-  int DeletePacket(const SerialisedPacket &packet);
-  int PacketUnique(const SerialisedPacket &packet);
+  int StorePacket(const PacketData &packet, bool check_uniqueness);
+  int DeletePacket(const PacketData &packet);
+  int PacketUnique(const PacketData &packet);
   void PacketOpCallback(int return_code, int *op_result);
-  std::string CreateGenericPacket(const SerialisedPacket &packet,
-                                  bool signing_packet_confirmed = true);
+  void CreateSignedData(const PacketData &packet,
+                        bool signing_packet_confirmed,
+                        std::string *signed_data_name,
+                        std::string *serialised_signed_data,
+                        asymm::Identity *signing_key_id);
+  void GetPacketNameAndKeyId(const std::string &packet_name_raw,
+                             const passport::PacketType &type,
+                             bool signing_packet_confirmed,
+                             std::string *packet_name,
+                             std::string *signing_id);
   std::string DebugStr(const passport::PacketType &packet_type);
 
 

@@ -65,6 +65,7 @@ class ContactsHandler;
 class MessageHandler;
 class PrivateShareHandler;
 class PublicId;
+class UserStorage;
 struct UserDetails;
 
 class Session {
@@ -101,9 +102,13 @@ class Session {
                            std::shared_ptr<Session>,
                            asymm::PublicKey*,
                            int type);
+  friend void GetPrivateKey(const std::string&,
+                            std::shared_ptr<Session>,
+                            asymm::PrivateKey*);
   friend class Authentication;
   friend class MessageHandler;
   friend class PublicId;
+  friend class UserStorage;
   friend class test::AuthenticationTest;
   friend class test::ClientControllerTest;
   friend class test::LocalStoreManagerTest;

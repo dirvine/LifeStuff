@@ -48,7 +48,12 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
   if (!fs::exists(mount_dir_path))
     fs::create_directory(mount_dir_path);
 
-  drive_in_user_space_.reset(new MaidDriveInUserSpace(chunk_store_));
+  const asymm::PrivateKey &private_key(
+      session->passport_->PacketPrivateKey(passport::kPmid, true));
+  drive_in_user_space_.reset(new MaidDriveInUserSpace(
+      chunk_store_,
+      &private_key,
+      session->passport_->PacketName(passport::kPmid, true)));
 
   int n(0);
   if (creation) {
@@ -59,7 +64,7 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
     n = drive_in_user_space_->Init(session->unique_user_id(),
                                    session->root_parent_id());
   }
-  DLOG(ERROR) << "DLH Init: " << n;
+  DLOG(ERROR) << "drive_in_user_space_ Init: " << n;
 
 #ifdef WIN32
   std::uint32_t drive_letters, mask = 0x4, count = 2;
@@ -119,20 +124,22 @@ int UserStorage::InsertDataMap(const fs::path &absolute_path,
                                              serialised_data_map);
 }
 
-int UserStorage::ShareExisting(const fs::path &absolute_path,
-                               std::string *directory_id,
-                               std::string *share_id) {
-  return drive_in_user_space_->ShareExisting(absolute_path,
-                                             directory_id,
-                                             share_id);
+int UserStorage::ShareExisting(const fs::path &/*absolute_path*/,
+                               std::string * /*directory_id*/,
+                               std::string * /*share_id*/) {
+                                                                        return 9999;
+//  return drive_in_user_space_->SetShareDetails(absolute_path,
+//                                               directory_id,
+//                                               share_id);
 }
 
-int UserStorage::InsertShare(const fs::path &absolute_path,
-                             const std::string &directory_id,
-                             const std::string &share_id) {
-  return drive_in_user_space_->InsertShare(absolute_path,
-                                           directory_id,
-                                           share_id);
+int UserStorage::InsertShare(const fs::path &/*absolute_path*/,
+                             const std::string &/*directory_id*/,
+                             const std::string &/*share_id*/) {
+                                                                        return 9999;
+//  return drive_in_user_space_->InsertShare(absolute_path,
+//                                           directory_id,
+//                                           share_id);
 }
 
 }  // namespace lifestuff

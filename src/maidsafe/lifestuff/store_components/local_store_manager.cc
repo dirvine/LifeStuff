@@ -17,6 +17,7 @@
 #include "boost/filesystem.hpp"
 
 #include "maidsafe/common/buffered_chunk_store.h"
+#include "maidsafe/private/chunk_actions/chunk_action_authority.h"
 
 #include "maidsafe/lifestuff/log.h"
 
@@ -36,13 +37,22 @@ LocalStoreManager::~LocalStoreManager() {}
 
 void LocalStoreManager::Init(VoidFuncOneInt callback) {
   fs::path buffered_chunk_store_dir(local_store_manager_dir_ / "StoreChunks");
-  ReturnCode result = FakeStoreManager::Init(buffered_chunk_store_dir);
-  if (result != kSuccess)
-    return ExecReturnCodeCallback(callback, result);
 
-  std::shared_ptr<FileChunkStore> cstore(new FileChunkStore(chunk_validation_));
+  boost::system::error_code error_code;
+  if (!fs::exists(buffered_chunk_store_dir, error_code)) {
+    fs::create_directories(buffered_chunk_store_dir, error_code);
+    if (error_code) {
+      DLOG(ERROR) << "Failed to create " << buffered_chunk_store_dir
+                  << ": " << error_code.message();
+      return;
+    }
+  }
+
+  std::shared_ptr<FileChunkStore> cstore(new FileChunkStore);
   cstore->Init(buffered_chunk_store_dir);
   client_chunk_store_.reset(new ThreadsafeChunkStore(cstore));
+  chunk_action_authority_.reset(
+      new priv::ChunkActionAuthority(client_chunk_store_));
   ExecReturnCodeCallback(callback, kSuccess);
 }
 

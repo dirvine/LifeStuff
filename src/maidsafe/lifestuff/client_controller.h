@@ -8,7 +8,6 @@
 * Created:      2009-01-28-11.09.12
 * Revision:     none
 * Compiler:     gcc
-* Author:       Fraser Hutchison (fh), fraser.hutchison@maidsafe.net
 * Company:      maidsafe.net limited
 *
 * The following source code is property of maidsafe.net limited and is not
@@ -114,7 +113,6 @@ class ClientController {
   std::shared_ptr<PacketManager> packet_manager_;
   std::shared_ptr<Authentication> auth_;
   std::string ser_da_, surrogate_ser_da_;
-  std::string client_store_;
   bool initialised_;
   bool logging_out_;
   bool logged_in_;

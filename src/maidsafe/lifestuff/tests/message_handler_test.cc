@@ -14,160 +14,158 @@
 * ============================================================================
 */
 
-#include "maidsafe/lifestuff/message_handler.h"
-
-#include "maidsafe/common/test.h"
-#include "maidsafe/common/utils.h"
-
-#include "maidsafe/lifestuff/contacts.h"
-#include "maidsafe/lifestuff/data_handler.h"
-#include "maidsafe/lifestuff/message.h"
-#include "maidsafe/lifestuff/public_id.h"
-#include "maidsafe/lifestuff/session.h"
-#include "maidsafe/lifestuff/lifestuff_messages_pb.h"
-#include "maidsafe/lifestuff/tests/test_callback.h"
-#if defined AMAZON_WEB_SERVICE_STORE
-#  include "maidsafe/lifestuff/store_components/aws_store_manager.h"
-#else
-#  include "maidsafe/lifestuff/store_components/local_store_manager.h"
-#endif
-
-namespace ba = boost::asio;
-namespace bptime = boost::posix_time;
-namespace bs2 = boost::signals2;
-namespace args = std::placeholders;
-namespace fs = boost::filesystem;
-
-namespace maidsafe {
-
-namespace lifestuff {
-
-namespace test {
-
-class MessageHandlerTest : public testing::Test {
- public:
-  MessageHandlerTest()
-      : test_dir_(maidsafe::test::CreateTestPath()),
-        session1_(new Session),
-        session2_(new Session),
-#if defined AMAZON_WEB_SERVICE_STORE
-        packet_manager1_(new AWSStoreManager(session1_, *test_dir_)),
-        packet_manager2_(new AWSStoreManager(session2_, *test_dir_)),
-#else
-        packet_manager1_(new LocalStoreManager(session1_, test_dir_->string())),
-        packet_manager2_(new LocalStoreManager(session2_, test_dir_->string())),
-#endif
-        asio_service_(),
-        work_(new ba::io_service::work(asio_service_)),
-        threads_(),
-        public_id1_(packet_manager1_, session1_, asio_service_),
-        public_id2_(packet_manager2_, session2_, asio_service_),
-        message_handler1_(packet_manager1_, session1_, asio_service_),
-        message_handler2_(packet_manager2_, session2_, asio_service_),
-        public_username1_("User 1 " + RandomAlphaNumericString(8)),
-        public_username2_("User 2 " + RandomAlphaNumericString(8)),
-        received_public_username_(),
-        interval_(3) {}
-
-  bool NewContactSlot(const std::string &/*own_public_username*/,
-                      const std::string &other_public_username,
-                      bool accept_new_contact) {
-    received_public_username_ = other_public_username;
-    return accept_new_contact;
-  }
-
-  void NewMessagetSlot(const Message &signal_message,
-                       Message *slot_message,
-                       volatile bool *invoked) {
-    *slot_message = signal_message;
-    *invoked = true;
-  }
-
- protected:
-  void SetUp() {
-    session1_->ResetSession();
-    session2_->ResetSession();
-    packet_manager1_->Init([](int /*result*/) {});
-    packet_manager2_->Init([](int /*result*/) {});
-    for (int i(0); i != 10; ++i)
-      threads_.create_thread(std::bind(
-          static_cast<std::size_t(boost::asio::io_service::*)()>
-              (&boost::asio::io_service::run), &asio_service_));
-  }
-
-  void TearDown() {
-    work_.reset();
-    asio_service_.stop();
-    threads_.join_all();
-    packet_manager1_->Close(true);
-    packet_manager2_->Close(true);
-  }
-
-  bool MessagesEqual(const Message &left, const Message &right) const {
-    return left.content == right.content &&
-           left.message_id == right.message_id &&
-           left.parent_id == right.parent_id &&
-           left.sender_public_username == right.sender_public_username &&
-           left.subject == right.subject;
-  }
-
-  std::shared_ptr<fs::path> test_dir_;
-  std::shared_ptr<Session> session1_, session2_;
-  std::shared_ptr<PacketManager> packet_manager1_, packet_manager2_;
-  ba::io_service asio_service_;
-  std::shared_ptr<ba::io_service::work> work_;
-  boost::thread_group threads_;
-  PublicId public_id1_, public_id2_;
-  MessageHandler message_handler1_, message_handler2_;
-  std::string public_username1_, public_username2_, received_public_username_;
-  bptime::seconds interval_;
-
- private:
-  explicit MessageHandlerTest(const MessageHandlerTest&);
-  MessageHandlerTest &operator=(const MessageHandlerTest&);
-};
-
-TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
-  // Create users who both accept new contacts
-  ASSERT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
-  ASSERT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
-
-  // Connect a slot which will reject the new contact
-  public_id1_.new_contact_signal()->connect(
-      std::bind(&MessageHandlerTest::NewContactSlot,
-                this, args::_1, args::_2, true));
-  ASSERT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
-  ASSERT_EQ(kSuccess,
-            public_id2_.SendContactInfo(public_username2_, public_username1_));
-
-  Sleep(interval_ * 2);
-  ASSERT_EQ(public_username2_, received_public_username_);
-  mi_contact received_contact;
-  ASSERT_EQ(kSuccess,
-            session1_->contacts_handler()->GetContactInfo(
-                received_public_username_,
-                &received_contact));
-  public_id1_.StopCheckingForNewContacts();
-  Sleep(interval_ * 2);
-
-  Message received;
-  volatile bool invoked(false);
-  message_handler2_.new_message_signal()->connect(
-      std::bind(&MessageHandlerTest::NewMessagetSlot,
-                this, args::_1, &received, &invoked));
-  ASSERT_EQ(kSuccess,
-            message_handler2_.StartCheckingForNewMessages(interval_));
-
-  Message sent(kNormal, "id", "parent_id", public_username1_, "subject",
-               std::vector<std::string>(1, "content"));
-  ASSERT_EQ(kSuccess,
-            message_handler1_.Send(public_username1_, public_username2_, sent));
-
-  while (!invoked)
-    Sleep(bptime::milliseconds(100));
-
-  ASSERT_TRUE(MessagesEqual(sent, received));
-}
+//#include "maidsafe/lifestuff/message_handler.h"
+//
+//#include "maidsafe/common/test.h"
+//#include "maidsafe/common/utils.h"
+//
+//#include "maidsafe/lifestuff/contacts.h"
+//#include "maidsafe/lifestuff/message.h"
+//#include "maidsafe/lifestuff/public_id.h"
+//#include "maidsafe/lifestuff/session.h"
+//#include "maidsafe/lifestuff/tests/test_callback.h"
+//#if defined AMAZON_WEB_SERVICE_STORE
+//#  include "maidsafe/lifestuff/store_components/aws_store_manager.h"
+//#else
+//#  include "maidsafe/lifestuff/store_components/local_store_manager.h"
+//#endif
+//
+//namespace ba = boost::asio;
+//namespace bptime = boost::posix_time;
+//namespace bs2 = boost::signals2;
+//namespace args = std::placeholders;
+//namespace fs = boost::filesystem;
+//
+//namespace maidsafe {
+//
+//namespace lifestuff {
+//
+//namespace test {
+//
+//class MessageHandlerTest : public testing::Test {
+// public:
+//  MessageHandlerTest()
+//      : test_dir_(maidsafe::test::CreateTestPath()),
+//        session1_(new Session),
+//        session2_(new Session),
+//#if defined AMAZON_WEB_SERVICE_STORE
+//        packet_manager1_(new AWSStoreManager(session1_, *test_dir_)),
+//        packet_manager2_(new AWSStoreManager(session2_, *test_dir_)),
+//#else
+//        packet_manager1_(new LocalStoreManager(session1_, test_dir_->string())),
+//        packet_manager2_(new LocalStoreManager(session2_, test_dir_->string())),
+//#endif
+//        asio_service_(),
+//        work_(new ba::io_service::work(asio_service_)),
+//        threads_(),
+//        public_id1_(packet_manager1_, session1_, asio_service_),
+//        public_id2_(packet_manager2_, session2_, asio_service_),
+//        message_handler1_(packet_manager1_, session1_, asio_service_),
+//        message_handler2_(packet_manager2_, session2_, asio_service_),
+//        public_username1_("User 1 " + RandomAlphaNumericString(8)),
+//        public_username2_("User 2 " + RandomAlphaNumericString(8)),
+//        received_public_username_(),
+//        interval_(3) {}
+//
+//  bool NewContactSlot(const std::string &/*own_public_username*/,
+//                      const std::string &other_public_username,
+//                      bool accept_new_contact) {
+//    received_public_username_ = other_public_username;
+//    return accept_new_contact;
+//  }
+//
+//  void NewMessagetSlot(const Message &signal_message,
+//                       Message *slot_message,
+//                       volatile bool *invoked) {
+//    *slot_message = signal_message;
+//    *invoked = true;
+//  }
+//
+// protected:
+//  void SetUp() {
+//    session1_->ResetSession();
+//    session2_->ResetSession();
+//    packet_manager1_->Init([](int /*result*/) {});
+//    packet_manager2_->Init([](int /*result*/) {});
+//    for (int i(0); i != 10; ++i)
+//      threads_.create_thread(std::bind(
+//          static_cast<std::size_t(boost::asio::io_service::*)()>
+//              (&boost::asio::io_service::run), &asio_service_));
+//  }
+//
+//  void TearDown() {
+//    work_.reset();
+//    asio_service_.stop();
+//    threads_.join_all();
+//    packet_manager1_->Close(true);
+//    packet_manager2_->Close(true);
+//  }
+//
+//  bool MessagesEqual(const Message &left, const Message &right) const {
+//    return left.content == right.content &&
+//           left.message_id == right.message_id &&
+//           left.parent_id == right.parent_id &&
+//           left.sender_public_username == right.sender_public_username &&
+//           left.subject == right.subject;
+//  }
+//
+//  std::shared_ptr<fs::path> test_dir_;
+//  std::shared_ptr<Session> session1_, session2_;
+//  std::shared_ptr<PacketManager> packet_manager1_, packet_manager2_;
+//  ba::io_service asio_service_;
+//  std::shared_ptr<ba::io_service::work> work_;
+//  boost::thread_group threads_;
+//  PublicId public_id1_, public_id2_;
+//  MessageHandler message_handler1_, message_handler2_;
+//  std::string public_username1_, public_username2_, received_public_username_;
+//  bptime::seconds interval_;
+//
+// private:
+//  explicit MessageHandlerTest(const MessageHandlerTest&);
+//  MessageHandlerTest &operator=(const MessageHandlerTest&);
+//};
+//
+//TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
+//  // Create users who both accept new contacts
+//  ASSERT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
+//  ASSERT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
+//
+//  // Connect a slot which will reject the new contact
+//  public_id1_.new_contact_signal()->connect(
+//      std::bind(&MessageHandlerTest::NewContactSlot,
+//                this, args::_1, args::_2, true));
+//  ASSERT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
+//  ASSERT_EQ(kSuccess,
+//            public_id2_.SendContactInfo(public_username2_, public_username1_));
+//
+//  Sleep(interval_ * 2);
+//  ASSERT_EQ(public_username2_, received_public_username_);
+//  mi_contact received_contact;
+//  ASSERT_EQ(kSuccess,
+//            session1_->contacts_handler()->GetContactInfo(
+//                received_public_username_,
+//                &received_contact));
+//  public_id1_.StopCheckingForNewContacts();
+//  Sleep(interval_ * 2);
+//
+//  Message received;
+//  volatile bool invoked(false);
+//  message_handler2_.new_message_signal()->connect(
+//      std::bind(&MessageHandlerTest::NewMessagetSlot,
+//                this, args::_1, &received, &invoked));
+//  ASSERT_EQ(kSuccess,
+//            message_handler2_.StartCheckingForNewMessages(interval_));
+//
+//  Message sent(kNormal, "id", "parent_id", public_username1_, "subject",
+//               std::vector<std::string>(1, "content"));
+//  ASSERT_EQ(kSuccess,
+//            message_handler1_.Send(public_username1_, public_username2_, sent));
+//
+//  while (!invoked)
+//    Sleep(bptime::milliseconds(100));
+//
+//  ASSERT_TRUE(MessagesEqual(sent, received));
+//}
 
 // TEST_F(PublicIdTest, FUNC_CreatePublicIdAntiSocial) {
 //  // Create user1 who doesn't accept new contacts, and user2 who does
@@ -243,9 +241,9 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
 //
 // TODO(Fraser#5#): 2011-12-01 - Test for multiple public usernames per user
 // TODO(Fraser#5#): 2011-12-01 - Test for moving MMID
-
-}  // namespace test
-
-}  // namespace lifestuff
-
-}  // namespace maidsafe
+//
+//}  // namespace test
+//
+//}  // namespace lifestuff
+//
+//}  // namespace maidsafe

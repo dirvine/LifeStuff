@@ -44,15 +44,16 @@ SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_DIR} CACHE INTERNAL "Except for MSVC, th
 
 
 ###################################################################################################
-# MaidSafe Common, Encrypt, DHT, Drive, Passport and PKI library search                           #
+# MaidSafe Common, Private, Encrypt, DHT, Drive, PKI and Passport library search                  #
 ###################################################################################################
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/build)
 INCLUDE(maidsafe_find_common)
+ADD_MAIDSAFE_LIBRARY(MaidSafe-Private)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-Encrypt)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-Drive)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-PKI)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-Passport)
-ADD_MAIDSAFE_LIBRARY(MaidSafe-PD)
+# ADD_MAIDSAFE_LIBRARY(MaidSafe-PD)
 # ADD_MAIDSAFE_LIBRARY(MaidSafe-AWS-Transporter)
 
 
@@ -107,21 +108,17 @@ SOURCE_GROUP("LifeStuff Source Files" FILES ${SOURCE_FILES_LIFESTUFF_DIR})
 SOURCE_GROUP("LifeStuff Header Files" FILES ${HEADER_FILES_LIFESTUFF_DIR})
 
 SET(SOURCE_FILES_LOCAL_STORE "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/fake_store_manager.cc"
-                             "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_handler.cc"
                              "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/local_store_manager.cc")
 SET(HEADER_FILES_LOCAL_STORE "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/packet_manager.h"
                              "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/fake_store_manager.h"
-                             "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_handler.h"
                              "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/local_store_manager.h")
 SET(ALL_FILES_LOCAL_STORE ${SOURCE_FILES_LOCAL_STORE} ${HEADER_FILES_LOCAL_STORE})
 # SET(SOURCE_FILES_AWS_STORE "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/fake_store_manager.cc"
 #                            "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_store_manager.cc"
-#                            "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_handler.cc"
 #                            "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_remote_chunk_store.cc"
 #                            "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_chunk_manager.cc")
 # SET(HEADER_FILES_AWS_STORE "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/packet_manager.h"
 #                            "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/fake_store_manager.h"
-#                            "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_handler.h"
 #                            "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_store_manager.h"
 #                            "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_remote_chunk_store.h"
 #                            "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/store_components/aws_chunk_manager.h")

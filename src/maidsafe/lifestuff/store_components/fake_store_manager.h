@@ -39,13 +39,12 @@
 
 namespace maidsafe {
 
+namespace priv { class ChunkActionAuthority; }
+
 class ChunkStore;
-class ChunkValidation;
 
 namespace lifestuff {
 
-class DataHandler;
-class GenericPacket;
 class Session;
 
 class FakeStoreManager : public PacketManager {
@@ -53,41 +52,41 @@ class FakeStoreManager : public PacketManager {
   explicit FakeStoreManager(std::shared_ptr<Session> session);
   virtual ~FakeStoreManager();
   int Close(bool cancel_pending_ops);
-  bool KeyUnique(const std::string &key);
+  bool KeyUnique(const std::string &key, const std::string &signing_key_id);
   void KeyUnique(const std::string &key,
+                 const std::string &signing_key_id,
                  const VoidFuncOneInt &cb);
   int GetPacket(const std::string &packet_name,
-                std::vector<std::string> *results,
-                const std::string &public_key_id = "",
-                const int &data_type = -1);
+                const std::string &signing_key_id,
+                std::vector<std::string> *results);
   void GetPacket(const std::string &packet_name,
+                 const std::string &signing_key_id,
                  const GetPacketFunctor &lpf);
   void StorePacket(const std::string &packet_name,
                    const std::string &value,
+                   const std::string &signing_key_id,
                    const VoidFuncOneInt &cb);
   void DeletePacket(const std::string &packet_name,
-                    const std::string &value,
+                    const std::string &signing_key_id,
                     const VoidFuncOneInt &cb);
-  void UpdatePacket(const std::string &packet_name,
-                    const std::string &old_value,
-                    const std::string &new_value,
+  void ModifyPacket(const std::string &packet_name,
+                    const std::string &value,
+                    const std::string &signing_key_id,
                     const VoidFuncOneInt &cb);
   std::shared_ptr<ChunkStore> chunk_store() const;
 
  protected:
-  ReturnCode Init(const boost::filesystem::path &buffered_chunk_store_dir);
+//  ReturnCode Init(const boost::filesystem::path &buffered_chunk_store_dir);
   void ExecReturnCodeCallback(VoidFuncOneInt callback, ReturnCode return_code);
   void ExecReturnLoadPacketCallback(GetPacketFunctor callback,
                                     std::vector<std::string> results,
                                     ReturnCode return_code);
-  void CreateSerialisedSignedValue(const GenericPacket &data,
-                                   std::string *ser_gp);
 
   boost::asio::io_service asio_service_;
   std::shared_ptr<boost::asio::io_service::work> work_;
   boost::thread_group thread_group_;
-  std::shared_ptr<ChunkValidation> chunk_validation_;
   std::shared_ptr<ChunkStore> client_chunk_store_;
+  std::shared_ptr<priv::ChunkActionAuthority> chunk_action_authority_;
   std::shared_ptr<Session> session_;
   boost::filesystem::path temp_directory_path_;
 

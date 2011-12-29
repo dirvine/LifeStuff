@@ -28,14 +28,17 @@
 
 #include "boost/signals2/connection.hpp"
 
-#include "maidsafe/lifestuff/lifestuff_messages_pb.h"
-#include "maidsafe/lifestuff/data_handler.h"
-#include "maidsafe/lifestuff/store_components/local_store_manager.h"
+#include "maidsafe/private/chunk_actions/chunk_action_authority.h"
+#include "maidsafe/private/chunk_actions/chunk_pb.h"
+#include "maidsafe/private/chunk_actions/chunk_types.h"
+
 #include "maidsafe/lifestuff/session.h"
+#include "maidsafe/lifestuff/store_components/local_store_manager.h"
 #include "maidsafe/lifestuff/tests/test_callback.h"
 
 namespace args = std::placeholders;
 namespace fs = boost::filesystem;
+namespace pca = maidsafe::priv::chunk_actions;
 
 namespace maidsafe {
 
@@ -53,7 +56,8 @@ class LocalStoreManagerTest : public testing::Test {
         functor_(),
         get_functor_(),
         anmaid_public_key_(),
-        encoded_anmaid_public_key_() {}
+        encoded_anmaid_public_key_(),
+        anmaid_name_() {}
 
   ~LocalStoreManagerTest() {}
 
@@ -79,6 +83,7 @@ class LocalStoreManagerTest : public testing::Test {
         session_->passport_->SignaturePacketValue(passport::kAnmaid, true);
     asymm::EncodePublicKey(anmaid_public_key_, &encoded_anmaid_public_key_);
     ASSERT_FALSE(encoded_anmaid_public_key_.empty());
+    anmaid_name_ = session_->passport_->PacketName(passport::kAnmaid, true);
   }
 
   void TearDown() {
@@ -87,17 +92,12 @@ class LocalStoreManagerTest : public testing::Test {
     sm_->Close(true);
   }
 
-  void GeneratePacket(bool hashable, std::string *name, GenericPacket *gp) {
-    gp->set_data(encoded_anmaid_public_key_);
-    gp->set_signature(session_->passport_->PacketSignature(passport::kAnmaid,
-                                                           true));
-    if (hashable)
-      gp->set_type(0);
-    else
-      gp->set_type(1);
-    *name = session_->passport_->PacketName(passport::kAnmaid, true);
-    gp->set_signing_id(session_->passport_->PacketName(passport::kAnmaid,
-                                                       true));
+  void GeneratePacket(std::string *name, pca::SignedData *signed_data) {
+    signed_data->set_data(encoded_anmaid_public_key_);
+    signed_data->set_signature(
+        session_->passport_->PacketSignature(passport::kAnmaid, true));
+    *name = session_->passport_->PacketName(passport::kMaid, true) +
+            std::string(1, pca::kSignaturePacket);
   }
 
   void CreateTestPacketsInSession() { session_->CreateTestPackets(); }
@@ -109,7 +109,7 @@ class LocalStoreManagerTest : public testing::Test {
   std::function<void(int)> functor_;  // NOLINT (Dan)
   std::function<void(const std::vector<std::string>&, int)> get_functor_;
   asymm::PublicKey anmaid_public_key_;
-  std::string encoded_anmaid_public_key_;
+  std::string encoded_anmaid_public_key_, anmaid_name_;
 
  private:
   LocalStoreManagerTest(const LocalStoreManagerTest&);
@@ -117,205 +117,226 @@ class LocalStoreManagerTest : public testing::Test {
 };
 
 TEST_F(LocalStoreManagerTest, BEH_KeyUnique) {
-  GenericPacket gp;
-  std::string gp_name;
-  GeneratePacket(false, &gp_name, &gp);
+  pca::SignedData signed_data;
+  std::string packet_name;
+  GeneratePacket(&packet_name, &signed_data);
 
-  ASSERT_TRUE(sm_->KeyUnique(gp_name));
-  sm_->KeyUnique(gp_name, functor_);
+  ASSERT_TRUE(sm_->KeyUnique(packet_name, anmaid_name_));
+  sm_->KeyUnique(packet_name, anmaid_name_, functor_);
   ASSERT_EQ(kKeyUnique, cb_.WaitForIntResult());
 
   cb_.Reset();
-  sm_->StorePacket(gp_name, gp.SerializeAsString(), functor_);
+  sm_->StorePacket(packet_name,
+                   signed_data.SerializeAsString(),
+                   anmaid_name_,
+                   functor_);
   ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
 
-  ASSERT_FALSE(sm_->KeyUnique(gp_name));
-  sm_->KeyUnique(gp_name, functor_);
+  ASSERT_FALSE(sm_->KeyUnique(packet_name, anmaid_name_));
+  sm_->KeyUnique(packet_name, anmaid_name_, functor_);
   ASSERT_EQ(kKeyNotUnique, cb_.WaitForIntResult());
 }
 
 TEST_F(LocalStoreManagerTest, BEH_GetPacket) {
-  GenericPacket gp;
-  std::string gp_name;
-  GeneratePacket(false, &gp_name, &gp);
-  ASSERT_TRUE(sm_->KeyUnique(gp_name));
+  pca::SignedData signed_data;
+  std::string packet_name;
+  GeneratePacket(&packet_name, &signed_data);
+  ASSERT_TRUE(sm_->KeyUnique(packet_name, anmaid_name_));
 
   cb_.Reset();
-  sm_->StorePacket(gp_name, gp.SerializeAsString(), functor_);
+  sm_->StorePacket(packet_name,
+                   signed_data.SerializeAsString(),
+                   anmaid_name_,
+                   functor_);
   ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
-  ASSERT_FALSE(sm_->KeyUnique(gp_name));
+  ASSERT_FALSE(sm_->KeyUnique(packet_name, anmaid_name_));
   std::vector<std::string> res;
 
   // Test Blocking GetPacket Func
-  ASSERT_EQ(kSuccess, sm_->GetPacket(gp_name, &res));
+  ASSERT_EQ(kSuccess, sm_->GetPacket(packet_name, anmaid_name_, &res));
   ASSERT_EQ(size_t(1), res.size());
-  GenericPacket gp_res;
-  ASSERT_TRUE(gp_res.ParseFromString(res[0]));
-  ASSERT_EQ(gp.data(), gp_res.data());
-  ASSERT_EQ(kSuccess, asymm::CheckSignature(gp.data(),
-                                          gp_res.signature(),
-                                          anmaid_public_key_));
+  pca::SignedData res_signed_data;
+  ASSERT_TRUE(res_signed_data.ParseFromString(res[0]));
+  ASSERT_EQ(signed_data.data(), res_signed_data.data());
+  ASSERT_EQ(kSuccess, asymm::CheckSignature(signed_data.data(),
+                                            res_signed_data.signature(),
+                                            anmaid_public_key_));
 
   // Test Non-Blocking GetPacket Func
-  sm_->GetPacket(gp_name, get_functor_);
+  sm_->GetPacket(packet_name, anmaid_name_, get_functor_);
   ASSERT_EQ(kSuccess, cb_.WaitForGetPacketCallbackResult());
   std::vector<std::string> results(cb_.get_packet_results());
   ASSERT_EQ(size_t(1), results.size());
-  GenericPacket gp_res2;
-  ASSERT_TRUE(gp_res2.ParseFromString(results[0]));
-  ASSERT_EQ(gp.data(), gp_res2.data());
-  ASSERT_EQ(kSuccess, asymm::CheckSignature(gp.data(),
-                                          gp_res2.signature(),
-                                          anmaid_public_key_));
+  pca::SignedData res_signed_data2;
+  ASSERT_TRUE(res_signed_data2.ParseFromString(results[0]));
+  ASSERT_EQ(signed_data.data(), res_signed_data2.data());
+  ASSERT_EQ(kSuccess, asymm::CheckSignature(signed_data.data(),
+                                            res_signed_data2.signature(),
+                                            anmaid_public_key_));
 }
 
 TEST_F(LocalStoreManagerTest, BEH_StoreSystemPacket) {
-  GenericPacket gp;
-  std::string gp_name;
-  GeneratePacket(false, &gp_name, &gp);
-  ASSERT_TRUE(sm_->KeyUnique(gp_name));
+  pca::SignedData signed_data;
+  std::string packet_name;
+  GeneratePacket(&packet_name, &signed_data);
+  ASSERT_TRUE(sm_->KeyUnique(packet_name, anmaid_name_));
 
   cb_.Reset();
-  sm_->StorePacket(gp_name, gp.SerializeAsString(), functor_);
+  sm_->StorePacket(packet_name,
+                   signed_data.SerializeAsString(),
+                   anmaid_name_,
+                   functor_);
   ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
-  ASSERT_FALSE(sm_->KeyUnique(gp_name));
+  ASSERT_FALSE(sm_->KeyUnique(packet_name, anmaid_name_));
 
   std::vector<std::string> res;
-  ASSERT_EQ(kSuccess, sm_->GetPacket(gp_name, &res));
+  ASSERT_EQ(kSuccess, sm_->GetPacket(packet_name, anmaid_name_, &res));
   ASSERT_EQ(size_t(1), res.size());
-  GenericPacket gp_res;
-  ASSERT_TRUE(gp_res.ParseFromString(res[0]));
-  ASSERT_EQ(gp.data(), gp_res.data());
-  ASSERT_EQ(kSuccess, asymm::CheckSignature(gp.data(),
-                                          gp_res.signature(),
-                                          anmaid_public_key_));
+  pca::SignedData res_signed_data;
+  ASSERT_TRUE(res_signed_data.ParseFromString(res[0]));
+  ASSERT_EQ(signed_data.data(), res_signed_data.data());
+  ASSERT_EQ(kSuccess, asymm::CheckSignature(signed_data.data(),
+                                            res_signed_data.signature(),
+                                            anmaid_public_key_));
 }
 
 TEST_F(LocalStoreManagerTest, BEH_DeleteSystemPacketOwner) {
-  GenericPacket gp;
-  std::string gp_name;
-  GeneratePacket(false, &gp_name, &gp);
+  pca::SignedData signed_data;
+  std::string packet_name;
+  GeneratePacket(&packet_name, &signed_data);
 
   cb_.Reset();
-  sm_->StorePacket(gp_name, gp.SerializeAsString(), functor_);
+  sm_->StorePacket(packet_name,
+                   signed_data.SerializeAsString(),
+                   anmaid_name_,
+                   functor_);
   ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
 
-  ASSERT_FALSE(sm_->KeyUnique(gp_name));
+  ASSERT_FALSE(sm_->KeyUnique(packet_name, anmaid_name_));
 
-  std::vector<std::string> values(1, gp.data());
+  std::vector<std::string> values(1, signed_data.data());
   cb_.Reset();
-  sm_->DeletePacket(gp_name, gp.SerializeAsString(), functor_);
+  sm_->DeletePacket(packet_name, anmaid_name_, functor_);
   ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
 
-  ASSERT_TRUE(sm_->KeyUnique(gp_name));
+  ASSERT_TRUE(sm_->KeyUnique(packet_name, anmaid_name_));
 }
 
 TEST_F(LocalStoreManagerTest, BEH_DeleteSystemPacketNotOwner) {
-  GenericPacket gp;
-  std::string gp_name;
-  GeneratePacket(false, &gp_name, &gp);
+  pca::SignedData signed_data;
+  std::string packet_name;
+  GeneratePacket(&packet_name, &signed_data);
 
   cb_.Reset();
-  sm_->StorePacket(gp_name, gp.SerializeAsString(), functor_);
+  sm_->StorePacket(packet_name,
+                   signed_data.SerializeAsString(),
+                   anmaid_name_,
+                   functor_);
   ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
-  ASSERT_FALSE(sm_->KeyUnique(gp_name));
+  ASSERT_FALSE(sm_->KeyUnique(packet_name, anmaid_name_));
 
-  std::vector<std::string> values(1, gp.data());
+  std::vector<std::string> values(1, signed_data.data());
 
   // Overwrite original signature packets
   CreateTestPacketsInSession();
 
   cb_.Reset();
-  sm_->DeletePacket(gp_name, gp.SerializeAsString(), functor_);
+  sm_->DeletePacket(packet_name, anmaid_name_, functor_);
   ASSERT_NE(kSuccess, cb_.WaitForIntResult());
-  ASSERT_FALSE(sm_->KeyUnique(gp_name));
+  ASSERT_FALSE(sm_->KeyUnique(packet_name, anmaid_name_));
 }
 
-TEST_F(LocalStoreManagerTest, BEH_UpdateSystemPacket) {
+TEST_F(LocalStoreManagerTest, BEH_ModifySystemPacket) {
   // Store one packet
-  GenericPacket gp;
-  std::string gp_name;
-  GeneratePacket(false, &gp_name, &gp);
+  pca::SignedData signed_data;
+  std::string packet_name;
+  GeneratePacket(&packet_name, &signed_data);
 
   cb_.Reset();
-  sm_->StorePacket(gp_name, gp.SerializeAsString(), functor_);
+  sm_->StorePacket(packet_name,
+                   signed_data.SerializeAsString(),
+                   anmaid_name_,
+                   functor_);
   ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
 
   std::vector<std::string> res;
-  ASSERT_EQ(kSuccess, sm_->GetPacket(gp_name, &res));
+  ASSERT_EQ(kSuccess, sm_->GetPacket(packet_name, anmaid_name_, &res));
   ASSERT_EQ(size_t(1), res.size());
-  GenericPacket gp_res;
-  ASSERT_TRUE(gp_res.ParseFromString(res[0]));
-  ASSERT_EQ(gp.data(), gp_res.data());
-  ASSERT_EQ(kSuccess, asymm::CheckSignature(gp.data(),
-                                          gp_res.signature(),
-                                          anmaid_public_key_));
+  pca::SignedData res_signed_data;
+  ASSERT_TRUE(res_signed_data.ParseFromString(res[0]));
+  ASSERT_EQ(signed_data.data(), res_signed_data.data());
+  ASSERT_EQ(kSuccess, asymm::CheckSignature(signed_data.data(),
+                                            res_signed_data.signature(),
+                                            anmaid_public_key_));
 
   // Update the packet
   cb_.Reset();
-  GenericPacket new_gp;
+  pca::SignedData new_signed_data;
   std::string s;
-  GeneratePacket(false, &s, &new_gp);
-  sm_->UpdatePacket(gp_name,
-                    gp.SerializeAsString(),
-                    new_gp.SerializeAsString(),
+  GeneratePacket(&s, &new_signed_data);
+  sm_->ModifyPacket(packet_name,
+                    new_signed_data.SerializeAsString(),
+                    anmaid_name_,
                     functor_);
   ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
   res.clear();
 
-  ASSERT_EQ(kSuccess, sm_->GetPacket(gp_name, &res));
+  ASSERT_EQ(kSuccess, sm_->GetPacket(packet_name, anmaid_name_, &res));
   ASSERT_EQ(size_t(1), res.size());
-  gp_res.Clear();
-  ASSERT_TRUE(gp_res.ParseFromString(res[0]));
-  ASSERT_EQ(new_gp.data(), gp_res.data());
-  ASSERT_EQ(kSuccess, asymm::CheckSignature(new_gp.data(),
-                                          gp_res.signature(),
-                                          anmaid_public_key_));
+  res_signed_data.Clear();
+  ASSERT_TRUE(res_signed_data.ParseFromString(res[0]));
+  ASSERT_EQ(new_signed_data.data(), res_signed_data.data());
+  ASSERT_EQ(kSuccess, asymm::CheckSignature(new_signed_data.data(),
+                                            res_signed_data.signature(),
+                                            anmaid_public_key_));
 }
 
-TEST_F(LocalStoreManagerTest, BEH_UpdateSystemPacketNotOwner) {
+TEST_F(LocalStoreManagerTest, BEH_ModifySystemPacketNotOwner) {
   // Store one packet
-  GenericPacket gp;
-  std::string gp_name;
-  GeneratePacket(false, &gp_name, &gp);
+  pca::SignedData signed_data;
+  std::string packet_name;
+  GeneratePacket(&packet_name, &signed_data);
 
   cb_.Reset();
-  sm_->StorePacket(gp_name, gp.SerializeAsString(), functor_);
+  sm_->StorePacket(packet_name,
+                   signed_data.SerializeAsString(),
+                   anmaid_name_,
+                   functor_);
   ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
 
   std::vector<std::string> res;
-  ASSERT_EQ(kSuccess, sm_->GetPacket(gp_name, &res));
+  ASSERT_EQ(kSuccess, sm_->GetPacket(packet_name, anmaid_name_, &res));
   ASSERT_EQ(size_t(1), res.size());
-  GenericPacket gp_res;
-  ASSERT_TRUE(gp_res.ParseFromString(res[0]));
-  ASSERT_EQ(gp.data(), gp_res.data());
-  ASSERT_EQ(kSuccess, asymm::CheckSignature(gp.data(),
-                                          gp_res.signature(),
-                                          anmaid_public_key_));
+  pca::SignedData res_signed_data;
+  ASSERT_TRUE(res_signed_data.ParseFromString(res[0]));
+  ASSERT_EQ(signed_data.data(), res_signed_data.data());
+  ASSERT_EQ(kSuccess, asymm::CheckSignature(signed_data.data(),
+                                            res_signed_data.signature(),
+                                            anmaid_public_key_));
 
   // Create different credentials
   CreateTestPacketsInSession();
 
   // Update the packet
-  GenericPacket new_gp;
+  pca::SignedData new_signed_data;
   std::string s;
-  GeneratePacket(false, &s, &new_gp);
+  GeneratePacket(&s, &new_signed_data);
   cb_.Reset();
-  sm_->UpdatePacket(gp_name,
-                    gp.SerializeAsString(),
-                    new_gp.SerializeAsString(),
+  sm_->ModifyPacket(packet_name,
+                    new_signed_data.SerializeAsString(),
+                    anmaid_name_,
                     functor_);
   ASSERT_NE(kSuccess, cb_.WaitForIntResult());
 
   res.clear();
-  ASSERT_EQ(kSuccess, sm_->GetPacket(gp_name, &res));
+  ASSERT_EQ(kSuccess, sm_->GetPacket(packet_name, anmaid_name_, &res));
   ASSERT_EQ(size_t(1), res.size());
-  gp_res.Clear();
-  ASSERT_TRUE(gp_res.ParseFromString(res[0]));
-  ASSERT_EQ(gp.data(), gp_res.data());
-  ASSERT_EQ(kSuccess, asymm::CheckSignature(gp.data(),
-                                          gp_res.signature(),
-                                          anmaid_public_key_));
+  res_signed_data.Clear();
+  ASSERT_TRUE(res_signed_data.ParseFromString(res[0]));
+  ASSERT_EQ(signed_data.data(), res_signed_data.data());
+  ASSERT_EQ(kSuccess, asymm::CheckSignature(signed_data.data(),
+                                            res_signed_data.signature(),
+                                            anmaid_public_key_));
 }
 
 }  // namespace test

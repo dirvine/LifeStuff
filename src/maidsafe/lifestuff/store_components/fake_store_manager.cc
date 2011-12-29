@@ -19,18 +19,22 @@
 
 #include "boost/filesystem.hpp"
 
-#include "maidsafe/common/chunk_validation.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
+#include "maidsafe/private/chunk_actions/chunk_action_authority.h"
+#include "maidsafe/private/chunk_actions/chunk_pb.h"
+#include "maidsafe/private/chunk_actions/chunk_types.h"
+#include "maidsafe/private/chunk_actions/signature_packet_pb.h"
+
 #include "maidsafe/dht/contact.h"
 
-#include "maidsafe/lifestuff/data_handler.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
-#include "maidsafe/lifestuff/lifestuff_messages_pb.h"
 
 namespace fs = boost::filesystem;
+namespace pca = maidsafe::priv::chunk_actions;
 
 namespace maidsafe {
 
@@ -53,44 +57,6 @@ void PrintDebugInfo(const std::string &packet_name,
                   << ")";
 }
 
-class VeritasChunkValidation : public ChunkValidation {
- public:
-  VeritasChunkValidation() : ChunkValidation() {}
-  ~VeritasChunkValidation() {}
-
-  bool ValidName(const std::string &/*name*/) { return true; }
-  bool Hashable(const std::string &/*name*/) { return false; }
-  bool Modifiable(const std::string &/*name*/) { return true; }
-  bool ValidChunk(const std::string &/*name*/, const std::string &/*content*/) {
-    return true;
-  }
-  bool ValidChunk(const std::string &/*name*/, const fs::path &/*path*/) {
-    return true;
-  }
-  std::string Version(const std::string &/*name*/,
-                      const std::string &/*content*/) {
-    return "";
-  }
-  std::string Version(const std::string &/*name*/, const fs::path &/*path*/) {
-    return "";
-  }
-
- private:
-  VeritasChunkValidation(const VeritasChunkValidation&);
-  VeritasChunkValidation& operator=(const VeritasChunkValidation&);
-};
-
-template <typename T>
-void GetDataSlot(const T &signal_data, T *slot_data) {
-  *slot_data = signal_data;
-}
-void GetStringDataSlot(const std::string &signal_data, std::string *slot_data) {
-  *slot_data = signal_data;
-}
-void GetVectorDataSlot(const std::vector<std::string> &signal_data,
-                       std::vector<std::string> *slot_data) {
-  *slot_data = signal_data;
-}
 
 std::string DebugString(const int &packet_type) {
   switch (packet_type) {
@@ -125,14 +91,28 @@ std::string DebugString(const int &packet_type) {
   }
 }
 
+std::string CreateOwnershipProof(const asymm::PrivateKey &private_key) {
+  pca::SignedData signed_data;
+  signed_data.set_data(RandomString(crypto::SHA512::DIGESTSIZE));
+  std::string signature;
+  int result(asymm::Sign(signed_data.data(), private_key, &signature));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to sign something: " << result;
+    return "";
+  }
+  signed_data.set_signature(signature);
+  return signed_data.SerializeAsString();
+}
+
 }  // namespace
+
 
 void GetPublicKey(const std::string &packet_name,
                   std::shared_ptr<Session> session,
                   asymm::PublicKey *public_key,
-                  int type) {
+                  int /*type*/) {
   std::shared_ptr<passport::Passport> pprt(session->passport_);
-  passport::PacketType packet_type;
+  passport::PacketType packet_type(passport::kUnknown);
   for (int i(passport::kAnmid); i != passport::kMid; ++i) {
     packet_type = static_cast<passport::PacketType>(i);
     if (pprt->PacketName(packet_type, false) == packet_name) {
@@ -145,23 +125,20 @@ void GetPublicKey(const std::string &packet_name,
     }
   }
 
-  switch (type) {
-    case kMmid:
-        packet_type = passport::kMmid;
-        break;
-    case kMpid:
-        packet_type = passport::kAnmpid;
-        break;
-    case kAnmpid:
-        packet_type = passport::kAnmpid;
-        break;
-    case kMsid:
-        packet_type = passport::kAnmpid;
-        break;
-    default:
-        packet_type = passport::kUnknown;
-        break;
-  }
+//  switch (type) {
+//    case kMpid:
+//        packet_type = passport::kAnmpid;
+//        break;
+//    case kAnmpid:
+//        packet_type = passport::kAnmpid;
+//        break;
+//    case kMsid:
+//        packet_type = passport::kAnmpid;
+//        break;
+//    default:
+//        packet_type = passport::kUnknown;
+//        break;
+//  }
   *public_key = pprt->SignaturePacketValue(packet_type, false, packet_name);
   if (asymm::ValidateKey(*public_key))
     return;
@@ -170,39 +147,78 @@ void GetPublicKey(const std::string &packet_name,
     DLOG(ERROR) << "Failed to validate confirmed public key";
 }
 
+void GetPrivateKey(const std::string &packet_name,
+                   std::shared_ptr<Session> session,
+                   asymm::PrivateKey *private_key) {
+  std::shared_ptr<passport::Passport> pprt(session->passport_);
+  passport::PacketType packet_type(passport::kUnknown);
+  for (int i(passport::kAnmid); i != passport::kMid; ++i) {
+    packet_type = static_cast<passport::PacketType>(i);
+    if (pprt->PacketName(packet_type, false) == packet_name) {
+      *private_key = pprt->PacketPrivateKey(packet_type, false);
+      return;
+    }
+    if (pprt->PacketName(packet_type, true) == packet_name) {
+      *private_key = pprt->PacketPrivateKey(packet_type, true);
+      return;
+    }
+  }
+
+//  switch (type) {
+//    case kMpid:
+//        packet_type = passport::kAnmpid;
+//        break;
+//    case kAnmpid:
+//        packet_type = passport::kAnmpid;
+//        break;
+//    case kMsid:
+//        packet_type = passport::kAnmpid;
+//        break;
+//    default:
+//        packet_type = passport::kUnknown;
+//        break;
+//  }
+  *private_key = pprt->PacketPrivateKey(packet_type, false, packet_name);
+  if (asymm::ValidateKey(*private_key))
+    return;
+  *private_key = pprt->PacketPrivateKey(packet_type, true, packet_name);
+  if (!asymm::ValidateKey(*private_key))
+    DLOG(ERROR) << "Failed to validate confirmed private key";
+}
+
 FakeStoreManager::FakeStoreManager(std::shared_ptr<Session> session)
     : asio_service_(),
       work_(new boost::asio::io_service::work(asio_service_)),
       thread_group_(),
-      chunk_validation_(new VeritasChunkValidation),
       client_chunk_store_(),
+      chunk_action_authority_(),
       session_(session),
       temp_directory_path_() {
   boost::system::error_code error_code;
   temp_directory_path_ = fs::temp_directory_path(error_code);
   if (error_code)
     DLOG(ERROR) << "Failed to get temp directory: " << error_code.message();
-}
-
-ReturnCode FakeStoreManager::Init(const fs::path &buffered_chunk_store_dir) {
   for (int i = 0; i < 3; ++i) {
     thread_group_.create_thread(
         std::bind(static_cast<std::size_t(boost::asio::io_service::*)()>
                       (&boost::asio::io_service::run), &asio_service_));
   }
-
-  boost::system::error_code error_code;
-  if (!fs::exists(buffered_chunk_store_dir, error_code)) {
-    fs::create_directories(buffered_chunk_store_dir, error_code);
-    if (error_code) {
-      DLOG(ERROR) << "Failed to create " << buffered_chunk_store_dir
-                  << ": " << error_code.message();
-      return kStoreManagerInitError;
-    }
-  }
-
-  return kSuccess;
 }
+
+//  ReturnCode FakeStoreManager::Init(const fs::path &buffered_chunk_store_dir) {
+//
+//    boost::system::error_code error_code;
+//    if (!fs::exists(buffered_chunk_store_dir, error_code)) {
+//      fs::create_directories(buffered_chunk_store_dir, error_code);
+//      if (error_code) {
+//        DLOG(ERROR) << "Failed to create " << buffered_chunk_store_dir
+//                    << ": " << error_code.message();
+//        return kStoreManagerInitError;
+//      }
+//    }
+//
+//    return kSuccess;
+//  }
 
 FakeStoreManager::~FakeStoreManager() {
   work_.reset();
@@ -212,206 +228,148 @@ FakeStoreManager::~FakeStoreManager() {
 
 int FakeStoreManager::Close(bool /*cancel_pending_ops*/) { return kSuccess; }
 
-bool FakeStoreManager::KeyUnique(const std::string &key) {
-  DataHandler data_handler;
-  return data_handler.ProcessData(DataHandler::kHas,
-                                  key,
-                                  "",
-                                  asymm::PublicKey(),
-                                  client_chunk_store_) == kKeyUnique;
+bool FakeStoreManager::KeyUnique(const std::string &key,
+                                 const asymm::Identity &signing_key_id) {
+  asymm::PublicKey public_key;
+  if (!signing_key_id.empty())
+    GetPublicKey(signing_key_id, session_, &public_key, 99);
+  return chunk_action_authority_->Has(key, "", public_key);
 }
 
 void FakeStoreManager::KeyUnique(const std::string &key,
+                                 const asymm::Identity &signing_key_id,
                                  const VoidFuncOneInt &cb) {
-  DataHandler data_handler;
-  ReturnCode result(
-      static_cast<ReturnCode>(data_handler.ProcessData(DataHandler::kHas,
-                                                       key,
-                                                       "",
-                                                       asymm::PublicKey(),
-                                                       client_chunk_store_)));
+  asymm::PublicKey public_key;
+  if (!signing_key_id.empty())
+    GetPublicKey(signing_key_id, session_, &public_key, 99);
+  ReturnCode result(chunk_action_authority_->Has(key, "", public_key) ?
+                    kKeyNotUnique : kKeyUnique);
   ExecReturnCodeCallback(cb, result);
 }
 
 int FakeStoreManager::GetPacket(const std::string &packet_name,
-                                std::vector<std::string> *results,
-                                const asymm::Identity &public_key_id,
-                                const int &data_type) {
+                                const std::string &signing_key_id,
+                                std::vector<std::string> *results) {
   DLOG(INFO) << "Searching <" << Base32Substr(packet_name) << ">";
 
   BOOST_ASSERT(results);
   results->clear();
 
   asymm::PublicKey public_key;
-  if (!public_key_id.empty())
-    GetPublicKey(public_key_id, session_, &public_key, data_type);
+  if (!signing_key_id.empty())
+    GetPublicKey(signing_key_id, session_, &public_key, 99);
 
-  DataHandler data_handler;
-  std::string data;
-  data_handler.get_string_signal()->connect(
-      DataHandler::GetStringSignalPtr::element_type::slot_type(
-          &GetStringDataSlot, _1, &data));
-  data_handler.get_vector_signal()->connect(
-      DataHandler::GetVectorSignalPtr::element_type::slot_type(
-          &GetVectorDataSlot, _1, results));  //  NOLINT (Fraser)
-
-  int result(data_handler.ProcessData(DataHandler::kGet,
-                                      packet_name,
-                                      "",
-                                      public_key,
-                                      client_chunk_store_));
-  if (result != kSuccess) {
-    DLOG(ERROR) << "FakeStoreManager::GetPacket - Failure in DH::ProcessData: "
-                << result;
+  std::string data(chunk_action_authority_->Get(packet_name, "", public_key));
+  if (data.empty()) {
+    DLOG(ERROR) << "FakeStoreManager::GetPacket - Failure";
     return kGetPacketFailure;
   }
 
-  if (data.empty()) {
-    if (results->empty()) {
-      DLOG(ERROR) << "FakeStoreManager::GetPacket - data empty";
-      return kGetPacketEmptyData;
-    }
-  } else {
-    results->push_back(data);
-  }
-
+  results->push_back(data);
   return kSuccess;
 }
 
 void FakeStoreManager::GetPacket(const std::string &packetname,
+                                 const asymm::Identity &signing_key_id,
                                  const GetPacketFunctor &lpf) {
   std::vector<std::string> results;
-  ReturnCode rc(static_cast<ReturnCode>(GetPacket(packetname, &results)));
+  ReturnCode rc(static_cast<ReturnCode>(GetPacket(packetname,
+                                                  signing_key_id,
+                                                  &results)));
   ExecReturnLoadPacketCallback(lpf, results, rc);
-}
-
-void FakeStoreManager::DeletePacket(const std::string &packet_name,
-                                    const std::string &value,
-                                    const VoidFuncOneInt &cb) {
-  GenericPacket gp;
-  if (!gp.ParseFromString(value)) {
-    ExecReturnCodeCallback(cb, kDeletePacketFailure);
-    DLOG(ERROR) << "FakeStoreManager::DeletePacket - Failure to parse value";
-    return;
-  }
-
-  DLOG(INFO) << "Deleting <" << Base32Substr(packet_name) << ", "
-             << Base32Substr(gp.data()) << ">";
-
-  asymm::PublicKey public_key;
-  GetPublicKey(gp.signing_id(), session_, &public_key, gp.type());
-  if (!asymm::ValidateKey(public_key)) {
-    ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
-    DLOG(ERROR) << "FakeStoreManager::StorePacket - No public key";
-    return;
-  }
-
-  std::string data;
-  CreateSerialisedSignedValue(gp, &data);
-  DataHandler data_handler;
-  int result(data_handler.ProcessData(DataHandler::kDelete,
-                                      packet_name,
-                                      data,
-                                      public_key,
-                                      client_chunk_store_));
-  if (result != kSuccess) {
-    ExecReturnCodeCallback(cb, kDeletePacketFailure);
-    DLOG(ERROR) << "FakeStoreManager::DeletePacket - Failure in "
-                << "DH::ProcessData: " << result;
-    return;
-  }
-
-  ExecReturnCodeCallback(cb, kSuccess);
 }
 
 void FakeStoreManager::StorePacket(const std::string &packet_name,
                                    const std::string &value,
+                                   const asymm::Identity &signing_key_id,
                                    const VoidFuncOneInt &cb) {
-  GenericPacket gp;
-  if (!gp.ParseFromString(value)) {
+  DLOG(INFO) << "Storing <" << Base32Substr(packet_name) << ", "
+             << Base32Substr(value) << ">";
+
+  if (signing_key_id.empty()) {
+    DLOG(ERROR) << "FakeStoreManager::StorePacket - No public key ID";
     ExecReturnCodeCallback(cb, kStorePacketFailure);
-    DLOG(ERROR) << "FakeStoreManager::StorePacket - Failure to parse value";
     return;
   }
 
   asymm::PublicKey public_key;
-  if (gp.has_signing_id()) {
-    GetPublicKey(gp.signing_id(), session_, &public_key, gp.type());
-    if (!asymm::ValidateKey(public_key)) {
-      ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
-      DLOG(ERROR) << "FakeStoreManager::StorePacket - No public key - ID: "
-                  << Base32Substr(gp.signing_id());
-      return;
-    }
+  GetPublicKey(signing_key_id, session_, &public_key, 99);
+  if (!asymm::ValidateKey(public_key)) {
+    DLOG(ERROR) << "FakeStoreManager::StorePacket - No public key";
+    ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
+    return;
   }
 
-  std::string data;
-  CreateSerialisedSignedValue(gp, &data);
-  DataHandler data_handler;
-
-  DLOG(INFO) << "Storing <" << Base32Substr(packet_name) << ", "
-             << Base32Substr(data) << ">";
-
-  int result(data_handler.ProcessData(DataHandler::kStore,
-                                      packet_name,
-                                      data,
-                                      public_key,
-                                      client_chunk_store_));
-  if (result != kSuccess) {
+  if (!chunk_action_authority_->Store(packet_name, value, public_key)) {
     ExecReturnCodeCallback(cb, kStorePacketFailure);
-    DLOG(ERROR) << "FakeStoreManager::StorePacket - Failure in "
-                << "DH::ProcessData: " << result;
+    DLOG(ERROR) << "FakeStoreManager::StorePacket - Failure";
     return;
   }
 
   ExecReturnCodeCallback(cb, kSuccess);
 }
 
-void FakeStoreManager::UpdatePacket(const std::string &packet_name,
-                                    const std::string &old_value,
-                                    const std::string &new_value,
+void FakeStoreManager::DeletePacket(const std::string &packet_name,
+                                    const asymm::Identity &signing_key_id,
                                     const VoidFuncOneInt &cb) {
-  DLOG(INFO) << "Updating <" << Base32Substr(packet_name) << ", "
-             << Base32Substr(old_value) << "> to <" << Base32Substr(packet_name)
-             << ", " << Base32Substr(new_value) << ">";
-  PrintDebugInfo(packet_name, old_value, new_value, "UpdatePacket");
+  DLOG(INFO) << "Deleting <" << Base32Substr(packet_name);
 
-  GenericPacket old_gp, new_gp;
-  if (!old_gp.ParseFromString(old_value)) {
+  if (signing_key_id.empty()) {
+    DLOG(ERROR) << "FakeStoreManager::DeletePacket - No public key ID";
     ExecReturnCodeCallback(cb, kDeletePacketFailure);
-    DLOG(ERROR) << "FakeStoreManager::UpdatePacket - Failure parsing old value";
     return;
   }
-  if (!new_gp.ParseFromString(new_value)) {
-    ExecReturnCodeCallback(cb, kDeletePacketFailure);
-    DLOG(ERROR) << "FakeStoreManager::UpdatePacket - Failure parsing new value";
-    return;
-  }
-
-  // TODO(Team): Compare both signing ids?
 
   asymm::PublicKey public_key;
-  GetPublicKey(old_gp.signing_id(), session_, &public_key, old_gp.type());
+  GetPublicKey(signing_key_id, session_, &public_key, 99);
   if (!asymm::ValidateKey(public_key)) {
+    DLOG(ERROR) << "FakeStoreManager::DeletePacket - No public key";
     ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
-    DLOG(ERROR) << "FakeStoreManager::StorePacket - No public key";
     return;
   }
 
-  std::string old_data, new_data;
-  CreateSerialisedSignedValue(old_gp, &old_data);
-  CreateSerialisedSignedValue(new_gp, &new_data);
+  asymm::PrivateKey private_key;
+  GetPrivateKey(signing_key_id, session_, &private_key);
 
-  DataHandler data_handler;
-  int result(data_handler.ProcessData(DataHandler::kUpdate,
-                                      packet_name,
-                                      new_data,
-                                      public_key,
-                                      client_chunk_store_));
-  if (result != kSuccess) {
+  if (!chunk_action_authority_->Delete(packet_name, "",
+                                       CreateOwnershipProof(private_key),
+                                       public_key)) {
+    DLOG(ERROR) << "FakeStoreManager::DeletePacket - Failure";
+    ExecReturnCodeCallback(cb, kDeletePacketFailure);
+    return;
+  }
+
+  ExecReturnCodeCallback(cb, kSuccess);
+}
+
+void FakeStoreManager::ModifyPacket(const std::string &packet_name,
+                                    const std::string &value,
+                                    const asymm::Identity &signing_key_id,
+                                    const VoidFuncOneInt &cb) {
+  DLOG(INFO) << "Modifying <" << Base32Substr(packet_name) << "> to <"
+             << Base32Substr(value) << ">";
+  PrintDebugInfo(packet_name, value, "", "ModifyPacket");
+
+  if (signing_key_id.empty()) {
+    DLOG(ERROR) << "FakeStoreManager::ModifyPacket - No public key ID";
     ExecReturnCodeCallback(cb, kUpdatePacketFailure);
-    DLOG(ERROR) << "FakeStoreManager::UpdatePacket - Failure in "
-                << "DH::ProcessData: " << result;
+    return;
+  }
+
+  asymm::PublicKey public_key;
+  GetPublicKey(signing_key_id, session_, &public_key, 99);
+  if (!asymm::ValidateKey(public_key)) {
+    ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
+    DLOG(ERROR) << "FakeStoreManager::ModifyPacket - No public key";
+    return;
+  }
+
+  if (!chunk_action_authority_->Modify(packet_name,
+                                       value,
+                                       "",
+                                       public_key)) {
+    DLOG(ERROR) << "FakeStoreManager::ModifyPacket - Failure";
+    ExecReturnCodeCallback(cb, kUpdatePacketFailure);
     return;
   }
 
@@ -430,21 +388,9 @@ void FakeStoreManager::ExecReturnLoadPacketCallback(
   asio_service_.post(std::bind(callback, results, return_code));
 }
 
-
-void FakeStoreManager::CreateSerialisedSignedValue(const GenericPacket &data,
-                                                   std::string *ser_gp) {
-  ser_gp->clear();
-  DataWrapper data_wrapper;
-  data_wrapper.set_data_type(data.type());
-  GenericPacket *gp = data_wrapper.mutable_signed_data();
-  *gp = data;
-  *ser_gp = data_wrapper.SerializeAsString();
-}
-
 std::shared_ptr<ChunkStore> FakeStoreManager::chunk_store() const {
   return client_chunk_store_;
 }
-
 
 }  // namespace lifestuff
 

@@ -7,13 +7,11 @@
 * Version:      1.0
 * Created:      2009-01-28-10.59.46
 * Revision:     none
-* Compiler:     gcc
-* Author:       Fraser Hutchison (fh), fraser.hutchison@maidsafe.net
 * Company:      maidsafe.net limited
 *
 * The following source code is property of maidsafe.net limited and is not
 * meant for external use.  The use of this code is governed by the license
-* file LICENSE.TXT found in the root of this directory and also on
+* file LICENCE.TXT found in the root of this directory and also on
 * www.maidsafe.net.
 *
 * You are not free to copy, amend or otherwise use this source code without
@@ -42,7 +40,6 @@
 #include "maidsafe/common/buffered_chunk_store.h"
 #include "maidsafe/common/chunk_store.h"
 #include "maidsafe/common/crypto.h"
-#include "maidsafe/common/hashable_chunk_validation.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/lifestuff/log.h"
@@ -105,7 +102,6 @@ ClientController::ClientController(std::shared_ptr<Session> session)
       auth_(new Authentication(session)),
       ser_da_(),
       surrogate_ser_da_(),
-      client_store_(),
       initialised_(false),
       logging_out_(false),
       logged_in_(false) {}

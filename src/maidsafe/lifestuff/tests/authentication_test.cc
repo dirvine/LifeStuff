@@ -27,7 +27,6 @@
 
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/session.h"
-#include "maidsafe/lifestuff/lifestuff_messages_pb.h"
 #include "maidsafe/lifestuff/tests/test_callback.h"
 #if defined AMAZON_WEB_SERVICE_STORE
 #  include "maidsafe/lifestuff/store_components/aws_store_manager.h"
@@ -105,6 +104,20 @@ class AuthenticationTest : public testing::Test {
     return session_->passport_->PacketName(packet_type, confirmed);
   }
 
+  std::string PacketSignerFromSession(passport::PacketType packet_type,
+                                      bool confirmed) {
+    switch (packet_type) {
+      case passport::kMid:
+          return session_->passport_->PacketName(passport::kAnmid, confirmed);
+      case passport::kSmid:
+          return session_->passport_->PacketName(passport::kAnsmid, confirmed);
+      case passport::kTmid:
+      case passport::kStmid:
+          return session_->passport_->PacketName(passport::kAntmid, confirmed);
+      default: return "";
+    }
+  }
+
   std::shared_ptr<fs::path> test_dir_;
   std::shared_ptr<Session> session_;
   std::shared_ptr<PacketManager> packet_manager_;
@@ -112,7 +125,7 @@ class AuthenticationTest : public testing::Test {
   std::string username_, pin_, password_, ser_dm_, surrogate_ser_dm_;
 
  private:
-  explicit AuthenticationTest(const AuthenticationTest&);
+  AuthenticationTest(const AuthenticationTest&);
   AuthenticationTest &operator=(const AuthenticationTest&);
 };
 
@@ -222,9 +235,15 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionBlocking) {
   std::string tmidname(PacketValueFromSession(passport::kTmid, true));
   std::string stmidname(PacketValueFromSession(passport::kStmid, true));
 
-  ASSERT_TRUE(packet_manager_->KeyUnique(original_tmidname));
-  ASSERT_FALSE(packet_manager_->KeyUnique(stmidname));
-  ASSERT_FALSE(packet_manager_->KeyUnique(tmidname));
+  ASSERT_TRUE(packet_manager_->KeyUnique(
+                  original_tmidname,
+                  PacketSignerFromSession(passport::kTmid, true)));
+  ASSERT_FALSE(packet_manager_->KeyUnique(
+                   stmidname,
+                   PacketSignerFromSession(passport::kStmid, true)));
+  ASSERT_FALSE(packet_manager_->KeyUnique(
+                   tmidname,
+                   PacketSignerFromSession(passport::kTmid, true)));
 }
 
 TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionCallbacks) {
@@ -250,7 +269,9 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionCallbacks) {
   authentication_.SaveSession(ser_dm_, std::bind(&CallbackObject::IntCallback,
                                                  &cb, args::_1));
   ASSERT_EQ(kSuccess, cb.WaitForIntResult());
-  ASSERT_TRUE(packet_manager_->KeyUnique(original_tmidname));
+  ASSERT_TRUE(packet_manager_->KeyUnique(
+                  original_tmidname,
+                  PacketSignerFromSession(passport::kTmid, true)));
 }
 
 TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
@@ -275,7 +296,9 @@ TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
   std::string ser_dm_login;
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
-  ASSERT_TRUE(packet_manager_->KeyUnique(original_stmidname));
+  ASSERT_TRUE(packet_manager_->KeyUnique(
+                  original_stmidname,
+                  PacketSignerFromSession(passport::kTmid, true)));
 }
 
 TEST_F(AuthenticationTest, FUNC_ChangePin) {
@@ -299,7 +322,9 @@ TEST_F(AuthenticationTest, FUNC_ChangePin) {
   std::string ser_dm_login;
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
-  ASSERT_TRUE(packet_manager_->KeyUnique(original_stmidname));
+  ASSERT_TRUE(packet_manager_->KeyUnique(
+                  original_stmidname,
+                  PacketSignerFromSession(passport::kTmid, true)));
 }
 
 TEST_F(AuthenticationTest, FUNC_ChangePassword) {

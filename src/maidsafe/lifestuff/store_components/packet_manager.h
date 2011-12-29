@@ -43,13 +43,6 @@ class ChunkStore;
 
 namespace lifestuff {
 
-enum IfPacketExists {
-  kDoNothingReturnFailure,
-  kDoNothingReturnSuccess,
-  kOverwrite,
-  kAppend
-};
-
 typedef std::function<void(const std::vector<std::string>&, int)>
         GetPacketFunctor;
 
@@ -61,30 +54,33 @@ class PacketManager {
 
   virtual int Close(bool cancel_pending_ops) = 0;
 
-  virtual bool KeyUnique(const std::string &key) = 0;
+  virtual bool KeyUnique(const std::string &key,
+                         const std::string &signing_key_id) = 0;
 
   virtual void KeyUnique(const std::string &key,
+                         const std::string &signing_key_id,
                          const VoidFuncOneInt &cb) = 0;
 
   virtual int GetPacket(const std::string &packet_name,
-                        std::vector<std::string> *results,
-                        const std::string &public_key_id = "",
-                        const int &data_type = -1) = 0;
+                        const std::string &signing_key_id,
+                        std::vector<std::string> *results) = 0;
 
   virtual void GetPacket(const std::string &packet_name,
+                         const std::string &signing_key_id,
                          const GetPacketFunctor &cb) = 0;
 
   virtual void StorePacket(const std::string &packet_name,
                            const std::string &value,
+                           const std::string &signing_key_id,
                            const VoidFuncOneInt &cb) = 0;
 
   virtual void DeletePacket(const std::string &packet_name,
-                            const std::string &value,
+                            const std::string &signing_key_id,
                             const VoidFuncOneInt &cb) = 0;
 
-  virtual void UpdatePacket(const std::string &packet_name,
-                            const std::string &old_value,
-                            const std::string &new_value,
+  virtual void ModifyPacket(const std::string &packet_name,
+                            const std::string &value,
+                            const std::string &signing_key_id,
                             const VoidFuncOneInt &cb) = 0;
 
   virtual std::shared_ptr<ChunkStore> chunk_store() const = 0;
