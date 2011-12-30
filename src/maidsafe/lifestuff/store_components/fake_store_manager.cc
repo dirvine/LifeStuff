@@ -26,7 +26,6 @@
 #include "maidsafe/private/chunk_actions/chunk_action_authority.h"
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
-#include "maidsafe/private/chunk_actions/signature_packet_pb.h"
 
 #include "maidsafe/dht/contact.h"
 
@@ -233,7 +232,7 @@ bool FakeStoreManager::KeyUnique(const std::string &key,
   asymm::PublicKey public_key;
   if (!signing_key_id.empty())
     GetPublicKey(signing_key_id, session_, &public_key, 99);
-  return chunk_action_authority_->Has(key, "", public_key);
+  return !chunk_action_authority_->Has(key, "", public_key);
 }
 
 void FakeStoreManager::KeyUnique(const std::string &key,
@@ -330,9 +329,16 @@ void FakeStoreManager::DeletePacket(const std::string &packet_name,
 
   asymm::PrivateKey private_key;
   GetPrivateKey(signing_key_id, session_, &private_key);
+  if (!asymm::ValidateKey(private_key)) {
+    DLOG(ERROR) << "FakeStoreManager::DeletePacket - No private key";
+    ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
+    return;
+  }
+  std::string ownership_proof(CreateOwnershipProof(private_key));
 
-  if (!chunk_action_authority_->Delete(packet_name, "",
-                                       CreateOwnershipProof(private_key),
+  if (!chunk_action_authority_->Delete(packet_name,
+                                       "",
+                                       ownership_proof,
                                        public_key)) {
     DLOG(ERROR) << "FakeStoreManager::DeletePacket - Failure";
     ExecReturnCodeCallback(cb, kDeletePacketFailure);

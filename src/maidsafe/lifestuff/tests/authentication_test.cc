@@ -25,6 +25,9 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/private/chunk_actions/chunk_action_authority.h"
+#include "maidsafe/private/chunk_actions/chunk_types.h"
+
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/tests/test_callback.h"
@@ -36,6 +39,7 @@
 
 namespace args = std::placeholders;
 namespace fs = boost::filesystem;
+namespace pca = maidsafe::priv::chunk_actions;
 
 namespace maidsafe {
 
@@ -94,6 +98,7 @@ class AuthenticationTest : public testing::Test {
       ser_dm_login->clear();
       return kPasswordFailure;
     }
+    DLOG(ERROR) << "\n\n\n\n";
     return kSuccess;
   }
 
@@ -142,7 +147,7 @@ TEST_F(AuthenticationTest, FUNC_GoodLogin) {
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
                                                        ser_dm_,
                                                        surrogate_ser_dm_));
-  DLOG(ERROR) << "\n\n\n";
+  DLOG(INFO) << "\n\n\n";
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
   std::string ser_dm_login;
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
@@ -236,13 +241,16 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionBlocking) {
   std::string stmidname(PacketValueFromSession(passport::kStmid, true));
 
   ASSERT_TRUE(packet_manager_->KeyUnique(
-                  original_tmidname,
+                  pca::ApplyTypeToName(original_tmidname,
+                                       pca::kModifiableByOwner),
                   PacketSignerFromSession(passport::kTmid, true)));
   ASSERT_FALSE(packet_manager_->KeyUnique(
-                   stmidname,
+                   pca::ApplyTypeToName(stmidname,
+                                        pca::kModifiableByOwner),
                    PacketSignerFromSession(passport::kStmid, true)));
   ASSERT_FALSE(packet_manager_->KeyUnique(
-                   tmidname,
+                   pca::ApplyTypeToName(tmidname,
+                                        pca::kModifiableByOwner),
                    PacketSignerFromSession(passport::kTmid, true)));
 }
 
@@ -270,7 +278,8 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionCallbacks) {
                                                  &cb, args::_1));
   ASSERT_EQ(kSuccess, cb.WaitForIntResult());
   ASSERT_TRUE(packet_manager_->KeyUnique(
-                  original_tmidname,
+                  pca::ApplyTypeToName(original_tmidname,
+                                       pca::kModifiableByOwner),
                   PacketSignerFromSession(passport::kTmid, true)));
 }
 
@@ -297,7 +306,8 @@ TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_TRUE(packet_manager_->KeyUnique(
-                  original_stmidname,
+                  pca::ApplyTypeToName(original_stmidname,
+                                       pca::kModifiableByOwner),
                   PacketSignerFromSession(passport::kTmid, true)));
 }
 
@@ -323,7 +333,8 @@ TEST_F(AuthenticationTest, FUNC_ChangePin) {
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_TRUE(packet_manager_->KeyUnique(
-                  original_stmidname,
+                  pca::ApplyTypeToName(original_stmidname,
+                                       pca::kModifiableByOwner),
                   PacketSignerFromSession(passport::kTmid, true)));
 }
 
