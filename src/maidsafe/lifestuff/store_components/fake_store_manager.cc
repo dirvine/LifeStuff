@@ -124,26 +124,40 @@ void GetPublicKey(const std::string &packet_name,
     }
   }
 
-//  switch (type) {
-//    case kMpid:
-//        packet_type = passport::kAnmpid;
-//        break;
-//    case kAnmpid:
-//        packet_type = passport::kAnmpid;
-//        break;
-//    case kMsid:
-//        packet_type = passport::kAnmpid;
-//        break;
-//    default:
-//        packet_type = passport::kUnknown;
-//        break;
-//  }
-  *public_key = pprt->SignaturePacketValue(packet_type, false, packet_name);
-  if (asymm::ValidateKey(*public_key))
-    return;
-  *public_key = pprt->SignaturePacketValue(packet_type, true, packet_name);
-  if (!asymm::ValidateKey(*public_key))
-    DLOG(ERROR) << "Failed to validate confirmed public key";
+  int result(-1);
+  passport::SelectableIdentityData data;
+  std::vector<passport::SelectableIdData> selectables;
+  session->passport_->SelectableIdentitiesList(&selectables);
+  auto it(selectables.begin());
+  while (it != selectables.end()) {
+    std::string public_username(std::get<0>(*it));
+    result = session->passport_->GetSelectableIdentityData(public_username,
+                                                           false,
+                                                           &data);
+    if (result == kSuccess && data.size() == 3U) {
+      for (int n(0); n < 3; ++n) {
+      	if (std::get<0>(data.at(n)) == packet_name) {
+          *public_key = std::get<1>(data.at(n));
+          if (asymm::ValidateKey(*public_key))
+            return;
+      	}
+      }
+    } else {
+      result = session->passport_->GetSelectableIdentityData(public_username,
+                                                             true,
+                                                             &data);
+      if (result == kSuccess && data.size() == 3U) {
+        for (int n(0); n < 3; ++n) {
+          if (std::get<0>(data.at(n)) == packet_name) {
+            *public_key = std::get<1>(data.at(n));
+            if (asymm::ValidateKey(*public_key))
+              return;
+          }
+        }
+      }
+    }
+    ++it;
+  }
 }
 
 void GetPrivateKey(const std::string &packet_name,

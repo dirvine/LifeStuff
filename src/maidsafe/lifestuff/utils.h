@@ -31,6 +31,7 @@ namespace lifestuff {
 class PacketManager;
 
 int GetValidatedMpidPublicKey(const std::string &public_username,
+                              const std::string &own_mpid_name,
                               std::shared_ptr<PacketManager> packet_manager,
                               asymm::PublicKey *public_key);
 

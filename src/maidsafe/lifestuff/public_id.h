@@ -52,7 +52,7 @@ class Session;
 
 class PublicId {
  public:
-  typedef bs2::signal<bool(const std::string&,  // NOLINT (Fraser)
+  typedef bs2::signal<void(const std::string&,  // NOLINT (Fraser)
                            const std::string&)> NewContactSignal;
   typedef std::shared_ptr<NewContactSignal> NewContactSignalPtr;
   typedef bs2::signal<void(const std::string&)> ContactConfirmedSignal;  // NOLINT (Dan)
@@ -77,6 +77,9 @@ class PublicId {
                       const std::string &recipient_public_username);
   // Removes from the network the packets created in CreatePublicId.
   int DeletePublicId(const std::string &public_username);
+  // To confirm a contact once user has decided on the introduction
+  int ConfirmContact(const std::string &public_username,
+                     const std::string &recipient_public_username);
 
   NewContactSignalPtr new_contact_signal() const;
   ContactConfirmedSignalPtr contact_confirmed_signal() const;
