@@ -385,7 +385,7 @@ int PublicId::SendContactInfo(const std::string &public_username,
   return kSuccess;
 }
 
-int PublicId::DeletePublicId(const std::string &/*public_username*/) {
+int PublicId::DisablePublicId(const std::string &/*public_username*/) {
   return kSuccess;
 }
 

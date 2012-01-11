@@ -263,15 +263,15 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
   ASSERT_FALSE(received_contact.pub_key_.empty());
 }
 
-TEST_F(PublicIdTest, FUNC_DeletePublicId) {
+TEST_F(PublicIdTest, FUNC_DisablePublicId) {
   ASSERT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
   ASSERT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
 
   // TODO(Fraser#5#): 2011-12-01 - Change kPendingResult for correct value
-  ASSERT_EQ(kPendingResult, public_id1_.DeletePublicId(""));
-  ASSERT_EQ(kPendingResult, public_id1_.DeletePublicId("Rubbish"));
+  ASSERT_EQ(kPendingResult, public_id1_.DisablePublicId(""));
+  ASSERT_EQ(kPendingResult, public_id1_.DisablePublicId("Rubbish"));
 
-  ASSERT_EQ(kSuccess, public_id1_.DeletePublicId(public_username1_));
+  ASSERT_EQ(kSuccess, public_id1_.DisablePublicId(public_username1_));
   // TODO(Fraser#5#): 2011-12-01 - Check user2 can't "send" message to user1's
   //                               MMID
 

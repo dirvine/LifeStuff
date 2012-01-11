@@ -76,7 +76,7 @@ class PublicId {
   int SendContactInfo(const std::string &public_username,
                       const std::string &recipient_public_username);
   // Removes from the network the packets created in CreatePublicId.
-  int DeletePublicId(const std::string &public_username);
+  int DisablePublicId(const std::string &public_username);
   // To confirm a contact once user has decided on the introduction
   int ConfirmContact(const std::string &public_username,
                      const std::string &recipient_public_username);
