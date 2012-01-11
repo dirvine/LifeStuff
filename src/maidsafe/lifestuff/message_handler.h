@@ -45,16 +45,21 @@ namespace bs2 = boost::signals2;
 
 namespace maidsafe {
 
+namespace priv {
+namespace chunk_actions {
+class Message;
+}  // namespace chunk_actions
+}  // namespace priv
+
 namespace lifestuff {
 
-struct Message;
 class PacketManager;
 class Session;
 
 
 class MessageHandler {
  public:
-  typedef bs2::signal<void(const Message&)> NewMessageSignal;  // NOLINT (Fraser)
+  typedef bs2::signal<void(const priv::chunk_actions::Message&)> NewMessageSignal;  // NOLINT (Fraser)
   typedef std::shared_ptr<NewMessageSignal> NewMessageSignalPtr;
   MessageHandler(std::shared_ptr<PacketManager> packet_manager,
                  std::shared_ptr<Session> session,
@@ -69,7 +74,7 @@ class MessageHandler {
 
   int Send(const std::string &public_username,
            const std::string &recipient_public_username,
-           const Message &message);
+           const priv::chunk_actions::Message &message);
 
   NewMessageSignalPtr new_message_signal() const;
 
@@ -77,7 +82,7 @@ class MessageHandler {
   MessageHandler(const MessageHandler&);
   MessageHandler& operator=(const MessageHandler&);
 
-  bool ValidateMessage(const Message &message) const;
+  bool ValidateMessage(const priv::chunk_actions::Message &message) const;
   void GetNewMessages(const bptime::seconds &interval,
                       const boost::system::error_code &error_code);
   void ProcessRetrieved(const passport::SelectableIdData &data,

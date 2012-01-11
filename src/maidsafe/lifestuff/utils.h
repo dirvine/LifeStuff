@@ -36,6 +36,7 @@ int GetValidatedMpidPublicKey(const std::string &public_username,
                               asymm::PublicKey *public_key);
 
 int GetValidatedMmidPublicKey(const std::string &mmid_name,
+                              const std::string &own_mmid_name,
                               std::shared_ptr<PacketManager> packet_manager,
                               asymm::PublicKey *public_key);
 

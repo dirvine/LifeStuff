@@ -236,12 +236,7 @@ TEST_F(LocalStoreManagerTest, BEH_DeleteSystemPacketOwner) {
   sm_->DeletePacket(packet_name, anmaid_name_, functor_);
   ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
 
-  ASSERT_FALSE(sm_->KeyUnique(packet_name, anmaid_name_));
-
-  std::vector<std::string> res;
-  ASSERT_EQ(kSuccess, sm_->GetPacket(packet_name, anmaid_name_, &res));
-  ASSERT_EQ(size_t(1), res.size());
-  ASSERT_EQ("0", res.at(0));
+  ASSERT_TRUE(sm_->KeyUnique(packet_name, anmaid_name_));
 }
 
 TEST_F(LocalStoreManagerTest, BEH_DeleteSystemPacketNotOwner) {

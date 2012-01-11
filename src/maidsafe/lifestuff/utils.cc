@@ -106,48 +106,49 @@ int GetValidatedMpidPublicKey(const std::string &public_username,
   return kSuccess;
 }
 
-int GetValidatedMmidPublicKey(const std::string &/*mmid_name*/,
-                              std::shared_ptr<PacketManager> /*packet_manager*/,
-                              asymm::PublicKey * /*public_key*/) {
-//  std::vector<std::string> packet_values;
-//  int result(packet_manager->GetPacket(mmid_name, &packet_values));
-//  if (result != kSuccess || packet_values.size() != 1U) {
-//    DLOG(ERROR) << "Failed to get public key for " << Base32Substr(mmid_name);
-//    *public_key = asymm::PublicKey();
-//    return kGetPublicKeyFailure;
-//  }
-//
-//  GenericPacket packet;
-//  if (!packet.ParseFromString(packet_values.at(0))) {
-//    DLOG(ERROR) << "Failed to parse public key packet for "
-//                << Base32Substr(mmid_name);
-//    *public_key = asymm::PublicKey();
-//    return kGetPublicKeyFailure;
-//  }
-//  BOOST_ASSERT(!packet.data().empty());
-//  BOOST_ASSERT(!packet.signature().empty());
-//
-//  // Validate self-signing
-//  if (crypto::Hash<crypto::SHA512>(packet.data() + packet.signature()) !=
-//      mmid_name) {
-//    DLOG(ERROR) << "Failed to validate MMID " << Base32Substr(mmid_name);
-//    *public_key = asymm::PublicKey();
-//    return kGetPublicKeyFailure;
-//  }
-//
-//  // Decode and validate public key
-//  std::string serialised_public_key(packet.data());
-//  std::string public_key_signature(packet.signature());
-//  asymm::DecodePublicKey(serialised_public_key, public_key);
-//  if (!asymm::ValidateKey(*public_key)) {
-//    DLOG(ERROR) << "Failed to validate public key for "
-//                << Base32Substr(mmid_name);
-//    *public_key = asymm::PublicKey();
-//    return kGetPublicKeyFailure;
-//  } else {
-//    DLOG(ERROR) << "\t\t\t\t The MMID public key is "
-//                << Base32Substr(serialised_public_key);
-//  }
+int GetValidatedMmidPublicKey(const std::string &mmid_name,
+                              const std::string &own_mmid_name,
+                              std::shared_ptr<PacketManager> packet_manager,
+                              asymm::PublicKey *public_key) {
+  std::vector<std::string> packet_values;
+  int result(packet_manager->GetPacket(
+                  mmid_name + std::string(1, pca::kAppendableByAll),
+                  own_mmid_name,
+                  &packet_values));
+  if (result != kSuccess || packet_values.size() != 1U) {
+    DLOG(ERROR) << "Failed to get public key for " << Base32Substr(mmid_name);
+    *public_key = asymm::PublicKey();
+    return kGetPublicKeyFailure;
+  }
+
+  pca::SignedData packet;
+  if (!packet.ParseFromString(packet_values.at(0))) {
+    DLOG(ERROR) << "Failed to parse public key packet for "
+                << Base32Substr(mmid_name);
+    *public_key = asymm::PublicKey();
+    return kGetPublicKeyFailure;
+  }
+  BOOST_ASSERT(!packet.data().empty());
+  BOOST_ASSERT(!packet.signature().empty());
+
+  // Validate self-signing
+  if (crypto::Hash<crypto::SHA512>(packet.data() + packet.signature()) !=
+      mmid_name) {
+    DLOG(ERROR) << "Failed to validate MMID " << Base32Substr(mmid_name);
+    *public_key = asymm::PublicKey();
+    return kGetPublicKeyFailure;
+  }
+
+  // Decode and validate public key
+  std::string serialised_public_key(packet.data());
+  std::string public_key_signature(packet.signature());
+  asymm::DecodePublicKey(serialised_public_key, public_key);
+  if (!asymm::ValidateKey(*public_key)) {
+    DLOG(ERROR) << "Failed to validate public key for "
+                << Base32Substr(mmid_name);
+    *public_key = asymm::PublicKey();
+    return kGetPublicKeyFailure;
+  }
 
   return kSuccess;
 }

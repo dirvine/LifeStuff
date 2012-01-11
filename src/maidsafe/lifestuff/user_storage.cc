@@ -48,12 +48,15 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
   if (!fs::exists(mount_dir_path))
     fs::create_directory(mount_dir_path);
 
-  const asymm::PrivateKey &private_key(
-      session->passport_->PacketPrivateKey(passport::kPmid, true));
-  drive_in_user_space_.reset(new MaidDriveInUserSpace(
-      chunk_store_,
-      &private_key,
-      session->passport_->PacketName(passport::kPmid, true)));
+  asymm::Keys key_ring;
+  key_ring.identity = session->passport_->PacketName(passport::kPmid, true);
+  key_ring.public_key =
+      session->passport_->SignaturePacketValue(passport::kPmid, true);
+  key_ring.private_key = session->passport_->PacketPrivateKey(passport::kPmid,
+                                                              true);
+  key_ring.validation_token =
+      session->passport_->PacketSignature(passport::kPmid, true);
+  drive_in_user_space_.reset(new MaidDriveInUserSpace(chunk_store_, key_ring));
 
   int n(0);
   if (creation) {
