@@ -55,7 +55,6 @@ void SendContactInfoCallback(const int &response,
 }
 
 std::string AppendableIdValue(const passport::SelectableIdentityData &data,
-                              const std::string &public_username,
                               bool accepts_new_contacts,
                               const asymm::PrivateKey private_key,
                               int index) {
@@ -90,8 +89,7 @@ std::string AnmpidName(const passport::SelectableIdentityData &data) {
   return std::get<0>(data.at(0)) + std::string (1, pca::kSignaturePacket);
 }
 
-std::string AnmpidValue(const passport::SelectableIdentityData &data,
-                        const std::string &public_username) {
+std::string AnmpidValue(const passport::SelectableIdentityData &data) {
   std::string public_key;
   asymm::EncodePublicKey(std::get<1>(data.at(0)), &public_key);
   pca::SignedData packet;
@@ -104,8 +102,7 @@ std::string MpidName(const passport::SelectableIdentityData &data) {
   return std::get<0>(data.at(1)) + std::string (1, pca::kSignaturePacket);
 }
 
-std::string MpidValue(const passport::SelectableIdentityData &data,
-                      const std::string &public_username) {
+std::string MpidValue(const passport::SelectableIdentityData &data) {
   std::string public_key;
   asymm::EncodePublicKey(std::get<1>(data.at(1)), &public_key);
   pca::SignedData packet;
@@ -120,14 +117,9 @@ std::string MaidsafeContactIdName(const std::string &public_username) {
 }
 
 std::string MaidsafeContactIdValue(const passport::SelectableIdentityData &data,
-                                   const std::string &public_username,
                                    bool accepts_new_contacts,
                                    const asymm::PrivateKey private_key) {
-  return AppendableIdValue(data,
-                           public_username,
-                           accepts_new_contacts,
-                           private_key,
-                           1);
+  return AppendableIdValue(data, accepts_new_contacts, private_key, 1);
 }
 
 std::string MaidsafeInboxName(const passport::SelectableIdentityData &data) {
@@ -135,9 +127,8 @@ std::string MaidsafeInboxName(const passport::SelectableIdentityData &data) {
 }
 
 std::string MaidsafeInboxValue(const passport::SelectableIdentityData &data,
-                               const std::string &public_username,
                                const asymm::PrivateKey private_key) {
-  return AppendableIdValue(data, public_username, true, private_key, 2);
+  return AppendableIdValue(data, true, private_key, 2);
 }
 
 }  // namespace
@@ -223,25 +214,22 @@ int PublicId::CreatePublicId(const std::string &public_username,
                                             public_username));
 
   packet_manager_->StorePacket(MaidsafeInboxName(data),
-                               MaidsafeInboxValue(data,
-                                                  public_username,
-                                                  inbox_private_key),
+                               MaidsafeInboxValue(data, inbox_private_key),
                                std::get<0>(data.at(2)),
                                std::bind(&SendContactInfoCallback, args::_1,
                                          &mutex, &cond_var, &msid_result));
   packet_manager_->StorePacket(AnmpidName(data),
-                               AnmpidValue(data, public_username),
+                               AnmpidValue(data),
                                std::get<0>(data.at(0)),
                                std::bind(&SendContactInfoCallback, args::_1,
                                          &mutex, &cond_var, &anmpid_result));
   packet_manager_->StorePacket(MpidName(data),
-                               MpidValue(data, public_username),
+                               MpidValue(data),
                                std::get<0>(data.at(0)),
                                std::bind(&SendContactInfoCallback, args::_1,
                                          &mutex, &cond_var, &mpid_result));
   packet_manager_->StorePacket(MaidsafeContactIdName(public_username),
                                MaidsafeContactIdValue(data,
-                                                      public_username,
                                                       accepts_new_contacts,
                                                       contact_id_private_key),
                                std::get<0>(data.at(1)),
