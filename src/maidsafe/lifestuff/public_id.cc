@@ -386,6 +386,21 @@ int PublicId::SendContactInfo(const std::string &public_username,
 }
 
 int PublicId::DisablePublicId(const std::string &public_username) {
+  int result(ModifyAppendability(public_username, pca::kModifiableByOwner));
+  if (result != kSuccess)
+    DLOG(ERROR) << "Failed to Disable PublicId";
+  return result;
+}
+
+int PublicId::EnablePublicId(const std::string &public_username) {
+  int result(ModifyAppendability(public_username, pca::kAppendableByAll));
+  if (result != kSuccess)
+    DLOG(ERROR) << "Failed to Enable PublicId";
+  return result;
+}
+
+int PublicId::ModifyAppendability(const std::string &public_username,
+                                  const char appendability) {
   if (public_username.empty()) {
     DLOG(ERROR) << "Public ID name empty";
     return kPublicIdEmpty;
@@ -412,7 +427,7 @@ int PublicId::DisablePublicId(const std::string &public_username) {
                                             true,
                                             public_username));
   // Composes ModifyAppendableByAll packet disabling appendability
-  std::string appendability_string(1, pca::kModifiableByOwner);
+  std::string appendability_string(1, appendability);
   pca::SignedData signed_allow_others_to_append;
   std::string signature;
 

@@ -75,8 +75,10 @@ class PublicId {
   // Appends our info as an MCID to the recipient's MPID packet.
   int SendContactInfo(const std::string &public_username,
                       const std::string &recipient_public_username);
-  // Removes from the network the packets created in CreatePublicId.
+  // Disallow others add contact or send msg.
   int DisablePublicId(const std::string &public_username);
+  // Allow others add contact or send msg.
+  int EnablePublicId(const std::string &public_username);
   // To confirm a contact once user has decided on the introduction
   int ConfirmContact(const std::string &public_username,
                      const std::string &recipient_public_username);
@@ -94,6 +96,10 @@ class PublicId {
                       const boost::system::error_code &error_code);
   void ProcessRequests(const passport::SelectableIdData &data,
                        const std::vector<std::string> &mpid_values);
+  // Modify the Appendability of MCIA and MMIC associated with the public_name
+  // i.e. enable/disable others add new contact and send msg
+  int ModifyAppendability(const std::string &public_username,
+                          const char appendability);
 
   std::shared_ptr<PacketManager> packet_manager_;
   std::shared_ptr<Session> session_;
