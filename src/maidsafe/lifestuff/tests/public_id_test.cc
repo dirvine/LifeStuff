@@ -292,6 +292,36 @@ TEST_F(PublicIdTest, FUNC_DisablePublicId) {
   //                  then it shall not be allowed to send msg to MMID anymore
 }
 
+TEST_F(PublicIdTest, FUNC_EnablePublicId) {
+  ASSERT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
+  ASSERT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
+
+  ASSERT_EQ(kPublicIdEmpty, public_id1_.EnablePublicId(""));
+  ASSERT_EQ(kGetPublicIdError, public_id1_.EnablePublicId("Rubbish"));
+
+  ASSERT_EQ(kSuccess, public_id1_.DisablePublicId(public_username1_));
+
+  // Check user2 can't add itself to user1's MCID
+  public_id1_.new_contact_signal()->connect(
+      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, args::_2));
+  ASSERT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
+  ASSERT_EQ(kSendContactInfoFailure,
+            public_id2_.SendContactInfo(public_username2_, public_username1_));
+  Sleep(interval_ * 2);
+  ASSERT_TRUE(received_public_username_.empty());
+
+  ASSERT_EQ(kSuccess, public_id1_.EnablePublicId(public_username1_));
+
+  // Check user2 can now add itself to user1's MCID
+  public_id1_.new_contact_signal()->connect(
+      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, args::_2));
+  ASSERT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
+  ASSERT_EQ(kSuccess,
+            public_id2_.SendContactInfo(public_username2_, public_username1_));
+  Sleep(interval_ * 2);
+  ASSERT_FALSE(received_public_username_.empty());
+}
+
 // TODO(Fraser#5#): 2011-12-01 - Test for multiple public usernames per user
 // TODO(Fraser#5#): 2011-12-01 - Test for moving MMID
 
