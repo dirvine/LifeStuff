@@ -98,7 +98,7 @@ class AuthenticationTest : public testing::Test {
       ser_dm_login->clear();
       return kPasswordFailure;
     }
-    DLOG(ERROR) << "\n\n\n\n";
+    DLOG(INFO) << "\n\n\n\n";
     return kSuccess;
   }
 
@@ -156,13 +156,13 @@ TEST_F(AuthenticationTest, FUNC_GoodLogin) {
   ASSERT_EQ(pin_, session_->pin());
   ASSERT_EQ(password_, session_->password());
 
-  DLOG(ERROR) << "\n\n\n";
+  DLOG(INFO) << "\n\n\n";
   ASSERT_EQ(kSuccess, authentication_.SaveSession(ser_dm_ + "1"));
 
-  DLOG(ERROR) << "\n\n\n";
+  DLOG(INFO) << "\n\n\n";
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
 
-  DLOG(ERROR) << "\n\n\n";
+  DLOG(INFO) << "\n\n\n";
   ser_dm_login.clear();
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
   ASSERT_EQ(ser_dm_ + "1", ser_dm_login);
@@ -346,18 +346,18 @@ TEST_F(AuthenticationTest, FUNC_ChangePassword) {
                                                        ser_dm_,
                                                        surrogate_ser_dm_));
 
-  DLOG(ERROR) << "\n\n\n";
+  DLOG(INFO) << "\n\n\n";
   ASSERT_EQ(kSuccess, authentication_.ChangePassword(ser_dm_ + "2",
                                                      "password_new"));
   ASSERT_EQ("password_new", session_->password());
 
-  DLOG(ERROR) << "\n\n\n";
+  DLOG(INFO) << "\n\n\n";
   std::string ser_dm_login;
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
   ASSERT_NE(ser_dm_, ser_dm_login);
 
-  DLOG(ERROR) << "\n\n\n";
+  DLOG(INFO) << "\n\n\n";
   ser_dm_login.clear();
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login, "password_new"));

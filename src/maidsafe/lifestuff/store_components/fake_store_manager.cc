@@ -177,20 +177,6 @@ void GetPrivateKey(const std::string &packet_name,
     }
   }
 
-//  switch (type) {
-//    case kMpid:
-//        packet_type = passport::kAnmpid;
-//        break;
-//    case kAnmpid:
-//        packet_type = passport::kAnmpid;
-//        break;
-//    case kMsid:
-//        packet_type = passport::kAnmpid;
-//        break;
-//    default:
-//        packet_type = passport::kUnknown;
-//        break;
-//  }
   *private_key = pprt->PacketPrivateKey(packet_type, false, packet_name);
   if (asymm::ValidateKey(*private_key))
     return;
@@ -217,21 +203,6 @@ FakeStoreManager::FakeStoreManager(std::shared_ptr<Session> session)
                       (&boost::asio::io_service::run), &asio_service_));
   }
 }
-
-//  ReturnCode FakeStoreManager::Init(const fs::path &buffered_chunk_store_dir) {
-//
-//    boost::system::error_code error_code;
-//    if (!fs::exists(buffered_chunk_store_dir, error_code)) {
-//      fs::create_directories(buffered_chunk_store_dir, error_code);
-//      if (error_code) {
-//        DLOG(ERROR) << "Failed to create " << buffered_chunk_store_dir
-//                    << ": " << error_code.message();
-//        return kStoreManagerInitError;
-//      }
-//    }
-//
-//    return kSuccess;
-//  }
 
 FakeStoreManager::~FakeStoreManager() {
   work_.reset();

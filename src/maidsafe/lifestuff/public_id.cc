@@ -401,7 +401,7 @@ void PublicId::GetNewContacts(const bptime::seconds &interval,
                               const boost::system::error_code &error_code) {
   if (error_code) {
     if (error_code != ba::error::operation_aborted) {
-      DLOG(ERROR) << "Refresh timer error: " << error_code.message();
+      DLOG(WARNING) << "Refresh timer error: " << error_code.message();
     } else {
       return;
     }
@@ -463,7 +463,7 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
       DLOG(ERROR) << "Failed to decrypt MMID name: " << n;
       continue;
     } else {
-      DLOG(ERROR) << "MMID name received in contact: "
+      DLOG(INFO) << "MMID name received in contact: "
                   << Base32Substr(mmid_name);
     }
     std::string public_username;

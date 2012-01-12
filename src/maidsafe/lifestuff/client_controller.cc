@@ -115,7 +115,7 @@ int ClientController::Initialise() {
   packet_manager_->Init(std::bind(&CCCallback::IntCallback, &cb, args::_1));
   int result(cb.WaitForIntResult());
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to initialise packet_manager_.";
+    DLOG(ERROR) << "Failed to initialise packet manager.";
     return result;
   }
   auth_->Init(packet_manager_);
@@ -147,8 +147,8 @@ int ClientController::ParseDa() {
   }
   session_->set_unique_user_id(data_atlas.unique_user_id());
   session_->set_root_parent_id(data_atlas.root_parent_id());
-  DLOG(ERROR) << "UUID: " << Base32Substr(session_->unique_user_id());
-  DLOG(ERROR) << "PID: " << Base32Substr(session_->root_parent_id());
+  DLOG(INFO) << "UUID: " << Base32Substr(session_->unique_user_id());
+  DLOG(INFO) << "PID: " << Base32Substr(session_->root_parent_id());
 
   if (!data_atlas.has_serialised_keyring()) {
     DLOG(ERROR) << "Missing serialised keyring.";
@@ -168,10 +168,9 @@ int ClientController::ParseDa() {
     return -9003;
   }
 
-  std::list<PublicContact> contacts;
   for (int n = 0; n < data_atlas.contacts_size(); ++n) {
-    PublicContact pc = data_atlas.contacts(n);
-    contacts.push_back(pc);
+    Contact c(data_atlas.contacts(n));
+    session_->contacts_handler()->AddContact(c);
   }
 
   std::list<Share> shares;
@@ -192,11 +191,11 @@ int ClientController::SerialiseDa() {
   DataAtlas data_atlas;
   data_atlas.set_unique_user_id(session_->unique_user_id());
   data_atlas.set_root_parent_id(session_->root_parent_id());
-  DLOG(ERROR) << "UUID: " << Base32Substr(session_->unique_user_id());
-  DLOG(ERROR) << "PID: " << Base32Substr(session_->root_parent_id());
+  DLOG(INFO) << "UUID: " << Base32Substr(session_->unique_user_id());
+  DLOG(INFO) << "PID: " << Base32Substr(session_->root_parent_id());
   data_atlas.set_timestamp(boost::lexical_cast<std::string>(
       GetDurationSinceEpoch().total_microseconds()));
-  DLOG(WARNING) << "data_atlas.set_timestamp: " << data_atlas.timestamp();
+  DLOG(INFO) << "data_atlas.set_timestamp: " << data_atlas.timestamp();
 
   std::string serialised_keyring, serialised_selectables;
   session_->SerialiseKeyChain(&serialised_keyring, &serialised_selectables);
@@ -273,7 +272,7 @@ bool ClientController::CreateUser(const std::string &username,
     session_->ResetSession();
     return false;
   } else {
-    DLOG(ERROR) << "auth_->CreateUserSysPackets DONE.";
+    DLOG(INFO) << "auth_->CreateUserSysPackets DONE.";
   }
 
   int n = SerialiseDa();
@@ -300,7 +299,7 @@ bool ClientController::CreateUser(const std::string &username,
     session_->ResetSession();
     return false;
   } else {
-    DLOG(ERROR) << "auth_->CreateTmidPacket DONE.";
+    DLOG(INFO) << "auth_->CreateTmidPacket DONE.";
   }
 
   session_->set_session_name(false);
@@ -407,7 +406,7 @@ int ClientController::SaveSession() {
 
   if (n != kSuccess) {
     if (n == kFailedToDeleteOldPacket) {
-      DLOG(ERROR) << "Failed to delete old TMID otherwise saved session OK.";
+      DLOG(WARNING) << "Failed to delete old TMID otherwise saved session OK.";
     } else {
       DLOG(ERROR) << "Failed to Save Session.";
       return n;
@@ -445,7 +444,7 @@ bool ClientController::ChangeUsername(const std::string &new_username) {
   int result = auth_->ChangeUsername(ser_da_, new_username);
   if (result != kSuccess) {
     if (result == kFailedToDeleteOldPacket) {
-      DLOG(ERROR) << "Failed to delete old packets, changed username OK.";
+      DLOG(WARNING) << "Failed to delete old packets, changed username OK.";
       return true;
     } else {
       DLOG(ERROR) << "Failed to change username.";
@@ -465,7 +464,7 @@ bool ClientController::ChangePin(const std::string &new_pin) {
   int result = auth_->ChangePin(ser_da_, new_pin);
   if (result != kSuccess) {
     if (result == kFailedToDeleteOldPacket) {
-      DLOG(ERROR) << "Failed to delete old packets, otherwise changed PIN OK.";
+      DLOG(WARNING) << "Failed to delete old packets, otherwise changed PIN OK.";
       return true;
     } else {
       DLOG(ERROR) << "Failed to change PIN.";

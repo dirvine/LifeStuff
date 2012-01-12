@@ -224,7 +224,7 @@ void Authentication::GetMidCallback(const std::vector<std::string> &values,
 
 #ifdef DEBUG
   if (values.size() != 1)
-    DLOG(WARNING) << "Auth::GetMidCallback - Values: " << values.size();
+    DLOG(INFO) << "Auth::GetMidCallback - Values: " << values.size();
 #endif
 
   pca::SignedData packet;
@@ -249,7 +249,7 @@ void Authentication::GetMidCallback(const std::vector<std::string> &values,
     return;
   }
 
-  DLOG(WARNING) << "Auth::GetMidCallback: TMID - (" << Base32Substr(tmid_name)
+  DLOG(INFO) << "Auth::GetMidCallback: TMID - (" << Base32Substr(tmid_name)
                 << ", " << Base32Substr(values.at(0)) << ")";
   packet_manager_->GetPacket(pca::ApplyTypeToName(tmid_name,
                                                   pca::kModifiableByOwner),
@@ -271,7 +271,7 @@ void Authentication::GetSmidCallback(const std::vector<std::string> &values,
 
 #ifdef DEBUG
   if (values.size() != 1)
-    DLOG(WARNING) << "Auth::GetSmidCallback - Values: " << values.size();
+    DLOG(INFO) << "Auth::GetSmidCallback - Values: " << values.size();
 #endif
 
   pca::SignedData packet;
@@ -314,7 +314,7 @@ void Authentication::GetTmidCallback(const std::vector<std::string> &values,
   }
 #ifdef DEBUG
   if (values.size() != 1)
-    DLOG(WARNING) << "Auth::GetTmidCallback - Values: " << values.size();
+    DLOG(INFO) << "Auth::GetTmidCallback - Values: " << values.size();
 #endif
 
   pca::SignedData packet;
@@ -343,7 +343,7 @@ void Authentication::GetStmidCallback(const std::vector<std::string> &values,
   }
 #ifdef DEBUG
   if (values.size() != 1)
-    DLOG(WARNING) << "Auth::GetStmidCallback - Values: " << values.size();
+    DLOG(INFO) << "Auth::GetStmidCallback - Values: " << values.size();
 #endif
 
   pca::SignedData packet;
@@ -375,14 +375,14 @@ int Authentication::CreateUserSysPackets(const std::string &username,
   }
 
   if (!already_initialised) {
-    DLOG(WARNING) << "Authentication::CreateUserSysPackets - NOT INTIALISED";
+    DLOG(ERROR) << "Authentication::CreateUserSysPackets - NOT INTIALISED";
     return kAuthenticationError;
   }
   session_->set_username(username);
   session_->set_pin(pin);
 
   if (session_->passport_->CreateSigningPackets() != kSuccess) {
-    DLOG(WARNING) << "Authentication::CreateUserSysPackets - Not initialised";
+    DLOG(ERROR) << "Authentication::CreateUserSysPackets - Not initialised";
     session_->set_username("");
     session_->set_pin("");
     return kAuthenticationError;
@@ -415,7 +415,7 @@ int Authentication::CreateUserSysPackets(const std::string &username,
   }
 #ifdef DEBUG
   if (!success)
-    DLOG(WARNING) << "Authentication::CreateUserSysPackets: timed out.";
+    DLOG(INFO) << "Authentication::CreateUserSysPackets: timed out.";
 #endif
   if ((anmaid_status == kSucceeded) && (anmid_status == kSucceeded) &&
       (ansmid_status == kSucceeded) && (antmid_status == kSucceeded) &&
@@ -447,13 +447,13 @@ void Authentication::StoreSignaturePacket(
                               dependent_op_status));
     }
     catch(const std::exception &e) {
-      DLOG(WARNING) << DebugStr(packet_type) << ": " << e.what();
+      DLOG(ERROR) << DebugStr(packet_type) << ": " << e.what();
       success = false;
     }
     success = (*dependent_op_status == kSucceeded);
   }
   if (!success) {
-    DLOG(WARNING) << DebugStr(packet_type) << ": failed wait for dependent op";
+    DLOG(ERROR) << DebugStr(packet_type) << ": failed wait for dependent op";
     boost::mutex::scoped_lock lock(mutex_);
     *op_status = kFailed;
     cond_var_.notify_all();
@@ -463,7 +463,7 @@ void Authentication::StoreSignaturePacket(
   // Get packet
   std::string packet_name(session_->passport_->PacketName(packet_type, false));
   if (packet_name.empty()) {
-    DLOG(WARNING) << DebugStr(packet_type) << ": failed init";
+    DLOG(ERROR) << DebugStr(packet_type) << ": failed init";
     boost::mutex::scoped_lock lock(mutex_);
     *op_status = kFailed;
     cond_var_.notify_all();
@@ -516,7 +516,7 @@ void Authentication::SignaturePacketStoreCallback(
 //    if (packet_type == passport::kPmid)
 //      packet_manager_->SetPmid(packet->name());
   } else {
-    DLOG(WARNING) << DebugStr(packet_type) << ": Failed to store.";
+    DLOG(ERROR) << DebugStr(packet_type) << ": Failed to store.";
     *op_status = kFailed;
 //    session_->passport_->RevertSignaturePacket(packet_type);
   }
@@ -565,19 +565,8 @@ int Authentication::CreateTmidPacket(
       result = StorePacket(tmid, false);
       if (result == kSuccess) {
         result = StorePacket(stmid, false);
-        if (result != kSuccess)
-          DLOG(ERROR) << "\t\t\t\t\tFailed STMID!!!!!";
-      } else {
-        DLOG(ERROR) << "\t\t\t\t\tFailed TMID!!!!!";
-        if (crypto::Hash<crypto::SHA512>(tmid.value + tmid.signature) !=
-            tmid.name)
-          DLOG(ERROR) << "\t\t\t\t\tTMID doesn't hash?";
       }
-    } else {
-      DLOG(ERROR) << "\t\t\t\t\tFailed SMID!!!!!";
     }
-  } else {
-    DLOG(ERROR) << "\t\t\t\t\tFailed MID!!!!!";
   }
 
   if (result != kSuccess) {
@@ -590,7 +579,6 @@ int Authentication::CreateTmidPacket(
   }
   session_->set_password(password);
   serialised_data_atlas_ = serialised_data_atlas;
-  DLOG(ERROR) << "\n\n\n";
   return kSuccess;
 }
 
@@ -821,7 +809,7 @@ int Authentication::RemoveMe() {
                             &ansmid_status));
   }
   catch(const std::exception &e) {
-    DLOG(WARNING) << "Authentication::RemoveMe: " << e.what();
+    DLOG(ERROR) << "Authentication::RemoveMe: " << e.what();
     success = false;
   }
 #ifdef DEBUG
@@ -851,14 +839,14 @@ void Authentication::DeletePacket(const passport::PacketType &packet_type,
                               dependent_op_status));
     }
     catch(const std::exception &e) {
-      DLOG(WARNING) << "Authentication::DeletePacket (" << packet_type << "): "
+      DLOG(ERROR) << "Authentication::DeletePacket (" << packet_type << "): "
                  << e.what();
       success = false;
     }
     success = (*dependent_op_status == kSucceeded);
   }
   if (!success) {
-    DLOG(WARNING) << "Authentication::DeletePacket (" << packet_type
+    DLOG(ERROR) << "Authentication::DeletePacket (" << packet_type
                << "): Failed wait";
     boost::mutex::scoped_lock lock(mutex_);
     *op_status = kFailed;
@@ -895,7 +883,7 @@ void Authentication::DeletePacketCallback(
     *op_status = kSucceeded;
 //    session_->passport_->DeletePacket(packet_type);
   } else {
-    DLOG(WARNING) << "Authentication::DeletePacketCallback (" << packet_type
+    DLOG(ERROR) << "Authentication::DeletePacketCallback (" << packet_type
                   << "): Failed to delete";
     *op_status = kFailed;
   }
@@ -1112,7 +1100,7 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
   }
 #ifdef DEBUG
   if (!success)
-    DLOG(ERROR) << "Authentication::ChangeUserData: timed out deleting.";
+    DLOG(INFO) << "Authentication::ChangeUserData: timed out deleting.";
 #endif
   // Result of deletions not considered here.
   if (result != kSuccess) {
@@ -1245,7 +1233,7 @@ int Authentication::ChangePassword(const std::string &serialised_data_atlas,
   }
 #ifdef DEBUG
   if (!success)
-    DLOG(ERROR) << "Authentication::ChangePassword: timed out deleting.";
+    DLOG(INFO) << "Authentication::ChangePassword: timed out deleting.";
 #endif
   // Result of deletions not considered here.
   if (result != kSuccess) {
@@ -1299,7 +1287,7 @@ int Authentication::StorePacket(const PacketData &packet,
     return kAuthenticationError;
   }
 
-  DLOG(ERROR) << "Authentication::StorePacket: result=" << result << " - "
+  DLOG(INFO) << "Authentication::StorePacket: result=" << result << " - "
               << Base32Substr(packet.name);
 
   return result;
@@ -1329,7 +1317,7 @@ int Authentication::DeletePacket(const PacketData &packet) {
     success = false;
   }
   if (!success) {
-    DLOG(WARNING) << "Authentication::DeletePacket: Timed out.";
+    DLOG(ERROR) << "Authentication::DeletePacket: Timed out.";
     return kAuthenticationError;
   }
 #ifdef DEBUG

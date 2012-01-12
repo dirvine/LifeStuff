@@ -24,6 +24,7 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/lifestuff/log.h"
+#include "maidsafe/lifestuff/data_atlas_pb.h"
 
 namespace fs = boost::filesystem;
 
@@ -45,6 +46,20 @@ Contact::Contact()
       confirmed_('\0'),
       rank_(0),
       last_contact_(-1) {}
+
+Contact::Contact(const PublicContact &contact)
+    : pub_name_(contact.pub_name()),
+      pub_key_(contact.pub_key()),
+      full_name_(contact.full_name()),
+      office_phone_(contact.office_phone()),
+      birthday_(contact.birthday()),
+      gender_(contact.gender().at(0)),
+      language_(contact.language()),
+      country_(contact.country()),
+      city_(contact.city()),
+      confirmed_(contact.confirmed().at(0)),
+      rank_(contact.rank()),
+      last_contact_(contact.last_contact()) {}
 
 Contact::Contact(const std::vector<std::string> &attributes)
     : pub_name_(attributes[0]),
@@ -80,6 +95,12 @@ int ContactsHandler::AddContact(const std::string &pub_name,
     lc = last_contact;
   mi_contact mic(pub_name, pub_key, full_name, office_phone, birthday, gender,
                  language, country, city, confirmed, rank, lc);
+  cs_.insert(mic);
+  return 0;
+}
+
+int ContactsHandler::AddContact(const Contact &contact) {
+  mi_contact mic(contact);
   cs_.insert(mic);
   return 0;
 }

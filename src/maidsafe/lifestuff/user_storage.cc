@@ -67,7 +67,7 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
     n = drive_in_user_space_->Init(session->unique_user_id(),
                                    session->root_parent_id());
   }
-  DLOG(ERROR) << "drive_in_user_space_ Init: " << n;
+  DLOG(INFO) << "drive_in_user_space_ Init: " << n;
 
 #ifdef WIN32
   std::uint32_t drive_letters, mask = 0x4, count = 2;
@@ -76,8 +76,10 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
     mask <<= 1;
     ++count;
   }
-  if (count > 25)
+  if (count > 25) {
     DLOG(ERROR) << "No available drive letters:";
+    return;
+  }
 
   char drive_name[3] = {'A' + static_cast<char>(count), ':', '\0'};
   g_mount_dir_ = drive_name;

@@ -208,7 +208,7 @@ void MessageHandler::GetNewMessages(
     const boost::system::error_code &error_code) {
   if (error_code) {
     if (error_code != ba::error::operation_aborted) {
-      DLOG(ERROR) << "Refresh timer error: " << error_code.message();
+      DLOG(WARNING) << "Refresh timer error: " << error_code.message();
     } else {
       return;
     }
@@ -231,11 +231,11 @@ void MessageHandler::GetNewMessages(
     result = packet_manager_->GetPacket(AppendableByAllType(std::get<1>(*it)),
                                         std::get<0>(data.at(2)),
                                         &mmid_values);
-    DLOG(ERROR) << "Found " << mmid_values.size() << " values";
+//    DLOG(INFO) << "Found " << mmid_values.size() << " values";
     if (result == kSuccess) {
       ProcessRetrieved(*it, mmid_values);
     } else if (result != kGetPacketEmptyData) {
-      DLOG(ERROR) << "Failed to get MPID contents for " << std::get<0>(*it)
+      DLOG(WARNING) << "Failed to get MPID contents for " << std::get<0>(*it)
                   << ": " << result;
     }
   }
@@ -270,11 +270,6 @@ void MessageHandler::ProcessRetrieved(
                                            passport::kMmid,
                                            true,
                                            std::get<0>(data)));
-//    pca::Encrypted encrypted;
-//    if (!encrypted.ParseFromString(signed_data.data())) {
-//      DLOG(ERROR) << "Failed to parse as encrypted message";
-//      continue;
-//    }
 
     std::string decrypted_message;
     int n(asymm::Decrypt(signed_data.data(),

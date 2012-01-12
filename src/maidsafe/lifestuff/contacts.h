@@ -52,6 +52,8 @@ namespace lifestuff {
 // TODO(Dan#5#): 2009-07-22 - Language and country lists to be decided on and
 //                            incorporated to the logic.
 
+class PublicContact;
+
 class Contact {
  private:
   std::string pub_name_;
@@ -70,21 +72,22 @@ class Contact {
  public:
   //  Constructors
   Contact();
+  Contact(const PublicContact &contact);
   explicit Contact(const std::vector<std::string> &attributes);
 
   //  Getters
-  inline std::string PublicName() { return pub_name_; }
-  inline std::string PublicKey() { return pub_key_; }
-  inline std::string FullName() { return full_name_; }
-  inline std::string OfficePhone() { return office_phone_; }
-  inline std::string Birthday() { return birthday_; }
-  inline char Gender() { return gender_; }
-  inline int Language() { return language_; }
-  inline int Country() { return country_; }
-  inline std::string City() { return city_; }
-  inline char Confirmed() { return confirmed_; }
-  inline int Rank() { return rank_; }
-  inline int LastContact() { return last_contact_; }
+  inline std::string PublicName() const { return pub_name_; }
+  inline std::string PublicKey() const { return pub_key_; }
+  inline std::string FullName() const { return full_name_; }
+  inline std::string OfficePhone() const { return office_phone_; }
+  inline std::string Birthday() const { return birthday_; }
+  inline char Gender() const { return gender_; }
+  inline int Language() const { return language_; }
+  inline int Country() const { return country_; }
+  inline std::string City() const { return city_; }
+  inline char Confirmed() const { return confirmed_; }
+  inline int Rank() const { return rank_; }
+  inline int LastContact() const { return last_contact_; }
 
   // Setters
   inline bool SetPublicName(std::string pub_name) {
@@ -131,7 +134,7 @@ class Contact {
     rank_ = rank;
     return true;
   }
-  inline bool SetLastContact(int last_contact) {
+  inline bool SetLastContact(uint32_t last_contact) {
     last_contact_ = last_contact;
     return true;
   }
@@ -189,6 +192,19 @@ struct mi_contact {
         confirmed_(confirmed),
         rank_(rank),
         last_contact_(last_contact) {}
+  mi_contact(const Contact &contact)
+      : pub_name_(contact.PublicName()),
+        pub_key_(contact.PublicKey()),
+        full_name_(contact.FullName()),
+        office_phone_(contact.OfficePhone()),
+        birthday_(contact.Birthday()),
+        gender_(contact.Gender()),
+        language_(contact.Language()),
+        country_(contact.Country()),
+        city_(contact.City()),
+        confirmed_(contact.Confirmed()),
+        rank_(contact.Rank()),
+        last_contact_(contact.LastContact()) {}
 };
 
 /* Tags */
@@ -234,6 +250,7 @@ class ContactsHandler {
                  const char &confirmed,
                  const int &rank,
                  const uint32_t &last_contact);
+  int AddContact(const Contact &contact);
   int DeleteContact(const std::string &pub_name);
   int UpdateContact(const mi_contact &mic);
   int UpdateContactKey(const std::string &pub_name,
