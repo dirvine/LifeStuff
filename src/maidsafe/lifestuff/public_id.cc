@@ -385,7 +385,107 @@ int PublicId::SendContactInfo(const std::string &public_username,
   return kSuccess;
 }
 
-int PublicId::DeletePublicId(const std::string &/*public_username*/) {
+int PublicId::DisablePublicId(const std::string &public_username) {
+  int result(ModifyAppendability(public_username, pca::kModifiableByOwner));
+  if (result != kSuccess)
+    DLOG(ERROR) << "Failed to Disable PublicId";
+  return result;
+}
+
+int PublicId::EnablePublicId(const std::string &public_username) {
+  int result(ModifyAppendability(public_username, pca::kAppendableByAll));
+  if (result != kSuccess)
+    DLOG(ERROR) << "Failed to Enable PublicId";
+  return result;
+}
+
+int PublicId::ModifyAppendability(const std::string &public_username,
+                                  const char appendability) {
+  if (public_username.empty()) {
+    DLOG(ERROR) << "Public ID name empty";
+    return kPublicIdEmpty;
+  }
+
+  // Retrieves ANMPID, MPID, and MMID's <name, value, signature>
+  passport::SelectableIdentityData data;
+  int result(session_->passport_->GetSelectableIdentityData(public_username,
+                                                            true,
+                                                            &data));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to get own public ID data: " << result;
+    return kGetPublicIdError;
+  }
+  BOOST_ASSERT(data.size() == 3U);
+
+  // Retriveves own MPID, MMID private keys
+  asymm::PrivateKey MPID_private_key(
+      session_->passport_->PacketPrivateKey(passport::kMpid,
+                                            true,
+                                            public_username));
+  asymm::PrivateKey MMID_private_key(
+      session_->passport_->PacketPrivateKey(passport::kMmid,
+                                            true,
+                                            public_username));
+  // Composes ModifyAppendableByAll packet disabling appendability
+  std::string appendability_string(1, appendability);
+  pca::SignedData signed_allow_others_to_append;
+  std::string signature;
+
+  rsa::Sign(appendability_string, MPID_private_key, &signature);
+  signed_allow_others_to_append.set_data(appendability_string);
+  signed_allow_others_to_append.set_signature(signature);
+  pca::ModifyAppendableByAll modify_mcid;
+  modify_mcid.mutable_allow_others_to_append()
+      ->CopyFrom(signed_allow_others_to_append);
+
+  signature.clear();
+  rsa::Sign(appendability_string, MMID_private_key, &signature);
+  signed_allow_others_to_append.set_signature(signature);
+  pca::ModifyAppendableByAll modify_mmid;
+  modify_mmid.mutable_allow_others_to_append()
+      ->CopyFrom(signed_allow_others_to_append);
+
+  // Invalidates the MCID,MMID by modify them as kModifiableByOwner via
+  // ModifyAppendableByAll packet
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  int mcid_result(kPendingResult), mmid_result(kPendingResult);
+  packet_manager_->ModifyPacket(
+      MaidsafeContactIdName(public_username),
+      modify_mcid.SerializeAsString(),
+      std::get<0>(data.at(1)),
+      std::bind(&SendContactInfoCallback, args::_1,
+                &mutex, &cond_var, &mcid_result));
+  packet_manager_->ModifyPacket(
+      MaidsafeInboxName(data),
+      modify_mmid.SerializeAsString(),
+      std::get<0>(data.at(2)),
+      std::bind(&SendContactInfoCallback, args::_1,
+                &mutex, &cond_var, &mmid_result));
+  try {
+    boost::mutex::scoped_lock lock(mutex);
+    if (!cond_var.timed_wait(lock,
+                             bptime::seconds(30),
+                             [&]()->bool {
+                               return mcid_result != kPendingResult &&
+                                      mmid_result != kPendingResult;
+                             })) {
+      DLOG(ERROR) << "Timed out modifying MCID/MMID when disable public_id.";
+      return kPublicIdTimeout;
+    }
+  }
+  catch(const std::exception &e) {
+    DLOG(ERROR) << "Failed to modifying MCID/MMID when disable public_id: "
+                << e.what();
+    return kPublicIdException;
+  }
+  if (mcid_result != kSuccess || mmid_result != kSuccess) {
+    DLOG(ERROR) << "Failed to modifying MCID/MMID when disable public_id.  "
+                << " with MCID Result : " << mcid_result
+                << " , MMID result :" << mmid_result;
+    return kModifyFailure;
+  }
+
   return kSuccess;
 }
 
