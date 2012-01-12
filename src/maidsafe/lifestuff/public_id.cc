@@ -405,11 +405,11 @@ int PublicId::DisablePublicId(const std::string &public_username) {
   // Retriveves own MPID, MMID private keys
   asymm::PrivateKey MPID_private_key(
       session_->passport_->PacketPrivateKey(passport::kMpid,
-                                            false,
+                                            true,
                                             public_username));
   asymm::PrivateKey MMID_private_key(
       session_->passport_->PacketPrivateKey(passport::kMmid,
-                                            false,
+                                            true,
                                             public_username));
   // Composes ModifyAppendableByAll packet disabling appendability
   std::string appendability_string(1, pca::kModifiableByOwner);
@@ -423,6 +423,7 @@ int PublicId::DisablePublicId(const std::string &public_username) {
   modify_mcid.mutable_allow_others_to_append()
       ->CopyFrom(signed_allow_others_to_append);
 
+  signature.clear();
   rsa::Sign(appendability_string, MMID_private_key, &signature);
   signed_allow_others_to_append.set_signature(signature);
   pca::ModifyAppendableByAll modify_mmid;
