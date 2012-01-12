@@ -431,19 +431,19 @@ int PublicId::ModifyAppendability(const std::string &public_username,
   pca::SignedData signed_allow_others_to_append;
   std::string signature;
 
-  rsa::Sign(appendability_string, MPID_private_key, &signature);
+  asymm::Sign(appendability_string, MPID_private_key, &signature);
   signed_allow_others_to_append.set_data(appendability_string);
   signed_allow_others_to_append.set_signature(signature);
   pca::ModifyAppendableByAll modify_mcid;
-  modify_mcid.mutable_allow_others_to_append()
-      ->CopyFrom(signed_allow_others_to_append);
+  modify_mcid.mutable_allow_others_to_append()->CopyFrom(
+      signed_allow_others_to_append);
 
   signature.clear();
-  rsa::Sign(appendability_string, MMID_private_key, &signature);
+  asymm::Sign(appendability_string, MMID_private_key, &signature);
   signed_allow_others_to_append.set_signature(signature);
   pca::ModifyAppendableByAll modify_mmid;
-  modify_mmid.mutable_allow_others_to_append()
-      ->CopyFrom(signed_allow_others_to_append);
+  modify_mmid.mutable_allow_others_to_append()->CopyFrom(
+      signed_allow_others_to_append);
 
   // Invalidates the MCID,MMID by modify them as kModifiableByOwner via
   // ModifyAppendableByAll packet
@@ -477,13 +477,13 @@ int PublicId::ModifyAppendability(const std::string &public_username,
   catch(const std::exception &e) {
     DLOG(ERROR) << "Failed to modifying MCID/MMID when disable public_id: "
                 << e.what();
-    return kPublicIdException;
+    return kModifyAppendabilityFailure;
   }
   if (mcid_result != kSuccess || mmid_result != kSuccess) {
     DLOG(ERROR) << "Failed to modifying MCID/MMID when disable public_id.  "
                 << " with MCID Result : " << mcid_result
                 << " , MMID result :" << mmid_result;
-    return kModifyFailure;
+    return kModifyAppendabilityFailure;
   }
 
   return kSuccess;

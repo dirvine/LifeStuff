@@ -96,7 +96,7 @@ class PublicId {
                       const boost::system::error_code &error_code);
   void ProcessRequests(const passport::SelectableIdData &data,
                        const std::vector<std::string> &mpid_values);
-  // Modify the Appendability of MCIA and MMIC associated with the public_name
+  // Modify the Appendability of MCID and MMID associated with the public_name
   // i.e. enable/disable others add new contact and send msg
   int ModifyAppendability(const std::string &public_username,
                           const char appendability);

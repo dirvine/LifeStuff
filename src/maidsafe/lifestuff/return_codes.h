@@ -106,6 +106,7 @@ enum ReturnCode {
   kStorePublicIdFailure = -206008,
   kPublicIdEmpty = -206009,
   kNoPublicIds = -206010,
+  kModifyAppendabilityFailure = -206011,
 
   // MessageHandler
   kMessageHandlerException = -207001
