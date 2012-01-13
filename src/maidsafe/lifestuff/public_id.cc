@@ -595,7 +595,7 @@ int PublicId::RemoveContact(const std::string &public_username,
   std::string appendability_string(1, pca::kModifiableByOwner);
   pca::SignedData signed_allow_others_to_append;
   std::string signature;
-  rsa::Sign(appendability_string, old_inbox_private_key, &signature);
+  asymm::Sign(appendability_string, old_inbox_private_key, &signature);
   signed_allow_others_to_append.set_signature(signature);
   pca::ModifyAppendableByAll modify_mmid;
   modify_mmid.mutable_allow_others_to_append()
