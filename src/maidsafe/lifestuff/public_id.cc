@@ -534,6 +534,8 @@ int PublicId::RemoveContact(const std::string &public_username,
     DLOG(ERROR) << "Failed to generate a new MMID: " << result;
     return kGenerateNewMMIDFailure;
   }
+  session_->passport_->ConfirmMovedMaidsafeInbox(public_username);
+
   std::vector<int> results;
   results.push_back(kPendingResult);
   asymm::PrivateKey new_inbox_private_key(session_->passport_->PacketPrivateKey(
@@ -555,6 +557,9 @@ int PublicId::RemoveContact(const std::string &public_username,
     return kModifyFailure;
   }
 
+  // Informs each contact in the list about the new MMID
+  result = InformContactInfo(public_username, ContactList());
+
   // Invalidate previous MMID, i.e. put it into kModifiableByOwner
   // First composes ModifyAppendableByAll packet disabling appendability
   std::string appendability_string(1, pca::kModifiableByOwner);
@@ -565,20 +570,17 @@ int PublicId::RemoveContact(const std::string &public_username,
   pca::ModifyAppendableByAll modify_mmid;
   modify_mmid.mutable_allow_others_to_append()
       ->CopyFrom(signed_allow_others_to_append);
-  // to speed-up, don't need to wait for the response
-  int mmid_modify_result(kPendingResult);
+
+  results.clear();
+  results.push_back(kPendingResult);
   std::string old_mmid_name(std::get<0>(old_MMID));
   packet_manager_->ModifyPacket(
       old_mmid_name,
       modify_mmid.SerializeAsString(),
       std::get<0>(old_MMID),
       std::bind(&SendContactInfoCallback, args::_1,
-                &mutex, &cond_var, &mmid_modify_result));
-
-  // Informs each contact in the list about the new MMID
-  result = InformContactInfo(public_username, ContactList());
-
-  session_->passport_->ConfirmMovedMaidsafeInbox(public_username);
+                &mutex, &cond_var, &results[0]));
+  WaitingResponse(mutex, cond_var, results);
 
   return result;
 }
