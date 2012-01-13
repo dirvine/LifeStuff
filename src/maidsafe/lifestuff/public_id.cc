@@ -54,6 +54,20 @@ void SendContactInfoCallback(const int &response,
   cond_var->notify_one();
 }
 
+std::string ComposeModifyAppendableByAll(const asymm::PrivateKey &signing_key,
+                                         const char appendability) {
+  std::string appendability_string(1, appendability);
+  pca::SignedData signed_data;
+  std::string signature;
+
+  asymm::Sign(appendability_string, signing_key, &signature);
+  signed_data.set_data(appendability_string);
+  signed_data.set_signature(signature);
+  pca::ModifyAppendableByAll modify;
+  modify.mutable_allow_others_to_append()->CopyFrom(signed_data);
+  return modify.SerializeAsString();
+}
+
 std::string AppendableIdValue(const passport::SelectableIdentityData &data,
                               bool accepts_new_contacts,
                               const asymm::PrivateKey private_key,
@@ -309,25 +323,6 @@ int PublicId::ModifyAppendability(const std::string &public_username,
       session_->passport_->PacketPrivateKey(passport::kMmid,
                                             true,
                                             public_username));
-  // Composes ModifyAppendableByAll packet to change appendability
-  std::string appendability_string(1, appendability);
-  pca::SignedData signed_allow_others_to_append;
-  std::string signature;
-
-  asymm::Sign(appendability_string, MPID_private_key, &signature);
-  signed_allow_others_to_append.set_data(appendability_string);
-  signed_allow_others_to_append.set_signature(signature);
-  pca::ModifyAppendableByAll modify_mcid;
-  modify_mcid.mutable_allow_others_to_append()->CopyFrom(
-      signed_allow_others_to_append);
-
-  signature.clear();
-  asymm::Sign(appendability_string, MMID_private_key, &signature);
-  signed_allow_others_to_append.set_signature(signature);
-  pca::ModifyAppendableByAll modify_mmid;
-  modify_mmid.mutable_allow_others_to_append()->CopyFrom(
-      signed_allow_others_to_append);
-
   // Change appendability of MCID,MMID by modify them via ModifyAppendableByAll
   boost::mutex mutex;
   boost::condition_variable cond_var;
@@ -336,13 +331,13 @@ int PublicId::ModifyAppendability(const std::string &public_username,
   results.push_back(kPendingResult);
   packet_manager_->ModifyPacket(
       MaidsafeContactIdName(public_username),
-      modify_mcid.SerializeAsString(),
+      ComposeModifyAppendableByAll(MPID_private_key, appendability),
       std::get<0>(data.at(1)),
       std::bind(&SendContactInfoCallback, args::_1,
                 &mutex, &cond_var, &results[0]));
   packet_manager_->ModifyPacket(
       MaidsafeInboxName(data),
-      modify_mmid.SerializeAsString(),
+      ComposeModifyAppendableByAll(MMID_private_key, appendability),
       std::get<0>(data.at(2)),
       std::bind(&SendContactInfoCallback, args::_1,
                 &mutex, &cond_var, &results[1]));
@@ -561,22 +556,13 @@ int PublicId::RemoveContact(const std::string &public_username,
   result = InformContactInfo(public_username, ContactList());
 
   // Invalidate previous MMID, i.e. put it into kModifiableByOwner
-  // First composes ModifyAppendableByAll packet disabling appendability
-  std::string appendability_string(1, pca::kModifiableByOwner);
-  pca::SignedData signed_allow_others_to_append;
-  std::string signature;
-  asymm::Sign(appendability_string, old_inbox_private_key, &signature);
-  signed_allow_others_to_append.set_signature(signature);
-  pca::ModifyAppendableByAll modify_mmid;
-  modify_mmid.mutable_allow_others_to_append()
-      ->CopyFrom(signed_allow_others_to_append);
-
   results.clear();
   results.push_back(kPendingResult);
   std::string old_mmid_name(std::get<0>(old_MMID));
   packet_manager_->ModifyPacket(
       old_mmid_name,
-      modify_mmid.SerializeAsString(),
+      ComposeModifyAppendableByAll(old_inbox_private_key,
+                                   pca::kModifiableByOwner),
       std::get<0>(old_MMID),
       std::bind(&SendContactInfoCallback, args::_1,
                 &mutex, &cond_var, &results[0]));
