@@ -272,117 +272,13 @@ int PublicId::CreatePublicId(const std::string &public_username,
 
 int PublicId::SendContactInfo(const std::string &public_username,
                               const std::string &recipient_public_username) {
-  // Get our MMID name, and MPID private key
-  passport::SelectableIdentityData data;
-  // Retrieves ANMPID, MPID, and MMID's <name, value, signature>
-  int result(session_->passport_->GetSelectableIdentityData(public_username,
-                                                            true,
-                                                            &data));
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to get own public ID data: " << result;
-    return kGetPublicIdError;
-  }
-  BOOST_ASSERT(data.size() == 3U);
-
-  // Get recipient's public key
-  asymm::PublicKey recipient_public_key;
-  result = GetValidatedMpidPublicKey(recipient_public_username,
-                                     std::get<0>(data.at(1)),
-                                     packet_manager_,
-                                     &recipient_public_key);
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to get public key for " << recipient_public_username;
-    return result;
-  }
-
-  std::vector<passport::SelectableIdData> selectables;
-  session_->passport_->SelectableIdentitiesList(&selectables);
-  passport::SelectableIdData selectable_id;
-  auto it(std::find_if(selectables.begin(),
-                       selectables.end(),
-                       [public_username]
-                           (const passport::SelectableIdData &selectable) {
-                         return (std::get<0>(selectable) == public_username);
-                       }));
-
-  if (it == selectables.end()) {
-    DLOG(ERROR) << "Failed to get own MPID private key";
-    return kGetPublicIdError;
-  }
-
-  // Create MCID, encrypted for recipient
-  std::string mmid_name(std::get<0>(data.at(2)));
-  std::string encrypted_mmid_name;
-  result = asymm::Encrypt(mmid_name,
-                          recipient_public_key,
-                          &encrypted_mmid_name);
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to encrypt MCID's MMID name: " << result;
-    return kEncryptingError;
-  }
-
-  std::string encrypted_public_username;
-  result = asymm::Encrypt(public_username,
-                          recipient_public_key,
-                          &encrypted_public_username);
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to encrypt MCID's public username: " << result;
-    return kEncryptingError;
-  }
-
-  pca::Introduction introduction;
-  introduction.set_mmid_name(encrypted_mmid_name);
-  introduction.set_public_username(encrypted_public_username);
-
-  asymm::Signature signature;
-  result = asymm::Sign(introduction.SerializeAsString(),
-                       std::get<2>(*it),
-                       &signature);
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to sign MCID data: " << result;
-    return kSigningError;
-  }
-
-  // Store encrypted MCID at recipient's MPID's name
-  boost::mutex mutex;
-  boost::condition_variable cond_var;
-  result = kPendingResult;
-  VoidFuncOneInt callback(std::bind(&SendContactInfoCallback, args::_1, &mutex,
-                                    &cond_var, &result));
-
-  pca::SignedData signed_data;
-  signed_data.set_data(introduction.SerializeAsString());
-  signed_data.set_signature(signature);
-  packet_manager_->ModifyPacket(
-      MaidsafeContactIdName(recipient_public_username),
-      signed_data.SerializeAsString(),
-      std::get<0>(data.at(1)),
-      callback);
-
-  try {
-    boost::mutex::scoped_lock lock(mutex);
-    if (!cond_var.timed_wait(lock,
-                             bptime::seconds(30),
-                             [&result]()->bool {
-                               return result != kPendingResult;
-                             })) {
-      DLOG(ERROR) << "Timed out storing packet.";
-      return kPublicIdTimeout;
-    }
-  }
-  catch(const std::exception &e) {
-    DLOG(ERROR) << "Failed to store packet: " << e.what();
-    return kPublicIdException;
-  }
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to store packet.  Result: " << result;
-    return kSendContactInfoFailure;
-  }
-
-  session_->contacts_handler()->AddContact(recipient_public_username, "", "",
-                                           "", "", '\0', 0, 0, "", 'U', 0, 0);
-
-  return kSuccess;
+  std::vector<std::string> contacts;
+  contacts.push_back(recipient_public_username);
+  int result(InformContactInfo(public_username, contacts));
+  if (result == kSuccess)
+    session_->contacts_handler()->AddContact(recipient_public_username, "", "",
+                                          "", "", '\0', 0, 0, "", 'U', 0, 0);
+  return result;
 }
 
 int PublicId::DisablePublicId(const std::string &public_username) {
@@ -426,7 +322,7 @@ int PublicId::ModifyAppendability(const std::string &public_username,
       session_->passport_->PacketPrivateKey(passport::kMmid,
                                             true,
                                             public_username));
-  // Composes ModifyAppendableByAll packet disabling appendability
+  // Composes ModifyAppendableByAll packet to change appendability
   std::string appendability_string(1, appendability);
   pca::SignedData signed_allow_others_to_append;
   std::string signature;
@@ -445,8 +341,7 @@ int PublicId::ModifyAppendability(const std::string &public_username,
   modify_mmid.mutable_allow_others_to_append()->CopyFrom(
       signed_allow_others_to_append);
 
-  // Invalidates the MCID,MMID by modify them as kModifiableByOwner via
-  // ModifyAppendableByAll packet
+  // Change appendability of MCID,MMID by modify them via ModifyAppendableByAll
   boost::mutex mutex;
   boost::condition_variable cond_var;
   int mcid_result(kPendingResult), mmid_result(kPendingResult);
@@ -470,17 +365,17 @@ int PublicId::ModifyAppendability(const std::string &public_username,
                                return mcid_result != kPendingResult &&
                                       mmid_result != kPendingResult;
                              })) {
-      DLOG(ERROR) << "Timed out modifying MCID/MMID when disable public_id.";
+      DLOG(ERROR) << "Timed out modifying MCID/MMID when modify public_id.";
       return kPublicIdTimeout;
     }
   }
   catch(const std::exception &e) {
-    DLOG(ERROR) << "Failed to modifying MCID/MMID when disable public_id: "
+    DLOG(ERROR) << "Failed to modifying MCID/MMID when modify public_id: "
                 << e.what();
     return kModifyAppendabilityFailure;
   }
   if (mcid_result != kSuccess || mmid_result != kSuccess) {
-    DLOG(ERROR) << "Failed to modifying MCID/MMID when disable public_id.  "
+    DLOG(ERROR) << "Failed to modifying MCID/MMID when modify public_id.  "
                 << " with MCID Result : " << mcid_result
                 << " , MMID result :" << mmid_result;
     return kModifyAppendabilityFailure;
@@ -619,6 +514,114 @@ int PublicId::ConfirmContact(const std::string &public_username,
           recipient_public_username, 'C') != 0) {
     DLOG(ERROR) << "Failed to confirm " << recipient_public_username;
     return -1;
+  }
+
+  return kSuccess;
+}
+
+int PublicId::InformContactInfo(const std::string &public_username,
+                                const std::vector<std::string> &contacts) {
+  // Get our MMID name, and MPID private key
+  passport::SelectableIdentityData data;
+  // Retrieves ANMPID, MPID, and MMID's <name, value, signature>
+  int result(session_->passport_->GetSelectableIdentityData(public_username,
+                                                            true,
+                                                            &data));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to get own public ID data: " << result;
+    return kGetPublicIdError;
+  }
+  BOOST_ASSERT(data.size() == 3U);
+  std::string mmid_name(std::get<0>(data.at(2)));
+
+  // Retrieves MPID private_key
+  asymm::PrivateKey MPID_private_key(
+      session_->passport_->PacketPrivateKey(passport::kMpid,
+                                            true,
+                                            public_username));
+  // Inform each contat in the contact list of the MMID contact info
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  std::vector<int> results;
+  int size(contacts.size());
+
+  for (int i = 0; i < size; ++i) {
+    std::string recipient_public_username(contacts[i]);
+    // Get recipient's public key
+    asymm::PublicKey recipient_public_key;
+    int result(GetValidatedMpidPublicKey(recipient_public_username,
+                                         std::get<0>(data.at(1)),
+                                         packet_manager_,
+                                         &recipient_public_key));
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed to get public key for "
+                  << recipient_public_username;
+      return result;
+    }
+    std::string encrypted_mmid_name;
+    result = asymm::Encrypt(mmid_name,
+                            recipient_public_key,
+                            &encrypted_mmid_name);
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed to encrypt MCID's MMID name: " << result;
+      return kEncryptingError;
+    }
+    std::string encrypted_public_username;
+    result = asymm::Encrypt(public_username,
+                            recipient_public_key,
+                            &encrypted_public_username);
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed to encrypt MCID's public username: " << result;
+      return kEncryptingError;
+    }
+
+    pca::Introduction introduction;
+    introduction.set_mmid_name(encrypted_mmid_name);
+    introduction.set_public_username(encrypted_public_username);
+
+    asymm::Signature signature;
+    result = asymm::Sign(introduction.SerializeAsString(),
+                         MPID_private_key,
+                         &signature);
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed to sign MCID data: " << result;
+      return kSigningError;
+    }
+    pca::SignedData signed_data;
+    signed_data.set_data(introduction.SerializeAsString());
+    signed_data.set_signature(signature);
+
+    // Store encrypted MCID at recipient's MPID's name
+    results.push_back(kPendingResult);
+    packet_manager_->ModifyPacket(
+        MaidsafeContactIdName(recipient_public_username),
+        signed_data.SerializeAsString(),
+        std::get<0>(data.at(1)),
+        std::bind(&SendContactInfoCallback, args::_1, &mutex,
+                  &cond_var, &results[i]));
+  }
+  try {
+    boost::mutex::scoped_lock lock(mutex);
+    if (!cond_var.timed_wait(lock,
+                             bptime::seconds(30),
+                             [&]()->bool {
+                               for (int i = 0; i < size; ++i) {
+                                 if (results[i] == kPendingResult)
+                                   return false;
+                               }
+                               return true;
+                             })) {
+      DLOG(ERROR) << "Timed out storing packet.";
+      return kPublicIdTimeout;
+    }
+  }
+  catch(const std::exception &e) {
+    DLOG(ERROR) << "Failed to store packet: " << e.what();
+    return kPublicIdException;
+  }
+  for (int i = 0; i < size; ++i) {
+    if (results[i] != kSuccess)
+      return kSendContactInfoFailure;
   }
 
   return kSuccess;

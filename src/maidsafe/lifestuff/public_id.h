@@ -100,6 +100,9 @@ class PublicId {
   // i.e. enable/disable others add new contact and send msg
   int ModifyAppendability(const std::string &public_username,
                           const char appendability);
+  // Notify each contact in the list about the contact_info
+  int InformContactInfo(const std::string &public_username,
+                        const std::vector<std::string> &contacts);
 
   std::shared_ptr<PacketManager> packet_manager_;
   std::shared_ptr<Session> session_;
