@@ -107,6 +107,7 @@ enum ReturnCode {
   kPublicIdEmpty = -206009,
   kNoPublicIds = -206010,
   kModifyAppendabilityFailure = -206011,
+  kGenerateNewMMIDFailure = -206012,
 
   // MessageHandler
   kMessageHandlerException = -207001

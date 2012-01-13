@@ -82,6 +82,10 @@ class PublicId {
   // To confirm a contact once user has decided on the introduction
   int ConfirmContact(const std::string &public_username,
                      const std::string &recipient_public_username);
+  // Remove a contact from current contact list, and inform other contacts the
+  // new MMID
+  int RemoveContact(const std::string &public_username,
+                    const std::string &contact_name);
 
   NewContactSignalPtr new_contact_signal() const;
   ContactConfirmedSignalPtr contact_confirmed_signal() const;
