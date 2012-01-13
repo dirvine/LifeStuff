@@ -200,10 +200,11 @@ int PublicId::CreatePublicId(const std::string &public_username,
   // Store packets
   boost::mutex mutex;
   boost::condition_variable cond_var;
-  int anmpid_result(kPendingResult),
-      mpid_result(kPendingResult),
-      mmid_result(kPendingResult),
-      msid_result(kPendingResult);
+  std::vector<int> results;
+  results.push_back(kPendingResult);
+  results.push_back(kPendingResult);
+  results.push_back(kPendingResult);
+  results.push_back(kPendingResult);
   asymm::PrivateKey inbox_private_key(session_->passport_->PacketPrivateKey(
                                           passport::kMmid,
                                           false,
@@ -217,47 +218,33 @@ int PublicId::CreatePublicId(const std::string &public_username,
                                MaidsafeInboxValue(data, inbox_private_key),
                                std::get<0>(data.at(2)),
                                std::bind(&SendContactInfoCallback, args::_1,
-                                         &mutex, &cond_var, &msid_result));
+                                         &mutex, &cond_var, &results[0]));
   packet_manager_->StorePacket(AnmpidName(data),
                                AnmpidValue(data),
                                std::get<0>(data.at(0)),
                                std::bind(&SendContactInfoCallback, args::_1,
-                                         &mutex, &cond_var, &anmpid_result));
+                                         &mutex, &cond_var, &results[1]));
   packet_manager_->StorePacket(MpidName(data),
                                MpidValue(data),
                                std::get<0>(data.at(0)),
                                std::bind(&SendContactInfoCallback, args::_1,
-                                         &mutex, &cond_var, &mpid_result));
+                                         &mutex, &cond_var, &results[2]));
   packet_manager_->StorePacket(MaidsafeContactIdName(public_username),
                                MaidsafeContactIdValue(data,
                                                       accepts_new_contacts,
                                                       contact_id_private_key),
                                std::get<0>(data.at(1)),
                                std::bind(&SendContactInfoCallback, args::_1,
-                                         &mutex, &cond_var, &mmid_result));
-  try {
-    boost::mutex::scoped_lock lock(mutex);
-    if (!cond_var.timed_wait(lock,
-                             bptime::seconds(30),
-                             [&]()->bool {
-                               return anmpid_result != kPendingResult &&
-                                      mpid_result != kPendingResult &&
-                                      mmid_result != kPendingResult &&
-                                      msid_result != kPendingResult;
-                             })) {
-      DLOG(ERROR) << "Timed out storing packets.";
-      return kPublicIdTimeout;
-    }
-  }
-  catch(const std::exception &e) {
-    DLOG(ERROR) << "Failed to store packets: " << e.what();
-    return kPublicIdException;
-  }
-  if (anmpid_result != kSuccess || mpid_result != kSuccess ||
-      mmid_result != kSuccess || msid_result != kSuccess) {
-    DLOG(ERROR) << "Failed to store packets.  ANMPID: " << anmpid_result
-                << "   MPID: " << mpid_result << "   MMID: " << mmid_result
-                << "   MSID: " << msid_result;
+                                         &mutex, &cond_var, &results[3]));
+  result = WaitingResponse(mutex, cond_var, results);
+  if (result != kSuccess)
+    return result;
+
+  if (results[0] != kSuccess || results[1] != kSuccess ||
+      results[2] != kSuccess || results[3] != kSuccess) {
+    DLOG(ERROR) << "Failed to store packets.  ANMPID: " << results[1]
+                << "   MPID: " << results[2] << "   MMID: " << results[3]
+                << "   MSID: " << results[0];
     return kStorePublicIdFailure;
   }
 
@@ -344,40 +331,29 @@ int PublicId::ModifyAppendability(const std::string &public_username,
   // Change appendability of MCID,MMID by modify them via ModifyAppendableByAll
   boost::mutex mutex;
   boost::condition_variable cond_var;
-  int mcid_result(kPendingResult), mmid_result(kPendingResult);
+  std::vector<int> results;
+  results.push_back(kPendingResult);
+  results.push_back(kPendingResult);
   packet_manager_->ModifyPacket(
       MaidsafeContactIdName(public_username),
       modify_mcid.SerializeAsString(),
       std::get<0>(data.at(1)),
       std::bind(&SendContactInfoCallback, args::_1,
-                &mutex, &cond_var, &mcid_result));
+                &mutex, &cond_var, &results[0]));
   packet_manager_->ModifyPacket(
       MaidsafeInboxName(data),
       modify_mmid.SerializeAsString(),
       std::get<0>(data.at(2)),
       std::bind(&SendContactInfoCallback, args::_1,
-                &mutex, &cond_var, &mmid_result));
-  try {
-    boost::mutex::scoped_lock lock(mutex);
-    if (!cond_var.timed_wait(lock,
-                             bptime::seconds(30),
-                             [&]()->bool {
-                               return mcid_result != kPendingResult &&
-                                      mmid_result != kPendingResult;
-                             })) {
-      DLOG(ERROR) << "Timed out modifying MCID/MMID when modify public_id.";
-      return kPublicIdTimeout;
-    }
-  }
-  catch(const std::exception &e) {
-    DLOG(ERROR) << "Failed to modifying MCID/MMID when modify public_id: "
-                << e.what();
-    return kModifyAppendabilityFailure;
-  }
-  if (mcid_result != kSuccess || mmid_result != kSuccess) {
+                &mutex, &cond_var, &results[1]));
+  result = WaitingResponse(mutex, cond_var, results);
+  if (result != kSuccess)
+    return result;
+
+  if (results[0] != kSuccess || results[1] != kSuccess) {
     DLOG(ERROR) << "Failed to modifying MCID/MMID when modify public_id.  "
-                << " with MCID Result : " << mcid_result
-                << " , MMID result :" << mmid_result;
+                << " with MCID Result : " << results[0]
+                << " , MMID result :" << results[1];
     return kModifyAppendabilityFailure;
   }
 
@@ -558,7 +534,8 @@ int PublicId::RemoveContact(const std::string &public_username,
     DLOG(ERROR) << "Failed to generate a new MMID: " << result;
     return kGenerateNewMMIDFailure;
   }
-  int mmid_store_result(kPendingResult);
+  std::vector<int> results;
+  results.push_back(kPendingResult);
   asymm::PrivateKey new_inbox_private_key(session_->passport_->PacketPrivateKey(
                                           passport::kMmid,
                                           false,
@@ -568,24 +545,12 @@ int PublicId::RemoveContact(const std::string &public_username,
                                std::get<0>(data.at(2)),
                                std::bind(&SendContactInfoCallback, args::_1,
                                          &mutex, &cond_var,
-                                         &mmid_store_result));
-  try {
-    boost::mutex::scoped_lock lock(mutex);
-    if (!cond_var.timed_wait(lock,
-                             bptime::seconds(30),
-                             [&]()->bool {
-                               return mmid_store_result != kPendingResult;
-                             })) {
-      DLOG(ERROR) << "Timed out storing new MMID when remove a contact.";
-      return kPublicIdTimeout;
-    }
-  }
-  catch(const std::exception &e) {
-    DLOG(ERROR) << "Failed to storing new MMID when remove a contact. "
-                << e.what();
-    return kPublicIdException;
-  }
-  if (mmid_store_result != kSuccess) {
+                                         &results[0]));
+  result = WaitingResponse(mutex, cond_var, results);
+  if (result != kSuccess)
+    return result;
+
+  if (results[0] != kSuccess) {
     DLOG(ERROR) << "Failed to storing new MMID when remove a contact.";
     return kModifyFailure;
   }
@@ -699,6 +664,22 @@ int PublicId::InformContactInfo(const std::string &public_username,
         std::bind(&SendContactInfoCallback, args::_1, &mutex,
                   &cond_var, &results[i]));
   }
+  result = WaitingResponse(mutex, cond_var, results);
+  if (result != kSuccess)
+    return result;
+
+  for (int i = 0; i < size; ++i) {
+    if (results[i] != kSuccess)
+      return kSendContactInfoFailure;
+  }
+
+  return kSuccess;
+}
+
+int PublicId::WaitingResponse(boost::mutex &mutex,
+                              boost::condition_variable &cond_var,
+                              std::vector<int> &results) {
+  int size(results.size());
   try {
     boost::mutex::scoped_lock lock(mutex);
     if (!cond_var.timed_wait(lock,
@@ -710,19 +691,14 @@ int PublicId::InformContactInfo(const std::string &public_username,
                                }
                                return true;
                              })) {
-      DLOG(ERROR) << "Timed out storing packet.";
+      DLOG(ERROR) << "Timed out during waiting response.";
       return kPublicIdTimeout;
     }
   }
   catch(const std::exception &e) {
-    DLOG(ERROR) << "Failed to store packet: " << e.what();
+    DLOG(ERROR) << "Exception Failure during waiting response : " << e.what();
     return kPublicIdException;
   }
-  for (int i = 0; i < size; ++i) {
-    if (results[i] != kSuccess)
-      return kSendContactInfoFailure;
-  }
-
   return kSuccess;
 }
 

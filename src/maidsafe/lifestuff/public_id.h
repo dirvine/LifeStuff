@@ -107,6 +107,10 @@ class PublicId {
   // Notify each contact in the list about the contact_info
   int InformContactInfo(const std::string &public_username,
                         const std::vector<std::string> &contacts);
+  // Universal blocking function for waiting response
+  int WaitingResponse(boost::mutex &mutex,
+                      boost::condition_variable &cond_var,
+                      std::vector<int> &results);
 
   std::shared_ptr<PacketManager> packet_manager_;
   std::shared_ptr<Session> session_;
