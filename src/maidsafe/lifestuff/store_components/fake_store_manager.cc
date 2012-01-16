@@ -142,17 +142,16 @@ void GetPublicKey(const std::string &packet_name,
             return;
       	}
       }
-    } else {
-      result = session->passport_->GetSelectableIdentityData(public_username,
-                                                             true,
-                                                             &data);
-      if (result == kSuccess && data.size() == 3U) {
-        for (int n(0); n < 3; ++n) {
-          if (std::get<0>(data.at(n)) == packet_name) {
-            *public_key = std::get<1>(data.at(n));
-            if (asymm::ValidateKey(*public_key))
-              return;
-          }
+    }
+    result = session->passport_->GetSelectableIdentityData(public_username,
+                                                            true,
+                                                            &data);
+    if (result == kSuccess && data.size() == 3U) {
+      for (int n(0); n < 3; ++n) {
+        if (std::get<0>(data.at(n)) == packet_name) {
+          *public_key = std::get<1>(data.at(n));
+          if (asymm::ValidateKey(*public_key))
+            return;
         }
       }
     }

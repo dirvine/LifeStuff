@@ -140,9 +140,40 @@ std::string MaidsafeInboxName(const passport::SelectableIdentityData &data) {
   return std::get<0>(data.at(2)) + std::string (1, pca::kAppendableByAll);
 }
 
+std::string MaidsafeInboxName(const std::string &data) {
+  return data + std::string (1, pca::kAppendableByAll);
+}
+
 std::string MaidsafeInboxValue(const passport::SelectableIdentityData &data,
                                const asymm::PrivateKey private_key) {
   return AppendableIdValue(data, true, private_key, 2);
+}
+
+std::string MaidsafeInboxValue(const passport::PacketData &data,
+                               const asymm::PrivateKey private_key) {
+  pca::AppendableByAll contact_id;
+  pca::SignedData *identity_key = contact_id.mutable_identity_key();
+  pca::SignedData *allow_others_to_append =
+      contact_id.mutable_allow_others_to_append();
+
+  std::string public_key;
+  asymm::EncodePublicKey(std::get<1>(data), &public_key);
+  identity_key->set_data(public_key);
+  identity_key->set_signature(std::get<2>(data));
+  allow_others_to_append->set_data(std::string(1, pca::kAppendableByAll));
+
+  asymm::Signature packet_signature;
+  int result(asymm::Sign(allow_others_to_append->data(),
+                         private_key,
+                         &packet_signature));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "AppendableIdValue - Failed to sign";
+    return "";
+  }
+
+  allow_others_to_append->set_signature(packet_signature);
+
+  return contact_id.SerializeAsString();
 }
 
 }  // namespace
@@ -497,30 +528,20 @@ int PublicId::RemoveContact(const std::string &public_username,
     return kPublicIdEmpty;
   }
 
-  // Retrieves ANMPID, MPID, and MMID's <name, value, signature>
-  passport::SelectableIdentityData data;
-  int result(session_->passport_->GetSelectableIdentityData(public_username,
-                                                            true,
-                                                            &data));
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to get own public ID data: " << result;
-    return kGetPublicIdError;
-  }
-  BOOST_ASSERT(data.size() == 3U);
-
   asymm::PrivateKey old_inbox_private_key(
       session_->passport_->PacketPrivateKey(passport::kMmid,
                                             true,
                                             public_username));
   // Generate a new MMID and store it
   passport::PacketData new_MMID, old_MMID;
-  result = session_->passport_->MoveMaidsafeInbox(public_username,
-                                                  &old_MMID,
-                                                  &new_MMID);
+  int result(session_->passport_->MoveMaidsafeInbox(public_username,
+                                                    &old_MMID,
+                                                    &new_MMID));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to generate a new MMID: " << result;
     return kGenerateNewMMIDFailure;
   }
+
   boost::mutex mutex;
   boost::condition_variable cond_var;
   std::vector<int> results;
@@ -529,22 +550,20 @@ int PublicId::RemoveContact(const std::string &public_username,
       session_->passport_->PacketPrivateKey(passport::kMmid,
                                             false,
                                             public_username));
-  packet_manager_->StorePacket(MaidsafeInboxName(data),
-                               MaidsafeInboxValue(data, new_inbox_private_key),
-                               std::get<0>(data.at(2)),
+  packet_manager_->StorePacket(MaidsafeInboxName(std::get<0>(new_MMID)),
+                               MaidsafeInboxValue(new_MMID,
+                                                  new_inbox_private_key),
+                               std::get<0>(new_MMID),
                                std::bind(&SendContactInfoCallback, args::_1,
                                          &mutex, &cond_var,
                                          &results[0]));
   result = WaitingResponse(mutex, cond_var, results);
   if (result != kSuccess)
     return result;
-
   if (results[0] != kSuccess) {
-    DLOG(ERROR) << "Failed to storing new MMID when remove a contact.";
+    DLOG(ERROR) << "Failed to store new MMID when remove a contact.";
     return kModifyFailure;
   }
-
-  session_->passport_->ConfirmMovedMaidsafeInbox(public_username);
 
   result = session_->contacts_handler()->DeleteContact(contact_name);
   if (result != kSuccess) {
@@ -557,15 +576,22 @@ int PublicId::RemoveContact(const std::string &public_username,
   // Invalidate previous MMID, i.e. put it into kModifiableByOwner
   results.clear();
   results.push_back(kPendingResult);
-  std::string old_mmid_name(std::get<0>(old_MMID));
   packet_manager_->ModifyPacket(
-      old_mmid_name,
+      MaidsafeInboxName(std::get<0>(old_MMID)),
       ComposeModifyAppendableByAll(old_inbox_private_key,
                                    pca::kModifiableByOwner),
       std::get<0>(old_MMID),
       std::bind(&SendContactInfoCallback, args::_1,
                 &mutex, &cond_var, &results[0]));
-  WaitingResponse(mutex, cond_var, results);
+  result = WaitingResponse(mutex, cond_var, results);
+  if (result != kSuccess)
+    return result;
+  if (results[0] != kSuccess) {
+    DLOG(ERROR) << "Failed to invalidate previous MMID when remove a contact.";
+    return kModifyFailure;
+  }
+
+  session_->passport_->ConfirmMovedMaidsafeInbox(public_username);
 
   return result;
 }
