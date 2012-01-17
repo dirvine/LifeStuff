@@ -179,6 +179,66 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
   ASSERT_TRUE(MessagesEqual(sent, received));
 }
 
+TEST_F(MessageHandlerTest, BEH_RemoveContact) {
+  // Create users who both accept new contacts
+  ASSERT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
+  ASSERT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
+
+  // Connect a slot which will reject the new contact
+  public_id1_.new_contact_signal()->connect(
+      std::bind(&MessageHandlerTest::NewContactSlot,
+                this, args::_1, args::_2, true));
+  ASSERT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
+  ASSERT_EQ(kSuccess,
+            public_id2_.SendContactInfo(public_username2_, public_username1_));
+
+  Sleep(interval_ * 2);
+  ASSERT_EQ(public_username2_, received_public_username_);
+  mi_contact received_contact;
+  ASSERT_EQ(kSuccess,
+            session1_->contacts_handler()->GetContactInfo(
+                received_public_username_,
+                &received_contact));
+  public_id1_.StopCheckingForNewContacts();
+  Sleep(interval_ * 2);
+
+  pca::Message received;
+  volatile bool invoked(false);
+  message_handler2_.new_message_signal()->connect(
+      std::bind(&MessageHandlerTest::NewMessagetSlot,
+                this, args::_1, &received, &invoked));
+  ASSERT_EQ(kSuccess,
+            message_handler2_.StartCheckingForNewMessages(interval_));
+
+  pca::Message sent;
+  sent.set_type(pca::Message::kNormal);
+  sent.set_id("id");
+  sent.set_parent_id("parent_id");
+  sent.set_sender_public_username(public_username1_);
+  sent.set_subject("subject");
+  sent.add_content(std::string("content"));
+
+  ASSERT_EQ(kSuccess,
+            message_handler1_.Send(public_username1_, public_username2_, sent));
+  while (!invoked)
+    Sleep(bptime::milliseconds(100));
+  ASSERT_TRUE(MessagesEqual(sent, received));
+
+  received.Clear();
+  ASSERT_EQ(kSuccess,
+            message_handler1_.Send(public_username1_, public_username2_, sent));
+  Sleep(interval_ * 2);
+  ASSERT_TRUE(MessagesEqual(sent, received));
+
+  public_id2_.RemoveContact(public_username2_, public_username1_);
+
+  received.Clear();
+  ASSERT_EQ(kUpdatePacketFailure,
+            message_handler1_.Send(public_username1_, public_username2_, sent));
+  Sleep(interval_ * 2);
+  ASSERT_FALSE(MessagesEqual(sent, received));
+}
+
 //  TEST_F(PublicIdTest, FUNC_CreatePublicIdAntiSocial) {
 //  // Create user1 who doesn't accept new contacts, and user2 who does
 //  EXPECT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, false));
