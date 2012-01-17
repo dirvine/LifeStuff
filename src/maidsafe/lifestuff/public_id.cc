@@ -281,7 +281,7 @@ int PublicId::CreatePublicId(const std::string &public_username,
                                std::get<0>(data.at(1)),
                                std::bind(&SendContactInfoCallback, args::_1,
                                          &mutex, &cond_var, &results[3]));
-  result = WaitingResponse(mutex, cond_var, results);
+  result = AwaitingResponse(mutex, cond_var, results);
   if (result != kSuccess)
     return result;
 
@@ -387,7 +387,7 @@ int PublicId::ModifyAppendability(const std::string &public_username,
       std::get<0>(data.at(2)),
       std::bind(&SendContactInfoCallback, args::_1,
                 &mutex, &cond_var, &results[1]));
-  result = WaitingResponse(mutex, cond_var, results);
+  result = AwaitingResponse(mutex, cond_var, results);
   if (result != kSuccess)
     return result;
 
@@ -493,16 +493,26 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
     n = session_->contact_handler_map()[std::get<0>(data)]->ContactInfo(
             public_username,
             &mic);
-    if (n == 0 && mic.status == Contact::kRequestSent) {
-      int stat(session_->contact_handler_map()[std::get<0>(data)]->UpdateStatus(
-                   public_username,
-                   Contact::kConfirmed));
-      int mmid(
-          session_->contact_handler_map()[std::get<0>(data)]->UpdateMmidName(
-              public_username,
-              mmid_name));
-      if (stat == kSuccess && mmid == kSuccess) {
-        (*contact_confirmed_signal_)(public_username);
+    if (n == kSuccess) {
+      if (mic.status == Contact::kRequestSent) {
+        int stat(session_->contact_handler_map()[std::get<0>(data)]->UpdateStatus(
+                    public_username,
+                    Contact::kConfirmed));
+        int mmid(
+            session_->contact_handler_map()[std::get<0>(data)]->UpdateMmidName(
+                public_username,
+                mmid_name));
+        if (stat == kSuccess && mmid == kSuccess) {
+          (*contact_confirmed_signal_)(public_username);
+        }
+      } else if (mic.status == Contact::kConfirmed) {
+        int mmid(
+            session_->contact_handler_map()[std::get<0>(data)]->UpdateMmidName(
+                public_username,
+                mmid_name));
+        if (mmid != kSuccess) {
+          DLOG(ERROR) << "Failed to update MMID";
+        }
       }
     } else {
       n = session_->contact_handler_map()[std::get<0>(data)]->AddContact(
@@ -584,7 +594,7 @@ int PublicId::RemoveContact(const std::string &public_username,
                                std::bind(&SendContactInfoCallback, args::_1,
                                          &mutex, &cond_var,
                                          &results[0]));
-  result = WaitingResponse(mutex, cond_var, results);
+  result = AwaitingResponse(mutex, cond_var, results);
   if (result != kSuccess)
     return result;
   if (results[0] != kSuccess) {
@@ -598,9 +608,6 @@ int PublicId::RemoveContact(const std::string &public_username,
     DLOG(ERROR) << "Failed to remove contact : " << contact_name;
     return result;
   }
-  // Informs each contact in the list about the new MMID
-  result = InformContactInfo(public_username, ContactList(public_username));
-
   // Invalidate previous MMID, i.e. put it into kModifiableByOwner
   results.clear();
   results.push_back(kPendingResult);
@@ -611,7 +618,7 @@ int PublicId::RemoveContact(const std::string &public_username,
       std::get<0>(old_MMID),
       std::bind(&SendContactInfoCallback, args::_1,
                 &mutex, &cond_var, &results[0]));
-  result = WaitingResponse(mutex, cond_var, results);
+  result = AwaitingResponse(mutex, cond_var, results);
   if (result != kSuccess)
     return result;
   if (results[0] != kSuccess) {
@@ -620,6 +627,8 @@ int PublicId::RemoveContact(const std::string &public_username,
   }
 
   session_->passport_->ConfirmMovedMaidsafeInbox(public_username);
+  // Informs each contact in the list about the new MMID
+  result = InformContactInfo(public_username, ContactList(public_username));
 
   return result;
 }
@@ -705,7 +714,7 @@ int PublicId::InformContactInfo(const std::string &public_username,
         std::bind(&SendContactInfoCallback, args::_1, &mutex,
                   &cond_var, &results[i]));
   }
-  result = WaitingResponse(mutex, cond_var, results);
+  result = AwaitingResponse(mutex, cond_var, results);
   if (result != kSuccess)
     return result;
 
@@ -717,9 +726,9 @@ int PublicId::InformContactInfo(const std::string &public_username,
   return kSuccess;
 }
 
-int PublicId::WaitingResponse(boost::mutex &mutex,
-                              boost::condition_variable &cond_var,
-                              std::vector<int> &results) {
+int PublicId::AwaitingResponse(boost::mutex &mutex,
+                               boost::condition_variable &cond_var,
+                               std::vector<int> &results) {
   int size(results.size());
   try {
     boost::mutex::scoped_lock lock(mutex);
