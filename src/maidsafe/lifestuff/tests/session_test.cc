@@ -27,7 +27,7 @@
 
 #include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/contacts.h"
-#include "maidsafe/lifestuff/private_shares.h"
+#include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/session.h"
 
 namespace maidsafe {
@@ -68,13 +68,9 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_EQ("", session_->unique_user_id());
   ASSERT_EQ("", session_->root_parent_id());
   ASSERT_EQ(0, session_->mounted());
-  std::vector<mi_contact> list;
-  ASSERT_EQ(0, session_->contacts_handler()->GetContactList(&list));
+  std::vector<Contact> list;
+  ASSERT_EQ(0, session_->contacts_handler()->OrderedContacts(&list));
   ASSERT_EQ(size_t(0), list.size());
-  std::list<PrivateShare> ps_list;
-  ASSERT_EQ(0, session_->private_share_handler()->GetFullShareList(
-                  kAlpha, kAll, &ps_list));
-  ASSERT_EQ(size_t(0), ps_list.size());
 
   // Modify session
   session_->set_def_con_level(kDefCon1);
@@ -84,27 +80,14 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   session_->set_root_parent_id("ddd2");
   session_->set_mounted(1);
   session_->set_win_drive('N');
-  ASSERT_EQ(0, session_->contacts_handler()->AddContact("pub_name",
-                                                        "pub_key",
-                                                        "full_name",
-                                                        "office_phone",
-                                                        "birthday",
-                                                        'M', 18, 6,
-                                                        "city",
-                                                        'C', 0, 0));
-  std::vector<std::string> attributes;
-  attributes.push_back("name");
-  attributes.push_back("msid");
-  attributes.push_back("msid_pub_key");
-  attributes.push_back("msid_pri_key");
-  std::list<ShareParticipants> participants;
-  participants.push_back(ShareParticipants("id", "id_pub_key", 'A'));
-  std::vector<boost::uint32_t> share_stats(2, 0);
-  ASSERT_EQ(0,
-            session_->private_share_handler()->AddPrivateShare(attributes,
-                                                               share_stats,
-                                                               &participants));
-
+  ASSERT_EQ(kSuccess,
+            session_->contacts_handler()->AddContact("pub_name",
+                                                     "mpid_name",
+                                                     "mmid_name",
+                                                     asymm::PublicKey(),
+                                                     asymm::PublicKey(),
+                                                     Contact::kBlocked,
+                                                     0, 0));
   // Verify modifications
   ASSERT_EQ(kDefCon1, session_->def_con_level());
   ASSERT_EQ("aaa", session_->username());
@@ -115,33 +98,16 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_EQ("ddd2", session_->root_parent_id());
   ASSERT_EQ(1, session_->mounted());
   ASSERT_EQ('N', session_->win_drive());
-  ASSERT_EQ(0, session_->contacts_handler()->GetContactList(&list));
+  ASSERT_EQ(kSuccess, session_->contacts_handler()->OrderedContacts(&list));
   ASSERT_EQ(size_t(1), list.size());
-  ASSERT_EQ("pub_name", list[0].pub_name_);
-  ASSERT_EQ("pub_key", list[0].pub_key_);
-  ASSERT_EQ("full_name", list[0].full_name_);
-  ASSERT_EQ("office_phone", list[0].office_phone_);
-  ASSERT_EQ("birthday", list[0].birthday_);
-  ASSERT_EQ('M', list[0].gender_);
-  ASSERT_EQ(18, list[0].language_);
-  ASSERT_EQ(6, list[0].country_);
-  ASSERT_EQ("city", list[0].city_);
-  ASSERT_EQ('C', list[0].confirmed_);
-  ASSERT_EQ(0, list[0].rank_);
-  ASSERT_NE(0, list[0].last_contact_);
-  ASSERT_EQ(0, session_->private_share_handler()->GetFullShareList(kAlpha,
-                                                                   kAll,
-                                                                   &ps_list));
-  ASSERT_EQ(size_t(1), ps_list.size());
-  ASSERT_EQ("name", ps_list.front().Name());
-  ASSERT_EQ("msid", ps_list.front().Msid());
-  ASSERT_EQ("msid_pub_key", ps_list.front().MsidPubKey());
-  ASSERT_EQ("msid_pri_key", ps_list.front().MsidPriKey());
-  std::list<ShareParticipants> sp_list = ps_list.front().Participants();
-  ASSERT_EQ(size_t(1), sp_list.size());
-  ASSERT_EQ("id", sp_list.front().id);
-  ASSERT_EQ("id_pub_key", sp_list.front().public_key);
-  ASSERT_EQ('A', sp_list.front().role);
+  ASSERT_EQ("pub_name", list[0].public_username);
+  ASSERT_EQ("mpid_name", list[0].mpid_name);
+  ASSERT_EQ("mpid_name", list[0].mpid_name);
+  ASSERT_FALSE(asymm::ValidateKey(list[0].mpid_public_key));
+  ASSERT_FALSE(asymm::ValidateKey(list[0].mmid_public_key));
+  ASSERT_EQ(Contact::kBlocked, list[0].status);
+  ASSERT_EQ(0, list[0].rank);
+  ASSERT_NE(0, list[0].last_contact);
 
   // Resetting the session
   ASSERT_TRUE(session_->ResetSession());
@@ -156,12 +122,8 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_EQ("", session_->root_parent_id());
   ASSERT_EQ(0, session_->mounted());
   ASSERT_EQ('\0', session_->win_drive());
-  ASSERT_EQ(0, session_->contacts_handler()->GetContactList(&list));
+  ASSERT_EQ(kSuccess, session_->contacts_handler()->OrderedContacts(&list));
   ASSERT_EQ(size_t(0), list.size());
-  ASSERT_EQ(0, session_->private_share_handler()->GetFullShareList(kAlpha,
-                                                                   kAll,
-                                                                   &ps_list));
-  ASSERT_EQ(size_t(0), ps_list.size());
 }
 
 TEST_F(SessionTest, BEH_SessionName) {

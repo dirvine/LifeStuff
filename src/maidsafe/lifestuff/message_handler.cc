@@ -29,7 +29,7 @@
 
 #include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/log.h"
-#include "maidsafe/lifestuff/maidsafe.h"
+#include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/utils.h"
 #include "maidsafe/lifestuff/store_components/packet_manager.h"
@@ -99,11 +99,11 @@ int MessageHandler::Send(const std::string &public_username,
     DLOG(ERROR) << "Invalid message. Won't send. Good day. I said: 'Good day!'";
     return -7;
   }
-  mi_contact recipient_contact;
-  int result(session_->contacts_handler()->GetContactInfo(
+  Contact recipient_contact;
+  int result(session_->contacts_handler()->ContactInfo(
                  recipient_public_username,
                  &recipient_contact));
-  if (result != kSuccess || recipient_contact.pub_key_.empty()) {
+  if (result != kSuccess || recipient_contact.mmid_name.empty()) {
     DLOG(ERROR) << "Failed to get MMID for " << recipient_public_username;
     return result;
   }
@@ -121,7 +121,7 @@ int MessageHandler::Send(const std::string &public_username,
 
   // Get recipient's public key
   asymm::PublicKey recipient_public_key;
-  result = GetValidatedMmidPublicKey(recipient_contact.pub_key_,
+  result = GetValidatedMmidPublicKey(recipient_contact.mmid_name,
                                      std::get<0>(data.at(2)),
                                      packet_manager_,
                                      &recipient_public_key);
@@ -171,10 +171,11 @@ int MessageHandler::Send(const std::string &public_username,
   VoidFuncOneInt callback(std::bind(&SendMessageCallback, args::_1, &mutex,
                                     &cond_var, &result));
 
-  packet_manager_->ModifyPacket(AppendableByAllType(recipient_contact.pub_key_),
-                                signed_data.SerializeAsString(),
-                                std::get<0>(data.at(2)),
-                                callback);
+  packet_manager_->ModifyPacket(
+      AppendableByAllType(recipient_contact.mmid_name),
+      signed_data.SerializeAsString(),
+      std::get<0>(data.at(2)),
+      callback);
 
   try {
     boost::mutex::scoped_lock lock(mutex);

@@ -42,11 +42,10 @@
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/data_atlas_pb.h"
-#include "maidsafe/lifestuff/private_shares.h"
+#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
 
 namespace args = std::placeholders;
@@ -173,12 +172,6 @@ int ClientController::ParseDa() {
     session_->contacts_handler()->AddContact(c);
   }
 
-  std::list<Share> shares;
-  for (int n = 0; n < data_atlas.shares_size(); ++n) {
-    Share sh = data_atlas.shares(n);
-    shares.push_back(sh);
-  }
-
   return 0;
 }
 
@@ -206,50 +199,17 @@ int ClientController::SerialiseDa() {
   data_atlas.set_serialised_keyring(serialised_keyring);
   data_atlas.set_serialised_selectables(serialised_selectables);
 
-  std::vector<mi_contact> contacts;
-  session_->contacts_handler()->GetContactList(&contacts);
+  std::vector<Contact> contacts;
+  session_->contacts_handler()->OrderedContacts(&contacts);
   for (size_t n = 0; n < contacts.size(); ++n) {
     PublicContact *pc = data_atlas.add_contacts();
-    pc->set_pub_name(contacts[n].pub_name_);
-    pc->set_pub_key(contacts[n].pub_key_);
-    pc->set_full_name(contacts[n].full_name_);
-    pc->set_office_phone(contacts[n].office_phone_);
-    pc->set_birthday(contacts[n].birthday_);
-    std::string g(1, contacts[n].gender_);
-    pc->set_gender(g);
-    pc->set_language(contacts[n].language_);
-    pc->set_country(contacts[n].country_);
-    pc->set_city(contacts[n].city_);
-    std::string c(1, contacts[n].confirmed_);
-    pc->set_confirmed(c);
-    pc->set_rank(contacts[n].rank_);
-    pc->set_last_contact(contacts[n].last_contact_);
+    pc->set_public_username(contacts[n].public_username);
+    pc->set_mpid_name(contacts[n].mpid_name);
+    pc->set_mmid_name(contacts[n].mmid_name);
+    pc->set_status(contacts[n].status);
+    pc->set_rank(contacts[n].rank);
+    pc->set_last_contact(contacts[n].last_contact);
   }
-
-  std::list<PrivateShare> ps_list;
-  session_->private_share_handler()->GetFullShareList(kAlpha, kAll, &ps_list);
-  while (!ps_list.empty()) {
-    PrivateShare this_ps = ps_list.front();
-    Share *sh = data_atlas.add_shares();
-    sh->set_name(this_ps.Name());
-    sh->set_msid(this_ps.Msid());
-    sh->set_msid_pub_key(this_ps.MsidPubKey());
-    sh->set_msid_pri_key(this_ps.MsidPriKey());
-    sh->set_rank(this_ps.Rank());
-    sh->set_last_view(this_ps.LastViewed());
-    std::list<ShareParticipants> this_sp_list = this_ps.Participants();
-    while (!this_sp_list.empty()) {
-      ShareParticipants this_sp = this_sp_list.front();
-      ShareParticipant *shp = sh->add_participants();
-      shp->set_public_name(this_sp.id);
-      shp->set_public_name_pub_key(this_sp.public_key);
-      std::string role(1, this_sp.role);
-      shp->set_role(role);
-      this_sp_list.pop_front();
-    }
-    ps_list.pop_front();
-  }
-
 
   ser_da_.clear();
   data_atlas.SerializeToString(&ser_da_);

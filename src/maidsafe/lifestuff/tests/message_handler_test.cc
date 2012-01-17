@@ -146,9 +146,9 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
 
   Sleep(interval_ * 2);
   ASSERT_EQ(public_username2_, received_public_username_);
-  mi_contact received_contact;
+  Contact received_contact;
   ASSERT_EQ(kSuccess,
-            session1_->contacts_handler()->GetContactInfo(
+            session1_->contacts_handler()->ContactInfo(
                 received_public_username_,
                 &received_contact));
   public_id1_.StopCheckingForNewContacts();
@@ -209,14 +209,14 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
 //  EXPECT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
 //  Sleep(interval_ * 2);
 //  EXPECT_EQ(public_username2_, received_public_username_);
-//  mi_contact received_contact;
+//  Contact received_contact;
 //  EXPECT_EQ(-1913, session1_->contacts_handler()->GetContactInfo(
 //                       received_public_username_, &received_contact));
 //
 //  // Connect a slot which will accept the new contact
 //  connection.disconnect();
 //  received_public_username_.clear();
-//  received_contact = mi_contact();
+//  received_contact = Contact();
 //  public_id1_.new_contact_signal()->connect(
 //      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, true));
 //  EXPECT_EQ(kSuccess,

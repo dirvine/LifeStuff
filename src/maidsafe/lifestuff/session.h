@@ -63,7 +63,6 @@ class SessionTest;
 class Authentication;
 class ContactsHandler;
 class MessageHandler;
-class PrivateShareHandler;
 class PublicId;
 class UserStorage;
 struct UserDetails;
@@ -75,7 +74,6 @@ class Session {
   bool ResetSession();
 
   std::shared_ptr<ContactsHandler> contacts_handler() const;
-  std::shared_ptr<PrivateShareHandler> private_share_handler() const;
 
   DefConLevels def_con_level() const;
   std::string username() const;
@@ -126,7 +124,6 @@ class Session {
   std::shared_ptr<UserDetails> user_details_;
   std::shared_ptr<passport::Passport> passport_;
   std::shared_ptr<ContactsHandler> contacts_handler_;
-  std::shared_ptr<PrivateShareHandler> private_share_handler_;
 };
 
 }  // namespace lifestuff

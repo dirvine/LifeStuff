@@ -30,7 +30,6 @@
 #include <string>
 #include <vector>
 
-#include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/version.h"
 
 #if MAIDSAFE_LIFESTUFF_VERSION != 111
@@ -39,62 +38,15 @@
 #endif
 
 
-namespace kad { class Contact; }
-
 namespace maidsafe {
 
 namespace lifestuff {
 
-// This is the size in bytes of the NON-HEX format strings used as keys.  When
-// encoded to hex the string size is doubled.
 const uint32_t kKeySize = 64;
-
 const uint16_t kRsaKeySize = 4096;
-// const crypto::hashtype kHashSize(crypto::SHA_512);
-
-const std::string kAnonymousRequestSignature(2 * kKeySize, 'f');
-
 const std::string kRoot("/");
-
-const int kRootSubdirSize = 4;
-const int kSharesSubdirSize = 1;
-
-const std::string kRootSubdir[kRootSubdirSize][2] = {
-  {"/My Stuff", ""},
-  {"/Shares", "" },
-  {"/Emails", ""},
-  {"/Chat", ""}
-};
-
-const std::string kSharesSubdir[kSharesSubdirSize][2] = {
-  {"/Shares/Private", ""} /*,*/
-//  {
-//  "/Shares/Public", "a0590baf0f811834de68fec77950c179595f5ecb5dc3c6abac67dc34
-//  "9714101e40b44531054196b4616f3314cee94d71babb5fbc7010d7fff958d8c8cc54836c"
-//  },
-//  {
-//    "/Shares/Anonymous",
-//    "63ed99cc9f91c7dd568247337fd5b479e2cec00e9054ec4c5797c3"
-//    "19a80fe3ab07a01dca8200dfd63142b1ed376970bb3a9acd3fa55e9"
-//    "d631d3c0aff42f7660e"
-//  }
-};
-
-enum DirType { ANONYMOUS, PRIVATE, PRIVATE_SHARE, PUBLIC_SHARE };
-
-enum SortingMode { kAlpha, kRank, kLast };
-
-enum ShareFilter { kAll, kRo, kAdmin };
-
 enum DefConLevels { kDefCon1 = 1, kDefCon2, kDefCon3 };
-
-//  typedef std::function<void(int)> OneIntFunction;
 typedef std::function<void(int)> VoidFuncOneInt;  // NOLINT (Dan)
-typedef std::function<void(const ReturnCode&, const kad::Contact&)>
-        VoidFuncIntContact;
-typedef std::function<void(const ReturnCode&,
-                           const std::vector<kad::Contact>&)>
-        VoidFuncIntContacts;
 
 }  // namespace lifestuff
 

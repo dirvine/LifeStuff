@@ -31,7 +31,7 @@
 
 #include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/contacts.h"
-#include "maidsafe/lifestuff/private_shares.h"
+#include "maidsafe/lifestuff/return_codes.h"
 
 namespace maidsafe {
 
@@ -58,8 +58,7 @@ struct UserDetails {
 Session::Session()
     : user_details_(new UserDetails),
       passport_(new passport::Passport),
-      contacts_handler_(new ContactsHandler),
-      private_share_handler_(new PrivateShareHandler) {}
+      contacts_handler_(new ContactsHandler) {}
 
 Session::~Session() {}
 
@@ -76,17 +75,11 @@ bool Session::ResetSession() {
   // TODO(Fraser#5#): 2011-11-17 - Implement in passport
   passport_->ClearKeyChain(true, true, true);
   contacts_handler_->ClearContacts();
-  private_share_handler_->ClearPrivateShares();
   return true;
 }
 
-
 std::shared_ptr<ContactsHandler> Session::contacts_handler() const {
   return contacts_handler_;
-}
-
-std::shared_ptr<PrivateShareHandler> Session::private_share_handler() const {
-  return private_share_handler_;
 }
 
 DefConLevels Session::def_con_level() const {

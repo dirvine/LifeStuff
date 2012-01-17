@@ -23,8 +23,9 @@
 
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/data_atlas_pb.h"
+#include "maidsafe/lifestuff/log.h"
+#include "maidsafe/lifestuff/return_codes.h"
 
 namespace fs = boost::filesystem;
 
@@ -34,292 +35,304 @@ namespace lifestuff {
 
 //  Contacts
 Contact::Contact()
-    : pub_name_(),
-      pub_key_(),
-      full_name_(),
-      office_phone_(),
-      birthday_(),
-      gender_('U'),
-      language_(-1),
-      country_(-1),
-      city_(),
-      confirmed_('\0'),
-      rank_(0),
-      last_contact_(-1) {}
+    : public_username(),
+      mpid_name(),
+      mmid_name(),
+      mpid_public_key(),
+      mmid_public_key(),
+      status(kUnitialised),
+      rank(0),
+      last_contact(0) {}
 
+Contact::Contact(const std::string &public_name_in,
+        const std::string &mpid_name_in,
+        const std::string &mmid_name_in,
+        const asymm::PublicKey &mpid_public_key_in,
+        const asymm::PublicKey &mmid_public_key_in,
+        Status status)
+    : public_username(public_name_in),
+      mpid_name(mpid_name_in),
+      mmid_name(mmid_name_in),
+      mpid_public_key(mpid_public_key_in),
+      mmid_public_key(mmid_public_key_in),
+      status(status),
+      rank(0),
+      last_contact(0) {}
 Contact::Contact(const PublicContact &contact)
-    : pub_name_(contact.pub_name()),
-      pub_key_(contact.pub_key()),
-      full_name_(contact.full_name()),
-      office_phone_(contact.office_phone()),
-      birthday_(contact.birthday()),
-      gender_(contact.gender().at(0)),
-      language_(contact.language()),
-      country_(contact.country()),
-      city_(contact.city()),
-      confirmed_(contact.confirmed().at(0)),
-      rank_(contact.rank()),
-      last_contact_(contact.last_contact()) {}
-
-Contact::Contact(const std::vector<std::string> &attributes)
-    : pub_name_(attributes[0]),
-      pub_key_(attributes[1]),
-      full_name_(attributes[2]),
-      office_phone_(attributes[3]),
-      birthday_(attributes[4]),
-      gender_(attributes[5].at(0)),
-      language_(boost::lexical_cast<int>(attributes[6])),
-      country_(boost::lexical_cast<int>(attributes[7])),
-      city_(attributes[8]),
-      confirmed_(attributes[9].at(0)),
-      rank_(boost::lexical_cast<int>(attributes[10])),
-      last_contact_(boost::lexical_cast<int>(attributes[11])) {}
+    : public_username(contact.public_username()),
+      mpid_name(contact.mpid_name()),
+      mmid_name(contact.mmid_name()),
+      mpid_public_key(),
+      mmid_public_key(),
+      status(static_cast<Status>(contact.status())),
+      rank(contact.rank()),
+      last_contact(contact.last_contact()) {
+  asymm::PublicKey mpid_key, mmid_key;
+  asymm::DecodePublicKey(contact.mpid_public_key(), &mpid_key);
+  if (!asymm::ValidateKey(mpid_key))
+    DLOG(ERROR) << "Error decoding MPID public key";
+  asymm::DecodePublicKey(contact.mmid_public_key(), &mmid_key);
+  if (!asymm::ValidateKey(mmid_key))
+    DLOG(ERROR) << "Error decoding MMID public key";
+}
 
 //  ContactsHandler
-int ContactsHandler::AddContact(const std::string &pub_name,
-                                const std::string &pub_key,
-                                const std::string &full_name,
-                                const std::string &office_phone,
-                                const std::string &birthday,
-                                const char &gender,
-                                const int &language,
-                                const int &country,
-                                const std::string &city,
-                                const char &confirmed,
-                                const int &rank,
+int ContactsHandler::AddContact(const std::string &public_username,
+                                const std::string &mpid_name,
+                                const std::string &mmid_name,
+                                const asymm::PublicKey &mpid_public_key,
+                                const asymm::PublicKey &mmid_public_key,
+                                Contact::Status status,
+                                const uint32_t &rank,
                                 const uint32_t &last_contact) {
-  uint32_t lc = 0;
+  Contact contact(public_username,
+                  mpid_name,
+                  mmid_name,
+                  mpid_public_key,
+                  mmid_public_key,
+                  status);
   if (last_contact == 0)
-    lc = static_cast<uint32_t>(GetDurationSinceEpoch().total_milliseconds());
+    contact.last_contact =
+        static_cast<uint32_t>(GetDurationSinceEpoch().total_milliseconds());
   else
-    lc = last_contact;
-  mi_contact mic(pub_name, pub_key, full_name, office_phone, birthday, gender,
-                 language, country, city, confirmed, rank, lc);
-  cs_.insert(mic);
-  return 0;
+    contact.last_contact = last_contact;
+  contact.rank = rank;
+
+  auto result(contact_set_.insert(contact));
+  if (!result.second) {
+    DLOG(ERROR) << "Failed to insert contact " << contact.public_username;
+    return -77;
+  }
+
+  return kSuccess;
 }
 
 int ContactsHandler::AddContact(const Contact &contact) {
-  mi_contact mic(contact);
-  cs_.insert(mic);
-  return 0;
+  auto result(contact_set_.insert(contact));
+  if (!result.second) {
+    DLOG(ERROR) << "Failed to insert contact " << contact.public_username;
+    return -77;
+  }
+
+  return kSuccess;
 }
 
-int ContactsHandler::DeleteContact(const std::string &pub_name) {
-  contact_set::iterator it = cs_.find(pub_name);
-  if (it == cs_.end()) {
-    DLOG(ERROR) << "Contact(" << pub_name << ") not present in contact list.";
-    return -1901;
-  }
-  cs_.erase(pub_name);
-  return 0;
+int ContactsHandler::DeleteContact(const std::string &public_username) {
+  auto erased(contact_set_.erase(public_username));
+  return erased == 1U ? kSuccess : -78;
 }
 
-int ContactsHandler::UpdateContact(const mi_contact &mic) {
-  contact_set::iterator it = cs_.find(mic.pub_name_);
-  if (it == cs_.end()) {
-    DLOG(ERROR) << "Contact(" << mic.pub_name_ << ") not present in list.";
-    return -1902;
+int ContactsHandler::UpdateContact(const Contact &contact) {
+  ContactSet::iterator it = contact_set_.find(contact.public_username);
+  if (it == contact_set_.end()) {
+    DLOG(ERROR) << "Contact(" << contact.public_username
+                << ") not present in list.";
+    return -79;
   }
-  mi_contact local_mic = *it;
-  local_mic.pub_key_ = mic.pub_key_;
-  local_mic.full_name_ = mic.full_name_;
-  local_mic.office_phone_ = mic.office_phone_;
-  local_mic.birthday_ = mic.birthday_;
-  local_mic.gender_ = mic.gender_;
-  local_mic.language_ = mic.language_;
-  local_mic.country_ = mic.country_;
-  local_mic.city_ = mic.city_;
-  local_mic.confirmed_ = mic.confirmed_;
-  local_mic.rank_ = mic.rank_;
-  local_mic.last_contact_ = mic.last_contact_;
-  cs_.replace(it, local_mic);
-  return 0;
+
+  Contact local_contact = *it;
+  local_contact.public_username = contact.public_username;
+  local_contact.mpid_name = contact.mpid_name;
+  local_contact.mmid_name = contact.mmid_name;
+  local_contact.mpid_public_key = contact.mpid_public_key;
+  local_contact.mmid_public_key = contact.mmid_public_key;
+  local_contact.status = contact.status;
+  local_contact.rank = contact.rank;
+  local_contact.last_contact = contact.last_contact;
+
+  if (!contact_set_.replace(it, local_contact)) {
+    DLOG(ERROR) << "Failed to replace contact in set "
+                << contact.public_username;
+    return -79;
+  }
+
+  return kSuccess;
+}
+/*
+  int UpdateMpidName(const std::string &public_username,
+                     const std::string &new_mpid_name);
+  int UpdateMmidName(const std::string &public_username,
+                     const std::string &new_mmid_name);
+  int UpdateMpidPublicKey(const std::string &public_username,
+                          const asymm::PublicKey &new_mpid_public_key);
+  int UpdateMmidPublicKey(const std::string &public_username,
+                          const asymm::PublicKey &new_mmid_public_key);
+  int UpdateStatus(const std::string &public_username,
+                   const Contact::Status &status);
+  int TouchContact(const std::string &public_username);
+  int GetContactInfo(const std::string &public_username, Contact *contact);
+  int OrderedContacts(std::vector<Contact> *list, Order type = 0);
+*/
+int ContactsHandler::UpdateMpidName(const std::string &public_username,
+                                    const std::string &new_mpid_name) {
+  ContactSet::iterator it = contact_set_.find(public_username);
+  if (it == contact_set_.end()) {
+    DLOG(ERROR) << "Contact(" << public_username << ") not present in list.";
+    return -79;
+  }
+
+  Contact contact = *it;
+  contact.mpid_name = new_mpid_name;
+
+  if (!contact_set_.replace(it, contact)) {
+    DLOG(ERROR) << "Failed to replace contact in set "
+                << contact.public_username;
+    return -79;
+  }
+
+  return kSuccess;
 }
 
-int ContactsHandler::UpdateContactKey(const std::string &pub_name,
-                                      const std::string &value) {
-  contact_set::iterator it = cs_.find(pub_name);
-  if (it == cs_.end()) {
-    DLOG(ERROR) << "Contact(" << pub_name << ") not present in contact list.";
-    return -1903;
+int ContactsHandler::UpdateMmidName(const std::string &public_username,
+                                    const std::string &new_mmid_name) {
+  ContactSet::iterator it = contact_set_.find(public_username);
+  if (it == contact_set_.end()) {
+    DLOG(ERROR) << "Contact(" << public_username << ") not present in list.";
+    return -79;
   }
-  mi_contact mic = *it;
-  mic.pub_key_ = value;
-  cs_.replace(it, mic);
-  return 0;
+
+  Contact contact = *it;
+  contact.mmid_name = new_mmid_name;
+
+  if (!contact_set_.replace(it, contact)) {
+    DLOG(ERROR) << "Failed to replace contact in set "
+                << contact.public_username;
+    return -79;
+  }
+
+  return kSuccess;
 }
 
-int ContactsHandler::UpdateContactFullName(const std::string &pub_name,
-                                           const std::string &value) {
-  contact_set::iterator it = cs_.find(pub_name);
-  if (it == cs_.end()) {
-    DLOG(ERROR) << "Contact(" << pub_name << ") not present in contact list.";
-    return -1904;
+int ContactsHandler::UpdateMpidPublicKey(
+    const std::string &public_username,
+    const asymm::PublicKey &new_mpid_public_key) {
+  ContactSet::iterator it = contact_set_.find(public_username);
+  if (it == contact_set_.end()) {
+    DLOG(ERROR) << "Contact(" << public_username << ") not present in list.";
+    return -79;
   }
-  mi_contact mic = *it;
-  mic.full_name_ = value;
-  cs_.replace(it, mic);
-  return 0;
+
+  Contact contact = *it;
+  contact.mpid_public_key = new_mpid_public_key;
+
+  if (!contact_set_.replace(it, contact)) {
+    DLOG(ERROR) << "Failed to replace contact in set "
+                << contact.public_username;
+    return -79;
+  }
+
+  return kSuccess;
 }
 
-int ContactsHandler::UpdateContactOfficePhone(const std::string &pub_name,
-                                              const std::string &value) {
-  contact_set::iterator it = cs_.find(pub_name);
-  if (it == cs_.end()) {
-    DLOG(ERROR) << "Contact(" << pub_name << ") not present in contact list.";
-    return -1905;
+int ContactsHandler::UpdateMmidPublicKey(
+    const std::string &public_username,
+    const asymm::PublicKey &new_mmid_public_key) {
+  ContactSet::iterator it = contact_set_.find(public_username);
+  if (it == contact_set_.end()) {
+    DLOG(ERROR) << "Contact(" << public_username << ") not present in list.";
+    return -79;
   }
-  mi_contact mic = *it;
-  mic.office_phone_ = value;
-  cs_.replace(it, mic);
-  return 0;
+
+  Contact contact = *it;
+  contact.mmid_public_key = new_mmid_public_key;
+
+  if (!contact_set_.replace(it, contact)) {
+    DLOG(ERROR) << "Failed to replace contact in set "
+                << contact.public_username;
+    return -79;
+  }
+
+  return kSuccess;
 }
 
-int ContactsHandler::UpdateContactBirthday(const std::string &pub_name,
-                                           const std::string &value) {
-  contact_set::iterator it = cs_.find(pub_name);
-  if (it == cs_.end()) {
-    DLOG(ERROR) << "Contact(" << pub_name << ") not present in contact list.";
-    return -1906;
+int ContactsHandler::UpdateStatus(const std::string &public_username,
+                                  const Contact::Status &status) {
+  ContactSet::iterator it = contact_set_.find(public_username);
+  if (it == contact_set_.end()) {
+    DLOG(ERROR) << "Contact(" << public_username << ") not present in list.";
+    return -79;
   }
-  mi_contact mic = *it;
-  mic.birthday_ = value;
-  cs_.replace(it, mic);
-  return 0;
+
+  Contact contact = *it;
+  contact.status = status;
+
+  if (!contact_set_.replace(it, contact)) {
+    DLOG(ERROR) << "Failed to replace contact in set "
+                << contact.public_username;
+    return -79;
+  }
+
+  return kSuccess;
 }
 
-int ContactsHandler::UpdateContactGender(const std::string &pub_name,
-                                         const char &value) {
-  contact_set::iterator it = cs_.find(pub_name);
-  if (it == cs_.end()) {
-    DLOG(ERROR) << "Contact(" << pub_name << ") not present in contact list.";
-    return -1907;
+int ContactsHandler::TouchContact(const std::string &public_username) {
+  ContactSet::iterator it = contact_set_.find(public_username);
+  if (it == contact_set_.end()) {
+    DLOG(ERROR) << "Contact(" << public_username
+                << ") not present in contact list.";
+    return -79;
   }
-  mi_contact mic = *it;
-  mic.gender_ = value;
-  cs_.replace(it, mic);
-  return 0;
-}
 
-int ContactsHandler::UpdateContactLanguage(const std::string &pub_name,
-                                           const int &value) {
-  contact_set::iterator it = cs_.find(pub_name);
-  if (it == cs_.end()) {
-    DLOG(ERROR) << "Contact(" << pub_name << ") not present in contact list.";
-    return -1908;
-  }
-  mi_contact mic = *it;
-  mic.language_ = value;
-  cs_.replace(it, mic);
-  return 0;
-}
-
-int ContactsHandler::UpdateContactCountry(const std::string &pub_name,
-                                          const int &value) {
-  contact_set::iterator it = cs_.find(pub_name);
-  if (it == cs_.end()) {
-    DLOG(ERROR) << "Contact(" << pub_name << ") not present in contact list.";
-    return -1909;
-  }
-  mi_contact mic = *it;
-  mic.country_ = value;
-  cs_.replace(it, mic);
-  return 0;
-}
-
-int ContactsHandler::UpdateContactCity(const std::string &pub_name,
-                                       const std::string &value) {
-  contact_set::iterator it = cs_.find(pub_name);
-  if (it == cs_.end()) {
-    DLOG(ERROR) << "Contact(" << pub_name << ") not present in contact list.";
-    return -1910;
-  }
-  mi_contact mic = *it;
-  mic.city_ = value;
-  cs_.replace(it, mic);
-  return 0;
-}
-
-int ContactsHandler::UpdateContactConfirmed(const std::string &pub_name,
-                                            const char &value) {
-  contact_set::iterator it = cs_.find(pub_name);
-  if (it == cs_.end()) {
-    DLOG(ERROR) << "Contact(" << pub_name << ") not present in contact list.";
-    return -1911;
-  }
-  mi_contact mic = *it;
-  mic.confirmed_ = value;
-  cs_.replace(it, mic);
-  return 0;
-}
-
-int ContactsHandler::SetLastContactRank(const std::string &pub_name) {
-  contact_set::iterator it = cs_.find(pub_name);
-  if (it == cs_.end()) {
-    DLOG(ERROR) << "Contact(" << pub_name << ") not present in contact list.";
-    return -1912;
-  }
-  mi_contact mic = *it;
-  mic.rank_++;
-  mic.last_contact_ =
+  Contact contact = *it;
+  ++contact.rank;
+  contact.last_contact =
       static_cast<uint32_t>(GetDurationSinceEpoch().total_milliseconds());
-  cs_.replace(it, mic);
-  return 0;
-}
 
-int ContactsHandler::GetContactInfo(const std::string &pub_name,
-                                    mi_contact *mic) {
-  contact_set::iterator it = cs_.find(pub_name);
-  if (it == cs_.end()) {
-    DLOG(ERROR) << "Contact(" << pub_name << ") not present in contact list.";
-    return -1913;
+  if (!contact_set_.replace(it, contact)) {
+    DLOG(ERROR) << "Failed to replace contact in set "
+                << contact.public_username;
+    return -79;
   }
-  *mic = *it;
-  return 0;
+
+  return kSuccess;
 }
 
-// type:  1  - for most contacted
-//        2  - for most recent
-//        0  - (default) alphabetical
-int ContactsHandler::GetContactList(std::vector<mi_contact> *list,
-                                       int type) {
+int ContactsHandler::ContactInfo(const std::string &public_username,
+                                 Contact *contact) {
+  ContactSet::iterator it = contact_set_.find(public_username);
+  if (it == contact_set_.end()) {
+    DLOG(ERROR) << "Contact(" << public_username
+                << ") not present in contact list.";
+    return -80;
+  }
+
+  *contact = *it;
+
+  return kSuccess;
+}
+
+int ContactsHandler::OrderedContacts(std::vector<Contact> *list, Order type) {
   list->clear();
   switch (type) {
-    case 0: typedef contact_set::index<pub_name>::type
-                    contact_set_by_pub_name;
-            for (contact_set_by_pub_name::iterator it =
-                 cs_.get<pub_name>().begin();
-                 it != cs_.get<pub_name>().end(); ++it) {
-              mi_contact mic = *it;
-              list->push_back(mic);
-            }
-            break;
-    case 1: typedef contact_set::index<rank>::type
-                    contact_set_by_rank;
-            for (contact_set_by_rank::iterator it = cs_.get<rank>().begin();
-                 it != cs_.get<rank>().end(); ++it) {
-              mi_contact mic = *it;
-              list->push_back(mic);
-            }
-            break;
-    case 2: typedef contact_set::index<last_contact>::type
-                    contact_set_by_last_contact;
-            for (contact_set_by_last_contact::iterator it =
-                 cs_.get<last_contact>().begin();
-                 it != cs_.get<last_contact>().end(); ++it) {
-              mi_contact mic = *it;
-              list->push_back(mic);
-            }
-            break;
+    case kAlphabetical:
+        for (auto it(contact_set_.get<alphabetical>().begin());
+             it != contact_set_.get<alphabetical>().end();
+             ++it) {
+          Contact contact = *it;
+          list->push_back(contact);
+        }
+        break;
+    case kPopular:
+        for (auto it(contact_set_.get<popular>().begin());
+             it != contact_set_.get<popular>().end();
+             ++it) {
+          Contact contact = *it;
+          list->push_back(contact);
+        }
+        break;
+    case kLastContacted:
+        for (auto it(contact_set_.get<last_contacted>().begin());
+             it != contact_set_.get<last_contacted>().end();
+             ++it) {
+          Contact contact = *it;
+          list->push_back(contact);
+        }
+        break;
   }
   return 0;
 }
 
-int ContactsHandler::ClearContacts() {
-  cs_.clear();
-  return 0;
-}
+void ContactsHandler::ClearContacts() { contact_set_.clear(); }
 
 }  // namespace lifestuff
 

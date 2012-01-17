@@ -44,242 +44,105 @@
 #  pragma warning(pop)
 #endif
 
+#include "maidsafe/common/rsa.h"
 
 namespace maidsafe {
 
 namespace lifestuff {
 
-// TODO(Dan#5#): 2009-07-22 - Language and country lists to be decided on and
+// TODO(Team#5#): 2009-07-22 - Language and country lists to be decided on and
 //                            incorporated to the logic.
 
 class PublicContact;
 
-class Contact {
- private:
-  std::string pub_name_;
-  std::string pub_key_;
-  std::string full_name_;
-  std::string office_phone_;
-  std::string birthday_;
-  char gender_;
-  int language_;
-  int country_;
-  std::string city_;
-  char confirmed_;
-  int rank_;
-  int last_contact_;
+struct Contact {
+  enum Status {
+    kUnitialised,
+    kRequestSent,
+    kPendingResponse,
+    kConfirmed,
+    kBlocked
+  };
 
- public:
-  //  Constructors
   Contact();
+  Contact(const std::string &public_username_in,
+          const std::string &mpid_name_in,
+          const std::string &mmid_name_in,
+          const asymm::PublicKey &mpid_public_key_in,
+          const asymm::PublicKey &mmid_public_key_in,
+          Status status);
   Contact(const PublicContact &contact);
-  explicit Contact(const std::vector<std::string> &attributes);
 
-  //  Getters
-  inline std::string PublicName() const { return pub_name_; }
-  inline std::string PublicKey() const { return pub_key_; }
-  inline std::string FullName() const { return full_name_; }
-  inline std::string OfficePhone() const { return office_phone_; }
-  inline std::string Birthday() const { return birthday_; }
-  inline char Gender() const { return gender_; }
-  inline int Language() const { return language_; }
-  inline int Country() const { return country_; }
-  inline std::string City() const { return city_; }
-  inline char Confirmed() const { return confirmed_; }
-  inline int Rank() const { return rank_; }
-  inline int LastContact() const { return last_contact_; }
-
-  // Setters
-  inline bool SetPublicName(std::string pub_name) {
-    pub_name_ = pub_name;
-    return true;
-  }
-  inline bool SetPublicKey(std::string pub_key) {
-    pub_key_ = pub_key;
-    return true;
-  }
-  inline bool SetFullName(std::string full_name) {
-    full_name_ = full_name;
-    return true;
-  }
-  inline bool SetOfficePhone(std::string office_phone) {
-    office_phone_ = office_phone;
-    return true;
-  }
-  inline bool SetBirthday(std::string birthday) {
-    birthday_ = birthday;
-    return true;
-  }
-  inline bool SetGender(char gender) {
-    gender_ = gender;
-    return true;
-  }
-  inline bool SetLanguage(int language) {
-    language_ = language;
-    return true;
-  }
-  inline bool SetCountry(int country) {
-    country_ = country;
-    return true;
-  }
-  inline bool SetCity(std::string city) {
-    city_ = city;
-    return true;
-  }
-  inline bool SetConfirmed(char confirmed) {
-    confirmed_ = confirmed;
-    return true;
-  }
-  inline bool SetRank(int rank) {
-    rank_ = rank;
-    return true;
-  }
-  inline bool SetLastContact(uint32_t last_contact) {
-    last_contact_ = last_contact;
-    return true;
-  }
-};
-
-struct mi_contact {
-  std::string pub_name_;
-  std::string pub_key_;
-  std::string full_name_;
-  std::string office_phone_;
-  std::string birthday_;
-  char gender_;
-  int language_;
-  int country_;
-  std::string city_;
-  char confirmed_;
-  int rank_;
-  uint32_t last_contact_;
-
-  mi_contact()
-      : pub_name_(),
-        pub_key_(),
-        full_name_(),
-        office_phone_(),
-        birthday_(),
-        gender_('\0'),
-        language_(0),
-        country_(0),
-        city_(),
-        confirmed_('\0'),
-        rank_(0),
-        last_contact_(0) {}
-
-  mi_contact(const std::string &pub_name,
-             const std::string &pub_key,
-             const std::string &full_name,
-             const std::string &office_phone,
-             const std::string &birthday,
-             char gender,
-             int language,
-             int country,
-             const std::string &city,
-             char confirmed,
-             int rank,
-             uint32_t last_contact)
-      : pub_name_(pub_name),
-        pub_key_(pub_key),
-        full_name_(full_name),
-        office_phone_(office_phone),
-        birthday_(birthday),
-        gender_(gender),
-        language_(language),
-        country_(country),
-        city_(city),
-        confirmed_(confirmed),
-        rank_(rank),
-        last_contact_(last_contact) {}
-  mi_contact(const Contact &contact)
-      : pub_name_(contact.PublicName()),
-        pub_key_(contact.PublicKey()),
-        full_name_(contact.FullName()),
-        office_phone_(contact.OfficePhone()),
-        birthday_(contact.Birthday()),
-        gender_(contact.Gender()),
-        language_(contact.Language()),
-        country_(contact.Country()),
-        city_(contact.City()),
-        confirmed_(contact.Confirmed()),
-        rank_(contact.Rank()),
-        last_contact_(contact.LastContact()) {}
+  std::string public_username, mpid_name, mmid_name;
+  asymm::PublicKey mpid_public_key, mmid_public_key;
+  Status status;
+  uint32_t rank;
+  uint32_t last_contact;
 };
 
 /* Tags */
-struct pub_name {};
-struct rank {};
-struct last_contact {};
+struct alphabetical {};
+struct popular {};
+struct last_contacted {};
 
 typedef boost::multi_index::multi_index_container<
-  mi_contact,
+  Contact,
   boost::multi_index::indexed_by<
     boost::multi_index::ordered_unique<
-      boost::multi_index::tag<pub_name>,
-      BOOST_MULTI_INDEX_MEMBER(mi_contact, std::string, pub_name_)
+      boost::multi_index::tag<alphabetical>,
+      BOOST_MULTI_INDEX_MEMBER(Contact, std::string, public_username)
     >,
     boost::multi_index::ordered_non_unique<
-      boost::multi_index::tag<rank>,
-      BOOST_MULTI_INDEX_MEMBER(mi_contact, int, rank_), std::greater<int>
+      boost::multi_index::tag<popular>,
+      BOOST_MULTI_INDEX_MEMBER(Contact, uint32_t, rank),
+      std::greater<uint32_t>
     >,
     boost::multi_index::ordered_non_unique<
-      boost::multi_index::tag<last_contact>,
-      BOOST_MULTI_INDEX_MEMBER(mi_contact, uint32_t, last_contact_),
-      std::greater<int>
+      boost::multi_index::tag<last_contacted>,
+      BOOST_MULTI_INDEX_MEMBER(Contact, uint32_t, last_contact),
+      std::greater<uint32_t>
     >
   >
-> contact_set;
+> ContactSet;
 
 class ContactsHandler {
- private:
-// TODO(Team): Change this to allow mapping different public usernames
-  contact_set cs_;
-
  public:
-  ContactsHandler() : cs_() { }
-  int AddContact(const std::string &pub_name,
-                 const std::string &pub_key,
-                 const std::string &full_name,
-                 const std::string &office_phone,
-                 const std::string &birthday,
-                 const char &gender,
-                 const int &language,
-                 const int &country,
-                 const std::string &city,
-                 const char &confirmed,
-                 const int &rank,
+  enum Order {
+    kAlphabetical,
+    kPopular,
+    kLastContacted
+  };
+
+  ContactsHandler() : contact_set_() { }
+  int AddContact(const std::string &public_username,
+                 const std::string &mpid_name,
+                 const std::string &mmid_name,
+                 const asymm::PublicKey &mpid_public_key,
+                 const asymm::PublicKey &mmid_public_key,
+                 Contact::Status status,
+                 const uint32_t &rank,
                  const uint32_t &last_contact);
   int AddContact(const Contact &contact);
-  int DeleteContact(const std::string &pub_name);
-  int UpdateContact(const mi_contact &mic);
-  int UpdateContactKey(const std::string &pub_name,
-                       const std::string &value);
-  int UpdateContactFullName(const std::string &pub_name,
-                            const std::string &value);
-  int UpdateContactOfficePhone(const std::string &pub_name,
-                               const std::string &value);
-  int UpdateContactBirthday(const std::string &pub_name,
-                            const std::string &value);
-  int UpdateContactGender(const std::string &pub_name,
-                          const char &value);
-  int UpdateContactLanguage(const std::string &pub_name,
-                            const int &value);
-  int UpdateContactCountry(const std::string &pub_name,
-                           const int &value);
-  int UpdateContactCity(const std::string &pub_name,
-                        const std::string &value);
-  int UpdateContactConfirmed(const std::string &pub_name,
-                             const char &value);
-  int SetLastContactRank(const std::string &pub_name);
-  int GetContactInfo(const std::string &pub_name, mi_contact *mic);
+  int DeleteContact(const std::string &public_username);
+  int UpdateContact(const Contact &contact);
+  int UpdateMpidName(const std::string &public_username,
+                     const std::string &new_mpid_name);
+  int UpdateMmidName(const std::string &public_username,
+                     const std::string &new_mmid_name);
+  int UpdateMpidPublicKey(const std::string &public_username,
+                          const asymm::PublicKey &new_mpid_public_key);
+  int UpdateMmidPublicKey(const std::string &public_username,
+                          const asymm::PublicKey &new_mmid_public_key);
+  int UpdateStatus(const std::string &public_username,
+                   const Contact::Status &status);
+  int TouchContact(const std::string &public_username);
+  int ContactInfo(const std::string &public_username, Contact *contact);
+  int OrderedContacts(std::vector<Contact> *list, Order type = kAlphabetical);
 
-  // type:  1  - for most contacted
-  //        2  - for most recent
-  //        0  - (default) alphabetical
-  int GetContactList(std::vector<mi_contact> *list, int type = 0);
+  void ClearContacts();
 
-  int ClearContacts();
+ private:
+  ContactSet contact_set_;
 };
 
 }  // namespace lifestuff

@@ -177,25 +177,25 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
   Sleep(interval_ * 2);
 
   ASSERT_EQ(public_username2_, received_public_username_);
-  mi_contact received_contact;
+  Contact received_contact;
   ASSERT_EQ(kSuccess,
-            session1_->contacts_handler()->GetContactInfo(
+            session1_->contacts_handler()->ContactInfo(
                 received_public_username_, &received_contact));
-  ASSERT_EQ('P', received_contact.confirmed_);
+  ASSERT_EQ(Contact::kPendingResponse, received_contact.status);
 // TODO(Fraser#5#): 2011-12-01 - Check contents of contact struct are correct
 
-  received_contact = mi_contact();
-  std::string public_username3(public_username2_ + "1");
-  ASSERT_EQ(kSuccess,
-            public_id2_.CreatePublicId(public_username3, true));
-  ASSERT_EQ(kSuccess,
-            public_id2_.SendContactInfo(public_username3, public_username1_));
-  Sleep(interval_ * 2);
-  ASSERT_EQ(public_username3, received_public_username_);
-  ASSERT_EQ(kSuccess,
-            session1_->contacts_handler()->GetContactInfo(
-                received_public_username_, &received_contact));
-  ASSERT_EQ('P', received_contact.confirmed_);
+//  received_contact = Contact();
+//  std::string public_username3(public_username2_ + "1");
+//  ASSERT_EQ(kSuccess,
+//            public_id2_.CreatePublicId(public_username3, true));
+//  ASSERT_EQ(kSuccess,
+//            public_id2_.SendContactInfo(public_username3, public_username1_));
+//  Sleep(interval_ * 2);
+//  ASSERT_EQ(public_username3, received_public_username_);
+//  ASSERT_EQ(kSuccess,
+//            session1_->contacts_handler()->ContactInfo(
+//                received_public_username_, &received_contact));
+//  ASSERT_EQ(Contact::kPendingResponse, received_contact.status);
 }
 
 TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
@@ -218,35 +218,35 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
   ASSERT_EQ(kSuccess,
             public_id2_.SendContactInfo(public_username2_, public_username1_));
   ASSERT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
-  mi_contact received_contact;
+  Contact received_contact;
   ASSERT_EQ(kSuccess,
-            session2_->contacts_handler()->GetContactInfo(
+            session2_->contacts_handler()->ContactInfo(
                 public_username1_,
                 &received_contact));
-  ASSERT_EQ('U', received_contact.confirmed_);
+  ASSERT_EQ(Contact::kRequestSent, received_contact.status);
 
   while (!invoked1)
     Sleep(bptime::milliseconds(100));
 
   // Other side got message. Check status of contact and reply affirmatively.
   ASSERT_EQ(public_username2_, received_public_username_);
-  received_contact = mi_contact();
+  received_contact = Contact();
   ASSERT_EQ(kSuccess,
-            session1_->contacts_handler()->GetContactInfo(
+            session1_->contacts_handler()->ContactInfo(
                 public_username2_,
                 &received_contact));
-  ASSERT_EQ('P', received_contact.confirmed_);
+  ASSERT_EQ(Contact::kPendingResponse, received_contact.status);
   ASSERT_EQ(kSuccess,
             public_id1_.ConfirmContact(public_username1_, public_username2_));
   ASSERT_EQ(kSuccess, public_id2_.StartCheckingForNewContacts(interval_));
 
   // Contact should now be confirmed after reply
-  received_contact = mi_contact();
+  received_contact = Contact();
   ASSERT_EQ(kSuccess,
-            session1_->contacts_handler()->GetContactInfo(
+            session1_->contacts_handler()->ContactInfo(
                 public_username2_,
                 &received_contact));
-  ASSERT_EQ('C', received_contact.confirmed_);
+  ASSERT_EQ(Contact::kConfirmed, received_contact.status);
 
   while (!invoked2)
     Sleep(bptime::milliseconds(100));
@@ -254,13 +254,13 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
 
   // Confirmation received, status should be updated
   ASSERT_EQ(public_username1_, confirmed_contact);
-  received_contact = mi_contact();
+  received_contact = Contact();
   ASSERT_EQ(kSuccess,
-            session2_->contacts_handler()->GetContactInfo(
+            session2_->contacts_handler()->ContactInfo(
                 public_username1_,
                 &received_contact));
-  ASSERT_EQ('C', received_contact.confirmed_);
-  ASSERT_FALSE(received_contact.pub_key_.empty());
+  ASSERT_EQ(Contact::kConfirmed, received_contact.status);
+  ASSERT_FALSE(received_contact.mmid_name.empty());
 }
 
 TEST_F(PublicIdTest, FUNC_DisablePublicId) {
@@ -339,7 +339,7 @@ TEST_F(PublicIdTest, FUNC_ContactList) {
     ASSERT_EQ(kSuccess,
               public_id2_.SendContactInfo(
                   public_username2_ + boost::lexical_cast<std::string>(y),
-                  public_username1_));
+                  public_username1_)) << y;
   }
 
   public_id1_.new_contact_signal()->connect(

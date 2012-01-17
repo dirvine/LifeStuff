@@ -74,7 +74,8 @@ class PublicId {
                      bool accepts_new_contacts);
   // Appends our info as an MCID to the recipient's MPID packet.
   int SendContactInfo(const std::string &public_username,
-                      const std::string &recipient_public_username);
+                      const std::string &recipient_public_username,
+                      bool add_contact = true);
   // Disallow others add contact or send msg.
   int DisablePublicId(const std::string &public_username);
   // Allow others add contact or send msg.
