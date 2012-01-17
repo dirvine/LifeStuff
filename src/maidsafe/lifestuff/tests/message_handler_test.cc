@@ -194,9 +194,9 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
 
   Sleep(interval_ * 2);
   ASSERT_EQ(public_username2_, received_public_username_);
-  mi_contact received_contact;
+  Contact received_contact;
   ASSERT_EQ(kSuccess,
-            session1_->contacts_handler()->GetContactInfo(
+            session1_->contacts_handler()->ContactInfo(
                 received_public_username_,
                 &received_contact));
   public_id1_.StopCheckingForNewContacts();
@@ -238,81 +238,6 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
   Sleep(interval_ * 2);
   ASSERT_FALSE(MessagesEqual(sent, received));
 }
-
-//  TEST_F(PublicIdTest, FUNC_CreatePublicIdAntiSocial) {
-//  // Create user1 who doesn't accept new contacts, and user2 who does
-//  EXPECT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, false));
-//  EXPECT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
-//
-//  public_id1_.new_contact_signal()->connect(
-//      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, true));
-//  EXPECT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
-//
-//  EXPECT_EQ(kSendContactInfoFailure,
-//           public_id2_.SendContactInfo(public_username2_, public_username1_));
-//
-//  Sleep(interval_ * 2);
-//  EXPECT_TRUE(received_public_username_.empty());
-//  }
-//
-// TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
-//  // Create users who both accept new contacts
-//  EXPECT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
-//  EXPECT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
-//
-//  // Connect a slot which will reject the new contact
-//  bs2::connection connection(public_id1_.new_contact_signal()->connect(
-//      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, false)));
-//  EXPECT_EQ(kSuccess,
-//           public_id2_.SendContactInfo(public_username2_, public_username1_));
-//
-//  EXPECT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
-//  Sleep(interval_ * 2);
-//  EXPECT_EQ(public_username2_, received_public_username_);
-//  Contact received_contact;
-//  EXPECT_EQ(-1913, session1_->contacts_handler()->GetContactInfo(
-//                       received_public_username_, &received_contact));
-//
-//  // Connect a slot which will accept the new contact
-//  connection.disconnect();
-//  received_public_username_.clear();
-//  received_contact = Contact();
-//  public_id1_.new_contact_signal()->connect(
-//      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, true));
-//  EXPECT_EQ(kSuccess,
-//           public_id2_.SendContactInfo(public_username2_, public_username1_));
-//  Sleep(interval_ * 2);
-//  EXPECT_EQ(public_username2_, received_public_username_);
-//  EXPECT_EQ(kSuccess,
-//            session1_->contacts_handler()->GetContactInfo(
-//                received_public_username_, &received_contact));
-// // TODO(Fraser#5#): 2011-12-01 - Check contents of contact struct are correct
-// }
-//
-// TEST_F(PublicIdTest, FUNC_DeletePublicId) {
-//  EXPECT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
-//  EXPECT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
-//
-//  // TODO(Fraser#5#): 2011-12-01 - Change kPendingResult for correct value
-//  EXPECT_EQ(kPendingResult, public_id1_.DeletePublicId(""));
-//  EXPECT_EQ(kPendingResult, public_id1_.DeletePublicId("Rubbish"));
-//
-//  EXPECT_EQ(kSuccess, public_id1_.DeletePublicId(public_username1_));
-//  // TODO(Fraser#5#): 2011-12-01 - Check user2 can't "send" message to user1's
-//  //                               MMID
-//
-//  // Check a new user can't take this public username
-//  EXPECT_EQ(kPublicIdExists,
-//            public_id2_.CreatePublicId(public_username1_, false));
-//  EXPECT_EQ(kPublicIdExists,
-//            public_id2_.CreatePublicId(public_username1_, true));
-//
-//  // Check the original user can re-take the public username
-//  EXPECT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
-// }
-//
-// TODO(Fraser#5#): 2011-12-01 - Test for multiple public usernames per user
-// TODO(Fraser#5#): 2011-12-01 - Test for moving MMID
 
 }  // namespace test
 
