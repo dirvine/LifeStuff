@@ -52,22 +52,28 @@ class MessageHandlerTest : public testing::Test {
       : test_dir_(maidsafe::test::CreateTestPath()),
         session1_(new Session),
         session2_(new Session),
+        session3_(new Session),
 #if defined AMAZON_WEB_SERVICE_STORE
         packet_manager1_(new AWSStoreManager(session1_, *test_dir_)),
         packet_manager2_(new AWSStoreManager(session2_, *test_dir_)),
+        packet_manager3_(new AWSStoreManager(session3_, *test_dir_)),
 #else
         packet_manager1_(new LocalStoreManager(session1_, test_dir_->string())),
         packet_manager2_(new LocalStoreManager(session2_, test_dir_->string())),
+        packet_manager3_(new LocalStoreManager(session3_, test_dir_->string())),
 #endif
         asio_service_(),
         work_(new ba::io_service::work(asio_service_)),
         threads_(),
         public_id1_(packet_manager1_, session1_, asio_service_),
         public_id2_(packet_manager2_, session2_, asio_service_),
+        public_id3_(packet_manager3_, session3_, asio_service_),
         message_handler1_(packet_manager1_, session1_, asio_service_),
         message_handler2_(packet_manager2_, session2_, asio_service_),
+        message_handler3_(packet_manager3_, session3_, asio_service_),
         public_username1_("User 1 " + RandomAlphaNumericString(8)),
         public_username2_("User 2 " + RandomAlphaNumericString(8)),
+        public_username3_("User 3 " + RandomAlphaNumericString(8)),
         received_public_username_(),
         interval_(3) {}
 
@@ -89,8 +95,10 @@ class MessageHandlerTest : public testing::Test {
   void SetUp() {
     session1_->ResetSession();
     session2_->ResetSession();
+    session3_->ResetSession();
     packet_manager1_->Init([](int /*result*/) {});
     packet_manager2_->Init([](int /*result*/) {});
+    packet_manager3_->Init([](int /*result*/) {});
     for (int i(0); i != 10; ++i)
       threads_.create_thread(std::bind(
           static_cast<std::size_t(boost::asio::io_service::*)()>
@@ -103,6 +111,7 @@ class MessageHandlerTest : public testing::Test {
     threads_.join_all();
     packet_manager1_->Close(true);
     packet_manager2_->Close(true);
+    packet_manager3_->Close(true);
   }
 
   bool MessagesEqual(const pca::Message &left,
@@ -116,14 +125,16 @@ class MessageHandlerTest : public testing::Test {
   }
 
   std::shared_ptr<fs::path> test_dir_;
-  std::shared_ptr<Session> session1_, session2_;
-  std::shared_ptr<PacketManager> packet_manager1_, packet_manager2_;
+  std::shared_ptr<Session> session1_, session2_, session3_;
+  std::shared_ptr<PacketManager> packet_manager1_, packet_manager2_,
+                                 packet_manager3_;
   ba::io_service asio_service_;
   std::shared_ptr<ba::io_service::work> work_;
   boost::thread_group threads_;
-  PublicId public_id1_, public_id2_;
-  MessageHandler message_handler1_, message_handler2_;
-  std::string public_username1_, public_username2_, received_public_username_;
+  PublicId public_id1_, public_id2_, public_id3_;
+  MessageHandler message_handler1_, message_handler2_, message_handler3_;
+  std::string public_username1_, public_username2_, public_username3_,
+              received_public_username_;
   bptime::seconds interval_;
 
  private:
@@ -180,63 +191,72 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
 }
 
 TEST_F(MessageHandlerTest, BEH_RemoveContact) {
-  // Create users who both accept new contacts
   ASSERT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
   ASSERT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
+  ASSERT_EQ(kSuccess, public_id3_.CreatePublicId(public_username3_, true));
 
-  // Connect a slot which will reject the new contact
   public_id1_.new_contact_signal()->connect(
       std::bind(&MessageHandlerTest::NewContactSlot,
                 this, args::_1, args::_2, true));
   ASSERT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
-  ASSERT_EQ(kSuccess,
-            public_id2_.SendContactInfo(public_username2_, public_username1_));
+  public_id2_.new_contact_signal()->connect(
+      std::bind(&MessageHandlerTest::NewContactSlot,
+                this, args::_1, args::_2, true));
+  ASSERT_EQ(kSuccess, public_id2_.StartCheckingForNewContacts(interval_));
+  public_id3_.new_contact_signal()->connect(
+      std::bind(&MessageHandlerTest::NewContactSlot,
+                this, args::_1, args::_2, true));
+  ASSERT_EQ(kSuccess, public_id3_.StartCheckingForNewContacts(interval_));
 
-  Sleep(interval_ * 2);
-  ASSERT_EQ(public_username2_, received_public_username_);
-  Contact received_contact;
   ASSERT_EQ(kSuccess,
-            session1_->contact_handler_map()[public_username1_]->ContactInfo(
-                received_public_username_,
-                &received_contact));
-  public_id1_.StopCheckingForNewContacts();
+            public_id1_.SendContactInfo(public_username1_, public_username2_));
+  ASSERT_EQ(kSuccess,
+            public_id1_.SendContactInfo(public_username1_, public_username3_));
+  Sleep(interval_ * 2);
+  ASSERT_EQ(kSuccess,
+            public_id2_.ConfirmContact(public_username2_, public_username1_));
+  ASSERT_EQ(kSuccess,
+            public_id3_.ConfirmContact(public_username3_, public_username1_));
   Sleep(interval_ * 2);
 
   pca::Message received;
   volatile bool invoked(false);
-  message_handler2_.new_message_signal()->connect(
+  message_handler1_.new_message_signal()->connect(
       std::bind(&MessageHandlerTest::NewMessagetSlot,
                 this, args::_1, &received, &invoked));
   ASSERT_EQ(kSuccess,
-            message_handler2_.StartCheckingForNewMessages(interval_));
+            message_handler1_.StartCheckingForNewMessages(interval_));
 
   pca::Message sent;
   sent.set_type(pca::Message::kNormal);
   sent.set_id("id");
   sent.set_parent_id("parent_id");
-  sent.set_sender_public_username(public_username1_);
+  sent.set_sender_public_username(public_username2_);
   sent.set_subject("subject");
   sent.add_content(std::string("content"));
 
   ASSERT_EQ(kSuccess,
-            message_handler1_.Send(public_username1_, public_username2_, sent));
+            message_handler2_.Send(public_username2_, public_username1_, sent));
   while (!invoked)
     Sleep(bptime::milliseconds(100));
   ASSERT_TRUE(MessagesEqual(sent, received));
 
-  received.Clear();
-  ASSERT_EQ(kSuccess,
-            message_handler1_.Send(public_username1_, public_username2_, sent));
+  public_id1_.RemoveContact(public_username1_, public_username2_);
   Sleep(interval_ * 2);
-  ASSERT_TRUE(MessagesEqual(sent, received));
-
-  public_id2_.RemoveContact(public_username2_, public_username1_);
 
   received.Clear();
   ASSERT_EQ(kUpdatePacketFailure,
-            message_handler1_.Send(public_username1_, public_username2_, sent));
+            message_handler2_.Send(public_username2_, public_username1_, sent));
   Sleep(interval_ * 2);
   ASSERT_FALSE(MessagesEqual(sent, received));
+
+  invoked = false;
+  sent.set_sender_public_username(public_username3_);
+  ASSERT_EQ(kSuccess,
+            message_handler3_.Send(public_username3_, public_username1_, sent));
+  while (!invoked)
+    Sleep(bptime::milliseconds(100));
+  ASSERT_TRUE(MessagesEqual(sent, received));
 }
 
 }  // namespace test
