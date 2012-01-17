@@ -179,23 +179,25 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
   ASSERT_EQ(public_username2_, received_public_username_);
   Contact received_contact;
   ASSERT_EQ(kSuccess,
-            session1_->contacts_handler()->ContactInfo(
-                received_public_username_, &received_contact));
+            session1_->contact_handler_map()[public_username1_]->ContactInfo(
+                received_public_username_,
+                &received_contact));
   ASSERT_EQ(Contact::kPendingResponse, received_contact.status);
 // TODO(Fraser#5#): 2011-12-01 - Check contents of contact struct are correct
 
-//  received_contact = Contact();
-//  std::string public_username3(public_username2_ + "1");
-//  ASSERT_EQ(kSuccess,
-//            public_id2_.CreatePublicId(public_username3, true));
-//  ASSERT_EQ(kSuccess,
-//            public_id2_.SendContactInfo(public_username3, public_username1_));
-//  Sleep(interval_ * 2);
-//  ASSERT_EQ(public_username3, received_public_username_);
-//  ASSERT_EQ(kSuccess,
-//            session1_->contacts_handler()->ContactInfo(
-//                received_public_username_, &received_contact));
-//  ASSERT_EQ(Contact::kPendingResponse, received_contact.status);
+  received_contact = Contact();
+  std::string public_username3(public_username2_ + "1");
+  ASSERT_EQ(kSuccess,
+            public_id2_.CreatePublicId(public_username3, true));
+  ASSERT_EQ(kSuccess,
+            public_id2_.SendContactInfo(public_username3, public_username1_));
+  Sleep(interval_ * 2);
+  ASSERT_EQ(public_username3, received_public_username_);
+  ASSERT_EQ(kSuccess,
+            session1_->contact_handler_map()[public_username1_]->ContactInfo(
+                received_public_username_,
+                &received_contact));
+  ASSERT_EQ(Contact::kPendingResponse, received_contact.status);
 }
 
 TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
@@ -220,7 +222,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
   ASSERT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
   Contact received_contact;
   ASSERT_EQ(kSuccess,
-            session2_->contacts_handler()->ContactInfo(
+            session2_->contact_handler_map()[public_username2_]->ContactInfo(
                 public_username1_,
                 &received_contact));
   ASSERT_EQ(Contact::kRequestSent, received_contact.status);
@@ -232,7 +234,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
   ASSERT_EQ(public_username2_, received_public_username_);
   received_contact = Contact();
   ASSERT_EQ(kSuccess,
-            session1_->contacts_handler()->ContactInfo(
+            session1_->contact_handler_map()[public_username1_]->ContactInfo(
                 public_username2_,
                 &received_contact));
   ASSERT_EQ(Contact::kPendingResponse, received_contact.status);
@@ -243,7 +245,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
   // Contact should now be confirmed after reply
   received_contact = Contact();
   ASSERT_EQ(kSuccess,
-            session1_->contacts_handler()->ContactInfo(
+            session1_->contact_handler_map()[public_username1_]->ContactInfo(
                 public_username2_,
                 &received_contact));
   ASSERT_EQ(Contact::kConfirmed, received_contact.status);
@@ -256,7 +258,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
   ASSERT_EQ(public_username1_, confirmed_contact);
   received_contact = Contact();
   ASSERT_EQ(kSuccess,
-            session2_->contacts_handler()->ContactInfo(
+            session2_->contact_handler_map()[public_username2_]->ContactInfo(
                 public_username1_,
                 &received_contact));
   ASSERT_EQ(Contact::kConfirmed, received_contact.status);
@@ -347,7 +349,7 @@ TEST_F(PublicIdTest, FUNC_ContactList) {
   ASSERT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
   Sleep(interval_ * 3);
 
-  std::vector<std::string> contacts(public_id1_.ContactList());
+  std::vector<std::string> contacts(public_id1_.ContactList(public_username1_));
   ASSERT_EQ(size_t(n), contacts.size());
   ASSERT_EQ(std::set<std::string>(usernames.begin(), usernames.end()),
             std::set<std::string>(contacts.begin(), contacts.end()));

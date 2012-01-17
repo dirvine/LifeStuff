@@ -148,7 +148,7 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
   ASSERT_EQ(public_username2_, received_public_username_);
   Contact received_contact;
   ASSERT_EQ(kSuccess,
-            session1_->contacts_handler()->ContactInfo(
+            session1_->contact_handler_map()[public_username1_]->ContactInfo(
                 received_public_username_,
                 &received_contact));
   public_id1_.StopCheckingForNewContacts();
@@ -196,7 +196,7 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
   ASSERT_EQ(public_username2_, received_public_username_);
   Contact received_contact;
   ASSERT_EQ(kSuccess,
-            session1_->contacts_handler()->ContactInfo(
+            session1_->contact_handler_map()[public_username1_]->ContactInfo(
                 received_public_username_,
                 &received_contact));
   public_id1_.StopCheckingForNewContacts();

@@ -299,6 +299,15 @@ int PublicId::CreatePublicId(const std::string &public_username,
     DLOG(ERROR) << "Failed to confirm Public ID with name " << public_username;
     return result;
   }
+
+  auto n(session_->contact_handler_map().insert(
+             std::make_pair(public_username,
+                            ContactsHandlerPtr(new ContactsHandler))));
+  if (!n.second) {
+    DLOG(ERROR) << "Failed to add contact handler for " << public_username;
+    return result;
+  }
+
   return kSuccess;
 }
 
@@ -309,12 +318,13 @@ int PublicId::SendContactInfo(const std::string &public_username,
   contacts.push_back(recipient_public_username);
   int result(InformContactInfo(public_username, contacts));
   if (result == kSuccess && add_contact)
-    result = session_->contacts_handler()->AddContact(recipient_public_username,
-                                                      "", "",
-                                                      asymm::PublicKey(),
-                                                      asymm::PublicKey(),
-                                                      Contact::kRequestSent,
-                                                      0, 0);
+    result = session_->contact_handler_map()[public_username]->AddContact(
+                 recipient_public_username,
+                 "", "",
+                 asymm::PublicKey(),
+                 asymm::PublicKey(),
+                 Contact::kRequestSent,
+                 0, 0);
   return result;
 }
 
@@ -480,24 +490,31 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
     // TODO(Team#5#): 2011-12-02 - Validate signature of each Introduction
 
     Contact mic;
-    n = session_->contacts_handler()->ContactInfo(public_username, &mic);
+    n = session_->contact_handler_map()[std::get<0>(data)]->ContactInfo(
+            public_username,
+            &mic);
     if (n == 0 && mic.status == Contact::kRequestSent) {
-      int stat(session_->contacts_handler()->UpdateStatus(public_username,
-                                                          Contact::kConfirmed));
-      int mmid(session_->contacts_handler()->UpdateMmidName(public_username,
-                                                            mmid_name));
+      int stat(session_->contact_handler_map()[std::get<0>(data)]->UpdateStatus(
+                   public_username,
+                   Contact::kConfirmed));
+      int mmid(
+          session_->contact_handler_map()[std::get<0>(data)]->UpdateMmidName(
+              public_username,
+              mmid_name));
       if (stat == kSuccess && mmid == kSuccess) {
         (*contact_confirmed_signal_)(public_username);
       }
     } else {
-      session_->contacts_handler()->AddContact(public_username,
-                                               "",
-                                               mmid_name,
-                                               asymm::PublicKey(),
-                                               asymm::PublicKey(),
-                                               Contact::kPendingResponse,
-                                               0, 0);
-      (*new_contact_signal_)(std::get<0>(data), public_username);
+      n = session_->contact_handler_map()[std::get<0>(data)]->AddContact(
+              public_username,
+              "",
+              mmid_name,
+              asymm::PublicKey(),
+              asymm::PublicKey(),
+              Contact::kPendingResponse,
+              0, 0);
+      if (n == kSuccess)
+        (*new_contact_signal_)(std::get<0>(data), public_username);
     }
   }
 }
@@ -505,7 +522,7 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
 int PublicId::ConfirmContact(const std::string &public_username,
                              const std::string &recipient_public_username) {
   Contact mic;
-  int result(session_->contacts_handler()->ContactInfo(
+  int result(session_->contact_handler_map()[public_username]->ContactInfo(
                  recipient_public_username,
                  &mic));
   if (result != 0 || mic.status != Contact::kPendingResponse) {
@@ -521,8 +538,9 @@ int PublicId::ConfirmContact(const std::string &public_username,
     return -1;
   }
 
-  if (session_->contacts_handler()->UpdateStatus(recipient_public_username,
-                                                 Contact::kConfirmed) != 0) {
+  if (session_->contact_handler_map()[public_username]->UpdateStatus(
+          recipient_public_username,
+          Contact::kConfirmed) != 0) {
     DLOG(ERROR) << "Failed to confirm " << recipient_public_username;
     return -1;
   }
@@ -574,13 +592,14 @@ int PublicId::RemoveContact(const std::string &public_username,
     return kModifyFailure;
   }
 
-  result = session_->contacts_handler()->DeleteContact(contact_name);
+  result = session_->contact_handler_map()[public_username]->DeleteContact(
+               contact_name);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to remove contact : " << contact_name;
     return result;
   }
   // Informs each contact in the list about the new MMID
-  result = InformContactInfo(public_username, ContactList());
+  result = InformContactInfo(public_username, ContactList(public_username));
 
   // Invalidate previous MMID, i.e. put it into kModifiableByOwner
   results.clear();
@@ -724,10 +743,11 @@ int PublicId::WaitingResponse(boost::mutex &mutex,
   return kSuccess;
 }
 
-std::vector<std::string> PublicId::ContactList() const {
+std::vector<std::string> PublicId::ContactList(
+    const std::string &public_username) const {
   std::vector<std::string> contacts;
   std::vector<Contact> session_contacts;
-  int n(session_->contacts_handler()->OrderedContacts(
+  int n(session_->contact_handler_map()[public_username]->OrderedContacts(
             &session_contacts,
             ContactsHandler::kLastContacted));
   if (n != 0) {

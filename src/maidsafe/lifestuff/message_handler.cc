@@ -100,7 +100,7 @@ int MessageHandler::Send(const std::string &public_username,
     return -7;
   }
   Contact recipient_contact;
-  int result(session_->contacts_handler()->ContactInfo(
+  int result(session_->contact_handler_map()[public_username]->ContactInfo(
                  recipient_public_username,
                  &recipient_contact));
   if (result != kSuccess || recipient_contact.mmid_name.empty()) {

@@ -167,9 +167,18 @@ int ClientController::ParseDa() {
     return -9003;
   }
 
+  std::set<std::string> public_usernames;
+  std::string public_username;
   for (int n = 0; n < data_atlas.contacts_size(); ++n) {
+    if (public_usernames.find(data_atlas.contacts(n).own_public_username()) ==
+        public_usernames.end()) {
+      session_->contact_handler_map().insert(
+          std::make_pair(data_atlas.contacts(n).own_public_username(),
+                         ContactsHandlerPtr(new ContactsHandler)));
+      public_username = data_atlas.contacts(n).own_public_username();
+    }
     Contact c(data_atlas.contacts(n));
-    session_->contacts_handler()->AddContact(c);
+    session_->contact_handler_map()[public_username]->AddContact(c);
   }
 
   return 0;
@@ -200,15 +209,21 @@ int ClientController::SerialiseDa() {
   data_atlas.set_serialised_selectables(serialised_selectables);
 
   std::vector<Contact> contacts;
-  session_->contacts_handler()->OrderedContacts(&contacts);
-  for (size_t n = 0; n < contacts.size(); ++n) {
-    PublicContact *pc = data_atlas.add_contacts();
-    pc->set_public_username(contacts[n].public_username);
-    pc->set_mpid_name(contacts[n].mpid_name);
-    pc->set_mmid_name(contacts[n].mmid_name);
-    pc->set_status(contacts[n].status);
-    pc->set_rank(contacts[n].rank);
-    pc->set_last_contact(contacts[n].last_contact);
+  for (auto it(session_->contact_handler_map().begin());
+       it != session_->contact_handler_map().end();
+       ++it) {
+    contacts.clear();
+    (*it).second->OrderedContacts(&contacts);
+    for (size_t n = 0; n < contacts.size(); ++n) {
+      PublicContact *pc = data_atlas.add_contacts();
+      pc->set_own_public_username((*it).first);
+      pc->set_public_username(contacts[n].public_username);
+      pc->set_mpid_name(contacts[n].mpid_name);
+      pc->set_mmid_name(contacts[n].mmid_name);
+      pc->set_status(contacts[n].status);
+      pc->set_rank(contacts[n].rank);
+      pc->set_last_contact(contacts[n].last_contact);
+    }
   }
 
   ser_da_.clear();

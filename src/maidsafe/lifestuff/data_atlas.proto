@@ -1,15 +1,16 @@
 package maidsafe.lifestuff;
 
 message PublicContact {
-  required bytes public_username = 1;
-  required bytes mpid_name = 2;
-  required bytes mmid_name = 3;
-  required bytes mpid_public_key = 4;
-  required bytes mmid_public_key = 5;
-  required uint32 status = 6;
-  required uint32 rank = 7;
-  required uint32 last_contact = 8;
-  optional bytes pointer_to_info = 9;
+  required bytes own_public_username = 1;
+  required bytes public_username = 2;
+  required bytes mpid_name = 3;
+  required bytes mmid_name = 4;
+  required bytes mpid_public_key = 5;
+  required bytes mmid_public_key = 6;
+  required uint32 status = 7;
+  required uint32 rank = 8;
+  required uint32 last_contact = 9;
+  optional bytes pointer_to_info = 10;
 }
 
 message PersonalDetails {

@@ -58,7 +58,7 @@ struct UserDetails {
 Session::Session()
     : user_details_(new UserDetails),
       passport_(new passport::Passport),
-      contacts_handler_(new ContactsHandler) {}
+      contact_handler_map_() {}
 
 Session::~Session() {}
 
@@ -74,12 +74,12 @@ bool Session::ResetSession() {
   user_details_->win_drive = '\0';
   // TODO(Fraser#5#): 2011-11-17 - Implement in passport
   passport_->ClearKeyChain(true, true, true);
-  contacts_handler_->ClearContacts();
+  contact_handler_map_.clear();
   return true;
 }
 
-std::shared_ptr<ContactsHandler> Session::contacts_handler() const {
-  return contacts_handler_;
+ContactHandlerMap& Session::contact_handler_map() {
+  return contact_handler_map_;
 }
 
 DefConLevels Session::def_con_level() const {

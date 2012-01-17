@@ -67,13 +67,16 @@ class PublicId;
 class UserStorage;
 struct UserDetails;
 
+typedef std::shared_ptr<ContactsHandler> ContactsHandlerPtr;
+typedef std::map<std::string, ContactsHandlerPtr> ContactHandlerMap;
+
 class Session {
  public:
   Session();
   ~Session();
   bool ResetSession();
 
-  std::shared_ptr<ContactsHandler> contacts_handler() const;
+  ContactHandlerMap& contact_handler_map();
 
   DefConLevels def_con_level() const;
   std::string username() const;
@@ -123,7 +126,7 @@ class Session {
 
   std::shared_ptr<UserDetails> user_details_;
   std::shared_ptr<passport::Passport> passport_;
-  std::shared_ptr<ContactsHandler> contacts_handler_;
+  ContactHandlerMap contact_handler_map_;
 };
 
 }  // namespace lifestuff

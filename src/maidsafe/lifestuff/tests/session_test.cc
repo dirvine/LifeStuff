@@ -68,9 +68,7 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_EQ("", session_->unique_user_id());
   ASSERT_EQ("", session_->root_parent_id());
   ASSERT_EQ(0, session_->mounted());
-  std::vector<Contact> list;
-  ASSERT_EQ(0, session_->contacts_handler()->OrderedContacts(&list));
-  ASSERT_EQ(size_t(0), list.size());
+  ASSERT_EQ(size_t(0), session_->contact_handler_map().size());
 
   // Modify session
   session_->set_def_con_level(kDefCon1);
@@ -80,14 +78,18 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   session_->set_root_parent_id("ddd2");
   session_->set_mounted(1);
   session_->set_win_drive('N');
+  auto result(session_->contact_handler_map().insert(std::make_pair(
+                  "My pub name",
+                  ContactsHandlerPtr(new ContactsHandler))));
   ASSERT_EQ(kSuccess,
-            session_->contacts_handler()->AddContact("pub_name",
-                                                     "mpid_name",
-                                                     "mmid_name",
-                                                     asymm::PublicKey(),
-                                                     asymm::PublicKey(),
-                                                     Contact::kBlocked,
-                                                     0, 0));
+            session_->contact_handler_map()["My pub name"]->AddContact(
+                "pub_name",
+                "mpid_name",
+                "mmid_name",
+                asymm::PublicKey(),
+                asymm::PublicKey(),
+                Contact::kBlocked,
+                0, 0));
   // Verify modifications
   ASSERT_EQ(kDefCon1, session_->def_con_level());
   ASSERT_EQ("aaa", session_->username());
@@ -98,7 +100,10 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_EQ("ddd2", session_->root_parent_id());
   ASSERT_EQ(1, session_->mounted());
   ASSERT_EQ('N', session_->win_drive());
-  ASSERT_EQ(kSuccess, session_->contacts_handler()->OrderedContacts(&list));
+  std::vector<Contact> list;
+  ASSERT_EQ(kSuccess,
+            session_->contact_handler_map()["My pub name"]->OrderedContacts(
+                &list));
   ASSERT_EQ(size_t(1), list.size());
   ASSERT_EQ("pub_name", list[0].public_username);
   ASSERT_EQ("mpid_name", list[0].mpid_name);
@@ -122,8 +127,7 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_EQ("", session_->root_parent_id());
   ASSERT_EQ(0, session_->mounted());
   ASSERT_EQ('\0', session_->win_drive());
-  ASSERT_EQ(kSuccess, session_->contacts_handler()->OrderedContacts(&list));
-  ASSERT_EQ(size_t(0), list.size());
+  ASSERT_EQ(size_t(0), session_->contact_handler_map().size());
 }
 
 TEST_F(SessionTest, BEH_SessionName) {

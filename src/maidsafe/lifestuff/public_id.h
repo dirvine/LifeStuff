@@ -91,7 +91,8 @@ class PublicId {
   NewContactSignalPtr new_contact_signal() const;
   ContactConfirmedSignalPtr contact_confirmed_signal() const;
 
-  std::vector<std::string> ContactList() const;
+  std::vector<std::string> ContactList(
+      const std::string &public_username) const;
   std::vector<std::string> PublicIdsList() const;
 
  private:
