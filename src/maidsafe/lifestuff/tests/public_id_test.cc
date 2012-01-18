@@ -324,6 +324,41 @@ TEST_F(PublicIdTest, FUNC_EnablePublicId) {
   ASSERT_FALSE(received_public_username_.empty());
 }
 
+TEST_F(PublicIdTest, FUNC_RemoveContact) {
+  // Detailed msg exchanging behaviour tests are undertaken as part of
+  // message_handler_test. Here only basic functionality is tested
+  ASSERT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
+  ASSERT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
+
+  ASSERT_EQ(kPublicIdEmpty, public_id1_.RemoveContact(public_username1_, ""));
+  ASSERT_EQ(kPublicIdEmpty, public_id1_.RemoveContact("", public_username2_));
+
+  ASSERT_EQ(kLiveContactNotFound,
+            public_id1_.RemoveContact(public_username1_, public_username2_));
+
+  public_id1_.new_contact_signal()->connect(
+      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, args::_2));
+  ASSERT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
+  ASSERT_EQ(kSuccess,
+            public_id2_.SendContactInfo(public_username2_, public_username1_));
+  Sleep(interval_ * 2);
+  ASSERT_FALSE(received_public_username_.empty());
+
+  ASSERT_EQ(kSuccess,
+            public_id1_.RemoveContact(public_username1_, public_username2_));
+
+  // Although sending msg is disallowed, sending contact_info shall be allowed
+  received_public_username_.clear();
+  ASSERT_EQ(-77,
+            public_id2_.SendContactInfo(public_username2_, public_username1_));
+  ASSERT_EQ(kSuccess,
+            public_id2_.RemoveContact(public_username2_, public_username1_));
+  ASSERT_EQ(kSuccess,
+            public_id2_.SendContactInfo(public_username2_, public_username1_));
+  Sleep(interval_ * 2);
+  ASSERT_FALSE(received_public_username_.empty());
+}
+
 // TODO(Fraser#5#): 2011-12-01 - Test for multiple public usernames per user
 // TODO(Fraser#5#): 2011-12-01 - Test for moving MMID
 

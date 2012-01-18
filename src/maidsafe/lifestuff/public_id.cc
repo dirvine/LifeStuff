@@ -565,6 +565,10 @@ int PublicId::RemoveContact(const std::string &public_username,
     return kPublicIdEmpty;
   }
 
+  if (session_->contact_handler_map()[public_username]->TouchContact(
+               contact_name) != kSuccess)
+    return kLiveContactNotFound;
+
   asymm::PrivateKey old_inbox_private_key(
       session_->passport_->PacketPrivateKey(passport::kMmid,
                                             true,
