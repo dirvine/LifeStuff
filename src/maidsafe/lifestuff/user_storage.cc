@@ -118,9 +118,8 @@ bool UserStorage::mount_status() {
 }
 
 int UserStorage::GetDataMap(const fs::path &absolute_path,
-                            std::string *serialised_data_map) {
-  return drive_in_user_space_->GetDataMap(absolute_path,
-                                          serialised_data_map);
+                            std::string *serialised_data_map) const {
+  return drive_in_user_space_->GetDataMap(absolute_path, serialised_data_map);
 }
 
 int UserStorage::InsertDataMap(const fs::path &absolute_path,
@@ -129,22 +128,88 @@ int UserStorage::InsertDataMap(const fs::path &absolute_path,
                                              serialised_data_map);
 }
 
-int UserStorage::ShareExisting(const fs::path &/*absolute_path*/,
-                               std::string * /*directory_id*/,
-                               std::string * /*share_id*/) {
-                                                                        return 9999;
-//  return drive_in_user_space_->SetShareDetails(absolute_path,
-//                                               directory_id,
-//                                               share_id);
+int UserStorage::SetShareDetails(const fs::path &absolute_path,
+                                 const std::string &share_id,
+                                 const asymm::Keys &share_keyring,
+                                 const std::string &this_user_id,
+                                 std::string *directory_id) {
+  return drive_in_user_space_->SetShareDetails(absolute_path,
+                                               share_id,
+                                               share_keyring,
+                                               this_user_id,
+                                               directory_id);
 }
 
-int UserStorage::InsertShare(const fs::path &/*absolute_path*/,
-                             const std::string &/*directory_id*/,
-                             const std::string &/*share_id*/) {
-                                                                        return 9999;
-//  return drive_in_user_space_->InsertShare(absolute_path,
-//                                           directory_id,
-//                                           share_id);
+int UserStorage::InsertShare(const fs::path &absolute_path,
+                             const std::string &directory_id,
+                             const std::string &share_id,
+                             const asymm::Keys &share_keyring) {
+  return drive_in_user_space_->InsertShare(absolute_path,
+                                           directory_id,
+                                           share_id,
+                                           share_keyring);
+}
+
+int UserStorage::AddShareUser(const fs::path &absolute_path,
+                              const std::string &user_id,
+                              bool admin_rights) {
+  return drive_in_user_space_->AddShareUser(absolute_path,
+                                            user_id,
+                                            admin_rights);
+}
+
+void UserStorage::GetAllShareUsers(
+    const fs::path &absolute_path,
+    std::map<std::string, bool> *all_share_users) const {
+  return drive_in_user_space_->GetAllShareUsers(absolute_path, all_share_users);
+}
+
+int UserStorage::RemoveShareUser(const fs::path &absolute_path,
+                                 const std::string &user_id) {
+  return drive_in_user_space_->RemoveShareUser(absolute_path, user_id);
+}
+
+int UserStorage::GetShareUsersRights(const fs::path &absolute_path,
+                                     const std::string &user_id,
+                                     bool *admin_rights) const {
+  return drive_in_user_space_->GetShareUsersRights(absolute_path,
+                                                   user_id,
+                                                   admin_rights);
+}
+
+int UserStorage::SetShareUsersRights(const fs::path &absolute_path,
+                                     const std::string &user_id,
+                                     bool admin_rights) {
+  return drive_in_user_space_->SetShareUsersRights(absolute_path,
+                                                   user_id,
+                                                   admin_rights);
+}
+
+int UserStorage::GetNotes(const fs::path &absolute_path,
+                          std::vector<std::string> *notes) const {
+  return drive_in_user_space_->GetNotes(absolute_path, notes);
+}
+
+int UserStorage::AddNote(const fs::path &absolute_path,
+                         const std::string &note) {
+  return drive_in_user_space_->AddNote(absolute_path, note);
+}
+
+int UserStorage::ReadHiddenFile(const fs::path &absolute_path,
+                                std::string *content) const {
+  return drive_in_user_space_->ReadHiddenFile(absolute_path, content);
+}
+
+int UserStorage::WriteHiddenFile(const fs::path &absolute_path,
+                                 const std::string &content,
+                                 bool overwrite_existing) {
+  return drive_in_user_space_->WriteHiddenFile(absolute_path,
+                                               content,
+                                               overwrite_existing);
+}
+
+int UserStorage::DeleteHiddenFile(const fs::path &absolute_path) {
+  return drive_in_user_space_->DeleteHiddenFile(absolute_path);
 }
 
 }  // namespace lifestuff
