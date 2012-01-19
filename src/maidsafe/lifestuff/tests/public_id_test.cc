@@ -182,7 +182,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
             session1_->contact_handler_map()[public_username1_]->ContactInfo(
                 received_public_username_,
                 &received_contact));
-  ASSERT_EQ(Contact::kPendingResponse, received_contact.status);
+  ASSERT_EQ(kPendingResponse, received_contact.status);
 // TODO(Fraser#5#): 2011-12-01 - Check contents of contact struct are correct
 
   received_contact = Contact();
@@ -197,7 +197,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
             session1_->contact_handler_map()[public_username1_]->ContactInfo(
                 received_public_username_,
                 &received_contact));
-  ASSERT_EQ(Contact::kPendingResponse, received_contact.status);
+  ASSERT_EQ(kPendingResponse, received_contact.status);
 }
 
 TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
@@ -225,7 +225,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
             session2_->contact_handler_map()[public_username2_]->ContactInfo(
                 public_username1_,
                 &received_contact));
-  ASSERT_EQ(Contact::kRequestSent, received_contact.status);
+  ASSERT_EQ(kRequestSent, received_contact.status);
 
   while (!invoked1)
     Sleep(bptime::milliseconds(100));
@@ -237,7 +237,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
             session1_->contact_handler_map()[public_username1_]->ContactInfo(
                 public_username2_,
                 &received_contact));
-  ASSERT_EQ(Contact::kPendingResponse, received_contact.status);
+  ASSERT_EQ(kPendingResponse, received_contact.status);
   ASSERT_EQ(kSuccess,
             public_id1_.ConfirmContact(public_username1_, public_username2_));
   ASSERT_EQ(kSuccess, public_id2_.StartCheckingForNewContacts(interval_));
@@ -248,7 +248,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
             session1_->contact_handler_map()[public_username1_]->ContactInfo(
                 public_username2_,
                 &received_contact));
-  ASSERT_EQ(Contact::kConfirmed, received_contact.status);
+  ASSERT_EQ(kConfirmed, received_contact.status);
 
   while (!invoked2)
     Sleep(bptime::milliseconds(100));
@@ -261,7 +261,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
             session2_->contact_handler_map()[public_username2_]->ContactInfo(
                 public_username1_,
                 &received_contact));
-  ASSERT_EQ(Contact::kConfirmed, received_contact.status);
+  ASSERT_EQ(kConfirmed, received_contact.status);
   ASSERT_FALSE(received_contact.mmid_name.empty());
 }
 

@@ -35,7 +35,7 @@
 
 #include "maidsafe/passport/passport_config.h"
 
-#include "maidsafe/lifestuff/maidsafe.h"
+#include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
 
 namespace maidsafe {

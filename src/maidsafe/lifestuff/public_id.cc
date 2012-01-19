@@ -323,7 +323,7 @@ int PublicId::SendContactInfo(const std::string &public_username,
                  "", "",
                  asymm::PublicKey(),
                  asymm::PublicKey(),
-                 Contact::kRequestSent,
+                 kRequestSent,
                  0, 0);
   return result;
 }
@@ -494,10 +494,10 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
             public_username,
             &mic);
     if (n == kSuccess) {
-      if (mic.status == Contact::kRequestSent) {
+      if (mic.status == kRequestSent) {
         int stat(session_->contact_handler_map()[std::get<0>(data)]->UpdateStatus(
                     public_username,
-                    Contact::kConfirmed));
+                    kConfirmed));
         int mmid(
             session_->contact_handler_map()[std::get<0>(data)]->UpdateMmidName(
                 public_username,
@@ -505,7 +505,7 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
         if (stat == kSuccess && mmid == kSuccess) {
           (*contact_confirmed_signal_)(public_username);
         }
-      } else if (mic.status == Contact::kConfirmed) {
+      } else if (mic.status == kConfirmed) {
         int mmid(
             session_->contact_handler_map()[std::get<0>(data)]->UpdateMmidName(
                 public_username,
@@ -521,7 +521,7 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
               mmid_name,
               asymm::PublicKey(),
               asymm::PublicKey(),
-              Contact::kPendingResponse,
+              kPendingResponse,
               0, 0);
       if (n == kSuccess)
         (*new_contact_signal_)(std::get<0>(data), public_username);
@@ -535,7 +535,7 @@ int PublicId::ConfirmContact(const std::string &public_username,
   int result(session_->contact_handler_map()[public_username]->ContactInfo(
                  recipient_public_username,
                  &mic));
-  if (result != 0 || mic.status != Contact::kPendingResponse) {
+  if (result != 0 || mic.status != kPendingResponse) {
     DLOG(ERROR) << "No such pending username found: "
                 << recipient_public_username;
     return -1;
@@ -550,7 +550,7 @@ int PublicId::ConfirmContact(const std::string &public_username,
 
   if (session_->contact_handler_map()[public_username]->UpdateStatus(
           recipient_public_username,
-          Contact::kConfirmed) != 0) {
+          kConfirmed) != 0) {
     DLOG(ERROR) << "Failed to confirm " << recipient_public_username;
     return -1;
   }
@@ -762,7 +762,7 @@ std::vector<std::string> PublicId::ContactList(
   std::vector<Contact> session_contacts;
   int n(session_->contact_handler_map()[public_username]->OrderedContacts(
             &session_contacts,
-            ContactsHandler::kLastContacted));
+            kLastContacted));
   if (n != 0) {
     DLOG(ERROR) << "Failed to retrive list";
   } else {

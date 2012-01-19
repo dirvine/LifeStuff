@@ -88,7 +88,7 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
                 "mmid_name",
                 asymm::PublicKey(),
                 asymm::PublicKey(),
-                Contact::kBlocked,
+                kBlocked,
                 0, 0));
   // Verify modifications
   ASSERT_EQ(kDefCon1, session_->def_con_level());
@@ -110,7 +110,7 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_EQ("mpid_name", list[0].mpid_name);
   ASSERT_FALSE(asymm::ValidateKey(list[0].mpid_public_key));
   ASSERT_FALSE(asymm::ValidateKey(list[0].mmid_public_key));
-  ASSERT_EQ(Contact::kBlocked, list[0].status);
+  ASSERT_EQ(kBlocked, list[0].status);
   ASSERT_EQ(0, list[0].rank);
   ASSERT_NE(0, list[0].last_contact);
 

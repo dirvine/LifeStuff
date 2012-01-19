@@ -48,6 +48,20 @@ const std::string kRoot("/");
 enum DefConLevels { kDefCon1 = 1, kDefCon2, kDefCon3 };
 typedef std::function<void(int)> VoidFuncOneInt;  // NOLINT (Dan)
 
+enum ContactStatus {
+  kUnitialised,
+  kRequestSent,
+  kPendingResponse,
+  kConfirmed,
+  kBlocked
+};
+
+enum ContactOrder {
+  kAlphabetical,
+  kPopular,
+  kLastContacted
+};
+
 }  // namespace lifestuff
 
 }  // namespace maidsafe

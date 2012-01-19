@@ -29,7 +29,7 @@
 #include <string>
 #include <vector>
 
-#include "maidsafe/lifestuff/maidsafe.h"
+#include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/version.h"
 
 #if MAIDSAFE_LIFESTUFF_VERSION != 111

@@ -49,7 +49,7 @@ Contact::Contact(const std::string &public_name_in,
         const std::string &mmid_name_in,
         const asymm::PublicKey &mpid_public_key_in,
         const asymm::PublicKey &mmid_public_key_in,
-        Status status)
+        ContactStatus status)
     : public_username(public_name_in),
       mpid_name(mpid_name_in),
       mmid_name(mmid_name_in),
@@ -64,7 +64,7 @@ Contact::Contact(const PublicContact &contact)
       mmid_name(contact.mmid_name()),
       mpid_public_key(),
       mmid_public_key(),
-      status(static_cast<Status>(contact.status())),
+      status(static_cast<ContactStatus>(contact.status())),
       rank(contact.rank()),
       last_contact(contact.last_contact()) {
   asymm::PublicKey mpid_key, mmid_key;
@@ -82,7 +82,7 @@ int ContactsHandler::AddContact(const std::string &public_username,
                                 const std::string &mmid_name,
                                 const asymm::PublicKey &mpid_public_key,
                                 const asymm::PublicKey &mmid_public_key,
-                                Contact::Status status,
+                                ContactStatus status,
                                 const uint32_t &rank,
                                 const uint32_t &last_contact) {
   Contact contact(public_username,
@@ -246,7 +246,7 @@ int ContactsHandler::UpdateMmidPublicKey(
 }
 
 int ContactsHandler::UpdateStatus(const std::string &public_username,
-                                  const Contact::Status &status) {
+                                  const ContactStatus &status) {
   ContactSet::iterator it = contact_set_.find(public_username);
   if (it == contact_set_.end()) {
     DLOG(ERROR) << "Contact(" << public_username << ") not present in list.";
@@ -301,28 +301,29 @@ int ContactsHandler::ContactInfo(const std::string &public_username,
   return kSuccess;
 }
 
-int ContactsHandler::OrderedContacts(std::vector<Contact> *list, Order type) {
+int ContactsHandler::OrderedContacts(std::vector<Contact> *list,
+                                     ContactOrder type) {
   list->clear();
   switch (type) {
     case kAlphabetical:
-        for (auto it(contact_set_.get<alphabetical>().begin());
-             it != contact_set_.get<alphabetical>().end();
+        for (auto it(contact_set_.get<Alphabetical>().begin());
+             it != contact_set_.get<Alphabetical>().end();
              ++it) {
           Contact contact = *it;
           list->push_back(contact);
         }
         break;
     case kPopular:
-        for (auto it(contact_set_.get<popular>().begin());
-             it != contact_set_.get<popular>().end();
+        for (auto it(contact_set_.get<Popular>().begin());
+             it != contact_set_.get<Popular>().end();
              ++it) {
           Contact contact = *it;
           list->push_back(contact);
         }
         break;
     case kLastContacted:
-        for (auto it(contact_set_.get<last_contacted>().begin());
-             it != contact_set_.get<last_contacted>().end();
+        for (auto it(contact_set_.get<LastContacted>().begin());
+             it != contact_set_.get<LastContacted>().end();
              ++it) {
           Contact contact = *it;
           list->push_back(contact);

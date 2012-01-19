@@ -41,7 +41,7 @@
 
 #include "maidsafe/passport/passport.h"
 
-#include "maidsafe/lifestuff/maidsafe.h"
+#include "maidsafe/lifestuff/lifestuff.h"
 
 #if MAIDSAFE_LIFESTUFF_VERSION != 111
 #  error This API is not compatible with the installed library.\

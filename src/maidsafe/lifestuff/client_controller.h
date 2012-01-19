@@ -36,7 +36,7 @@
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
 
-#include "maidsafe/lifestuff/maidsafe.h"
+#include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/store_components/packet_manager.h"
 

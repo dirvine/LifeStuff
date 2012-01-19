@@ -46,6 +46,8 @@
 
 #include "maidsafe/common/rsa.h"
 
+#include "maidsafe/lifestuff/lifestuff.h"
+
 namespace maidsafe {
 
 namespace lifestuff {
@@ -56,49 +58,41 @@ namespace lifestuff {
 class PublicContact;
 
 struct Contact {
-  enum Status {
-    kUnitialised,
-    kRequestSent,
-    kPendingResponse,
-    kConfirmed,
-    kBlocked
-  };
-
   Contact();
   Contact(const std::string &public_username_in,
           const std::string &mpid_name_in,
           const std::string &mmid_name_in,
           const asymm::PublicKey &mpid_public_key_in,
           const asymm::PublicKey &mmid_public_key_in,
-          Status status);
+          ContactStatus status);
   Contact(const PublicContact &contact);
 
   std::string public_username, mpid_name, mmid_name;
   asymm::PublicKey mpid_public_key, mmid_public_key;
-  Status status;
+  ContactStatus status;
   uint32_t rank;
   uint32_t last_contact;
 };
 
 /* Tags */
-struct alphabetical {};
-struct popular {};
-struct last_contacted {};
+struct Alphabetical {};
+struct Popular {};
+struct LastContacted {};
 
 typedef boost::multi_index::multi_index_container<
   Contact,
   boost::multi_index::indexed_by<
     boost::multi_index::ordered_unique<
-      boost::multi_index::tag<alphabetical>,
+      boost::multi_index::tag<Alphabetical>,
       BOOST_MULTI_INDEX_MEMBER(Contact, std::string, public_username)
     >,
     boost::multi_index::ordered_non_unique<
-      boost::multi_index::tag<popular>,
+      boost::multi_index::tag<Popular>,
       BOOST_MULTI_INDEX_MEMBER(Contact, uint32_t, rank),
       std::greater<uint32_t>
     >,
     boost::multi_index::ordered_non_unique<
-      boost::multi_index::tag<last_contacted>,
+      boost::multi_index::tag<LastContacted>,
       BOOST_MULTI_INDEX_MEMBER(Contact, uint32_t, last_contact),
       std::greater<uint32_t>
     >
@@ -107,19 +101,13 @@ typedef boost::multi_index::multi_index_container<
 
 class ContactsHandler {
  public:
-  enum Order {
-    kAlphabetical,
-    kPopular,
-    kLastContacted
-  };
-
   ContactsHandler() : contact_set_() { }
   int AddContact(const std::string &public_username,
                  const std::string &mpid_name,
                  const std::string &mmid_name,
                  const asymm::PublicKey &mpid_public_key,
                  const asymm::PublicKey &mmid_public_key,
-                 Contact::Status status,
+                 ContactStatus status,
                  const uint32_t &rank,
                  const uint32_t &last_contact);
   int AddContact(const Contact &contact);
@@ -134,10 +122,11 @@ class ContactsHandler {
   int UpdateMmidPublicKey(const std::string &public_username,
                           const asymm::PublicKey &new_mmid_public_key);
   int UpdateStatus(const std::string &public_username,
-                   const Contact::Status &status);
+                   const ContactStatus &status);
   int TouchContact(const std::string &public_username);
   int ContactInfo(const std::string &public_username, Contact *contact);
-  int OrderedContacts(std::vector<Contact> *list, Order type = kAlphabetical);
+  int OrderedContacts(std::vector<Contact> *list,
+                      ContactOrder type = kAlphabetical);
 
   void ClearContacts();
 
