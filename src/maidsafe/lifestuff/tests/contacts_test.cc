@@ -278,7 +278,7 @@ TEST_F(ContactsTest, BEH_ListContacts_Rank_LastContact) {
   }
 }
 
-TEST_F(ContactsTest, BEH_ListContacts_CompositeKeys) {
+TEST_F(ContactsTest, BEH_ListContacts_Status) {
   Contact msc(contact_);
   int indexing(0);
   int status_index(0);
@@ -304,11 +304,11 @@ TEST_F(ContactsTest, BEH_ListContacts_CompositeKeys) {
   status_index = 0;
   do {
     ASSERT_EQ(0, sch_->OrderedContacts(&mi_list, kAlphabetical,
-                                       types[status_index], true));
+                                       types[status_index]));
     ASSERT_EQ(size_t(20), mi_list.size());
 
     ASSERT_EQ(0, sch_->OrderedContacts(&mi_list, kPopular,
-                                       types[status_index], true));
+                                       types[status_index]));
     ASSERT_EQ(size_t(20), mi_list.size());
 
     for (unsigned int n = 0; n < mi_list.size()-1; n++) {
@@ -318,7 +318,7 @@ TEST_F(ContactsTest, BEH_ListContacts_CompositeKeys) {
     }
 
     ASSERT_EQ(0, sch_->OrderedContacts(&mi_list, kLastContacted,
-                                       types[status_index], true));
+                                       types[status_index]));
     ASSERT_EQ(size_t(20), mi_list.size());
 
     for (unsigned int n = 0; n < mi_list.size()-1; n++) {
@@ -328,6 +328,28 @@ TEST_F(ContactsTest, BEH_ListContacts_CompositeKeys) {
     }
     ++status_index;
   } while (status_index < 5);
+
+  // Enquire multiple status at once
+  ASSERT_EQ(0, sch_->OrderedContacts(&mi_list, kPopular,
+                                     kUnitialised | kPendingResponse));
+  ASSERT_EQ(size_t(40), mi_list.size());
+  for (unsigned int n = 0; n < mi_list.size()-1; n++) {
+    Contact mic = mi_list[n];
+    Contact mic1 = mi_list[n+1];
+    ASSERT_GE(mic.rank, mic1.rank);
+    ASSERT_TRUE(mic.status & (kUnitialised | kPendingResponse));
+    ASSERT_TRUE(mic1.status & (kUnitialised | kPendingResponse));
+  }
+  ASSERT_EQ(0, sch_->OrderedContacts(&mi_list, kLastContacted,
+                                     kRequestSent | kConfirmed | kBlocked));
+  ASSERT_EQ(size_t(60), mi_list.size());
+  for (unsigned int n = 0; n < mi_list.size()-1; n++) {
+    Contact mic = mi_list[n];
+    Contact mic1 = mi_list[n+1];
+    ASSERT_GE(mic.last_contact, mic1.last_contact);
+    ASSERT_TRUE(mic.status & (kRequestSent | kConfirmed | kBlocked));
+    ASSERT_TRUE(mic1.status & (kRequestSent | kConfirmed | kBlocked));
+  }
 }
 
 }  // namespace test

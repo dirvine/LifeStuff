@@ -303,56 +303,56 @@ int ContactsHandler::ContactInfo(const std::string &public_username,
 
 int ContactsHandler::OrderedContacts(std::vector<Contact> *list,
                                      ContactOrder type,
-                                     ContactStatus status,
-                                     bool filter_by_status) {
+                                     uint16_t bitwise_status) {
   list->clear();
-  if (filter_by_status) {
-    switch (type) {
-      case kAlphabetical:
-          GetContactsByCompositeKey<StatusAlphabetical>(status, list);
-          break;
-      case kPopular:
-          GetContactsByCompositeKey<StatusPopular>(status, list);
-          break;
-      case kLastContacted:
-          GetContactsByCompositeKey<StatusLastContacted>(status, list);
-          break;
-    }
-  } else {
-    switch (type) {
-      case kAlphabetical:
-          GetContactsBySingleKey<Alphabetical>(list);
-          break;
-      case kPopular:
-          GetContactsBySingleKey<Popular>(list);
-          break;
-      case kLastContacted:
-          GetContactsBySingleKey<LastContacted>(list);
-          break;
-    }
+  ContactSet *enquiry_pool = &contact_set_;
+  ContactSet contacts;
+  if (bitwise_status != 0x00) {
+    if (kUnitialised & bitwise_status)
+      GetContactsByStatus(&contacts, kUnitialised);
+    if (kRequestSent & bitwise_status)
+      GetContactsByStatus(&contacts, kRequestSent);
+    if (kPendingResponse & bitwise_status)
+      GetContactsByStatus(&contacts, kPendingResponse);
+    if (kConfirmed & bitwise_status)
+      GetContactsByStatus(&contacts, kConfirmed);
+    if (kBlocked & bitwise_status)
+      GetContactsByStatus(&contacts, kBlocked);
+    enquiry_pool = &contacts;
+  }
+  switch (type) {
+    case kAlphabetical:
+        GetContactsByOrder<Alphabetical>(enquiry_pool, list);
+        break;
+    case kPopular:
+        GetContactsByOrder<Popular>(enquiry_pool, list);
+        break;
+    case kLastContacted:
+        GetContactsByOrder<LastContacted>(enquiry_pool, list);
+        break;
   }
   return kSuccess;
 }
 
 template <typename T>
-void ContactsHandler::GetContactsBySingleKey(std::vector<Contact> *list) {
-  for (auto it(contact_set_.get<T>().begin());
-      it != contact_set_.get<T>().end();
+void ContactsHandler::GetContactsByOrder(ContactSet *contacts,
+                                         std::vector<Contact> *list) {
+  for (auto it(contacts->get<T>().begin());
+      it != contacts->get<T>().end();
       ++it) {
     Contact contact = *it;
     list->push_back(contact);
   }
 }
 
-template <typename T>
-void ContactsHandler::GetContactsByCompositeKey(ContactStatus status,
-                                                std::vector<Contact> *list) {
-  auto pit = contact_set_.get<T>().equal_range(boost::make_tuple(status));
+void ContactsHandler::GetContactsByStatus(ContactSet *contacts,
+                                          ContactStatus status) {
+  auto pit = contact_set_.get<Status>().equal_range(status);
   auto it_begin = pit.first;
   auto it_end = pit.second;
   while (it_begin != it_end) {
     Contact contact = *it_begin;
-    list->push_back(contact);
+    contacts->insert(*it_begin);
     ++it_begin;
   }
 }
