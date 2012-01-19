@@ -302,35 +302,59 @@ int ContactsHandler::ContactInfo(const std::string &public_username,
 }
 
 int ContactsHandler::OrderedContacts(std::vector<Contact> *list,
-                                     ContactOrder type) {
+                                     ContactOrder type,
+                                     ContactStatus status,
+                                     bool filter_by_status) {
   list->clear();
-  switch (type) {
-    case kAlphabetical:
-        for (auto it(contact_set_.get<Alphabetical>().begin());
-             it != contact_set_.get<Alphabetical>().end();
-             ++it) {
-          Contact contact = *it;
-          list->push_back(contact);
-        }
-        break;
-    case kPopular:
-        for (auto it(contact_set_.get<Popular>().begin());
-             it != contact_set_.get<Popular>().end();
-             ++it) {
-          Contact contact = *it;
-          list->push_back(contact);
-        }
-        break;
-    case kLastContacted:
-        for (auto it(contact_set_.get<LastContacted>().begin());
-             it != contact_set_.get<LastContacted>().end();
-             ++it) {
-          Contact contact = *it;
-          list->push_back(contact);
-        }
-        break;
+  if (filter_by_status) {
+    switch (type) {
+      case kAlphabetical:
+          GetContactsByCompositeKey<StatusAlphabetical>(status, list);
+          break;
+      case kPopular:
+          GetContactsByCompositeKey<StatusPopular>(status, list);
+          break;
+      case kLastContacted:
+          GetContactsByCompositeKey<StatusLastContacted>(status, list);
+          break;
+    }
+  } else {
+    switch (type) {
+      case kAlphabetical:
+          GetContactsBySingleKey<Alphabetical>(list);
+          break;
+      case kPopular:
+          GetContactsBySingleKey<Popular>(list);
+          break;
+      case kLastContacted:
+          GetContactsBySingleKey<LastContacted>(list);
+          break;
+    }
   }
-  return 0;
+  return kSuccess;
+}
+
+template <typename T>
+void ContactsHandler::GetContactsBySingleKey(std::vector<Contact> *list) {
+  for (auto it(contact_set_.get<T>().begin());
+      it != contact_set_.get<T>().end();
+      ++it) {
+    Contact contact = *it;
+    list->push_back(contact);
+  }
+}
+
+template <typename T>
+void ContactsHandler::GetContactsByCompositeKey(ContactStatus status,
+                                                std::vector<Contact> *list) {
+  auto pit = contact_set_.get<T>().equal_range(boost::make_tuple(status));
+  auto it_begin = pit.first;
+  auto it_end = pit.second;
+  while (it_begin != it_end) {
+    Contact contact = *it_begin;
+    list->push_back(contact);
+    ++it_begin;
+  }
 }
 
 void ContactsHandler::ClearContacts() { contact_set_.clear(); }

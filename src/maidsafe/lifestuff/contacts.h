@@ -36,6 +36,7 @@
 #endif
 
 #include "boost/multi_index_container.hpp"
+#include "boost/multi_index/composite_key.hpp"
 #include "boost/multi_index/ordered_index.hpp"
 #include "boost/multi_index/identity.hpp"
 #include "boost/multi_index/member.hpp"
@@ -78,6 +79,9 @@ struct Contact {
 struct Alphabetical {};
 struct Popular {};
 struct LastContacted {};
+struct StatusAlphabetical {};
+struct StatusPopular {};
+struct StatusLastContacted {};
 
 typedef boost::multi_index::multi_index_container<
   Contact,
@@ -95,6 +99,38 @@ typedef boost::multi_index::multi_index_container<
       boost::multi_index::tag<LastContacted>,
       BOOST_MULTI_INDEX_MEMBER(Contact, uint32_t, last_contact),
       std::greater<uint32_t>
+    >,
+    boost::multi_index::ordered_non_unique<
+      boost::multi_index::tag<StatusAlphabetical>,
+      boost::multi_index::composite_key<
+        Contact,
+        BOOST_MULTI_INDEX_MEMBER(Contact, ContactStatus, status),
+        BOOST_MULTI_INDEX_MEMBER(Contact, std::string, public_username)
+      >
+    >,
+    boost::multi_index::ordered_non_unique<
+      boost::multi_index::tag<StatusPopular>,
+      boost::multi_index::composite_key<
+        Contact,
+        BOOST_MULTI_INDEX_MEMBER(Contact, ContactStatus, status),
+        BOOST_MULTI_INDEX_MEMBER(Contact, uint32_t, rank)
+      >,
+      boost::multi_index::composite_key_compare<
+        std::less<ContactStatus>,
+        std::greater<uint32_t>
+      >
+    >,
+    boost::multi_index::ordered_non_unique<
+      boost::multi_index::tag<StatusLastContacted>,
+      boost::multi_index::composite_key<
+        Contact,
+        BOOST_MULTI_INDEX_MEMBER(Contact, ContactStatus, status),
+        BOOST_MULTI_INDEX_MEMBER(Contact, uint32_t, last_contact)
+      >,
+      boost::multi_index::composite_key_compare<
+        std::less<ContactStatus>,
+        std::greater<uint32_t>
+      >
     >
   >
 > ContactSet;
@@ -126,11 +162,19 @@ class ContactsHandler {
   int TouchContact(const std::string &public_username);
   int ContactInfo(const std::string &public_username, Contact *contact);
   int OrderedContacts(std::vector<Contact> *list,
-                      ContactOrder type = kAlphabetical);
+                      ContactOrder type = kAlphabetical,
+                      ContactStatus status = kConfirmed,
+                      bool filter_by_status = false);
 
   void ClearContacts();
 
  private:
+  template <typename T>
+  void GetContactsBySingleKey(std::vector<Contact> *list);
+  template <typename T>
+  void GetContactsByCompositeKey(ContactStatus status,
+                                 std::vector<Contact> *list);
+
   ContactSet contact_set_;
 };
 
