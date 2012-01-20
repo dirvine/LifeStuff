@@ -127,7 +127,7 @@ std::string MpidValue(const passport::SelectableIdentityData &data) {
 
 std::string MaidsafeContactIdName(const std::string &public_username) {
   return crypto::Hash<crypto::SHA512>(public_username) +
-         std::string (1, pca::kAppendableByAll);
+         std::string(1, pca::kAppendableByAll);
 }
 
 std::string MaidsafeContactIdValue(const passport::SelectableIdentityData &data,
