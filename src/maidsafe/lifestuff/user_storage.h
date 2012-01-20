@@ -93,6 +93,14 @@ class UserStorage {
                   std::map<Contact, bool> contacts,
                   std::string *directory_id,
                   std::string *share_id);
+  int AddShareUser(const fs::path &absolute_path,
+                   const std::string &user_id,
+                   bool admin_rights);
+  int RemoveShareUser(const fs::path &absolute_path,
+                      const std::string &user_id);
+  int SetShareUsersRights(const fs::path &absolute_path,
+                          const std::string &user_id,
+                          bool admin_rights);
 
  private:
   bool mount_status_;

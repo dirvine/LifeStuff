@@ -143,9 +143,9 @@ int UserStorage::ShareExisting(const fs::path &/*absolute_path*/,
 }
 
 int UserStorage::CreateShare(const fs::path &absolute_path,
-                  std::map<Contact, bool> contacts,
-                  std::string *directory_id,
-                  std::string *share_id) {
+                             std::map<Contact, bool> contacts,
+                             std::string *directory_id,
+                             std::string *share_id) {
   *share_id = crypto::Hash<crypto::SHA512>(absolute_path.string());
 
   std::vector<pki::SignaturePacketPtr> signature_packets;
@@ -206,6 +206,27 @@ int UserStorage::CreateShare(const fs::path &absolute_path,
                   << ", with result of : " << result;
   }
   return kSuccess;
+}
+
+int UserStorage::AddShareUser(const fs::path &absolute_path,
+                              const std::string &user_id,
+                              bool admin_rights) {
+  return drive_in_user_space_->AddShareUser(absolute_path,
+                                            user_id,
+                                            admin_rights);
+}
+
+int UserStorage::RemoveShareUser(const fs::path &absolute_path,
+                                 const std::string &user_id) {
+  return drive_in_user_space_->RemoveShareUser(absolute_path, user_id);
+}
+
+int UserStorage::SetShareUsersRights(const fs::path &absolute_path,
+                                     const std::string &user_id,
+                                     bool admin_rights) {
+  return drive_in_user_space_->SetShareUsersRights(absolute_path,
+                                                   user_id,
+                                                   admin_rights);
 }
 
 }  // namespace lifestuff
