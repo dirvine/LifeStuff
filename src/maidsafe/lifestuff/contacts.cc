@@ -302,35 +302,59 @@ int ContactsHandler::ContactInfo(const std::string &public_username,
 }
 
 int ContactsHandler::OrderedContacts(std::vector<Contact> *list,
-                                     ContactOrder type) {
+                                     ContactOrder type,
+                                     uint16_t bitwise_status) {
   list->clear();
+  ContactSet *enquiry_pool = &contact_set_;
+  ContactSet contacts;
+  if (bitwise_status != 0x00) {
+    if (kUnitialised & bitwise_status)
+      GetContactsByStatus(&contacts, kUnitialised);
+    if (kRequestSent & bitwise_status)
+      GetContactsByStatus(&contacts, kRequestSent);
+    if (kPendingResponse & bitwise_status)
+      GetContactsByStatus(&contacts, kPendingResponse);
+    if (kConfirmed & bitwise_status)
+      GetContactsByStatus(&contacts, kConfirmed);
+    if (kBlocked & bitwise_status)
+      GetContactsByStatus(&contacts, kBlocked);
+    enquiry_pool = &contacts;
+  }
   switch (type) {
     case kAlphabetical:
-        for (auto it(contact_set_.get<Alphabetical>().begin());
-             it != contact_set_.get<Alphabetical>().end();
-             ++it) {
-          Contact contact = *it;
-          list->push_back(contact);
-        }
+        GetContactsByOrder<Alphabetical>(enquiry_pool, list);
         break;
     case kPopular:
-        for (auto it(contact_set_.get<Popular>().begin());
-             it != contact_set_.get<Popular>().end();
-             ++it) {
-          Contact contact = *it;
-          list->push_back(contact);
-        }
+        GetContactsByOrder<Popular>(enquiry_pool, list);
         break;
     case kLastContacted:
-        for (auto it(contact_set_.get<LastContacted>().begin());
-             it != contact_set_.get<LastContacted>().end();
-             ++it) {
-          Contact contact = *it;
-          list->push_back(contact);
-        }
+        GetContactsByOrder<LastContacted>(enquiry_pool, list);
         break;
   }
-  return 0;
+  return kSuccess;
+}
+
+template <typename T>
+void ContactsHandler::GetContactsByOrder(ContactSet *contacts,
+                                         std::vector<Contact> *list) {
+  for (auto it(contacts->get<T>().begin());
+      it != contacts->get<T>().end();
+      ++it) {
+    Contact contact = *it;
+    list->push_back(contact);
+  }
+}
+
+void ContactsHandler::GetContactsByStatus(ContactSet *contacts,
+                                          ContactStatus status) {
+  auto pit = contact_set_.get<Status>().equal_range(status);
+  auto it_begin = pit.first;
+  auto it_end = pit.second;
+  while (it_begin != it_end) {
+    Contact contact = *it_begin;
+    contacts->insert(*it_begin);
+    ++it_begin;
+  }
 }
 
 void ContactsHandler::ClearContacts() { contact_set_.clear(); }
