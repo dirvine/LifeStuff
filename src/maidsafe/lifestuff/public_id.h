@@ -83,7 +83,8 @@ class PublicId {
   int EnablePublicId(const std::string &public_username);
   // To confirm a contact once user has decided on the introduction
   int ConfirmContact(const std::string &public_username,
-                     const std::string &recipient_public_username);
+                     const std::string &recipient_public_username,
+                     bool confirm = true);
   // Remove a contact from current contact list, and inform other contacts the
   // new MMID
   int RemoveContact(const std::string &public_username,

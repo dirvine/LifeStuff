@@ -343,8 +343,8 @@ TEST_F(ContactsTest, BEH_ListContacts_Status) {
     Contact mic = mi_list[n];
     Contact mic1 = mi_list[n+1];
     ASSERT_GE(mic.rank, mic1.rank);
-    ASSERT_TRUE(mic.status == (kUnitialised | kPendingResponse));
-    ASSERT_TRUE(mic1.status == (kUnitialised | kPendingResponse));
+    ASSERT_NE(0, mic.status & (kUnitialised | kPendingResponse));
+    ASSERT_NE(0, mic1.status & (kUnitialised | kPendingResponse));
   }
   sch_->OrderedContacts(&mi_list, kLastContacted,
                         kRequestSent | kConfirmed | kBlocked);
@@ -353,8 +353,8 @@ TEST_F(ContactsTest, BEH_ListContacts_Status) {
     Contact mic = mi_list[n];
     Contact mic1 = mi_list[n+1];
     ASSERT_GE(mic.last_contact, mic1.last_contact);
-    ASSERT_TRUE(mic.status == (kRequestSent | kConfirmed | kBlocked));
-    ASSERT_TRUE(mic1.status == (kRequestSent | kConfirmed | kBlocked));
+    ASSERT_NE(0, mic.status & (kRequestSent | kConfirmed | kBlocked));
+    ASSERT_NE(0, mic1.status & (kRequestSent | kConfirmed | kBlocked));
   }
 }
 

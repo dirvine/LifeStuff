@@ -530,32 +530,38 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
 }
 
 int PublicId::ConfirmContact(const std::string &public_username,
-                             const std::string &recipient_public_username) {
-  Contact mic;
-  int result(session_->contact_handler_map()[public_username]->ContactInfo(
-                 recipient_public_username,
-                 &mic));
-  if (result != 0 || mic.status != kPendingResponse) {
-    DLOG(ERROR) << "No such pending username found: "
-                << recipient_public_username;
-    return -1;
-  }
+                             const std::string &recipient_public_username,
+                             bool confirm) {
+  if (confirm) {
+    Contact mic;
+    int result(session_->contact_handler_map()[public_username]->ContactInfo(
+                   recipient_public_username,
+                   &mic));
+    if (result != 0 || mic.status != kPendingResponse) {
+      DLOG(ERROR) << "No such pending username found: "
+                  << recipient_public_username;
+      return -1;
+    }
 
-  result = SendContactInfo(public_username, recipient_public_username, false);
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to send confirmation to "
-                << recipient_public_username;
-    return -1;
-  }
+    result = SendContactInfo(public_username, recipient_public_username, false);
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed to send confirmation to "
+                  << recipient_public_username;
+      return -1;
+    }
 
-  if (session_->contact_handler_map()[public_username]->UpdateStatus(
-          recipient_public_username,
-          kConfirmed) != 0) {
-    DLOG(ERROR) << "Failed to confirm " << recipient_public_username;
-    return -1;
-  }
+    if (session_->contact_handler_map()[public_username]->UpdateStatus(
+            recipient_public_username,
+            kConfirmed) != 0) {
+      DLOG(ERROR) << "Failed to confirm " << recipient_public_username;
+      return -1;
+    }
 
-  return kSuccess;
+    return kSuccess;
+  } else {
+    return session_->contact_handler_map()[public_username]->DeleteContact(
+               recipient_public_username);
+  }
 }
 
 int PublicId::RemoveContact(const std::string &public_username,
