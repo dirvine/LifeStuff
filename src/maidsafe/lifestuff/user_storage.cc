@@ -33,10 +33,13 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-UserStorage::UserStorage(std::shared_ptr<ChunkStore> chunk_store)
+UserStorage::UserStorage(std::shared_ptr<ChunkStore> chunk_store,
+                         std::shared_ptr<PacketManager> packet_manager)
     : mount_status_(false),
       chunk_store_(chunk_store),
       drive_in_user_space_(),
+      packet_manager_(packet_manager),
+      session_(),
       g_mount_dir_() {}
 
 void UserStorage::MountDrive(const fs::path &mount_dir_path,
@@ -48,6 +51,7 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
   if (!fs::exists(mount_dir_path))
     fs::create_directory(mount_dir_path);
 
+  session_ = session;
   asymm::Keys key_ring;
   key_ring.identity = session->passport_->PacketName(passport::kPmid, true);
   key_ring.public_key =
@@ -138,13 +142,70 @@ int UserStorage::ShareExisting(const fs::path &/*absolute_path*/,
 //                                               share_id);
 }
 
-int UserStorage::InsertShare(const fs::path &/*absolute_path*/,
-                             const std::string &/*directory_id*/,
-                             const std::string &/*share_id*/) {
-                                                                        return 9999;
-//  return drive_in_user_space_->InsertShare(absolute_path,
-//                                           directory_id,
-//                                           share_id);
+int UserStorage::CreateShare(const fs::path &absolute_path,
+                  std::map<Contact, bool> contacts,
+                  std::string *directory_id,
+                  std::string *share_id) {
+  *share_id = crypto::Hash<crypto::SHA512>(absolute_path.string());
+
+  std::vector<pki::SignaturePacketPtr> signature_packets;
+  pki::CreateChainedId(&signature_packets, 2);
+  // Store packets
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  std::vector<int> results;
+  results.push_back(kPendingResult);
+  results.push_back(kPendingResult);
+  packet_manager_->StorePacket(ComposeSignaturePacketName(
+                                  signature_packets[1]->name()),
+                               ComposeSignaturePacketValue(
+                                  *signature_packets[1]),
+                               signature_packets[1]->name(),
+                               std::bind(&SendContactInfoCallback,
+                                         std::placeholders::_1,
+                                         &mutex, &cond_var, &results[1]));
+  packet_manager_->StorePacket(ComposeSignaturePacketName(
+                                  signature_packets[0]->name()),
+                               ComposeSignaturePacketValue(
+                                  *signature_packets[0]),
+                               signature_packets[1]->name(),
+                               std::bind(&SendContactInfoCallback,
+                                         std::placeholders::_1,
+                                         &mutex, &cond_var, &results[0]));
+  int result(AwaitingResponse(mutex, cond_var, results));
+  if (result != kSuccess)
+    return result;
+  if (results[0] != kSuccess || results[1] != kSuccess) {
+    DLOG(ERROR) << "Failed to store packets.  Packet 1 : " << results[0]
+                << "   Packet 2 : " << results[1];
+    return kStorePacketFailure;
+  }
+
+  asymm::Keys key_ring;
+  key_ring.identity = signature_packets[1]->name();
+  key_ring.public_key = signature_packets[1]->value();
+  key_ring.private_key = signature_packets[1]->private_key();
+  key_ring.validation_token = signature_packets[1]->signature();
+  result = drive_in_user_space_->SetShareDetails(absolute_path,
+                                                 *share_id,
+                                                 key_ring,
+                                                 session_->unique_user_id(),
+                                                 directory_id);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed in creating share of " << absolute_path.string()
+                << ", with result of : " << result;
+    return result;
+  }
+  for (auto it = contacts.begin(); it != contacts.end(); ++it) {
+    int result(drive_in_user_space_->AddShareUser(absolute_path,
+                                                  (*it).first.public_username,
+                                                  (*it).second));
+    if (result != kSuccess)
+      DLOG(ERROR) << "Failed in add contact of " << (*it).first.public_username
+                  << "  into the share of " << absolute_path.string()
+                  << ", with result of : " << result;
+  }
+  return kSuccess;
 }
 
 }  // namespace lifestuff

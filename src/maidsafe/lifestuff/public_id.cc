@@ -43,17 +43,6 @@ namespace lifestuff {
 
 namespace {
 
-void SendContactInfoCallback(const int &response,
-                             boost::mutex *mutex,
-                             boost::condition_variable *cond_var,
-                             int *result) {
-  if (!mutex || !cond_var || !result)
-    return;
-  boost::mutex::scoped_lock lock(*mutex);
-  *result = response;
-  cond_var->notify_one();
-}
-
 std::string ComposeModifyAppendableByAll(const asymm::PrivateKey &signing_key,
                                          const char appendability) {
   std::string appendability_string(1, appendability);
@@ -727,32 +716,6 @@ int PublicId::InformContactInfo(const std::string &public_username,
       return kSendContactInfoFailure;
   }
 
-  return kSuccess;
-}
-
-int PublicId::AwaitingResponse(boost::mutex &mutex,
-                               boost::condition_variable &cond_var,
-                               std::vector<int> &results) {
-  int size(results.size());
-  try {
-    boost::mutex::scoped_lock lock(mutex);
-    if (!cond_var.timed_wait(lock,
-                             bptime::seconds(30),
-                             [&]()->bool {
-                               for (int i = 0; i < size; ++i) {
-                                 if (results[i] == kPendingResult)
-                                   return false;
-                               }
-                               return true;
-                             })) {
-      DLOG(ERROR) << "Timed out during waiting response.";
-      return kPublicIdTimeout;
-    }
-  }
-  catch(const std::exception &e) {
-    DLOG(ERROR) << "Exception Failure during waiting response : " << e.what();
-    return kPublicIdException;
-  }
   return kSuccess;
 }
 

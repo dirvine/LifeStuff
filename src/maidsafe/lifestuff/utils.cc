@@ -153,6 +153,57 @@ int GetValidatedMmidPublicKey(const std::string &mmid_name,
   return kSuccess;
 }
 
+void SendContactInfoCallback(const int &response,
+                             boost::mutex *mutex,
+                             boost::condition_variable *cond_var,
+                             int *result) {
+  if (!mutex || !cond_var || !result)
+    return;
+  boost::mutex::scoped_lock lock(*mutex);
+  *result = response;
+  cond_var->notify_one();
+}
+
+int AwaitingResponse(boost::mutex &mutex,
+                     boost::condition_variable &cond_var,
+                     std::vector<int> &results) {
+  int size(results.size());
+  try {
+    boost::mutex::scoped_lock lock(mutex);
+    if (!cond_var.timed_wait(lock,
+                             boost::posix_time::seconds(30),
+                             [&]()->bool {
+                               for (int i = 0; i < size; ++i) {
+                                 if (results[i] == kPendingResult)
+                                   return false;
+                               }
+                               return true;
+                             })) {
+      DLOG(ERROR) << "Timed out during waiting response.";
+      return kPublicIdTimeout;
+    }
+  }
+  catch(const std::exception &e) {
+    DLOG(ERROR) << "Exception Failure during waiting response : " << e.what();
+    return kPublicIdException;
+  }
+  return kSuccess;
+}
+
+std::string ComposeSignaturePacketName(const std::string &name) {
+  return name + std::string (1, pca::kSignaturePacket);
+}
+
+std::string ComposeSignaturePacketValue(
+    const maidsafe::pki::SignaturePacket &packet) {
+  std::string public_key;
+  asymm::EncodePublicKey(packet.value(), &public_key);
+  pca::SignedData signed_data;
+  signed_data.set_data(public_key);
+  signed_data.set_signature(packet.signature());
+  return signed_data.SerializeAsString();
+}
+
 }  // namespace lifestuff
 
 }  // namespace maidsafe

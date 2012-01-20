@@ -17,12 +17,15 @@
 #ifndef MAIDSAFE_LIFESTUFF_UTILS_H_
 #define MAIDSAFE_LIFESTUFF_UTILS_H_
 
-
 #include <memory>
 #include <string>
 
+#include "boost/thread/condition_variable.hpp"
+#include "boost/thread/mutex.hpp"
+
 #include "maidsafe/common/rsa.h"
 
+#include "maidsafe/pki/packet.h"
 
 namespace maidsafe {
 
@@ -40,6 +43,19 @@ int GetValidatedMmidPublicKey(const std::string &mmid_name,
                               std::shared_ptr<PacketManager> packet_manager,
                               asymm::PublicKey *public_key);
 
+void SendContactInfoCallback(const int &response,
+                             boost::mutex *mutex,
+                             boost::condition_variable *cond_var,
+                             int *result);
+
+int AwaitingResponse(boost::mutex &mutex,
+                     boost::condition_variable &cond_var,
+                     std::vector<int> &results);
+
+std::string ComposeSignaturePacketName(const std::string &name);
+
+std::string ComposeSignaturePacketValue(
+    const maidsafe::pki::SignaturePacket &packet);
 }  // namespace lifestuff
 
 }  // namespace maidsafe

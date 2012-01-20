@@ -28,7 +28,16 @@
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
 
+#include "maidsafe/pki/packet.h"
+
+#include "maidsafe/passport/passport_config.h"
+
+#include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/version.h"
+#include "maidsafe/lifestuff/utils.h"
+#include "maidsafe/lifestuff/contacts.h"
+#include "maidsafe/lifestuff/return_codes.h"
+#include "maidsafe/lifestuff/store_components/packet_manager.h"
 
 #ifdef WIN32
 #  include "maidsafe/drive/win_drive.h"
@@ -56,11 +65,13 @@ class ChunkStore;
 
 namespace lifestuff {
 
+class PacketManager;
 class Session;
 
 class UserStorage {
  public:
-  explicit UserStorage(std::shared_ptr<ChunkStore> chunk_store);
+  explicit UserStorage(std::shared_ptr<ChunkStore> chunk_store,
+                       std::shared_ptr<PacketManager> packet_manager);
   virtual ~UserStorage() {}
 
   virtual void MountDrive(const fs::path &mount_dir_path,
@@ -78,14 +89,17 @@ class UserStorage {
   int ShareExisting(const fs::path &absolute_path,
                     std::string *directory_id,
                     std::string *share_id);
-  int InsertShare(const fs::path &absolute_path,
-                  const std::string &directory_id,
-                  const std::string &share_id);
+  int CreateShare(const fs::path &absolute_path,
+                  std::map<Contact, bool> contacts,
+                  std::string *directory_id,
+                  std::string *share_id);
 
  private:
   bool mount_status_;
   std::shared_ptr<ChunkStore> chunk_store_;
   std::shared_ptr<MaidDriveInUserSpace> drive_in_user_space_;
+  std::shared_ptr<PacketManager> packet_manager_;
+  std::shared_ptr<Session> session_;
   fs::path g_mount_dir_;
 };
 
