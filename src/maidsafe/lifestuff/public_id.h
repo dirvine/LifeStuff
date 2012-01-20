@@ -32,6 +32,7 @@
 
 #include "maidsafe/passport/passport_config.h"
 
+#include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/version.h"
 
 #if MAIDSAFE_LIFESTUFF_VERSION != 111
@@ -92,7 +93,9 @@ class PublicId {
   ContactConfirmedSignalPtr contact_confirmed_signal() const;
 
   std::vector<std::string> ContactList(
-      const std::string &public_username) const;
+      const std::string &public_username,
+      ContactOrder type = kLastContacted,
+      uint16_t bitwise_status = 0x00) const;
   std::vector<std::string> PublicIdsList() const;
 
  private:

@@ -757,18 +757,17 @@ int PublicId::AwaitingResponse(boost::mutex &mutex,
 }
 
 std::vector<std::string> PublicId::ContactList(
-    const std::string &public_username) const {
+    const std::string &public_username,
+    ContactOrder type,
+    uint16_t bitwise_status) const {
   std::vector<std::string> contacts;
   std::vector<Contact> session_contacts;
-  int n(session_->contact_handler_map()[public_username]->OrderedContacts(
+  session_->contact_handler_map()[public_username]->OrderedContacts(
             &session_contacts,
-            kLastContacted));
-  if (n != 0) {
-    DLOG(ERROR) << "Failed to retrive list";
-  } else {
-    for (auto it(session_contacts.begin()); it != session_contacts.end(); ++it)
-      contacts.push_back((*it).public_username);
-  }
+            type,
+            bitwise_status);
+  for (auto it(session_contacts.begin()); it != session_contacts.end(); ++it)
+    contacts.push_back((*it).public_username);
   return contacts;
 }
 
