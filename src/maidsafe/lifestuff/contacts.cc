@@ -301,9 +301,9 @@ int ContactsHandler::ContactInfo(const std::string &public_username,
   return kSuccess;
 }
 
-int ContactsHandler::OrderedContacts(std::vector<Contact> *list,
-                                     ContactOrder type,
-                                     uint16_t bitwise_status) {
+void ContactsHandler::OrderedContacts(std::vector<Contact> *list,
+                                      ContactOrder type,
+                                      uint16_t bitwise_status) {
   list->clear();
   ContactSet *enquiry_pool = &contact_set_;
   ContactSet contacts;
@@ -331,7 +331,6 @@ int ContactsHandler::OrderedContacts(std::vector<Contact> *list,
         GetContactsByOrder<LastContacted>(enquiry_pool, list);
         break;
   }
-  return kSuccess;
 }
 
 template <typename T>
@@ -340,8 +339,7 @@ void ContactsHandler::GetContactsByOrder(ContactSet *contacts,
   for (auto it(contacts->get<T>().begin());
       it != contacts->get<T>().end();
       ++it) {
-    Contact contact = *it;
-    list->push_back(contact);
+    list->push_back(*it);
   }
 }
 
@@ -351,7 +349,6 @@ void ContactsHandler::GetContactsByStatus(ContactSet *contacts,
   auto it_begin = pit.first;
   auto it_end = pit.second;
   while (it_begin != it_end) {
-    Contact contact = *it_begin;
     contacts->insert(*it_begin);
     ++it_begin;
   }

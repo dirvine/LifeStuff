@@ -61,23 +61,23 @@ class ContactsTest : public testing::Test {
 
 TEST_F(ContactsTest, BEH_Create_ListContacts) {
   std::vector<Contact> mi_list;
-  ASSERT_EQ(0, sch_->OrderedContacts(&mi_list));
+  sch_->OrderedContacts(&mi_list);
   ASSERT_EQ(size_t(0), mi_list.size());
-  ASSERT_EQ(0, sch_->OrderedContacts(&mi_list, kPopular));
+  sch_->OrderedContacts(&mi_list, kPopular);
   ASSERT_EQ(size_t(0), mi_list.size());
-  ASSERT_EQ(0, sch_->OrderedContacts(&mi_list, kLastContacted));
+  sch_->OrderedContacts(&mi_list, kLastContacted);
   ASSERT_EQ(size_t(0), mi_list.size());
   ++test;
 }
 
 TEST_F(ContactsTest, BEH_AddContacts) {
   std::vector<Contact> mi_list;
-  ASSERT_EQ(0, sch_->OrderedContacts(&mi_list));
+  sch_->OrderedContacts(&mi_list);
   ASSERT_EQ(size_t(0), mi_list.size());
 
   Contact msc(contact_);
   ASSERT_EQ(0, sch_->AddContact(msc));
-  ASSERT_EQ(0, sch_->OrderedContacts(&mi_list));
+  sch_->OrderedContacts(&mi_list);
   ASSERT_EQ(size_t(1), mi_list.size());
 
   Contact mic;
@@ -93,7 +93,7 @@ TEST_F(ContactsTest, BEH_AddContacts) {
                                   msc.rank,
                                   msc.last_contact));
   ASSERT_EQ(-77, sch_->AddContact(msc));
-  ASSERT_EQ(0, sch_->OrderedContacts(&mi_list));
+  sch_->OrderedContacts(&mi_list);
   ASSERT_EQ(size_t(1), mi_list.size());
 
   msc.public_username = "palo.feo.smer";
@@ -105,18 +105,18 @@ TEST_F(ContactsTest, BEH_AddContacts) {
                                 msc.status,
                                 msc.rank,
                                 msc.last_contact));
-  ASSERT_EQ(0, sch_->OrderedContacts(&mi_list));
+  sch_->OrderedContacts(&mi_list);
   ASSERT_EQ(size_t(2), mi_list.size());
 }
 
 TEST_F(ContactsTest, BEH_DeleteContacts) {
   std::vector<Contact> mi_list;
-  ASSERT_EQ(0, sch_->OrderedContacts(&mi_list));
+  sch_->OrderedContacts(&mi_list);
   ASSERT_EQ(size_t(0), mi_list.size());
 
   Contact msc(contact_);
   ASSERT_EQ(0, sch_->AddContact(msc));
-  ASSERT_EQ(0, sch_->OrderedContacts(&mi_list));
+  sch_->OrderedContacts(&mi_list);
   ASSERT_EQ(size_t(1), mi_list.size());
 
   Contact mic;
@@ -125,19 +125,19 @@ TEST_F(ContactsTest, BEH_DeleteContacts) {
 
   ASSERT_EQ(0, sch_->DeleteContact(msc.public_username));
   ASSERT_EQ(-80, sch_->ContactInfo(msc.public_username, &mic));
-  ASSERT_EQ(0, sch_->OrderedContacts(&mi_list));
+  sch_->OrderedContacts(&mi_list);
   ASSERT_EQ(size_t(0), mi_list.size());
   ASSERT_EQ(-78, sch_->DeleteContact(msc.public_username));
 }
 
 TEST_F(ContactsTest, BEH_Update_Select_PubName_Contacts) {
   std::vector<Contact> mi_list;
-  ASSERT_EQ(0, sch_->OrderedContacts(&mi_list));
+  sch_->OrderedContacts(&mi_list);
   ASSERT_EQ(size_t(0), mi_list.size());
 
   Contact msc(contact_);
   ASSERT_EQ(0, sch_->AddContact(msc));
-  ASSERT_EQ(0, sch_->OrderedContacts(&mi_list));
+  sch_->OrderedContacts(&mi_list);
   ASSERT_EQ(size_t(1), mi_list.size());
 
   Contact mic;
@@ -245,7 +245,7 @@ TEST_F(ContactsTest, BEH_Update_Select_PubName_Contacts) {
 
 TEST_F(ContactsTest, BEH_ListContacts_Rank_LastContact) {
   std::vector<Contact> mi_list;
-  ASSERT_EQ(0, sch_->OrderedContacts(&mi_list));
+  sch_->OrderedContacts(&mi_list);
   ASSERT_EQ(size_t(0), mi_list.size());
 
   Contact msc(contact_);
@@ -256,10 +256,10 @@ TEST_F(ContactsTest, BEH_ListContacts_Rank_LastContact) {
     ASSERT_EQ(0, sch_->AddContact(msc));
   }
 
-  ASSERT_EQ(0, sch_->OrderedContacts(&mi_list));
+  sch_->OrderedContacts(&mi_list);
   ASSERT_EQ(size_t(20), mi_list.size());
 
-  ASSERT_EQ(0, sch_->OrderedContacts(&mi_list, kPopular));
+  sch_->OrderedContacts(&mi_list, kPopular);
   ASSERT_EQ(size_t(20), mi_list.size());
 
   for (unsigned int n = 0; n < mi_list.size()-1; n++) {
@@ -268,7 +268,7 @@ TEST_F(ContactsTest, BEH_ListContacts_Rank_LastContact) {
     ASSERT_GE(mic.rank, mic1.rank);
   }
 
-  ASSERT_EQ(0, sch_->OrderedContacts(&mi_list, kLastContacted));
+  sch_->OrderedContacts(&mi_list, kLastContacted);
   ASSERT_EQ(size_t(20), mi_list.size());
 
   for (unsigned int n = 0; n < mi_list.size()-1; n++) {
@@ -298,17 +298,15 @@ TEST_F(ContactsTest, BEH_ListContacts_Status) {
   } while (status_index < 5);
 
   std::vector<Contact> mi_list;
-  ASSERT_EQ(0, sch_->OrderedContacts(&mi_list));
+  sch_->OrderedContacts(&mi_list);
   ASSERT_EQ(size_t(100), mi_list.size());
 
   status_index = 0;
   do {
-    ASSERT_EQ(0, sch_->OrderedContacts(&mi_list, kAlphabetical,
-                                       types[status_index]));
+    sch_->OrderedContacts(&mi_list, kAlphabetical, types[status_index]);
     ASSERT_EQ(size_t(20), mi_list.size());
 
-    ASSERT_EQ(0, sch_->OrderedContacts(&mi_list, kPopular,
-                                       types[status_index]));
+    sch_->OrderedContacts(&mi_list, kPopular, types[status_index]);
     ASSERT_EQ(size_t(20), mi_list.size());
 
     for (unsigned int n = 0; n < mi_list.size()-1; n++) {
@@ -317,8 +315,7 @@ TEST_F(ContactsTest, BEH_ListContacts_Status) {
       ASSERT_GE(mic.rank, mic1.rank);
     }
 
-    ASSERT_EQ(0, sch_->OrderedContacts(&mi_list, kLastContacted,
-                                       types[status_index]));
+    sch_->OrderedContacts(&mi_list, kLastContacted, types[status_index]);
     ASSERT_EQ(size_t(20), mi_list.size());
 
     for (unsigned int n = 0; n < mi_list.size()-1; n++) {
@@ -330,8 +327,7 @@ TEST_F(ContactsTest, BEH_ListContacts_Status) {
   } while (status_index < 5);
 
   // Enquire multiple status at once
-  ASSERT_EQ(0, sch_->OrderedContacts(&mi_list, kPopular,
-                                     kUnitialised | kPendingResponse));
+  sch_->OrderedContacts(&mi_list, kPopular, kUnitialised | kPendingResponse);
   ASSERT_EQ(size_t(40), mi_list.size());
   for (unsigned int n = 0; n < mi_list.size()-1; n++) {
     Contact mic = mi_list[n];
@@ -340,8 +336,8 @@ TEST_F(ContactsTest, BEH_ListContacts_Status) {
     ASSERT_TRUE(mic.status & (kUnitialised | kPendingResponse));
     ASSERT_TRUE(mic1.status & (kUnitialised | kPendingResponse));
   }
-  ASSERT_EQ(0, sch_->OrderedContacts(&mi_list, kLastContacted,
-                                     kRequestSent | kConfirmed | kBlocked));
+  sch_->OrderedContacts(&mi_list, kLastContacted,
+                        kRequestSent | kConfirmed | kBlocked);
   ASSERT_EQ(size_t(60), mi_list.size());
   for (unsigned int n = 0; n < mi_list.size()-1; n++) {
     Contact mic = mi_list[n];

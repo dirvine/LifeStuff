@@ -130,9 +130,9 @@ class ContactsHandler {
                    const ContactStatus &status);
   int TouchContact(const std::string &public_username);
   int ContactInfo(const std::string &public_username, Contact *contact);
-  int OrderedContacts(std::vector<Contact> *list,
-                      ContactOrder type = kAlphabetical,
-                      uint16_t bitwise_status = 0x00);
+  void OrderedContacts(std::vector<Contact> *list,
+                       ContactOrder type = kAlphabetical,
+                       uint16_t bitwise_status = 0x00);
 
   void ClearContacts();
 

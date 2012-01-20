@@ -101,9 +101,7 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_EQ(1, session_->mounted());
   ASSERT_EQ('N', session_->win_drive());
   std::vector<Contact> list;
-  ASSERT_EQ(kSuccess,
-            session_->contact_handler_map()["My pub name"]->OrderedContacts(
-                &list));
+  session_->contact_handler_map()["My pub name"]->OrderedContacts(&list);
   ASSERT_EQ(size_t(1), list.size());
   ASSERT_EQ("pub_name", list[0].public_username);
   ASSERT_EQ("mpid_name", list[0].mpid_name);
