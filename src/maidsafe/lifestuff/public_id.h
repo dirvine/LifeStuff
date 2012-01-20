@@ -95,7 +95,7 @@ class PublicId {
   std::vector<std::string> ContactList(
       const std::string &public_username,
       ContactOrder type = kLastContacted,
-      uint16_t bitwise_status = 0x00) const;
+      uint16_t bitwise_status = kAll) const;
   std::vector<std::string> PublicIdsList() const;
 
  private:

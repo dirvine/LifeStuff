@@ -60,20 +60,20 @@ Contact::Contact(const std::string &public_name_in,
       last_contact(0) {}
 Contact::Contact(const PublicContact &contact)
     : public_username(contact.public_username()),
-      mpid_name(contact.mpid_name()),
+      mpid_name(),
       mmid_name(contact.mmid_name()),
       mpid_public_key(),
       mmid_public_key(),
       status(static_cast<ContactStatus>(contact.status())),
       rank(contact.rank()),
       last_contact(contact.last_contact()) {
-  asymm::PublicKey mpid_key, mmid_key;
-  asymm::DecodePublicKey(contact.mpid_public_key(), &mpid_key);
-  if (!asymm::ValidateKey(mpid_key))
-    DLOG(ERROR) << "Error decoding MPID public key";
-  asymm::DecodePublicKey(contact.mmid_public_key(), &mmid_key);
-  if (!asymm::ValidateKey(mmid_key))
-    DLOG(ERROR) << "Error decoding MMID public key";
+//  asymm::PublicKey mpid_key, mmid_key;
+//  asymm::DecodePublicKey(contact.mpid_public_key(), &mpid_key);
+//  if (!asymm::ValidateKey(mpid_key))
+//    DLOG(ERROR) << "Error decoding MPID public key";
+//  asymm::DecodePublicKey(contact.mmid_public_key(), &mmid_key);
+//  if (!asymm::ValidateKey(mmid_key))
+//    DLOG(ERROR) << "Error decoding MMID public key";
 }
 
 //  ContactsHandler
@@ -148,21 +148,7 @@ int ContactsHandler::UpdateContact(const Contact &contact) {
 
   return kSuccess;
 }
-/*
-  int UpdateMpidName(const std::string &public_username,
-                     const std::string &new_mpid_name);
-  int UpdateMmidName(const std::string &public_username,
-                     const std::string &new_mmid_name);
-  int UpdateMpidPublicKey(const std::string &public_username,
-                          const asymm::PublicKey &new_mpid_public_key);
-  int UpdateMmidPublicKey(const std::string &public_username,
-                          const asymm::PublicKey &new_mmid_public_key);
-  int UpdateStatus(const std::string &public_username,
-                   const Contact::Status &status);
-  int TouchContact(const std::string &public_username);
-  int GetContactInfo(const std::string &public_username, Contact *contact);
-  int OrderedContacts(std::vector<Contact> *list, Order type = 0);
-*/
+
 int ContactsHandler::UpdateMpidName(const std::string &public_username,
                                     const std::string &new_mpid_name) {
   ContactSet::iterator it = contact_set_.find(public_username);
@@ -337,8 +323,8 @@ template <typename T>
 void ContactsHandler::GetContactsByOrder(ContactSet *contacts,
                                          std::vector<Contact> *list) {
   for (auto it(contacts->get<T>().begin());
-      it != contacts->get<T>().end();
-      ++it) {
+       it != contacts->get<T>().end();
+       ++it) {
     list->push_back(*it);
   }
 }

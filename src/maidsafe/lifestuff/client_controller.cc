@@ -178,7 +178,8 @@ int ClientController::ParseDa() {
       public_username = data_atlas.contacts(n).own_public_username();
     }
     Contact c(data_atlas.contacts(n));
-    session_->contact_handler_map()[public_username]->AddContact(c);
+    int n(session_->contact_handler_map()[public_username]->AddContact(c));
+    DLOG(ERROR) << "Result of adding " << c.public_username << ": " << n;
   }
 
   return 0;

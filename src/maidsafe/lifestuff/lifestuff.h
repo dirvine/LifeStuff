@@ -49,6 +49,7 @@ enum DefConLevels { kDefCon1 = 1, kDefCon2, kDefCon3 };
 typedef std::function<void(int)> VoidFuncOneInt;  // NOLINT (Dan)
 
 enum ContactStatus {
+  kAll = 0x00,
   kUnitialised = 0x01,
   kRequestSent = 0x02,
   kPendingResponse = 0x04,
