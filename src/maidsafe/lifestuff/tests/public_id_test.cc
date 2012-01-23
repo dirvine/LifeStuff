@@ -435,7 +435,9 @@ TEST_F(PublicIdTest, FUNC_ContactList) {
   ASSERT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
   Sleep(interval_ * 3);
 
-  ContactMap contacts(public_id1_.ContactList(public_username1_));
+  ContactMap contacts(public_id1_.ContactList(public_username1_,
+                                              kAlphabetical,
+                                              kAll));
   ASSERT_EQ(size_t(n), contacts.size());
   for (auto it(usernames.begin()); it != usernames.end(); ++it)
     ASSERT_FALSE(contacts.find(*it) == contacts.end());
