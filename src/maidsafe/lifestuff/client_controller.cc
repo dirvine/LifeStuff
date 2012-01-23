@@ -178,7 +178,8 @@ int ClientController::ParseDa() {
       public_username = data_atlas.contacts(n).own_public_username();
     }
     Contact c(data_atlas.contacts(n));
-    session_->contact_handler_map()[public_username]->AddContact(c);
+    int res(session_->contact_handler_map()[public_username]->AddContact(c));
+    DLOG(ERROR) << "Result of adding " << c.public_username << ": " << res;
   }
 
   return 0;
@@ -439,7 +440,8 @@ bool ClientController::ChangePin(const std::string &new_pin) {
   int result = auth_->ChangePin(ser_da_, new_pin);
   if (result != kSuccess) {
     if (result == kFailedToDeleteOldPacket) {
-      DLOG(WARNING) << "Failed to delete old packets, otherwise changed PIN OK.";
+      DLOG(WARNING) <<
+          "Failed to delete old packets, otherwise changed PIN OK.";
       return true;
     } else {
       DLOG(ERROR) << "Failed to change PIN.";

@@ -20,6 +20,7 @@
 #include "boost/filesystem.hpp"
 
 #include "maidsafe/common/crypto.h"
+#include "maidsafe/common/rsa.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
@@ -108,8 +109,7 @@ std::string CreateOwnershipProof(const asymm::PrivateKey &private_key) {
 
 void GetPublicKey(const std::string &packet_name,
                   std::shared_ptr<Session> session,
-                  asymm::PublicKey *public_key,
-                  int /*type*/) {
+                  asymm::PublicKey *public_key) {
   std::shared_ptr<passport::Passport> pprt(session->passport_);
   passport::PacketType packet_type(passport::kUnknown);
   for (int i(passport::kAnmid); i != passport::kMid; ++i) {
@@ -144,8 +144,8 @@ void GetPublicKey(const std::string &packet_name,
       }
     }
     result = session->passport_->GetSelectableIdentityData(public_username,
-                                                            true,
-                                                            &data);
+                                                           true,
+                                                           &data);
     if (result == kSuccess && data.size() == 3U) {
       for (int n(0); n < 3; ++n) {
         if (std::get<0>(data.at(n)) == packet_name) {
@@ -215,7 +215,7 @@ bool FakeStoreManager::KeyUnique(const std::string &key,
                                  const asymm::Identity &signing_key_id) {
   asymm::PublicKey public_key;
   if (!signing_key_id.empty())
-    GetPublicKey(signing_key_id, session_, &public_key, 99);
+    GetPublicKey(signing_key_id, session_, &public_key);
   return !chunk_action_authority_->Has(key, "", public_key);
 }
 
@@ -224,7 +224,7 @@ void FakeStoreManager::KeyUnique(const std::string &key,
                                  const VoidFuncOneInt &cb) {
   asymm::PublicKey public_key;
   if (!signing_key_id.empty())
-    GetPublicKey(signing_key_id, session_, &public_key, 99);
+    GetPublicKey(signing_key_id, session_, &public_key);
   ReturnCode result(chunk_action_authority_->Has(key, "", public_key) ?
                     kKeyNotUnique : kKeyUnique);
   ExecReturnCodeCallback(cb, result);
@@ -240,7 +240,7 @@ int FakeStoreManager::GetPacket(const std::string &packet_name,
 
   asymm::PublicKey public_key;
   if (!signing_key_id.empty())
-    GetPublicKey(signing_key_id, session_, &public_key, 99);
+    GetPublicKey(signing_key_id, session_, &public_key);
 
   std::string data(chunk_action_authority_->Get(packet_name, "", public_key));
   if (data.empty()) {
@@ -276,12 +276,21 @@ void FakeStoreManager::StorePacket(const std::string &packet_name,
   }
 
   asymm::PublicKey public_key;
-  GetPublicKey(signing_key_id, session_, &public_key, 99);
+  GetPublicKey(signing_key_id, session_, &public_key);
   if (!asymm::ValidateKey(public_key)) {
-    DLOG(ERROR) << "FakeStoreManager::StorePacket - No public key";
-    ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
-    return;
+    if (signing_key_id == packet_name.substr(0, signing_key_id.size())) {
+      public_key = asymm::PublicKey();
+      pca::SignedData signed_data;
+      signed_data.ParseFromString(value);
+      asymm::DecodePublicKey(signed_data.data(), &public_key);
+      if (!asymm::ValidateKey(public_key)) {
+        DLOG(ERROR) << "FakeStoreManager::StorePacket - No public key";
+        ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
+        return;
+      }
+    }
   }
+
 
   if (!chunk_action_authority_->Store(packet_name, value, public_key)) {
     ExecReturnCodeCallback(cb, kStorePacketFailure);
@@ -304,7 +313,7 @@ void FakeStoreManager::DeletePacket(const std::string &packet_name,
   }
 
   asymm::PublicKey public_key;
-  GetPublicKey(signing_key_id, session_, &public_key, 99);
+  GetPublicKey(signing_key_id, session_, &public_key);
   if (!asymm::ValidateKey(public_key)) {
     DLOG(ERROR) << "FakeStoreManager::DeletePacket - No public key";
     ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
@@ -347,18 +356,21 @@ void FakeStoreManager::ModifyPacket(const std::string &packet_name,
   }
 
   asymm::PublicKey public_key;
-  GetPublicKey(signing_key_id, session_, &public_key, 99);
+  GetPublicKey(signing_key_id, session_, &public_key);
   if (!asymm::ValidateKey(public_key)) {
     ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
     DLOG(ERROR) << "FakeStoreManager::ModifyPacket - No public key";
     return;
   }
 
+  int64_t operation_diff;
   if (!chunk_action_authority_->Modify(packet_name,
                                        value,
                                        "",
-                                       public_key)) {
-    DLOG(ERROR) << "FakeStoreManager::ModifyPacket - Failure";
+                                       public_key,
+                                       &operation_diff)) {
+    DLOG(ERROR) << "FakeStoreManager::ModifyPacket - Failure - OD: "
+                << operation_diff;
     ExecReturnCodeCallback(cb, kUpdatePacketFailure);
     return;
   }

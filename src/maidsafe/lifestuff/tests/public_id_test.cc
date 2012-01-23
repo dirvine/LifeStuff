@@ -40,6 +40,8 @@ namespace lifestuff {
 
 namespace test {
 
+typedef std::map<std::string, ContactStatus> ContactMap;
+
 class PublicIdTest : public testing::Test {
  public:
   PublicIdTest()
@@ -265,6 +267,55 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
   ASSERT_FALSE(received_contact.mmid_name.empty());
 }
 
+TEST_F(PublicIdTest, FUNC_CreatePublicIdWithRefusal) {
+  // Create users who both accept new contacts
+  ASSERT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
+  ASSERT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
+
+  // Connect a slot which will reject the new contact
+  volatile bool invoked1(false), invoked2(false);
+  bs2::connection connection(public_id1_.new_contact_signal()->connect(
+      std::bind(&PublicIdTest::ContactRequestSlot,
+                this, args::_1, args::_2, &invoked1)));
+
+  std::string confirmed_contact;
+  bs2::connection connection2(public_id2_.contact_confirmed_signal()->connect(
+      std::bind(&PublicIdTest::ContactConfirmedSlot,
+                this, args::_1, &confirmed_contact, &invoked2)));
+
+  // Send the message and start checking for messages
+  ASSERT_EQ(kSuccess,
+            public_id2_.SendContactInfo(public_username2_, public_username1_));
+  ASSERT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
+  Contact received_contact;
+  ASSERT_EQ(kSuccess,
+            session2_->contact_handler_map()[public_username2_]->ContactInfo(
+                public_username1_,
+                &received_contact));
+  ASSERT_EQ(kRequestSent, received_contact.status);
+
+  while (!invoked1)
+    Sleep(bptime::milliseconds(100));
+
+  // Other side got message. Check status of contact and reply affirmatively.
+  ASSERT_EQ(public_username2_, received_public_username_);
+  received_contact = Contact();
+  ASSERT_EQ(kSuccess,
+            session1_->contact_handler_map()[public_username1_]->ContactInfo(
+                public_username2_,
+                &received_contact));
+  ASSERT_EQ(kPendingResponse, received_contact.status);
+  ASSERT_EQ(kSuccess,
+            public_id1_.ConfirmContact(public_username1_,
+                                       public_username2_,
+                                       false));
+  received_contact = Contact();
+  ASSERT_NE(kSuccess,
+            session1_->contact_handler_map()[public_username1_]->ContactInfo(
+                public_username2_,
+                &received_contact));
+}
+
 TEST_F(PublicIdTest, FUNC_DisablePublicId) {
   ASSERT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
 
@@ -384,10 +435,12 @@ TEST_F(PublicIdTest, FUNC_ContactList) {
   ASSERT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
   Sleep(interval_ * 3);
 
-  std::vector<std::string> contacts(public_id1_.ContactList(public_username1_));
+  ContactMap contacts(public_id1_.ContactList(public_username1_,
+                                              kAlphabetical,
+                                              kAll));
   ASSERT_EQ(size_t(n), contacts.size());
-  ASSERT_EQ(std::set<std::string>(usernames.begin(), usernames.end()),
-            std::set<std::string>(contacts.begin(), contacts.end()));
+  for (auto it(usernames.begin()); it != usernames.end(); ++it)
+    ASSERT_FALSE(contacts.find(*it) == contacts.end());
 }
 
 TEST_F(PublicIdTest, FUNC_PublicIdList) {

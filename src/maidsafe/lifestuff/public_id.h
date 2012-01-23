@@ -83,7 +83,8 @@ class PublicId {
   int EnablePublicId(const std::string &public_username);
   // To confirm a contact once user has decided on the introduction
   int ConfirmContact(const std::string &public_username,
-                     const std::string &recipient_public_username);
+                     const std::string &recipient_public_username,
+                     bool confirm = true);
   // Remove a contact from current contact list, and inform other contacts the
   // new MMID
   int RemoveContact(const std::string &public_username,
@@ -92,10 +93,10 @@ class PublicId {
   NewContactSignalPtr new_contact_signal() const;
   ContactConfirmedSignalPtr contact_confirmed_signal() const;
 
-  std::vector<std::string> ContactList(
+  std::map<std::string, ContactStatus> ContactList(
       const std::string &public_username,
       ContactOrder type = kLastContacted,
-      uint16_t bitwise_status = 0x00) const;
+      uint16_t bitwise_status = kConfirmed) const;
   std::vector<std::string> PublicIdsList() const;
 
  private:

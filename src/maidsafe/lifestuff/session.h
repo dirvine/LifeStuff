@@ -101,8 +101,7 @@ class Session {
 
   friend void GetPublicKey(const std::string&,
                            std::shared_ptr<Session>,
-                           asymm::PublicKey*,
-                           int type);
+                           asymm::PublicKey*);
   friend void GetPrivateKey(const std::string&,
                             std::shared_ptr<Session>,
                             asymm::PrivateKey*);

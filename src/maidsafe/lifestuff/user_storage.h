@@ -82,29 +82,57 @@ class UserStorage {
   virtual fs::path g_mount_dir();
   virtual bool mount_status();
 
+  // ********************* File / Folder Transfers *****************************
   int GetDataMap(const fs::path &absolute_path,
-                 std::string *serialised_data_map);
+                 std::string *serialised_data_map) const;
   int InsertDataMap(const fs::path &absolute_path,
                     const std::string &serialised_data_map);
-  int ShareExisting(const fs::path &absolute_path,
-                    std::string *directory_id,
-                    std::string *share_id);
-  int AcceptShare(const fs::path &absolute_path,
-                  const std::string &directory_id,
-                  const std::string &share_id,
-                  const asymm::Keys &share_keyring);
+  int GetDirectoryListing(const fs::path &absolute_path,
+                          std::string *parent_id,
+                          std::string *directory_id) const;
+  int InsertDirectoryListing(const fs::path &absolute_path,
+                             const std::string &parent_id,
+                             const std::string &directory_id);
+
+  // ****************************** Shares *************************************
+  int SetShareDetails(const fs::path &absolute_path,
+                      const std::string &share_id,
+                      const asymm::Keys &share_keyring,
+                      const std::string &this_user_id,
+                      std::string *directory_id);
   int CreateShare(const fs::path &absolute_path,
                   std::map<Contact, bool> contacts,
                   std::string *directory_id,
                   std::string *share_id);
+  int InsertShare(const fs::path &absolute_path,
+                  const std::string &directory_id,
+                  const std::string &share_id,
+                  const asymm::Keys &share_keyring);
   int AddShareUser(const fs::path &absolute_path,
                    const std::string &user_id,
                    bool admin_rights);
+  void GetAllShareUsers(const fs::path &absolute_path,
+                        std::map<std::string, bool> *all_share_users) const;
   int RemoveShareUser(const fs::path &absolute_path,
                       const std::string &user_id);
+  int GetShareUsersRights(const fs::path &absolute_path,
+                          const std::string &user_id,
+                          bool *admin_rights) const;
   int SetShareUsersRights(const fs::path &absolute_path,
                           const std::string &user_id,
                           bool admin_rights);
+
+  // **************************** File Notes ***********************************
+  int GetNotes(const fs::path &absolute_path,
+               std::vector<std::string> *notes) const;
+  int AddNote(const fs::path &absolute_path, const std::string &note);
+
+  // *************************** Hidden Files **********************************
+  int ReadHiddenFile(const fs::path &absolute_path, std::string *content) const;
+  int WriteHiddenFile(const fs::path &absolute_path,
+                      const std::string &content,
+                      bool overwrite_existing);
+  int DeleteHiddenFile(const fs::path &absolute_path);
 
  private:
   bool mount_status_;

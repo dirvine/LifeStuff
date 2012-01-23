@@ -282,9 +282,13 @@ TEST_F(ContactsTest, BEH_ListContacts_Status) {
   Contact msc(contact_);
   int indexing(0);
   int status_index(0);
-  std::vector<ContactStatus> types = { kUnitialised, kRequestSent,
-                                       kPendingResponse, kConfirmed,
-                                       kBlocked };
+  std::vector<ContactStatus> types;
+  types.push_back(kUnitialised);
+  types.push_back(kRequestSent);
+  types.push_back(kPendingResponse);
+  types.push_back(kConfirmed);
+  types.push_back(kBlocked);
+
   do {
     for (int n = 1; n < 21; n++) {
       msc.rank = RandomUint32() % 10;
@@ -303,10 +307,14 @@ TEST_F(ContactsTest, BEH_ListContacts_Status) {
 
   status_index = 0;
   do {
-    sch_->OrderedContacts(&mi_list, kAlphabetical, types[status_index]);
+    sch_->OrderedContacts(&mi_list,
+                          kAlphabetical,
+                          static_cast<uint16_t>(types[status_index]));
     ASSERT_EQ(size_t(20), mi_list.size());
 
-    sch_->OrderedContacts(&mi_list, kPopular, types[status_index]);
+    sch_->OrderedContacts(&mi_list,
+                          kPopular,
+                          static_cast<uint16_t>(types[status_index]));
     ASSERT_EQ(size_t(20), mi_list.size());
 
     for (unsigned int n = 0; n < mi_list.size()-1; n++) {
@@ -315,7 +323,9 @@ TEST_F(ContactsTest, BEH_ListContacts_Status) {
       ASSERT_GE(mic.rank, mic1.rank);
     }
 
-    sch_->OrderedContacts(&mi_list, kLastContacted, types[status_index]);
+    sch_->OrderedContacts(&mi_list,
+                          kLastContacted,
+                          static_cast<uint16_t>(types[status_index]));
     ASSERT_EQ(size_t(20), mi_list.size());
 
     for (unsigned int n = 0; n < mi_list.size()-1; n++) {
@@ -333,8 +343,8 @@ TEST_F(ContactsTest, BEH_ListContacts_Status) {
     Contact mic = mi_list[n];
     Contact mic1 = mi_list[n+1];
     ASSERT_GE(mic.rank, mic1.rank);
-    ASSERT_TRUE(mic.status & (kUnitialised | kPendingResponse));
-    ASSERT_TRUE(mic1.status & (kUnitialised | kPendingResponse));
+    ASSERT_NE(0, mic.status & (kUnitialised | kPendingResponse));
+    ASSERT_NE(0, mic1.status & (kUnitialised | kPendingResponse));
   }
   sch_->OrderedContacts(&mi_list, kLastContacted,
                         kRequestSent | kConfirmed | kBlocked);
@@ -343,8 +353,8 @@ TEST_F(ContactsTest, BEH_ListContacts_Status) {
     Contact mic = mi_list[n];
     Contact mic1 = mi_list[n+1];
     ASSERT_GE(mic.last_contact, mic1.last_contact);
-    ASSERT_TRUE(mic.status & (kRequestSent | kConfirmed | kBlocked));
-    ASSERT_TRUE(mic1.status & (kRequestSent | kConfirmed | kBlocked));
+    ASSERT_NE(0, mic.status & (kRequestSent | kConfirmed | kBlocked));
+    ASSERT_NE(0, mic1.status & (kRequestSent | kConfirmed | kBlocked));
   }
 }
 

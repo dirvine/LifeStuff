@@ -116,7 +116,7 @@ std::string MpidValue(const passport::SelectableIdentityData &data) {
 
 std::string MaidsafeContactIdName(const std::string &public_username) {
   return crypto::Hash<crypto::SHA512>(public_username) +
-         std::string (1, pca::kAppendableByAll);
+         std::string(1, pca::kAppendableByAll);
 }
 
 std::string MaidsafeContactIdValue(const passport::SelectableIdentityData &data,
@@ -163,6 +163,14 @@ std::string MaidsafeInboxValue(const passport::PacketData &data,
   allow_others_to_append->set_signature(packet_signature);
 
   return contact_id.SerializeAsString();
+}
+
+std::vector<std::string> MapToVector(
+    const std::map<std::string, ContactStatus> &map) {
+  std::vector<std::string> vector;
+  for (auto it(map.begin()); it != map.end(); ++it)
+  	vector.push_back((*it).first);
+  return vector;
 }
 
 }  // namespace
@@ -519,32 +527,38 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
 }
 
 int PublicId::ConfirmContact(const std::string &public_username,
-                             const std::string &recipient_public_username) {
-  Contact mic;
-  int result(session_->contact_handler_map()[public_username]->ContactInfo(
-                 recipient_public_username,
-                 &mic));
-  if (result != 0 || mic.status != kPendingResponse) {
-    DLOG(ERROR) << "No such pending username found: "
-                << recipient_public_username;
-    return -1;
-  }
+                             const std::string &recipient_public_username,
+                             bool confirm) {
+  if (confirm) {
+    Contact mic;
+    int result(session_->contact_handler_map()[public_username]->ContactInfo(
+                   recipient_public_username,
+                   &mic));
+    if (result != 0 || mic.status != kPendingResponse) {
+      DLOG(ERROR) << "No such pending username found: "
+                  << recipient_public_username;
+      return -1;
+    }
 
-  result = SendContactInfo(public_username, recipient_public_username, false);
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to send confirmation to "
-                << recipient_public_username;
-    return -1;
-  }
+    result = SendContactInfo(public_username, recipient_public_username, false);
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed to send confirmation to "
+                  << recipient_public_username;
+      return -1;
+    }
 
-  if (session_->contact_handler_map()[public_username]->UpdateStatus(
-          recipient_public_username,
-          kConfirmed) != 0) {
-    DLOG(ERROR) << "Failed to confirm " << recipient_public_username;
-    return -1;
-  }
+    if (session_->contact_handler_map()[public_username]->UpdateStatus(
+            recipient_public_username,
+            kConfirmed) != 0) {
+      DLOG(ERROR) << "Failed to confirm " << recipient_public_username;
+      return -1;
+    }
 
-  return kSuccess;
+    return kSuccess;
+  } else {
+    return session_->contact_handler_map()[public_username]->DeleteContact(
+               recipient_public_username);
+  }
 }
 
 int PublicId::RemoveContact(const std::string &public_username,
@@ -621,7 +635,8 @@ int PublicId::RemoveContact(const std::string &public_username,
 
   session_->passport_->ConfirmMovedMaidsafeInbox(public_username);
   // Informs each contact in the list about the new MMID
-  result = InformContactInfo(public_username, ContactList(public_username));
+  result = InformContactInfo(public_username,
+                             MapToVector(ContactList(public_username)));
 
   return result;
 }
@@ -719,18 +734,19 @@ int PublicId::InformContactInfo(const std::string &public_username,
   return kSuccess;
 }
 
-std::vector<std::string> PublicId::ContactList(
+std::map<std::string, ContactStatus> PublicId::ContactList(
     const std::string &public_username,
     ContactOrder type,
     uint16_t bitwise_status) const {
-  std::vector<std::string> contacts;
+  std::map<std::string, ContactStatus> contacts;
   std::vector<Contact> session_contacts;
   session_->contact_handler_map()[public_username]->OrderedContacts(
             &session_contacts,
             type,
             bitwise_status);
   for (auto it(session_contacts.begin()); it != session_contacts.end(); ++it)
-    contacts.push_back((*it).public_username);
+    contacts.insert(std::make_pair((*it).public_username, (*it).status));
+
   return contacts;
 }
 
