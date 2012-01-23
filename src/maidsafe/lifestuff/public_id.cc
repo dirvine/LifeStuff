@@ -176,6 +176,14 @@ std::string MaidsafeInboxValue(const passport::PacketData &data,
   return contact_id.SerializeAsString();
 }
 
+std::vector<std::string> MapToVector(
+    const std::map<std::string, ContactStatus> &map) {
+  std::vector<std::string> vector;
+  for (auto it(map.begin()); it != map.end(); ++it)
+  	vector.push_back((*it).first);
+  return vector;
+}
+
 }  // namespace
 
 PublicId::PublicId(std::shared_ptr<PacketManager> packet_manager,
@@ -638,7 +646,8 @@ int PublicId::RemoveContact(const std::string &public_username,
 
   session_->passport_->ConfirmMovedMaidsafeInbox(public_username);
   // Informs each contact in the list about the new MMID
-  result = InformContactInfo(public_username, ContactList(public_username));
+  result = InformContactInfo(public_username,
+                             MapToVector(ContactList(public_username)));
 
   return result;
 }
@@ -762,18 +771,19 @@ int PublicId::AwaitingResponse(boost::mutex &mutex,
   return kSuccess;
 }
 
-std::vector<std::string> PublicId::ContactList(
+std::map<std::string, ContactStatus> PublicId::ContactList(
     const std::string &public_username,
     ContactOrder type,
     uint16_t bitwise_status) const {
-  std::vector<std::string> contacts;
+  std::map<std::string, ContactStatus> contacts;
   std::vector<Contact> session_contacts;
   session_->contact_handler_map()[public_username]->OrderedContacts(
             &session_contacts,
             type,
             bitwise_status);
   for (auto it(session_contacts.begin()); it != session_contacts.end(); ++it)
-    contacts.push_back((*it).public_username);
+    contacts.insert(std::make_pair((*it).public_username, (*it).status));
+
   return contacts;
 }
 

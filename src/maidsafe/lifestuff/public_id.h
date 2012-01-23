@@ -93,10 +93,10 @@ class PublicId {
   NewContactSignalPtr new_contact_signal() const;
   ContactConfirmedSignalPtr contact_confirmed_signal() const;
 
-  std::vector<std::string> ContactList(
+  std::map<std::string, ContactStatus> ContactList(
       const std::string &public_username,
       ContactOrder type = kLastContacted,
-      uint16_t bitwise_status = kAll) const;
+      uint16_t bitwise_status = kConfirmed) const;
   std::vector<std::string> PublicIdsList() const;
 
  private:

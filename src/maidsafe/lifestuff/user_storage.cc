@@ -86,9 +86,14 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
   drive_in_user_space_->Mount(g_mount_dir_, L"LifeStuff Drive");
 #else
   g_mount_dir_ = mount_dir_path / session_name;
-  fs::create_directories(g_mount_dir_);
-  boost::thread(std::bind(&MaidDriveInUserSpace::Mount, drive_in_user_space_,
-                          g_mount_dir_, "LifeStuff Drive"));
+  boost::system::error_code ec;
+  if (fs::exists(g_mount_dir_, ec))
+    fs::remove_all(g_mount_dir_, ec);
+  fs::create_directories(g_mount_dir_, ec);
+  boost::thread(std::bind(&MaidDriveInUserSpace::Mount,
+                          drive_in_user_space_,
+                          g_mount_dir_,
+                          "LifeStuff Drive"));
   drive_in_user_space_->WaitUntilMounted();
 #endif
   mount_status_ = true;

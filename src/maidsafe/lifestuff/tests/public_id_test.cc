@@ -40,6 +40,8 @@ namespace lifestuff {
 
 namespace test {
 
+typedef std::map<std::string, ContactStatus> ContactMap;
+
 class PublicIdTest : public testing::Test {
  public:
   PublicIdTest()
@@ -433,10 +435,10 @@ TEST_F(PublicIdTest, FUNC_ContactList) {
   ASSERT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
   Sleep(interval_ * 3);
 
-  std::vector<std::string> contacts(public_id1_.ContactList(public_username1_));
+  ContactMap contacts(public_id1_.ContactList(public_username1_));
   ASSERT_EQ(size_t(n), contacts.size());
-  ASSERT_EQ(std::set<std::string>(usernames.begin(), usernames.end()),
-            std::set<std::string>(contacts.begin(), contacts.end()));
+  for (auto it(usernames.begin()); it != usernames.end(); ++it)
+    ASSERT_FALSE(contacts.find(*it) == contacts.end());
 }
 
 TEST_F(PublicIdTest, FUNC_PublicIdList) {
