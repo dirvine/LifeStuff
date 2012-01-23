@@ -89,6 +89,10 @@ class UserStorage {
   int ShareExisting(const fs::path &absolute_path,
                     std::string *directory_id,
                     std::string *share_id);
+  int AcceptShare(const fs::path &absolute_path,
+                  const std::string &directory_id,
+                  const std::string &share_id,
+                  const asymm::Keys &share_keyring);
   int CreateShare(const fs::path &absolute_path,
                   std::map<Contact, bool> contacts,
                   std::string *directory_id,

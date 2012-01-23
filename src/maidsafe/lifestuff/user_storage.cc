@@ -142,6 +142,16 @@ int UserStorage::ShareExisting(const fs::path &/*absolute_path*/,
 //                                               share_id);
 }
 
+int UserStorage::AcceptShare(const fs::path &absolute_path,
+                             const std::string &directory_id,
+                             const std::string &share_id,
+                             const asymm::Keys &share_keyring) {
+  return drive_in_user_space_->InsertShare(absolute_path,
+                                           directory_id,
+                                           share_id,
+                                           share_keyring);
+}
+
 int UserStorage::CreateShare(const fs::path &absolute_path,
                              std::map<Contact, bool> contacts,
                              std::string *directory_id,
