@@ -174,7 +174,7 @@ TEST_F(MessageHandlerTest, FUNC_SignalConnections) {
   ASSERT_FALSE(connection.connected());
 
   for (int n(pca::Message::ContentType_MIN);
-       n != pca::Message::ContentType_MAX;
+       n <= pca::Message::ContentType_MAX;
        ++n) {
     connection.disconnect();
     connection = message_handler1_.ConnectToSignal(
