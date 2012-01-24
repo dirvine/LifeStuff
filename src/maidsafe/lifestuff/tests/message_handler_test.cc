@@ -75,7 +75,8 @@ class MessageHandlerTest : public testing::Test {
         public_username2_("User 2 " + RandomAlphaNumericString(8)),
         public_username3_("User 3 " + RandomAlphaNumericString(8)),
         received_public_username_(),
-        interval_(3) {}
+        interval_(3),
+        multiple_messages_(5) {}
 
   bool NewContactSlot(const std::string &/*own_public_username*/,
                       const std::string &other_public_username,
@@ -84,11 +85,20 @@ class MessageHandlerTest : public testing::Test {
     return accept_new_contact;
   }
 
-  void NewMessagetSlot(const pca::Message &signal_message,
-                       pca::Message *slot_message,
-                       volatile bool *invoked) {
+  void NewMessageSlot(const pca::Message &signal_message,
+                      pca::Message *slot_message,
+                      volatile bool *invoked) {
     *slot_message = signal_message;
     *invoked = true;
+  }
+
+  void SeveralMessagesSlot(const pca::Message &signal_message,
+                           std::vector<pca::Message> *messages,
+                           volatile bool *invoked,
+                           size_t *count) {
+    messages->push_back(signal_message);
+    if (messages->size() == *count)
+      *invoked = true;
   }
 
  protected:
@@ -116,12 +126,15 @@ class MessageHandlerTest : public testing::Test {
 
   bool MessagesEqual(const pca::Message &left,
                      const pca::Message &right) const {
-    return left.type() == right.type() &&
+    bool b(left.type() == right.type() &&
            left.id() == right.id() &&
            left.parent_id() == right.parent_id() &&
            left.has_subject() == right.has_subject() &&
            left.subject() == right.subject() &&
-           left.content_size() == right.content_size();
+           left.content_size() == right.content_size());
+    if (left.has_timestamp() && right.has_timestamp())
+      b = b && (left.timestamp() == right.timestamp());
+    return b;
   }
 
   std::shared_ptr<fs::path> test_dir_;
@@ -136,11 +149,41 @@ class MessageHandlerTest : public testing::Test {
   std::string public_username1_, public_username2_, public_username3_,
               received_public_username_;
   bptime::seconds interval_;
+  size_t multiple_messages_;
 
  private:
   explicit MessageHandlerTest(const MessageHandlerTest&);
   MessageHandlerTest &operator=(const MessageHandlerTest&);
 };
+
+TEST_F(MessageHandlerTest, FUNC_SignalConnections) {
+  pca::Message received;
+  volatile bool invoked(false);
+  bs2::connection connection(message_handler1_.ConnectToSignal(
+                                 static_cast<pca::Message::ContentType>(
+                                     pca::Message::ContentType_MIN - 1),
+                                 std::bind(&MessageHandlerTest::NewMessageSlot,
+                                           this, args::_1, &received,
+                                           &invoked)));
+  ASSERT_FALSE(connection.connected());
+  connection = message_handler1_.ConnectToSignal(
+                   static_cast<pca::Message::ContentType>(
+                       pca::Message::ContentType_MAX + 1),
+                   std::bind(&MessageHandlerTest::NewMessageSlot,
+                             this, args::_1, &received, &invoked));
+  ASSERT_FALSE(connection.connected());
+
+  for (int n(pca::Message::ContentType_MIN);
+       n != pca::Message::ContentType_MAX;
+       ++n) {
+    connection.disconnect();
+    connection = message_handler1_.ConnectToSignal(
+                     static_cast<pca::Message::ContentType>(n),
+                     std::bind(&MessageHandlerTest::NewMessageSlot,
+                               this, args::_1, &received, &invoked));
+    ASSERT_TRUE(connection.connected());
+  }
+}
 
 TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
   // Create users who both accept new contacts
@@ -167,8 +210,9 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
 
   pca::Message received;
   volatile bool invoked(false);
-  message_handler2_.new_message_signal()->connect(
-      std::bind(&MessageHandlerTest::NewMessagetSlot,
+  message_handler2_.ConnectToSignal(
+      pca::Message::kNormal,
+      std::bind(&MessageHandlerTest::NewMessageSlot,
                 this, args::_1, &received, &invoked));
   ASSERT_EQ(kSuccess,
             message_handler2_.StartCheckingForNewMessages(interval_));
@@ -188,6 +232,102 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
     Sleep(bptime::milliseconds(100));
 
   ASSERT_TRUE(MessagesEqual(sent, received));
+}
+
+TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
+  // Create users who both accept new contacts
+  ASSERT_EQ(kSuccess, public_id1_.CreatePublicId(public_username1_, true));
+  ASSERT_EQ(kSuccess, public_id2_.CreatePublicId(public_username2_, true));
+
+  // Connect a slot which will reject the new contact
+  public_id1_.new_contact_signal()->connect(
+      std::bind(&MessageHandlerTest::NewContactSlot,
+                this, args::_1, args::_2, true));
+  ASSERT_EQ(kSuccess, public_id1_.StartCheckingForNewContacts(interval_));
+  ASSERT_EQ(kSuccess,
+            public_id2_.SendContactInfo(public_username2_, public_username1_));
+
+  Sleep(interval_ * 2);
+  ASSERT_EQ(public_username2_, received_public_username_);
+  Contact received_contact;
+  ASSERT_EQ(kSuccess,
+            session1_->contact_handler_map()[public_username1_]->ContactInfo(
+                received_public_username_,
+                &received_contact));
+  public_id1_.StopCheckingForNewContacts();
+  Sleep(interval_ * 2);
+
+  pca::Message sent;
+  sent.set_type(pca::Message::kNormal);
+  sent.set_id("id");
+  sent.set_parent_id("parent_id");
+  sent.set_sender_public_username(public_username1_);
+  sent.set_subject("subject");
+  sent.add_content(std::string("content"));
+
+  for (size_t n(0); n < multiple_messages_; ++n) {
+    sent.set_timestamp(crypto::Hash<crypto::SHA512>(
+                           boost::lexical_cast<std::string>(n)));
+  	ASSERT_EQ(kSuccess,
+              message_handler1_.Send(public_username1_,
+                                     public_username2_,
+                                     sent));
+  }
+
+  std::vector<pca::Message> received_messages;
+  volatile bool done(false);
+  bs2::connection connection(message_handler2_.ConnectToSignal(
+                                 pca::Message::kNormal,
+                                 std::bind(
+                                     &MessageHandlerTest::SeveralMessagesSlot,
+                                     this,
+                                     args::_1,
+                                     &received_messages,
+                                     &done,
+                                     &multiple_messages_)));
+  ASSERT_EQ(kSuccess,
+            message_handler2_.StartCheckingForNewMessages(interval_));
+  while (!done)
+    Sleep(bptime::milliseconds(100));
+
+  connection.disconnect();
+  message_handler2_.StopCheckingForNewMessages();
+  ASSERT_EQ(multiple_messages_, received_messages.size());
+  for (size_t a(0); a < multiple_messages_; ++a) {
+    sent.set_timestamp(crypto::Hash<crypto::SHA512>(
+                           boost::lexical_cast<std::string>(a)));
+    ASSERT_TRUE(MessagesEqual(sent, received_messages[a]));
+  }
+
+  done = false;
+  multiple_messages_ = 1;
+  for (size_t a(0); a < multiple_messages_ * 5; ++a) {
+    sent.set_timestamp(crypto::Hash<crypto::SHA512>(
+                           boost::lexical_cast<std::string>("n")));
+  	ASSERT_EQ(kSuccess,
+              message_handler1_.Send(public_username1_,
+                                     public_username2_,
+                                     sent));
+    DLOG(ERROR) << "Sent " << a;
+  }
+
+  // If same message is sent, it should be reported only once
+  received_messages.clear();
+  connection = message_handler2_.ConnectToSignal(
+                   pca::Message::kNormal,
+                   std::bind(&MessageHandlerTest::SeveralMessagesSlot,
+                             this,
+                             args::_1,
+                             &received_messages,
+                             &done,
+                             &multiple_messages_));
+  ASSERT_EQ(kSuccess,
+            message_handler2_.StartCheckingForNewMessages(interval_));
+  while (!done)
+    Sleep(bptime::milliseconds(100));
+
+  message_handler2_.StopCheckingForNewMessages();
+  ASSERT_EQ(multiple_messages_, received_messages.size());
 }
 
 TEST_F(MessageHandlerTest, BEH_RemoveContact) {
@@ -221,8 +361,9 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
 
   pca::Message received;
   volatile bool invoked(false);
-  message_handler1_.new_message_signal()->connect(
-      std::bind(&MessageHandlerTest::NewMessagetSlot,
+  message_handler1_.ConnectToSignal(
+      pca::Message::kNormal,
+      std::bind(&MessageHandlerTest::NewMessageSlot,
                 this, args::_1, &received, &invoked));
   ASSERT_EQ(kSuccess,
             message_handler1_.StartCheckingForNewMessages(interval_));
