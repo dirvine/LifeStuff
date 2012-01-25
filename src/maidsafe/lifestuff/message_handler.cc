@@ -23,7 +23,6 @@
 
 #include "maidsafe/passport/passport.h"
 
-#include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 
@@ -67,7 +66,14 @@ MessageHandler::MessageHandler(std::shared_ptr<PacketManager> packet_manager,
       session_(session),
       asio_service_(asio_service),
       get_new_messages_timer_(asio_service),
-      new_message_signal_(new NewMessageSignal) {}
+      new_message_signals_(),
+      received_messages_() {
+  for (int n(pca::Message::ContentType_MIN);
+       n <= pca::Message::ContentType_MAX;
+       ++n) {
+  	new_message_signals_.push_back(std::make_shared<NewMessageSignal>());
+  }
+}
 
 MessageHandler::~MessageHandler() {
   StopCheckingForNewMessages();
@@ -200,8 +206,16 @@ int MessageHandler::Send(const std::string &public_username,
   return kSuccess;
 }
 
-MessageHandler::NewMessageSignalPtr MessageHandler::new_message_signal() const {
-  return new_message_signal_;
+bs2::connection MessageHandler::ConnectToSignal(
+    const pca::Message::ContentType type,
+    const MessageFunction &function) {
+  if (type < pca::Message::ContentType_MIN ||
+      type > pca::Message::ContentType_MAX) {
+    DLOG(ERROR) << "No such content type, and therefore, no signal. Good day!";
+    return bs2::connection();
+  }
+
+  return new_message_signals_.at(static_cast<size_t>(type))->connect(function);
 }
 
 void MessageHandler::GetNewMessages(
@@ -214,6 +228,8 @@ void MessageHandler::GetNewMessages(
       return;
     }
   }
+
+  ClearExpiredReceivedMessages();
 
   int result(-1);
   std::vector<passport::SelectableIdData> selectables;
@@ -232,9 +248,10 @@ void MessageHandler::GetNewMessages(
     result = packet_manager_->GetPacket(AppendableByAllType(std::get<1>(*it)),
                                         std::get<0>(data.at(2)),
                                         &mmid_values);
-//    DLOG(INFO) << "Found " << mmid_values.size() << " values";
+
     if (result == kSuccess) {
       ProcessRetrieved(*it, mmid_values);
+      ClearExpiredReceivedMessages();
     } else if (result != kGetPacketEmptyData) {
       DLOG(WARNING) << "Failed to get MPID contents for " << std::get<0>(*it)
                   << ": " << result;
@@ -286,18 +303,49 @@ void MessageHandler::ProcessRetrieved(
       DLOG(ERROR) << "Failed to parse decrypted message";
       continue;
     }
-    (*new_message_signal_)(mmid_message);
+
+    if (ValidateMessage(mmid_message) &&
+        !MessagePreviouslyReceived(decrypted_message)) {
+      (*new_message_signals_.at(mmid_message.type()))(mmid_message);
+    }
   }
 }
 
 bool MessageHandler::ValidateMessage(const pca::Message &message) const {
-  if (message.IsInitialized()) {
-    for (auto it(0); it < message.content_size(); ++it)
-      if (!message.content(it).empty())
-        return true;
-  }
+  if (!message.IsInitialized())
+    return false;
+
+  if (message.type() < pca::Message::ContentType_MIN ||
+      message.type() > pca::Message::ContentType_MAX)
+    return false;
+
+  for (auto it(0); it < message.content_size(); ++it)
+    if (!message.content(it).empty())
+      return true;
 
   return false;
+}
+
+bool MessageHandler::MessagePreviouslyReceived(const std::string &message) {
+  if (received_messages_.find(message) == received_messages_.end()) {
+    received_messages_.insert(
+        std::make_pair(message,
+                       GetDurationSinceEpoch().total_milliseconds()));
+    return false;
+  }
+
+  return true;
+}
+
+void MessageHandler::ClearExpiredReceivedMessages() {
+  // TODO(Team): There might be a more efficient way of doing this (BIMAP)
+  uint64_t now(GetDurationSinceEpoch().total_milliseconds());
+  for (auto it(received_messages_.begin()); it != received_messages_.end(); ) {
+    if ((*it).second < now)
+      it = received_messages_.erase(it);
+    else
+      ++it;
+  }
 }
 
 }  // namespace lifestuff

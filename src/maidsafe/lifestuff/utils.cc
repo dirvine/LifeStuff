@@ -167,13 +167,13 @@ void SendContactInfoCallback(const int &response,
 int AwaitingResponse(boost::mutex &mutex,
                      boost::condition_variable &cond_var,
                      std::vector<int> &results) {
-  int size(results.size());
+  size_t size(results.size());
   try {
     boost::mutex::scoped_lock lock(mutex);
     if (!cond_var.timed_wait(lock,
                              boost::posix_time::seconds(30),
                              [&]()->bool {
-                               for (int i = 0; i < size; ++i) {
+                               for (size_t i = 0; i < size; ++i) {
                                  if (results[i] == kPendingResult)
                                    return false;
                                }

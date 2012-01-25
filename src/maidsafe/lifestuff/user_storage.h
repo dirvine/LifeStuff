@@ -22,7 +22,9 @@
 #ifndef MAIDSAFE_LIFESTUFF_USER_STORAGE_H_
 #define MAIDSAFE_LIFESTUFF_USER_STORAGE_H_
 
+#include <map>
 #include <string>
+#include <vector>
 #include "boost/filesystem.hpp"
 #include "boost/asio/io_service.hpp"
 #include "boost/thread/condition_variable.hpp"
@@ -136,6 +138,12 @@ class UserStorage {
                       const std::string &content,
                       bool overwrite_existing);
   int DeleteHiddenFile(const fs::path &absolute_path);
+
+
+  // ************************* Signals Handling ********************************
+  bs2::connection ConnectToDriveChanged(drive::DriveChangedSlotPtr slot) const;
+  bs2::connection ConnectToShareChanged(drive::ShareChangedSlotPtr slot) const;
+
 
  private:
   bool mount_status_;

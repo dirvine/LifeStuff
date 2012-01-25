@@ -23,13 +23,17 @@
 #include <string>
 #include <vector>
 
+#include "boost/config.hpp"
+#include "boost/signals2.hpp"
+
 #include "boost/asio/deadline_timer.hpp"
 #include "boost/asio/io_service.hpp"
+#include "boost/bimap/bimap.hpp"
 #include "boost/date_time/posix_time/posix_time_duration.hpp"
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
-#include "boost/signals2.hpp"
 
+#include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
 #include "maidsafe/passport/passport_config.h"
 
 #include "maidsafe/lifestuff/version.h"
@@ -40,16 +44,12 @@
 #endif
 
 namespace ba = boost::asio;
+namespace bbm = boost::bimaps;
 namespace bptime = boost::posix_time;
 namespace bs2 = boost::signals2;
+namespace pca = maidsafe::priv::chunk_actions;
 
 namespace maidsafe {
-
-namespace priv {
-namespace chunk_actions {
-class Message;
-}  // namespace chunk_actions
-}  // namespace priv
 
 namespace lifestuff {
 
@@ -59,8 +59,11 @@ class Session;
 
 class MessageHandler {
  public:
-  typedef bs2::signal<void(const priv::chunk_actions::Message&)> NewMessageSignal;  // NOLINT (Fraser)
+  typedef bs2::signal<void(const priv::chunk_actions::Message&)> NewMessageSignal;  // NOLINT (Dan)
+  typedef NewMessageSignal::slot_type MessageFunction;
   typedef std::shared_ptr<NewMessageSignal> NewMessageSignalPtr;
+  typedef std::map<std::string, uint64_t> ReceivedMessagesMap;
+
   MessageHandler(std::shared_ptr<PacketManager> packet_manager,
                  std::shared_ptr<Session> session,
                  ba::io_service &asio_service);  // NOLINT (Fraser)
@@ -76,7 +79,8 @@ class MessageHandler {
            const std::string &recipient_public_username,
            const priv::chunk_actions::Message &message);
 
-  NewMessageSignalPtr new_message_signal() const;
+  bs2::connection ConnectToSignal(const pca::Message::ContentType type,
+                                  const MessageFunction &function);
 
  private:
   MessageHandler(const MessageHandler&);
@@ -87,12 +91,15 @@ class MessageHandler {
                       const boost::system::error_code &error_code);
   void ProcessRetrieved(const passport::SelectableIdData &data,
                         const std::vector<std::string> &mmid_values);
+  bool MessagePreviouslyReceived(const std::string &message);
+  void ClearExpiredReceivedMessages();
 
   std::shared_ptr<PacketManager> packet_manager_;
   std::shared_ptr<Session> session_;
   ba::io_service &asio_service_;
   ba::deadline_timer get_new_messages_timer_;
-  NewMessageSignalPtr new_message_signal_;
+  std::vector<NewMessageSignalPtr> new_message_signals_;
+  ReceivedMessagesMap received_messages_;
 };
 
 }  // namespace lifestuff

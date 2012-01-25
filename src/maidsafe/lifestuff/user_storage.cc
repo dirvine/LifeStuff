@@ -510,6 +510,17 @@ int UserStorage::DeleteHiddenFile(const fs::path &absolute_path) {
   return drive_in_user_space_->DeleteHiddenFile(absolute_path);
 }
 
+bs2::connection UserStorage::ConnectToDriveChanged(
+    drive::DriveChangedSlotPtr slot) const {
+  return drive_in_user_space_->ConnectToDriveChanged(slot);
+}
+
+bs2::connection UserStorage::ConnectToShareChanged(
+    drive::ShareChangedSlotPtr slot) const {
+  return drive_in_user_space_->ConnectToShareChanged(slot);
+}
+
+
 }  // namespace lifestuff
 
 }  // namespace maidsafe

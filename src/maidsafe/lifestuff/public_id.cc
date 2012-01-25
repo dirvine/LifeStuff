@@ -665,9 +665,9 @@ int PublicId::InformContactInfo(const std::string &public_username,
   boost::mutex mutex;
   boost::condition_variable cond_var;
   std::vector<int> results;
-  int size(contacts.size());
+  size_t size(contacts.size());
 
-  for (int i = 0; i < size; ++i) {
+  for (size_t i = 0; i < size; ++i) {
     std::string recipient_public_username(contacts[i]);
     // Get recipient's public key
     asymm::PublicKey recipient_public_key;
@@ -726,8 +726,8 @@ int PublicId::InformContactInfo(const std::string &public_username,
   if (result != kSuccess)
     return result;
 
-  for (int i = 0; i < size; ++i) {
-    if (results[i] != kSuccess)
+  for (size_t j = 0; j < size; ++j) {
+    if (results[j] != kSuccess)
       return kSendContactInfoFailure;
   }
 

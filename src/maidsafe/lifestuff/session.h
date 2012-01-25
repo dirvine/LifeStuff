@@ -57,6 +57,7 @@ class AuthenticationTest;
 class ClientControllerTest;
 class LocalStoreManagerTest;
 class MessageHandlerTest;
+class PublicIdTest;
 class SessionTest;
 }  // namespace test
 
@@ -113,6 +114,7 @@ class Session {
   friend class test::ClientControllerTest;
   friend class test::LocalStoreManagerTest;
   friend class test::MessageHandlerTest;
+  friend class test::PublicIdTest;
   friend class test::SessionTest;
 
  private:
