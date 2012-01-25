@@ -71,7 +71,8 @@ class Session;
 class UserStorage {
  public:
   explicit UserStorage(std::shared_ptr<ChunkStore> chunk_store,
-                       std::shared_ptr<PacketManager> packet_manager);
+                       std::shared_ptr<PacketManager> packet_manager,
+                       std::shared_ptr<MessageHandler> message_handler);
   virtual ~UserStorage() {}
 
   virtual void MountDrive(const fs::path &mount_dir_path,
@@ -104,17 +105,19 @@ class UserStorage {
                   std::map<Contact, bool> contacts,
                   std::string *directory_id,
                   std::string *share_id);
+  int StopShare(const fs::path &absolute_path);
   int InsertShare(const fs::path &absolute_path,
                   const std::string &directory_id,
                   const std::string &share_id,
                   const asymm::Keys &share_keyring);
+  int LeaveShare(const fs::path &absolute_path);
   int AddShareUser(const fs::path &absolute_path,
                    const std::string &user_id,
                    bool admin_rights);
   void GetAllShareUsers(const fs::path &absolute_path,
                         std::map<std::string, bool> *all_share_users) const;
   int RemoveShareUser(const fs::path &absolute_path,
-                      const std::string &user_id);
+                      const std::vector<std::string> &user_ids);
   int GetShareUsersRights(const fs::path &absolute_path,
                           const std::string &user_id,
                           bool *admin_rights) const;
@@ -140,6 +143,7 @@ class UserStorage {
   std::shared_ptr<MaidDriveInUserSpace> drive_in_user_space_;
   std::shared_ptr<PacketManager> packet_manager_;
   std::shared_ptr<Session> session_;
+  std::shared_ptr<MessageHandler> message_handler_;
   fs::path g_mount_dir_;
 };
 
