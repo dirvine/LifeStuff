@@ -73,7 +73,6 @@ MessageHandler::MessageHandler(std::shared_ptr<PacketManager> packet_manager,
        ++n) {
   	new_message_signals_.push_back(std::make_shared<NewMessageSignal>());
   }
-  DLOG(ERROR) << "\n\n\n\n\t\t\t\t\t\tMessageHandler::MessageHandler signals size: " << new_message_signals_.size() << "\n\n\n\n";
 }
 
 MessageHandler::~MessageHandler() {
