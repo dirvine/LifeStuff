@@ -24,8 +24,8 @@
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/tests/test_callback.h"
-#if defined AMAZON_WEB_SERVICE_STORE
-#  include "maidsafe/lifestuff/store_components/aws_store_manager.h"
+#if defined REMOTE_STORE
+#  include "maidsafe/lifestuff/store_components/remote_store_manager.h"
 #else
 #  include "maidsafe/lifestuff/store_components/local_store_manager.h"
 #endif
@@ -50,9 +50,9 @@ class PublicIdTest : public testing::Test {
       : test_dir_(maidsafe::test::CreateTestPath()),
         session1_(new Session),
         session2_(new Session),
-#if defined AMAZON_WEB_SERVICE_STORE
-        packet_manager1_(new AWSStoreManager(session1_, *test_dir_)),
-        packet_manager2_(new AWSStoreManager(session2_, *test_dir_)),
+#if defined REMOTE_STORE
+        packet_manager1_(new RemoteStoreManager(session1_, test_dir_->string())),
+        packet_manager2_(new RemoteStoreManager(session2_, test_dir_->string())),
 #else
         packet_manager1_(new LocalStoreManager(session1_, test_dir_->string())),
         packet_manager2_(new LocalStoreManager(session2_, test_dir_->string())),
@@ -208,7 +208,7 @@ TEST_F(PublicIdTest, FUNC_CreateInvalidId) {
   // The remote chunkstore doesn't check on AWS during the Has operation, so
   // this results in an attampt to store the ID packets again, hence the
   // different failures below.
-#if defined AMAZON_WEB_SERVICE_STORE
+#if defined REMOTE_STORE
   EXPECT_EQ(kStorePublicIdFailure,
             public_id1_.CreatePublicId(public_username1_, false));
 #else
@@ -539,8 +539,13 @@ TEST_F(PublicIdTest, FUNC_RecoveryOfPendingContacts) {
     CreateTestSignaturePackets(session1);
     CreateTestSignaturePackets(session2);
     std::shared_ptr<PacketManager>
+#if defined REMOTE_STORE
+        packet_manager1(new RemoteStoreManager(session1, test_dir_->string())),
+        packet_manager2(new RemoteStoreManager(session2, test_dir_->string()));
+#else
         packet_manager1(new LocalStoreManager(session1, test_dir_->string())),
         packet_manager2(new LocalStoreManager(session2, test_dir_->string()));
+#endif
     ba::io_service asio_service1, asio_service2;
     std::shared_ptr<ba::io_service::work>
         work1(new ba::io_service::work(asio_service1)),
@@ -609,8 +614,13 @@ TEST_F(PublicIdTest, FUNC_RecoveryOfPendingContacts) {
     LoadSession(session1, serialised_keyring1, serialised_selectables1, da1);
     LoadSession(session2, serialised_keyring2, serialised_selectables2, da2);
     std::shared_ptr<PacketManager>
+#if defined REMOTE_STORE
+        packet_manager1(new RemoteStoreManager(session1, test_dir_->string())),
+        packet_manager2(new RemoteStoreManager(session2, test_dir_->string()));
+#else
         packet_manager1(new LocalStoreManager(session1, test_dir_->string())),
         packet_manager2(new LocalStoreManager(session2, test_dir_->string()));
+#endif
     ba::io_service asio_service1, asio_service2;
     std::shared_ptr<ba::io_service::work>
         work1(new ba::io_service::work(asio_service1)),
@@ -672,8 +682,13 @@ TEST_F(PublicIdTest, FUNC_RecoveryOfPendingContacts) {
     LoadSession(session1, serialised_keyring1, serialised_selectables1, da1);
     LoadSession(session2, serialised_keyring2, serialised_selectables2, da2);
     std::shared_ptr<PacketManager>
+#if defined REMOTE_STORE
+        packet_manager1(new RemoteStoreManager(session1, test_dir_->string())),
+        packet_manager2(new RemoteStoreManager(session2, test_dir_->string()));
+#else
         packet_manager1(new LocalStoreManager(session1, test_dir_->string())),
         packet_manager2(new LocalStoreManager(session2, test_dir_->string()));
+#endif
     ba::io_service asio_service1, asio_service2;
     std::shared_ptr<ba::io_service::work>
         work1(new ba::io_service::work(asio_service1)),
@@ -743,8 +758,13 @@ TEST_F(PublicIdTest, FUNC_RecoveryOfPendingContacts) {
     LoadSession(session1, serialised_keyring1, serialised_selectables1, da1);
     LoadSession(session2, serialised_keyring2, serialised_selectables2, da2);
     std::shared_ptr<PacketManager>
+#if defined REMOTE_STORE
+        packet_manager1(new RemoteStoreManager(session1, test_dir_->string())),
+        packet_manager2(new RemoteStoreManager(session2, test_dir_->string()));
+#else
         packet_manager1(new LocalStoreManager(session1, test_dir_->string())),
         packet_manager2(new LocalStoreManager(session2, test_dir_->string()));
+#endif
     ba::io_service asio_service1, asio_service2;
     std::shared_ptr<ba::io_service::work>
         work1(new ba::io_service::work(asio_service1)),

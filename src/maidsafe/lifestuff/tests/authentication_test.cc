@@ -32,8 +32,8 @@
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/tests/test_callback.h"
-#if defined AMAZON_WEB_SERVICE_STORE
-#  include "maidsafe/lifestuff/store_components/aws_store_manager.h"
+#if defined REMOTE_STORE
+#  include "maidsafe/lifestuff/store_components/remote_store_manager.h"
 #else
 #  include "maidsafe/lifestuff/store_components/local_store_manager.h"
 #endif
@@ -53,8 +53,8 @@ class AuthenticationTest : public testing::Test {
   AuthenticationTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
         session_(new Session),
-#if defined AMAZON_WEB_SERVICE_STORE
-        packet_manager_(new AWSStoreManager(session_, *test_dir_)),
+#if defined REMOTE_STORE
+        packet_manager_(new RemoteStoreManager(session_, test_dir_->string())),
 #else
         packet_manager_(new LocalStoreManager(session_, test_dir_->string())),
 #endif

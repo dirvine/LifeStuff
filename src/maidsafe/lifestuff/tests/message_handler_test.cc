@@ -28,8 +28,8 @@
 #include "maidsafe/lifestuff/public_id.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/tests/test_callback.h"
-#if defined AMAZON_WEB_SERVICE_STORE
-#  include "maidsafe/lifestuff/store_components/aws_store_manager.h"
+#if defined REMOTE_STORE
+#  include "maidsafe/lifestuff/store_components/remote_store_manager.h"
 #else
 #  include "maidsafe/lifestuff/store_components/local_store_manager.h"
 #endif
@@ -54,10 +54,10 @@ class MessageHandlerTest : public testing::Test {
         session1_(new Session),
         session2_(new Session),
         session3_(new Session),
-#if defined AMAZON_WEB_SERVICE_STORE
-        packet_manager1_(new AWSStoreManager(session1_, *test_dir_)),
-        packet_manager2_(new AWSStoreManager(session2_, *test_dir_)),
-        packet_manager3_(new AWSStoreManager(session3_, *test_dir_)),
+#if defined REMOTE_STORE
+        packet_manager1_(new RemoteStoreManager(session1_, test_dir_->string())),
+        packet_manager2_(new RemoteStoreManager(session2_, test_dir_->string())),
+        packet_manager3_(new RemoteStoreManager(session3_, test_dir_->string())),
 #else
         packet_manager1_(new LocalStoreManager(session1_, test_dir_->string())),
         packet_manager2_(new LocalStoreManager(session2_, test_dir_->string())),

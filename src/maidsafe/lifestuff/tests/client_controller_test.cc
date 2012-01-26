@@ -38,8 +38,8 @@
 #include "maidsafe/lifestuff/client_controller.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
-#if defined AMAZON_WEB_SERVICE_STORE
-#  include "maidsafe/lifestuff/store_components/aws_store_manager.h"
+#if defined REMOTE_STORE
+#  include "maidsafe/lifestuff/store_components/remote_store_manager.h"
 #else
 #  include "maidsafe/lifestuff/store_components/local_store_manager.h"
 #endif
@@ -61,8 +61,8 @@ class ClientControllerTest : public testing::Test {
       : test_dir_(maidsafe::test::CreateTestPath()),
         session_(new Session),
         cc_(new ClientController(session_)),
-#if defined AMAZON_WEB_SERVICE_STORE
-        packet_manager_(new AWSStoreManager(session_, *test_dir_)) {}
+#if defined REMOTE_STORE
+        packet_manager_(new RemoteStoreManager(session_, test_dir_->string())) {}
 #else
         packet_manager_(new LocalStoreManager(session_, test_dir_->string())) {}
 #endif
@@ -87,9 +87,9 @@ class ClientControllerTest : public testing::Test {
   std::shared_ptr<ClientController> CreateSecondClientController() {
     std::shared_ptr<Session> ss2(new Session);
     std::shared_ptr<ClientController> cc2(new ClientController(ss2));
-#if defined AMAZON_WEB_SERVICE_STORE
+#if defined REMOTE_STORE
     std::shared_ptr<PacketManager>
-        packet_manager2(new AWSStoreManager(ss2, *test_dir_));
+        packet_manager2(new RemoteStoreManager(ss2, test_dir_->string()));
 #else
     std::shared_ptr<PacketManager>
         packet_manager2(new LocalStoreManager(ss2, test_dir_->string()));

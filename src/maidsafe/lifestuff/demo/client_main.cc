@@ -27,8 +27,8 @@
 #include "maidsafe/lifestuff/client_controller.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/demo/commands.h"
-#if defined AMAZON_WEB_SERVICE_STORE
-#  include "maidsafe/lifestuff/store_components/aws_store_manager.h"
+#if defined REMOTE_STORE
+#  include "maidsafe/lifestuff/store_components/remote_store_manager.h"
 #else
 #  include "maidsafe/lifestuff/store_components/local_store_manager.h"
 #endif
@@ -51,8 +51,8 @@ int main(int /*argc*/, char *argv[]) {
       new maidsafe::lifestuff::Session);
   std::shared_ptr<maidsafe::lifestuff::ClientController> cc(
       new maidsafe::lifestuff::ClientController(session));
-#if defined AMAZON_WEB_SERVICE_STORE
-  cc->Init<maidsafe::lifestuff::AWSStoreManager>();
+#if defined REMOTE_STORE
+  cc->Init<maidsafe::lifestuff::RemoteStoreManager>();
 #else
   cc->Init<maidsafe::lifestuff::LocalStoreManager>();
 #endif
