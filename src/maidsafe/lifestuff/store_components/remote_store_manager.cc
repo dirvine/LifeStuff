@@ -127,9 +127,18 @@ struct RemoteStoreManager::SignalToCallback {
                    RemoteChunkStore::OperationType type_in)
       : chunk_name(chunk_name_in),
         cb(cb_in),
+        gpcb(),
+        type(type_in) {}
+  SignalToCallback(const std::string &chunk_name_in,
+                   const GetPacketFunctor &gpcb_in,
+                   RemoteChunkStore::OperationType type_in)
+      : chunk_name(chunk_name_in),
+        cb(),
+        gpcb(gpcb_in),
         type(type_in) {}
   std::string chunk_name;
   VoidFuncOneInt cb;
+  GetPacketFunctor gpcb;
   RemoteChunkStore::OperationType type;
 };
 
@@ -261,9 +270,6 @@ int RemoteStoreManager::GetPacket(const std::string &packet_name,
                                   std::vector<std::string> *results) {
   DLOG(INFO) << "Searching <" << Base32Substr(packet_name) << ">";
 
-  {
-    boost::mutex::scoped_lock loch_harray(signal_to_cb_mutex_);
-  }
   BOOST_ASSERT(results);
   results->clear();
 
@@ -282,13 +288,15 @@ int RemoteStoreManager::GetPacket(const std::string &packet_name,
 }
 
 void RemoteStoreManager::GetPacket(const std::string &packetname,
-                                 const asymm::Identity &signing_key_id,
-                                 const GetPacketFunctor &lpf) {
-  std::vector<std::string> results;
-  ReturnCode rc(static_cast<ReturnCode>(GetPacket(packetname,
-                                                  signing_key_id,
-                                                  &results)));
-  ExecReturnLoadPacketCallback(lpf, results, rc);
+                                   const asymm::Identity &signing_key_id,
+                                   const GetPacketFunctor &lpf) {
+  {
+    boost::mutex::scoped_lock loch_harray(signal_to_cb_mutex_);
+    sig_to_cb_list_.push_back(SignalToCallback(packet_name,
+                                               lpf,
+                                               RemoteChunkStore::kOpGet));
+  }
+  client_chunk_store_->Get(packet_name);
 }
 
 void RemoteStoreManager::StorePacket(const std::string &packet_name,
@@ -320,6 +328,14 @@ void RemoteStoreManager::StorePacket(const std::string &packet_name,
     }
   }
 
+  {
+    boost::mutex::scoped_lock loch_harray(signal_to_cb_mutex_);
+    sig_to_cb_list_.push_back(SignalToCallback(packet_name,
+                                               cb,
+                                               RemoteChunkStore::kOpStore));
+  }
+
+  client_chunk_store_->Store(packet_name, value, ValidationData());
 
   if (!chunk_action_authority_->Store(packet_name, value, public_key)) {
     ExecReturnCodeCallback(cb, kStorePacketFailure);
