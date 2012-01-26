@@ -36,6 +36,7 @@
 
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/client_controller.h"
+#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
 #if defined AMAZON_WEB_SERVICE_STORE
 #  include "maidsafe/lifestuff/store_components/aws_store_manager.h"

@@ -21,6 +21,7 @@
 
 #include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/data_atlas_pb.h"
+#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/tests/test_callback.h"
 #if defined AMAZON_WEB_SERVICE_STORE
