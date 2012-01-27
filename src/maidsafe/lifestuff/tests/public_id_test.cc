@@ -51,8 +51,10 @@ class PublicIdTest : public testing::Test {
         session1_(new Session),
         session2_(new Session),
 #if defined REMOTE_STORE
-        packet_manager1_(new RemoteStoreManager(session1_, test_dir_->string())),
-        packet_manager2_(new RemoteStoreManager(session2_, test_dir_->string())),
+        packet_manager1_(new RemoteStoreManager(session1_,
+                                                test_dir_->string())),
+        packet_manager2_(new RemoteStoreManager(session2_,
+                                                test_dir_->string())),
 #else
         packet_manager1_(new LocalStoreManager(session1_, test_dir_->string())),
         packet_manager2_(new LocalStoreManager(session2_, test_dir_->string())),

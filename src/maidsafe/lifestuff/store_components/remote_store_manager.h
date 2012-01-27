@@ -14,9 +14,10 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_FAKE_STORE_MANAGER_H_
-#define MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_FAKE_STORE_MANAGER_H_
+#ifndef MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_REMOTE_STORE_MANAGER_H_
+#define MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_REMOTE_STORE_MANAGER_H_
 
+#include <list>
 #include <memory>
 #include <string>
 #include <vector>
@@ -27,6 +28,7 @@
 #include "boost/thread/mutex.hpp"
 
 #include "maidsafe/common/rsa.h"
+#include "maidsafe/pd/client/client_container.h"
 
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/version.h"
@@ -41,8 +43,7 @@
 namespace maidsafe {
 
 namespace priv { class ChunkActionAuthority; }
-
-class ChunkStore;
+namespace pd { class RemoteChunkStore; }
 
 namespace lifestuff {
 
@@ -59,49 +60,54 @@ class RemoteStoreManager : public PacketManager {
   bool KeyUnique(const std::string &key, const std::string &signing_key_id);
   void KeyUnique(const std::string &key,
                  const std::string &signing_key_id,
-                 const VoidFuncOneInt &cb);
+                 const VoidFuncOneInt &callback);
   int GetPacket(const std::string &packet_name,
                 const std::string &signing_key_id,
-                std::vector<std::string> *results);
+                std::string *value);
   void GetPacket(const std::string &packet_name,
                  const std::string &signing_key_id,
-                 const GetPacketFunctor &lpf);
+                 const GetPacketFunctor &callback);
   void StorePacket(const std::string &packet_name,
                    const std::string &value,
                    const std::string &signing_key_id,
-                   const VoidFuncOneInt &cb);
+                   const VoidFuncOneInt &callback);
   void DeletePacket(const std::string &packet_name,
                     const std::string &signing_key_id,
-                    const VoidFuncOneInt &cb);
+                    const VoidFuncOneInt &callback);
   void ModifyPacket(const std::string &packet_name,
                     const std::string &value,
                     const std::string &signing_key_id,
-                    const VoidFuncOneInt &cb);
+                    const VoidFuncOneInt &callback);
   std::shared_ptr<ChunkStore> chunk_store() const;
 
-  void ChunkGot(const std::string &chunk_name,
-                const ReturnCode &return_code);
-  void ChunkStored(const std::string &chunk_name,
-                   const ReturnCode &return_code);
-  void ChunkDeleted(const std::string &chunk_name,
-                    const ReturnCode &return_code);
-  void ChunkModified(const std::string &chunk_name,
-                     const ReturnCode &return_code);
+  void FindAndExecCallback(const std::string &chunk_name,
+                           const int &op_type,
+                           const int &return_code);
 
  private:
   struct SignalToCallback;
 
 //  ReturnCode Init(const boost::filesystem::path &buffered_chunk_store_dir);
   void ExecReturnCodeCallback(VoidFuncOneInt callback, ReturnCode return_code);
-  void ExecReturnLoadPacketCallback(GetPacketFunctor callback,
-                                    std::vector<std::string> results,
-                                    ReturnCode return_code);
+  void ExecReturnGetPacketCallback(GetPacketFunctor callback,
+                                   std::string result,
+                                   ReturnCode return_code);
+  AlternativeStore::ValidationData GetValidationData(
+      const std::string &packet_name,
+      bool create_proof) const;
 
-  boost::mutex signal_to_cb_mutex_;
-  std::list<SignalToCallback> sig_to_cb_list_;
-  ClientContainer client_container_;
-  std::shared_ptr<ChunkStore> client_chunk_store_;
+  // TODO(Fraser#5#): 2012-01-27 - Remove once RCS implements Update
+  void TempExecStoreAfterDelete(
+      const std::string &packet_name,
+      const std::string &value,
+      AlternativeStore::ValidationData validation_data,
+      const VoidFuncOneInt &callback);
+
+  pd::ClientContainer client_container_;
+  std::shared_ptr<pd::RemoteChunkStore> client_chunk_store_;
   std::shared_ptr<Session> session_;
+  std::shared_ptr<std::list<SignalToCallback>> sig_to_cb_list_;
+  boost::mutex signal_to_cb_mutex_;
 
   RemoteStoreManager &operator=(const RemoteStoreManager&);
   RemoteStoreManager(const RemoteStoreManager&);
@@ -111,4 +117,4 @@ class RemoteStoreManager : public PacketManager {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_FAKE_STORE_MANAGER_H_
+#endif  // MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_REMOTE_STORE_MANAGER_H_

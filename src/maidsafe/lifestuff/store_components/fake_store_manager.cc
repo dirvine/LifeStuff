@@ -136,11 +136,11 @@ void GetPublicKey(const std::string &packet_name,
                                                            &data);
     if (result == kSuccess && data.size() == 3U) {
       for (int n(0); n < 3; ++n) {
-      	if (std::get<0>(data.at(n)) == packet_name) {
+        if (std::get<0>(data.at(n)) == packet_name) {
           *public_key = std::get<1>(data.at(n));
           if (asymm::ValidateKey(*public_key))
             return;
-      	}
+        }
       }
     }
     result = session->passport_->GetSelectableIdentityData(public_username,
@@ -232,34 +232,33 @@ void FakeStoreManager::KeyUnique(const std::string &key,
 
 int FakeStoreManager::GetPacket(const std::string &packet_name,
                                 const std::string &signing_key_id,
-                                std::vector<std::string> *results) {
+                                std::string *result) {
   DLOG(INFO) << "Searching <" << Base32Substr(packet_name) << ">";
 
-  BOOST_ASSERT(results);
-  results->clear();
+  BOOST_ASSERT(result);
+  result->clear();
 
   asymm::PublicKey public_key;
   if (!signing_key_id.empty())
     GetPublicKey(signing_key_id, session_, &public_key);
 
-  std::string data(chunk_action_authority_->Get(packet_name, "", public_key));
-  if (data.empty()) {
+  *result = chunk_action_authority_->Get(packet_name, "", public_key);
+  if (result->empty()) {
     DLOG(ERROR) << "FakeStoreManager::GetPacket - Failure";
     return kGetPacketFailure;
   }
 
-  results->push_back(data);
   return kSuccess;
 }
 
 void FakeStoreManager::GetPacket(const std::string &packetname,
                                  const asymm::Identity &signing_key_id,
                                  const GetPacketFunctor &lpf) {
-  std::vector<std::string> results;
+  std::string result;
   ReturnCode rc(static_cast<ReturnCode>(GetPacket(packetname,
                                                   signing_key_id,
-                                                  &results)));
-  ExecReturnLoadPacketCallback(lpf, results, rc);
+                                                  &result)));
+  ExecReturnLoadPacketCallback(lpf, result, rc);
 }
 
 void FakeStoreManager::StorePacket(const std::string &packet_name,
@@ -383,11 +382,10 @@ void FakeStoreManager::ExecReturnCodeCallback(VoidFuncOneInt callback,
   asio_service_.post(std::bind(callback, return_code));
 }
 
-void FakeStoreManager::ExecReturnLoadPacketCallback(
-    GetPacketFunctor callback,
-    std::vector<std::string> results,
-    ReturnCode return_code) {
-  asio_service_.post(std::bind(callback, results, return_code));
+void FakeStoreManager::ExecReturnLoadPacketCallback(GetPacketFunctor callback,
+                                                    std::string result,
+                                                    ReturnCode return_code) {
+  asio_service_.post(std::bind(callback, result, return_code));
 }
 
 std::shared_ptr<ChunkStore> FakeStoreManager::chunk_store() const {

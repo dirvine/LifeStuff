@@ -43,8 +43,7 @@ class ChunkStore;
 
 namespace lifestuff {
 
-typedef std::function<void(const std::vector<std::string>&, int)>
-        GetPacketFunctor;
+typedef std::function<void(const std::string&, int)> GetPacketFunctor;
 
 class PacketManager {
  public:
@@ -63,7 +62,7 @@ class PacketManager {
 
   virtual int GetPacket(const std::string &packet_name,
                         const std::string &signing_key_id,
-                        std::vector<std::string> *results) = 0;
+                        std::string *result) = 0;
 
   virtual void GetPacket(const std::string &packet_name,
                          const std::string &signing_key_id,

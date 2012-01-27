@@ -19,6 +19,7 @@
 
 #include <functional>
 
+#include "boost/bind.hpp"
 #include "boost/filesystem.hpp"
 
 #include "maidsafe/common/crypto.h"
@@ -31,7 +32,7 @@
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 
 #include "maidsafe/pd/client/remote_chunk_store.h"
-#include "maidsafe/pd/client/vault_chunk_manager.h"
+#include "maidsafe/pd/client/chunk_manager.h"
 
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
@@ -61,40 +62,6 @@ void PrintDebugInfo(const std::string &packet_name,
                   << ")";
 }
 
-
-std::string DebugString(const int &packet_type) {
-  switch (packet_type) {
-    case passport::kUnknown:
-      return "unknown";
-    case passport::kMid:
-      return "MID";
-    case passport::kSmid:
-      return "SMID";
-    case passport::kTmid:
-      return "TMID";
-    case passport::kStmid:
-      return "STMID";
-    case passport::kMpid:
-      return "MPID";
-    case passport::kPmid:
-      return "PMID";
-    case passport::kMaid:
-      return "MAID";
-    case passport::kAnmid:
-      return "ANMID";
-    case passport::kAnsmid:
-      return "ANSMID";
-    case passport::kAntmid:
-      return "ANTMID";
-    case passport::kAnmpid:
-      return "ANMPID";
-    case passport::kAnmaid:
-      return "ANMAID";
-    default:
-      return "error";
-  }
-}
-
 std::string CreateOwnershipProof(const asymm::PrivateKey &private_key) {
   pca::SignedData signed_data;
   signed_data.set_data(RandomString(crypto::SHA512::DIGESTSIZE));
@@ -108,11 +75,99 @@ std::string CreateOwnershipProof(const asymm::PrivateKey &private_key) {
   return signed_data.SerializeAsString();
 }
 
+//void GetPublicKey(const std::string &packet_name,
+//                  std::shared_ptr<Session> session,
+//                  asymm::PublicKey *public_key) {
+//  std::shared_ptr<passport::Passport> pprt(session->passport_);
+//  passport::PacketType packet_type(passport::kUnknown);
+//  for (int i(passport::kAnmid); i != passport::kMid; ++i) {
+//    packet_type = static_cast<passport::PacketType>(i);
+//    if (pprt->PacketName(packet_type, false) == packet_name) {
+//      *public_key = pprt->SignaturePacketValue(packet_type, false);
+//      return;
+//    }
+//    if (pprt->PacketName(packet_type, true) == packet_name) {
+//      *public_key = pprt->SignaturePacketValue(packet_type, true);
+//      return;
+//    }
+//  }
+//
+//  int result(-1);
+//  passport::SelectableIdentityData data;
+//  std::vector<passport::SelectableIdData> selectables;
+//  session->passport_->SelectableIdentitiesList(&selectables);
+//  auto it(selectables.begin());
+//  while (it != selectables.end()) {
+//    std::string public_username(std::get<0>(*it));
+//    result = session->passport_->GetSelectableIdentityData(public_username,
+//                                                           false,
+//                                                           &data);
+//    if (result == kSuccess && data.size() == 3U) {
+//      for (int n(0); n < 3; ++n) {
+//        if (std::get<0>(data.at(n)) == packet_name) {
+//          *public_key = std::get<1>(data.at(n));
+//          if (asymm::ValidateKey(*public_key))
+//            return;
+//        }
+//      }
+//    }
+//    result = session->passport_->GetSelectableIdentityData(public_username,
+//                                                           true,
+//                                                           &data);
+//    if (result == kSuccess && data.size() == 3U) {
+//      for (int n(0); n < 3; ++n) {
+//        if (std::get<0>(data.at(n)) == packet_name) {
+//          *public_key = std::get<1>(data.at(n));
+//          if (asymm::ValidateKey(*public_key))
+//            return;
+//        }
+//      }
+//    }
+//    ++it;
+//  }
+//}
+//
+//void GetPrivateKey(const std::string &packet_name,
+//                   std::shared_ptr<Session> session,
+//                   asymm::PrivateKey *private_key) {
+//  std::shared_ptr<passport::Passport> pprt(session->passport_);
+//  passport::PacketType packet_type(passport::kUnknown);
+//  for (int i(passport::kAnmid); i != passport::kMid; ++i) {
+//    packet_type = static_cast<passport::PacketType>(i);
+//    if (pprt->PacketName(packet_type, false) == packet_name) {
+//      *private_key = pprt->PacketPrivateKey(packet_type, false);
+//      return;
+//    }
+//    if (pprt->PacketName(packet_type, true) == packet_name) {
+//      *private_key = pprt->PacketPrivateKey(packet_type, true);
+//      return;
+//    }
+//  }
+//
+//  *private_key = pprt->PacketPrivateKey(packet_type, false, packet_name);
+//  if (asymm::ValidateKey(*private_key))
+//    return;
+//  *private_key = pprt->PacketPrivateKey(packet_type, true, packet_name);
+//  if (!asymm::ValidateKey(*private_key))
+//    DLOG(ERROR) << "Failed to validate confirmed private key";
+//}
+
 void ExecuteHas(std::shared_ptr<ChunkStore> client_chunk_store,
                 const std::string &key,
-                const VoidFuncOneInt &cb) {
-  ReturnCode rc(client_chunk_store_->Has(key) ? kKeyNotUnique : kKeyUnique);
-  cb(rc);
+                const VoidFuncOneInt &callback) {
+  callback(client_chunk_store->Has(key) ? kKeyNotUnique : kKeyUnique);
+}
+
+void ExecuteGet(std::shared_ptr<ChunkStore> client_chunk_store,
+                const std::string &packet_name,
+                const AlternativeStore::ValidationData &validation_data,
+                const GetPacketFunctor &callback) {
+  std::string value(client_chunk_store->Get(packet_name, validation_data));
+  if (value.empty()) {
+    DLOG(ERROR) << "RemoteStoreManager::GetPacket - Failure";
+    callback(value, kGetPacketFailure);
+  }
+  callback(value, kSuccess);
 }
 
 }  // namespace
@@ -120,115 +175,38 @@ void ExecuteHas(std::shared_ptr<ChunkStore> client_chunk_store,
 struct RemoteStoreManager::SignalToCallback {
   SignalToCallback()
       : chunk_name(),
-        cb(),
-        type(RemoteChunkStore::kOpGet) {}
+        callback(),
+        type(pd::RemoteChunkStore::kOpGet) {}
   SignalToCallback(const std::string &chunk_name_in,
                    const VoidFuncOneInt &cb_in,
-                   RemoteChunkStore::OperationType type_in)
+                   pd::RemoteChunkStore::OperationType type_in)
       : chunk_name(chunk_name_in),
-        cb(cb_in),
-        gpcb(),
+        callback(cb_in),
+        get_packet_callback(),
         type(type_in) {}
   SignalToCallback(const std::string &chunk_name_in,
-                   const GetPacketFunctor &gpcb_in,
-                   RemoteChunkStore::OperationType type_in)
+                   const GetPacketFunctor &get_packet_callback_in,
+                   pd::RemoteChunkStore::OperationType type_in)
       : chunk_name(chunk_name_in),
-        cb(),
-        gpcb(gpcb_in),
+        callback(),
+        get_packet_callback(get_packet_callback_in),
         type(type_in) {}
   std::string chunk_name;
-  VoidFuncOneInt cb;
-  GetPacketFunctor gpcb;
-  RemoteChunkStore::OperationType type;
+  VoidFuncOneInt callback;
+  GetPacketFunctor get_packet_callback;
+  pd::RemoteChunkStore::OperationType type;
 };
-
-void GetPublicKey(const std::string &packet_name,
-                  std::shared_ptr<Session> session,
-                  asymm::PublicKey *public_key) {
-  std::shared_ptr<passport::Passport> pprt(session->passport_);
-  passport::PacketType packet_type(passport::kUnknown);
-  for (int i(passport::kAnmid); i != passport::kMid; ++i) {
-    packet_type = static_cast<passport::PacketType>(i);
-    if (pprt->PacketName(packet_type, false) == packet_name) {
-      *public_key = pprt->SignaturePacketValue(packet_type, false);
-      return;
-    }
-    if (pprt->PacketName(packet_type, true) == packet_name) {
-      *public_key = pprt->SignaturePacketValue(packet_type, true);
-      return;
-    }
-  }
-
-  int result(-1);
-  passport::SelectableIdentityData data;
-  std::vector<passport::SelectableIdData> selectables;
-  session->passport_->SelectableIdentitiesList(&selectables);
-  auto it(selectables.begin());
-  while (it != selectables.end()) {
-    std::string public_username(std::get<0>(*it));
-    result = session->passport_->GetSelectableIdentityData(public_username,
-                                                           false,
-                                                           &data);
-    if (result == kSuccess && data.size() == 3U) {
-      for (int n(0); n < 3; ++n) {
-      	if (std::get<0>(data.at(n)) == packet_name) {
-          *public_key = std::get<1>(data.at(n));
-          if (asymm::ValidateKey(*public_key))
-            return;
-      	}
-      }
-    }
-    result = session->passport_->GetSelectableIdentityData(public_username,
-                                                           true,
-                                                           &data);
-    if (result == kSuccess && data.size() == 3U) {
-      for (int n(0); n < 3; ++n) {
-        if (std::get<0>(data.at(n)) == packet_name) {
-          *public_key = std::get<1>(data.at(n));
-          if (asymm::ValidateKey(*public_key))
-            return;
-        }
-      }
-    }
-    ++it;
-  }
-}
-
-void GetPrivateKey(const std::string &packet_name,
-                   std::shared_ptr<Session> session,
-                   asymm::PrivateKey *private_key) {
-  std::shared_ptr<passport::Passport> pprt(session->passport_);
-  passport::PacketType packet_type(passport::kUnknown);
-  for (int i(passport::kAnmid); i != passport::kMid; ++i) {
-    packet_type = static_cast<passport::PacketType>(i);
-    if (pprt->PacketName(packet_type, false) == packet_name) {
-      *private_key = pprt->PacketPrivateKey(packet_type, false);
-      return;
-    }
-    if (pprt->PacketName(packet_type, true) == packet_name) {
-      *private_key = pprt->PacketPrivateKey(packet_type, true);
-      return;
-    }
-  }
-
-  *private_key = pprt->PacketPrivateKey(packet_type, false, packet_name);
-  if (asymm::ValidateKey(*private_key))
-    return;
-  *private_key = pprt->PacketPrivateKey(packet_type, true, packet_name);
-  if (!asymm::ValidateKey(*private_key))
-    DLOG(ERROR) << "Failed to validate confirmed private key";
-}
 
 RemoteStoreManager::RemoteStoreManager(std::shared_ptr<Session> session,
                                        const std::string &/*db_directory*/)
-    : sig_to_cb_list_(),
-      signal_to_cb_mutex_(),
-      client_container_(),
+    : client_container_(),
       client_chunk_store_(),
-      session_(session) {}
+      session_(session),
+      sig_to_cb_list_(new std::list<SignalToCallback>),
+      signal_to_cb_mutex_() {}
 
 RemoteStoreManager::~RemoteStoreManager() {
-  client_container_.Stop();
+  client_container_.Stop(nullptr);
 }
 
 void RemoteStoreManager::Init(VoidFuncOneInt callback) {
@@ -237,18 +215,32 @@ void RemoteStoreManager::Init(VoidFuncOneInt callback) {
           client_container_.chunk_store(),
           client_container_.chunk_manager(),
           client_container_.chunk_action_authority()));
-  // TODO(Dan): Make connections trackable or keep connections as class members.
-  client_chunk_store_->sig_chunk_got()->connect(
-      std::bind(&RemoteStoreManager::ChunkGot, this, args::_1, args::_2));
   client_chunk_store_->sig_chunk_stored()->connect(
-      std::bind(&RemoteStoreManager::ChunkStored, this, args::_1, args::_2));
+      pd::ChunkManager::ChunkStoredSig::slot_type(
+          &RemoteStoreManager::FindAndExecCallback,
+          this,
+          _1,
+          pd::RemoteChunkStore::kOpStore,
+          _2).track_foreign(sig_to_cb_list_));
   client_chunk_store_->sig_chunk_deleted()->connect(
-      std::bind(&RemoteStoreManager::ChunkDeleted, this, args::_1, args::_2));
+      pd::ChunkManager::ChunkGotSig::slot_type(
+          &RemoteStoreManager::FindAndExecCallback,
+          this,
+          _1,
+          pd::RemoteChunkStore::kOpDelete,
+          _2).track_foreign(sig_to_cb_list_));
+//  client_chunk_store_->sig_chunk_modified()->connect(
+//      pd::ChunkManager::ChunkModifiedSig::slot_type(
+//          &RemoteStoreManager::FindAndExecCallback,
+//          this,
+//          _1,
+//          pd::RemoteChunkStore::kOpModify,
+//          _2).track_foreign(sig_to_cb_list_));
   ExecReturnCodeCallback(callback, kSuccess);
 }
 
 int RemoteStoreManager::Close(bool /*cancel_pending_ops*/) {
-  client_container_.Stop();
+  return client_container_.Stop(nullptr);
 }
 
 bool RemoteStoreManager::KeyUnique(const std::string &key,
@@ -258,185 +250,242 @@ bool RemoteStoreManager::KeyUnique(const std::string &key,
 
 void RemoteStoreManager::KeyUnique(const std::string &key,
                                    const asymm::Identity &/*signing_key_id*/,
-                                   const VoidFuncOneInt &cb) {
+                                   const VoidFuncOneInt &callback) {
   client_container_.asio_service().post(std::bind(&ExecuteHas,
-                                                  chunk_action_authority_,
+                                                  client_chunk_store_,
                                                   key,
-                                                  cb));
+                                                  callback));
 }
 
 int RemoteStoreManager::GetPacket(const std::string &packet_name,
                                   const std::string &signing_key_id,
-                                  std::vector<std::string> *results) {
+                                  std::string *value) {
   DLOG(INFO) << "Searching <" << Base32Substr(packet_name) << ">";
 
-  BOOST_ASSERT(results);
-  results->clear();
+  BOOST_ASSERT(value);
+  value->clear();
 
-  asymm::PublicKey public_key;
-  if (!signing_key_id.empty())
-    GetPublicKey(signing_key_id, session_, &public_key);
-
-  std::string data(chunk_action_authority_->Get(packet_name, "", public_key));
-  if (data.empty()) {
+  *value = client_chunk_store_->Get(packet_name,
+                                    GetValidationData(signing_key_id, false));
+  if (value->empty()) {
     DLOG(ERROR) << "RemoteStoreManager::GetPacket - Failure";
     return kGetPacketFailure;
   }
 
-  results->push_back(data);
   return kSuccess;
 }
 
-void RemoteStoreManager::GetPacket(const std::string &packetname,
+void RemoteStoreManager::GetPacket(const std::string &packet_name,
                                    const asymm::Identity &signing_key_id,
-                                   const GetPacketFunctor &lpf) {
-  {
-    boost::mutex::scoped_lock loch_harray(signal_to_cb_mutex_);
-    sig_to_cb_list_.push_back(SignalToCallback(packet_name,
-                                               lpf,
-                                               RemoteChunkStore::kOpGet));
-  }
-  client_chunk_store_->Get(packet_name);
+                                   const GetPacketFunctor &callback) {
+  client_container_.asio_service().post(std::bind(
+      &ExecuteGet,
+      client_chunk_store_,
+      packet_name,
+      GetValidationData(signing_key_id, false),
+      callback));
 }
 
 void RemoteStoreManager::StorePacket(const std::string &packet_name,
-                                   const std::string &value,
-                                   const asymm::Identity &signing_key_id,
-                                   const VoidFuncOneInt &cb) {
+                                     const std::string &value,
+                                     const asymm::Identity &signing_key_id,
+                                     const VoidFuncOneInt &callback) {
   DLOG(INFO) << "Storing <" << Base32Substr(packet_name) << ", "
              << Base32Substr(value) << ">";
 
   if (signing_key_id.empty()) {
     DLOG(ERROR) << "RemoteStoreManager::StorePacket - No public key ID";
-    ExecReturnCodeCallback(cb, kStorePacketFailure);
+    ExecReturnCodeCallback(callback, kStorePacketFailure);
     return;
   }
 
-  asymm::PublicKey public_key;
-  GetPublicKey(signing_key_id, session_, &public_key);
-  if (!asymm::ValidateKey(public_key)) {
-    if (signing_key_id == packet_name.substr(0, signing_key_id.size())) {
-      public_key = asymm::PublicKey();
-      pca::SignedData signed_data;
-      signed_data.ParseFromString(value);
-      asymm::DecodePublicKey(signed_data.data(), &public_key);
-      if (!asymm::ValidateKey(public_key)) {
-        DLOG(ERROR) << "RemoteStoreManager::StorePacket - No public key";
-        ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
-        return;
-      }
-    }
-  }
+  boost::mutex::scoped_lock loch_harray(signal_to_cb_mutex_);
+  sig_to_cb_list_->push_back(
+      SignalToCallback(packet_name,
+                       callback,
+                       pd::RemoteChunkStore::kOpStore));
 
-  {
-    boost::mutex::scoped_lock loch_harray(signal_to_cb_mutex_);
-    sig_to_cb_list_.push_back(SignalToCallback(packet_name,
-                                               cb,
-                                               RemoteChunkStore::kOpStore));
-  }
-
-  client_chunk_store_->Store(packet_name, value, ValidationData());
-
-  if (!chunk_action_authority_->Store(packet_name, value, public_key)) {
-    ExecReturnCodeCallback(cb, kStorePacketFailure);
+  if (!client_chunk_store_->Store(packet_name,
+                                  value,
+                                  GetValidationData(signing_key_id, false))) {
+    sig_to_cb_list_->pop_back();
     DLOG(ERROR) << "RemoteStoreManager::StorePacket - Failure";
+    ExecReturnCodeCallback(callback, kStorePacketFailure);
     return;
   }
-
-  ExecReturnCodeCallback(cb, kSuccess);
 }
 
 void RemoteStoreManager::DeletePacket(const std::string &packet_name,
                                     const asymm::Identity &signing_key_id,
-                                    const VoidFuncOneInt &cb) {
+                                    const VoidFuncOneInt &callback) {
   DLOG(INFO) << "Deleting <" << Base32Substr(packet_name);
 
   if (signing_key_id.empty()) {
     DLOG(ERROR) << "RemoteStoreManager::DeletePacket - No public key ID";
-    ExecReturnCodeCallback(cb, kDeletePacketFailure);
+    ExecReturnCodeCallback(callback, kDeletePacketFailure);
     return;
   }
 
-  asymm::PublicKey public_key;
-  GetPublicKey(signing_key_id, session_, &public_key);
-  if (!asymm::ValidateKey(public_key)) {
-    DLOG(ERROR) << "RemoteStoreManager::DeletePacket - No public key";
-    ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
-    return;
-  }
+  boost::mutex::scoped_lock loch_harray(signal_to_cb_mutex_);
+  sig_to_cb_list_->push_back(
+      SignalToCallback(packet_name,
+                       callback,
+                       pd::RemoteChunkStore::kOpDelete));
 
-  asymm::PrivateKey private_key;
-  GetPrivateKey(signing_key_id, session_, &private_key);
-  if (!asymm::ValidateKey(private_key)) {
-    DLOG(ERROR) << "RemoteStoreManager::DeletePacket - No private key";
-    ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
-    return;
-  }
-  std::string ownership_proof(CreateOwnershipProof(private_key));
-
-  if (!chunk_action_authority_->Delete(packet_name,
-                                       "",
-                                       ownership_proof,
-                                       public_key)) {
+  if (!client_chunk_store_->Delete(packet_name,
+                                   GetValidationData(signing_key_id, true))) {
+    sig_to_cb_list_->pop_back();
     DLOG(ERROR) << "RemoteStoreManager::DeletePacket - Failure";
-    ExecReturnCodeCallback(cb, kDeletePacketFailure);
+    ExecReturnCodeCallback(callback, kDeletePacketFailure);
     return;
   }
-
-  ExecReturnCodeCallback(cb, kSuccess);
 }
 
+// TODO(Fraser#5#): 2012-01-27 - Uncomment once RemoteChunkStore implements Modify
+//void RemoteStoreManager::ModifyPacket(const std::string &packet_name,
+//                                      const std::string &value,
+//                                      const asymm::Identity &signing_key_id,
+//                                      const VoidFuncOneInt &callback) {
+//  DLOG(INFO) << "Modifying <" << Base32Substr(packet_name) << "> to <"
+//             << Base32Substr(value) << ">";
+//  PrintDebugInfo(packet_name, value, "", "ModifyPacket");
+//
+//  if (signing_key_id.empty()) {
+//    DLOG(ERROR) << "RemoteStoreManager::ModifyPacket - No public key ID";
+//    ExecReturnCodeCallback(callback, kUpdatePacketFailure);
+//    return;
+//  }
+//
+//  boost::mutex::scoped_lock loch_harray(signal_to_cb_mutex_);
+//  sig_to_cb_list_->push_back(
+//      SignalToCallback(packet_name,
+//                       callback,
+//                       pd::RemoteChunkStore::kOpModify));
+//
+//  if (!client_chunk_store_->Modify(packet_name,
+//                                   value,
+//                                   GetValidationData(signing_key_id, false))) {
+//    sig_to_cb_list_->pop_back();
+//    DLOG(ERROR) << "RemoteStoreManager::ModifyPacket - Failure";
+//    ExecReturnCodeCallback(callback, kUpdatePacketFailure);
+//    return;
+//  }
+//  ExecReturnCodeCallback(callback, kSuccess);
+//}
+
 void RemoteStoreManager::ModifyPacket(const std::string &packet_name,
-                                    const std::string &value,
-                                    const asymm::Identity &signing_key_id,
-                                    const VoidFuncOneInt &cb) {
+                                      const std::string &value,
+                                      const asymm::Identity &signing_key_id,
+                                      const VoidFuncOneInt &callback) {
   DLOG(INFO) << "Modifying <" << Base32Substr(packet_name) << "> to <"
              << Base32Substr(value) << ">";
   PrintDebugInfo(packet_name, value, "", "ModifyPacket");
 
   if (signing_key_id.empty()) {
     DLOG(ERROR) << "RemoteStoreManager::ModifyPacket - No public key ID";
-    ExecReturnCodeCallback(cb, kUpdatePacketFailure);
+    ExecReturnCodeCallback(callback, kUpdatePacketFailure);
     return;
   }
 
-  asymm::PublicKey public_key;
-  GetPublicKey(signing_key_id, session_, &public_key);
-  if (!asymm::ValidateKey(public_key)) {
-    ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
-    DLOG(ERROR) << "RemoteStoreManager::ModifyPacket - No public key";
+  AlternativeStore::ValidationData validation_data(
+      GetValidationData(signing_key_id, true));
+  VoidFuncOneInt functor(std::bind(
+      &RemoteStoreManager::TempExecStoreAfterDelete,
+      this,
+      packet_name,
+      value,
+      validation_data,
+      callback));
+
+  boost::mutex::scoped_lock loch_harray(signal_to_cb_mutex_);
+  sig_to_cb_list_->push_back(
+      SignalToCallback(packet_name,
+                       functor,
+                       pd::RemoteChunkStore::kOpDelete));
+
+  if (!client_chunk_store_->Delete(packet_name, validation_data)) {
+    sig_to_cb_list_->pop_back();
+    DLOG(ERROR) << "RemoteStoreManager::ModifyPacket - Delete Failure";
+    ExecReturnCodeCallback(callback, kUpdatePacketFailure);
     return;
   }
+}
 
-  int64_t operation_diff;
-  if (!chunk_action_authority_->Modify(packet_name,
-                                       value,
-                                       "",
-                                       public_key,
-                                       &operation_diff)) {
-    DLOG(ERROR) << "RemoteStoreManager::ModifyPacket - Failure - OD: "
-                << operation_diff;
-    ExecReturnCodeCallback(cb, kUpdatePacketFailure);
+void RemoteStoreManager::TempExecStoreAfterDelete(
+    const std::string &packet_name,
+    const std::string &value,
+    AlternativeStore::ValidationData validation_data,
+    const VoidFuncOneInt &callback) {
+  validation_data.ownership_proof.clear();
+  boost::mutex::scoped_lock loch_harray(signal_to_cb_mutex_);
+  sig_to_cb_list_->push_back(
+      SignalToCallback(packet_name,
+                       callback,
+                       pd::RemoteChunkStore::kOpStore));
+
+  if (!client_chunk_store_->Store(packet_name, value, validation_data)) {
+    sig_to_cb_list_->pop_back();
+    DLOG(ERROR) << "RemoteStoreManager::UpdatePacket - Store Failure";
+    ExecReturnCodeCallback(callback, kUpdatePacketFailure);
     return;
   }
+}
 
-  ExecReturnCodeCallback(cb, kSuccess);
+void RemoteStoreManager::FindAndExecCallback(const std::string &chunk_name,
+                                             const int &op_type,
+                                             const int &return_code) {
+  VoidFuncOneInt callback;
+  {
+    boost::mutex::scoped_lock loch_harray(signal_to_cb_mutex_);
+    auto itr(std::find_if(
+        sig_to_cb_list_->begin(),
+        sig_to_cb_list_->end(),
+        [&chunk_name, &op_type]
+            (const SignalToCallback &signal_to_callback)->bool {
+                return signal_to_callback.chunk_name == chunk_name &&
+                       signal_to_callback.type == op_type;
+        }));
+    if (itr == sig_to_cb_list_->end()) {
+      DLOG(ERROR) << "Failed to find callback for "
+                  << Base32Substr(chunk_name) << ", op type " << op_type;
+      return;
+    }
+    callback = (*itr).callback;
+    sig_to_cb_list_->erase(itr);
+  }
+  callback(return_code);
 }
 
 void RemoteStoreManager::ExecReturnCodeCallback(VoidFuncOneInt callback,
-                                              ReturnCode return_code) {
-  asio_service_.post(std::bind(callback, return_code));
+                                                ReturnCode return_code) {
+  client_container_.asio_service().post(std::bind(callback, return_code));
 }
 
-void RemoteStoreManager::ExecReturnLoadPacketCallback(
+void RemoteStoreManager::ExecReturnGetPacketCallback(
     GetPacketFunctor callback,
-    std::vector<std::string> results,
+    std::string result,
     ReturnCode return_code) {
-  asio_service_.post(std::bind(callback, results, return_code));
+  client_container_.asio_service().post(std::bind(callback, result,
+                                                  return_code));
 }
 
 std::shared_ptr<ChunkStore> RemoteStoreManager::chunk_store() const {
   return client_chunk_store_;
+}
+
+AlternativeStore::ValidationData RemoteStoreManager::GetValidationData(
+    const std::string &packet_name,
+    bool create_proof) const {
+  AlternativeStore::ValidationData validation_data;
+  if (!packet_name.empty()) {
+    //GetKeyring(&validation_data.key_pair);
+    if (create_proof) {
+      validation_data.ownership_proof =
+          CreateOwnershipProof(validation_data.key_pair.private_key);
+    }
+  }
+
+  return validation_data;
 }
 
 }  // namespace lifestuff

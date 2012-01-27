@@ -44,18 +44,18 @@ int GetValidatedMpidPublicKey(const std::string &public_username,
   // Get public key packet from network
   std::string packet_name(crypto::Hash<crypto::SHA512>(public_username) +
                           std::string(1, pca::kAppendableByAll));
-  std::vector<std::string> packet_values;
+  std::string packet_value;
   int result(packet_manager->GetPacket(packet_name,
                                        own_mpid_name,
-                                       &packet_values));
-  if (result != kSuccess || packet_values.size() != 1U) {
+                                       &packet_value));
+  if (result != kSuccess) {
     DLOG(ERROR) << "Failed to get public key for " << public_username;
     *public_key = asymm::PublicKey();
     return kGetPublicKeyFailure;
   }
 
   pca::SignedData packet;
-  if (!packet.ParseFromString(packet_values.at(0))) {
+  if (!packet.ParseFromString(packet_value)) {
     DLOG(ERROR) << "Failed to parse public key packet for " << public_username;
     *public_key = asymm::PublicKey();
     return kGetPublicKeyFailure;
@@ -77,16 +77,16 @@ int GetValidatedMpidPublicKey(const std::string &public_username,
   std::string mpid_value(serialised_public_key + public_key_signature);
   std::string mpid_name(crypto::Hash<crypto::SHA512>(mpid_value) +
                         std::string(1, pca::kSignaturePacket));
-  packet_values.clear();
-  result = packet_manager->GetPacket(mpid_name, own_mpid_name, &packet_values);
-  if (result != kSuccess || packet_values.size() != 1U) {
+  packet_value.clear();
+  result = packet_manager->GetPacket(mpid_name, own_mpid_name, &packet_value);
+  if (result != kSuccess) {
     DLOG(ERROR) << "Failed to get MPID for " << public_username;
     *public_key = asymm::PublicKey();
     return kGetMpidFailure;
   }
 
   packet.Clear();
-  if (!packet.ParseFromString(packet_values.at(0))) {
+  if (!packet.ParseFromString(packet_value)) {
     DLOG(ERROR) << "Failed to parse MPID packet for " << public_username;
     *public_key = asymm::PublicKey();
     return kGetMpidFailure;
@@ -110,19 +110,19 @@ int GetValidatedMmidPublicKey(const std::string &mmid_name,
                               const std::string &own_mmid_name,
                               std::shared_ptr<PacketManager> packet_manager,
                               asymm::PublicKey *public_key) {
-  std::vector<std::string> packet_values;
+  std::string packet_value;
   int result(packet_manager->GetPacket(
                   mmid_name + std::string(1, pca::kAppendableByAll),
                   own_mmid_name,
-                  &packet_values));
-  if (result != kSuccess || packet_values.size() != 1U) {
+                  &packet_value));
+  if (result != kSuccess) {
     DLOG(ERROR) << "Failed to get public key for " << Base32Substr(mmid_name);
     *public_key = asymm::PublicKey();
     return kGetPublicKeyFailure;
   }
 
   pca::SignedData packet;
-  if (!packet.ParseFromString(packet_values.at(0))) {
+  if (!packet.ParseFromString(packet_value)) {
     DLOG(ERROR) << "Failed to parse public key packet for "
                 << Base32Substr(mmid_name);
     *public_key = asymm::PublicKey();

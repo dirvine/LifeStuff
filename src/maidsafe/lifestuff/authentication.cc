@@ -211,9 +211,8 @@ int Authentication::GetUserInfo(const std::string &username,
   return kUserDoesntExist;
 }
 
-void Authentication::GetMidCallback(const std::vector<std::string> &values,
-                                    int return_code) {
-  if (return_code != kSuccess || values.empty()) {
+void Authentication::GetMidCallback(const std::string &value, int return_code) {
+  if (return_code != kSuccess) {
     DLOG(WARNING) << "Auth::GetMidCallback: No MID";
     {
       boost::mutex::scoped_lock loch_chapala(mid_mutex_);
@@ -222,13 +221,8 @@ void Authentication::GetMidCallback(const std::vector<std::string> &values,
     return;
   }
 
-#ifdef DEBUG
-  if (values.size() != 1)
-    DLOG(INFO) << "Auth::GetMidCallback - Values: " << values.size();
-#endif
-
   pca::SignedData packet;
-  if (!packet.ParseFromString(values.at(0)) || packet.data().empty()) {
+  if (!packet.ParseFromString(value) || packet.data().empty()) {
     DLOG(WARNING) << "Auth::GetMidCallback: Failed to parse";
     {
       boost::mutex::scoped_lock loch_chapala(mid_mutex_);
@@ -250,7 +244,7 @@ void Authentication::GetMidCallback(const std::vector<std::string> &values,
   }
 
   DLOG(INFO) << "Auth::GetMidCallback: TMID - (" << Base32Substr(tmid_name)
-                << ", " << Base32Substr(values.at(0)) << ")";
+                << ", " << Base32Substr(value) << ")";
   packet_manager_->GetPacket(pca::ApplyTypeToName(tmid_name,
                                                   pca::kModifiableByOwner),
                              "",
@@ -258,9 +252,9 @@ void Authentication::GetMidCallback(const std::vector<std::string> &values,
                                        this, args::_1, args::_2));
 }
 
-void Authentication::GetSmidCallback(const std::vector<std::string> &values,
+void Authentication::GetSmidCallback(const std::string &value,
                                      int return_code) {
-  if (return_code != kSuccess || values.empty()) {
+  if (return_code != kSuccess) {
     DLOG(WARNING) << "Auth::GetSmidCallback: No SMID";
     {
       boost::mutex::scoped_lock loch_chapala(smid_mutex_);
@@ -269,13 +263,8 @@ void Authentication::GetSmidCallback(const std::vector<std::string> &values,
     return;
   }
 
-#ifdef DEBUG
-  if (values.size() != 1)
-    DLOG(INFO) << "Auth::GetSmidCallback - Values: " << values.size();
-#endif
-
   pca::SignedData packet;
-  if (!packet.ParseFromString(values.at(0)) || packet.data().empty()) {
+  if (!packet.ParseFromString(value) || packet.data().empty()) {
     DLOG(WARNING) << "Auth::GetSmidCallback: Failed to parse";
     {
       boost::mutex::scoped_lock loch_chapala(smid_mutex_);
@@ -302,9 +291,9 @@ void Authentication::GetSmidCallback(const std::vector<std::string> &values,
                              std::bind(&Authentication::GetStmidCallback,
                                        this, args::_1, args::_2));}
 
-void Authentication::GetTmidCallback(const std::vector<std::string> &values,
+void Authentication::GetTmidCallback(const std::string &value,
                                      int return_code) {
-  if (return_code != kSuccess || values.empty()) {
+  if (return_code != kSuccess) {
     DLOG(WARNING) << "Auth::GetTmidCallback: No TMID";
     {
       boost::mutex::scoped_lock loch_chapala(mid_mutex_);
@@ -312,13 +301,9 @@ void Authentication::GetTmidCallback(const std::vector<std::string> &values,
     }
     return;
   }
-#ifdef DEBUG
-  if (values.size() != 1)
-    DLOG(INFO) << "Auth::GetTmidCallback - Values: " << values.size();
-#endif
 
   pca::SignedData packet;
-  if (!packet.ParseFromString(values.at(0)) || packet.data().empty()) {
+  if (!packet.ParseFromString(value) || packet.data().empty()) {
     DLOG(WARNING) << "Auth::GetTmidCallback: Failed to parse";
     {
       boost::mutex::scoped_lock loch_chapala(mid_mutex_);
@@ -331,9 +316,9 @@ void Authentication::GetTmidCallback(const std::vector<std::string> &values,
   tmid_op_status_ = kSucceeded;
 }
 
-void Authentication::GetStmidCallback(const std::vector<std::string> &values,
+void Authentication::GetStmidCallback(const std::string &value,
                                       int return_code) {
-  if (return_code != kSuccess || values.empty()) {
+  if (return_code != kSuccess) {
     DLOG(WARNING) << "Auth::GetStmidCallback: No TMID";
     {
       boost::mutex::scoped_lock loch_chapala(smid_mutex_);
@@ -341,13 +326,9 @@ void Authentication::GetStmidCallback(const std::vector<std::string> &values,
     }
     return;
   }
-#ifdef DEBUG
-  if (values.size() != 1)
-    DLOG(INFO) << "Auth::GetStmidCallback - Values: " << values.size();
-#endif
 
   pca::SignedData packet;
-  if (!packet.ParseFromString(values.at(0)) || packet.data().empty()) {
+  if (!packet.ParseFromString(value) || packet.data().empty()) {
     DLOG(WARNING) << "Auth::GetStmidCallback: Failed to parse";
     {
       boost::mutex::scoped_lock loch_chapala(smid_mutex_);

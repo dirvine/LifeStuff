@@ -25,6 +25,7 @@
 #ifndef MAIDSAFE_LIFESTUFF_SESSION_H_
 #define MAIDSAFE_LIFESTUFF_SESSION_H_
 
+#include <map>
 #include <string>
 
 #ifdef __MSVC__

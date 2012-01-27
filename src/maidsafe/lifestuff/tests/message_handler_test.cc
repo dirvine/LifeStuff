@@ -55,9 +55,12 @@ class MessageHandlerTest : public testing::Test {
         session2_(new Session),
         session3_(new Session),
 #if defined REMOTE_STORE
-        packet_manager1_(new RemoteStoreManager(session1_, test_dir_->string())),
-        packet_manager2_(new RemoteStoreManager(session2_, test_dir_->string())),
-        packet_manager3_(new RemoteStoreManager(session3_, test_dir_->string())),
+        packet_manager1_(new RemoteStoreManager(session1_,
+                                                test_dir_->string())),
+        packet_manager2_(new RemoteStoreManager(session2_,
+                                                test_dir_->string())),
+        packet_manager3_(new RemoteStoreManager(session3_,
+                                                test_dir_->string())),
 #else
         packet_manager1_(new LocalStoreManager(session1_, test_dir_->string())),
         packet_manager2_(new LocalStoreManager(session2_, test_dir_->string())),
@@ -269,7 +272,7 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
   for (size_t n(0); n < multiple_messages_; ++n) {
     sent.set_timestamp(crypto::Hash<crypto::SHA512>(
                            boost::lexical_cast<std::string>(n)));
-  	ASSERT_EQ(kSuccess,
+    ASSERT_EQ(kSuccess,
               message_handler1_.Send(public_username1_,
                                      public_username2_,
                                      sent));
@@ -305,7 +308,7 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
   for (size_t a(0); a < multiple_messages_ * 5; ++a) {
     sent.set_timestamp(crypto::Hash<crypto::SHA512>(
                            boost::lexical_cast<std::string>("n")));
-  	ASSERT_EQ(kSuccess,
+    ASSERT_EQ(kSuccess,
               message_handler1_.Send(public_username1_,
                                      public_username2_,
                                      sent));

@@ -65,7 +65,7 @@ struct Contact {
           const asymm::PublicKey &mpid_public_key_in,
           const asymm::PublicKey &mmid_public_key_in,
           ContactStatus status);
-  Contact(const PublicContact &contact);
+  explicit Contact(const PublicContact &contact);
 
   std::string public_username, mpid_name, mmid_name;
   asymm::PublicKey mpid_public_key, mmid_public_key;

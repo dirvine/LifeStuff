@@ -19,6 +19,7 @@
 
 
 #include <functional>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -105,7 +106,7 @@ class PublicId {
   void GetNewContacts(const bptime::seconds &interval,
                       const boost::system::error_code &error_code);
   void ProcessRequests(const passport::SelectableIdData &data,
-                       const std::vector<std::string> &mpid_values);
+                       const std::string &mpid_value);
   // Modify the Appendability of MCID and MMID associated with the public_name
   // i.e. enable/disable others add new contact and send msg
   int ModifyAppendability(const std::string &public_username,

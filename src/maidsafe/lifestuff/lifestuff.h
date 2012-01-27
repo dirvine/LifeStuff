@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_MAIDSAFE_H_
-#define MAIDSAFE_LIFESTUFF_MAIDSAFE_H_
+#ifndef MAIDSAFE_LIFESTUFF_LIFESTUFF_H_
+#define MAIDSAFE_LIFESTUFF_LIFESTUFF_H_
 
 #include <cstdint>
 #include <functional>
@@ -67,4 +67,4 @@ enum ContactOrder {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_MAIDSAFE_H_
+#endif  // MAIDSAFE_LIFESTUFF_LIFESTUFF_H_

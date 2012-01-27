@@ -145,16 +145,11 @@ class Authentication {
   Authentication &operator=(const Authentication&);
   Authentication(const Authentication&);
 
-  void GetMidCallback(const std::vector<std::string> &values,
-                      int return_code);
-  void GetSmidCallback(const std::vector<std::string> &values,
-                       int return_code);
-  void GetTmidCallback(const std::vector<std::string> &values,
-                       int return_code);
-  void GetStmidCallback(const std::vector<std::string> &values,
-                        int return_code);
-
-  void GetMidTmidCallback(const std::vector<std::string> &values,
+  void GetMidCallback(const std::string &value, int return_code);
+  void GetSmidCallback(const std::string &value, int return_code);
+  void GetTmidCallback(const std::string &value, int return_code);
+  void GetStmidCallback(const std::string &value, int return_code);
+  void GetMidTmidCallback(const std::string &value,
                           int return_code,
                           bool surrogate);
   // Function waits until dependent_op_status != kPending or timeout before

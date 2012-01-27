@@ -19,6 +19,7 @@
 
 
 #include <functional>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -90,7 +91,7 @@ class MessageHandler {
   void GetNewMessages(const bptime::seconds &interval,
                       const boost::system::error_code &error_code);
   void ProcessRetrieved(const passport::SelectableIdData &data,
-                        const std::vector<std::string> &mmid_values);
+                        const std::string &mmid_value);
   bool MessagePreviouslyReceived(const std::string &message);
   void ClearExpiredReceivedMessages();
 

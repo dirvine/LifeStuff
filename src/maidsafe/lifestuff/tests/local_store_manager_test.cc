@@ -125,7 +125,7 @@ class LocalStoreManagerTest : public testing::Test {
   std::shared_ptr<LocalStoreManager> sm_;
   CallbackObject cb_;
   std::function<void(int)> functor_;  // NOLINT (Dan)
-  std::function<void(const std::vector<std::string>&, int)> get_functor_;
+  std::function<void(const std::string&, int)> get_functor_;
   asymm::PublicKey anmaid_public_key_, anmid_public_key_;
   std::string encoded_anmaid_public_key_, anmaid_name_, anmid_name_;
 
@@ -168,13 +168,12 @@ TEST_F(LocalStoreManagerTest, BEH_GetPacket) {
                    functor_);
   ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
   ASSERT_FALSE(sm_->KeyUnique(packet_name, anmaid_name_));
-  std::vector<std::string> res;
+  std::string res;
 
   // Test Blocking GetPacket Func
   ASSERT_EQ(kSuccess, sm_->GetPacket(packet_name, anmaid_name_, &res));
-  ASSERT_EQ(size_t(1), res.size());
   pca::SignedData res_signed_data;
-  ASSERT_TRUE(res_signed_data.ParseFromString(res[0]));
+  ASSERT_TRUE(res_signed_data.ParseFromString(res));
   ASSERT_EQ(signed_data.data(), res_signed_data.data());
   ASSERT_EQ(kSuccess, asymm::CheckSignature(signed_data.data(),
                                             res_signed_data.signature(),
@@ -183,10 +182,9 @@ TEST_F(LocalStoreManagerTest, BEH_GetPacket) {
   // Test Non-Blocking GetPacket Func
   sm_->GetPacket(packet_name, anmaid_name_, get_functor_);
   ASSERT_EQ(kSuccess, cb_.WaitForGetPacketCallbackResult());
-  std::vector<std::string> results(cb_.get_packet_results());
-  ASSERT_EQ(size_t(1), results.size());
+  std::string result(cb_.get_packet_result());
   pca::SignedData res_signed_data2;
-  ASSERT_TRUE(res_signed_data2.ParseFromString(results[0]));
+  ASSERT_TRUE(res_signed_data2.ParseFromString(result));
   ASSERT_EQ(signed_data.data(), res_signed_data2.data());
   ASSERT_EQ(kSuccess, asymm::CheckSignature(signed_data.data(),
                                             res_signed_data2.signature(),
@@ -207,11 +205,10 @@ TEST_F(LocalStoreManagerTest, BEH_StoreSystemPacket) {
   ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
   ASSERT_FALSE(sm_->KeyUnique(packet_name, anmaid_name_));
 
-  std::vector<std::string> res;
+  std::string res;
   ASSERT_EQ(kSuccess, sm_->GetPacket(packet_name, anmaid_name_, &res));
-  ASSERT_EQ(size_t(1), res.size());
   pca::SignedData res_signed_data;
-  ASSERT_TRUE(res_signed_data.ParseFromString(res[0]));
+  ASSERT_TRUE(res_signed_data.ParseFromString(res));
   ASSERT_EQ(signed_data.data(), res_signed_data.data());
   ASSERT_EQ(kSuccess, asymm::CheckSignature(signed_data.data(),
                                             res_signed_data.signature(),
@@ -276,11 +273,10 @@ TEST_F(LocalStoreManagerTest, BEH_ModifySystemPacket) {
                    functor_);
   ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
 
-  std::vector<std::string> res;
+  std::string res;
   ASSERT_EQ(kSuccess, sm_->GetPacket(packet_name, anmid_name_, &res));
-  ASSERT_EQ(size_t(1), res.size());
   pca::SignedData res_signed_data;
-  ASSERT_TRUE(res_signed_data.ParseFromString(res[0]));
+  ASSERT_TRUE(res_signed_data.ParseFromString(res));
   ASSERT_EQ(signed_data.data(), res_signed_data.data());
   ASSERT_EQ(kSuccess, asymm::CheckSignature(signed_data.data(),
                                             res_signed_data.signature(),
@@ -301,7 +297,7 @@ TEST_F(LocalStoreManagerTest, BEH_ModifySystemPacket) {
   ASSERT_EQ(kSuccess, sm_->GetPacket(packet_name, anmid_name_, &res));
   ASSERT_EQ(size_t(1), res.size());
   res_signed_data.Clear();
-  ASSERT_TRUE(res_signed_data.ParseFromString(res[0]));
+  ASSERT_TRUE(res_signed_data.ParseFromString(res));
   ASSERT_EQ(new_signed_data.data(), res_signed_data.data());
   ASSERT_EQ(kSuccess, asymm::CheckSignature(new_signed_data.data(),
                                             res_signed_data.signature(),
@@ -321,11 +317,10 @@ TEST_F(LocalStoreManagerTest, BEH_ModifySystemPacketNotOwner) {
                    functor_);
   ASSERT_EQ(kSuccess, cb_.WaitForIntResult());
 
-  std::vector<std::string> res;
+  std::string res;
   ASSERT_EQ(kSuccess, sm_->GetPacket(packet_name, anmid_name_, &res));
-  ASSERT_EQ(size_t(1), res.size());
   pca::SignedData res_signed_data;
-  ASSERT_TRUE(res_signed_data.ParseFromString(res[0]));
+  ASSERT_TRUE(res_signed_data.ParseFromString(res));
   ASSERT_EQ(signed_data.data(), res_signed_data.data());
   ASSERT_EQ(kSuccess, asymm::CheckSignature(signed_data.data(),
                                             res_signed_data.signature(),
@@ -349,7 +344,7 @@ TEST_F(LocalStoreManagerTest, BEH_ModifySystemPacketNotOwner) {
   ASSERT_EQ(kSuccess, sm_->GetPacket(packet_name, anmid_name_, &res));
   ASSERT_EQ(size_t(1), res.size());
   res_signed_data.Clear();
-  ASSERT_TRUE(res_signed_data.ParseFromString(res[0]));
+  ASSERT_TRUE(res_signed_data.ParseFromString(res));
   ASSERT_EQ(signed_data.data(), res_signed_data.data());
   ASSERT_EQ(kSuccess, asymm::CheckSignature(signed_data.data(),
                                             res_signed_data.signature(),

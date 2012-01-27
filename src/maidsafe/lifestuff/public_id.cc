@@ -180,7 +180,7 @@ std::vector<std::string> MapToVector(
     const std::map<std::string, ContactStatus> &map) {
   std::vector<std::string> vector;
   for (auto it(map.begin()); it != map.end(); ++it)
-  	vector.push_back((*it).first);
+    vector.push_back((*it).first);
   return vector;
 }
 
@@ -435,13 +435,13 @@ void PublicId::GetNewContacts(const bptime::seconds &interval,
       session_->passport_->GetSelectableIdentityData(std::get<0>(*it),
                                                      true,
                                                      &data);
-      std::vector<std::string> mpid_values;
+      std::string mpid_value;
       int result(packet_manager_->GetPacket(
                      MaidsafeContactIdName(std::get<0>(*it)),
                      std::get<0>(data.at(1)),
-                     &mpid_values));
+                     &mpid_value));
       if (result == kSuccess) {
-        ProcessRequests(*it, mpid_values);
+        ProcessRequests(*it, mpid_value);
       } else if (result == kGetPacketEmptyData) {
         DLOG(INFO) << "No new add requests for " << std::get<0>(*it);
       } else {
@@ -460,10 +460,9 @@ void PublicId::GetNewContacts(const bptime::seconds &interval,
 }
 
 void PublicId::ProcessRequests(const passport::SelectableIdData &data,
-                               const std::vector<std::string> &mpid_values) {
-  BOOST_ASSERT(mpid_values.size() == 1U);
+                               const std::string &mpid_value) {
   pca::AppendableByAll mcid;
-  if (!mcid.ParseFromString(mpid_values.at(0))) {
+  if (!mcid.ParseFromString(mpid_value)) {
     DLOG(ERROR) << "Failed to parse as AppendableByAll";
     return;
   }
@@ -503,9 +502,8 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
             &mic);
     if (n == kSuccess) {
       if (mic.status == kRequestSent) {
-        int stat(session_->contact_handler_map()[std::get<0>(data)]->UpdateStatus(
-                    public_username,
-                    kConfirmed));
+        int stat(session_->contact_handler_map()[std::get<0>(data)]->
+                    UpdateStatus(public_username, kConfirmed));
         int mmid(
             session_->contact_handler_map()[std::get<0>(data)]->UpdateMmidName(
                 public_username,

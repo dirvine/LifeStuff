@@ -71,7 +71,7 @@ MessageHandler::MessageHandler(std::shared_ptr<PacketManager> packet_manager,
   for (int n(pca::Message::ContentType_MIN);
        n <= pca::Message::ContentType_MAX;
        ++n) {
-  	new_message_signals_.push_back(std::make_shared<NewMessageSignal>());
+    new_message_signals_.push_back(std::make_shared<NewMessageSignal>());
   }
 }
 
@@ -244,13 +244,13 @@ void MessageHandler::GetNewMessages(
       continue;
     }
 
-    std::vector<std::string> mmid_values;
+    std::string mmid_value;
     result = packet_manager_->GetPacket(AppendableByAllType(std::get<1>(*it)),
                                         std::get<0>(data.at(2)),
-                                        &mmid_values);
+                                        &mmid_value);
 
     if (result == kSuccess) {
-      ProcessRetrieved(*it, mmid_values);
+      ProcessRetrieved(*it, mmid_value);
       ClearExpiredReceivedMessages();
     } else if (result != kGetPacketEmptyData) {
       DLOG(WARNING) << "Failed to get MPID contents for " << std::get<0>(*it)
@@ -266,12 +266,10 @@ void MessageHandler::GetNewMessages(
                                                std::placeholders::_1));
 }
 
-void MessageHandler::ProcessRetrieved(
-    const passport::SelectableIdData &data,
-    const std::vector<std::string> &mmid_values) {
-  BOOST_ASSERT(mmid_values.size() == 1U);
+void MessageHandler::ProcessRetrieved(const passport::SelectableIdData &data,
+                                      const std::string &mmid_value) {
   pca::AppendableByAll mmid;
-  if (!mmid.ParseFromString(mmid_values.at(0))) {
+  if (!mmid.ParseFromString(mmid_value)) {
     DLOG(ERROR) << "Failed to parse as AppendableByAll";
     return;
   }

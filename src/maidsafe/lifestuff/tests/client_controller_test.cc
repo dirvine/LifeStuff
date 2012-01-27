@@ -62,9 +62,11 @@ class ClientControllerTest : public testing::Test {
         session_(new Session),
         cc_(new ClientController(session_)),
 #if defined REMOTE_STORE
-        packet_manager_(new RemoteStoreManager(session_, test_dir_->string())) {}
+        packet_manager_(new RemoteStoreManager(session_,
+                                               test_dir_->string())) {}
 #else
-        packet_manager_(new LocalStoreManager(session_, test_dir_->string())) {}
+        packet_manager_(new LocalStoreManager(session_,
+                                              test_dir_->string())) {}
 #endif
 
  protected:
