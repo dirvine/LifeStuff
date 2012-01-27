@@ -98,15 +98,8 @@ class UserStorage {
                              const std::string &directory_id);
 
   // ****************************** Shares *************************************
-  int SetShareDetails(const fs::path &absolute_path,
-                      const std::string &share_id,
-                      const asymm::Keys &share_keyring,
-                      const std::string &this_user_id,
-                      std::string *directory_id);
   int CreateShare(const fs::path &absolute_path,
-                  std::map<Contact, bool> contacts,
-                  std::string *directory_id,
-                  std::string *share_id);
+                  const std::map<std::string, bool> &contacts);
   int StopShare(const fs::path &absolute_path);
   int InsertShare(const fs::path &absolute_path,
                   const std::string &directory_id,
@@ -114,8 +107,7 @@ class UserStorage {
                   const asymm::Keys &share_keyring);
   int LeaveShare(const fs::path &absolute_path);
   int AddShareUser(const fs::path &absolute_path,
-                   const std::string &user_id,
-                   bool admin_rights);
+                   const std::map<std::string, bool> &contacts);
   void GetAllShareUsers(const fs::path &absolute_path,
                         std::map<std::string, bool> *all_share_users) const;
   int RemoveShareUser(const fs::path &absolute_path,
@@ -146,6 +138,15 @@ class UserStorage {
 
 
  private:
+  int ModifyShareDetails(const drive::ShareData &old_share_data,
+                         const drive::ShareData &new_share_data);
+  void InformContactsOperation(
+      const std::map<std::string, bool> &contacts,
+      const ShareOperations operation,
+      drive::ShareData share_data,
+      drive::ShareData additional = drive::ShareData());
+  void NewMessageSlot(const pca::Message &message);
+
   bool mount_status_;
   std::shared_ptr<ChunkStore> chunk_store_;
   std::shared_ptr<MaidDriveInUserSpace> drive_in_user_space_;

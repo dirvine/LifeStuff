@@ -63,6 +63,13 @@ enum ContactOrder {
   kLastContacted
 };
 
+enum ShareOperations {
+  kToJoin,
+  kToLeave,
+  kToMove,
+  kToUpgrade
+};
+
 }  // namespace lifestuff
 
 }  // namespace maidsafe
