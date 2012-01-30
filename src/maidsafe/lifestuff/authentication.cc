@@ -35,9 +35,10 @@
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 
+#include "maidsafe/pd/client/remote_chunk_store.h"
+
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
-#include "maidsafe/lifestuff/store_components/packet_manager.h"
 
 namespace args = std::placeholders;
 namespace pca = maidsafe::priv::chunk_actions;
@@ -128,6 +129,20 @@ Authentication::PacketData::PacketData(
 }
 
 
+Authentication::Authentication(std::shared_ptr<Session> session)
+    : remote_chunk_store_(),
+      session_(session),
+      mutex_(),
+      mid_mutex_(),
+      smid_mutex_(),
+      cond_var_(),
+      tmid_op_status_(kPendingMid),
+      stmid_op_status_(kPendingMid),
+      encrypted_tmid_(),
+      encrypted_stmid_(),
+      serialised_data_atlas_(),
+      kSingleOpTimeout_(5000) {}
+
 Authentication::~Authentication() {
   if (tmid_op_status_ != kPendingMid || stmid_op_status_ != kPendingMid) {
     bool tmid_success(false), stmid_success(false);
@@ -156,8 +171,9 @@ Authentication::~Authentication() {
   }
 }
 
-void Authentication::Init(std::shared_ptr<PacketManager> packet_manager) {
-  packet_manager_ = packet_manager;
+void Authentication::Init(
+    std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store) {
+  remote_chunk_store_ = remote_chunk_store;
   tmid_op_status_ = kNoUser;
   stmid_op_status_ = kNoUser;
 }
@@ -177,16 +193,16 @@ int Authentication::GetUserInfo(const std::string &username,
   session_->set_pin(pin);
   tmid_op_status_ = kPending;
   stmid_op_status_ = kPending;
-  packet_manager_->GetPacket(pca::ApplyTypeToName(mid_name,
-                                                  pca::kModifiableByOwner),
-                             "",
-                             std::bind(&Authentication::GetMidCallback, this,
-                                       args::_1, args::_2));
-  packet_manager_->GetPacket(pca::ApplyTypeToName(smid_name,
-                                                  pca::kModifiableByOwner),
-                             "",
-                             std::bind(&Authentication::GetSmidCallback, this,
-                                       args::_1, args::_2));
+//  packet_manager_->GetPacket(pca::ApplyTypeToName(mid_name,
+//                                                  pca::kModifiableByOwner),
+//                             "",
+//                             std::bind(&Authentication::GetMidCallback, this,
+//                                       args::_1, args::_2));
+//  packet_manager_->GetPacket(pca::ApplyTypeToName(smid_name,
+//                                                  pca::kModifiableByOwner),
+//                             "",
+//                             std::bind(&Authentication::GetSmidCallback, this,
+//                                       args::_1, args::_2));
 
   // Wait until both ops are finished here
   bool mid_finished(false), smid_finished(false);
@@ -245,11 +261,11 @@ void Authentication::GetMidCallback(const std::string &value, int return_code) {
 
   DLOG(INFO) << "Auth::GetMidCallback: TMID - (" << Base32Substr(tmid_name)
                 << ", " << Base32Substr(value) << ")";
-  packet_manager_->GetPacket(pca::ApplyTypeToName(tmid_name,
-                                                  pca::kModifiableByOwner),
-                             "",
-                             std::bind(&Authentication::GetTmidCallback,
-                                       this, args::_1, args::_2));
+//  packet_manager_->GetPacket(pca::ApplyTypeToName(tmid_name,
+//                                                  pca::kModifiableByOwner),
+//                             "",
+//                             std::bind(&Authentication::GetTmidCallback,
+//                                       this, args::_1, args::_2));
 }
 
 void Authentication::GetSmidCallback(const std::string &value,
@@ -285,11 +301,12 @@ void Authentication::GetSmidCallback(const std::string &value,
     return;
   }
 
-  packet_manager_->GetPacket(pca::ApplyTypeToName(stmid_name,
-                                                  pca::kModifiableByOwner),
-                             "",
-                             std::bind(&Authentication::GetStmidCallback,
-                                       this, args::_1, args::_2));}
+//  packet_manager_->GetPacket(pca::ApplyTypeToName(stmid_name,
+//                                                  pca::kModifiableByOwner),
+//                             "",
+//                             std::bind(&Authentication::GetStmidCallback,
+//                                       this, args::_1, args::_2));
+}
 
 void Authentication::GetTmidCallback(const std::string &value,
                                      int return_code) {
@@ -457,7 +474,7 @@ void Authentication::StoreSignaturePacket(
   VoidFuncOneInt functor =
       std::bind(&Authentication::SignaturePacketUniqueCallback,
                 this, args::_1, packet_type, op_status);
-  packet_manager_->KeyUnique(packet_name, "", functor);
+//  packet_manager_->KeyUnique(packet_name, "", functor);
 }
 
 void Authentication::SignaturePacketUniqueCallback(
@@ -483,8 +500,8 @@ void Authentication::SignaturePacketUniqueCallback(
   std::string signed_data_name, serialised_signed_data, signing_id;
   CreateSignedData(packet, confirmed, &signed_data_name,
                    &serialised_signed_data, &signing_id);
-  packet_manager_->StorePacket(signed_data_name, serialised_signed_data,
-                               signing_id, functor);
+//  packet_manager_->StorePacket(signed_data_name, serialised_signed_data,
+//                               signing_id, functor);
 }
 
 void Authentication::SignaturePacketStoreCallback(
@@ -592,32 +609,32 @@ void Authentication::SaveSession(const std::string &serialised_data_atlas,
   VoidFuncOneInt callback = std::bind(&Authentication::SaveSessionCallback,
                                       this, args::_1, passport::kSmid,
                                       save_session_data);
-  packet_manager_->ModifyPacket(smid_name,
-                                serialised_smid,
-                                smid_signing_id,
-                                callback);
+//  packet_manager_->ModifyPacket(smid_name,
+//                                serialised_smid,
+//                                smid_signing_id,
+//                                callback);
 
   // Update MID
   callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
                        passport::kMid, save_session_data);
-  packet_manager_->ModifyPacket(mid_name,
-                                serialised_mid,
-                                mid_signing_id,
-                                callback);
+//  packet_manager_->ModifyPacket(mid_name,
+//                                serialised_mid,
+//                                mid_signing_id,
+//                                callback);
 
   // Store new TMID
   callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
                        passport::kTmid, save_session_data);
-  packet_manager_->StorePacket(tmid_name,
-                               serialised_tmid,
-                               tmid_signing_id,
-                               callback);
+//  packet_manager_->StorePacket(tmid_name,
+//                               serialised_tmid,
+//                               tmid_signing_id,
+//                               callback);
   // Delete old STMID
   callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
                        passport::kStmid, save_session_data);
   std::string old_stmid_name(pca::ApplyTypeToName(old_stmid.name,
                                                   pca::kModifiableByOwner));
-  packet_manager_->DeletePacket(old_stmid_name, tmid_signing_id, callback);
+//  packet_manager_->DeletePacket(old_stmid_name, tmid_signing_id, callback);
 }
 
 void Authentication::SaveSessionCallback(int return_code,
@@ -852,7 +869,7 @@ void Authentication::DeletePacket(const passport::PacketType &packet_type,
                         true,
                         &packet_name,
                         &signing_id);
-  packet_manager_->DeletePacket(packet_name, signing_id, functor);
+//  packet_manager_->DeletePacket(packet_name, signing_id, functor);
 }
 
 void Authentication::DeletePacketCallback(
@@ -913,31 +930,31 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
   // Check uniqueness of new MID
   callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
                        passport::kMid, save_session_data);
-  packet_manager_->KeyUnique(pca::ApplyTypeToName(mid.name,
-                                                  pca::kModifiableByOwner),
-                             "",
-                             callback);
+//  packet_manager_->KeyUnique(pca::ApplyTypeToName(mid.name,
+//                                                  pca::kModifiableByOwner),
+//                             "",
+//                             callback);
   // Check uniqueness of new SMID
   callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
                        passport::kSmid, save_session_data);
-  packet_manager_->KeyUnique(pca::ApplyTypeToName(smid.name,
-                                                  pca::kModifiableByOwner),
-                             "",
-                             callback);
+//  packet_manager_->KeyUnique(pca::ApplyTypeToName(smid.name,
+//                                                  pca::kModifiableByOwner),
+//                             "",
+//                             callback);
   // Check uniqueness of new TMID
   callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
                        passport::kTmid, save_session_data);
-  packet_manager_->KeyUnique(pca::ApplyTypeToName(tmid.name,
-                                                  pca::kModifiableByOwner),
-                             "",
-                             callback);
+//  packet_manager_->KeyUnique(pca::ApplyTypeToName(tmid.name,
+//                                                  pca::kModifiableByOwner),
+//                             "",
+//                             callback);
   // Check uniqueness of new STMID
   callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
                        passport::kStmid, save_session_data);
-  packet_manager_->KeyUnique(pca::ApplyTypeToName(stmid.name,
-                                                  pca::kModifiableByOwner),
-                             "",
-                             callback);
+//  packet_manager_->KeyUnique(pca::ApplyTypeToName(stmid.name,
+//                                                  pca::kModifiableByOwner),
+//                             "",
+//                             callback);
   // Wait for checking to complete
   bool success(true);
   try {
@@ -987,31 +1004,31 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
   // Store new MID
   callback = std::bind(&Authentication::SaveSessionCallback,
                        this, args::_1, passport::kMid, save_session_data);
-  packet_manager_->StorePacket(mid_name,
-                               serialised_mid,
-                               mid_signing_id,
-                               callback);
+//  packet_manager_->StorePacket(mid_name,
+//                               serialised_mid,
+//                               mid_signing_id,
+//                               callback);
   // Store new SMID
   callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
                        passport::kSmid, save_session_data);
-  packet_manager_->StorePacket(smid_name,
-                               serialised_smid,
-                               smid_signing_id,
-                               callback);
+//  packet_manager_->StorePacket(smid_name,
+//                               serialised_smid,
+//                               smid_signing_id,
+//                               callback);
   // Store new TMID
   callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
                        passport::kTmid, save_session_data);
-  packet_manager_->StorePacket(tmid_name,
-                               serialised_tmid,
-                               tmid_signing_id,
-                               callback);
+//  packet_manager_->StorePacket(tmid_name,
+//                               serialised_tmid,
+//                               tmid_signing_id,
+//                               callback);
   // Store new STMID
   callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
                        passport::kStmid, save_session_data);
-  packet_manager_->StorePacket(stmid_name,
-                               serialised_stmid,
-                               stmid_signing_id,
-                               callback);
+//  packet_manager_->StorePacket(stmid_name,
+//                               serialised_stmid,
+//                               stmid_signing_id,
+//                               callback);
   // Wait for storing to complete
   success = true;
   try {
@@ -1043,31 +1060,31 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
   // Delete old MID
   callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
                         passport::kMid, save_session_data);
-  packet_manager_->DeletePacket(pca::ApplyTypeToName(old_mid.name,
-                                                     pca::kModifiableByOwner),
-                                mid_signing_id,
-                                callback);
+//  packet_manager_->DeletePacket(pca::ApplyTypeToName(old_mid.name,
+//                                                     pca::kModifiableByOwner),
+//                                mid_signing_id,
+//                                callback);
   // Delete old SMID
   callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
                         passport::kSmid, save_session_data);
-  packet_manager_->DeletePacket(pca::ApplyTypeToName(old_smid.name,
-                                                     pca::kModifiableByOwner),
-                                smid_signing_id,
-                                callback);
+//  packet_manager_->DeletePacket(pca::ApplyTypeToName(old_smid.name,
+//                                                     pca::kModifiableByOwner),
+//                                smid_signing_id,
+//                                callback);
   // Delete old TMID
   callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
                        passport::kTmid, save_session_data);
-  packet_manager_->DeletePacket(pca::ApplyTypeToName(old_tmid.name,
-                                                     pca::kModifiableByOwner),
-                                tmid_signing_id,
-                                callback);
+//  packet_manager_->DeletePacket(pca::ApplyTypeToName(old_tmid.name,
+//                                                     pca::kModifiableByOwner),
+//                                tmid_signing_id,
+//                                callback);
   // Delete old STMID
   callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
                        passport::kStmid, save_session_data);
-  packet_manager_->DeletePacket(pca::ApplyTypeToName(old_stmid.name,
-                                                     pca::kModifiableByOwner),
-                                stmid_signing_id,
-                                callback);
+//  packet_manager_->DeletePacket(pca::ApplyTypeToName(old_stmid.name,
+//                                                     pca::kModifiableByOwner),
+//                                stmid_signing_id,
+//                                callback);
   try {
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(
@@ -1135,31 +1152,31 @@ int Authentication::ChangePassword(const std::string &serialised_data_atlas,
   VoidFuncOneInt callback = std::bind(&Authentication::SaveSessionCallback,
                                       this, args::_1, passport::kMid,
                                       save_session_data);
-  packet_manager_->ModifyPacket(mid_name,
-                                serialised_mid,
-                                mid_signing_id,
-                                callback);
+//  packet_manager_->ModifyPacket(mid_name,
+//                                serialised_mid,
+//                                mid_signing_id,
+//                                callback);
   // Update SMID
   callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
                        passport::kSmid, save_session_data);
-  packet_manager_->ModifyPacket(smid_name,
-                                serialised_smid,
-                                smid_signing_id,
-                                callback);
+//  packet_manager_->ModifyPacket(smid_name,
+//                                serialised_smid,
+//                                smid_signing_id,
+//                                callback);
   // Store new TMID
   callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
                        passport::kTmid, save_session_data);
-  packet_manager_->StorePacket(tmid_name,
-                               serialised_tmid,
-                               tmid_signing_id,
-                               callback);
+//  packet_manager_->StorePacket(tmid_name,
+//                               serialised_tmid,
+//                               tmid_signing_id,
+//                               callback);
   // Store new STMID
   callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
                        passport::kStmid, save_session_data);
-  packet_manager_->StorePacket(stmid_name,
-                               serialised_stmid,
-                               stmid_signing_id,
-                               callback);
+//  packet_manager_->StorePacket(stmid_name,
+//                               serialised_stmid,
+//                               stmid_signing_id,
+//                               callback);
   // Wait for storing/updating to complete
   bool success(true);
   try {
@@ -1189,17 +1206,17 @@ int Authentication::ChangePassword(const std::string &serialised_data_atlas,
   // Delete old TMID
   callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
                        passport::kTmid, save_session_data);
-  packet_manager_->DeletePacket(pca::ApplyTypeToName(old_tmid.name,
-                                                     pca::kModifiableByOwner),
-                                tmid_signing_id,
-                                callback);
+//  packet_manager_->DeletePacket(pca::ApplyTypeToName(old_tmid.name,
+//                                                     pca::kModifiableByOwner),
+//                                tmid_signing_id,
+//                                callback);
   // Delete old STMID
   callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
                        passport::kStmid, save_session_data);
-  packet_manager_->DeletePacket(pca::ApplyTypeToName(old_stmid.name,
-                                                     pca::kModifiableByOwner),
-                                stmid_signing_id,
-                                callback);
+//  packet_manager_->DeletePacket(pca::ApplyTypeToName(old_stmid.name,
+//                                                     pca::kModifiableByOwner),
+//                                stmid_signing_id,
+//                                callback);
 
   try {
     boost::mutex::scoped_lock lock(mutex_);
@@ -1247,10 +1264,10 @@ int Authentication::StorePacket(const PacketData &packet,
                    &packet_name,
                    &serialised_packet,
                    &signing_id);
-  packet_manager_->StorePacket(packet_name,
-                               serialised_packet,
-                               signing_id,
-                               functor);
+//  packet_manager_->StorePacket(packet_name,
+//                               serialised_packet,
+//                               signing_id,
+//                               functor);
   bool success(true);
   try {
     boost::mutex::scoped_lock lock(mutex_);
@@ -1284,7 +1301,7 @@ int Authentication::DeletePacket(const PacketData &packet) {
                         true,
                         &packet_name,
                         &signing_id);
-  packet_manager_->DeletePacket(packet_name, signing_id, functor);
+//  packet_manager_->DeletePacket(packet_name, signing_id, functor);
   bool success(true);
   try {
     boost::mutex::scoped_lock lock(mutex_);
@@ -1318,7 +1335,7 @@ int Authentication::PacketUnique(const PacketData &packet) {
                         true,
                         &packet_name,
                         &signing_id);
-  packet_manager_->KeyUnique(packet_name, signing_id, functor);
+//  packet_manager_->KeyUnique(packet_name, signing_id, functor);
   bool success(true);
   try {
     boost::mutex::scoped_lock lock(mutex_);

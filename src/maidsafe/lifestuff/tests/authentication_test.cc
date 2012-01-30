@@ -28,15 +28,12 @@
 #include "maidsafe/private/chunk_actions/chunk_action_authority.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 
+#include "maidsafe/pd/client/remote_chunk_store.h"
+
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/tests/test_callback.h"
-#if defined REMOTE_STORE
-#  include "maidsafe/lifestuff/store_components/remote_store_manager.h"
-#else
-#  include "maidsafe/lifestuff/store_components/local_store_manager.h"
-#endif
 
 namespace args = std::placeholders;
 namespace fs = boost::filesystem;
@@ -53,11 +50,12 @@ class AuthenticationTest : public testing::Test {
   AuthenticationTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
         session_(new Session),
-#if defined REMOTE_STORE
-        packet_manager_(new RemoteStoreManager(session_, test_dir_->string())),
-#else
-        packet_manager_(new LocalStoreManager(session_, test_dir_->string())),
-#endif
+        remote_chunk_store_(),
+//  #if defined REMOTE_STORE
+//          packet_manager_(new RemoteStoreManager(session_, test_dir_->string())),
+//  #else
+//          packet_manager_(new LocalStoreManager(session_, test_dir_->string())),
+//  #endif
         authentication_(session_),
         username_("user"),
         pin_("1234"),
@@ -68,13 +66,11 @@ class AuthenticationTest : public testing::Test {
  protected:
   void SetUp() {
     session_->ResetSession();
-    packet_manager_->Init(std::bind(&AuthenticationTest::InitAndCloseCallback,
-                                    this, args::_1));
-    authentication_.Init(packet_manager_);
+    authentication_.Init(remote_chunk_store_);
   }
 
   void TearDown() {
-    packet_manager_->Close(true);
+//    packet_manager_->Close(true);
   }
 
   int GetMasterDataMap(std::string *ser_dm_login) {
@@ -126,7 +122,7 @@ class AuthenticationTest : public testing::Test {
 
   std::shared_ptr<fs::path> test_dir_;
   std::shared_ptr<Session> session_;
-  std::shared_ptr<PacketManager> packet_manager_;
+  std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store_;
   Authentication authentication_;
   std::string username_, pin_, password_, ser_dm_, surrogate_ser_dm_;
 
@@ -241,18 +237,18 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionBlocking) {
   std::string tmidname(PacketValueFromSession(passport::kTmid, true));
   std::string stmidname(PacketValueFromSession(passport::kStmid, true));
 
-  ASSERT_TRUE(packet_manager_->KeyUnique(
-                  pca::ApplyTypeToName(original_tmidname,
-                                       pca::kModifiableByOwner),
-                  PacketSignerFromSession(passport::kTmid, true)));
-  ASSERT_FALSE(packet_manager_->KeyUnique(
-                   pca::ApplyTypeToName(stmidname,
-                                        pca::kModifiableByOwner),
-                   PacketSignerFromSession(passport::kStmid, true)));
-  ASSERT_FALSE(packet_manager_->KeyUnique(
-                   pca::ApplyTypeToName(tmidname,
-                                        pca::kModifiableByOwner),
-                   PacketSignerFromSession(passport::kTmid, true)));
+//  ASSERT_TRUE(packet_manager_->KeyUnique(
+//                  pca::ApplyTypeToName(original_tmidname,
+//                                       pca::kModifiableByOwner),
+//                  PacketSignerFromSession(passport::kTmid, true)));
+//  ASSERT_FALSE(packet_manager_->KeyUnique(
+//                   pca::ApplyTypeToName(stmidname,
+//                                        pca::kModifiableByOwner),
+//                   PacketSignerFromSession(passport::kStmid, true)));
+//  ASSERT_FALSE(packet_manager_->KeyUnique(
+//                   pca::ApplyTypeToName(tmidname,
+//                                        pca::kModifiableByOwner),
+//                   PacketSignerFromSession(passport::kTmid, true)));
 }
 
 TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionCallbacks) {
@@ -278,10 +274,10 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionCallbacks) {
   authentication_.SaveSession(ser_dm_, std::bind(&CallbackObject::IntCallback,
                                                  &cb, args::_1));
   ASSERT_EQ(kSuccess, cb.WaitForIntResult());
-  ASSERT_TRUE(packet_manager_->KeyUnique(
-                  pca::ApplyTypeToName(original_tmidname,
-                                       pca::kModifiableByOwner),
-                  PacketSignerFromSession(passport::kTmid, true)));
+//  ASSERT_TRUE(packet_manager_->KeyUnique(
+//                  pca::ApplyTypeToName(original_tmidname,
+//                                       pca::kModifiableByOwner),
+//                  PacketSignerFromSession(passport::kTmid, true)));
 }
 
 TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
@@ -306,10 +302,10 @@ TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
   std::string ser_dm_login;
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
-  ASSERT_TRUE(packet_manager_->KeyUnique(
-                  pca::ApplyTypeToName(original_stmidname,
-                                       pca::kModifiableByOwner),
-                  PacketSignerFromSession(passport::kTmid, true)));
+//  ASSERT_TRUE(packet_manager_->KeyUnique(
+//                  pca::ApplyTypeToName(original_stmidname,
+//                                       pca::kModifiableByOwner),
+//                  PacketSignerFromSession(passport::kTmid, true)));
 }
 
 TEST_F(AuthenticationTest, FUNC_ChangePin) {
@@ -333,10 +329,10 @@ TEST_F(AuthenticationTest, FUNC_ChangePin) {
   std::string ser_dm_login;
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
-  ASSERT_TRUE(packet_manager_->KeyUnique(
-                  pca::ApplyTypeToName(original_stmidname,
-                                       pca::kModifiableByOwner),
-                  PacketSignerFromSession(passport::kTmid, true)));
+//  ASSERT_TRUE(packet_manager_->KeyUnique(
+//                  pca::ApplyTypeToName(original_stmidname,
+//                                       pca::kModifiableByOwner),
+//                  PacketSignerFromSession(passport::kTmid, true)));
 }
 
 TEST_F(AuthenticationTest, FUNC_ChangePassword) {

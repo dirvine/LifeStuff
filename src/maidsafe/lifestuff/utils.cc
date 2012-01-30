@@ -27,9 +27,10 @@
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 
+#include "maidsafe/pd/client/remote_chunk_store.h"
+
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
-#include "maidsafe/lifestuff/store_components/packet_manager.h"
 
 namespace pca = maidsafe::priv::chunk_actions;
 
@@ -37,17 +38,18 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-int GetValidatedMpidPublicKey(const std::string &public_username,
-                              const std::string &own_mpid_name,
-                              std::shared_ptr<PacketManager> packet_manager,
-                              asymm::PublicKey *public_key) {
+int GetValidatedMpidPublicKey(
+    const std::string &public_username,
+    const std::string &own_mpid_name,
+    std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+    asymm::PublicKey *public_key) {
   // Get public key packet from network
   std::string packet_name(crypto::Hash<crypto::SHA512>(public_username) +
                           std::string(1, pca::kAppendableByAll));
   std::string packet_value;
-  int result(packet_manager->GetPacket(packet_name,
+  int result(/*packet_manager->GetPacket(packet_name,
                                        own_mpid_name,
-                                       &packet_value));
+                                       &packet_value)*/0);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to get public key for " << public_username;
     *public_key = asymm::PublicKey();
@@ -78,7 +80,7 @@ int GetValidatedMpidPublicKey(const std::string &public_username,
   std::string mpid_name(crypto::Hash<crypto::SHA512>(mpid_value) +
                         std::string(1, pca::kSignaturePacket));
   packet_value.clear();
-  result = packet_manager->GetPacket(mpid_name, own_mpid_name, &packet_value);
+//  result = packet_manager->GetPacket(mpid_name, own_mpid_name, &packet_value);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to get MPID for " << public_username;
     *public_key = asymm::PublicKey();
@@ -106,15 +108,16 @@ int GetValidatedMpidPublicKey(const std::string &public_username,
   return kSuccess;
 }
 
-int GetValidatedMmidPublicKey(const std::string &mmid_name,
-                              const std::string &own_mmid_name,
-                              std::shared_ptr<PacketManager> packet_manager,
-                              asymm::PublicKey *public_key) {
+int GetValidatedMmidPublicKey(
+    const std::string &mmid_name,
+    const std::string &own_mmid_name,
+    std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+    asymm::PublicKey *public_key) {
   std::string packet_value;
-  int result(packet_manager->GetPacket(
+  int result(/*packet_manager->GetPacket(
                   mmid_name + std::string(1, pca::kAppendableByAll),
                   own_mmid_name,
-                  &packet_value));
+                  &packet_value)*/0);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to get public key for " << Base32Substr(mmid_name);
     *public_key = asymm::PublicKey();

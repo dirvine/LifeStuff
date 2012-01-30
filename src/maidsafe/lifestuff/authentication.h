@@ -44,34 +44,20 @@ namespace pki {
 class Packet;
 class SignaturePacket;
 }  // namespace pki
-
 namespace passport { class Passport; }
+namespace pd { class RemoteChunkStore; }
 
 namespace lifestuff {
 
-namespace test { class ClientControllerTest; }
-
-class PacketManager;
 class Session;
+namespace test { class ClientControllerTest; }
 
 class Authentication {
  public:
-  explicit Authentication(std::shared_ptr<Session> session)
-      : packet_manager_(),
-        session_(session),
-        mutex_(),
-        mid_mutex_(),
-        smid_mutex_(),
-        cond_var_(),
-        tmid_op_status_(kPendingMid),
-        stmid_op_status_(kPendingMid),
-        encrypted_tmid_(),
-        encrypted_stmid_(),
-        serialised_data_atlas_(),
-        kSingleOpTimeout_(5000) {}
+  explicit Authentication(std::shared_ptr<Session> session);
   ~Authentication();
   // Used to intialise passport_ in all cases.
-  void Init(std::shared_ptr<PacketManager> packet_manager);
+  void Init(std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store);
   // Used to intialise passport_ in all cases.
   int GetUserInfo(const std::string &username, const std::string &pin);
   // Used when creating a new user.
@@ -228,7 +214,7 @@ class Authentication {
   std::string DebugStr(const passport::PacketType &packet_type);
 
 
-  std::shared_ptr<PacketManager> packet_manager_;
+  std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<Session> session_;
   boost::mutex mutex_, mid_mutex_, smid_mutex_;
   boost::condition_variable cond_var_;

@@ -28,17 +28,19 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-class PacketManager;
+namespace pd { class RemoteChunkStore; }
 
-int GetValidatedMpidPublicKey(const std::string &public_username,
-                              const std::string &own_mpid_name,
-                              std::shared_ptr<PacketManager> packet_manager,
-                              asymm::PublicKey *public_key);
+int GetValidatedMpidPublicKey(
+    const std::string &public_username,
+    const std::string &own_mpid_name,
+    std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+    asymm::PublicKey *public_key);
 
-int GetValidatedMmidPublicKey(const std::string &mmid_name,
-                              const std::string &own_mmid_name,
-                              std::shared_ptr<PacketManager> packet_manager,
-                              asymm::PublicKey *public_key);
+int GetValidatedMmidPublicKey(
+    const std::string &mmid_name,
+    const std::string &own_mmid_name,
+    std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+    asymm::PublicKey *public_key);
 
 }  // namespace lifestuff
 

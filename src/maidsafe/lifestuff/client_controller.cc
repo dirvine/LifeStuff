@@ -97,7 +97,7 @@ void PacketOpCallback(const int &store_manager_result,
 
 ClientController::ClientController(std::shared_ptr<Session> session)
     : session_(session),
-      packet_manager_(),
+      remote_chunk_store_(),
       auth_(new Authentication(session)),
       ser_da_(),
       surrogate_ser_da_(),
@@ -111,7 +111,11 @@ ClientController::~ClientController() {
 
 int ClientController::Initialise() {
   CCCallback cb;
-  packet_manager_->Init(std::bind(&CCCallback::IntCallback, &cb, args::_1));
+#if defined REMOTE_STORE
+  remote_chunk_store_.
+#else
+#endif
+  remote_chunk_store_->Init(std::bind(&CCCallback::IntCallback, &cb, args::_1));
   int result(cb.WaitForIntResult());
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to initialise packet manager.";

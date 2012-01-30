@@ -110,7 +110,7 @@ class ClientController {
   int SerialiseDa();
 
   std::shared_ptr<Session> session_;
-  std::shared_ptr<PacketManager> packet_manager_;
+  std::shared_ptr<remote_chunk_store_> remote_chunk_store_;
   std::shared_ptr<Authentication> auth_;
   std::string ser_da_, surrogate_ser_da_;
   bool initialised_;
