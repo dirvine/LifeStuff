@@ -23,6 +23,7 @@
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 
+#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/public_id.h"
 #include "maidsafe/lifestuff/session.h"

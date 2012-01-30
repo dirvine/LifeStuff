@@ -28,6 +28,7 @@
 #include "maidsafe/private/chunk_actions/chunk_action_authority.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 
+#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/tests/test_callback.h"

@@ -40,6 +40,7 @@
 #include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/store_components/packet_manager.h"
+#include "maidsafe/lifestuff/message_handler.h"
 
 #ifdef WIN32
 #  include "maidsafe/drive/win_drive.h"
@@ -73,8 +74,7 @@ class Session;
 class UserStorage {
  public:
   explicit UserStorage(std::shared_ptr<ChunkStore> chunk_store,
-                       std::shared_ptr<PacketManager> packet_manager,
-                       std::shared_ptr<MessageHandler> message_handler);
+                       std::shared_ptr<PacketManager> packet_manager);
   virtual ~UserStorage() {}
 
   virtual void MountDrive(const fs::path &mount_dir_path,
@@ -84,6 +84,8 @@ class UserStorage {
   virtual void UnMountDrive();
   virtual fs::path g_mount_dir();
   virtual bool mount_status();
+
+  void SetMessageHandler(std::shared_ptr<MessageHandler> message_handler);
 
   // ********************* File / Folder Transfers *****************************
   int GetDataMap(const fs::path &absolute_path,
@@ -100,22 +102,22 @@ class UserStorage {
   // ****************************** Shares *************************************
   int CreateShare(const fs::path &absolute_path,
                   const std::map<std::string, bool> &contacts);
-  int StopShare(const fs::path &absolute_path);
-  int InsertShare(const fs::path &absolute_path,
+  int StopShare(const std::string &share_id);
+  int InsertShare(const std::string &share_id,
+                  const fs::path &absolute_path,
                   const std::string &directory_id,
-                  const std::string &share_id,
                   const asymm::Keys &share_keyring);
-  int LeaveShare(const fs::path &absolute_path);
-  int AddShareUser(const fs::path &absolute_path,
-                   const std::map<std::string, bool> &contacts);
-  void GetAllShareUsers(const fs::path &absolute_path,
+  int LeaveShare(const std::string & share_id);
+  int AddShareUsers(const std::string &share_id,
+                    const std::map<std::string, bool> &contacts);
+  void GetAllShareUsers(const std::string &share_id,
                         std::map<std::string, bool> *all_share_users) const;
-  int RemoveShareUser(const fs::path &absolute_path,
-                      const std::vector<std::string> &user_ids);
-  int GetShareUsersRights(const fs::path &absolute_path,
+  int RemoveShareUsers(const std::string &share_id,
+                       const std::vector<std::string> &user_ids);
+  int GetShareUsersRights(const std::string &share_id,
                           const std::string &user_id,
                           bool *admin_rights) const;
-  int SetShareUsersRights(const fs::path &absolute_path,
+  int SetShareUsersRights(const std::string &share_id,
                           const std::string &user_id,
                           bool admin_rights);
 
@@ -136,15 +138,19 @@ class UserStorage {
   bs2::connection ConnectToDriveChanged(drive::DriveChangedSlotPtr slot) const;
   bs2::connection ConnectToShareChanged(drive::ShareChangedSlotPtr slot) const;
 
-
  private:
-  int ModifyShareDetails(const drive::ShareData &old_share_data,
-                         const drive::ShareData &new_share_data);
+  int ModifyShareDetails(const std::string &share_id,
+                         const std::string &new_share_id,
+                         const std::string &new_directory_id,
+                         const asymm::Keys &new_key_ring);
   void InformContactsOperation(
       const std::map<std::string, bool> &contacts,
       const ShareOperations operation,
-      drive::ShareData share_data,
-      drive::ShareData additional = drive::ShareData());
+      const std::string &share_id,
+      const std::string &absolute_path = "",
+      const std::string &directory_id = "",
+      const asymm::Keys &key_ring = asymm::Keys(),
+      const std::string &new_share_id = "");
   void NewMessageSlot(const pca::Message &message);
 
   bool mount_status_;
