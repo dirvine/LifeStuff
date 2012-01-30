@@ -295,7 +295,6 @@ TEST_F(LocalStoreManagerTest, BEH_ModifySystemPacket) {
   res.clear();
 
   ASSERT_EQ(kSuccess, sm_->GetPacket(packet_name, anmid_name_, &res));
-  ASSERT_EQ(size_t(1), res.size());
   res_signed_data.Clear();
   ASSERT_TRUE(res_signed_data.ParseFromString(res));
   ASSERT_EQ(new_signed_data.data(), res_signed_data.data());
@@ -342,7 +341,6 @@ TEST_F(LocalStoreManagerTest, BEH_ModifySystemPacketNotOwner) {
 
   res.clear();
   ASSERT_EQ(kSuccess, sm_->GetPacket(packet_name, anmid_name_, &res));
-  ASSERT_EQ(size_t(1), res.size());
   res_signed_data.Clear();
   ASSERT_TRUE(res_signed_data.ParseFromString(res));
   ASSERT_EQ(signed_data.data(), res_signed_data.data());

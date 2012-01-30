@@ -172,6 +172,86 @@ void ExecuteGet(std::shared_ptr<ChunkStore> client_chunk_store,
 
 }  // namespace
 
+void GetKeyring(const std::string &packet_name,
+                std::shared_ptr<Session> session,
+                asymm::Keys *keyring) {
+  std::shared_ptr<passport::Passport> pprt(session->passport_);
+  passport::PacketType packet_type(passport::kUnknown);
+  for (int i(passport::kAnmid); i != passport::kMid; ++i) {
+    packet_type = static_cast<passport::PacketType>(i);
+    if (pprt->PacketName(packet_type, false) == packet_name) {
+      keyring->public_key = pprt->SignaturePacketValue(packet_type, false);
+      keyring->private_key = pprt->PacketPrivateKey(packet_type, false);
+      keyring->identity = pprt->PacketName(packet_type, false);
+      keyring->validation_token = pprt->PacketSignature(packet_type, false);
+      return;
+    }
+    if (pprt->PacketName(packet_type, true) == packet_name) {
+      keyring->public_key = pprt->SignaturePacketValue(packet_type, true);
+      keyring->private_key = pprt->PacketPrivateKey(packet_type, true);
+      keyring->identity = pprt->PacketName(packet_type, true);
+      keyring->validation_token = pprt->PacketSignature(packet_type, true);
+      return;
+    }
+  }
+
+  int result(-1);
+  passport::SelectableIdentityData data;
+  std::vector<passport::SelectableIdData> selectables;
+  pprt->SelectableIdentitiesList(&selectables);
+  auto it(selectables.begin());
+  while (it != selectables.end()) {
+    std::string public_username(std::get<0>(*it));
+    result = pprt->GetSelectableIdentityData(public_username, false, &data);
+    if (result == kSuccess && data.size() == 3U) {
+      for (int n(0); n < 3; ++n) {
+        if (std::get<0>(data.at(n)) == packet_name) {
+          passport::PacketType pt(passport::kAnmpid);
+          if (n == 1) {
+            pt = passport::kMpid;
+          } else if (n == 2) {
+            pt = passport::kMmid;
+          }
+          keyring->public_key = std::get<1>(data.at(n));
+          if (asymm::ValidateKey(keyring->public_key)) {
+            keyring->private_key =
+                pprt->PacketPrivateKey(pt, false, packet_name);
+            keyring->identity = pprt->PacketName(pt, false, packet_name);
+            keyring->validation_token =
+                pprt->PacketSignature(pt, false, packet_name);
+            return;
+          }
+        }
+      }
+    }
+    result = pprt->GetSelectableIdentityData(public_username, true, &data);
+    if (result == kSuccess && data.size() == 3U) {
+      for (int n(0); n < 3; ++n) {
+        if (std::get<0>(data.at(n)) == packet_name) {
+          passport::PacketType pt(passport::kAnmpid);
+          if (n == 1) {
+            pt = passport::kMpid;
+          } else if (n == 2) {
+            pt = passport::kMmid;
+          }
+          keyring->public_key = std::get<1>(data.at(n));
+          if (asymm::ValidateKey(keyring->public_key)) {
+            keyring->private_key =
+                pprt->PacketPrivateKey(pt, true, packet_name);
+            keyring->identity =
+                pprt->PacketName(pt, true, packet_name);
+            keyring->validation_token =
+                pprt->PacketSignature(pt, true, packet_name);
+            return;
+          }
+        }
+      }
+    }
+    ++it;
+  }
+}
+
+
 struct RemoteStoreManager::SignalToCallback {
   SignalToCallback()
       : chunk_name(),
@@ -478,7 +558,7 @@ AlternativeStore::ValidationData RemoteStoreManager::GetValidationData(
     bool create_proof) const {
   AlternativeStore::ValidationData validation_data;
   if (!packet_name.empty()) {
-    //GetKeyring(&validation_data.key_pair);
+    GetKeyring(packet_name, session_, &validation_data.key_pair);
     if (create_proof) {
       validation_data.ownership_proof =
           CreateOwnershipProof(validation_data.key_pair.private_key);
