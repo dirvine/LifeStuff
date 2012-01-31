@@ -151,8 +151,10 @@ int UserStorage::ModifyShareDetails(const std::string &share_id,
                                     const std::string &new_share_id,
                                     const std::string &new_directory_id,
                                     const asymm::Keys &new_key_ring) {
-//   return drive_in_user_space_->ModifyShareDetails();
-  return -1;
+  return drive_in_user_space_->UpdateShare(share_id,
+                                           &new_share_id,
+                                           &new_directory_id,
+                                           &new_key_ring);
 }
 
 int UserStorage::InsertShare(const std::string &share_id,
@@ -167,22 +169,23 @@ int UserStorage::InsertShare(const std::string &share_id,
 
 int UserStorage::StopShare(const std::string &share_id){
   std::map<std::string, bool> contacts;
-  drive_in_user_space_->GetAllShareUsers(share_id, &contacts);
+  drive_in_user_space_->GetShareDetails(share_id, NULL, NULL, NULL, &contacts);
 
   asymm::Keys key_ring;
   fs::path absolute_path;
-//   result = drive_in_user_space_->GetShareData(share_id,
-//                                               &absolute_path,
-//                                               &key_ring);
-//   if (result != kSuccess)
-//     return result;
+  int result(drive_in_user_space_->GetShareDetails(share_id,
+                                                   &absolute_path,
+                                                   &key_ring,
+                                                   NULL, NULL));
+  if (result != kSuccess)
+    return result;
 
   std::string directory_id;
-  int result(drive_in_user_space_->SetShareDetails(absolute_path,
-                                                   "",
-                                                   asymm::Keys(),
-                                                   session_->unique_user_id(),
-                                                   &directory_id));
+  result = drive_in_user_space_->SetShareDetails(absolute_path,
+                                                 "",
+                                                 asymm::Keys(),
+                                                 session_->unique_user_id(),
+                                                 &directory_id);
   if (result != kSuccess)
     return result;
 
@@ -210,13 +213,12 @@ int UserStorage::StopShare(const std::string &share_id){
 }
 
 int UserStorage::LeaveShare(const std::string & share_id){
-  asymm::Keys key_ring;
   fs::path absolute_path;
-//   result = drive_in_user_space_->GetShareData(share_id,
-//                                               &absolute_path,
-//                                               &key_ring);
-//   if (result != kSuccess)
-//     return result;
+  int result(drive_in_user_space_->GetShareDetails(share_id,
+                                                   &absolute_path,
+                                                   NULL, NULL, NULL));
+  if (result != kSuccess)
+    return result;
   std::string directory_id;
   return drive_in_user_space_->SetShareDetails(absolute_path,
                                                "",
@@ -285,8 +287,8 @@ int UserStorage::AddShareUsers(const std::string &share_id,
   fs::path absolute_path;
   std::string directory_id;
   asymm::Keys key_ring;
-//   drive_in_user_space_->FetchShareData(share_id, &absolute_path,
-//                                        &directory_id, &key_ring);
+  drive_in_user_space_->GetShareDetails(share_id, &absolute_path,
+                                        &key_ring, &directory_id, NULL);
   InformContactsOperation(contacts, kToJoin, share_id,
                           absolute_path.string(),
                           directory_id, key_ring);
@@ -297,16 +299,16 @@ int UserStorage::AddShareUsers(const std::string &share_id,
 void UserStorage::GetAllShareUsers(
     const std::string &share_id,
     std::map<std::string, bool> *all_share_users) const {
-  return drive_in_user_space_->GetAllShareUsers(share_id, all_share_users);
+  drive_in_user_space_->GetShareDetails(share_id, NULL, NULL, NULL,
+                                        all_share_users);
 }
 
 int UserStorage::RemoveShareUsers(const std::string &share_id,
                                   const std::vector<std::string> &user_ids) {
   fs::path absolute_path;
-  std::string old_directory_id;
   asymm::Keys old_key_ring;
-//   drive_in_user_space_->FetchShareData(share_id, &absolute_path,
-//                                        &old_directory_id, &old_key_ring);
+  drive_in_user_space_->GetShareDetails(share_id, &absolute_path,
+                                        &old_key_ring, NULL, NULL);
   int result(drive_in_user_space_->RemoveShareUsers(share_id, user_ids));
   if (result != kSuccess)
     return result;
@@ -375,9 +377,10 @@ int UserStorage::RemoveShareUsers(const std::string &share_id,
   }
 
   std::map<std::string, bool> contacts;
-  drive_in_user_space_->GetAllShareUsers(new_share_id, &contacts);
-  InformContactsOperation(contacts, kToMove, share_id, new_share_id,
-                          directory_id, key_ring);
+  drive_in_user_space_->GetShareDetails(new_share_id, NULL, NULL, NULL,
+                                        &contacts);
+  InformContactsOperation(contacts, kToMove, share_id, "",
+                          directory_id, key_ring, new_share_id);
 
   return kSuccess;
 }
@@ -410,11 +413,9 @@ int UserStorage::SetShareUsersRights(const std::string &share_id,
   contacts.insert(std::make_pair(user_id, admin_rights));
 
   if ((!old_admin_right) && admin_rights) {
-    fs::path absolute_path;
-    std::string directory_id;
     asymm::Keys key_ring;
-  //   drive_in_user_space_->FetchShareData(share_id, &absolute_path,
-  //                                        &directory_id, &key_ring);
+    drive_in_user_space_->GetShareDetails(share_id, NULL,
+                                          &key_ring, NULL, NULL);
     // in case of upgrading : just inform the contact the share key_ring
     InformContactsOperation(contacts, kToUpgrade, share_id, "", "", key_ring);
   } else if (old_admin_right && (!admin_rights)) {
@@ -557,7 +558,8 @@ void UserStorage::NewMessageSlot(const pca::Message &message) {
       key_ring.validation_token = message.content(2);
       asymm::DecodePrivateKey(message.content(3), &(key_ring.private_key));
       asymm::DecodePublicKey(message.content(4), &(key_ring.public_key));
-//       drive_in_user_space_->AddKey(message.content(0), key_ring);
+      drive_in_user_space_->UpdateShare(message.content(0), NULL, NULL,
+                                        &key_ring);
     } else {
       if (message.content_size() > 4) {
         key_ring.identity = message.content(3);
@@ -568,7 +570,7 @@ void UserStorage::NewMessageSlot(const pca::Message &message) {
       if (message.subject() == "join_share") {
         InsertShare(message.content(0), message.content(1),
                     message.content(2), key_ring);
-      } else {
+      } else if (message.subject() == "move_share") {
         ModifyShareDetails(message.content(0), message.content(1),
                            message.content(2), key_ring);
       }
