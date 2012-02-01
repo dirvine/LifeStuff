@@ -80,7 +80,7 @@ void LocalChunkManager::GetChunk(const std::string &name,
   std::string content(
       simulation_chunk_action_authority_->Get(name, "", owner_public_key));
   if (content.empty()) {
-    DLOG(ERROR) << "CAA failure on network chunkstore";
+    DLOG(ERROR) << "CAA failure on network chunkstore " << Base32Substr(name);
     (*sig_chunk_got_)(name, kGetPacketFailure);
   }
 
@@ -114,7 +114,7 @@ void LocalChunkManager::StoreChunk(const std::string &name,
   if (!simulation_chunk_action_authority_->Store(name,
                                                  content,
                                                  owner_public_key)) {
-    DLOG(ERROR) << "CAA failure on network chunkstore" << Base32Substr(name);
+    DLOG(ERROR) << "CAA failure on network chunkstore " << Base32Substr(name);
     (*sig_chunk_stored_)(name, kStorePacketFailure);
     return;
   }
@@ -134,7 +134,7 @@ void LocalChunkManager::DeleteChunk(const std::string &name,
                                                   "",
                                                   ownership_proof,
                                                   owner_public_key)) {
-    DLOG(ERROR) << "CAA failure on network chunkstore" << Base32Substr(name);
+    DLOG(ERROR) << "CAA failure on network chunkstore " << Base32Substr(name);
     (*sig_chunk_deleted_)(name, kDeletePacketFailure);
     return;
   }
@@ -142,24 +142,23 @@ void LocalChunkManager::DeleteChunk(const std::string &name,
   (*sig_chunk_deleted_)(name, kSuccess);
 }
 
-//void LocalChunkManager::ModifyChunk(const std::string &name) {
-//  std::string content(chunk_store_->Get(name));
-//  if (content.empty()) {
-//    (*sig_chunk_stored_)(name, pd::kGeneralError);
-//    return;
-//  }
-//
-//  std::string encoded_name(EncodeToBase32(name));
-//  if (amazon_web_service_->Modify(encoded_name, content) !=
-//      aws_transporter::AWSTransporter::kSuccess) {
-//    DLOG(ERROR) << "Failed to modify chunk " << Base32Substr(name) << " in AWS";
-//    (*sig_chunk_stored_)(name, pd::kGeneralError);
-//    return;
-//  }
-//
-//  chunk_store_->Delete(name);
-//  (*sig_chunk_stored_)(name, pd::kSuccess);
-//}
+void LocalChunkManager::ModifyChunk(const std::string &name,
+                                    const std::string &content,
+                                    const rsa::Identity &/*owner_key_id*/,
+                                    const rsa::PublicKey &owner_public_key) {
+  int64_t operation_diff;
+  if (!simulation_chunk_action_authority_->Modify(name,
+                                                  content,
+                                                  "",
+                                                  owner_public_key,
+                                                  &operation_diff)) {
+    DLOG(ERROR) << "CAA failure on network chunkstore " << Base32Substr(name);
+    (*sig_chunk_modified_)(name, kUpdatePacketFailure);
+    return;
+  }
+
+  (*sig_chunk_modified_)(name, kSuccess);
+}
 
 }  // namespace pd
 

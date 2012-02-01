@@ -89,6 +89,9 @@ class AuthenticationTest : public testing::TestWithParam<bool> {
     remote_chunk_store_->sig_chunk_deleted()->connect(
         std::bind(&YeOldeSignalToCallbackConverter::Deleted, converter_.get(),
                   args::_1, args::_2));
+    remote_chunk_store_->sig_chunk_modified()->connect(
+        std::bind(&YeOldeSignalToCallbackConverter::Modified, converter_.get(),
+                  args::_1, args::_2));
     authentication_.Init(remote_chunk_store_, converter_);
   }
 
@@ -171,7 +174,7 @@ TEST_F(AuthenticationTest, FUNC_GoodLogin) {
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
                                                        ser_dm_,
                                                        surrogate_ser_dm_));
-  DLOG(INFO) << "\n\n\n";
+  DLOG(INFO) << "\n\n\n1";
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
   std::string ser_dm_login;
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
@@ -180,18 +183,18 @@ TEST_F(AuthenticationTest, FUNC_GoodLogin) {
   ASSERT_EQ(pin_, session_->pin());
   ASSERT_EQ(password_, session_->password());
 
-//  DLOG(INFO) << "\n\n\n";
-//  ASSERT_EQ(kSuccess, authentication_.SaveSession(ser_dm_ + "1"));
-//
-//  DLOG(INFO) << "\n\n\n";
-//  ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
-//
-//  DLOG(INFO) << "\n\n\n";
-//  ser_dm_login.clear();
-//  ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
-//  ASSERT_EQ(ser_dm_ + "1", ser_dm_login);
-//  ASSERT_EQ(username_, session_->username());
-//  ASSERT_EQ(pin_, session_->pin());
+  DLOG(INFO) << "\n\n\n2";
+  ASSERT_EQ(kSuccess, authentication_.SaveSession(ser_dm_ + "1"));
+
+  DLOG(INFO) << "\n\n\n3";
+  ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
+
+  DLOG(INFO) << "\n\n\n4";
+  ser_dm_login.clear();
+  ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
+  ASSERT_EQ(ser_dm_ + "1", ser_dm_login);
+  ASSERT_EQ(username_, session_->username());
+  ASSERT_EQ(pin_, session_->pin());
 }
 
 TEST_F(AuthenticationTest, FUNC_LoginNoUser) {

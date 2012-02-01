@@ -120,11 +120,6 @@ int YeOldeSignalToCallbackConverter::AddOperation(const std::string &name,
   return kSuccess;
 }
 
-void YeOldeSignalToCallbackConverter::Got(const std::string &chunk_name,
-                                          const int &result) {
-  ExecuteCallback(chunk_name, result);
-}
-
 void YeOldeSignalToCallbackConverter::Deleted(const std::string &chunk_name,
                                               const int &result) {
   ExecuteCallback(chunk_name, result);
@@ -132,6 +127,11 @@ void YeOldeSignalToCallbackConverter::Deleted(const std::string &chunk_name,
 
 void YeOldeSignalToCallbackConverter::Stored(const std::string &chunk_name,
                                              const int &result) {
+  ExecuteCallback(chunk_name, result);
+}
+
+void YeOldeSignalToCallbackConverter::Modified(const std::string &chunk_name,
+                                               const int &result) {
   ExecuteCallback(chunk_name, result);
 }
 
@@ -709,43 +709,65 @@ void Authentication::SaveSession(const std::string &serialised_data_atlas,
   CreateSignedData(smid, true, &smid_name, &serialised_smid, &smid_signing_id);
   CreateSignedData(tmid, true, &tmid_name, &serialised_tmid, &tmid_signing_id);
 
+  AlternativeStore::ValidationData validation_data_mid;
+  GetKeysAndProof(passport::kAnmid, &validation_data_mid, true);
+  AlternativeStore::ValidationData validation_data_smid;
+  GetKeysAndProof(passport::kAnsmid, &validation_data_smid, true);
+  AlternativeStore::ValidationData validation_data_tmid;
+  GetKeysAndProof(passport::kAntmid, &validation_data_tmid, true);
+
   SaveSessionDataPtr save_session_data(
       new SaveSessionData(functor, kRegular, serialised_data_atlas));
-  // Update SMID
-  VoidFuncOneInt callback = std::bind(&Authentication::SaveSessionCallback,
-                                      this, args::_1, passport::kSmid,
-                                      save_session_data);
-//  packet_manager_->ModifyPacket(smid_name,
-//                                serialised_smid,
-//                                smid_signing_id,
-//                                callback);
 
   // Update MID
+  VoidFuncOneInt callback = std::bind(&Authentication::SaveSessionCallback,
+                                      this, args::_1, passport::kMid,
+                                      save_session_data);
+  if (converter_->AddOperation(mid_name, callback) != kSuccess) {
+    DLOG(ERROR) << "Authentication::StorePacket: failed to add to converter - "
+                << DebugStr(mid.type);
+//    return functor(kAuthenticationError);
+  }
+  remote_chunk_store_->Modify(mid_name, serialised_mid, validation_data_mid);
+
+  // Update SMID
   callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
-                       passport::kMid, save_session_data);
-//  packet_manager_->ModifyPacket(mid_name,
-//                                serialised_mid,
-//                                mid_signing_id,
-//                                callback);
+                       passport::kSmid, save_session_data);
+  if (converter_->AddOperation(smid_name, callback) != kSuccess) {
+    DLOG(ERROR) << "Authentication::StorePacket: failed to add to converter - "
+                << DebugStr(smid.type);
+//    return functor(kAuthenticationError);
+  }
+  remote_chunk_store_->Modify(smid_name, serialised_smid, validation_data_smid);
 
   // Store new TMID
   callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
                        passport::kTmid, save_session_data);
-//  packet_manager_->StorePacket(tmid_name,
-//                               serialised_tmid,
-//                               tmid_signing_id,
-//                               callback);
+  if (converter_->AddOperation(tmid_name, callback) != kSuccess) {
+    DLOG(ERROR) << "Authentication::StorePacket: failed to add to converter - "
+                << DebugStr(tmid.type);
+//    return functor(kAuthenticationError);
+  }
+  remote_chunk_store_->Store(tmid_name, serialised_tmid, validation_data_tmid);
+
   // Delete old STMID
   callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
                        passport::kStmid, save_session_data);
   std::string old_stmid_name(pca::ApplyTypeToName(old_stmid.name,
                                                   pca::kModifiableByOwner));
-//  packet_manager_->DeletePacket(old_stmid_name, tmid_signing_id, callback);
+  if (converter_->AddOperation(old_stmid_name, callback) != kSuccess) {
+    DLOG(ERROR) << "Authentication::StorePacket: failed to add to converter - "
+                << DebugStr(old_stmid.type);
+//    return functor(kAuthenticationError);
+  }
+  remote_chunk_store_->Delete(old_stmid_name, validation_data_tmid);
 }
 
 void Authentication::SaveSessionCallback(int return_code,
                                          passport::PacketType packet_type,
                                          SaveSessionDataPtr save_session_data) {
+  DLOG(ERROR) << "Authentication::SaveSessionCallback - pt: "
+              << DebugStr(packet_type) << ", result: " << return_code;
   OpStatus op_status(kSucceeded);
   if ((save_session_data->op_type == kIsUnique && return_code != kKeyUnique) ||
       (save_session_data->op_type != kIsUnique && return_code != kSuccess)) {
@@ -1541,9 +1563,13 @@ void Authentication::GetKeysAndProof(
       session_->passport_->PacketPrivateKey(pt, confirmed);
   validation_data->key_pair.validation_token =
       session_->passport_->PacketSignature(pt, confirmed);
-  asymm::Sign(RandomString(64),
+  pca::SignedData signed_data;
+  signed_data.set_data(RandomString(64));
+  asymm::Sign(signed_data.data(),
               validation_data->key_pair.private_key,
               &validation_data->ownership_proof);
+  signed_data.set_signature(validation_data->ownership_proof);
+  validation_data->ownership_proof = signed_data.SerializeAsString();
 }
 
 }  // namespace lifestuff

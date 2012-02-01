@@ -62,9 +62,9 @@ class YeOldeSignalToCallbackConverter {
   int AddOperation(const std::string &name, const VoidFuncOneInt cb);
 
   // slots
-  void Got(const std::string &chunk_name, const int &result);
   void Deleted(const std::string &chunk_name, const int &result);
   void Stored(const std::string &chunk_name, const int &result);
+  void Modified(const std::string &chunk_name, const int &result);
 
  private:
   struct ChunkNameAndCallback {
