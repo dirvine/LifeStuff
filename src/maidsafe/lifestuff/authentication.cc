@@ -101,6 +101,62 @@ bool IsSignature(const int &packet_type) {
 
 }  // unnamed namespace
 
+YeOldeSignalToCallbackConverter::YeOldeSignalToCallbackConverter(
+    uint16_t max_size)
+    : operation_queue_(),
+      max_size_(max_size),
+      mutex_() {}
+
+int YeOldeSignalToCallbackConverter::AddOperation(const std::string &name,
+                                                  const VoidFuncOneInt cb) {
+  boost::mutex::scoped_lock loch_of_cliff(mutex_);
+  if (QueueIsFull()) {
+    DLOG(ERROR) << "Queue is full";
+    return -1;
+  }
+
+  operation_queue_.push_back(ChunkNameAndCallback(name, cb));
+
+  return kSuccess;
+}
+
+void YeOldeSignalToCallbackConverter::Got(const std::string &chunk_name,
+                                          const int &result) {
+  ExecuteCallback(chunk_name, result);
+}
+
+void YeOldeSignalToCallbackConverter::Deleted(const std::string &chunk_name,
+                                              const int &result) {
+  ExecuteCallback(chunk_name, result);
+}
+
+void YeOldeSignalToCallbackConverter::Stored(const std::string &chunk_name,
+                                             const int &result) {
+  ExecuteCallback(chunk_name, result);
+}
+
+bool YeOldeSignalToCallbackConverter::QueueIsFull() {
+  if (static_cast<uint16_t>(operation_queue_.size()) >= max_size_)
+    return true;
+
+  return false;
+}
+
+void YeOldeSignalToCallbackConverter::ExecuteCallback(
+    const std::string &chunk_name,
+    const int &result) {
+  boost::mutex::scoped_lock loch_of_cliff(mutex_);
+  auto it = std::find_if(operation_queue_.begin(),
+                         operation_queue_.end(),
+                         [&chunk_name] (const ChunkNameAndCallback &cnac) {
+                           return cnac.chunk_name == chunk_name;
+                         });
+  (*it).callback(result);
+  operation_queue_.erase(it);
+}
+
+
+// Internal Authentication struct
 Authentication::PacketData::PacketData()
     : type(passport::kUnknown),
       name(),
@@ -141,7 +197,8 @@ Authentication::Authentication(std::shared_ptr<Session> session)
       encrypted_tmid_(),
       encrypted_stmid_(),
       serialised_data_atlas_(),
-      kSingleOpTimeout_(5000) {}
+      kSingleOpTimeout_(5000),
+      converter_() {}
 
 Authentication::~Authentication() {
   if (tmid_op_status_ != kPendingMid || stmid_op_status_ != kPendingMid) {
@@ -172,8 +229,10 @@ Authentication::~Authentication() {
 }
 
 void Authentication::Init(
-    std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store) {
+    std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+    std::shared_ptr<YeOldeSignalToCallbackConverter> converter) {
   remote_chunk_store_ = remote_chunk_store;
+  converter_ = converter;
   tmid_op_status_ = kNoUser;
   stmid_op_status_ = kNoUser;
 }
@@ -193,6 +252,36 @@ int Authentication::GetUserInfo(const std::string &username,
   session_->set_pin(pin);
   tmid_op_status_ = kPending;
   stmid_op_status_ = kPending;
+
+  AlternativeStore::ValidationData validation_data;
+  GetKeysAndProof(passport::kAnmid, &validation_data, false);
+  std::string encrypted_mid(
+      remote_chunk_store_->Get(pca::ApplyTypeToName(mid_name,
+                                                    pca::kModifiableByOwner),
+                               validation_data));
+  if (encrypted_mid.empty()) {
+    DLOG(ERROR) << "Failed to obtain MID";
+    tmid_op_status_ = kFailed;
+    stmid_op_status_ = kFailed;
+//    return kAuthenticationError;
+  } else {
+    GetMidCallback(encrypted_mid, kSuccess);
+
+    validation_data = AlternativeStore::ValidationData();
+    GetKeysAndProof(passport::kAnsmid, &validation_data, false);
+    std::string encrypted_smid(
+        remote_chunk_store_->Get(pca::ApplyTypeToName(smid_name,
+                                                      pca::kModifiableByOwner),
+                                 validation_data));
+    if (encrypted_smid.empty()) {
+      DLOG(ERROR) << "Failed to obtain SMID";
+      tmid_op_status_ = kFailed;
+      stmid_op_status_ = kFailed;
+  //    return kAuthenticationError;
+    } else {
+      GetSmidCallback(encrypted_smid, kSuccess);
+    }
+  }
 //  packet_manager_->GetPacket(pca::ApplyTypeToName(mid_name,
 //                                                  pca::kModifiableByOwner),
 //                             "",
@@ -217,9 +306,10 @@ int Authentication::GetUserInfo(const std::string &username,
       smid_finished = stmid_op_status_ != kPending;
     }
   }
-  if (tmid_op_status_ == kSucceeded || stmid_op_status_ == kSucceeded) {
+
+  if (tmid_op_status_ == kSucceeded || stmid_op_status_ == kSucceeded)
     return kUserExists;
-  }
+
   session_->set_username("");
   session_->set_pin("");
   tmid_op_status_ = kNoUser;
@@ -261,6 +351,21 @@ void Authentication::GetMidCallback(const std::string &value, int return_code) {
 
   DLOG(INFO) << "Auth::GetMidCallback: TMID - (" << Base32Substr(tmid_name)
                 << ", " << Base32Substr(value) << ")";
+
+  AlternativeStore::ValidationData validation_data;
+  GetKeysAndProof(passport::kAntmid, &validation_data, false);
+  std::string encrypted_tmid(
+      remote_chunk_store_->Get(pca::ApplyTypeToName(tmid_name,
+                                                    pca::kModifiableByOwner),
+                               validation_data));
+  if (encrypted_tmid.empty()) {
+    DLOG(ERROR) << "Failed to obtain TMID";
+    tmid_op_status_ = kFailed;
+    return;
+  }
+  GetTmidCallback(encrypted_tmid, kSuccess);
+
+
 //  packet_manager_->GetPacket(pca::ApplyTypeToName(tmid_name,
 //                                                  pca::kModifiableByOwner),
 //                             "",
@@ -300,6 +405,20 @@ void Authentication::GetSmidCallback(const std::string &value,
     }
     return;
   }
+
+  AlternativeStore::ValidationData validation_data;
+  GetKeysAndProof(passport::kAntmid, &validation_data, false);
+  std::string encrypted_stmid(
+      remote_chunk_store_->Get(pca::ApplyTypeToName(stmid_name,
+                                                    pca::kModifiableByOwner),
+                               validation_data));
+  if (encrypted_stmid.empty()) {
+    DLOG(ERROR) << "Failed to obtain TMID";
+    stmid_op_status_ = kFailed;
+    return;
+  }
+  GetStmidCallback(encrypted_stmid, kSuccess);
+
 
 //  packet_manager_->GetPacket(pca::ApplyTypeToName(stmid_name,
 //                                                  pca::kModifiableByOwner),
@@ -459,7 +578,9 @@ void Authentication::StoreSignaturePacket(
   }
 
   // Get packet
-  std::string packet_name(session_->passport_->PacketName(packet_type, false));
+  std::string packet_name(
+      pca::ApplyTypeToName(session_->passport_->PacketName(packet_type, false),
+                           pca::kModifiableByOwner));
   if (packet_name.empty()) {
     DLOG(ERROR) << DebugStr(packet_type) << ": failed init";
     boost::mutex::scoped_lock lock(mutex_);
@@ -472,36 +593,30 @@ void Authentication::StoreSignaturePacket(
 //  DLOG(INFO) << "Authentication::StoreSignaturePacket - " << packet_type
 //             << " - " << Base32Substr(sig_packet->name());
   VoidFuncOneInt functor =
-      std::bind(&Authentication::SignaturePacketUniqueCallback,
+      std::bind(&Authentication::SignaturePacketStoreCallback,
                 this, args::_1, packet_type, op_status);
-//  packet_manager_->KeyUnique(packet_name, "", functor);
-}
-
-void Authentication::SignaturePacketUniqueCallback(
-    int return_code,
-    passport::PacketType packet_type,
-    OpStatus *op_status) {
-  if (return_code != kKeyUnique) {
+  if (converter_->AddOperation(packet_name, functor) != kSuccess) {
+    DLOG(ERROR) << DebugStr(packet_type) << ": failed insert to converter";
     boost::mutex::scoped_lock lock(mutex_);
-    DLOG(ERROR) << DebugStr(packet_type) << ": Not unique.";
-    *op_status = kNotUnique;
-//    session_->passport_->RevertSignaturePacket(packet_type);
+    *op_status = kFailed;
     cond_var_.notify_all();
     return;
   }
 
-  // Store packet
-  VoidFuncOneInt functor =
-      std::bind(&Authentication::SignaturePacketStoreCallback,
-                this, args::_1, packet_type, op_status);
-  PacketData packet(packet_type, session_->passport_, false);
-  bool confirmed(packet_type != passport::kMaid &&
-                 packet_type != passport::kPmid);
-  std::string signed_data_name, serialised_signed_data, signing_id;
-  CreateSignedData(packet, confirmed, &signed_data_name,
-                   &serialised_signed_data, &signing_id);
-//  packet_manager_->StorePacket(signed_data_name, serialised_signed_data,
-//                               signing_id, functor);
+  AlternativeStore::ValidationData validation_data;
+  GetKeysAndProof(passport::kAnmid, &validation_data, false);
+  pca::SignedData signed_data;
+  std::string encoded_public_key;
+  asymm::EncodePublicKey(validation_data.key_pair.public_key,
+                         &encoded_public_key);
+  BOOST_ASSERT(!encoded_public_key.empty());
+  signed_data.set_data(encoded_public_key);
+  signed_data.set_signature(validation_data.key_pair.validation_token);
+
+  remote_chunk_store_->Store(packet_name,
+                             signed_data.SerializeAsString(),
+                             validation_data);
+//  packet_manager_->KeyUnique(packet_name, "", functor);
 }
 
 void Authentication::SignaturePacketStoreCallback(
@@ -511,8 +626,6 @@ void Authentication::SignaturePacketStoreCallback(
   boost::mutex::scoped_lock lock(mutex_);
   if (return_code == kSuccess) {
     *op_status = kSucceeded;
-//    if (packet_type == passport::kPmid)
-//      packet_manager_->SetPmid(packet->name());
   } else {
     DLOG(ERROR) << DebugStr(packet_type) << ": Failed to store.";
     *op_status = kFailed;
@@ -526,43 +639,36 @@ int Authentication::CreateTmidPacket(
     const std::string &serialised_data_atlas,
     const std::string &surrogate_serialised_data_atlas) {
   int result(kPendingResult);
-  const boost::uint8_t kMaxAttempts(3);
-  boost::uint8_t attempt(0);
-  PacketData mid, smid, tmid, stmid;
-  while ((result != kSuccess) && (attempt < kMaxAttempts)) {
-    result = session_->passport_->SetIdentityPackets(
-                 session_->username(),
-                 session_->pin(),
-                 password,
-                 serialised_data_atlas,
-                 surrogate_serialised_data_atlas);
-    if (result != kSuccess) {
-      DLOG(ERROR) << "Authentication::CreateTmidPacket: Failed init.";
-      return kAuthenticationError;
-    }
-    mid = PacketData(passport::kMid, session_->passport_, false);
-    smid = PacketData(passport::kSmid, session_->passport_, false);
-    tmid = PacketData(passport::kTmid, session_->passport_, false);
-    stmid = PacketData(passport::kStmid, session_->passport_, false);
-    bool unique((PacketUnique(mid) == kKeyUnique) &&
-                (PacketUnique(smid) == kKeyUnique) &&
-                (PacketUnique(tmid) == kKeyUnique) &&
-                (PacketUnique(stmid) == kKeyUnique));
-    if (!unique) {
-      DLOG(ERROR) << "Authentication::CreateTmidPacket: MID/SMID/TMID/STMID "
-                     "exists.";
-      ++attempt;
-      result = kKeyNotUnique;
-      continue;
-    }
+  result = session_->passport_->SetIdentityPackets(
+               session_->username(),
+               session_->pin(),
+               password,
+               serialised_data_atlas,
+               surrogate_serialised_data_atlas);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Authentication::CreateTmidPacket: Failed init.";
+    return kAuthenticationError;
   }
-  result = StorePacket(mid, false);
+
+  PacketData mid(passport::kMid, session_->passport_, false),
+             smid(passport::kSmid, session_->passport_, false),
+             tmid(passport::kTmid, session_->passport_, false),
+             stmid(passport::kStmid, session_->passport_, false);
+
+  AlternativeStore::ValidationData validation_data_mid;
+  GetKeysAndProof(passport::kAnmid, &validation_data_mid, true);
+  AlternativeStore::ValidationData validation_data_smid;
+  GetKeysAndProof(passport::kAnsmid, &validation_data_smid, true);
+  AlternativeStore::ValidationData validation_data_tmid;
+  GetKeysAndProof(passport::kAntmid, &validation_data_tmid, true);
+
+  result = StorePacket(mid, validation_data_mid);
   if (result == kSuccess) {
-    result = StorePacket(smid, false);
+    result = StorePacket(smid, validation_data_smid);
     if (result == kSuccess) {
-      result = StorePacket(tmid, false);
+      result = StorePacket(tmid, validation_data_tmid);
       if (result == kSuccess) {
-        result = StorePacket(stmid, false);
+        result = StorePacket(stmid, validation_data_tmid);
       }
     }
   }
@@ -1243,31 +1349,28 @@ int Authentication::ChangePassword(const std::string &serialised_data_atlas,
   return kSuccess;
 }
 
-int Authentication::StorePacket(const PacketData &packet,
-                                bool check_uniqueness) {
+int Authentication::StorePacket(
+    const PacketData &packet,
+    const AlternativeStore::ValidationData &validation_data) {
   int result(kPendingResult);
-  if (check_uniqueness) {
-    result = PacketUnique(packet);
-    if (result != kKeyUnique) {
-      DLOG(ERROR) << "Authentication::StorePacket: key already exists.";
-      return result;
-    }
-  }
-  result = kPendingResult;
-  VoidFuncOneInt functor = std::bind(&Authentication::PacketOpCallback, this,
-                                     args::_1, &result);
+  std::string packet_name, serialised_packet, signing_id;
   bool confirmed(packet.type != passport::kMaid &&
                  packet.type != passport::kPmid);
-  std::string packet_name, serialised_packet, signing_id;
   CreateSignedData(packet,
                    confirmed,
                    &packet_name,
                    &serialised_packet,
                    &signing_id);
-//  packet_manager_->StorePacket(packet_name,
-//                               serialised_packet,
-//                               signing_id,
-//                               functor);
+  VoidFuncOneInt functor = std::bind(&Authentication::PacketOpCallback,
+                                     this, args::_1, &result);
+  if (converter_->AddOperation(packet_name, functor) != kSuccess) {
+    DLOG(ERROR) << "Authentication::StorePacket: failed to add to converter - "
+                << DebugStr(packet.type);
+    return kAuthenticationError;
+  }
+
+  remote_chunk_store_->Store(packet_name, serialised_packet, validation_data);
+
   bool success(true);
   try {
     boost::mutex::scoped_lock lock(mutex_);
@@ -1322,36 +1425,6 @@ int Authentication::DeletePacket(const PacketData &packet) {
   if (result != kSuccess)
     DLOG(INFO) << "Authentication::DeletePacket result = " << result;
 #endif
-  return result;
-}
-
-int Authentication::PacketUnique(const PacketData &packet) {
-  int result(kPendingResult);
-  VoidFuncOneInt functor = std::bind(&Authentication::PacketOpCallback, this,
-                                     args::_1, &result);
-  std::string packet_name, signing_id;
-  GetPacketNameAndKeyId(packet.name,
-                        packet.type,
-                        true,
-                        &packet_name,
-                        &signing_id);
-//  packet_manager_->KeyUnique(packet_name, signing_id, functor);
-  bool success(true);
-  try {
-    boost::mutex::scoped_lock lock(mutex_);
-    success = cond_var_.timed_wait(
-                  lock,
-                  kSingleOpTimeout_,
-                  std::bind(&Authentication::PacketOpDone, this, &result));
-  }
-  catch(const std::exception &e) {
-    DLOG(WARNING) << "Authentication::PacketUnique: " << e.what();
-    success = false;
-  }
-  if (!success) {
-    DLOG(ERROR) << "Authentication::PacketUnique: timed out.";
-    return kAuthenticationError;
-  }
   return result;
 }
 
@@ -1449,6 +1522,28 @@ void Authentication::GetPacketNameAndKeyId(const std::string &packet_name_raw,
 
 std::string Authentication::DebugStr(const passport::PacketType &packet_type) {
   return passport::PacketDebugString(packet_type);
+}
+
+void Authentication::GetKeysAndProof(
+    passport::PacketType pt,
+    AlternativeStore::ValidationData *validation_data,
+    bool confirmed) {
+  if (!IsSignature(pt)) {
+    DLOG(ERROR) << "Not signature packet, what'r'u playing at?";
+    return;
+  }
+
+  validation_data->key_pair.identity =
+      session_->passport_->PacketName(pt, confirmed);
+  validation_data->key_pair.public_key =
+      session_->passport_->SignaturePacketValue(pt, confirmed);
+  validation_data->key_pair.private_key =
+      session_->passport_->PacketPrivateKey(pt, confirmed);
+  validation_data->key_pair.validation_token =
+      session_->passport_->PacketSignature(pt, confirmed);
+  asymm::Sign(RandomString(64),
+              validation_data->key_pair.private_key,
+              &validation_data->ownership_proof);
 }
 
 }  // namespace lifestuff

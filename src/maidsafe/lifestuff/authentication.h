@@ -24,6 +24,7 @@
 #ifndef MAIDSAFE_LIFESTUFF_AUTHENTICATION_H_
 #define MAIDSAFE_LIFESTUFF_AUTHENTICATION_H_
 
+#include <list>
 #include <memory>
 #include <string>
 #include <vector>
@@ -31,6 +32,7 @@
 #include "boost/thread/mutex.hpp"
 #include "boost/thread/condition_variable.hpp"
 
+#include "maidsafe/common/alternative_store.h"
 #include "maidsafe/common/rsa.h"
 
 #include "maidsafe/passport/passport_config.h"
@@ -52,12 +54,45 @@ namespace lifestuff {
 class Session;
 namespace test { class ClientControllerTest; }
 
+// TODO(Brian): Try to template this to receive other types of function
+//              and declare slots with the same type
+class YeOldeSignalToCallbackConverter {
+ public:
+  YeOldeSignalToCallbackConverter(uint16_t max_size = UINT16_MAX);
+  int AddOperation(const std::string &name, const VoidFuncOneInt cb);
+
+  // slots
+  void Got(const std::string &chunk_name, const int &result);
+  void Deleted(const std::string &chunk_name, const int &result);
+  void Stored(const std::string &chunk_name, const int &result);
+
+ private:
+  struct ChunkNameAndCallback {
+    ChunkNameAndCallback()
+        : chunk_name(),
+          callback() {}
+    ChunkNameAndCallback(const std::string &name, const VoidFuncOneInt cb)
+        : chunk_name(name),
+          callback(cb) {}
+    std::string chunk_name;
+    VoidFuncOneInt callback;
+  };
+
+  bool QueueIsFull();
+  void ExecuteCallback(const std::string &chunk_name, const int &result);
+
+  std::list<ChunkNameAndCallback> operation_queue_;
+  size_t max_size_;
+  boost::mutex mutex_;
+};
+
 class Authentication {
  public:
   explicit Authentication(std::shared_ptr<Session> session);
   ~Authentication();
   // Used to intialise passport_ in all cases.
-  void Init(std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store);
+  void Init(std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+            std::shared_ptr<YeOldeSignalToCallbackConverter> converter);
   // Used to intialise passport_ in all cases.
   int GetUserInfo(const std::string &username, const std::string &pin);
   // Used when creating a new user.
@@ -143,9 +178,6 @@ class Authentication {
   void StoreSignaturePacket(const passport::PacketType &packet_type,
                             OpStatus *op_status,
                             OpStatus *dependent_op_status);
-  void SignaturePacketUniqueCallback(int return_code,
-                                     passport::PacketType packet_type,
-                                     OpStatus *op_status);
   void SignaturePacketStoreCallback(int return_code,
                                     passport::PacketType packet_type,
                                     OpStatus *op_status);
@@ -197,9 +229,9 @@ class Authentication {
   }
   // Designed to be called as functor in timed_wait - user_info mutex locked
   bool PacketOpDone(int *return_code) { return *return_code != kPendingResult; }
-  int StorePacket(const PacketData &packet, bool check_uniqueness);
+  int StorePacket(const PacketData &packet,
+                  const AlternativeStore::ValidationData &validation_data);
   int DeletePacket(const PacketData &packet);
-  int PacketUnique(const PacketData &packet);
   void PacketOpCallback(int return_code, int *op_result);
   void CreateSignedData(const PacketData &packet,
                         bool signing_packet_confirmed,
@@ -213,6 +245,9 @@ class Authentication {
                              std::string *signing_id);
   std::string DebugStr(const passport::PacketType &packet_type);
 
+  void GetKeysAndProof(passport::PacketType pt,
+                       AlternativeStore::ValidationData *validation_data,
+                       bool confirmed);
 
   std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<Session> session_;
@@ -221,6 +256,7 @@ class Authentication {
   OpStatus tmid_op_status_, stmid_op_status_;
   std::string encrypted_tmid_, encrypted_stmid_, serialised_data_atlas_;
   const boost::posix_time::milliseconds kSingleOpTimeout_;
+  std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
 };
 
 }  // namespace lifestuff

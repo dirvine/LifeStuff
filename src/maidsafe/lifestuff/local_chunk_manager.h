@@ -36,17 +36,17 @@ class LocalChunkManager : public pd::ChunkManager {
                     const fs::path &simulation_directory);
   ~LocalChunkManager();
 
-  virtual void GetChunk(const std::string &name,
-                        const rsa::Identity &owner_key_id,
-                        const rsa::PublicKey &owner_public_key,
-                        const std::string &ownership_proof) = 0;
-  virtual void StoreChunk(const std::string &name,
-                          const rsa::Identity &owner_key_id,
-                          const rsa::PublicKey &owner_public_key) = 0;
-  virtual void DeleteChunk(const std::string &name,
-                           const rsa::Identity &owner_key_id,
-                           const rsa::PublicKey &owner_public_key,
-                           const std::string &ownership_proof) = 0;
+  void GetChunk(const std::string &name,
+                const rsa::Identity &owner_key_id,
+                const rsa::PublicKey &owner_public_key,
+                const std::string &ownership_proof);
+  void StoreChunk(const std::string &name,
+                  const rsa::Identity &owner_key_id,
+                  const rsa::PublicKey &owner_public_key);
+  void DeleteChunk(const std::string &name,
+                   const rsa::Identity &owner_key_id,
+                   const rsa::PublicKey &owner_public_key,
+                   const std::string &ownership_proof);
 //  void ModifyChunk(const std::string &name);
 
  private:
