@@ -151,18 +151,18 @@ MS_ADD_STATIC_LIBRARY(${MS_PROJECT_NAME} ${ALL_FILES_LIFESTUFF_DIR})
 MS_ADD_EXECUTABLE(TESTlifestuff Tests ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${TESTS_MAIN_CC})
 
 MS_ADD_EXECUTABLE(TESTauthentication Tests ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
-MS_ADD_EXECUTABLE(TESTclientcontroller Tests ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
-MS_ADD_EXECUTABLE(TESTpublic_id Tests ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
-MS_ADD_EXECUTABLE(LifestuffDemo Demo ${ALL_FILES_LIFESTUFF_DEMO_DIR})
+#MS_ADD_EXECUTABLE(TESTclientcontroller Tests ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
+#MS_ADD_EXECUTABLE(TESTpublic_id Tests ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
+#MS_ADD_EXECUTABLE(LifestuffDemo Demo ${ALL_FILES_LIFESTUFF_DEMO_DIR})
 
 TARGET_LINK_LIBRARIES(lifestuff_static maidsafe_drive_static maidsafe_passport_static maidsafe_pd_static)
 
 TARGET_LINK_LIBRARIES(TESTlifestuff lifestuff_static gtest_static gmock_static)
 
 TARGET_LINK_LIBRARIES(TESTauthentication lifestuff_static gtest_static)
-TARGET_LINK_LIBRARIES(TESTclientcontroller lifestuff_static gtest_static)
-TARGET_LINK_LIBRARIES(TESTpublic_id lifestuff_static gtest_static)
-TARGET_LINK_LIBRARIES(LifestuffDemo lifestuff_static)
+#TARGET_LINK_LIBRARIES(TESTclientcontroller lifestuff_static gtest_static)
+#TARGET_LINK_LIBRARIES(TESTpublic_id lifestuff_static gtest_static)
+#TARGET_LINK_LIBRARIES(LifestuffDemo lifestuff_static)
 
 
 ###################################################################################################
@@ -191,8 +191,8 @@ ADD_STYLE_TEST(${STYLE_ALL})
 
 ADD_GTESTS(TESTlifestuff)
 ADD_GTESTS(TESTauthentication)
-ADD_GTESTS(TESTclientcontroller)
-ADD_GTESTS(TESTpublic_id)
+#ADD_GTESTS(TESTclientcontroller)
+#ADD_GTESTS(TESTpublic_id)
 
 TEST_SUMMARY_OUTPUT()
 

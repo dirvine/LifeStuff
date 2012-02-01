@@ -49,18 +49,13 @@ namespace bs2 = boost::signals2;
 
 namespace maidsafe {
 
-namespace dht {
-class Contact;
-}  // namespace dht
-
+namespace dht { class Contact; }
+namespace pd { class RemoteChunkStore; }
 class ChunkStore;
 
 namespace lifestuff {
 
-namespace test {
-class ClientControllerTest;
-}  // namespace test
-
+namespace test { class ClientControllerTest; }
 class Authentication;
 class Session;
 
@@ -76,7 +71,7 @@ class ClientController {
   int Init() {
     if (initialised_)
       return kSuccess;
-    packet_manager_.reset(new T(session_, ""));
+//    packet_manager_.reset(new T(session_, ""));
     return Initialise();
   }
   bool initialised() const { return initialised_; }
@@ -110,7 +105,7 @@ class ClientController {
   int SerialiseDa();
 
   std::shared_ptr<Session> session_;
-  std::shared_ptr<remote_chunk_store_> remote_chunk_store_;
+  std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<Authentication> auth_;
   std::string ser_da_, surrogate_ser_da_;
   bool initialised_;
