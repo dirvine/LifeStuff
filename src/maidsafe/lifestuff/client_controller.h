@@ -59,6 +59,7 @@ namespace lifestuff {
 
 namespace test {
 class ClientControllerTest;
+class UserStorageTest;
 }  // namespace test
 
 class Authentication;
@@ -103,6 +104,7 @@ class ClientController {
   std::shared_ptr<PacketManager> packet_manager() const;
 
   friend class test::ClientControllerTest;
+  friend class test::UserStorageTest;
 
  private:
   int Initialise();
