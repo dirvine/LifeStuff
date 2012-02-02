@@ -39,6 +39,7 @@
 
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
+#include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
 namespace args = std::placeholders;
 namespace pca = maidsafe::priv::chunk_actions;
@@ -118,61 +119,6 @@ passport::PacketType SigningPacket(passport::PacketType packet_type) {
 }
 
 }  // unnamed namespace
-
-YeOldeSignalToCallbackConverter::YeOldeSignalToCallbackConverter(
-    uint16_t max_size)
-    : operation_queue_(),
-      max_size_(max_size),
-      mutex_() {}
-
-int YeOldeSignalToCallbackConverter::AddOperation(const std::string &name,
-                                                  const VoidFuncOneInt cb) {
-  boost::mutex::scoped_lock loch_of_cliff(mutex_);
-  if (QueueIsFull()) {
-    DLOG(ERROR) << "Queue is full";
-    return -1;
-  }
-
-  operation_queue_.push_back(ChunkNameAndCallback(name, cb));
-
-  return kSuccess;
-}
-
-void YeOldeSignalToCallbackConverter::Deleted(const std::string &chunk_name,
-                                              const int &result) {
-  ExecuteCallback(chunk_name, result);
-}
-
-void YeOldeSignalToCallbackConverter::Stored(const std::string &chunk_name,
-                                             const int &result) {
-  ExecuteCallback(chunk_name, result);
-}
-
-void YeOldeSignalToCallbackConverter::Modified(const std::string &chunk_name,
-                                               const int &result) {
-  ExecuteCallback(chunk_name, result);
-}
-
-bool YeOldeSignalToCallbackConverter::QueueIsFull() {
-  if (static_cast<uint16_t>(operation_queue_.size()) >= max_size_)
-    return true;
-
-  return false;
-}
-
-void YeOldeSignalToCallbackConverter::ExecuteCallback(
-    const std::string &chunk_name,
-    const int &result) {
-  boost::mutex::scoped_lock loch_of_cliff(mutex_);
-  auto it = std::find_if(operation_queue_.begin(),
-                         operation_queue_.end(),
-                         [&chunk_name] (const ChunkNameAndCallback &cnac) {
-                           return cnac.chunk_name == chunk_name;
-                         });
-  (*it).callback(result);
-  operation_queue_.erase(it);
-}
-
 
 // Internal Authentication struct
 Authentication::PacketData::PacketData()

@@ -67,13 +67,7 @@ class ClientController {
   ClientController(const ClientController&);
 
   ~ClientController();
-  template <typename T>
-  int Init() {
-    if (initialised_)
-      return kSuccess;
-//    packet_manager_.reset(new T(session_, ""));
-    return Initialise();
-  }
+  int Init();
   bool initialised() const { return initialised_; }
 
   // User credential operations
@@ -94,8 +88,6 @@ class ClientController {
   std::string Username();
   std::string Pin();
   std::string Password();
-  std::shared_ptr<ChunkStore> client_chunk_store() const;
-  std::shared_ptr<PacketManager> packet_manager() const;
 
   friend class test::ClientControllerTest;
 

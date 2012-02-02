@@ -47,6 +47,7 @@
 #include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
+#include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
 namespace args = std::placeholders;
 
@@ -105,23 +106,18 @@ ClientController::ClientController(std::shared_ptr<Session> session)
       logging_out_(false),
       logged_in_(false) {}
 
-ClientController::~ClientController() {
-  packet_manager_->Close(false);
+ClientController::~ClientController() {}
+
+int ClientController::Init() {
+  if (initialised_)
+    return kSuccess;
+
+  return Initialise();
 }
 
 int ClientController::Initialise() {
-  CCCallback cb;
-#if defined REMOTE_STORE
-  remote_chunk_store_.
-#else
-#endif
-  remote_chunk_store_->Init(std::bind(&CCCallback::IntCallback, &cb, args::_1));
-  int result(cb.WaitForIntResult());
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to initialise packet manager.";
-    return result;
-  }
-  auth_->Init(packet_manager_);
+  auth_->Init(remote_chunk_store_,
+              std::make_shared<YeOldeSignalToCallbackConverter>());
   initialised_ = true;
   return kSuccess;
 }
@@ -480,14 +476,6 @@ std::string ClientController::Pin() {
 
 std::string ClientController::Password() {
   return session_->password();
-}
-
-std::shared_ptr<ChunkStore> ClientController::client_chunk_store() const {
-  return packet_manager_->chunk_store();
-}
-
-std::shared_ptr<PacketManager> ClientController::packet_manager() const {
-  return packet_manager_;
 }
 
 }  // namespace lifestuff

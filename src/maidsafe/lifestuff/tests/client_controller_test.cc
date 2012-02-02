@@ -60,27 +60,18 @@ class ClientControllerTest : public testing::Test {
   ClientControllerTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
         session_(new Session),
-        cc_(new ClientController(session_)),
-#if defined REMOTE_STORE
-        packet_manager_(new RemoteStoreManager(session_,
-                                               test_dir_->string())) {}
-#else
-        packet_manager_(new LocalStoreManager(session_,
-                                              test_dir_->string())) {}
-#endif
+        cc_(new ClientController(session_)) {}
 
  protected:
   void SetUp() {
     session_->ResetSession();
-    packet_manager_->Init(std::bind(&ClientControllerTest::InitAndCloseCallback,
-                                    this, args::_1));
-    cc_->auth_.reset(new Authentication(session_));
-    cc_->auth_->Init(packet_manager_);
-    cc_->packet_manager_ = packet_manager_;
-    cc_->initialised_ = true;
+    cc_->Init();
+//    cc_->auth_.reset(new Authentication(session_));
+//    cc_->auth_->Init(packet_manager_);
+//    cc_->packet_manager_ = packet_manager_;
+//    cc_->initialised_ = true;
   }
   void TearDown() {
-    packet_manager_->Close(true);
     cc_->initialised_ = false;
   }
 
@@ -89,27 +80,18 @@ class ClientControllerTest : public testing::Test {
   std::shared_ptr<ClientController> CreateSecondClientController() {
     std::shared_ptr<Session> ss2(new Session);
     std::shared_ptr<ClientController> cc2(new ClientController(ss2));
-#if defined REMOTE_STORE
-    std::shared_ptr<PacketManager>
-        packet_manager2(new RemoteStoreManager(ss2, test_dir_->string()));
-#else
-    std::shared_ptr<PacketManager>
-        packet_manager2(new LocalStoreManager(ss2, test_dir_->string()));
-#endif
     ss2->ResetSession();
-    packet_manager2->Init(std::bind(&ClientControllerTest::InitAndCloseCallback,
-                                    this, args::_1));
-    cc2->auth_.reset(new Authentication(ss2));
-    cc2->auth_->Init(packet_manager2);
-    cc2->packet_manager_ = packet_manager2;
-    cc2->initialised_ = true;
+    cc2->Init();
+//    cc2->auth_.reset(new Authentication(ss2));
+//    cc2->auth_->Init(packet_manager2);
+//    cc2->packet_manager_ = packet_manager2;
+//    cc2->initialised_ = true;
     return cc2;
   }
 
   std::shared_ptr<fs::path> test_dir_;
   std::shared_ptr<Session> session_;
   std::shared_ptr<ClientController> cc_;
-  std::shared_ptr<PacketManager> packet_manager_;
 
  private:
   ClientControllerTest(const ClientControllerTest&);
