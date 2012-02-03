@@ -36,7 +36,7 @@
 #include "maidsafe/lifestuff/local_chunk_manager.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
-#include "maidsafe/lifestuff/tests/test_callback.h"
+#include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
 namespace args = std::placeholders;
 namespace fs = boost::filesystem;
@@ -275,35 +275,6 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionBlocking) {
 //                   pca::ApplyTypeToName(tmidname,
 //                                        pca::kModifiableByOwner),
 //                   PacketSignerFromSession(passport::kTmid, true)));
-}
-
-TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionCallbacks) {
-  username_ += "07";
-  ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
-                                                       ser_dm_,
-                                                       surrogate_ser_dm_));
-  std::string original_tmidname(PacketValueFromSession(passport::kTmid, true));
-  ASSERT_FALSE(original_tmidname.empty());
-
-  // store current mid, smid and tmid details to check later whether they remain
-  // on the network
-  ser_dm_ = RandomString(1000);
-  CallbackObject cb;
-  authentication_.SaveSession(ser_dm_, std::bind(&CallbackObject::IntCallback,
-                                                 &cb, args::_1));
-  ASSERT_EQ(kSuccess, cb.WaitForIntResult());
-
-  ser_dm_ = RandomString(1000);
-  cb.Reset();
-  authentication_.SaveSession(ser_dm_, std::bind(&CallbackObject::IntCallback,
-                                                 &cb, args::_1));
-  ASSERT_EQ(kSuccess, cb.WaitForIntResult());
-//  ASSERT_TRUE(packet_manager_->KeyUnique(
-//                  pca::ApplyTypeToName(original_tmidname,
-//                                       pca::kModifiableByOwner),
-//                  PacketSignerFromSession(passport::kTmid, true)));
 }
 
 TEST_F(AuthenticationTest, FUNC_ChangeUsername) {

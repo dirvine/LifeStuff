@@ -33,8 +33,8 @@
 #include "boost/function.hpp"
 #include "boost/signals2.hpp"
 #include "boost/asio/io_service.hpp"
-#include "boost/thread/condition_variable.hpp"
-#include "boost/thread/mutex.hpp"
+#include "boost/filesystem/path.hpp"
+#include "boost/thread/thread.hpp"
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
@@ -46,6 +46,7 @@
 #endif
 
 namespace bs2 = boost::signals2;
+namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
@@ -63,11 +64,8 @@ class ClientController {
  public:
   explicit ClientController(std::shared_ptr<Session> session);
 
-  ClientController &operator=(const ClientController&);
-  ClientController(const ClientController&);
-
   ~ClientController();
-  int Init();
+  int Init(bool local, const fs::path &chunk_store_dir);
   bool initialised() const { return initialised_; }
 
   // User credential operations
@@ -83,8 +81,8 @@ class ClientController {
   bool ChangePin(const std::string &new_pin);
   bool ChangePassword(const std::string &new_password);
   bool LeaveMaidsafeNetwork();
-  std::string SessionName();
 
+  std::string SessionName();
   std::string Username();
   std::string Pin();
   std::string Password();
@@ -92,7 +90,9 @@ class ClientController {
   friend class test::ClientControllerTest;
 
  private:
-  int Initialise();
+  ClientController &operator=(const ClientController&);
+  ClientController(const ClientController&);
+
   int ParseDa();
   int SerialiseDa();
 
@@ -103,6 +103,10 @@ class ClientController {
   bool initialised_;
   bool logging_out_;
   bool logged_in_;
+
+  boost::asio::io_service service_;
+  std::shared_ptr<boost::asio::io_service::work> work_;
+  boost::thread_group threads_;
 };
 
 }  // namespace lifestuff

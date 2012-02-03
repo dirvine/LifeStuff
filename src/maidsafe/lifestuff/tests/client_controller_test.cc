@@ -65,12 +65,9 @@ class ClientControllerTest : public testing::Test {
  protected:
   void SetUp() {
     session_->ResetSession();
-    cc_->Init();
-//    cc_->auth_.reset(new Authentication(session_));
-//    cc_->auth_->Init(packet_manager_);
-//    cc_->packet_manager_ = packet_manager_;
-//    cc_->initialised_ = true;
+    cc_->Init(true, *test_dir_);
   }
+
   void TearDown() {
     cc_->initialised_ = false;
   }
@@ -81,11 +78,7 @@ class ClientControllerTest : public testing::Test {
     std::shared_ptr<Session> ss2(new Session);
     std::shared_ptr<ClientController> cc2(new ClientController(ss2));
     ss2->ResetSession();
-    cc2->Init();
-//    cc2->auth_.reset(new Authentication(ss2));
-//    cc2->auth_->Init(packet_manager2);
-//    cc2->packet_manager_ = packet_manager2;
-//    cc2->initialised_ = true;
+    cc2->Init(true, *test_dir_);
     return cc2;
   }
 
