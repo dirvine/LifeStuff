@@ -39,7 +39,7 @@ namespace lifestuff {
 //              and declare slots with the same type
 class YeOldeSignalToCallbackConverter {
  public:
-  YeOldeSignalToCallbackConverter(uint16_t max_size = UINT16_MAX);
+  explicit YeOldeSignalToCallbackConverter(uint16_t max_size = UINT16_MAX);
   int AddOperation(const std::string &name, const VoidFuncOneInt cb);
 
   // slots

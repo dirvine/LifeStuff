@@ -289,7 +289,7 @@ int PublicId::CreatePublicId(const std::string &public_username,
                                std::get<0>(data.at(1)),
                                std::bind(&SendContactInfoCallback, args::_1,
                                          &mutex, &cond_var, &results[3]));
-  result = AwaitingResponse(mutex, cond_var, results);
+  result = AwaitingResponse(&mutex, &cond_var, results);
   if (result != kSuccess)
     return result;
 
@@ -395,7 +395,7 @@ int PublicId::ModifyAppendability(const std::string &public_username,
       std::get<0>(data.at(2)),
       std::bind(&SendContactInfoCallback, args::_1,
                 &mutex, &cond_var, &results[1]));
-  result = AwaitingResponse(mutex, cond_var, results);
+  result = AwaitingResponse(&mutex, &cond_var, results);
   if (result != kSuccess)
     return result;
 
@@ -610,7 +610,7 @@ int PublicId::RemoveContact(const std::string &public_username,
                                std::bind(&SendContactInfoCallback, args::_1,
                                          &mutex, &cond_var,
                                          &results[0]));
-  result = AwaitingResponse(mutex, cond_var, results);
+  result = AwaitingResponse(&mutex, &cond_var, results);
   if (result != kSuccess)
     return result;
   if (results[0] != kSuccess) {
@@ -634,7 +634,7 @@ int PublicId::RemoveContact(const std::string &public_username,
       std::get<0>(old_MMID),
       std::bind(&SendContactInfoCallback, args::_1,
                 &mutex, &cond_var, &results[0]));
-  result = AwaitingResponse(mutex, cond_var, results);
+  result = AwaitingResponse(&mutex, &cond_var, results);
   if (result != kSuccess)
     return result;
   if (results[0] != kSuccess) {
@@ -731,7 +731,7 @@ int PublicId::InformContactInfo(const std::string &public_username,
         std::bind(&SendContactInfoCallback, args::_1, &mutex,
                   &cond_var, &results[i]));
   }
-  result = AwaitingResponse(mutex, cond_var, results);
+  result = AwaitingResponse(&mutex, &cond_var, results);
   if (result != kSuccess)
     return result;
 
@@ -743,21 +743,21 @@ int PublicId::InformContactInfo(const std::string &public_username,
   return kSuccess;
 }
 
-int PublicId::AwaitingResponse(boost::mutex &mutex,
-                               boost::condition_variable &cond_var,
+int PublicId::AwaitingResponse(boost::mutex *mutex,
+                               boost::condition_variable *cond_var,
                                std::vector<int> &results) {
   size_t size(results.size());
   try {
-    boost::mutex::scoped_lock lock(mutex);
-    if (!cond_var.timed_wait(lock,
-                             bptime::seconds(30),
-                             [&]()->bool {
-                               for (size_t i = 0; i < size; ++i) {
-                                 if (results[i] == kPendingResult)
-                                   return false;
-                               }
-                               return true;
-                             })) {
+    boost::mutex::scoped_lock lock(*mutex);
+    if (!cond_var->timed_wait(lock,
+                              bptime::seconds(30),
+                              [&]()->bool {
+                                for (size_t i = 0; i < size; ++i) {
+                                  if (results[i] == kPendingResult)
+                                    return false;
+                                }
+                                return true;
+                              })) {
       DLOG(ERROR) << "Timed out during waiting response.";
       return kPublicIdTimeout;
     }

@@ -15,8 +15,8 @@
 */
 
 
-#ifndef MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_LOCAL_CHUNK_MANAGER_H_
-#define MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_LOCAL_CHUNK_MANAGER_H_
+#ifndef MAIDSAFE_LIFESTUFF_LOCAL_CHUNK_MANAGER_H_
+#define MAIDSAFE_LIFESTUFF_LOCAL_CHUNK_MANAGER_H_
 
 #include <memory>
 #include <string>
@@ -57,11 +57,11 @@ class LocalChunkManager : public pd::ChunkManager {
   LocalChunkManager& operator=(const LocalChunkManager&);
 
   std::shared_ptr<ChunkStore> simulation_chunk_store_;
-  std::shared_ptr<priv::ChunkActionAuthority> simulation_chunk_action_authority_;  // NOLINT(Dan)
+  std::shared_ptr<priv::ChunkActionAuthority> simulation_chunk_action_authority_;  // NOLINT (Dan)
 };
 
 }  // namespace lifestuff
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_STORE_COMPONENTS_LOCAL_CHUNK_MANAGER_H_
+#endif  // MAIDSAFE_LIFESTUFF_LOCAL_CHUNK_MANAGER_H_
