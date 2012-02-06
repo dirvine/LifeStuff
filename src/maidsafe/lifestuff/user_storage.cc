@@ -34,10 +34,9 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-UserStorage::UserStorage(std::shared_ptr<ChunkStore> chunk_store,
-                         std::shared_ptr<PacketManager> packet_manager)
+UserStorage::UserStorage(std::shared_ptr<PacketManager> packet_manager)
     : mount_status_(false),
-      chunk_store_(chunk_store),
+      chunk_store_(packet_manager->chunk_store()),
       drive_in_user_space_(),
       packet_manager_(packet_manager),
       session_(),
@@ -47,15 +46,16 @@ UserStorage::UserStorage(std::shared_ptr<ChunkStore> chunk_store,
 void UserStorage::SetMessageHandler(
     std::shared_ptr<MessageHandler> message_handler) {
   message_handler_ = message_handler;
-  message_handler_->ConnectToSignal(pca::Message::kSharedDirectory,
-                                    std::bind(&UserStorage::NewMessageSlot,
-                                              this, args::_1));
+//   message_handler_->ConnectToSignal(pca::Message::kSharedDirectory,
+//                                     std::bind(&UserStorage::NewMessageSlot,
+//                                               this, args::_1));
 }
 
 void UserStorage::MountDrive(const fs::path &mount_dir_path,
                              const std::string &session_name,
                              std::shared_ptr<Session> session,
-                             bool creation) {
+                             bool creation,
+                             const std::string &drive_logo) {
   if (mount_status_)
     return;
   if (!fs::exists(mount_dir_path))
@@ -97,7 +97,7 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
 
   char drive_name[3] = {'A' + static_cast<char>(count), ':', '\0'};
   g_mount_dir_ = drive_name;
-  drive_in_user_space_->Mount(g_mount_dir_, L"LifeStuff Drive");
+  drive_in_user_space_->Mount(g_mount_dir_, drive_logo);
 #else
   g_mount_dir_ = mount_dir_path / session_name;
   boost::system::error_code ec;
@@ -107,7 +107,7 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
   boost::thread(std::bind(&MaidDriveInUserSpace::Mount,
                           drive_in_user_space_,
                           g_mount_dir_,
-                          "LifeStuff Drive"));
+                          drive_logo));
   drive_in_user_space_->WaitUntilMounted();
 #endif
   mount_status_ = true;
@@ -528,15 +528,15 @@ void UserStorage::InformContactsOperation(
   int result;
   for (auto it = contacts.begin(); it != contacts.end(); ++it) {
     // do nothing if trying to send a msg to itself
-    if ((*it).first != session_->unique_user_id()) {
+    if ((*it).first != session_->username()) {
       if ((*it).second) {
         sent.set_id(RandomString(64));
-        result = message_handler_->Send(session_->unique_user_id(),
+        result = message_handler_->Send(session_->username(),
                                         (*it).first,
                                         sent);
       } else {
         sent_non_admin.set_id(RandomString(64));
-        result = message_handler_->Send(session_->unique_user_id(),
+        result = message_handler_->Send(session_->username(),
                                         (*it).first,
                                         sent_non_admin);
       }

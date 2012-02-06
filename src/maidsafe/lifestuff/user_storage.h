@@ -73,14 +73,14 @@ class Session;
 
 class UserStorage {
  public:
-  explicit UserStorage(std::shared_ptr<ChunkStore> chunk_store,
-                       std::shared_ptr<PacketManager> packet_manager);
+  explicit UserStorage(std::shared_ptr<PacketManager> packet_manager);
   virtual ~UserStorage() {}
 
   virtual void MountDrive(const fs::path &mount_dir_path,
                           const std::string &session_name,
                           std::shared_ptr<Session> session,
-                          bool creation);
+                          bool creation,
+                          const std::string &drive_logo = "LifeStuff Drive");
   virtual void UnMountDrive();
   virtual fs::path g_mount_dir();
   virtual bool mount_status();
@@ -133,7 +133,7 @@ class UserStorage {
                       bool overwrite_existing);
   int DeleteHiddenFile(const fs::path &absolute_path);
 
-
+  void NewMessageSlot(const pca::Message &message);
   // ************************* Signals Handling ********************************
   bs2::connection ConnectToDriveChanged(drive::DriveChangedSlotPtr slot) const;
   bs2::connection ConnectToShareChanged(drive::ShareChangedSlotPtr slot) const;
@@ -151,7 +151,6 @@ class UserStorage {
       const std::string &directory_id = "",
       const asymm::Keys &key_ring = asymm::Keys(),
       const std::string &new_share_id = "");
-  void NewMessageSlot(const pca::Message &message);
 
   bool mount_status_;
   std::shared_ptr<ChunkStore> chunk_store_;
