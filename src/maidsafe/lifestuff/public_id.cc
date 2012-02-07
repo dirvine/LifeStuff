@@ -199,8 +199,7 @@ PublicId::PublicId(
       asio_service_(asio_service),
       get_new_contacts_timer_(asio_service),
       new_contact_signal_(new NewContactSignal),
-      contact_confirmed_signal_(new ContactConfirmedSignal),
-      the_hutchs_temp_bool_(false) {}
+      contact_confirmed_signal_(new ContactConfirmedSignal) {}
 
 PublicId::~PublicId() {
   StopCheckingForNewContacts();
@@ -222,7 +221,6 @@ int PublicId::StartCheckingForNewContacts(bptime::seconds interval) {
 }
 
 void PublicId::StopCheckingForNewContacts() {
-//  the_hutchs_temp_bool_ = true;
   get_new_contacts_timer_.cancel();
 }
 
@@ -528,7 +526,6 @@ PublicId::ContactConfirmedSignalPtr PublicId::contact_confirmed_signal() const {
 
 void PublicId::GetNewContacts(const bptime::seconds &interval,
                               const boost::system::error_code &error_code) {
-  DLOG(ERROR) << "\n\nInto of GetNewContacts\n\n";
   if (error_code) {
     if (error_code != ba::error::operation_aborted) {
       DLOG(WARNING) << "Refresh timer error: " << error_code.message();
@@ -538,10 +535,6 @@ void PublicId::GetNewContacts(const bptime::seconds &interval,
     }
   }
 
-  if (the_hutchs_temp_bool_)
-    return;
-
-  DLOG(ERROR) << "\n\nAfter Error check\n\n";
   std::vector<passport::SelectableIdData> selectables;
   session_->passport_->SelectableIdentitiesList(&selectables);
   for (auto it(selectables.begin()); it != selectables.end(); ++it) {
@@ -555,11 +548,11 @@ void PublicId::GetNewContacts(const bptime::seconds &interval,
                       passport::kMpid,
                       true,
                       &validation_data_mpid);
-      DLOG(ERROR) << "\n\nbefore GET intros\n\n";
+//      DLOG(ERROR) << "\t\t\t\t\tbefore GET intros";
       std::string mpid_value(
           remote_chunk_store_->Get(MaidsafeContactIdName(std::get<0>(*it)),
                                    validation_data_mpid));
-      DLOG(ERROR) << "\n\nafter GET intros\n\n";
+//      DLOG(ERROR) << "\t\t\t\t\tafter GET intros";
       if (mpid_value.empty()) {
         DLOG(ERROR) << "Failed to get MPID contents for " << std::get<0>(*it);
       } else {
@@ -574,7 +567,6 @@ void PublicId::GetNewContacts(const bptime::seconds &interval,
                                                this,
                                                interval,
                                                std::placeholders::_1));
-  DLOG(ERROR) << "\n\nOut of GetNewContacts\n\n";
 }
 
 void PublicId::ProcessRequests(const passport::SelectableIdData &data,
@@ -585,7 +577,6 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
     return;
   }
 
-  DLOG(ERROR) << "\n\nAppendices size: " << mcid.appendices_size() << "\n\n";
   for (int it(0); it < mcid.appendices_size(); ++it) {
     pca::Introduction introduction;
     if (!introduction.ParseFromString(mcid.appendices(it).data())) {

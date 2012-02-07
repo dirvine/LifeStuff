@@ -136,7 +136,6 @@ class PublicId {
   ba::deadline_timer get_new_contacts_timer_;
   NewContactSignalPtr new_contact_signal_;
   ContactConfirmedSignalPtr contact_confirmed_signal_;
-  bool the_hutchs_temp_bool_;
 };
 
 }  // namespace lifestuff

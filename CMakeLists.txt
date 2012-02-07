@@ -75,10 +75,6 @@ FILE(GLOB SOURCE_FILES_LIFESTUFF_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestu
 FILE(GLOB HEADER_FILES_LIFESTUFF_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/*.h")
 SET(ALL_FILES_LIFESTUFF_DIR ${SOURCE_FILES_LIFESTUFF_DIR} ${HEADER_FILES_LIFESTUFF_DIR})
 
-# TEMP !!!!!!!!!!!!!!!
-LIST(REMOVE_ITEM ALL_FILES_LIFESTUFF_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/message_handler.h)
-LIST(REMOVE_ITEM ALL_FILES_LIFESTUFF_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/message_handler.cc)
-
 SET(STYLE_ALL ${ALL_FILES_LIFESTUFF_DIR})
 LIST(REMOVE_ITEM STYLE_ALL "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.h"
                            "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.cc"
@@ -97,20 +93,12 @@ SOURCE_GROUP("Tests Source Files" FILES ${SOURCE_FILES_LIFESTUFF_TESTS_DIR})
 SOURCE_GROUP("Tests Header Files" FILES ${HEADER_FILES_LIFESTUFF_TESTS_DIR})
 
 SET(TESTS_MAIN_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/tests_main.cc")
-SET(CLIENT_MAIN_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/client_main.cc")
 SET(AUTHENTICATION_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/authentication_test.cc")
 SET(CLIENT_CONTROLLER_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/client_controller_test.cc")
-SET(PUBLIC_ID_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/public_id_test.cc")
-#                      "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/message_handler_test.cc")
+SET(PUBLIC_ID_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/public_id_test.cc"
+                      "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/message_handler_test.cc")
 
 LIST(REMOVE_ITEM ALL_FILES_LIFESTUFF_TESTS_DIR ${CLIENT_MAIN_CC} ${AUTHENTICATION_TEST_CC} ${CLIENT_CONTROLLER_TEST_CC} ${PUBLIC_ID_TEST_CC})
-
-####    DEMO    ####
-FILE(GLOB SOURCE_FILES_LIFESTUFF_DEMO_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/demo/*.cc")
-FILE(GLOB HEADER_FILES_LIFESTUFF_DEMO_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/demo/*.h")
-SET(ALL_FILES_LIFESTUFF_DEMO_DIR ${SOURCE_FILES_LIFESTUFF_DEMO_DIR} ${HEADER_FILES_LIFESTUFF_DEMO_DIR})
-SOURCE_GROUP("Demo Source Files" FILES ${SOURCE_FILES_LIFESTUFF_DEMO_DIR})
-SOURCE_GROUP("Demo Header Files" FILES ${HEADER_FILES_LIFESTUFF_DEMO_DIR})
 
 
 ###################################################################################################
@@ -123,7 +111,6 @@ MS_ADD_EXECUTABLE(TESTlifestuff Tests ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${TESTS_M
 MS_ADD_EXECUTABLE(TESTauthentication Tests ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
 MS_ADD_EXECUTABLE(TESTclientcontroller Tests ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
 MS_ADD_EXECUTABLE(TESTpublic_id Tests ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
-#MS_ADD_EXECUTABLE(LifestuffDemo Demo ${ALL_FILES_LIFESTUFF_DEMO_DIR})
 
 TARGET_LINK_LIBRARIES(lifestuff_static maidsafe_drive_static maidsafe_passport_static maidsafe_pd_static)
 
@@ -132,7 +119,6 @@ TARGET_LINK_LIBRARIES(TESTlifestuff lifestuff_static gtest_static gmock_static)
 TARGET_LINK_LIBRARIES(TESTauthentication lifestuff_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTclientcontroller lifestuff_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTpublic_id lifestuff_static gtest_static)
-#TARGET_LINK_LIBRARIES(LifestuffDemo lifestuff_static)
 
 
 ###################################################################################################
@@ -157,7 +143,7 @@ ENDIF()
 ###################################################################################################
 # Tests                                                                                           #
 ###################################################################################################
-ADD_STYLE_TEST(${STYLE_ALL})
+ADD_STYLE_TEST(${STYLE_ALL} ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${AUTHENTICATION_TEST_CC} ${CLIENT_CONTROLLER_TEST_CC} ${PUBLIC_ID_TEST_CC})
 
 ADD_GTESTS(TESTlifestuff)
 ADD_GTESTS(TESTauthentication)

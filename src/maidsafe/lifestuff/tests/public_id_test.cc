@@ -127,7 +127,6 @@ class PublicIdTest : public testing::Test {
       threads1_.create_thread(std::bind(
           static_cast<std::size_t(boost::asio::io_service::*)()>
               (&boost::asio::io_service::run), &asio_service1_));
-    DLOG(ERROR) << "\n\n";
     for (int i2(0); i2 != 10; ++i2)
       threads2_.create_thread(std::bind(
           static_cast<std::size_t(boost::asio::io_service::*)()>
@@ -183,23 +182,14 @@ class PublicIdTest : public testing::Test {
   }
 
   void TearDown() {
-    DLOG(ERROR) << "5a";
     public_id1_->StopCheckingForNewContacts();
-    DLOG(ERROR) << "5b";
     public_id2_->StopCheckingForNewContacts();
-    DLOG(ERROR) << "5c";
     work1_.reset();
-    DLOG(ERROR) << "6";
     work2_.reset();
-    DLOG(ERROR) << "7";
     asio_service1_.stop();
-    DLOG(ERROR) << "8";
     asio_service2_.stop();
-    DLOG(ERROR) << "9";
     threads1_.join_all();
-    DLOG(ERROR) << "10";
     threads2_.join_all();
-    DLOG(ERROR) << "11";
   }
 
   void CreateTestSignaturePackets(std::shared_ptr<Session> session) {
@@ -580,22 +570,18 @@ TEST_F(PublicIdTest, FUNC_ContactList) {
   public_id1_->new_contact_signal()->connect(
       std::bind(&PublicIdTest::NewContactCounterSlot,
                 this, args::_1, args::_2, n, &counter, &done));
-  DLOG(ERROR) << "\n\n\n\n1";
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   ASSERT_EQ(kSuccess, public_id2_->StartCheckingForNewContacts(interval_));
 
   while (!done)
     Sleep(bptime::milliseconds(100));
 
-  DLOG(ERROR) << "\n\n\n\n2";
   ContactMap contacts(public_id1_->ContactList(public_username1_,
                                                kAlphabetical,
                                                kAll));
-  DLOG(ERROR) << "\n\n\n\n3";
   ASSERT_EQ(size_t(n), contacts.size());
   for (auto it(usernames.begin()); it != usernames.end(); ++it)
     ASSERT_FALSE(contacts.find(*it) == contacts.end());
-  DLOG(ERROR) << "\n\n\n\n4";
 }
 
 TEST_F(PublicIdTest, FUNC_PublicIdList) {
@@ -615,288 +601,290 @@ TEST_F(PublicIdTest, FUNC_PublicIdList) {
 }
 
 TEST_F(PublicIdTest, FUNC_RecoveryOfPendingContacts) {
-//    std::string serialised_keyring1, serialised_keyring2, da1,
-//                serialised_selectables1, serialised_selectables2, da2;
-//    {
-//      std::shared_ptr<Session> session1(new Session), session2(new Session);
-//      CreateTestSignaturePackets(session1);
-//      CreateTestSignaturePackets(session2);
-//      std::shared_ptr<PacketManager>
-//  #if defined REMOTE_STORE
-//          packet_manager1(new RemoteStoreManager(session1, test_dir_->string())),
-//          packet_manager2(new RemoteStoreManager(session2, test_dir_->string()));
-//  #else
-//          packet_manager1(new LocalStoreManager(session1, test_dir_->string())),
-//          packet_manager2(new LocalStoreManager(session2, test_dir_->string()));
-//  #endif
-//      ba::io_service asio_service1, asio_service2;
-//      std::shared_ptr<ba::io_service::work>
-//          work1(new ba::io_service::work(asio_service1)),
-//          work2(new ba::io_service::work(asio_service2));
-//      boost::thread_group threads1, threads2;
-//      PublicId public_id1(packet_manager1, session1, asio_service1),
-//               public_id2(packet_manager2, session2, asio_service2);
-//
-//      packet_manager1->Init([](int /*result*/) {});
-//      packet_manager2->Init([](int /*result*/) {});
-//      for (int i(0); i != 5; ++i) {
-//        threads1.create_thread(std::bind(
-//            static_cast<std::size_t(boost::asio::io_service::*)()>
-//                (&boost::asio::io_service::run), &asio_service1));
-//        threads2.create_thread(std::bind(
-//            static_cast<std::size_t(boost::asio::io_service::*)()>
-//                (&boost::asio::io_service::run), &asio_service2));
-//      }
-//
-//      ASSERT_EQ(kSuccess, public_id2.CreatePublicId(public_username2_, true));
-//      for (char n(48); n < 53; ++n) {
-//        ASSERT_EQ(kSuccess,
-//                  public_id1.CreatePublicId(public_username1_ + std::string(1, n),
-//                                            true));
-//        ASSERT_EQ(kSuccess,
-//                  public_id1.SendContactInfo(public_username1_ +
-//                                                 std::string(1, n),
-//                                             public_username2_));
-//      }
-//
-//      volatile bool done(false);
-//      int count(0);
-//      bs2::connection connection(public_id2.new_contact_signal()->connect(
-//                                     std::bind(&PublicIdTest::ManyContactsSlot,
-//                                               this,
-//                                               args::_1,
-//                                               args::_2,
-//                                               &done,
-//                                               &count)));
-//      ASSERT_EQ(kSuccess, public_id2.StartCheckingForNewContacts(interval_));
-//
-//      while (!done)
-//        Sleep(bptime::milliseconds(100));
-//
-//      connection.disconnect();
-//      public_id2.StopCheckingForNewContacts();
-//
-//      DumpSession(session1, &serialised_keyring1, &serialised_selectables1, &da1);
-//      DumpSession(session2, &serialised_keyring2, &serialised_selectables2, &da2);
-//
-//      session1->ResetSession();
-//      session2->ResetSession();
-//
-//      work1.reset();
-//      work2.reset();
-//      asio_service1.stop();
-//      asio_service2.stop();
-//      threads1.join_all();
-//      threads2.join_all();
-//      packet_manager1->Close(true);
-//      packet_manager2->Close(true);
-//    }
-//    DLOG(ERROR) << "\n\n\n\n";
-//    {
-//      std::shared_ptr<Session> session1(new Session), session2(new Session);
-//      LoadSession(session1, serialised_keyring1, serialised_selectables1, da1);
-//      LoadSession(session2, serialised_keyring2, serialised_selectables2, da2);
-//      std::shared_ptr<PacketManager>
-//  #if defined REMOTE_STORE
-//          packet_manager1(new RemoteStoreManager(session1, test_dir_->string())),
-//          packet_manager2(new RemoteStoreManager(session2, test_dir_->string()));
-//  #else
-//          packet_manager1(new LocalStoreManager(session1, test_dir_->string())),
-//          packet_manager2(new LocalStoreManager(session2, test_dir_->string()));
-//  #endif
-//      ba::io_service asio_service1, asio_service2;
-//      std::shared_ptr<ba::io_service::work>
-//          work1(new ba::io_service::work(asio_service1)),
-//          work2(new ba::io_service::work(asio_service2));
-//      boost::thread_group threads1, threads2;
-//      PublicId public_id1(packet_manager1, session1, asio_service1),
-//               public_id2(packet_manager2, session2, asio_service2);
-//
-//      packet_manager1->Init([](int /*result*/) {});
-//      packet_manager2->Init([](int /*result*/) {});
-//      for (int i(0); i != 5; ++i) {
-//        threads1.create_thread(std::bind(
-//            static_cast<std::size_t(boost::asio::io_service::*)()>
-//                (&boost::asio::io_service::run), &asio_service1));
-//        threads2.create_thread(std::bind(
-//            static_cast<std::size_t(boost::asio::io_service::*)()>
-//                (&boost::asio::io_service::run), &asio_service2));
-//      }
-//
-//      ASSERT_EQ(size_t(5), session1->contact_handler_map().size());
-//      ASSERT_EQ(size_t(1), session2->contact_handler_map().size());
-//      for (char n(48); n < 53; ++n) {
-//        std::string pubname(public_username1_ + std::string(1, n));
-//        Contact contact;
-//        ASSERT_EQ(kSuccess,
-//                  session1->contact_handler_map()[pubname]->ContactInfo(
-//                      public_username2_,
-//                      &contact));
-//        ASSERT_EQ(kRequestSent, contact.status);
-//        contact = Contact();
-//        ASSERT_EQ(kSuccess,
-//                  session2->contact_handler_map()[public_username2_]->ContactInfo(
-//                      pubname,
-//                      &contact));
-//        ASSERT_EQ(kPendingResponse, contact.status);
-//        ASSERT_EQ(kSuccess,
-//                  public_id2.ConfirmContact(public_username2_,
-//                                            pubname));
-//      }
-//
-//      DumpSession(session1, &serialised_keyring1, &serialised_selectables1, &da1);
-//      DumpSession(session2, &serialised_keyring2, &serialised_selectables2, &da2);
-//
-//      session1->ResetSession();
-//      session2->ResetSession();
-//
-//      work1.reset();
-//      work2.reset();
-//      asio_service1.stop();
-//      asio_service2.stop();
-//      threads1.join_all();
-//      threads2.join_all();
-//      packet_manager1->Close(true);
-//      packet_manager2->Close(true);
-//    }
-//    DLOG(ERROR) << "\n\n\n\n";
-//    {
-//      std::shared_ptr<Session> session1(new Session), session2(new Session);
-//      LoadSession(session1, serialised_keyring1, serialised_selectables1, da1);
-//      LoadSession(session2, serialised_keyring2, serialised_selectables2, da2);
-//      std::shared_ptr<PacketManager>
-//  #if defined REMOTE_STORE
-//          packet_manager1(new RemoteStoreManager(session1, test_dir_->string())),
-//          packet_manager2(new RemoteStoreManager(session2, test_dir_->string()));
-//  #else
-//          packet_manager1(new LocalStoreManager(session1, test_dir_->string())),
-//          packet_manager2(new LocalStoreManager(session2, test_dir_->string()));
-//  #endif
-//      ba::io_service asio_service1, asio_service2;
-//      std::shared_ptr<ba::io_service::work>
-//          work1(new ba::io_service::work(asio_service1)),
-//          work2(new ba::io_service::work(asio_service2));
-//      boost::thread_group threads1, threads2;
-//      PublicId public_id1(packet_manager1, session1, asio_service1),
-//               public_id2(packet_manager2, session2, asio_service2);
-//
-//      packet_manager1->Init([](int /*result*/) {});
-//      packet_manager2->Init([](int /*result*/) {});
-//      for (int i(0); i != 5; ++i) {
-//        threads1.create_thread(std::bind(
-//            static_cast<std::size_t(boost::asio::io_service::*)()>
-//                (&boost::asio::io_service::run), &asio_service1));
-//        threads2.create_thread(std::bind(
-//            static_cast<std::size_t(boost::asio::io_service::*)()>
-//                (&boost::asio::io_service::run), &asio_service2));
-//      }
-//
-//      ASSERT_EQ(size_t(5), session1->contact_handler_map().size());
-//      ASSERT_EQ(size_t(1), session2->contact_handler_map().size());
-//      for (char n(48); n < 53; ++n) {
-//        std::string pubname(public_username1_ + std::string(1, n));
-//        Contact contact;
-//        ASSERT_EQ(kSuccess,
-//                  session1->contact_handler_map()[pubname]->ContactInfo(
-//                      public_username2_,
-//                      &contact));
-//        ASSERT_EQ(kRequestSent, contact.status);
-//        contact = Contact();
-//        ASSERT_EQ(kSuccess,
-//                  session2->contact_handler_map()[public_username2_]->ContactInfo(
-//                      pubname,
-//                      &contact));
-//        ASSERT_EQ(kConfirmed, contact.status);
-//      }
-//
-//      volatile bool done(false);
-//      int count(0);
-//      bs2::connection connection(public_id1.contact_confirmed_signal()->connect(
-//                                     std::bind(
-//                                         &PublicIdTest::ManyConfirmationssSlot,
-//                                         this, args::_1, &done, &count)));
-//      ASSERT_EQ(kSuccess, public_id1.StartCheckingForNewContacts(interval_));
-//
-//      while (!done)
-//        Sleep(bptime::milliseconds(100));
-//
-//      DumpSession(session1, &serialised_keyring1, &serialised_selectables1, &da1);
-//      DumpSession(session2, &serialised_keyring2, &serialised_selectables2, &da2);
-//
-//      session1->ResetSession();
-//      session2->ResetSession();
-//
-//      work1.reset();
-//      work2.reset();
-//      asio_service1.stop();
-//      asio_service2.stop();
-//      threads1.join_all();
-//      threads2.join_all();
-//      packet_manager1->Close(true);
-//      packet_manager2->Close(true);
-//    }
-//    DLOG(ERROR) << "\n\n\n\n";
-//    {
-//      std::shared_ptr<Session> session1(new Session), session2(new Session);
-//      LoadSession(session1, serialised_keyring1, serialised_selectables1, da1);
-//      LoadSession(session2, serialised_keyring2, serialised_selectables2, da2);
-//      std::shared_ptr<PacketManager>
-//  #if defined REMOTE_STORE
-//          packet_manager1(new RemoteStoreManager(session1, test_dir_->string())),
-//          packet_manager2(new RemoteStoreManager(session2, test_dir_->string()));
-//  #else
-//          packet_manager1(new LocalStoreManager(session1, test_dir_->string())),
-//          packet_manager2(new LocalStoreManager(session2, test_dir_->string()));
-//  #endif
-//      ba::io_service asio_service1, asio_service2;
-//      std::shared_ptr<ba::io_service::work>
-//          work1(new ba::io_service::work(asio_service1)),
-//          work2(new ba::io_service::work(asio_service2));
-//      boost::thread_group threads1, threads2;
-//      PublicId public_id1(packet_manager1, session1, asio_service1),
-//               public_id2(packet_manager2, session2, asio_service2);
-//
-//      packet_manager1->Init([](int /*result*/) {});
-//      packet_manager2->Init([](int /*result*/) {});
-//      for (int i(0); i != 5; ++i) {
-//        threads1.create_thread(std::bind(
-//            static_cast<std::size_t(boost::asio::io_service::*)()>
-//                (&boost::asio::io_service::run), &asio_service1));
-//        threads2.create_thread(std::bind(
-//            static_cast<std::size_t(boost::asio::io_service::*)()>
-//                (&boost::asio::io_service::run), &asio_service2));
-//      }
-//
-//      ASSERT_EQ(size_t(5), session1->contact_handler_map().size());
-//      ASSERT_EQ(size_t(1), session2->contact_handler_map().size());
-//      for (char n(48); n < 53; ++n) {
-//        std::string pubname(public_username1_ + std::string(1, n));
-//        Contact contact;
-//        ASSERT_EQ(kSuccess,
-//                  session1->contact_handler_map()[pubname]->ContactInfo(
-//                      public_username2_,
-//                      &contact));
-//        ASSERT_EQ(kConfirmed, contact.status);
-//        contact = Contact();
-//        ASSERT_EQ(kSuccess,
-//                  session2->contact_handler_map()[public_username2_]->ContactInfo(
-//                      pubname,
-//                      &contact));
-//        ASSERT_EQ(kConfirmed, contact.status);
-//      }
-//
-//      session1->ResetSession();
-//      session2->ResetSession();
-//
-//      work1.reset();
-//      work2.reset();
-//      asio_service1.stop();
-//      asio_service2.stop();
-//      threads1.join_all();
-//      threads2.join_all();
-//      packet_manager1->Close(true);
-//      packet_manager2->Close(true);
-//    }
+/*
+  std::string serialised_keyring1, serialised_keyring2, da1,
+              serialised_selectables1, serialised_selectables2, da2;
+  {
+    std::shared_ptr<Session> session1(new Session), session2(new Session);
+    CreateTestSignaturePackets(session1);
+    CreateTestSignaturePackets(session2);
+    std::shared_ptr<PacketManager>
+#if defined REMOTE_STORE
+        packet_manager1(new RemoteStoreManager(session1, test_dir_->string())),
+        packet_manager2(new RemoteStoreManager(session2, test_dir_->string()));
+#else
+        packet_manager1(new LocalStoreManager(session1, test_dir_->string())),
+        packet_manager2(new LocalStoreManager(session2, test_dir_->string()));
+#endif
+    ba::io_service asio_service1, asio_service2;
+    std::shared_ptr<ba::io_service::work>
+        work1(new ba::io_service::work(asio_service1)),
+        work2(new ba::io_service::work(asio_service2));
+    boost::thread_group threads1, threads2;
+    PublicId public_id1(packet_manager1, session1, asio_service1),
+             public_id2(packet_manager2, session2, asio_service2);
+
+    packet_manager1->Init([](int result) {});
+    packet_manager2->Init([](int result) {});
+    for (int i(0); i != 5; ++i) {
+      threads1.create_thread(std::bind(
+          static_cast<std::size_t(boost::asio::io_service::*)()>
+              (&boost::asio::io_service::run), &asio_service1));
+      threads2.create_thread(std::bind(
+          static_cast<std::size_t(boost::asio::io_service::*)()>
+              (&boost::asio::io_service::run), &asio_service2));
+    }
+
+    ASSERT_EQ(kSuccess, public_id2.CreatePublicId(public_username2_, true));
+    for (char n(48); n < 53; ++n) {
+      ASSERT_EQ(kSuccess,
+                public_id1.CreatePublicId(public_username1_ + std::string(1, n),
+                                          true));
+      ASSERT_EQ(kSuccess,
+                public_id1.SendContactInfo(public_username1_ +
+                                               std::string(1, n),
+                                           public_username2_));
+    }
+
+    volatile bool done(false);
+    int count(0);
+    bs2::connection connection(public_id2.new_contact_signal()->connect(
+                                   std::bind(&PublicIdTest::ManyContactsSlot,
+                                             this,
+                                             args::_1,
+                                             args::_2,
+                                             &done,
+                                             &count)));
+    ASSERT_EQ(kSuccess, public_id2.StartCheckingForNewContacts(interval_));
+
+    while (!done)
+      Sleep(bptime::milliseconds(100));
+
+    connection.disconnect();
+    public_id2.StopCheckingForNewContacts();
+
+    DumpSession(session1, &serialised_keyring1, &serialised_selectables1, &da1);
+    DumpSession(session2, &serialised_keyring2, &serialised_selectables2, &da2);
+
+    session1->ResetSession();
+    session2->ResetSession();
+
+    work1.reset();
+    work2.reset();
+    asio_service1.stop();
+    asio_service2.stop();
+    threads1.join_all();
+    threads2.join_all();
+    packet_manager1->Close(true);
+    packet_manager2->Close(true);
+  }
+  DLOG(ERROR) << "\n\n\n\n";
+  {
+    std::shared_ptr<Session> session1(new Session), session2(new Session);
+    LoadSession(session1, serialised_keyring1, serialised_selectables1, da1);
+    LoadSession(session2, serialised_keyring2, serialised_selectables2, da2);
+    std::shared_ptr<PacketManager>
+#if defined REMOTE_STORE
+        packet_manager1(new RemoteStoreManager(session1, test_dir_->string())),
+        packet_manager2(new RemoteStoreManager(session2, test_dir_->string()));
+#else
+        packet_manager1(new LocalStoreManager(session1, test_dir_->string())),
+        packet_manager2(new LocalStoreManager(session2, test_dir_->string()));
+#endif
+    ba::io_service asio_service1, asio_service2;
+    std::shared_ptr<ba::io_service::work>
+        work1(new ba::io_service::work(asio_service1)),
+        work2(new ba::io_service::work(asio_service2));
+    boost::thread_group threads1, threads2;
+    PublicId public_id1(packet_manager1, session1, asio_service1),
+             public_id2(packet_manager2, session2, asio_service2);
+
+    packet_manager1->Init([](int result) {});
+    packet_manager2->Init([](int result) {});
+    for (int i(0); i != 5; ++i) {
+      threads1.create_thread(std::bind(
+          static_cast<std::size_t(boost::asio::io_service::*)()>
+              (&boost::asio::io_service::run), &asio_service1));
+      threads2.create_thread(std::bind(
+          static_cast<std::size_t(boost::asio::io_service::*)()>
+              (&boost::asio::io_service::run), &asio_service2));
+    }
+
+    ASSERT_EQ(size_t(5), session1->contact_handler_map().size());
+    ASSERT_EQ(size_t(1), session2->contact_handler_map().size());
+    for (char n(48); n < 53; ++n) {
+      std::string pubname(public_username1_ + std::string(1, n));
+      Contact contact;
+      ASSERT_EQ(kSuccess,
+                session1->contact_handler_map()[pubname]->ContactInfo(
+                    public_username2_,
+                    &contact));
+      ASSERT_EQ(kRequestSent, contact.status);
+      contact = Contact();
+      ASSERT_EQ(kSuccess,
+                session2->contact_handler_map()[public_username2_]->ContactInfo(
+                    pubname,
+                    &contact));
+      ASSERT_EQ(kPendingResponse, contact.status);
+      ASSERT_EQ(kSuccess,
+                public_id2.ConfirmContact(public_username2_,
+                                          pubname));
+    }
+
+    DumpSession(session1, &serialised_keyring1, &serialised_selectables1, &da1);
+    DumpSession(session2, &serialised_keyring2, &serialised_selectables2, &da2);
+
+    session1->ResetSession();
+    session2->ResetSession();
+
+    work1.reset();
+    work2.reset();
+    asio_service1.stop();
+    asio_service2.stop();
+    threads1.join_all();
+    threads2.join_all();
+    packet_manager1->Close(true);
+    packet_manager2->Close(true);
+  }
+  DLOG(ERROR) << "\n\n\n\n";
+  {
+    std::shared_ptr<Session> session1(new Session), session2(new Session);
+    LoadSession(session1, serialised_keyring1, serialised_selectables1, da1);
+    LoadSession(session2, serialised_keyring2, serialised_selectables2, da2);
+    std::shared_ptr<PacketManager>
+#if defined REMOTE_STORE
+        packet_manager1(new RemoteStoreManager(session1, test_dir_->string())),
+        packet_manager2(new RemoteStoreManager(session2, test_dir_->string()));
+#else
+        packet_manager1(new LocalStoreManager(session1, test_dir_->string())),
+        packet_manager2(new LocalStoreManager(session2, test_dir_->string()));
+#endif
+    ba::io_service asio_service1, asio_service2;
+    std::shared_ptr<ba::io_service::work>
+        work1(new ba::io_service::work(asio_service1)),
+        work2(new ba::io_service::work(asio_service2));
+    boost::thread_group threads1, threads2;
+    PublicId public_id1(packet_manager1, session1, asio_service1),
+             public_id2(packet_manager2, session2, asio_service2);
+
+    packet_manager1->Init([](int result) {});
+    packet_manager2->Init([](int result) {});
+    for (int i(0); i != 5; ++i) {
+      threads1.create_thread(std::bind(
+          static_cast<std::size_t(boost::asio::io_service::*)()>
+              (&boost::asio::io_service::run), &asio_service1));
+      threads2.create_thread(std::bind(
+          static_cast<std::size_t(boost::asio::io_service::*)()>
+              (&boost::asio::io_service::run), &asio_service2));
+    }
+
+    ASSERT_EQ(size_t(5), session1->contact_handler_map().size());
+    ASSERT_EQ(size_t(1), session2->contact_handler_map().size());
+    for (char n(48); n < 53; ++n) {
+      std::string pubname(public_username1_ + std::string(1, n));
+      Contact contact;
+      ASSERT_EQ(kSuccess,
+                session1->contact_handler_map()[pubname]->ContactInfo(
+                    public_username2_,
+                    &contact));
+      ASSERT_EQ(kRequestSent, contact.status);
+      contact = Contact();
+      ASSERT_EQ(kSuccess,
+                session2->contact_handler_map()[public_username2_]->ContactInfo(
+                    pubname,
+                    &contact));
+      ASSERT_EQ(kConfirmed, contact.status);
+    }
+
+    volatile bool done(false);
+    int count(0);
+    bs2::connection connection(public_id1.contact_confirmed_signal()->connect(
+                                   std::bind(
+                                       &PublicIdTest::ManyConfirmationssSlot,
+                                       this, args::_1, &done, &count)));
+    ASSERT_EQ(kSuccess, public_id1.StartCheckingForNewContacts(interval_));
+
+    while (!done)
+      Sleep(bptime::milliseconds(100));
+
+    DumpSession(session1, &serialised_keyring1, &serialised_selectables1, &da1);
+    DumpSession(session2, &serialised_keyring2, &serialised_selectables2, &da2);
+
+    session1->ResetSession();
+    session2->ResetSession();
+
+    work1.reset();
+    work2.reset();
+    asio_service1.stop();
+    asio_service2.stop();
+    threads1.join_all();
+    threads2.join_all();
+    packet_manager1->Close(true);
+    packet_manager2->Close(true);
+  }
+  DLOG(ERROR) << "\n\n\n\n";
+  {
+    std::shared_ptr<Session> session1(new Session), session2(new Session);
+    LoadSession(session1, serialised_keyring1, serialised_selectables1, da1);
+    LoadSession(session2, serialised_keyring2, serialised_selectables2, da2);
+    std::shared_ptr<PacketManager>
+#if defined REMOTE_STORE
+        packet_manager1(new RemoteStoreManager(session1, test_dir_->string())),
+        packet_manager2(new RemoteStoreManager(session2, test_dir_->string()));
+#else
+        packet_manager1(new LocalStoreManager(session1, test_dir_->string())),
+        packet_manager2(new LocalStoreManager(session2, test_dir_->string()));
+#endif
+    ba::io_service asio_service1, asio_service2;
+    std::shared_ptr<ba::io_service::work>
+        work1(new ba::io_service::work(asio_service1)),
+        work2(new ba::io_service::work(asio_service2));
+    boost::thread_group threads1, threads2;
+    PublicId public_id1(packet_manager1, session1, asio_service1),
+             public_id2(packet_manager2, session2, asio_service2);
+
+    packet_manager1->Init([](int result) {});
+    packet_manager2->Init([](int result) {});
+    for (int i(0); i != 5; ++i) {
+      threads1.create_thread(std::bind(
+          static_cast<std::size_t(boost::asio::io_service::*)()>
+              (&boost::asio::io_service::run), &asio_service1));
+      threads2.create_thread(std::bind(
+          static_cast<std::size_t(boost::asio::io_service::*)()>
+              (&boost::asio::io_service::run), &asio_service2));
+    }
+
+    ASSERT_EQ(size_t(5), session1->contact_handler_map().size());
+    ASSERT_EQ(size_t(1), session2->contact_handler_map().size());
+    for (char n(48); n < 53; ++n) {
+      std::string pubname(public_username1_ + std::string(1, n));
+      Contact contact;
+      ASSERT_EQ(kSuccess,
+                session1->contact_handler_map()[pubname]->ContactInfo(
+                    public_username2_,
+                    &contact));
+      ASSERT_EQ(kConfirmed, contact.status);
+      contact = Contact();
+      ASSERT_EQ(kSuccess,
+                session2->contact_handler_map()[public_username2_]->ContactInfo(
+                    pubname,
+                    &contact));
+      ASSERT_EQ(kConfirmed, contact.status);
+    }
+
+    session1->ResetSession();
+    session2->ResetSession();
+
+    work1.reset();
+    work2.reset();
+    asio_service1.stop();
+    asio_service2.stop();
+    threads1.join_all();
+    threads2.join_all();
+    packet_manager1->Close(true);
+    packet_manager2->Close(true);
+  }
+*/
 }
 
 }  // namespace test

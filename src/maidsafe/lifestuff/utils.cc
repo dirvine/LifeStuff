@@ -111,7 +111,8 @@ int GetValidatedMmidPublicKey(
     std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
     asymm::PublicKey *public_key) {
   std::string packet_value(
-      remote_chunk_store->Get(mmid_name, validation_data));
+      remote_chunk_store->Get(mmid_name + std::string(1, pca::kAppendableByAll),
+                              validation_data));
   if (packet_value.empty()) {
     DLOG(ERROR) << "Failed to get public key for " << Base32Substr(mmid_name);
     *public_key = asymm::PublicKey();
