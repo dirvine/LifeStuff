@@ -94,6 +94,17 @@ class PublicIdTest : public testing::Test {
     received_public_username_ = other_public_username;
   }
 
+  void NewContactCounterSlot(const std::string &/*own_public_username*/,
+                             const std::string &other_public_username,
+                             const int &times,
+                             int *counter,
+                             volatile bool *done) {
+    received_public_username_ = other_public_username;
+    ++(*counter);
+    if (*counter == times)
+      *done = true;
+  }
+
   void ContactRequestSlot(const std::string &/*own_public_username*/,
                           const std::string &other_public_username,
                           volatile bool *invoked) {
@@ -549,7 +560,7 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
 }
 
 TEST_F(PublicIdTest, FUNC_ContactList) {
-  int n(5);
+  int n(5), counter(0);
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_username1_, true));
   std::vector<std::string> usernames;
   for (int a(0); a < n; ++a) {
@@ -565,12 +576,16 @@ TEST_F(PublicIdTest, FUNC_ContactList) {
                   public_username1_)) << y;
   }
 
+  volatile bool done(false);
   public_id1_->new_contact_signal()->connect(
-      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, args::_2));
+      std::bind(&PublicIdTest::NewContactCounterSlot,
+                this, args::_1, args::_2, n, &counter, &done));
   DLOG(ERROR) << "\n\n\n\n1";
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   ASSERT_EQ(kSuccess, public_id2_->StartCheckingForNewContacts(interval_));
-  Sleep(interval_ * 2);
+
+  while (!done)
+    Sleep(bptime::milliseconds(100));
 
   DLOG(ERROR) << "\n\n\n\n2";
   ContactMap contacts(public_id1_->ContactList(public_username1_,
