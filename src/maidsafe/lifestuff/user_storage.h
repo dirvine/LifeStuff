@@ -101,7 +101,8 @@ class UserStorage {
 
   // ****************************** Shares *************************************
   int CreateShare(const fs::path &absolute_path,
-                  const std::map<std::string, bool> &contacts);
+                  const std::map<std::string, bool> &contacts,
+                  std::string *share_id_result = NULL);
   int StopShare(const std::string &share_id);
   int InsertShare(const std::string &share_id,
                   const fs::path &absolute_path,

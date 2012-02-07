@@ -228,8 +228,11 @@ int UserStorage::LeaveShare(const std::string & share_id){
 }
 
 int UserStorage::CreateShare(const fs::path &absolute_path,
-                             const std::map<std::string, bool> &contacts) {
+                             const std::map<std::string, bool> &contacts,
+                             std::string *share_id_result) {
   std::string share_id(crypto::Hash<crypto::SHA512>(absolute_path.string()));
+  if (share_id_result)
+    *share_id_result = share_id;
 
   std::vector<pki::SignaturePacketPtr> signature_packets;
   pki::CreateChainedId(&signature_packets, 1);
