@@ -71,61 +71,74 @@ class UserStorageTest : public testing::Test {
   UserStorageTest()
     : test_dir_(maidsafe::test::CreateTestPath()),
       g_mount_dir_(new fs::path(fs::initial_path() / "LifeStuff")),
-      client_controller1_(CreateClientController("User 1")),
-      user_storage1_(CreateUserStorage(client_controller1_)),
-      session1_(client_controller1_->session_),
-      client_controller2_(CreateClientController("User 2")),
-      user_storage2_(CreateUserStorage(client_controller2_)),
-      session2_(client_controller2_->session_),
+      client_controller1_(),
+      user_storage1_(),
+      session1_(),
+      client_controller2_(),
+      user_storage2_(),
+      session2_(),
       asio_service_(),
       work_(new ba::io_service::work(asio_service_)),
       threads_(),
       interval_(1),
-      public_id1_(new PublicId(client_controller1_->packet_manager_,
-                               session1_, asio_service_)),
-      public_id2_(new PublicId(client_controller2_->packet_manager_,
-                               session2_, asio_service_)),
-      message_handler1_(new MessageHandler(
-                                  client_controller1_->packet_manager_,
-                                  session1_,
-                                  asio_service_)),
-      message_handler2_(new MessageHandler(
-                                  client_controller2_->packet_manager_,
-                                  session2_,
-                                  asio_service_)) {
-  for (int i(0); i != 5; ++i)
-    threads_.create_thread(std::bind(
-        static_cast<std::size_t(boost::asio::io_service::*)()>
-            (&boost::asio::io_service::run), &asio_service_));
-
-  message_handler1_->ConnectToSignal(pca::Message::kSharedDirectory,
-                                     std::bind(&UserStorage::NewMessageSlot,
-                                               user_storage1_, args::_1));
-  public_id1_->CreatePublicId("User 1", true);
-  user_storage1_->SetMessageHandler(message_handler1_);
-
-  message_handler2_->ConnectToSignal(pca::Message::kSharedDirectory,
-                                     std::bind(&UserStorage::NewMessageSlot,
-                                               user_storage2_, args::_1));
-  public_id2_->CreatePublicId("User 2", true);
-  user_storage2_->SetMessageHandler(message_handler2_);
-
-  public_id1_->StartCheckingForNewContacts(interval_);
-  public_id2_->StartCheckingForNewContacts(interval_);
-
-  public_id1_->SendContactInfo("User 1", "User 2");
-  Sleep(interval_ * 2);
-  public_id2_->ConfirmContact("User 2", "User 1");
-  Sleep(interval_ * 2);
-
-  public_id1_->StopCheckingForNewContacts();
-  public_id2_->StopCheckingForNewContacts();
-}
+      public_id1_(),
+      public_id2_(),
+      message_handler1_(),
+      message_handler2_() {}
 
  protected:
-  void SetUp() {}
+  void SetUp() {
+    client_controller1_ = CreateClientController("User 1");
+    user_storage1_ = CreateUserStorage(client_controller1_);
+    session1_ = client_controller1_->session_;
+    client_controller2_ = CreateClientController("User 2");
+    user_storage2_ = CreateUserStorage(client_controller2_);
+    session2_ = client_controller2_->session_;
+
+    public_id1_.reset(new PublicId(client_controller1_->packet_manager_,
+                                   session1_, asio_service_));
+    public_id2_.reset(new PublicId(client_controller2_->packet_manager_,
+                                   session2_, asio_service_)),
+    message_handler1_.reset(new MessageHandler(
+                                    client_controller1_->packet_manager_,
+                                    session1_,
+                                    asio_service_));
+    message_handler2_.reset(new MessageHandler(
+                                    client_controller2_->packet_manager_,
+                                    session2_,
+                                    asio_service_));
+    message_handler1_->ConnectToSignal(pca::Message::kSharedDirectory,
+                                      std::bind(&UserStorage::NewMessageSlot,
+                                                user_storage1_, args::_1));
+    user_storage1_->SetMessageHandler(message_handler1_);
+
+    message_handler2_->ConnectToSignal(pca::Message::kSharedDirectory,
+                                      std::bind(&UserStorage::NewMessageSlot,
+                                                user_storage2_, args::_1));
+    user_storage2_->SetMessageHandler(message_handler2_);
+
+    for (int i(0); i != 5; ++i)
+      threads_.create_thread(std::bind(
+          static_cast<std::size_t(boost::asio::io_service::*)()>
+              (&boost::asio::io_service::run), &asio_service_));
+
+    public_id1_->CreatePublicId("User 1", true);
+    public_id2_->CreatePublicId("User 2", true);
+    public_id1_->StartCheckingForNewContacts(interval_);
+    public_id2_->StartCheckingForNewContacts(interval_);
+
+    public_id1_->SendContactInfo("User 1", "User 2");
+    Sleep(interval_ * 2);
+    public_id2_->ConfirmContact("User 2", "User 1");
+    Sleep(interval_ * 2);
+
+    public_id1_->StopCheckingForNewContacts();
+    public_id2_->StopCheckingForNewContacts();
+  }
 
   void TearDown() {
+    session1_->ResetSession();
+    session2_->ResetSession();
     work_.reset();
     asio_service_.stop();
     threads_.join_all();
@@ -182,7 +195,7 @@ class UserStorageTest : public testing::Test {
   std::shared_ptr<MessageHandler> message_handler2_;
 };
 
-TEST_F(UserStorageTest, FUNC_FirstTest) {
+TEST_F(UserStorageTest, FUNC_CreateShare) {
   user_storage1_->MountDrive(*g_mount_dir_,
                              client_controller1_->SessionName(),
                              session1_, true);
@@ -198,7 +211,7 @@ TEST_F(UserStorageTest, FUNC_FirstTest) {
                              client_controller2_->SessionName(),
                              session2_, true);
   Sleep(interval_ * 2);
-  fs::path dir(user_storage2_->g_mount_dir() / (tail));
+  fs::path dir(user_storage2_->g_mount_dir() / tail);
   boost::system::error_code error_code;
   EXPECT_FALSE(fs::exists(dir, error_code)) << dir;
 
@@ -208,6 +221,59 @@ TEST_F(UserStorageTest, FUNC_FirstTest) {
   EXPECT_TRUE(fs::exists(dir, error_code)) << dir << " : "
                                            << error_code.message();
 
+  message_handler2_->StopCheckingForNewMessages();
+  user_storage2_->UnMountDrive();
+}
+
+TEST_F(UserStorageTest, FUNC_AddUser) {
+  user_storage1_->MountDrive(*g_mount_dir_,
+                             client_controller1_->SessionName(),
+                             session1_, true);
+  Sleep(interval_ * 2);
+  std::map<std::string, bool> users;
+  std::string tail;
+  fs::path dir0(CreateTestDirectory(user_storage1_->g_mount_dir(), &tail));
+  std::string share_id;
+  ASSERT_EQ(kSuccess, user_storage1_->CreateShare(dir0, users, &share_id));
+  user_storage1_->UnMountDrive();
+  Sleep(interval_ * 2);
+
+  user_storage2_->MountDrive(*g_mount_dir_,
+                             client_controller2_->SessionName(),
+                             session2_, true);
+  Sleep(interval_ * 2);
+  fs::path dir(user_storage2_->g_mount_dir() / tail);
+  boost::system::error_code error_code;
+  EXPECT_FALSE(fs::exists(dir, error_code)) << dir;
+  ASSERT_EQ(kSuccess,
+            message_handler2_->StartCheckingForNewMessages(interval_));
+  Sleep(interval_ * 2);
+  EXPECT_FALSE(fs::exists(dir, error_code)) << dir;
+  message_handler2_->StopCheckingForNewMessages();
+  user_storage2_->UnMountDrive();
+  Sleep(interval_ * 2);
+
+  user_storage1_->MountDrive(*g_mount_dir_,
+                             client_controller1_->SessionName(),
+                             session1_, false);
+  Sleep(interval_ * 2);
+  EXPECT_TRUE(fs::exists(user_storage1_->g_mount_dir() / tail,
+                         error_code)) << user_storage1_->g_mount_dir();
+  users.insert(std::make_pair("User 2", false));
+  ASSERT_EQ(kSuccess, user_storage1_->AddShareUsers(share_id, users));
+  user_storage1_->UnMountDrive();
+  Sleep(interval_ * 2);
+
+  user_storage2_->MountDrive(*g_mount_dir_,
+                             client_controller2_->SessionName(),
+                             session2_, false);
+  Sleep(interval_ * 2);
+  EXPECT_FALSE(fs::exists(dir, error_code)) << dir;
+  ASSERT_EQ(kSuccess,
+            message_handler2_->StartCheckingForNewMessages(interval_));
+  Sleep(interval_ * 2);
+  EXPECT_TRUE(fs::exists(dir, error_code)) << dir << " : "
+                                           << error_code.message();
   message_handler2_->StopCheckingForNewMessages();
   user_storage2_->UnMountDrive();
 }
