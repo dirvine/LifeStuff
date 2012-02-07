@@ -181,7 +181,7 @@ class PublicIdTest : public testing::Test {
     DLOG(ERROR) << "6";
     work2_.reset();
     DLOG(ERROR) << "7";
-//    asio_service1_.stop();
+    asio_service1_.stop();
     DLOG(ERROR) << "8";
     asio_service2_.stop();
     DLOG(ERROR) << "9";

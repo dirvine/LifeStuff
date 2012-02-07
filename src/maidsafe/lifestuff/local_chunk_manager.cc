@@ -149,7 +149,6 @@ void LocalChunkManager::ModifyChunk(const std::string &name,
   int64_t operation_diff;
   if (!simulation_chunk_action_authority_->Modify(name,
                                                   content,
-                                                  "",
                                                   owner_public_key,
                                                   &operation_diff)) {
     DLOG(ERROR) << "CAA failure on network chunkstore " << Base32Substr(name);
