@@ -38,7 +38,6 @@
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
-#include "maidsafe/lifestuff/store_components/packet_manager.h"
 
 #if MAIDSAFE_LIFESTUFF_VERSION != 111
 #  error This API is not compatible with the installed library.\

@@ -96,7 +96,9 @@ class AuthenticationTest : public testing::TestWithParam<bool> {
   }
 
   void TearDown() {
-//    packet_manager_->Close(true);
+    work_.reset();
+    service_.stop();
+    threads_.join_all();
   }
 
   int GetMasterDataMap(std::string *ser_dm_login) {

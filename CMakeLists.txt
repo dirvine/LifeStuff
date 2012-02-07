@@ -59,30 +59,6 @@ ADD_MAIDSAFE_LIBRARY(MaidSafe-PD)
 
 
 ###################################################################################################
-# Callback File System / Fuse library search                                                      #
-###################################################################################################
-IF(WIN32)
-  INCLUDE(maidsafe_find_cbfs)
-  SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Cbfs_INCLUDE_DIR})
-  SET(LIBS_DIRS ${LIBS_DIRS} ${Cbfs_LIBRARY_DIR})
-  SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Cbfs_LIBRARY_DIR})
-  SET(Fuse_LIBRARY ${Cbfs_LIBRARY})
-ELSE()
-  FIND_LIBRARY(Fuse_LIBRARY libfuse.a)
-  IF(Fuse_LIBRARY)
-    MESSAGE("-- Found library ${Fuse_LIBRARY}")
-    GET_FILENAME_COMPONENT(Fuse_LIBRARY_DIR ${Fuse_LIBRARY} PATH)
-    SET(LIBS_DIRS ${LIBS_DIRS} ${Fuse_LIBRARY_DIR})
-    SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Fuse_LIBRARY_DIR})
-  ELSE()
-    SET(ERROR_MESSAGE "\nCould not find library libfuse.a.")
-    SET(ERROR_MESSAGE "${ERROR_MESSAGE}  Run\n${ERROR_MESSAGE_CMAKE_PATH} -DADD_LIBRARY_DIR=<Path to libfuse.a directory>")
-    MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
-  ENDIF()
-ENDIF()
-
-
-###################################################################################################
 # Standard setup                                                                                  #
 ###################################################################################################
 SET(PROTO_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
@@ -100,12 +76,8 @@ FILE(GLOB HEADER_FILES_LIFESTUFF_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestu
 SET(ALL_FILES_LIFESTUFF_DIR ${SOURCE_FILES_LIFESTUFF_DIR} ${HEADER_FILES_LIFESTUFF_DIR})
 
 # TEMP !!!!!!!!!!!!!!!
-LIST(REMOVE_ITEM ALL_FILES_LIFESTUFF_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/public_id.h)
-LIST(REMOVE_ITEM ALL_FILES_LIFESTUFF_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/public_id.cc)
 LIST(REMOVE_ITEM ALL_FILES_LIFESTUFF_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/message_handler.h)
 LIST(REMOVE_ITEM ALL_FILES_LIFESTUFF_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/message_handler.cc)
-LIST(REMOVE_ITEM ALL_FILES_LIFESTUFF_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/utils.h)
-LIST(REMOVE_ITEM ALL_FILES_LIFESTUFF_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/utils.cc)
 
 SET(STYLE_ALL ${ALL_FILES_LIFESTUFF_DIR})
 LIST(REMOVE_ITEM STYLE_ALL "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.h"
@@ -128,8 +100,8 @@ SET(TESTS_MAIN_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/tests_main
 SET(CLIENT_MAIN_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/client_main.cc")
 SET(AUTHENTICATION_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/authentication_test.cc")
 SET(CLIENT_CONTROLLER_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/client_controller_test.cc")
-SET(PUBLIC_ID_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/public_id_test.cc"
-                      "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/message_handler_test.cc")
+SET(PUBLIC_ID_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/public_id_test.cc")
+#                      "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/message_handler_test.cc")
 
 LIST(REMOVE_ITEM ALL_FILES_LIFESTUFF_TESTS_DIR ${CLIENT_MAIN_CC} ${AUTHENTICATION_TEST_CC} ${CLIENT_CONTROLLER_TEST_CC} ${PUBLIC_ID_TEST_CC})
 
@@ -150,7 +122,7 @@ MS_ADD_EXECUTABLE(TESTlifestuff Tests ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${TESTS_M
 
 MS_ADD_EXECUTABLE(TESTauthentication Tests ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
 MS_ADD_EXECUTABLE(TESTclientcontroller Tests ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
-#MS_ADD_EXECUTABLE(TESTpublic_id Tests ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
+MS_ADD_EXECUTABLE(TESTpublic_id Tests ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
 #MS_ADD_EXECUTABLE(LifestuffDemo Demo ${ALL_FILES_LIFESTUFF_DEMO_DIR})
 
 TARGET_LINK_LIBRARIES(lifestuff_static maidsafe_drive_static maidsafe_passport_static maidsafe_pd_static)
@@ -159,7 +131,7 @@ TARGET_LINK_LIBRARIES(TESTlifestuff lifestuff_static gtest_static gmock_static)
 
 TARGET_LINK_LIBRARIES(TESTauthentication lifestuff_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTclientcontroller lifestuff_static gtest_static)
-#TARGET_LINK_LIBRARIES(TESTpublic_id lifestuff_static gtest_static)
+TARGET_LINK_LIBRARIES(TESTpublic_id lifestuff_static gtest_static)
 #TARGET_LINK_LIBRARIES(LifestuffDemo lifestuff_static)
 
 
@@ -190,7 +162,7 @@ ADD_STYLE_TEST(${STYLE_ALL})
 ADD_GTESTS(TESTlifestuff)
 ADD_GTESTS(TESTauthentication)
 ADD_GTESTS(TESTclientcontroller)
-#ADD_GTESTS(TESTpublic_id)
+ADD_GTESTS(TESTpublic_id)
 
 TEST_SUMMARY_OUTPUT()
 

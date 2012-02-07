@@ -38,12 +38,6 @@
 #include "maidsafe/lifestuff/client_controller.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
-#if defined REMOTE_STORE
-#  include "maidsafe/lifestuff/store_components/remote_store_manager.h"
-#else
-#  include "maidsafe/lifestuff/store_components/local_store_manager.h"
-#endif
-
 
 namespace args = std::placeholders;
 namespace fs = boost::filesystem;

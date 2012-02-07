@@ -31,6 +31,8 @@
 #include "boost/thread/mutex.hpp"
 #include "boost/signals2.hpp"
 
+#include "maidsafe/common/alternative_store.h"
+
 #include "maidsafe/passport/passport_config.h"
 
 #include "maidsafe/lifestuff/lifestuff.h"
@@ -47,10 +49,12 @@ namespace bs2 = boost::signals2;
 
 namespace maidsafe {
 
+namespace pd { class RemoteChunkStore; }
+
 namespace lifestuff {
 
-class PacketManager;
 class Session;
+class YeOldeSignalToCallbackConverter;
 
 class PublicId {
  public:
@@ -59,7 +63,9 @@ class PublicId {
   typedef std::shared_ptr<NewContactSignal> NewContactSignalPtr;
   typedef bs2::signal<void(const std::string&)> ContactConfirmedSignal;  // NOLINT (Dan)
   typedef std::shared_ptr<ContactConfirmedSignal> ContactConfirmedSignalPtr;
-  PublicId(std::shared_ptr<PacketManager> packet_manager,
+
+  PublicId(std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+           std::shared_ptr<YeOldeSignalToCallbackConverter> converter,
            std::shared_ptr<Session> session,
            ba::io_service &asio_service);  // NOLINT (Fraser)
   ~PublicId();
@@ -118,13 +124,19 @@ class PublicId {
   int AwaitingResponse(boost::mutex *mutex,
                        boost::condition_variable *cond_var,
                        std::vector<int> &results);
+  void GetKeysAndProof(const std::string &public_username,
+                       passport::PacketType pt,
+                       bool confirmed,
+                       AlternativeStore::ValidationData *validation_data);
 
-  std::shared_ptr<PacketManager> packet_manager_;
+  std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store_;
+  std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
   std::shared_ptr<Session> session_;
   ba::io_service &asio_service_;
   ba::deadline_timer get_new_contacts_timer_;
   NewContactSignalPtr new_contact_signal_;
   ContactConfirmedSignalPtr contact_confirmed_signal_;
+  bool the_hutchs_temp_bool_;
 };
 
 }  // namespace lifestuff
