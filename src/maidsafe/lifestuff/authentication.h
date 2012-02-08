@@ -24,6 +24,7 @@
 #ifndef MAIDSAFE_LIFESTUFF_AUTHENTICATION_H_
 #define MAIDSAFE_LIFESTUFF_AUTHENTICATION_H_
 
+#include <list>
 #include <memory>
 #include <string>
 #include <vector>
@@ -31,6 +32,7 @@
 #include "boost/thread/mutex.hpp"
 #include "boost/thread/condition_variable.hpp"
 
+#include "maidsafe/common/alternative_store.h"
 #include "maidsafe/common/rsa.h"
 
 #include "maidsafe/passport/passport_config.h"
@@ -44,34 +46,22 @@ namespace pki {
 class Packet;
 class SignaturePacket;
 }  // namespace pki
-
 namespace passport { class Passport; }
+namespace pd { class RemoteChunkStore; }
 
 namespace lifestuff {
 
-namespace test { class ClientControllerTest; }
-
-class PacketManager;
 class Session;
+class YeOldeSignalToCallbackConverter;
+namespace test { class ClientControllerTest; }
 
 class Authentication {
  public:
-  explicit Authentication(std::shared_ptr<Session> session)
-      : packet_manager_(),
-        session_(session),
-        mutex_(),
-        mid_mutex_(),
-        smid_mutex_(),
-        cond_var_(),
-        tmid_op_status_(kPendingMid),
-        stmid_op_status_(kPendingMid),
-        encrypted_tmid_(),
-        encrypted_stmid_(),
-        serialised_data_atlas_(),
-        kSingleOpTimeout_(5000) {}
+  explicit Authentication(std::shared_ptr<Session> session);
   ~Authentication();
   // Used to intialise passport_ in all cases.
-  void Init(std::shared_ptr<PacketManager> packet_manager);
+  void Init(std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+            std::shared_ptr<YeOldeSignalToCallbackConverter> converter);
   // Used to intialise passport_ in all cases.
   int GetUserInfo(const std::string &username, const std::string &pin);
   // Used when creating a new user.
@@ -145,16 +135,11 @@ class Authentication {
   Authentication &operator=(const Authentication&);
   Authentication(const Authentication&);
 
-  void GetMidCallback(const std::vector<std::string> &values,
-                      int return_code);
-  void GetSmidCallback(const std::vector<std::string> &values,
-                       int return_code);
-  void GetTmidCallback(const std::vector<std::string> &values,
-                       int return_code);
-  void GetStmidCallback(const std::vector<std::string> &values,
-                        int return_code);
-
-  void GetMidTmidCallback(const std::vector<std::string> &values,
+  void GetMidCallback(const std::string &value, int return_code);
+  void GetSmidCallback(const std::string &value, int return_code);
+  void GetTmidCallback(const std::string &value, int return_code);
+  void GetStmidCallback(const std::string &value, int return_code);
+  void GetMidTmidCallback(const std::string &value,
                           int return_code,
                           bool surrogate);
   // Function waits until dependent_op_status != kPending or timeout before
@@ -162,9 +147,6 @@ class Authentication {
   void StoreSignaturePacket(const passport::PacketType &packet_type,
                             OpStatus *op_status,
                             OpStatus *dependent_op_status);
-  void SignaturePacketUniqueCallback(int return_code,
-                                     passport::PacketType packet_type,
-                                     OpStatus *op_status);
   void SignaturePacketStoreCallback(int return_code,
                                     passport::PacketType packet_type,
                                     OpStatus *op_status);
@@ -216,9 +198,9 @@ class Authentication {
   }
   // Designed to be called as functor in timed_wait - user_info mutex locked
   bool PacketOpDone(int *return_code) { return *return_code != kPendingResult; }
-  int StorePacket(const PacketData &packet, bool check_uniqueness);
+  int StorePacket(const PacketData &packet,
+                  const AlternativeStore::ValidationData &validation_data);
   int DeletePacket(const PacketData &packet);
-  int PacketUnique(const PacketData &packet);
   void PacketOpCallback(int return_code, int *op_result);
   void CreateSignedData(const PacketData &packet,
                         bool signing_packet_confirmed,
@@ -232,14 +214,18 @@ class Authentication {
                              std::string *signing_id);
   std::string DebugStr(const passport::PacketType &packet_type);
 
+  void GetKeysAndProof(passport::PacketType pt,
+                       AlternativeStore::ValidationData *validation_data,
+                       bool confirmed);
 
-  std::shared_ptr<PacketManager> packet_manager_;
+  std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<Session> session_;
   boost::mutex mutex_, mid_mutex_, smid_mutex_;
   boost::condition_variable cond_var_;
   OpStatus tmid_op_status_, stmid_op_status_;
   std::string encrypted_tmid_, encrypted_stmid_, serialised_data_atlas_;
   const boost::posix_time::milliseconds kSingleOpTimeout_;
+  std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
 };
 
 }  // namespace lifestuff

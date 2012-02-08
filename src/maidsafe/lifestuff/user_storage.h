@@ -54,7 +54,7 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-class ChunkStore;
+namespace pd { class RemoteChunkStore; }
 
 namespace lifestuff {
 
@@ -62,7 +62,7 @@ class Session;
 
 class UserStorage {
  public:
-  explicit UserStorage(std::shared_ptr<ChunkStore> chunk_store);
+  explicit UserStorage(std::shared_ptr<pd::RemoteChunkStore> chunk_store);
   virtual ~UserStorage() {}
 
   virtual void MountDrive(const fs::path &mount_dir_path,
@@ -131,7 +131,7 @@ class UserStorage {
 
  private:
   bool mount_status_;
-  std::shared_ptr<ChunkStore> chunk_store_;
+  std::shared_ptr<pd::RemoteChunkStore> chunk_store_;
   std::shared_ptr<MaidDriveInUserSpace> drive_in_user_space_;
   fs::path g_mount_dir_;
 };

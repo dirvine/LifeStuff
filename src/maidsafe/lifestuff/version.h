@@ -59,7 +59,7 @@
 #endif
 
 #include "maidsafe/passport/version.h"
-#define THIS_NEEDS_MAIDSAFE_PASSPORT_VERSION 110
+#define THIS_NEEDS_MAIDSAFE_PASSPORT_VERSION 200
 #if MAIDSAFE_PASSPORT_VERSION < THIS_NEEDS_MAIDSAFE_PASSPORT_VERSION
 #  error This API is not compatible with the installed library.\
     Please update the MaidSafe-Passport library.

@@ -59,7 +59,7 @@ class FakeStoreManager : public PacketManager {
                  const VoidFuncOneInt &cb);
   int GetPacket(const std::string &packet_name,
                 const std::string &signing_key_id,
-                std::vector<std::string> *results);
+                std::string *result);
   void GetPacket(const std::string &packet_name,
                  const std::string &signing_key_id,
                  const GetPacketFunctor &lpf);
@@ -80,7 +80,7 @@ class FakeStoreManager : public PacketManager {
 //  ReturnCode Init(const boost::filesystem::path &buffered_chunk_store_dir);
   void ExecReturnCodeCallback(VoidFuncOneInt callback, ReturnCode return_code);
   void ExecReturnLoadPacketCallback(GetPacketFunctor callback,
-                                    std::vector<std::string> results,
+                                    std::string result,
                                     ReturnCode return_code);
 
   boost::asio::io_service asio_service_;

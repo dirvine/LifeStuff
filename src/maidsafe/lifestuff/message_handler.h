@@ -19,6 +19,7 @@
 
 
 #include <functional>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -28,12 +29,13 @@
 
 #include "boost/asio/deadline_timer.hpp"
 #include "boost/asio/io_service.hpp"
-#include "boost/bimap/bimap.hpp"
 #include "boost/date_time/posix_time/posix_time_duration.hpp"
-#include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
 
+#include "maidsafe/common/alternative_store.h"
+
 #include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
+
 #include "maidsafe/passport/passport_config.h"
 
 #include "maidsafe/lifestuff/version.h"
@@ -44,18 +46,18 @@
 #endif
 
 namespace ba = boost::asio;
-namespace bbm = boost::bimaps;
 namespace bptime = boost::posix_time;
 namespace bs2 = boost::signals2;
 namespace pca = maidsafe::priv::chunk_actions;
 
 namespace maidsafe {
 
+namespace pd { class RemoteChunkStore; }
+
 namespace lifestuff {
 
-class PacketManager;
 class Session;
-
+class YeOldeSignalToCallbackConverter;
 
 class MessageHandler {
  public:
@@ -64,7 +66,8 @@ class MessageHandler {
   typedef std::shared_ptr<NewMessageSignal> NewMessageSignalPtr;
   typedef std::map<std::string, uint64_t> ReceivedMessagesMap;
 
-  MessageHandler(std::shared_ptr<PacketManager> packet_manager,
+  MessageHandler(std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+                 std::shared_ptr<YeOldeSignalToCallbackConverter> converter,
                  std::shared_ptr<Session> session,
                  ba::io_service &asio_service);  // NOLINT (Fraser)
   ~MessageHandler();
@@ -90,11 +93,16 @@ class MessageHandler {
   void GetNewMessages(const bptime::seconds &interval,
                       const boost::system::error_code &error_code);
   void ProcessRetrieved(const passport::SelectableIdData &data,
-                        const std::vector<std::string> &mmid_values);
+                        const std::string &mmid_value);
   bool MessagePreviouslyReceived(const std::string &message);
   void ClearExpiredReceivedMessages();
+  void GetKeysAndProof(const std::string &public_username,
+                       passport::PacketType pt,
+                       bool confirmed,
+                       AlternativeStore::ValidationData *validation_data);
 
-  std::shared_ptr<PacketManager> packet_manager_;
+  std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store_;
+  std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
   std::shared_ptr<Session> session_;
   ba::io_service &asio_service_;
   ba::deadline_timer get_new_messages_timer_;

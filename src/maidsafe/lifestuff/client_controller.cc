@@ -42,11 +42,18 @@
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/private/chunk_actions/chunk_action_authority.h"
+
+#include "maidsafe/pd/client/client_container.h"
+#include "maidsafe/pd/client/remote_chunk_store.h"
+
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/data_atlas_pb.h"
+#include "maidsafe/lifestuff/local_chunk_manager.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
+#include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
 namespace args = std::placeholders;
 
@@ -54,72 +61,56 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-class CCCallback {
- public:
-  CCCallback()
-      : return_int_(kPendingResult),
-        mutex_(),
-        cv_() {}
-
-  void IntCallback(int return_code) {
-    boost::mutex::scoped_lock lock(mutex_);
-    return_int_ = return_code;
-    cv_.notify_one();
-  }
-
-  int WaitForIntResult() {
-    int result;
-    {
-      boost::mutex::scoped_lock lock(mutex_);
-      while (return_int_ == kPendingResult)
-        cv_.wait(lock);
-      result = return_int_;
-      return_int_ = kPendingResult;
-    }
-    return result;
-  }
-
- private:
-  int return_int_;
-  boost::mutex mutex_;
-  boost::condition_variable cv_;
-};
-
-
-void PacketOpCallback(const int &store_manager_result,
-                      boost::mutex *mutex,
-                      boost::condition_variable *cond_var,
-                      int *op_result) {
-  boost::mutex::scoped_lock lock(*mutex);
-  *op_result = store_manager_result;
-  cond_var->notify_one();
-}
-
-ClientController::ClientController(std::shared_ptr<Session> session)
+ClientController::ClientController(boost::asio::io_service &service,  // NOLINT (Dan)
+                                   std::shared_ptr<Session> session)
     : session_(session),
-      packet_manager_(),
+      remote_chunk_store_(),
       auth_(new Authentication(session)),
       ser_da_(),
       surrogate_ser_da_(),
       initialised_(false),
       logging_out_(false),
-      logged_in_(false) {}
+      logged_in_(false),
+      service_(service),
+      converter_(new YeOldeSignalToCallbackConverter) {}
 
-ClientController::~ClientController() {
-  packet_manager_->Close(false);
-}
+ClientController::~ClientController() {}
 
-int ClientController::Initialise() {
-  CCCallback cb;
-  packet_manager_->Init(std::bind(&CCCallback::IntCallback, &cb, args::_1));
-  int result(cb.WaitForIntResult());
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to initialise packet manager.";
-    return result;
+void ClientController::Init(bool local, const fs::path &base_dir) {
+  if (initialised_)
+    return;
+
+  if (local) {
+    std::shared_ptr<BufferedChunkStore> bcs(new BufferedChunkStore(service_));
+    bcs->Init(base_dir / "buffered_chunk_store");
+    std::shared_ptr<priv::ChunkActionAuthority> caa(
+        new priv::ChunkActionAuthority(bcs));
+    std::shared_ptr<LocalChunkManager> local_chunk_manager(
+        new LocalChunkManager(bcs, base_dir / "local_chunk_manager"));
+    remote_chunk_store_.reset(new pd::RemoteChunkStore(bcs,
+                                                       local_chunk_manager,
+                                                       caa));
+  } else {
+    pd::ClientContainer container;
+    container.Init(base_dir / "buffer", 10);
+    remote_chunk_store_.reset(
+        new pd::RemoteChunkStore(container.chunk_store(),
+                                 container.chunk_manager(),
+                                 container.chunk_action_authority()));
   }
-  auth_->Init(packet_manager_);
+
+  remote_chunk_store_->sig_chunk_stored()->connect(
+      std::bind(&YeOldeSignalToCallbackConverter::Stored, converter_.get(),
+                args::_1, args::_2));
+  remote_chunk_store_->sig_chunk_deleted()->connect(
+      std::bind(&YeOldeSignalToCallbackConverter::Deleted, converter_.get(),
+                args::_1, args::_2));
+  remote_chunk_store_->sig_chunk_modified()->connect(
+      std::bind(&YeOldeSignalToCallbackConverter::Modified, converter_.get(),
+                args::_1, args::_2));
+
+  auth_->Init(remote_chunk_store_, converter_);
   initialised_ = true;
-  return kSuccess;
 }
 
 int ClientController::ParseDa() {
@@ -363,23 +354,12 @@ int ClientController::SaveSession() {
   }
 
   int n = SerialiseDa();
-  if (n != 0) {
+  if (n != kSuccess) {
     DLOG(ERROR) << "Failed to serialise DA.";
     return n;
   }
 
-  n = kPendingResult;
-  boost::mutex mutex;
-  boost::condition_variable cond_var;
-  VoidFuncOneInt func = std::bind(&PacketOpCallback, args::_1, &mutex,
-                                  &cond_var, &n);
-  auth_->SaveSession(ser_da_, func);
-  {
-    boost::mutex::scoped_lock lock(mutex);
-    while (n == kPendingResult)
-      cond_var.wait(lock);
-  }
-
+  n = auth_->SaveSession(ser_da_);
   if (n != kSuccess) {
     if (n == kFailedToDeleteOldPacket) {
       DLOG(WARNING) << "Failed to delete old TMID otherwise saved session OK.";
@@ -388,7 +368,7 @@ int ClientController::SaveSession() {
       return n;
     }
   }
-  return 0;
+  return kSuccess;
 }
 
 bool ClientController::LeaveMaidsafeNetwork() {
@@ -478,12 +458,12 @@ std::string ClientController::Password() {
   return session_->password();
 }
 
-std::shared_ptr<ChunkStore> ClientController::client_chunk_store() const {
-  return packet_manager_->chunk_store();
+std::shared_ptr<pd::RemoteChunkStore> ClientController::remote_chunk_store() {
+  return remote_chunk_store_;
 }
 
-std::shared_ptr<PacketManager> ClientController::packet_manager() const {
-  return packet_manager_;
+std::shared_ptr<YeOldeSignalToCallbackConverter> ClientController::converter() {
+  return converter_;
 }
 
 }  // namespace lifestuff

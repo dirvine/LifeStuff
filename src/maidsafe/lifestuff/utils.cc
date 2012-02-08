@@ -27,9 +27,10 @@
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 
+#include "maidsafe/pd/client/remote_chunk_store.h"
+
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
-#include "maidsafe/lifestuff/store_components/packet_manager.h"
 
 namespace pca = maidsafe::priv::chunk_actions;
 
@@ -37,25 +38,24 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-int GetValidatedMpidPublicKey(const std::string &public_username,
-                              const std::string &own_mpid_name,
-                              std::shared_ptr<PacketManager> packet_manager,
-                              asymm::PublicKey *public_key) {
+int GetValidatedMpidPublicKey(
+    const std::string &public_username,
+    const AlternativeStore::ValidationData &validation_data,
+    std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+    asymm::PublicKey *public_key) {
   // Get public key packet from network
   std::string packet_name(crypto::Hash<crypto::SHA512>(public_username) +
                           std::string(1, pca::kAppendableByAll));
-  std::vector<std::string> packet_values;
-  int result(packet_manager->GetPacket(packet_name,
-                                       own_mpid_name,
-                                       &packet_values));
-  if (result != kSuccess || packet_values.size() != 1U) {
+  std::string packet_value(remote_chunk_store->Get(packet_name,
+                                                   validation_data));
+  if (packet_value.empty()) {
     DLOG(ERROR) << "Failed to get public key for " << public_username;
     *public_key = asymm::PublicKey();
     return kGetPublicKeyFailure;
   }
 
   pca::SignedData packet;
-  if (!packet.ParseFromString(packet_values.at(0))) {
+  if (!packet.ParseFromString(packet_value)) {
     DLOG(ERROR) << "Failed to parse public key packet for " << public_username;
     *public_key = asymm::PublicKey();
     return kGetPublicKeyFailure;
@@ -77,16 +77,15 @@ int GetValidatedMpidPublicKey(const std::string &public_username,
   std::string mpid_value(serialised_public_key + public_key_signature);
   std::string mpid_name(crypto::Hash<crypto::SHA512>(mpid_value) +
                         std::string(1, pca::kSignaturePacket));
-  packet_values.clear();
-  result = packet_manager->GetPacket(mpid_name, own_mpid_name, &packet_values);
-  if (result != kSuccess || packet_values.size() != 1U) {
+  packet_value = remote_chunk_store->Get(packet_name, validation_data);
+  if (packet_value.empty()) {
     DLOG(ERROR) << "Failed to get MPID for " << public_username;
     *public_key = asymm::PublicKey();
     return kGetMpidFailure;
   }
 
   packet.Clear();
-  if (!packet.ParseFromString(packet_values.at(0))) {
+  if (!packet.ParseFromString(packet_value)) {
     DLOG(ERROR) << "Failed to parse MPID packet for " << public_username;
     *public_key = asymm::PublicKey();
     return kGetMpidFailure;
@@ -106,23 +105,22 @@ int GetValidatedMpidPublicKey(const std::string &public_username,
   return kSuccess;
 }
 
-int GetValidatedMmidPublicKey(const std::string &mmid_name,
-                              const std::string &own_mmid_name,
-                              std::shared_ptr<PacketManager> packet_manager,
-                              asymm::PublicKey *public_key) {
-  std::vector<std::string> packet_values;
-  int result(packet_manager->GetPacket(
-                  mmid_name + std::string(1, pca::kAppendableByAll),
-                  own_mmid_name,
-                  &packet_values));
-  if (result != kSuccess || packet_values.size() != 1U) {
+int GetValidatedMmidPublicKey(
+    const std::string &mmid_name,
+    const AlternativeStore::ValidationData &validation_data,
+    std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+    asymm::PublicKey *public_key) {
+  std::string packet_value(
+      remote_chunk_store->Get(mmid_name + std::string(1, pca::kAppendableByAll),
+                              validation_data));
+  if (packet_value.empty()) {
     DLOG(ERROR) << "Failed to get public key for " << Base32Substr(mmid_name);
     *public_key = asymm::PublicKey();
     return kGetPublicKeyFailure;
   }
 
   pca::SignedData packet;
-  if (!packet.ParseFromString(packet_values.at(0))) {
+  if (!packet.ParseFromString(packet_value)) {
     DLOG(ERROR) << "Failed to parse public key packet for "
                 << Base32Substr(mmid_name);
     *public_key = asymm::PublicKey();

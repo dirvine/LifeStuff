@@ -33,12 +33,11 @@
 #include "boost/function.hpp"
 #include "boost/signals2.hpp"
 #include "boost/asio/io_service.hpp"
-#include "boost/thread/condition_variable.hpp"
-#include "boost/thread/mutex.hpp"
+#include "boost/filesystem/path.hpp"
+#include "boost/thread/thread.hpp"
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
-#include "maidsafe/lifestuff/store_components/packet_manager.h"
 
 #if MAIDSAFE_LIFESTUFF_VERSION != 111
 #  error This API is not compatible with the installed library.\
@@ -46,39 +45,28 @@
 #endif
 
 namespace bs2 = boost::signals2;
+namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-namespace dht {
-class Contact;
-}  // namespace dht
-
+namespace dht { class Contact; }
+namespace pd { class RemoteChunkStore; }
 class ChunkStore;
 
 namespace lifestuff {
 
-namespace test {
-class ClientControllerTest;
-}  // namespace test
-
+namespace test { class ClientControllerTest; }
 class Authentication;
 class Session;
+class YeOldeSignalToCallbackConverter;
 
 class ClientController {
  public:
-  explicit ClientController(std::shared_ptr<Session> session);
-
-  ClientController &operator=(const ClientController&);
-  ClientController(const ClientController&);
+  explicit ClientController(boost::asio::io_service &service,  // NOLINT (Dan)
+                            std::shared_ptr<Session> session);
 
   ~ClientController();
-  template <typename T>
-  int Init() {
-    if (initialised_)
-      return kSuccess;
-    packet_manager_.reset(new T(session_, ""));
-    return Initialise();
-  }
+  void Init(bool local, const fs::path &chunk_store_dir);
   bool initialised() const { return initialised_; }
 
   // User credential operations
@@ -94,28 +82,34 @@ class ClientController {
   bool ChangePin(const std::string &new_pin);
   bool ChangePassword(const std::string &new_password);
   bool LeaveMaidsafeNetwork();
-  std::string SessionName();
 
+  std::string SessionName();
   std::string Username();
   std::string Pin();
   std::string Password();
-  std::shared_ptr<ChunkStore> client_chunk_store() const;
-  std::shared_ptr<PacketManager> packet_manager() const;
+
+  std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store();
+  std::shared_ptr<YeOldeSignalToCallbackConverter> converter();
 
   friend class test::ClientControllerTest;
 
  private:
-  int Initialise();
+  ClientController &operator=(const ClientController&);
+  ClientController(const ClientController&);
+
   int ParseDa();
   int SerialiseDa();
 
   std::shared_ptr<Session> session_;
-  std::shared_ptr<PacketManager> packet_manager_;
+  std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<Authentication> auth_;
   std::string ser_da_, surrogate_ser_da_;
   bool initialised_;
   bool logging_out_;
   bool logged_in_;
+
+  boost::asio::io_service &service_;
+  std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
 };
 
 }  // namespace lifestuff

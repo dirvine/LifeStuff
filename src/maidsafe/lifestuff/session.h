@@ -25,6 +25,7 @@
 #ifndef MAIDSAFE_LIFESTUFF_SESSION_H_
 #define MAIDSAFE_LIFESTUFF_SESSION_H_
 
+#include <map>
 #include <string>
 
 #ifdef __MSVC__
@@ -100,6 +101,9 @@ class Session {
   void SerialiseKeyChain(std::string *serialised_keyring,
                          std::string *serialised_selectables);
 
+  friend void GetKeyring(const std::string&,
+                         std::shared_ptr<Session>,
+                         asymm::Keys*);
   friend void GetPublicKey(const std::string&,
                            std::shared_ptr<Session>,
                            asymm::PublicKey*);

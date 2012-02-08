@@ -21,24 +21,27 @@
 #include <memory>
 #include <string>
 
+#include "maidsafe/common/alternative_store.h"
 #include "maidsafe/common/rsa.h"
 
 
 namespace maidsafe {
 
+namespace pd { class RemoteChunkStore; }
+
 namespace lifestuff {
 
-class PacketManager;
+int GetValidatedMpidPublicKey(
+    const std::string &public_username,
+    const AlternativeStore::ValidationData &validation_data,
+    std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+    asymm::PublicKey *public_key);
 
-int GetValidatedMpidPublicKey(const std::string &public_username,
-                              const std::string &own_mpid_name,
-                              std::shared_ptr<PacketManager> packet_manager,
-                              asymm::PublicKey *public_key);
-
-int GetValidatedMmidPublicKey(const std::string &mmid_name,
-                              const std::string &own_mmid_name,
-                              std::shared_ptr<PacketManager> packet_manager,
-                              asymm::PublicKey *public_key);
+int GetValidatedMmidPublicKey(
+    const std::string &mmid_name,
+    const AlternativeStore::ValidationData &validation_data,
+    std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+    asymm::PublicKey *public_key);
 
 }  // namespace lifestuff
 
