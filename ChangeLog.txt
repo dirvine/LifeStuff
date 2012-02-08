@@ -1,6 +1,14 @@
-v0.01.11 (WIP)
+v0.02.01 (WIP)
 --------------
 
+v0.02.00
+--------
+* Change to store everything using chunkstore logic. No more packet manager.
+* Implementation of local chunk manager.
+* Completion of public ID handling.
+* Completion of message handling.
+* Moving of inbox.
+* Disabling public ID.
 
 v0.01.10
 --------

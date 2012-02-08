@@ -27,7 +27,7 @@
 
 #include "maidsafe/lifestuff/version.h"
 
-#if MAIDSAFE_LIFESTUFF_VERSION != 111
+#if MAIDSAFE_LIFESTUFF_VERSION != 200
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-lifestuff library.
 #endif
