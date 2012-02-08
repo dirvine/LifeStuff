@@ -18,6 +18,7 @@
 
 #include "boost/thread/thread.hpp"
 
+#include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
@@ -63,10 +64,6 @@ class PublicIdTest : public testing::Test {
         public_id2_(),
         asio_service1_(),
         asio_service2_(),
-        work1_(new ba::io_service::work(asio_service1_)),
-        work2_(new ba::io_service::work(asio_service2_)),
-        threads1_(),
-        threads2_(),
         public_username1_("User 1 " + RandomAlphaNumericString(8)),
         public_username2_("User 2 " + RandomAlphaNumericString(8)),
         received_public_username_(),
@@ -123,17 +120,11 @@ class PublicIdTest : public testing::Test {
   void SetUp() {
     session1_->ResetSession();
     session2_->ResetSession();
-    for (int i1(0); i1 != 10; ++i1)
-      threads1_.create_thread(std::bind(
-          static_cast<std::size_t(boost::asio::io_service::*)()>
-              (&boost::asio::io_service::run), &asio_service1_));
-    for (int i2(0); i2 != 10; ++i2)
-      threads2_.create_thread(std::bind(
-          static_cast<std::size_t(boost::asio::io_service::*)()>
-              (&boost::asio::io_service::run), &asio_service2_));
+    asio_service1_.Start(10);
+    asio_service2_.Start(10);
 
     std::shared_ptr<BufferedChunkStore> bcs1(
-        new BufferedChunkStore(asio_service1_));
+        new BufferedChunkStore(asio_service1_.service()));
     bcs1->Init(*test_dir_ / "buffered_chunk_store1");
     std::shared_ptr<priv::ChunkActionAuthority> caa1(
         new priv::ChunkActionAuthority(bcs1));
@@ -154,10 +145,10 @@ class PublicIdTest : public testing::Test {
     public_id1_.reset(new PublicId(remote_chunk_store1_,
                                    converter1_,
                                    session1_,
-                                   asio_service1_));
+                                   asio_service1_.service()));
 
     std::shared_ptr<BufferedChunkStore> bcs2(
-        new BufferedChunkStore(asio_service2_));
+        new BufferedChunkStore(asio_service2_.service()));
     bcs2->Init(*test_dir_ / "buffered_chunk_store2");
     std::shared_ptr<priv::ChunkActionAuthority> caa2(
         new priv::ChunkActionAuthority(bcs2));
@@ -178,18 +169,14 @@ class PublicIdTest : public testing::Test {
     public_id2_.reset(new PublicId(remote_chunk_store2_,
                                    converter2_,
                                    session2_,
-                                   asio_service2_));
+                                   asio_service2_.service()));
   }
 
   void TearDown() {
     public_id1_->StopCheckingForNewContacts();
     public_id2_->StopCheckingForNewContacts();
-    work1_.reset();
-    work2_.reset();
-    asio_service1_.stop();
-    asio_service2_.stop();
-    threads1_.join_all();
-    threads2_.join_all();
+    asio_service1_.Stop();
+    asio_service2_.Stop();
   }
 
   void CreateTestSignaturePackets(std::shared_ptr<Session> session) {
@@ -256,9 +243,7 @@ class PublicIdTest : public testing::Test {
                                         remote_chunk_store2_;
   std::shared_ptr<PublicId> public_id1_, public_id2_;
 
-  ba::io_service asio_service1_, asio_service2_;
-  std::shared_ptr<ba::io_service::work> work1_, work2_;
-  boost::thread_group threads1_, threads2_;
+  AsioService asio_service1_, asio_service2_;
 
   std::string public_username1_, public_username2_, received_public_username_;
   bptime::seconds interval_;

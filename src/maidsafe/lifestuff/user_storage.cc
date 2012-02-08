@@ -23,6 +23,8 @@
 
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/pd/client/remote_chunk_store.h"
+
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/version.h"
@@ -33,7 +35,7 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-UserStorage::UserStorage(std::shared_ptr<ChunkStore> chunk_store)
+UserStorage::UserStorage(std::shared_ptr<pd::RemoteChunkStore> chunk_store)
     : mount_status_(false),
       chunk_store_(chunk_store),
       drive_in_user_space_(),

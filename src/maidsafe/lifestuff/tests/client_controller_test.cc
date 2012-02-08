@@ -29,6 +29,7 @@
 #include "boost/filesystem/fstream.hpp"
 #include "boost/progress.hpp"
 
+#include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/chunk_store.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/test.h"
@@ -54,23 +55,29 @@ class ClientControllerTest : public testing::Test {
   ClientControllerTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
         session_(new Session),
-        cc_(new ClientController(session_)) {}
+        asio_service_(),
+        asio_service2_(),
+        cc_() {}
 
  protected:
   void SetUp() {
+    asio_service_.Start(10);
+    asio_service2_.Start(10);
+    cc_.reset(new ClientController(asio_service_.service(), session_));
     session_->ResetSession();
     cc_->Init(true, *test_dir_);
   }
 
   void TearDown() {
+    asio_service_.Stop();
+    asio_service2_.Stop();
     cc_->initialised_ = false;
   }
 
-  void InitAndCloseCallback(int /*i*/) {}
-
   std::shared_ptr<ClientController> CreateSecondClientController() {
     std::shared_ptr<Session> ss2(new Session);
-    std::shared_ptr<ClientController> cc2(new ClientController(ss2));
+    std::shared_ptr<ClientController> cc2(
+        new ClientController(asio_service2_.service(), ss2));
     ss2->ResetSession();
     cc2->Init(true, *test_dir_);
     return cc2;
@@ -78,6 +85,7 @@ class ClientControllerTest : public testing::Test {
 
   std::shared_ptr<fs::path> test_dir_;
   std::shared_ptr<Session> session_;
+  AsioService asio_service_, asio_service2_;
   std::shared_ptr<ClientController> cc_;
 
  private:

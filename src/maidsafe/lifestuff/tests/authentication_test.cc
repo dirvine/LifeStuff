@@ -22,6 +22,7 @@
 * ============================================================================
 */
 
+#include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/buffered_chunk_store.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
@@ -61,18 +62,14 @@ class AuthenticationTest : public testing::TestWithParam<bool> {
         ser_dm_(RandomString(1000)),
         surrogate_ser_dm_(RandomString(1000)),
         converter_(new YeOldeSignalToCallbackConverter),
-        service_(),
-        work_(new boost::asio::io_service::work(service_)),
-        threads_() {}
+        service_() {}
 
  protected:
   void SetUp() {
-    for (int i(0); i != 10; ++i)
-      threads_.create_thread(std::bind(
-          static_cast<std::size_t(boost::asio::io_service::*)()>
-              (&boost::asio::io_service::run), &service_));
+    service_.Start(10);
 
-    std::shared_ptr<BufferedChunkStore> bcs(new BufferedChunkStore(service_));
+    std::shared_ptr<BufferedChunkStore> bcs(
+        new BufferedChunkStore(service_.service()));
     bcs->Init(*test_dir_ / "buffered_chunk_store");
     std::shared_ptr<priv::ChunkActionAuthority> caa(
         new priv::ChunkActionAuthority(bcs));
@@ -95,11 +92,7 @@ class AuthenticationTest : public testing::TestWithParam<bool> {
     authentication_.Init(remote_chunk_store_, converter_);
   }
 
-  void TearDown() {
-    work_.reset();
-    service_.stop();
-    threads_.join_all();
-  }
+  void TearDown() { service_.Stop(); }
 
   int GetMasterDataMap(std::string *ser_dm_login) {
     return GetMasterDataMap(ser_dm_login, password_);
@@ -154,9 +147,7 @@ class AuthenticationTest : public testing::TestWithParam<bool> {
   Authentication authentication_;
   std::string username_, pin_, password_, ser_dm_, surrogate_ser_dm_;
   std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
-  boost::asio::io_service service_;
-  std::shared_ptr<boost::asio::io_service::work> work_;
-  boost::thread_group threads_;
+  AsioService service_;
 
  private:
   AuthenticationTest(const AuthenticationTest&);

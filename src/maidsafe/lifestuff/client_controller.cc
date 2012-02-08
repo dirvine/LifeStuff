@@ -61,7 +61,8 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-ClientController::ClientController(std::shared_ptr<Session> session)
+ClientController::ClientController(boost::asio::io_service &service,  // NOLINT (Dan)
+                                   std::shared_ptr<Session> session)
     : session_(session),
       remote_chunk_store_(),
       auth_(new Authentication(session)),
@@ -70,24 +71,14 @@ ClientController::ClientController(std::shared_ptr<Session> session)
       initialised_(false),
       logging_out_(false),
       logged_in_(false),
-      service_(),
-      work_(new boost::asio::io_service::work(service_)),
-      threads_() {
-  for (int i(0); i != 10; ++i)
-    threads_.create_thread(std::bind(
-        static_cast<std::size_t(boost::asio::io_service::*)()>
-            (&boost::asio::io_service::run), &service_));
-}
+      service_(service),
+      converter_(new YeOldeSignalToCallbackConverter) {}
 
-ClientController::~ClientController() {
-  work_.reset();
-  service_.stop();
-  threads_.join_all();
-}
+ClientController::~ClientController() {}
 
-int ClientController::Init(bool local, const fs::path &base_dir) {
+void ClientController::Init(bool local, const fs::path &base_dir) {
   if (initialised_)
-    return kSuccess;
+    return;
 
   if (local) {
     std::shared_ptr<BufferedChunkStore> bcs(new BufferedChunkStore(service_));
@@ -108,22 +99,18 @@ int ClientController::Init(bool local, const fs::path &base_dir) {
                                  container.chunk_action_authority()));
   }
 
-  std::shared_ptr<YeOldeSignalToCallbackConverter> yostcc(
-      new YeOldeSignalToCallbackConverter);
   remote_chunk_store_->sig_chunk_stored()->connect(
-      std::bind(&YeOldeSignalToCallbackConverter::Stored, yostcc.get(),
+      std::bind(&YeOldeSignalToCallbackConverter::Stored, converter_.get(),
                 args::_1, args::_2));
   remote_chunk_store_->sig_chunk_deleted()->connect(
-      std::bind(&YeOldeSignalToCallbackConverter::Deleted, yostcc.get(),
+      std::bind(&YeOldeSignalToCallbackConverter::Deleted, converter_.get(),
                 args::_1, args::_2));
   remote_chunk_store_->sig_chunk_modified()->connect(
-      std::bind(&YeOldeSignalToCallbackConverter::Modified, yostcc.get(),
+      std::bind(&YeOldeSignalToCallbackConverter::Modified, converter_.get(),
                 args::_1, args::_2));
 
-  auth_->Init(remote_chunk_store_, yostcc);
+  auth_->Init(remote_chunk_store_, converter_);
   initialised_ = true;
-
-  return kSuccess;
 }
 
 int ClientController::ParseDa() {
@@ -469,6 +456,14 @@ std::string ClientController::Pin() {
 
 std::string ClientController::Password() {
   return session_->password();
+}
+
+std::shared_ptr<pd::RemoteChunkStore> ClientController::remote_chunk_store() {
+  return remote_chunk_store_;
+}
+
+std::shared_ptr<YeOldeSignalToCallbackConverter> ClientController::converter() {
+  return converter_;
 }
 
 }  // namespace lifestuff

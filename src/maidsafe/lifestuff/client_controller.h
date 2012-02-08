@@ -58,13 +58,15 @@ namespace lifestuff {
 namespace test { class ClientControllerTest; }
 class Authentication;
 class Session;
+class YeOldeSignalToCallbackConverter;
 
 class ClientController {
  public:
-  explicit ClientController(std::shared_ptr<Session> session);
+  explicit ClientController(boost::asio::io_service &service,  // NOLINT (Dan)
+                            std::shared_ptr<Session> session);
 
   ~ClientController();
-  int Init(bool local, const fs::path &chunk_store_dir);
+  void Init(bool local, const fs::path &chunk_store_dir);
   bool initialised() const { return initialised_; }
 
   // User credential operations
@@ -86,6 +88,9 @@ class ClientController {
   std::string Pin();
   std::string Password();
 
+  std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store();
+  std::shared_ptr<YeOldeSignalToCallbackConverter> converter();
+
   friend class test::ClientControllerTest;
 
  private:
@@ -103,9 +108,8 @@ class ClientController {
   bool logging_out_;
   bool logged_in_;
 
-  boost::asio::io_service service_;
-  std::shared_ptr<boost::asio::io_service::work> work_;
-  boost::thread_group threads_;
+  boost::asio::io_service &service_;
+  std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
 };
 
 }  // namespace lifestuff

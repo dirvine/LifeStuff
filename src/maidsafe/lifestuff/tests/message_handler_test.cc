@@ -16,6 +16,7 @@
 
 #include "maidsafe/lifestuff/message_handler.h"
 
+#include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
@@ -70,12 +71,6 @@ class MessageHandlerTest : public testing::Test {
         asio_service1_(),
         asio_service2_(),
         asio_service3_(),
-        work1_(new ba::io_service::work(asio_service1_)),
-        work2_(new ba::io_service::work(asio_service2_)),
-        work3_(new ba::io_service::work(asio_service3_)),
-        threads1_(),
-        threads2_(),
-        threads3_(),
         public_username1_("User 1 " + RandomAlphaNumericString(8)),
         public_username2_("User 2 " + RandomAlphaNumericString(8)),
         public_username3_("User 3 " + RandomAlphaNumericString(8)),
@@ -111,21 +106,12 @@ class MessageHandlerTest : public testing::Test {
     session1_->ResetSession();
     session2_->ResetSession();
     session3_->ResetSession();
-    for (int i1(0); i1 != 10; ++i1)
-      threads1_.create_thread(std::bind(
-          static_cast<std::size_t(boost::asio::io_service::*)()>
-              (&boost::asio::io_service::run), &asio_service1_));
-    for (int i2(0); i2 != 10; ++i2)
-      threads2_.create_thread(std::bind(
-          static_cast<std::size_t(boost::asio::io_service::*)()>
-              (&boost::asio::io_service::run), &asio_service2_));
-    for (int i3(0); i3 != 10; ++i3)
-      threads3_.create_thread(std::bind(
-          static_cast<std::size_t(boost::asio::io_service::*)()>
-              (&boost::asio::io_service::run), &asio_service3_));
+    asio_service1_.Start(10);
+    asio_service2_.Start(10);
+    asio_service3_.Start(10);
 
     std::shared_ptr<BufferedChunkStore> bcs1(
-        new BufferedChunkStore(asio_service1_));
+        new BufferedChunkStore(asio_service1_.service()));
     bcs1->Init(*test_dir_ / "buffered_chunk_store1");
     std::shared_ptr<priv::ChunkActionAuthority> caa1(
         new priv::ChunkActionAuthority(bcs1));
@@ -146,14 +132,14 @@ class MessageHandlerTest : public testing::Test {
     public_id1_.reset(new PublicId(remote_chunk_store1_,
                                    converter1_,
                                    session1_,
-                                   asio_service1_));
+                                   asio_service1_.service()));
     message_handler1_.reset(new MessageHandler(remote_chunk_store1_,
                                                converter1_,
                                                session1_,
-                                               asio_service1_));
+                                               asio_service1_.service()));
 
     std::shared_ptr<BufferedChunkStore> bcs2(
-        new BufferedChunkStore(asio_service2_));
+        new BufferedChunkStore(asio_service2_.service()));
     bcs2->Init(*test_dir_ / "buffered_chunk_store2");
     std::shared_ptr<priv::ChunkActionAuthority> caa2(
         new priv::ChunkActionAuthority(bcs2));
@@ -174,14 +160,14 @@ class MessageHandlerTest : public testing::Test {
     public_id2_.reset(new PublicId(remote_chunk_store2_,
                                    converter2_,
                                    session2_,
-                                   asio_service2_));
+                                   asio_service2_.service()));
     message_handler2_.reset(new MessageHandler(remote_chunk_store2_,
                                                converter2_,
                                                session2_,
-                                               asio_service2_));
+                                               asio_service2_.service()));
 
     std::shared_ptr<BufferedChunkStore> bcs3(
-        new BufferedChunkStore(asio_service3_));
+        new BufferedChunkStore(asio_service3_.service()));
     bcs3->Init(*test_dir_ / "buffered_chunk_store3");
     std::shared_ptr<priv::ChunkActionAuthority> caa3(
         new priv::ChunkActionAuthority(bcs3));
@@ -202,23 +188,17 @@ class MessageHandlerTest : public testing::Test {
     public_id3_.reset(new PublicId(remote_chunk_store3_,
                                    converter3_,
                                    session3_,
-                                   asio_service3_));
+                                   asio_service3_.service()));
     message_handler3_.reset(new MessageHandler(remote_chunk_store3_,
                                                converter3_,
                                                session3_,
-                                               asio_service3_));
+                                               asio_service3_.service()));
   }
 
   void TearDown() {
-    work1_.reset();
-    work2_.reset();
-    work3_.reset();
-    asio_service1_.stop();
-    asio_service2_.stop();
-    asio_service3_.stop();
-    threads1_.join_all();
-    threads2_.join_all();
-    threads3_.join_all();
+    asio_service1_.Stop();
+    asio_service2_.Stop();
+    asio_service3_.Stop();
   }
 
   bool MessagesEqual(const pca::Message &left,
@@ -247,9 +227,7 @@ class MessageHandlerTest : public testing::Test {
                                   message_handler2_,
                                   message_handler3_;
 
-  ba::io_service asio_service1_, asio_service2_, asio_service3_;
-  std::shared_ptr<ba::io_service::work> work1_, work2_, work3_;
-  boost::thread_group threads1_, threads2_, threads3_;
+  AsioService asio_service1_, asio_service2_, asio_service3_;
 
   std::string public_username1_, public_username2_, public_username3_,
               received_public_username_;
