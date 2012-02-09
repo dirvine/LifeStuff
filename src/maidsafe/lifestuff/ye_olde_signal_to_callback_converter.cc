@@ -80,8 +80,10 @@ void YeOldeSignalToCallbackConverter::ExecuteCallback(
                          [&chunk_name] (const ChunkNameAndCallback &cnac) {
                            return cnac.chunk_name == chunk_name;
                          });
-  (*it).callback(result);
-  operation_queue_.erase(it);
+  if (it != operation_queue_.end()) {
+    (*it).callback(result);
+    operation_queue_.erase(it);
+  }
 }
 
 }  // namespace lifestuff
