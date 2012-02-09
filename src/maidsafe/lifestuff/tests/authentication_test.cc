@@ -37,8 +37,8 @@
 #include "maidsafe/lifestuff/local_chunk_manager.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
+#include "maidsafe/lifestuff/utils.h"
 #include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
-#include "maidsafe/lifestuff/tests/test_utils.h"
 
 namespace args = std::placeholders;
 namespace fs = boost::filesystem;
@@ -55,8 +55,8 @@ class AuthenticationTest : public testing::TestWithParam<std::string> {
   AuthenticationTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
         session_(new Session),
-        remote_chunk_store_(),
         client_container_(),
+        remote_chunk_store_(),
         authentication_(session_),
         username_(RandomAlphaNumericString(8)),
         pin_("1234"),
@@ -85,7 +85,7 @@ class AuthenticationTest : public testing::TestWithParam<std::string> {
                                    chunk_action_authority));
     } else if (GetParam() == "Network Storage") {
       client_container_ = SetUpClientContainer(*test_dir_);
-      ASSERT_TRUE(client_container_);
+      ASSERT_TRUE(client_container_.get());
       remote_chunk_store_.reset(new pd::RemoteChunkStore(
           client_container_->chunk_store(),
           client_container_->chunk_manager(),

@@ -53,6 +53,7 @@
 #include "maidsafe/lifestuff/local_chunk_manager.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
+#include "maidsafe/lifestuff/utils.h"
 #include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
 namespace args = std::placeholders;
@@ -72,7 +73,8 @@ ClientController::ClientController(boost::asio::io_service &service,  // NOLINT 
       logging_out_(false),
       logged_in_(false),
       service_(service),
-      converter_(new YeOldeSignalToCallbackConverter) {}
+      converter_(new YeOldeSignalToCallbackConverter),
+      client_container_() {}
 
 ClientController::~ClientController() {}
 
@@ -91,12 +93,16 @@ void ClientController::Init(bool local, const fs::path &base_dir) {
                                                        local_chunk_manager,
                                                        caa));
   } else {
-    pd::ClientContainer container;
-    container.Init(base_dir / "buffer", 10);
-    remote_chunk_store_.reset(
-        new pd::RemoteChunkStore(container.chunk_store(),
-                                 container.chunk_manager(),
-                                 container.chunk_action_authority()));
+    client_container_ = SetUpClientContainer(base_dir);
+    if(client_container_) {
+      remote_chunk_store_.reset(new pd::RemoteChunkStore(
+          client_container_->chunk_store(),
+          client_container_->chunk_manager(),
+          client_container_->chunk_action_authority()));
+    } else {
+      DLOG(ERROR) << "Failed to initialise client container.";
+      return;
+    }
   }
 
   remote_chunk_store_->sig_chunk_stored()->connect(

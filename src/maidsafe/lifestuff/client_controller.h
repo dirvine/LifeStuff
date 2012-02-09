@@ -50,7 +50,10 @@ namespace fs = boost::filesystem;
 namespace maidsafe {
 
 namespace dht { class Contact; }
-namespace pd { class RemoteChunkStore; }
+namespace pd {
+class ClientContainer;
+class RemoteChunkStore;
+}
 class ChunkStore;
 
 namespace lifestuff {
@@ -110,6 +113,7 @@ class ClientController {
 
   boost::asio::io_service &service_;
   std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
+  std::shared_ptr<pd::ClientContainer> client_container_;
 };
 
 }  // namespace lifestuff

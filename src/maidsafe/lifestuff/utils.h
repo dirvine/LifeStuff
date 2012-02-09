@@ -21,13 +21,20 @@
 #include <memory>
 #include <string>
 
+#include "boost/filesystem/path.hpp"
+
 #include "maidsafe/common/alternative_store.h"
 #include "maidsafe/common/rsa.h"
 
+namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-namespace pd { class RemoteChunkStore; }
+namespace dht { class Contact; }
+namespace pd {
+class ClientContainer;
+class RemoteChunkStore;
+}
 
 namespace lifestuff {
 
@@ -42,6 +49,13 @@ int GetValidatedMmidPublicKey(
     const AlternativeStore::ValidationData &validation_data,
     std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
     asymm::PublicKey *public_key);
+
+
+int RetrieveBootstrapContacts(const fs::path &download_dir,
+                              std::vector<dht::Contact> *bootstrap_contacts);
+
+typedef std::shared_ptr<pd::ClientContainer> ClientContainerPtr;
+ClientContainerPtr SetUpClientContainer(const fs::path &test_dir);
 
 }  // namespace lifestuff
 
