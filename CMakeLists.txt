@@ -84,8 +84,10 @@ HANDLE_VERSIONS(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/version.h)
 ###################################################################################################
 IF(WIN32)
   INCLUDE(maidsafe_find_cbfs)
+  SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Cbfs_INCLUDE_DIR})
   SET(LIBS_DIRS ${LIBS_DIRS} ${Cbfs_LIBRARY_DIR})
   SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Cbfs_LIBRARY_DIR_DEBUG})
+  SET(Fuse_LIBRARY ${Cbfs_LIBRARY})
 ENDIF()
 
 
