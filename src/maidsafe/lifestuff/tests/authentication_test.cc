@@ -375,7 +375,7 @@ TEST_P(AuthenticationTest, FUNC_RegisterLeaveRegister) {
                                                        surrogate_ser_dm_));
 }
 
-INSTANTIATE_TEST_CASE_P(LocalRemote, AuthenticationTest,
+INSTANTIATE_TEST_CASE_P(LocalAndNetwork, AuthenticationTest,
                         testing::Values("Local Storage", "Network Storage"));
 
 }  // namespace test
