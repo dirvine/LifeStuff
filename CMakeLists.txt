@@ -59,6 +59,18 @@ ADD_MAIDSAFE_LIBRARY(MaidSafe-PD)
 
 
 ###################################################################################################
+# Callback File System / Fuse library search                                                      #
+###################################################################################################
+IF(WIN32)
+  INCLUDE(maidsafe_find_cbfs)
+  SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Cbfs_INCLUDE_DIR})
+  SET(LIBS_DIRS ${LIBS_DIRS} ${Cbfs_LIBRARY_DIR})
+  SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Cbfs_LIBRARY_DIR})
+  SET(Fuse_LIBRARY ${Cbfs_LIBRARY})
+ENDIF()
+
+
+###################################################################################################
 # Standard setup                                                                                  #
 ###################################################################################################
 SET(PROTO_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
