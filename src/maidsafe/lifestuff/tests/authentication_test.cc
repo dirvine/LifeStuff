@@ -32,13 +32,13 @@
 
 #include "maidsafe/pd/client/client_container.h"
 #include "maidsafe/pd/client/remote_chunk_store.h"
-#include "maidsafe/pd/client/utils.h"
 
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/local_chunk_manager.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
+#include "maidsafe/lifestuff/tests/test_utils.h"
 
 namespace args = std::placeholders;
 namespace fs = boost::filesystem;
@@ -85,21 +85,8 @@ class AuthenticationTest : public testing::TestWithParam<bool> {
                                    local_chunk_manager,
                                    chunk_action_authority));
     } else {
-      client_container_.reset(new pd::ClientContainer);
-      std::shared_ptr<asymm::Keys> key_pair(new asymm::Keys);
-      ASSERT_EQ(kSuccess, asymm::GenerateKeyPair(key_pair.get()));
-      std::string pub_key;
-      asymm::EncodePublicKey(key_pair->public_key, &pub_key);
-      ASSERT_EQ(kSuccess, asymm::Sign(pub_key, key_pair->private_key,
-                                      &key_pair->validation_token));
-      key_pair->identity =
-          crypto::Hash<crypto::SHA512>(pub_key + key_pair->validation_token);
-      client_container_->set_key_pair(key_pair);
-      ASSERT_TRUE(client_container_->Init(*test_dir_ / "buffered_chunk_store",
-                                          10, 4));
-      std::vector<dht::Contact> bootstrap_contacts;
-      ASSERT_TRUE(pd::ReadBootstrapFile(".\\bootstrap.xml", &bootstrap_contacts));
-      ASSERT_EQ(kSuccess, client_container_->Start(&bootstrap_contacts));
+      client_container_ = SetUpClientContainer(*test_dir_);
+      ASSERT_TRUE(client_container_);
       remote_chunk_store_.reset(new pd::RemoteChunkStore(
           client_container_->chunk_store(),
           client_container_->chunk_manager(),
@@ -173,7 +160,7 @@ class AuthenticationTest : public testing::TestWithParam<bool> {
   std::shared_ptr<fs::path> test_dir_;
   std::shared_ptr<Session> session_;
   std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store_;
-  std::shared_ptr<pd::ClientContainer> client_container_;
+  ClientContainerPtr client_container_;
   Authentication authentication_;
   std::string username_, pin_, password_, ser_dm_, surrogate_ser_dm_;
   std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;

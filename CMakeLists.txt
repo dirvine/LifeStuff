@@ -80,18 +80,6 @@ HANDLE_VERSIONS(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/version.h)
 
 
 ###################################################################################################
-# Callback File System library search                                                             #
-###################################################################################################
-IF(WIN32)
-  INCLUDE(maidsafe_find_cbfs)
-  SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Cbfs_INCLUDE_DIR})
-  SET(LIBS_DIRS ${LIBS_DIRS} ${Cbfs_LIBRARY_DIR})
-  SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Cbfs_LIBRARY_DIR_DEBUG})
-  SET(Fuse_LIBRARY ${Cbfs_LIBRARY})
-ENDIF()
-
-
-###################################################################################################
 # Set up all files as GLOBs                                                                       #
 ###################################################################################################
 ####    CODE    ####
@@ -121,8 +109,10 @@ SET(AUTHENTICATION_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/a
 SET(CLIENT_CONTROLLER_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/client_controller_test.cc")
 SET(PUBLIC_ID_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/public_id_test.cc"
                       "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/message_handler_test.cc")
+SET(UTILS "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/test_utils.cc"
+          "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/test_utils.h")
 
-LIST(REMOVE_ITEM ALL_FILES_LIFESTUFF_TESTS_DIR ${CLIENT_MAIN_CC} ${AUTHENTICATION_TEST_CC} ${CLIENT_CONTROLLER_TEST_CC} ${PUBLIC_ID_TEST_CC})
+LIST(REMOVE_ITEM ALL_FILES_LIFESTUFF_TESTS_DIR ${CLIENT_MAIN_CC} ${AUTHENTICATION_TEST_CC} ${CLIENT_CONTROLLER_TEST_CC} ${PUBLIC_ID_TEST_CC} ${UTILS})
 
 
 ###################################################################################################
@@ -132,9 +122,9 @@ MS_ADD_STATIC_LIBRARY(${MS_PROJECT_NAME} ${ALL_FILES_LIFESTUFF_DIR})
 
 MS_ADD_EXECUTABLE(TESTlifestuff Tests ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${TESTS_MAIN_CC})
 
-MS_ADD_EXECUTABLE(TESTauthentication Tests ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
-MS_ADD_EXECUTABLE(TESTclientcontroller Tests ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
-MS_ADD_EXECUTABLE(TESTpublic_id Tests ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
+MS_ADD_EXECUTABLE(TESTauthentication Tests ${AUTHENTICATION_TEST_CC} ${UTILS} ${TESTS_MAIN_CC})
+MS_ADD_EXECUTABLE(TESTclientcontroller Tests ${CLIENT_CONTROLLER_TEST_CC} ${UTILS} ${TESTS_MAIN_CC})
+MS_ADD_EXECUTABLE(TESTpublic_id Tests ${PUBLIC_ID_TEST_CC} ${UTILS} ${TESTS_MAIN_CC})
 
 TARGET_LINK_LIBRARIES(lifestuff_static maidsafe_drive_static maidsafe_passport_static maidsafe_pd_static)
 
