@@ -303,6 +303,23 @@ TEST_F(UserStorageTest, FUNC_AddAdminUser) {
   message_handler2_->StopCheckingForNewMessages();
   user_storage2_->UnMountDrive();
   Sleep(interval_ * 2);
+
+  user_storage1_->MountDrive(*g_mount_dir_,
+                             client_controller1_->SessionName(),
+                             session1_, false);
+  Sleep(interval_ * 2);
+  ASSERT_TRUE(fs::exists(dir0 / tail, error_code));
+  user_storage1_->UnMountDrive();
+  Sleep(interval_ * 2);
+
+  user_storage2_->MountDrive(*g_mount_dir_,
+                             client_controller2_->SessionName(),
+                             session2_, false);
+  Sleep(interval_ * 2);
+  ASSERT_TRUE(fs::exists(dir, error_code)) << dir;
+  ASSERT_TRUE(fs::exists(sub_dir, error_code)) << sub_dir;
+  user_storage2_->UnMountDrive();
+  Sleep(interval_ * 2);
 }
 
 TEST_F(UserStorageTest, FUNC_UpgradeUserToAdmin) {
