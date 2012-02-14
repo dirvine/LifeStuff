@@ -23,25 +23,28 @@
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
 
+#include "maidsafe/common/alternative_store.h"
 #include "maidsafe/common/rsa.h"
 
 #include "maidsafe/pki/packet.h"
 
 namespace maidsafe {
 
+namespace pd { class RemoteChunkStore; }
+
 namespace lifestuff {
 
-class PacketManager;
+int GetValidatedMpidPublicKey(
+    const std::string &public_username,
+    const AlternativeStore::ValidationData &validation_data,
+    std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+    asymm::PublicKey *public_key);
 
-int GetValidatedMpidPublicKey(const std::string &public_username,
-                              const std::string &own_mpid_name,
-                              std::shared_ptr<PacketManager> packet_manager,
-                              asymm::PublicKey *public_key);
-
-int GetValidatedMmidPublicKey(const std::string &mmid_name,
-                              const std::string &own_mmid_name,
-                              std::shared_ptr<PacketManager> packet_manager,
-                              asymm::PublicKey *public_key);
+int GetValidatedMmidPublicKey(
+    const std::string &mmid_name,
+    const AlternativeStore::ValidationData &validation_data,
+    std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+    asymm::PublicKey *public_key);
 
 void SendContactInfoCallback(const int &response,
                              boost::mutex *mutex,

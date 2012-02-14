@@ -19,6 +19,7 @@
 
 
 #include <functional>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -30,12 +31,14 @@
 #include "boost/thread/mutex.hpp"
 #include "boost/signals2.hpp"
 
+#include "maidsafe/common/alternative_store.h"
+
 #include "maidsafe/passport/passport_config.h"
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/version.h"
 
-#if MAIDSAFE_LIFESTUFF_VERSION != 111
+#if MAIDSAFE_LIFESTUFF_VERSION != 201
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-lifestuff library.
 #endif
@@ -46,10 +49,12 @@ namespace bs2 = boost::signals2;
 
 namespace maidsafe {
 
+namespace pd { class RemoteChunkStore; }
+
 namespace lifestuff {
 
-class PacketManager;
 class Session;
+class YeOldeSignalToCallbackConverter;
 
 class PublicId {
  public:
@@ -58,7 +63,9 @@ class PublicId {
   typedef std::shared_ptr<NewContactSignal> NewContactSignalPtr;
   typedef bs2::signal<void(const std::string&)> ContactConfirmedSignal;  // NOLINT (Dan)
   typedef std::shared_ptr<ContactConfirmedSignal> ContactConfirmedSignalPtr;
-  PublicId(std::shared_ptr<PacketManager> packet_manager,
+
+  PublicId(std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+           std::shared_ptr<YeOldeSignalToCallbackConverter> converter,
            std::shared_ptr<Session> session,
            ba::io_service &asio_service);  // NOLINT (Fraser)
   ~PublicId();
@@ -105,7 +112,7 @@ class PublicId {
   void GetNewContacts(const bptime::seconds &interval,
                       const boost::system::error_code &error_code);
   void ProcessRequests(const passport::SelectableIdData &data,
-                       const std::vector<std::string> &mpid_values);
+                       const std::string &mpid_value);
   // Modify the Appendability of MCID and MMID associated with the public_name
   // i.e. enable/disable others add new contact and send msg
   int ModifyAppendability(const std::string &public_username,
@@ -114,7 +121,17 @@ class PublicId {
   int InformContactInfo(const std::string &public_username,
                         const std::vector<std::string> &contacts);
 
-  std::shared_ptr<PacketManager> packet_manager_;
+  // Universal blocking function for waiting response
+  int AwaitingResponse(boost::mutex *mutex,
+                       boost::condition_variable *cond_var,
+                       std::vector<int> &results);
+  void GetKeysAndProof(const std::string &public_username,
+                       passport::PacketType pt,
+                       bool confirmed,
+                       AlternativeStore::ValidationData *validation_data);
+
+  std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store_;
+  std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
   std::shared_ptr<Session> session_;
   ba::io_service &asio_service_;
   ba::deadline_timer get_new_contacts_timer_;

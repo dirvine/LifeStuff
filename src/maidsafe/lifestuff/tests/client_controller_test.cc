@@ -29,6 +29,7 @@
 #include "boost/filesystem/fstream.hpp"
 #include "boost/progress.hpp"
 
+#include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/chunk_store.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/test.h"
@@ -37,13 +38,8 @@
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/client_controller.h"
+#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
-#if defined AMAZON_WEB_SERVICE_STORE
-#  include "maidsafe/lifestuff/store_components/aws_store_manager.h"
-#else
-#  include "maidsafe/lifestuff/store_components/local_store_manager.h"
-#endif
-
 
 namespace args = std::placeholders;
 namespace fs = boost::filesystem;
@@ -60,54 +56,38 @@ class ClientControllerTest : public testing::Test {
   ClientControllerTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
         session_(new Session),
-        cc_(new ClientController(session_)),
-#if defined AMAZON_WEB_SERVICE_STORE
-        packet_manager_(new AWSStoreManager(session_, *test_dir_)) {}
-#else
-        packet_manager_(new LocalStoreManager(session_, test_dir_->string())) {}
-#endif
+        asio_service_(),
+        asio_service2_(),
+        cc_() {}
 
  protected:
   void SetUp() {
+    asio_service_.Start(10);
+    asio_service2_.Start(10);
+    cc_.reset(new ClientController(asio_service_.service(), session_));
     session_->ResetSession();
-    packet_manager_->Init(std::bind(&ClientControllerTest::InitAndCloseCallback,
-                                    this, args::_1));
-    cc_->auth_.reset(new Authentication(session_));
-    cc_->auth_->Init(packet_manager_);
-    cc_->packet_manager_ = packet_manager_;
-    cc_->initialised_ = true;
+    cc_->Init(true, *test_dir_);
   }
+
   void TearDown() {
-    packet_manager_->Close(true);
+    asio_service_.Stop();
+    asio_service2_.Stop();
     cc_->initialised_ = false;
   }
 
-  void InitAndCloseCallback(int /*i*/) {}
-
   std::shared_ptr<ClientController> CreateSecondClientController() {
     std::shared_ptr<Session> ss2(new Session);
-    std::shared_ptr<ClientController> cc2(new ClientController(ss2));
-#if defined AMAZON_WEB_SERVICE_STORE
-    std::shared_ptr<PacketManager>
-        packet_manager2(new AWSStoreManager(ss2, *test_dir_));
-#else
-    std::shared_ptr<PacketManager>
-        packet_manager2(new LocalStoreManager(ss2, test_dir_->string()));
-#endif
+    std::shared_ptr<ClientController> cc2(
+        new ClientController(asio_service2_.service(), ss2));
     ss2->ResetSession();
-    packet_manager2->Init(std::bind(&ClientControllerTest::InitAndCloseCallback,
-                                    this, args::_1));
-    cc2->auth_.reset(new Authentication(ss2));
-    cc2->auth_->Init(packet_manager2);
-    cc2->packet_manager_ = packet_manager2;
-    cc2->initialised_ = true;
+    cc2->Init(true, *test_dir_);
     return cc2;
   }
 
   std::shared_ptr<fs::path> test_dir_;
   std::shared_ptr<Session> session_;
+  AsioService asio_service_, asio_service2_;
   std::shared_ptr<ClientController> cc_;
-  std::shared_ptr<PacketManager> packet_manager_;
 
  private:
   ClientControllerTest(const ClientControllerTest&);

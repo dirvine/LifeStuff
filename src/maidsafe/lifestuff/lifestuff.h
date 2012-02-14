@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_MAIDSAFE_H_
-#define MAIDSAFE_LIFESTUFF_MAIDSAFE_H_
+#ifndef MAIDSAFE_LIFESTUFF_LIFESTUFF_H_
+#define MAIDSAFE_LIFESTUFF_LIFESTUFF_H_
 
 #include <cstdint>
 #include <functional>
@@ -32,7 +32,7 @@
 
 #include "maidsafe/lifestuff/version.h"
 
-#if MAIDSAFE_LIFESTUFF_VERSION != 111
+#if MAIDSAFE_LIFESTUFF_VERSION != 201
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-lifestuff library.
 #endif
@@ -74,4 +74,4 @@ enum ShareOperations {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_MAIDSAFE_H_
+#endif  // MAIDSAFE_LIFESTUFF_LIFESTUFF_H_

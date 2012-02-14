@@ -21,17 +21,19 @@
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/passport/passport.h"
-
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
+
+#include "maidsafe/passport/passport.h"
+
+#include "maidsafe/pd/client/remote_chunk_store.h"
 
 #include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/utils.h"
-#include "maidsafe/lifestuff/store_components/packet_manager.h"
+#include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
 namespace args = std::placeholders;
 namespace pca = maidsafe::priv::chunk_actions;
@@ -59,10 +61,13 @@ std::string AppendableByAllType(const std::string &mmid) {
 
 }  // namespace
 
-MessageHandler::MessageHandler(std::shared_ptr<PacketManager> packet_manager,
-                               std::shared_ptr<Session> session,
-                               boost::asio::io_service &asio_service)  // NOLINT (Fraser)
-    : packet_manager_(packet_manager),
+MessageHandler::MessageHandler(
+    std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+    std::shared_ptr<YeOldeSignalToCallbackConverter> converter,
+    std::shared_ptr<Session> session,
+    boost::asio::io_service &asio_service)  // NOLINT (Fraser)
+    : remote_chunk_store_(remote_chunk_store),
+      converter_(converter),
       session_(session),
       asio_service_(asio_service),
       get_new_messages_timer_(asio_service),
@@ -71,7 +76,7 @@ MessageHandler::MessageHandler(std::shared_ptr<PacketManager> packet_manager,
   for (int n(pca::Message::ContentType_MIN);
        n <= pca::Message::ContentType_MAX;
        ++n) {
-  	new_message_signals_.push_back(std::make_shared<NewMessageSignal>());
+    new_message_signals_.push_back(std::make_shared<NewMessageSignal>());
   }
 }
 
@@ -127,10 +132,15 @@ int MessageHandler::Send(const std::string &public_username,
   BOOST_ASSERT(data.size() == 3U);
 
   // Get recipient's public key
+  AlternativeStore::ValidationData validation_data_mmid;
+  GetKeysAndProof(public_username,
+                  passport::kMmid,
+                  true,
+                  &validation_data_mmid);
   asymm::PublicKey recipient_public_key;
   result = GetValidatedMmidPublicKey(recipient_contact.mmid_name,
-                                     std::get<0>(data.at(2)),
-                                     packet_manager_,
+                                     validation_data_mmid,
+                                     remote_chunk_store_,
                                      &recipient_public_key);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to get public key for " << recipient_public_username;
@@ -175,6 +185,18 @@ int MessageHandler::Send(const std::string &public_username,
   boost::mutex mutex;
   boost::condition_variable cond_var;
   result = kPendingResult;
+
+  std::string inbox_id(AppendableByAllType(recipient_contact.mmid_name));
+  VoidFuncOneInt callback(std::bind(&SendMessageCallback, args::_1, &mutex,
+                                    &cond_var, &result));
+  if (converter_->AddOperation(inbox_id, callback) != kSuccess) {
+    DLOG(ERROR) << "Failed to add operation to converter";
+    return kAuthenticationError;
+  }
+  remote_chunk_store_->Modify(inbox_id,
+                              signed_data.SerializeAsString(),
+                              validation_data_mmid);
+/*
   VoidFuncOneInt callback(std::bind(&SendMessageCallback, args::_1, &mutex,
                                     &cond_var, &result));
 
@@ -183,6 +205,7 @@ int MessageHandler::Send(const std::string &public_username,
       signed_data.SerializeAsString(),
       std::get<0>(data.at(2)),
       callback);
+*/
 
   try {
     boost::mutex::scoped_lock lock(mutex);
@@ -245,17 +268,21 @@ void MessageHandler::GetNewMessages(
       continue;
     }
 
-    std::vector<std::string> mmid_values;
-    result = packet_manager_->GetPacket(AppendableByAllType(std::get<1>(*it)),
-                                        std::get<0>(data.at(2)),
-                                        &mmid_values);
+    AlternativeStore::ValidationData validation_data_mmid;
+    GetKeysAndProof(std::get<0>(*it),
+                    passport::kMmid,
+                    true,
+                    &validation_data_mmid);
+    std::string mmid_value(
+        remote_chunk_store_->Get(AppendableByAllType(std::get<1>(*it)),
+                                 validation_data_mmid));
 
-    if (result == kSuccess) {
-      ProcessRetrieved(*it, mmid_values);
-      ClearExpiredReceivedMessages();
-    } else if (result != kGetPacketEmptyData) {
+    if (mmid_value.empty()) {
       DLOG(WARNING) << "Failed to get MPID contents for " << std::get<0>(*it)
-                  << ": " << result;
+                    << ": " << result;
+    } else {
+      ProcessRetrieved(*it, mmid_value);
+      ClearExpiredReceivedMessages();
     }
   }
 
@@ -267,12 +294,10 @@ void MessageHandler::GetNewMessages(
                                                std::placeholders::_1));
 }
 
-void MessageHandler::ProcessRetrieved(
-    const passport::SelectableIdData &data,
-    const std::vector<std::string> &mmid_values) {
-  BOOST_ASSERT(mmid_values.size() == 1U);
+void MessageHandler::ProcessRetrieved(const passport::SelectableIdData &data,
+                                      const std::string &mmid_value) {
   pca::AppendableByAll mmid;
-  if (!mmid.ParseFromString(mmid_values.at(0))) {
+  if (!mmid.ParseFromString(mmid_value)) {
     DLOG(ERROR) << "Failed to parse as AppendableByAll";
     return;
   }
@@ -348,6 +373,36 @@ void MessageHandler::ClearExpiredReceivedMessages() {
       ++it;
   }
 }
+
+void MessageHandler::GetKeysAndProof(
+    const std::string &public_username,
+    passport::PacketType pt,
+    bool confirmed,
+    AlternativeStore::ValidationData *validation_data) {
+  if (pt != passport::kAnmpid &&
+      pt != passport::kMpid &&
+      pt != passport::kMmid) {
+    DLOG(ERROR) << "Not valid public ID packet, what'r'u playing at?";
+    return;
+  }
+
+  validation_data->key_pair.identity =
+      session_->passport_->PacketName(pt, confirmed, public_username);
+  validation_data->key_pair.public_key =
+      session_->passport_->SignaturePacketValue(pt, confirmed, public_username);
+  validation_data->key_pair.private_key =
+      session_->passport_->PacketPrivateKey(pt, confirmed, public_username);
+  validation_data->key_pair.validation_token =
+      session_->passport_->PacketSignature(pt, confirmed, public_username);
+  pca::SignedData signed_data;
+  signed_data.set_data(RandomString(64));
+  asymm::Sign(signed_data.data(),
+              validation_data->key_pair.private_key,
+              &validation_data->ownership_proof);
+  signed_data.set_signature(validation_data->ownership_proof);
+  validation_data->ownership_proof = signed_data.SerializeAsString();
+}
+
 
 }  // namespace lifestuff
 

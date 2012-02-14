@@ -25,6 +25,7 @@
 #ifndef MAIDSAFE_LIFESTUFF_SESSION_H_
 #define MAIDSAFE_LIFESTUFF_SESSION_H_
 
+#include <map>
 #include <string>
 
 #ifdef __MSVC__
@@ -43,7 +44,7 @@
 
 #include "maidsafe/lifestuff/lifestuff.h"
 
-#if MAIDSAFE_LIFESTUFF_VERSION != 111
+#if MAIDSAFE_LIFESTUFF_VERSION != 201
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-lifestuff library.
 #endif
@@ -100,6 +101,9 @@ class Session {
   void SerialiseKeyChain(std::string *serialised_keyring,
                          std::string *serialised_selectables);
 
+  friend void GetKeyring(const std::string&,
+                         std::shared_ptr<Session>,
+                         asymm::Keys*);
   friend void GetPublicKey(const std::string&,
                            std::shared_ptr<Session>,
                            asymm::PublicKey*);

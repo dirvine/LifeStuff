@@ -49,7 +49,7 @@
 #endif
 
 
-#if MAIDSAFE_LIFESTUFF_VERSION != 111
+#if MAIDSAFE_LIFESTUFF_VERSION != 201
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-lifestuff library.
 #endif
@@ -64,7 +64,7 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-class ChunkStore;
+namespace pd { class RemoteChunkStore; }
 
 namespace lifestuff {
 
@@ -73,7 +73,7 @@ class Session;
 
 class UserStorage {
  public:
-  explicit UserStorage(std::shared_ptr<PacketManager> packet_manager);
+  explicit UserStorage(std::shared_ptr<pd::RemoteChunkStore> chunk_store);
   virtual ~UserStorage() {}
 
   virtual void MountDrive(const fs::path &mount_dir_path,
@@ -154,7 +154,7 @@ class UserStorage {
       const std::string &new_share_id = "");
 
   bool mount_status_;
-  std::shared_ptr<ChunkStore> chunk_store_;
+  std::shared_ptr<pd::RemoteChunkStore> chunk_store_;
   std::shared_ptr<MaidDriveInUserSpace> drive_in_user_space_;
   std::shared_ptr<PacketManager> packet_manager_;
   std::shared_ptr<Session> session_;
