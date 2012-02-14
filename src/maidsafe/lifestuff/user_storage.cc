@@ -308,9 +308,8 @@ void UserStorage::GetAllShareUsers(
 
 int UserStorage::RemoveShareUsers(const std::string &share_id,
                                   const std::vector<std::string> &user_ids) {
-  fs::path absolute_path;
   asymm::Keys old_key_ring;
-  drive_in_user_space_->GetShareDetails(share_id, &absolute_path,
+  drive_in_user_space_->GetShareDetails(share_id, NULL,
                                         &old_key_ring, NULL, NULL);
   int result(drive_in_user_space_->RemoveShareUsers(share_id, user_ids));
   if (result != kSuccess)
@@ -322,7 +321,7 @@ int UserStorage::RemoveShareUsers(const std::string &share_id,
   }
   InformContactsOperation(removed_contacts, kToLeave, share_id);
 
-  std::string new_share_id(RandomString(512));
+  std::string new_share_id(RandomString(share_id.size()));
   std::vector<pki::SignaturePacketPtr> signature_packets;
   pki::CreateChainedId(&signature_packets, 1);
   // Store packets
@@ -351,14 +350,12 @@ int UserStorage::RemoveShareUsers(const std::string &share_id,
   key_ring.public_key = signature_packets[0]->value();
   key_ring.private_key = signature_packets[0]->private_key();
   key_ring.validation_token = signature_packets[0]->signature();
-  std::string directory_id;
-  result = drive_in_user_space_->SetShareDetails(absolute_path,
-                                                 new_share_id,
-                                                 key_ring,
-                                                 session_->unique_user_id(),
-                                                 &directory_id);
+  result = drive_in_user_space_->UpdateShare(share_id,
+                                             &new_share_id,
+                                             NULL,
+                                             &key_ring);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed in updating share of " << absolute_path.string()
+    DLOG(ERROR) << "Failed in updating share of " << Base32Substr(share_id)
                 << ", with result of : " << result;
     return result;
   }
@@ -376,14 +373,14 @@ int UserStorage::RemoveShareUsers(const std::string &share_id,
     return result;
   if (results[0] != kSuccess) {
     DLOG(ERROR) << "Failed to remove packet.  Packet 1 : " << results[0];
-    return kDeletePacketFailure;
+//     return kDeletePacketFailure;
   }
 
   std::map<std::string, bool> contacts;
   drive_in_user_space_->GetShareDetails(new_share_id, NULL, NULL, NULL,
                                         &contacts);
   InformContactsOperation(contacts, kToMove, share_id, "",
-                          directory_id, key_ring, new_share_id);
+                          "", key_ring, new_share_id);
 
   return kSuccess;
 }
@@ -561,8 +558,7 @@ void UserStorage::NewMessageSlot(const pca::Message &message) {
       key_ring.validation_token = message.content(2);
       asymm::DecodePrivateKey(message.content(3), &(key_ring.private_key));
       asymm::DecodePublicKey(message.content(4), &(key_ring.public_key));
-      drive_in_user_space_->UpdateShare(message.content(0), NULL, NULL,
-                                        &key_ring);
+      ModifyShareDetails(message.content(0), NULL, NULL, key_ring);
     } else {
       if (message.content_size() > 4) {
         key_ring.identity = message.content(3);

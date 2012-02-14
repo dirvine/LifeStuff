@@ -366,7 +366,6 @@ void FakeStoreManager::ModifyPacket(const std::string &packet_name,
   int64_t operation_diff;
   if (!chunk_action_authority_->Modify(packet_name,
                                        value,
-                                       "",
                                        public_key,
                                        &operation_diff)) {
     DLOG(ERROR) << "FakeStoreManager::ModifyPacket - Failure - OD: "

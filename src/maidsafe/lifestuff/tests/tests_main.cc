@@ -40,6 +40,8 @@ int main(int argc, char **argv) {
   FLAGS_ms_logging_passport = google::FATAL;
   FLAGS_ms_logging_private = google::INFO;
   FLAGS_ms_logging_lifestuff = google::INFO;
+  FLAGS_ms_logging_drive = google::INFO;
+  FLAGS_ms_logging_encrypt = google::INFO;
 
   testing::InitGoogleTest(&argc, argv);
 
