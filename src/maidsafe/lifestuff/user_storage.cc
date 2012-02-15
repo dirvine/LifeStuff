@@ -497,6 +497,12 @@ int UserStorage::DeleteHiddenFile(const fs::path &absolute_path) {
   return drive_in_user_space_->DeleteHiddenFile(absolute_path);
 }
 
+int UserStorage::MatchHiddenFiles(const fs::path &relative_path,
+                                  const std::string &regex,
+                                  std::list<std::string> *matches) {
+  return drive_in_user_space_->MatchHiddenFiles(relative_path, regex, matches);
+}
+
 bs2::connection UserStorage::ConnectToDriveChanged(
     drive::DriveChangedSlotPtr slot) const {
   return drive_in_user_space_->ConnectToDriveChanged(slot);

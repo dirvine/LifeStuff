@@ -134,6 +134,8 @@ class UserStorage {
                       const std::string &content,
                       bool overwrite_existing);
   int DeleteHiddenFile(const fs::path &absolute_path);
+  int MatchHiddenFiles(const fs::path &relative_path, const std::string &regex,
+                       std::list<std::string> *matches);
 
   void NewMessageSlot(const pca::Message &message);
   // ************************* Signals Handling ********************************
