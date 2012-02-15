@@ -417,6 +417,8 @@ TEST_F(UserStorageTest, FUNC_RemoveUserByOwner) {
   std::vector<std::string> user_ids;
   user_ids.push_back("User 2");
   ASSERT_EQ(kSuccess, user_storage1_->RemoveShareUsers(share_id, user_ids));
+  fs::path sub_dir0(CreateTestDirectory(dir0, &tail));
+  ASSERT_TRUE(fs::exists(sub_dir0, error_code)) << sub_dir0;
   user_storage1_->UnMountDrive();
   Sleep(interval_ * 2);
   user_storage2_->MountDrive(*g_mount_dir_,
@@ -424,6 +426,8 @@ TEST_F(UserStorageTest, FUNC_RemoveUserByOwner) {
                              session2_, false);
   Sleep(interval_ * 2);
   ASSERT_TRUE(fs::exists(dir, error_code)) << dir;
+  fs::path sub_dir(dir / tail);
+  ASSERT_FALSE(fs::exists(sub_dir, error_code)) << sub_dir;
   ASSERT_EQ(kSuccess,
             message_handler2_->StartCheckingForNewMessages(interval_));
   Sleep(interval_ * 2);
@@ -432,11 +436,13 @@ TEST_F(UserStorageTest, FUNC_RemoveUserByOwner) {
   message_handler2_->StopCheckingForNewMessages();
   user_storage2_->UnMountDrive();
   Sleep(interval_ * 2);
+
   user_storage1_->MountDrive(*g_mount_dir_,
                              client_controller1_->SessionName(),
                              session1_, false);
   Sleep(interval_ * 2);
   ASSERT_TRUE(fs::exists(dir0, error_code)) << dir0;
+  ASSERT_TRUE(fs::exists(sub_dir0, error_code)) << sub_dir0;
   user_storage1_->UnMountDrive();
   Sleep(interval_ * 2);
 }
