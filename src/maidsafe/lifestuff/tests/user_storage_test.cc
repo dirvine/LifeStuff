@@ -32,12 +32,7 @@
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/client_controller.h"
 #include "maidsafe/lifestuff/user_storage.h"
-#include "maidsafe/lifestuff/tests/test_callback.h"
-#if defined AMAZON_WEB_SERVICE_STORE
-#  include "maidsafe/lifestuff/store_components/aws_store_manager.h"
-#else
-#  include "maidsafe/lifestuff/store_components/local_store_manager.h"
-#endif
+#include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
 namespace args = std::placeholders;
 namespace ba = boost::asio;
@@ -76,6 +71,8 @@ class UserStorageTest : public testing::Test {
       work_(new ba::io_service::work(asio_service_)),
       threads_(),
       interval_(1),
+      converter1_(new YeOldeSignalToCallbackConverter),
+      converter2_(new YeOldeSignalToCallbackConverter),
       public_id1_(),
       public_id2_(),
       message_handler1_(),
@@ -84,22 +81,48 @@ class UserStorageTest : public testing::Test {
  protected:
   void SetUp() {
     client_controller1_ = CreateClientController("User 1");
-    user_storage1_ = CreateUserStorage(client_controller1_);
     session1_ = client_controller1_->session_;
     client_controller2_ = CreateClientController("User 2");
-    user_storage2_ = CreateUserStorage(client_controller2_);
     session2_ = client_controller2_->session_;
 
-    public_id1_.reset(new PublicId(client_controller1_->packet_manager_,
-                                   session1_, asio_service_));
-    public_id2_.reset(new PublicId(client_controller2_->packet_manager_,
-                                   session2_, asio_service_)),
+    client_controller1_->remote_chunk_store()->sig_chunk_stored()->connect(
+        std::bind(&YeOldeSignalToCallbackConverter::Stored, converter1_.get(),
+                  args::_1, args::_2));
+    client_controller1_->remote_chunk_store()->sig_chunk_deleted()->connect(
+        std::bind(&YeOldeSignalToCallbackConverter::Deleted, converter1_.get(),
+                  args::_1, args::_2));
+    client_controller1_->remote_chunk_store()->sig_chunk_modified()->connect(
+        std::bind(&YeOldeSignalToCallbackConverter::Modified, converter1_.get(),
+                  args::_1, args::_2));
+
+    client_controller2_->remote_chunk_store()->sig_chunk_stored()->connect(
+        std::bind(&YeOldeSignalToCallbackConverter::Stored, converter2_.get(),
+                  args::_1, args::_2));
+    client_controller2_->remote_chunk_store()->sig_chunk_deleted()->connect(
+        std::bind(&YeOldeSignalToCallbackConverter::Deleted, converter2_.get(),
+                  args::_1, args::_2));
+    client_controller2_->remote_chunk_store()->sig_chunk_modified()->connect(
+        std::bind(&YeOldeSignalToCallbackConverter::Modified, converter2_.get(),
+                  args::_1, args::_2));
+
+    public_id1_.reset(new PublicId(client_controller1_->remote_chunk_store(),
+                                   converter1_, session1_, asio_service_));
+    public_id2_.reset(new PublicId(client_controller2_->remote_chunk_store(),
+                                   converter2_, session2_, asio_service_));
+
+    user_storage1_.reset(new UserStorage(
+                      client_controller1_->remote_chunk_store(), converter1_));
+    user_storage2_.reset(new UserStorage(
+                      client_controller2_->remote_chunk_store(), converter2_));
+
     message_handler1_.reset(new MessageHandler(
-                                    client_controller1_->packet_manager_,
+                                    client_controller1_->remote_chunk_store(),
+                                    converter1_,
                                     session1_,
                                     asio_service_));
     message_handler2_.reset(new MessageHandler(
-                                    client_controller2_->packet_manager_,
+                                    client_controller2_->remote_chunk_store(),
+                                    converter2_,
                                     session2_,
                                     asio_service_));
     message_handler1_->ConnectToSignal(pca::Message::kSharedDirectory,
@@ -142,32 +165,15 @@ class UserStorageTest : public testing::Test {
   std::shared_ptr<ClientController> CreateClientController(
       std::string username) {
     std::shared_ptr<Session> ss(new Session);
-    std::shared_ptr<ClientController> cc(new ClientController(ss));
-#if defined AMAZON_WEB_SERVICE_STORE
-    std::shared_ptr<PacketManager>
-        packet_manager(new AWSStoreManager(ss, *test_dir_));
-#else
-    std::shared_ptr<PacketManager>
-        packet_manager(new LocalStoreManager(ss, test_dir_->string()));
-#endif
-    ss->ResetSession();
-    packet_manager->Init(std::bind(&UserStorageTest::InitAndCloseCallback,
-                                   this, args::_1));
+    std::shared_ptr<ClientController> cc(new ClientController(asio_service_,
+                                                              ss));
     cc->auth_.reset(new Authentication(ss));
-    cc->auth_->Init(packet_manager);
-    cc->packet_manager_ = packet_manager;
+    cc->Init(true, *test_dir_);
     cc->initialised_ = true;
     std::stringstream pin_stream;
     pin_stream << RandomUint32();
     cc->CreateUser(username, pin_stream.str(), RandomString(6));
     return cc;
-  }
-
-  std::shared_ptr<UserStorage> CreateUserStorage(
-      std::shared_ptr<ClientController> cc) {
-    std::shared_ptr<maidsafe::lifestuff::UserStorage> us (
-        new UserStorage(cc->packet_manager()));
-    return us;
   }
 
   void InitAndCloseCallback(int /*i*/) {}
@@ -184,6 +190,7 @@ class UserStorageTest : public testing::Test {
   std::shared_ptr<ba::io_service::work> work_;
   boost::thread_group threads_;
   bptime::seconds interval_;
+  std::shared_ptr<YeOldeSignalToCallbackConverter> converter1_, converter2_;
   std::shared_ptr<PublicId> public_id1_;
   std::shared_ptr<PublicId> public_id2_;
   std::shared_ptr<MessageHandler> message_handler1_;

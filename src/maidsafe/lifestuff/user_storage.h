@@ -39,7 +39,6 @@
 #include "maidsafe/lifestuff/utils.h"
 #include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/return_codes.h"
-#include "maidsafe/lifestuff/store_components/packet_manager.h"
 #include "maidsafe/lifestuff/message_handler.h"
 
 #ifdef WIN32
@@ -73,7 +72,9 @@ class Session;
 
 class UserStorage {
  public:
-  explicit UserStorage(std::shared_ptr<pd::RemoteChunkStore> chunk_store);
+  explicit UserStorage(
+              std::shared_ptr<pd::RemoteChunkStore> chunk_store,
+              std::shared_ptr<YeOldeSignalToCallbackConverter> converter);
   virtual ~UserStorage() {}
 
   virtual void MountDrive(const fs::path &mount_dir_path,
@@ -152,12 +153,14 @@ class UserStorage {
       const std::string &directory_id = "",
       const asymm::Keys &key_ring = asymm::Keys(),
       const std::string &new_share_id = "");
+  AlternativeStore::ValidationData PopulateValidationData(
+      const asymm::Keys &key_ring);
 
   bool mount_status_;
   std::shared_ptr<pd::RemoteChunkStore> chunk_store_;
   std::shared_ptr<MaidDriveInUserSpace> drive_in_user_space_;
-  std::shared_ptr<PacketManager> packet_manager_;
   std::shared_ptr<Session> session_;
+  std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
   std::shared_ptr<MessageHandler> message_handler_;
   fs::path g_mount_dir_;
 };

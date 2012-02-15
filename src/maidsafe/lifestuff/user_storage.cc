@@ -28,6 +28,7 @@
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/version.h"
+#include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
 namespace args = std::placeholders;
 namespace fs = boost::filesystem;
@@ -36,12 +37,14 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-UserStorage::UserStorage(std::shared_ptr<pd::RemoteChunkStore> chunk_store)
+UserStorage::UserStorage(
+    std::shared_ptr<pd::RemoteChunkStore> chunk_store,
+    std::shared_ptr<YeOldeSignalToCallbackConverter> converter)
     : mount_status_(false),
-      chunk_store_(packet_manager->chunk_store()),
+      chunk_store_(chunk_store),
       drive_in_user_space_(),
-      packet_manager_(packet_manager),
       session_(),
+      converter_(converter),
       message_handler_(),
       g_mount_dir_() {}
 
@@ -195,12 +198,18 @@ int UserStorage::StopShare(const std::string &share_id){
   boost::condition_variable cond_var;
   std::vector<int> results;
   results.push_back(kPendingResult);
-  packet_manager_->DeletePacket(ComposeSignaturePacketName(
-                                    key_ring.identity),
-                                key_ring.identity,
-                                std::bind(&SendContactInfoCallback,
-                                          std::placeholders::_1,
-                                          &mutex, &cond_var, &results[0]));
+  AlternativeStore::ValidationData validation_data(
+      PopulateValidationData(key_ring));
+  std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
+
+  VoidFuncOneInt callback(std::bind(&SendContactInfoCallback, args::_1,
+                                    &mutex, &cond_var, &results[0]));
+  if (converter_->AddOperation(packet_id, callback) != kSuccess) {
+    DLOG(ERROR) << "Failed to add operation to converter";
+    return kAuthenticationError;
+  }
+  chunk_store_->Delete(packet_id, validation_data);
+
   result = AwaitingResponse(mutex, cond_var, results);
   if (result != kSuccess)
     return result;
@@ -238,19 +247,30 @@ int UserStorage::CreateShare(const fs::path &absolute_path,
 
   std::vector<pki::SignaturePacketPtr> signature_packets;
   pki::CreateChainedId(&signature_packets, 1);
+  asymm::Keys key_ring;
+  key_ring.identity = signature_packets[0]->name();
+  key_ring.public_key = signature_packets[0]->value();
+  key_ring.private_key = signature_packets[0]->private_key();
+  key_ring.validation_token = signature_packets[0]->signature();
+
   // Store packets
   boost::mutex mutex;
   boost::condition_variable cond_var;
   std::vector<int> results;
   results.push_back(kPendingResult);
-  packet_manager_->StorePacket(ComposeSignaturePacketName(
-                                  signature_packets[0]->name()),
-                               ComposeSignaturePacketValue(
-                                  *signature_packets[0]),
-                               signature_packets[0]->name(),
-                               std::bind(&SendContactInfoCallback,
-                                         std::placeholders::_1,
-                                         &mutex, &cond_var, &results[0]));
+
+  AlternativeStore::ValidationData validation_data(
+      PopulateValidationData(key_ring));
+  std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
+  VoidFuncOneInt callback(std::bind(&SendContactInfoCallback, args::_1,
+                                    &mutex, &cond_var, &results[0]));
+  if (converter_->AddOperation(packet_id, callback) != kSuccess) {
+    DLOG(ERROR) << "Failed to add operation to converter";
+    return kAuthenticationError;
+  }
+  chunk_store_->Store(packet_id,
+                      ComposeSignaturePacketValue(*signature_packets[0]),
+                      validation_data);
   int result(AwaitingResponse(mutex, cond_var, results));
   if (result != kSuccess)
     return result;
@@ -259,11 +279,6 @@ int UserStorage::CreateShare(const fs::path &absolute_path,
     return kStorePacketFailure;
   }
 
-  asymm::Keys key_ring;
-  key_ring.identity = signature_packets[0]->name();
-  key_ring.public_key = signature_packets[0]->value();
-  key_ring.private_key = signature_packets[0]->private_key();
-  key_ring.validation_token = signature_packets[0]->signature();
   std::string directory_id;
   result = drive_in_user_space_->SetShareDetails(absolute_path,
                                                  share_id,
@@ -326,19 +341,31 @@ int UserStorage::RemoveShareUsers(const std::string &share_id,
   std::string new_share_id(RandomString(share_id.size()));
   std::vector<pki::SignaturePacketPtr> signature_packets;
   pki::CreateChainedId(&signature_packets, 1);
+  asymm::Keys key_ring;
+  key_ring.identity = signature_packets[0]->name();
+  key_ring.public_key = signature_packets[0]->value();
+  key_ring.private_key = signature_packets[0]->private_key();
+  key_ring.validation_token = signature_packets[0]->signature();
+
   // Store packets
   boost::mutex mutex;
   boost::condition_variable cond_var;
   std::vector<int> results;
   results.push_back(kPendingResult);
-  packet_manager_->StorePacket(ComposeSignaturePacketName(
-                                  signature_packets[0]->name()),
-                               ComposeSignaturePacketValue(
-                                  *signature_packets[0]),
-                               signature_packets[0]->name(),
-                               std::bind(&SendContactInfoCallback,
-                                         std::placeholders::_1,
-                                         &mutex, &cond_var, &results[0]));
+
+  AlternativeStore::ValidationData validation_data(
+      PopulateValidationData(key_ring));
+  std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
+  VoidFuncOneInt callback(std::bind(&SendContactInfoCallback, args::_1,
+                                    &mutex, &cond_var, &results[0]));
+  if (converter_->AddOperation(packet_id, callback) != kSuccess) {
+    DLOG(ERROR) << "Failed to add operation to converter";
+    return kAuthenticationError;
+  }
+  chunk_store_->Store(packet_id,
+                      ComposeSignaturePacketValue(*signature_packets[0]),
+                      validation_data);
+
   result = AwaitingResponse(mutex, cond_var, results);
   if (result != kSuccess)
     return result;
@@ -347,11 +374,6 @@ int UserStorage::RemoveShareUsers(const std::string &share_id,
     return kStorePacketFailure;
   }
 
-  asymm::Keys key_ring;
-  key_ring.identity = signature_packets[0]->name();
-  key_ring.public_key = signature_packets[0]->value();
-  key_ring.private_key = signature_packets[0]->private_key();
-  key_ring.validation_token = signature_packets[0]->signature();
   result = drive_in_user_space_->UpdateShare(share_id,
                                              &new_share_id,
                                              NULL,
@@ -364,12 +386,15 @@ int UserStorage::RemoveShareUsers(const std::string &share_id,
 
   results.clear();
   results.push_back(kPendingResult);
-  packet_manager_->DeletePacket(ComposeSignaturePacketName(
-                                    old_key_ring.identity),
-                                old_key_ring.identity,
-                                std::bind(&SendContactInfoCallback,
-                                          std::placeholders::_1,
-                                          &mutex, &cond_var, &results[0]));
+
+  validation_data = PopulateValidationData(old_key_ring);
+  packet_id = ComposeSignaturePacketName(old_key_ring.identity);
+  if (converter_->AddOperation(packet_id, callback) != kSuccess) {
+    DLOG(ERROR) << "Failed to add operation to converter";
+    return kAuthenticationError;
+  }
+  chunk_store_->Delete(packet_id, validation_data);
+
   result = AwaitingResponse(mutex, cond_var, results);
   if (result != kSuccess)
     return result;
@@ -577,6 +602,20 @@ void UserStorage::NewMessageSlot(const pca::Message &message) {
       }
     }
   }
+}
+
+AlternativeStore::ValidationData UserStorage::PopulateValidationData(
+    const asymm::Keys &key_ring) {
+  AlternativeStore::ValidationData validation_data;
+  validation_data.key_pair = key_ring;
+  pca::SignedData signed_data;
+  signed_data.set_data(RandomString(64));
+  asymm::Sign(signed_data.data(),
+              validation_data.key_pair.private_key,
+              &validation_data.ownership_proof);
+  signed_data.set_signature(validation_data.ownership_proof);
+  validation_data.ownership_proof = signed_data.SerializeAsString();
+  return validation_data;
 }
 
 }  // namespace lifestuff
