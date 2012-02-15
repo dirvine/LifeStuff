@@ -153,13 +153,13 @@ int UserStorage::InsertDataMap(const fs::path &absolute_path,
 }
 
 int UserStorage::ModifyShareDetails(const std::string &share_id,
-                                    const std::string &new_share_id,
-                                    const std::string &new_directory_id,
-                                    const asymm::Keys &new_key_ring) {
+                                    const std::string *new_share_id,
+                                    const std::string *new_directory_id,
+                                    const asymm::Keys *new_key_ring) {
   return drive_in_user_space_->UpdateShare(share_id,
-                                           &new_share_id,
-                                           &new_directory_id,
-                                           &new_key_ring);
+                                           new_share_id,
+                                           new_directory_id,
+                                           new_key_ring);
 }
 
 int UserStorage::InsertShare(const std::string &share_id,
@@ -585,7 +585,7 @@ void UserStorage::NewMessageSlot(const pca::Message &message) {
       key_ring.validation_token = message.content(2);
       asymm::DecodePrivateKey(message.content(3), &(key_ring.private_key));
       asymm::DecodePublicKey(message.content(4), &(key_ring.public_key));
-      ModifyShareDetails(message.content(0), NULL, NULL, key_ring);
+      ModifyShareDetails(message.content(0), NULL, NULL, &key_ring);
     } else {
       if (message.content_size() > 4) {
         key_ring.identity = message.content(3);
@@ -597,8 +597,8 @@ void UserStorage::NewMessageSlot(const pca::Message &message) {
         InsertShare(message.content(0), message.content(1),
                     message.content(2), key_ring);
       } else if (message.subject() == "move_share") {
-        ModifyShareDetails(message.content(0), message.content(1),
-                           message.content(2), key_ring);
+        ModifyShareDetails(message.content(0), &(message.content(1)),
+                           &(message.content(2)), &key_ring);
       }
     }
   }

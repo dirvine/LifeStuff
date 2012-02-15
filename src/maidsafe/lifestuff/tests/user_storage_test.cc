@@ -80,6 +80,10 @@ class UserStorageTest : public testing::Test {
 
  protected:
   void SetUp() {
+    for (int i(0); i != 5; ++i)
+      threads_.create_thread(std::bind(
+          static_cast<std::size_t(boost::asio::io_service::*)()>
+              (&boost::asio::io_service::run), &asio_service_));
     client_controller1_ = CreateClientController("User 1");
     session1_ = client_controller1_->session_;
     client_controller2_ = CreateClientController("User 2");
@@ -134,11 +138,6 @@ class UserStorageTest : public testing::Test {
                                       std::bind(&UserStorage::NewMessageSlot,
                                                 user_storage2_, args::_1));
     user_storage2_->SetMessageHandler(message_handler2_);
-
-    for (int i(0); i != 5; ++i)
-      threads_.create_thread(std::bind(
-          static_cast<std::size_t(boost::asio::io_service::*)()>
-              (&boost::asio::io_service::run), &asio_service_));
 
     public_id1_->CreatePublicId("User 1", true);
     public_id2_->CreatePublicId("User 2", true);

@@ -142,9 +142,9 @@ class UserStorage {
 
  private:
   int ModifyShareDetails(const std::string &share_id,
-                         const std::string &new_share_id,
-                         const std::string &new_directory_id,
-                         const asymm::Keys &new_key_ring);
+                         const std::string *new_share_id,
+                         const std::string *new_directory_id,
+                         const asymm::Keys *new_key_ring);
   void InformContactsOperation(
       const std::map<std::string, bool> &contacts,
       const ShareOperations operation,
