@@ -224,18 +224,7 @@ int UserStorage::StopShare(const std::string &share_id){
 }
 
 int UserStorage::LeaveShare(const std::string & share_id){
-  fs::path absolute_path;
-  int result(drive_in_user_space_->GetShareDetails(share_id,
-                                                   &absolute_path,
-                                                   NULL, NULL, NULL));
-  if (result != kSuccess)
-    return result;
-  std::string directory_id;
-  return drive_in_user_space_->SetShareDetails(absolute_path,
-                                               "",
-                                               asymm::Keys(),
-                                               session_->unique_user_id(),
-                                               &directory_id);
+  return drive_in_user_space_->RemoveShare(share_id);
 }
 
 int UserStorage::CreateShare(const fs::path &absolute_path,
