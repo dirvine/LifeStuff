@@ -381,6 +381,69 @@ TEST_F(UserStorageTest, FUNC_UpgradeUserToAdmin) {
   user_storage2_->UnMountDrive();
 }
 
+TEST_F(UserStorageTest, FUNC_StopShareByOwner) {
+  user_storage1_->MountDrive(*g_mount_dir_,
+                             client_controller1_->SessionName(),
+                             session1_, true);
+  Sleep(interval_ * 2);
+  std::map<std::string, bool> users;
+  users.insert(std::make_pair("User 2", false));
+  std::string tail;
+  fs::path dir0(CreateTestDirectory(user_storage1_->g_mount_dir(), &tail));
+  boost::system::error_code error_code;
+  ASSERT_TRUE(fs::exists(dir0, error_code)) << dir0;
+  std::string share_id;
+  ASSERT_EQ(kSuccess, user_storage1_->CreateShare(dir0, users, &share_id));
+  user_storage1_->UnMountDrive();
+  Sleep(interval_ * 2);
+
+  user_storage2_->MountDrive(*g_mount_dir_,
+                             client_controller2_->SessionName(),
+                             session2_, true);
+  Sleep(interval_ * 2);
+  fs::path dir(user_storage2_->g_mount_dir() / tail);
+  ASSERT_FALSE(fs::exists(dir, error_code)) << dir;
+  ASSERT_EQ(kSuccess,
+            message_handler2_->StartCheckingForNewMessages(interval_));
+  Sleep(interval_ * 2);
+  ASSERT_TRUE(fs::exists(dir, error_code)) << dir;
+  message_handler2_->StopCheckingForNewMessages();
+  user_storage2_->UnMountDrive();
+  Sleep(interval_ * 2);
+
+  user_storage1_->MountDrive(*g_mount_dir_,
+                             client_controller1_->SessionName(),
+                             session1_, false);
+  Sleep(interval_ * 2);
+  ASSERT_TRUE(fs::exists(dir0, error_code)) << dir0;
+  ASSERT_EQ(kSuccess, user_storage1_->StopShare(share_id));
+  ASSERT_FALSE(fs::exists(dir0, error_code)) << dir0;
+  user_storage1_->UnMountDrive();
+  Sleep(interval_ * 2);
+
+  user_storage2_->MountDrive(*g_mount_dir_,
+                             client_controller2_->SessionName(),
+                             session2_, false);
+  Sleep(interval_ * 2);
+  ASSERT_TRUE(fs::exists(dir, error_code)) << dir;
+  ASSERT_EQ(kSuccess,
+            message_handler2_->StartCheckingForNewMessages(interval_));
+  Sleep(interval_ * 2);
+  ASSERT_FALSE(fs::exists(dir, error_code)) << dir << " : "
+                                           << error_code.message();
+  message_handler2_->StopCheckingForNewMessages();
+  user_storage2_->UnMountDrive();
+  Sleep(interval_ * 2);
+
+  user_storage1_->MountDrive(*g_mount_dir_,
+                             client_controller1_->SessionName(),
+                             session1_, false);
+  Sleep(interval_ * 2);
+  ASSERT_FALSE(fs::exists(dir0, error_code)) << dir0;
+  user_storage1_->UnMountDrive();
+  Sleep(interval_ * 2);
+}
+
 TEST_F(UserStorageTest, FUNC_RemoveUserByOwner) {
   user_storage1_->MountDrive(*g_mount_dir_,
                              client_controller1_->SessionName(),
@@ -409,6 +472,7 @@ TEST_F(UserStorageTest, FUNC_RemoveUserByOwner) {
   message_handler2_->StopCheckingForNewMessages();
   user_storage2_->UnMountDrive();
   Sleep(interval_ * 2);
+
   user_storage1_->MountDrive(*g_mount_dir_,
                              client_controller1_->SessionName(),
                              session1_, false);
@@ -417,13 +481,18 @@ TEST_F(UserStorageTest, FUNC_RemoveUserByOwner) {
   std::vector<std::string> user_ids;
   user_ids.push_back("User 2");
   ASSERT_EQ(kSuccess, user_storage1_->RemoveShareUsers(share_id, user_ids));
+  fs::path sub_dir0(CreateTestDirectory(dir0, &tail));
+  ASSERT_TRUE(fs::exists(sub_dir0, error_code)) << sub_dir0;
   user_storage1_->UnMountDrive();
   Sleep(interval_ * 2);
+
   user_storage2_->MountDrive(*g_mount_dir_,
                              client_controller2_->SessionName(),
                              session2_, false);
   Sleep(interval_ * 2);
   ASSERT_TRUE(fs::exists(dir, error_code)) << dir;
+  fs::path sub_dir(dir / tail);
+  ASSERT_FALSE(fs::exists(sub_dir, error_code)) << sub_dir;
   ASSERT_EQ(kSuccess,
             message_handler2_->StartCheckingForNewMessages(interval_));
   Sleep(interval_ * 2);
@@ -432,11 +501,13 @@ TEST_F(UserStorageTest, FUNC_RemoveUserByOwner) {
   message_handler2_->StopCheckingForNewMessages();
   user_storage2_->UnMountDrive();
   Sleep(interval_ * 2);
+
   user_storage1_->MountDrive(*g_mount_dir_,
                              client_controller1_->SessionName(),
                              session1_, false);
   Sleep(interval_ * 2);
   ASSERT_TRUE(fs::exists(dir0, error_code)) << dir0;
+  ASSERT_TRUE(fs::exists(sub_dir0, error_code)) << sub_dir0;
   user_storage1_->UnMountDrive();
   Sleep(interval_ * 2);
 }

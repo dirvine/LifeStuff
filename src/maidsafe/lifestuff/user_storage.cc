@@ -174,25 +174,20 @@ int UserStorage::InsertShare(const std::string &share_id,
 
 int UserStorage::StopShare(const std::string &share_id){
   std::map<std::string, bool> contacts;
-  drive_in_user_space_->GetShareDetails(share_id, NULL, NULL, NULL, &contacts);
-
   asymm::Keys key_ring;
-  fs::path absolute_path;
+  fs::path relative_path;
   int result(drive_in_user_space_->GetShareDetails(share_id,
-                                                   &absolute_path,
+                                                   &relative_path,
                                                    &key_ring,
-                                                   NULL, NULL));
+                                                   NULL, &contacts));
   if (result != kSuccess)
     return result;
 
-  std::string directory_id;
-  result = drive_in_user_space_->SetShareDetails(absolute_path,
-                                                 "",
-                                                 asymm::Keys(),
-                                                 session_->unique_user_id(),
-                                                 &directory_id);
+  result = LeaveShare(share_id);
   if (result != kSuccess)
     return result;
+
+  InformContactsOperation(contacts, kToLeave, share_id);
 
   boost::mutex mutex;
   boost::condition_variable cond_var;
@@ -218,24 +213,11 @@ int UserStorage::StopShare(const std::string &share_id){
     return kDeletePacketFailure;
   }
 
-  InformContactsOperation(contacts, kToLeave, share_id);
-
   return kSuccess;
 }
 
 int UserStorage::LeaveShare(const std::string & share_id){
-  fs::path absolute_path;
-  int result(drive_in_user_space_->GetShareDetails(share_id,
-                                                   &absolute_path,
-                                                   NULL, NULL, NULL));
-  if (result != kSuccess)
-    return result;
-  std::string directory_id;
-  return drive_in_user_space_->SetShareDetails(absolute_path,
-                                               "",
-                                               asymm::Keys(),
-                                               session_->unique_user_id(),
-                                               &directory_id);
+  return drive_in_user_space_->RemoveShare(share_id);
 }
 
 int UserStorage::CreateShare(const fs::path &absolute_path,
