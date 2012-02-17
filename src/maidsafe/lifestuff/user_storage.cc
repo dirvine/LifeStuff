@@ -48,14 +48,6 @@ UserStorage::UserStorage(
       message_handler_(),
       g_mount_dir_() {}
 
-void UserStorage::SetMessageHandler(
-    std::shared_ptr<MessageHandler> message_handler) {
-  message_handler_ = message_handler;
-//   message_handler_->ConnectToSignal(pca::Message::kSharedDirectory,
-//                                     std::bind(&UserStorage::NewMessageSlot,
-//                                               this, args::_1));
-}
-
 void UserStorage::MountDrive(const fs::path &mount_dir_path,
                              const std::string &session_name,
                              std::shared_ptr<Session> session,
@@ -141,6 +133,14 @@ bool UserStorage::mount_status() {
   return mount_status_;
 }
 
+void UserStorage::SetMessageHandler(
+    std::shared_ptr<MessageHandler> message_handler) {
+  message_handler_ = message_handler;
+//   message_handler_->ConnectToSignal(pca::Message::kSharedDirectory,
+//                                     std::bind(&UserStorage::NewMessageSlot,
+//                                               this, args::_1));
+}
+
 int UserStorage::GetDataMap(const fs::path &absolute_path,
                             std::string *serialised_data_map) const {
   return drive_in_user_space_->GetDataMap(absolute_path, serialised_data_map);
@@ -152,14 +152,62 @@ int UserStorage::InsertDataMap(const fs::path &absolute_path,
                                              serialised_data_map);
 }
 
-int UserStorage::ModifyShareDetails(const std::string &share_id,
-                                    const std::string *new_share_id,
-                                    const std::string *new_directory_id,
-                                    const asymm::Keys *new_key_ring) {
-  return drive_in_user_space_->UpdateShare(share_id,
-                                           new_share_id,
-                                           new_directory_id,
-                                           new_key_ring);
+int UserStorage::CreateShare(const fs::path &absolute_path,
+                             const std::map<std::string, bool> &contacts,
+                             std::string *share_id_result) {
+  std::string share_id(crypto::Hash<crypto::SHA512>(absolute_path.string()));
+  if (share_id_result)
+    *share_id_result = share_id;
+
+  std::vector<pki::SignaturePacketPtr> signature_packets;
+  pki::CreateChainedId(&signature_packets, 1);
+  asymm::Keys key_ring;
+  key_ring.identity = signature_packets[0]->name();
+  key_ring.public_key = signature_packets[0]->value();
+  key_ring.private_key = signature_packets[0]->private_key();
+  key_ring.validation_token = signature_packets[0]->signature();
+
+  // Store packets
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  std::vector<int> results;
+  results.push_back(kPendingResult);
+
+  AlternativeStore::ValidationData validation_data(
+      PopulateValidationData(key_ring));
+  std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
+  VoidFuncOneInt callback(std::bind(&SendContactInfoCallback, args::_1,
+                                    &mutex, &cond_var, &results[0]));
+  if (converter_->AddOperation(packet_id, callback) != kSuccess) {
+    DLOG(ERROR) << "Failed to add operation to converter";
+    return kAuthenticationError;
+  }
+  chunk_store_->Store(packet_id,
+                      ComposeSignaturePacketValue(*signature_packets[0]),
+                      validation_data);
+  int result(AwaitingResponse(mutex, cond_var, results));
+  if (result != kSuccess)
+    return result;
+  if (results[0] != kSuccess) {
+    DLOG(ERROR) << "Failed to store packet.  Packet 1 : " << results[0];
+    return kStorePacketFailure;
+  }
+
+  std::string directory_id;
+  result = drive_in_user_space_->SetShareDetails(absolute_path,
+                                                 share_id,
+                                                 key_ring,
+                                                 session_->unique_user_id(),
+                                                 &directory_id);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed in creating share of " << absolute_path.string()
+                << ", with result of : " << result;
+    return result;
+  }
+  // AddShareUser will send out the informing msg to contacts
+  AddShareUsers(share_id, contacts);
+
+  return kSuccess;
 }
 
 int UserStorage::InsertShare(const std::string &share_id,
@@ -220,65 +268,6 @@ int UserStorage::LeaveShare(const std::string & share_id){
   return drive_in_user_space_->RemoveShare(share_id);
 }
 
-int UserStorage::CreateShare(const fs::path &absolute_path,
-                             const std::map<std::string, bool> &contacts,
-                             std::string *share_id_result) {
-  std::string share_id(crypto::Hash<crypto::SHA512>(absolute_path.string()));
-  if (share_id_result)
-    *share_id_result = share_id;
-
-  std::vector<pki::SignaturePacketPtr> signature_packets;
-  pki::CreateChainedId(&signature_packets, 1);
-  asymm::Keys key_ring;
-  key_ring.identity = signature_packets[0]->name();
-  key_ring.public_key = signature_packets[0]->value();
-  key_ring.private_key = signature_packets[0]->private_key();
-  key_ring.validation_token = signature_packets[0]->signature();
-
-  // Store packets
-  boost::mutex mutex;
-  boost::condition_variable cond_var;
-  std::vector<int> results;
-  results.push_back(kPendingResult);
-
-  AlternativeStore::ValidationData validation_data(
-      PopulateValidationData(key_ring));
-  std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
-  VoidFuncOneInt callback(std::bind(&SendContactInfoCallback, args::_1,
-                                    &mutex, &cond_var, &results[0]));
-  if (converter_->AddOperation(packet_id, callback) != kSuccess) {
-    DLOG(ERROR) << "Failed to add operation to converter";
-    return kAuthenticationError;
-  }
-  chunk_store_->Store(packet_id,
-                      ComposeSignaturePacketValue(*signature_packets[0]),
-                      validation_data);
-  int result(AwaitingResponse(mutex, cond_var, results));
-  if (result != kSuccess)
-    return result;
-  if (results[0] != kSuccess) {
-    DLOG(ERROR) << "Failed to store packet.  Packet 1 : " << results[0];
-    return kStorePacketFailure;
-  }
-
-  std::string directory_id;
-  result = drive_in_user_space_->SetShareDetails(absolute_path,
-                                                 share_id,
-                                                 key_ring,
-                                                 session_->unique_user_id(),
-                                                 &directory_id);
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed in creating share of " << absolute_path.string()
-                << ", with result of : " << result;
-    return result;
-  }
-
-  // AddShareUser will send out the informing msg to contacts
-  AddShareUsers(share_id, contacts);
-
-  return kSuccess;
-}
-
 int UserStorage::AddShareUsers(const std::string &share_id,
                                const std::map<std::string, bool> &contacts) {
 
@@ -294,7 +283,6 @@ int UserStorage::AddShareUsers(const std::string &share_id,
   InformContactsOperation(contacts, kToJoin, share_id,
                           absolute_path.string(),
                           directory_id, key_ring);
-
   return kSuccess;
 }
 
@@ -479,10 +467,40 @@ int UserStorage::DeleteHiddenFile(const fs::path &absolute_path) {
   return drive_in_user_space_->DeleteHiddenFile(absolute_path);
 }
 
-int UserStorage::MatchHiddenFiles(const fs::path &relative_path,
-                                  const std::string &regex,
-                                  std::list<std::string> *matches) {
-  return drive_in_user_space_->MatchHiddenFiles(relative_path, regex, matches);
+int UserStorage::SearchHiddenFiles(const fs::path &relative_path,
+                                   const std::string &regex,
+                                   std::list<std::string> *results) {
+  return
+    drive_in_user_space_->SearchHiddenFiles(relative_path, regex, results);
+}
+
+void UserStorage::NewMessageSlot(const pca::Message &message) {
+  if (message.subject() == "leave_share") {
+    LeaveShare(message.content(0));
+  } else {
+    asymm::Keys key_ring;
+    if (message.subject() == "upgrade_share") {
+      key_ring.identity = message.content(1);
+      key_ring.validation_token = message.content(2);
+      asymm::DecodePrivateKey(message.content(3), &(key_ring.private_key));
+      asymm::DecodePublicKey(message.content(4), &(key_ring.public_key));
+      ModifyShareDetails(message.content(0), NULL, NULL, &key_ring);
+    } else {
+      if (message.content_size() > 4) {
+        key_ring.identity = message.content(3);
+        key_ring.validation_token = message.content(4);
+        asymm::DecodePrivateKey(message.content(5), &(key_ring.private_key));
+        asymm::DecodePublicKey(message.content(6), &(key_ring.public_key));
+      }
+      if (message.subject() == "join_share") {
+        InsertShare(message.content(0), message.content(1),
+                    message.content(2), key_ring);
+      } else if (message.subject() == "move_share") {
+        ModifyShareDetails(message.content(0), &(message.content(1)),
+                           &(message.content(2)), &key_ring);
+      }
+    }
+  }
 }
 
 bs2::connection UserStorage::ConnectToDriveChanged(
@@ -493,6 +511,30 @@ bs2::connection UserStorage::ConnectToDriveChanged(
 bs2::connection UserStorage::ConnectToShareChanged(
     drive::ShareChangedSlotPtr slot) const {
   return drive_in_user_space_->ConnectToShareChanged(slot);
+}
+
+int UserStorage::ModifyShareDetails(const std::string &share_id,
+                                    const std::string *new_share_id,
+                                    const std::string *new_directory_id,
+                                    const asymm::Keys *new_key_ring) {
+  return drive_in_user_space_->UpdateShare(share_id,
+                                           new_share_id,
+                                           new_directory_id,
+                                           new_key_ring);
+}
+
+AlternativeStore::ValidationData UserStorage::PopulateValidationData(
+    const asymm::Keys &key_ring) {
+  AlternativeStore::ValidationData validation_data;
+  validation_data.key_pair = key_ring;
+  pca::SignedData signed_data;
+  signed_data.set_data(RandomString(64));
+  asymm::Sign(signed_data.data(),
+              validation_data.key_pair.private_key,
+              &validation_data.ownership_proof);
+  signed_data.set_signature(validation_data.ownership_proof);
+  validation_data.ownership_proof = signed_data.SerializeAsString();
+  return validation_data;
 }
 
 void UserStorage::InformContactsOperation(
@@ -561,49 +603,6 @@ void UserStorage::InformContactsOperation(
                     << ", with result of : " << result;
     }
   }
-}
-
-void UserStorage::NewMessageSlot(const pca::Message &message) {
-  if (message.subject() == "leave_share") {
-    LeaveShare(message.content(0));
-  } else {
-    asymm::Keys key_ring;
-    if (message.subject() == "upgrade_share") {
-      key_ring.identity = message.content(1);
-      key_ring.validation_token = message.content(2);
-      asymm::DecodePrivateKey(message.content(3), &(key_ring.private_key));
-      asymm::DecodePublicKey(message.content(4), &(key_ring.public_key));
-      ModifyShareDetails(message.content(0), NULL, NULL, &key_ring);
-    } else {
-      if (message.content_size() > 4) {
-        key_ring.identity = message.content(3);
-        key_ring.validation_token = message.content(4);
-        asymm::DecodePrivateKey(message.content(5), &(key_ring.private_key));
-        asymm::DecodePublicKey(message.content(6), &(key_ring.public_key));
-      }
-      if (message.subject() == "join_share") {
-        InsertShare(message.content(0), message.content(1),
-                    message.content(2), key_ring);
-      } else if (message.subject() == "move_share") {
-        ModifyShareDetails(message.content(0), &(message.content(1)),
-                           &(message.content(2)), &key_ring);
-      }
-    }
-  }
-}
-
-AlternativeStore::ValidationData UserStorage::PopulateValidationData(
-    const asymm::Keys &key_ring) {
-  AlternativeStore::ValidationData validation_data;
-  validation_data.key_pair = key_ring;
-  pca::SignedData signed_data;
-  signed_data.set_data(RandomString(64));
-  asymm::Sign(signed_data.data(),
-              validation_data.key_pair.private_key,
-              &validation_data.ownership_proof);
-  signed_data.set_signature(validation_data.ownership_proof);
-  validation_data.ownership_proof = signed_data.SerializeAsString();
-  return validation_data;
 }
 
 }  // namespace lifestuff

@@ -204,7 +204,8 @@ TEST_F(UserStorageTest, FUNC_CreateShare) {
   std::map<std::string, bool> users;
   users.insert(std::make_pair("User 2", false));
   std::string tail;
-  fs::path dir0(CreateTestDirectory(user_storage1_->g_mount_dir(), &tail));
+  fs::path dir0(CreateTestDirectory(user_storage1_->g_mount_dir() /
+                                    fs::path("/").make_preferred(), &tail));
   ASSERT_EQ(kSuccess, user_storage1_->CreateShare(dir0, users));
   user_storage1_->UnMountDrive();
 
@@ -212,7 +213,8 @@ TEST_F(UserStorageTest, FUNC_CreateShare) {
                              client_controller2_->SessionName(),
                              session2_, true);
   Sleep(interval_ * 2);
-  fs::path dir(user_storage2_->g_mount_dir() / tail);
+  fs::path dir(user_storage2_->g_mount_dir() / fs::path("/").make_preferred() /
+               tail);
   boost::system::error_code error_code;
   EXPECT_FALSE(fs::exists(dir, error_code)) << dir;
 

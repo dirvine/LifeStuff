@@ -103,12 +103,12 @@ class UserStorage {
   // ****************************** Shares *************************************
   int CreateShare(const fs::path &absolute_path,
                   const std::map<std::string, bool> &contacts,
-                  std::string *share_id_result = NULL);
-  int StopShare(const std::string &share_id);
+                  std::string *share_id_result = nullptr);
   int InsertShare(const std::string &share_id,
                   const fs::path &absolute_path,
                   const std::string &directory_id,
                   const asymm::Keys &share_keyring);
+  int StopShare(const std::string &share_id);
   int LeaveShare(const std::string & share_id);
   int AddShareUsers(const std::string &share_id,
                     const std::map<std::string, bool> &contacts);
@@ -134,8 +134,8 @@ class UserStorage {
                       const std::string &content,
                       bool overwrite_existing);
   int DeleteHiddenFile(const fs::path &absolute_path);
-  int MatchHiddenFiles(const fs::path &relative_path, const std::string &regex,
-                       std::list<std::string> *matches);
+  int SearchHiddenFiles(const fs::path &relative_path, const std::string &regex,
+                        std::list<std::string> *results);
 
   void NewMessageSlot(const pca::Message &message);
   // ************************* Signals Handling ********************************
