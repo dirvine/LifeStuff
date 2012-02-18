@@ -198,16 +198,22 @@ class PublicIdTest : public testing::Test {
          it != session->contact_handler_map().end();
          ++it) {
       contacts.clear();
-      (*it).second->OrderedContacts(&contacts);
+      PublicUsername *pub_name = data_atlas.add_public_usernames();
+      pub_name->set_own_public_username((*it).first);
+      (*it).second->OrderedContacts(&contacts, kAlphabetical, kRequestSent |
+                                                              kPendingResponse |
+                                                              kConfirmed |
+                                                              kBlocked);
       for (size_t n = 0; n < contacts.size(); ++n) {
-        PublicContact *pc = data_atlas.add_contacts();
-        pc->set_own_public_username((*it).first);
+        PublicContact *pc = pub_name->add_contacts();
         pc->set_public_username(contacts[n].public_username);
         pc->set_mpid_name(contacts[n].mpid_name);
         pc->set_mmid_name(contacts[n].mmid_name);
         pc->set_status(contacts[n].status);
         pc->set_rank(contacts[n].rank);
         pc->set_last_contact(contacts[n].last_contact);
+        DLOG(ERROR) << "Added contact " << contacts[n].public_username
+                    << " of own pubname " << (*it).first;
       }
     }
     data_atlas.SerializeToString(ser_conts);
@@ -220,19 +226,16 @@ class PublicIdTest : public testing::Test {
     ASSERT_EQ(kSuccess, session->ParseKeyChain(ser_keys, ser_sels));
     DataAtlas data_atlas;
     data_atlas.ParseFromString(ser_conts);
-    std::set<std::string> public_usernames;
-    std::string public_username;
-    for (int n = 0; n < data_atlas.contacts_size(); ++n) {
-      if (public_usernames.find(data_atlas.contacts(n).own_public_username()) ==
-          public_usernames.end()) {
-        session->contact_handler_map().insert(
-            std::make_pair(data_atlas.contacts(n).own_public_username(),
-                           ContactsHandlerPtr(new ContactsHandler)));
-        public_username = data_atlas.contacts(n).own_public_username();
+    std::string pub_name;
+    for (int n = 0; n < data_atlas.public_usernames_size(); ++n) {
+      pub_name = data_atlas.public_usernames(n).own_public_username();
+      session->contact_handler_map().insert(
+          std::make_pair(pub_name,
+                         std::make_shared<ContactsHandler>()));
+      for (int a(0); a < data_atlas.public_usernames(n).contacts_size(); ++a) {
+        Contact c(data_atlas.public_usernames(n).contacts(a));
+        session->contact_handler_map()[pub_name]->AddContact(c);
       }
-      Contact c(data_atlas.contacts(n));
-      ASSERT_EQ(kSuccess,
-                session->contact_handler_map()[public_username]->AddContact(c));
     }
   }
 
