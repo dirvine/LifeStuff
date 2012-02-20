@@ -91,7 +91,7 @@ class UserStorageTest : public testing::Test {
     }
     EXPECT_EQ(kSuccess, user_storage->InsertShare(message.content(0),
                                                   message.content(1),
-                                                  message.content(2), 
+                                                  message.content(2),
                                                   key_ring));
   }
 
@@ -129,9 +129,9 @@ class UserStorageTest : public testing::Test {
       asymm::DecodePublicKey(message.content(6), &(key_ring.public_key));
     }
     EXPECT_EQ(kSuccess, user_storage->ModifyShareDetails(message.content(0),
-                                                         message.content(1),
-                                                         message.content(2), 
-                                                         key_ring));
+                                                         &message.content(1),
+                                                         &message.content(2),
+                                                         &key_ring));
   }
  protected:
   void SetUp() {
