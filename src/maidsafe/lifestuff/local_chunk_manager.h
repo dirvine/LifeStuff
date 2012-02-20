@@ -37,20 +37,20 @@ class LocalChunkManager : public pd::ChunkManager {
   ~LocalChunkManager();
 
   void GetChunk(const std::string &name,
-                const rsa::Identity &owner_key_id,
-                const rsa::PublicKey &owner_public_key,
+                const asymm::Identity &owner_key_id,
+                const asymm::PublicKey &owner_public_key,
                 const std::string &ownership_proof);
   void StoreChunk(const std::string &name,
-                  const rsa::Identity &owner_key_id,
-                  const rsa::PublicKey &owner_public_key);
+                  const asymm::Identity &owner_key_id,
+                  const asymm::PublicKey &owner_public_key);
   void DeleteChunk(const std::string &name,
-                   const rsa::Identity &owner_key_id,
-                   const rsa::PublicKey &owner_public_key,
+                   const asymm::Identity &owner_key_id,
+                   const asymm::PublicKey &owner_public_key,
                    const std::string &ownership_proof);
   void ModifyChunk(const std::string &name,
                    const std::string &content,
-                   const rsa::Identity &owner_key_id,
-                   const rsa::PublicKey &owner_public_key);
+                   const asymm::Identity &owner_key_id,
+                   const asymm::PublicKey &owner_public_key);
 
  private:
   LocalChunkManager(const LocalChunkManager&);

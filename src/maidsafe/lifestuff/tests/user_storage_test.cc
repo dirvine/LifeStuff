@@ -106,7 +106,7 @@ class UserStorageTest : public testing::Test {
     }
     EXPECT_EQ(kSuccess, user_storage->InsertShare(message.content(0),
                                                   message.content(1),
-                                                  message.content(2), 
+                                                  message.content(2),
                                                   key_ring));
   }
 

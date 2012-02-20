@@ -38,6 +38,7 @@
 #include "maidsafe/lifestuff/local_chunk_manager.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
+#include "maidsafe/lifestuff/utils.h"
 #include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
 namespace args = std::placeholders;
@@ -50,35 +51,49 @@ namespace lifestuff {
 
 namespace test {
 
-class AuthenticationTest : public testing::TestWithParam<bool> {
+class AuthenticationTest : public testing::TestWithParam<std::string> {
  public:
   AuthenticationTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
         session_(new Session),
+        client_container_(),
         remote_chunk_store_(),
         authentication_(session_),
-        username_("user"),
+        username_(RandomAlphaNumericString(8)),
         pin_("1234"),
-        password_("password1"),
+        password_(RandomAlphaNumericString(8)),
         ser_dm_(RandomString(1000)),
         surrogate_ser_dm_(RandomString(1000)),
         converter_(new YeOldeSignalToCallbackConverter),
-        service_() {}
+        asio_service_() {}
 
  protected:
   void SetUp() {
-    service_.Start(10);
+    asio_service_.Start(10);
 
-    std::shared_ptr<BufferedChunkStore> bcs(
-        new BufferedChunkStore(service_.service()));
-    bcs->Init(*test_dir_ / "buffered_chunk_store");
-    std::shared_ptr<priv::ChunkActionAuthority> caa(
-        new priv::ChunkActionAuthority(bcs));
-    std::shared_ptr<LocalChunkManager> local_chunk_manager(
-        new LocalChunkManager(bcs, *test_dir_ / "local_chunk_manager"));
-    remote_chunk_store_.reset(new pd::RemoteChunkStore(bcs,
-                                                       local_chunk_manager,
-                                                       caa));
+    if (GetParam() == "Local Storage") {
+      std::shared_ptr<BufferedChunkStore> buffered_chunk_store(
+          new BufferedChunkStore(asio_service_.service()));
+      buffered_chunk_store->Init(*test_dir_ / "buffered_chunk_store");
+      std::shared_ptr<priv::ChunkActionAuthority> chunk_action_authority(
+          new priv::ChunkActionAuthority(buffered_chunk_store));
+      std::shared_ptr<LocalChunkManager> local_chunk_manager(
+          new LocalChunkManager(buffered_chunk_store,
+                                *test_dir_ / "local_chunk_manager"));
+      remote_chunk_store_.reset(
+          new pd::RemoteChunkStore(buffered_chunk_store,
+                                   local_chunk_manager,
+                                   chunk_action_authority));
+    } else if (GetParam() == "Network Storage") {
+      client_container_ = SetUpClientContainer(*test_dir_);
+      ASSERT_TRUE(client_container_.get() != nullptr);
+      remote_chunk_store_.reset(new pd::RemoteChunkStore(
+          client_container_->chunk_store(),
+          client_container_->chunk_manager(),
+          client_container_->chunk_action_authority()));
+    } else {
+      FAIL() << "Invalid test value parameter";
+    }
 
     session_->ResetSession();
     remote_chunk_store_->sig_chunk_stored()->connect(
@@ -93,7 +108,9 @@ class AuthenticationTest : public testing::TestWithParam<bool> {
     authentication_.Init(remote_chunk_store_, converter_);
   }
 
-  void TearDown() { service_.Stop(); }
+  void TearDown() {
+    asio_service_.Stop();
+  }
 
   int GetMasterDataMap(std::string *ser_dm_login) {
     return GetMasterDataMap(ser_dm_login, password_);
@@ -121,8 +138,6 @@ class AuthenticationTest : public testing::TestWithParam<bool> {
     return kSuccess;
   }
 
-  void InitAndCloseCallback(int /*i*/) {}
-
   std::string PacketValueFromSession(passport::PacketType packet_type,
                                      bool confirmed) {
     return session_->passport_->PacketName(packet_type, confirmed);
@@ -144,25 +159,24 @@ class AuthenticationTest : public testing::TestWithParam<bool> {
 
   std::shared_ptr<fs::path> test_dir_;
   std::shared_ptr<Session> session_;
+  ClientContainerPtr client_container_;
   std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store_;
   Authentication authentication_;
   std::string username_, pin_, password_, ser_dm_, surrogate_ser_dm_;
   std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
-  AsioService service_;
+  AsioService asio_service_;
 
  private:
   AuthenticationTest(const AuthenticationTest&);
   AuthenticationTest &operator=(const AuthenticationTest&);
 };
 
-TEST_F(AuthenticationTest, FUNC_CreateUserSysPackets) {
-  username_ += "01";
+TEST_P(AuthenticationTest, FUNC_CreateUserSysPackets) {
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
 }
 
-TEST_F(AuthenticationTest, FUNC_GoodLogin) {
-  username_ += "02";
+TEST_P(AuthenticationTest, FUNC_GoodLogin) {
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
@@ -187,8 +201,7 @@ TEST_F(AuthenticationTest, FUNC_GoodLogin) {
   ASSERT_EQ(pin_, session_->pin());
 }
 
-TEST_F(AuthenticationTest, FUNC_LoginNoUser) {
-  username_ += "03";
+TEST_P(AuthenticationTest, FUNC_LoginNoUser) {
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
@@ -196,13 +209,12 @@ TEST_F(AuthenticationTest, FUNC_LoginNoUser) {
                                                        surrogate_ser_dm_));
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
   std::string ser_dm_login;
-  password_ = "password_tonto";
+  password_ += "password_tonto";
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
   ASSERT_NE(ser_dm_, ser_dm_login);
 }
 
-TEST_F(AuthenticationTest, FUNC_RegisterUserOnce) {
-  username_ += "041";
+TEST_P(AuthenticationTest, FUNC_RegisterUserOnce) {
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
@@ -210,24 +222,20 @@ TEST_F(AuthenticationTest, FUNC_RegisterUserOnce) {
                                                        surrogate_ser_dm_));
   ASSERT_EQ(username_, session_->username());
   ASSERT_EQ(pin_, session_->pin());
-//  Sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(password_, session_->password());
 }
 
-TEST_F(AuthenticationTest, FUNC_RegisterUserWithoutNetworkCheck) {
-  username_ += "042";
+TEST_P(AuthenticationTest, FUNC_RegisterUserWithoutNetworkCheck) {
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
                                                        ser_dm_,
                                                        surrogate_ser_dm_));
   ASSERT_EQ(username_, session_->username());
   ASSERT_EQ(pin_, session_->pin());
-//  Sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(password_, session_->password());
 }
 
-TEST_F(AuthenticationTest, FUNC_RegisterUserTwice) {
-  username_ += "05";
+TEST_P(AuthenticationTest, FUNC_RegisterUserTwice) {
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
@@ -237,8 +245,7 @@ TEST_F(AuthenticationTest, FUNC_RegisterUserTwice) {
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
 }
 
-TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionBlocking) {
-  username_ += "06";
+TEST_P(AuthenticationTest, FUNC_RepeatedSaveSessionBlocking) {
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
@@ -271,8 +278,7 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionBlocking) {
 //                   PacketSignerFromSession(passport::kTmid, true)));
 }
 
-TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
-  username_ += "08";
+TEST_P(AuthenticationTest, FUNC_ChangeUsername) {
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
@@ -285,11 +291,11 @@ TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
   ASSERT_FALSE(original_tmidname.empty());
   ASSERT_FALSE(original_stmidname.empty());
 
-  ASSERT_EQ(kSuccess, authentication_.ChangeUsername(ser_dm_ + "2",
-                                                     "el iuserneim"));
-  ASSERT_EQ("el iuserneim", session_->username());
+  const std::string kNewName(RandomAlphaNumericString(9));
+  ASSERT_EQ(kSuccess, authentication_.ChangeUsername(ser_dm_ + "2", kNewName));
+  ASSERT_EQ(kNewName, session_->username());
 
-  ASSERT_EQ(kUserExists, authentication_.GetUserInfo("el iuserneim", pin_));
+  ASSERT_EQ(kUserExists, authentication_.GetUserInfo(kNewName, pin_));
   std::string ser_dm_login;
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
@@ -299,8 +305,7 @@ TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
 //                  PacketSignerFromSession(passport::kTmid, true)));
 }
 
-TEST_F(AuthenticationTest, FUNC_ChangePin) {
-  username_ += "09";
+TEST_P(AuthenticationTest, FUNC_ChangePin) {
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
@@ -313,10 +318,11 @@ TEST_F(AuthenticationTest, FUNC_ChangePin) {
   ASSERT_FALSE(original_tmidname.empty());
   ASSERT_FALSE(original_stmidname.empty());
 
-  ASSERT_EQ(kSuccess, authentication_.ChangePin(ser_dm_ + "2", "7894"));
-  ASSERT_EQ("7894", session_->pin());
+  const std::string kNewPin("7894");
+  ASSERT_EQ(kSuccess, authentication_.ChangePin(ser_dm_ + "2", kNewPin));
+  ASSERT_EQ(kNewPin, session_->pin());
 
-  ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, "7894"));
+  ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, kNewPin));
   std::string ser_dm_login;
   ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
@@ -326,17 +332,17 @@ TEST_F(AuthenticationTest, FUNC_ChangePin) {
 //                  PacketSignerFromSession(passport::kTmid, true)));
 }
 
-TEST_F(AuthenticationTest, FUNC_ChangePassword) {
-  username_ += "10";
+TEST_P(AuthenticationTest, FUNC_ChangePassword) {
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
                                                        ser_dm_,
                                                        surrogate_ser_dm_));
 
+  const std::string kNewPassword(RandomAlphaNumericString(9));
   ASSERT_EQ(kSuccess, authentication_.ChangePassword(ser_dm_ + "2",
-                                                     "password_new"));
-  ASSERT_EQ("password_new", session_->password());
+                                                     kNewPassword));
+  ASSERT_EQ(kNewPassword, session_->password());
 
   std::string ser_dm_login;
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
@@ -345,12 +351,11 @@ TEST_F(AuthenticationTest, FUNC_ChangePassword) {
 
   ser_dm_login.clear();
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
-  ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login, "password_new"));
+  ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login, kNewPassword));
   ASSERT_NE(ser_dm_, ser_dm_login);
 }
 
-TEST_F(AuthenticationTest, FUNC_RegisterLeaveRegister) {
-  username_ += "13";
+TEST_P(AuthenticationTest, FUNC_RegisterLeaveRegister) {
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
@@ -371,9 +376,8 @@ TEST_F(AuthenticationTest, FUNC_RegisterLeaveRegister) {
                                                        surrogate_ser_dm_));
 }
 
-INSTANTIATE_TEST_CASE_P(LocalRemote,
-                        AuthenticationTest,
-                        testing::Values(true));
+INSTANTIATE_TEST_CASE_P(LocalAndNetwork, AuthenticationTest,
+                        testing::Values("Local Storage", "Network Storage"));
 
 }  // namespace test
 

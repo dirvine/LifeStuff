@@ -30,7 +30,7 @@
 
 int main(int argc, char **argv) {
   // Initialise logging
-  google::InitGoogleLogging(argv[0]);
+  maidsafe::InitLogging(argv[0]);
   // Choose to direct output to stderr or not.
   FLAGS_logtostderr = true;
   // If Google logging is linked in, log messages at or above this level.
@@ -39,9 +39,12 @@ int main(int argc, char **argv) {
   FLAGS_ms_logging_private = google::ERROR;
   FLAGS_ms_logging_pki = google::FATAL;
   FLAGS_ms_logging_passport = google::FATAL;
-  FLAGS_ms_logging_lifestuff = google::ERROR;
   FLAGS_ms_logging_drive = google::ERROR;
   FLAGS_ms_logging_encrypt = google::ERROR;
+  FLAGS_ms_logging_transport = google::FATAL;
+  FLAGS_ms_logging_dht = google::FATAL;
+  FLAGS_ms_logging_pd = google::FATAL;
+  FLAGS_ms_logging_lifestuff = google::INFO;
 
   testing::InitGoogleTest(&argc, argv);
 
