@@ -67,7 +67,8 @@ enum ShareOperations {
   kToJoin,
   kToLeave,
   kToMove,
-  kToUpgrade
+  kToUpgrade,
+  kToRemove
 };
 
 }  // namespace lifestuff

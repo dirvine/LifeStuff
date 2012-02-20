@@ -78,6 +78,21 @@ class UserStorageTest : public testing::Test {
       message_handler1_(),
       message_handler2_() {}
 
+  void DoShareTest(
+        const std::shared_ptr<maidsafe::lifestuff::UserStorage> &user_storage,
+        const pca::Message &message) {
+    if (message.subject() == "join_share")
+      return InsertShareTest(user_storage, message);
+    if (message.subject() == "remove_share")
+      return RemoveShareTest(user_storage, message);
+    if (message.subject() == "leave_share")
+      return StopShareTest(user_storage, message);
+    if (message.subject() == "upgrade_share")
+      return UpgradeShareTest(user_storage, message);
+    if (message.subject() == "move_share")
+      return ModifyShareTest(user_storage, message);
+  }
+
   void InsertShareTest(
         const std::shared_ptr<maidsafe::lifestuff::UserStorage> &user_storage,
         const pca::Message &message) {
@@ -100,6 +115,13 @@ class UserStorageTest : public testing::Test {
         const pca::Message &message) {
     EXPECT_EQ(message.subject(), "leave_share");
     EXPECT_EQ(kSuccess, user_storage->StopShare(message.content(0)));
+  }
+
+  void RemoveShareTest(
+        const std::shared_ptr<maidsafe::lifestuff::UserStorage> &user_storage,
+        const pca::Message &message) {
+    EXPECT_EQ(message.subject(), "remove_share");
+    EXPECT_EQ(kSuccess, user_storage->LeaveShare(message.content(0)));
   }
 
   void UpgradeShareTest(
@@ -129,9 +151,9 @@ class UserStorageTest : public testing::Test {
       asymm::DecodePublicKey(message.content(6), &(key_ring.public_key));
     }
     EXPECT_EQ(kSuccess, user_storage->ModifyShareDetails(message.content(0),
-                                                         message.content(1),
-                                                         message.content(2), 
-                                                         key_ring));
+                                                         &message.content(1),
+                                                         &message.content(2), 
+                                                         &key_ring));
   }
  protected:
   void SetUp() {
@@ -265,9 +287,9 @@ TEST_F(UserStorageTest, FUNC_CreateShare) {
   ASSERT_EQ(kSuccess, user_storage1_->CreateShare(dir0, users));
   user_storage1_->UnMountDrive();
 
-  /*bs2::connection connection(
+  bs2::connection connection(
     message_handler2_->ConnectToSignal(pca::Message::kSharedDirectory,
-      std::bind(&UserStorageTest::InsertShareTest, this, user_storage2_, args::_1)));*/
+      std::bind(&UserStorageTest::DoShareTest, this, user_storage2_, args::_1)));
 
   user_storage2_->MountDrive(*g_mount_dir_,
                              client_controller2_->SessionName(),
@@ -329,7 +351,7 @@ TEST_F(UserStorageTest, FUNC_AddUser) {
 
   bs2::connection connection(
     message_handler2_->ConnectToSignal(pca::Message::kSharedDirectory,
-      std::bind(&UserStorageTest::InsertShareTest, this, user_storage2_, args::_1)));
+      std::bind(&UserStorageTest::DoShareTest, this, user_storage2_, args::_1)));
 
   user_storage2_->MountDrive(*g_mount_dir_,
                              client_controller2_->SessionName(),
@@ -364,7 +386,7 @@ TEST_F(UserStorageTest, FUNC_AddAdminUser) {
 
   bs2::connection connection(
     message_handler2_->ConnectToSignal(pca::Message::kSharedDirectory,
-      std::bind(&UserStorageTest::InsertShareTest, this, user_storage2_, args::_1)));
+      std::bind(&UserStorageTest::DoShareTest, this, user_storage2_, args::_1)));
 
   user_storage2_->MountDrive(*g_mount_dir_,
                              client_controller2_->SessionName(),
@@ -414,9 +436,9 @@ TEST_F(UserStorageTest, FUNC_UpgradeUserToAdmin) {
   user_storage1_->UnMountDrive();
   Sleep(interval_ * 2);
 
-  bs2::connection connection1(
+  bs2::connection connection(
     message_handler2_->ConnectToSignal(pca::Message::kSharedDirectory,
-      std::bind(&UserStorageTest::InsertShareTest, this, user_storage2_, args::_1)));
+      std::bind(&UserStorageTest::DoShareTest, this, user_storage2_, args::_1)));
 
   user_storage2_->MountDrive(*g_mount_dir_,
                              client_controller2_->SessionName(),
@@ -444,9 +466,9 @@ TEST_F(UserStorageTest, FUNC_UpgradeUserToAdmin) {
   user_storage1_->UnMountDrive();
   Sleep(interval_ * 2);
 
-  bs2::connection connection2(
+  /*bs2::connection connection2(
     message_handler2_->ConnectToSignal(pca::Message::kSharedDirectory,
-      std::bind(&UserStorageTest::UpgradeShareTest, this, user_storage2_, args::_1)));
+      std::bind(&UserStorageTest::UpgradeShareTest, this, user_storage2_, args::_1)));*/
 
   user_storage2_->MountDrive(*g_mount_dir_,
                              client_controller2_->SessionName(),
@@ -480,9 +502,9 @@ TEST_F(UserStorageTest, FUNC_StopShareByOwner) {
   user_storage1_->UnMountDrive();
   Sleep(interval_ * 2);
 
-  bs2::connection connection1(
+  bs2::connection connection(
     message_handler2_->ConnectToSignal(pca::Message::kSharedDirectory,
-      std::bind(&UserStorageTest::InsertShareTest, this, user_storage2_, args::_1)));
+      std::bind(&UserStorageTest::DoShareTest, this, user_storage2_, args::_1)));
 
   user_storage2_->MountDrive(*g_mount_dir_,
                              client_controller2_->SessionName(),
@@ -510,9 +532,9 @@ TEST_F(UserStorageTest, FUNC_StopShareByOwner) {
   user_storage1_->UnMountDrive();
   Sleep(interval_ * 2);
 
-  bs2::connection connection2(
+  /*bs2::connection connection2(
     message_handler2_->ConnectToSignal(pca::Message::kSharedDirectory,
-      std::bind(&UserStorageTest::StopShareTest, this, user_storage2_, args::_1)));
+      std::bind(&UserStorageTest::StopShareTest, this, user_storage2_, args::_1)));*/
 
   user_storage2_->MountDrive(*g_mount_dir_,
                              client_controller2_->SessionName(),
@@ -522,7 +544,7 @@ TEST_F(UserStorageTest, FUNC_StopShareByOwner) {
   ASSERT_EQ(kSuccess,
             message_handler2_->StartCheckingForNewMessages(interval_));
   Sleep(interval_ * 2);
-  ASSERT_FALSE(fs::exists(dir, error_code)) << dir << " : "
+  ASSERT_TRUE(fs::exists(dir, error_code)) << dir << " : "
                                            << error_code.message();
   message_handler2_->StopCheckingForNewMessages();
   user_storage2_->UnMountDrive();
@@ -553,9 +575,9 @@ TEST_F(UserStorageTest, FUNC_RemoveUserByOwner) {
   user_storage1_->UnMountDrive();
   Sleep(interval_ * 2);
 
-  bs2::connection connection1(
+  bs2::connection connection(
     message_handler2_->ConnectToSignal(pca::Message::kSharedDirectory,
-      std::bind(&UserStorageTest::InsertShareTest, this, user_storage2_, args::_1)));
+      std::bind(&UserStorageTest::DoShareTest, this, user_storage2_, args::_1)));
 
   user_storage2_->MountDrive(*g_mount_dir_,
                              client_controller2_->SessionName(),
@@ -586,9 +608,9 @@ TEST_F(UserStorageTest, FUNC_RemoveUserByOwner) {
   user_storage1_->UnMountDrive();
   Sleep(interval_ * 2);
 
-  bs2::connection connection2(
+  /*bs2::connection connection2(
     message_handler2_->ConnectToSignal(pca::Message::kSharedDirectory,
-      std::bind(&UserStorageTest::StopShareTest, this, user_storage2_, args::_1)));
+      std::bind(&UserStorageTest::StopShareTest, this, user_storage2_, args::_1)));*/
 
   user_storage2_->MountDrive(*g_mount_dir_,
                              client_controller2_->SessionName(),
