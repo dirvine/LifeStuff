@@ -25,8 +25,11 @@
 
 #include "maidsafe/pd/client/remote_chunk_store.h"
 
+#include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/log.h"
+#include "maidsafe/lifestuff/message_handler.h"
 #include "maidsafe/lifestuff/session.h"
+#include "maidsafe/lifestuff/utils.h"
 #include "maidsafe/lifestuff/version.h"
 #include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 

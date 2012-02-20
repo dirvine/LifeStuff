@@ -30,23 +30,23 @@
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
 
-#include "maidsafe/pki/packet.h"
-
-#include "maidsafe/passport/passport_config.h"
-
-#include "maidsafe/lifestuff/lifestuff.h"
-#include "maidsafe/lifestuff/version.h"
-#include "maidsafe/lifestuff/utils.h"
-#include "maidsafe/lifestuff/contacts.h"
-#include "maidsafe/lifestuff/return_codes.h"
-#include "maidsafe/lifestuff/message_handler.h"
-
 #ifdef WIN32
 #  include "maidsafe/drive/win_drive.h"
 #else
 #  include "maidsafe/drive/unix_drive.h"
 #endif
 
+#include "maidsafe/common/alternative_store.h"
+
+#include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
+
+#include "maidsafe/pki/packet.h"
+
+#include "maidsafe/passport/passport_config.h"
+
+#include "maidsafe/lifestuff/lifestuff.h"
+#include "maidsafe/lifestuff/return_codes.h"
+#include "maidsafe/lifestuff/version.h"
 
 #if MAIDSAFE_LIFESTUFF_VERSION != 201
 #  error This API is not compatible with the installed library.\
@@ -60,6 +60,7 @@
 #endif
 
 namespace fs = boost::filesystem;
+namespace pca = maidsafe::priv::chunk_actions;
 
 namespace maidsafe {
 
@@ -67,8 +68,9 @@ namespace pd { class RemoteChunkStore; }
 
 namespace lifestuff {
 
-class PacketManager;
+class MessageHandler;
 class Session;
+class YeOldeSignalToCallbackConverter;
 
 class UserStorage {
  public:
@@ -138,7 +140,8 @@ class UserStorage {
                       const std::string &content,
                       bool overwrite_existing);
   int DeleteHiddenFile(const fs::path &absolute_path);
-  int SearchHiddenFiles(const fs::path &relative_path, const std::string &regex,
+  int SearchHiddenFiles(const fs::path &relative_path,
+                        const std::string &regex,
                         std::list<std::string> *results);
 
   void NewMessageSlot(const pca::Message &message);
