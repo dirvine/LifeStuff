@@ -76,9 +76,9 @@ class Authentication {
                    const VoidFuncOneInt &functor);
   int SaveSession(const std::string &serialised_data_atlas);
   // Used when logging in.
-  int GetMasterDataMap(const std::string &password,
-                       std::string *serialised_data_atlas,
-                       std::string *surrogate_serialised_data_atlas);
+  void GetMasterDataMap(const std::string &password,
+                        std::string *serialised_data_atlas,
+                        std::string *surrogate_serialised_data_atlas);
   int SetLoggedInData(const std::string &ser_da,
                       const std::string &surrogate_ser_da);
   int RemoveMe();

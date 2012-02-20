@@ -814,7 +814,7 @@ int Authentication::SaveSession(const std::string &serialised_data_atlas) {
   return result;
 }
 
-int Authentication::GetMasterDataMap(
+void Authentication::GetMasterDataMap(
     const std::string &password,
     std::string *serialised_data_atlas,
     std::string *surrogate_serialised_data_atlas) {
@@ -830,19 +830,19 @@ int Authentication::GetMasterDataMap(
                                   session_->pin(),
                                   password,
                                   encrypted_stmid_);
-  if (serialised_data_atlas->empty()) {
-    DLOG(ERROR) << "TMID error.";
-    if (surrogate_serialised_data_atlas->empty()) {
-      DLOG(ERROR) << "STMID error.  Found neither.";
-      return kPasswordFailure;
-    }
-    serialised_data_atlas_ = *surrogate_serialised_data_atlas;
-  } else {
-    serialised_data_atlas_ = *serialised_data_atlas;
-  }
-  session_->set_password(password);
+//  if (serialised_data_atlas->empty()) {
+//    DLOG(ERROR) << "TMID error.";
+//    if (surrogate_serialised_data_atlas->empty()) {
+//      DLOG(ERROR) << "STMID error.  Found neither.";
+//      return kPasswordFailure;
+//    }
+//    serialised_data_atlas_ = *surrogate_serialised_data_atlas;
+//  } else {
+//    serialised_data_atlas_ = *serialised_data_atlas;
+//  }
+//  session_->set_password(password);
 
-  return kSuccess;
+//  return kSuccess;
 }
 
 int Authentication::SetLoggedInData(const std::string &ser_da,
