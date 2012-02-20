@@ -110,6 +110,10 @@ class UserStorage {
                   const asymm::Keys &share_keyring);
   int StopShare(const std::string &share_id);
   int LeaveShare(const std::string & share_id);
+  int ModifyShareDetails(const std::string &share_id,
+                         const std::string *new_share_id,
+                         const std::string *new_directory_id,
+                         const asymm::Keys *new_key_ring);
   int AddShareUsers(const std::string &share_id,
                     const std::map<std::string, bool> &contacts);
   void GetAllShareUsers(const std::string &share_id,
@@ -143,10 +147,6 @@ class UserStorage {
   bs2::connection ConnectToShareChanged(drive::ShareChangedSlotPtr slot) const;
 
  private:
-  int ModifyShareDetails(const std::string &share_id,
-                         const std::string *new_share_id,
-                         const std::string *new_directory_id,
-                         const asymm::Keys *new_key_ring);
   void InformContactsOperation(
       const std::map<std::string, bool> &contacts,
       const ShareOperations operation,

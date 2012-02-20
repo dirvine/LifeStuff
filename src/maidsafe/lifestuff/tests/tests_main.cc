@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
   FLAGS_ms_logging_pki = google::FATAL;
   FLAGS_ms_logging_passport = google::FATAL;
   FLAGS_ms_logging_lifestuff = google::ERROR;
-  FLAGS_ms_logging_drive = google::ERROR;
+  FLAGS_ms_logging_drive = google::INFO;
   FLAGS_ms_logging_encrypt = google::ERROR;
 
   testing::InitGoogleTest(&argc, argv);
