@@ -85,7 +85,7 @@ class AuthenticationTest : public testing::TestWithParam<std::string> {
                                    chunk_action_authority));
     } else if (GetParam() == "Network Storage") {
       client_container_ = SetUpClientContainer(*test_dir_);
-      ASSERT_TRUE(client_container_.get());
+      ASSERT_TRUE(client_container_.get() != nullptr);
       remote_chunk_store_.reset(new pd::RemoteChunkStore(
           client_container_->chunk_store(),
           client_container_->chunk_manager(),
