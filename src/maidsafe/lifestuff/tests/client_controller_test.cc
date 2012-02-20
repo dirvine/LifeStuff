@@ -80,7 +80,8 @@ class ClientControllerTest : public testing::TestWithParam<std::string> {
     std::shared_ptr<ClientController> cc2(
         new ClientController(asio_service2_.service(), ss2));
     ss2->ResetSession();
-    cc2->Init(true, *test_dir_);
+    bool local(GetParam() == "Local Storage");
+    cc2->Init(local, *test_dir_);
     return cc2;
   }
 
