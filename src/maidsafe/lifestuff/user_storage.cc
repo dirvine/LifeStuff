@@ -185,12 +185,16 @@ int UserStorage::CreateShare(const fs::path &absolute_path,
     DLOG(ERROR) << "Failed to add operation to converter";
     return kAuthenticationError;
   }
+
   chunk_store_->Store(packet_id,
                       ComposeSignaturePacketValue(*signature_packets[0]),
                       validation_data);
   int result(AwaitingResponse(mutex, cond_var, results));
-  if (result != kSuccess)
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Timed out waiting for the response";
     return result;
+  }
+
   if (results[0] != kSuccess) {
     DLOG(ERROR) << "Failed to store packet.  Packet 1 : " << results[0];
     return kStorePacketFailure;
