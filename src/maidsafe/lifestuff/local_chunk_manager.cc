@@ -66,8 +66,8 @@ LocalChunkManager::LocalChunkManager(
 LocalChunkManager::~LocalChunkManager() {}
 
 void LocalChunkManager::GetChunk(const std::string &name,
-                                 const rsa::Identity &/*owner_key_id*/,
-                                 const rsa::PublicKey &owner_public_key,
+                                 const asymm::Identity &/*owner_key_id*/,
+                                 const asymm::PublicKey &owner_public_key,
                                  const std::string &/*ownership_proof*/) {
   // TODO(Team): Add check of ID on network
   unsigned char chunk_type(pca::GetDataType(name));
@@ -100,8 +100,8 @@ void LocalChunkManager::GetChunk(const std::string &name,
 }
 
 void LocalChunkManager::StoreChunk(const std::string &name,
-                                   const rsa::Identity &/*owner_key_id*/,
-                                   const rsa::PublicKey &owner_public_key) {
+                                   const asymm::Identity &/*owner_key_id*/,
+                                   const asymm::PublicKey &owner_public_key) {
   // TODO(Team): Add check of ID on network
   unsigned char chunk_type(pca::GetDataType(name));
   std::string content(chunk_store_->Get(name));
@@ -126,8 +126,8 @@ void LocalChunkManager::StoreChunk(const std::string &name,
 }
 
 void LocalChunkManager::DeleteChunk(const std::string &name,
-                                    const rsa::Identity &/*owner_key_id*/,
-                                    const rsa::PublicKey &owner_public_key,
+                                    const asymm::Identity &/*owner_key_id*/,
+                                    const asymm::PublicKey &owner_public_key,
                                     const std::string &ownership_proof) {
   // TODO(Team): Add check of ID on network
   if (!simulation_chunk_action_authority_->Delete(name,
@@ -144,8 +144,8 @@ void LocalChunkManager::DeleteChunk(const std::string &name,
 
 void LocalChunkManager::ModifyChunk(const std::string &name,
                                     const std::string &content,
-                                    const rsa::Identity &/*owner_key_id*/,
-                                    const rsa::PublicKey &owner_public_key) {
+                                    const asymm::Identity &/*owner_key_id*/,
+                                    const asymm::PublicKey &owner_public_key) {
   int64_t operation_diff;
   if (!simulation_chunk_action_authority_->Modify(name,
                                                   content,

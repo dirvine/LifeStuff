@@ -179,7 +179,9 @@ Authentication::~Authentication() {
                           std::bind(&Authentication::StmidOpDone, this));
     }
     catch(const std::exception &e) {
-      DLOG(WARNING) << "Authentication dtor: " << e.what();
+      DLOG(WARNING) << "Authentication dtor: " << e.what()
+                    << ", tmid_success: " << std::boolalpha << tmid_success
+                    << ", stmid_success: " << std::boolalpha << stmid_success;
     }
 #ifdef DEBUG
     if (!tmid_success)
@@ -481,7 +483,7 @@ int Authentication::CreateUserSysPackets(const std::string &username,
   StoreSignaturePacket(passport::kMaid, &maid_status, &anmaid_status);
   OpStatus pmid_status(kPending);
   StoreSignaturePacket(passport::kPmid, &pmid_status, &maid_status);
-  bool success(true);
+  bool success(false);
   try {
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(
@@ -491,8 +493,8 @@ int Authentication::CreateUserSysPackets(const std::string &username,
                             &pmid_status, &anmid_status, &antmid_status));
   }
   catch(const std::exception &e) {
-    DLOG(ERROR) << "Authentication::CreateUserSysPackets: " << e.what();
-    success = false;
+    DLOG(ERROR) << "Authentication::CreateUserSysPackets: " << e.what()
+                << ", success: " << std::boolalpha << success;
   }
 #ifdef DEBUG
   if (!success)
@@ -888,7 +890,7 @@ int Authentication::RemoveMe() {
 //  DeletePacket(passport::kMpid, &mpid_status, NULL);
 //  OpStatus anmpid_status(kPending);
 //  DeletePacket(passport::kAnmpid, &anmpid_status, &mpid_status);
-  bool success(true);
+  bool success(false);
   try {
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(
@@ -899,8 +901,8 @@ int Authentication::RemoveMe() {
                             &ansmid_status));
   }
   catch(const std::exception &e) {
-    DLOG(ERROR) << "Authentication::RemoveMe: " << e.what();
-    success = false;
+    DLOG(ERROR) << "Authentication::RemoveMe: " << e.what()
+                << ", success: " << std::boolalpha << success;
   }
 #ifdef DEBUG
   if (!success)
