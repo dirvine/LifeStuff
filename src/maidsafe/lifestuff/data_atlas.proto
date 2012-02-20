@@ -1,7 +1,6 @@
 package maidsafe.lifestuff;
 
 message PublicContact {
-  required bytes own_public_username = 1;
   required bytes public_username = 2;
   optional bytes mpid_name = 3;
   required bytes mmid_name = 4;
@@ -13,14 +12,9 @@ message PublicContact {
   optional bytes pointer_to_info = 10;
 }
 
-message PersonalDetails {
-  optional bytes full_name = 1;
-  optional bytes phone_number = 2;
-  optional bytes birthday = 3;
-  optional bytes gender = 4;
-  optional int32 language = 5;
-  optional bytes city = 6;
-  optional int32 country = 7;
+message PublicUsername {
+  required bytes own_public_username = 1;
+  repeated PublicContact contacts = 2;
 }
 
 message DataAtlas {
@@ -29,6 +23,6 @@ message DataAtlas {
   optional bytes serialised_keyring = 3;
   optional bytes serialised_selectables = 4;
   optional bytes timestamp = 5;
-  repeated PublicContact contacts = 6;
+  repeated PublicUsername public_usernames = 6;
 }
 

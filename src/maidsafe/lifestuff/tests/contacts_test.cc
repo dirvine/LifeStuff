@@ -290,7 +290,7 @@ TEST_F(ContactsTest, BEH_ListContacts_Status) {
   types.push_back(kBlocked);
 
   do {
-    for (int n = 1; n < 21; n++) {
+    for (int n(1); n < 21; ++n) {
       msc.rank = RandomUint32() % 10;
       msc.last_contact = RandomUint32() % 10;
       msc.status = types[status_index];

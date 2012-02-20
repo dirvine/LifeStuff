@@ -470,8 +470,7 @@ int UserStorage::DeleteHiddenFile(const fs::path &absolute_path) {
 int UserStorage::SearchHiddenFiles(const fs::path &relative_path,
                                    const std::string &regex,
                                    std::list<std::string> *results) {
-  return
-    drive_in_user_space_->SearchHiddenFiles(relative_path, regex, results);
+  return drive_in_user_space_->SearchHiddenFiles(relative_path, regex, results);
 }
 
 void UserStorage::NewMessageSlot(const pca::Message &message) {
