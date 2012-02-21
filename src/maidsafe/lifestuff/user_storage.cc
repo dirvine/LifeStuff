@@ -42,13 +42,14 @@ namespace lifestuff {
 
 UserStorage::UserStorage(
     std::shared_ptr<pd::RemoteChunkStore> chunk_store,
-    std::shared_ptr<YeOldeSignalToCallbackConverter> converter)
+    std::shared_ptr<YeOldeSignalToCallbackConverter> converter,
+    std::shared_ptr<MessageHandler> message_handler)
     : mount_status_(false),
       chunk_store_(chunk_store),
       drive_in_user_space_(),
       session_(),
       converter_(converter),
-      message_handler_(),
+      message_handler_(message_handler),
       g_mount_dir_() {}
 
 void UserStorage::MountDrive(const fs::path &mount_dir_path,
@@ -239,7 +240,7 @@ int UserStorage::StopShare(const std::string &share_id){
   if (result != kSuccess)
     return result;
 
-  //result = LeaveShare(share_id);
+  // result = LeaveShare(share_id);
   result = drive_in_user_space_->SetShareDetails(g_mount_dir_ / relative_path,
                                                  "",
                                                  key_ring,

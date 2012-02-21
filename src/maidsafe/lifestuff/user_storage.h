@@ -76,7 +76,8 @@ class UserStorage {
  public:
   explicit UserStorage(
               std::shared_ptr<pd::RemoteChunkStore> chunk_store,
-              std::shared_ptr<YeOldeSignalToCallbackConverter> converter);
+              std::shared_ptr<YeOldeSignalToCallbackConverter> converter,
+              std::shared_ptr<MessageHandler> message_handler);
   virtual ~UserStorage() {}
 
   virtual void MountDrive(const fs::path &mount_dir_path,
