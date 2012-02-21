@@ -93,7 +93,7 @@ void ClientController::Init(bool local, const fs::path &base_dir) {
                                                        caa));
   } else {
     client_container_ = SetUpClientContainer(base_dir);
-    if(client_container_) {
+    if (client_container_) {
       remote_chunk_store_.reset(new pd::RemoteChunkStore(
           client_container_->chunk_store(),
           client_container_->chunk_manager(),
