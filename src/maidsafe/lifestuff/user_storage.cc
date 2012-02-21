@@ -231,6 +231,7 @@ int UserStorage::StopShare(const std::string &share_id){
   std::map<std::string, bool> contacts;
   asymm::Keys key_ring;
   fs::path relative_path;
+  maidsafe::drive::DirectoryId directory_id;
   int result(drive_in_user_space_->GetShareDetails(share_id,
                                                    &relative_path,
                                                    &key_ring,
@@ -238,11 +239,16 @@ int UserStorage::StopShare(const std::string &share_id){
   if (result != kSuccess)
     return result;
 
-  result = LeaveShare(share_id);
+  //result = LeaveShare(share_id);
+  result = drive_in_user_space_->SetShareDetails(g_mount_dir_ / relative_path,
+                                                 "",
+                                                 key_ring,
+                                                 session_->username(),
+                                                 &directory_id);
   if (result != kSuccess)
     return result;
 
-  InformContactsOperation(contacts, kToLeave, share_id);
+  InformContactsOperation(contacts, kToRemove, share_id);
 
   boost::mutex mutex;
   boost::condition_variable cond_var;
@@ -560,6 +566,10 @@ void UserStorage::InformContactsOperation(
   switch (operation) {
     case(kToLeave) : {
       sent.set_subject("leave_share");
+      break;
+    }
+    case(kToRemove) : {
+      sent.set_subject("remove_share");
       break;
     }
     case(kToJoin) : {
