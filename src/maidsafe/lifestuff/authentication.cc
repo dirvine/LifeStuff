@@ -832,19 +832,16 @@ void Authentication::GetMasterDataMap(
                                   session_->pin(),
                                   password,
                                   encrypted_stmid_);
-//  if (serialised_data_atlas->empty()) {
-//    DLOG(ERROR) << "TMID error.";
-//    if (surrogate_serialised_data_atlas->empty()) {
-//      DLOG(ERROR) << "STMID error.  Found neither.";
-//      return kPasswordFailure;
-//    }
-//    serialised_data_atlas_ = *surrogate_serialised_data_atlas;
-//  } else {
-//    serialised_data_atlas_ = *serialised_data_atlas;
-//  }
-//  session_->set_password(password);
 
-//  return kSuccess;
+  if (!serialised_data_atlas->empty()) {
+    serialised_data_atlas_ = *serialised_data_atlas;
+    return;
+  }
+
+  if (!surrogate_serialised_data_atlas->empty()) {
+    serialised_data_atlas_ = *surrogate_serialised_data_atlas;
+    return;
+  }
 }
 
 int Authentication::SetLoggedInData(const std::string &ser_da,
