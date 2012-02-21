@@ -93,7 +93,7 @@ void ClientController::Init(bool local, const fs::path &base_dir) {
                                                        caa));
   } else {
     client_container_ = SetUpClientContainer(base_dir);
-    if(client_container_) {
+    if (client_container_) {
       remote_chunk_store_.reset(new pd::RemoteChunkStore(
           client_container_->chunk_store(),
           client_container_->chunk_manager(),
@@ -301,16 +301,11 @@ bool ClientController::ValidateUser(const std::string &password) {
     DLOG(ERROR) << "CC::ValidateUser - Not initialised.";
     return false;
   }
-//  ser_da_.clear();
 
   std::string serialised_data_atlas, surrogate_serialised_data_atlas;
-  int res(auth_->GetMasterDataMap(password,
-                                  &serialised_data_atlas,
-                                  &surrogate_serialised_data_atlas));
-  if (res != 0) {
-    DLOG(ERROR) << "CC::ValidateUser - Failed retrieving DA.";
-    return false;
-  }
+  auth_->GetMasterDataMap(password,
+                          &serialised_data_atlas,
+                          &surrogate_serialised_data_atlas);
 
   if (!serialised_data_atlas.empty()) {
     DLOG(INFO) << "ClientController::ValidateUser - Using TMID";
@@ -321,15 +316,15 @@ bool ClientController::ValidateUser(const std::string &password) {
     surrogate_ser_da_ = surrogate_serialised_data_atlas;
   } else {
     // Password validation failed
-//    session_->ResetSession();
     DLOG(INFO) << "ClientController::ValidateUser - Invalid password";
     return false;
   }
 
+  session_->set_password(password);
   session_->set_session_name(false);
+
   if (ParseDa() != 0) {
     DLOG(INFO) << "ClientController::ValidateUser - Cannot parse DA";
-//    session_->ResetSession();
     return false;
   }
   logged_in_ = true;

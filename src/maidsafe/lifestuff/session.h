@@ -64,6 +64,7 @@ class SessionTest;
 
 class Authentication;
 class ContactsHandler;
+class ClientController;
 class MessageHandler;
 class PublicId;
 class UserStorage;
@@ -111,6 +112,7 @@ class Session {
                             std::shared_ptr<Session>,
                             asymm::PrivateKey*);
   friend class Authentication;
+  friend class ClientController;
   friend class MessageHandler;
   friend class PublicId;
   friend class UserStorage;

@@ -112,32 +112,6 @@ class AuthenticationTest : public testing::TestWithParam<std::string> {
     asio_service_.Stop();
   }
 
-  int GetMasterDataMap(std::string *ser_dm_login) {
-    return GetMasterDataMap(ser_dm_login, password_);
-  }
-
-  int GetMasterDataMap(std::string *ser_dm_login, const std::string &password) {
-    std::string serialised_data_atlas, surrogate_serialised_data_atlas;
-    int res =
-        authentication_.GetMasterDataMap(password,
-                                         &serialised_data_atlas,
-                                         &surrogate_serialised_data_atlas);
-    if (res != 0) {
-      return kPasswordFailure;
-    }
-
-    if (!serialised_data_atlas.empty()) {
-      *ser_dm_login = serialised_data_atlas;
-    } else if (!surrogate_serialised_data_atlas.empty()) {
-      *ser_dm_login = surrogate_serialised_data_atlas;
-    } else {
-      ser_dm_login->clear();
-      return kPasswordFailure;
-    }
-
-    return kSuccess;
-  }
-
   std::string PacketValueFromSession(passport::PacketType packet_type,
                                      bool confirmed) {
     return session_->passport_->PacketName(packet_type, confirmed);
@@ -155,6 +129,10 @@ class AuthenticationTest : public testing::TestWithParam<std::string> {
           return session_->passport_->PacketName(passport::kAntmid, confirmed);
       default: return "";
     }
+  }
+
+  void SetPassword(const std::string &password) {
+    session_->set_password(password);
   }
 
   std::shared_ptr<fs::path> test_dir_;
@@ -183,19 +161,20 @@ TEST_P(AuthenticationTest, FUNC_GoodLogin) {
                                                        ser_dm_,
                                                        surrogate_ser_dm_));
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
-  std::string ser_dm_login;
-  ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
+  std::string ser_dm_login, ser_dm_login1;
+  authentication_.GetMasterDataMap(password_, &ser_dm_login, &ser_dm_login1);
   ASSERT_EQ(ser_dm_, ser_dm_login);
   ASSERT_EQ(username_, session_->username());
   ASSERT_EQ(pin_, session_->pin());
-  ASSERT_EQ(password_, session_->password());
+  SetPassword(password_);
 
   ASSERT_EQ(kSuccess, authentication_.SaveSession(ser_dm_ + "1"));
 
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
 
   ser_dm_login.clear();
-  ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
+  ser_dm_login1.clear();
+  authentication_.GetMasterDataMap(password_, &ser_dm_login, &ser_dm_login1);
   ASSERT_EQ(ser_dm_ + "1", ser_dm_login);
   ASSERT_EQ(username_, session_->username());
   ASSERT_EQ(pin_, session_->pin());
@@ -208,9 +187,9 @@ TEST_P(AuthenticationTest, FUNC_LoginNoUser) {
                                                        ser_dm_,
                                                        surrogate_ser_dm_));
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
-  std::string ser_dm_login;
+  std::string ser_dm_login, ser_dm_login1;
   password_ += "password_tonto";
-  ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
+  authentication_.GetMasterDataMap(password_, &ser_dm_login, &ser_dm_login1);
   ASSERT_NE(ser_dm_, ser_dm_login);
 }
 
@@ -296,8 +275,9 @@ TEST_P(AuthenticationTest, FUNC_ChangeUsername) {
   ASSERT_EQ(kNewName, session_->username());
 
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(kNewName, pin_));
-  std::string ser_dm_login;
-  ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
+  std::string ser_dm_login, ser_dm_login1;
+  authentication_.GetMasterDataMap(password_, &ser_dm_login, &ser_dm_login1);
+  ASSERT_EQ(ser_dm_ + "2", ser_dm_login);
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
 //  ASSERT_TRUE(packet_manager_->KeyUnique(
 //                  pca::ApplyTypeToName(original_stmidname,
@@ -323,13 +303,10 @@ TEST_P(AuthenticationTest, FUNC_ChangePin) {
   ASSERT_EQ(kNewPin, session_->pin());
 
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, kNewPin));
-  std::string ser_dm_login;
-  ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
+  std::string ser_dm_login, ser_dm_login1;
+  authentication_.GetMasterDataMap(password_, &ser_dm_login, &ser_dm_login1);
+  ASSERT_EQ(ser_dm_ + "2", ser_dm_login);
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
-//  ASSERT_TRUE(packet_manager_->KeyUnique(
-//                  pca::ApplyTypeToName(original_stmidname,
-//                                       pca::kModifiableByOwner),
-//                  PacketSignerFromSession(passport::kTmid, true)));
 }
 
 TEST_P(AuthenticationTest, FUNC_ChangePassword) {
@@ -344,14 +321,15 @@ TEST_P(AuthenticationTest, FUNC_ChangePassword) {
                                                      kNewPassword));
   ASSERT_EQ(kNewPassword, session_->password());
 
-  std::string ser_dm_login;
+  std::string ser_dm_login, ser_dm_login1;
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
-  ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
+  authentication_.GetMasterDataMap(password_, &ser_dm_login, &ser_dm_login1);
   ASSERT_NE(ser_dm_, ser_dm_login);
 
   ser_dm_login.clear();
+  ser_dm_login1.clear();
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
-  ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login, kNewPassword));
+  authentication_.GetMasterDataMap(kNewPassword, &ser_dm_login, &ser_dm_login1);
   ASSERT_NE(ser_dm_, ser_dm_login);
 }
 

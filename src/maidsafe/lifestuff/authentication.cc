@@ -161,7 +161,7 @@ Authentication::Authentication(std::shared_ptr<Session> session)
       encrypted_tmid_(),
       encrypted_stmid_(),
       serialised_data_atlas_(),
-      kSingleOpTimeout_(5000),
+      kSingleOpTimeout_(20000),
       converter_() {}
 
 Authentication::~Authentication() {
@@ -732,8 +732,10 @@ void Authentication::SaveSession(const std::string &serialised_data_atlas,
 void Authentication::SaveSessionCallback(int return_code,
                                          passport::PacketType packet_type,
                                          SaveSessionDataPtr save_session_data) {
-  DLOG(ERROR) << "Authentication::SaveSessionCallback - pt: "
-              << DebugStr(packet_type) << ", result: " << return_code;
+  if (return_code != kSuccess) {
+    DLOG(INFO) << "Authentication::SaveSessionCallback - pt: "
+               << DebugStr(packet_type) << ", result: " << return_code;
+  }
   OpStatus op_status(kSucceeded);
   if ((save_session_data->op_type == kIsUnique && return_code != kKeyUnique) ||
       (save_session_data->op_type != kIsUnique && return_code != kSuccess)) {
@@ -814,7 +816,7 @@ int Authentication::SaveSession(const std::string &serialised_data_atlas) {
   return result;
 }
 
-int Authentication::GetMasterDataMap(
+void Authentication::GetMasterDataMap(
     const std::string &password,
     std::string *serialised_data_atlas,
     std::string *surrogate_serialised_data_atlas) {
@@ -830,19 +832,16 @@ int Authentication::GetMasterDataMap(
                                   session_->pin(),
                                   password,
                                   encrypted_stmid_);
-  if (serialised_data_atlas->empty()) {
-    DLOG(ERROR) << "TMID error.";
-    if (surrogate_serialised_data_atlas->empty()) {
-      DLOG(ERROR) << "STMID error.  Found neither.";
-      return kPasswordFailure;
-    }
-    serialised_data_atlas_ = *surrogate_serialised_data_atlas;
-  } else {
-    serialised_data_atlas_ = *serialised_data_atlas;
-  }
-  session_->set_password(password);
 
-  return kSuccess;
+  if (!serialised_data_atlas->empty()) {
+    serialised_data_atlas_ = *serialised_data_atlas;
+    return;
+  }
+
+  if (!surrogate_serialised_data_atlas->empty()) {
+    serialised_data_atlas_ = *surrogate_serialised_data_atlas;
+    return;
+  }
 }
 
 int Authentication::SetLoggedInData(const std::string &ser_da,
