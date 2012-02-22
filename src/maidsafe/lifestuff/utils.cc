@@ -254,7 +254,7 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
   }
 
   bootstrap_stream.close();
-  if (!pd::ReadBootstrapFile(bootstrap_file, bootstrap_contacts)) {
+  if (!dht::ReadContactsFromFile(bootstrap_file, bootstrap_contacts)) {
     DLOG(ERROR) << "Failed to read " << bootstrap_file;
     return kGeneralError;
   }
