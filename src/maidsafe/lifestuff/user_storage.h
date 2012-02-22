@@ -88,8 +88,6 @@ class UserStorage {
   virtual fs::path g_mount_dir();
   virtual bool mount_status();
 
-  void SetMessageHandler(std::shared_ptr<MessageHandler> message_handler);
-
   // ********************* File / Folder Transfers *****************************
   int GetDataMap(const fs::path &absolute_path,
                  std::string *serialised_data_map) const;
@@ -106,8 +104,8 @@ class UserStorage {
   int CreateShare(const fs::path &absolute_path,
                   const std::map<std::string, bool> &contacts,
                   std::string *share_id_result = nullptr);
-  int InsertShare(const std::string &share_id,
-                  const fs::path &absolute_path,
+  int InsertShare(const fs::path &relative_path,
+                  const std::string &share_id,
                   const std::string &directory_id,
                   const asymm::Keys &share_keyring);
   int StopShare(const std::string &share_id);
@@ -116,7 +114,7 @@ class UserStorage {
                          const std::string *new_share_id,
                          const std::string *new_directory_id,
                          const asymm::Keys *new_key_ring);
-  int AddShareUsers(const std::string &share_id,
+  int AddShareUsers(const fs::path &relative_path,
                     const std::map<std::string, bool> &contacts);
   void GetAllShareUsers(const std::string &share_id,
                         std::map<std::string, bool> *all_share_users) const;
@@ -144,17 +142,16 @@ class UserStorage {
                         const std::string &regex,
                         std::list<std::string> *results);
 
-  void NewMessageSlot(const pca::Message &message);
   // ************************* Signals Handling ********************************
   bs2::connection ConnectToDriveChanged(drive::DriveChangedSlotPtr slot) const;
   bs2::connection ConnectToShareChanged(drive::ShareChangedSlotPtr slot) const;
 
  private:
+  template<int Operation>
   void InformContactsOperation(
       const std::map<std::string, bool> &contacts,
-      const ShareOperations operation,
       const std::string &share_id,
-      const std::string &absolute_path = "",
+      const std::string &relative_path = "",
       const std::string &directory_id = "",
       const asymm::Keys &key_ring = asymm::Keys(),
       const std::string &new_share_id = "");
