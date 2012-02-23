@@ -108,22 +108,23 @@ class UserStorage {
                   const std::string &share_id,
                   const std::string &directory_id,
                   const asymm::Keys &share_keyring);
-  int StopShare(const std::string &share_id);
-  int LeaveShare(const std::string & share_id);
-  int ModifyShareDetails(const std::string &share_id,
+  int StopShare(const fs::path &relative_path);
+  int LeaveShare(const fs::path &relative_path);
+  int ModifyShareDetails(const fs::path &relative_path,
+                         const std::string &share_id,
                          const std::string *new_share_id,
                          const std::string *new_directory_id,
                          const asymm::Keys *new_key_ring);
   int AddShareUsers(const fs::path &relative_path,
                     const std::map<std::string, bool> &contacts);
-  void GetAllShareUsers(const std::string &share_id,
-                        std::map<std::string, bool> *all_share_users) const;
-  int RemoveShareUsers(const std::string &share_id,
+  int GetAllShareUsers(const fs::path &relative_path,
+                       std::map<std::string, bool> *all_share_users) const;
+  int RemoveShareUsers(const fs::path &relative_path,
                        const std::vector<std::string> &user_ids);
-  int GetShareUsersRights(const std::string &share_id,
+  int GetShareUsersRights(const fs::path &relative_path,
                           const std::string &user_id,
                           bool *admin_rights) const;
-  int SetShareUsersRights(const std::string &share_id,
+  int SetShareUsersRights(const fs::path &relative_path,
                           const std::string &user_id,
                           bool admin_rights);
 
@@ -133,11 +134,11 @@ class UserStorage {
   int AddNote(const fs::path &absolute_path, const std::string &note);
 
   // *************************** Hidden Files **********************************
-  int ReadHiddenFile(const fs::path &absolute_path, std::string *content) const;
-  int WriteHiddenFile(const fs::path &absolute_path,
+  int ReadHiddenFile(const fs::path &relative_path, std::string *content) const;
+  int WriteHiddenFile(const fs::path &relative_path,
                       const std::string &content,
                       bool overwrite_existing);
-  int DeleteHiddenFile(const fs::path &absolute_path);
+  int DeleteHiddenFile(const fs::path &relative_path);
   int SearchHiddenFiles(const fs::path &relative_path,
                         const std::string &regex,
                         std::list<std::string> *results);
@@ -147,7 +148,7 @@ class UserStorage {
   bs2::connection ConnectToShareChanged(drive::ShareChangedSlotPtr slot) const;
 
  private:
-  template<int Operation>
+  template<typename Operation>
   void InformContactsOperation(
       const std::map<std::string, bool> &contacts,
       const std::string &share_id,
