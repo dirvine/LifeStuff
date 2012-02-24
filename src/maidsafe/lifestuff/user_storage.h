@@ -22,9 +22,11 @@
 #ifndef MAIDSAFE_LIFESTUFF_USER_STORAGE_H_
 #define MAIDSAFE_LIFESTUFF_USER_STORAGE_H_
 
+#include <list>
 #include <map>
 #include <string>
 #include <vector>
+
 #include "boost/filesystem.hpp"
 #include "boost/asio/io_service.hpp"
 #include "boost/thread/condition_variable.hpp"
@@ -102,30 +104,35 @@ class UserStorage {
                              const std::string &directory_id);
 
   // ****************************** Shares *************************************
-  int CreateShare(const fs::path &absolute_path,
+  int CreateShare(const std::string &sender_public_username,
+                  const fs::path &absolute_path,
                   const std::map<std::string, bool> &contacts,
                   std::string *share_id_result = nullptr);
-  int InsertShare(const fs::path &relative_path,
+  int InsertShare(const fs::path &absolute_path,
                   const std::string &share_id,
                   const std::string &directory_id,
                   const asymm::Keys &share_keyring);
-  int StopShare(const fs::path &relative_path);
-  int LeaveShare(const fs::path &relative_path);
-  int ModifyShareDetails(const fs::path &relative_path,
+  int StopShare(const std::string &sender_public_username,
+                const fs::path &absolute_path);
+  int LeaveShare(const fs::path &absolute_path);
+  int ModifyShareDetails(const fs::path &absolute_path,
                          const std::string &share_id,
                          const std::string *new_share_id,
                          const std::string *new_directory_id,
                          const asymm::Keys *new_key_ring);
-  int AddShareUsers(const fs::path &relative_path,
+  int AddShareUsers(const std::string &sender_public_username,
+                    const fs::path &absolute_path,
                     const std::map<std::string, bool> &contacts);
-  int GetAllShareUsers(const fs::path &relative_path,
+  int GetAllShareUsers(const fs::path &absolute_path,
                        std::map<std::string, bool> *all_share_users) const;
-  int RemoveShareUsers(const fs::path &relative_path,
+  int RemoveShareUsers(const std::string &sender_public_username,
+                       const fs::path &absolute_path,
                        const std::vector<std::string> &user_ids);
-  int GetShareUsersRights(const fs::path &relative_path,
+  int GetShareUsersRights(const fs::path &absolute_path,
                           const std::string &user_id,
                           bool *admin_rights) const;
-  int SetShareUsersRights(const fs::path &relative_path,
+  int SetShareUsersRights(const std::string &sender_public_username,
+                          const fs::path &absolute_path,
                           const std::string &user_id,
                           bool admin_rights);
 
@@ -135,12 +142,12 @@ class UserStorage {
   int AddNote(const fs::path &absolute_path, const std::string &note);
 
   // *************************** Hidden Files **********************************
-  int ReadHiddenFile(const fs::path &relative_path, std::string *content) const;
-  int WriteHiddenFile(const fs::path &relative_path,
+  int ReadHiddenFile(const fs::path &absolute_path, std::string *content) const;
+  int WriteHiddenFile(const fs::path &absolute_path,
                       const std::string &content,
                       bool overwrite_existing);
-  int DeleteHiddenFile(const fs::path &relative_path);
-  int SearchHiddenFiles(const fs::path &relative_path,
+  int DeleteHiddenFile(const fs::path &absolute_path);
+  int SearchHiddenFiles(const fs::path &absolute_path,
                         const std::string &regex,
                         std::list<std::string> *results);
 
@@ -151,9 +158,10 @@ class UserStorage {
  private:
   template<typename Operation>
   int InformContactsOperation(
+      const std::string &sender_public_username,
       const std::map<std::string, bool> &contacts,
       const std::string &share_id,
-      const std::string &relative_path = "",
+      const std::string &absolute_path = "",
       const std::string &directory_id = "",
       const asymm::Keys &key_ring = asymm::Keys(),
       const std::string &new_share_id = "");

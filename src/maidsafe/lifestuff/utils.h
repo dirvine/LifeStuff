@@ -59,9 +59,9 @@ void SendContactInfoCallback(const int &response,
                              boost::condition_variable *cond_var,
                              int *result);
 
-int AwaitingResponse(boost::mutex &mutex,
-                     boost::condition_variable &cond_var,
-                     std::vector<int> &results);
+int AwaitingResponse(boost::mutex *mutex,
+                     boost::condition_variable *cond_var,
+                     std::vector<int> *results);
 
 std::string ComposeSignaturePacketName(const std::string &name);
 

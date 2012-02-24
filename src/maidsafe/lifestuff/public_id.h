@@ -124,7 +124,7 @@ class PublicId {
   // Universal blocking function for waiting response
   int AwaitingResponse(boost::mutex *mutex,
                        boost::condition_variable *cond_var,
-                       std::vector<int> &results);
+                       std::vector<int> *results);
   void GetKeysAndProof(const std::string &public_username,
                        passport::PacketType pt,
                        bool confirmed,
