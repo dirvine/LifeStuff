@@ -60,7 +60,7 @@ class UserStorageTest : public testing::Test {
  public:
   UserStorageTest()
     : test_dir_(maidsafe::test::CreateTestPath()),
-      g_mount_dir_(new fs::path(fs::initial_path() / "LifeStuff")),
+      mount_dir_(new fs::path(fs::initial_path() / "LifeStuff")),
       client_controller1_(),
       user_storage1_(),
       session1_(),
@@ -98,7 +98,8 @@ class UserStorageTest : public testing::Test {
         const std::shared_ptr<maidsafe::lifestuff::UserStorage> &user_storage,
         const pca::Message &message,
         const fs::path &relative_path) {
-    EXPECT_EQ(message.subject(), "join_share");
+
+    ASSERT_EQ(message.subject(), "join_share");
     asymm::Keys key_ring;
     if (message.content_size() > 4) {
       key_ring.identity = message.content(3);
@@ -107,7 +108,7 @@ class UserStorageTest : public testing::Test {
       asymm::DecodePublicKey(message.content(6), &(key_ring.public_key));
     }
     // fs::path("/").make_preferred() / message.content(1)
-    EXPECT_EQ(kSuccess, user_storage->InsertShare(relative_path,
+    ASSERT_EQ(kSuccess, user_storage->InsertShare(relative_path,
                                                   message.content(0),
                                                   message.content(2),
                                                   key_ring));
@@ -116,28 +117,28 @@ class UserStorageTest : public testing::Test {
   void StopShareTest(
         const std::shared_ptr<maidsafe::lifestuff::UserStorage> &user_storage,
         const pca::Message &message) {
-    EXPECT_EQ(message.subject(), "leave_share");
-    EXPECT_EQ(kSuccess, user_storage->StopShare(message.content(0)));
+    ASSERT_EQ(message.subject(), "leave_share");
+    ASSERT_EQ(kSuccess, user_storage->StopShare(message.content(0)));
   }
 
   void RemoveShareTest(
         const std::shared_ptr<maidsafe::lifestuff::UserStorage> &user_storage,
         const pca::Message &message) {
-    EXPECT_EQ(message.subject(), "remove_share");
-    EXPECT_EQ(kSuccess, user_storage->LeaveShare(message.content(0)));
+    ASSERT_EQ(message.subject(), "remove_share");
+    ASSERT_EQ(kSuccess, user_storage->LeaveShare(message.content(0)));
   }
 
   void UpgradeShareTest(
         const std::shared_ptr<maidsafe::lifestuff::UserStorage> &user_storage,
         const pca::Message &message,
         const fs::path &relative_path) {
-    EXPECT_EQ(message.subject(), "upgrade_share");
+    ASSERT_EQ(message.subject(), "upgrade_share");
     asymm::Keys key_ring;
     key_ring.identity = message.content(1);
     key_ring.validation_token = message.content(2);
     asymm::DecodePrivateKey(message.content(3), &(key_ring.private_key));
     asymm::DecodePublicKey(message.content(4), &(key_ring.public_key));
-    EXPECT_EQ(kSuccess, user_storage->ModifyShareDetails(relative_path,
+    ASSERT_EQ(kSuccess, user_storage->ModifyShareDetails(relative_path,
                                                          message.content(0),
                                                          nullptr,
                                                          nullptr,
@@ -148,7 +149,7 @@ class UserStorageTest : public testing::Test {
         const std::shared_ptr<maidsafe::lifestuff::UserStorage> &user_storage,
         const pca::Message &message,
         const fs::path &relative_path) {
-    EXPECT_EQ(message.subject(), "move_share");
+    ASSERT_EQ(message.subject(), "move_share");
     asymm::Keys key_ring;
     if (message.content_size() > 4) {
       key_ring.identity = message.content(3);
@@ -156,10 +157,10 @@ class UserStorageTest : public testing::Test {
       asymm::DecodePrivateKey(message.content(5), &(key_ring.private_key));
       asymm::DecodePublicKey(message.content(6), &(key_ring.public_key));
     }
-    EXPECT_EQ(kSuccess, user_storage->ModifyShareDetails(relative_path,
+    ASSERT_EQ(kSuccess, user_storage->ModifyShareDetails(relative_path,
                                                          message.content(0),
                                                          &message.content(1),
-                                                         &message.content(2), 
+                                                         &message.content(2),
                                                          &key_ring));
   }
 
@@ -258,7 +259,7 @@ class UserStorageTest : public testing::Test {
   void InitAndCloseCallback(int /*i*/) {}
 
   std::shared_ptr<fs::path> test_dir_;
-  std::shared_ptr<fs::path> g_mount_dir_;
+  std::shared_ptr<fs::path> mount_dir_;
   std::shared_ptr<ClientController> client_controller1_;
   std::shared_ptr<maidsafe::lifestuff::UserStorage> user_storage1_;
   std::shared_ptr<maidsafe::lifestuff::Session> session1_;
@@ -277,7 +278,7 @@ class UserStorageTest : public testing::Test {
 };
 
 TEST_F(UserStorageTest, FUNC_CreateShare) {
-  user_storage1_->MountDrive(*g_mount_dir_,
+  user_storage1_->MountDrive(*mount_dir_,
                              client_controller1_->SessionName(),
                              session1_, true);
   Sleep(interval_ * 2);
@@ -285,12 +286,14 @@ TEST_F(UserStorageTest, FUNC_CreateShare) {
   users.insert(std::make_pair("User 2", false));
   std::string tail;
   fs::path directory0(CreateTestDirectory(user_storage1_->g_mount_dir() /
-                                            fs::path("/").make_preferred(),
+                                              fs::path("/").make_preferred(),
                                           &tail));
+  DLOG(ERROR) << "\n\n\ndirectory0: " << directory0.string() << "\n\n";
   ASSERT_EQ(kSuccess, user_storage1_->CreateShare(directory0, users));
   user_storage1_->UnMountDrive();
 
   fs::path directory1(fs::path("/").make_preferred() / tail);
+  DLOG(ERROR) << "\n\n\ndirectory1: " << directory1 << "\n\n";
   bs2::connection connection(
     message_handler2_->ConnectToSignal(pca::Message::kSharedDirectory,
       std::bind(&UserStorageTest::DoShareTest,
@@ -299,19 +302,19 @@ TEST_F(UserStorageTest, FUNC_CreateShare) {
                 args::_1,
                 directory1)));
 
-  user_storage2_->MountDrive(*g_mount_dir_,
+  user_storage2_->MountDrive(*mount_dir_,
                              client_controller2_->SessionName(),
                              session2_, true);
   Sleep(interval_ * 2);
   boost::system::error_code error_code;
-  EXPECT_FALSE(fs::exists(user_storage2_->g_mount_dir() / directory1,
+  ASSERT_FALSE(fs::exists(user_storage2_->g_mount_dir() / directory1,
                           error_code)) << directory1 << " : "
                                        << error_code.message();
 
   ASSERT_EQ(kSuccess,
             message_handler2_->StartCheckingForNewMessages(interval_));
   Sleep(interval_ * 2);
-  EXPECT_TRUE(fs::exists(user_storage2_->g_mount_dir() / directory1,
+  ASSERT_TRUE(fs::exists(user_storage2_->g_mount_dir() / directory1,
                          error_code)) << directory1 << " : "
                                       << error_code.message();
 
@@ -320,7 +323,7 @@ TEST_F(UserStorageTest, FUNC_CreateShare) {
 }
 
 TEST_F(UserStorageTest, FUNC_AddUser) {
-  user_storage1_->MountDrive(*g_mount_dir_,
+  user_storage1_->MountDrive(*mount_dir_,
                              client_controller1_->SessionName(),
                              session1_, true);
   Sleep(interval_ * 2);
@@ -334,28 +337,28 @@ TEST_F(UserStorageTest, FUNC_AddUser) {
   user_storage1_->UnMountDrive();
   Sleep(interval_ * 2);
 
-  user_storage2_->MountDrive(*g_mount_dir_,
+  user_storage2_->MountDrive(*mount_dir_,
                              client_controller2_->SessionName(),
                              session2_, true);
   Sleep(interval_ * 2);
   fs::path directory1(fs::path("/").make_preferred() / tail);
   boost::system::error_code error_code;
-  EXPECT_FALSE(fs::exists(user_storage2_->g_mount_dir() / directory1,
+  ASSERT_FALSE(fs::exists(user_storage2_->g_mount_dir() / directory1,
                           error_code)) << directory1 << error_code.message();
   ASSERT_EQ(kSuccess,
             message_handler2_->StartCheckingForNewMessages(interval_));
   Sleep(interval_ * 2);
-  EXPECT_FALSE(fs::exists(user_storage2_->g_mount_dir() / directory1,
+  ASSERT_FALSE(fs::exists(user_storage2_->g_mount_dir() / directory1,
                           error_code)) << directory1 << error_code.message();
   message_handler2_->StopCheckingForNewMessages();
   user_storage2_->UnMountDrive();
   Sleep(interval_ * 2);
 
-  user_storage1_->MountDrive(*g_mount_dir_,
+  user_storage1_->MountDrive(*mount_dir_,
                              client_controller1_->SessionName(),
                              session1_, false);
   Sleep(interval_ * 2);
-  EXPECT_TRUE(fs::exists(directory0, error_code)) << directory0
+  ASSERT_TRUE(fs::exists(directory0, error_code)) << directory0
                                                   << error_code.message();
   users.insert(std::make_pair("User 2", false));
   ASSERT_EQ(kSuccess, user_storage1_->AddShareUsers(directory0.root_directory() /
@@ -372,23 +375,23 @@ TEST_F(UserStorageTest, FUNC_AddUser) {
                 args::_1,
                 directory1)));
 
-  user_storage2_->MountDrive(*g_mount_dir_,
+  user_storage2_->MountDrive(*mount_dir_,
                              client_controller2_->SessionName(),
                              session2_, false);
   Sleep(interval_ * 2);
-  EXPECT_FALSE(fs::exists(user_storage2_->g_mount_dir() / directory1,
+  ASSERT_FALSE(fs::exists(user_storage2_->g_mount_dir() / directory1,
                           error_code)) << directory1 << error_code.message();
   ASSERT_EQ(kSuccess,
             message_handler2_->StartCheckingForNewMessages(interval_));
   Sleep(interval_ * 2);
-  EXPECT_TRUE(fs::exists(user_storage2_->g_mount_dir() / directory1,
+  ASSERT_TRUE(fs::exists(user_storage2_->g_mount_dir() / directory1,
                          error_code)) << directory1 << error_code.message();
   message_handler2_->StopCheckingForNewMessages();
   user_storage2_->UnMountDrive();
 }
 
 TEST_F(UserStorageTest, FUNC_AddAdminUser) {
-  user_storage1_->MountDrive(*g_mount_dir_,
+  user_storage1_->MountDrive(*mount_dir_,
                              client_controller1_->SessionName(),
                              session1_, true);
   Sleep(interval_ * 2);
@@ -413,11 +416,11 @@ TEST_F(UserStorageTest, FUNC_AddAdminUser) {
                 args::_1,
                 directory1)));
 
-  user_storage2_->MountDrive(*g_mount_dir_,
+  user_storage2_->MountDrive(*mount_dir_,
                              client_controller2_->SessionName(),
                              session2_, true);
   Sleep(interval_ * 2);
-  EXPECT_EQ(kSuccess,
+  ASSERT_EQ(kSuccess,
             message_handler2_->StartCheckingForNewMessages(interval_));
   Sleep(interval_ * 2);
   ASSERT_TRUE(fs::exists(user_storage2_->g_mount_dir() / directory1,
@@ -430,7 +433,7 @@ TEST_F(UserStorageTest, FUNC_AddAdminUser) {
   user_storage2_->UnMountDrive();
   Sleep(interval_ * 2);
 
-  user_storage1_->MountDrive(*g_mount_dir_,
+  user_storage1_->MountDrive(*mount_dir_,
                              client_controller1_->SessionName(),
                              session1_, false);
   Sleep(interval_ * 2);
@@ -438,7 +441,7 @@ TEST_F(UserStorageTest, FUNC_AddAdminUser) {
   user_storage1_->UnMountDrive();
   Sleep(interval_ * 2);
 
-  user_storage2_->MountDrive(*g_mount_dir_,
+  user_storage2_->MountDrive(*mount_dir_,
                              client_controller2_->SessionName(),
                              session2_, false);
   Sleep(interval_ * 2);
@@ -450,7 +453,7 @@ TEST_F(UserStorageTest, FUNC_AddAdminUser) {
 }
 
 TEST_F(UserStorageTest, FUNC_UpgradeUserToAdmin) {
-  user_storage1_->MountDrive(*g_mount_dir_,
+  user_storage1_->MountDrive(*mount_dir_,
                              client_controller1_->SessionName(),
                              session1_, true);
   Sleep(interval_ * 2);
@@ -474,11 +477,11 @@ TEST_F(UserStorageTest, FUNC_UpgradeUserToAdmin) {
                 args::_1,
                 directory1)));
 
-  user_storage2_->MountDrive(*g_mount_dir_,
+  user_storage2_->MountDrive(*mount_dir_,
                              client_controller2_->SessionName(),
                              session2_, true);
   Sleep(interval_ * 2);
-  EXPECT_EQ(kSuccess,
+  ASSERT_EQ(kSuccess,
             message_handler2_->StartCheckingForNewMessages(interval_));
   Sleep(interval_ * 2);
   boost::system::error_code error_code;
@@ -492,7 +495,7 @@ TEST_F(UserStorageTest, FUNC_UpgradeUserToAdmin) {
   user_storage2_->UnMountDrive();
   Sleep(interval_ * 2);
 
-  user_storage1_->MountDrive(*g_mount_dir_,
+  user_storage1_->MountDrive(*mount_dir_,
                              client_controller1_->SessionName(),
                              session1_, false);
   Sleep(interval_ * 2);
@@ -504,7 +507,7 @@ TEST_F(UserStorageTest, FUNC_UpgradeUserToAdmin) {
   user_storage1_->UnMountDrive();
   Sleep(interval_ * 2);
 
-  user_storage2_->MountDrive(*g_mount_dir_,
+  user_storage2_->MountDrive(*mount_dir_,
                              client_controller2_->SessionName(),
                              session2_, false);
   Sleep(interval_ * 2);
@@ -524,7 +527,7 @@ TEST_F(UserStorageTest, FUNC_UpgradeUserToAdmin) {
 }
 
 //TEST_F(UserStorageTest, FUNC_StopShareByOwner) {
-//  user_storage1_->MountDrive(*g_mount_dir_,
+//  user_storage1_->MountDrive(*mount_dir_,
 //                             client_controller1_->SessionName(),
 //                             session1_, true);
 //  Sleep(interval_ * 2);
@@ -544,7 +547,7 @@ TEST_F(UserStorageTest, FUNC_UpgradeUserToAdmin) {
 //    message_handler2_->ConnectToSignal(pca::Message::kSharedDirectory,
 //      std::bind(&UserStorageTest::DoShareTest, this, user_storage2_, args::_1)));
 //
-//  user_storage2_->MountDrive(*g_mount_dir_,
+//  user_storage2_->MountDrive(*mount_dir_,
 //                             client_controller2_->SessionName(),
 //                             session2_, true);
 //  Sleep(interval_ * 2);
@@ -559,7 +562,7 @@ TEST_F(UserStorageTest, FUNC_UpgradeUserToAdmin) {
 //  user_storage2_->UnMountDrive();
 //  Sleep(interval_ * 2);
 //
-//  user_storage1_->MountDrive(*g_mount_dir_,
+//  user_storage1_->MountDrive(*mount_dir_,
 //                             client_controller1_->SessionName(),
 //                             session1_, false);
 //  Sleep(interval_ * 2);
@@ -574,7 +577,7 @@ TEST_F(UserStorageTest, FUNC_UpgradeUserToAdmin) {
 //    message_handler2_->ConnectToSignal(pca::Message::kSharedDirectory,
 //      std::bind(&UserStorageTest::StopShareTest, this, user_storage2_, args::_1)));*/
 //
-//  user_storage2_->MountDrive(*g_mount_dir_,
+//  user_storage2_->MountDrive(*mount_dir_,
 //                             client_controller2_->SessionName(),
 //                             session2_, false);
 //  Sleep(interval_ * 2);
@@ -588,7 +591,7 @@ TEST_F(UserStorageTest, FUNC_UpgradeUserToAdmin) {
 //  user_storage2_->UnMountDrive();
 //  Sleep(interval_ * 2);
 //
-//  user_storage1_->MountDrive(*g_mount_dir_,
+//  user_storage1_->MountDrive(*mount_dir_,
 //                             client_controller1_->SessionName(),
 //                             session1_, false);
 //  Sleep(interval_ * 2);
@@ -599,7 +602,7 @@ TEST_F(UserStorageTest, FUNC_UpgradeUserToAdmin) {
 //}
 //
 //TEST_F(UserStorageTest, FUNC_RemoveUserByOwner) {
-//  user_storage1_->MountDrive(*g_mount_dir_,
+//  user_storage1_->MountDrive(*mount_dir_,
 //                             client_controller1_->SessionName(),
 //                             session1_, true);
 //  Sleep(interval_ * 2);
@@ -617,7 +620,7 @@ TEST_F(UserStorageTest, FUNC_UpgradeUserToAdmin) {
 //    message_handler2_->ConnectToSignal(pca::Message::kSharedDirectory,
 //      std::bind(&UserStorageTest::DoShareTest, this, user_storage2_, args::_1)));
 //
-//  user_storage2_->MountDrive(*g_mount_dir_,
+//  user_storage2_->MountDrive(*mount_dir_,
 //                             client_controller2_->SessionName(),
 //                             session2_, true);
 //  Sleep(interval_ * 2);
@@ -633,7 +636,7 @@ TEST_F(UserStorageTest, FUNC_UpgradeUserToAdmin) {
 //  user_storage2_->UnMountDrive();
 //  Sleep(interval_ * 2);
 //
-//  user_storage1_->MountDrive(*g_mount_dir_,
+//  user_storage1_->MountDrive(*mount_dir_,
 //                             client_controller1_->SessionName(),
 //                             session1_, false);
 //  Sleep(interval_ * 2);
@@ -650,7 +653,7 @@ TEST_F(UserStorageTest, FUNC_UpgradeUserToAdmin) {
 //    message_handler2_->ConnectToSignal(pca::Message::kSharedDirectory,
 //      std::bind(&UserStorageTest::StopShareTest, this, user_storage2_, args::_1)));*/
 //
-//  user_storage2_->MountDrive(*g_mount_dir_,
+//  user_storage2_->MountDrive(*mount_dir_,
 //                             client_controller2_->SessionName(),
 //                             session2_, false);
 //  Sleep(interval_ * 2);
@@ -666,7 +669,7 @@ TEST_F(UserStorageTest, FUNC_UpgradeUserToAdmin) {
 //  user_storage2_->UnMountDrive();
 //  Sleep(interval_ * 2);
 //
-//  user_storage1_->MountDrive(*g_mount_dir_,
+//  user_storage1_->MountDrive(*mount_dir_,
 //                             client_controller1_->SessionName(),
 //                             session1_, false);
 //  Sleep(interval_ * 2);

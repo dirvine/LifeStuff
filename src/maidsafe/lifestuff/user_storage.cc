@@ -294,11 +294,11 @@ int UserStorage::CreateShare(const fs::path &absolute_path,
     return result;
   }
   // AddShareUser will send out the informing msg to contacts
-  fs::path relative_path(absolute_path.root_directory() /
-                         absolute_path.relative_path());
-  result = AddShareUsers(relative_path, contacts);
+//  fs::path relative_path(absolute_path.root_directory() /
+//                         absolute_path.relative_path());
+  result = AddShareUsers(absolute_path, contacts);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to add users to share at " << relative_path;
+    DLOG(ERROR) << "Failed to add users to share at " << absolute_path;
     return result;
   }
   return kSuccess;
@@ -314,7 +314,7 @@ int UserStorage::InsertShare(const fs::path &relative_path,
                                            share_keyring);
 }
 
-int UserStorage::StopShare(const fs::path &relative_path){
+int UserStorage::StopShare(const fs::path &relative_path) {
   std::map<std::string, bool> contacts;
   asymm::Keys key_ring;
   std::string share_id;
@@ -367,7 +367,7 @@ int UserStorage::StopShare(const fs::path &relative_path){
   return kSuccess;
 }
 
-int UserStorage::LeaveShare(const fs::path& relative_path){
+int UserStorage::LeaveShare(const fs::path& relative_path) {
   return drive_in_user_space_->RemoveShare(relative_path);
 }
 
@@ -383,28 +383,42 @@ int UserStorage::ModifyShareDetails(const fs::path &relative_path,
                                            new_key_ring);
 }
 
-int UserStorage::AddShareUsers(const fs::path &relative_path,
+int UserStorage::AddShareUsers(const fs::path &absolute_path,
                                const std::map<std::string, bool> &contacts) {
-  
-  int result(drive_in_user_space_->AddShareUsers(relative_path, contacts));
-  if (result != kSuccess)
+
+  int result(drive_in_user_space_->AddShareUsers(
+                 drive_in_user_space_->RelativePath(absolute_path),
+                 contacts));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to add users to share: " << absolute_path.string();
     return result;
+  }
 
   std::string share_id;
   std::string directory_id;
   asymm::Keys key_ring;
 
-  drive_in_user_space_->GetShareDetails(relative_path,
-                                        nullptr,
-                                        &key_ring,
-                                        &share_id,
-                                        &directory_id,
-                                        nullptr);
-  InformContactsOperation<JoinShareTag>(contacts,
-                                        share_id,
-                                        relative_path.filename().string(),
-                                        directory_id,
-                                        key_ring);
+  result = drive_in_user_space_->GetShareDetails(absolute_path,
+                                                 nullptr,
+                                                 &key_ring,
+                                                 &share_id,
+                                                 &directory_id,
+                                                 nullptr);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to get share details: " << absolute_path.string();
+    return result;
+  }
+
+  result = InformContactsOperation<JoinShareTag>(contacts,
+                                                 share_id,
+                                                 absolute_path.filename().string(),
+                                                 directory_id,
+                                                 key_ring);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to get share details: " << absolute_path.string();
+    return result;
+  }
+
   return kSuccess;
 }
 
@@ -651,7 +665,7 @@ AlternativeStore::ValidationData UserStorage::PopulateValidationData(
 }
 
 template<typename Operation>
-void UserStorage::InformContactsOperation(
+int UserStorage::InformContactsOperation(
     const std::map<std::string, bool> &contacts,
     const std::string &share_id,
     const std::string &relative_path,
@@ -684,7 +698,7 @@ void UserStorage::InformContactsOperation(
   asymm::EncodePublicKey(key_ring.public_key, &public_key);
   admin_message.add_content(public_key);
 
-  int result;
+  int result, aggregate(0);
   for (auto it = contacts.begin(); it != contacts.end(); ++it) {
     // do nothing if trying to send a msg to itself
     if ((*it).first != session_->username()) {
@@ -697,12 +711,16 @@ void UserStorage::InformContactsOperation(
                                         (*it).first,
                                         non_admin_message);
       }
-      if (result != kSuccess)
+      if (result != kSuccess) {
         DLOG(ERROR) << "Failed in inform contact " << (*it).first
                     << "  of operation " << ", with result of : "
                     << result;
+        ++aggregate;
+      }
     }
   }
+
+  return aggregate;
 }
 
 }  // namespace lifestuff

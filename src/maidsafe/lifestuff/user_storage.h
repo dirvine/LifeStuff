@@ -150,7 +150,7 @@ class UserStorage {
 
  private:
   template<typename Operation>
-  void InformContactsOperation(
+  int InformContactsOperation(
       const std::map<std::string, bool> &contacts,
       const std::string &share_id,
       const std::string &relative_path = "",
