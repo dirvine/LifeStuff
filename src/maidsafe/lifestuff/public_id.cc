@@ -45,17 +45,6 @@ namespace lifestuff {
 
 namespace {
 
-void SendContactInfoCallback(const int &response,
-                             boost::mutex *mutex,
-                             boost::condition_variable *cond_var,
-                             int *result) {
-  if (!mutex || !cond_var || !result)
-    return;
-  boost::mutex::scoped_lock lock(*mutex);
-  *result = response;
-  cond_var->notify_one();
-}
-
 std::string ComposeModifyAppendableByAll(const asymm::PrivateKey &signing_key,
                                          const char appendability) {
   std::string appendability_string(1, appendability);

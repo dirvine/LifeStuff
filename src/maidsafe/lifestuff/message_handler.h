@@ -38,6 +38,8 @@
 
 #include "maidsafe/passport/passport_config.h"
 
+#include "maidsafe/pd/client/remote_chunk_store.h"
+
 #include "maidsafe/lifestuff/version.h"
 
 #if MAIDSAFE_LIFESTUFF_VERSION != 201

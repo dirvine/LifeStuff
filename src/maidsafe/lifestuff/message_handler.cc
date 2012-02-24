@@ -100,7 +100,8 @@ int MessageHandler::StartCheckingForNewMessages(bptime::seconds interval) {
 }
 
 void MessageHandler::StopCheckingForNewMessages() {
-  get_new_messages_timer_.cancel();
+//   get_new_messages_timer_.cancel();
+  get_new_messages_timer_.expires_at(boost::posix_time::pos_infin);
 }
 
 int MessageHandler::Send(const std::string &public_username,

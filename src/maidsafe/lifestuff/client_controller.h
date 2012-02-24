@@ -58,7 +58,11 @@ class ChunkStore;
 
 namespace lifestuff {
 
-namespace test { class ClientControllerTest; }
+namespace test {
+class ClientControllerTest;
+class UserStorageTest;
+}  // namespace test
+
 class Authentication;
 class Session;
 class YeOldeSignalToCallbackConverter;
@@ -95,6 +99,7 @@ class ClientController {
   std::shared_ptr<YeOldeSignalToCallbackConverter> converter();
 
   friend class test::ClientControllerTest;
+  friend class test::UserStorageTest;
 
  private:
   ClientController &operator=(const ClientController&);

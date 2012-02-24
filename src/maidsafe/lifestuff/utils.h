@@ -17,15 +17,18 @@
 #ifndef MAIDSAFE_LIFESTUFF_UTILS_H_
 #define MAIDSAFE_LIFESTUFF_UTILS_H_
 
-
 #include <memory>
 #include <string>
 #include <vector>
 
+#include "boost/thread/condition_variable.hpp"
+#include "boost/thread/mutex.hpp"
 #include "boost/filesystem/path.hpp"
 
 #include "maidsafe/common/alternative_store.h"
 #include "maidsafe/common/rsa.h"
+
+#include "maidsafe/pki/packet.h"
 
 namespace fs = boost::filesystem;
 
@@ -51,6 +54,19 @@ int GetValidatedMmidPublicKey(
     std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
     asymm::PublicKey *public_key);
 
+void SendContactInfoCallback(const int &response,
+                             boost::mutex *mutex,
+                             boost::condition_variable *cond_var,
+                             int *result);
+
+int AwaitingResponse(boost::mutex &mutex,
+                     boost::condition_variable &cond_var,
+                     std::vector<int> &results);
+
+std::string ComposeSignaturePacketName(const std::string &name);
+
+std::string ComposeSignaturePacketValue(
+    const maidsafe::pki::SignaturePacket &packet);
 
 int RetrieveBootstrapContacts(const fs::path &download_dir,
                               std::vector<dht::Contact> *bootstrap_contacts);

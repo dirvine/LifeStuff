@@ -28,6 +28,7 @@
 #include "maidsafe/pd/client/client_container.h"
 #include "maidsafe/pd/client/remote_chunk_store.h"
 
+#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/local_chunk_manager.h"
