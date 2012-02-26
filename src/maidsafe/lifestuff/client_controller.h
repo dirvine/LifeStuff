@@ -49,12 +49,15 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-namespace dht { class Contact; }
-namespace pd {
-class ClientContainer;
+//namespace dht { class Contact; }
+namespace priv {
+namespace chunk_store {
+//class ClientContainer;
 class RemoteChunkStore;
-}
-class ChunkStore;
+}  // namespace chunk_store
+}  // namespace priv
+
+namespace pcs = maidsafe::priv::chunk_store;
 
 namespace lifestuff {
 
@@ -95,7 +98,7 @@ class ClientController {
   std::string Pin();
   std::string Password();
 
-  std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store();
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store();
   std::shared_ptr<YeOldeSignalToCallbackConverter> converter();
 
   friend class test::ClientControllerTest;
@@ -109,7 +112,7 @@ class ClientController {
   int SerialiseDa();
 
   std::shared_ptr<Session> session_;
-  std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store_;
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<Authentication> auth_;
   std::string ser_da_, surrogate_ser_da_;
   bool initialised_;
@@ -118,7 +121,7 @@ class ClientController {
 
   boost::asio::io_service &service_;
   std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
-  std::shared_ptr<pd::ClientContainer> client_container_;
+//  std::shared_ptr<pd::ClientContainer> client_container_;
 };
 
 }  // namespace lifestuff

@@ -33,6 +33,8 @@
 
 #include "maidsafe/common/alternative_store.h"
 
+#include "maidsafe/private/chunk_store/remote_chunk_store.h"
+
 #include "maidsafe/passport/passport_config.h"
 
 #include "maidsafe/lifestuff/lifestuff.h"
@@ -46,10 +48,9 @@
 namespace ba = boost::asio;
 namespace bptime = boost::posix_time;
 namespace bs2 = boost::signals2;
+namespace pcs = maidsafe::priv::chunk_store;
 
 namespace maidsafe {
-
-namespace pd { class RemoteChunkStore; }
 
 namespace lifestuff {
 
@@ -64,7 +65,7 @@ class PublicId {
   typedef bs2::signal<void(const std::string&)> ContactConfirmedSignal;  // NOLINT (Dan)
   typedef std::shared_ptr<ContactConfirmedSignal> ContactConfirmedSignalPtr;
 
-  PublicId(std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+  PublicId(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
            std::shared_ptr<YeOldeSignalToCallbackConverter> converter,
            std::shared_ptr<Session> session,
            ba::io_service &asio_service);  // NOLINT (Fraser)
@@ -128,9 +129,9 @@ class PublicId {
   void GetKeysAndProof(const std::string &public_username,
                        passport::PacketType pt,
                        bool confirmed,
-                       AlternativeStore::ValidationData *validation_data);
+                       pcs::RemoteChunkStore::ValidationData *validation_data);
 
-  std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store_;
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
   std::shared_ptr<Session> session_;
   ba::io_service &asio_service_;

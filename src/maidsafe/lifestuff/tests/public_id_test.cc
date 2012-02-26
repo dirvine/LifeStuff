@@ -24,14 +24,13 @@
 
 #include "maidsafe/private/chunk_actions/chunk_action_authority.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
+#include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
-#include "maidsafe/pd/client/client_container.h"
-#include "maidsafe/pd/client/remote_chunk_store.h"
+//#include "maidsafe/pd/client/client_container.h"
 
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/data_atlas_pb.h"
-#include "maidsafe/lifestuff/local_chunk_manager.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/session.h"
@@ -124,16 +123,8 @@ class PublicIdTest : public testing::Test {
     asio_service1_.Start(10);
     asio_service2_.Start(10);
 
-    std::shared_ptr<BufferedChunkStore> bcs1(
-        new BufferedChunkStore(asio_service1_.service()));
-    bcs1->Init(*test_dir_ / "buffered_chunk_store1");
-    std::shared_ptr<priv::ChunkActionAuthority> caa1(
-        new priv::ChunkActionAuthority(bcs1));
-    std::shared_ptr<LocalChunkManager> local_chunk_manager1(
-        new LocalChunkManager(bcs1, *test_dir_ / "local_chunk_manager"));
-    remote_chunk_store1_.reset(new pd::RemoteChunkStore(bcs1,
-                                                        local_chunk_manager1,
-                                                        caa1));
+    remote_chunk_store1_ = pcs::CreateLocalChunkStore(*test_dir_,
+                                                      asio_service1_.service());
     remote_chunk_store1_->sig_chunk_stored()->connect(
         std::bind(&YeOldeSignalToCallbackConverter::Stored, converter1_.get(),
                   args::_1, args::_2));
@@ -148,16 +139,8 @@ class PublicIdTest : public testing::Test {
                                    session1_,
                                    asio_service1_.service()));
 
-    std::shared_ptr<BufferedChunkStore> bcs2(
-        new BufferedChunkStore(asio_service2_.service()));
-    bcs2->Init(*test_dir_ / "buffered_chunk_store2");
-    std::shared_ptr<priv::ChunkActionAuthority> caa2(
-        new priv::ChunkActionAuthority(bcs2));
-    std::shared_ptr<LocalChunkManager> local_chunk_manager2(
-        new LocalChunkManager(bcs2, *test_dir_ / "local_chunk_manager"));
-    remote_chunk_store2_.reset(new pd::RemoteChunkStore(bcs2,
-                                                        local_chunk_manager2,
-                                                        caa2));
+    remote_chunk_store2_ = pcs::CreateLocalChunkStore(*test_dir_,
+                                                      asio_service2_.service());
     remote_chunk_store2_->sig_chunk_stored()->connect(
         std::bind(&YeOldeSignalToCallbackConverter::Stored, converter2_.get(),
                   args::_1, args::_2));
@@ -243,8 +226,8 @@ class PublicIdTest : public testing::Test {
   std::shared_ptr<fs::path> test_dir_;
   std::shared_ptr<Session> session1_, session2_;
   std::shared_ptr<YeOldeSignalToCallbackConverter> converter1_, converter2_;
-  std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store1_,
-                                        remote_chunk_store2_;
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store1_,
+                                         remote_chunk_store2_;
   std::shared_ptr<PublicId> public_id1_, public_id2_;
 
   AsioService asio_service1_, asio_service2_;

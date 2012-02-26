@@ -32,13 +32,10 @@
 #include "boost/date_time/posix_time/posix_time_duration.hpp"
 #include "boost/thread/mutex.hpp"
 
-#include "maidsafe/common/alternative_store.h"
-
 #include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
+#include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 #include "maidsafe/passport/passport_config.h"
-
-#include "maidsafe/pd/client/remote_chunk_store.h"
 
 #include "maidsafe/lifestuff/version.h"
 
@@ -51,10 +48,9 @@ namespace ba = boost::asio;
 namespace bptime = boost::posix_time;
 namespace bs2 = boost::signals2;
 namespace pca = maidsafe::priv::chunk_actions;
+namespace pcs = maidsafe::priv::chunk_store;
 
 namespace maidsafe {
-
-namespace pd { class RemoteChunkStore; }
 
 namespace lifestuff {
 
@@ -68,7 +64,7 @@ class MessageHandler {
   typedef std::shared_ptr<NewMessageSignal> NewMessageSignalPtr;
   typedef std::map<std::string, uint64_t> ReceivedMessagesMap;
 
-  MessageHandler(std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+  MessageHandler(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
                  std::shared_ptr<YeOldeSignalToCallbackConverter> converter,
                  std::shared_ptr<Session> session,
                  ba::io_service &asio_service);  // NOLINT (Fraser)
@@ -101,9 +97,9 @@ class MessageHandler {
   void GetKeysAndProof(const std::string &public_username,
                        passport::PacketType pt,
                        bool confirmed,
-                       AlternativeStore::ValidationData *validation_data);
+                       pcs::RemoteChunkStore::ValidationData *validation_data);
 
-  std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store_;
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
   std::shared_ptr<Session> session_;
   ba::io_service &asio_service_;

@@ -41,6 +41,7 @@
 #include "maidsafe/common/alternative_store.h"
 
 #include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
+#include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 #include "maidsafe/pki/packet.h"
 
@@ -63,10 +64,9 @@
 
 namespace fs = boost::filesystem;
 namespace pca = maidsafe::priv::chunk_actions;
+namespace pcs = maidsafe::priv::chunk_store;
 
 namespace maidsafe {
-
-namespace pd { class RemoteChunkStore; }
 
 namespace lifestuff {
 
@@ -77,7 +77,7 @@ class YeOldeSignalToCallbackConverter;
 class UserStorage {
  public:
   explicit UserStorage(
-              std::shared_ptr<pd::RemoteChunkStore> chunk_store,
+              std::shared_ptr<pcs::RemoteChunkStore> chunk_store,
               std::shared_ptr<YeOldeSignalToCallbackConverter> converter,
               std::shared_ptr<MessageHandler> message_handler);
   virtual ~UserStorage() {}
@@ -165,11 +165,11 @@ class UserStorage {
       const std::string &directory_id = "",
       const asymm::Keys &key_ring = asymm::Keys(),
       const std::string &new_share_id = "");
-  AlternativeStore::ValidationData PopulateValidationData(
+  pcs::RemoteChunkStore::ValidationData PopulateValidationData(
       const asymm::Keys &key_ring);
 
   bool mount_status_;
-  std::shared_ptr<pd::RemoteChunkStore> chunk_store_;
+  std::shared_ptr<pcs::RemoteChunkStore> chunk_store_;
   std::shared_ptr<MaidDriveInUserSpace> drive_in_user_space_;
   std::shared_ptr<Session> session_;
   std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;

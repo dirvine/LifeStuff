@@ -25,33 +25,34 @@
 #include "boost/thread/mutex.hpp"
 #include "boost/filesystem/path.hpp"
 
-#include "maidsafe/common/alternative_store.h"
 #include "maidsafe/common/rsa.h"
+
+#include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 #include "maidsafe/pki/packet.h"
 
 namespace fs = boost::filesystem;
+namespace pcs = maidsafe::priv::chunk_store;
 
 namespace maidsafe {
 
-namespace dht { class Contact; }
-namespace pd {
-class ClientContainer;
-class RemoteChunkStore;
-}
+//namespace dht { class Contact; }
+//namespace pd {
+//class ClientContainer;
+//}
 
 namespace lifestuff {
 
 int GetValidatedMpidPublicKey(
     const std::string &public_username,
-    const AlternativeStore::ValidationData &validation_data,
-    std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+    const pcs::RemoteChunkStore::ValidationData &validation_data,
+    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
     asymm::PublicKey *public_key);
 
 int GetValidatedMmidPublicKey(
     const std::string &mmid_name,
-    const AlternativeStore::ValidationData &validation_data,
-    std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+    const pcs::RemoteChunkStore::ValidationData &validation_data,
+    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
     asymm::PublicKey *public_key);
 
 void SendContactInfoCallback(const int &response,
@@ -68,11 +69,11 @@ std::string ComposeSignaturePacketName(const std::string &name);
 std::string ComposeSignaturePacketValue(
     const maidsafe::pki::SignaturePacket &packet);
 
-int RetrieveBootstrapContacts(const fs::path &download_dir,
-                              std::vector<dht::Contact> *bootstrap_contacts);
-
-typedef std::shared_ptr<pd::ClientContainer> ClientContainerPtr;
-ClientContainerPtr SetUpClientContainer(const fs::path &test_dir);
+//int RetrieveBootstrapContacts(const fs::path &download_dir,
+//                              std::vector<dht::Contact> *bootstrap_contacts);
+//
+//typedef std::shared_ptr<pd::ClientContainer> ClientContainerPtr;
+//ClientContainerPtr SetUpClientContainer(const fs::path &test_dir);
 
 }  // namespace lifestuff
 

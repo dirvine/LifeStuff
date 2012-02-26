@@ -53,9 +53,9 @@ ADD_MAIDSAFE_LIBRARY(MaidSafe-Encrypt)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-Drive)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-PKI)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-Passport)
-ADD_MAIDSAFE_LIBRARY(MaidSafe-Transport)
-ADD_MAIDSAFE_LIBRARY(MaidSafe-DHT)
-ADD_MAIDSAFE_LIBRARY(MaidSafe-PD)
+#ADD_MAIDSAFE_LIBRARY(MaidSafe-Transport)
+#ADD_MAIDSAFE_LIBRARY(MaidSafe-DHT)
+#ADD_MAIDSAFE_LIBRARY(MaidSafe-PD)
 
 
 ###################################################################################################
@@ -109,8 +109,13 @@ SET(AUTHENTICATION_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/a
 SET(CLIENT_CONTROLLER_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/client_controller_test.cc")
 SET(PUBLIC_ID_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/public_id_test.cc"
                       "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/message_handler_test.cc")
+SET(USER_STORAGE_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/user_storage_test.cc")
 
-LIST(REMOVE_ITEM ALL_FILES_LIFESTUFF_TESTS_DIR ${CLIENT_MAIN_CC} ${AUTHENTICATION_TEST_CC} ${CLIENT_CONTROLLER_TEST_CC} ${PUBLIC_ID_TEST_CC} ${UTILS})
+LIST(REMOVE_ITEM ALL_FILES_LIFESTUFF_TESTS_DIR ${CLIENT_MAIN_CC}
+                                               ${AUTHENTICATION_TEST_CC}
+                                               ${CLIENT_CONTROLLER_TEST_CC}
+                                               ${PUBLIC_ID_TEST_CC}
+                                               ${USER_STORAGE_TEST_CC})
 
 
 ###################################################################################################
@@ -119,10 +124,10 @@ LIST(REMOVE_ITEM ALL_FILES_LIFESTUFF_TESTS_DIR ${CLIENT_MAIN_CC} ${AUTHENTICATIO
 MS_ADD_STATIC_LIBRARY(${MS_PROJECT_NAME} ${ALL_FILES_LIFESTUFF_DIR})
 
 MS_ADD_EXECUTABLE(TESTlifestuff Tests ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${TESTS_MAIN_CC})
-
 MS_ADD_EXECUTABLE(TESTauthentication Tests ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
 MS_ADD_EXECUTABLE(TESTclientcontroller Tests ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
 MS_ADD_EXECUTABLE(TESTpublic_id Tests ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
+MS_ADD_EXECUTABLE(TESTuser_storage Tests ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC})
 
 # This target allows lifestuff_static to be installed without building all project targets
 IF(MSVC)
@@ -132,13 +137,13 @@ ELSE()
 ENDIF()
 
 ADD_DEPENDENCIES(install_fast lifestuff_static)
-TARGET_LINK_LIBRARIES(lifestuff_static maidsafe_drive_static maidsafe_passport_static maidsafe_pd_static)
+TARGET_LINK_LIBRARIES(lifestuff_static maidsafe_drive_static maidsafe_passport_static) # maidsafe_pd_static)
 
-TARGET_LINK_LIBRARIES(TESTlifestuff lifestuff_static gtest_static gmock_static)
-
+TARGET_LINK_LIBRARIES(TESTlifestuff lifestuff_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTauthentication lifestuff_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTclientcontroller lifestuff_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTpublic_id lifestuff_static gtest_static)
+TARGET_LINK_LIBRARIES(TESTuser_storage lifestuff_static gtest_static)
 
 
 ###################################################################################################
@@ -163,12 +168,13 @@ ENDIF()
 ###################################################################################################
 # Tests                                                                                           #
 ###################################################################################################
-ADD_STYLE_TEST(${STYLE_ALL} ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${AUTHENTICATION_TEST_CC} ${CLIENT_CONTROLLER_TEST_CC} ${PUBLIC_ID_TEST_CC})
+ADD_STYLE_TEST(${STYLE_ALL} ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${AUTHENTICATION_TEST_CC} ${CLIENT_CONTROLLER_TEST_CC} ${PUBLIC_ID_TEST_CC} ${USER_STORAGE_TEST_CC})
 
 ADD_GTESTS(TESTlifestuff)
 ADD_GTESTS(TESTauthentication)
 ADD_GTESTS(TESTclientcontroller)
 ADD_GTESTS(TESTpublic_id)
+ADD_GTESTS(TESTuser_storage)
 
 TEST_SUMMARY_OUTPUT()
 

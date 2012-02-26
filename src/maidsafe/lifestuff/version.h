@@ -88,34 +88,4 @@
     Please update this project.
 #endif
 
-#include "maidsafe/transport/version.h"
-#define THIS_NEEDS_MAIDSAFE_TRANSPORT_VERSION 104
-#if MAIDSAFE_TRANSPORT_VERSION < THIS_NEEDS_MAIDSAFE_TRANSPORT_VERSION
-#  error This API is not compatible with the installed library.\
-    Please update the MaidSafe-Transport library.
-#elif MAIDSAFE_TRANSPORT_VERSION > THIS_NEEDS_MAIDSAFE_TRANSPORT_VERSION
-#  error This API uses a newer version of the MaidSafe-Transport library.\
-    Please update this project.
-#endif
-
-#include "maidsafe/dht/version.h"
-#define THIS_NEEDS_MAIDSAFE_DHT_VERSION 3108
-#if MAIDSAFE_DHT_VERSION < THIS_NEEDS_MAIDSAFE_DHT_VERSION
-#  error This API is not compatible with the installed library.\
-    Please update the MaidSafe-DHT library.
-#elif MAIDSAFE_DHT_VERSION > THIS_NEEDS_MAIDSAFE_DHT_VERSION
-#  error This API uses a newer version of the MaidSafe-DHT library.\
-    Please update this project.
-#endif
-
-#include "maidsafe/pd/version.h"
-#define THIS_NEEDS_MAIDSAFE_PD_VERSION 800
-#if MAIDSAFE_PD_VERSION < THIS_NEEDS_MAIDSAFE_PD_VERSION
-#  error This API is not compatible with the installed library.\
-    Please update the MaidSafe-PD library.
-#elif MAIDSAFE_PD_VERSION > THIS_NEEDS_MAIDSAFE_PD_VERSION
-#  error This API uses a newer version of the MaidSafe-PD library.\
-    Please update this project.
-#endif
-
 #endif  // MAIDSAFE_LIFESTUFF_VERSION_H_

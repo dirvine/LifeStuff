@@ -34,8 +34,7 @@
 #include "maidsafe/private/chunk_actions/chunk_action_authority.h"
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
-
-#include "maidsafe/pd/client/remote_chunk_store.h"
+#include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
@@ -195,7 +194,7 @@ Authentication::~Authentication() {
 }
 
 void Authentication::Init(
-    std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
     std::shared_ptr<YeOldeSignalToCallbackConverter> converter) {
   remote_chunk_store_ = remote_chunk_store;
   converter_ = converter;
@@ -219,7 +218,7 @@ int Authentication::GetUserInfo(const std::string &username,
   tmid_op_status_ = kPending;
   stmid_op_status_ = kPending;
 
-  AlternativeStore::ValidationData validation_data;
+  pcs::RemoteChunkStore::ValidationData validation_data;
   GetKeysAndProof(passport::kAnmid, &validation_data, false);
   std::string encrypted_mid(
       remote_chunk_store_->Get(pca::ApplyTypeToName(mid_name,
@@ -233,7 +232,7 @@ int Authentication::GetUserInfo(const std::string &username,
   } else {
     GetMidCallback(encrypted_mid, kSuccess);
 
-    validation_data = AlternativeStore::ValidationData();
+    validation_data = pcs::RemoteChunkStore::ValidationData();
     GetKeysAndProof(passport::kAnsmid, &validation_data, false);
     std::string encrypted_smid(
         remote_chunk_store_->Get(pca::ApplyTypeToName(smid_name,
@@ -318,7 +317,7 @@ void Authentication::GetMidCallback(const std::string &value, int return_code) {
   DLOG(INFO) << "Auth::GetMidCallback: TMID - (" << Base32Substr(tmid_name)
                 << ", " << Base32Substr(value) << ")";
 
-  AlternativeStore::ValidationData validation_data;
+  pcs::RemoteChunkStore::ValidationData validation_data;
   GetKeysAndProof(passport::kAntmid, &validation_data, false);
   std::string encrypted_tmid(
       remote_chunk_store_->Get(pca::ApplyTypeToName(tmid_name,
@@ -372,7 +371,7 @@ void Authentication::GetSmidCallback(const std::string &value,
     return;
   }
 
-  AlternativeStore::ValidationData validation_data;
+  pcs::RemoteChunkStore::ValidationData validation_data;
   GetKeysAndProof(passport::kAntmid, &validation_data, false);
   std::string encrypted_stmid(
       remote_chunk_store_->Get(pca::ApplyTypeToName(stmid_name,
@@ -569,7 +568,7 @@ void Authentication::StoreSignaturePacket(
     return;
   }
 
-  AlternativeStore::ValidationData validation_data;
+  pcs::RemoteChunkStore::ValidationData validation_data;
   GetKeysAndProof(passport::kAnmid, &validation_data, false);
   pca::SignedData signed_data;
   std::string encoded_public_key;
@@ -621,11 +620,11 @@ int Authentication::CreateTmidPacket(
              tmid(passport::kTmid, session_->passport_, false),
              stmid(passport::kStmid, session_->passport_, false);
 
-  AlternativeStore::ValidationData validation_data_mid;
+  pcs::RemoteChunkStore::ValidationData validation_data_mid;
   GetKeysAndProof(passport::kAnmid, &validation_data_mid, true);
-  AlternativeStore::ValidationData validation_data_smid;
+  pcs::RemoteChunkStore::ValidationData validation_data_smid;
   GetKeysAndProof(passport::kAnsmid, &validation_data_smid, true);
-  AlternativeStore::ValidationData validation_data_tmid;
+  pcs::RemoteChunkStore::ValidationData validation_data_tmid;
   GetKeysAndProof(passport::kAntmid, &validation_data_tmid, true);
 
   result = StorePacket(mid, validation_data_mid);
@@ -675,11 +674,11 @@ void Authentication::SaveSession(const std::string &serialised_data_atlas,
   CreateSignedData(smid, true, &smid_name, &serialised_smid, &smid_signing_id);
   CreateSignedData(tmid, true, &tmid_name, &serialised_tmid, &tmid_signing_id);
 
-  AlternativeStore::ValidationData validation_data_mid;
+  pcs::RemoteChunkStore::ValidationData validation_data_mid;
   GetKeysAndProof(passport::kAnmid, &validation_data_mid, true);
-  AlternativeStore::ValidationData validation_data_smid;
+  pcs::RemoteChunkStore::ValidationData validation_data_smid;
   GetKeysAndProof(passport::kAnsmid, &validation_data_smid, true);
-  AlternativeStore::ValidationData validation_data_tmid;
+  pcs::RemoteChunkStore::ValidationData validation_data_tmid;
   GetKeysAndProof(passport::kAntmid, &validation_data_tmid, true);
 
   SaveSessionDataPtr save_session_data(
@@ -957,7 +956,7 @@ void Authentication::DeletePacket(const passport::PacketType &packet_type,
                         true,
                         &packet_name,
                         &signing_id);
-  AlternativeStore::ValidationData validation_data;
+  pcs::RemoteChunkStore::ValidationData validation_data;
   GetKeysAndProof(SigningPacket(packet_type), &validation_data, true);
   if (converter_->AddOperation(packet_name, functor) != kSuccess) {
     DLOG(ERROR) << "Authentication::DeletePacket: failed to add to converter - "
@@ -1018,11 +1017,11 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
              tmid(passport::kTmid, session_->passport_, false),
              stmid(passport::kStmid, session_->passport_, false);
 
-  AlternativeStore::ValidationData validation_data_mid;
+  pcs::RemoteChunkStore::ValidationData validation_data_mid;
   GetKeysAndProof(passport::kAnmid, &validation_data_mid, true);
-  AlternativeStore::ValidationData validation_data_smid;
+  pcs::RemoteChunkStore::ValidationData validation_data_smid;
   GetKeysAndProof(passport::kAnsmid, &validation_data_smid, true);
-  AlternativeStore::ValidationData validation_data_tmid;
+  pcs::RemoteChunkStore::ValidationData validation_data_tmid;
   GetKeysAndProof(passport::kAntmid, &validation_data_tmid, true);
 
   VoidFuncOneInt callback(std::bind(&Authentication::PacketOpCallback, this,
@@ -1225,11 +1224,11 @@ int Authentication::ChangePassword(const std::string &serialised_data_atlas,
                    &serialised_stmid,
                    &stmid_signing_id);
 
-  AlternativeStore::ValidationData validation_data_mid;
+  pcs::RemoteChunkStore::ValidationData validation_data_mid;
   GetKeysAndProof(passport::kAnmid, &validation_data_mid, true);
-  AlternativeStore::ValidationData validation_data_smid;
+  pcs::RemoteChunkStore::ValidationData validation_data_smid;
   GetKeysAndProof(passport::kAnsmid, &validation_data_smid, true);
-  AlternativeStore::ValidationData validation_data_tmid;
+  pcs::RemoteChunkStore::ValidationData validation_data_tmid;
   GetKeysAndProof(passport::kAntmid, &validation_data_tmid, true);
 
   result = kPendingResult;
@@ -1359,7 +1358,7 @@ int Authentication::ChangePassword(const std::string &serialised_data_atlas,
 
 int Authentication::StorePacket(
     const PacketData &packet,
-    const AlternativeStore::ValidationData &validation_data) {
+    const pcs::RemoteChunkStore::ValidationData &validation_data) {
   int result(kPendingResult);
   std::string packet_name, serialised_packet, signing_id;
   bool confirmed(packet.type != passport::kMaid &&
@@ -1412,7 +1411,7 @@ int Authentication::DeletePacket(const PacketData &packet) {
                         true,
                         &packet_name,
                         &signing_id);
-  AlternativeStore::ValidationData validation_data;
+  pcs::RemoteChunkStore::ValidationData validation_data;
   GetKeysAndProof(SigningPacket(packet.type), &validation_data, true);
   if (converter_->AddOperation(packet_name, functor) != kSuccess) {
     DLOG(ERROR) << "Authentication::DeletePacket: failed to add to converter - "
@@ -1542,7 +1541,7 @@ std::string Authentication::DebugStr(const passport::PacketType &packet_type) {
 
 void Authentication::GetKeysAndProof(
     passport::PacketType pt,
-    AlternativeStore::ValidationData *validation_data,
+    pcs::RemoteChunkStore::ValidationData *validation_data,
     bool confirmed) {
   if (!IsSignature(pt)) {
     DLOG(ERROR) << "Not signature packet, what'r'u playing at?";
