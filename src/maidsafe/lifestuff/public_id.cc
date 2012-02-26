@@ -348,7 +348,7 @@ int PublicId::CreatePublicId(const std::string &public_username,
                                          &mutex, &cond_var, &results[3]));
 */
 
-  result = AwaitingResponse(&mutex, &cond_var, results);
+  result = AwaitingResponse(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
 
@@ -491,7 +491,7 @@ int PublicId::ModifyAppendability(const std::string &public_username,
                 &mutex, &cond_var, &results[1]));
 */
 
-  result = AwaitingResponse(&mutex, &cond_var, results);
+  result = AwaitingResponse(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
 
@@ -729,7 +729,7 @@ int PublicId::RemoveContact(const std::string &public_username,
                                          &results[0]));
 */
 
-  result = AwaitingResponse(&mutex, &cond_var, results);
+  result = AwaitingResponse(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
   if (results[0] != kSuccess) {
@@ -775,7 +775,7 @@ int PublicId::RemoveContact(const std::string &public_username,
                 &mutex, &cond_var, &results[0]));
 */
 
-  result = AwaitingResponse(&mutex, &cond_var, results);
+  result = AwaitingResponse(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
   if (results[0] != kSuccess) {
@@ -882,7 +882,7 @@ int PublicId::InformContactInfo(const std::string &public_username,
                                 signed_data.SerializeAsString(),
                                 validation_data_mpid);
   }
-  result = AwaitingResponse(&mutex, &cond_var, results);
+  result = AwaitingResponse(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
 
@@ -896,15 +896,15 @@ int PublicId::InformContactInfo(const std::string &public_username,
 
 int PublicId::AwaitingResponse(boost::mutex *mutex,
                                boost::condition_variable *cond_var,
-                               std::vector<int> &results) {
-  size_t size(results.size());
+                               std::vector<int> *results) {
+  size_t size(results->size());
   try {
     boost::mutex::scoped_lock lock(*mutex);
     if (!cond_var->timed_wait(lock,
                               bptime::seconds(30),
                               [&]()->bool {
-                                for (size_t i = 0; i < size; ++i) {
-                                  if (results[i] == kPendingResult)
+                                for (size_t i(0); i < size; ++i) {
+                                  if (results->at(i) == kPendingResult)
                                     return false;
                                 }
                                 return true;

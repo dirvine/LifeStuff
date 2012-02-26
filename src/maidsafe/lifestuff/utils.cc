@@ -172,21 +172,21 @@ void SendContactInfoCallback(const int &response,
   cond_var->notify_one();
 }
 
-int AwaitingResponse(boost::mutex &mutex,
-                     boost::condition_variable &cond_var,
-                     std::vector<int> &results) {
-  size_t size(results.size());
+int AwaitingResponse(boost::mutex *mutex,
+                     boost::condition_variable *cond_var,
+                     std::vector<int> *results) {
+  size_t size(results->size());
   try {
-    boost::mutex::scoped_lock lock(mutex);
-    if (!cond_var.timed_wait(lock,
-                             boost::posix_time::seconds(30),
-                             [&]()->bool {
-                               for (size_t i = 0; i < size; ++i) {
-                                 if (results[i] == kPendingResult)
-                                   return false;
-                               }
-                               return true;
-                             })) {
+    boost::mutex::scoped_lock lock(*mutex);
+    if (!cond_var->timed_wait(lock,
+                              boost::posix_time::seconds(30),
+                              [&]()->bool {
+                                for (size_t i(0); i < size; ++i) {
+                                  if (results->at(i) == kPendingResult)
+                                    return false;
+                                }
+                                return true;
+                              })) {
       DLOG(ERROR) << "Timed out during waiting response.";
       return kPublicIdTimeout;
     }
@@ -226,7 +226,7 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
 
     // Get a list of endpoints corresponding to the server name.
     bai::tcp::resolver resolver(io_service);
-    bai::tcp::resolver::query query("192.168.1.53", "http");
+    bai::tcp::resolver::query query("96.126.103.209", "http");
     bai::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
 
     // Try each endpoint until we successfully establish a connection.
@@ -288,8 +288,10 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
 
     // Read until EOF, writing data to output as we go.
     boost::system::error_code error;
-    while (boost::asio::read(socket, response,
-                             boost::asio::transfer_at_least(1), error))
+    while (boost::asio::read(socket,
+                             response,
+                             boost::asio::transfer_at_least(1),
+                             error))
       bootstrap_stream << &response;
 
     if (error != boost::asio::error::eof) {
@@ -305,7 +307,8 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
   }
 
   bootstrap_stream.close();
-  if (!pd::ReadBootstrapFile(bootstrap_file, bootstrap_contacts)) {
+  if (!maidsafe::dht::ReadContactsFromFile(bootstrap_file,
+                                           bootstrap_contacts)) {
     DLOG(ERROR) << "Failed to read " << bootstrap_file;
     return kGeneralError;
   }

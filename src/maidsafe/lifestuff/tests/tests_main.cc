@@ -39,12 +39,12 @@ int main(int argc, char **argv) {
   FLAGS_ms_logging_private = google::ERROR;
   FLAGS_ms_logging_pki = google::FATAL;
   FLAGS_ms_logging_passport = google::FATAL;
-  FLAGS_ms_logging_drive = google::ERROR;
+  FLAGS_ms_logging_drive = google::INFO;
   FLAGS_ms_logging_encrypt = google::ERROR;
   FLAGS_ms_logging_transport = google::FATAL;
   FLAGS_ms_logging_dht = google::FATAL;
   FLAGS_ms_logging_pd = google::FATAL;
-  FLAGS_ms_logging_lifestuff = google::INFO;
+  FLAGS_ms_logging_lifestuff = google::ERROR;
 
   testing::InitGoogleTest(&argc, argv);
 
