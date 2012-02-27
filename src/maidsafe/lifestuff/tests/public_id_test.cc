@@ -35,6 +35,7 @@
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/session.h"
+#include "maidsafe/lifestuff/utils.h"
 #include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
 namespace ba = boost::asio;
@@ -51,7 +52,7 @@ namespace test {
 
 typedef std::map<std::string, ContactStatus> ContactMap;
 
-class PublicIdTest : public testing::Test {
+class PublicIdTest : public testing::TestWithParam<std::string> {
  public:
   PublicIdTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
@@ -68,7 +69,9 @@ class PublicIdTest : public testing::Test {
         public_username1_("User 1 " + RandomAlphaNumericString(8)),
         public_username2_("User 2 " + RandomAlphaNumericString(8)),
         received_public_username_(),
-        interval_(3) {}
+        interval_(3),
+        client_container1_(),
+        client_container2_() {}
 
   void ManyContactsSlot(const std::string &/*own_public_username*/,
                         const std::string &/*other_public_username*/,
@@ -124,16 +127,28 @@ class PublicIdTest : public testing::Test {
     asio_service1_.Start(10);
     asio_service2_.Start(10);
 
-    std::shared_ptr<BufferedChunkStore> bcs1(
-        new BufferedChunkStore(asio_service1_.service()));
-    bcs1->Init(*test_dir_ / "buffered_chunk_store1");
-    std::shared_ptr<priv::ChunkActionAuthority> caa1(
-        new priv::ChunkActionAuthority(bcs1));
-    std::shared_ptr<LocalChunkManager> local_chunk_manager1(
-        new LocalChunkManager(bcs1, *test_dir_ / "local_chunk_manager"));
-    remote_chunk_store1_.reset(new pd::RemoteChunkStore(bcs1,
-                                                        local_chunk_manager1,
-                                                        caa1));
+    if (GetParam() == "Local Storage") {
+      std::shared_ptr<BufferedChunkStore> bcs1(
+          new BufferedChunkStore(asio_service1_.service()));
+      bcs1->Init(*test_dir_ / "buffered_chunk_store1");
+      std::shared_ptr<priv::ChunkActionAuthority> caa1(
+          new priv::ChunkActionAuthority(bcs1));
+      std::shared_ptr<LocalChunkManager> local_chunk_manager1(
+          new LocalChunkManager(bcs1, *test_dir_ / "local_chunk_manager"));
+      remote_chunk_store1_.reset(new pd::RemoteChunkStore(bcs1,
+                                                          local_chunk_manager1,
+                                                          caa1));
+    } else if (GetParam() == "Network Storage") {
+      client_container1_ = SetUpClientContainer(*test_dir_);
+      ASSERT_TRUE(client_container1_.get() != nullptr);
+      remote_chunk_store1_.reset(new pd::RemoteChunkStore(
+          client_container1_->chunk_store(),
+          client_container1_->chunk_manager(),
+          client_container1_->chunk_action_authority()));
+    } else {
+      FAIL() << "Invalid test value parameter";
+    }
+
     remote_chunk_store1_->sig_chunk_stored()->connect(
         std::bind(&YeOldeSignalToCallbackConverter::Stored, converter1_.get(),
                   args::_1, args::_2));
@@ -148,16 +163,28 @@ class PublicIdTest : public testing::Test {
                                    session1_,
                                    asio_service1_.service()));
 
-    std::shared_ptr<BufferedChunkStore> bcs2(
-        new BufferedChunkStore(asio_service2_.service()));
-    bcs2->Init(*test_dir_ / "buffered_chunk_store2");
-    std::shared_ptr<priv::ChunkActionAuthority> caa2(
-        new priv::ChunkActionAuthority(bcs2));
-    std::shared_ptr<LocalChunkManager> local_chunk_manager2(
-        new LocalChunkManager(bcs2, *test_dir_ / "local_chunk_manager"));
-    remote_chunk_store2_.reset(new pd::RemoteChunkStore(bcs2,
-                                                        local_chunk_manager2,
-                                                        caa2));
+    if (GetParam() == "Local Storage") {
+      std::shared_ptr<BufferedChunkStore> bcs2(
+          new BufferedChunkStore(asio_service2_.service()));
+      bcs2->Init(*test_dir_ / "buffered_chunk_store2");
+      std::shared_ptr<priv::ChunkActionAuthority> caa2(
+          new priv::ChunkActionAuthority(bcs2));
+      std::shared_ptr<LocalChunkManager> local_chunk_manager2(
+          new LocalChunkManager(bcs2, *test_dir_ / "local_chunk_manager"));
+      remote_chunk_store2_.reset(new pd::RemoteChunkStore(bcs2,
+                                                          local_chunk_manager2,
+                                                          caa2));
+    } else if (GetParam() == "Network Storage") {
+      client_container2_ = SetUpClientContainer(*test_dir_);
+      ASSERT_TRUE(client_container2_.get() != nullptr);
+      remote_chunk_store2_.reset(new pd::RemoteChunkStore(
+          client_container2_->chunk_store(),
+          client_container2_->chunk_manager(),
+          client_container2_->chunk_action_authority()));
+    } else {
+      FAIL() << "Invalid test value parameter";
+    }
+
     remote_chunk_store2_->sig_chunk_stored()->connect(
         std::bind(&YeOldeSignalToCallbackConverter::Stored, converter2_.get(),
                   args::_1, args::_2));
@@ -251,13 +278,14 @@ class PublicIdTest : public testing::Test {
 
   std::string public_username1_, public_username2_, received_public_username_;
   bptime::seconds interval_;
+  ClientContainerPtr client_container1_, client_container2_;
 
  private:
   explicit PublicIdTest(const PublicIdTest&);
   PublicIdTest &operator=(const PublicIdTest&);
 };
 
-TEST_F(PublicIdTest, FUNC_CreateInvalidId) {
+TEST_P(PublicIdTest, FUNC_CreateInvalidId) {
   ASSERT_EQ(kPublicIdEmpty, public_id1_->CreatePublicId("", false));
   ASSERT_EQ(kPublicIdEmpty, public_id1_->CreatePublicId("", true));
 
@@ -276,7 +304,7 @@ TEST_F(PublicIdTest, FUNC_CreateInvalidId) {
             public_id2_->CreatePublicId(public_username1_, true));
 }
 
-TEST_F(PublicIdTest, FUNC_CreatePublicIdAntiSocial) {
+TEST_P(PublicIdTest, FUNC_CreatePublicIdAntiSocial) {
   // Create user1 who doesn't accept new contacts, and user2 who does
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_username1_, false));
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_username2_, true));
@@ -292,7 +320,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdAntiSocial) {
   ASSERT_TRUE(received_public_username_.empty());
 }
 
-TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
+TEST_P(PublicIdTest, FUNC_CreatePublicIdSociable) {
   // Create users who both accept new contacts
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_username1_, true));
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_username2_, true));
@@ -330,7 +358,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
   ASSERT_EQ(kPendingResponse, received_contact.status);
 }
 
-TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
+TEST_P(PublicIdTest, FUNC_CreatePublicIdWithReply) {
   // Create users who both accept new contacts
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_username1_, true));
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_username2_, true));
@@ -395,7 +423,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
   ASSERT_FALSE(received_contact.mmid_name.empty());
 }
 
-TEST_F(PublicIdTest, FUNC_CreatePublicIdWithRefusal) {
+TEST_P(PublicIdTest, FUNC_CreatePublicIdWithRefusal) {
   // Create users who both accept new contacts
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_username1_, true));
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_username2_, true));
@@ -444,7 +472,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithRefusal) {
                 &received_contact));
 }
 
-TEST_F(PublicIdTest, FUNC_DisablePublicId) {
+TEST_P(PublicIdTest, FUNC_DisablePublicId) {
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_username1_, true));
 
   ASSERT_EQ(kPublicIdEmpty, public_id1_->DisablePublicId(""));
@@ -473,7 +501,7 @@ TEST_F(PublicIdTest, FUNC_DisablePublicId) {
   //                  then it shall not be allowed to send msg to MMID anymore
 }
 
-TEST_F(PublicIdTest, FUNC_EnablePublicId) {
+TEST_P(PublicIdTest, FUNC_EnablePublicId) {
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_username1_, true));
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_username2_, true));
 
@@ -503,7 +531,7 @@ TEST_F(PublicIdTest, FUNC_EnablePublicId) {
   ASSERT_FALSE(received_public_username_.empty());
 }
 
-TEST_F(PublicIdTest, FUNC_RemoveContact) {
+TEST_P(PublicIdTest, FUNC_RemoveContact) {
   // Detailed msg exchanging behaviour tests are undertaken as part of
   // message_handler_test. Here only basic functionality is tested
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_username1_, true));
@@ -538,7 +566,7 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
   ASSERT_FALSE(received_public_username_.empty());
 }
 
-TEST_F(PublicIdTest, FUNC_ContactList) {
+TEST_P(PublicIdTest, FUNC_ContactList) {
   int n(5), counter(0);
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_username1_, true));
   std::vector<std::string> usernames;
@@ -573,7 +601,7 @@ TEST_F(PublicIdTest, FUNC_ContactList) {
     ASSERT_FALSE(contacts.find(*it) == contacts.end());
 }
 
-TEST_F(PublicIdTest, FUNC_PublicIdList) {
+TEST_P(PublicIdTest, FUNC_PublicIdList) {
   int n(10);
   for (int a(0); a < n; ++a) {
     std::string pub_name(public_username1_ +
@@ -589,7 +617,7 @@ TEST_F(PublicIdTest, FUNC_PublicIdList) {
               public_ids.at(y));
 }
 
-TEST_F(PublicIdTest, FUNC_RecoveryOfPendingContacts) {
+TEST_P(PublicIdTest, FUNC_RecoveryOfPendingContacts) {
 /*
   std::string serialised_keyring1, serialised_keyring2, da1,
               serialised_selectables1, serialised_selectables2, da2;
@@ -875,6 +903,9 @@ TEST_F(PublicIdTest, FUNC_RecoveryOfPendingContacts) {
   }
 */
 }
+
+INSTANTIATE_TEST_CASE_P(LocalAndNetwork, PublicIdTest,
+                        testing::Values("Local Storage", "Network Storage"));
 
 }  // namespace test
 
