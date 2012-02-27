@@ -284,7 +284,7 @@ int UserStorage::CreateShare(const std::string &sender_public_username,
                drive_in_user_space_->RelativePath(absolute_path),
                share_id,
                key_ring,
-               session_->unique_user_id(),
+               session_->username(),
                &directory_id);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed in creating share of " << absolute_path.string()
@@ -338,7 +338,6 @@ int UserStorage::StopShare(const std::string &sender_public_username,
   InformContactsOperation<RemoveShareTag>(sender_public_username,
                                           contacts,
                                           share_id);
-
   boost::mutex mutex;
   boost::condition_variable cond_var;
   std::vector<int> results;
@@ -416,7 +415,7 @@ int UserStorage::AddShareUsers(const std::string &sender_public_username,
       InformContactsOperation<JoinShareTag>(sender_public_username,
                                             contacts,
                                             share_id,
-                                            absolute_path.filename().string(),
+                                            absolute_path,
                                             directory_id,
                                             key_ring);
   if (result != kSuccess) {
