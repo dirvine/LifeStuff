@@ -214,7 +214,7 @@ std::string ComposeSignaturePacketValue(
 
 int RetrieveBootstrapContacts(const fs::path &download_dir,
                               std::vector<dht::Contact> *bootstrap_contacts) {
-  fs::path bootstrap_file(download_dir / "bootstrap.xml");
+  fs::path bootstrap_file(download_dir / "bootstrap");
   std::ofstream bootstrap_stream(bootstrap_file.c_str(), std::ofstream::trunc);
   if (!bootstrap_stream.good()) {
     DLOG(ERROR) << "Can't open " << bootstrap_file << " for writing.";
@@ -226,7 +226,7 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
 
     // Get a list of endpoints corresponding to the server name.
     bai::tcp::resolver resolver(io_service);
-    bai::tcp::resolver::query query("96.126.103.209", "http");
+    bai::tcp::resolver::query query("192.168.1.53", "http");
     bai::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
 
     // Try each endpoint until we successfully establish a connection.
@@ -238,7 +238,7 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
     // allow us to treat all data up until the EOF as the content.
     boost::asio::streambuf request;
     std::ostream request_stream(&request);
-    request_stream << "GET /bootstrap.xml HTTP/1.0\r\n";
+    request_stream << "GET /bootstrap HTTP/1.0\r\n";
     request_stream << "Host: LifeStuffTest\r\n";
     request_stream << "Accept: */*\r\n";
     request_stream << "Connection: close\r\n\r\n";
@@ -261,12 +261,12 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
     std::string status_message;
     std::getline(response_stream, status_message);
     if (!response_stream || http_version.substr(0, 5) != "HTTP/") {
-      DLOG(ERROR) << "Error downloading bootstrap.xml: Invalid response";
+      DLOG(ERROR) << "Error downloading bootstrap file: Invalid response";
       bootstrap_stream.close();
       return kGeneralError;
     }
     if (status_code != 200) {
-      DLOG(ERROR) << "Error downloading bootstrap.xml: Response returned "
+      DLOG(ERROR) << "Error downloading bootstrap file: Response returned "
                   << "with status code " << status_code;
       bootstrap_stream.close();
       return kGeneralError;
@@ -295,7 +295,7 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
       bootstrap_stream << &response;
 
     if (error != boost::asio::error::eof) {
-      DLOG(ERROR) << "Error downloading bootstrap.xml: " << error.message();
+      DLOG(ERROR) << "Error downloading bootstrap file: " << error.message();
       bootstrap_stream.close();
       return error.value();
     }

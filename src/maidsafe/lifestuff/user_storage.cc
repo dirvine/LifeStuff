@@ -284,7 +284,7 @@ int UserStorage::CreateShare(const std::string &sender_public_username,
                drive_in_user_space_->RelativePath(absolute_path),
                share_id,
                key_ring,
-               session_->username(),
+               sender_public_username,
                &directory_id);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed in creating share of " << absolute_path.string()
@@ -330,7 +330,7 @@ int UserStorage::StopShare(const std::string &sender_public_username,
   result = drive_in_user_space_->SetShareDetails(relative_path,
                                                  "",
                                                  key_ring,
-                                                 session_->username(),
+                                                 sender_public_username,
                                                  &directory_id);
   if (result != kSuccess)
     return result;
@@ -415,7 +415,7 @@ int UserStorage::AddShareUsers(const std::string &sender_public_username,
       InformContactsOperation<JoinShareTag>(sender_public_username,
                                             contacts,
                                             share_id,
-                                            absolute_path,
+                                            absolute_path.filename().string(),
                                             directory_id,
                                             key_ring);
   if (result != kSuccess) {
@@ -755,13 +755,13 @@ int UserStorage::InformContactsOperation(
   int result, aggregate(0);
   for (auto it = contacts.begin(); it != contacts.end(); ++it) {
     // do nothing if trying to send a msg to itself
-    if ((*it).first != session_->username()) {
+    if ((*it).first != sender_public_username) {
       if ((*it).second) {
-        result = message_handler_->Send(session_->username(),
+        result = message_handler_->Send(sender_public_username,
                                         (*it).first,
                                         admin_message);
       } else {
-        result = message_handler_->Send(session_->username(),
+        result = message_handler_->Send(sender_public_username,
                                         (*it).first,
                                         non_admin_message);
       }
