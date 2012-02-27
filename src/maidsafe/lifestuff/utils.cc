@@ -214,18 +214,13 @@ std::string ComposeSignaturePacketValue(
 
 int RetrieveBootstrapContacts(const fs::path &download_dir,
                               std::vector<dht::Contact> *bootstrap_contacts) {
-  fs::path bootstrap_file(download_dir / "bootstrap");
-  std::ofstream bootstrap_stream(bootstrap_file.c_str(), std::ofstream::trunc);
-  if (!bootstrap_stream.good()) {
-    DLOG(ERROR) << "Can't open " << bootstrap_file << " for writing.";
-    return kGeneralError;
-  }
-
+  std::ostringstream bootstrap_stream(std::ios::binary);
   try {
     boost::asio::io_service io_service;
 
     // Get a list of endpoints corresponding to the server name.
     bai::tcp::resolver resolver(io_service);
+//    bai::tcp::resolver::query query("96.126.103.209", "http");
     bai::tcp::resolver::query query("192.168.1.53", "http");
     bai::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
 
@@ -262,13 +257,11 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
     std::getline(response_stream, status_message);
     if (!response_stream || http_version.substr(0, 5) != "HTTP/") {
       DLOG(ERROR) << "Error downloading bootstrap file: Invalid response";
-      bootstrap_stream.close();
       return kGeneralError;
     }
     if (status_code != 200) {
       DLOG(ERROR) << "Error downloading bootstrap file: Response returned "
                   << "with status code " << status_code;
-      bootstrap_stream.close();
       return kGeneralError;
     }
 
@@ -296,17 +289,16 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
 
     if (error != boost::asio::error::eof) {
       DLOG(ERROR) << "Error downloading bootstrap file: " << error.message();
-      bootstrap_stream.close();
       return error.value();
     }
   }
   catch(const std::exception &e) {
     DLOG(ERROR) << "Exception: " << e.what();
-    bootstrap_stream.close();
     return kGeneralException;
   }
 
-  bootstrap_stream.close();
+  fs::path bootstrap_file(download_dir / "bootstrap");
+  WriteFile(bootstrap_file, bootstrap_stream.str());
   if (!maidsafe::dht::ReadContactsFromFile(bootstrap_file,
                                            bootstrap_contacts)) {
     DLOG(ERROR) << "Failed to read " << bootstrap_file;
