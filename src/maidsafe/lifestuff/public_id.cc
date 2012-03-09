@@ -27,8 +27,6 @@
 
 #include "maidsafe/passport/passport.h"
 
-#include "maidsafe/pd/client/remote_chunk_store.h"
-
 #include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
@@ -44,17 +42,6 @@ namespace maidsafe {
 namespace lifestuff {
 
 namespace {
-
-void SendContactInfoCallback(const int &response,
-                             boost::mutex *mutex,
-                             boost::condition_variable *cond_var,
-                             int *result) {
-  if (!mutex || !cond_var || !result)
-    return;
-  boost::mutex::scoped_lock lock(*mutex);
-  *result = response;
-  cond_var->notify_one();
-}
 
 std::string ComposeModifyAppendableByAll(const asymm::PrivateKey &signing_key,
                                          const char appendability) {
@@ -189,7 +176,7 @@ std::vector<std::string> MapToVector(
 }  // namespace
 
 PublicId::PublicId(
-    std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
     std::shared_ptr<YeOldeSignalToCallbackConverter> converter,
     std::shared_ptr<Session> session,
     ba::io_service &asio_service)  // NOLINT (Fraser)
@@ -265,9 +252,9 @@ int PublicId::CreatePublicId(const std::string &public_username,
       session_->passport_->PacketPrivateKey(passport::kMpid,
                                             false,
                                             public_username));
-  AlternativeStore::ValidationData validation_data_mmid;
-  AlternativeStore::ValidationData validation_data_mpid;
-  AlternativeStore::ValidationData validation_data_anmpid;
+  pcs::RemoteChunkStore::ValidationData validation_data_mmid;
+  pcs::RemoteChunkStore::ValidationData validation_data_mpid;
+  pcs::RemoteChunkStore::ValidationData validation_data_anmpid;
   GetKeysAndProof(public_username,
                   passport::kMmid,
                   false,
@@ -359,7 +346,7 @@ int PublicId::CreatePublicId(const std::string &public_username,
                                          &mutex, &cond_var, &results[3]));
 */
 
-  result = AwaitingResponse(&mutex, &cond_var, results);
+  result = AwaitingResponse(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
 
@@ -454,7 +441,7 @@ int PublicId::ModifyAppendability(const std::string &public_username,
   results.push_back(kPendingResult);
   results.push_back(kPendingResult);
 
-  AlternativeStore::ValidationData validation_data_mpid;
+  pcs::RemoteChunkStore::ValidationData validation_data_mpid;
   GetKeysAndProof(public_username,
                   passport::kMpid,
                   true,
@@ -471,7 +458,7 @@ int PublicId::ModifyAppendability(const std::string &public_username,
       ComposeModifyAppendableByAll(MPID_private_key, appendability),
       validation_data_mpid);
 
-  AlternativeStore::ValidationData validation_data_mmid;
+  pcs::RemoteChunkStore::ValidationData validation_data_mmid;
   GetKeysAndProof(public_username,
                   passport::kMmid,
                   true,
@@ -502,7 +489,7 @@ int PublicId::ModifyAppendability(const std::string &public_username,
                 &mutex, &cond_var, &results[1]));
 */
 
-  result = AwaitingResponse(&mutex, &cond_var, results);
+  result = AwaitingResponse(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
 
@@ -543,7 +530,7 @@ void PublicId::GetNewContacts(const bptime::seconds &interval,
       session_->passport_->GetSelectableIdentityData(std::get<0>(*it),
                                                      true,
                                                      &data);
-      AlternativeStore::ValidationData validation_data_mpid;
+      pcs::RemoteChunkStore::ValidationData validation_data_mpid;
       GetKeysAndProof(std::get<0>(*it),
                       passport::kMpid,
                       true,
@@ -713,7 +700,7 @@ int PublicId::RemoveContact(const std::string &public_username,
       session_->passport_->PacketPrivateKey(passport::kMmid,
                                             false,
                                             public_username));
-  AlternativeStore::ValidationData validation_data_mmid;
+  pcs::RemoteChunkStore::ValidationData validation_data_mmid;
   GetKeysAndProof(public_username,
                   passport::kMmid,
                   false,
@@ -740,7 +727,7 @@ int PublicId::RemoveContact(const std::string &public_username,
                                          &results[0]));
 */
 
-  result = AwaitingResponse(&mutex, &cond_var, results);
+  result = AwaitingResponse(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
   if (results[0] != kSuccess) {
@@ -758,7 +745,7 @@ int PublicId::RemoveContact(const std::string &public_username,
   results.clear();
   results.push_back(kPendingResult);
 
-  validation_data_mmid = AlternativeStore::ValidationData();
+  validation_data_mmid = pcs::RemoteChunkStore::ValidationData();
   GetKeysAndProof(public_username,
                   passport::kMmid,
                   true,
@@ -786,7 +773,7 @@ int PublicId::RemoveContact(const std::string &public_username,
                 &mutex, &cond_var, &results[0]));
 */
 
-  result = AwaitingResponse(&mutex, &cond_var, results);
+  result = AwaitingResponse(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
   if (results[0] != kSuccess) {
@@ -828,7 +815,7 @@ int PublicId::InformContactInfo(const std::string &public_username,
   std::vector<int> results;
   size_t size(contacts.size());
 
-  AlternativeStore::ValidationData validation_data_mpid;
+  pcs::RemoteChunkStore::ValidationData validation_data_mpid;
   GetKeysAndProof(public_username,
                   passport::kMpid,
                   true,
@@ -893,7 +880,7 @@ int PublicId::InformContactInfo(const std::string &public_username,
                                 signed_data.SerializeAsString(),
                                 validation_data_mpid);
   }
-  result = AwaitingResponse(&mutex, &cond_var, results);
+  result = AwaitingResponse(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
 
@@ -907,15 +894,15 @@ int PublicId::InformContactInfo(const std::string &public_username,
 
 int PublicId::AwaitingResponse(boost::mutex *mutex,
                                boost::condition_variable *cond_var,
-                               std::vector<int> &results) {
-  size_t size(results.size());
+                               std::vector<int> *results) {
+  size_t size(results->size());
   try {
     boost::mutex::scoped_lock lock(*mutex);
     if (!cond_var->timed_wait(lock,
                               bptime::seconds(30),
                               [&]()->bool {
-                                for (size_t i = 0; i < size; ++i) {
-                                  if (results[i] == kPendingResult)
+                                for (size_t i(0); i < size; ++i) {
+                                  if (results->at(i) == kPendingResult)
                                     return false;
                                 }
                                 return true;
@@ -960,7 +947,7 @@ void PublicId::GetKeysAndProof(
     const std::string &public_username,
     passport::PacketType pt,
     bool confirmed,
-    AlternativeStore::ValidationData *validation_data) {
+    pcs::RemoteChunkStore::ValidationData *validation_data) {
   if (pt != passport::kAnmpid &&
       pt != passport::kMpid &&
       pt != passport::kMmid) {

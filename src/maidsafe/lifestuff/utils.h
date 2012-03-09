@@ -17,31 +17,65 @@
 #ifndef MAIDSAFE_LIFESTUFF_UTILS_H_
 #define MAIDSAFE_LIFESTUFF_UTILS_H_
 
-
 #include <memory>
 #include <string>
+#include <vector>
 
-#include "maidsafe/common/alternative_store.h"
+#include "boost/thread/condition_variable.hpp"
+#include "boost/thread/mutex.hpp"
+#include "boost/filesystem/path.hpp"
+
 #include "maidsafe/common/rsa.h"
 
+#include "maidsafe/private/chunk_store/remote_chunk_store.h"
+
+#include "maidsafe/pki/packet.h"
+
+namespace fs = boost::filesystem;
+namespace pcs = maidsafe::priv::chunk_store;
 
 namespace maidsafe {
 
-namespace pd { class RemoteChunkStore; }
+#ifndef LOCAL_TARGETS_ONLY
+namespace dht { class Contact; }
+namespace pd { class ClientContainer; }
+#endif
 
 namespace lifestuff {
 
 int GetValidatedMpidPublicKey(
     const std::string &public_username,
-    const AlternativeStore::ValidationData &validation_data,
-    std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+    const pcs::RemoteChunkStore::ValidationData &validation_data,
+    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
     asymm::PublicKey *public_key);
 
 int GetValidatedMmidPublicKey(
     const std::string &mmid_name,
-    const AlternativeStore::ValidationData &validation_data,
-    std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+    const pcs::RemoteChunkStore::ValidationData &validation_data,
+    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
     asymm::PublicKey *public_key);
+
+void SendContactInfoCallback(const int &response,
+                             boost::mutex *mutex,
+                             boost::condition_variable *cond_var,
+                             int *result);
+
+int AwaitingResponse(boost::mutex *mutex,
+                     boost::condition_variable *cond_var,
+                     std::vector<int> *results);
+
+std::string ComposeSignaturePacketName(const std::string &name);
+
+std::string ComposeSignaturePacketValue(
+    const maidsafe::pki::SignaturePacket &packet);
+
+#ifndef LOCAL_TARGETS_ONLY
+int RetrieveBootstrapContacts(const fs::path &download_dir,
+                              std::vector<dht::Contact> *bootstrap_contacts);
+
+typedef std::shared_ptr<pd::ClientContainer> ClientContainerPtr;
+ClientContainerPtr SetUpClientContainer(const fs::path &test_dir);
+#endif
 
 }  // namespace lifestuff
 

@@ -27,7 +27,7 @@
 
 #include "maidsafe/lifestuff/version.h"
 
-#if MAIDSAFE_LIFESTUFF_VERSION != 200
+#if MAIDSAFE_LIFESTUFF_VERSION != 300
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-lifestuff library.
 #endif
@@ -40,10 +40,12 @@ namespace lifestuff {
 enum ReturnCode {
   // General
   kSuccess = 0,
-  kPendingResult = -200001,
-  kGetPublicKeyFailure = -200002,
-  kGetMpidFailure = -200003,
-  kInvalidPublicKey = -200004,
+  kGeneralError = -200001,
+  kGeneralException = -200002,
+  kPendingResult = -200003,
+  kGetPublicKeyFailure = -200004,
+  kGetMpidFailure = -200005,
+  kInvalidPublicKey = -200006,
 
   // Authentication
   kAuthenticationError = -201001,

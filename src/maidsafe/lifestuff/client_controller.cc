@@ -35,27 +35,27 @@
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
-#include "boost/foreach.hpp"
 
-#include "maidsafe/common/buffered_chunk_store.h"
-#include "maidsafe/common/chunk_store.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/private/chunk_actions/chunk_action_authority.h"
+#include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
+#ifndef LOCAL_TARGETS_ONLY
 #include "maidsafe/pd/client/client_container.h"
-#include "maidsafe/pd/client/remote_chunk_store.h"
+#endif
 
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/data_atlas_pb.h"
-#include "maidsafe/lifestuff/local_chunk_manager.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
+#include "maidsafe/lifestuff/utils.h"
 #include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
 namespace args = std::placeholders;
+namespace pca = maidsafe::priv::chunk_actions;
 
 namespace maidsafe {
 
@@ -72,6 +72,9 @@ ClientController::ClientController(boost::asio::io_service &service,  // NOLINT 
       logging_out_(false),
       logged_in_(false),
       service_(service),
+#ifndef LOCAL_TARGETS_ONLY
+      client_container_(),
+#endif
       converter_(new YeOldeSignalToCallbackConverter) {}
 
 ClientController::~ClientController() {}
@@ -81,22 +84,20 @@ void ClientController::Init(bool local, const fs::path &base_dir) {
     return;
 
   if (local) {
-    std::shared_ptr<BufferedChunkStore> bcs(new BufferedChunkStore(service_));
-    bcs->Init(base_dir / "buffered_chunk_store");
-    std::shared_ptr<priv::ChunkActionAuthority> caa(
-        new priv::ChunkActionAuthority(bcs));
-    std::shared_ptr<LocalChunkManager> local_chunk_manager(
-        new LocalChunkManager(bcs, base_dir / "local_chunk_manager"));
-    remote_chunk_store_.reset(new pd::RemoteChunkStore(bcs,
-                                                       local_chunk_manager,
-                                                       caa));
+    remote_chunk_store_ = pcs::CreateLocalChunkStore(base_dir, service_);
   } else {
-    pd::ClientContainer container;
-    container.Init(base_dir / "buffer", 10);
-    remote_chunk_store_.reset(
-        new pd::RemoteChunkStore(container.chunk_store(),
-                                 container.chunk_manager(),
-                                 container.chunk_action_authority()));
+#ifndef LOCAL_TARGETS_ONLY
+    client_container_ = SetUpClientContainer(base_dir);
+    if (client_container_) {
+      remote_chunk_store_.reset(new pcs::RemoteChunkStore(
+          client_container_->chunk_store(),
+          client_container_->chunk_manager(),
+          client_container_->chunk_action_authority()));
+    } else {
+      DLOG(ERROR) << "Failed to initialise client container.";
+      return;
+    }
+#endif
   }
 
   remote_chunk_store_->sig_chunk_stored()->connect(
@@ -158,19 +159,18 @@ int ClientController::ParseDa() {
     return -9003;
   }
 
-  std::set<std::string> public_usernames;
-  std::string public_username;
-  for (int n = 0; n < data_atlas.contacts_size(); ++n) {
-    if (public_usernames.find(data_atlas.contacts(n).own_public_username()) ==
-        public_usernames.end()) {
-      session_->contact_handler_map().insert(
-          std::make_pair(data_atlas.contacts(n).own_public_username(),
-                         ContactsHandlerPtr(new ContactsHandler)));
-      public_username = data_atlas.contacts(n).own_public_username();
+  std::string pub_name;
+  for (int n(0); n < data_atlas.public_usernames_size(); ++n) {
+    pub_name = data_atlas.public_usernames(n).own_public_username();
+    session_->contact_handler_map().insert(
+        std::make_pair(pub_name,
+                       std::make_shared<ContactsHandler>()));
+    for (int a(0); a < data_atlas.public_usernames(n).contacts_size(); ++a) {
+      Contact c(data_atlas.public_usernames(n).contacts(a));
+      int res(session_->contact_handler_map()[pub_name]->AddContact(c));
+      DLOG(ERROR) << "Result of adding (" << pub_name << ") - "
+                  << c.public_username << ": " << res;
     }
-    Contact c(data_atlas.contacts(n));
-    int res(session_->contact_handler_map()[public_username]->AddContact(c));
-    DLOG(ERROR) << "Result of adding " << c.public_username << ": " << res;
   }
 
   return 0;
@@ -205,16 +205,22 @@ int ClientController::SerialiseDa() {
        it != session_->contact_handler_map().end();
        ++it) {
     contacts.clear();
-    (*it).second->OrderedContacts(&contacts);
-    for (size_t n = 0; n < contacts.size(); ++n) {
-      PublicContact *pc = data_atlas.add_contacts();
-      pc->set_own_public_username((*it).first);
+    PublicUsername *pub_name = data_atlas.add_public_usernames();
+    pub_name->set_own_public_username((*it).first);
+    (*it).second->OrderedContacts(&contacts, kAlphabetical, kRequestSent |
+                                                            kPendingResponse |
+                                                            kConfirmed |
+                                                            kBlocked);
+    for (size_t n(0); n < contacts.size(); ++n) {
+      PublicContact *pc = pub_name->add_contacts();
       pc->set_public_username(contacts[n].public_username);
       pc->set_mpid_name(contacts[n].mpid_name);
       pc->set_mmid_name(contacts[n].mmid_name);
       pc->set_status(contacts[n].status);
       pc->set_rank(contacts[n].rank);
       pc->set_last_contact(contacts[n].last_contact);
+      DLOG(ERROR) << "Added contact " << contacts[n].public_username
+                  << " of own pubname " << (*it).first;
     }
   }
 
@@ -291,16 +297,11 @@ bool ClientController::ValidateUser(const std::string &password) {
     DLOG(ERROR) << "CC::ValidateUser - Not initialised.";
     return false;
   }
-//  ser_da_.clear();
 
   std::string serialised_data_atlas, surrogate_serialised_data_atlas;
-  int res(auth_->GetMasterDataMap(password,
-                                  &serialised_data_atlas,
-                                  &surrogate_serialised_data_atlas));
-  if (res != 0) {
-    DLOG(ERROR) << "CC::ValidateUser - Failed retrieving DA.";
-    return false;
-  }
+  auth_->GetMasterDataMap(password,
+                          &serialised_data_atlas,
+                          &surrogate_serialised_data_atlas);
 
   if (!serialised_data_atlas.empty()) {
     DLOG(INFO) << "ClientController::ValidateUser - Using TMID";
@@ -311,15 +312,15 @@ bool ClientController::ValidateUser(const std::string &password) {
     surrogate_ser_da_ = surrogate_serialised_data_atlas;
   } else {
     // Password validation failed
-//    session_->ResetSession();
     DLOG(INFO) << "ClientController::ValidateUser - Invalid password";
     return false;
   }
 
+  session_->set_password(password);
   session_->set_session_name(false);
+
   if (ParseDa() != 0) {
     DLOG(INFO) << "ClientController::ValidateUser - Cannot parse DA";
-//    session_->ResetSession();
     return false;
   }
   logged_in_ = true;
@@ -458,7 +459,7 @@ std::string ClientController::Password() {
   return session_->password();
 }
 
-std::shared_ptr<pd::RemoteChunkStore> ClientController::remote_chunk_store() {
+std::shared_ptr<pcs::RemoteChunkStore> ClientController::remote_chunk_store() {
   return remote_chunk_store_;
 }
 

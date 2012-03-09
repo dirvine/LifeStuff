@@ -44,7 +44,7 @@
 
 #include "maidsafe/lifestuff/lifestuff.h"
 
-#if MAIDSAFE_LIFESTUFF_VERSION != 200
+#if MAIDSAFE_LIFESTUFF_VERSION != 300
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-lifestuff library.
 #endif
@@ -64,6 +64,7 @@ class SessionTest;
 
 class Authentication;
 class ContactsHandler;
+class ClientController;
 class MessageHandler;
 class PublicId;
 class UserStorage;
@@ -111,6 +112,7 @@ class Session {
                             std::shared_ptr<Session>,
                             asymm::PrivateKey*);
   friend class Authentication;
+  friend class ClientController;
   friend class MessageHandler;
   friend class PublicId;
   friend class UserStorage;
