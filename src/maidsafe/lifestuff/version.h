@@ -21,7 +21,7 @@
 #ifndef MAIDSAFE_LIFESTUFF_VERSION_H_
 #define MAIDSAFE_LIFESTUFF_VERSION_H_
 
-#define MAIDSAFE_LIFESTUFF_VERSION 300
+#define MAIDSAFE_LIFESTUFF_VERSION 400
 
 #if defined CMAKE_MAIDSAFE_LIFESTUFF_VERSION &&\
   MAIDSAFE_LIFESTUFF_VERSION != CMAKE_MAIDSAFE_LIFESTUFF_VERSION
@@ -29,7 +29,7 @@
 #endif
 
 #include "maidsafe/common/version.h"
-#define THIS_NEEDS_MAIDSAFE_COMMON_VERSION 1100
+#define THIS_NEEDS_MAIDSAFE_COMMON_VERSION 1200
 #if MAIDSAFE_COMMON_VERSION < THIS_NEEDS_MAIDSAFE_COMMON_VERSION
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-common library.
@@ -39,7 +39,7 @@
 #endif
 
 #include "maidsafe/private/version.h"
-#define THIS_NEEDS_MAIDSAFE_PRIVATE_VERSION 200
+#define THIS_NEEDS_MAIDSAFE_PRIVATE_VERSION 300
 #if MAIDSAFE_PRIVATE_VERSION < THIS_NEEDS_MAIDSAFE_PRIVATE_VERSION
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-private library.
@@ -49,7 +49,7 @@
 #endif
 
 #include "maidsafe/encrypt/version.h"
-#define THIS_NEEDS_MAIDSAFE_ENCRYPT_VERSION 1100
+#define THIS_NEEDS_MAIDSAFE_ENCRYPT_VERSION 1200
 #if MAIDSAFE_ENCRYPT_VERSION < THIS_NEEDS_MAIDSAFE_ENCRYPT_VERSION
 #  error This API is not compatible with the installed library.\
     Please update the MaidSafe-Encrypt library.
@@ -59,7 +59,7 @@
 #endif
 
 #include "maidsafe/drive/version.h"
-#define THIS_NEEDS_MAIDSAFE_DRIVE_VERSION 300
+#define THIS_NEEDS_MAIDSAFE_DRIVE_VERSION 400
 #if MAIDSAFE_DRIVE_VERSION < THIS_NEEDS_MAIDSAFE_DRIVE_VERSION
 #  error This API is not compatible with the installed library.\
     Please update the MaidSafe-Drive library.
@@ -69,7 +69,7 @@
 #endif
 
 #include "maidsafe/pki/version.h"
-#define THIS_NEEDS_MAIDSAFE_PKI_VERSION 200
+#define THIS_NEEDS_MAIDSAFE_PKI_VERSION 300
 #if MAIDSAFE_PKI_VERSION < THIS_NEEDS_MAIDSAFE_PKI_VERSION
 #  error This API is not compatible with the installed library.\
     Please update the MaidSafe-PKI library.
@@ -79,7 +79,7 @@
 #endif
 
 #include "maidsafe/passport/version.h"
-#define THIS_NEEDS_MAIDSAFE_PASSPORT_VERSION 300
+#define THIS_NEEDS_MAIDSAFE_PASSPORT_VERSION 400
 #if MAIDSAFE_PASSPORT_VERSION < THIS_NEEDS_MAIDSAFE_PASSPORT_VERSION
 #  error This API is not compatible with the installed library.\
     Please update the MaidSafe-Passport library.
@@ -91,7 +91,7 @@
 #ifndef LOCAL_TARGETS_ONLY
 
 #include "maidsafe/transport/version.h"
-#define THIS_NEEDS_MAIDSAFE_TRANSPORT_VERSION 200
+#define THIS_NEEDS_MAIDSAFE_TRANSPORT_VERSION 300
 #if MAIDSAFE_TRANSPORT_VERSION < THIS_NEEDS_MAIDSAFE_TRANSPORT_VERSION
 #  error This API is not compatible with the installed library.\
     Please update the MaidSafe-Transport library.
@@ -101,7 +101,7 @@
 #endif
 
 #include "maidsafe/dht/version.h"
-#define THIS_NEEDS_MAIDSAFE_DHT_VERSION 3200
+#define THIS_NEEDS_MAIDSAFE_DHT_VERSION 3300
 #if MAIDSAFE_DHT_VERSION < THIS_NEEDS_MAIDSAFE_DHT_VERSION
 #  error This API is not compatible with the installed library.\
     Please update the MaidSafe-DHT library.
@@ -111,7 +111,7 @@
 #endif
 
 #include "maidsafe/pd/version.h"
-#define THIS_NEEDS_MAIDSAFE_PD_VERSION 800
+#define THIS_NEEDS_MAIDSAFE_PD_VERSION 900
 #if MAIDSAFE_PD_VERSION < THIS_NEEDS_MAIDSAFE_PD_VERSION
 #  error This API is not compatible with the installed library.\
     Please update the MaidSafe-PD library.
