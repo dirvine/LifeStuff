@@ -23,7 +23,6 @@
 */
 
 #include "maidsafe/common/asio_service.h"
-#include "maidsafe/common/buffered_chunk_store.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
@@ -31,9 +30,10 @@
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
-//#include "maidsafe/pd/client/client_container.h"
+#ifndef LOCAL_TARGETS_ONLY
+#include "maidsafe/pd/client/client_container.h"
+#endif
 
-#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
@@ -55,7 +55,9 @@ class AuthenticationTest : public testing::Test {
   AuthenticationTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
         session_(new Session),
-//        client_container_(),
+#ifndef LOCAL_TARGETS_ONLY
+        client_container_(),
+#endif
         remote_chunk_store_(),
         authentication_(session_),
         username_(RandomAlphaNumericString(8)),
@@ -70,19 +72,17 @@ class AuthenticationTest : public testing::Test {
   void SetUp() {
     asio_service_.Start(10);
 
-//    if (GetParam() == "Local Storage") {
+#ifdef LOCAL_TARGETS_ONLY
     remote_chunk_store_ = pcs::CreateLocalChunkStore(*test_dir_,
                                                      asio_service_.service());
-//    } else if (GetParam() == "Network Storage") {
-//      client_container_ = SetUpClientContainer(*test_dir_);
-//      ASSERT_TRUE(client_container_.get() != nullptr);
-//      remote_chunk_store_.reset(new pd::RemoteChunkStore(
-//          client_container_->chunk_store(),
-//          client_container_->chunk_manager(),
-//          client_container_->chunk_action_authority()));
-//    } else {
-//      FAIL() << "Invalid test value parameter";
-//    }
+#else
+    client_container_ = SetUpClientContainer(*test_dir_);
+    ASSERT_TRUE(client_container_.get() != nullptr);
+    remote_chunk_store_.reset(new pcs::RemoteChunkStore(
+        client_container_->chunk_store(),
+        client_container_->chunk_manager(),
+        client_container_->chunk_action_authority()));
+#endif
 
     session_->ResetSession();
     remote_chunk_store_->sig_chunk_stored()->connect(
@@ -126,7 +126,9 @@ class AuthenticationTest : public testing::Test {
 
   std::shared_ptr<fs::path> test_dir_;
   std::shared_ptr<Session> session_;
-//  ClientContainerPtr client_container_;
+#ifndef LOCAL_TARGETS_ONLY
+  ClientContainerPtr client_container_;
+#endif
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   Authentication authentication_;
   std::string username_, pin_, password_, ser_dm_, surrogate_ser_dm_;

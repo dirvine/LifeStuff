@@ -31,8 +31,6 @@
 #include "boost/thread/mutex.hpp"
 #include "boost/signals2.hpp"
 
-#include "maidsafe/common/alternative_store.h"
-
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 #include "maidsafe/passport/passport_config.h"

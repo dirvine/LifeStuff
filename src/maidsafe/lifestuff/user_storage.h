@@ -38,8 +38,6 @@
 #  include "maidsafe/drive/unix_drive.h"
 #endif
 
-#include "maidsafe/common/alternative_store.h"
-
 #include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 

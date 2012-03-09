@@ -36,10 +36,10 @@ namespace pcs = maidsafe::priv::chunk_store;
 
 namespace maidsafe {
 
-//namespace dht { class Contact; }
-//namespace pd {
-//class ClientContainer;
-//}
+#ifndef LOCAL_TARGETS_ONLY
+namespace dht { class Contact; }
+namespace pd { class ClientContainer; }
+#endif
 
 namespace lifestuff {
 
@@ -69,11 +69,13 @@ std::string ComposeSignaturePacketName(const std::string &name);
 std::string ComposeSignaturePacketValue(
     const maidsafe::pki::SignaturePacket &packet);
 
-//int RetrieveBootstrapContacts(const fs::path &download_dir,
-//                              std::vector<dht::Contact> *bootstrap_contacts);
-//
-//typedef std::shared_ptr<pd::ClientContainer> ClientContainerPtr;
-//ClientContainerPtr SetUpClientContainer(const fs::path &test_dir);
+#ifndef LOCAL_TARGETS_ONLY
+int RetrieveBootstrapContacts(const fs::path &download_dir,
+                              std::vector<dht::Contact> *bootstrap_contacts);
+
+typedef std::shared_ptr<pd::ClientContainer> ClientContainerPtr;
+ClientContainerPtr SetUpClientContainer(const fs::path &test_dir);
+#endif
 
 }  // namespace lifestuff
 

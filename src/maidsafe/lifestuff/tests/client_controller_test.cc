@@ -62,11 +62,14 @@ class ClientControllerTest : public testing::Test {
     asio_service2_.Start(10);
     cc_.reset(new ClientController(asio_service_.service(), session_));
     session_->ResetSession();
-//    bool local(GetParam() == "Local Storage");
-//    if (!local && GetParam() != "Network Storage")
-//      FAIL() << "Invalid test value parameter";
 
-    cc_->Init(true, *test_dir_);
+#ifdef LOCAL_TARGETS_ONLY
+    bool local(true);
+#else
+    bool local(false);
+#endif
+
+    cc_->Init(local, *test_dir_);
   }
 
   void TearDown() {

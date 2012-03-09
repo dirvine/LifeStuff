@@ -36,15 +36,15 @@
 #  pragma warning(pop)
 #endif
 
-#include "maidsafe/common/buffered_chunk_store.h"
-#include "maidsafe/common/chunk_store.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/private/chunk_actions/chunk_action_authority.h"
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
-//#include "maidsafe/pd/client/client_container.h"
+#ifndef LOCAL_TARGETS_ONLY
+#include "maidsafe/pd/client/client_container.h"
+#endif
 
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/contacts.h"
@@ -72,8 +72,10 @@ ClientController::ClientController(boost::asio::io_service &service,  // NOLINT 
       logging_out_(false),
       logged_in_(false),
       service_(service),
-      converter_(new YeOldeSignalToCallbackConverter)/*,
-      client_container_()*/ {}
+#ifndef LOCAL_TARGETS_ONLY
+      client_container_(),
+#endif
+      converter_(new YeOldeSignalToCallbackConverter) {}
 
 ClientController::~ClientController() {}
 
@@ -84,16 +86,18 @@ void ClientController::Init(bool local, const fs::path &base_dir) {
   if (local) {
     remote_chunk_store_ = pcs::CreateLocalChunkStore(base_dir, service_);
   } else {
-//    client_container_ = SetUpClientContainer(base_dir);
-//    if (client_container_) {
-//      remote_chunk_store_.reset(new pd::RemoteChunkStore(
-//          client_container_->chunk_store(),
-//          client_container_->chunk_manager(),
-//          client_container_->chunk_action_authority()));
-//    } else {
-//      DLOG(ERROR) << "Failed to initialise client container.";
-//      return;
-//    }
+#ifndef LOCAL_TARGETS_ONLY
+    client_container_ = SetUpClientContainer(base_dir);
+    if (client_container_) {
+      remote_chunk_store_.reset(new pcs::RemoteChunkStore(
+          client_container_->chunk_store(),
+          client_container_->chunk_manager(),
+          client_container_->chunk_action_authority()));
+    } else {
+      DLOG(ERROR) << "Failed to initialise client container.";
+      return;
+    }
+#endif
   }
 
   remote_chunk_store_->sig_chunk_stored()->connect(

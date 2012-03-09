@@ -32,7 +32,6 @@
 #include "boost/thread/mutex.hpp"
 #include "boost/thread/condition_variable.hpp"
 
-#include "maidsafe/common/alternative_store.h"
 #include "maidsafe/common/rsa.h"
 
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"

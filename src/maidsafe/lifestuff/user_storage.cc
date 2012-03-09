@@ -189,7 +189,8 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
   boost::thread(std::bind(&MaidDriveInUserSpace::Mount,
                           drive_in_user_space_,
                           g_mount_dir_,
-                          drive_logo));
+                          drive_logo,
+                          false));
   drive_in_user_space_->WaitUntilMounted();
 #endif
   mount_status_ = true;
@@ -282,7 +283,7 @@ int UserStorage::CreateShare(const std::string &sender_public_username,
                drive_in_user_space_->RelativePath(absolute_path),
                share_id,
                key_ring,
-               session_->unique_user_id(),
+               sender_public_username,
                &directory_id);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed in creating share of " << absolute_path.string()
@@ -328,7 +329,7 @@ int UserStorage::StopShare(const std::string &sender_public_username,
   result = drive_in_user_space_->SetShareDetails(relative_path,
                                                  "",
                                                  key_ring,
-                                                 session_->username(),
+                                                 sender_public_username,
                                                  &directory_id);
   if (result != kSuccess)
     return result;
@@ -336,7 +337,6 @@ int UserStorage::StopShare(const std::string &sender_public_username,
   InformContactsOperation<RemoveShareTag>(sender_public_username,
                                           contacts,
                                           share_id);
-
   boost::mutex mutex;
   boost::condition_variable cond_var;
   std::vector<int> results;
@@ -579,15 +579,15 @@ int UserStorage::SetShareUsersRights(const std::string &sender_public_username,
   int result(drive_in_user_space_->GetShareUsersRights(relative_path,
                                                        user_id,
                                                        &old_admin_right));
-   if (result != kSuccess) {
+  if (result != kSuccess) {
     DLOG(ERROR) << "Failed getting admin right for contact " << user_id
                 << ", with result : " << result;
     return result;
   }
 
- result = drive_in_user_space_->SetShareUsersRights(relative_path,
-                                                    user_id,
-                                                    admin_rights);
+  result = drive_in_user_space_->SetShareUsersRights(relative_path,
+                                                     user_id,
+                                                     admin_rights);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed setting admin right for contact " << user_id
                 << ", with result : " << result;
@@ -754,13 +754,13 @@ int UserStorage::InformContactsOperation(
   int result, aggregate(0);
   for (auto it = contacts.begin(); it != contacts.end(); ++it) {
     // do nothing if trying to send a msg to itself
-    if ((*it).first != session_->username()) {
+    if ((*it).first != sender_public_username) {
       if ((*it).second) {
-        result = message_handler_->Send(session_->username(),
+        result = message_handler_->Send(sender_public_username,
                                         (*it).first,
                                         admin_message);
       } else {
-        result = message_handler_->Send(session_->username(),
+        result = message_handler_->Send(sender_public_username,
                                         (*it).first,
                                         non_admin_message);
       }

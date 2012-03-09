@@ -27,14 +27,16 @@
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
-//#include "maidsafe/pd/client/client_container.h"
+#ifndef LOCAL_TARGETS_ONLY
+#include "maidsafe/pd/client/client_container.h"
+#endif
 
-#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/public_id.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/session.h"
+#include "maidsafe/lifestuff/utils.h"
 #include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
 namespace args = std::placeholders;
@@ -76,6 +78,11 @@ class MessageHandlerTest : public testing::Test {
         public_username2_("User 2 " + RandomAlphaNumericString(8)),
         public_username3_("User 3 " + RandomAlphaNumericString(8)),
         received_public_username_(),
+#ifndef LOCAL_TARGETS_ONLY
+        client_container1_(),
+        client_container2_(),
+        client_container3_(),
+#endif
         interval_(3),
         multiple_messages_(5) {}
 
@@ -111,8 +118,34 @@ class MessageHandlerTest : public testing::Test {
     asio_service2_.Start(10);
     asio_service3_.Start(10);
 
+#ifdef LOCAL_TARGETS_ONLY
     remote_chunk_store1_ = pcs::CreateLocalChunkStore(*test_dir_,
                                                       asio_service1_.service());
+    remote_chunk_store2_ = pcs::CreateLocalChunkStore(*test_dir_,
+                                                      asio_service2_.service());
+    remote_chunk_store3_ = pcs::CreateLocalChunkStore(*test_dir_,
+                                                      asio_service3_.service());
+#else
+    client_container1_ = SetUpClientContainer(*test_dir_);
+    ASSERT_TRUE(client_container1_.get() != nullptr);
+    remote_chunk_store1_.reset(new pcs::RemoteChunkStore(
+        client_container1_->chunk_store(),
+        client_container1_->chunk_manager(),
+        client_container1_->chunk_action_authority()));
+    client_container2_ = SetUpClientContainer(*test_dir_);
+    ASSERT_TRUE(client_container2_.get() != nullptr);
+    remote_chunk_store2_.reset(new pcs::RemoteChunkStore(
+        client_container2_->chunk_store(),
+        client_container2_->chunk_manager(),
+        client_container2_->chunk_action_authority()));
+    client_container3_ = SetUpClientContainer(*test_dir_);
+    ASSERT_TRUE(client_container3_.get() != nullptr);
+    remote_chunk_store3_.reset(new pcs::RemoteChunkStore(
+        client_container3_->chunk_store(),
+        client_container3_->chunk_manager(),
+        client_container3_->chunk_action_authority()));
+#endif
+
     remote_chunk_store1_->sig_chunk_stored()->connect(
         std::bind(&YeOldeSignalToCallbackConverter::Stored, converter1_.get(),
                   args::_1, args::_2));
@@ -131,8 +164,6 @@ class MessageHandlerTest : public testing::Test {
                                                session1_,
                                                asio_service1_.service()));
 
-    remote_chunk_store2_ = pcs::CreateLocalChunkStore(*test_dir_,
-                                                      asio_service2_.service());
     remote_chunk_store2_->sig_chunk_stored()->connect(
         std::bind(&YeOldeSignalToCallbackConverter::Stored, converter2_.get(),
                   args::_1, args::_2));
@@ -151,8 +182,6 @@ class MessageHandlerTest : public testing::Test {
                                                session2_,
                                                asio_service2_.service()));
 
-    remote_chunk_store3_ = pcs::CreateLocalChunkStore(*test_dir_,
-                                                      asio_service3_.service());
     remote_chunk_store3_->sig_chunk_stored()->connect(
         std::bind(&YeOldeSignalToCallbackConverter::Stored, converter3_.get(),
                   args::_1, args::_2));
@@ -208,6 +237,9 @@ class MessageHandlerTest : public testing::Test {
 
   std::string public_username1_, public_username2_, public_username3_,
               received_public_username_;
+#ifndef LOCAL_TARGETS_ONLY
+  ClientContainerPtr client_container1_, client_container2_, client_container3_;
+#endif
   bptime::seconds interval_;
   size_t multiple_messages_;
 

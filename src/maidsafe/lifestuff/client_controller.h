@@ -49,13 +49,15 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-//namespace dht { class Contact; }
 namespace priv {
 namespace chunk_store {
-//class ClientContainer;
 class RemoteChunkStore;
 }  // namespace chunk_store
 }  // namespace priv
+
+#ifndef LOCAL_TARGETS_ONLY
+namespace pd { class ClientContainer; }
+#endif
 
 namespace pcs = maidsafe::priv::chunk_store;
 
@@ -120,8 +122,10 @@ class ClientController {
   bool logged_in_;
 
   boost::asio::io_service &service_;
+#ifndef LOCAL_TARGETS_ONLY
+  std::shared_ptr<pd::ClientContainer> client_container_;
+#endif
   std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
-//  std::shared_ptr<pd::ClientContainer> client_container_;
 };
 
 }  // namespace lifestuff
