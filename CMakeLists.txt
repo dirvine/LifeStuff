@@ -158,9 +158,7 @@ ENDIF()
 ###################################################################################################
 INCLUDE(maidsafe_standard_flags)
 
-IF(LOCAL_TARGETS_ONLY)
-  ADD_DEFINITIONS(-DLOCAL_TARGETS_ONLY)
-ENDIF()
+ADD_DEFINITIONS(-DLOCAL_TARGETS_ONLY)
 
 IF(MSVC)
   SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.cc
