@@ -88,7 +88,7 @@ class UserStorage {
                           bool creation,
                           const std::string &drive_logo = "LifeStuff Drive");
   virtual void UnMountDrive();
-  virtual fs::path g_mount_dir();
+  virtual fs::path mount_dir();
   virtual bool mount_status();
 
   // ********************* File / Folder Transfers *****************************
@@ -174,7 +174,7 @@ class UserStorage {
   std::shared_ptr<Session> session_;
   std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
   std::shared_ptr<MessageHandler> message_handler_;
-  fs::path g_mount_dir_;
+  fs::path mount_dir_;
 };
 
 }  // namespace lifestuff

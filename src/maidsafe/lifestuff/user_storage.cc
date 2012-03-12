@@ -133,7 +133,7 @@ UserStorage::UserStorage(
       session_(),
       converter_(converter),
       message_handler_(message_handler),
-      g_mount_dir_() {}
+      mount_dir_() {}
 
 void UserStorage::MountDrive(const fs::path &mount_dir_path,
                              const std::string &session_name,
@@ -180,17 +180,17 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
   }
 
   char drive_name[3] = {'A' + static_cast<char>(count), ':', '\0'};
-  g_mount_dir_ = drive_name;
-  drive_in_user_space_->Mount(g_mount_dir_, drive_logo);
+  mount_dir_ = drive_name;
+  drive_in_user_space_->Mount(mount_dir_, drive_logo);
 #else
-  g_mount_dir_ = mount_dir_path / session_name;
+  mount_dir_ = mount_dir_path / session_name;
   boost::system::error_code ec;
-  if (fs::exists(g_mount_dir_, ec))
-    fs::remove_all(g_mount_dir_, ec);
-  fs::create_directories(g_mount_dir_, ec);
+  if (fs::exists(mount_dir_, ec))
+    fs::remove_all(mount_dir_, ec);
+  fs::create_directories(mount_dir_, ec);
   boost::thread(std::bind(&MaidDriveInUserSpace::Mount,
                           drive_in_user_space_,
-                          g_mount_dir_,
+                          mount_dir_,
                           drive_logo));
   drive_in_user_space_->WaitUntilMounted();
 #endif
@@ -207,13 +207,13 @@ void UserStorage::UnMountDrive() {
   drive_in_user_space_->Unmount();
   drive_in_user_space_->WaitUntilUnMounted();
   boost::system::error_code error_code;
-  fs::remove_all(g_mount_dir_, error_code);
+  fs::remove_all(mount_dir_, error_code);
 #endif
   mount_status_ = false;
 }
 
-fs::path UserStorage::g_mount_dir() {
-  return g_mount_dir_;
+fs::path UserStorage::mount_dir() {
+  return mount_dir_;
 }
 
 bool UserStorage::mount_status() {
