@@ -32,13 +32,16 @@
 #include "boost/thread/mutex.hpp"
 #include "boost/thread/condition_variable.hpp"
 
-#include "maidsafe/common/alternative_store.h"
 #include "maidsafe/common/rsa.h"
+
+#include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 #include "maidsafe/passport/passport_config.h"
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
+
+namespace pcs = maidsafe::priv::chunk_store;
 
 namespace maidsafe {
 
@@ -47,7 +50,6 @@ class Packet;
 class SignaturePacket;
 }  // namespace pki
 namespace passport { class Passport; }
-namespace pd { class RemoteChunkStore; }
 
 namespace lifestuff {
 
@@ -60,7 +62,7 @@ class Authentication {
   explicit Authentication(std::shared_ptr<Session> session);
   ~Authentication();
   // Used to intialise passport_ in all cases.
-  void Init(std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+  void Init(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
             std::shared_ptr<YeOldeSignalToCallbackConverter> converter);
   // Used to intialise passport_ in all cases.
   int GetUserInfo(const std::string &username, const std::string &pin);
@@ -199,7 +201,7 @@ class Authentication {
   // Designed to be called as functor in timed_wait - user_info mutex locked
   bool PacketOpDone(int *return_code) { return *return_code != kPendingResult; }
   int StorePacket(const PacketData &packet,
-                  const AlternativeStore::ValidationData &validation_data);
+                  const pcs::RemoteChunkStore::ValidationData &validation_data);
   int DeletePacket(const PacketData &packet);
   void PacketOpCallback(int return_code, int *op_result);
   void CreateSignedData(const PacketData &packet,
@@ -215,10 +217,10 @@ class Authentication {
   std::string DebugStr(const passport::PacketType &packet_type);
 
   void GetKeysAndProof(passport::PacketType pt,
-                       AlternativeStore::ValidationData *validation_data,
+                       pcs::RemoteChunkStore::ValidationData *validation_data,
                        bool confirmed);
 
-  std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store_;
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<Session> session_;
   boost::mutex mutex_, mid_mutex_, smid_mutex_;
   boost::condition_variable cond_var_;

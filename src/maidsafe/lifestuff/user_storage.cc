@@ -25,8 +25,6 @@
 
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/pd/client/remote_chunk_store.h"
-
 #include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/message_handler.h"
@@ -124,7 +122,7 @@ struct AddMessageDetails<MoveShareTag> {
 }  // namespace
 
 UserStorage::UserStorage(
-    std::shared_ptr<pd::RemoteChunkStore> chunk_store,
+    std::shared_ptr<pcs::RemoteChunkStore> chunk_store,
     std::shared_ptr<YeOldeSignalToCallbackConverter> converter,
     std::shared_ptr<MessageHandler> message_handler)
     : mount_status_(false),
@@ -191,7 +189,8 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
   boost::thread(std::bind(&MaidDriveInUserSpace::Mount,
                           drive_in_user_space_,
                           mount_dir_,
-                          drive_logo));
+                          drive_logo,
+                          false));
   drive_in_user_space_->WaitUntilMounted();
 #endif
   mount_status_ = true;
@@ -253,7 +252,7 @@ int UserStorage::CreateShare(const std::string &sender_public_username,
   std::vector<int> results;
   results.push_back(kPendingResult);
 
-  AlternativeStore::ValidationData validation_data(
+  pcs::RemoteChunkStore::ValidationData validation_data(
       PopulateValidationData(key_ring));
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
   VoidFuncOneInt callback(std::bind(&SendContactInfoCallback,
@@ -342,7 +341,7 @@ int UserStorage::StopShare(const std::string &sender_public_username,
   boost::condition_variable cond_var;
   std::vector<int> results;
   results.push_back(kPendingResult);
-  AlternativeStore::ValidationData
+  pcs::RemoteChunkStore::ValidationData
       validation_data(PopulateValidationData(key_ring));
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
 
@@ -482,7 +481,7 @@ int UserStorage::RemoveShareUsers(const std::string &sender_public_username,
   std::vector<int> results;
   results.push_back(kPendingResult);
 
-  AlternativeStore::ValidationData validation_data(
+  pcs::RemoteChunkStore::ValidationData validation_data(
       PopulateValidationData(key_ring));
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
   VoidFuncOneInt callback(std::bind(&SendContactInfoCallback, args::_1,
@@ -580,15 +579,15 @@ int UserStorage::SetShareUsersRights(const std::string &sender_public_username,
   int result(drive_in_user_space_->GetShareUsersRights(relative_path,
                                                        user_id,
                                                        &old_admin_right));
-   if (result != kSuccess) {
+  if (result != kSuccess) {
     DLOG(ERROR) << "Failed getting admin right for contact " << user_id
                 << ", with result : " << result;
     return result;
   }
 
- result = drive_in_user_space_->SetShareUsersRights(relative_path,
-                                                    user_id,
-                                                    admin_rights);
+  result = drive_in_user_space_->SetShareUsersRights(relative_path,
+                                                     user_id,
+                                                     admin_rights);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed setting admin right for contact " << user_id
                 << ", with result : " << result;
@@ -703,9 +702,9 @@ bs2::connection UserStorage::ConnectToShareChanged(
   return drive_in_user_space_->ConnectToShareChanged(slot);
 }
 
-AlternativeStore::ValidationData UserStorage::PopulateValidationData(
+pcs::RemoteChunkStore::ValidationData UserStorage::PopulateValidationData(
     const asymm::Keys &key_ring) {
-  AlternativeStore::ValidationData validation_data;
+  pcs::RemoteChunkStore::ValidationData validation_data;
   validation_data.key_pair = key_ring;
   pca::SignedData signed_data;
   signed_data.set_data(RandomString(64));

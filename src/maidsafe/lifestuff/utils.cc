@@ -32,11 +32,11 @@
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 
+#ifndef LOCAL_TARGETS_ONLY
 #include "maidsafe/dht/contact.h"
-
 #include "maidsafe/pd/client/client_container.h"
-#include "maidsafe/pd/client/remote_chunk_store.h"
 #include "maidsafe/pd/client/utils.h"
+#endif
 
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
@@ -50,8 +50,8 @@ namespace lifestuff {
 
 int GetValidatedMpidPublicKey(
     const std::string &public_username,
-    const AlternativeStore::ValidationData &validation_data,
-    std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+    const pcs::RemoteChunkStore::ValidationData &validation_data,
+    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
     asymm::PublicKey *public_key) {
   // Get public key packet from network
   std::string packet_name(crypto::Hash<crypto::SHA512>(public_username) +
@@ -117,8 +117,8 @@ int GetValidatedMpidPublicKey(
 
 int GetValidatedMmidPublicKey(
     const std::string &mmid_name,
-    const AlternativeStore::ValidationData &validation_data,
-    std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+    const pcs::RemoteChunkStore::ValidationData &validation_data,
+    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
     asymm::PublicKey *public_key) {
   std::string packet_value(
       remote_chunk_store->Get(mmid_name + std::string(1, pca::kAppendableByAll),
@@ -211,6 +211,8 @@ std::string ComposeSignaturePacketValue(
   signed_data.set_signature(packet.signature());
   return signed_data.SerializeAsString();
 }
+
+#ifndef LOCAL_TARGETS_ONLY
 
 int RetrieveBootstrapContacts(const fs::path &download_dir,
                               std::vector<dht::Contact> *bootstrap_contacts) {
@@ -351,6 +353,8 @@ ClientContainerPtr SetUpClientContainer(const fs::path &test_dir) {
   DLOG(INFO) << "Started client_container.";
   return client_container;
 }
+
+#endif
 
 }  // namespace lifestuff
 

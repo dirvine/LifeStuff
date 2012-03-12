@@ -44,7 +44,7 @@ namespace lifestuff {
 
 namespace test {
 
-class ClientControllerTest : public testing::TestWithParam<std::string> {
+class ClientControllerTest : public testing::Test {
  public:
   ClientControllerTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
@@ -62,9 +62,12 @@ class ClientControllerTest : public testing::TestWithParam<std::string> {
     asio_service2_.Start(10);
     cc_.reset(new ClientController(asio_service_.service(), session_));
     session_->ResetSession();
-    bool local(GetParam() == "Local Storage");
-    if (!local && GetParam() != "Network Storage")
-      FAIL() << "Invalid test value parameter";
+
+#ifdef LOCAL_TARGETS_ONLY
+    bool local(true);
+#else
+    bool local(false);
+#endif
 
     cc_->Init(local, *test_dir_);
   }
@@ -80,8 +83,8 @@ class ClientControllerTest : public testing::TestWithParam<std::string> {
     std::shared_ptr<ClientController> cc2(
         new ClientController(asio_service2_.service(), ss2));
     ss2->ResetSession();
-    bool local(GetParam() == "Local Storage");
-    cc2->Init(local, *test_dir_);
+//    bool local(GetParam() == "Local Storage");
+    cc2->Init(true, *test_dir_);
     return cc2;
   }
 
@@ -96,7 +99,7 @@ class ClientControllerTest : public testing::TestWithParam<std::string> {
   ClientControllerTest &operator=(const ClientControllerTest&);
 };
 
-TEST_P(ClientControllerTest, FUNC_DirectCreate) {
+TEST_F(ClientControllerTest, FUNC_DirectCreate) {
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
@@ -109,7 +112,7 @@ TEST_P(ClientControllerTest, FUNC_DirectCreate) {
   DLOG(INFO) << "User created.\n===================\n";
 }
 
-TEST_P(ClientControllerTest, FUNC_LoginSequence) {
+TEST_F(ClientControllerTest, FUNC_LoginSequence) {
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
@@ -146,7 +149,7 @@ TEST_P(ClientControllerTest, FUNC_LoginSequence) {
   DLOG(INFO) << "Can't log in with fake details.";
 }
 
-TEST_P(ClientControllerTest, FUNC_RepeatedValidateUser) {
+TEST_F(ClientControllerTest, FUNC_RepeatedValidateUser) {
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
@@ -184,7 +187,7 @@ TEST_P(ClientControllerTest, FUNC_RepeatedValidateUser) {
   DLOG(INFO) << "Logged out.\n===================\n";
 }
 
-TEST_P(ClientControllerTest, FUNC_ChangeDetails) {
+TEST_F(ClientControllerTest, FUNC_ChangeDetails) {
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
@@ -290,7 +293,7 @@ TEST_P(ClientControllerTest, FUNC_ChangeDetails) {
   DLOG(INFO) << "Can't log in with old u/p/w.";
 }
 
-TEST_P(ClientControllerTest, FUNC_LeaveNetwork) {
+TEST_F(ClientControllerTest, FUNC_LeaveNetwork) {
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
@@ -335,7 +338,7 @@ TEST_P(ClientControllerTest, FUNC_LeaveNetwork) {
   DLOG(INFO) << "Logged out.";
 }
 
-TEST_P(ClientControllerTest, FUNC_ParallelLogin) {
+TEST_F(ClientControllerTest, FUNC_ParallelLogin) {
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
@@ -354,7 +357,7 @@ TEST_P(ClientControllerTest, FUNC_ParallelLogin) {
   DLOG(INFO) << "Successful parallel log in.";
 }
 
-TEST_P(ClientControllerTest, FUNC_MultiClientControllerLoginandLogout) {
+TEST_F(ClientControllerTest, FUNC_MultiClientControllerLoginandLogout) {
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
@@ -383,9 +386,6 @@ TEST_P(ClientControllerTest, FUNC_MultiClientControllerLoginandLogout) {
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Logged out.\n===================\n";
 }
-
-INSTANTIATE_TEST_CASE_P(LocalAndNetwork, ClientControllerTest,
-                        testing::Values("Local Storage", "Network Storage"));
 
 }  // namespace test
 

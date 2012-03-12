@@ -39,7 +39,7 @@
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
 
-#if MAIDSAFE_LIFESTUFF_VERSION != 201
+#if MAIDSAFE_LIFESTUFF_VERSION != 400
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-lifestuff library.
 #endif
@@ -49,12 +49,17 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-namespace dht { class Contact; }
-namespace pd {
-class ClientContainer;
+namespace priv {
+namespace chunk_store {
 class RemoteChunkStore;
-}
-class ChunkStore;
+}  // namespace chunk_store
+}  // namespace priv
+
+#ifndef LOCAL_TARGETS_ONLY
+namespace pd { class ClientContainer; }
+#endif
+
+namespace pcs = maidsafe::priv::chunk_store;
 
 namespace lifestuff {
 
@@ -95,7 +100,7 @@ class ClientController {
   std::string Pin();
   std::string Password();
 
-  std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store();
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store();
   std::shared_ptr<YeOldeSignalToCallbackConverter> converter();
 
   friend class test::ClientControllerTest;
@@ -109,7 +114,7 @@ class ClientController {
   int SerialiseDa();
 
   std::shared_ptr<Session> session_;
-  std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store_;
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<Authentication> auth_;
   std::string ser_da_, surrogate_ser_da_;
   bool initialised_;
@@ -117,8 +122,10 @@ class ClientController {
   bool logged_in_;
 
   boost::asio::io_service &service_;
-  std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
+#ifndef LOCAL_TARGETS_ONLY
   std::shared_ptr<pd::ClientContainer> client_container_;
+#endif
+  std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
 };
 
 }  // namespace lifestuff

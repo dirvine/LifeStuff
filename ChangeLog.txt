@@ -1,5 +1,25 @@
-v0.02.01 (WIP)
+v0.05.00 (WIP)
 --------------
+
+v0.04.00
+--------
+
+v0.03.00
+--------
+* Changes to RetrieveBootstrapContacts function.
+* changes to use sender's public username on share functions, to compile vs Drive
+  next and to change the name of the bootstrap file to just 'bootstrap'
+* Work to adapt the local targets to the remote chunkstore in private.
+* Added sender public username to share calls and adapted all user storage
+  functions to receive 'absolute' paths and transform them before they are passed
+  to drive functions.
+* Updated logging macro.
+* Added MessageHandler to UserStorage Constructor.
+* Work to change GetMasterDataMap to void from int return.
+* Fixed bug for serialisation and parsing of public usernames from data atlas.
+* Work for shares.
+* CC changes to allow use of pd's client container. Deleted store_components folder.
+* Set up tests to use network.
 
 v0.02.00
 --------

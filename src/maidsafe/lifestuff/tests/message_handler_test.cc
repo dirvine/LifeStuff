@@ -20,21 +20,23 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/private/return_codes.h"
 #include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_action_authority.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
+#include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
+#ifndef LOCAL_TARGETS_ONLY
 #include "maidsafe/pd/client/client_container.h"
-#include "maidsafe/pd/client/remote_chunk_store.h"
+#endif
 
-#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/contacts.h"
-#include "maidsafe/lifestuff/local_chunk_manager.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/public_id.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/session.h"
+#include "maidsafe/lifestuff/utils.h"
 #include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
 namespace args = std::placeholders;
@@ -76,6 +78,11 @@ class MessageHandlerTest : public testing::Test {
         public_username2_("User 2 " + RandomAlphaNumericString(8)),
         public_username3_("User 3 " + RandomAlphaNumericString(8)),
         received_public_username_(),
+#ifndef LOCAL_TARGETS_ONLY
+        client_container1_(),
+        client_container2_(),
+        client_container3_(),
+#endif
         interval_(3),
         multiple_messages_(5) {}
 
@@ -111,16 +118,34 @@ class MessageHandlerTest : public testing::Test {
     asio_service2_.Start(10);
     asio_service3_.Start(10);
 
-    std::shared_ptr<BufferedChunkStore> bcs1(
-        new BufferedChunkStore(asio_service1_.service()));
-    bcs1->Init(*test_dir_ / "buffered_chunk_store1");
-    std::shared_ptr<priv::ChunkActionAuthority> caa1(
-        new priv::ChunkActionAuthority(bcs1));
-    std::shared_ptr<LocalChunkManager> local_chunk_manager1(
-        new LocalChunkManager(bcs1, *test_dir_ / "local_chunk_manager"));
-    remote_chunk_store1_.reset(new pd::RemoteChunkStore(bcs1,
-                                                        local_chunk_manager1,
-                                                        caa1));
+#ifdef LOCAL_TARGETS_ONLY
+    remote_chunk_store1_ = pcs::CreateLocalChunkStore(*test_dir_,
+                                                      asio_service1_.service());
+    remote_chunk_store2_ = pcs::CreateLocalChunkStore(*test_dir_,
+                                                      asio_service2_.service());
+    remote_chunk_store3_ = pcs::CreateLocalChunkStore(*test_dir_,
+                                                      asio_service3_.service());
+#else
+    client_container1_ = SetUpClientContainer(*test_dir_);
+    ASSERT_TRUE(client_container1_.get() != nullptr);
+    remote_chunk_store1_.reset(new pcs::RemoteChunkStore(
+        client_container1_->chunk_store(),
+        client_container1_->chunk_manager(),
+        client_container1_->chunk_action_authority()));
+    client_container2_ = SetUpClientContainer(*test_dir_);
+    ASSERT_TRUE(client_container2_.get() != nullptr);
+    remote_chunk_store2_.reset(new pcs::RemoteChunkStore(
+        client_container2_->chunk_store(),
+        client_container2_->chunk_manager(),
+        client_container2_->chunk_action_authority()));
+    client_container3_ = SetUpClientContainer(*test_dir_);
+    ASSERT_TRUE(client_container3_.get() != nullptr);
+    remote_chunk_store3_.reset(new pcs::RemoteChunkStore(
+        client_container3_->chunk_store(),
+        client_container3_->chunk_manager(),
+        client_container3_->chunk_action_authority()));
+#endif
+
     remote_chunk_store1_->sig_chunk_stored()->connect(
         std::bind(&YeOldeSignalToCallbackConverter::Stored, converter1_.get(),
                   args::_1, args::_2));
@@ -139,16 +164,6 @@ class MessageHandlerTest : public testing::Test {
                                                session1_,
                                                asio_service1_.service()));
 
-    std::shared_ptr<BufferedChunkStore> bcs2(
-        new BufferedChunkStore(asio_service2_.service()));
-    bcs2->Init(*test_dir_ / "buffered_chunk_store2");
-    std::shared_ptr<priv::ChunkActionAuthority> caa2(
-        new priv::ChunkActionAuthority(bcs2));
-    std::shared_ptr<LocalChunkManager> local_chunk_manager2(
-        new LocalChunkManager(bcs2, *test_dir_ / "local_chunk_manager"));
-    remote_chunk_store2_.reset(new pd::RemoteChunkStore(bcs2,
-                                                        local_chunk_manager2,
-                                                        caa2));
     remote_chunk_store2_->sig_chunk_stored()->connect(
         std::bind(&YeOldeSignalToCallbackConverter::Stored, converter2_.get(),
                   args::_1, args::_2));
@@ -167,16 +182,6 @@ class MessageHandlerTest : public testing::Test {
                                                session2_,
                                                asio_service2_.service()));
 
-    std::shared_ptr<BufferedChunkStore> bcs3(
-        new BufferedChunkStore(asio_service3_.service()));
-    bcs3->Init(*test_dir_ / "buffered_chunk_store3");
-    std::shared_ptr<priv::ChunkActionAuthority> caa3(
-        new priv::ChunkActionAuthority(bcs3));
-    std::shared_ptr<LocalChunkManager> local_chunk_manager3(
-        new LocalChunkManager(bcs3, *test_dir_ / "local_chunk_manager"));
-    remote_chunk_store3_.reset(new pd::RemoteChunkStore(bcs3,
-                                                        local_chunk_manager3,
-                                                        caa3));
     remote_chunk_store3_->sig_chunk_stored()->connect(
         std::bind(&YeOldeSignalToCallbackConverter::Stored, converter3_.get(),
                   args::_1, args::_2));
@@ -220,9 +225,9 @@ class MessageHandlerTest : public testing::Test {
   std::shared_ptr<YeOldeSignalToCallbackConverter> converter1_,
                                                    converter2_,
                                                    converter3_;
-  std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store1_,
-                                        remote_chunk_store2_,
-                                        remote_chunk_store3_;
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store1_,
+                                         remote_chunk_store2_,
+                                         remote_chunk_store3_;
   std::shared_ptr<PublicId> public_id1_, public_id2_, public_id3_;
   std::shared_ptr<MessageHandler> message_handler1_,
                                   message_handler2_,
@@ -232,6 +237,9 @@ class MessageHandlerTest : public testing::Test {
 
   std::string public_username1_, public_username2_, public_username3_,
               received_public_username_;
+#ifndef LOCAL_TARGETS_ONLY
+  ClientContainerPtr client_container1_, client_container2_, client_container3_;
+#endif
   bptime::seconds interval_;
   size_t multiple_messages_;
 
@@ -474,7 +482,7 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
   Sleep(interval_ * 2);
 
   received.Clear();
-  ASSERT_EQ(kUpdatePacketFailure,
+  ASSERT_EQ(priv::kModifyFailure,
             message_handler2_->Send(public_username2_,
                                     public_username1_,
                                     sent));

@@ -26,6 +26,10 @@
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 
+#ifndef LOCAL_TARGETS_ONLY
+#include "maidsafe/pd/client/client_container.h"
+#endif
+
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/public_id.h"
@@ -97,10 +101,9 @@ class UserStorageTest : public testing::Test {
   }
 
   void InsertShareTest(
-        const std::shared_ptr<maidsafe::lifestuff::UserStorage> &user_storage,
-        const pca::Message &message,
-        const fs::path &absolute_path) {
-
+      const std::shared_ptr<maidsafe::lifestuff::UserStorage> &user_storage,
+      const pca::Message &message,
+      const fs::path &absolute_path) {
     ASSERT_EQ(message.subject(), "join_share");
     asymm::Keys key_ring;
     if (message.content_size() > 4) {
@@ -177,53 +180,33 @@ class UserStorageTest : public testing::Test {
     client_controller2_ = CreateClientController(pub_name2_);
     session2_ = client_controller2_->session_;
 
-    /*client_controller1_->remote_chunk_store()->sig_chunk_stored()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Stored, converter1_.get(),
-                  args::_1, args::_2));
-    client_controller1_->remote_chunk_store()->sig_chunk_deleted()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Deleted, converter1_.get(),
-                  args::_1, args::_2));
-    client_controller1_->remote_chunk_store()->sig_chunk_modified()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Modified, converter1_.get(),
-                  args::_1, args::_2));
-
-    client_controller2_->remote_chunk_store()->sig_chunk_stored()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Stored, converter2_.get(),
-                  args::_1, args::_2));
-    client_controller2_->remote_chunk_store()->sig_chunk_deleted()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Deleted, converter2_.get(),
-                  args::_1, args::_2));
-    client_controller2_->remote_chunk_store()->sig_chunk_modified()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Modified, converter2_.get(),
-                  args::_1, args::_2));*/
-
     public_id1_.reset(new PublicId(client_controller1_->remote_chunk_store(),
-                                   client_controller1_->converter(), // converter1_,
+                                   client_controller1_->converter(),
                                    session1_,
                                    asio_service_.service()));
     public_id2_.reset(new PublicId(client_controller2_->remote_chunk_store(),
-                                   client_controller2_->converter(), // converter2_,
+                                   client_controller2_->converter(),
                                    session2_,
                                    asio_service_.service()));
 
     message_handler1_.reset(
         new MessageHandler(client_controller1_->remote_chunk_store(),
-                           client_controller1_->converter(), // converter1_,
+                           client_controller1_->converter(),
                            session1_,
                            asio_service_.service()));
     message_handler2_.reset(
         new MessageHandler(client_controller2_->remote_chunk_store(),
-                           client_controller2_->converter(), // converter2_,
+                           client_controller2_->converter(),
                            session2_,
                            asio_service_.service()));
 
     user_storage1_.reset(
         new UserStorage(client_controller1_->remote_chunk_store(),
-                        client_controller1_->converter(), // converter1_,
+                        client_controller1_->converter(),
                         message_handler1_));
     user_storage2_.reset(
         new UserStorage(client_controller2_->remote_chunk_store(),
-                        client_controller2_->converter(), // converter2_,
+                        client_controller2_->converter(),
                         message_handler1_));
 
     public_id1_->CreatePublicId(pub_name1_, true);
@@ -252,7 +235,11 @@ class UserStorageTest : public testing::Test {
     std::shared_ptr<ClientController> client_controller(
         new ClientController(asio_service_.service(), session));
     client_controller->auth_.reset(new Authentication(session));
+#ifdef LOCAL_TARGETS_ONLY
     client_controller->Init(true, *test_dir_);
+#else
+    client_controller->Init(false, *test_dir_);
+#endif
     client_controller->initialised_ = true;
     std::stringstream pin_stream;
     pin_stream << RandomUint32();
@@ -453,7 +440,7 @@ TEST_F(UserStorageTest, FUNC_AddAdminUser) {
   message_handler2_->StopCheckingForNewMessages();
   user_storage2_->UnMountDrive();
   Sleep(interval_ * 2);
-  
+
   user_storage1_->MountDrive(*mount_dir_,
                              client_controller1_->SessionName(),
                              session1_,
@@ -462,7 +449,7 @@ TEST_F(UserStorageTest, FUNC_AddAdminUser) {
   ASSERT_TRUE(fs::exists(directory0 / tail, error_code));
   user_storage1_->UnMountDrive();
   Sleep(interval_ * 2);
-  
+
   user_storage2_->MountDrive(*mount_dir_,
                              client_controller2_->SessionName(),
                              session2_,
@@ -717,6 +704,73 @@ TEST_F(UserStorageTest, FUNC_StopShareByOwner) {
 //  user_storage1_->UnMountDrive();
 //  Sleep(interval_ * 2);
 //}
+
+  bs2::connection connection(
+      message_handler2_->ConnectToSignal(
+          pca::Message::kSharedDirectory,
+          std::bind(&UserStorageTest::DoShareTest, this,
+                    user_storage2_, args::_1)));
+
+  user_storage2_->MountDrive(*mount_dir_,
+                             client_controller2_->SessionName(),
+                             session2_, true);
+  Sleep(interval_ * 2);
+  fs::path dir(user_storage2_->g_mount_dir() / fs::path("/").make_preferred() /
+               tail);
+  boost::system::error_code error_code;
+  ASSERT_FALSE(fs::exists(dir, error_code)) << dir;
+  ASSERT_EQ(kSuccess,
+            message_handler2_->StartCheckingForNewMessages(interval_));
+  Sleep(interval_ * 2);
+  ASSERT_TRUE(fs::exists(dir, error_code)) << dir;
+  message_handler2_->StopCheckingForNewMessages();
+  user_storage2_->UnMountDrive();
+  Sleep(interval_ * 2);
+
+  user_storage1_->MountDrive(*mount_dir_,
+                             client_controller1_->SessionName(),
+                             session1_, false);
+  Sleep(interval_ * 2);
+  ASSERT_TRUE(fs::exists(dir0, error_code)) << dir0;
+  std::vector<std::string> user_ids;
+  user_ids.push_back(pub_name2_);
+  ASSERT_EQ(kSuccess, user_storage1_->RemoveShareUsers(share_id, user_ids));
+  fs::path sub_dir0(CreateTestDirectory(dir0, &tail));
+  ASSERT_TRUE(fs::exists(sub_dir0, error_code)) << sub_dir0;
+  user_storage1_->UnMountDrive();
+  Sleep(interval_ * 2);
+
+//  bs2::connection connection2(
+//      message_handler2_->ConnectToSignal(pca::Message::kSharedDirectory,
+//          std::bind(&UserStorageTest::StopShareTest, this,
+//                    user_storage2_, args::_1)));
+
+  user_storage2_->MountDrive(*mount_dir_,
+                             client_controller2_->SessionName(),
+                             session2_, false);
+  Sleep(interval_ * 2);
+  ASSERT_TRUE(fs::exists(dir, error_code)) << dir;
+  fs::path sub_dir(dir / tail);
+  ASSERT_FALSE(fs::exists(sub_dir, error_code)) << sub_dir;
+  ASSERT_EQ(kSuccess,
+            message_handler2_->StartCheckingForNewMessages(interval_));
+  Sleep(interval_ * 2);
+  ASSERT_FALSE(fs::exists(dir, error_code)) << dir << " : "
+                                           << error_code.message();
+  message_handler2_->StopCheckingForNewMessages();
+  user_storage2_->UnMountDrive();
+  Sleep(interval_ * 2);
+
+  user_storage1_->MountDrive(*mount_dir_,
+                             client_controller1_->SessionName(),
+                             session1_, false);
+  Sleep(interval_ * 2);
+  ASSERT_TRUE(fs::exists(dir0, error_code)) << dir0;
+  ASSERT_TRUE(fs::exists(sub_dir0, error_code)) << sub_dir0;
+  user_storage1_->UnMountDrive();
+  Sleep(interval_ * 2);
+}
+*/
 
 }  // namespace test
 

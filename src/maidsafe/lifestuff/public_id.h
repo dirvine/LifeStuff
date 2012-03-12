@@ -31,14 +31,14 @@
 #include "boost/thread/mutex.hpp"
 #include "boost/signals2.hpp"
 
-#include "maidsafe/common/alternative_store.h"
+#include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 #include "maidsafe/passport/passport_config.h"
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/version.h"
 
-#if MAIDSAFE_LIFESTUFF_VERSION != 201
+#if MAIDSAFE_LIFESTUFF_VERSION != 400
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-lifestuff library.
 #endif
@@ -46,10 +46,9 @@
 namespace ba = boost::asio;
 namespace bptime = boost::posix_time;
 namespace bs2 = boost::signals2;
+namespace pcs = maidsafe::priv::chunk_store;
 
 namespace maidsafe {
-
-namespace pd { class RemoteChunkStore; }
 
 namespace lifestuff {
 
@@ -64,7 +63,7 @@ class PublicId {
   typedef bs2::signal<void(const std::string&)> ContactConfirmedSignal;  // NOLINT (Dan)
   typedef std::shared_ptr<ContactConfirmedSignal> ContactConfirmedSignalPtr;
 
-  PublicId(std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+  PublicId(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
            std::shared_ptr<YeOldeSignalToCallbackConverter> converter,
            std::shared_ptr<Session> session,
            ba::io_service &asio_service);  // NOLINT (Fraser)
@@ -128,9 +127,9 @@ class PublicId {
   void GetKeysAndProof(const std::string &public_username,
                        passport::PacketType pt,
                        bool confirmed,
-                       AlternativeStore::ValidationData *validation_data);
+                       pcs::RemoteChunkStore::ValidationData *validation_data);
 
-  std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store_;
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
   std::shared_ptr<Session> session_;
   ba::io_service &asio_service_;

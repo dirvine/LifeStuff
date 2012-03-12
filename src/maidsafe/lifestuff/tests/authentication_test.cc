@@ -23,19 +23,18 @@
 */
 
 #include "maidsafe/common/asio_service.h"
-#include "maidsafe/common/buffered_chunk_store.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/private/chunk_actions/chunk_action_authority.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
+#include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
+#ifndef LOCAL_TARGETS_ONLY
 #include "maidsafe/pd/client/client_container.h"
-#include "maidsafe/pd/client/remote_chunk_store.h"
+#endif
 
-#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/authentication.h"
-#include "maidsafe/lifestuff/local_chunk_manager.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/utils.h"
@@ -51,12 +50,14 @@ namespace lifestuff {
 
 namespace test {
 
-class AuthenticationTest : public testing::TestWithParam<std::string> {
+class AuthenticationTest : public testing::Test {
  public:
   AuthenticationTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
         session_(new Session),
+#ifndef LOCAL_TARGETS_ONLY
         client_container_(),
+#endif
         remote_chunk_store_(),
         authentication_(session_),
         username_(RandomAlphaNumericString(8)),
@@ -71,29 +72,17 @@ class AuthenticationTest : public testing::TestWithParam<std::string> {
   void SetUp() {
     asio_service_.Start(10);
 
-    if (GetParam() == "Local Storage") {
-      std::shared_ptr<BufferedChunkStore> buffered_chunk_store(
-          new BufferedChunkStore(asio_service_.service()));
-      buffered_chunk_store->Init(*test_dir_ / "buffered_chunk_store");
-      std::shared_ptr<priv::ChunkActionAuthority> chunk_action_authority(
-          new priv::ChunkActionAuthority(buffered_chunk_store));
-      std::shared_ptr<LocalChunkManager> local_chunk_manager(
-          new LocalChunkManager(buffered_chunk_store,
-                                *test_dir_ / "local_chunk_manager"));
-      remote_chunk_store_.reset(
-          new pd::RemoteChunkStore(buffered_chunk_store,
-                                   local_chunk_manager,
-                                   chunk_action_authority));
-    } else if (GetParam() == "Network Storage") {
-      client_container_ = SetUpClientContainer(*test_dir_);
-      ASSERT_TRUE(client_container_.get() != nullptr);
-      remote_chunk_store_.reset(new pd::RemoteChunkStore(
-          client_container_->chunk_store(),
-          client_container_->chunk_manager(),
-          client_container_->chunk_action_authority()));
-    } else {
-      FAIL() << "Invalid test value parameter";
-    }
+#ifdef LOCAL_TARGETS_ONLY
+    remote_chunk_store_ = pcs::CreateLocalChunkStore(*test_dir_,
+                                                     asio_service_.service());
+#else
+    client_container_ = SetUpClientContainer(*test_dir_);
+    ASSERT_TRUE(client_container_.get() != nullptr);
+    remote_chunk_store_.reset(new pcs::RemoteChunkStore(
+        client_container_->chunk_store(),
+        client_container_->chunk_manager(),
+        client_container_->chunk_action_authority()));
+#endif
 
     session_->ResetSession();
     remote_chunk_store_->sig_chunk_stored()->connect(
@@ -137,8 +126,10 @@ class AuthenticationTest : public testing::TestWithParam<std::string> {
 
   std::shared_ptr<fs::path> test_dir_;
   std::shared_ptr<Session> session_;
+#ifndef LOCAL_TARGETS_ONLY
   ClientContainerPtr client_container_;
-  std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store_;
+#endif
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   Authentication authentication_;
   std::string username_, pin_, password_, ser_dm_, surrogate_ser_dm_;
   std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
@@ -149,12 +140,12 @@ class AuthenticationTest : public testing::TestWithParam<std::string> {
   AuthenticationTest &operator=(const AuthenticationTest&);
 };
 
-TEST_P(AuthenticationTest, FUNC_CreateUserSysPackets) {
+TEST_F(AuthenticationTest, FUNC_CreateUserSysPackets) {
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
 }
 
-TEST_P(AuthenticationTest, FUNC_GoodLogin) {
+TEST_F(AuthenticationTest, FUNC_GoodLogin) {
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
@@ -180,7 +171,7 @@ TEST_P(AuthenticationTest, FUNC_GoodLogin) {
   ASSERT_EQ(pin_, session_->pin());
 }
 
-TEST_P(AuthenticationTest, FUNC_LoginNoUser) {
+TEST_F(AuthenticationTest, FUNC_LoginNoUser) {
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
@@ -193,7 +184,7 @@ TEST_P(AuthenticationTest, FUNC_LoginNoUser) {
   ASSERT_NE(ser_dm_, ser_dm_login);
 }
 
-TEST_P(AuthenticationTest, FUNC_RegisterUserOnce) {
+TEST_F(AuthenticationTest, FUNC_RegisterUserOnce) {
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
@@ -204,7 +195,7 @@ TEST_P(AuthenticationTest, FUNC_RegisterUserOnce) {
   ASSERT_EQ(password_, session_->password());
 }
 
-TEST_P(AuthenticationTest, FUNC_RegisterUserWithoutNetworkCheck) {
+TEST_F(AuthenticationTest, FUNC_RegisterUserWithoutNetworkCheck) {
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
                                                        ser_dm_,
@@ -214,7 +205,7 @@ TEST_P(AuthenticationTest, FUNC_RegisterUserWithoutNetworkCheck) {
   ASSERT_EQ(password_, session_->password());
 }
 
-TEST_P(AuthenticationTest, FUNC_RegisterUserTwice) {
+TEST_F(AuthenticationTest, FUNC_RegisterUserTwice) {
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
@@ -224,7 +215,7 @@ TEST_P(AuthenticationTest, FUNC_RegisterUserTwice) {
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
 }
 
-TEST_P(AuthenticationTest, FUNC_RepeatedSaveSessionBlocking) {
+TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionBlocking) {
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
@@ -257,7 +248,7 @@ TEST_P(AuthenticationTest, FUNC_RepeatedSaveSessionBlocking) {
 //                   PacketSignerFromSession(passport::kTmid, true)));
 }
 
-TEST_P(AuthenticationTest, FUNC_ChangeUsername) {
+TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
@@ -285,7 +276,7 @@ TEST_P(AuthenticationTest, FUNC_ChangeUsername) {
 //                  PacketSignerFromSession(passport::kTmid, true)));
 }
 
-TEST_P(AuthenticationTest, FUNC_ChangePin) {
+TEST_F(AuthenticationTest, FUNC_ChangePin) {
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
@@ -309,7 +300,7 @@ TEST_P(AuthenticationTest, FUNC_ChangePin) {
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
 }
 
-TEST_P(AuthenticationTest, FUNC_ChangePassword) {
+TEST_F(AuthenticationTest, FUNC_ChangePassword) {
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
@@ -333,7 +324,7 @@ TEST_P(AuthenticationTest, FUNC_ChangePassword) {
   ASSERT_NE(ser_dm_, ser_dm_login);
 }
 
-TEST_P(AuthenticationTest, FUNC_RegisterLeaveRegister) {
+TEST_F(AuthenticationTest, FUNC_RegisterLeaveRegister) {
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
@@ -353,9 +344,6 @@ TEST_P(AuthenticationTest, FUNC_RegisterLeaveRegister) {
                                                        ser_dm_,
                                                        surrogate_ser_dm_));
 }
-
-INSTANTIATE_TEST_CASE_P(LocalAndNetwork, AuthenticationTest,
-                        testing::Values("Local Storage", "Network Storage"));
 
 }  // namespace test
 

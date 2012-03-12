@@ -53,9 +53,11 @@ ADD_MAIDSAFE_LIBRARY(MaidSafe-Encrypt)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-Drive)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-PKI)
 ADD_MAIDSAFE_LIBRARY(MaidSafe-Passport)
-ADD_MAIDSAFE_LIBRARY(MaidSafe-Transport)
-ADD_MAIDSAFE_LIBRARY(MaidSafe-DHT)
-ADD_MAIDSAFE_LIBRARY(MaidSafe-PD)
+IF(NOT LOCAL_TARGETS_ONLY)
+  ADD_MAIDSAFE_LIBRARY(MaidSafe-Transport)
+  ADD_MAIDSAFE_LIBRARY(MaidSafe-DHT)
+  ADD_MAIDSAFE_LIBRARY(MaidSafe-PD)
+ENDIF()
 
 
 ###################################################################################################
@@ -109,42 +111,54 @@ SET(AUTHENTICATION_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/a
 SET(CLIENT_CONTROLLER_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/client_controller_test.cc")
 SET(PUBLIC_ID_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/public_id_test.cc"
                       "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/message_handler_test.cc")
+SET(USER_STORAGE_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/user_storage_test.cc")
 
-LIST(REMOVE_ITEM ALL_FILES_LIFESTUFF_TESTS_DIR ${CLIENT_MAIN_CC} ${AUTHENTICATION_TEST_CC} ${CLIENT_CONTROLLER_TEST_CC} ${PUBLIC_ID_TEST_CC} ${UTILS})
+LIST(REMOVE_ITEM ALL_FILES_LIFESTUFF_TESTS_DIR ${CLIENT_MAIN_CC}
+                                               ${AUTHENTICATION_TEST_CC}
+                                               ${CLIENT_CONTROLLER_TEST_CC}
+                                               ${PUBLIC_ID_TEST_CC}
+                                               ${USER_STORAGE_TEST_CC})
 
 
 ###################################################################################################
 # Define MaidSafe libraries and executables                                                       #
 ###################################################################################################
-MS_ADD_STATIC_LIBRARY(${MS_PROJECT_NAME} ${ALL_FILES_LIFESTUFF_DIR})
+MS_ADD_STATIC_LIBRARY(lifestuff_local ${ALL_FILES_LIFESTUFF_DIR})
+MS_ADD_EXECUTABLE(TESTlifestuff_local Tests ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${TESTS_MAIN_CC})
+MS_ADD_EXECUTABLE(TESTauthentication_local Tests ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
+MS_ADD_EXECUTABLE(TESTclientcontroller_local Tests ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
+MS_ADD_EXECUTABLE(TESTpublic_id_local Tests ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
+MS_ADD_EXECUTABLE(TESTuser_storage_local Tests ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC})
+TARGET_LINK_LIBRARIES(lifestuff_local_static maidsafe_drive_static maidsafe_passport_static)
+TARGET_LINK_LIBRARIES(TESTlifestuff_local lifestuff_local_static gtest_static)
+TARGET_LINK_LIBRARIES(TESTauthentication_local lifestuff_local_static gtest_static)
+TARGET_LINK_LIBRARIES(TESTclientcontroller_local lifestuff_local_static gtest_static)
+TARGET_LINK_LIBRARIES(TESTpublic_id_local lifestuff_local_static gtest_static)
+TARGET_LINK_LIBRARIES(TESTuser_storage_local lifestuff_local_static gtest_static)
 
-MS_ADD_EXECUTABLE(TESTlifestuff Tests ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${TESTS_MAIN_CC})
-
-MS_ADD_EXECUTABLE(TESTauthentication Tests ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
-MS_ADD_EXECUTABLE(TESTclientcontroller Tests ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
-MS_ADD_EXECUTABLE(TESTpublic_id Tests ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
-
-# This target allows lifestuff_static to be installed without building all project targets
-IF(MSVC)
-  ADD_CUSTOM_TARGET(install_fast ${CMAKE_COMMAND} -DBUILD_TYPE=$<CONFIGURATION> -P ${CMAKE_BINARY_DIR}/cmake_install.cmake)
-ELSE()
-  ADD_CUSTOM_TARGET(install_fast ${CMAKE_COMMAND} -DBUILD_TYPE=${CMAKE_BUILD_TYPE} -P ${CMAKE_BINARY_DIR}/cmake_install.cmake)
+IF(NOT LOCAL_TARGETS_ONLY)
+  MS_ADD_STATIC_LIBRARY(${MS_PROJECT_NAME} ${ALL_FILES_LIFESTUFF_DIR})
+  MS_ADD_EXECUTABLE(TESTlifestuff Tests ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${TESTS_MAIN_CC})
+  MS_ADD_EXECUTABLE(TESTauthentication Tests ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
+  MS_ADD_EXECUTABLE(TESTclientcontroller Tests ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
+  MS_ADD_EXECUTABLE(TESTpublic_id Tests ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
+  MS_ADD_EXECUTABLE(TESTuser_storage Tests ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC})
+  TARGET_LINK_LIBRARIES(lifestuff_static maidsafe_drive_static maidsafe_passport_static maidsafe_pd_static)
+  TARGET_LINK_LIBRARIES(TESTlifestuff lifestuff_static gtest_static)
+  TARGET_LINK_LIBRARIES(TESTauthentication lifestuff_static gtest_static)
+  TARGET_LINK_LIBRARIES(TESTclientcontroller lifestuff_static gtest_static)
+  TARGET_LINK_LIBRARIES(TESTpublic_id lifestuff_static gtest_static)
+  TARGET_LINK_LIBRARIES(TESTuser_storage lifestuff_static gtest_static)
 ENDIF()
 
-ADD_DEPENDENCIES(install_fast lifestuff_static)
-TARGET_LINK_LIBRARIES(lifestuff_static maidsafe_drive_static maidsafe_passport_static maidsafe_pd_static)
-
-TARGET_LINK_LIBRARIES(TESTlifestuff lifestuff_static gtest_static gmock_static)
-
-TARGET_LINK_LIBRARIES(TESTauthentication lifestuff_static gtest_static)
-TARGET_LINK_LIBRARIES(TESTclientcontroller lifestuff_static gtest_static)
-TARGET_LINK_LIBRARIES(TESTpublic_id lifestuff_static gtest_static)
 
 
 ###################################################################################################
 # Set compiler and linker flags                                                                   #
 ###################################################################################################
 INCLUDE(maidsafe_standard_flags)
+
+ADD_DEFINITIONS(-DLOCAL_TARGETS_ONLY)
 
 IF(MSVC)
   SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.cc
@@ -163,12 +177,13 @@ ENDIF()
 ###################################################################################################
 # Tests                                                                                           #
 ###################################################################################################
-ADD_STYLE_TEST(${STYLE_ALL} ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${AUTHENTICATION_TEST_CC} ${CLIENT_CONTROLLER_TEST_CC} ${PUBLIC_ID_TEST_CC})
+ADD_STYLE_TEST(${STYLE_ALL} ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${AUTHENTICATION_TEST_CC} ${CLIENT_CONTROLLER_TEST_CC} ${PUBLIC_ID_TEST_CC} ${USER_STORAGE_TEST_CC})
 
-ADD_GTESTS(TESTlifestuff)
-ADD_GTESTS(TESTauthentication)
-ADD_GTESTS(TESTclientcontroller)
-ADD_GTESTS(TESTpublic_id)
+ADD_GTESTS(TESTlifestuff_local)
+ADD_GTESTS(TESTauthentication_local)
+ADD_GTESTS(TESTclientcontroller_local)
+ADD_GTESTS(TESTpublic_id_local)
+ADD_GTESTS(TESTuser_storage_local)
 
 TEST_SUMMARY_OUTPUT()
 
@@ -177,6 +192,14 @@ TEST_SUMMARY_OUTPUT()
 # Install details                                                                                 #
 ###################################################################################################
 FINAL_MESSAGE()
+
+SET(JUST_LOCAL "Hello, user. If you should desire to build a local version of the\n")
+SET(JUST_LOCAL "${JUST_LOCAL}libraries and tests, please use -DLOCAL_TARGETS_ONLY=ON\n")
+SET(JUST_LOCAL "${JUST_LOCAL}when running cmake. To switch to both versions, please\n")
+SET(JUST_LOCAL "${JUST_LOCAL}use -DLOCAL_TARGETS_ONLY=OFF\n")
+MESSAGE(${JUST_LOCAL})
+MESSAGE("================================================================================")
+
 RENAME_OUTDATED_BUILT_EXES()
 
 SET(LIFESTUFF_INSTALL_FILES
@@ -190,6 +213,9 @@ SET(LIFESTUFF_INSTALL_FILES
       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/version.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h)
 
-MS_INSTALL_LIBS(lifestuff_static)
+MS_INSTALL_LIBS(lifestuff_local_static)
+IF(NOT LOCAL_TARGETS_ONLY)
+  MS_INSTALL_LIBS(lifestuff_static)
+ENDIF()
 MS_INSTALL_HEADERS(lifestuff ${LIFESTUFF_INSTALL_FILES})
 MS_INSTALL_EXPORT()

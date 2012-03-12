@@ -26,8 +26,6 @@
 
 #include "maidsafe/passport/passport.h"
 
-#include "maidsafe/pd/client/remote_chunk_store.h"
-
 #include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
@@ -36,7 +34,6 @@
 #include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
 namespace args = std::placeholders;
-namespace pca = maidsafe::priv::chunk_actions;
 
 namespace maidsafe {
 
@@ -62,7 +59,7 @@ std::string AppendableByAllType(const std::string &mmid) {
 }  // namespace
 
 MessageHandler::MessageHandler(
-    std::shared_ptr<pd::RemoteChunkStore> remote_chunk_store,
+    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
     std::shared_ptr<YeOldeSignalToCallbackConverter> converter,
     std::shared_ptr<Session> session,
     boost::asio::io_service &asio_service)  // NOLINT (Fraser)
@@ -132,7 +129,7 @@ int MessageHandler::Send(const std::string &public_username,
   BOOST_ASSERT(data.size() == 3U);
 
   // Get recipient's public key
-  AlternativeStore::ValidationData validation_data_mmid;
+  pcs::RemoteChunkStore::ValidationData validation_data_mmid;
   GetKeysAndProof(public_username,
                   passport::kMmid,
                   true,
@@ -268,7 +265,7 @@ void MessageHandler::GetNewMessages(
       continue;
     }
 
-    AlternativeStore::ValidationData validation_data_mmid;
+    pcs::RemoteChunkStore::ValidationData validation_data_mmid;
     GetKeysAndProof(std::get<0>(*it),
                     passport::kMmid,
                     true,
@@ -378,7 +375,7 @@ void MessageHandler::GetKeysAndProof(
     const std::string &public_username,
     passport::PacketType pt,
     bool confirmed,
-    AlternativeStore::ValidationData *validation_data) {
+    pcs::RemoteChunkStore::ValidationData *validation_data) {
   if (pt != passport::kAnmpid &&
       pt != passport::kMpid &&
       pt != passport::kMmid) {
