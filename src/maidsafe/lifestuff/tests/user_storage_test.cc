@@ -88,23 +88,23 @@ class UserStorageTest : public testing::Test {
       const std::shared_ptr<maidsafe::lifestuff::UserStorage> &user_storage,
       const pca::Message &message,
       const fs::path &absolute_path = fs::path()) {
-    if (message.subject() == "join_share")
+    if (message.subject() == "insert_share")
       return InsertShareTest(user_storage, message, absolute_path);
     if (message.subject() == "remove_share")
       return RemoveShareTest(user_storage, message, absolute_path);
-    if (message.subject() == "leave_share")
+    if (message.subject() == "stop_share")
       return StopShareTest(sender, user_storage, message, absolute_path);
+    if (message.subject() == "update_share")
+      return MoveShareTest(user_storage, message, absolute_path);
     if (message.subject() == "upgrade_share")
       return UpgradeShareTest(user_storage, message, absolute_path);
-    if (message.subject() == "move_share")
-      return MoveShareTest(user_storage, message, absolute_path);
   }
 
   void InsertShareTest(
       const std::shared_ptr<maidsafe::lifestuff::UserStorage> &user_storage,
       const pca::Message &message,
       const fs::path &absolute_path) {
-    ASSERT_EQ(message.subject(), "join_share");
+    ASSERT_EQ(message.subject(), "insert_share");
     asymm::Keys key_ring;
     if (message.content_size() > 4) {
       key_ring.identity = message.content(3);
@@ -124,7 +124,7 @@ class UserStorageTest : public testing::Test {
       const std::shared_ptr<maidsafe::lifestuff::UserStorage> &user_storage,
       const pca::Message &message,
       const fs::path &absolute_path) {
-    ASSERT_EQ(message.subject(), "leave_share");
+    ASSERT_EQ(message.subject(), "stop_share");
     ASSERT_EQ(kSuccess, user_storage->StopShare(sender, absolute_path));
   }
 
@@ -133,7 +133,7 @@ class UserStorageTest : public testing::Test {
         const pca::Message &message,
         const fs::path &absolute_path) {
     ASSERT_EQ(message.subject(), "remove_share");
-    ASSERT_EQ(kSuccess, user_storage->LeaveShare(absolute_path));
+    ASSERT_EQ(kSuccess, user_storage->RemoveShare(absolute_path));
   }
 
   void UpgradeShareTest(
@@ -146,18 +146,18 @@ class UserStorageTest : public testing::Test {
     key_ring.validation_token = message.content(2);
     asymm::DecodePrivateKey(message.content(3), &(key_ring.private_key));
     asymm::DecodePublicKey(message.content(4), &(key_ring.public_key));
-    ASSERT_EQ(kSuccess, user_storage->ModifyShareDetails(absolute_path,
-                                                         message.content(0),
-                                                         nullptr,
-                                                         nullptr,
-                                                         &key_ring));
+    ASSERT_EQ(kSuccess, user_storage->UpdateShare(absolute_path,
+                                                  message.content(0),
+                                                  nullptr,
+                                                  nullptr,
+                                                  &key_ring));
   }
 
   void MoveShareTest(
         const std::shared_ptr<maidsafe::lifestuff::UserStorage> &user_storage,
         const pca::Message &message,
         const fs::path &absolute_path) {
-    ASSERT_EQ(message.subject(), "move_share");
+    ASSERT_EQ(message.subject(), "update_share");
     asymm::Keys key_ring;
     if (message.content_size() > 4) {
       key_ring.identity = message.content(3);
@@ -165,11 +165,11 @@ class UserStorageTest : public testing::Test {
       asymm::DecodePrivateKey(message.content(5), &(key_ring.private_key));
       asymm::DecodePublicKey(message.content(6), &(key_ring.public_key));
     }
-    ASSERT_EQ(kSuccess, user_storage->ModifyShareDetails(absolute_path,
-                                                         message.content(0),
-                                                         &message.content(1),
-                                                         &message.content(2),
-                                                         &key_ring));
+    ASSERT_EQ(kSuccess, user_storage->UpdateShare(absolute_path,
+                                                  message.content(0),
+                                                  &message.content(1),
+                                                  &message.content(2),
+                                                  &key_ring));
   }
 
  protected:
