@@ -86,7 +86,7 @@ class UserStorage {
                           bool creation,
                           const std::string &drive_logo = "LifeStuff Drive");
   virtual void UnMountDrive();
-  virtual fs::path g_mount_dir();
+  virtual fs::path mount_dir();
   virtual bool mount_status();
 
   // ********************* File / Folder Transfers *****************************
@@ -112,12 +112,12 @@ class UserStorage {
                   const asymm::Keys &share_keyring);
   int StopShare(const std::string &sender_public_username,
                 const fs::path &absolute_path);
-  int LeaveShare(const fs::path &absolute_path);
-  int ModifyShareDetails(const fs::path &absolute_path,
-                         const std::string &share_id,
-                         const std::string *new_share_id,
-                         const std::string *new_directory_id,
-                         const asymm::Keys *new_key_ring);
+  int RemoveShare(const fs::path &absolute_path);
+  int UpdateShare(const fs::path &absolute_path,
+                  const std::string &share_id,
+                  const std::string *new_share_id,
+                  const std::string *new_directory_id,
+                  const asymm::Keys *new_key_ring);
   int AddShareUsers(const std::string &sender_public_username,
                     const fs::path &absolute_path,
                     const std::map<std::string, bool> &contacts);
@@ -172,7 +172,7 @@ class UserStorage {
   std::shared_ptr<Session> session_;
   std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
   std::shared_ptr<MessageHandler> message_handler_;
-  fs::path g_mount_dir_;
+  fs::path mount_dir_;
 };
 
 }  // namespace lifestuff
