@@ -20,7 +20,7 @@
 * ============================================================================
 */
 
-#include "maidsafe/lifestuff/client_controller.h"
+#include "maidsafe/lifestuff/user_credentials.h"
 
 #ifdef MAIDSAFE_WIN32
 #  include <shlwapi.h>
@@ -62,7 +62,7 @@ namespace maidsafe {
 namespace lifestuff {
 
 UserCredentials::UserCredentials(boost::asio::io_service &service,  // NOLINT (Dan)
-                                   std::shared_ptr<Session> session)
+                                 std::shared_ptr<Session> session)
     : session_(session),
       remote_chunk_store_(),
       authentication_(new Authentication(session)),
@@ -230,8 +230,8 @@ int UserCredentials::SerialiseDa() {
 }
 
 bool UserCredentials::CreateUser(const std::string &username,
-                                  const std::string &pin,
-                                  const std::string &password) {
+                                 const std::string &pin,
+                                 const std::string &password) {
   if (!initialised_) {
     DLOG(ERROR) << "Not initialised.";
     return false;
@@ -282,7 +282,7 @@ bool UserCredentials::CreateUser(const std::string &username,
 }
 
 int UserCredentials::CheckUserExists(const std::string &username,
-                                      const std::string &pin) {
+                                     const std::string &pin) {
   if (!initialised_) {
     DLOG(ERROR) << "Not initialised.";
     return kUserCredentialsNotInitialised;

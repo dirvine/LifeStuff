@@ -30,12 +30,12 @@
 #include "maidsafe/pd/client/client_container.h"
 #endif
 
-#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/contacts.h"
+#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/public_id.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/authentication.h"
-#include "maidsafe/lifestuff/client_controller.h"
+#include "maidsafe/lifestuff/user_credentials.h"
 #include "maidsafe/lifestuff/user_storage.h"
 #include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
@@ -611,16 +611,16 @@ TEST_F(UserStorageTest, FUNC_StopShareByOwner) {
   message_handler2_->StopCheckingForNewMessages();
   user_storage2_->UnMountDrive();
 
-  //Sleep(interval_ * 2);
-  //user_storage1_->MountDrive(*mount_dir_,
-  //                           client_controller1_->SessionName(),
-  //                           session1_,
-  //                           false);
-  //Sleep(interval_ * 2);
-  //EXPECT_TRUE(fs::exists(directory0, error_code)) << directory0;
-  ////EXPECT_FALSE(fs::exists(directory0, error_code)) << directory0;
-  //user_storage1_->UnMountDrive();
-  //Sleep(interval_ * 2);
+  // Sleep(interval_ * 2);
+  // user_storage1_->MountDrive(*mount_dir_,
+  //                            client_controller1_->SessionName(),
+  //                            session1_,
+  //                            false);
+  // Sleep(interval_ * 2);
+  // EXPECT_TRUE(fs::exists(directory0, error_code)) << directory0;
+  // EXPECT_FALSE(fs::exists(directory0, error_code)) << directory0;
+  // user_storage1_->UnMountDrive();
+  // Sleep(interval_ * 2);
 }
 
 TEST_F(UserStorageTest, FUNC_RemoveUserByOwner) {

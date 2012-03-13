@@ -21,8 +21,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_CLIENT_CONTROLLER_H_
-#define MAIDSAFE_LIFESTUFF_CLIENT_CONTROLLER_H_
+#ifndef MAIDSAFE_LIFESTUFF_USER_CREDENTIALS_H_
+#define MAIDSAFE_LIFESTUFF_USER_CREDENTIALS_H_
 
 #include <list>
 #include <map>
@@ -132,4 +132,4 @@ class UserCredentials {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_CLIENT_CONTROLLER_H_
+#endif  // MAIDSAFE_LIFESTUFF_USER_CREDENTIALS_H_

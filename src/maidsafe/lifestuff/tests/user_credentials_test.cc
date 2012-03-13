@@ -30,9 +30,9 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/lifestuff/client_controller.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
+#include "maidsafe/lifestuff/user_credentials.h"
 
 namespace args = std::placeholders;
 namespace fs = boost::filesystem;

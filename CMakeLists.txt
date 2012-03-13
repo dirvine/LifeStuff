@@ -108,7 +108,7 @@ SOURCE_GROUP("Tests Header Files" FILES ${HEADER_FILES_LIFESTUFF_TESTS_DIR})
 
 SET(TESTS_MAIN_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/tests_main.cc")
 SET(AUTHENTICATION_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/authentication_test.cc")
-SET(CLIENT_CONTROLLER_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/client_controller_test.cc")
+SET(CLIENT_CONTROLLER_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/user_credentials_test.cc")
 SET(PUBLIC_ID_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/public_id_test.cc"
                       "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/message_handler_test.cc")
 SET(USER_STORAGE_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/user_storage_test.cc")
@@ -206,7 +206,7 @@ MESSAGE("=======================================================================
 RENAME_OUTDATED_BUILT_EXES()
 
 SET(LIFESTUFF_INSTALL_FILES
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client_controller.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/user_credentials.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/session.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/user_storage.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff.h
