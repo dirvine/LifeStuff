@@ -175,9 +175,9 @@ class UserStorageTest : public testing::Test {
  protected:
   void SetUp() {
     asio_service_.Start(5);
-    client_controller1_ = CreateClientController(pub_name1_);
+    client_controller1_ = CreateUserCredentials(pub_name1_);
     session1_ = client_controller1_->session_;
-    client_controller2_ = CreateClientController(pub_name2_);
+    client_controller2_ = CreateUserCredentials(pub_name2_);
     session2_ = client_controller2_->session_;
 
     public_id1_.reset(new PublicId(client_controller1_->remote_chunk_store(),
@@ -229,18 +229,13 @@ class UserStorageTest : public testing::Test {
     asio_service_.Stop();
   }
 
-  std::shared_ptr<ClientController> CreateClientController(
+  std::shared_ptr<UserCredentials> CreateUserCredentials(
       std::string username) {
     std::shared_ptr<Session> session(new Session);
-    std::shared_ptr<ClientController> client_controller(
-        new ClientController(asio_service_.service(), session));
-    client_controller->auth_.reset(new Authentication(session));
-#ifdef LOCAL_TARGETS_ONLY
-    client_controller->Init(true, *test_dir_);
-#else
-    client_controller->Init(false, *test_dir_);
-#endif
-    client_controller->initialised_ = true;
+    std::shared_ptr<UserCredentials> client_controller(
+        new UserCredentials(asio_service_.service(), session));
+    client_controller->Init(*test_dir_);
+
     std::stringstream pin_stream;
     pin_stream << RandomUint32();
     client_controller->CreateUser(username, pin_stream.str(), RandomString(6));
@@ -251,12 +246,12 @@ class UserStorageTest : public testing::Test {
 
   std::shared_ptr<fs::path> test_dir_;
   std::shared_ptr<fs::path> mount_dir_;
-  std::shared_ptr<ClientController> client_controller1_;
-  std::shared_ptr<maidsafe::lifestuff::UserStorage> user_storage1_;
-  std::shared_ptr<maidsafe::lifestuff::Session> session1_;
-  std::shared_ptr<ClientController> client_controller2_;
-  std::shared_ptr<maidsafe::lifestuff::UserStorage> user_storage2_;
-  std::shared_ptr<maidsafe::lifestuff::Session> session2_;
+  std::shared_ptr<UserCredentials> client_controller1_;
+  std::shared_ptr<UserStorage> user_storage1_;
+  std::shared_ptr<Session> session1_;
+  std::shared_ptr<UserCredentials> client_controller2_;
+  std::shared_ptr<UserStorage> user_storage2_;
+  std::shared_ptr<Session> session2_;
   AsioService asio_service_;
   bptime::seconds interval_;
   std::shared_ptr<YeOldeSignalToCallbackConverter> converter1_, converter2_;

@@ -55,18 +55,18 @@ namespace lifestuff {
 
 namespace test {
 class AuthenticationTest;
-class ClientControllerTest;
 class LocalStoreManagerTest;
 class MessageHandlerTest;
 class PublicIdTest;
 class SessionTest;
+class UserCredentialsTest;
 }  // namespace test
 
 class Authentication;
 class ContactsHandler;
-class ClientController;
 class MessageHandler;
 class PublicId;
+class UserCredentials;
 class UserStorage;
 struct UserDetails;
 
@@ -112,16 +112,16 @@ class Session {
                             std::shared_ptr<Session>,
                             asymm::PrivateKey*);
   friend class Authentication;
-  friend class ClientController;
   friend class MessageHandler;
   friend class PublicId;
+  friend class UserCredentials;
   friend class UserStorage;
   friend class test::AuthenticationTest;
-  friend class test::ClientControllerTest;
   friend class test::LocalStoreManagerTest;
   friend class test::MessageHandlerTest;
   friend class test::PublicIdTest;
   friend class test::SessionTest;
+  friend class test::UserCredentialsTest;
 
  private:
   Session &operator=(const Session&);

@@ -61,13 +61,13 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-ClientController::ClientController(boost::asio::io_service &service,  // NOLINT (Dan)
+UserCredentials::UserCredentials(boost::asio::io_service &service,  // NOLINT (Dan)
                                    std::shared_ptr<Session> session)
     : session_(session),
       remote_chunk_store_(),
-      auth_(new Authentication(session)),
-      ser_da_(),
-      surrogate_ser_da_(),
+      authentication_(new Authentication(session)),
+      serialised_da_(),
+      surrogate_serialised_da_(),
       initialised_(false),
       logging_out_(false),
       logged_in_(false),
@@ -77,28 +77,26 @@ ClientController::ClientController(boost::asio::io_service &service,  // NOLINT 
 #endif
       converter_(new YeOldeSignalToCallbackConverter) {}
 
-ClientController::~ClientController() {}
+UserCredentials::~UserCredentials() {}
 
-void ClientController::Init(bool local, const fs::path &base_dir) {
+void UserCredentials::Init(const fs::path &base_dir) {
   if (initialised_)
     return;
 
-  if (local) {
-    remote_chunk_store_ = pcs::CreateLocalChunkStore(base_dir, service_);
+#ifdef LOCAL_TARGETS_ONLY
+  remote_chunk_store_ = pcs::CreateLocalChunkStore(base_dir, service_);
+#else
+  client_container_ = SetUpClientContainer(base_dir);
+  if (client_container_) {
+    remote_chunk_store_.reset(new pcs::RemoteChunkStore(
+        client_container_->chunk_store(),
+        client_container_->chunk_manager(),
+        client_container_->chunk_action_authority()));
   } else {
-#ifndef LOCAL_TARGETS_ONLY
-    client_container_ = SetUpClientContainer(base_dir);
-    if (client_container_) {
-      remote_chunk_store_.reset(new pcs::RemoteChunkStore(
-          client_container_->chunk_store(),
-          client_container_->chunk_manager(),
-          client_container_->chunk_action_authority()));
-    } else {
-      DLOG(ERROR) << "Failed to initialise client container.";
-      return;
-    }
-#endif
+    DLOG(ERROR) << "Failed to initialise client container.";
+    return;
   }
+#endif
 
   remote_chunk_store_->sig_chunk_stored()->connect(
       std::bind(&YeOldeSignalToCallbackConverter::Stored, converter_.get(),
@@ -110,21 +108,21 @@ void ClientController::Init(bool local, const fs::path &base_dir) {
       std::bind(&YeOldeSignalToCallbackConverter::Modified, converter_.get(),
                 args::_1, args::_2));
 
-  auth_->Init(remote_chunk_store_, converter_);
+  authentication_->Init(remote_chunk_store_, converter_);
   initialised_ = true;
 }
 
-int ClientController::ParseDa() {
+int UserCredentials::ParseDa() {
   if (!initialised_) {
     DLOG(ERROR) << "Not initialised.";
-    return kClientControllerNotInitialised;
+    return kUserCredentialsNotInitialised;
   }
   DataAtlas data_atlas;
-  if (ser_da_.empty() && surrogate_ser_da_.empty()) {
+  if (serialised_da_.empty() && surrogate_serialised_da_.empty()) {
     DLOG(ERROR) << "TMID brought is empty.";
     return -9000;
   }
-  if (!data_atlas.ParseFromString(ser_da_)) {
+  if (!data_atlas.ParseFromString(serialised_da_)) {
     DLOG(ERROR) << "TMID doesn't parse.";
     return -9000;
   }
@@ -153,7 +151,8 @@ int ClientController::ParseDa() {
     return -9003;
   }
 
-  n = auth_->SetLoggedInData(ser_da_, surrogate_ser_da_);
+  n = authentication_->SetLoggedInData(serialised_da_,
+                                       surrogate_serialised_da_);
   if (n != kSuccess) {
     DLOG(ERROR) << "Failed SetLoggedInData: " << n;
     return -9003;
@@ -176,10 +175,10 @@ int ClientController::ParseDa() {
   return 0;
 }
 
-int ClientController::SerialiseDa() {
+int UserCredentials::SerialiseDa() {
   if (!initialised_) {
     DLOG(ERROR) << "Not initialised.";
-    return kClientControllerNotInitialised;
+    return kUserCredentialsNotInitialised;
   }
 
   DataAtlas data_atlas;
@@ -224,13 +223,13 @@ int ClientController::SerialiseDa() {
     }
   }
 
-  ser_da_.clear();
-  data_atlas.SerializeToString(&ser_da_);
+  serialised_da_.clear();
+  data_atlas.SerializeToString(&serialised_da_);
 
   return 0;
 }
 
-bool ClientController::CreateUser(const std::string &username,
+bool UserCredentials::CreateUser(const std::string &username,
                                   const std::string &pin,
                                   const std::string &password) {
   if (!initialised_) {
@@ -239,13 +238,13 @@ bool ClientController::CreateUser(const std::string &username,
   }
 
   session_->ResetSession();
-  int result = auth_->CreateUserSysPackets(username, pin);
+  int result = authentication_->CreateUserSysPackets(username, pin);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to create user system packets.";
     session_->ResetSession();
     return false;
   } else {
-    DLOG(INFO) << "auth_->CreateUserSysPackets DONE.";
+    DLOG(INFO) << "authentication_->CreateUserSysPackets DONE.";
   }
 
   int n = SerialiseDa();
@@ -253,7 +252,7 @@ bool ClientController::CreateUser(const std::string &username,
     DLOG(ERROR) << "Failed to serialise DA.";
     return false;
   }
-  std::string ser_da(ser_da_);
+  std::string serialised_da(serialised_da_);
 
   // Need different timestamps
   Sleep(boost::posix_time::milliseconds(1));
@@ -262,17 +261,19 @@ bool ClientController::CreateUser(const std::string &username,
     DLOG(ERROR) << "Failed to serialise DA.";
     return false;
   }
-  std::string surrogate_ser_da(ser_da_);
+  std::string surrogate_serialised_da(serialised_da_);
 
-  ser_da_ = ser_da;
+  serialised_da_ = serialised_da;
 
-  result = auth_->CreateTmidPacket(password, ser_da, surrogate_ser_da);
+  result = authentication_->CreateTmidPacket(password,
+                                             serialised_da,
+                                             surrogate_serialised_da);
   if (result != kSuccess) {
     DLOG(ERROR) << "Cannot create tmid packet.";
     session_->ResetSession();
     return false;
   } else {
-    DLOG(INFO) << "auth_->CreateTmidPacket DONE.";
+    DLOG(INFO) << "authentication_->CreateTmidPacket DONE.";
   }
 
   session_->set_session_name(false);
@@ -280,39 +281,39 @@ bool ClientController::CreateUser(const std::string &username,
   return true;
 }
 
-int ClientController::CheckUserExists(const std::string &username,
+int UserCredentials::CheckUserExists(const std::string &username,
                                       const std::string &pin) {
   if (!initialised_) {
     DLOG(ERROR) << "Not initialised.";
-    return kClientControllerNotInitialised;
+    return kUserCredentialsNotInitialised;
   }
   session_->ResetSession();
   session_->set_def_con_level(kDefCon1);
-  ser_da_.clear();
-  return auth_->GetUserInfo(username, pin);
+  serialised_da_.clear();
+  return authentication_->GetUserInfo(username, pin);
 }
 
-bool ClientController::ValidateUser(const std::string &password) {
+bool UserCredentials::ValidateUser(const std::string &password) {
   if (!initialised_) {
     DLOG(ERROR) << "CC::ValidateUser - Not initialised.";
     return false;
   }
 
   std::string serialised_data_atlas, surrogate_serialised_data_atlas;
-  auth_->GetMasterDataMap(password,
+  authentication_->GetMasterDataMap(password,
                           &serialised_data_atlas,
                           &surrogate_serialised_data_atlas);
 
   if (!serialised_data_atlas.empty()) {
-    DLOG(INFO) << "ClientController::ValidateUser - Using TMID";
-    ser_da_ = serialised_data_atlas;
-    surrogate_ser_da_ = surrogate_serialised_data_atlas;
+    DLOG(INFO) << "UserCredentials::ValidateUser - Using TMID";
+    serialised_da_ = serialised_data_atlas;
+    surrogate_serialised_da_ = surrogate_serialised_data_atlas;
   } else if (!surrogate_serialised_data_atlas.empty()) {
-    DLOG(INFO) << "ClientController::ValidateUser - Using STMID";
-    surrogate_ser_da_ = surrogate_serialised_data_atlas;
+    DLOG(INFO) << "UserCredentials::ValidateUser - Using STMID";
+    surrogate_serialised_da_ = surrogate_serialised_data_atlas;
   } else {
     // Password validation failed
-    DLOG(INFO) << "ClientController::ValidateUser - Invalid password";
+    DLOG(INFO) << "UserCredentials::ValidateUser - Invalid password";
     return false;
   }
 
@@ -320,14 +321,14 @@ bool ClientController::ValidateUser(const std::string &password) {
   session_->set_session_name(false);
 
   if (ParseDa() != 0) {
-    DLOG(INFO) << "ClientController::ValidateUser - Cannot parse DA";
+    DLOG(INFO) << "UserCredentials::ValidateUser - Cannot parse DA";
     return false;
   }
   logged_in_ = true;
   return true;
 }
 
-bool ClientController::Logout() {
+bool UserCredentials::Logout() {
   if (!initialised_) {
     DLOG(ERROR) << "Not initialised.";
     return false;
@@ -341,17 +342,17 @@ bool ClientController::Logout() {
     return false;
   }
 
-  ser_da_.clear();
+  serialised_da_.clear();
   logging_out_ = false;
   logged_in_ = false;
   session_->ResetSession();
   return true;
 }
 
-int ClientController::SaveSession() {
+int UserCredentials::SaveSession() {
   if (!initialised_) {
     DLOG(ERROR) << "Not initialised.";
-    return kClientControllerNotInitialised;
+    return kUserCredentialsNotInitialised;
   }
 
   int n = SerialiseDa();
@@ -360,7 +361,7 @@ int ClientController::SaveSession() {
     return n;
   }
 
-  n = auth_->SaveSession(ser_da_);
+  n = authentication_->SaveSession(serialised_da_);
   if (n != kSuccess) {
     if (n == kFailedToDeleteOldPacket) {
       DLOG(WARNING) << "Failed to delete old TMID otherwise saved session OK.";
@@ -372,18 +373,18 @@ int ClientController::SaveSession() {
   return kSuccess;
 }
 
-bool ClientController::LeaveMaidsafeNetwork() {
+bool UserCredentials::LeaveMaidsafeNetwork() {
   if (!initialised_) {
     DLOG(ERROR) << "Not initialised.";
     return false;
   }
-  if (auth_->RemoveMe() == kSuccess)
+  if (authentication_->RemoveMe() == kSuccess)
     return true;
 
   return false;
 }
 
-std::string ClientController::SessionName() {
+std::string UserCredentials::SessionName() {
   if (!initialised_) {
     DLOG(ERROR) << "Not initialised.";
     return "";
@@ -391,14 +392,14 @@ std::string ClientController::SessionName() {
   return session_->session_name();
 }
 
-bool ClientController::ChangeUsername(const std::string &new_username) {
+bool UserCredentials::ChangeUsername(const std::string &new_username) {
   if (!initialised_) {
     DLOG(ERROR) << "Not initialised.";
     return false;
   }
   SerialiseDa();
 
-  int result = auth_->ChangeUsername(ser_da_, new_username);
+  int result = authentication_->ChangeUsername(serialised_da_, new_username);
   if (result != kSuccess) {
     if (result == kFailedToDeleteOldPacket) {
       DLOG(WARNING) << "Failed to delete old packets, changed username OK.";
@@ -411,14 +412,14 @@ bool ClientController::ChangeUsername(const std::string &new_username) {
   return true;
 }
 
-bool ClientController::ChangePin(const std::string &new_pin) {
+bool UserCredentials::ChangePin(const std::string &new_pin) {
   if (!initialised_) {
     DLOG(ERROR) << "Not initialised.";
     return false;
   }
   SerialiseDa();
 
-  int result = auth_->ChangePin(ser_da_, new_pin);
+  int result = authentication_->ChangePin(serialised_da_, new_pin);
   if (result != kSuccess) {
     if (result == kFailedToDeleteOldPacket) {
       DLOG(WARNING) <<
@@ -432,14 +433,14 @@ bool ClientController::ChangePin(const std::string &new_pin) {
   return true;
 }
 
-bool ClientController::ChangePassword(const std::string &new_password) {
+bool UserCredentials::ChangePassword(const std::string &new_password) {
   if (!initialised_) {
     DLOG(ERROR) << " Not initialised.";
     return false;
   }
   SerialiseDa();
 
-  int result = auth_->ChangePassword(ser_da_, new_password);
+  int result = authentication_->ChangePassword(serialised_da_, new_password);
   if (result != kSuccess) {
     DLOG(ERROR) << " Authentication failed: " << result;
     return false;
@@ -447,23 +448,23 @@ bool ClientController::ChangePassword(const std::string &new_password) {
   return true;
 }
 
-std::string ClientController::Username() {
+std::string UserCredentials::Username() {
   return session_->username();
 }
 
-std::string ClientController::Pin() {
+std::string UserCredentials::Pin() {
   return session_->pin();
 }
 
-std::string ClientController::Password() {
+std::string UserCredentials::Password() {
   return session_->password();
 }
 
-std::shared_ptr<pcs::RemoteChunkStore> ClientController::remote_chunk_store() {
+std::shared_ptr<pcs::RemoteChunkStore> UserCredentials::remote_chunk_store() {
   return remote_chunk_store_;
 }
 
-std::shared_ptr<YeOldeSignalToCallbackConverter> ClientController::converter() {
+std::shared_ptr<YeOldeSignalToCallbackConverter> UserCredentials::converter() {
   return converter_;
 }
 

@@ -57,7 +57,7 @@ enum ReturnCode {
   kFailedToDeleteOldPacket = -201007,
 
   // Client Controller
-  kClientControllerNotInitialised = -202001,
+  kUserCredentialsNotInitialised = -202001,
 
   // Store Manager
   kStoreManagerInitError = -203001,

@@ -64,7 +64,7 @@ namespace pcs = maidsafe::priv::chunk_store;
 namespace lifestuff {
 
 namespace test {
-class ClientControllerTest;
+class UserCredentialsTest;
 class UserStorageTest;
 }  // namespace test
 
@@ -72,13 +72,13 @@ class Authentication;
 class Session;
 class YeOldeSignalToCallbackConverter;
 
-class ClientController {
+class UserCredentials {
  public:
-  explicit ClientController(boost::asio::io_service &service,  // NOLINT (Dan)
+  explicit UserCredentials(boost::asio::io_service &service,  // NOLINT (Dan)
                             std::shared_ptr<Session> session);
 
-  ~ClientController();
-  void Init(bool local, const fs::path &chunk_store_dir);
+  ~UserCredentials();
+  void Init(const fs::path &chunk_store_dir);
   bool initialised() const { return initialised_; }
 
   // User credential operations
@@ -103,20 +103,20 @@ class ClientController {
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store();
   std::shared_ptr<YeOldeSignalToCallbackConverter> converter();
 
-  friend class test::ClientControllerTest;
+  friend class test::UserCredentialsTest;
   friend class test::UserStorageTest;
 
  private:
-  ClientController &operator=(const ClientController&);
-  ClientController(const ClientController&);
+  UserCredentials &operator=(const UserCredentials&);
+  UserCredentials(const UserCredentials&);
 
   int ParseDa();
   int SerialiseDa();
 
   std::shared_ptr<Session> session_;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
-  std::shared_ptr<Authentication> auth_;
-  std::string ser_da_, surrogate_ser_da_;
+  std::shared_ptr<Authentication> authentication_;
+  std::string serialised_da_, surrogate_serialised_da_;
   bool initialised_;
   bool logging_out_;
   bool logged_in_;

@@ -44,9 +44,9 @@ namespace lifestuff {
 
 namespace test {
 
-class ClientControllerTest : public testing::Test {
+class UserCredentialsTest : public testing::Test {
  public:
-  ClientControllerTest()
+  UserCredentialsTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
         session_(new Session),
         asio_service_(),
@@ -60,16 +60,10 @@ class ClientControllerTest : public testing::Test {
   void SetUp() {
     asio_service_.Start(10);
     asio_service2_.Start(10);
-    cc_.reset(new ClientController(asio_service_.service(), session_));
+    cc_.reset(new UserCredentials(asio_service_.service(), session_));
     session_->ResetSession();
 
-#ifdef LOCAL_TARGETS_ONLY
-    bool local(true);
-#else
-    bool local(false);
-#endif
-
-    cc_->Init(local, *test_dir_);
+    cc_->Init(*test_dir_);
   }
 
   void TearDown() {
@@ -78,28 +72,27 @@ class ClientControllerTest : public testing::Test {
     cc_->initialised_ = false;
   }
 
-  std::shared_ptr<ClientController> CreateSecondClientController() {
+  std::shared_ptr<UserCredentials> CreateSecondUserCredentials() {
     std::shared_ptr<Session> ss2(new Session);
-    std::shared_ptr<ClientController> cc2(
-        new ClientController(asio_service2_.service(), ss2));
+    std::shared_ptr<UserCredentials> cc2(
+        new UserCredentials(asio_service2_.service(), ss2));
     ss2->ResetSession();
-//    bool local(GetParam() == "Local Storage");
-    cc2->Init(true, *test_dir_);
+    cc2->Init(*test_dir_);
     return cc2;
   }
 
   std::shared_ptr<fs::path> test_dir_;
   std::shared_ptr<Session> session_;
   AsioService asio_service_, asio_service2_;
-  std::shared_ptr<ClientController> cc_;
+  std::shared_ptr<UserCredentials> cc_;
   std::string username_, pin_, password_;
 
  private:
-  ClientControllerTest(const ClientControllerTest&);
-  ClientControllerTest &operator=(const ClientControllerTest&);
+  UserCredentialsTest(const UserCredentialsTest&);
+  UserCredentialsTest &operator=(const UserCredentialsTest&);
 };
 
-TEST_F(ClientControllerTest, FUNC_DirectCreate) {
+TEST_F(UserCredentialsTest, FUNC_DirectCreate) {
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
@@ -112,7 +105,7 @@ TEST_F(ClientControllerTest, FUNC_DirectCreate) {
   DLOG(INFO) << "User created.\n===================\n";
 }
 
-TEST_F(ClientControllerTest, FUNC_LoginSequence) {
+TEST_F(UserCredentialsTest, FUNC_LoginSequence) {
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
@@ -149,7 +142,7 @@ TEST_F(ClientControllerTest, FUNC_LoginSequence) {
   DLOG(INFO) << "Can't log in with fake details.";
 }
 
-TEST_F(ClientControllerTest, FUNC_RepeatedValidateUser) {
+TEST_F(UserCredentialsTest, FUNC_RepeatedValidateUser) {
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
@@ -187,7 +180,7 @@ TEST_F(ClientControllerTest, FUNC_RepeatedValidateUser) {
   DLOG(INFO) << "Logged out.\n===================\n";
 }
 
-TEST_F(ClientControllerTest, FUNC_ChangeDetails) {
+TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
@@ -293,7 +286,7 @@ TEST_F(ClientControllerTest, FUNC_ChangeDetails) {
   DLOG(INFO) << "Can't log in with old u/p/w.";
 }
 
-TEST_F(ClientControllerTest, FUNC_LeaveNetwork) {
+TEST_F(UserCredentialsTest, FUNC_LeaveNetwork) {
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
@@ -338,7 +331,7 @@ TEST_F(ClientControllerTest, FUNC_LeaveNetwork) {
   DLOG(INFO) << "Logged out.";
 }
 
-TEST_F(ClientControllerTest, FUNC_ParallelLogin) {
+TEST_F(UserCredentialsTest, FUNC_ParallelLogin) {
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
@@ -351,13 +344,13 @@ TEST_F(ClientControllerTest, FUNC_ParallelLogin) {
   ASSERT_EQ(password_, session_->password());
   DLOG(INFO) << "User created.\n===================\n";
 
-  std::shared_ptr<ClientController> cc2 = CreateSecondClientController();
+  std::shared_ptr<UserCredentials> cc2 = CreateSecondUserCredentials();
   ASSERT_EQ(kUserExists, cc2->CheckUserExists(username_, pin_));
   ASSERT_TRUE(cc2->ValidateUser(password_));
   DLOG(INFO) << "Successful parallel log in.";
 }
 
-TEST_F(ClientControllerTest, FUNC_MultiClientControllerLoginandLogout) {
+TEST_F(UserCredentialsTest, FUNC_MultiUserCredentialsLoginandLogout) {
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
@@ -376,7 +369,7 @@ TEST_F(ClientControllerTest, FUNC_MultiClientControllerLoginandLogout) {
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Logged out.\n===================\n";
 
-  std::shared_ptr<ClientController> cc2 = CreateSecondClientController();
+  std::shared_ptr<UserCredentials> cc2 = CreateSecondUserCredentials();
   ASSERT_EQ(kUserExists, cc2->CheckUserExists(username_, pin_));
   ASSERT_TRUE(cc2->ValidateUser(password_));
   DLOG(INFO) << "Successful parallel log in.";
