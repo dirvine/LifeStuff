@@ -1,3 +1,0 @@
-#!/bin/sh
-rm -f /usr/share/applications/lifestuff_client.desktop
-rm -f /usr/bin/ClientDemo
