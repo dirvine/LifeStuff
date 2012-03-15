@@ -47,12 +47,14 @@ struct UserDetails {
         unique_user_id(),
         root_parent_id(),
         mounted(0),
-        win_drive('\0') {}
+        win_drive('\0'),
+        picture_data_map() {}
   DefConLevels defconlevel;
   std::string username, pin, password, session_name;
   std::string unique_user_id, root_parent_id;
   int mounted;
   char win_drive;
+  std::string picture_data_map;
 };
 
 Session::Session()
@@ -99,6 +101,9 @@ std::string Session::root_parent_id() const {
 }
 int Session::mounted() const { return user_details_->mounted; }
 char Session::win_drive() const { return user_details_->win_drive; }
+std::string Session::picture_data_map() const {
+  return user_details_->picture_data_map;
+}
 
 void Session::set_def_con_level(DefConLevels defconlevel) {
   user_details_->defconlevel = defconlevel;
@@ -130,6 +135,9 @@ void Session::set_root_parent_id(const std::string &root_parent_id) {
 void Session::set_mounted(int mounted) { user_details_->mounted = mounted; }
 void Session::set_win_drive(char win_drive) {
   user_details_->win_drive = win_drive;
+}
+void Session::set_picture_data_map(const std::string &picture_data_map) {
+  user_details_->picture_data_map = picture_data_map;
 }
 
 int Session::ParseKeyChain(const std::string &serialised_keyring,

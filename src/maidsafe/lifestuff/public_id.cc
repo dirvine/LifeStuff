@@ -809,7 +809,7 @@ int PublicId::InformContactInfo(const std::string &public_username,
       session_->passport_->PacketPrivateKey(passport::kMpid,
                                             true,
                                             public_username));
-  // Inform each contat in the contact list of the MMID contact info
+  // Inform each contact in the contact list of the MMID contact info
   boost::mutex mutex;
   boost::condition_variable cond_var;
   std::vector<int> results;
