@@ -90,7 +90,7 @@ class Session {
   std::string root_parent_id() const;
   int mounted() const;
   char win_drive() const;
-  std::string picture_data_map() const;
+  std::string profile_picture_data_map() const;
 
   void set_def_con_level(DefConLevels defconlevel);
   bool set_session_name(bool clear);
@@ -98,7 +98,8 @@ class Session {
   void set_root_parent_id(const std::string &root_parent_id);
   void set_mounted(int mounted);
   void set_win_drive(char win_drive);
-  void set_picture_data_map(const std::string &picture_data_map);
+  void set_profile_picture_data_map(
+      const std::string &profile_picture_data_map);
 
   int ParseKeyChain(const std::string &serialised_keyring,
                     const std::string &serialised_selectables);

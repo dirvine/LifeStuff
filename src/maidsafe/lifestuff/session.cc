@@ -46,15 +46,10 @@ struct UserDetails {
         session_name(),
         unique_user_id(),
         root_parent_id(),
-        mounted(0),
-        win_drive('\0'),
-        picture_data_map() {}
+        profile_picture_data_map() {}
   DefConLevels defconlevel;
-  std::string username, pin, password, session_name;
-  std::string unique_user_id, root_parent_id;
-  int mounted;
-  char win_drive;
-  std::string picture_data_map;
+  std::string username, pin, password, session_name, unique_user_id,
+              root_parent_id, profile_picture_data_map;
 };
 
 Session::Session()
@@ -72,8 +67,7 @@ bool Session::ResetSession() {
   user_details_->session_name.clear();
   user_details_->unique_user_id.clear();
   user_details_->root_parent_id.clear();
-  user_details_->mounted = 0;
-  user_details_->win_drive = '\0';
+  user_details_->profile_picture_data_map.clear();
   // TODO(Fraser#5#): 2011-11-17 - Implement in passport
   passport_->ClearKeyChain(true, true, true);
   contact_handler_map_.clear();
@@ -99,10 +93,8 @@ std::string Session::unique_user_id() const {
 std::string Session::root_parent_id() const {
   return user_details_->root_parent_id;
 }
-int Session::mounted() const { return user_details_->mounted; }
-char Session::win_drive() const { return user_details_->win_drive; }
-std::string Session::picture_data_map() const {
-  return user_details_->picture_data_map;
+std::string Session::profile_picture_data_map() const {
+  return user_details_->profile_picture_data_map;
 }
 
 void Session::set_def_con_level(DefConLevels defconlevel) {
@@ -132,12 +124,9 @@ void Session::set_unique_user_id(const std::string &unique_user_id) {
 void Session::set_root_parent_id(const std::string &root_parent_id) {
   user_details_->root_parent_id = root_parent_id;
 }
-void Session::set_mounted(int mounted) { user_details_->mounted = mounted; }
-void Session::set_win_drive(char win_drive) {
-  user_details_->win_drive = win_drive;
-}
-void Session::set_picture_data_map(const std::string &picture_data_map) {
-  user_details_->picture_data_map = picture_data_map;
+void Session::set_profile_picture_data_map(
+    const std::string &profile_picture_data_map) {
+  user_details_->profile_picture_data_map = profile_picture_data_map;
 }
 
 int Session::ParseKeyChain(const std::string &serialised_keyring,

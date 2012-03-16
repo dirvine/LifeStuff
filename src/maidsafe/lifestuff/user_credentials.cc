@@ -139,6 +139,11 @@ int UserCredentials::ParseDa() {
   DLOG(INFO) << "UUID: " << Base32Substr(session_->unique_user_id());
   DLOG(INFO) << "PID: " << Base32Substr(session_->root_parent_id());
 
+  if (!data_atlas.profile_picture_data_map()) {
+    DLOG(ERROR) << "DA doesn't have profile picture data map.";
+    return -9001;
+  }
+
   if (!data_atlas.has_serialised_keyring()) {
     DLOG(ERROR) << "Missing serialised keyring.";
     return -9003;
@@ -198,6 +203,9 @@ int UserCredentials::SerialiseDa() {
   }
   data_atlas.set_serialised_keyring(serialised_keyring);
   data_atlas.set_serialised_selectables(serialised_selectables);
+
+  // Profile picture
+  data_atlas.set_profile_picture_data_map(session_->profile_picture_data_map());
 
   std::vector<Contact> contacts;
   for (auto it(session_->contact_handler_map().begin());

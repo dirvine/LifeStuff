@@ -23,6 +23,7 @@ message DataAtlas {
   optional bytes serialised_keyring = 3;
   optional bytes serialised_selectables = 4;
   optional bytes timestamp = 5;
-  repeated PublicUsername public_usernames = 6;
+  optional bytes profile_picture_data_map = 6;
+  repeated PublicUsername public_usernames = 7;
 }
 

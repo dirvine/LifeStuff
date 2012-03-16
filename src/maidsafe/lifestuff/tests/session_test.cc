@@ -67,7 +67,7 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_EQ("", session_->session_name());
   ASSERT_EQ("", session_->unique_user_id());
   ASSERT_EQ("", session_->root_parent_id());
-  ASSERT_EQ(0, session_->mounted());
+  ASSERT_EQ("", session_->profile_picture_data_map());
   ASSERT_EQ(size_t(0), session_->contact_handler_map().size());
 
   // Modify session
@@ -76,8 +76,7 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_TRUE(session_->set_session_name(false));
   session_->set_unique_user_id("ddd1");
   session_->set_root_parent_id("ddd2");
-  session_->set_mounted(1);
-  session_->set_win_drive('N');
+  session_->set_profile_picture_data_map("eee");
   auto result(session_->contact_handler_map().insert(std::make_pair(
                   "My pub name",
                   ContactsHandlerPtr(new ContactsHandler))));
@@ -98,8 +97,7 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_NE("", session_->session_name());
   ASSERT_EQ("ddd1", session_->unique_user_id());
   ASSERT_EQ("ddd2", session_->root_parent_id());
-  ASSERT_EQ(1, session_->mounted());
-  ASSERT_EQ('N', session_->win_drive());
+  ASSERT_EQ("eee", session_->profile_picture_data_map());
   std::vector<Contact> list;
   session_->contact_handler_map()["My pub name"]->OrderedContacts(&list);
   ASSERT_EQ(size_t(1), list.size());
@@ -123,8 +121,7 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_EQ("", session_->session_name());
   ASSERT_EQ("", session_->unique_user_id());
   ASSERT_EQ("", session_->root_parent_id());
-  ASSERT_EQ(0, session_->mounted());
-  ASSERT_EQ('\0', session_->win_drive());
+  ASSERT_EQ("", session_->profile_picture_data_map());
   ASSERT_EQ(size_t(0), session_->contact_handler_map().size());
 }
 
