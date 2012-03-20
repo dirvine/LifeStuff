@@ -112,12 +112,14 @@ SET(CLIENT_CONTROLLER_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/test
 SET(PUBLIC_ID_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/public_id_test.cc"
                       "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/message_handler_test.cc")
 SET(USER_STORAGE_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/user_storage_test.cc")
+SET(PROFILE_PICTURE_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/profile_picture_test.cc")
 
 LIST(REMOVE_ITEM ALL_FILES_LIFESTUFF_TESTS_DIR ${CLIENT_MAIN_CC}
                                                ${AUTHENTICATION_TEST_CC}
                                                ${CLIENT_CONTROLLER_TEST_CC}
                                                ${PUBLIC_ID_TEST_CC}
-                                               ${USER_STORAGE_TEST_CC})
+                                               ${USER_STORAGE_TEST_CC}
+                                               ${PROFILE_PICTURE_TEST_CC})
 
 
 ###################################################################################################
@@ -129,12 +131,14 @@ MS_ADD_EXECUTABLE(TESTauthentication_local Tests ${AUTHENTICATION_TEST_CC} ${TES
 MS_ADD_EXECUTABLE(TESTpublic_id_local Tests ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
 MS_ADD_EXECUTABLE(TESTuser_credentials_local Tests ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
 MS_ADD_EXECUTABLE(TESTuser_storage_local Tests ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC})
+MS_ADD_EXECUTABLE(TESTfull_local Tests ${PROFILE_PICTURE_TEST_CC} ${TESTS_MAIN_CC})
 TARGET_LINK_LIBRARIES(lifestuff_local_static maidsafe_drive_static maidsafe_passport_static)
 TARGET_LINK_LIBRARIES(TESTlifestuff_local lifestuff_local_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTauthentication_local lifestuff_local_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTpublic_id_local lifestuff_local_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTuser_credentials_local lifestuff_local_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTuser_storage_local lifestuff_local_static gtest_static)
+TARGET_LINK_LIBRARIES(TESTfull_local lifestuff_local_static gtest_static)
 
 IF(NOT LOCAL_TARGETS_ONLY)
   MS_ADD_STATIC_LIBRARY(${MS_PROJECT_NAME} ${ALL_FILES_LIFESTUFF_DIR})
@@ -184,6 +188,7 @@ ADD_GTESTS(TESTauthentication_local)
 ADD_GTESTS(TESTpublic_id_local)
 ADD_GTESTS(TESTuser_credentials_local)
 ADD_GTESTS(TESTuser_storage_local)
+ADD_GTESTS(TESTfull_local)
 
 TEST_SUMMARY_OUTPUT()
 

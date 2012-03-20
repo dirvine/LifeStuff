@@ -81,7 +81,6 @@ class UserStorage {
   virtual ~UserStorage() {}
 
   virtual void MountDrive(const fs::path &mount_dir_path,
-                          const std::string &session_name,
                           std::shared_ptr<Session> session,
                           bool creation,
                           const std::string &drive_logo = "LifeStuff Drive");

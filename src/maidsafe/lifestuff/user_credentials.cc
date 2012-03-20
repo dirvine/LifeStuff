@@ -139,7 +139,7 @@ int UserCredentials::ParseDa() {
   DLOG(INFO) << "UUID: " << Base32Substr(session_->unique_user_id());
   DLOG(INFO) << "PID: " << Base32Substr(session_->root_parent_id());
 
-  if (!data_atlas.profile_picture_data_map()) {
+  if (!data_atlas.has_profile_picture_data_map()) {
     DLOG(ERROR) << "DA doesn't have profile picture data map.";
     return -9001;
   }

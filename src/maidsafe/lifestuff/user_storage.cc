@@ -134,7 +134,6 @@ UserStorage::UserStorage(
       mount_dir_() {}
 
 void UserStorage::MountDrive(const fs::path &mount_dir_path,
-                             const std::string &session_name,
                              std::shared_ptr<Session> session,
                              bool creation,
                              const std::string &drive_logo) {
@@ -156,7 +155,8 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
 
   int n(0);
   if (creation) {
-    session->set_unique_user_id(crypto::Hash<crypto::SHA512>(session_name));
+    session->set_unique_user_id(
+        crypto::Hash<crypto::SHA512>(session->session_name()));
     n = drive_in_user_space_->Init(session->unique_user_id(), "");
     session->set_root_parent_id(drive_in_user_space_->root_parent_id());
   } else {
@@ -181,7 +181,7 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
   mount_dir_ = drive_name;
   drive_in_user_space_->Mount(mount_dir_, drive_logo);
 #else
-  mount_dir_ = mount_dir_path / session_name;
+  mount_dir_ = mount_dir_path / session->session_name();
   boost::system::error_code ec;
   if (fs::exists(mount_dir_, ec))
     fs::remove_all(mount_dir_, ec);
