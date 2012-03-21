@@ -52,6 +52,162 @@ namespace lifestuff {
 
 namespace test {
 
+namespace {
+
+fs::path CreateTestDirectory(fs::path const& parent,
+                             std::string *tail) {
+  *tail = RandomAlphaNumericString(5);
+  fs::path directory(parent / (*tail));
+  boost::system::error_code error_code;
+
+  fs::create_directories(directory, error_code);
+  if (error_code)
+    return fs::path();
+
+  return directory;
+}
+
+bptime::seconds g_interval(1);
+
+struct TestElements {
+  TestElements()
+      : user_credentials(),
+        user_storage(),
+        session(new Session),
+        asio_service(),
+        converter(new YeOldeSignalToCallbackConverter),
+        public_id(),
+        message_handler() {}
+  std::shared_ptr<UserCredentials> user_credentials;
+  std::shared_ptr<UserStorage> user_storage;
+  std::shared_ptr<Session> session;
+  AsioService asio_service;
+  std::shared_ptr<YeOldeSignalToCallbackConverter> converter;
+  std::shared_ptr<PublicId> public_id;
+  std::shared_ptr<MessageHandler> message_handler;
+};
+
+void InitTestElements(const fs::path &test_dir,
+                      TestElements *test_elements) {
+  // Initialisation
+  test_elements->asio_service.Start(5);
+  test_elements->user_credentials.reset(
+      new UserCredentials(test_elements->asio_service.service(),
+                          test_elements->session));
+  test_elements->user_credentials->Init(test_dir);
+
+  test_elements->public_id.reset(
+      new PublicId(test_elements->user_credentials->remote_chunk_store(),
+                    test_elements->user_credentials->converter(),
+                    test_elements->session,
+                    test_elements->asio_service.service()));
+
+  test_elements->message_handler.reset(
+      new MessageHandler(test_elements->user_credentials->remote_chunk_store(),
+                         test_elements->user_credentials->converter(),
+                         test_elements->session,
+                         test_elements->asio_service.service()));
+
+  test_elements->user_storage.reset(
+      new UserStorage(test_elements->user_credentials->remote_chunk_store(),
+                      test_elements->user_credentials->converter(),
+                      test_elements->message_handler));
+}
+
+void CreateUserTestElements(const fs::path &test_dir,
+                            const std::string &username,
+                            const std::string &pin,
+                            const std::string &password,
+                            const std::string &public_username,
+                            TestElements *test_elements) {
+  InitTestElements(test_dir, test_elements);
+  // User creation
+  test_elements->user_credentials->CreateUser(username, pin, password);
+  test_elements->public_id->CreatePublicId(public_username, true);
+  test_elements->public_id->StartCheckingForNewContacts(g_interval);
+  test_elements->message_handler->StartCheckingForNewMessages(g_interval);
+  test_elements->user_storage->MountDrive(test_dir,
+                                          test_elements->session,
+                                          true);
+}
+
+void LoginTestElements(const fs::path &test_dir,
+                       const std::string &username,
+                       const std::string &pin,
+                       const std::string &password,
+                       TestElements *test_elements) {
+  InitTestElements(test_dir, test_elements);
+  test_elements->user_credentials->CheckUserExists(username, pin);
+  test_elements->user_credentials->ValidateUser(password);
+  test_elements->public_id->StartCheckingForNewContacts(g_interval);
+  test_elements->message_handler->StartCheckingForNewMessages(g_interval);
+  test_elements->user_storage->MountDrive(test_dir,
+                                          test_elements->session,
+                                          false);
+}
+
+void ConnectTwoPublicIdsAndStopChecking(const std::string &public_username1,
+                                        const std::string &public_username2,
+                                        std::shared_ptr<PublicId> public_id1,
+                                        std::shared_ptr<PublicId> public_id2) {
+  public_id1->SendContactInfo(public_username1, public_username2);
+  Sleep(g_interval * 2);
+  public_id2->ConfirmContact(public_username2, public_username1);
+  Sleep(g_interval * 2);
+
+  public_id1->StopCheckingForNewContacts();
+  public_id2->StopCheckingForNewContacts();
+}
+
+void TestElementsTearDown(TestElements *test_elements) {
+  test_elements->user_storage->UnMountDrive();
+  test_elements->public_id->StopCheckingForNewContacts();
+  test_elements->message_handler->StopCheckingForNewMessages();
+  test_elements->user_credentials->Logout();
+  test_elements->session->ResetSession();
+}
+
+void ShareMessageSlot(const pca::Message &incoming_message,
+                      pca::Message *received_message,
+                      volatile bool *done) {
+  *received_message = incoming_message;
+  *done = true;
+}
+
+int InsertShareTest(const std::shared_ptr<UserStorage> &user_storage,
+                    const pca::Message &message,
+                    const fs::path &absolute_path) {
+  asymm::Keys key_ring;
+  if (message.content_size() > 4) {
+    key_ring.identity = message.content(3);
+    key_ring.validation_token = message.content(4);
+    asymm::DecodePrivateKey(message.content(5), &(key_ring.private_key));
+    asymm::DecodePublicKey(message.content(6), &(key_ring.public_key));
+  }
+  return user_storage->InsertShare(absolute_path,
+                                   message.content(0),
+                                   message.content(2),
+                                   key_ring);
+}
+
+void NewContactSlot(const std::string&,
+                    const std::string&,
+                    volatile bool *done) {
+  *done = true;
+}
+
+std::string CreatePin() {
+  std::stringstream pin_stream;
+  uint32_t int_pin(0);
+  while (int_pin == 0)
+    int_pin = RandomUint32();
+  
+  pin_stream << int_pin;
+  return pin_stream.str();
+}
+
+}  // namespace
+
 class ProfilePictureTest : public testing::Test {
  public:
   ProfilePictureTest()
@@ -80,7 +236,6 @@ class ProfilePictureTest : public testing::Test {
     std::stringstream pin_stream;
     pin_stream << RandomUint32();
     pin_ = pin_stream.str();
-    user_credentials_->CreateUser(username_, pin_, password_);
 
     public_id_.reset(new PublicId(user_credentials_->remote_chunk_store(),
                                   user_credentials_->converter(),
@@ -98,9 +253,10 @@ class ProfilePictureTest : public testing::Test {
                         user_credentials_->converter(),
                         message_handler_));
 
+    user_credentials_->CreateUser(username_, pin_, password_);
     public_id_->CreatePublicId(public_username_, true);
     public_id_->StartCheckingForNewContacts(interval_);
-
+    message_handler_->StartCheckingForNewMessages(interval_);
     user_storage_->MountDrive(mount_dir_, session_, true);
   }
 
@@ -120,20 +276,11 @@ class ProfilePictureTest : public testing::Test {
   void LogIn() {
     EXPECT_EQ(-201004, user_credentials_->CheckUserExists(username_, pin_));
     EXPECT_TRUE(user_credentials_->ValidateUser(password_));
+    public_id_->StartCheckingForNewContacts(interval_);
+    message_handler_->StartCheckingForNewMessages(interval_);
     user_storage_->MountDrive(mount_dir_, session_, false);
   }
 
-  fs::path CreateTestDirectory(fs::path const& parent,
-                               std::string *tail) {
-    *tail = RandomAlphaNumericString(5);
-    fs::path directory(parent / (*tail));
-    boost::system::error_code error_code;
-    fs::create_directories(directory, error_code);
-    if (error_code)
-      return fs::path();
-    return directory;
-  }
-  
   maidsafe::test::TestPath test_dir_;
   fs::path mount_dir_;
   AsioService asio_service_;
@@ -147,14 +294,15 @@ class ProfilePictureTest : public testing::Test {
   std::string public_username_, username_, pin_, password_;
 };
 
-TEST_F(ProfilePictureTest, FUNC_ProfilePicture) {
-  // Create file
+TEST_F(ProfilePictureTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
+  // Create directory
   std::string tail;
   boost::system::error_code error_code;
-  fs::path test(CreateTestDirectory(mount_dir_, &tail));
+  fs::path test(CreateTestDirectory(mount_dir_ / session_->session_name(),
+                                    &tail));
   EXPECT_TRUE(fs::exists(test, error_code));
   EXPECT_EQ(0, error_code.value());
-  
+
   // Logout
   Quit();
 
@@ -163,8 +311,240 @@ TEST_F(ProfilePictureTest, FUNC_ProfilePicture) {
 
   // Check directory exists
   EXPECT_TRUE(fs::exists(test, error_code));
-  EXPECT_EQ(0, error_code.value());  
+  EXPECT_EQ(0, error_code.value());
 }
+
+TEST_F(ProfilePictureTest, FUNC_ChangeProfilePictureDataMap) {
+  // Create file
+  std::string file_name(RandomAlphaNumericString(8)),
+              file_content(RandomString(5 * 1024));
+  fs::path file_path(mount_dir_ / session_->session_name() / file_name);
+  std::ofstream ofstream(file_path.c_str(), std::ios::binary);
+  ofstream << file_content;
+  ofstream.close();
+
+  boost::system::error_code error_code;
+  EXPECT_TRUE(fs::exists(file_path, error_code));
+  EXPECT_EQ(0, error_code.value());
+
+  std::string new_data_map;
+  user_storage_->GetDataMap(fs::path("/").make_preferred() / file_name,
+                            &new_data_map);
+  EXPECT_FALSE(new_data_map.empty());
+  session_->set_profile_picture_data_map(new_data_map);
+
+  // Logout
+  Quit();
+
+  // Login
+  LogIn();
+
+  // Check directory exists
+  EXPECT_TRUE(fs::exists(file_path, error_code));
+  EXPECT_EQ(0, error_code.value());
+  EXPECT_EQ(new_data_map, session_->profile_picture_data_map());
+  new_data_map.clear();
+  user_storage_->GetDataMap(fs::path("/").make_preferred() / file_name,
+                            &new_data_map);
+  EXPECT_EQ(new_data_map, session_->profile_picture_data_map());
+}
+
+TEST(FullTest, FUNC_DestructionOfObjects) {
+  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
+  std::string username(RandomString(6)),
+              pin(CreatePin()),
+              password(RandomString(6)),
+              public_username(RandomAlphaNumericString(5));
+  std::string tail;
+  boost::system::error_code error_code;
+  fs::path directory;
+
+  {
+    TestElements test_elements;
+    CreateUserTestElements(*test_dir, username, pin, password, public_username,
+                           &test_elements);
+
+    directory = CreateTestDirectory(*test_dir, &tail);
+    EXPECT_TRUE(fs::exists(directory, error_code));
+    EXPECT_EQ(0, error_code.value());
+
+    TestElementsTearDown(&test_elements);
+  }
+  {
+    TestElements test_elements;
+    LoginTestElements(*test_dir, username, pin, password, &test_elements);
+
+    EXPECT_TRUE(fs::exists(directory, error_code));
+    EXPECT_EQ(0, error_code.value());
+
+    TestElementsTearDown(&test_elements);
+  }
+}
+
+/*
+TEST(ProfilePictureTest, FUNC_IndependentRemoveUserByOwner) {
+  std::string username1, pin1, password1, public_username1,
+              username2, pin2, password2, public_username2;
+  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
+  boost::system::error_code error_code;
+  std::string tail("OTJUP");
+  fs::path directory1, directory2, sub_directory1;
+//   volatile bool done(false);
+  pca::Message message;
+  bs2::connection connection;
+
+  DLOG(ERROR) << "111111111111111111111111111111111111111111111111111111111111";
+  {  // Create 1.
+    TestElements test_elements1;
+    CreateTestElements(*test_dir, g_interval, true, &username1, &pin1,
+                       &password1, &public_username1, &test_elements1);
+    TestElementsTearDown(test_elements1, true);
+  }
+
+  //  DLOG(ERROR) << "222222222222222222222222222222222222222222222222222222222222";
+//  {  // Create 2.
+//    TestElements test_elements2;
+//    CreateTestElements(*test_dir, g_interval, true, &username2, &pin2,
+//                       &password2, &public_username2, &test_elements2);
+//    EXPECT_EQ(kSuccess,
+//              test_elements2.public_id->SendContactInfo(public_username2,
+//                                                        public_username1));
+//    TestElementsTearDown(test_elements2, true);
+//  }
+
+  DLOG(ERROR) << "333333333333333333333333333333333333333333333333333333333333";
+  {  // Log in 1, create directory and share it
+    TestElements test_elements1;
+    CreateTestElements(*test_dir, g_interval, true, &username1, &pin1,
+                       &password1, &public_username1, &test_elements1);
+
+//    connection = test_elements1.public_id->new_contact_signal()->connect(
+//                     std::bind(&NewContactSlot, args::_1, args::_2, &done));
+//    test_elements1.public_id->StartCheckingForNewContacts(g_interval);
+//    while (!done)
+//      Sleep(bptime::milliseconds(100));
+//    connection.disconnect();
+//    test_elements1.public_id->StopCheckingForNewContacts();
+
+    directory1 = test_elements1.user_storage->mount_dir() /
+                 fs::path("/").make_preferred() /
+                 tail;
+    fs::create_directory(directory1, error_code);
+    EXPECT_EQ(0, error_code.value());
+
+//    std::string share_id;
+//    std::map<std::string, bool> users;
+//    users.insert(std::make_pair(public_username2, false));
+//    EXPECT_EQ(kSuccess,
+//              test_elements1.user_storage->CreateShare(public_username1,
+//                                                       directory1,
+//                                                       users,
+//                                                       &share_id));
+
+    EXPECT_TRUE(fs::exists(directory1, error_code)) << directory1;
+    TestElementsTearDown(test_elements1, true);
+  }
+  DLOG(ERROR) << "444444444444444444444444444444444444444444444444444444444444";
+
+//  {  // Log in 2, receive share message and verify directory
+//    TestElements test_elements2;
+//    CreateTestElements(*test_dir, g_interval, true, &username2, &pin2,
+//                       &password2, &public_username2, &test_elements2);
+//
+//    directory2  = test_elements2.user_storage->mount_dir() /
+//                  fs::path("/").make_preferred() /
+//                  tail;
+//    EXPECT_FALSE(fs::exists(directory2, error_code)) << directory2;
+//
+//    connection = test_elements2.message_handler->ConnectToSignal(
+//                     pca::Message::kSharedDirectory,
+//                     std::bind(&ShareMessageSlot, args::_1, &message, &done));
+//    EXPECT_EQ(kSuccess,
+//              test_elements2.message_handler->StartCheckingForNewMessages(
+//                  g_interval));
+//
+//    while (!done)
+//      Sleep(bptime::milliseconds(100));
+//
+//    connection.disconnect();
+//    EXPECT_EQ(kSuccess, InsertShareTest(test_elements2.user_storage,
+//                                        message,
+//                                        directory2));
+//
+//    EXPECT_TRUE(fs::exists(directory2, error_code)) << directory2;
+//    test_elements2.message_handler->StopCheckingForNewMessages();
+//    TestElementsTearDown(test_elements2, true);
+//  }
+
+  {  // Log in 1, create subdirectory in share and remove user from share
+    TestElements test_elements1;
+    CreateTestElements(*test_dir, g_interval, true, &username1, &pin1,
+                       &password1, &public_username1, &test_elements1);
+
+    directory1 = test_elements1.user_storage->mount_dir() /
+                 fs::path("/").make_preferred() /
+                 tail;
+    EXPECT_TRUE(fs::exists(directory1, error_code)) << directory1;
+
+//    std::vector<std::string> user_ids;
+//    user_ids.push_back(public_username2);
+//    EXPECT_EQ(kSuccess,
+//              test_elements1.user_storage->RemoveShareUsers(public_username1,
+//                                                            directory1,
+//                                                            user_ids));
+//
+//    tail = "I0E1k";
+//    sub_directory1 = directory1 / tail;
+//    fs::create_directory(sub_directory1, error_code);
+//    EXPECT_EQ(0, error_code.value());
+//    EXPECT_TRUE(fs::exists(sub_directory1, error_code)) << sub_directory1;
+
+    TestElementsTearDown(test_elements1, true);
+  }
+  DLOG(ERROR) << "555555555555555555555555555555555555555555555555555555555555";
+
+//  {  // Log in 2, verify directory2 is removed and subdirectory never existed
+//    TestElements test_elements2;
+//    CreateTestElements(*test_dir, g_interval, true, &username2, &pin2,
+//                       &password2, &public_username2, &test_elements2);
+//    DLOG(ERROR) << "Guy 2 mounted\n\n\n\n";
+//
+//    EXPECT_TRUE(fs::exists(directory2, error_code)) << directory2;
+//    fs::path sub_directory2(directory2 / tail);
+//    EXPECT_FALSE(fs::exists(sub_directory2, error_code)) << sub_directory2;
+//
+//    done = false;
+//    message.Clear();
+//    connection = test_elements2.message_handler->ConnectToSignal(
+//                     pca::Message::kSharedDirectory,
+//                     std::bind(&ShareMessageSlot, args::_1, &message, &done));
+//    EXPECT_EQ(kSuccess,
+//              test_elements2.message_handler->StartCheckingForNewMessages(
+//                  g_interval));
+//
+//    while (!done)
+//      Sleep(bptime::milliseconds(100));
+//
+//    connection.disconnect();
+//    EXPECT_EQ(kSuccess, test_elements2.user_storage->RemoveShare(directory2));
+//
+//    EXPECT_FALSE(fs::exists(directory2, error_code)) << directory2;
+//    test_elements2.message_handler->StopCheckingForNewMessages();
+//    TestElementsTearDown(test_elements2, true);
+//  }
+//  {  // Log in 1, create subdirectory in share and remove user from share
+//    TestElements test_elements1;
+//    CreateTestElements(*test_dir, g_interval, true, &username1, &pin1,
+//                       &password1, &public_username1, &test_elements1);
+//
+//    DLOG(ERROR) << "Guy 1 mounted\n\n\n\n";
+//    EXPECT_TRUE(fs::exists(directory1, error_code)) << directory1;
+//    EXPECT_TRUE(fs::exists(sub_directory1, error_code)) << sub_directory1;
+//
+//    TestElementsTearDown(test_elements1, true);
+//  }
+}
+*/
 
 }  // namespace test
 

@@ -143,6 +143,7 @@ int UserCredentials::ParseDa() {
     DLOG(ERROR) << "DA doesn't have profile picture data map.";
     return -9001;
   }
+  session_->set_profile_picture_data_map(data_atlas.profile_picture_data_map());
 
   if (!data_atlas.has_serialised_keyring()) {
     DLOG(ERROR) << "Missing serialised keyring.";
