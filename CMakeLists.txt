@@ -181,7 +181,13 @@ ENDIF()
 ###################################################################################################
 # Tests                                                                                           #
 ###################################################################################################
-ADD_STYLE_TEST(${STYLE_ALL} ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${AUTHENTICATION_TEST_CC} ${CLIENT_CONTROLLER_TEST_CC} ${PUBLIC_ID_TEST_CC} ${USER_STORAGE_TEST_CC})
+ADD_STYLE_TEST(${STYLE_ALL}
+               ${ALL_FILES_LIFESTUFF_TESTS_DIR}
+               ${AUTHENTICATION_TEST_CC}
+               ${CLIENT_CONTROLLER_TEST_CC}
+               ${PUBLIC_ID_TEST_CC}
+               ${USER_STORAGE_TEST_CC}
+               ${PROFILE_PICTURE_TEST_CC})
 
 ADD_GTESTS(TESTlifestuff_local)
 ADD_GTESTS(TESTauthentication_local)

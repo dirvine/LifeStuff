@@ -16,15 +16,9 @@
 
 #include <sstream>
 
-#include "maidsafe/lifestuff/message_handler.h"
-
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
-
-#include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
-#include "maidsafe/private/chunk_actions/chunk_pb.h"
-#include "maidsafe/private/chunk_actions/chunk_types.h"
 
 #ifndef LOCAL_TARGETS_ONLY
 #include "maidsafe/pd/client/client_container.h"
@@ -32,9 +26,9 @@
 
 #include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/log.h"
+#include "maidsafe/lifestuff/message_handler.h"
 #include "maidsafe/lifestuff/public_id.h"
 #include "maidsafe/lifestuff/session.h"
-#include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/user_credentials.h"
 #include "maidsafe/lifestuff/user_storage.h"
 #include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
@@ -54,6 +48,11 @@ namespace test {
 
 namespace {
 
+bptime::seconds g_interval(1);
+typedef std::function<void(const std::string&, const std::string&)>
+        NewContactSlotType;
+typedef std::function<void(const std::string&)> ConfirmContactSlotType;
+
 fs::path CreateTestDirectory(fs::path const& parent,
                              std::string *tail) {
   *tail = RandomAlphaNumericString(5);
@@ -66,8 +65,6 @@ fs::path CreateTestDirectory(fs::path const& parent,
 
   return directory;
 }
-
-bptime::seconds g_interval(1);
 
 struct TestElements {
   TestElements()
@@ -131,14 +128,27 @@ void CreateUserTestElements(const fs::path &test_dir,
                                           true);
 }
 
-void LoginTestElements(const fs::path &test_dir,
-                       const std::string &username,
-                       const std::string &pin,
-                       const std::string &password,
-                       TestElements *test_elements) {
+void LoginTestElements(
+    const fs::path &test_dir,
+    const std::string &username,
+    const std::string &pin,
+    const std::string &password,
+    TestElements *test_elements,
+    const NewContactSlotType &new_contact_slot = NewContactSlotType(),
+    const ConfirmContactSlotType &confirm_contact_slot =
+        ConfirmContactSlotType()) {
   InitTestElements(test_dir, test_elements);
   test_elements->user_credentials->CheckUserExists(username, pin);
   test_elements->user_credentials->ValidateUser(password);
+
+  if (new_contact_slot) {
+    test_elements->public_id->new_contact_signal()->connect(new_contact_slot);
+  }
+  if (confirm_contact_slot) {
+    test_elements->public_id->contact_confirmed_signal()->connect(
+        confirm_contact_slot);
+  }
+
   test_elements->public_id->StartCheckingForNewContacts(g_interval);
   test_elements->message_handler->StartCheckingForNewMessages(g_interval);
   test_elements->user_storage->MountDrive(test_dir,
@@ -196,12 +206,16 @@ void NewContactSlot(const std::string&,
   *done = true;
 }
 
+void ConfirmContactSlot(const std::string&, volatile bool *done) {
+  *done = true;
+}
+
 std::string CreatePin() {
   std::stringstream pin_stream;
   uint32_t int_pin(0);
   while (int_pin == 0)
     int_pin = RandomUint32();
-  
+
   pin_stream << int_pin;
   return pin_stream.str();
 }
@@ -298,8 +312,7 @@ TEST_F(ProfilePictureTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
   // Create directory
   std::string tail;
   boost::system::error_code error_code;
-  fs::path test(CreateTestDirectory(mount_dir_ / session_->session_name(),
-                                    &tail));
+  fs::path test(CreateTestDirectory(user_storage_->mount_dir(), &tail));
   EXPECT_TRUE(fs::exists(test, error_code));
   EXPECT_EQ(0, error_code.value());
 
@@ -318,7 +331,7 @@ TEST_F(ProfilePictureTest, FUNC_ChangeProfilePictureDataMap) {
   // Create file
   std::string file_name(RandomAlphaNumericString(8)),
               file_content(RandomString(5 * 1024));
-  fs::path file_path(mount_dir_ / session_->session_name() / file_name);
+  fs::path file_path(user_storage_->mount_dir() / file_name);
   std::ofstream ofstream(file_path.c_str(), std::ios::binary);
   ofstream << file_content;
   ofstream.close();
@@ -328,8 +341,7 @@ TEST_F(ProfilePictureTest, FUNC_ChangeProfilePictureDataMap) {
   EXPECT_EQ(0, error_code.value());
 
   std::string new_data_map;
-  user_storage_->GetDataMap(fs::path("/").make_preferred() / file_name,
-                            &new_data_map);
+  user_storage_->GetDataMap(file_path, &new_data_map);
   EXPECT_FALSE(new_data_map.empty());
   session_->set_profile_picture_data_map(new_data_map);
 
@@ -344,9 +356,117 @@ TEST_F(ProfilePictureTest, FUNC_ChangeProfilePictureDataMap) {
   EXPECT_EQ(0, error_code.value());
   EXPECT_EQ(new_data_map, session_->profile_picture_data_map());
   new_data_map.clear();
-  user_storage_->GetDataMap(fs::path("/").make_preferred() / file_name,
-                            &new_data_map);
+  user_storage_->GetDataMap(file_path, &new_data_map);
   EXPECT_EQ(new_data_map, session_->profile_picture_data_map());
+}
+
+TEST(FullTest, FUNC_NotifyProfilePicture) {
+  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
+  std::string username1(RandomString(6)),
+              pin1(CreatePin()),
+              password1(RandomString(6)),
+              public_username1(RandomAlphaNumericString(5)),
+              file_name1(RandomAlphaNumericString(8)),
+              file_content1(RandomString(5 * 1024)),
+              file_name2(RandomAlphaNumericString(8)),
+              file_content2(RandomString(5 * 1024)),
+              data_map1,
+              data_map2;
+  boost::system::error_code error_code;
+  fs::path file_path1, file_path2;
+
+  {
+    TestElements test_elements1;
+    CreateUserTestElements(*test_dir,
+                           username1,
+                           pin1,
+                           password1,
+                           public_username1,
+                           &test_elements1);
+    file_path1 = test_elements1.user_storage->mount_dir() / file_name1;
+    std::ofstream ofstream(file_path1.c_str(), std::ios::binary);
+    ofstream << file_content1;
+    ofstream.close();
+
+    EXPECT_TRUE(fs::exists(file_path1, error_code));
+    EXPECT_EQ(0, error_code.value());
+    test_elements1.user_storage->GetDataMap(file_path1, &data_map1);
+    EXPECT_FALSE(data_map1.empty());
+    test_elements1.session->set_profile_picture_data_map(data_map1);
+
+    TestElementsTearDown(&test_elements1);
+  }
+
+  std::string username2(RandomString(6)),
+              pin2(CreatePin()),
+              password2(RandomString(6)),
+              public_username2(RandomAlphaNumericString(5));
+  {
+    TestElements test_elements2;
+    CreateUserTestElements(*test_dir,
+                           username2,
+                           pin2,
+                           password2,
+                           public_username2,
+                           &test_elements2);
+
+    file_path2 = test_elements2.user_storage->mount_dir() / file_name2;
+    std::ofstream ofstream(file_path2.c_str(), std::ios::binary);
+    ofstream << file_content2;
+    ofstream.close();
+
+    EXPECT_TRUE(fs::exists(file_path2, error_code));
+    EXPECT_EQ(0, error_code.value());
+    test_elements2.user_storage->GetDataMap(file_path2, &data_map2);
+    EXPECT_FALSE(data_map2.empty());
+    test_elements2.session->set_profile_picture_data_map(data_map2);
+
+    EXPECT_EQ(kSuccess,
+              test_elements2.public_id->SendContactInfo(public_username2,
+                                                        public_username1));
+
+    TestElementsTearDown(&test_elements2);
+  }
+
+  volatile bool done(false);
+  {
+    TestElements test_elements1;
+    LoginTestElements(*test_dir, username1, pin1, password1, &test_elements1,
+                      std::bind(&NewContactSlot, args::_1, args::_2, &done));
+
+    while (!done)
+      Sleep(bptime::milliseconds(100));
+
+    Contact contact2;
+    EXPECT_EQ(kSuccess,
+              test_elements1.session->contact_handler_map()
+                  [public_username1]->ContactInfo(public_username2, &contact2));
+    EXPECT_EQ(data_map2, contact2.profile_picture_data_map);
+
+    EXPECT_EQ(kSuccess,
+              test_elements1.public_id->ConfirmContact(public_username1,
+                                                       public_username2));
+    TestElementsTearDown(&test_elements1);
+  }
+
+  {
+    done = false;
+    TestElements test_elements2;
+    LoginTestElements(*test_dir, username2, pin2, password2, &test_elements2,
+                      NewContactSlotType(),
+                      std::bind(&ConfirmContactSlot, args::_1, &done));
+
+    while (!done)
+      Sleep(bptime::milliseconds(100));
+
+    Contact contact1;
+    EXPECT_EQ(kSuccess,
+              test_elements2.session->contact_handler_map()
+                  [public_username2]->ContactInfo(public_username1, &contact1));
+    EXPECT_EQ(data_map1, contact1.profile_picture_data_map);
+
+    TestElementsTearDown(&test_elements2);
+  }
 }
 
 TEST(FullTest, FUNC_DestructionOfObjects) {
@@ -364,7 +484,9 @@ TEST(FullTest, FUNC_DestructionOfObjects) {
     CreateUserTestElements(*test_dir, username, pin, password, public_username,
                            &test_elements);
 
-    directory = CreateTestDirectory(*test_dir, &tail);
+    directory = CreateTestDirectory(test_elements.user_storage->mount_dir(),
+                                    &tail);
+
     EXPECT_TRUE(fs::exists(directory, error_code));
     EXPECT_EQ(0, error_code.value());
 

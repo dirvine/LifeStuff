@@ -578,9 +578,9 @@ TEST_F(UserStorageTest, FUNC_RemoveUserByOwner) {
   std::map<std::string, bool> users;
   users.insert(std::make_pair(pub_name2_, false));
   std::string tail("OTJUP");
-//  fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir() /
-//                                              fs::path("/").make_preferred() / "OTJUP",
-//                                          &tail));
+//  fs::path directory0(CreateTestDirectory(
+//      user_storage1_->mount_dir() / fs::path("/").make_preferred() / "OTJUP",
+//      &tail));
   fs::path directory0(user_storage1_->mount_dir() /
                       fs::path("/").make_preferred() /
                       tail);

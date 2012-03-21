@@ -85,6 +85,7 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
                 "pub_name",
                 "mpid_name",
                 "mmid_name",
+                "profile_picture_data_map",
                 asymm::PublicKey(),
                 asymm::PublicKey(),
                 kBlocked,
@@ -103,7 +104,8 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_EQ(size_t(1), list.size());
   ASSERT_EQ("pub_name", list[0].public_username);
   ASSERT_EQ("mpid_name", list[0].mpid_name);
-  ASSERT_EQ("mpid_name", list[0].mpid_name);
+  ASSERT_EQ("mmid_name", list[0].mmid_name);
+  ASSERT_EQ("profile_picture_data_map", list[0].profile_picture_data_map);
   ASSERT_FALSE(asymm::ValidateKey(list[0].mpid_public_key));
   ASSERT_FALSE(asymm::ValidateKey(list[0].mmid_public_key));
   ASSERT_EQ(kBlocked, list[0].status);

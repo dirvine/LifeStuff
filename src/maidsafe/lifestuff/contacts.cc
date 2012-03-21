@@ -38,6 +38,7 @@ Contact::Contact()
     : public_username(),
       mpid_name(),
       mmid_name(),
+      profile_picture_data_map(),
       mpid_public_key(),
       mmid_public_key(),
       status(kUnitialised),
@@ -47,12 +48,14 @@ Contact::Contact()
 Contact::Contact(const std::string &public_name_in,
         const std::string &mpid_name_in,
         const std::string &mmid_name_in,
+        const std::string &profile_picture_data_map_in,
         const asymm::PublicKey &mpid_public_key_in,
         const asymm::PublicKey &mmid_public_key_in,
         ContactStatus status)
     : public_username(public_name_in),
       mpid_name(mpid_name_in),
       mmid_name(mmid_name_in),
+      profile_picture_data_map(profile_picture_data_map_in),
       mpid_public_key(mpid_public_key_in),
       mmid_public_key(mmid_public_key_in),
       status(status),
@@ -62,6 +65,7 @@ Contact::Contact(const PublicContact &contact)
     : public_username(contact.public_username()),
       mpid_name(),
       mmid_name(contact.mmid_name()),
+      profile_picture_data_map(contact.profile_picture_data_map()),
       mpid_public_key(),
       mmid_public_key(),
       status(static_cast<ContactStatus>(contact.status())),
@@ -80,6 +84,7 @@ Contact::Contact(const PublicContact &contact)
 int ContactsHandler::AddContact(const std::string &public_username,
                                 const std::string &mpid_name,
                                 const std::string &mmid_name,
+                                const std::string &profile_picture_data_map,
                                 const asymm::PublicKey &mpid_public_key,
                                 const asymm::PublicKey &mmid_public_key,
                                 ContactStatus status,
@@ -88,6 +93,7 @@ int ContactsHandler::AddContact(const std::string &public_username,
   Contact contact(public_username,
                   mpid_name,
                   mmid_name,
+                  profile_picture_data_map,
                   mpid_public_key,
                   mmid_public_key,
                   status);
@@ -180,6 +186,26 @@ int ContactsHandler::UpdateMmidName(const std::string &public_username,
   Contact contact = *it;
   contact.mmid_name = new_mmid_name;
 
+  if (!contact_set_.replace(it, contact)) {
+    DLOG(ERROR) << "Failed to replace contact in set "
+                << contact.public_username;
+    return -79;
+  }
+
+  return kSuccess;
+}
+
+int ContactsHandler::UpdateProfilePictureDataMap(
+    const std::string &public_username,
+    const std::string &profile_picture_data_map) {
+  ContactSet::iterator it = contact_set_.find(public_username);
+  if (it == contact_set_.end()) {
+    DLOG(ERROR) << "Contact(" << public_username << ") not present in list.";
+    return -79;
+  }
+
+  Contact contact = *it;
+  contact.profile_picture_data_map = profile_picture_data_map;
   if (!contact_set_.replace(it, contact)) {
     DLOG(ERROR) << "Failed to replace contact in set "
                 << contact.public_username;

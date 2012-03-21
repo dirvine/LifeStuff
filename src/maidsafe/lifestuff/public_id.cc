@@ -28,6 +28,7 @@
 #include "maidsafe/passport/passport.h"
 
 #include "maidsafe/lifestuff/contacts.h"
+#include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/session.h"
@@ -376,16 +377,16 @@ int PublicId::CreatePublicId(const std::string &public_username,
   return kSuccess;
 }
 
-int PublicId::SendContactInfo(const std::string &public_username,
+int PublicId::SendContactInfo(const std::string &own_public_username,
                               const std::string &recipient_public_username,
                               bool add_contact) {
   std::vector<std::string> contacts;
   contacts.push_back(recipient_public_username);
-  int result(InformContactInfo(public_username, contacts));
+  int result(InformContactInfo(own_public_username, contacts));
   if (result == kSuccess && add_contact)
-    result = session_->contact_handler_map()[public_username]->AddContact(
+    result = session_->contact_handler_map()[own_public_username]->AddContact(
                  recipient_public_username,
-                 "", "",
+                 "", "", "",
                  asymm::PublicKey(),
                  asymm::PublicKey(),
                  kRequestSent,
@@ -565,34 +566,26 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
   }
 
   for (int it(0); it < mcid.appendices_size(); ++it) {
-    pca::Introduction introduction;
-    if (!introduction.ParseFromString(mcid.appendices(it).data())) {
+    std::string encrypted_introduction;
+    int n(asymm::Decrypt(mcid.appendices(it).data(),
+                         std::get<2>(data),
+                         &encrypted_introduction));
+    if (n != kSuccess || encrypted_introduction.empty()) {
+      DLOG(ERROR) << "Failed to decrypt Introduction: " << n;
+      continue;
+    }
+
+    Introduction introduction;
+    if (!introduction.ParseFromString(encrypted_introduction)) {
       DLOG(ERROR) << "Failed to parse as Introduction";
       continue;
     }
 
-    std::string mmid_name;
-    int n(asymm::Decrypt(introduction.mmid_name(),
-                         std::get<2>(data),
-                         &mmid_name));
-    if (n != kSuccess || mmid_name.empty()) {
-      DLOG(ERROR) << "Failed to decrypt MMID name: " << n;
-      continue;
-    } else {
-      DLOG(INFO) << "MMID name received in contact: "
-                  << Base32Substr(mmid_name);
-    }
-    std::string public_username;
-    n = asymm::Decrypt(introduction.public_username(),
-                       std::get<2>(data),
-                       &public_username);
-    if (n != kSuccess || public_username.empty()) {
-      DLOG(ERROR) << "Failed to decrypt public username: " << n;
-      continue;
-    }
-
     // TODO(Team#5#): 2011-12-02 - Validate signature of each Introduction
-
+    std::string public_username(introduction.public_username()),
+                mmid_name(introduction.mmid_name()),
+                profile_picture_data_map(
+                    introduction.profile_picture_data_map());
     Contact mic;
     n = session_->contact_handler_map()[std::get<0>(data)]->ContactInfo(
             public_username,
@@ -605,7 +598,12 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
             session_->contact_handler_map()[std::get<0>(data)]->UpdateMmidName(
                 public_username,
                 mmid_name));
-        if (stat == kSuccess && mmid == kSuccess) {
+        int picture(
+            session_->contact_handler_map()
+                [std::get<0>(data)]->UpdateProfilePictureDataMap(
+                    public_username,
+                    profile_picture_data_map));
+        if (stat == kSuccess && mmid == kSuccess && picture == kSuccess) {
           (*contact_confirmed_signal_)(public_username);
         }
       } else if (mic.status == kConfirmed) {
@@ -613,8 +611,13 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
             session_->contact_handler_map()[std::get<0>(data)]->UpdateMmidName(
                 public_username,
                 mmid_name));
-        if (mmid != kSuccess) {
-          DLOG(ERROR) << "Failed to update MMID";
+        int picture(
+            session_->contact_handler_map()
+                [std::get<0>(data)]->UpdateProfilePictureDataMap(
+                    public_username,
+                    profile_picture_data_map));
+        if (mmid != kSuccess || picture != kSuccess) {
+          DLOG(ERROR) << "Failed to update MMID or profile picture DM";
         }
       }
     } else {
@@ -622,6 +625,7 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
               public_username,
               "",
               mmid_name,
+              profile_picture_data_map,
               asymm::PublicKey(),
               asymm::PublicKey(),
               kPendingResponse,
@@ -632,28 +636,31 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
   }
 }
 
-int PublicId::ConfirmContact(const std::string &public_username,
+int PublicId::ConfirmContact(const std::string &own_public_username,
                              const std::string &recipient_public_username,
                              bool confirm) {
   if (confirm) {
     Contact mic;
-    int result(session_->contact_handler_map()[public_username]->ContactInfo(
-                   recipient_public_username,
-                   &mic));
+    int result(
+        session_->contact_handler_map()[own_public_username]->ContactInfo(
+            recipient_public_username,
+            &mic));
     if (result != 0 || mic.status != kPendingResponse) {
       DLOG(ERROR) << "No such pending username found: "
                   << recipient_public_username;
       return -1;
     }
 
-    result = SendContactInfo(public_username, recipient_public_username, false);
+    result = SendContactInfo(own_public_username,
+                             recipient_public_username,
+                             false);
     if (result != kSuccess) {
       DLOG(ERROR) << "Failed to send confirmation to "
                   << recipient_public_username;
       return -1;
     }
 
-    if (session_->contact_handler_map()[public_username]->UpdateStatus(
+    if (session_->contact_handler_map()[own_public_username]->UpdateStatus(
             recipient_public_username,
             kConfirmed) != 0) {
       DLOG(ERROR) << "Failed to confirm " << recipient_public_username;
@@ -662,7 +669,7 @@ int PublicId::ConfirmContact(const std::string &public_username,
 
     return kSuccess;
   } else {
-    return session_->contact_handler_map()[public_username]->DeleteContact(
+    return session_->contact_handler_map()[own_public_username]->DeleteContact(
                recipient_public_username);
   }
 }
@@ -834,29 +841,24 @@ int PublicId::InformContactInfo(const std::string &public_username,
                   << recipient_public_username;
       return result;
     }
-    std::string encrypted_mmid_name;
-    result = asymm::Encrypt(mmid_name,
+
+    Introduction introduction;
+    introduction.set_mmid_name(mmid_name);
+    introduction.set_public_username(public_username);
+    introduction.set_profile_picture_data_map(
+        session_->profile_picture_data_map());
+
+    std::string encrypted_introduction;
+    result = asymm::Encrypt(introduction.SerializeAsString(),
                             recipient_public_key,
-                            &encrypted_mmid_name);
-    if (result != kSuccess) {
-      DLOG(ERROR) << "Failed to encrypt MCID's MMID name: " << result;
-      return kEncryptingError;
-    }
-    std::string encrypted_public_username;
-    result = asymm::Encrypt(public_username,
-                            recipient_public_key,
-                            &encrypted_public_username);
+                            &encrypted_introduction);
     if (result != kSuccess) {
       DLOG(ERROR) << "Failed to encrypt MCID's public username: " << result;
       return kEncryptingError;
     }
 
-    pca::Introduction introduction;
-    introduction.set_mmid_name(encrypted_mmid_name);
-    introduction.set_public_username(encrypted_public_username);
-
     asymm::Signature signature;
-    result = asymm::Sign(introduction.SerializeAsString(),
+    result = asymm::Sign(encrypted_introduction,
                          MPID_private_key,
                          &signature);
     if (result != kSuccess) {
@@ -864,7 +866,7 @@ int PublicId::InformContactInfo(const std::string &public_username,
       return kSigningError;
     }
     pca::SignedData signed_data;
-    signed_data.set_data(introduction.SerializeAsString());
+    signed_data.set_data(encrypted_introduction);
     signed_data.set_signature(signature);
 
     // Store encrypted MCID at recipient's MPID's name

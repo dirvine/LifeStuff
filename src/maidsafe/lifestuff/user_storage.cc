@@ -221,13 +221,16 @@ bool UserStorage::mount_status() {
 
 int UserStorage::GetDataMap(const fs::path &absolute_path,
                             std::string *serialised_data_map) const {
-  return drive_in_user_space_->GetDataMap(absolute_path, serialised_data_map);
+  return drive_in_user_space_->GetDataMap(
+             drive_in_user_space_->RelativePath(absolute_path),
+             serialised_data_map);
 }
 
 int UserStorage::InsertDataMap(const fs::path &absolute_path,
                                const std::string &serialised_data_map) {
-  return drive_in_user_space_->InsertDataMap(absolute_path,
-                                             serialised_data_map);
+  return drive_in_user_space_->InsertDataMap(
+             drive_in_user_space_->RelativePath(absolute_path),
+             serialised_data_map);
 }
 
 int UserStorage::CreateShare(const std::string &sender_public_username,

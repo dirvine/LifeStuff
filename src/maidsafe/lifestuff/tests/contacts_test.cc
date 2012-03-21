@@ -39,7 +39,7 @@ class ContactsTest : public testing::Test {
         test(0),
         keys_(),
         keys1_(),
-        contact_("dan.schmidt", "abcdefghijk", "Dan Schmidt Valle",
+        contact_("dan.schmidt", "abcdefghijk", "Dan Schmidt Valle", "Picky",
                  asymm::PublicKey(), asymm::PublicKey(), kUnitialised) {
     GenerateKeyPair(&keys_);
     GenerateKeyPair(&keys1_);
@@ -87,6 +87,7 @@ TEST_F(ContactsTest, BEH_AddContacts) {
   ASSERT_EQ(-77, sch_->AddContact(msc.public_username,
                                   msc.mpid_name,
                                   msc.mmid_name,
+                                  msc.profile_picture_data_map,
                                   msc.mpid_public_key,
                                   msc.mmid_public_key,
                                   msc.status,
@@ -100,6 +101,7 @@ TEST_F(ContactsTest, BEH_AddContacts) {
   ASSERT_EQ(0, sch_->AddContact(msc.public_username,
                                 msc.mpid_name,
                                 msc.mmid_name,
+                                msc.profile_picture_data_map,
                                 msc.mpid_public_key,
                                 msc.mmid_public_key,
                                 msc.status,

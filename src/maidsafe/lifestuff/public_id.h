@@ -80,7 +80,7 @@ class PublicId {
   int CreatePublicId(const std::string &public_username,
                      bool accepts_new_contacts);
   // Appends our info as an MCID to the recipient's MPID packet.
-  int SendContactInfo(const std::string &public_username,
+  int SendContactInfo(const std::string &own_public_username,
                       const std::string &recipient_public_username,
                       bool add_contact = true);
   // Disallow others add contact or send msg.
@@ -88,7 +88,7 @@ class PublicId {
   // Allow others add contact or send msg.
   int EnablePublicId(const std::string &public_username);
   // To confirm a contact once user has decided on the introduction
-  int ConfirmContact(const std::string &public_username,
+  int ConfirmContact(const std::string &own_public_username,
                      const std::string &recipient_public_username,
                      bool confirm = true);
   // Remove a contact from current contact list, and inform other contacts the
