@@ -31,6 +31,7 @@
 #endif
 
 #include "maidsafe/lifestuff/contacts.h"
+#include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/public_id.h"
 #include "maidsafe/lifestuff/session.h"
@@ -109,7 +110,7 @@ class UserStorageTest : public testing::Test {
 
   void DoShareTest(const std::string &sender,
                    const std::shared_ptr<UserStorage> &user_storage,
-                   const pca::Message &message,
+                   const Message &message,
                    const fs::path &absolute_path = fs::path()) {
     if (message.subject() == "insert_share")
       return InsertShareTest(user_storage, message, absolute_path);
@@ -124,7 +125,7 @@ class UserStorageTest : public testing::Test {
   }
 
   void InsertShareTest(const std::shared_ptr<UserStorage> &user_storage,
-                       const pca::Message &message,
+                       const Message &message,
                        const fs::path &absolute_path) {
     EXPECT_EQ(message.subject(), "insert_share");
     asymm::Keys key_ring;
@@ -143,21 +144,21 @@ class UserStorageTest : public testing::Test {
 
   void StopShareTest(const std::string &sender,
                      const std::shared_ptr<UserStorage> &user_storage,
-                     const pca::Message &message,
+                     const Message &message,
                      const fs::path &absolute_path) {
     EXPECT_EQ(message.subject(), "stop_share");
     EXPECT_EQ(kSuccess, user_storage->StopShare(sender, absolute_path));
   }
 
   void RemoveShareTest(const std::shared_ptr<UserStorage> &user_storage,
-                       const pca::Message &message,
+                       const Message &message,
                        const fs::path &absolute_path) {
     EXPECT_EQ(message.subject(), "remove_share");
     EXPECT_EQ(kSuccess, user_storage->RemoveShare(absolute_path));
   }
 
   void UpgradeShareTest(const std::shared_ptr<UserStorage> &user_storage,
-                        const pca::Message &message,
+                        const Message &message,
                         const fs::path &absolute_path) {
     EXPECT_EQ(message.subject(), "upgrade_share");
     asymm::Keys key_ring;
@@ -173,7 +174,7 @@ class UserStorageTest : public testing::Test {
   }
 
   void MoveShareTest(const std::shared_ptr<UserStorage> &user_storage,
-                     const pca::Message &message,
+                     const Message &message,
                      const fs::path &absolute_path) {
     EXPECT_EQ(message.subject(), "update_share");
     asymm::Keys key_ring;
@@ -283,7 +284,7 @@ TEST_F(UserStorageTest, FUNC_CreateShare) {
                       tail);
   bs2::connection connection(
     message_handler2_->ConnectToSignal(
-        pca::Message::kSharedDirectory,
+        Message::kSharedDirectory,
         std::bind(&UserStorageTest::DoShareTest,
                   this,
                   pub_name1_,
@@ -327,7 +328,7 @@ TEST_F(UserStorageTest, FUNC_AddUser) {
                       tail);
   bs2::connection connection(
       message_handler2_->ConnectToSignal(
-          pca::Message::kSharedDirectory,
+          Message::kSharedDirectory,
           std::bind(&UserStorageTest::DoShareTest,
                     this,
                     pub_name1_,
@@ -394,7 +395,7 @@ TEST_F(UserStorageTest, FUNC_AddAdminUser) {
                       tail);
   bs2::connection connection(
       message_handler2_->ConnectToSignal(
-          pca::Message::kSharedDirectory,
+          Message::kSharedDirectory,
           std::bind(&UserStorageTest::DoShareTest,
                     this,
                     pub_name1_,
@@ -451,7 +452,7 @@ TEST_F(UserStorageTest, FUNC_UpgradeUserToAdmin) {
                       tail);
   bs2::connection connection(
       message_handler2_->ConnectToSignal(
-          pca::Message::kSharedDirectory,
+          Message::kSharedDirectory,
           std::bind(&UserStorageTest::DoShareTest,
                     this,
                     pub_name1_,
@@ -522,7 +523,7 @@ TEST_F(UserStorageTest, FUNC_StopShareByOwner) {
                       tail);
   bs2::connection connection(
     message_handler2_->ConnectToSignal(
-        pca::Message::kSharedDirectory,
+        Message::kSharedDirectory,
         std::bind(&UserStorageTest::DoShareTest,
                   this,
                   pub_name1_,
@@ -607,7 +608,7 @@ TEST_F(UserStorageTest, FUNC_RemoveUserByOwner) {
   DLOG(ERROR) << directory1 << "\n\n\n\n";
   bs2::connection connection(
       message_handler2_->ConnectToSignal(
-            pca::Message::kSharedDirectory,
+            Message::kSharedDirectory,
             std::bind(&UserStorageTest::DoShareTest,
                       this,
                       pub_name1_,

@@ -26,6 +26,7 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/lifestuff/contacts.h"
+#include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/message_handler.h"
 #include "maidsafe/lifestuff/session.h"
@@ -56,8 +57,8 @@ struct AddMessageDetails<InsertShareTag> {
   void operator()(const fs::path& path,
                   const std::string& directory_id,
                   const std::string&,
-                  pca::Message* admin_message,
-                  pca::Message* non_admin_message) {
+                  Message* admin_message,
+                  Message* non_admin_message) {
     admin_message->set_subject("insert_share");
     admin_message->add_content(path.filename().string());
     admin_message->add_content(directory_id);
@@ -72,8 +73,8 @@ struct AddMessageDetails<StopShareTag> {
   void operator()(const fs::path&,
                   const std::string&,
                   const std::string&,
-                  pca::Message* admin_message,
-                  pca::Message* non_admin_message) {
+                  Message* admin_message,
+                  Message* non_admin_message) {
     admin_message->set_subject("stop_share");
     non_admin_message->set_subject("stop_share");
   }
@@ -84,8 +85,8 @@ struct AddMessageDetails<RemoveShareTag> {
   void operator()(const fs::path&,
                   const std::string&,
                   const std::string&,
-                  pca::Message* admin_message,
-                  pca::Message* non_admin_message) {
+                  Message* admin_message,
+                  Message* non_admin_message) {
     admin_message->set_subject("remove_share");
     non_admin_message->set_subject("remove_share");
   }
@@ -96,8 +97,8 @@ struct AddMessageDetails<UpdateShareTag> {
   void operator()(const fs::path&,
                   const std::string& directory_id,
                   const std::string& new_share_id,
-                  pca::Message* admin_message,
-                  pca::Message* non_admin_message) {
+                  Message* admin_message,
+                  Message* non_admin_message) {
     admin_message->set_subject("update_share");
     admin_message->add_content(directory_id);
     admin_message->add_content(new_share_id);
@@ -112,8 +113,8 @@ struct AddMessageDetails<UpgradeShareTag> {
   void operator()(const fs::path&,
                   const std::string&,
                   const std::string&,
-                  pca::Message* admin_message,
-                  pca::Message* non_admin_message) {
+                  Message* admin_message,
+                  Message* non_admin_message) {
     admin_message->set_subject("upgrade_share");
     non_admin_message->set_subject("upgrade_share");
   }
@@ -729,16 +730,16 @@ int UserStorage::InformContactsOperation(
     const std::string &directory_id,
     const asymm::Keys &key_ring,
     const std::string &new_share_id) {
-  pca::Message admin_message, non_admin_message;
+  Message admin_message, non_admin_message;
   std::string public_key, private_key, parent_id(RandomString(64)),
               id(RandomString(64));
 
-  admin_message.set_type(pca::Message::kSharedDirectory);
+  admin_message.set_type(Message::kSharedDirectory);
   admin_message.set_parent_id(parent_id);
   admin_message.set_id(id);
   admin_message.set_sender_public_username(sender_public_username);
   admin_message.add_content(share_id);
-  non_admin_message.set_type(pca::Message::kSharedDirectory);
+  non_admin_message.set_type(Message::kSharedDirectory);
   non_admin_message.set_parent_id(parent_id);
   non_admin_message.set_id(id);
   non_admin_message.set_sender_public_username(sender_public_username);

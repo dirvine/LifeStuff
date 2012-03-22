@@ -34,6 +34,7 @@
 #include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
 namespace args = std::placeholders;
+namespace pca = maidsafe::priv::chunk_actions;
 
 namespace maidsafe {
 
@@ -70,8 +71,8 @@ MessageHandler::MessageHandler(
       get_new_messages_timer_(asio_service),
       new_message_signals_(),
       received_messages_() {
-  for (int n(pca::Message::ContentType_MIN);
-       n <= pca::Message::ContentType_MAX;
+  for (int n(Message::ContentType_MIN);
+       n <= Message::ContentType_MAX;
        ++n) {
     new_message_signals_.push_back(std::make_shared<NewMessageSignal>());
   }
@@ -103,7 +104,7 @@ void MessageHandler::StopCheckingForNewMessages() {
 
 int MessageHandler::Send(const std::string &public_username,
                          const std::string &recipient_public_username,
-                         const pca::Message &message) {
+                         const Message &message) {
   if (!ValidateMessage(message)) {
     DLOG(ERROR) << "Invalid message. Won't send. Good day. I said: 'Good day!'";
     return -7;
@@ -228,10 +229,10 @@ int MessageHandler::Send(const std::string &public_username,
 }
 
 bs2::connection MessageHandler::ConnectToSignal(
-    const pca::Message::ContentType type,
+    const Message::ContentType type,
     const MessageFunction &function) {
-  if (type < pca::Message::ContentType_MIN ||
-      type > pca::Message::ContentType_MAX) {
+  if (type < Message::ContentType_MIN ||
+      type > Message::ContentType_MAX) {
     DLOG(ERROR) << "No such content type, and therefore, no signal. Good day!";
     return bs2::connection();
   }
@@ -321,7 +322,7 @@ void MessageHandler::ProcessRetrieved(const passport::SelectableIdData &data,
       continue;
     }
 
-    pca::Message mmid_message;
+    Message mmid_message;
     if (!mmid_message.ParseFromString(decrypted_message)) {
       DLOG(ERROR) << "Failed to parse decrypted message";
       continue;
@@ -334,12 +335,12 @@ void MessageHandler::ProcessRetrieved(const passport::SelectableIdData &data,
   }
 }
 
-bool MessageHandler::ValidateMessage(const pca::Message &message) const {
+bool MessageHandler::ValidateMessage(const Message &message) const {
   if (!message.IsInitialized())
     return false;
 
-  if (message.type() < pca::Message::ContentType_MIN ||
-      message.type() > pca::Message::ContentType_MAX)
+  if (message.type() < Message::ContentType_MIN ||
+      message.type() > Message::ContentType_MAX)
     return false;
 
   for (auto it(0); it < message.content_size(); ++it)

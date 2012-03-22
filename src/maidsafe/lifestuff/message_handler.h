@@ -37,6 +37,7 @@
 
 #include "maidsafe/passport/passport_config.h"
 
+#include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/version.h"
 
 #if MAIDSAFE_LIFESTUFF_VERSION != 400
@@ -47,19 +48,19 @@
 namespace ba = boost::asio;
 namespace bptime = boost::posix_time;
 namespace bs2 = boost::signals2;
-namespace pca = maidsafe::priv::chunk_actions;
 namespace pcs = maidsafe::priv::chunk_store;
 
 namespace maidsafe {
 
 namespace lifestuff {
 
+class Message;
 class Session;
 class YeOldeSignalToCallbackConverter;
 
 class MessageHandler {
  public:
-  typedef bs2::signal<void(const priv::chunk_actions::Message&)> NewMessageSignal;  // NOLINT (Dan)
+  typedef bs2::signal<void(const Message&)> NewMessageSignal;  // NOLINT (Dan)
   typedef NewMessageSignal::slot_type MessageFunction;
   typedef std::shared_ptr<NewMessageSignal> NewMessageSignalPtr;
   typedef std::map<std::string, uint64_t> ReceivedMessagesMap;
@@ -78,16 +79,16 @@ class MessageHandler {
 
   int Send(const std::string &public_username,
            const std::string &recipient_public_username,
-           const priv::chunk_actions::Message &message);
+           const Message &message);
 
-  bs2::connection ConnectToSignal(const pca::Message::ContentType type,
+  bs2::connection ConnectToSignal(const Message::ContentType type,
                                   const MessageFunction &function);
 
  private:
   MessageHandler(const MessageHandler&);
   MessageHandler& operator=(const MessageHandler&);
 
-  bool ValidateMessage(const priv::chunk_actions::Message &message) const;
+  bool ValidateMessage(const Message &message) const;
   void GetNewMessages(const bptime::seconds &interval,
                       const boost::system::error_code &error_code);
   void ProcessRetrieved(const passport::SelectableIdData &data,

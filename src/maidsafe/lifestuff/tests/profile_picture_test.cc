@@ -25,6 +25,7 @@
 #endif
 
 #include "maidsafe/lifestuff/contacts.h"
+#include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/message_handler.h"
 #include "maidsafe/lifestuff/public_id.h"
@@ -177,15 +178,15 @@ void TestElementsTearDown(TestElements *test_elements) {
   test_elements->session->Reset();
 }
 
-void ShareMessageSlot(const pca::Message &incoming_message,
-                      pca::Message *received_message,
+void ShareMessageSlot(const Message &incoming_message,
+                      Message *received_message,
                       volatile bool *done) {
   *received_message = incoming_message;
   *done = true;
 }
 
 int InsertShareTest(const std::shared_ptr<UserStorage> &user_storage,
-                    const pca::Message &message,
+                    const Message &message,
                     const fs::path &absolute_path) {
   asymm::Keys key_ring;
   if (message.content_size() > 4) {

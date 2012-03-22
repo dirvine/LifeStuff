@@ -217,12 +217,13 @@ MESSAGE("=======================================================================
 RENAME_OUTDATED_BUILT_EXES()
 
 SET(LIFESTUFF_INSTALL_FILES
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/user_credentials.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/session.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/user_storage.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas_pb.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/message_handler.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/public_id.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/session.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/user_credentials.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/user_storage.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/return_codes.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/version.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h)

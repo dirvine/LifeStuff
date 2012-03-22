@@ -32,6 +32,7 @@
 #endif
 
 #include "maidsafe/lifestuff/contacts.h"
+#include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/public_id.h"
 #include "maidsafe/lifestuff/return_codes.h"
@@ -93,15 +94,15 @@ class MessageHandlerTest : public testing::Test {
     return accept_new_contact;
   }
 
-  void NewMessageSlot(const pca::Message &signal_message,
-                      pca::Message *slot_message,
+  void NewMessageSlot(const Message &signal_message,
+                      Message *slot_message,
                       volatile bool *invoked) {
     *slot_message = signal_message;
     *invoked = true;
   }
 
-  void SeveralMessagesSlot(const pca::Message &signal_message,
-                           std::vector<pca::Message> *messages,
+  void SeveralMessagesSlot(const Message &signal_message,
+                           std::vector<Message> *messages,
                            volatile bool *invoked,
                            size_t *count) {
     messages->push_back(signal_message);
@@ -207,8 +208,8 @@ class MessageHandlerTest : public testing::Test {
     asio_service3_.Stop();
   }
 
-  bool MessagesEqual(const pca::Message &left,
-                     const pca::Message &right) const {
+  bool MessagesEqual(const Message &left,
+                     const Message &right) const {
     bool b(left.type() == right.type() &&
            left.id() == right.id() &&
            left.parent_id() == right.parent_id() &&
@@ -249,28 +250,28 @@ class MessageHandlerTest : public testing::Test {
 };
 
 TEST_F(MessageHandlerTest, FUNC_SignalConnections) {
-  pca::Message received;
+  Message received;
   volatile bool invoked(false);
   bs2::connection connection(message_handler1_->ConnectToSignal(
-                                 static_cast<pca::Message::ContentType>(
-                                     pca::Message::ContentType_MIN - 1),
+                                 static_cast<Message::ContentType>(
+                                     Message::ContentType_MIN - 1),
                                  std::bind(&MessageHandlerTest::NewMessageSlot,
                                            this, args::_1, &received,
                                            &invoked)));
   ASSERT_FALSE(connection.connected());
   connection = message_handler1_->ConnectToSignal(
-                   static_cast<pca::Message::ContentType>(
-                       pca::Message::ContentType_MAX + 1),
+                   static_cast<Message::ContentType>(
+                       Message::ContentType_MAX + 1),
                    std::bind(&MessageHandlerTest::NewMessageSlot,
                              this, args::_1, &received, &invoked));
   ASSERT_FALSE(connection.connected());
 
-  for (int n(pca::Message::ContentType_MIN);
-       n <= pca::Message::ContentType_MAX;
+  for (int n(Message::ContentType_MIN);
+       n <= Message::ContentType_MAX;
        ++n) {
     connection.disconnect();
     connection = message_handler1_->ConnectToSignal(
-                     static_cast<pca::Message::ContentType>(n),
+                     static_cast<Message::ContentType>(n),
                      std::bind(&MessageHandlerTest::NewMessageSlot,
                                this, args::_1, &received, &invoked));
     ASSERT_TRUE(connection.connected());
@@ -300,17 +301,17 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
   public_id1_->StopCheckingForNewContacts();
   Sleep(interval_ * 2);
 
-  pca::Message received;
+  Message received;
   volatile bool invoked(false);
   message_handler2_->ConnectToSignal(
-      pca::Message::kNormal,
+      Message::kNormal,
       std::bind(&MessageHandlerTest::NewMessageSlot,
                 this, args::_1, &received, &invoked));
   ASSERT_EQ(kSuccess,
             message_handler2_->StartCheckingForNewMessages(interval_));
 
-  pca::Message sent;
-  sent.set_type(pca::Message::kNormal);
+  Message sent;
+  sent.set_type(Message::kNormal);
   sent.set_id("id");
   sent.set_parent_id("parent_id");
   sent.set_sender_public_username(public_username1_);
@@ -351,8 +352,8 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
   public_id1_->StopCheckingForNewContacts();
   Sleep(interval_ * 2);
 
-  pca::Message sent;
-  sent.set_type(pca::Message::kNormal);
+  Message sent;
+  sent.set_type(Message::kNormal);
   sent.set_id("id");
   sent.set_parent_id("parent_id");
   sent.set_sender_public_username(public_username1_);
@@ -368,10 +369,10 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
                                      sent));
   }
 
-  std::vector<pca::Message> received_messages;
+  std::vector<Message> received_messages;
   volatile bool done(false);
   bs2::connection connection(message_handler2_->ConnectToSignal(
-                                 pca::Message::kNormal,
+                                 Message::kNormal,
                                  std::bind(
                                      &MessageHandlerTest::SeveralMessagesSlot,
                                      this,
@@ -408,7 +409,7 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
   // If same message is sent, it should be reported only once
   received_messages.clear();
   connection = message_handler2_->ConnectToSignal(
-                   pca::Message::kNormal,
+                   Message::kNormal,
                    std::bind(&MessageHandlerTest::SeveralMessagesSlot,
                              this,
                              args::_1,
@@ -453,17 +454,17 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
             public_id3_->ConfirmContact(public_username3_, public_username1_));
   Sleep(interval_ * 2);
 
-  pca::Message received;
+  Message received;
   volatile bool invoked(false);
   message_handler1_->ConnectToSignal(
-      pca::Message::kNormal,
+      Message::kNormal,
       std::bind(&MessageHandlerTest::NewMessageSlot,
                 this, args::_1, &received, &invoked));
   ASSERT_EQ(kSuccess,
             message_handler1_->StartCheckingForNewMessages(interval_));
 
-  pca::Message sent;
-  sent.set_type(pca::Message::kNormal);
+  Message sent;
+  sent.set_type(Message::kNormal);
   sent.set_id("id");
   sent.set_parent_id("parent_id");
   sent.set_sender_public_username(public_username2_);
