@@ -217,6 +217,7 @@ MESSAGE("=======================================================================
 RENAME_OUTDATED_BUILT_EXES()
 
 SET(LIFESTUFF_INSTALL_FILES
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas_pb.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/message_handler.h
