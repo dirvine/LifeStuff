@@ -246,11 +246,11 @@ bool UserCredentials::CreateUser(const std::string &username,
     return false;
   }
 
-  session_->ResetSession();
+  session_->Reset();
   int result = authentication_->CreateUserSysPackets(username, pin);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to create user system packets.";
-    session_->ResetSession();
+    session_->Reset();
     return false;
   } else {
     DLOG(INFO) << "authentication_->CreateUserSysPackets DONE.";
@@ -279,7 +279,7 @@ bool UserCredentials::CreateUser(const std::string &username,
                                              surrogate_serialised_da);
   if (result != kSuccess) {
     DLOG(ERROR) << "Cannot create tmid packet.";
-    session_->ResetSession();
+    session_->Reset();
     return false;
   } else {
     DLOG(INFO) << "authentication_->CreateTmidPacket DONE.";
@@ -296,7 +296,7 @@ int UserCredentials::CheckUserExists(const std::string &username,
     DLOG(ERROR) << "Not initialised.";
     return kUserCredentialsNotInitialised;
   }
-  session_->ResetSession();
+  session_->Reset();
   session_->set_def_con_level(kDefCon1);
   serialised_da_.clear();
   return authentication_->GetUserInfo(username, pin);
@@ -354,7 +354,7 @@ bool UserCredentials::Logout() {
   serialised_da_.clear();
   logging_out_ = false;
   logged_in_ = false;
-  session_->ResetSession();
+  session_->Reset();
   return true;
 }
 

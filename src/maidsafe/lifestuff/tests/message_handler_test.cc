@@ -111,9 +111,9 @@ class MessageHandlerTest : public testing::Test {
 
  protected:
   void SetUp() {
-    session1_->ResetSession();
-    session2_->ResetSession();
-    session3_->ResetSession();
+    session1_->Reset();
+    session2_->Reset();
+    session3_->Reset();
     asio_service1_.Start(10);
     asio_service2_.Start(10);
     asio_service3_.Start(10);

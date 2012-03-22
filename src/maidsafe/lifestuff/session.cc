@@ -59,7 +59,7 @@ Session::Session()
 
 Session::~Session() {}
 
-bool Session::ResetSession() {
+bool Session::Reset() {
   user_details_->defconlevel = kDefCon3;
   user_details_->username.clear();
   user_details_->pin.clear();

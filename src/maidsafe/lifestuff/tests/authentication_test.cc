@@ -84,7 +84,7 @@ class AuthenticationTest : public testing::Test {
         client_container_->chunk_action_authority()));
 #endif
 
-    session_->ResetSession();
+    session_->Reset();
     remote_chunk_store_->sig_chunk_stored()->connect(
         std::bind(&YeOldeSignalToCallbackConverter::Stored, converter_.get(),
                   args::_1, args::_2));
@@ -211,7 +211,7 @@ TEST_F(AuthenticationTest, FUNC_RegisterUserTwice) {
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
                                                        ser_dm_,
                                                        surrogate_ser_dm_));
-  session_->ResetSession();
+  session_->Reset();
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
 }
 
@@ -335,10 +335,10 @@ TEST_F(AuthenticationTest, FUNC_RegisterLeaveRegister) {
   ASSERT_EQ(kSuccess, authentication_.RemoveMe());
 
   //  Check user no longer registered.
-  session_->ResetSession();
+  session_->Reset();
   ASSERT_NE(kUserExists, authentication_.GetUserInfo(username_, pin_));
 
-  session_->ResetSession();
+  session_->Reset();
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
                                                        ser_dm_,

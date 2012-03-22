@@ -124,8 +124,8 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
 
  protected:
   void SetUp() {
-    session1_->ResetSession();
-    session2_->ResetSession();
+    session1_->Reset();
+    session2_->Reset();
     asio_service1_.Start(10);
     asio_service2_.Start(10);
 

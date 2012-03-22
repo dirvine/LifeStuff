@@ -174,7 +174,7 @@ void TestElementsTearDown(TestElements *test_elements) {
   test_elements->public_id->StopCheckingForNewContacts();
   test_elements->message_handler->StopCheckingForNewMessages();
   test_elements->user_credentials->Logout();
-  test_elements->session->ResetSession();
+  test_elements->session->Reset();
 }
 
 void ShareMessageSlot(const pca::Message &incoming_message,
@@ -284,7 +284,7 @@ class ProfilePictureTest : public testing::Test {
     public_id_->StopCheckingForNewContacts();
     message_handler_->StopCheckingForNewMessages();
     user_credentials_->Logout();
-    session_->ResetSession();
+    session_->Reset();
   }
 
   void LogIn() {

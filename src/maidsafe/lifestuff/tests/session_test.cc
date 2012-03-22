@@ -41,7 +41,7 @@ class SessionTest : public testing::Test {
   SessionTest() : session_(new Session) {}
 
  protected:
-  void SetUp() { session_->ResetSession(); }
+  void SetUp() { session_->Reset(); }
 
   void SetUnamePinWord(const std::string &uname,
                        const std::string &pin,
@@ -58,7 +58,7 @@ class SessionTest : public testing::Test {
   SessionTest &operator=(const SessionTest&);
 };
 
-TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
+TEST_F(SessionTest, BEH_SetsGetsAndReset) {
   // Check session is clean originally
   ASSERT_EQ(kDefCon3, session_->def_con_level());
   ASSERT_EQ("", session_->username());
@@ -113,7 +113,7 @@ TEST_F(SessionTest, BEH_SetsGetsAndResetSession) {
   ASSERT_NE(0, list[0].last_contact);
 
   // Resetting the session
-  ASSERT_TRUE(session_->ResetSession());
+  ASSERT_TRUE(session_->Reset());
 
   // Check session is clean again
   ASSERT_EQ(kDefCon3, session_->def_con_level());

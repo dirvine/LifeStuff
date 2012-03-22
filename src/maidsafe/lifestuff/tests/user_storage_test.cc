@@ -245,8 +245,8 @@ class UserStorageTest : public testing::Test {
   }
 
   void TearDown() {
-    session1_->ResetSession();
-    session2_->ResetSession();
+    session1_->Reset();
+    session2_->Reset();
     asio_service1_.Stop();
     asio_service2_.Stop();
   }

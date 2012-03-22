@@ -61,7 +61,7 @@ class UserCredentialsTest : public testing::Test {
     asio_service_.Start(10);
     asio_service2_.Start(10);
     cc_.reset(new UserCredentials(asio_service_.service(), session_));
-    session_->ResetSession();
+    session_->Reset();
 
     cc_->Init(*test_dir_);
   }
@@ -76,7 +76,7 @@ class UserCredentialsTest : public testing::Test {
     std::shared_ptr<Session> ss2(new Session);
     std::shared_ptr<UserCredentials> cc2(
         new UserCredentials(asio_service2_.service(), ss2));
-    ss2->ResetSession();
+    ss2->Reset();
     cc2->Init(*test_dir_);
     return cc2;
   }
@@ -279,7 +279,7 @@ TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
   ASSERT_NE(kUserExists, cc_->CheckUserExists(username_, kNewPin));
   ASSERT_FALSE(cc_->ValidateUser(password_))
                << "old details still work, damn it, damn the devil to hell";
-  session_->ResetSession();
+  session_->Reset();
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());

@@ -77,7 +77,7 @@ class Session {
  public:
   Session();
   ~Session();
-  bool ResetSession();
+  bool Reset();
 
   ContactHandlerMap& contact_handler_map();
 
