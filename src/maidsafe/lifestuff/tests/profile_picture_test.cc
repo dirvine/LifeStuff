@@ -361,6 +361,57 @@ TEST_F(ProfilePictureTest, FUNC_ChangeProfilePictureDataMap) {
   EXPECT_EQ(new_data_map, session_->profile_picture_data_map());
 }
 
+TEST_F(ProfilePictureTest, FUNC_ReconstructFileFromDataMap) {
+  // Create file
+//   std::string file_name("cabello.jpg"),
+  std::string file_name(RandomAlphaNumericString(8)),
+              file_content(RandomString(5 * 1024));
+  fs::path file_path(user_storage_->mount_dir() / file_name);
+  std::ofstream ofstream(file_path.c_str(), std::ios::binary);
+  ofstream << file_content;
+  ofstream.close();
+//   std::string s;
+//   std::cin >> s;
+
+  boost::system::error_code error_code;
+  EXPECT_TRUE(fs::exists(file_path, error_code));
+  EXPECT_EQ(0, error_code.value());
+
+  std::string new_data_map;
+  user_storage_->GetDataMap(file_path, &new_data_map);
+  EXPECT_FALSE(new_data_map.empty());
+  session_->set_profile_picture_data_map(new_data_map);
+
+  // Logout
+  Quit();
+
+  // Login
+  LogIn();
+
+  // Check directory exists
+  EXPECT_TRUE(fs::exists(file_path, error_code));
+  EXPECT_EQ(0, error_code.value());
+  EXPECT_EQ(new_data_map, session_->profile_picture_data_map());
+  new_data_map.clear();
+  user_storage_->GetDataMap(file_path, &new_data_map);
+  EXPECT_EQ(new_data_map, session_->profile_picture_data_map());
+
+  std::string reconstructed_content(user_storage_->ConstructFile(new_data_map));
+  EXPECT_EQ(file_content, reconstructed_content);
+
+  //////////////////
+//   fs::path reconstructed_path(
+//       user_storage_->mount_dir() /
+//       std::string(RandomAlphaNumericString(8) + ".jpg"));
+//   std::ofstream reconstructed_ofs(reconstructed_path.c_str(),
+//                                   std::ios::binary);
+//   reconstructed_ofs << reconstructed_content;
+//   reconstructed_ofs.close();
+//
+//   s.clear();
+//   std::cin >> s;
+}
+
 TEST(FullTest, FUNC_NotifyProfilePicture) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   std::string username1(RandomString(6)),

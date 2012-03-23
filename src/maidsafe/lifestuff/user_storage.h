@@ -152,6 +152,8 @@ class UserStorage {
   bs2::connection ConnectToDriveChanged(drive::DriveChangedSlotPtr slot) const;
   bs2::connection ConnectToShareChanged(drive::ShareChangedSlotPtr slot) const;
 
+  std::string ConstructFile(const std::string &serialised_data_map);
+
  private:
   template<typename Operation>
   int InformContactsOperation(

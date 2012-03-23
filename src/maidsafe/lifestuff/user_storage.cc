@@ -23,7 +23,12 @@
 
 #include <list>
 
+#include "boost/archive/text_iarchive.hpp"
+
 #include "maidsafe/common/utils.h"
+
+#include "maidsafe/encrypt/data_map.h"
+#include "maidsafe/encrypt/self_encryptor.h"
 
 #include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/data_atlas_pb.h"
@@ -779,6 +784,36 @@ int UserStorage::InformContactsOperation(
   }
 
   return aggregate;
+}
+
+std::string UserStorage::ConstructFile(const std::string &serialised_data_map) {
+  encrypt::DataMapPtr data_map(new encrypt::DataMap);
+  std::istringstream input_stream(serialised_data_map, std::ios_base::binary);
+  try {
+    boost::archive::text_iarchive input_archive(input_stream);
+    input_archive >> *data_map;
+  } catch(const boost::archive::archive_exception &e) {
+    DLOG(ERROR) << e.what();
+    return "";
+  }
+
+  uint64_t file_size(data_map->chunks.empty() ? data_map->content.size() : 0);
+  std::for_each(
+      data_map->chunks.begin(),
+      data_map->chunks.end(),
+      [&file_size](const encrypt::ChunkDetails &chunk_details) {
+        file_size += chunk_details.size;
+      });
+
+  // TODO(Team): decide based on the size whether to go ahead.
+  // if (file_size > 'some limit')
+  //   return "";
+
+  encrypt::SelfEncryptor self_encryptor(data_map, chunk_store_);
+  std::unique_ptr<char[]> contents(new char[file_size]);
+  self_encryptor.Read(contents.get(), file_size, 0);
+
+  return std::string().assign(contents.get(), file_size);
 }
 
 }  // namespace lifestuff
