@@ -96,9 +96,11 @@ class PublicId {
   int RemoveContact(const std::string &public_username,
                     const std::string &contact_name);
 
+  // Signals
   NewContactSignalPtr new_contact_signal() const;
   ContactConfirmedSignalPtr contact_confirmed_signal() const;
 
+  // Lists
   std::map<std::string, ContactStatus> ContactList(
       const std::string &public_username,
       ContactOrder type = kLastContacted,
@@ -108,6 +110,7 @@ class PublicId {
  private:
   PublicId(const PublicId&);
   PublicId& operator=(const PublicId&);
+
   void GetNewContacts(const bptime::seconds &interval,
                       const boost::system::error_code &error_code);
   void ProcessRequests(const passport::SelectableIdData &data,
@@ -124,16 +127,15 @@ class PublicId {
   int AwaitingResponse(boost::mutex *mutex,
                        boost::condition_variable *cond_var,
                        std::vector<int> *results);
-  void GetKeysAndProof(const std::string &public_username,
-                       passport::PacketType pt,
-                       bool confirmed,
-                       pcs::RemoteChunkStore::ValidationData *validation_data);
+  void KeysAndProof(const std::string &public_username,
+                    passport::PacketType pt,
+                    bool confirmed,
+                    pcs::RemoteChunkStore::ValidationData *validation_data);
 
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
   std::shared_ptr<Session> session_;
-  ba::io_service &asio_service_;
-  ba::deadline_timer get_new_contacts_timer_;
+  ba::deadline_timer get_new_contacts_timer_, check_online_contacts_timer_;
   NewContactSignalPtr new_contact_signal_;
   ContactConfirmedSignalPtr contact_confirmed_signal_;
 };

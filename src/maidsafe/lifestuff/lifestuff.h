@@ -42,9 +42,6 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-const uint32_t kKeySize = 64;
-const uint16_t kRsaKeySize = 4096;
-const std::string kRoot("/");
 enum DefConLevels { kDefCon1 = 1, kDefCon2, kDefCon3 };
 typedef std::function<void(int)> VoidFuncOneInt;  // NOLINT (Dan)
 
@@ -61,6 +58,11 @@ enum ContactOrder {
   kAlphabetical,
   kPopular,
   kLastContacted
+};
+
+enum ContactPresence {
+  kOffline,
+  kOnline
 };
 
 }  // namespace lifestuff

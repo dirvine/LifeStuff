@@ -51,21 +51,8 @@ namespace {
 
 bptime::seconds g_interval(1);
 typedef std::function<void(const std::string&, const std::string&)>
-        NewContactSlotType;
+        TwoStringsAndBoolFunctionType;
 typedef std::function<void(const std::string&)> ConfirmContactSlotType;
-
-fs::path CreateTestDirectory(fs::path const& parent,
-                             std::string *tail) {
-  *tail = RandomAlphaNumericString(5);
-  fs::path directory(parent / (*tail));
-  boost::system::error_code error_code;
-
-  fs::create_directories(directory, error_code);
-  if (error_code)
-    return fs::path();
-
-  return directory;
-}
 
 struct TestElements {
   TestElements()
@@ -85,6 +72,19 @@ struct TestElements {
   std::shared_ptr<MessageHandler> message_handler;
 };
 
+fs::path CreateTestDirectory(fs::path const& parent,
+                             std::string *tail) {
+  *tail = RandomAlphaNumericString(5);
+  fs::path directory(parent / (*tail));
+  boost::system::error_code error_code;
+
+  fs::create_directories(directory, error_code);
+  if (error_code)
+    return fs::path();
+
+  return directory;
+}
+
 void InitTestElements(const fs::path &test_dir,
                       TestElements *test_elements) {
   // Initialisation
@@ -96,9 +96,9 @@ void InitTestElements(const fs::path &test_dir,
 
   test_elements->public_id.reset(
       new PublicId(test_elements->user_credentials->remote_chunk_store(),
-                    test_elements->user_credentials->converter(),
-                    test_elements->session,
-                    test_elements->asio_service.service()));
+                   test_elements->user_credentials->converter(),
+                   test_elements->session,
+                   test_elements->asio_service.service()));
 
   test_elements->message_handler.reset(
       new MessageHandler(test_elements->user_credentials->remote_chunk_store(),
@@ -117,16 +117,20 @@ void CreateUserTestElements(const fs::path &test_dir,
                             const std::string &pin,
                             const std::string &password,
                             const std::string &public_username,
-                            TestElements *test_elements) {
+                            TestElements *test_elements,
+                            bool mount = true) {
   InitTestElements(test_dir, test_elements);
   // User creation
   test_elements->user_credentials->CreateUser(username, pin, password);
   test_elements->public_id->CreatePublicId(public_username, true);
   test_elements->public_id->StartCheckingForNewContacts(g_interval);
   test_elements->message_handler->StartCheckingForNewMessages(g_interval);
-  test_elements->user_storage->MountDrive(test_dir,
-                                          test_elements->session,
-                                          true);
+
+  if (mount) {
+    test_elements->user_storage->MountDrive(test_dir,
+                                            test_elements->session,
+                                            true);
+  }
 }
 
 void LoginTestElements(
@@ -135,9 +139,13 @@ void LoginTestElements(
     const std::string &pin,
     const std::string &password,
     TestElements *test_elements,
-    const NewContactSlotType &new_contact_slot = NewContactSlotType(),
+    const TwoStringsAndBoolFunctionType &new_contact_slot =
+        TwoStringsAndBoolFunctionType(),
     const ConfirmContactSlotType &confirm_contact_slot =
-        ConfirmContactSlotType()) {
+        ConfirmContactSlotType(),
+    const TwoStringsAndBoolFunctionType &profile_picture_slot =
+        TwoStringsAndBoolFunctionType(),
+    bool mount = true) {
   InitTestElements(test_dir, test_elements);
   test_elements->user_credentials->CheckUserExists(username, pin);
   test_elements->user_credentials->ValidateUser(password);
@@ -149,65 +157,49 @@ void LoginTestElements(
     test_elements->public_id->contact_confirmed_signal()->connect(
         confirm_contact_slot);
   }
+  if (profile_picture_slot) {
+    test_elements->message_handler->ConenctToContactProfilePictureSignal(
+        profile_picture_slot);
+  }
 
   test_elements->public_id->StartCheckingForNewContacts(g_interval);
   test_elements->message_handler->StartCheckingForNewMessages(g_interval);
-  test_elements->user_storage->MountDrive(test_dir,
-                                          test_elements->session,
-                                          false);
+
+  if (mount) {
+    test_elements->user_storage->MountDrive(test_dir,
+                                            test_elements->session,
+                                            false);
+  }
 }
 
-void ConnectTwoPublicIdsAndStopChecking(const std::string &public_username1,
-                                        const std::string &public_username2,
-                                        std::shared_ptr<PublicId> public_id1,
-                                        std::shared_ptr<PublicId> public_id2) {
-  public_id1->SendContactInfo(public_username1, public_username2);
-  Sleep(g_interval * 2);
-  public_id2->ConfirmContact(public_username2, public_username1);
-  Sleep(g_interval * 2);
+void TestElementsTearDown(TestElements *test_elements,
+                          bool unmount = true) {
+  if (unmount) {
+    test_elements->user_storage->UnMountDrive();
+  }
 
-  public_id1->StopCheckingForNewContacts();
-  public_id2->StopCheckingForNewContacts();
-}
-
-void TestElementsTearDown(TestElements *test_elements) {
-  test_elements->user_storage->UnMountDrive();
   test_elements->public_id->StopCheckingForNewContacts();
   test_elements->message_handler->StopCheckingForNewMessages();
   test_elements->user_credentials->Logout();
   test_elements->session->Reset();
 }
 
-void ShareMessageSlot(const Message &incoming_message,
-                      Message *received_message,
-                      volatile bool *done) {
-  *received_message = incoming_message;
-  *done = true;
-}
 
-int InsertShareTest(const std::shared_ptr<UserStorage> &user_storage,
-                    const Message &message,
-                    const fs::path &absolute_path) {
-  asymm::Keys key_ring;
-  if (message.content_size() > 4) {
-    key_ring.identity = message.content(3);
-    key_ring.validation_token = message.content(4);
-    asymm::DecodePrivateKey(message.content(5), &(key_ring.private_key));
-    asymm::DecodePublicKey(message.content(6), &(key_ring.public_key));
-  }
-  return user_storage->InsertShare(absolute_path,
-                                   message.content(0),
-                                   message.content(2),
-                                   key_ring);
-}
 
-void NewContactSlot(const std::string&,
-                    const std::string&,
-                    volatile bool *done) {
+void TwoStringsAndBoolSlot(const std::string&,
+                           const std::string&,
+                           volatile bool *done) {
   *done = true;
 }
 
 void ConfirmContactSlot(const std::string&, volatile bool *done) {
+  *done = true;
+}
+
+void PresenceSlot(const std::string&,
+                  const std::string&,
+                  ContactPresence,
+                  volatile bool *done) {
   *done = true;
 }
 
@@ -221,11 +213,85 @@ std::string CreatePin() {
   return pin_stream.str();
 }
 
+Message CreatePresenceMessage(const std::string &sender,
+                              const std::string &receiver,
+                              bool logged_in) {
+  Message message;
+  message.set_type(Message::kContactInformation);
+  message.set_id(RandomString(64));
+  message.set_sender_public_username(sender);
+  message.set_receiver_public_username(receiver);
+  message.set_timestamp(
+      boost::lexical_cast<std::string>(GetDurationSinceEpoch()));
+  if (logged_in)
+    message.set_subject("kOnline");
+  else
+    message.set_subject("kOffline");
+  return message;
+}
+
+int ConnectPublicIds(const std::string &public_username1,
+                     std::shared_ptr<PublicId> public_id1,
+                     std::shared_ptr<MessageHandler> handler1,
+                     const std::string &public_username2,
+                     std::shared_ptr<PublicId> public_id2,
+                     std::shared_ptr<MessageHandler> handler2) {
+  volatile bool done1(false), done2(false);
+  public_id2->new_contact_signal()->connect(
+      std::bind(&TwoStringsAndBoolSlot, args::_1, args::_2, &done2));
+  public_id1->SendContactInfo(public_username1, public_username2);
+
+  while (!done2)
+    Sleep(bptime::milliseconds(100));
+
+  public_id1->contact_confirmed_signal()->connect(std::bind(&ConfirmContactSlot,
+                                                            args::_1,
+                                                            &done1));
+  public_id2->ConfirmContact(public_username2, public_username1);
+
+  while (!done1)
+    Sleep(bptime::milliseconds(100));
+
+  done1 = false;
+  done2 = false;
+  handler1->ConenctToContactPresenceSignal(std::bind(&PresenceSlot, args::_1,
+                                                     args::_2, args::_3,
+                                                     &done1));
+  handler2->ConenctToContactPresenceSignal(std::bind(&PresenceSlot, args::_1,
+                                                     args::_2, args::_3,
+                                                     &done2));
+
+  int result(handler1->Send(public_username1,
+                            public_username2,
+                            CreatePresenceMessage(public_username1,
+                                                  public_username2,
+                                                  true)));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed updating presence 1";
+    return result;
+  }
+
+  result = handler2->Send(public_username2,
+                          public_username1,
+                          CreatePresenceMessage(public_username2,
+                                                public_username1,
+                                                true));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed updating presence 2";
+    return result;
+  }
+
+  while (!done1 || !done2)
+    Sleep(bptime::milliseconds(100));
+
+  return kSuccess;
+}
+
 }  // namespace
 
-class ProfilePictureTest : public testing::Test {
+class FixtureFullTest : public testing::Test {
  public:
-  ProfilePictureTest()
+  FixtureFullTest()
     : test_dir_(maidsafe::test::CreateTestPath()),
       mount_dir_(fs::initial_path() / "LifeStuff"),
       asio_service_(),
@@ -309,7 +375,7 @@ class ProfilePictureTest : public testing::Test {
   std::string public_username_, username_, pin_, password_;
 };
 
-TEST_F(ProfilePictureTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
+TEST_F(FixtureFullTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
   // Create directory
   std::string tail;
   boost::system::error_code error_code;
@@ -328,7 +394,7 @@ TEST_F(ProfilePictureTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
   EXPECT_EQ(0, error_code.value());
 }
 
-TEST_F(ProfilePictureTest, FUNC_ChangeProfilePictureDataMap) {
+TEST_F(FixtureFullTest, FUNC_ChangeProfilePictureDataMap) {
   // Create file
   std::string file_name(RandomAlphaNumericString(8)),
               file_content(RandomString(5 * 1024));
@@ -361,7 +427,7 @@ TEST_F(ProfilePictureTest, FUNC_ChangeProfilePictureDataMap) {
   EXPECT_EQ(new_data_map, session_->profile_picture_data_map());
 }
 
-TEST_F(ProfilePictureTest, FUNC_ReconstructFileFromDataMap) {
+TEST_F(FixtureFullTest, FUNC_ReconstructFileFromDataMap) {
   // Create file
 //   std::string file_name("cabello.jpg"),
   std::string file_name(RandomAlphaNumericString(8)),
@@ -412,7 +478,63 @@ TEST_F(ProfilePictureTest, FUNC_ReconstructFileFromDataMap) {
 //   std::cin >> s;
 }
 
-TEST(FullTest, FUNC_NotifyProfilePicture) {
+TEST(IndependentFullTest, FUNC_OnlinePresenceTest) {
+  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
+  std::string username1(RandomString(6)),
+              pin1(CreatePin()),
+              password1(RandomString(6)),
+              public_username1(RandomAlphaNumericString(5)),
+              username2(RandomString(6)),
+              pin2(CreatePin()),
+              password2(RandomString(6)),
+              public_username2(RandomAlphaNumericString(5));
+
+  TestElements test_elements1;
+  CreateUserTestElements(*test_dir,
+                          username1,
+                          pin1,
+                          password1,
+                          public_username1,
+                          &test_elements1,
+                          false);
+
+  TestElements test_elements2;
+  CreateUserTestElements(*test_dir,
+                          username2,
+                          pin2,
+                          password2,
+                          public_username2,
+                          &test_elements2,
+                          false);
+
+  EXPECT_EQ(kSuccess, ConnectPublicIds(public_username1,
+                                       test_elements1.public_id,
+                                       test_elements1.message_handler,
+                                       public_username2,
+                                       test_elements2.public_id,
+                                       test_elements2.message_handler));
+
+  // They should both see each other as online after PingContact message
+  Contact contact1, contact2;
+  EXPECT_EQ(kSuccess,
+            test_elements1.session->contact_handler_map()
+                [public_username1]->ContactInfo(public_username2,
+                                                &contact2));
+  EXPECT_EQ(kOnline, contact2.presence);
+  EXPECT_EQ(kSuccess,
+            test_elements2.session->contact_handler_map()
+                [public_username2]->ContactInfo(public_username1,
+                                                &contact1));
+  EXPECT_EQ(kOnline, contact1.presence);
+
+  // Log out 1, message should be sent and 2 should have 1 as offline
+
+  // Log in 1, message should be sent and 2 should update 1 as online
+  TestElementsTearDown(&test_elements1, false);
+  TestElementsTearDown(&test_elements2, false);
+}
+
+TEST(IndependentFullTest, FUNC_NotifyProfilePicture) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   std::string username1(RandomString(6)),
               pin1(CreatePin()),
@@ -484,7 +606,8 @@ TEST(FullTest, FUNC_NotifyProfilePicture) {
   {
     TestElements test_elements1;
     LoginTestElements(*test_dir, username1, pin1, password1, &test_elements1,
-                      std::bind(&NewContactSlot, args::_1, args::_2, &done));
+                      std::bind(&TwoStringsAndBoolSlot, args::_1, args::_2,
+                                &done));
 
     while (!done)
       Sleep(bptime::milliseconds(100));
@@ -505,8 +628,61 @@ TEST(FullTest, FUNC_NotifyProfilePicture) {
     done = false;
     TestElements test_elements2;
     LoginTestElements(*test_dir, username2, pin2, password2, &test_elements2,
-                      NewContactSlotType(),
+                      TwoStringsAndBoolFunctionType(),
                       std::bind(&ConfirmContactSlot, args::_1, &done));
+
+    while (!done)
+      Sleep(bptime::milliseconds(100));
+
+    Contact contact1;
+    EXPECT_EQ(kSuccess,
+              test_elements2.session->contact_handler_map()
+                  [public_username2]->ContactInfo(public_username1, &contact1));
+    EXPECT_EQ(data_map1, contact1.profile_picture_data_map);
+
+    TestElementsTearDown(&test_elements2);
+  }
+
+  {
+    TestElements test_elements1;
+    LoginTestElements(*test_dir, username1, pin1, password1, &test_elements1);
+
+    file_content1 = RandomString(5 * 1024);
+    file_name1 = RandomAlphaNumericString(8) + std::string(".jpg");
+    file_path1 = test_elements1.user_storage->mount_dir() / file_name1;
+    std::ofstream ofstream(file_path1.c_str(), std::ios::binary);
+    ofstream << file_content1;
+    ofstream.close();
+
+    EXPECT_TRUE(fs::exists(file_path1, error_code));
+    EXPECT_EQ(0, error_code.value());
+    test_elements1.user_storage->GetDataMap(file_path1, &data_map1);
+    EXPECT_FALSE(data_map2.empty());
+    test_elements1.session->set_profile_picture_data_map(data_map1);
+
+    Message message;
+    message.set_type(Message::kContactInformation);
+    message.set_id(RandomString(64));
+    message.set_sender_public_username(public_username1);
+    message.set_receiver_public_username(public_username2);
+    message.add_content(data_map1);
+    message.set_timestamp(
+        boost::lexical_cast<std::string>(GetDurationSinceEpoch()));
+    message.set_subject("kPicture");
+    EXPECT_EQ(kSuccess, test_elements1.message_handler->Send(public_username1,
+                                                             public_username2,
+                                                             message));
+
+    TestElementsTearDown(&test_elements1);
+  }
+
+  {
+    done = false;
+    TestElements test_elements2;
+    LoginTestElements(*test_dir, username2, pin2, password2, &test_elements2,
+                      TwoStringsAndBoolFunctionType(), ConfirmContactSlotType(),
+                      std::bind(&TwoStringsAndBoolSlot, args::_1, args::_2,
+                                &done));
 
     while (!done)
       Sleep(bptime::milliseconds(100));
@@ -521,7 +697,7 @@ TEST(FullTest, FUNC_NotifyProfilePicture) {
   }
 }
 
-TEST(FullTest, FUNC_DestructionOfObjects) {
+TEST(IndependentFullTest, FUNC_DestructionOfObjects) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   std::string username(RandomString(6)),
               pin(CreatePin()),

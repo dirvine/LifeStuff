@@ -38,6 +38,7 @@
 #include "maidsafe/passport/passport_config.h"
 
 #include "maidsafe/lifestuff/data_atlas_pb.h"
+#include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/version.h"
 
 #if MAIDSAFE_LIFESTUFF_VERSION != 400
@@ -63,6 +64,19 @@ class MessageHandler {
   typedef bs2::signal<void(const Message&)> NewMessageSignal;  // NOLINT (Dan)
   typedef NewMessageSignal::slot_type MessageFunction;
   typedef std::shared_ptr<NewMessageSignal> NewMessageSignalPtr;
+
+  typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
+                           const std::string&,
+                           ContactPresence presence)> ContactPresenceSignal;
+  typedef ContactPresenceSignal::slot_type ContactPresenceFunction;
+  typedef std::shared_ptr<ContactPresenceSignal> ContactPresenceSignalPtr;
+
+  typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
+                           const std::string&)> ContactProfilePictureSignal;
+  typedef ContactProfilePictureSignal::slot_type ContactProfilePictureFunction;
+  typedef std::shared_ptr<ContactProfilePictureSignal>
+          ContactProfilePictureSignalPtr;
+
   typedef std::map<std::string, uint64_t> ReceivedMessagesMap;
 
   MessageHandler(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
@@ -83,6 +97,10 @@ class MessageHandler {
 
   bs2::connection ConnectToSignal(const Message::ContentType type,
                                   const MessageFunction &function);
+  bs2::connection ConenctToContactPresenceSignal(
+      const ContactPresenceFunction &function);
+  bs2::connection ConenctToContactProfilePictureSignal(
+      const ContactProfilePictureFunction &function);
 
  private:
   MessageHandler(const MessageHandler&);
@@ -95,17 +113,19 @@ class MessageHandler {
                         const std::string &mmid_value);
   bool MessagePreviouslyReceived(const std::string &message);
   void ClearExpiredReceivedMessages();
-  void GetKeysAndProof(const std::string &public_username,
-                       passport::PacketType pt,
-                       bool confirmed,
-                       pcs::RemoteChunkStore::ValidationData *validation_data);
+  void KeysAndProof(const std::string &public_username,
+                    passport::PacketType pt,
+                    bool confirmed,
+                    pcs::RemoteChunkStore::ValidationData *validation_data);
+  void ContactInformationSlot(const Message& information_message);
 
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
   std::shared_ptr<Session> session_;
-  ba::io_service &asio_service_;
   ba::deadline_timer get_new_messages_timer_;
   std::vector<NewMessageSignalPtr> new_message_signals_;
+  ContactPresenceSignalPtr contact_presence_signal_;
+  ContactProfilePictureSignalPtr contact_profile_picture_signal_;
   ReceivedMessagesMap received_messages_;
 };
 

@@ -184,8 +184,8 @@ PublicId::PublicId(
     : remote_chunk_store_(remote_chunk_store),
       converter_(converter),
       session_(session),
-      asio_service_(asio_service),
       get_new_contacts_timer_(asio_service),
+      check_online_contacts_timer_(asio_service),
       new_contact_signal_(new NewContactSignal),
       contact_confirmed_signal_(new ContactConfirmedSignal) {}
 
@@ -256,18 +256,12 @@ int PublicId::CreatePublicId(const std::string &public_username,
   pcs::RemoteChunkStore::ValidationData validation_data_mmid;
   pcs::RemoteChunkStore::ValidationData validation_data_mpid;
   pcs::RemoteChunkStore::ValidationData validation_data_anmpid;
-  GetKeysAndProof(public_username,
-                  passport::kMmid,
-                  false,
-                  &validation_data_mmid);
-  GetKeysAndProof(public_username,
-                  passport::kMpid,
-                  false,
-                  &validation_data_mpid);
-  GetKeysAndProof(public_username,
-                  passport::kAnmpid,
-                  false,
-                  &validation_data_anmpid);
+  KeysAndProof(public_username, passport::kMmid, false, &validation_data_mmid);
+  KeysAndProof(public_username, passport::kMpid, false, &validation_data_mpid);
+  KeysAndProof(public_username,
+               passport::kAnmpid,
+               false,
+               &validation_data_anmpid);
 
   std::string inbox_name(MaidsafeInboxName(data));
   VoidFuncOneInt callback(std::bind(&SendContactInfoCallback, args::_1,
@@ -443,10 +437,7 @@ int PublicId::ModifyAppendability(const std::string &public_username,
   results.push_back(kPendingResult);
 
   pcs::RemoteChunkStore::ValidationData validation_data_mpid;
-  GetKeysAndProof(public_username,
-                  passport::kMpid,
-                  true,
-                  &validation_data_mpid);
+  KeysAndProof(public_username, passport::kMpid, true, &validation_data_mpid);
   std::string packet_name(MaidsafeContactIdName(public_username));
   VoidFuncOneInt callback(std::bind(&SendContactInfoCallback, args::_1,
                                     &mutex, &cond_var, &results[0]));
@@ -460,10 +451,7 @@ int PublicId::ModifyAppendability(const std::string &public_username,
       validation_data_mpid);
 
   pcs::RemoteChunkStore::ValidationData validation_data_mmid;
-  GetKeysAndProof(public_username,
-                  passport::kMmid,
-                  true,
-                  &validation_data_mmid);
+  KeysAndProof(public_username, passport::kMmid, true, &validation_data_mmid);
   packet_name = MaidsafeInboxName(data);
   callback = std::bind(&SendContactInfoCallback, args::_1,
                        &mutex, &cond_var, &results[1]);
@@ -532,10 +520,10 @@ void PublicId::GetNewContacts(const bptime::seconds &interval,
                                                      true,
                                                      &data);
       pcs::RemoteChunkStore::ValidationData validation_data_mpid;
-      GetKeysAndProof(std::get<0>(*it),
-                      passport::kMpid,
-                      true,
-                      &validation_data_mpid);
+      KeysAndProof(std::get<0>(*it),
+                   passport::kMpid,
+                   true,
+                   &validation_data_mpid);
 //      DLOG(ERROR) << "\t\t\t\t\tbefore GET intros";
       std::string mpid_value(
           remote_chunk_store_->Get(MaidsafeContactIdName(std::get<0>(*it)),
@@ -708,10 +696,7 @@ int PublicId::RemoveContact(const std::string &public_username,
                                             false,
                                             public_username));
   pcs::RemoteChunkStore::ValidationData validation_data_mmid;
-  GetKeysAndProof(public_username,
-                  passport::kMmid,
-                  false,
-                  &validation_data_mmid);
+  KeysAndProof(public_username, passport::kMmid, false, &validation_data_mmid);
   std::string inbox_name(MaidsafeInboxName(std::get<0>(new_MMID)));
   VoidFuncOneInt callback(std::bind(&SendContactInfoCallback, args::_1,
                                     &mutex, &cond_var, &results[0]));
@@ -753,10 +738,7 @@ int PublicId::RemoveContact(const std::string &public_username,
   results.push_back(kPendingResult);
 
   validation_data_mmid = pcs::RemoteChunkStore::ValidationData();
-  GetKeysAndProof(public_username,
-                  passport::kMmid,
-                  true,
-                  &validation_data_mmid);
+  KeysAndProof(public_username, passport::kMmid, true, &validation_data_mmid);
   callback = std::bind(&SendContactInfoCallback, args::_1,
                        &mutex, &cond_var, &results[0]);
   inbox_name = MaidsafeInboxName(std::get<0>(old_MMID));
@@ -770,15 +752,6 @@ int PublicId::RemoveContact(const std::string &public_username,
                                   old_inbox_private_key,
                                   pca::kModifiableByOwner),
                               validation_data_mmid);
-/*
-  packet_manager_->ModifyPacket(
-      MaidsafeInboxName(std::get<0>(old_MMID)),
-      ComposeModifyAppendableByAll(old_inbox_private_key,
-                                   pca::kModifiableByOwner),
-      std::get<0>(old_MMID),
-      std::bind(&SendContactInfoCallback, args::_1,
-                &mutex, &cond_var, &results[0]));
-*/
 
   result = AwaitingResponse(&mutex, &cond_var, &results);
   if (result != kSuccess)
@@ -823,10 +796,7 @@ int PublicId::InformContactInfo(const std::string &public_username,
   size_t size(contacts.size());
 
   pcs::RemoteChunkStore::ValidationData validation_data_mpid;
-  GetKeysAndProof(public_username,
-                  passport::kMpid,
-                  true,
-                  &validation_data_mpid);
+  KeysAndProof(public_username, passport::kMpid, true, &validation_data_mpid);
 
   for (size_t i = 0; i < size; ++i) {
     std::string recipient_public_username(contacts[i]);
@@ -945,7 +915,7 @@ std::vector<std::string> PublicId::PublicIdsList() const {
   return public_ids;
 }
 
-void PublicId::GetKeysAndProof(
+void PublicId::KeysAndProof(
     const std::string &public_username,
     passport::PacketType pt,
     bool confirmed,

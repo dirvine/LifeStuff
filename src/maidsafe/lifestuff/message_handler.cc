@@ -67,15 +67,19 @@ MessageHandler::MessageHandler(
     : remote_chunk_store_(remote_chunk_store),
       converter_(converter),
       session_(session),
-      asio_service_(asio_service),
       get_new_messages_timer_(asio_service),
       new_message_signals_(),
+      contact_presence_signal_(new ContactPresenceSignal),
+      contact_profile_picture_signal_(new ContactProfilePictureSignal),
       received_messages_() {
   for (int n(Message::ContentType_MIN);
        n <= Message::ContentType_MAX;
        ++n) {
     new_message_signals_.push_back(std::make_shared<NewMessageSignal>());
   }
+  ConnectToSignal(Message::kContactInformation,
+                  std::bind(&MessageHandler::ContactInformationSlot,
+                            this, args::_1));
 }
 
 MessageHandler::~MessageHandler() {
@@ -131,7 +135,7 @@ int MessageHandler::Send(const std::string &public_username,
 
   // Get recipient's public key
   pcs::RemoteChunkStore::ValidationData validation_data_mmid;
-  GetKeysAndProof(public_username,
+  KeysAndProof(public_username,
                   passport::kMmid,
                   true,
                   &validation_data_mmid);
@@ -146,7 +150,7 @@ int MessageHandler::Send(const std::string &public_username,
   }
 
   // Encrypt the message for the recipient
-  std::string encrypted_message/*, encrpyted_symm_key*/;
+  std::string encrypted_message;
   result = asymm::Encrypt(message.SerializeAsString(),
                           recipient_public_key,
                           &encrypted_message);
@@ -155,9 +159,6 @@ int MessageHandler::Send(const std::string &public_username,
     return kGetPublicIdError;
   }
 
-//  pca::Encrypted combined_encrypted_message;
-//  combined_encrypted_message.set_asymm_encrypted_symm_key(encrpyted_symm_key);
-//  combined_encrypted_message.set_symm_encrypted_data(encrypted_message);
 
   pca::SignedData signed_data;
   signed_data.set_data(encrypted_message);
@@ -194,16 +195,6 @@ int MessageHandler::Send(const std::string &public_username,
   remote_chunk_store_->Modify(inbox_id,
                               signed_data.SerializeAsString(),
                               validation_data_mmid);
-/*
-  VoidFuncOneInt callback(std::bind(&SendMessageCallback, args::_1, &mutex,
-                                    &cond_var, &result));
-
-  packet_manager_->ModifyPacket(
-      AppendableByAllType(recipient_contact.mmid_name),
-      signed_data.SerializeAsString(),
-      std::get<0>(data.at(2)),
-      callback);
-*/
 
   try {
     boost::mutex::scoped_lock lock(mutex);
@@ -240,6 +231,17 @@ bs2::connection MessageHandler::ConnectToSignal(
   return new_message_signals_.at(static_cast<size_t>(type))->connect(function);
 }
 
+bs2::connection MessageHandler::ConenctToContactPresenceSignal(
+    const ContactPresenceFunction &function) {
+  return contact_presence_signal_->connect(function);
+}
+
+bs2::connection MessageHandler::ConenctToContactProfilePictureSignal(
+    const ContactProfilePictureFunction &function) {
+  return contact_profile_picture_signal_->connect(function);
+}
+
+
 void MessageHandler::GetNewMessages(
     const bptime::seconds &interval,
     const boost::system::error_code &error_code) {
@@ -267,7 +269,7 @@ void MessageHandler::GetNewMessages(
     }
 
     pcs::RemoteChunkStore::ValidationData validation_data_mmid;
-    GetKeysAndProof(std::get<0>(*it),
+    KeysAndProof(std::get<0>(*it),
                     passport::kMmid,
                     true,
                     &validation_data_mmid);
@@ -336,18 +338,23 @@ void MessageHandler::ProcessRetrieved(const passport::SelectableIdData &data,
 }
 
 bool MessageHandler::ValidateMessage(const Message &message) const {
-  if (!message.IsInitialized())
+  if (!message.IsInitialized()) {
+    DLOG(WARNING) << "Message not initialised.";
     return false;
+  }
 
   if (message.type() < Message::ContentType_MIN ||
-      message.type() > Message::ContentType_MAX)
+      message.type() > Message::ContentType_MAX) {
+    DLOG(WARNING) << "Message type out of range.";
     return false;
+  }
 
-  for (auto it(0); it < message.content_size(); ++it)
-    if (!message.content(it).empty())
-      return true;
-
-  return false;
+//   for (auto it(0); it < message.content_size(); ++it)
+//     if (!message.content(it).empty())
+//       return true;
+//   DLOG(WARNING) << "Message with no content.";
+//   return false;
+  return true;
 }
 
 bool MessageHandler::MessagePreviouslyReceived(const std::string &message) {
@@ -372,7 +379,7 @@ void MessageHandler::ClearExpiredReceivedMessages() {
   }
 }
 
-void MessageHandler::GetKeysAndProof(
+void MessageHandler::KeysAndProof(
     const std::string &public_username,
     passport::PacketType pt,
     bool confirmed,
@@ -401,6 +408,42 @@ void MessageHandler::GetKeysAndProof(
   validation_data->ownership_proof = signed_data.SerializeAsString();
 }
 
+void MessageHandler::ContactInformationSlot(
+    const Message& information_message) {
+  if (!information_message.has_subject()) {
+    // Drop silently
+    DLOG(WARNING) << information_message.sender_public_username()
+                  << " has sent a presence message with no subject.";
+    return;
+  }
+
+  std::string sender(information_message.sender_public_username()),
+              receiver(information_message.receiver_public_username());
+  int result(0);
+  if (information_message.subject() == "kOnline") {
+    result = session_->contact_handler_map()[receiver]->UpdatePresence(sender,
+                                                                       kOnline);
+    if (result == kSuccess)
+      (*contact_presence_signal_)(receiver, sender, kOnline);
+  } else if (information_message.subject() == "kOffline") {
+    result =
+        session_->contact_handler_map()[receiver]->UpdatePresence(sender,
+                                                                  kOffline);
+    if (result == kSuccess)
+      (*contact_presence_signal_)(receiver, sender, kOffline);
+  } else if (information_message.subject() == "kPicture" &&
+             information_message.content_size() == 1) {
+    result = session_->contact_handler_map()
+                 [receiver]->UpdateProfilePictureDataMap(
+                     sender, information_message.content(0));
+    if (result == kSuccess)
+      (*contact_profile_picture_signal_)(receiver, sender);
+  } else {
+    DLOG(WARNING) << information_message.sender_public_username()
+                  << " has sent a badly formed presence message.";
+    return;
+  }
+}
 
 }  // namespace lifestuff
 

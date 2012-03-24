@@ -53,7 +53,7 @@ namespace maidsafe {
 namespace lifestuff {
 
 // TODO(Team#5#): 2009-07-22 - Language and country lists to be decided on and
-//                            incorporated to the logic.
+//                             incorporated to the logic.
 
 class PublicContact;
 
@@ -73,6 +73,7 @@ struct Contact {
   ContactStatus status;
   uint32_t rank;
   uint32_t last_contact;
+  ContactPresence presence;
 };
 
 /* Tags */
@@ -132,6 +133,8 @@ class ContactsHandler {
                           const asymm::PublicKey &new_mmid_public_key);
   int UpdateStatus(const std::string &public_username,
                    const ContactStatus &status);
+  int UpdatePresence(const std::string &public_username,
+                     const ContactPresence &presence);
   int TouchContact(const std::string &public_username);
   int ContactInfo(const std::string &public_username, Contact *contact);
   void OrderedContacts(std::vector<Contact> *list,

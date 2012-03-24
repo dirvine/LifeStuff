@@ -43,15 +43,16 @@ Contact::Contact()
       mmid_public_key(),
       status(kUnitialised),
       rank(0),
-      last_contact(0) {}
+      last_contact(0),
+      presence(kOffline) {}
 
 Contact::Contact(const std::string &public_name_in,
-        const std::string &mpid_name_in,
-        const std::string &mmid_name_in,
-        const std::string &profile_picture_data_map_in,
-        const asymm::PublicKey &mpid_public_key_in,
-        const asymm::PublicKey &mmid_public_key_in,
-        ContactStatus status)
+                 const std::string &mpid_name_in,
+                 const std::string &mmid_name_in,
+                 const std::string &profile_picture_data_map_in,
+                 const asymm::PublicKey &mpid_public_key_in,
+                 const asymm::PublicKey &mmid_public_key_in,
+                 ContactStatus status)
     : public_username(public_name_in),
       mpid_name(mpid_name_in),
       mmid_name(mmid_name_in),
@@ -60,7 +61,8 @@ Contact::Contact(const std::string &public_name_in,
       mmid_public_key(mmid_public_key_in),
       status(status),
       rank(0),
-      last_contact(0) {}
+      last_contact(0),
+      presence(kOffline) {}
 Contact::Contact(const PublicContact &contact)
     : public_username(contact.public_username()),
       mpid_name(),
@@ -70,15 +72,8 @@ Contact::Contact(const PublicContact &contact)
       mmid_public_key(),
       status(static_cast<ContactStatus>(contact.status())),
       rank(contact.rank()),
-      last_contact(contact.last_contact()) {
-//  asymm::PublicKey mpid_key, mmid_key;
-//  asymm::DecodePublicKey(contact.mpid_public_key(), &mpid_key);
-//  if (!asymm::ValidateKey(mpid_key))
-//    DLOG(ERROR) << "Error decoding MPID public key";
-//  asymm::DecodePublicKey(contact.mmid_public_key(), &mmid_key);
-//  if (!asymm::ValidateKey(mmid_key))
-//    DLOG(ERROR) << "Error decoding MMID public key";
-}
+      last_contact(contact.last_contact()),
+      presence(kOffline) {}
 
 //  ContactsHandler
 int ContactsHandler::AddContact(const std::string &public_username,
@@ -267,6 +262,26 @@ int ContactsHandler::UpdateStatus(const std::string &public_username,
 
   Contact contact = *it;
   contact.status = status;
+
+  if (!contact_set_.replace(it, contact)) {
+    DLOG(ERROR) << "Failed to replace contact in set "
+                << contact.public_username;
+    return -79;
+  }
+
+  return kSuccess;
+}
+
+int ContactsHandler::UpdatePresence(const std::string &public_username,
+                                    const ContactPresence &presence) {
+  ContactSet::iterator it = contact_set_.find(public_username);
+  if (it == contact_set_.end()) {
+    DLOG(ERROR) << "Contact(" << public_username << ") not present in list.";
+    return -79;
+  }
+
+  Contact contact = *it;
+  contact.presence = presence;
 
   if (!contact_set_.replace(it, contact)) {
     DLOG(ERROR) << "Failed to replace contact in set "

@@ -216,9 +216,9 @@ class Authentication {
                              std::string *signing_id);
   std::string DebugStr(const passport::PacketType &packet_type);
 
-  void GetKeysAndProof(passport::PacketType pt,
-                       pcs::RemoteChunkStore::ValidationData *validation_data,
-                       bool confirmed);
+  void KeysAndProof(passport::PacketType pt,
+                    pcs::RemoteChunkStore::ValidationData *validation_data,
+                    bool confirmed);
 
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<Session> session_;
