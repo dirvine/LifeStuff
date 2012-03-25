@@ -158,7 +158,7 @@ void LoginTestElements(
         confirm_contact_slot);
   }
   if (profile_picture_slot) {
-    test_elements->message_handler->ConenctToContactProfilePictureSignal(
+    test_elements->message_handler->ConnectToContactProfilePictureSignal(
         profile_picture_slot);
   }
 
@@ -179,7 +179,7 @@ void TestElementsTearDown(TestElements *test_elements,
   }
 
   test_elements->public_id->StopCheckingForNewContacts();
-  test_elements->message_handler->StopCheckingForNewMessages();
+  test_elements->message_handler->ShutDown();
   test_elements->user_credentials->Logout();
   test_elements->session->Reset();
 }
@@ -254,10 +254,10 @@ int ConnectPublicIds(const std::string &public_username1,
 
   done1 = false;
   done2 = false;
-  handler1->ConenctToContactPresenceSignal(std::bind(&PresenceSlot, args::_1,
+  handler1->ConnectToContactPresenceSignal(std::bind(&PresenceSlot, args::_1,
                                                      args::_2, args::_3,
                                                      &done1));
-  handler2->ConenctToContactPresenceSignal(std::bind(&PresenceSlot, args::_1,
+  handler2->ConnectToContactPresenceSignal(std::bind(&PresenceSlot, args::_1,
                                                      args::_2, args::_3,
                                                      &done2));
 
@@ -528,9 +528,21 @@ TEST(IndependentFullTest, FUNC_OnlinePresenceTest) {
   EXPECT_EQ(kOnline, contact1.presence);
 
   // Log out 1, message should be sent and 2 should have 1 as offline
+  volatile bool done(false);
+  test_elements2.message_handler->ConnectToContactPresenceSignal(
+      std::bind(&PresenceSlot, args::_1, args::_2, args::_3, &done));
+  TestElementsTearDown(&test_elements1, false);
+
+  while (!done)
+    Sleep(bptime::milliseconds(100));
+
+  EXPECT_EQ(kSuccess,
+            test_elements2.session->contact_handler_map()
+                [public_username2]->ContactInfo(public_username1,
+                                                &contact1));
+  EXPECT_EQ(kOffline, contact1.presence);
 
   // Log in 1, message should be sent and 2 should update 1 as online
-  TestElementsTearDown(&test_elements1, false);
   TestElementsTearDown(&test_elements2, false);
 }
 

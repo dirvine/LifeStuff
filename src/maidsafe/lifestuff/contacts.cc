@@ -360,6 +360,12 @@ void ContactsHandler::OrderedContacts(std::vector<Contact> *list,
   }
 }
 
+void ContactsHandler::OnlineContacts(std::vector<Contact> *online_contacts) {
+  online_contacts->clear();
+  auto it_pair(contact_set_.get<Presence>().equal_range(kOnline));
+  online_contacts->assign(it_pair.first, it_pair.second);
+}
+
 template <typename T>
 void ContactsHandler::GetContactsByOrder(ContactSet *contacts,
                                          std::vector<Contact> *list) {

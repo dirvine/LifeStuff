@@ -85,21 +85,24 @@ class MessageHandler {
                  ba::io_service &asio_service);  // NOLINT (Fraser)
   ~MessageHandler();
 
+  void StartUp(bptime::seconds interval);
+  void ShutDown();
+
   // Periodically retrieves saved messages from MMID and fires
   // new_message_signal_ for each valid message retrieved.  Checking will only
   // succeed if at least one public username has been successfully created.
   int StartCheckingForNewMessages(boost::posix_time::seconds interval);
   void StopCheckingForNewMessages();
 
-  int Send(const std::string &public_username,
+  int Send(const std::string &own_public_username,
            const std::string &recipient_public_username,
            const Message &message);
 
   bs2::connection ConnectToSignal(const Message::ContentType type,
                                   const MessageFunction &function);
-  bs2::connection ConenctToContactPresenceSignal(
+  bs2::connection ConnectToContactPresenceSignal(
       const ContactPresenceFunction &function);
-  bs2::connection ConenctToContactProfilePictureSignal(
+  bs2::connection ConnectToContactProfilePictureSignal(
       const ContactProfilePictureFunction &function);
 
  private:
@@ -118,6 +121,11 @@ class MessageHandler {
                     bool confirmed,
                     pcs::RemoteChunkStore::ValidationData *validation_data);
   void ContactInformationSlot(const Message& information_message);
+  void RetrieveMessagesForAllIds();
+  void SendPresenceMessage(const std::string &own_public_username,
+                           const std::string &recipient_public_username,
+                           const ContactPresence &presence);
+  void EnqueuePresenceMessages(ContactPresence presence);
 
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
@@ -127,6 +135,7 @@ class MessageHandler {
   ContactPresenceSignalPtr contact_presence_signal_;
   ContactProfilePictureSignalPtr contact_profile_picture_signal_;
   ReceivedMessagesMap received_messages_;
+  ba::io_service &asio_service_;  // NOLINT(Dan)
 };
 
 }  // namespace lifestuff

@@ -78,8 +78,9 @@ struct Contact {
 
 /* Tags */
 struct Alphabetical {};
-struct Popular {};
 struct LastContacted {};
+struct Popular {};
+struct Presence {};
 struct Status {};
 
 typedef boost::multi_index::multi_index_container<
@@ -102,6 +103,10 @@ typedef boost::multi_index::multi_index_container<
     boost::multi_index::ordered_non_unique<
       boost::multi_index::tag<Status>,
       BOOST_MULTI_INDEX_MEMBER(Contact, ContactStatus, status)
+    >,
+    boost::multi_index::ordered_non_unique<
+      boost::multi_index::tag<Presence>,
+      BOOST_MULTI_INDEX_MEMBER(Contact, ContactPresence, presence)
     >
   >
 > ContactSet;
@@ -140,7 +145,7 @@ class ContactsHandler {
   void OrderedContacts(std::vector<Contact> *list,
                        ContactOrder type = kAlphabetical,
                        uint16_t bitwise_status = 0x00);
-
+  void OnlineContacts(std::vector<Contact> *online_contacts);
   void ClearContacts();
 
  private:

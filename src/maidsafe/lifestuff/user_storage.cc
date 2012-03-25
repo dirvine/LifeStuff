@@ -797,15 +797,19 @@ std::string UserStorage::ConstructFile(const std::string &serialised_data_map) {
     return "";
   }
 
-  uint64_t file_size(data_map->chunks.empty() ? data_map->content.size() : 0);
-  std::for_each(
-      data_map->chunks.begin(),
-      data_map->chunks.end(),
-      [&file_size](const encrypt::ChunkDetails &chunk_details) {
-        file_size += chunk_details.size;
-      });
+  uint32_t file_size(data_map->chunks.empty() ? data_map->content.size() : 0);
+  auto it(data_map->chunks.begin());
+  while (it != data_map->chunks.end()) {
+    if ((std::numeric_limits<uint32_t>::max() - file_size) > (*it).size) {
+      DLOG(ERROR) << "File too large to read.";
+      return "";
+    }
+    file_size += (*it).size;
+    ++it;
+  }
 
   // TODO(Team): decide based on the size whether to go ahead.
+  // Update: It's now only possible to read a file up to uint32_t size.
   // if (file_size > 'some limit')
   //   return "";
 

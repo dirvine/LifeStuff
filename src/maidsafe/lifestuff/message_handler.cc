@@ -71,7 +71,8 @@ MessageHandler::MessageHandler(
       new_message_signals_(),
       contact_presence_signal_(new ContactPresenceSignal),
       contact_profile_picture_signal_(new ContactProfilePictureSignal),
-      received_messages_() {
+      received_messages_(),
+      asio_service_(asio_service) {
   for (int n(Message::ContentType_MIN);
        n <= Message::ContentType_MAX;
        ++n) {
@@ -84,6 +85,36 @@ MessageHandler::MessageHandler(
 
 MessageHandler::~MessageHandler() {
   StopCheckingForNewMessages();
+}
+
+void MessageHandler::StartUp(bptime::seconds interval) {
+  // Retrive once all messages
+  RetrieveMessagesForAllIds();
+  EnqueuePresenceMessages(kOnline);
+  StartCheckingForNewMessages(interval);
+}
+
+void MessageHandler::ShutDown() {
+  EnqueuePresenceMessages(kOffline);
+  StopCheckingForNewMessages();
+}
+
+void MessageHandler::EnqueuePresenceMessages(ContactPresence presence) {
+  // Get online contacts and message them to notify online status
+  std::vector<Contact> contacts;
+  for (auto it(session_->contact_handler_map().begin());
+       it != session_->contact_handler_map().end();
+       ++it) {
+    (*it).second->OnlineContacts(&contacts);
+    for (auto item(contacts.begin()); item != contacts.end(); ++item) {
+//       asio_service_.post(std::bind(&MessageHandler::SendPresenceMessage,
+//                                    this,
+//                                    (*it).first,
+//                                    (*item).public_username,
+//                                    presence));
+      SendPresenceMessage((*it).first, (*item).public_username, presence);
+    }
+  }
 }
 
 int MessageHandler::StartCheckingForNewMessages(bptime::seconds interval) {
@@ -231,16 +262,15 @@ bs2::connection MessageHandler::ConnectToSignal(
   return new_message_signals_.at(static_cast<size_t>(type))->connect(function);
 }
 
-bs2::connection MessageHandler::ConenctToContactPresenceSignal(
+bs2::connection MessageHandler::ConnectToContactPresenceSignal(
     const ContactPresenceFunction &function) {
   return contact_presence_signal_->connect(function);
 }
 
-bs2::connection MessageHandler::ConenctToContactProfilePictureSignal(
+bs2::connection MessageHandler::ConnectToContactProfilePictureSignal(
     const ContactProfilePictureFunction &function) {
   return contact_profile_picture_signal_->connect(function);
 }
-
 
 void MessageHandler::GetNewMessages(
     const bptime::seconds &interval,
@@ -254,37 +284,7 @@ void MessageHandler::GetNewMessages(
   }
 
   ClearExpiredReceivedMessages();
-
-  int result(-1);
-  std::vector<passport::SelectableIdData> selectables;
-  session_->passport_->SelectableIdentitiesList(&selectables);
-  for (auto it(selectables.begin()); it != selectables.end(); ++it) {
-    passport::SelectableIdentityData data;
-    result = session_->passport_->GetSelectableIdentityData(std::get<0>(*it),
-                                                            true,
-                                                            &data);
-    if (result != kSuccess || data.size() != 3U) {
-      DLOG(ERROR) << "Failed to get own public ID data: " << result;
-      continue;
-    }
-
-    pcs::RemoteChunkStore::ValidationData validation_data_mmid;
-    KeysAndProof(std::get<0>(*it),
-                    passport::kMmid,
-                    true,
-                    &validation_data_mmid);
-    std::string mmid_value(
-        remote_chunk_store_->Get(AppendableByAllType(std::get<1>(*it)),
-                                 validation_data_mmid));
-
-    if (mmid_value.empty()) {
-      DLOG(WARNING) << "Failed to get MPID contents for " << std::get<0>(*it)
-                    << ": " << result;
-    } else {
-      ProcessRetrieved(*it, mmid_value);
-      ClearExpiredReceivedMessages();
-    }
-  }
+  RetrieveMessagesForAllIds();
 
   get_new_messages_timer_.expires_at(get_new_messages_timer_.expires_at() +
                                      interval);
@@ -442,6 +442,66 @@ void MessageHandler::ContactInformationSlot(
     DLOG(WARNING) << information_message.sender_public_username()
                   << " has sent a badly formed presence message.";
     return;
+  }
+}
+
+void MessageHandler::RetrieveMessagesForAllIds() {
+  int result(-1);
+  std::vector<passport::SelectableIdData> selectables;
+  session_->passport_->SelectableIdentitiesList(&selectables);
+  for (auto it(selectables.begin()); it != selectables.end(); ++it) {
+    passport::SelectableIdentityData data;
+    result = session_->passport_->GetSelectableIdentityData(std::get<0>(*it),
+                                                            true,
+                                                            &data);
+    if (result != kSuccess || data.size() != 3U) {
+      DLOG(ERROR) << "Failed to get own public ID data: " << result;
+      continue;
+    }
+
+    pcs::RemoteChunkStore::ValidationData validation_data_mmid;
+    KeysAndProof(std::get<0>(*it),
+                    passport::kMmid,
+                    true,
+                    &validation_data_mmid);
+    std::string mmid_value(
+        remote_chunk_store_->Get(AppendableByAllType(std::get<1>(*it)),
+                                 validation_data_mmid));
+
+    if (mmid_value.empty()) {
+      DLOG(WARNING) << "Failed to get MPID contents for " << std::get<0>(*it)
+                    << ": " << result;
+    } else {
+      ProcessRetrieved(*it, mmid_value);
+      ClearExpiredReceivedMessages();
+    }
+  }
+}
+
+void MessageHandler::SendPresenceMessage(
+    const std::string &own_public_username,
+    const std::string &recipient_public_username,
+    const ContactPresence &presence) {
+  Message message;
+  message.set_type(Message::kContactInformation);
+  message.set_id(RandomString(64));
+  message.set_sender_public_username(own_public_username);
+  message.set_receiver_public_username(recipient_public_username);
+  message.set_timestamp(
+      boost::lexical_cast<std::string>(GetDurationSinceEpoch()));
+  if (presence == kOnline)
+    message.set_subject("kOnline");
+  else
+    message.set_subject("kOffline");
+
+  int result(Send(own_public_username, recipient_public_username, message));
+  if (result != kSuccess) {
+    DLOG(ERROR) << own_public_username << "failed to inform "
+                << recipient_public_username << " of presence state "
+                << presence;
+    session_->contact_handler_map()
+        [own_public_username]->UpdatePresence(recipient_public_username,
+                                              kOffline);
   }
 }
 
