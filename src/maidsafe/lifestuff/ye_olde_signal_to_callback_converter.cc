@@ -37,7 +37,7 @@ YeOldeSignalToCallbackConverter::YeOldeSignalToCallbackConverter(
       mutex_() {}
 
 int YeOldeSignalToCallbackConverter::AddOperation(const std::string &name,
-                                                  const VoidFuncOneInt cb) {
+                                                  const VoidFunctionOneInt cb) {
   boost::mutex::scoped_lock loch_of_cliff(mutex_);
   if (QueueIsFull()) {
     DLOG(ERROR) << "Queue is full";

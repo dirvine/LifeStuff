@@ -36,6 +36,7 @@ namespace pcs = maidsafe::priv::chunk_store;
 
 namespace maidsafe {
 
+namespace encrypt { struct DataMap; }
 #ifndef LOCAL_TARGETS_ONLY
 namespace dht { class Contact; }
 namespace pd { class ClientContainer; }
@@ -68,6 +69,9 @@ std::string ComposeSignaturePacketName(const std::string &name);
 
 std::string ComposeSignaturePacketValue(
     const maidsafe::pki::SignaturePacket &packet);
+
+std::shared_ptr<encrypt::DataMap> ParseSerialisedDataMap(
+    const std::string &serialised_data_map);
 
 #ifndef LOCAL_TARGETS_ONLY
 int RetrieveBootstrapContacts(const fs::path &download_dir,

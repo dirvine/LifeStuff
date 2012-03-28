@@ -60,7 +60,8 @@ class PublicId {
   typedef bs2::signal<void(const std::string&,  // NOLINT (Fraser)
                            const std::string&)> NewContactSignal;
   typedef std::shared_ptr<NewContactSignal> NewContactSignalPtr;
-  typedef bs2::signal<void(const std::string&)> ContactConfirmedSignal;  // NOLINT (Dan)
+  typedef bs2::signal<void(const std::string&,  // NOLINT (Fraser)
+                           const std::string&)> ContactConfirmedSignal;  // NOLINT (Dan)
   typedef std::shared_ptr<ContactConfirmedSignal> ContactConfirmedSignalPtr;
 
   PublicId(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,

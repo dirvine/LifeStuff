@@ -75,8 +75,8 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
 #endif
         interval_(3) {}
 
-  void ManyContactsSlot(const std::string &/*own_public_username*/,
-                        const std::string &/*other_public_username*/,
+  void ManyContactsSlot(const std::string&,
+                        const std::string&,
                         volatile bool *done,
                         int *count) {
     ++(*count);
@@ -84,20 +84,12 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
       *done = true;
   }
 
-  void ManyConfirmationssSlot(const std::string &/*own_public_username*/,
-                              volatile bool *done,
-                              int *count) {
-    ++(*count);
-    if (*count == 5)
-      *done = true;
-  }
-
-  void NewContactSlot(const std::string &/*own_public_username*/,
+  void NewContactSlot(const std::string&,
                       const std::string &other_public_username) {
     received_public_username_ = other_public_username;
   }
 
-  void NewContactCounterSlot(const std::string &/*own_public_username*/,
+  void NewContactCounterSlot(const std::string&,
                              const std::string &other_public_username,
                              const int &times,
                              int *counter,
@@ -108,14 +100,15 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
       *done = true;
   }
 
-  void ContactRequestSlot(const std::string &/*own_public_username*/,
+  void ContactRequestSlot(const std::string&,
                           const std::string &other_public_username,
                           volatile bool *invoked) {
     received_public_username_ = other_public_username;
     *invoked = true;
   }
 
-  void ContactConfirmedSlot(const std::string &signal_public_username,
+  void ContactConfirmedSlot(const std::string&,
+                            const std::string &signal_public_username,
                             std::string *slot_public_username,
                             volatile bool *invoked) {
     *slot_public_username  = signal_public_username;
@@ -352,7 +345,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
   std::string confirmed_contact;
   bs2::connection connection2(public_id2_->contact_confirmed_signal()->connect(
       std::bind(&PublicIdTest::ContactConfirmedSlot,
-                this, args::_1, &confirmed_contact, &invoked2)));
+                this, args::_1, args::_2, &confirmed_contact, &invoked2)));
 
   // Send the message and start checking for messages
   ASSERT_EQ(kSuccess,
@@ -417,7 +410,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithRefusal) {
   std::string confirmed_contact;
   bs2::connection connection2(public_id2_->contact_confirmed_signal()->connect(
       std::bind(&PublicIdTest::ContactConfirmedSlot,
-                this, args::_1, &confirmed_contact, &invoked2)));
+                this, args::_1, args::_2, &confirmed_contact, &invoked2)));
 
   // Send the message and start checking for messages
   ASSERT_EQ(kSuccess,

@@ -75,7 +75,7 @@ class Authentication {
                        const std::string &surrogate_serialised_data_atlas);
 
   void SaveSession(const std::string &serialised_data_atlas,
-                   const VoidFuncOneInt &functor);
+                   const VoidFunctionOneInt &functor);
   int SaveSession(const std::string &serialised_data_atlas);
   // Used when logging in.
   void GetMasterDataMap(const std::string &password,
@@ -116,7 +116,7 @@ class Authentication {
   };
 
   struct SaveSessionData {
-    SaveSessionData(VoidFuncOneInt func,
+    SaveSessionData(VoidFunctionOneInt func,
                     SaveSessionOpType op_t,
                     const std::string &serialised_data_atlas_in)
         : process_mid(kPending),
@@ -127,7 +127,7 @@ class Authentication {
           op_type(op_t),
           serialised_data_atlas(serialised_data_atlas_in) {}
     OpStatus process_mid, process_smid, process_tmid, process_stmid;
-    VoidFuncOneInt functor;
+    VoidFunctionOneInt functor;
     SaveSessionOpType op_type;
     std::string serialised_data_atlas;
   };

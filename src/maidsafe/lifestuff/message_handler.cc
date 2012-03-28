@@ -24,6 +24,8 @@
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 
+#include "maidsafe/encrypt/data_map.h"
+
 #include "maidsafe/passport/passport.h"
 
 #include "maidsafe/lifestuff/contacts.h"
@@ -68,20 +70,13 @@ MessageHandler::MessageHandler(
       converter_(converter),
       session_(session),
       get_new_messages_timer_(asio_service),
-      new_message_signals_(),
+      chat_signal_(new NewItemSignal),
+      file_transfer_signal_(new NewItemSignal),
+      share_signal_(new NewItemSignal),
       contact_presence_signal_(new ContactPresenceSignal),
       contact_profile_picture_signal_(new ContactProfilePictureSignal),
       received_messages_(),
-      asio_service_(asio_service) {
-  for (int n(Message::ContentType_MIN);
-       n <= Message::ContentType_MAX;
-       ++n) {
-    new_message_signals_.push_back(std::make_shared<NewMessageSignal>());
-  }
-  ConnectToSignal(Message::kContactInformation,
-                  std::bind(&MessageHandler::ContactInformationSlot,
-                            this, args::_1));
-}
+      asio_service_(asio_service) {}
 
 MessageHandler::~MessageHandler() {
   StopCheckingForNewMessages();
@@ -95,8 +90,8 @@ void MessageHandler::StartUp(bptime::seconds interval) {
 }
 
 void MessageHandler::ShutDown() {
-  EnqueuePresenceMessages(kOffline);
   StopCheckingForNewMessages();
+  EnqueuePresenceMessages(kOffline);
 }
 
 void MessageHandler::EnqueuePresenceMessages(ContactPresence presence) {
@@ -139,8 +134,9 @@ void MessageHandler::StopCheckingForNewMessages() {
 
 int MessageHandler::Send(const std::string &public_username,
                          const std::string &recipient_public_username,
-                         const Message &message) {
-  if (!ValidateMessage(message)) {
+                         const InboxItem &inbox_item) {
+  Message message;
+  if (!InboxToProtobuf(inbox_item, &message)) {
     DLOG(ERROR) << "Invalid message. Won't send. Good day. I said: 'Good day!'";
     return -7;
   }
@@ -217,7 +213,7 @@ int MessageHandler::Send(const std::string &public_username,
   result = kPendingResult;
 
   std::string inbox_id(AppendableByAllType(recipient_contact.mmid_name));
-  VoidFuncOneInt callback(std::bind(&SendMessageCallback, args::_1, &mutex,
+  VoidFunctionOneInt callback(std::bind(&SendMessageCallback, args::_1, &mutex,
                                     &cond_var, &result));
   if (converter_->AddOperation(inbox_id, callback) != kSuccess) {
     DLOG(ERROR) << "Failed to add operation to converter";
@@ -248,28 +244,6 @@ int MessageHandler::Send(const std::string &public_username,
   }
 
   return kSuccess;
-}
-
-bs2::connection MessageHandler::ConnectToSignal(
-    const Message::ContentType type,
-    const MessageFunction &function) {
-  if (type < Message::ContentType_MIN ||
-      type > Message::ContentType_MAX) {
-    DLOG(ERROR) << "No such content type, and therefore, no signal. Good day!";
-    return bs2::connection();
-  }
-
-  return new_message_signals_.at(static_cast<size_t>(type))->connect(function);
-}
-
-bs2::connection MessageHandler::ConnectToContactPresenceSignal(
-    const ContactPresenceFunction &function) {
-  return contact_presence_signal_->connect(function);
-}
-
-bs2::connection MessageHandler::ConnectToContactProfilePictureSignal(
-    const ContactProfilePictureFunction &function) {
-  return contact_profile_picture_signal_->connect(function);
 }
 
 void MessageHandler::GetNewMessages(
@@ -330,30 +304,59 @@ void MessageHandler::ProcessRetrieved(const passport::SelectableIdData &data,
       continue;
     }
 
-    if (ValidateMessage(mmid_message) &&
+    InboxItem inbox_item;
+    if (ProtobufToInbox(mmid_message, &inbox_item) &&
         !MessagePreviouslyReceived(decrypted_message)) {
-      (*new_message_signals_.at(mmid_message.type()))(mmid_message);
+      switch (inbox_item.item_type) {
+        case kChat: (*chat_signal_)(inbox_item);
+                    break;
+        case kFileTransfer: (*file_transfer_signal_)(inbox_item);
+                            break;
+        case kSharedDirectory: (*share_signal_)(inbox_item);
+                               break;
+        case kContactProfilePicture: ContactProfilePictureSlot(inbox_item);
+                                     break;
+        case kContactPresence: ContactPresenceSlot(inbox_item);
+                               break;
+      }
     }
   }
 }
 
-bool MessageHandler::ValidateMessage(const Message &message) const {
+bool MessageHandler::ProtobufToInbox(const Message &message,
+                                     InboxItem *inbox_item) const {
   if (!message.IsInitialized()) {
     DLOG(WARNING) << "Message not initialised.";
     return false;
   }
 
-  if (message.type() < Message::ContentType_MIN ||
-      message.type() > Message::ContentType_MAX) {
+  if (message.type() > kContactProfilePicture) {
     DLOG(WARNING) << "Message type out of range.";
     return false;
   }
 
-//   for (auto it(0); it < message.content_size(); ++it)
-//     if (!message.content(it).empty())
-//       return true;
-//   DLOG(WARNING) << "Message with no content.";
-//   return false;
+  inbox_item->item_type = static_cast<InboxItemType>(message.type());
+  inbox_item->sender_public_id = message.sender_public_username();
+  inbox_item->receiver_public_id = message.receiver_public_username();
+  inbox_item->timestamp = message.timestamp();
+  for (auto n(0); n < message.content_size(); ++n)
+    inbox_item->content.push_back(message.content(n));
+
+  return true;
+}
+
+bool MessageHandler::InboxToProtobuf(const InboxItem &inbox_item,
+                                     Message *message) const {
+  if (!message)
+    return false;
+
+  message->set_type(inbox_item.item_type);
+  message->set_sender_public_username(inbox_item.sender_public_id);
+  message->set_receiver_public_username(inbox_item.receiver_public_id);
+  message->set_timestamp(inbox_item.timestamp);
+  for (size_t n(0); n < inbox_item.content.size(); ++n)
+    message->add_content(inbox_item.content[n]);
+
   return true;
 }
 
@@ -408,41 +411,63 @@ void MessageHandler::KeysAndProof(
   validation_data->ownership_proof = signed_data.SerializeAsString();
 }
 
-void MessageHandler::ContactInformationSlot(
-    const Message& information_message) {
-  if (!information_message.has_subject()) {
+void MessageHandler::ContactPresenceSlot(const InboxItem &presence_message) {
+  if (presence_message.content.size() != 1U) {
     // Drop silently
-    DLOG(WARNING) << information_message.sender_public_username()
-                  << " has sent a presence message with no subject.";
+    DLOG(WARNING) << presence_message.sender_public_id
+                  << " has sent a presence message with bad content: "
+                  << presence_message.content.size();
     return;
   }
 
-  std::string sender(information_message.sender_public_username()),
-              receiver(information_message.receiver_public_username());
+  std::string sender(presence_message.sender_public_id),
+              receiver(presence_message.receiver_public_id);
   int result(0);
-  if (information_message.subject() == "kOnline") {
+  if (presence_message.content[0] == "kOnline") {
     result = session_->contact_handler_map()[receiver]->UpdatePresence(sender,
                                                                        kOnline);
     if (result == kSuccess)
       (*contact_presence_signal_)(receiver, sender, kOnline);
-  } else if (information_message.subject() == "kOffline") {
+  } else if (presence_message.content[0] == "kOffline") {
     result =
         session_->contact_handler_map()[receiver]->UpdatePresence(sender,
                                                                   kOffline);
     if (result == kSuccess)
       (*contact_presence_signal_)(receiver, sender, kOffline);
-  } else if (information_message.subject() == "kPicture" &&
-             information_message.content_size() == 1) {
-    result = session_->contact_handler_map()
-                 [receiver]->UpdateProfilePictureDataMap(
-                     sender, information_message.content(0));
-    if (result == kSuccess)
-      (*contact_profile_picture_signal_)(receiver, sender);
+
+    // Send message so they know we're online when they come back
+    asio_service_.post(std::bind(&MessageHandler::SendPresenceMessage,
+                                 this, receiver, sender, kOnline));
   } else {
-    DLOG(WARNING) << information_message.sender_public_username()
-                  << " has sent a badly formed presence message.";
+    DLOG(WARNING) << presence_message.sender_public_id
+                  << " has sent a presence message with wrong content.";
+  }
+}
+
+void MessageHandler::ContactProfilePictureSlot(
+    const InboxItem &profile_picture_message) {
+  if (profile_picture_message.content.size() != 1U) {
+    // Drop silently
+    DLOG(WARNING) << profile_picture_message.sender_public_id
+                  << " has sent a profile picture message with bad content.";
     return;
   }
+
+  std::string sender(profile_picture_message.sender_public_id),
+              receiver(profile_picture_message.receiver_public_id);
+  encrypt::DataMapPtr data_map(
+      ParseSerialisedDataMap(profile_picture_message.content[0]));
+  if (!data_map) {
+    DLOG(ERROR) << "Data map didn't parse.";
+    return;
+  }
+
+  int result(session_->contact_handler_map()
+                 [receiver]->UpdateProfilePictureDataMap(
+                     sender,
+                     profile_picture_message.content[0]));
+  if (result == kSuccess)
+    (*contact_profile_picture_signal_)(receiver, sender);
 }
 
 void MessageHandler::RetrieveMessagesForAllIds() {
@@ -482,19 +507,17 @@ void MessageHandler::SendPresenceMessage(
     const std::string &own_public_username,
     const std::string &recipient_public_username,
     const ContactPresence &presence) {
-  Message message;
-  message.set_type(Message::kContactInformation);
-  message.set_id(RandomString(64));
-  message.set_sender_public_username(own_public_username);
-  message.set_receiver_public_username(recipient_public_username);
-  message.set_timestamp(
-      boost::lexical_cast<std::string>(GetDurationSinceEpoch()));
+  InboxItem inbox_item(kContactPresence);
+  inbox_item.sender_public_id  = own_public_username;
+  inbox_item.receiver_public_id = recipient_public_username;
+  inbox_item.timestamp = boost::lexical_cast<std::string>(
+                             GetDurationSinceEpoch());
   if (presence == kOnline)
-    message.set_subject("kOnline");
+    inbox_item.content.push_back("kOnline");
   else
-    message.set_subject("kOffline");
+    inbox_item.content.push_back("kOffline");
 
-  int result(Send(own_public_username, recipient_public_username, message));
+  int result(Send(own_public_username, recipient_public_username, inbox_item));
   if (result != kSuccess) {
     DLOG(ERROR) << own_public_username << "failed to inform "
                 << recipient_public_username << " of presence state "
@@ -503,6 +526,31 @@ void MessageHandler::SendPresenceMessage(
         [own_public_username]->UpdatePresence(recipient_public_username,
                                               kOffline);
   }
+}
+
+bs2::connection MessageHandler::ConnectToChatSignal(
+    const ChatFunction &function) {
+  return chat_signal_->connect(function);
+}
+
+bs2::connection MessageHandler::ConnectToFileTransferSignal(
+    const FileTransferFunction &function) {
+  return file_transfer_signal_->connect(function);
+}
+
+bs2::connection MessageHandler::ConnectToShareSignal(
+    const ShareFunction &function) {
+  return share_signal_->connect(function);
+}
+
+bs2::connection MessageHandler::ConnectToContactPresenceSignal(
+    const ContactPresenceFunction &function) {
+  return contact_presence_signal_->connect(function);
+}
+
+bs2::connection MessageHandler::ConnectToContactProfilePictureSignal(
+    const ContactProfilePictureFunction &function) {
+  return contact_profile_picture_signal_->connect(function);
 }
 
 }  // namespace lifestuff

@@ -42,8 +42,13 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-enum DefConLevels { kDefCon1 = 1, kDefCon2, kDefCon3 };
-typedef std::function<void(int)> VoidFuncOneInt;  // NOLINT (Dan)
+class Message;
+
+enum DefConLevels {
+  kDefCon1 = 1,
+  kDefCon2,
+  kDefCon3
+};
 
 enum ContactStatus {
   kAll = 0x00,
@@ -64,6 +69,56 @@ enum ContactPresence {
   kOffline,
   kOnline
 };
+
+enum InboxItemType {
+  kChat,
+  kFileTransfer,
+  kSharedDirectory,
+  kContactPresence,
+  kContactProfilePicture,
+
+  // First and last markers
+  kInboxItemTypeFirst = kChat,
+  kInboxItemTypeLast = kContactProfilePicture
+};
+
+struct InboxItem {
+  explicit InboxItem(InboxItemType inbox_item_type = kChat)
+      : item_type(inbox_item_type),
+        sender_public_id(),
+        receiver_public_id(),
+        content(),
+        timestamp() {}
+  InboxItemType item_type;
+  std::string sender_public_id;
+  std::string receiver_public_id;
+  std::vector<std::string> content;
+  std::string timestamp;
+};
+
+const uint32_t kFileRecontructionLimit(20 * 1024 * 1024);
+const uint16_t kIntervalSeconds(5000);
+const std::string kLiteralOnline("kOnline");
+const std::string kLiteralOffline("kOffline");
+
+typedef std::function<void(const InboxItem&)> InboxItemFunction;
+typedef InboxItemFunction ChatFunction;
+typedef InboxItemFunction FileTransferFunction;
+typedef InboxItemFunction ShareFunction;
+
+typedef std::function<void(int)> VoidFunctionOneInt;  // NOLINT (Dan)
+typedef std::function<void(const std::string&)> OneStringFunction;
+
+typedef std::function<void(const std::string&, const std::string&)>
+        TwoStringsFunction;
+typedef TwoStringsFunction NewContactFunction;
+typedef TwoStringsFunction ContactConfirmationFunction;
+typedef TwoStringsFunction ContactProfilePictureFunction;
+
+typedef std::function<void(const std::string&,
+                           const std::string&,
+                           ContactPresence presence)> ContactPresenceFunction;
+namespace args = std::placeholders;
 
 }  // namespace lifestuff
 

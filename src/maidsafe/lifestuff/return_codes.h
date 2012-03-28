@@ -52,53 +52,15 @@ enum ReturnCode {
   kPasswordFailure = -201002,
   kUserDoesntExist = -201003,
   kUserExists = -201004,
-  kPublicUsernameExists = -201005,
-  kPublicUsernameAlreadySet = -201006,
-  kFailedToDeleteOldPacket = -201007,
+  kFailedToDeleteOldPacket = -201005,
 
   // Client Controller
   kUserCredentialsNotInitialised = -202001,
 
-  // Store Manager
-  kStoreManagerInitError = -203001,
-  kStorePacketFailure = -203002,
-  kDeletePacketFailure = -203003,
-  kGetPacketFailure = -203004,
-  kUpdatePacketFailure = -203005,
-  kNoPublicKeyToCheck = -203006,
-  kKeyUnique = -203007,
-  kKeyNotUnique = -203008,
-  kGetPacketEmptyData = -203009,
-
   // Session
-  kEmptyConversationId = -204001,
-  kNonExistentConversation = -204002,
-  kExistingConversation = -204003,
-  kGetKeyFailure = -204004,
-  kContactListFailure = -204005,
-  kAddLiveContactFailure = -204006,
-  kLiveContactNotFound = -204007,
-  kLiveContactNoEp = -204008,
-
-  // Data-Handler
-  kParseFailure = -205001,
-  kPreOperationCheckFailure = -205002,
-  kDuplicateNameFailure = -205003,
-  kStoreFailure = -205004,
-  kVerifyDataFailure = -205005,
-  kDeleteFailure = -205006,
-  kModifyFailure = -205007,
-  kMissingSignedData = -205008,
-  kInvalidUpdate = -205009,
-  kSignatureVerificationFailure =  -205010,
-  kNotHashable = -205011,
-  kNotOwner = -205012,
-  kNonExistent = -205013,
-  kUnknownFailure = -205014,
-  kWontAcceptContact = -205015,
+  kLiveContactNotFound = -204001,
 
   // PublicId
-  kPublicIdExists = -206001,
   kGetPublicIdError = -206002,
   kSigningError = -206003,
   kEncryptingError = -206004,
@@ -112,7 +74,8 @@ enum ReturnCode {
   kGenerateNewMMIDFailure = -206012,
 
   // MessageHandler
-  kMessageHandlerException = -207001
+  kMessageHandlerException = -207001,
+  kMessageHandlerNotInitialised = -207002
 };
 
 }  // namespace lifestuff

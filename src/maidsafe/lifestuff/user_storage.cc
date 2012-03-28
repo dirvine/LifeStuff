@@ -21,9 +21,8 @@
 
 #include "maidsafe/lifestuff/user_storage.h"
 
+#include <limits>
 #include <list>
-
-#include "boost/archive/text_iarchive.hpp"
 
 #include "maidsafe/common/utils.h"
 
@@ -62,14 +61,14 @@ struct AddMessageDetails<InsertShareTag> {
   void operator()(const fs::path& path,
                   const std::string& directory_id,
                   const std::string&,
-                  Message* admin_message,
-                  Message* non_admin_message) {
-    admin_message->set_subject("insert_share");
-    admin_message->add_content(path.filename().string());
-    admin_message->add_content(directory_id);
-    non_admin_message->set_subject("insert_share");
-    non_admin_message->add_content(path.filename().string());
-    non_admin_message->add_content(directory_id);
+                  InboxItem* admin_message,
+                  InboxItem* non_admin_message) {
+    admin_message->content.push_back("insert_share");
+    admin_message->content.push_back(path.filename().string());
+    admin_message->content.push_back(directory_id);
+    non_admin_message->content.push_back("insert_share");
+    non_admin_message->content.push_back(path.filename().string());
+    non_admin_message->content.push_back(directory_id);
   }
 };
 
@@ -78,10 +77,10 @@ struct AddMessageDetails<StopShareTag> {
   void operator()(const fs::path&,
                   const std::string&,
                   const std::string&,
-                  Message* admin_message,
-                  Message* non_admin_message) {
-    admin_message->set_subject("stop_share");
-    non_admin_message->set_subject("stop_share");
+                  InboxItem* admin_message,
+                  InboxItem* non_admin_message) {
+    admin_message->content.push_back("stop_share");
+    non_admin_message->content.push_back("stop_share");
   }
 };
 
@@ -90,10 +89,10 @@ struct AddMessageDetails<RemoveShareTag> {
   void operator()(const fs::path&,
                   const std::string&,
                   const std::string&,
-                  Message* admin_message,
-                  Message* non_admin_message) {
-    admin_message->set_subject("remove_share");
-    non_admin_message->set_subject("remove_share");
+                  InboxItem* admin_message,
+                  InboxItem* non_admin_message) {
+    admin_message->content.push_back("remove_share");
+    non_admin_message->content.push_back("remove_share");
   }
 };
 
@@ -102,14 +101,14 @@ struct AddMessageDetails<UpdateShareTag> {
   void operator()(const fs::path&,
                   const std::string& directory_id,
                   const std::string& new_share_id,
-                  Message* admin_message,
-                  Message* non_admin_message) {
-    admin_message->set_subject("update_share");
-    admin_message->add_content(directory_id);
-    admin_message->add_content(new_share_id);
-    non_admin_message->set_subject("update_share");
-    non_admin_message->add_content(directory_id);
-    non_admin_message->add_content(new_share_id);
+                  InboxItem* admin_message,
+                  InboxItem* non_admin_message) {
+    admin_message->content.push_back("update_share");
+    admin_message->content.push_back(directory_id);
+    admin_message->content.push_back(new_share_id);
+    non_admin_message->content.push_back("update_share");
+    non_admin_message->content.push_back(directory_id);
+    non_admin_message->content.push_back(new_share_id);
   }
 };
 
@@ -118,10 +117,10 @@ struct AddMessageDetails<UpgradeShareTag> {
   void operator()(const fs::path&,
                   const std::string&,
                   const std::string&,
-                  Message* admin_message,
-                  Message* non_admin_message) {
-    admin_message->set_subject("upgrade_share");
-    non_admin_message->set_subject("upgrade_share");
+                  InboxItem* admin_message,
+                  InboxItem* non_admin_message) {
+    admin_message->content.push_back("upgrade_share");
+    non_admin_message->content.push_back("upgrade_share");
   }
 };
 
@@ -225,6 +224,11 @@ bool UserStorage::mount_status() {
   return mount_status_;
 }
 
+void UserStorage::set_message_handler(
+    std::shared_ptr<MessageHandler> message_handler) {
+  message_handler_ = message_handler;
+}
+
 int UserStorage::GetDataMap(const fs::path &absolute_path,
                             std::string *serialised_data_map) const {
   return drive_in_user_space_->GetDataMap(
@@ -243,6 +247,11 @@ int UserStorage::CreateShare(const std::string &sender_public_username,
                              const fs::path &absolute_path,
                              const std::map<std::string, bool> &contacts,
                              std::string *share_id_result) {
+  if (!message_handler_) {
+    DLOG(WARNING) << "Uninitialised message handler.";
+    return kMessageHandlerNotInitialised;
+  }
+
   std::string share_id(crypto::Hash<crypto::SHA512>(absolute_path.string()));
   if (share_id_result)
     *share_id_result = share_id;
@@ -264,7 +273,7 @@ int UserStorage::CreateShare(const std::string &sender_public_username,
   pcs::RemoteChunkStore::ValidationData validation_data(
       PopulateValidationData(key_ring));
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
-  VoidFuncOneInt callback(std::bind(&SendContactInfoCallback,
+  VoidFunctionOneInt callback(std::bind(&SendContactInfoCallback,
                                     args::_1,
                                     &mutex,
                                     &cond_var,
@@ -285,7 +294,7 @@ int UserStorage::CreateShare(const std::string &sender_public_username,
 
   if (results[0] != kSuccess) {
     DLOG(ERROR) << "Failed to store packet.  Packet 1 : " << results[0];
-    return kStorePacketFailure;
+    return results[0];
   }
   std::string directory_id;
   result = drive_in_user_space_->SetShareDetails(
@@ -313,6 +322,11 @@ int UserStorage::InsertShare(const fs::path &absolute_path,
                              const std::string &share_id,
                              const std::string &directory_id,
                              const asymm::Keys &share_keyring) {
+  if (!message_handler_) {
+    DLOG(WARNING) << "Uninitialised message handler.";
+    return kMessageHandlerNotInitialised;
+  }
+
   return drive_in_user_space_->InsertShare(
              drive_in_user_space_->RelativePath(absolute_path),
              directory_id,
@@ -322,6 +336,11 @@ int UserStorage::InsertShare(const fs::path &absolute_path,
 
 int UserStorage::StopShare(const std::string &sender_public_username,
                            const fs::path &absolute_path) {
+  if (!message_handler_) {
+    DLOG(WARNING) << "Uninitialised message handler.";
+    return kMessageHandlerNotInitialised;
+  }
+
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
   std::map<std::string, bool> contacts;
   asymm::Keys key_ring;
@@ -354,7 +373,7 @@ int UserStorage::StopShare(const std::string &sender_public_username,
       validation_data(PopulateValidationData(key_ring));
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
 
-  VoidFuncOneInt callback(std::bind(&SendContactInfoCallback,
+  VoidFunctionOneInt callback(std::bind(&SendContactInfoCallback,
                                     args::_1,
                                     &mutex,
                                     &cond_var,
@@ -370,13 +389,18 @@ int UserStorage::StopShare(const std::string &sender_public_username,
     return result;
   if (results[0] != kSuccess) {
     DLOG(ERROR) << "Failed to remove packet. Packet 1 : " << results[0];
-    return kDeletePacketFailure;
+    return results[0];
   }
 
   return kSuccess;
 }
 
 int UserStorage::RemoveShare(const fs::path& absolute_path) {
+  if (!message_handler_) {
+    DLOG(WARNING) << "Uninitialised message handler.";
+    return kMessageHandlerNotInitialised;
+  }
+
   return drive_in_user_space_->RemoveShare(
              drive_in_user_space_->RelativePath(absolute_path));
 }
@@ -386,6 +410,11 @@ int UserStorage::UpdateShare(const fs::path &absolute_path,
                              const std::string *new_share_id,
                              const std::string *new_directory_id,
                              const asymm::Keys *new_key_ring) {
+  if (!message_handler_) {
+    DLOG(WARNING) << "Uninitialised message handler.";
+    return kMessageHandlerNotInitialised;
+  }
+
   return drive_in_user_space_->UpdateShare(
              drive_in_user_space_->RelativePath(absolute_path),
              share_id,
@@ -397,6 +426,11 @@ int UserStorage::UpdateShare(const fs::path &absolute_path,
 int UserStorage::AddShareUsers(const std::string &sender_public_username,
                                const fs::path &absolute_path,
                                const std::map<std::string, bool> &contacts) {
+  if (!message_handler_) {
+    DLOG(WARNING) << "Uninitialised message handler.";
+    return kMessageHandlerNotInitialised;
+  }
+
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
   int result(drive_in_user_space_->AddShareUsers(relative_path, contacts));
   if (result != kSuccess) {
@@ -437,6 +471,11 @@ int UserStorage::AddShareUsers(const std::string &sender_public_username,
 int UserStorage::GetAllShareUsers(
     const fs::path &absolute_path,
     std::map<std::string, bool> *all_share_users) const {
+  if (!message_handler_) {
+    DLOG(WARNING) << "Uninitialised message handler.";
+    return kMessageHandlerNotInitialised;
+  }
+
   int result(drive_in_user_space_->GetShareDetails(
                  drive_in_user_space_->RelativePath(absolute_path),
                  nullptr,
@@ -454,6 +493,11 @@ int UserStorage::GetAllShareUsers(
 int UserStorage::RemoveShareUsers(const std::string &sender_public_username,
                                   const fs::path &absolute_path,
                                   const std::vector<std::string> &user_ids) {
+  if (!message_handler_) {
+    DLOG(WARNING) << "Uninitialised message handler.";
+    return kMessageHandlerNotInitialised;
+  }
+
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
   std::string share_id;
   asymm::Keys old_key_ring;
@@ -493,7 +537,7 @@ int UserStorage::RemoveShareUsers(const std::string &sender_public_username,
   pcs::RemoteChunkStore::ValidationData validation_data(
       PopulateValidationData(key_ring));
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
-  VoidFuncOneInt callback(std::bind(&SendContactInfoCallback, args::_1,
+  VoidFunctionOneInt callback(std::bind(&SendContactInfoCallback, args::_1,
                                     &mutex, &cond_var, &results[0]));
   if (converter_->AddOperation(packet_id, callback) != kSuccess) {
     DLOG(ERROR) << "Failed to add operation to converter";
@@ -508,7 +552,7 @@ int UserStorage::RemoveShareUsers(const std::string &sender_public_username,
     return result;
   if (results[0] != kSuccess) {
     DLOG(ERROR) << "Failed to store packets.  Packet 1 : " << results[0];
-    return kStorePacketFailure;
+    return results[0];
   }
 
   std::string directory_id;
@@ -574,6 +618,11 @@ int UserStorage::RemoveShareUsers(const std::string &sender_public_username,
 int UserStorage::GetShareUsersRights(const fs::path &absolute_path,
                                      const std::string &user_id,
                                      bool *admin_rights) const {
+  if (!message_handler_) {
+    DLOG(WARNING) << "Uninitialised message handler.";
+    return kMessageHandlerNotInitialised;
+  }
+
   return drive_in_user_space_->GetShareUsersRights(
              drive_in_user_space_->RelativePath(absolute_path),
              user_id,
@@ -584,6 +633,11 @@ int UserStorage::SetShareUsersRights(const std::string &sender_public_username,
                                      const fs::path &absolute_path,
                                      const std::string &user_id,
                                      bool admin_rights) {
+  if (!message_handler_) {
+    DLOG(WARNING) << "Uninitialised message handler.";
+    return kMessageHandlerNotInitialised;
+  }
+
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
   bool old_admin_right;
   int result(drive_in_user_space_->GetShareUsersRights(relative_path,
@@ -735,41 +789,38 @@ int UserStorage::InformContactsOperation(
     const std::string &directory_id,
     const asymm::Keys &key_ring,
     const std::string &new_share_id) {
-  Message admin_message, non_admin_message;
-  std::string public_key, private_key, parent_id(RandomString(64)),
-              id(RandomString(64));
+  InboxItem admin_message, non_admin_message;
+  std::string public_key, private_key;
 
-  admin_message.set_type(Message::kSharedDirectory);
-  admin_message.set_parent_id(parent_id);
-  admin_message.set_id(id);
-  admin_message.set_sender_public_username(sender_public_username);
-  admin_message.add_content(share_id);
-  non_admin_message.set_type(Message::kSharedDirectory);
-  non_admin_message.set_parent_id(parent_id);
-  non_admin_message.set_id(id);
-  non_admin_message.set_sender_public_username(sender_public_username);
-  non_admin_message.add_content(share_id);
+  admin_message.item_type = kSharedDirectory;
+  admin_message.sender_public_id = sender_public_username;
+  admin_message.content.push_back(share_id);
+  non_admin_message.item_type = kSharedDirectory;
+  non_admin_message.sender_public_id = sender_public_username;
+  non_admin_message.content.push_back(share_id);
   AddMessageDetails<Operation>()(absolute_path,
                                  directory_id,
                                  new_share_id,
                                  &admin_message,
                                  &non_admin_message);
-  admin_message.add_content(key_ring.identity);
-  admin_message.add_content(key_ring.validation_token);
+  admin_message.content.push_back(key_ring.identity);
+  admin_message.content.push_back(key_ring.validation_token);
   asymm::EncodePrivateKey(key_ring.private_key, &private_key);
-  admin_message.add_content(private_key);
+  admin_message.content.push_back(private_key);
   asymm::EncodePublicKey(key_ring.public_key, &public_key);
-  admin_message.add_content(public_key);
+  admin_message.content.push_back(public_key);
 
   int result, aggregate(0);
   for (auto it = contacts.begin(); it != contacts.end(); ++it) {
     // do nothing if trying to send a msg to itself
     if ((*it).first != sender_public_username) {
       if ((*it).second) {
+        admin_message.receiver_public_id = (*it).first;
         result = message_handler_->Send(sender_public_username,
                                         (*it).first,
                                         admin_message);
       } else {
+        non_admin_message.receiver_public_id = (*it).first;
         result = message_handler_->Send(sender_public_username,
                                         (*it).first,
                                         non_admin_message);
@@ -787,20 +838,16 @@ int UserStorage::InformContactsOperation(
 }
 
 std::string UserStorage::ConstructFile(const std::string &serialised_data_map) {
-  encrypt::DataMapPtr data_map(new encrypt::DataMap);
-  std::istringstream input_stream(serialised_data_map, std::ios_base::binary);
-  try {
-    boost::archive::text_iarchive input_archive(input_stream);
-    input_archive >> *data_map;
-  } catch(const boost::archive::archive_exception &e) {
-    DLOG(ERROR) << e.what();
+  encrypt::DataMapPtr data_map(ParseSerialisedDataMap(serialised_data_map));
+  if (!data_map) {
+    DLOG(ERROR) << "Data map didn't parse.";
     return "";
   }
 
   uint32_t file_size(data_map->chunks.empty() ? data_map->content.size() : 0);
   auto it(data_map->chunks.begin());
   while (it != data_map->chunks.end()) {
-    if ((std::numeric_limits<uint32_t>::max() - file_size) > (*it).size) {
+    if (kFileRecontructionLimit < (file_size + (*it).size)) {
       DLOG(ERROR) << "File too large to read.";
       return "";
     }

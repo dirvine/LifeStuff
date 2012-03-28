@@ -233,19 +233,6 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionBlocking) {
   ASSERT_EQ(kSuccess, authentication_.SaveSession(ser_dm_));
   std::string tmidname(PacketValueFromSession(passport::kTmid, true));
   std::string stmidname(PacketValueFromSession(passport::kStmid, true));
-
-//  ASSERT_TRUE(packet_manager_->KeyUnique(
-//                  pca::ApplyTypeToName(original_tmidname,
-//                                       pca::kModifiableByOwner),
-//                  PacketSignerFromSession(passport::kTmid, true)));
-//  ASSERT_FALSE(packet_manager_->KeyUnique(
-//                   pca::ApplyTypeToName(stmidname,
-//                                        pca::kModifiableByOwner),
-//                   PacketSignerFromSession(passport::kStmid, true)));
-//  ASSERT_FALSE(packet_manager_->KeyUnique(
-//                   pca::ApplyTypeToName(tmidname,
-//                                        pca::kModifiableByOwner),
-//                   PacketSignerFromSession(passport::kTmid, true)));
 }
 
 TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
@@ -270,10 +257,6 @@ TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
   authentication_.GetMasterDataMap(password_, &ser_dm_login, &ser_dm_login1);
   ASSERT_EQ(ser_dm_ + "2", ser_dm_login);
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
-//  ASSERT_TRUE(packet_manager_->KeyUnique(
-//                  pca::ApplyTypeToName(original_stmidname,
-//                                       pca::kModifiableByOwner),
-//                  PacketSignerFromSession(passport::kTmid, true)));
 }
 
 TEST_F(AuthenticationTest, FUNC_ChangePin) {

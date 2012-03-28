@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "boost/asio.hpp"
+#include "boost/archive/text_iarchive.hpp"
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
 
@@ -31,6 +32,8 @@
 
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
+
+#include "maidsafe/encrypt/data_map.h"
 
 #ifndef LOCAL_TARGETS_ONLY
 #include "maidsafe/dht/contact.h"
@@ -210,6 +213,20 @@ std::string ComposeSignaturePacketValue(
   signed_data.set_data(public_key);
   signed_data.set_signature(packet.signature());
   return signed_data.SerializeAsString();
+}
+
+encrypt::DataMapPtr ParseSerialisedDataMap(
+    const std::string &serialised_data_map) {
+  encrypt::DataMapPtr data_map(new encrypt::DataMap);
+  std::istringstream input_stream(serialised_data_map, std::ios_base::binary);
+  try {
+    boost::archive::text_iarchive input_archive(input_stream);
+    input_archive >> *data_map;
+  } catch(const boost::archive::archive_exception &e) {
+    DLOG(ERROR) << e.what();
+    return encrypt::DataMapPtr();
+  }
+  return data_map;
 }
 
 #ifndef LOCAL_TARGETS_ONLY

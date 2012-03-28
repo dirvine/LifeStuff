@@ -45,7 +45,7 @@ namespace lifestuff {
 class YeOldeSignalToCallbackConverter {
  public:
   explicit YeOldeSignalToCallbackConverter(uint16_t max_size = UINT16_MAX);
-  int AddOperation(const std::string &name, const VoidFuncOneInt cb);
+  int AddOperation(const std::string &name, const VoidFunctionOneInt cb);
 
   // slots
   void Deleted(const std::string &chunk_name, const int &result);
@@ -57,11 +57,11 @@ class YeOldeSignalToCallbackConverter {
     ChunkNameAndCallback()
         : chunk_name(),
           callback() {}
-    ChunkNameAndCallback(const std::string &name, const VoidFuncOneInt cb)
+    ChunkNameAndCallback(const std::string &name, const VoidFunctionOneInt cb)
         : chunk_name(name),
           callback(cb) {}
     std::string chunk_name;
-    VoidFuncOneInt callback;
+    VoidFunctionOneInt callback;
   };
 
   bool QueueIsFull();

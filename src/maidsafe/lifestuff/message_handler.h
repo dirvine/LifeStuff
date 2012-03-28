@@ -61,19 +61,16 @@ class YeOldeSignalToCallbackConverter;
 
 class MessageHandler {
  public:
-  typedef bs2::signal<void(const Message&)> NewMessageSignal;  // NOLINT (Dan)
-  typedef NewMessageSignal::slot_type MessageFunction;
-  typedef std::shared_ptr<NewMessageSignal> NewMessageSignalPtr;
+  typedef bs2::signal<void(const InboxItem&)> NewItemSignal;  // NOLINT (Dan)
+  typedef std::shared_ptr<NewItemSignal> NewItemSignalPtr;
 
   typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
                            const std::string&,
                            ContactPresence presence)> ContactPresenceSignal;
-  typedef ContactPresenceSignal::slot_type ContactPresenceFunction;
   typedef std::shared_ptr<ContactPresenceSignal> ContactPresenceSignalPtr;
 
   typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
                            const std::string&)> ContactProfilePictureSignal;
-  typedef ContactProfilePictureSignal::slot_type ContactProfilePictureFunction;
   typedef std::shared_ptr<ContactProfilePictureSignal>
           ContactProfilePictureSignalPtr;
 
@@ -96,10 +93,12 @@ class MessageHandler {
 
   int Send(const std::string &own_public_username,
            const std::string &recipient_public_username,
-           const Message &message);
+           const InboxItem &message);
 
-  bs2::connection ConnectToSignal(const Message::ContentType type,
-                                  const MessageFunction &function);
+  bs2::connection ConnectToChatSignal(const ChatFunction &function);
+  bs2::connection ConnectToFileTransferSignal(
+      const FileTransferFunction &function);
+  bs2::connection ConnectToShareSignal(const ShareFunction &function);
   bs2::connection ConnectToContactPresenceSignal(
       const ContactPresenceFunction &function);
   bs2::connection ConnectToContactProfilePictureSignal(
@@ -109,7 +108,8 @@ class MessageHandler {
   MessageHandler(const MessageHandler&);
   MessageHandler& operator=(const MessageHandler&);
 
-  bool ValidateMessage(const Message &message) const;
+  bool ProtobufToInbox(const Message &message, InboxItem *inbox_item) const;
+  bool InboxToProtobuf(const InboxItem &inbox_item, Message *message) const;
   void GetNewMessages(const bptime::seconds &interval,
                       const boost::system::error_code &error_code);
   void ProcessRetrieved(const passport::SelectableIdData &data,
@@ -120,7 +120,8 @@ class MessageHandler {
                     passport::PacketType pt,
                     bool confirmed,
                     pcs::RemoteChunkStore::ValidationData *validation_data);
-  void ContactInformationSlot(const Message& information_message);
+  void ContactPresenceSlot(const InboxItem& information_message);
+  void ContactProfilePictureSlot(const InboxItem& information_message);
   void RetrieveMessagesForAllIds();
   void SendPresenceMessage(const std::string &own_public_username,
                            const std::string &recipient_public_username,
@@ -131,11 +132,11 @@ class MessageHandler {
   std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
   std::shared_ptr<Session> session_;
   ba::deadline_timer get_new_messages_timer_;
-  std::vector<NewMessageSignalPtr> new_message_signals_;
+  NewItemSignalPtr chat_signal_, file_transfer_signal_, share_signal_;
   ContactPresenceSignalPtr contact_presence_signal_;
   ContactProfilePictureSignalPtr contact_profile_picture_signal_;
   ReceivedMessagesMap received_messages_;
-  ba::io_service &asio_service_;  // NOLINT(Dan)
+  ba::io_service &asio_service_;  // NOLINT (Dan)
 };
 
 }  // namespace lifestuff

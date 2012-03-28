@@ -264,8 +264,8 @@ int PublicId::CreatePublicId(const std::string &public_username,
                &validation_data_anmpid);
 
   std::string inbox_name(MaidsafeInboxName(data));
-  VoidFuncOneInt callback(std::bind(&SendContactInfoCallback, args::_1,
-                                    &mutex, &cond_var, &results[0]));
+  VoidFunctionOneInt callback(std::bind(&SendContactInfoCallback, args::_1,
+                                        &mutex, &cond_var, &results[0]));
   if (converter_->AddOperation(inbox_name, callback) != kSuccess) {
     DLOG(ERROR) << "ChangeUserData: failed to add to converter - "
                 << passport::kMmid;
@@ -315,31 +315,6 @@ int PublicId::CreatePublicId(const std::string &public_username,
                                  accepts_new_contacts,
                                  validation_data_mpid.key_pair.private_key),
                              validation_data_mpid);
-
-/*
-  packet_manager_->StorePacket(MaidsafeInboxName(data),
-                               MaidsafeInboxValue(data, inbox_private_key),
-                               std::get<0>(data.at(2)),
-                               std::bind(&SendContactInfoCallback, args::_1,
-                                         &mutex, &cond_var, &results[0]));
-  packet_manager_->StorePacket(AnmpidName(data),
-                               AnmpidValue(data),
-                               std::get<0>(data.at(0)),
-                               std::bind(&SendContactInfoCallback, args::_1,
-                                         &mutex, &cond_var, &results[1]));
-  packet_manager_->StorePacket(MpidName(data),
-                               MpidValue(data),
-                               std::get<0>(data.at(0)),
-                               std::bind(&SendContactInfoCallback, args::_1,
-                                         &mutex, &cond_var, &results[2]));
-  packet_manager_->StorePacket(MaidsafeContactIdName(public_username),
-                               MaidsafeContactIdValue(data,
-                                                      accepts_new_contacts,
-                                                      contact_id_private_key),
-                               std::get<0>(data.at(1)),
-                               std::bind(&SendContactInfoCallback, args::_1,
-                                         &mutex, &cond_var, &results[3]));
-*/
 
   result = AwaitingResponse(&mutex, &cond_var, &results);
   if (result != kSuccess)
@@ -439,8 +414,8 @@ int PublicId::ModifyAppendability(const std::string &public_username,
   pcs::RemoteChunkStore::ValidationData validation_data_mpid;
   KeysAndProof(public_username, passport::kMpid, true, &validation_data_mpid);
   std::string packet_name(MaidsafeContactIdName(public_username));
-  VoidFuncOneInt callback(std::bind(&SendContactInfoCallback, args::_1,
-                                    &mutex, &cond_var, &results[0]));
+  VoidFunctionOneInt callback(std::bind(&SendContactInfoCallback, args::_1,
+                                        &mutex, &cond_var, &results[0]));
   if (converter_->AddOperation(packet_name, callback) != kSuccess) {
     DLOG(ERROR) << "Failed to add operation to converter";
     return kAuthenticationError;
@@ -463,20 +438,6 @@ int PublicId::ModifyAppendability(const std::string &public_username,
       packet_name,
       ComposeModifyAppendableByAll(MMID_private_key, appendability),
       validation_data_mmid);
-/*
-  packet_manager_->ModifyPacket(
-      MaidsafeContactIdName(public_username),
-      ComposeModifyAppendableByAll(MPID_private_key, appendability),
-      std::get<0>(data.at(1)),
-      std::bind(&SendContactInfoCallback, args::_1,
-                &mutex, &cond_var, &results[0]));
-  packet_manager_->ModifyPacket(
-      MaidsafeInboxName(data),
-      ComposeModifyAppendableByAll(MMID_private_key, appendability),
-      std::get<0>(data.at(2)),
-      std::bind(&SendContactInfoCallback, args::_1,
-                &mutex, &cond_var, &results[1]));
-*/
 
   result = AwaitingResponse(&mutex, &cond_var, &results);
   if (result != kSuccess)
@@ -592,7 +553,7 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
                     public_username,
                     profile_picture_data_map));
         if (stat == kSuccess && mmid == kSuccess && picture == kSuccess) {
-          (*contact_confirmed_signal_)(public_username);
+          (*contact_confirmed_signal_)(std::get<0>(data), public_username);
         }
       } else if (mic.status == kConfirmed) {
         int mmid(
@@ -698,33 +659,24 @@ int PublicId::RemoveContact(const std::string &public_username,
   pcs::RemoteChunkStore::ValidationData validation_data_mmid;
   KeysAndProof(public_username, passport::kMmid, false, &validation_data_mmid);
   std::string inbox_name(MaidsafeInboxName(std::get<0>(new_MMID)));
-  VoidFuncOneInt callback(std::bind(&SendContactInfoCallback, args::_1,
-                                    &mutex, &cond_var, &results[0]));
+  VoidFunctionOneInt callback(std::bind(&SendContactInfoCallback, args::_1,
+                                        &mutex, &cond_var, &results[0]));
   if (converter_->AddOperation(inbox_name, callback) != kSuccess) {
     DLOG(ERROR) << "ChangeUserData: failed to add to converter - "
                 << passport::kMmid;
-    return kModifyFailure;
+    return results[0];
   }
   remote_chunk_store_->Store(inbox_name,
                              MaidsafeInboxValue(new_MMID,
                                                 new_inbox_private_key),
                              validation_data_mmid);
-/*
-  packet_manager_->StorePacket(MaidsafeInboxName(std::get<0>(new_MMID)),
-                               MaidsafeInboxValue(new_MMID,
-                                                  new_inbox_private_key),
-                               std::get<0>(new_MMID),
-                               std::bind(&SendContactInfoCallback, args::_1,
-                                         &mutex, &cond_var,
-                                         &results[0]));
-*/
 
   result = AwaitingResponse(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
   if (results[0] != kSuccess) {
     DLOG(ERROR) << "Failed to store new MMID when remove a contact.";
-    return kModifyFailure;
+    return results[0];
   }
 
   result = session_->contact_handler_map()[public_username]->DeleteContact(
@@ -745,7 +697,7 @@ int PublicId::RemoveContact(const std::string &public_username,
   if (converter_->AddOperation(inbox_name, callback) != kSuccess) {
     DLOG(ERROR) << "ChangeUserData: failed to add to converter - "
                 << passport::kMmid;
-    return kModifyFailure;
+    return results[0];
   }
   remote_chunk_store_->Modify(inbox_name,
                               ComposeModifyAppendableByAll(
@@ -758,7 +710,7 @@ int PublicId::RemoveContact(const std::string &public_username,
     return result;
   if (results[0] != kSuccess) {
     DLOG(ERROR) << "Failed to invalidate previous MMID when remove a contact.";
-    return kModifyFailure;
+    return results[0];
   }
 
   session_->passport_->ConfirmMovedMaidsafeInbox(public_username);
@@ -842,8 +794,8 @@ int PublicId::InformContactInfo(const std::string &public_username,
     // Store encrypted MCID at recipient's MPID's name
     results.push_back(kPendingResult);
     std::string contact_id(MaidsafeContactIdName(recipient_public_username));
-    VoidFuncOneInt callback(std::bind(&SendContactInfoCallback, args::_1,
-                                      &mutex, &cond_var, &results[i]));
+    VoidFunctionOneInt callback(std::bind(&SendContactInfoCallback, args::_1,
+                                          &mutex, &cond_var, &results[i]));
     if (converter_->AddOperation(contact_id, callback) != kSuccess) {
       DLOG(ERROR) << "Failed to add operation to converter";
       return kAuthenticationError;

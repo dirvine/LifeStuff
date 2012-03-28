@@ -87,6 +87,7 @@ class UserStorage {
   virtual void UnMountDrive();
   virtual fs::path mount_dir();
   virtual bool mount_status();
+  void set_message_handler(std::shared_ptr<MessageHandler> message_handler);
 
   // ********************* File / Folder Transfers *****************************
   int GetDataMap(const fs::path &absolute_path,

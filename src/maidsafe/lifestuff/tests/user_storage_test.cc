@@ -110,84 +110,84 @@ class UserStorageTest : public testing::Test {
 
   void DoShareTest(const std::string &sender,
                    const std::shared_ptr<UserStorage> &user_storage,
-                   const Message &message,
+                   const InboxItem &message,
                    const fs::path &absolute_path = fs::path()) {
-    if (message.subject() == "insert_share")
+    if (message.content[1] == "insert_share")
       return InsertShareTest(user_storage, message, absolute_path);
-    if (message.subject() == "remove_share")
+    if (message.content[1] == "remove_share")
       return RemoveShareTest(user_storage, message, absolute_path);
-    if (message.subject() == "stop_share")
+    if (message.content[1] == "stop_share")
       return StopShareTest(sender, user_storage, message, absolute_path);
-    if (message.subject() == "update_share")
+    if (message.content[1] == "update_share")
       return MoveShareTest(user_storage, message, absolute_path);
-    if (message.subject() == "upgrade_share")
+    if (message.content[1] == "upgrade_share")
       return UpgradeShareTest(user_storage, message, absolute_path);
   }
 
   void InsertShareTest(const std::shared_ptr<UserStorage> &user_storage,
-                       const Message &message,
+                       const InboxItem &message,
                        const fs::path &absolute_path) {
-    EXPECT_EQ(message.subject(), "insert_share");
+    EXPECT_EQ(message.content[1], "insert_share");
     asymm::Keys key_ring;
-    if (message.content_size() > 4) {
-      key_ring.identity = message.content(3);
-      key_ring.validation_token = message.content(4);
-      asymm::DecodePrivateKey(message.content(5), &(key_ring.private_key));
-      asymm::DecodePublicKey(message.content(6), &(key_ring.public_key));
+    if (message.content.size() > 5) {
+      key_ring.identity = message.content[4];
+      key_ring.validation_token = message.content[5];
+      asymm::DecodePrivateKey(message.content[6], &(key_ring.private_key));
+      asymm::DecodePublicKey(message.content[7], &(key_ring.public_key));
     }
     // fs::path("/").make_preferred() / message.content(1)
     EXPECT_EQ(kSuccess, user_storage->InsertShare(absolute_path,
-                                                  message.content(0),
-                                                  message.content(2),
+                                                  message.content[0],
+                                                  message.content[3],
                                                   key_ring));
   }
 
   void StopShareTest(const std::string &sender,
                      const std::shared_ptr<UserStorage> &user_storage,
-                     const Message &message,
+                     const InboxItem &message,
                      const fs::path &absolute_path) {
-    EXPECT_EQ(message.subject(), "stop_share");
+    EXPECT_EQ(message.content[1], "stop_share");
     EXPECT_EQ(kSuccess, user_storage->StopShare(sender, absolute_path));
   }
 
   void RemoveShareTest(const std::shared_ptr<UserStorage> &user_storage,
-                       const Message &message,
+                       const InboxItem &message,
                        const fs::path &absolute_path) {
-    EXPECT_EQ(message.subject(), "remove_share");
+    EXPECT_EQ(message.content[1], "remove_share");
     EXPECT_EQ(kSuccess, user_storage->RemoveShare(absolute_path));
   }
 
   void UpgradeShareTest(const std::shared_ptr<UserStorage> &user_storage,
-                        const Message &message,
+                        const InboxItem &message,
                         const fs::path &absolute_path) {
-    EXPECT_EQ(message.subject(), "upgrade_share");
+    EXPECT_EQ(message.content[1], "upgrade_share");
     asymm::Keys key_ring;
-    key_ring.identity = message.content(1);
-    key_ring.validation_token = message.content(2);
-    asymm::DecodePrivateKey(message.content(3), &(key_ring.private_key));
-    asymm::DecodePublicKey(message.content(4), &(key_ring.public_key));
+    key_ring.identity = message.content[2];
+    key_ring.validation_token = message.content[3];
+    asymm::DecodePrivateKey(message.content[4], &(key_ring.private_key));
+    asymm::DecodePublicKey(message.content[5], &(key_ring.public_key));
     EXPECT_EQ(kSuccess, user_storage->UpdateShare(absolute_path,
-                                                  message.content(0),
+                                                  message.content[0],
                                                   nullptr,
                                                   nullptr,
                                                   &key_ring));
   }
 
   void MoveShareTest(const std::shared_ptr<UserStorage> &user_storage,
-                     const Message &message,
+                     const InboxItem &message,
                      const fs::path &absolute_path) {
-    EXPECT_EQ(message.subject(), "update_share");
+    EXPECT_EQ(message.content[1], "update_share");
     asymm::Keys key_ring;
-    if (message.content_size() > 4) {
-      key_ring.identity = message.content(3);
-      key_ring.validation_token = message.content(4);
-      asymm::DecodePrivateKey(message.content(5), &(key_ring.private_key));
-      asymm::DecodePublicKey(message.content(6), &(key_ring.public_key));
+    if (message.content.size() > 5) {
+      key_ring.identity = message.content[4];
+      key_ring.validation_token = message.content[5];
+      asymm::DecodePrivateKey(message.content[6], &(key_ring.private_key));
+      asymm::DecodePublicKey(message.content[7], &(key_ring.public_key));
     }
     EXPECT_EQ(kSuccess, user_storage->UpdateShare(absolute_path,
-                                                  message.content(0),
-                                                  &message.content(1),
-                                                  &message.content(2),
+                                                  message.content[0],
+                                                  &message.content[2],
+                                                  &message.content[3],
                                                   &key_ring));
   }
 
@@ -273,9 +273,8 @@ TEST_F(UserStorageTest, FUNC_CreateShare) {
   fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir() /
                                               fs::path("/").make_preferred(),
                                           &tail));
-  EXPECT_EQ(kSuccess, user_storage1_->CreateShare(pub_name1_,
-                                                  directory0,
-                                                  users));
+  EXPECT_EQ(kSuccess,
+            user_storage1_->CreateShare(pub_name1_, directory0, users));
   user_storage1_->UnMountDrive();
 
   user_storage2_->MountDrive(*mount_dir_, session2_, true);
@@ -283,8 +282,7 @@ TEST_F(UserStorageTest, FUNC_CreateShare) {
                       fs::path("/").make_preferred() /
                       tail);
   bs2::connection connection(
-    message_handler2_->ConnectToSignal(
-        Message::kSharedDirectory,
+    message_handler2_->ConnectToShareSignal(
         std::bind(&UserStorageTest::DoShareTest,
                   this,
                   pub_name1_,
@@ -327,8 +325,7 @@ TEST_F(UserStorageTest, FUNC_AddUser) {
                       fs::path("/").make_preferred() /
                       tail);
   bs2::connection connection(
-      message_handler2_->ConnectToSignal(
-          Message::kSharedDirectory,
+      message_handler2_->ConnectToShareSignal(
           std::bind(&UserStorageTest::DoShareTest,
                     this,
                     pub_name1_,
@@ -394,8 +391,7 @@ TEST_F(UserStorageTest, FUNC_AddAdminUser) {
                       fs::path("/").make_preferred() /
                       tail);
   bs2::connection connection(
-      message_handler2_->ConnectToSignal(
-          Message::kSharedDirectory,
+      message_handler2_->ConnectToShareSignal(
           std::bind(&UserStorageTest::DoShareTest,
                     this,
                     pub_name1_,
@@ -451,8 +447,7 @@ TEST_F(UserStorageTest, FUNC_UpgradeUserToAdmin) {
                       fs::path("/").make_preferred() /
                       tail);
   bs2::connection connection(
-      message_handler2_->ConnectToSignal(
-          Message::kSharedDirectory,
+      message_handler2_->ConnectToShareSignal(
           std::bind(&UserStorageTest::DoShareTest,
                     this,
                     pub_name1_,
@@ -522,8 +517,7 @@ TEST_F(UserStorageTest, FUNC_StopShareByOwner) {
                       fs::path("/").make_preferred() /
                       tail);
   bs2::connection connection(
-    message_handler2_->ConnectToSignal(
-        Message::kSharedDirectory,
+    message_handler2_->ConnectToShareSignal(
         std::bind(&UserStorageTest::DoShareTest,
                   this,
                   pub_name1_,
@@ -607,8 +601,7 @@ TEST_F(UserStorageTest, FUNC_RemoveUserByOwner) {
                       tail);
   DLOG(ERROR) << directory1 << "\n\n\n\n";
   bs2::connection connection(
-      message_handler2_->ConnectToSignal(
-            Message::kSharedDirectory,
+      message_handler2_->ConnectToShareSignal(
             std::bind(&UserStorageTest::DoShareTest,
                       this,
                       pub_name1_,

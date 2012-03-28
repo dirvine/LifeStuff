@@ -94,15 +94,15 @@ class MessageHandlerTest : public testing::Test {
     return accept_new_contact;
   }
 
-  void NewMessageSlot(const Message &signal_message,
-                      Message *slot_message,
+  void NewMessageSlot(const InboxItem &signal_message,
+                      InboxItem *slot_message,
                       volatile bool *invoked) {
     *slot_message = signal_message;
     *invoked = true;
   }
 
-  void SeveralMessagesSlot(const Message &signal_message,
-                           std::vector<Message> *messages,
+  void SeveralMessagesSlot(const InboxItem &signal_message,
+                           std::vector<InboxItem> *messages,
                            volatile bool *invoked,
                            size_t *count) {
     messages->push_back(signal_message);
@@ -208,17 +208,26 @@ class MessageHandlerTest : public testing::Test {
     asio_service3_.Stop();
   }
 
-  bool MessagesEqual(const Message &left,
-                     const Message &right) const {
-    bool b(left.type() == right.type() &&
-           left.id() == right.id() &&
-           left.parent_id() == right.parent_id() &&
-           left.has_subject() == right.has_subject() &&
-           left.subject() == right.subject() &&
-           left.content_size() == right.content_size());
-    if (left.has_timestamp() && right.has_timestamp())
-      b = b && (left.timestamp() == right.timestamp());
-    return b;
+  bool MessagesEqual(const InboxItem &left,
+                     const InboxItem &right) const {
+    if (left.item_type == right.item_type &&
+        left.content.size() == right.content.size() &&
+        left.receiver_public_id == right.receiver_public_id &&
+        left.sender_public_id == right.sender_public_id &&
+        left.timestamp == right.timestamp)
+      return true;
+
+    return false;
+  }
+
+  InboxItem CreateMessage(const std::string &sender,
+                          const std::string receiver) {
+    InboxItem sent;
+    sent.sender_public_id = sender;
+    sent.receiver_public_id = receiver;
+    sent.content.push_back("content");
+    sent.timestamp = boost::lexical_cast<std::string>(GetDurationSinceEpoch());
+    return sent;
   }
 
   std::shared_ptr<fs::path> test_dir_;
@@ -249,35 +258,6 @@ class MessageHandlerTest : public testing::Test {
   MessageHandlerTest &operator=(const MessageHandlerTest&);
 };
 
-TEST_F(MessageHandlerTest, FUNC_SignalConnections) {
-  Message received;
-  volatile bool invoked(false);
-  bs2::connection connection(message_handler1_->ConnectToSignal(
-                                 static_cast<Message::ContentType>(
-                                     Message::ContentType_MIN - 1),
-                                 std::bind(&MessageHandlerTest::NewMessageSlot,
-                                           this, args::_1, &received,
-                                           &invoked)));
-  ASSERT_FALSE(connection.connected());
-  connection = message_handler1_->ConnectToSignal(
-                   static_cast<Message::ContentType>(
-                       Message::ContentType_MAX + 1),
-                   std::bind(&MessageHandlerTest::NewMessageSlot,
-                             this, args::_1, &received, &invoked));
-  ASSERT_FALSE(connection.connected());
-
-  for (int n(Message::ContentType_MIN);
-       n <= Message::ContentType_MAX;
-       ++n) {
-    connection.disconnect();
-    connection = message_handler1_->ConnectToSignal(
-                     static_cast<Message::ContentType>(n),
-                     std::bind(&MessageHandlerTest::NewMessageSlot,
-                               this, args::_1, &received, &invoked));
-    ASSERT_TRUE(connection.connected());
-  }
-}
-
 TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
   // Create users who both accept new contacts
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_username1_, true));
@@ -301,23 +281,15 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
   public_id1_->StopCheckingForNewContacts();
   Sleep(interval_ * 2);
 
-  Message received;
+  InboxItem received;
   volatile bool invoked(false);
-  message_handler2_->ConnectToSignal(
-      Message::kNormal,
+  message_handler2_->ConnectToChatSignal(
       std::bind(&MessageHandlerTest::NewMessageSlot,
                 this, args::_1, &received, &invoked));
   ASSERT_EQ(kSuccess,
             message_handler2_->StartCheckingForNewMessages(interval_));
 
-  Message sent;
-  sent.set_type(Message::kNormal);
-  sent.set_id("id");
-  sent.set_parent_id("parent_id");
-  sent.set_sender_public_username(public_username1_);
-  sent.set_subject("subject");
-  sent.add_content(std::string("content"));
-
+  InboxItem sent(CreateMessage(public_username1_, public_username2_));
   ASSERT_EQ(kSuccess,
             message_handler1_->Send(public_username1_,
                                     public_username2_,
@@ -352,27 +324,18 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
   public_id1_->StopCheckingForNewContacts();
   Sleep(interval_ * 2);
 
-  Message sent;
-  sent.set_type(Message::kNormal);
-  sent.set_id("id");
-  sent.set_parent_id("parent_id");
-  sent.set_sender_public_username(public_username1_);
-  sent.set_subject("subject");
-  sent.add_content(std::string("content"));
-
+  InboxItem sent(CreateMessage(public_username1_, public_username2_));
   for (size_t n(0); n < multiple_messages_; ++n) {
-    sent.set_timestamp(crypto::Hash<crypto::SHA512>(
-                           boost::lexical_cast<std::string>(n)));
-    ASSERT_EQ(kSuccess,
-              message_handler1_->Send(public_username1_,
-                                     public_username2_,
-                                     sent));
+    sent.timestamp = crypto::Hash<crypto::SHA512>(
+                         boost::lexical_cast<std::string>(n));
+    ASSERT_EQ(kSuccess, message_handler1_->Send(public_username1_,
+                                                public_username2_,
+                                                sent));
   }
 
-  std::vector<Message> received_messages;
+  std::vector<InboxItem> received_messages;
   volatile bool done(false);
-  bs2::connection connection(message_handler2_->ConnectToSignal(
-                                 Message::kNormal,
+  bs2::connection connection(message_handler2_->ConnectToChatSignal(
                                  std::bind(
                                      &MessageHandlerTest::SeveralMessagesSlot,
                                      this,
@@ -389,27 +352,25 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
   message_handler2_->StopCheckingForNewMessages();
   ASSERT_EQ(multiple_messages_, received_messages.size());
   for (size_t a(0); a < multiple_messages_; ++a) {
-    sent.set_timestamp(crypto::Hash<crypto::SHA512>(
-                           boost::lexical_cast<std::string>(a)));
+    sent.timestamp = crypto::Hash<crypto::SHA512>(
+                         boost::lexical_cast<std::string>(a));
     ASSERT_TRUE(MessagesEqual(sent, received_messages[a]));
   }
 
   done = false;
   multiple_messages_ = 1;
   for (size_t a(0); a < multiple_messages_ * 5; ++a) {
-    sent.set_timestamp(crypto::Hash<crypto::SHA512>(
-                           boost::lexical_cast<std::string>("n")));
-    ASSERT_EQ(kSuccess,
-              message_handler1_->Send(public_username1_,
-                                     public_username2_,
-                                     sent));
+    sent.timestamp = crypto::Hash<crypto::SHA512>(
+                          boost::lexical_cast<std::string>("n"));
+    ASSERT_EQ(kSuccess, message_handler1_->Send(public_username1_,
+                                                public_username2_,
+                                                sent));
     DLOG(ERROR) << "Sent " << a;
   }
 
   // If same message is sent, it should be reported only once
   received_messages.clear();
-  connection = message_handler2_->ConnectToSignal(
-                   Message::kNormal,
+  connection = message_handler2_->ConnectToChatSignal(
                    std::bind(&MessageHandlerTest::SeveralMessagesSlot,
                              this,
                              args::_1,
@@ -454,23 +415,15 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
             public_id3_->ConfirmContact(public_username3_, public_username1_));
   Sleep(interval_ * 2);
 
-  Message received;
+  InboxItem received;
   volatile bool invoked(false);
-  message_handler1_->ConnectToSignal(
-      Message::kNormal,
+  message_handler1_->ConnectToChatSignal(
       std::bind(&MessageHandlerTest::NewMessageSlot,
                 this, args::_1, &received, &invoked));
   ASSERT_EQ(kSuccess,
             message_handler1_->StartCheckingForNewMessages(interval_));
 
-  Message sent;
-  sent.set_type(Message::kNormal);
-  sent.set_id("id");
-  sent.set_parent_id("parent_id");
-  sent.set_sender_public_username(public_username2_);
-  sent.set_subject("subject");
-  sent.add_content(std::string("content"));
-
+  InboxItem sent(CreateMessage(public_username2_, public_username1_));
   ASSERT_EQ(kSuccess,
             message_handler2_->Send(public_username2_,
                                     public_username1_,
@@ -482,7 +435,7 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
   public_id1_->RemoveContact(public_username1_, public_username2_);
   Sleep(interval_ * 2);
 
-  received.Clear();
+  received = InboxItem();
   ASSERT_EQ(priv::kModifyFailure,
             message_handler2_->Send(public_username2_,
                                     public_username1_,
@@ -491,7 +444,7 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
   ASSERT_FALSE(MessagesEqual(sent, received));
 
   invoked = false;
-  sent.set_sender_public_username(public_username3_);
+  sent.sender_public_id = public_username3_;
   ASSERT_EQ(kSuccess,
             message_handler3_->Send(public_username3_,
                                     public_username1_,

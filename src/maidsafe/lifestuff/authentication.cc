@@ -247,16 +247,6 @@ int Authentication::GetUserInfo(const std::string &username,
       GetSmidCallback(encrypted_smid, kSuccess);
     }
   }
-//  packet_manager_->GetPacket(pca::ApplyTypeToName(mid_name,
-//                                                  pca::kModifiableByOwner),
-//                             "",
-//                             std::bind(&Authentication::GetMidCallback, this,
-//                                       args::_1, args::_2));
-//  packet_manager_->GetPacket(pca::ApplyTypeToName(smid_name,
-//                                                  pca::kModifiableByOwner),
-//                             "",
-//                             std::bind(&Authentication::GetSmidCallback, this,
-//                                       args::_1, args::_2));
 
   // Wait until both ops are finished here
   bool mid_finished(false), smid_finished(false);
@@ -329,13 +319,6 @@ void Authentication::GetMidCallback(const std::string &value, int return_code) {
     return;
   }
   GetTmidCallback(encrypted_tmid, kSuccess);
-
-
-//  packet_manager_->GetPacket(pca::ApplyTypeToName(tmid_name,
-//                                                  pca::kModifiableByOwner),
-//                             "",
-//                             std::bind(&Authentication::GetTmidCallback,
-//                                       this, args::_1, args::_2));
 }
 
 void Authentication::GetSmidCallback(const std::string &value,
@@ -383,13 +366,6 @@ void Authentication::GetSmidCallback(const std::string &value,
     return;
   }
   GetStmidCallback(encrypted_stmid, kSuccess);
-
-
-//  packet_manager_->GetPacket(pca::ApplyTypeToName(stmid_name,
-//                                                  pca::kModifiableByOwner),
-//                             "",
-//                             std::bind(&Authentication::GetStmidCallback,
-//                                       this, args::_1, args::_2));
 }
 
 void Authentication::GetTmidCallback(const std::string &value,
@@ -557,7 +533,7 @@ void Authentication::StoreSignaturePacket(
   // Check packet name is not already a key on the DHT
 //  DLOG(INFO) << "Authentication::StoreSignaturePacket - " << packet_type
 //             << " - " << Base32Substr(sig_packet->name());
-  VoidFuncOneInt functor =
+  VoidFunctionOneInt functor =
       std::bind(&Authentication::SignaturePacketStoreCallback,
                 this, args::_1, packet_type, op_status);
   if (converter_->AddOperation(packet_name, functor) != kSuccess) {
@@ -581,7 +557,6 @@ void Authentication::StoreSignaturePacket(
   remote_chunk_store_->Store(packet_name,
                              signed_data.SerializeAsString(),
                              validation_data);
-//  packet_manager_->KeyUnique(packet_name, "", functor);
 }
 
 void Authentication::SignaturePacketStoreCallback(
@@ -652,7 +627,7 @@ int Authentication::CreateTmidPacket(
 }
 
 void Authentication::SaveSession(const std::string &serialised_data_atlas,
-                                 const VoidFuncOneInt &functor) {
+                                 const VoidFunctionOneInt &functor) {
   int result(session_->passport_->SetIdentityPackets(session_->username(),
                                                      session_->pin(),
                                                      session_->password(),
@@ -685,9 +660,9 @@ void Authentication::SaveSession(const std::string &serialised_data_atlas,
       new SaveSessionData(functor, kRegular, serialised_data_atlas));
 
   // Update MID
-  VoidFuncOneInt callback = std::bind(&Authentication::SaveSessionCallback,
-                                      this, args::_1, passport::kMid,
-                                      save_session_data);
+  VoidFunctionOneInt callback = std::bind(&Authentication::SaveSessionCallback,
+                                          this, args::_1, passport::kMid,
+                                          save_session_data);
   if (converter_->AddOperation(mid_name, callback) != kSuccess) {
     DLOG(ERROR) << "Authentication::StorePacket: failed to add to converter - "
                 << DebugStr(mid.type);
@@ -731,14 +706,11 @@ void Authentication::SaveSession(const std::string &serialised_data_atlas,
 void Authentication::SaveSessionCallback(int return_code,
                                          passport::PacketType packet_type,
                                          SaveSessionDataPtr save_session_data) {
+  OpStatus op_status(kSucceeded);
   if (return_code != kSuccess) {
+    op_status = kFailed;
     DLOG(INFO) << "Authentication::SaveSessionCallback - pt: "
                << DebugStr(packet_type) << ", result: " << return_code;
-  }
-  OpStatus op_status(kSucceeded);
-  if ((save_session_data->op_type == kIsUnique && return_code != kKeyUnique) ||
-      (save_session_data->op_type != kIsUnique && return_code != kSuccess)) {
-    op_status = kFailed;
   }
 
   boost::mutex::scoped_lock lock(mutex_);
@@ -793,8 +765,8 @@ void Authentication::SaveSessionCallback(int return_code,
 
 int Authentication::SaveSession(const std::string &serialised_data_atlas) {
   int result(kPendingResult);
-  VoidFuncOneInt functor = std::bind(&Authentication::PacketOpCallback, this,
-                                     args::_1, &result);
+  VoidFunctionOneInt functor = std::bind(&Authentication::PacketOpCallback,
+                                         this, args::_1, &result);
   SaveSession(serialised_data_atlas, functor);
   bool success(true);
   try {
@@ -948,8 +920,9 @@ void Authentication::DeletePacket(const passport::PacketType &packet_type,
   PacketData packet(packet_type, session_->passport_, true);
 
   // Delete packet
-  VoidFuncOneInt functor = std::bind(&Authentication::DeletePacketCallback,
-                                     this, args::_1, packet_type, op_status);
+  VoidFunctionOneInt functor = std::bind(&Authentication::DeletePacketCallback,
+                                         this, args::_1, packet_type,
+                                         op_status);
   std::string packet_name, signing_id;
   GetPacketNameAndKeyId(packet.name,
                         packet.type,
@@ -1024,8 +997,8 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
   pcs::RemoteChunkStore::ValidationData validation_data_tmid;
   KeysAndProof(passport::kAntmid, &validation_data_tmid, true);
 
-  VoidFuncOneInt callback(std::bind(&Authentication::PacketOpCallback, this,
-                                    args::_1, &result));
+  VoidFunctionOneInt callback(std::bind(&Authentication::PacketOpCallback, this,
+                                        args::_1, &result));
   SaveSessionDataPtr save_session_data(new SaveSessionData(
       callback, kIsUnique, serialised_data_atlas));
   result = kPendingResult;
@@ -1238,9 +1211,9 @@ int Authentication::ChangePassword(const std::string &serialised_data_atlas,
       serialised_data_atlas));
 
   // Update MID
-  VoidFuncOneInt callback = std::bind(&Authentication::SaveSessionCallback,
-                                      this, args::_1, passport::kMid,
-                                      save_session_data);
+  VoidFunctionOneInt callback = std::bind(&Authentication::SaveSessionCallback,
+                                          this, args::_1, passport::kMid,
+                                          save_session_data);
   if (converter_->AddOperation(mid_name, callback) != kSuccess) {
     DLOG(ERROR) << "ChangePassword: failed to add to converter - "
                 << DebugStr(mid.type);
@@ -1368,8 +1341,8 @@ int Authentication::StorePacket(
                    &packet_name,
                    &serialised_packet,
                    &signing_id);
-  VoidFuncOneInt functor = std::bind(&Authentication::PacketOpCallback,
-                                     this, args::_1, &result);
+  VoidFunctionOneInt functor = std::bind(&Authentication::PacketOpCallback,
+                                         this, args::_1, &result);
   if (converter_->AddOperation(packet_name, functor) != kSuccess) {
     DLOG(ERROR) << "Authentication::StorePacket: failed to add to converter - "
                 << DebugStr(packet.type);
@@ -1403,8 +1376,8 @@ int Authentication::StorePacket(
 
 int Authentication::DeletePacket(const PacketData &packet) {
   int result(kPendingResult);
-  VoidFuncOneInt functor = std::bind(&Authentication::PacketOpCallback, this,
-                                     args::_1, &result);
+  VoidFunctionOneInt functor = std::bind(&Authentication::PacketOpCallback,
+                                         this, args::_1, &result);
   std::string packet_name, signing_id;
   GetPacketNameAndKeyId(packet.name,
                         packet.type,
