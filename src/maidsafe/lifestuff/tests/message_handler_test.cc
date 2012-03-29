@@ -264,7 +264,7 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_username2_, true));
 
   // Connect a slot which will reject the new contact
-  public_id1_->new_contact_signal()->connect(
+  public_id1_->ConnectToNewContactSignal(
       std::bind(&MessageHandlerTest::NewContactSlot,
                 this, args::_1, args::_2, true));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
@@ -307,7 +307,7 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_username2_, true));
 
   // Connect a slot which will reject the new contact
-  public_id1_->new_contact_signal()->connect(
+  public_id1_->ConnectToNewContactSignal(
       std::bind(&MessageHandlerTest::NewContactSlot,
                 this, args::_1, args::_2, true));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
@@ -391,15 +391,15 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_username2_, true));
   ASSERT_EQ(kSuccess, public_id3_->CreatePublicId(public_username3_, true));
 
-  public_id1_->new_contact_signal()->connect(
+  public_id1_->ConnectToNewContactSignal(
       std::bind(&MessageHandlerTest::NewContactSlot,
                 this, args::_1, args::_2, true));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
-  public_id2_->new_contact_signal()->connect(
+  public_id2_->ConnectToNewContactSignal(
       std::bind(&MessageHandlerTest::NewContactSlot,
                 this, args::_1, args::_2, true));
   ASSERT_EQ(kSuccess, public_id2_->StartCheckingForNewContacts(interval_));
-  public_id3_->new_contact_signal()->connect(
+  public_id3_->ConnectToNewContactSignal(
       std::bind(&MessageHandlerTest::NewContactSlot,
                 this, args::_1, args::_2, true));
   ASSERT_EQ(kSuccess, public_id3_->StartCheckingForNewContacts(interval_));

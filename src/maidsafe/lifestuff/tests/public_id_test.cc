@@ -282,7 +282,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdAntiSocial) {
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_username1_, false));
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_username2_, true));
 
-  public_id1_->new_contact_signal()->connect(
+  public_id1_->ConnectToNewContactSignal(
       std::bind(&PublicIdTest::NewContactSlot, this, args::_1, args::_2));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
 
@@ -299,7 +299,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_username2_, true));
 
   // Connect a slot which will reject the new contact
-  bs2::connection connection(public_id1_->new_contact_signal()->connect(
+  bs2::connection connection(public_id1_->ConnectToNewContactSignal(
       std::bind(&PublicIdTest::NewContactSlot,
                 this, args::_1, args::_2)));
   ASSERT_EQ(kSuccess,
@@ -338,12 +338,12 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
 
   // Connect a slot which will reject the new contact
   volatile bool invoked1(false), invoked2(false);
-  bs2::connection connection(public_id1_->new_contact_signal()->connect(
+  bs2::connection connection(public_id1_->ConnectToNewContactSignal(
       std::bind(&PublicIdTest::ContactRequestSlot,
                 this, args::_1, args::_2, &invoked1)));
 
   std::string confirmed_contact;
-  bs2::connection connection2(public_id2_->contact_confirmed_signal()->connect(
+  bs2::connection connection2(public_id2_->ConnectToContactConfirmedSignal(
       std::bind(&PublicIdTest::ContactConfirmedSlot,
                 this, args::_1, args::_2, &confirmed_contact, &invoked2)));
 
@@ -403,12 +403,12 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithRefusal) {
 
   // Connect a slot which will reject the new contact
   volatile bool invoked1(false), invoked2(false);
-  bs2::connection connection(public_id1_->new_contact_signal()->connect(
+  bs2::connection connection(public_id1_->ConnectToNewContactSignal(
       std::bind(&PublicIdTest::ContactRequestSlot,
                 this, args::_1, args::_2, &invoked1)));
 
   std::string confirmed_contact;
-  bs2::connection connection2(public_id2_->contact_confirmed_signal()->connect(
+  bs2::connection connection2(public_id2_->ConnectToContactConfirmedSignal(
       std::bind(&PublicIdTest::ContactConfirmedSlot,
                 this, args::_1, args::_2, &confirmed_contact, &invoked2)));
 
@@ -462,7 +462,7 @@ TEST_F(PublicIdTest, FUNC_DisablePublicId) {
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_username2_, true));
 
   // Check user2 can't add itself to user1's MCID
-  public_id1_->new_contact_signal()->connect(
+  public_id1_->ConnectToNewContactSignal(
       std::bind(&PublicIdTest::NewContactSlot, this, args::_1, args::_2));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   ASSERT_EQ(kSendContactInfoFailure,
@@ -484,7 +484,7 @@ TEST_F(PublicIdTest, FUNC_EnablePublicId) {
   ASSERT_EQ(kSuccess, public_id1_->DisablePublicId(public_username1_));
 
   // Check user2 can't add itself to user1's MCID
-  public_id1_->new_contact_signal()->connect(
+  public_id1_->ConnectToNewContactSignal(
       std::bind(&PublicIdTest::NewContactSlot, this, args::_1, args::_2));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   ASSERT_EQ(kSendContactInfoFailure,
@@ -495,7 +495,7 @@ TEST_F(PublicIdTest, FUNC_EnablePublicId) {
   ASSERT_EQ(kSuccess, public_id1_->EnablePublicId(public_username1_));
 
   // Check user2 can now add itself to user1's MCID
-  public_id1_->new_contact_signal()->connect(
+  public_id1_->ConnectToNewContactSignal(
       std::bind(&PublicIdTest::NewContactSlot, this, args::_1, args::_2));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   ASSERT_EQ(kSuccess,
@@ -516,7 +516,7 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
   ASSERT_EQ(kLiveContactNotFound,
             public_id1_->RemoveContact(public_username1_, public_username2_));
 
-  public_id1_->new_contact_signal()->connect(
+  public_id1_->ConnectToNewContactSignal(
       std::bind(&PublicIdTest::NewContactSlot, this, args::_1, args::_2));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   ASSERT_EQ(kSuccess,
@@ -557,7 +557,7 @@ TEST_F(PublicIdTest, FUNC_ContactList) {
   }
 
   volatile bool done(false);
-  public_id1_->new_contact_signal()->connect(
+  public_id1_->ConnectToNewContactSignal(
       std::bind(&PublicIdTest::NewContactCounterSlot,
                 this, args::_1, args::_2, n, &counter, &done));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));

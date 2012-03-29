@@ -98,6 +98,8 @@ struct InboxItem {
 
 const uint32_t kFileRecontructionLimit(20 * 1024 * 1024);
 const uint16_t kIntervalSeconds(5000);
+const uint8_t kThreads(10);
+const uint8_t kSecondsInterval(5);
 const std::string kLiteralOnline("kOnline");
 const std::string kLiteralOffline("kOffline");
 

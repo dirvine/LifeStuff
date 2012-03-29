@@ -43,27 +43,46 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-class Message;
-struct LifeStuffElements;
+class LifeStuff {
+ public:
+  int Initialise(const boost::filesystem::path &base_directory);
 
-int Initialise(LifeStuffElements &lifestuff_elements);  // NOLINT (Dan)
+  int ConnectToSignals(
+      drive::DriveChangedSlotPtr drive_change_slot,
+      drive::ShareChangedSlotPtr share_change_slot,
+      const ChatFunction &chat_slot,
+      const FileTransferFunction &file_slot,
+      const ShareFunction &share_slot,
+      const NewContactFunction &new_contact_slot,
+      const ContactConfirmationFunction &confirmed_contact_slot,
+      const ContactProfilePictureFunction &profile_picture_slot,
+      const ContactPresenceFunction &contact_presence_slot);
 
-int ConnectToSignals(drive::DriveChangedSlotPtr drive_change_slot,
-                     drive::ShareChangedSlotPtr share_change_slot,
-                     const ChatFunction &chat_slot,
-                     const FileTransferFunction &file_slot,
-                     const ShareFunction &share_slot,
-                     const NewContactFunction &new_contact_slot,
-                     const ContactConfirmationFunction &confirmed_contact_slot,
-                     const ContactProfilePictureFunction &profile_picture_slot,
-                     const ContactPresenceFunction &contact_presence_slot,
-                     LifeStuffElements &lifestuff_elements);  // NOLINT (Dan)
+  int CreateUser(const std::string &username,
+                 const std::string &pin,
+                 const std::string &password);
 
-int CreateUser(const boost::filesystem::path &base_directory,
-               const std::string &username,
-               const std::string &pin,
-               const std::string &password,
-               LifeStuffElements &lifestuff_elements);  // NOLINT (Dan)
+  int CreatePublicId(const std::string &public_id);
+
+  int LogIn(const std::string &username,
+            const std::string &pin,
+            const std::string &password);
+
+  int LogOut();
+
+  int Finalise();
+
+  int SendChatMessage(const std::string &sender_public_id,
+                      const std::string &receiver_public_id,
+                      const std::string &message);
+
+  int ChangeProfilePicture(const std::string &sender_public_id,
+                           const fs::path &path_to_profile_picture);
+
+ private:
+  struct Elements;
+  std::shared_ptr<Elements> lifestuff_elements;
+};
 
 }  // namespace lifestuff
 

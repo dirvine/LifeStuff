@@ -453,12 +453,14 @@ int PublicId::ModifyAppendability(const std::string &public_username,
   return kSuccess;
 }
 
-PublicId::NewContactSignalPtr PublicId::new_contact_signal() const {
-  return new_contact_signal_;
+bs2::connection PublicId::ConnectToNewContactSignal(
+    const NewContactFunction &new_contact_slot) {
+  return new_contact_signal_->connect(new_contact_slot);
 }
 
-PublicId::ContactConfirmedSignalPtr PublicId::contact_confirmed_signal() const {
-  return contact_confirmed_signal_;
+bs2::connection PublicId::ConnectToContactConfirmedSignal(
+    const ContactConfirmationFunction &contact_confirmation_slot) {
+  return contact_confirmed_signal_->connect(contact_confirmation_slot);
 }
 
 void PublicId::GetNewContacts(const bptime::seconds &interval,

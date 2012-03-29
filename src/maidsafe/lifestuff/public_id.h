@@ -98,8 +98,10 @@ class PublicId {
                     const std::string &contact_name);
 
   // Signals
-  NewContactSignalPtr new_contact_signal() const;
-  ContactConfirmedSignalPtr contact_confirmed_signal() const;
+  bs2::connection ConnectToNewContactSignal(
+      const NewContactFunction &new_contact_slot);
+  bs2::connection ConnectToContactConfirmedSignal(
+      const ContactConfirmationFunction &contact_confirmation_slot);
 
   // Lists
   std::map<std::string, ContactStatus> ContactList(

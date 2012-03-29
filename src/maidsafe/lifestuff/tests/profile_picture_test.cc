@@ -151,10 +151,10 @@ void LoginTestElements(
   test_elements->user_credentials->ValidateUser(password);
 
   if (new_contact_slot) {
-    test_elements->public_id->new_contact_signal()->connect(new_contact_slot);
+    test_elements->public_id->ConnectToNewContactSignal(new_contact_slot);
   }
   if (confirm_contact_slot) {
-    test_elements->public_id->contact_confirmed_signal()->connect(
+    test_elements->public_id->ConnectToContactConfirmedSignal(
         confirm_contact_slot);
   }
   if (profile_picture_slot) {
@@ -234,14 +234,14 @@ int ConnectPublicIds(const std::string &public_username1,
                      std::shared_ptr<PublicId> public_id2,
                      std::shared_ptr<MessageHandler> handler2) {
   volatile bool done1(false), done2(false);
-  public_id2->new_contact_signal()->connect(
+  public_id2->ConnectToNewContactSignal(
       std::bind(&TwoStringsAndBoolSlot, args::_1, args::_2, &done2));
   public_id1->SendContactInfo(public_username1, public_username2);
 
   while (!done2)
     Sleep(bptime::milliseconds(100));
 
-  public_id1->contact_confirmed_signal()->connect(std::bind(&ConfirmContactSlot,
+  public_id1->ConnectToContactConfirmedSignal(std::bind(&ConfirmContactSlot,
                                                             args::_1,
                                                             args::_2,
                                                             &done1));
