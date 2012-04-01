@@ -54,7 +54,6 @@ namespace passport { class Passport; }
 namespace lifestuff {
 
 class Session;
-class YeOldeSignalToCallbackConverter;
 namespace test { class UserCredentialsTest; }
 
 class Authentication {
@@ -62,8 +61,7 @@ class Authentication {
   explicit Authentication(std::shared_ptr<Session> session);
   ~Authentication();
   // Used to intialise passport_ in all cases.
-  void Init(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
-            std::shared_ptr<YeOldeSignalToCallbackConverter> converter);
+  void Init(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store);
   // Used to intialise passport_ in all cases.
   int GetUserInfo(const std::string &username, const std::string &pin);
   // Used when creating a new user.
@@ -137,28 +135,28 @@ class Authentication {
   Authentication &operator=(const Authentication&);
   Authentication(const Authentication&);
 
-  void GetMidCallback(const std::string &value, int return_code);
-  void GetSmidCallback(const std::string &value, int return_code);
-  void GetTmidCallback(const std::string &value, int return_code);
-  void GetStmidCallback(const std::string &value, int return_code);
+  void GetMidCallback(const std::string &value, bool return_code);
+  void GetSmidCallback(const std::string &value, bool return_code);
+  void GetTmidCallback(const std::string &value, bool return_code);
+  void GetStmidCallback(const std::string &value, bool return_code);
   void GetMidTmidCallback(const std::string &value,
-                          int return_code,
+                          bool return_code,
                           bool surrogate);
   // Function waits until dependent_op_status != kPending or timeout before
   // starting
   void StoreSignaturePacket(const passport::PacketType &packet_type,
                             OpStatus *op_status,
                             OpStatus *dependent_op_status);
-  void SignaturePacketStoreCallback(int return_code,
+  void SignaturePacketStoreCallback(bool return_code,
                                     passport::PacketType packet_type,
                                     OpStatus *op_status);
-  void SaveSessionCallback(int return_code,
+  void SaveSessionCallback(bool return_code,
                            passport::PacketType packet_type,
                            SaveSessionDataPtr save_session_data);
   void DeletePacket(const passport::PacketType &packet_type,
                     OpStatus *op_status,
                     OpStatus *dependent_op_status);
-  void DeletePacketCallback(int return_code,
+  void DeletePacketCallback(bool return_code,
                             const passport::PacketType &packet_type,
                             OpStatus *op_status);
   int ChangeUserData(const std::string &serialised_data_atlas,
@@ -203,7 +201,7 @@ class Authentication {
   int StorePacket(const PacketData &packet,
                   const pcs::RemoteChunkStore::ValidationData &validation_data);
   int DeletePacket(const PacketData &packet);
-  void PacketOpCallback(int return_code, int *op_result);
+  void PacketOpCallback(bool return_code, int *op_result);
   void CreateSignedData(const PacketData &packet,
                         bool signing_packet_confirmed,
                         std::string *signed_data_name,
@@ -227,7 +225,6 @@ class Authentication {
   OpStatus tmid_op_status_, stmid_op_status_;
   std::string encrypted_tmid_, encrypted_stmid_, serialised_data_atlas_;
   const boost::posix_time::milliseconds kSingleOpTimeout_;
-  std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
 };
 
 }  // namespace lifestuff

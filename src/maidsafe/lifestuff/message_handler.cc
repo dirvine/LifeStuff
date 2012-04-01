@@ -33,7 +33,6 @@
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/utils.h"
-#include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
 namespace args = std::placeholders;
 namespace pca = maidsafe::priv::chunk_actions;
@@ -44,14 +43,17 @@ namespace lifestuff {
 
 namespace {
 
-void SendMessageCallback(const int &response,
+void SendMessageCallback(const bool &response,
                          boost::mutex *mutex,
                          boost::condition_variable *cond_var,
                          int *result) {
   if (!mutex || !cond_var || !result)
     return;
   boost::mutex::scoped_lock lock(*mutex);
-  *result = response;
+  if (response)
+    *result = kSuccess;
+  else
+    *result = kMessageHandlerError;
   cond_var->notify_one();
 }
 
@@ -63,11 +65,9 @@ std::string AppendableByAllType(const std::string &mmid) {
 
 MessageHandler::MessageHandler(
     std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
-    std::shared_ptr<YeOldeSignalToCallbackConverter> converter,
     std::shared_ptr<Session> session,
     boost::asio::io_service &asio_service)  // NOLINT (Fraser)
     : remote_chunk_store_(remote_chunk_store),
-      converter_(converter),
       session_(session),
       get_new_messages_timer_(asio_service),
       chat_signal_(new NewItemSignal),
@@ -213,14 +213,11 @@ int MessageHandler::Send(const std::string &public_username,
   result = kPendingResult;
 
   std::string inbox_id(AppendableByAllType(recipient_contact.mmid_name));
-  VoidFunctionOneInt callback(std::bind(&SendMessageCallback, args::_1, &mutex,
-                                    &cond_var, &result));
-  if (converter_->AddOperation(inbox_id, callback) != kSuccess) {
-    DLOG(ERROR) << "Failed to add operation to converter";
-    return kAuthenticationError;
-  }
+  VoidFunctionOneBool callback(std::bind(&SendMessageCallback, args::_1, &mutex,
+                                         &cond_var, &result));
   remote_chunk_store_->Modify(inbox_id,
                               signed_data.SerializeAsString(),
+                              callback,
                               validation_data_mmid);
 
   try {

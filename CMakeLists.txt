@@ -226,8 +226,7 @@ SET(LIFESTUFF_INSTALL_FILES
       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/user_credentials.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/user_storage.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/return_codes.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/version.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h)
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/version.h)
 
 MS_INSTALL_LIBS(lifestuff_local_static)
 IF(NOT LOCAL_TARGETS_ONLY)

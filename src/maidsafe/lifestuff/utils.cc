@@ -164,14 +164,17 @@ int GetValidatedMmidPublicKey(
   return kSuccess;
 }
 
-void SendContactInfoCallback(const int &response,
+void SendContactInfoCallback(const bool &response,
                              boost::mutex *mutex,
                              boost::condition_variable *cond_var,
                              int *result) {
   if (!mutex || !cond_var || !result)
     return;
   boost::mutex::scoped_lock lock(*mutex);
-  *result = response;
+  if (response)
+    *result = kSuccess;
+  else
+    *result = kSendContactInfoFailure;
   cond_var->notify_one();
 }
 
@@ -185,7 +188,7 @@ int AwaitingResponse(boost::mutex *mutex,
                               boost::posix_time::seconds(30),
                               [&]()->bool {
                                 for (size_t i(0); i < size; ++i) {
-                                  if (results->at(i) == kPendingResult)
+                                  if (!results->at(i) == kPendingResult)
                                     return false;
                                 }
                                 return true;

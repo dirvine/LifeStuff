@@ -33,7 +33,6 @@
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/user_credentials.h"
 #include "maidsafe/lifestuff/user_storage.h"
-#include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
 namespace maidsafe {
 
@@ -54,7 +53,6 @@ struct LifeStuff::Elements {
                interval(kSecondsInterval),
                asio_service(),
                session(),
-               converter(),
                user_credentials(),
                user_storage(),
                public_id(),
@@ -66,7 +64,6 @@ struct LifeStuff::Elements {
   bptime::seconds interval;
   AsioService asio_service;
   std::shared_ptr<Session> session;
-  std::shared_ptr<YeOldeSignalToCallbackConverter> converter;
   std::shared_ptr<UserCredentials> user_credentials;
   std::shared_ptr<UserStorage> user_storage;
   std::shared_ptr<PublicId> public_id;
@@ -89,21 +86,18 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
 
   lifestuff_elements->public_id.reset(
       new PublicId(lifestuff_elements->user_credentials->remote_chunk_store(),
-                   lifestuff_elements->user_credentials->converter(),
                    lifestuff_elements->session,
                    lifestuff_elements->asio_service.service()));
 
   lifestuff_elements->message_handler.reset(
       new MessageHandler(
           lifestuff_elements->user_credentials->remote_chunk_store(),
-          lifestuff_elements->user_credentials->converter(),
           lifestuff_elements->session,
           lifestuff_elements->asio_service.service()));
 
   lifestuff_elements->user_storage.reset(
       new UserStorage(
           lifestuff_elements->user_credentials->remote_chunk_store(),
-          lifestuff_elements->user_credentials->converter(),
           lifestuff_elements->message_handler));
 
   lifestuff_elements->base_directory = base_directory;
@@ -314,7 +308,6 @@ int LifeStuff::Finalise() {
 
   lifestuff_elements->asio_service.Stop();
   lifestuff_elements->base_directory = fs::path();
-  lifestuff_elements->converter.reset();
   lifestuff_elements->message_handler.reset();
   lifestuff_elements->public_id.reset();
   lifestuff_elements->session.reset();

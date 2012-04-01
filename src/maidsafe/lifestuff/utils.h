@@ -56,7 +56,7 @@ int GetValidatedMmidPublicKey(
     std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
     asymm::PublicKey *public_key);
 
-void SendContactInfoCallback(const int &response,
+void SendContactInfoCallback(const bool &response,
                              boost::mutex *mutex,
                              boost::condition_variable *cond_var,
                              int *result);

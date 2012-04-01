@@ -72,10 +72,12 @@ enum ReturnCode {
   kNoPublicIds = -206010,
   kModifyAppendabilityFailure = -206011,
   kGenerateNewMMIDFailure = -206012,
+  kRemoveContactFailure = -206013,
 
   // MessageHandler
   kMessageHandlerException = -207001,
-  kMessageHandlerNotInitialised = -207002
+  kMessageHandlerNotInitialised = -207002,
+  kMessageHandlerError = -207003
 };
 
 }  // namespace lifestuff

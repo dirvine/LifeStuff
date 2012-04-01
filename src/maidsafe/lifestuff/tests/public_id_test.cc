@@ -36,7 +36,6 @@
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/utils.h"
-#include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
 namespace ba = boost::asio;
 namespace bptime = boost::posix_time;
@@ -58,8 +57,6 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
       : test_dir_(maidsafe::test::CreateTestPath()),
         session1_(new Session),
         session2_(new Session),
-        converter1_(new YeOldeSignalToCallbackConverter),
-        converter2_(new YeOldeSignalToCallbackConverter),
         remote_chunk_store1_(),
         remote_chunk_store2_(),
         public_id1_(),
@@ -142,31 +139,11 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
         client_container2_->chunk_action_authority()));
 #endif
 
-    remote_chunk_store1_->sig_chunk_stored()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Stored, converter1_.get(),
-                  args::_1, args::_2));
-    remote_chunk_store1_->sig_chunk_deleted()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Deleted, converter1_.get(),
-                  args::_1, args::_2));
-    remote_chunk_store1_->sig_chunk_modified()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Modified, converter1_.get(),
-                  args::_1, args::_2));
     public_id1_.reset(new PublicId(remote_chunk_store1_,
-                                   converter1_,
                                    session1_,
                                    asio_service1_.service()));
 
-    remote_chunk_store2_->sig_chunk_stored()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Stored, converter2_.get(),
-                  args::_1, args::_2));
-    remote_chunk_store2_->sig_chunk_deleted()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Deleted, converter2_.get(),
-                  args::_1, args::_2));
-    remote_chunk_store2_->sig_chunk_modified()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Modified, converter2_.get(),
-                  args::_1, args::_2));
     public_id2_.reset(new PublicId(remote_chunk_store2_,
-                                   converter2_,
                                    session2_,
                                    asio_service2_.service()));
   }
@@ -240,7 +217,6 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
 
   std::shared_ptr<fs::path> test_dir_;
   std::shared_ptr<Session> session1_, session2_;
-  std::shared_ptr<YeOldeSignalToCallbackConverter> converter1_, converter2_;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store1_,
                                          remote_chunk_store2_;
   std::shared_ptr<PublicId> public_id1_, public_id2_;

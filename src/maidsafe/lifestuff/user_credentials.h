@@ -70,7 +70,6 @@ class UserStorageTest;
 
 class Authentication;
 class Session;
-class YeOldeSignalToCallbackConverter;
 
 class UserCredentials {
  public:
@@ -101,7 +100,6 @@ class UserCredentials {
   std::string Password();
 
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store();
-  std::shared_ptr<YeOldeSignalToCallbackConverter> converter();
 
   friend class test::UserCredentialsTest;
   friend class test::UserStorageTest;
@@ -125,7 +123,6 @@ class UserCredentials {
 #ifndef LOCAL_TARGETS_ONLY
   std::shared_ptr<pd::ClientContainer> client_container_;
 #endif
-  std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
 };
 
 }  // namespace lifestuff

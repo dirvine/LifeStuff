@@ -38,7 +38,6 @@
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/utils.h"
-#include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
 namespace args = std::placeholders;
 namespace ba = boost::asio;
@@ -60,9 +59,6 @@ class MessageHandlerTest : public testing::Test {
         session1_(new Session),
         session2_(new Session),
         session3_(new Session),
-        converter1_(new YeOldeSignalToCallbackConverter),
-        converter2_(new YeOldeSignalToCallbackConverter),
-        converter3_(new YeOldeSignalToCallbackConverter),
         remote_chunk_store1_(),
         remote_chunk_store2_(),
         remote_chunk_store3_(),
@@ -147,57 +143,24 @@ class MessageHandlerTest : public testing::Test {
         client_container3_->chunk_action_authority()));
 #endif
 
-    remote_chunk_store1_->sig_chunk_stored()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Stored, converter1_.get(),
-                  args::_1, args::_2));
-    remote_chunk_store1_->sig_chunk_deleted()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Deleted, converter1_.get(),
-                  args::_1, args::_2));
-    remote_chunk_store1_->sig_chunk_modified()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Modified, converter1_.get(),
-                  args::_1, args::_2));
     public_id1_.reset(new PublicId(remote_chunk_store1_,
-                                   converter1_,
                                    session1_,
                                    asio_service1_.service()));
     message_handler1_.reset(new MessageHandler(remote_chunk_store1_,
-                                               converter1_,
                                                session1_,
                                                asio_service1_.service()));
 
-    remote_chunk_store2_->sig_chunk_stored()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Stored, converter2_.get(),
-                  args::_1, args::_2));
-    remote_chunk_store2_->sig_chunk_deleted()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Deleted, converter2_.get(),
-                  args::_1, args::_2));
-    remote_chunk_store2_->sig_chunk_modified()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Modified, converter2_.get(),
-                  args::_1, args::_2));
     public_id2_.reset(new PublicId(remote_chunk_store2_,
-                                   converter2_,
                                    session2_,
                                    asio_service2_.service()));
     message_handler2_.reset(new MessageHandler(remote_chunk_store2_,
-                                               converter2_,
                                                session2_,
                                                asio_service2_.service()));
 
-    remote_chunk_store3_->sig_chunk_stored()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Stored, converter3_.get(),
-                  args::_1, args::_2));
-    remote_chunk_store3_->sig_chunk_deleted()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Deleted, converter3_.get(),
-                  args::_1, args::_2));
-    remote_chunk_store3_->sig_chunk_modified()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Modified, converter3_.get(),
-                  args::_1, args::_2));
     public_id3_.reset(new PublicId(remote_chunk_store3_,
-                                   converter3_,
                                    session3_,
                                    asio_service3_.service()));
     message_handler3_.reset(new MessageHandler(remote_chunk_store3_,
-                                               converter3_,
                                                session3_,
                                                asio_service3_.service()));
   }
@@ -232,9 +195,6 @@ class MessageHandlerTest : public testing::Test {
 
   std::shared_ptr<fs::path> test_dir_;
   std::shared_ptr<Session> session1_, session2_, session3_;
-  std::shared_ptr<YeOldeSignalToCallbackConverter> converter1_,
-                                                   converter2_,
-                                                   converter3_;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store1_,
                                          remote_chunk_store2_,
                                          remote_chunk_store3_;

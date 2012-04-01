@@ -38,7 +38,6 @@
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/user_credentials.h"
 #include "maidsafe/lifestuff/user_storage.h"
-#include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
 namespace args = std::placeholders;
 namespace ba = boost::asio;
@@ -99,8 +98,6 @@ class UserStorageTest : public testing::Test {
       asio_service1_(),
       asio_service2_(),
       interval_(1),
-      converter1_(new YeOldeSignalToCallbackConverter),
-      converter2_(new YeOldeSignalToCallbackConverter),
       public_id1_(),
       public_id2_(),
       message_handler1_(),
@@ -203,32 +200,26 @@ class UserStorageTest : public testing::Test {
     session2_ = client_controller2_->session_;
 
     public_id1_.reset(new PublicId(client_controller1_->remote_chunk_store(),
-                                   client_controller1_->converter(),
                                    session1_,
                                    asio_service1_.service()));
     public_id2_.reset(new PublicId(client_controller2_->remote_chunk_store(),
-                                   client_controller2_->converter(),
                                    session2_,
                                    asio_service2_.service()));
 
     message_handler1_.reset(
         new MessageHandler(client_controller1_->remote_chunk_store(),
-                           client_controller1_->converter(),
                            session1_,
                            asio_service1_.service()));
     message_handler2_.reset(
         new MessageHandler(client_controller2_->remote_chunk_store(),
-                           client_controller2_->converter(),
                            session2_,
                            asio_service2_.service()));
 
     user_storage1_.reset(
         new UserStorage(client_controller1_->remote_chunk_store(),
-                        client_controller1_->converter(),
                         message_handler1_));
     user_storage2_.reset(
         new UserStorage(client_controller2_->remote_chunk_store(),
-                        client_controller2_->converter(),
                         message_handler1_));
 
     public_id1_->CreatePublicId(pub_name1_, true);
@@ -258,7 +249,6 @@ class UserStorageTest : public testing::Test {
   std::shared_ptr<Session> session1_, session2_;
   AsioService asio_service1_, asio_service2_;
   bptime::seconds interval_;
-  std::shared_ptr<YeOldeSignalToCallbackConverter> converter1_, converter2_;
   std::shared_ptr<PublicId> public_id1_, public_id2_;
   std::shared_ptr<MessageHandler> message_handler1_, message_handler2_;
   std::string pub_name1_, pub_name2_;

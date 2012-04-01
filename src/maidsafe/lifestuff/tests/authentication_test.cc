@@ -38,7 +38,6 @@
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/utils.h"
-#include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
 namespace args = std::placeholders;
 namespace fs = boost::filesystem;
@@ -65,7 +64,6 @@ class AuthenticationTest : public testing::Test {
         password_(RandomAlphaNumericString(8)),
         ser_dm_(RandomString(1000)),
         surrogate_ser_dm_(RandomString(1000)),
-        converter_(new YeOldeSignalToCallbackConverter),
         asio_service_() {}
 
  protected:
@@ -85,16 +83,7 @@ class AuthenticationTest : public testing::Test {
 #endif
 
     session_->Reset();
-    remote_chunk_store_->sig_chunk_stored()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Stored, converter_.get(),
-                  args::_1, args::_2));
-    remote_chunk_store_->sig_chunk_deleted()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Deleted, converter_.get(),
-                  args::_1, args::_2));
-    remote_chunk_store_->sig_chunk_modified()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Modified, converter_.get(),
-                  args::_1, args::_2));
-    authentication_.Init(remote_chunk_store_, converter_);
+    authentication_.Init(remote_chunk_store_);
   }
 
   void TearDown() {
@@ -132,7 +121,6 @@ class AuthenticationTest : public testing::Test {
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   Authentication authentication_;
   std::string username_, pin_, password_, ser_dm_, surrogate_ser_dm_;
-  std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
   AsioService asio_service_;
 
  private:

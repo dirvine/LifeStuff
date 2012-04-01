@@ -70,13 +70,11 @@ namespace lifestuff {
 
 class MessageHandler;
 class Session;
-class YeOldeSignalToCallbackConverter;
 
 class UserStorage {
  public:
   explicit UserStorage(
               std::shared_ptr<pcs::RemoteChunkStore> chunk_store,
-              std::shared_ptr<YeOldeSignalToCallbackConverter> converter,
               std::shared_ptr<MessageHandler> message_handler);
   virtual ~UserStorage() {}
 
@@ -172,7 +170,6 @@ class UserStorage {
   std::shared_ptr<pcs::RemoteChunkStore> chunk_store_;
   std::shared_ptr<MaidDriveInUserSpace> drive_in_user_space_;
   std::shared_ptr<Session> session_;
-  std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
   std::shared_ptr<MessageHandler> message_handler_;
   fs::path mount_dir_;
 };

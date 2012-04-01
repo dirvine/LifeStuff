@@ -57,7 +57,6 @@ namespace lifestuff {
 
 class Message;
 class Session;
-class YeOldeSignalToCallbackConverter;
 
 class MessageHandler {
  public:
@@ -77,7 +76,6 @@ class MessageHandler {
   typedef std::map<std::string, uint64_t> ReceivedMessagesMap;
 
   MessageHandler(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
-                 std::shared_ptr<YeOldeSignalToCallbackConverter> converter,
                  std::shared_ptr<Session> session,
                  ba::io_service &asio_service);  // NOLINT (Fraser)
   ~MessageHandler();
@@ -129,7 +127,6 @@ class MessageHandler {
   void EnqueuePresenceMessages(ContactPresence presence);
 
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
-  std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
   std::shared_ptr<Session> session_;
   ba::deadline_timer get_new_messages_timer_;
   NewItemSignalPtr chat_signal_, file_transfer_signal_, share_signal_;

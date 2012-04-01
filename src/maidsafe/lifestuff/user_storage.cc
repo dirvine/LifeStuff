@@ -36,7 +36,6 @@
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/utils.h"
 #include "maidsafe/lifestuff/version.h"
-#include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
 namespace args = std::placeholders;
 namespace fs = boost::filesystem;
@@ -128,13 +127,11 @@ struct AddMessageDetails<UpgradeShareTag> {
 
 UserStorage::UserStorage(
     std::shared_ptr<pcs::RemoteChunkStore> chunk_store,
-    std::shared_ptr<YeOldeSignalToCallbackConverter> converter,
     std::shared_ptr<MessageHandler> message_handler)
     : mount_status_(false),
       chunk_store_(chunk_store),
       drive_in_user_space_(),
       session_(),
-      converter_(converter),
       message_handler_(message_handler),
       mount_dir_() {}
 
@@ -273,18 +270,11 @@ int UserStorage::CreateShare(const std::string &sender_public_username,
   pcs::RemoteChunkStore::ValidationData validation_data(
       PopulateValidationData(key_ring));
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
-  VoidFunctionOneInt callback(std::bind(&SendContactInfoCallback,
-                                    args::_1,
-                                    &mutex,
-                                    &cond_var,
-                                    &results[0]));
-  if (converter_->AddOperation(packet_id, callback) != kSuccess) {
-    DLOG(ERROR) << "Failed to add operation to converter";
-    return kAuthenticationError;
-  }
-
+  VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback, args::_1,
+                                         &mutex, &cond_var, &results[0]));
   chunk_store_->Store(packet_id,
                       ComposeSignaturePacketValue(*signature_packets[0]),
+                      callback,
                       validation_data);
   int result(AwaitingResponse(&mutex, &cond_var, &results));
   if (result != kSuccess) {
@@ -369,20 +359,13 @@ int UserStorage::StopShare(const std::string &sender_public_username,
   boost::condition_variable cond_var;
   std::vector<int> results;
   results.push_back(kPendingResult);
-  pcs::RemoteChunkStore::ValidationData
-      validation_data(PopulateValidationData(key_ring));
+  pcs::RemoteChunkStore::ValidationData validation_data(
+      PopulateValidationData(key_ring));
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
 
-  VoidFunctionOneInt callback(std::bind(&SendContactInfoCallback,
-                                    args::_1,
-                                    &mutex,
-                                    &cond_var,
-                                    &results[0]));
-  if (converter_->AddOperation(packet_id, callback) != kSuccess) {
-    DLOG(ERROR) << "Failed to add operation to converter";
-    return kAuthenticationError;
-  }
-  chunk_store_->Delete(packet_id, validation_data);
+  VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback, args::_1,
+                                         &mutex, &cond_var, &results[0]));
+  chunk_store_->Delete(packet_id, callback, validation_data);
 
   result = AwaitingResponse(&mutex, &cond_var, &results);
   if (result != kSuccess)
@@ -537,14 +520,11 @@ int UserStorage::RemoveShareUsers(const std::string &sender_public_username,
   pcs::RemoteChunkStore::ValidationData validation_data(
       PopulateValidationData(key_ring));
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
-  VoidFunctionOneInt callback(std::bind(&SendContactInfoCallback, args::_1,
-                                    &mutex, &cond_var, &results[0]));
-  if (converter_->AddOperation(packet_id, callback) != kSuccess) {
-    DLOG(ERROR) << "Failed to add operation to converter";
-    return kAuthenticationError;
-  }
+  VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback, args::_1,
+                                         &mutex, &cond_var, &results[0]));
   chunk_store_->Store(packet_id,
                       ComposeSignaturePacketValue(*signature_packets[0]),
+                      callback,
                       validation_data);
 
   result = AwaitingResponse(&mutex, &cond_var, &results);
@@ -572,11 +552,7 @@ int UserStorage::RemoveShareUsers(const std::string &sender_public_username,
 
   validation_data = PopulateValidationData(old_key_ring);
   packet_id = ComposeSignaturePacketName(old_key_ring.identity);
-  if (converter_->AddOperation(packet_id, callback) != kSuccess) {
-    DLOG(ERROR) << "Failed to add operation to converter";
-    return kAuthenticationError;
-  }
-  chunk_store_->Delete(packet_id, validation_data);
+  chunk_store_->Delete(packet_id, callback, validation_data);
 
   result = AwaitingResponse(&mutex, &cond_var, &results);
   if (result != kSuccess)

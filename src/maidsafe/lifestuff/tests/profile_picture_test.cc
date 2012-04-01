@@ -33,7 +33,6 @@
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/user_credentials.h"
 #include "maidsafe/lifestuff/user_storage.h"
-#include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
 namespace ba = boost::asio;
 namespace bptime = boost::posix_time;
@@ -61,14 +60,12 @@ struct TestElements {
         user_storage(),
         session(new Session),
         asio_service(),
-        converter(new YeOldeSignalToCallbackConverter),
         public_id(),
         message_handler() {}
   std::shared_ptr<UserCredentials> user_credentials;
   std::shared_ptr<UserStorage> user_storage;
   std::shared_ptr<Session> session;
   AsioService asio_service;
-  std::shared_ptr<YeOldeSignalToCallbackConverter> converter;
   std::shared_ptr<PublicId> public_id;
   std::shared_ptr<MessageHandler> message_handler;
 };
@@ -97,19 +94,16 @@ void InitTestElements(const fs::path &test_dir,
 
   test_elements->public_id.reset(
       new PublicId(test_elements->user_credentials->remote_chunk_store(),
-                   test_elements->user_credentials->converter(),
                    test_elements->session,
                    test_elements->asio_service.service()));
 
   test_elements->message_handler.reset(
       new MessageHandler(test_elements->user_credentials->remote_chunk_store(),
-                         test_elements->user_credentials->converter(),
                          test_elements->session,
                          test_elements->asio_service.service()));
 
   test_elements->user_storage.reset(
       new UserStorage(test_elements->user_credentials->remote_chunk_store(),
-                      test_elements->user_credentials->converter(),
                       test_elements->message_handler));
 }
 
@@ -297,7 +291,6 @@ class FixtureFullTest : public testing::Test {
       user_credentials_(),
       user_storage_(),
       session_(new Session),
-      converter_(new YeOldeSignalToCallbackConverter),
       public_id_(),
       message_handler_(),
       public_username_(RandomAlphaNumericString(5)),
@@ -317,19 +310,16 @@ class FixtureFullTest : public testing::Test {
     pin_ = pin_stream.str();
 
     public_id_.reset(new PublicId(user_credentials_->remote_chunk_store(),
-                                  user_credentials_->converter(),
                                   session_,
                                   asio_service_.service()));
 
     message_handler_.reset(
         new MessageHandler(user_credentials_->remote_chunk_store(),
-                           user_credentials_->converter(),
                            session_,
                            asio_service_.service()));
 
     user_storage_.reset(
         new UserStorage(user_credentials_->remote_chunk_store(),
-                        user_credentials_->converter(),
                         message_handler_));
 
     user_credentials_->CreateUser(username_, pin_, password_);
@@ -367,7 +357,6 @@ class FixtureFullTest : public testing::Test {
   std::shared_ptr<UserCredentials> user_credentials_;
   std::shared_ptr<UserStorage> user_storage_;
   std::shared_ptr<Session> session_;
-  std::shared_ptr<YeOldeSignalToCallbackConverter> converter_;
   std::shared_ptr<PublicId> public_id_;
   std::shared_ptr<MessageHandler> message_handler_;
   std::string public_username_, username_, pin_, password_;

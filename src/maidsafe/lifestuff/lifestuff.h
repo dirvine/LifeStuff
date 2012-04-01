@@ -108,8 +108,8 @@ typedef InboxItemFunction ChatFunction;
 typedef InboxItemFunction FileTransferFunction;
 typedef InboxItemFunction ShareFunction;
 
-typedef std::function<void(int)> VoidFunctionOneInt;  // NOLINT (Dan)
-typedef std::function<void(const std::string&)> OneStringFunction;
+typedef std::function<void(int)> VoidFunctionOneInt;
+typedef std::function<void(bool)> VoidFunctionOneBool;
 
 typedef std::function<void(const std::string&, const std::string&)>
         TwoStringsFunction;

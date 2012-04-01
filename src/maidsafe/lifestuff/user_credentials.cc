@@ -52,7 +52,6 @@
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/utils.h"
-#include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
 
 namespace args = std::placeholders;
 namespace pca = maidsafe::priv::chunk_actions;
@@ -71,11 +70,10 @@ UserCredentials::UserCredentials(boost::asio::io_service &service,  // NOLINT (D
       initialised_(false),
       logging_out_(false),
       logged_in_(false),
-      service_(service),
 #ifndef LOCAL_TARGETS_ONLY
       client_container_(),
 #endif
-      converter_(new YeOldeSignalToCallbackConverter) {}
+      service_(service) {}
 
 UserCredentials::~UserCredentials() {}
 
@@ -98,17 +96,7 @@ void UserCredentials::Init(const fs::path &base_dir) {
   }
 #endif
 
-  remote_chunk_store_->sig_chunk_stored()->connect(
-      std::bind(&YeOldeSignalToCallbackConverter::Stored, converter_.get(),
-                args::_1, args::_2));
-  remote_chunk_store_->sig_chunk_deleted()->connect(
-      std::bind(&YeOldeSignalToCallbackConverter::Deleted, converter_.get(),
-                args::_1, args::_2));
-  remote_chunk_store_->sig_chunk_modified()->connect(
-      std::bind(&YeOldeSignalToCallbackConverter::Modified, converter_.get(),
-                args::_1, args::_2));
-
-  authentication_->Init(remote_chunk_store_, converter_);
+  authentication_->Init(remote_chunk_store_);
   initialised_ = true;
 }
 
@@ -471,10 +459,6 @@ std::string UserCredentials::Password() {
 
 std::shared_ptr<pcs::RemoteChunkStore> UserCredentials::remote_chunk_store() {
   return remote_chunk_store_;
-}
-
-std::shared_ptr<YeOldeSignalToCallbackConverter> UserCredentials::converter() {
-  return converter_;
 }
 
 }  // namespace lifestuff
