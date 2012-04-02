@@ -396,10 +396,9 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
   Sleep(interval_ * 2);
 
   received = InboxItem();
-  ASSERT_EQ(priv::kModifyFailure,
-            message_handler2_->Send(public_username2_,
-                                    public_username1_,
-                                    sent));
+  ASSERT_NE(kSuccess, message_handler2_->Send(public_username2_,
+                                              public_username1_,
+                                              sent));
   Sleep(interval_ * 2);
   ASSERT_FALSE(MessagesEqual(sent, received));
 

@@ -676,7 +676,7 @@ int PublicId::RemoveContact(const std::string &public_username,
   result = AwaitingResponse(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
-  if (!results[0]) {
+  if (results[0] != kSuccess) {
     DLOG(ERROR) << "Failed to invalidate previous MMID when remove a contact.";
     return kRemoveContactFailure;
   }
@@ -712,7 +712,7 @@ int PublicId::InformContactInfo(const std::string &public_username,
   // Inform each contact in the contact list of the MMID contact info
   boost::mutex mutex;
   boost::condition_variable cond_var;
-  std::vector<int> results;
+  std::vector<int> results(contacts.size(), kPendingResult);
   size_t size(contacts.size());
 
   pcs::RemoteChunkStore::ValidationData validation_data_mpid;
@@ -760,10 +760,9 @@ int PublicId::InformContactInfo(const std::string &public_username,
     signed_data.set_signature(signature);
 
     // Store encrypted MCID at recipient's MPID's name
-    results.push_back(false);
     std::string contact_id(MaidsafeContactIdName(recipient_public_username));
     VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback, args::_1,
-                                          &mutex, &cond_var, &results[i]));
+                                           &mutex, &cond_var, &results[i]));
     remote_chunk_store_->Modify(contact_id,
                                 signed_data.SerializeAsString(),
                                 callback,
@@ -774,7 +773,7 @@ int PublicId::InformContactInfo(const std::string &public_username,
     return result;
 
   for (size_t j = 0; j < size; ++j) {
-    if (!results[j])
+    if (results[j] != kSuccess)
       return kSendContactInfoFailure;
   }
 

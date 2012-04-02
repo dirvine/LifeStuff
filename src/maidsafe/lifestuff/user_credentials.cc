@@ -370,17 +370,6 @@ int UserCredentials::SaveSession() {
   return kSuccess;
 }
 
-bool UserCredentials::LeaveMaidsafeNetwork() {
-  if (!initialised_) {
-    DLOG(ERROR) << "Not initialised.";
-    return false;
-  }
-  if (authentication_->RemoveMe() == kSuccess)
-    return true;
-
-  return false;
-}
-
 std::string UserCredentials::SessionName() {
   if (!initialised_) {
     DLOG(ERROR) << "Not initialised.";

@@ -92,7 +92,6 @@ class UserCredentials {
   bool ChangeUsername(const std::string &new_username);
   bool ChangePin(const std::string &new_pin);
   bool ChangePassword(const std::string &new_password);
-  bool LeaveMaidsafeNetwork();
 
   std::string SessionName();
   std::string Username();

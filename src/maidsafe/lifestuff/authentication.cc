@@ -468,10 +468,12 @@ int Authentication::CreateUserSysPackets(const std::string &username,
     DLOG(ERROR) << "Authentication::CreateUserSysPackets: " << e.what()
                 << ", success: " << std::boolalpha << success;
   }
+
 #ifdef DEBUG
   if (!success)
     DLOG(INFO) << "Authentication::CreateUserSysPackets: timed out.";
 #endif
+
   if ((anmaid_status == kSucceeded) && (anmid_status == kSucceeded) &&
       (ansmid_status == kSucceeded) && (antmid_status == kSucceeded) &&
       (maid_status == kSucceeded) && (pmid_status == kSucceeded)) {
@@ -481,8 +483,10 @@ int Authentication::CreateUserSysPackets(const std::string &username,
       DLOG(ERROR) << "ConfirmSigningPackets failed";
     }
   }
+
   session_->set_username("");
   session_->set_pin("");
+
   return kAuthenticationError;
 }
 
@@ -527,8 +531,6 @@ void Authentication::StoreSignaturePacket(
     return;
   }
 
-//  DLOG(INFO) << "Authentication::StoreSignaturePacket - " << packet_type
-//             << " - " << Base32Substr(sig_packet->name());
   VoidFunctionOneBool functor =
       std::bind(&Authentication::SignaturePacketStoreCallback,
                 this, args::_1, packet_type, op_status);
@@ -649,16 +651,16 @@ void Authentication::SaveSession(const std::string &serialised_data_atlas,
       new SaveSessionData(functor, kRegular, serialised_data_atlas));
 
   // Update MID
-  VoidFunctionOneBool callback = std::bind(&Authentication::SaveSessionCallback,
-                                           this, args::_1, passport::kMid,
-                                           save_session_data);
+  VoidFunctionOneBool callback(std::bind(&Authentication::ProcessingSaveSession,
+                                         this, args::_1, passport::kMid,
+                                         save_session_data));
   remote_chunk_store_->Modify(mid_name,
                               serialised_mid,
                               callback,
                               validation_data_mid);
 
   // Update SMID
-  callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
+  callback = std::bind(&Authentication::ProcessingSaveSession, this, args::_1,
                        passport::kSmid, save_session_data);
   remote_chunk_store_->Modify(smid_name,
                               serialised_smid,
@@ -666,7 +668,7 @@ void Authentication::SaveSession(const std::string &serialised_data_atlas,
                               validation_data_smid);
 
   // Store new TMID
-  callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
+  callback = std::bind(&Authentication::ProcessingSaveSession, this, args::_1,
                        passport::kTmid, save_session_data);
   remote_chunk_store_->Store(tmid_name,
                              serialised_tmid,
@@ -674,20 +676,21 @@ void Authentication::SaveSession(const std::string &serialised_data_atlas,
                              validation_data_tmid);
 
   // Delete old STMID
-  callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
+  callback = std::bind(&Authentication::ProcessingSaveSession, this, args::_1,
                        passport::kStmid, save_session_data);
   std::string old_stmid_name(pca::ApplyTypeToName(old_stmid.name,
                                                   pca::kModifiableByOwner));
   remote_chunk_store_->Delete(old_stmid_name, callback, validation_data_tmid);
 }
 
-void Authentication::SaveSessionCallback(bool return_code,
-                                         passport::PacketType packet_type,
-                                         SaveSessionDataPtr save_session_data) {
+void Authentication::ProcessingSaveSession(
+    bool return_code,
+    passport::PacketType packet_type,
+    SaveSessionDataPtr save_session_data) {
   OpStatus op_status(kSucceeded);
   if (!return_code) {
     op_status = kFailed;
-    DLOG(INFO) << "Authentication::SaveSessionCallback - pt: "
+    DLOG(INFO) << "Authentication::ProcessingSaveSession - pt: "
                << DebugStr(packet_type) << ", result: " << return_code;
   }
 
@@ -719,7 +722,7 @@ void Authentication::SaveSessionCallback(bool return_code,
       (save_session_data->process_smid == kFailed) ||
       (save_session_data->process_tmid == kFailed) ||
       (save_session_data->process_stmid == kFailed)) {
-//    DLOG(ERROR) << "Failed one operation.";
+    DLOG(ERROR) << "Failed one operation.";
     lock.unlock();
 //    if (save_session_data->op_type == kRegular ||
 //        save_session_data->op_type == kSaveNew ||
@@ -743,8 +746,8 @@ void Authentication::SaveSessionCallback(bool return_code,
 
 int Authentication::SaveSession(const std::string &serialised_data_atlas) {
   int result(kPending);
-  VoidFunctionOneBool functor = std::bind(&Authentication::PacketOpCallback,
-                                          this, args::_1, &result);
+  VoidFunctionOneInt functor(std::bind(&Authentication::SaveSessionCallback,
+                                       this, args::_1, &result));
   SaveSession(serialised_data_atlas, functor);
   bool success(true);
   try {
@@ -813,121 +816,6 @@ int Authentication::SetLoggedInData(const std::string &ser_da,
   return kSuccess;
 }
 
-int Authentication::RemoveMe() {
-  OpStatus pmid_status(kSucceeded);
-  DeletePacket(passport::kPmid, &pmid_status, NULL);
-  OpStatus maid_status(kPending);
-  DeletePacket(passport::kMaid, &maid_status, &pmid_status);
-  OpStatus anmaid_status(kPending);
-  DeletePacket(passport::kAnmaid, &anmaid_status, &maid_status);
-  OpStatus tmid_status(kPending);
-  DeletePacket(passport::kTmid, &tmid_status, NULL);
-  OpStatus stmid_status(kPending);
-  DeletePacket(passport::kStmid, &stmid_status, &tmid_status);
-  OpStatus antmid_status(kPending);
-  DeletePacket(passport::kAntmid, &antmid_status, &stmid_status);
-  OpStatus mid_status(kPending);
-  DeletePacket(passport::kMid, &mid_status, NULL);
-  OpStatus anmid_status(kPending);
-  DeletePacket(passport::kAnmid, &anmid_status, &mid_status);
-  OpStatus smid_status(kPending);
-  DeletePacket(passport::kSmid, &smid_status, NULL);
-  OpStatus ansmid_status(kPending);
-  DeletePacket(passport::kAnsmid, &ansmid_status, &smid_status);
-//  OpStatus mpid_status(kPending);
-//  DeletePacket(passport::kMpid, &mpid_status, NULL);
-//  OpStatus anmpid_status(kPending);
-//  DeletePacket(passport::kAnmpid, &anmpid_status, &mpid_status);
-  bool success(false);
-  try {
-    boost::mutex::scoped_lock lock(mutex_);
-    success = cond_var_.timed_wait(
-                  lock,
-                  kSingleOpTimeout_ * 12,
-                  std::bind(&Authentication::FourSystemPacketsOpDone, this,
-                            &anmaid_status, &antmid_status, &anmid_status,
-                            &ansmid_status));
-  }
-  catch(const std::exception &e) {
-    DLOG(ERROR) << "Authentication::RemoveMe: " << e.what()
-                << ", success: " << std::boolalpha << success;
-  }
-#ifdef DEBUG
-  if (!success)
-    DLOG(INFO) << "Authentication::RemoveMe: timed out.";
-#endif
-  // Really only need these to be deleted
-  if (pmid_status == kSucceeded && maid_status == kSucceeded &&
-      tmid_status == kSucceeded && stmid_status == kSucceeded) {
-    return kSuccess;
-  }
-  return kAuthenticationError;
-}
-
-void Authentication::DeletePacket(const passport::PacketType &packet_type,
-                                  OpStatus *op_status,
-                                  OpStatus *dependent_op_status) {
-  // Wait for dependent op or timeout.
-  bool success(true);
-  if (dependent_op_status) {
-    boost::mutex::scoped_lock lock(mutex_);
-    try {
-      success = cond_var_.timed_wait(
-                    lock,
-                    kSingleOpTimeout_,
-                    std::bind(&Authentication::SignerDone, this,
-                              dependent_op_status));
-    }
-    catch(const std::exception &e) {
-      DLOG(ERROR) << "Authentication::DeletePacket (" << packet_type << "): "
-                 << e.what();
-      success = false;
-    }
-    success = (*dependent_op_status == kSucceeded);
-  }
-  if (!success) {
-    DLOG(ERROR) << "Authentication::DeletePacket (" << packet_type
-               << "): Failed wait";
-    boost::mutex::scoped_lock lock(mutex_);
-    *op_status = kFailed;
-    cond_var_.notify_all();
-    return;
-  }
-
-  // Retrieve packet
-  PacketData packet(packet_type, session_->passport_, true);
-
-  // Delete packet
-  VoidFunctionOneInt functor = std::bind(&Authentication::DeletePacketCallback,
-                                         this, args::_1, packet_type,
-                                         op_status);
-  std::string packet_name, signing_id;
-  GetPacketNameAndKeyId(packet.name,
-                        packet.type,
-                        true,
-                        &packet_name,
-                        &signing_id);
-  pcs::RemoteChunkStore::ValidationData validation_data;
-  KeysAndProof(SigningPacket(packet_type), &validation_data, true);
-  remote_chunk_store_->Delete(packet_name, functor, validation_data);
-}
-
-void Authentication::DeletePacketCallback(
-    bool return_code,
-    const passport::PacketType &packet_type,
-    OpStatus *op_status) {
-  boost::mutex::scoped_lock lock(mutex_);
-  if (return_code) {
-    *op_status = kSucceeded;
-//    session_->passport_->DeletePacket(packet_type);
-  } else {
-    DLOG(ERROR) << "Authentication::DeletePacketCallback (" << packet_type
-                  << "): Failed to delete";
-    *op_status = kFailed;
-  }
-  cond_var_.notify_all();
-}
-
 int Authentication::ChangeUsername(const std::string &serialised_data_atlas,
                                    const std::string &new_username) {
   return ChangeUserData(serialised_data_atlas, new_username, session_->pin());
@@ -967,8 +855,9 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
   pcs::RemoteChunkStore::ValidationData validation_data_tmid;
   KeysAndProof(passport::kAntmid, &validation_data_tmid, true);
 
-  VoidFunctionOneInt int_callback(std::bind(&Authentication::PacketOpCallback,
-                                            this, args::_1, &result));
+  VoidFunctionOneInt int_callback(
+      std::bind(&Authentication::ChangeUserDataCallback, this,
+                args::_1, &result));
   SaveSessionDataPtr save_session_data(
       new SaveSessionData(int_callback, kIsUnique, serialised_data_atlas));
   result = kPendingResult;
@@ -993,7 +882,7 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
 
   // Store new MID
   VoidFunctionOneBool bool_callback =
-      std::bind(&Authentication::SaveSessionCallback, this, args::_1,
+      std::bind(&Authentication::ProcessingSaveSession, this, args::_1,
                 passport::kMid, save_session_data);
   remote_chunk_store_->Store(mid_name,
                              serialised_mid,
@@ -1001,7 +890,7 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
                              validation_data_mid);
 
   // Store new SMID
-  bool_callback = std::bind(&Authentication::SaveSessionCallback, this,
+  bool_callback = std::bind(&Authentication::ProcessingSaveSession, this,
                             args::_1, passport::kSmid, save_session_data);
   remote_chunk_store_->Store(smid_name,
                              serialised_smid,
@@ -1009,7 +898,7 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
                              validation_data_smid);
 
   // Store new TMID
-  bool_callback = std::bind(&Authentication::SaveSessionCallback, this,
+  bool_callback = std::bind(&Authentication::ProcessingSaveSession, this,
                             args::_1, passport::kTmid, save_session_data);
   remote_chunk_store_->Store(tmid_name,
                              serialised_tmid,
@@ -1017,7 +906,7 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
                              validation_data_tmid);
 
   // Store new STMID
-  bool_callback = std::bind(&Authentication::SaveSessionCallback, this,
+  bool_callback = std::bind(&Authentication::ProcessingSaveSession, this,
                             args::_1, passport::kStmid, save_session_data);
   remote_chunk_store_->Store(stmid_name,
                              serialised_stmid,
@@ -1039,7 +928,6 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
   }
   if (result != kSuccess || !success) {
     DLOG(ERROR) << "Authentication::ChangeUserData: storing packets failed.";
-//    session_->passport_->RevertUserDataChange();
     return kAuthenticationError;
   }
 
@@ -1050,11 +938,12 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
   save_session_data->process_tmid = kPending;
   save_session_data->process_stmid = kPending;
   save_session_data->functor =
-      std::bind(&Authentication::PacketOpCallback, this, args::_1, &result);
+      std::bind(&Authentication::ChangeUserDataCallback,
+                this, args::_1, &result);
   save_session_data->op_type = kDeleteOld;
 
   // Delete old MID
-  bool_callback = std::bind(&Authentication::SaveSessionCallback, this,
+  bool_callback = std::bind(&Authentication::ProcessingSaveSession, this,
                             args::_1, passport::kMid, save_session_data);
   std::string old_packet_name(pca::ApplyTypeToName(old_mid.name,
                                                    pca::kModifiableByOwner));
@@ -1063,7 +952,7 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
                               validation_data_mid);
 
   // Delete old SMID
-  bool_callback = std::bind(&Authentication::SaveSessionCallback, this,
+  bool_callback = std::bind(&Authentication::ProcessingSaveSession, this,
                             args::_1, passport::kSmid, save_session_data);
   old_packet_name = pca::ApplyTypeToName(old_smid.name,
                                          pca::kModifiableByOwner);
@@ -1072,7 +961,7 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
                               validation_data_smid);
 
   // Delete old TMID
-  bool_callback = std::bind(&Authentication::SaveSessionCallback, this,
+  bool_callback = std::bind(&Authentication::ProcessingSaveSession, this,
                             args::_1, passport::kTmid, save_session_data);
   old_packet_name = pca::ApplyTypeToName(old_tmid.name,
                                          pca::kModifiableByOwner);
@@ -1081,7 +970,7 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
                               validation_data_tmid);
 
   // Delete old STMID
-  bool_callback = std::bind(&Authentication::SaveSessionCallback, this,
+  bool_callback = std::bind(&Authentication::ProcessingSaveSession, this,
                             args::_1, passport::kStmid, save_session_data);
   old_packet_name = pca::ApplyTypeToName(old_stmid.name,
                                          pca::kModifiableByOwner);
@@ -1107,11 +996,12 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
   // Result of deletions not considered here.
   if (result != kSuccess) {
     DLOG(ERROR) << "Authentication::ChangeUserData: failed to confirm change.";
-//    session_->passport_->RevertUserDataChange();
     return kAuthenticationError;
   }
+
   session_->set_username(new_username);
   session_->set_pin(new_pin);
+
   return kSuccess;
 }
 
@@ -1155,21 +1045,22 @@ int Authentication::ChangePassword(const std::string &serialised_data_atlas,
 
   result = kPendingResult;
   SaveSessionDataPtr save_session_data(new SaveSessionData(
-      std::bind(&Authentication::PacketOpCallback, this, args::_1, &result),
+      std::bind(&Authentication::ChangeUserDataCallback, this, args::_1,
+                &result),
       kUpdate,
       serialised_data_atlas));
 
   // Update MID
-  VoidFunctionOneBool callback = std::bind(&Authentication::SaveSessionCallback,
-                                           this, args::_1, passport::kMid,
-                                           save_session_data);
+  VoidFunctionOneBool callback(std::bind(&Authentication::ProcessingSaveSession,
+                                         this, args::_1, passport::kMid,
+                                         save_session_data));
   remote_chunk_store_->Modify(mid_name,
                               serialised_mid,
                               callback,
                               validation_data_mid);
 
   // Update SMID
-  callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
+  callback = std::bind(&Authentication::ProcessingSaveSession, this, args::_1,
                        passport::kSmid, save_session_data);
   remote_chunk_store_->Modify(smid_name,
                               serialised_smid,
@@ -1177,7 +1068,7 @@ int Authentication::ChangePassword(const std::string &serialised_data_atlas,
                               validation_data_smid);
 
   // Store new TMID
-  callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
+  callback = std::bind(&Authentication::ProcessingSaveSession, this, args::_1,
                        passport::kTmid, save_session_data);
   remote_chunk_store_->Store(tmid_name,
                              serialised_tmid,
@@ -1185,7 +1076,7 @@ int Authentication::ChangePassword(const std::string &serialised_data_atlas,
                              validation_data_tmid);
 
   // Store new STMID
-  callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
+  callback = std::bind(&Authentication::ProcessingSaveSession, this, args::_1,
                        passport::kStmid, save_session_data);
   remote_chunk_store_->Store(stmid_name,
                              serialised_stmid,
@@ -1216,18 +1107,19 @@ int Authentication::ChangePassword(const std::string &serialised_data_atlas,
   save_session_data->process_tmid = kPending;
   save_session_data->process_stmid = kPending;
   save_session_data->functor =
-      std::bind(&Authentication::PacketOpCallback, this, args::_1, &result);
+      std::bind(&Authentication::ChangeUserDataCallback,
+                this, args::_1, &result);
   save_session_data->op_type = kDeleteOld;
 
   // Delete old TMID
-  callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
+  callback = std::bind(&Authentication::ProcessingSaveSession, this, args::_1,
                        passport::kTmid, save_session_data);
   std::string old_packet_name(pca::ApplyTypeToName(old_tmid.name,
                                                    pca::kModifiableByOwner));
   remote_chunk_store_->Delete(old_packet_name, callback, validation_data_tmid);
 
   // Delete old STMID
-  callback = std::bind(&Authentication::SaveSessionCallback, this, args::_1,
+  callback = std::bind(&Authentication::ProcessingSaveSession, this, args::_1,
                        passport::kStmid, save_session_data);
   old_packet_name = pca::ApplyTypeToName(old_stmid.name,
                                          pca::kModifiableByOwner);
@@ -1460,6 +1352,57 @@ void Authentication::KeysAndProof(
               &validation_data->ownership_proof);
   signed_data.set_signature(validation_data->ownership_proof);
   validation_data->ownership_proof = signed_data.SerializeAsString();
+}
+
+bool Authentication::TmidOpDone() {
+  return (tmid_op_status_ == kSucceeded ||
+          tmid_op_status_ == kNoUser ||
+          tmid_op_status_ == kFailed);
+}
+
+bool Authentication::StmidOpDone() {
+  return (stmid_op_status_ == kSucceeded ||
+          stmid_op_status_ == kNoUser ||
+          stmid_op_status_ == kFailed);
+}
+
+bool Authentication::SignerDone(OpStatus *op_status) {
+  return *op_status != kPending;
+}
+
+bool Authentication::TwoSystemPacketsOpDone(OpStatus *op_status1,
+                                            OpStatus *op_status2) {
+  return (*op_status1 != kPending) && (*op_status2 != kPending);
+}
+
+bool Authentication::ThreeSystemPacketsOpDone(OpStatus *op_status1,
+                                              OpStatus *op_status2,
+                                              OpStatus *op_status3) {
+  return TwoSystemPacketsOpDone(op_status1, op_status2) &&
+         (*op_status3 != kPending);
+}
+
+bool Authentication::FourSystemPacketsOpDone(OpStatus *op_status1,
+                                             OpStatus *op_status2,
+                                             OpStatus *op_status3,
+                                             OpStatus *op_status4) {
+  return TwoSystemPacketsOpDone(op_status1, op_status2) &&
+         TwoSystemPacketsOpDone(op_status3, op_status4);
+}
+
+bool Authentication::PacketOpDone(int *return_code) {
+  return *return_code != kPendingResult;
+}
+
+void Authentication::SaveSessionCallback(const int& return_code, int* result) {
+  boost::mutex::scoped_lock lock(mutex_);
+  *result = return_code;
+}
+
+void Authentication::ChangeUserDataCallback(const int& return_code,
+                                            int* result) {
+  boost::mutex::scoped_lock lock(mutex_);
+  *result = return_code;
 }
 
 }  // namespace lifestuff

@@ -128,11 +128,6 @@ class AuthenticationTest : public testing::Test {
   AuthenticationTest &operator=(const AuthenticationTest&);
 };
 
-TEST_F(AuthenticationTest, FUNC_CreateUserSysPackets) {
-  ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
-}
-
 TEST_F(AuthenticationTest, FUNC_GoodLogin) {
   ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
@@ -293,27 +288,6 @@ TEST_F(AuthenticationTest, FUNC_ChangePassword) {
   ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
   authentication_.GetMasterDataMap(kNewPassword, &ser_dm_login, &ser_dm_login1);
   ASSERT_NE(ser_dm_, ser_dm_login);
-}
-
-TEST_F(AuthenticationTest, FUNC_RegisterLeaveRegister) {
-  ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
-                                                       ser_dm_,
-                                                       surrogate_ser_dm_));
-
-  //  Remove user.
-  ASSERT_EQ(kSuccess, authentication_.RemoveMe());
-
-  //  Check user no longer registered.
-  session_->Reset();
-  ASSERT_NE(kUserExists, authentication_.GetUserInfo(username_, pin_));
-
-  session_->Reset();
-  ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(password_,
-                                                       ser_dm_,
-                                                       surrogate_ser_dm_));
 }
 
 }  // namespace test

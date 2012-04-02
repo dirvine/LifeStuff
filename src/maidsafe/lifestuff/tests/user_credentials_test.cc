@@ -286,51 +286,6 @@ TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
   DLOG(INFO) << "Can't log in with old u/p/w.";
 }
 
-TEST_F(UserCredentialsTest, FUNC_LeaveNetwork) {
-  ASSERT_TRUE(session_->username().empty());
-  ASSERT_TRUE(session_->pin().empty());
-  ASSERT_TRUE(session_->password().empty());
-  DLOG(INFO) << "Preconditions fulfilled.\n===================\n";
-
-  ASSERT_NE(kUserExists, cc_->CheckUserExists(username_, pin_));
-  ASSERT_TRUE(cc_->CreateUser(username_, pin_, password_));
-  ASSERT_EQ(username_, session_->username());
-  ASSERT_EQ(pin_, session_->pin());
-  ASSERT_EQ(password_, session_->password());
-  DLOG(INFO) << "User created.\n===================\n";
-
-  ASSERT_TRUE(cc_->Logout());
-  ASSERT_TRUE(session_->username().empty());
-  ASSERT_TRUE(session_->pin().empty());
-  ASSERT_TRUE(session_->password().empty());
-  DLOG(INFO) << "Logged out.\n===================\n";
-
-  ASSERT_EQ(kUserExists, cc_->CheckUserExists(username_, pin_));
-  ASSERT_TRUE(cc_->ValidateUser(password_));
-  ASSERT_EQ(username_, session_->username());
-  ASSERT_EQ(pin_, session_->pin());
-  ASSERT_EQ(password_, session_->password());
-  DLOG(INFO) << "Logged in.\n===================\n";
-
-  ASSERT_TRUE(cc_->LeaveMaidsafeNetwork());
-  DLOG(INFO) << "Left maidsafe ='(.\n===================\n";
-
-  ASSERT_EQ(kUserDoesntExist, cc_->CheckUserExists(username_, pin_));
-  DLOG(INFO) << "User no longer exists.\n===================\n";
-
-  ASSERT_TRUE(cc_->CreateUser(username_, pin_, password_));
-  ASSERT_EQ(username_, session_->username());
-  ASSERT_EQ(pin_, session_->pin());
-  ASSERT_EQ(password_, session_->password());
-  DLOG(INFO) << "User created again.\n===================\n";
-
-  ASSERT_TRUE(cc_->Logout());
-  ASSERT_TRUE(session_->username().empty());
-  ASSERT_TRUE(session_->pin().empty());
-  ASSERT_TRUE(session_->password().empty());
-  DLOG(INFO) << "Logged out.";
-}
-
 TEST_F(UserCredentialsTest, FUNC_ParallelLogin) {
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());

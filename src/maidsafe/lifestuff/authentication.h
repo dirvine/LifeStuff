@@ -72,8 +72,6 @@ class Authentication {
                        const std::string &serialised_data_atlas,
                        const std::string &surrogate_serialised_data_atlas);
 
-  void SaveSession(const std::string &serialised_data_atlas,
-                   const VoidFunctionOneInt &functor);
   int SaveSession(const std::string &serialised_data_atlas);
   // Used when logging in.
   void GetMasterDataMap(const std::string &password,
@@ -81,7 +79,6 @@ class Authentication {
                         std::string *surrogate_serialised_data_atlas);
   int SetLoggedInData(const std::string &ser_da,
                       const std::string &surrogate_ser_da);
-  int RemoveMe();
   int ChangeUsername(const std::string &serialised_data_atlas,
                      const std::string &new_username);
   int ChangePin(const std::string &serialised_data_atlas,
@@ -142,6 +139,11 @@ class Authentication {
   void GetMidTmidCallback(const std::string &value,
                           bool return_code,
                           bool surrogate);
+
+  void SaveSession(const std::string &serialised_data_atlas,
+                   const VoidFunctionOneInt &functor);
+  void SaveSessionCallback(const int &return_code, int *result);
+
   // Function waits until dependent_op_status != kPending or timeout before
   // starting
   void StoreSignaturePacket(const passport::PacketType &packet_type,
@@ -150,54 +152,35 @@ class Authentication {
   void SignaturePacketStoreCallback(bool return_code,
                                     passport::PacketType packet_type,
                                     OpStatus *op_status);
-  void SaveSessionCallback(bool return_code,
-                           passport::PacketType packet_type,
-                           SaveSessionDataPtr save_session_data);
-  void DeletePacket(const passport::PacketType &packet_type,
-                    OpStatus *op_status,
-                    OpStatus *dependent_op_status);
-  void DeletePacketCallback(bool return_code,
-                            const passport::PacketType &packet_type,
-                            OpStatus *op_status);
+  void ProcessingSaveSession(bool return_code,
+                             passport::PacketType packet_type,
+                             SaveSessionDataPtr save_session_data);
+
   int ChangeUserData(const std::string &serialised_data_atlas,
                      const std::string &new_username,
                      const std::string &new_pin);
+  void ChangeUserDataCallback(const int &return_code, int *result);
 
   // Designed to be called as functor in timed_wait - user_info mutex locked
-  bool TmidOpDone() {
-    return (tmid_op_status_ == kSucceeded ||
-            tmid_op_status_ == kNoUser ||
-            tmid_op_status_ == kFailed);
-  }
+  bool TmidOpDone();
   // Designed to be called as functor in timed_wait - user_info mutex locked
-  bool StmidOpDone() {
-    return (stmid_op_status_ == kSucceeded ||
-            stmid_op_status_ == kNoUser ||
-            stmid_op_status_ == kFailed);
-  }
+  bool StmidOpDone();
   // Designed to be called as functor in timed_wait - user_info mutex locked
-  bool SignerDone(OpStatus *op_status) { return *op_status != kPending; }
+  bool SignerDone(OpStatus *op_status);
   // Designed to be called as functor in timed_wait - user_info mutex locked
-  bool TwoSystemPacketsOpDone(OpStatus *op_status1, OpStatus *op_status2) {
-    return (*op_status1 != kPending) && (*op_status2 != kPending);
-  }
+  bool TwoSystemPacketsOpDone(OpStatus *op_status1, OpStatus *op_status2);
   // Designed to be called as functor in timed_wait - user_info mutex locked
   bool ThreeSystemPacketsOpDone(OpStatus *op_status1,
                                 OpStatus *op_status2,
-                                OpStatus *op_status3) {
-    return TwoSystemPacketsOpDone(op_status1, op_status2) &&
-           (*op_status3 != kPending);
-  }
+                                OpStatus *op_status3);
   // Designed to be called as functor in timed_wait - user_info mutex locked
   bool FourSystemPacketsOpDone(OpStatus *op_status1,
                                OpStatus *op_status2,
                                OpStatus *op_status3,
-                               OpStatus *op_status4) {
-    return TwoSystemPacketsOpDone(op_status1, op_status2) &&
-           TwoSystemPacketsOpDone(op_status3, op_status4);
-  }
+                               OpStatus *op_status4);
   // Designed to be called as functor in timed_wait - user_info mutex locked
-  bool PacketOpDone(int *return_code) { return *return_code != kPendingResult; }
+  bool PacketOpDone(int *return_code);
+
   int StorePacket(const PacketData &packet,
                   const pcs::RemoteChunkStore::ValidationData &validation_data);
   int DeletePacket(const PacketData &packet);
