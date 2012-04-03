@@ -366,6 +366,32 @@ void ContactsHandler::OnlineContacts(std::vector<Contact> *online_contacts) {
   online_contacts->assign(it_pair.first, it_pair.second);
 }
 
+ContactMap ContactsHandler::GetContacts(uint16_t bitwise_status) {
+  ContactMap contact_map;
+
+  ContactSet *enquiry_pool = &contact_set_;
+  ContactSet contacts;
+  if (kUnitialised & bitwise_status)
+    GetContactsByStatus(&contacts, kUnitialised);
+  if (kRequestSent & bitwise_status)
+    GetContactsByStatus(&contacts, kRequestSent);
+  if (kPendingResponse & bitwise_status)
+    GetContactsByStatus(&contacts, kPendingResponse);
+  if (kConfirmed & bitwise_status)
+    GetContactsByStatus(&contacts, kConfirmed);
+  if (kBlocked & bitwise_status)
+    GetContactsByStatus(&contacts, kBlocked);
+  enquiry_pool = &contacts;
+
+  for (auto it(enquiry_pool->begin()); it != enquiry_pool->end(); ++it) {
+    contact_map.insert(std::make_pair((*it).public_username,
+                                      std::make_pair((*it).status,
+                                                     (*it).presence)));
+  }
+
+  return contact_map;
+}
+
 template <typename T>
 void ContactsHandler::GetContactsByOrder(ContactSet *contacts,
                                          std::vector<Contact> *list) {

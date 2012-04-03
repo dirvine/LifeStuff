@@ -430,16 +430,6 @@ int PublicId::ModifyAppendability(const std::string &public_username,
   return kSuccess;
 }
 
-bs2::connection PublicId::ConnectToNewContactSignal(
-    const NewContactFunction &new_contact_slot) {
-  return new_contact_signal_->connect(new_contact_slot);
-}
-
-bs2::connection PublicId::ConnectToContactConfirmedSignal(
-    const ContactConfirmationFunction &contact_confirmation_slot) {
-  return contact_confirmed_signal_->connect(contact_confirmation_slot);
-}
-
 void PublicId::GetNewContacts(const bptime::seconds &interval,
                               const boost::system::error_code &error_code) {
   if (error_code) {
@@ -508,6 +498,9 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
     }
 
     // TODO(Team#5#): 2011-12-02 - Validate signature of each Introduction
+    // TODO(Team#5#): 2012-04-03 - Handle case where the request comes from
+    //                             someone who is already accepted, ie, might
+    //                             have blocked us and wants in again.
     std::string public_username(introduction.public_username()),
                 mmid_name(introduction.mmid_name()),
                 profile_picture_data_map(
@@ -822,15 +815,6 @@ std::map<std::string, ContactStatus> PublicId::ContactList(
   return contacts;
 }
 
-std::vector<std::string> PublicId::PublicIdsList() const {
-  std::vector<std::string> public_ids;
-  std::vector<passport::SelectableIdData> selectables;
-  session_->passport_->SelectableIdentitiesList(&selectables);
-  for (auto it(selectables.begin()); it != selectables.end(); ++it)
-    public_ids.push_back(std::get<0>(*it));
-  return public_ids;
-}
-
 void PublicId::KeysAndProof(
     const std::string &public_username,
     passport::PacketType pt,
@@ -858,6 +842,16 @@ void PublicId::KeysAndProof(
               &validation_data->ownership_proof);
   signed_data.set_signature(validation_data->ownership_proof);
   validation_data->ownership_proof = signed_data.SerializeAsString();
+}
+
+bs2::connection PublicId::ConnectToNewContactSignal(
+    const NewContactFunction &new_contact_slot) {
+  return new_contact_signal_->connect(new_contact_slot);
+}
+
+bs2::connection PublicId::ConnectToContactConfirmedSignal(
+    const ContactConfirmationFunction &contact_confirmation_slot) {
+  return contact_confirmed_signal_->connect(contact_confirmation_slot);
 }
 
 }  // namespace lifestuff

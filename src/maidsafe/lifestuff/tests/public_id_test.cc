@@ -550,21 +550,21 @@ TEST_F(PublicIdTest, FUNC_ContactList) {
     ASSERT_FALSE(contacts.find(*it) == contacts.end());
 }
 
-TEST_F(PublicIdTest, FUNC_PublicIdList) {
-  int n(10);
-  for (int a(0); a < n; ++a) {
-    std::string pub_name(public_username1_ +
-                         boost::lexical_cast<std::string>(a));
-    ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(pub_name, (a % 2) == 0));
-    DLOG(INFO) << "Created #" << a;
-  }
-
-  std::vector<std::string> public_ids(public_id1_->PublicIdsList());
-  ASSERT_EQ(size_t(n), public_ids.size());
-  for (int y(0); y < n; ++y)
-    ASSERT_EQ(public_username1_ + boost::lexical_cast<std::string>(y),
-              public_ids.at(y));
-}
+// Tiberius(PublicIdTest, FUNC_PublicIdList) {
+//   int n(10);
+//   for (int a(0); a < n; ++a) {
+//     std::string pub_name(public_username1_ +
+//                          boost::lexical_cast<std::string>(a));
+//     ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(pub_name, (a % 2) == 0));
+//     DLOG(INFO) << "Created #" << a;
+//   }
+//
+//   std::vector<std::string> public_ids(public_id1_->PublicIdsList());
+//   ASSERT_EQ(size_t(n), public_ids.size());
+//   for (int y(0); y < n; ++y)
+//     ASSERT_EQ(public_username1_ + boost::lexical_cast<std::string>(y),
+//               public_ids.at(y));
+// }
 
 }  // namespace test
 

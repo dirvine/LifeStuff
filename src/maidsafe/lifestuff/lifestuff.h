@@ -70,6 +70,14 @@ enum ContactPresence {
   kOnline
 };
 
+enum LifeStuffState {
+  kZeroth,
+  kInitialised,
+  kConnected,
+  kLoggedIn,
+  kLoggedOut
+};
+
 enum InboxItemType {
   kChat,
   kFileTransfer,
@@ -120,6 +128,9 @@ typedef TwoStringsFunction ContactProfilePictureFunction;
 typedef std::function<void(const std::string&,
                            const std::string&,
                            ContactPresence presence)> ContactPresenceFunction;
+
+typedef std::map<std::string, std::pair<ContactStatus, ContactPresence>>
+        ContactMap;
 namespace args = std::placeholders;
 
 }  // namespace lifestuff

@@ -100,7 +100,6 @@ class PublicId {
       const std::string &public_username,
       ContactOrder type = kLastContacted,
       uint16_t bitwise_status = kConfirmed) const;
-  std::vector<std::string> PublicIdsList() const;
 
  private:
   PublicId(const PublicId&);

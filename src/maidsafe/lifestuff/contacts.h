@@ -147,6 +147,7 @@ class ContactsHandler {
                        uint16_t bitwise_status = 0x00);
   void OnlineContacts(std::vector<Contact> *online_contacts);
   void ClearContacts();
+  ContactMap GetContacts(uint16_t bitwise_status);
 
  private:
   template <typename T>

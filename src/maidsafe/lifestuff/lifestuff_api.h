@@ -45,8 +45,11 @@ namespace lifestuff {
 
 class LifeStuff {
  public:
-  int Initialise(const boost::filesystem::path &base_directory);
+  LifeStuff();
+  ~LifeStuff();
 
+  /// State operations
+  int Initialise(const boost::filesystem::path &base_directory);
   int ConnectToSignals(
       drive::DriveChangedSlotPtr drive_change_slot,
       drive::ShareChangedSlotPtr share_change_slot,
@@ -57,27 +60,51 @@ class LifeStuff {
       const ContactConfirmationFunction &confirmed_contact_slot,
       const ContactProfilePictureFunction &profile_picture_slot,
       const ContactPresenceFunction &contact_presence_slot);
+  int Finalise();
 
+  /// Credential operations
   int CreateUser(const std::string &username,
                  const std::string &pin,
                  const std::string &password);
-
   int CreatePublicId(const std::string &public_id);
-
   int LogIn(const std::string &username,
             const std::string &pin,
             const std::string &password);
-
   int LogOut();
 
-  int Finalise();
+  /// Contact operations
+  int AddContact(const std::string &my_public_id,
+                 const std::string &contact_public_id);
+  int ConfirmContact(const std::string &my_public_id,
+                     const std::string &contact_public_id);
+  int DeclineContact(const std::string &my_public_id,
+                     const std::string &contact_public_id);
+  int RemoveContact(const std::string &my_public_id,
+                    const std::string &contact_public_id);
+  int ChangeProfilePicture(const std::string &my_public_id,
+                           const std::string &profile_picture_contents);
+  std::string GetOwnProfilePicture(const std::string &my_public_id);
+  std::string GetContactProfilePicture(const std::string &my_public_id,
+                                       const std::string &contact_public_id);
+  ContactMap GetContacts(const std::string &my_public_id,
+                         uint16_t bitwise_status = kConfirmed | kRequestSent);
+  std::vector<std::string> PublicIdsList() const;
 
+  /// Messaging
   int SendChatMessage(const std::string &sender_public_id,
                       const std::string &receiver_public_id,
                       const std::string &message);
 
-  int ChangeProfilePicture(const std::string &sender_public_id,
-                           const fs::path &path_to_profile_picture);
+  /// Filesystem
+  int ReadHiddenFile(const fs::path &absolute_path, std::string *content) const;
+  int WriteHiddenFile(const fs::path &absolute_path,
+                      const std::string &content,
+                      bool overwrite_existing);
+  int DeleteHiddenFile(const fs::path &absolute_path);
+
+  ///
+  int state() const;
+  fs::path mount_path() const;
 
  private:
   struct Elements;

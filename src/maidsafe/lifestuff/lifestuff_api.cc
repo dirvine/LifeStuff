@@ -24,6 +24,7 @@
 #include "maidsafe/lifestuff/lifestuff_api.h"
 
 #include "maidsafe/common/asio_service.h"
+#include "maidsafe/common/utils.h"
 
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
@@ -33,18 +34,11 @@
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/user_credentials.h"
 #include "maidsafe/lifestuff/user_storage.h"
+#include "contacts.h"
 
 namespace maidsafe {
 
 namespace lifestuff {
-
-enum LifeStuffState {
-  kZeroth,
-  kInitialised,
-  kConnected,
-  kLoggedIn,
-  kLoggedOut
-};
 
 struct LifeStuff::Elements {
   Elements() : thread_count(kThreads),
@@ -70,6 +64,10 @@ struct LifeStuff::Elements {
   std::shared_ptr<MessageHandler> message_handler;
 };
 
+LifeStuff::LifeStuff() : lifestuff_elements(new Elements) {}
+
+LifeStuff::~LifeStuff() {}
+
 int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
   if (lifestuff_elements->state != kZeroth) {
     DLOG(ERROR) << "Make sure that object is in the original Zeroth state. "
@@ -79,6 +77,7 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
 
   // Initialisation
   lifestuff_elements->asio_service.Start(lifestuff_elements->thread_count);
+  lifestuff_elements->session.reset(new Session);
   lifestuff_elements->user_credentials.reset(
       new UserCredentials(lifestuff_elements->asio_service.service(),
                           lifestuff_elements->session));
@@ -101,6 +100,7 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
           lifestuff_elements->message_handler));
 
   lifestuff_elements->base_directory = base_directory;
+  lifestuff_elements->state = kInitialised;
 
   return kSuccess;
 }
@@ -116,7 +116,7 @@ int LifeStuff::ConnectToSignals(
     const ContactProfilePictureFunction &profile_picture_slot,
     const ContactPresenceFunction &contact_presence_slot) {
   if (lifestuff_elements->state != kInitialised) {
-    DLOG(ERROR) << "Make sure that object is initialised and connected";
+    DLOG(ERROR) << "Make sure that object is initialised";
     return kGeneralError;
   }
 
@@ -177,12 +177,11 @@ int LifeStuff::CreateUser(const std::string &username,
     return kGeneralError;
   }
 
-  int result(lifestuff_elements->user_credentials->CreateUser(username,
-                                                              pin,
-                                                              password));
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to Create User: " << result;
-    return result;
+  if (!lifestuff_elements->user_credentials->CreateUser(username,
+                                                        pin,
+                                                        password)) {
+    DLOG(ERROR) << "Failed to Create User.";
+    return kGeneralError;
   }
 
   lifestuff_elements->user_storage->MountDrive(
@@ -282,10 +281,9 @@ int LifeStuff::LogOut() {
   lifestuff_elements->public_id->StopCheckingForNewContacts();
   lifestuff_elements->message_handler->ShutDown();
 
-  int result(lifestuff_elements->user_credentials->Logout());
-  if (result != kSuccess) {
+  if (!lifestuff_elements->user_credentials->Logout()) {
     DLOG(ERROR) << "Failed to log out.";
-    return result;
+    return kGeneralError;
   }
 
   if (!lifestuff_elements->user_credentials->remote_chunk_store()
@@ -317,6 +315,239 @@ int LifeStuff::Finalise() {
 
   return kSuccess;
 }
+
+/// Contact operations
+int PreContactChecks(const LifeStuffState &state,
+                     const std::string &my_public_id,
+                     std::shared_ptr<Session> session) {
+  if (state != kLoggedIn) {
+    DLOG(ERROR) << "Incorrect state. Should be logged in.";
+    return kGeneralError;
+  }
+
+  auto it(session->contact_handler_map().find(my_public_id));
+  if (it == session->contact_handler_map().end()) {
+    DLOG(ERROR) << "No such public ID.";
+    return kGeneralError;
+  }
+
+  return kSuccess;
+}
+
+int LifeStuff::AddContact(const std::string &my_public_id,
+                          const std::string &contact_public_id) {
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks in AddContact.";
+    return result;
+  }
+
+  return lifestuff_elements->public_id->SendContactInfo(my_public_id,
+                                                        contact_public_id,
+                                                        true);
+}
+
+int LifeStuff::ConfirmContact(const std::string &my_public_id,
+                              const std::string &contact_public_id) {
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks in ConfirmContact.";
+    return result;
+  }
+
+  return lifestuff_elements->public_id->ConfirmContact(my_public_id,
+                                                       contact_public_id,
+                                                       true);
+}
+
+int LifeStuff::DeclineContact(const std::string &my_public_id,
+                              const std::string &contact_public_id) {
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks in DeclineContact.";
+    return result;
+  }
+
+  return lifestuff_elements->public_id->ConfirmContact(my_public_id,
+                                                       contact_public_id,
+                                                       false);
+}
+
+int LifeStuff::RemoveContact(const std::string &my_public_id,
+                             const std::string &contact_public_id) {
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks in RemoveContact.";
+    return result;
+  }
+
+  return lifestuff_elements->public_id->RemoveContact(my_public_id,
+                                                      contact_public_id);
+}
+
+int LifeStuff::ChangeProfilePicture(
+    const std::string &my_public_id,
+    const std::string &profile_picture_contents) {
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks in ChangeProfilePicture.";
+    return result;
+  }
+
+  if (profile_picture_contents.empty() ||
+      profile_picture_contents.size() > kFileRecontructionLimit) {
+    DLOG(ERROR) << "Contents of picture inadequate("
+                << profile_picture_contents.size() << "). Good day!";
+    return kGeneralError;
+  }
+
+  // Write contents somewhere
+  fs::path profile_picture_path(lifestuff_elements->user_storage->mount_dir() /
+                                std::string(my_public_id +
+                                            "_profile_picture.ms_hidden"));
+  result = lifestuff_elements->user_storage->WriteHiddenFile(
+               profile_picture_path, profile_picture_contents, true);
+
+  // Get datamap
+  std::string data_map;
+  result = lifestuff_elements->user_storage->GetDataMap(profile_picture_path,
+                                                        &data_map);
+  if (result != kSuccess || data_map.empty()) {
+    DLOG(ERROR) << "Failed obtaining DM of profile picture.";
+    return result;
+  }
+
+  // Set in session
+  lifestuff_elements->session->set_profile_picture_data_map(data_map);
+
+  // Message construction
+  InboxItem message(kContactProfilePicture);
+  message.sender_public_id = my_public_id;
+  message.content.push_back(data_map);
+  message.timestamp = boost::lexical_cast<std::string>(GetDurationSinceEpoch());
+
+  // Send to everybody
+
+
+  return kSuccess;
+}
+
+std::string LifeStuff::GetOwnProfilePicture(const std::string &my_public_id) {
+  // Read contents, put them in a string, give them back. Should not be a file
+  // over a certain size (kFileRecontructionLimit).
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks in ChangeProfilePicture.";
+    return "";
+  }
+
+  fs::path profile_picture_path(lifestuff_elements->user_storage->mount_dir() /
+                                std::string(my_public_id +
+                                            "_profile_picture.ms_hidden"));
+  std::string profile_picture_contents;
+  result = lifestuff_elements->user_storage->ReadHiddenFile(
+               profile_picture_path, &profile_picture_contents);
+  if (result != kSuccess || profile_picture_contents.empty()) {
+    DLOG(ERROR) << "Failed reading profile picture: " << result;
+    return "";
+  }
+
+  return profile_picture_contents;
+}
+
+std::string LifeStuff::GetContactProfilePicture(
+    const std::string &my_public_id,
+    const std::string &contact_public_id) {
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks in GetContactProfilePicture.";
+    return "";
+  }
+
+  // Look up data map in session.
+  Contact contact;
+  result = lifestuff_elements->session->contact_handler_map()
+               [my_public_id]->ContactInfo(contact_public_id, &contact);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "No such contact(" << result << "): " << contact_public_id;
+    return "";
+  }
+
+  // Read contents, put them in a string, give them back. Should not be
+  // over a certain size (kFileRecontructionLimit).
+  return lifestuff_elements->user_storage->ConstructFile(
+            contact.profile_picture_data_map);
+
+}
+
+
+ContactMap LifeStuff::GetContacts(const std::string &my_public_id,
+                                  uint16_t bitwise_status) {
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks in GetContacts.";
+    return ContactMap();
+  }
+
+  return lifestuff_elements->session->contact_handler_map()
+             [my_public_id]->GetContacts(bitwise_status);
+}
+
+std::vector<std::string> LifeStuff::PublicIdsList() const {
+  std::vector<std::string> public_ids;
+
+  // Retrieve all keys
+  std::transform(lifestuff_elements->session->contact_handler_map().begin(),
+                 lifestuff_elements->session->contact_handler_map().end(),
+                 std::back_inserter(public_ids),
+                 std::bind(&ContactHandlerMap::value_type::first, args::_1));
+
+
+  return public_ids;
+}
+
+/// Filesystem
+int LifeStuff::ReadHiddenFile(const fs::path &absolute_path,
+                                std::string *content) const {
+  return lifestuff_elements->user_storage->ReadHiddenFile(absolute_path,
+                                                          content);
+}
+
+int LifeStuff::WriteHiddenFile(const fs::path &absolute_path,
+                                 const std::string &content,
+                                 bool overwrite_existing) {
+  return lifestuff_elements->user_storage->WriteHiddenFile(absolute_path,
+                                                           content,
+                                                           overwrite_existing);
+}
+
+int LifeStuff::DeleteHiddenFile(const fs::path &absolute_path) {
+  return lifestuff_elements->user_storage->DeleteHiddenFile(absolute_path);
+}
+
+///
+int LifeStuff::state() const { return lifestuff_elements->state; }
+
+fs::path LifeStuff::mount_path() const {
+  return lifestuff_elements->user_storage->mount_dir();
+}
+
 
 }  // namespace lifestuff
 
