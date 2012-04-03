@@ -27,7 +27,9 @@
 
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "maidsafe/lifestuff/version.h"

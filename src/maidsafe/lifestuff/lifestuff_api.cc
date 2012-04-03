@@ -23,18 +23,21 @@
 
 #include "maidsafe/lifestuff/lifestuff_api.h"
 
+#include <algorithm>
+#include <vector>
+
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
 
+#include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/message_handler.h"
 #include "maidsafe/lifestuff/public_id.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/user_credentials.h"
 #include "maidsafe/lifestuff/user_storage.h"
-#include "contacts.h"
 
 namespace maidsafe {
 
@@ -491,7 +494,6 @@ std::string LifeStuff::GetContactProfilePicture(
   // over a certain size (kFileRecontructionLimit).
   return lifestuff_elements->user_storage->ConstructFile(
             contact.profile_picture_data_map);
-
 }
 
 

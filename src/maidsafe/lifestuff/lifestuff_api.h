@@ -25,6 +25,7 @@
 #define MAIDSAFE_LIFESTUFF_LIFESTUFF_API_H_
 
 #include <string>
+#include <vector>
 
 #include "boost/filesystem/path.hpp"
 
