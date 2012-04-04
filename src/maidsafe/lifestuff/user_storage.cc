@@ -820,7 +820,8 @@ std::string UserStorage::ConstructFile(const std::string &serialised_data_map) {
     return "";
   }
 
-  uint32_t file_size(data_map->chunks.empty() ? data_map->content.size() : 0);
+  uint32_t file_size(data_map->chunks.empty() ?
+      static_cast<uint32_t>(data_map->content.size()) : 0);
   auto it(data_map->chunks.begin());
   while (it != data_map->chunks.end()) {
     if (kFileRecontructionLimit < (file_size + (*it).size)) {
