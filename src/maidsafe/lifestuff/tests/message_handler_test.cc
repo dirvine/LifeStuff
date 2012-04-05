@@ -83,11 +83,10 @@ class MessageHandlerTest : public testing::Test {
         interval_(3),
         multiple_messages_(5) {}
 
-  bool NewContactSlot(const std::string &/*own_public_username*/,
-                      const std::string &other_public_username,
-                      bool accept_new_contact) {
+  void NewContactSlot(const std::string &/*own_public_username*/,
+                      const std::string &other_public_username) {
     received_public_username_ = other_public_username;
-    return accept_new_contact;
+    // return accept_new_contact;
   }
 
   void NewMessageSlot(const InboxItem &signal_message,
@@ -226,7 +225,7 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
   // Connect a slot which will reject the new contact
   public_id1_->ConnectToNewContactSignal(
       std::bind(&MessageHandlerTest::NewContactSlot,
-                this, args::_1, args::_2, true));
+                this, args::_1, args::_2));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   ASSERT_EQ(kSuccess,
             public_id2_->SendContactInfo(public_username2_, public_username1_));
@@ -269,7 +268,7 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
   // Connect a slot which will reject the new contact
   public_id1_->ConnectToNewContactSignal(
       std::bind(&MessageHandlerTest::NewContactSlot,
-                this, args::_1, args::_2, true));
+                this, args::_1, args::_2));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   ASSERT_EQ(kSuccess,
             public_id2_->SendContactInfo(public_username2_, public_username1_));
@@ -353,15 +352,15 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
 
   public_id1_->ConnectToNewContactSignal(
       std::bind(&MessageHandlerTest::NewContactSlot,
-                this, args::_1, args::_2, true));
+                this, args::_1, args::_2));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   public_id2_->ConnectToNewContactSignal(
       std::bind(&MessageHandlerTest::NewContactSlot,
-                this, args::_1, args::_2, true));
+                this, args::_1, args::_2));
   ASSERT_EQ(kSuccess, public_id2_->StartCheckingForNewContacts(interval_));
   public_id3_->ConnectToNewContactSignal(
       std::bind(&MessageHandlerTest::NewContactSlot,
-                this, args::_1, args::_2, true));
+                this, args::_1, args::_2));
   ASSERT_EQ(kSuccess, public_id3_->StartCheckingForNewContacts(interval_));
 
   ASSERT_EQ(kSuccess,

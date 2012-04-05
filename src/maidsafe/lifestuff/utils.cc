@@ -188,7 +188,7 @@ int AwaitingResponse(boost::mutex *mutex,
                               boost::posix_time::seconds(30),
                               [&]()->bool {
                                 for (size_t i(0); i < size; ++i) {
-                                  if (results->at(i) != kPendingResult)
+                                  if (results->at(i) == kPendingResult)
                                     return false;
                                 }
                                 return true;
