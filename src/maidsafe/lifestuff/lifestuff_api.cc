@@ -399,6 +399,7 @@ int LifeStuff::RemoveContact(const std::string &my_public_id,
 int LifeStuff::ChangeProfilePicture(
     const std::string &my_public_id,
     const std::string &profile_picture_contents) {
+  DLOG(ERROR) << "!!!!!!!!!!!!!!!!!!! MEshilsdhiodfasdfhajklhfasehdfkjasdhfkjhasgjkh ask lhgasdfkashdfkjsdh";
   int result(PreContactChecks(lifestuff_elements->state,
                               my_public_id,
                               lifestuff_elements->session));
@@ -417,16 +418,31 @@ int LifeStuff::ChangeProfilePicture(
   // Write contents somewhere
   fs::path profile_picture_path(lifestuff_elements->user_storage->mount_dir() /
                                 std::string(my_public_id +
-                                            "_profile_picture.ms_hidden"));
-  result = lifestuff_elements->user_storage->WriteHiddenFile(
-               profile_picture_path, profile_picture_contents, true);
+                                            ".profile_picture"));
+  try {
+    std::ofstream ofs(profile_picture_path.c_str(), std::ios::binary);
+    ofs << profile_picture_contents;
+    ofs.close();
+  }
+  catch(const std::exception &e) {
+    DLOG(ERROR) << "Failed to write profile picture file: " << e.what();
+    return kGeneralError;
+  }
+//   result = lifestuff_elements->user_storage->WriteHiddenFile(
+//                profile_picture_path, profile_picture_contents, true);
+//   if (result != kSuccess) {
+//     DLOG(ERROR) << "Failed to write profile picture file: " << result
+//                 << ", file: " << profile_picture_path;
+//     return result;
+//   }
 
   // Get datamap
   std::string data_map;
   result = lifestuff_elements->user_storage->GetDataMap(profile_picture_path,
                                                         &data_map);
   if (result != kSuccess || data_map.empty()) {
-    DLOG(ERROR) << "Failed obtaining DM of profile picture.";
+    DLOG(ERROR) << "Failed obtaining DM of profile picture: " << result
+                << ", file: " << profile_picture_path;
     return result;
   }
 
