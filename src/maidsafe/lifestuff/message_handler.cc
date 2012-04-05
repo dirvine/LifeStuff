@@ -100,7 +100,8 @@ void MessageHandler::EnqueuePresenceMessages(ContactPresence presence) {
   for (auto it(session_->contact_handler_map().begin());
        it != session_->contact_handler_map().end();
        ++it) {
-    (*it).second->OnlineContacts(&contacts);
+
+    (*it).second->OrderedContacts(&contacts, kAlphabetical, kConfirmed);
     for (auto item(contacts.begin()); item != contacts.end(); ++item) {
 //       asio_service_.post(std::bind(&MessageHandler::SendPresenceMessage,
 //                                    this,
