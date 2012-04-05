@@ -505,24 +505,21 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
                 mmid_name(introduction.mmid_name()),
                 profile_picture_data_map(
                     introduction.profile_picture_data_map());
+    DLOG(ERROR) << "\t\t\t\t\tProcessing " << public_username;
+    if (profile_picture_data_map.empty())
+      DLOG(ERROR) << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ AAAAAAAAAAAAAAAAAAAAAAAAAAAA";
     Contact mic;
     n = session_->contact_handler_map()[std::get<0>(data)]->ContactInfo(
             public_username,
             &mic);
     if (n == kSuccess) {
       if (mic.status == kRequestSent) {
-        int stat(session_->contact_handler_map()[std::get<0>(data)]->
-                    UpdateStatus(public_username, kConfirmed));
-        int mmid(
-            session_->contact_handler_map()[std::get<0>(data)]->UpdateMmidName(
-                public_username,
-                mmid_name));
-        int picture(
-            session_->contact_handler_map()
-                [std::get<0>(data)]->UpdateProfilePictureDataMap(
-                    public_username,
-                    profile_picture_data_map));
-        if (stat == kSuccess && mmid == kSuccess && picture == kSuccess) {
+        mic.status = kConfirmed;
+        mic.mmid_name = mmid_name;
+        mic.profile_picture_data_map = profile_picture_data_map;
+        int update(session_->contact_handler_map()[std::get<0>(data)]->
+                       UpdateContact(mic));
+        if (update == kSuccess) {
           (*contact_confirmed_signal_)(std::get<0>(data), public_username);
         }
       } else if (mic.status == kConfirmed) {
@@ -530,12 +527,7 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
             session_->contact_handler_map()[std::get<0>(data)]->UpdateMmidName(
                 public_username,
                 mmid_name));
-        int picture(
-            session_->contact_handler_map()
-                [std::get<0>(data)]->UpdateProfilePictureDataMap(
-                    public_username,
-                    profile_picture_data_map));
-        if (mmid != kSuccess || picture != kSuccess) {
+        if (mmid != kSuccess) {
           DLOG(ERROR) << "Failed to update MMID or profile picture DM";
         }
       }

@@ -399,7 +399,6 @@ int LifeStuff::RemoveContact(const std::string &my_public_id,
 int LifeStuff::ChangeProfilePicture(
     const std::string &my_public_id,
     const std::string &profile_picture_contents) {
-  DLOG(ERROR) << "!!!!!!!!!!!!!!!!!!! MEshilsdhiodfasdfhajklhfasehdfkjasdhfkjhasgjkh ask lhgasdfkashdfkjsdh";
   int result(PreContactChecks(lifestuff_elements->state,
                               my_public_id,
                               lifestuff_elements->session));
@@ -417,24 +416,14 @@ int LifeStuff::ChangeProfilePicture(
 
   // Write contents somewhere
   fs::path profile_picture_path(lifestuff_elements->user_storage->mount_dir() /
+                                fs::path("/").make_preferred() /
                                 std::string(my_public_id +
                                             ".profile_picture"));
-  try {
-    std::ofstream ofs(profile_picture_path.c_str(), std::ios::binary);
-    ofs << profile_picture_contents;
-    ofs.close();
-  }
-  catch(const std::exception &e) {
-    DLOG(ERROR) << "Failed to write profile picture file: " << e.what();
+  if (!WriteFile(profile_picture_path, profile_picture_contents)) {
+    DLOG(ERROR) << "Failed to write profile picture file: "
+                << profile_picture_path;
     return kGeneralError;
   }
-//   result = lifestuff_elements->user_storage->WriteHiddenFile(
-//                profile_picture_path, profile_picture_contents, true);
-//   if (result != kSuccess) {
-//     DLOG(ERROR) << "Failed to write profile picture file: " << result
-//                 << ", file: " << profile_picture_path;
-//     return result;
-//   }
 
   // Get datamap
   std::string data_map;
@@ -473,13 +462,13 @@ std::string LifeStuff::GetOwnProfilePicture(const std::string &my_public_id) {
   }
 
   fs::path profile_picture_path(lifestuff_elements->user_storage->mount_dir() /
+                                fs::path("/").make_preferred() /
                                 std::string(my_public_id +
-                                            "_profile_picture.ms_hidden"));
+                                            ".profile_picture"));
   std::string profile_picture_contents;
-  result = lifestuff_elements->user_storage->ReadHiddenFile(
-               profile_picture_path, &profile_picture_contents);
-  if (result != kSuccess || profile_picture_contents.empty()) {
-    DLOG(ERROR) << "Failed reading profile picture: " << result;
+  if (!ReadFile(profile_picture_path, &profile_picture_contents) ||
+      profile_picture_contents.empty()) {
+    DLOG(ERROR) << "Failed reading profile picture: " << profile_picture_path;
     return "";
   }
 
@@ -501,7 +490,7 @@ std::string LifeStuff::GetContactProfilePicture(
   Contact contact;
   result = lifestuff_elements->session->contact_handler_map()
                [my_public_id]->ContactInfo(contact_public_id, &contact);
-  if (result != kSuccess) {
+  if (result != kSuccess || contact.profile_picture_data_map.empty()) {
     DLOG(ERROR) << "No such contact(" << result << "): " << contact_public_id;
     return "";
   }
