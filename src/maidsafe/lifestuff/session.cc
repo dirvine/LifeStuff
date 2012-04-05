@@ -29,8 +29,9 @@
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/contacts.h"
+#include "maidsafe/lifestuff/data_atlas_pb.h"
+#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
 
 namespace maidsafe {
@@ -45,17 +46,17 @@ struct UserDetails {
         password(),
         session_name(),
         unique_user_id(),
-        root_parent_id(),
-        profile_picture_data_map() {}
+        root_parent_id() {}
   DefConLevels defconlevel;
   std::string username, pin, password, session_name, unique_user_id,
-              root_parent_id, profile_picture_data_map;
+              root_parent_id;
 };
 
 Session::Session()
     : user_details_(new UserDetails),
       passport_(new passport::Passport),
-      contact_handler_map_() {}
+      contact_handler_map_(),
+      profile_picture_map_() {}
 
 Session::~Session() {}
 
@@ -67,10 +68,10 @@ bool Session::Reset() {
   user_details_->session_name.clear();
   user_details_->unique_user_id.clear();
   user_details_->root_parent_id.clear();
-  user_details_->profile_picture_data_map.clear();
   // TODO(Fraser#5#): 2011-11-17 - Implement in passport
   passport_->ClearKeyChain(true, true, true);
   contact_handler_map_.clear();
+  profile_picture_map_.clear();
   return true;
 }
 
@@ -93,8 +94,15 @@ std::string Session::unique_user_id() const {
 std::string Session::root_parent_id() const {
   return user_details_->root_parent_id;
 }
-std::string Session::profile_picture_data_map() const {
-  return user_details_->profile_picture_data_map;
+std::string Session::profile_picture_data_map(
+    const std::string &public_id) const {
+  auto it(profile_picture_map_.find(public_id));
+  if (it == profile_picture_map_.end()) {
+    DLOG(ERROR) << "no such public ID: " << public_id;
+    return "";
+  }
+
+  return (*it).second;
 }
 
 void Session::set_def_con_level(DefConLevels defconlevel) {
@@ -124,9 +132,16 @@ void Session::set_unique_user_id(const std::string &unique_user_id) {
 void Session::set_root_parent_id(const std::string &root_parent_id) {
   user_details_->root_parent_id = root_parent_id;
 }
-void Session::set_profile_picture_data_map(
+bool Session::set_profile_picture_data_map(
+    const std::string &public_id,
     const std::string &profile_picture_data_map) {
-  user_details_->profile_picture_data_map = profile_picture_data_map;
+  if (contact_handler_map_.find(public_id) == contact_handler_map_.end()) {
+    DLOG(ERROR) << "no such public ID: " << public_id;
+    return false;
+  }
+  profile_picture_map_[public_id] = profile_picture_data_map;
+
+  return true;
 }
 
 int Session::ParseKeyChain(const std::string &serialised_keyring,

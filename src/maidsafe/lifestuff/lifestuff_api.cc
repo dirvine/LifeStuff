@@ -436,7 +436,8 @@ int LifeStuff::ChangeProfilePicture(
   }
 
   // Set in session
-  lifestuff_elements->session->set_profile_picture_data_map(data_map);
+  lifestuff_elements->session->set_profile_picture_data_map(my_public_id,
+                                                            data_map);
 
   // Message construction
   InboxItem message(kContactProfilePicture);

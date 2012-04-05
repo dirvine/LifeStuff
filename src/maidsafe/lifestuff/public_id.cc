@@ -721,7 +721,7 @@ int PublicId::InformContactInfo(const std::string &public_username,
     introduction.set_mmid_name(mmid_name);
     introduction.set_public_username(public_username);
     introduction.set_profile_picture_data_map(
-        session_->profile_picture_data_map());
+        session_->profile_picture_data_map(public_username));
 
     std::string encrypted_introduction;
     result = asymm::Encrypt(introduction.SerializeAsString(),

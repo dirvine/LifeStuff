@@ -71,8 +71,11 @@ class AuthenticationTest : public testing::Test {
     asio_service_.Start(10);
 
 #ifdef LOCAL_TARGETS_ONLY
-    remote_chunk_store_ = pcs::CreateLocalChunkStore(*test_dir_,
-                                                     asio_service_.service());
+    fs::path buffered_chunk_store_path;
+    remote_chunk_store_ =
+        pcs::CreateLocalChunkStore(*test_dir_,
+                                   asio_service_.service(),
+                                   &buffered_chunk_store_path);
 #else
     client_container_ = SetUpClientContainer(*test_dir_);
     ASSERT_TRUE(client_container_.get() != nullptr);

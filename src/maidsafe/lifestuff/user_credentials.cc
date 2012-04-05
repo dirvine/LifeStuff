@@ -82,7 +82,10 @@ void UserCredentials::Init(const fs::path &base_dir) {
     return;
 
 #ifdef LOCAL_TARGETS_ONLY
-  remote_chunk_store_ = pcs::CreateLocalChunkStore(base_dir, service_);
+  fs::path buffered_chunk_store_path;
+  remote_chunk_store_ = pcs::CreateLocalChunkStore(base_dir,
+                                                   service_,
+                                                   &buffered_chunk_store_path);
 #else
   client_container_ = SetUpClientContainer(base_dir);
   if (client_container_) {
@@ -127,12 +130,6 @@ int UserCredentials::ParseDa() {
   DLOG(INFO) << "UUID: " << Base32Substr(session_->unique_user_id());
   DLOG(INFO) << "PID: " << Base32Substr(session_->root_parent_id());
 
-  if (!data_atlas.has_profile_picture_data_map()) {
-    DLOG(ERROR) << "DA doesn't have profile picture data map.";
-    return -9001;
-  }
-  session_->set_profile_picture_data_map(data_atlas.profile_picture_data_map());
-
   if (!data_atlas.has_serialised_keyring()) {
     DLOG(ERROR) << "Missing serialised keyring.";
     return -9003;
@@ -158,10 +155,13 @@ int UserCredentials::ParseDa() {
     session_->contact_handler_map().insert(
         std::make_pair(pub_name,
                        std::make_shared<ContactsHandler>()));
+    session_->set_profile_picture_data_map(
+        pub_name,
+        data_atlas.public_usernames(n).own_profile_picture_data_map());
     for (int a(0); a < data_atlas.public_usernames(n).contacts_size(); ++a) {
       Contact c(data_atlas.public_usernames(n).contacts(a));
       int res(session_->contact_handler_map()[pub_name]->AddContact(c));
-      DLOG(ERROR) << "Result of adding (" << pub_name << ") - "
+      DLOG(ERROR) << "Result of adding to own(" << pub_name << ") - "
                   << c.public_username << ": " << res;
     }
   }
@@ -193,9 +193,6 @@ int UserCredentials::SerialiseDa() {
   data_atlas.set_serialised_keyring(serialised_keyring);
   data_atlas.set_serialised_selectables(serialised_selectables);
 
-  // Profile picture
-  data_atlas.set_profile_picture_data_map(session_->profile_picture_data_map());
-
   std::vector<Contact> contacts;
   for (auto it(session_->contact_handler_map().begin());
        it != session_->contact_handler_map().end();
@@ -203,6 +200,8 @@ int UserCredentials::SerialiseDa() {
     contacts.clear();
     PublicUsername *pub_name = data_atlas.add_public_usernames();
     pub_name->set_own_public_username((*it).first);
+    pub_name->set_own_profile_picture_data_map(
+        session_->profile_picture_data_map((*it).first));
     (*it).second->OrderedContacts(&contacts, kAlphabetical, kRequestSent |
                                                             kPendingResponse |
                                                             kConfirmed |
@@ -215,6 +214,7 @@ int UserCredentials::SerialiseDa() {
       pc->set_status(contacts[n].status);
       pc->set_rank(contacts[n].rank);
       pc->set_last_contact(contacts[n].last_contact);
+      pc->set_profile_picture_data_map(contacts[n].profile_picture_data_map);
       DLOG(ERROR) << "Added contact " << contacts[n].public_username
                   << " of own pubname " << (*it).first;
     }

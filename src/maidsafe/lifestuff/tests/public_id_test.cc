@@ -120,10 +120,15 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
     asio_service2_.Start(10);
 
 #ifdef LOCAL_TARGETS_ONLY
-    remote_chunk_store1_ = pcs::CreateLocalChunkStore(*test_dir_,
-                                                      asio_service1_.service());
-    remote_chunk_store2_ = pcs::CreateLocalChunkStore(*test_dir_,
-                                                      asio_service2_.service());
+    fs::path buffered_chunk_store_path;
+    remote_chunk_store1_ =
+        pcs::CreateLocalChunkStore(*test_dir_,
+                                   asio_service1_.service(),
+                                   &buffered_chunk_store_path);
+    remote_chunk_store2_ =
+        pcs::CreateLocalChunkStore(*test_dir_,
+                                   asio_service2_.service(),
+                                   &buffered_chunk_store_path);
 #else
     client_container1_ = SetUpClientContainer(*test_dir_);
     ASSERT_TRUE(client_container1_.get() != nullptr);

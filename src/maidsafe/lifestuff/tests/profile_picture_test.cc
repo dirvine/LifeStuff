@@ -397,7 +397,7 @@ TEST_F(FixtureFullTest, FUNC_ChangeProfilePictureDataMap) {
   std::string new_data_map;
   user_storage_->GetDataMap(file_path, &new_data_map);
   EXPECT_FALSE(new_data_map.empty());
-  session_->set_profile_picture_data_map(new_data_map);
+  session_->set_profile_picture_data_map(public_username_, new_data_map);
 
   // Logout
   Quit();
@@ -408,10 +408,10 @@ TEST_F(FixtureFullTest, FUNC_ChangeProfilePictureDataMap) {
   // Check directory exists
   EXPECT_TRUE(fs::exists(file_path, error_code));
   EXPECT_EQ(0, error_code.value());
-  EXPECT_EQ(new_data_map, session_->profile_picture_data_map());
+  EXPECT_EQ(new_data_map, session_->profile_picture_data_map(public_username_));
   new_data_map.clear();
   user_storage_->GetDataMap(file_path, &new_data_map);
-  EXPECT_EQ(new_data_map, session_->profile_picture_data_map());
+  EXPECT_EQ(new_data_map, session_->profile_picture_data_map(public_username_));
 }
 
 TEST_F(FixtureFullTest, FUNC_ReconstructFileFromDataMap) {
@@ -443,7 +443,7 @@ TEST_F(FixtureFullTest, FUNC_ReconstructFileFromDataMap) {
   std::string new_data_map, large_data_map;
   user_storage_->GetDataMap(file_path, &new_data_map);
   EXPECT_FALSE(new_data_map.empty());
-  session_->set_profile_picture_data_map(new_data_map);
+  session_->set_profile_picture_data_map(public_username_, new_data_map);
   user_storage_->GetDataMap(file_path, &large_data_map);
   EXPECT_FALSE(large_data_map.empty());
 
@@ -456,10 +456,10 @@ TEST_F(FixtureFullTest, FUNC_ReconstructFileFromDataMap) {
   // Check directory exists
   EXPECT_TRUE(fs::exists(file_path, error_code));
   EXPECT_EQ(0, error_code.value());
-  EXPECT_EQ(new_data_map, session_->profile_picture_data_map());
+  EXPECT_EQ(new_data_map, session_->profile_picture_data_map(public_username_));
   new_data_map.clear();
   user_storage_->GetDataMap(file_path, &new_data_map);
-  EXPECT_EQ(new_data_map, session_->profile_picture_data_map());
+  EXPECT_EQ(new_data_map, session_->profile_picture_data_map(public_username_));
   large_data_map.clear();
   user_storage_->GetDataMap(large_file_path, &large_data_map);
 
@@ -601,7 +601,8 @@ TEST(IndependentFullTest, FUNC_NotifyProfilePicture) {
     EXPECT_EQ(0, error_code.value());
     test_elements1.user_storage->GetDataMap(file_path1, &data_map1);
     EXPECT_FALSE(data_map1.empty());
-    test_elements1.session->set_profile_picture_data_map(data_map1);
+    test_elements1.session->set_profile_picture_data_map(public_username1,
+                                                         data_map1);
 
     TestElementsTearDown(&test_elements1);
   }
@@ -628,7 +629,8 @@ TEST(IndependentFullTest, FUNC_NotifyProfilePicture) {
     EXPECT_EQ(0, error_code.value());
     test_elements2.user_storage->GetDataMap(file_path2, &data_map2);
     EXPECT_FALSE(data_map2.empty());
-    test_elements2.session->set_profile_picture_data_map(data_map2);
+    test_elements2.session->set_profile_picture_data_map(public_username2,
+                                                         data_map2);
 
     EXPECT_EQ(kSuccess,
               test_elements2.public_id->SendContactInfo(public_username2,
@@ -695,7 +697,8 @@ TEST(IndependentFullTest, FUNC_NotifyProfilePicture) {
     EXPECT_EQ(0, error_code.value());
     test_elements1.user_storage->GetDataMap(file_path1, &data_map1);
     EXPECT_FALSE(data_map2.empty());
-    test_elements1.session->set_profile_picture_data_map(data_map1);
+    test_elements1.session->set_profile_picture_data_map(public_username1,
+                                                         data_map1);
 
     InboxItem message(kContactProfilePicture);
     message.sender_public_id = public_username1;

@@ -140,6 +140,7 @@ int ContactsHandler::UpdateContact(const Contact &contact) {
   local_contact.status = contact.status;
   local_contact.rank = contact.rank;
   local_contact.last_contact = contact.last_contact;
+  local_contact.profile_picture_data_map = contact.profile_picture_data_map;
 
   if (!contact_set_.replace(it, local_contact)) {
     DLOG(ERROR) << "Failed to replace contact in set "
