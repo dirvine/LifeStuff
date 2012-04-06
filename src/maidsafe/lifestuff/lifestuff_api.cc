@@ -196,6 +196,22 @@ int LifeStuff::CreateUser(const std::string &username,
     return kGeneralError;
   }
 
+  boost::system::error_code error_code;
+  fs::create_directory(lifestuff_elements->user_storage->mount_dir() /
+                       fs::path("/").make_preferred() /
+                       "My Stuff", error_code);
+  if (error_code) {
+    DLOG(ERROR) << "Failed creating My Stuff: " << error_code.message();
+    return kGeneralError;
+  }
+  fs::create_directory(lifestuff_elements->user_storage->mount_dir() /
+                       fs::path("/").make_preferred() /
+                       "Shared Stuff", error_code);
+  if (error_code) {
+    DLOG(ERROR) << "Failed creating Shared Stuff: " << error_code.message();
+    return kGeneralError;
+  }
+
   lifestuff_elements->state = kLoggedIn;
 
   return kSuccess;
@@ -528,6 +544,27 @@ std::vector<std::string> LifeStuff::PublicIdsList() const {
 
 
   return public_ids;
+}
+
+/// Messaging
+int LifeStuff::SendChatMessage(const std::string &sender_public_id,
+                               const std::string &receiver_public_id,
+                               const std::string &message) {
+  if (message.size() > kMaxChatMessageSize) {
+    DLOG(ERROR) << "Message too large: " << message.size();
+    return kGeneralError;
+  }
+
+  InboxItem inbox_item(kChat);
+  inbox_item.receiver_public_id = receiver_public_id;
+  inbox_item.sender_public_id = sender_public_id;
+  inbox_item.content.push_back(message);
+  inbox_item.timestamp =
+      boost::lexical_cast<std::string>(GetDurationSinceEpoch());
+
+  return lifestuff_elements->message_handler->Send(sender_public_id,
+                                                   receiver_public_id,
+                                                   inbox_item);
 }
 
 /// Filesystem

@@ -505,9 +505,7 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
                 mmid_name(introduction.mmid_name()),
                 profile_picture_data_map(
                     introduction.profile_picture_data_map());
-    DLOG(ERROR) << "\t\t\t\t\tProcessing " << public_username;
-    if (profile_picture_data_map.empty())
-      DLOG(ERROR) << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ AAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+
     Contact mic;
     n = session_->contact_handler_map()[std::get<0>(data)]->ContactInfo(
             public_username,

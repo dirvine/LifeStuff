@@ -106,6 +106,7 @@ struct InboxItem {
   std::string timestamp;
 };
 
+const size_t kMaxChatMessageSize(1 * 1024 * 1024);
 const uint32_t kFileRecontructionLimit(20 * 1024 * 1024);
 const uint16_t kIntervalSeconds(5000);
 const uint8_t kThreads(10);
@@ -114,9 +115,12 @@ const std::string kLiteralOnline("kOnline");
 const std::string kLiteralOffline("kOffline");
 
 typedef std::function<void(const InboxItem&)> InboxItemFunction;
-typedef InboxItemFunction ChatFunction;
 typedef InboxItemFunction FileTransferFunction;
 typedef InboxItemFunction ShareFunction;
+
+typedef std::function<void(const std::string&,
+                           const std::string&,
+                           const std::string&)> ChatFunction;
 
 typedef std::function<void(int)> VoidFunctionOneInt;  // NOLINT (Dan)
 typedef std::function<void(bool)> VoidFunctionOneBool;  // NOLINT (Dan)

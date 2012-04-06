@@ -63,6 +63,11 @@ class MessageHandler {
   typedef std::shared_ptr<ContactPresenceSignal> ContactPresenceSignalPtr;
 
   typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
+                           const std::string&,
+                           const std::string&)> ChatMessageSignal;
+  typedef std::shared_ptr<ChatMessageSignal> ChatMessageSignalPtr;
+
+  typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
                            const std::string&)> ContactProfilePictureSignal;
   typedef std::shared_ptr<ContactProfilePictureSignal>
           ContactProfilePictureSignalPtr;
@@ -123,7 +128,8 @@ class MessageHandler {
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<Session> session_;
   ba::deadline_timer get_new_messages_timer_;
-  NewItemSignalPtr chat_signal_, file_transfer_signal_, share_signal_;
+  ChatMessageSignalPtr chat_signal_;
+  NewItemSignalPtr file_transfer_signal_, share_signal_;
   ContactPresenceSignalPtr contact_presence_signal_;
   ContactProfilePictureSignalPtr contact_profile_picture_signal_;
   ReceivedMessagesMap received_messages_;

@@ -89,18 +89,30 @@ class MessageHandlerTest : public testing::Test {
     // return accept_new_contact;
   }
 
-  void NewMessageSlot(const InboxItem &signal_message,
+  void NewMessageSlot(const std::string &own_public_username,
+                      const std::string &other_public_username,
+                      const std::string &message,
                       InboxItem *slot_message,
                       volatile bool *invoked) {
-    *slot_message = signal_message;
+    slot_message->receiver_public_id = own_public_username;
+    slot_message->sender_public_id = other_public_username;
+    slot_message->content.push_back(message);
+    slot_message->item_type = kChat;
     *invoked = true;
   }
 
-  void SeveralMessagesSlot(const InboxItem &signal_message,
+  void SeveralMessagesSlot(const std::string &own_public_username,
+                           const std::string &other_public_username,
+                           const std::string &message,
                            std::vector<InboxItem> *messages,
                            volatile bool *invoked,
                            size_t *count) {
-    messages->push_back(signal_message);
+    InboxItem slot_message;
+    slot_message.receiver_public_id = own_public_username;
+    slot_message.sender_public_id = other_public_username;
+    slot_message.content.push_back(message);
+    slot_message.item_type = kChat;
+    messages->push_back(slot_message);
     if (messages->size() == *count)
       *invoked = true;
   }
@@ -182,8 +194,7 @@ class MessageHandlerTest : public testing::Test {
     if (left.item_type == right.item_type &&
         left.content.size() == right.content.size() &&
         left.receiver_public_id == right.receiver_public_id &&
-        left.sender_public_id == right.sender_public_id &&
-        left.timestamp == right.timestamp)
+        left.sender_public_id == right.sender_public_id)
       return true;
 
     return false;
@@ -251,7 +262,7 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
   volatile bool invoked(false);
   message_handler2_->ConnectToChatSignal(
       std::bind(&MessageHandlerTest::NewMessageSlot,
-                this, args::_1, &received, &invoked));
+                this, args::_1, args::_2, args::_3, &received, &invoked));
   ASSERT_EQ(kSuccess,
             message_handler2_->StartCheckingForNewMessages(interval_));
 
@@ -306,6 +317,8 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
                                      &MessageHandlerTest::SeveralMessagesSlot,
                                      this,
                                      args::_1,
+                                     args::_2,
+                                     args::_3,
                                      &received_messages,
                                      &done,
                                      &multiple_messages_)));
@@ -340,6 +353,8 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
                    std::bind(&MessageHandlerTest::SeveralMessagesSlot,
                              this,
                              args::_1,
+                             args::_2,
+                             args::_3,
                              &received_messages,
                              &done,
                              &multiple_messages_));
@@ -385,7 +400,7 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
   volatile bool invoked(false);
   message_handler1_->ConnectToChatSignal(
       std::bind(&MessageHandlerTest::NewMessageSlot,
-                this, args::_1, &received, &invoked));
+                this, args::_1, args::_2, args::_3, &received, &invoked));
   ASSERT_EQ(kSuccess,
             message_handler1_->StartCheckingForNewMessages(interval_));
 

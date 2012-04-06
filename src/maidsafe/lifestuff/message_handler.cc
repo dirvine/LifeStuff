@@ -70,7 +70,7 @@ MessageHandler::MessageHandler(
     : remote_chunk_store_(remote_chunk_store),
       session_(session),
       get_new_messages_timer_(asio_service),
-      chat_signal_(new NewItemSignal),
+      chat_signal_(new ChatMessageSignal),
       file_transfer_signal_(new NewItemSignal),
       share_signal_(new NewItemSignal),
       contact_presence_signal_(new ContactPresenceSignal),
@@ -306,7 +306,9 @@ void MessageHandler::ProcessRetrieved(const passport::SelectableIdData &data,
     if (ProtobufToInbox(mmid_message, &inbox_item) &&
         !MessagePreviouslyReceived(decrypted_message)) {
       switch (inbox_item.item_type) {
-        case kChat: (*chat_signal_)(inbox_item);
+        case kChat: (*chat_signal_)(inbox_item.receiver_public_id,
+                                    inbox_item.sender_public_id,
+                                    inbox_item.content.at(0));
                     break;
         case kFileTransfer: (*file_transfer_signal_)(inbox_item);
                             break;
@@ -325,6 +327,11 @@ bool MessageHandler::ProtobufToInbox(const Message &message,
                                      InboxItem *inbox_item) const {
   if (!message.IsInitialized()) {
     DLOG(WARNING) << "Message not initialised.";
+    return false;
+  }
+
+  if (message.content_size() == 0) {
+    DLOG(WARNING) << "Message with no content. Type: " << message.type();
     return false;
   }
 
