@@ -68,9 +68,20 @@ class MessageHandler {
   typedef std::shared_ptr<ChatMessageSignal> ChatMessageSignalPtr;
 
   typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
+                           const std::string&,
+                           const std::string&,
+                           const std::string&)> FileTransferSignal;
+  typedef std::shared_ptr<FileTransferSignal> FileTransferSignalPtr;
+
+  typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
                            const std::string&)> ContactProfilePictureSignal;
   typedef std::shared_ptr<ContactProfilePictureSignal>
           ContactProfilePictureSignalPtr;
+
+  typedef bs2::signal<bool(const std::string&,  // NOLINT (Dan)
+                           std::string*)> ParseAndSaveDataMapSignal;
+  typedef std::shared_ptr<ParseAndSaveDataMapSignal>
+          ParseAndSaveDataMapSignalPtr;
 
   typedef std::map<std::string, uint64_t> ReceivedMessagesMap;
 
@@ -100,6 +111,8 @@ class MessageHandler {
       const ContactPresenceFunction &function);
   bs2::connection ConnectToContactProfilePictureSignal(
       const ContactProfilePictureFunction &function);
+  bs2::connection ConnectToParseAndSaveDataMapSignal(
+      const ParseAndSaveDataMapSignal::slot_type &function);
 
  private:
   MessageHandler(const MessageHandler&);
@@ -124,16 +137,21 @@ class MessageHandler {
                            const std::string &recipient_public_username,
                            const ContactPresence &presence);
   void EnqueuePresenceMessages(ContactPresence presence);
+  void SignalFileTransfer(const InboxItem &inbox_item);
+  void ContentsDontParseAsDataMap(const std::string& serialised_dm,
+                                  std::string* data_map);
 
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<Session> session_;
   ba::deadline_timer get_new_messages_timer_;
   ChatMessageSignalPtr chat_signal_;
-  NewItemSignalPtr file_transfer_signal_, share_signal_;
+  FileTransferSignalPtr file_transfer_signal_;
+  NewItemSignalPtr share_signal_;
   ContactPresenceSignalPtr contact_presence_signal_;
   ContactProfilePictureSignalPtr contact_profile_picture_signal_;
   ReceivedMessagesMap received_messages_;
   ba::io_service &asio_service_;  // NOLINT (Dan)
+  ParseAndSaveDataMapSignalPtr parse_and_save_data_map_signal_;
 };
 
 }  // namespace lifestuff

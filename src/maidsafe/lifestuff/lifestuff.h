@@ -32,6 +32,10 @@
 #include <utility>
 #include <vector>
 
+#include "boost/lexical_cast.hpp"
+
+#include "maidsafe/common/utils.h"
+
 #include "maidsafe/lifestuff/version.h"
 
 #if MAIDSAFE_LIFESTUFF_VERSION != 400
@@ -98,7 +102,7 @@ struct InboxItem {
         sender_public_id(),
         receiver_public_id(),
         content(),
-        timestamp() {}
+        timestamp(boost::lexical_cast<std::string>(GetDurationSinceEpoch())) {}
   InboxItemType item_type;
   std::string sender_public_id;
   std::string receiver_public_id;
@@ -115,12 +119,16 @@ const std::string kLiteralOnline("kOnline");
 const std::string kLiteralOffline("kOffline");
 
 typedef std::function<void(const InboxItem&)> InboxItemFunction;
-typedef InboxItemFunction FileTransferFunction;
 typedef InboxItemFunction ShareFunction;
 
 typedef std::function<void(const std::string&,
                            const std::string&,
                            const std::string&)> ChatFunction;
+
+typedef std::function<void(const std::string&,
+                           const std::string&,
+                           const std::string&,
+                           const std::string&)> FileTransferFunction;
 
 typedef std::function<void(int)> VoidFunctionOneInt;  // NOLINT (Dan)
 typedef std::function<void(bool)> VoidFunctionOneBool;  // NOLINT (Dan)

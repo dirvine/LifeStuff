@@ -226,6 +226,29 @@ void UserStorage::set_message_handler(
   message_handler_ = message_handler;
 }
 
+bool UserStorage::ParseAndSaveDataMap(const std::string &serialised_data_map,
+                                      std::string *data_map_hash) {
+  encrypt::DataMapPtr data_map(ParseSerialisedDataMap(serialised_data_map));
+  if (!data_map) {
+    DLOG(ERROR) << "Serialised DM doesn't parse.";
+    return false;
+  }
+
+  *data_map_hash =
+      EncodeToBase32(crypto::Hash<crypto::SHA1>(serialised_data_map));
+  int result(WriteHiddenFile(
+                 mount_dir_ / fs::path("/").make_preferred() /
+                     std::string(*data_map_hash + drive::kMsHidden.c_str()),
+                 serialised_data_map,
+                 true));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to create file: " << result;
+    return false;
+  }
+
+  return true;
+}
+
 int UserStorage::GetDataMap(const fs::path &absolute_path,
                             std::string *serialised_data_map) const {
   return drive_in_user_space_->GetDataMap(

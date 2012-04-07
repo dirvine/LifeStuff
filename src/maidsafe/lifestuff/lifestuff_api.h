@@ -52,8 +52,8 @@ class LifeStuff {
   /// State operations
   int Initialise(const boost::filesystem::path &base_directory);
   int ConnectToSignals(
-      drive::DriveChangedSlotPtr drive_change_slot,
-      drive::ShareChangedSlotPtr share_change_slot,
+//       drive::DriveChangedSlotPtr drive_change_slot,
+//       drive::ShareChangedSlotPtr share_change_slot,
       const ChatFunction &chat_slot,
       const FileTransferFunction &file_slot,
       const ShareFunction &share_slot,
@@ -95,6 +95,11 @@ class LifeStuff {
   int SendChatMessage(const std::string &sender_public_id,
                       const std::string &receiver_public_id,
                       const std::string &message);
+  int SendFile(const std::string &sender_public_id,
+               const std::string &receiver_public_id,
+               const fs::path absolute_path);
+  int ProcessAcceptedFile(const fs::path absolute_path,
+                          const std::string &identifier);
 
   /// Filesystem
   int ReadHiddenFile(const fs::path &absolute_path, std::string *content) const;

@@ -27,6 +27,7 @@
 #include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/lifestuff.h"
+#include "maidsafe/lifestuff/lifestuff_api.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/message_handler.h"
 #include "maidsafe/lifestuff/public_id.h"
@@ -184,6 +185,16 @@ void TwoStringsAndBoolSlot(const std::string&,
   *done = true;
 }
 
+void FileRecieved(const std::string&,
+                  const std::string&,
+                  const std::string&,
+                  const std::string &signal_file_id,
+                  std::string *slot_file_id,
+                  volatile bool *done) {
+  *slot_file_id = signal_file_id;
+  *done = true;
+}
+
 void ConfirmContactSlot(const std::string&,
                         const std::string&,
                         volatile bool *done) {
@@ -213,7 +224,6 @@ InboxItem CreatePresenceMessage(const std::string &sender,
   InboxItem message(kContactPresence);
   message.sender_public_id = sender;
   message.receiver_public_id = receiver;
-  message.timestamp = boost::lexical_cast<std::string>(GetDurationSinceEpoch());
   if (logged_in)
     message.content.push_back(kLiteralOnline);
   else
@@ -704,8 +714,6 @@ TEST(IndependentFullTest, FUNC_NotifyProfilePicture) {
     message.sender_public_id = public_username1;
     message.receiver_public_id = public_username2;
     message.content.push_back(data_map1);
-    message.timestamp =
-        boost::lexical_cast<std::string>(GetDurationSinceEpoch());
     EXPECT_EQ(kSuccess, test_elements1.message_handler->Send(public_username1,
                                                              public_username2,
                                                              message));
@@ -765,6 +773,137 @@ TEST(IndependentFullTest, FUNC_DestructionOfObjects) {
     EXPECT_EQ(0, error_code.value());
 
     TestElementsTearDown(&test_elements);
+  }
+}
+
+TEST(IndependentFullTest, FUNC_SendFile) {
+  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
+  std::string username1(RandomString(6)),
+              pin1(CreatePin()),
+              password1(RandomString(6)),
+              public_username1(RandomAlphaNumericString(5)),
+              file_name1(RandomAlphaNumericString(8)),
+              file_content1(RandomString(5 * 1024)),
+              file_name2(RandomAlphaNumericString(8));
+  boost::system::error_code error_code;
+  fs::path file_path1, file_path2;
+  volatile bool done;
+
+  {
+    LifeStuff test_elements1;
+    EXPECT_EQ(kSuccess, test_elements1.Initialise(*test_dir));
+    EXPECT_EQ(kSuccess,
+              test_elements1.ConnectToSignals(ChatFunction(),
+                                              FileTransferFunction(),
+                                              ShareFunction(),
+                                              NewContactFunction(),
+                                              ContactConfirmationFunction(),
+                                              ContactProfilePictureFunction(),
+                                              std::bind(&PresenceSlot, args::_1,
+                                                        args::_2, args::_3,
+                                                        &done)));
+    EXPECT_EQ(kSuccess, test_elements1.CreateUser(username1, pin1, password1));
+    EXPECT_EQ(kSuccess, test_elements1.CreatePublicId(public_username1));
+
+    file_path1 = test_elements1.mount_path() / file_name1;
+    std::ofstream ofstream(file_path1.c_str(), std::ios::binary);
+    ofstream << file_content1;
+    ofstream.close();
+    EXPECT_TRUE(fs::exists(file_path1, error_code));
+    EXPECT_EQ(0, error_code.value());
+
+    EXPECT_EQ(kSuccess, test_elements1.LogOut());
+    EXPECT_EQ(kSuccess, test_elements1.Finalise());
+  }
+  std::string username2(RandomString(6)),
+              pin2(CreatePin()),
+              password2(RandomString(6)),
+              public_username2(RandomAlphaNumericString(5));
+  DLOG(ERROR) << "\n\n\n\n";
+  {
+    LifeStuff test_elements2;
+    EXPECT_EQ(kSuccess, test_elements2.Initialise(*test_dir));
+    EXPECT_EQ(kSuccess,
+              test_elements2.ConnectToSignals(ChatFunction(),
+                                              FileTransferFunction(),
+                                              ShareFunction(),
+                                              NewContactFunction(),
+                                              ContactConfirmationFunction(),
+                                              ContactProfilePictureFunction(),
+                                              std::bind(&PresenceSlot, args::_1,
+                                                        args::_2, args::_3,
+                                                        &done)));
+    EXPECT_EQ(kSuccess, test_elements2.CreateUser(username2, pin2, password2));
+    EXPECT_EQ(kSuccess, test_elements2.CreatePublicId(public_username2));
+    EXPECT_EQ(kSuccess, test_elements2.AddContact(public_username2,
+                                                  public_username1));
+    EXPECT_EQ(kSuccess, test_elements2.LogOut());
+    EXPECT_EQ(kSuccess, test_elements2.Finalise());
+  }
+  DLOG(ERROR) << "\n\n\n\n";
+  {
+    LifeStuff test_elements1;
+    EXPECT_EQ(kSuccess, test_elements1.Initialise(*test_dir));
+    EXPECT_EQ(kSuccess,
+              test_elements1.ConnectToSignals(ChatFunction(),
+                                              FileTransferFunction(),
+                                              ShareFunction(),
+                                              std::bind(&TwoStringsAndBoolSlot,
+                                                        args::_1, args::_2,
+                                                        &done),
+                                              ContactConfirmationFunction(),
+                                              ContactProfilePictureFunction(),
+                                              ContactPresenceFunction()));
+    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+    while (!done)
+      Sleep(bptime::milliseconds(100));
+    EXPECT_EQ(kSuccess, test_elements1.ConfirmContact(public_username1,
+                                                      public_username2));
+
+    EXPECT_TRUE(fs::exists(file_path1, error_code));
+    EXPECT_EQ(0, error_code.value());
+    EXPECT_EQ(kSuccess, test_elements1.SendFile(public_username1,
+                                                public_username2,
+                                                file_path1));
+
+    EXPECT_EQ(kSuccess, test_elements1.LogOut());
+    EXPECT_EQ(kSuccess, test_elements1.Finalise());
+  }
+  DLOG(ERROR) << "\n\n\n\n";
+  {
+    done = false;
+    volatile bool file_received(false);
+    std::string file_id;
+    LifeStuff test_elements2;
+    EXPECT_EQ(kSuccess, test_elements2.Initialise(*test_dir));
+    EXPECT_EQ(kSuccess,
+              test_elements2.ConnectToSignals(ChatFunction(),
+                                              std::bind(&FileRecieved, args::_1,
+                                                        args::_2, args::_3,
+                                                        args::_4, &file_id,
+                                                        &file_received),
+                                              ShareFunction(),
+                                              NewContactFunction(),
+                                              std::bind(&TwoStringsAndBoolSlot,
+                                                        args::_1, args::_2,
+                                                        &done),
+                                              ContactProfilePictureFunction(),
+                                              ContactPresenceFunction()));
+    EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
+    while (!done && !file_received)
+      Sleep(bptime::milliseconds(100));
+    EXPECT_FALSE(file_id.empty());
+    EXPECT_EQ(kSuccess,
+              test_elements2.ProcessAcceptedFile(test_elements2.mount_path() /
+                                                     file_name2,
+                                                 file_id));
+
+    EXPECT_TRUE(fs::exists(test_elements2.mount_path() / file_name2,
+                           error_code));
+    EXPECT_EQ(0, error_code.value());
+
+    EXPECT_EQ(kSuccess, test_elements2.LogOut());
+    EXPECT_EQ(kSuccess, test_elements2.Finalise());
   }
 }
 

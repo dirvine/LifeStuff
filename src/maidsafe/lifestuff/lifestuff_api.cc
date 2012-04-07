@@ -38,6 +38,7 @@
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/user_credentials.h"
 #include "maidsafe/lifestuff/user_storage.h"
+#include "maidsafe/lifestuff/utils.h"
 
 namespace maidsafe {
 
@@ -102,6 +103,10 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
           lifestuff_elements->user_credentials->remote_chunk_store(),
           lifestuff_elements->message_handler));
 
+  lifestuff_elements->message_handler->ConnectToParseAndSaveDataMapSignal(
+      std::bind(&UserStorage::ParseAndSaveDataMap,
+                lifestuff_elements->user_storage, args::_1, args::_2));
+
   lifestuff_elements->base_directory = base_directory;
   lifestuff_elements->state = kInitialised;
 
@@ -109,8 +114,8 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
 }
 
 int LifeStuff::ConnectToSignals(
-    drive::DriveChangedSlotPtr drive_change_slot,
-    drive::ShareChangedSlotPtr share_change_slot,
+//     drive::DriveChangedSlotPtr drive_change_slot,
+//     drive::ShareChangedSlotPtr share_change_slot,
     const ChatFunction &chat_slot,
     const FileTransferFunction &file_slot,
     const ShareFunction &share_slot,
@@ -124,14 +129,16 @@ int LifeStuff::ConnectToSignals(
   }
 
   int connects(0);
-  if (drive_change_slot) {
-    lifestuff_elements->user_storage->ConnectToDriveChanged(drive_change_slot);
-    ++connects;
-  }
-  if (share_change_slot) {
-    lifestuff_elements->user_storage->ConnectToShareChanged(share_change_slot);
-    ++connects;
-  }
+//   if (drive_change_slot) {
+//     lifestuff_elements->user_storage->ConnectToDriveChanged(
+//         drive_change_slot);
+//     ++connects;
+//   }
+//   if (share_change_slot) {
+//     lifestuff_elements->user_storage->ConnectToShareChanged(
+//         share_change_slot);
+//     ++connects;
+//   }
   if (chat_slot) {
     lifestuff_elements->message_handler->ConnectToChatSignal(chat_slot);
     ++connects;
@@ -210,6 +217,11 @@ int LifeStuff::CreateUser(const std::string &username,
   if (error_code) {
     DLOG(ERROR) << "Failed creating Shared Stuff: " << error_code.message();
     return kGeneralError;
+  }
+
+  int result(lifestuff_elements->user_credentials->SaveSession());
+  if (result != kSuccess) {
+    DLOG(WARNING) << "Failed to save session.";
   }
 
   lifestuff_elements->state = kLoggedIn;
@@ -459,7 +471,6 @@ int LifeStuff::ChangeProfilePicture(
   InboxItem message(kContactProfilePicture);
   message.sender_public_id = my_public_id;
   message.content.push_back(data_map);
-  message.timestamp = boost::lexical_cast<std::string>(GetDurationSinceEpoch());
 
   // Send to everybody
 
@@ -559,12 +570,67 @@ int LifeStuff::SendChatMessage(const std::string &sender_public_id,
   inbox_item.receiver_public_id = receiver_public_id;
   inbox_item.sender_public_id = sender_public_id;
   inbox_item.content.push_back(message);
-  inbox_item.timestamp =
-      boost::lexical_cast<std::string>(GetDurationSinceEpoch());
 
   return lifestuff_elements->message_handler->Send(sender_public_id,
                                                    receiver_public_id,
                                                    inbox_item);
+}
+
+int LifeStuff::SendFile(const std::string &sender_public_id,
+                        const std::string &receiver_public_id,
+                        const fs::path absolute_path) {
+  std::string serialised_datamap;
+  int result(lifestuff_elements->user_storage->GetDataMap(absolute_path,
+                                                          &serialised_datamap));
+  if (result != kSuccess || serialised_datamap.empty()) {
+    DLOG(ERROR) << "Failed to get DM for " << absolute_path << ": " << result;
+    return result;
+  }
+
+  InboxItem inbox_item(kFileTransfer);
+  inbox_item.receiver_public_id = receiver_public_id;
+  inbox_item.sender_public_id = sender_public_id;
+  inbox_item.content.push_back(absolute_path.filename().c_str());
+  inbox_item.content.push_back(serialised_datamap);
+
+  result = lifestuff_elements->message_handler->Send(sender_public_id,
+                                                     receiver_public_id,
+                                                     inbox_item);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to send message: " << result;
+    return result;
+  }
+
+  return kSuccess;
+}
+
+int LifeStuff::ProcessAcceptedFile(const fs::path absolute_path,
+                                   const std::string &identifier) {
+  std::string serialised_data_map;
+  int result(
+      lifestuff_elements->user_storage->ReadHiddenFile(
+          mount_path() / fs::path("/").make_preferred() /
+              std::string(identifier + drive::kMsHidden.c_str()),
+          &serialised_data_map));
+  if (result != kSuccess || serialised_data_map.empty()) {
+    DLOG(ERROR) << "No such identifier found: " << result;
+    return result == kSuccess ? kGeneralError : result;
+  }
+
+  drive::DataMapPtr data_map_ptr(ParseSerialisedDataMap(serialised_data_map));
+  if (!data_map_ptr) {
+    DLOG(ERROR) << "Corrupted DM in file";
+    return kGeneralError;
+  }
+
+  result = lifestuff_elements->user_storage->InsertDataMap(absolute_path,
+                                                           serialised_data_map);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed inserting DM: " << result;
+    return result;
+  }
+
+  return kSuccess;
 }
 
 /// Filesystem

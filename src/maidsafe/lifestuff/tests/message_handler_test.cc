@@ -206,7 +206,6 @@ class MessageHandlerTest : public testing::Test {
     sent.sender_public_id = sender;
     sent.receiver_public_id = receiver;
     sent.content.push_back("content");
-    sent.timestamp = boost::lexical_cast<std::string>(GetDurationSinceEpoch());
     return sent;
   }
 

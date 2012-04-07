@@ -82,6 +82,8 @@ class UserStorage {
   void set_message_handler(std::shared_ptr<MessageHandler> message_handler);
 
   // ********************* File / Folder Transfers *****************************
+  bool ParseAndSaveDataMap(const std::string &serialised_data_map,
+                           std::string *data_map_hash);
   int GetDataMap(const fs::path &absolute_path,
                  std::string *serialised_data_map) const;
   int InsertDataMap(const fs::path &absolute_path,

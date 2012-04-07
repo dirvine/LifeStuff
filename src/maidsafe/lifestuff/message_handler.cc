@@ -71,12 +71,13 @@ MessageHandler::MessageHandler(
       session_(session),
       get_new_messages_timer_(asio_service),
       chat_signal_(new ChatMessageSignal),
-      file_transfer_signal_(new NewItemSignal),
+      file_transfer_signal_(new FileTransferSignal),
       share_signal_(new NewItemSignal),
       contact_presence_signal_(new ContactPresenceSignal),
       contact_profile_picture_signal_(new ContactProfilePictureSignal),
       received_messages_(),
-      asio_service_(asio_service) {}
+      asio_service_(asio_service),
+      parse_and_save_data_map_signal_(new ParseAndSaveDataMapSignal) {}
 
 MessageHandler::~MessageHandler() {
   StopCheckingForNewMessages();
@@ -100,7 +101,6 @@ void MessageHandler::EnqueuePresenceMessages(ContactPresence presence) {
   for (auto it(session_->contact_handler_map().begin());
        it != session_->contact_handler_map().end();
        ++it) {
-
     (*it).second->OrderedContacts(&contacts, kAlphabetical, kConfirmed);
     for (auto item(contacts.begin()); item != contacts.end(); ++item) {
 //       asio_service_.post(std::bind(&MessageHandler::SendPresenceMessage,
@@ -310,7 +310,7 @@ void MessageHandler::ProcessRetrieved(const passport::SelectableIdData &data,
                                     inbox_item.sender_public_id,
                                     inbox_item.content.at(0));
                     break;
-        case kFileTransfer: (*file_transfer_signal_)(inbox_item);
+        case kFileTransfer: SignalFileTransfer(inbox_item);
                             break;
         case kSharedDirectory: (*share_signal_)(inbox_item);
                                break;
@@ -515,8 +515,7 @@ void MessageHandler::SendPresenceMessage(
   InboxItem inbox_item(kContactPresence);
   inbox_item.sender_public_id  = own_public_username;
   inbox_item.receiver_public_id = recipient_public_username;
-  inbox_item.timestamp = boost::lexical_cast<std::string>(
-                             GetDurationSinceEpoch());
+
   if (presence == kOnline)
     inbox_item.content.push_back("kOnline");
   else
@@ -531,6 +530,34 @@ void MessageHandler::SendPresenceMessage(
         [own_public_username]->UpdatePresence(recipient_public_username,
                                               kOffline);
   }
+}
+
+void MessageHandler::SignalFileTransfer(const InboxItem &inbox_item) {
+  if (inbox_item.content.size() != 2U ||
+      inbox_item.content[0].empty() ||
+      inbox_item.content[1].empty()) {
+    DLOG(ERROR) << "Wrong number of arguments for message.";
+    (*file_transfer_signal_)(inbox_item.receiver_public_id,
+                             inbox_item.sender_public_id,
+                             "", "");
+    return;
+  }
+
+  std::string data_map_hash;
+  if (!(*parse_and_save_data_map_signal_)(inbox_item.content[1],
+                                          &data_map_hash)) {
+    DLOG(ERROR) << "Failed to parse file DM";
+    (*file_transfer_signal_)(inbox_item.receiver_public_id,
+                             inbox_item.sender_public_id,
+                             inbox_item.content[0],
+                             "");
+    return;
+  }
+
+  (*file_transfer_signal_)(inbox_item.receiver_public_id,
+                           inbox_item.sender_public_id,
+                           inbox_item.content[0],
+                           data_map_hash);
 }
 
 bs2::connection MessageHandler::ConnectToChatSignal(
@@ -556,6 +583,11 @@ bs2::connection MessageHandler::ConnectToContactPresenceSignal(
 bs2::connection MessageHandler::ConnectToContactProfilePictureSignal(
     const ContactProfilePictureFunction &function) {
   return contact_profile_picture_signal_->connect(function);
+}
+
+bs2::connection MessageHandler::ConnectToParseAndSaveDataMapSignal(
+    const ParseAndSaveDataMapSignal::slot_type &function) {
+  return parse_and_save_data_map_signal_->connect(function);
 }
 
 }  // namespace lifestuff
