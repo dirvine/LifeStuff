@@ -77,7 +77,8 @@ MessageHandler::MessageHandler(
       contact_profile_picture_signal_(new ContactProfilePictureSignal),
       received_messages_(),
       asio_service_(asio_service),
-      parse_and_save_data_map_signal_(new ParseAndSaveDataMapSignal) {}
+      parse_and_save_data_map_signal_(new ParseAndSaveDataMapSignal),
+      start_up_done_(false) {}
 
 MessageHandler::~MessageHandler() {
   StopCheckingForNewMessages();
@@ -87,6 +88,7 @@ void MessageHandler::StartUp(bptime::seconds interval) {
   // Retrive once all messages
   RetrieveMessagesForAllIds();
   EnqueuePresenceMessages(kOnline);
+  start_up_done_ = true;
   StartCheckingForNewMessages(interval);
 }
 
@@ -431,13 +433,13 @@ void MessageHandler::ContactPresenceSlot(const InboxItem &presence_message) {
   if (presence_message.content[0] == "kOnline") {
     result = session_->contact_handler_map()[receiver]->UpdatePresence(sender,
                                                                        kOnline);
-    if (result == kSuccess)
+    if (result == kSuccess && start_up_done_)
       (*contact_presence_signal_)(receiver, sender, kOnline);
   } else if (presence_message.content[0] == "kOffline") {
     result =
         session_->contact_handler_map()[receiver]->UpdatePresence(sender,
                                                                   kOffline);
-    if (result == kSuccess)
+    if (result == kSuccess && start_up_done_)
       (*contact_presence_signal_)(receiver, sender, kOffline);
 
     // Send message so they know we're online when they come back

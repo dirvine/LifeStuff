@@ -140,6 +140,7 @@ class MessageHandler {
   void SignalFileTransfer(const InboxItem &inbox_item);
   void ContentsDontParseAsDataMap(const std::string& serialised_dm,
                                   std::string* data_map);
+  void ProcessPresenceMessages();
 
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<Session> session_;
@@ -152,6 +153,7 @@ class MessageHandler {
   ReceivedMessagesMap received_messages_;
   ba::io_service &asio_service_;  // NOLINT (Dan)
   ParseAndSaveDataMapSignalPtr parse_and_save_data_map_signal_;
+  bool start_up_done_;
 };
 
 }  // namespace lifestuff

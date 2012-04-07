@@ -907,6 +907,122 @@ TEST(IndependentFullTest, FUNC_SendFile) {
   }
 }
 
+TEST(IndependentFullTest, FUNC_PresenceOnLogIn) {
+  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
+  std::string username1(RandomString(6)),
+              pin1(CreatePin()),
+              password1(RandomString(6)),
+              public_username1(RandomAlphaNumericString(5));
+  volatile bool done;
+
+  {
+    LifeStuff test_elements1;
+    EXPECT_EQ(kSuccess, test_elements1.Initialise(*test_dir));
+    EXPECT_EQ(kSuccess,
+              test_elements1.ConnectToSignals(ChatFunction(),
+                                              FileTransferFunction(),
+                                              ShareFunction(),
+                                              NewContactFunction(),
+                                              ContactConfirmationFunction(),
+                                              ContactProfilePictureFunction(),
+                                              std::bind(&PresenceSlot, args::_1,
+                                                        args::_2, args::_3,
+                                                        &done)));
+    EXPECT_EQ(kSuccess, test_elements1.CreateUser(username1, pin1, password1));
+    EXPECT_EQ(kSuccess, test_elements1.CreatePublicId(public_username1));
+    EXPECT_EQ(kSuccess, test_elements1.LogOut());
+    EXPECT_EQ(kSuccess, test_elements1.Finalise());
+  }
+  std::string username2(RandomString(6)),
+              pin2(CreatePin()),
+              password2(RandomString(6)),
+              public_username2(RandomAlphaNumericString(5));
+  DLOG(ERROR) << "\n\n\n\n";
+  {
+    LifeStuff test_elements2;
+    EXPECT_EQ(kSuccess, test_elements2.Initialise(*test_dir));
+    EXPECT_EQ(kSuccess,
+              test_elements2.ConnectToSignals(ChatFunction(),
+                                              FileTransferFunction(),
+                                              ShareFunction(),
+                                              NewContactFunction(),
+                                              ContactConfirmationFunction(),
+                                              ContactProfilePictureFunction(),
+                                              std::bind(&PresenceSlot, args::_1,
+                                                        args::_2, args::_3,
+                                                        &done)));
+    EXPECT_EQ(kSuccess, test_elements2.CreateUser(username2, pin2, password2));
+    EXPECT_EQ(kSuccess, test_elements2.CreatePublicId(public_username2));
+    EXPECT_EQ(kSuccess, test_elements2.AddContact(public_username2,
+                                                  public_username1));
+    EXPECT_EQ(kSuccess, test_elements2.LogOut());
+    EXPECT_EQ(kSuccess, test_elements2.Finalise());
+  }
+  DLOG(ERROR) << "\n\n\n\n";
+  {
+    done = false;
+    LifeStuff test_elements1;
+    EXPECT_EQ(kSuccess, test_elements1.Initialise(*test_dir));
+    EXPECT_EQ(kSuccess,
+              test_elements1.ConnectToSignals(ChatFunction(),
+                                              FileTransferFunction(),
+                                              ShareFunction(),
+                                              std::bind(&TwoStringsAndBoolSlot,
+                                                        args::_1, args::_2,
+                                                        &done),
+                                              ContactConfirmationFunction(),
+                                              ContactProfilePictureFunction(),
+                                              ContactPresenceFunction()));
+    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+    while (!done)
+      Sleep(bptime::milliseconds(100));
+    EXPECT_EQ(kSuccess, test_elements1.ConfirmContact(public_username1,
+                                                      public_username2));
+    EXPECT_EQ(kSuccess, test_elements1.LogOut());
+    EXPECT_EQ(kSuccess, test_elements1.Finalise());
+  }
+  DLOG(ERROR) << "\n\n\n\n";
+  {
+    done = false;
+    LifeStuff test_elements2;
+    EXPECT_EQ(kSuccess, test_elements2.Initialise(*test_dir));
+    EXPECT_EQ(kSuccess,
+              test_elements2.ConnectToSignals(ChatFunction(),
+                                              FileTransferFunction(),
+                                              ShareFunction(),
+                                              NewContactFunction(),
+                                              std::bind(&TwoStringsAndBoolSlot,
+                                                        args::_1, args::_2,
+                                                        &done),
+                                              ContactProfilePictureFunction(),
+                                              ContactPresenceFunction()));
+    EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
+    while (!done)
+      Sleep(bptime::milliseconds(100));
+    EXPECT_EQ(kSuccess, test_elements2.LogOut());
+    EXPECT_EQ(kSuccess, test_elements2.Finalise());
+  }
+  {
+    done = false;
+    LifeStuff test_elements1;
+    EXPECT_EQ(kSuccess, test_elements1.Initialise(*test_dir));
+    EXPECT_EQ(kSuccess,
+              test_elements1.ConnectToSignals(ChatFunction(),
+                                              FileTransferFunction(),
+                                              ShareFunction(),
+                                              NewContactFunction(),
+                                              ContactConfirmationFunction(),
+                                              ContactProfilePictureFunction(),
+                                              std::bind(&PresenceSlot, args::_1,
+                                                        args::_2, args::_3,
+                                                        &done)));
+    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+    EXPECT_FALSE(done);
+    EXPECT_EQ(kSuccess, test_elements1.LogOut());
+    EXPECT_EQ(kSuccess, test_elements1.Finalise());
+  }
+}
+
 }  // namespace test
 
 }  // namespace lifestuff
