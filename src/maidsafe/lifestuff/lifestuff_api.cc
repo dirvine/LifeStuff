@@ -590,7 +590,7 @@ int LifeStuff::SendFile(const std::string &sender_public_id,
   InboxItem inbox_item(kFileTransfer);
   inbox_item.receiver_public_id = receiver_public_id;
   inbox_item.sender_public_id = sender_public_id;
-  inbox_item.content.push_back(absolute_path.filename().c_str());
+  inbox_item.content.push_back(absolute_path.filename().string());
   inbox_item.content.push_back(serialised_datamap);
 
   result = lifestuff_elements->message_handler->Send(sender_public_id,
@@ -610,7 +610,7 @@ int LifeStuff::ProcessAcceptedFile(const fs::path absolute_path,
   int result(
       lifestuff_elements->user_storage->ReadHiddenFile(
           mount_path() / fs::path("/").make_preferred() /
-              std::string(identifier + drive::kMsHidden.c_str()),
+              std::string(identifier + drive::kMsHidden.string()),
           &serialised_data_map));
   if (result != kSuccess || serialised_data_map.empty()) {
     DLOG(ERROR) << "No such identifier found: " << result;

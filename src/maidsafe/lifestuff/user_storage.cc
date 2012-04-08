@@ -238,7 +238,7 @@ bool UserStorage::ParseAndSaveDataMap(const std::string &serialised_data_map,
       EncodeToBase32(crypto::Hash<crypto::SHA1>(serialised_data_map));
   int result(WriteHiddenFile(
                  mount_dir_ / fs::path("/").make_preferred() /
-                     std::string(*data_map_hash + drive::kMsHidden.c_str()),
+                     std::string(*data_map_hash + drive::kMsHidden.string()),
                  serialised_data_map,
                  true));
   if (result != kSuccess) {
