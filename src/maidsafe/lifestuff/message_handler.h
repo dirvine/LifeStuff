@@ -102,6 +102,11 @@ class MessageHandler {
   int Send(const std::string &own_public_username,
            const std::string &recipient_public_username,
            const InboxItem &message);
+  int SendPresenceMessage(const std::string &own_public_username,
+                          const std::string &recipient_public_username,
+                          const ContactPresence &presence);
+  void InformConfirmedContactOnline(const std::string &own_public_id,
+                                    const std::string &recipient_public_id);
 
   bs2::connection ConnectToChatSignal(const ChatFunction &function);
   bs2::connection ConnectToFileTransferSignal(
@@ -133,9 +138,6 @@ class MessageHandler {
   void ContactPresenceSlot(const InboxItem& information_message);
   void ContactProfilePictureSlot(const InboxItem& information_message);
   void RetrieveMessagesForAllIds();
-  void SendPresenceMessage(const std::string &own_public_username,
-                           const std::string &recipient_public_username,
-                           const ContactPresence &presence);
   void EnqueuePresenceMessages(ContactPresence presence);
   void SignalFileTransfer(const InboxItem &inbox_item);
   void ContentsDontParseAsDataMap(const std::string& serialised_dm,

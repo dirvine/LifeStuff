@@ -107,6 +107,10 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
       std::bind(&UserStorage::ParseAndSaveDataMap,
                 lifestuff_elements->user_storage, args::_1, args::_2));
 
+  lifestuff_elements->public_id->ConnectToContactConfirmedSignal(
+      std::bind(&MessageHandler::InformConfirmedContactOnline,
+                lifestuff_elements->message_handler, args::_1, args::_2));
+
   lifestuff_elements->base_directory = base_directory;
   lifestuff_elements->state = kInitialised;
 
@@ -390,9 +394,18 @@ int LifeStuff::ConfirmContact(const std::string &my_public_id,
     return result;
   }
 
-  return lifestuff_elements->public_id->ConfirmContact(my_public_id,
-                                                       contact_public_id,
-                                                       true);
+  result = lifestuff_elements->public_id->ConfirmContact(my_public_id,
+                                                         contact_public_id,
+                                                         true);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to Confirm Contact.";
+    return result;
+  }
+
+  return lifestuff_elements->message_handler->SendPresenceMessage(
+             my_public_id,
+             contact_public_id,
+             kOnline);
 }
 
 int LifeStuff::DeclineContact(const std::string &my_public_id,

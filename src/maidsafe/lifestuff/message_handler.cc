@@ -510,7 +510,7 @@ void MessageHandler::RetrieveMessagesForAllIds() {
   }
 }
 
-void MessageHandler::SendPresenceMessage(
+int MessageHandler::SendPresenceMessage(
     const std::string &own_public_username,
     const std::string &recipient_public_username,
     const ContactPresence &presence) {
@@ -532,6 +532,15 @@ void MessageHandler::SendPresenceMessage(
         [own_public_username]->UpdatePresence(recipient_public_username,
                                               kOffline);
   }
+
+  return result;
+}
+
+void MessageHandler::InformConfirmedContactOnline(
+    const std::string &own_public_id,
+    const std::string &recipient_public_id) {
+  asio_service_.post(std::bind(&MessageHandler::SendPresenceMessage, this,
+                               own_public_id, recipient_public_id, kOnline));
 }
 
 void MessageHandler::SignalFileTransfer(const InboxItem &inbox_item) {
