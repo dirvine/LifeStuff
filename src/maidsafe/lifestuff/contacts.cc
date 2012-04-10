@@ -148,6 +148,7 @@ int ContactsHandler::UpdateContact(const Contact &contact) {
     return -79;
   }
 
+  it = contact_set_.find(contact.public_username);
   return kSuccess;
 }
 
@@ -323,7 +324,6 @@ int ContactsHandler::ContactInfo(const std::string &public_username,
                 << ") not present in contact list.";
     return -80;
   }
-
   *contact = *it;
 
   return kSuccess;

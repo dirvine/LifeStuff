@@ -863,8 +863,9 @@ std::string UserStorage::ConstructFile(const std::string &serialised_data_map) {
   encrypt::SelfEncryptor self_encryptor(data_map, chunk_store_);
   std::unique_ptr<char[]> contents(new char[file_size]);
   self_encryptor.Read(contents.get(), file_size, 0);
+  std::string file_content(contents.get(), file_size);
 
-  return std::string().assign(contents.get(), file_size);
+  return file_content;
 }
 
 }  // namespace lifestuff

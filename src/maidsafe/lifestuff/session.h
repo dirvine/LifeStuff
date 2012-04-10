@@ -27,6 +27,7 @@
 
 #include <map>
 #include <string>
+#include <set>
 
 #ifdef __MSVC__
 #  pragma warning(push)
@@ -50,7 +51,6 @@ namespace lifestuff {
 
 namespace test {
 class AuthenticationTest;
-class LocalStoreManagerTest;
 class MessageHandlerTest;
 class PublicIdTest;
 class SessionTest;
@@ -67,6 +67,7 @@ struct UserDetails;
 
 typedef std::shared_ptr<ContactsHandler> ContactsHandlerPtr;
 typedef std::map<std::string, ContactsHandlerPtr> ContactHandlerMap;
+typedef std::map<std::string, std::set<std::string>> PublicIdContactMap;
 
 class Session {
  public:
@@ -75,6 +76,7 @@ class Session {
   bool Reset();
 
   ContactHandlerMap& contact_handler_map();
+  PublicIdContactMap GetAllContacts(ContactStatus status);
 
   DefConLevels def_con_level() const;
   std::string username() const;
@@ -117,7 +119,6 @@ class Session {
   friend class UserCredentials;
   friend class UserStorage;
   friend class test::AuthenticationTest;
-  friend class test::LocalStoreManagerTest;
   friend class test::MessageHandlerTest;
   friend class test::PublicIdTest;
   friend class test::SessionTest;

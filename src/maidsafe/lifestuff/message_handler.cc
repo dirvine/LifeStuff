@@ -105,11 +105,6 @@ void MessageHandler::EnqueuePresenceMessages(ContactPresence presence) {
        ++it) {
     (*it).second->OrderedContacts(&contacts, kAlphabetical, kConfirmed);
     for (auto item(contacts.begin()); item != contacts.end(); ++item) {
-//       asio_service_.post(std::bind(&MessageHandler::SendPresenceMessage,
-//                                    this,
-//                                    (*it).first,
-//                                    (*item).public_username,
-//                                    presence));
       SendPresenceMessage((*it).first, (*item).public_username, presence);
     }
   }
@@ -148,8 +143,9 @@ int MessageHandler::Send(const std::string &public_username,
                  recipient_public_username,
                  &recipient_contact));
   if (result != kSuccess || recipient_contact.mmid_name.empty()) {
-    DLOG(ERROR) << "Failed to get MMID for " << recipient_public_username;
-    return result;
+    DLOG(ERROR) << "Failed to get MMID for " << recipient_public_username
+                << ", type: " <<inbox_item.item_type;
+    return result == kSuccess ? kGeneralError : result;
   }
 
   // Retrieves ANMPID, MPID, and MMID's <name, value, signature>
@@ -188,7 +184,6 @@ int MessageHandler::Send(const std::string &public_username,
     DLOG(ERROR) << "Failed to get own public ID data: " << result;
     return kGetPublicIdError;
   }
-
 
   pca::SignedData signed_data;
   signed_data.set_data(encrypted_message);
@@ -453,7 +448,8 @@ void MessageHandler::ContactPresenceSlot(const InboxItem &presence_message) {
 
 void MessageHandler::ContactProfilePictureSlot(
     const InboxItem &profile_picture_message) {
-  if (profile_picture_message.content.size() != 1U) {
+  if (profile_picture_message.content.size() != 1U ||
+      profile_picture_message.content[0].empty()) {
     // Drop silently
     DLOG(WARNING) << profile_picture_message.sender_public_id
                   << " has sent a profile picture message with bad content.";
@@ -465,7 +461,7 @@ void MessageHandler::ContactProfilePictureSlot(
   encrypt::DataMapPtr data_map(
       ParseSerialisedDataMap(profile_picture_message.content[0]));
   if (!data_map) {
-    DLOG(ERROR) << "Data map didn't parse.";
+    DLOG(WARNING) << "Data map didn't parse.";
     return;
   }
 
@@ -473,8 +469,12 @@ void MessageHandler::ContactProfilePictureSlot(
                  [receiver]->UpdateProfilePictureDataMap(
                      sender,
                      profile_picture_message.content[0]));
-  if (result == kSuccess)
-    (*contact_profile_picture_signal_)(receiver, sender);
+  if (result != kSuccess) {
+    DLOG(WARNING) << "Failed to update picture DM in session: " << result;
+    return;
+  }
+
+  (*contact_profile_picture_signal_)(receiver, sender);
 }
 
 void MessageHandler::RetrieveMessagesForAllIds() {
@@ -525,9 +525,9 @@ int MessageHandler::SendPresenceMessage(
 
   int result(Send(own_public_username, recipient_public_username, inbox_item));
   if (result != kSuccess) {
-    DLOG(ERROR) << own_public_username << "failed to inform "
+    DLOG(ERROR) << own_public_username << " failed to inform "
                 << recipient_public_username << " of presence state "
-                << presence;
+                << presence << ", result: " << result;
     session_->contact_handler_map()
         [own_public_username]->UpdatePresence(recipient_public_username,
                                               kOffline);
@@ -571,6 +571,25 @@ void MessageHandler::SignalFileTransfer(const InboxItem &inbox_item) {
                            data_map_hash);
 }
 
+void MessageHandler::SendEveryone(const InboxItem &message) {
+  std::vector<Contact> contacts;
+  session_->contact_handler_map()
+      [message.sender_public_id]->OrderedContacts(&contacts,
+                                                  kAlphabetical,
+                                                  kConfirmed);
+  auto it_map(contacts.begin());
+  while (it_map != contacts.end()) {
+    InboxItem local_message(message);
+    local_message.receiver_public_id = (*it_map++).public_username;
+    DLOG(ERROR) << "local_message: " << local_message.content[0].size();
+    asio_service_.post(std::bind(&MessageHandler::Send,
+                                 this,
+                                 local_message.sender_public_id,
+                                 local_message.receiver_public_id,
+                                 local_message));
+  }
+}
+
 bs2::connection MessageHandler::ConnectToChatSignal(
     const ChatFunction &function) {
   return chat_signal_->connect(function);
@@ -581,11 +600,11 @@ bs2::connection MessageHandler::ConnectToFileTransferSignal(
   return file_transfer_signal_->connect(function);
 }
 
-bs2::connection MessageHandler::ConnectToShareSignal(
-    const ShareFunction &function) {
-  return share_signal_->connect(function);
-}
-
+// bs2::connection MessageHandler::ConnectToShareSignal(
+//     const ShareFunction &function) {
+//   return share_signal_->connect(function);
+// }
+//
 bs2::connection MessageHandler::ConnectToContactPresenceSignal(
     const ContactPresenceFunction &function) {
   return contact_presence_signal_->connect(function);

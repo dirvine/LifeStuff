@@ -39,6 +39,7 @@
 
 #include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/lifestuff.h"
+#include "maidsafe/lifestuff/utils.h"
 
 namespace ba = boost::asio;
 namespace bptime = boost::posix_time;
@@ -107,11 +108,12 @@ class MessageHandler {
                           const ContactPresence &presence);
   void InformConfirmedContactOnline(const std::string &own_public_id,
                                     const std::string &recipient_public_id);
+  void SendEveryone(const InboxItem &message);
 
   bs2::connection ConnectToChatSignal(const ChatFunction &function);
   bs2::connection ConnectToFileTransferSignal(
       const FileTransferFunction &function);
-  bs2::connection ConnectToShareSignal(const ShareFunction &function);
+//   bs2::connection ConnectToShareSignal(const ShareFunction &function);
   bs2::connection ConnectToContactPresenceSignal(
       const ContactPresenceFunction &function);
   bs2::connection ConnectToContactProfilePictureSignal(

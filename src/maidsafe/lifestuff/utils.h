@@ -21,11 +21,13 @@
 #include <string>
 #include <vector>
 
+#include "boost/lexical_cast.hpp"
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
 #include "boost/filesystem/path.hpp"
 
 #include "maidsafe/common/rsa.h"
+#include "maidsafe/common/utils.h"
 
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
@@ -43,6 +45,32 @@ namespace pd { class ClientContainer; }
 #endif
 
 namespace lifestuff {
+
+enum InboxItemType {
+  kChat,
+  kFileTransfer,
+  kSharedDirectory,
+  kContactPresence,
+  kContactProfilePicture,
+
+  // First and last markers
+  kInboxItemTypeFirst = kChat,
+  kInboxItemTypeLast = kContactProfilePicture
+};
+
+struct InboxItem {
+  explicit InboxItem(InboxItemType inbox_item_type = kChat)
+      : item_type(inbox_item_type),
+        sender_public_id(),
+        receiver_public_id(),
+        content(),
+        timestamp(boost::lexical_cast<std::string>(GetDurationSinceEpoch())) {}
+  InboxItemType item_type;
+  std::string sender_public_id;
+  std::string receiver_public_id;
+  std::vector<std::string> content;
+  std::string timestamp;
+};
 
 int GetValidatedMpidPublicKey(
     const std::string &public_username,

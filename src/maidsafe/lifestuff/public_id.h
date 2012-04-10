@@ -66,7 +66,9 @@ class PublicId {
   // for each valid MCID retrieved.  After the signal is fired, the MCID(s) are
   // deleted from the network.  Checking will only succeed if at least one
   // public username has been successfully created.
-  int StartCheckingForNewContacts(boost::posix_time::seconds interval);
+  void StartUp(bptime::seconds interval);
+  void ShutDown();
+  int StartCheckingForNewContacts(bptime::seconds interval);
   void StopCheckingForNewContacts();
 
   // Creates and stores to the network a new MSID, MPID, ANMPID and MMID.
@@ -107,6 +109,7 @@ class PublicId {
 
   void GetNewContacts(const bptime::seconds &interval,
                       const boost::system::error_code &error_code);
+  void GetContactsHandle();
   void ProcessRequests(const passport::SelectableIdData &data,
                        const std::string &mpid_value);
   // Modify the Appendability of MCID and MMID associated with the public_name

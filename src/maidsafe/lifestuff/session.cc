@@ -25,6 +25,7 @@
 #include "maidsafe/lifestuff/session.h"
 
 #include <memory>
+#include <vector>
 
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
@@ -77,6 +78,20 @@ bool Session::Reset() {
 
 ContactHandlerMap& Session::contact_handler_map() {
   return contact_handler_map_;
+}
+
+PublicIdContactMap Session::GetAllContacts(ContactStatus status) {
+  std::vector<Contact> contacts;
+  PublicIdContactMap result;
+  auto it(contact_handler_map_.begin());
+  for (; it != contact_handler_map_.end(); ++it) {
+    result[(*it).first] = std::set<std::string>();
+    (*it).second->OrderedContacts(&contacts, kAlphabetical, status);
+    for (auto item(contacts.begin()); item != contacts.end(); ++item)
+      result[(*it).first].insert((*item).public_username);
+  }
+
+  return result;
 }
 
 DefConLevels Session::def_con_level() const {

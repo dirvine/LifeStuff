@@ -190,6 +190,13 @@ PublicId::~PublicId() {
   StopCheckingForNewContacts();
 }
 
+void PublicId::StartUp(bptime::seconds interval) {
+  GetContactsHandle();
+  StartCheckingForNewContacts(interval);
+}
+
+void PublicId::ShutDown() { StopCheckingForNewContacts(); }
+
 int PublicId::StartCheckingForNewContacts(bptime::seconds interval) {
   std::vector<passport::SelectableIdData> selectables;
   session_->passport_->SelectableIdentitiesList(&selectables);
@@ -440,7 +447,16 @@ void PublicId::GetNewContacts(const bptime::seconds &interval,
       return;
     }
   }
+  GetContactsHandle();
+  get_new_contacts_timer_.expires_at(get_new_contacts_timer_.expires_at() +
+                                     interval);
+  get_new_contacts_timer_.async_wait(std::bind(&PublicId::GetNewContacts,
+                                               this,
+                                               interval,
+                                               std::placeholders::_1));
+}
 
+void PublicId::GetContactsHandle() {
   std::vector<passport::SelectableIdData> selectables;
   session_->passport_->SelectableIdentitiesList(&selectables);
   for (auto it(selectables.begin()); it != selectables.end(); ++it) {
@@ -464,13 +480,6 @@ void PublicId::GetNewContacts(const bptime::seconds &interval,
       }
     }
   }
-
-  get_new_contacts_timer_.expires_at(get_new_contacts_timer_.expires_at() +
-                                     interval);
-  get_new_contacts_timer_.async_wait(std::bind(&PublicId::GetNewContacts,
-                                               this,
-                                               interval,
-                                               std::placeholders::_1));
 }
 
 void PublicId::ProcessRequests(const passport::SelectableIdData &data,
@@ -515,8 +524,8 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
         mic.status = kConfirmed;
         mic.mmid_name = mmid_name;
         mic.profile_picture_data_map = profile_picture_data_map;
-        int update(session_->contact_handler_map()[std::get<0>(data)]->
-                       UpdateContact(mic));
+        int update(session_->contact_handler_map()
+                       [std::get<0>(data)]->UpdateContact(mic));
         if (update == kSuccess) {
           (*contact_confirmed_signal_)(std::get<0>(data), public_username);
         }
@@ -526,7 +535,7 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
                 public_username,
                 mmid_name));
         if (mmid != kSuccess) {
-          DLOG(ERROR) << "Failed to update MMID or profile picture DM";
+          DLOG(ERROR) << "Failed to update MMID.";
         }
       }
     } else {

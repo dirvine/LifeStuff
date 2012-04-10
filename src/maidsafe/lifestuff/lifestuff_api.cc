@@ -29,6 +29,8 @@
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/encrypt/data_map.h"
+
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
 
@@ -118,11 +120,9 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
 }
 
 int LifeStuff::ConnectToSignals(
-//     drive::DriveChangedSlotPtr drive_change_slot,
-//     drive::ShareChangedSlotPtr share_change_slot,
     const ChatFunction &chat_slot,
     const FileTransferFunction &file_slot,
-    const ShareFunction &share_slot,
+    const ShareInvitationFunction &/*share_slot*/,
     const NewContactFunction &new_contact_slot,
     const ContactConfirmationFunction &confirmed_contact_slot,
     const ContactProfilePictureFunction &profile_picture_slot,
@@ -133,16 +133,6 @@ int LifeStuff::ConnectToSignals(
   }
 
   int connects(0);
-//   if (drive_change_slot) {
-//     lifestuff_elements->user_storage->ConnectToDriveChanged(
-//         drive_change_slot);
-//     ++connects;
-//   }
-//   if (share_change_slot) {
-//     lifestuff_elements->user_storage->ConnectToShareChanged(
-//         share_change_slot);
-//     ++connects;
-//   }
   if (chat_slot) {
     lifestuff_elements->message_handler->ConnectToChatSignal(chat_slot);
     ++connects;
@@ -151,10 +141,10 @@ int LifeStuff::ConnectToSignals(
     lifestuff_elements->message_handler->ConnectToFileTransferSignal(file_slot);
     ++connects;
   }
-  if (share_slot) {
-    lifestuff_elements->message_handler->ConnectToShareSignal(share_slot);
-    ++connects;
-  }
+//   if (share_slot) {
+//     lifestuff_elements->message_handler->ConnectToShareSignal(share_slot);
+//     ++connects;
+//   }
   if (new_contact_slot) {
     lifestuff_elements->public_id->ConnectToNewContactSignal(new_contact_slot);
     ++connects;
@@ -291,8 +281,7 @@ int LifeStuff::LogIn(const std::string &username,
   }
 
   if (!lifestuff_elements->session->contact_handler_map().empty()) {
-    lifestuff_elements->public_id->StartCheckingForNewContacts(
-        lifestuff_elements->interval);
+    lifestuff_elements->public_id->StartUp(lifestuff_elements->interval);
     lifestuff_elements->message_handler->StartUp(lifestuff_elements->interval);
   }
 
@@ -313,7 +302,7 @@ int LifeStuff::LogOut() {
     return kGeneralError;
   }
 
-  lifestuff_elements->public_id->StopCheckingForNewContacts();
+  lifestuff_elements->public_id->ShutDown();
   lifestuff_elements->message_handler->ShutDown();
 
   if (!lifestuff_elements->user_credentials->Logout()) {
@@ -458,11 +447,20 @@ int LifeStuff::ChangeProfilePicture(
   // Write contents somewhere
   fs::path profile_picture_path(lifestuff_elements->user_storage->mount_dir() /
                                 fs::path("/").make_preferred() /
-                                std::string(my_public_id +
-                                            ".profile_picture"));
+                                std::string(my_public_id + ".profile_picture"));
   if (!WriteFile(profile_picture_path, profile_picture_contents)) {
     DLOG(ERROR) << "Failed to write profile picture file: "
                 << profile_picture_path;
+    return kGeneralError;
+  }
+
+  boost::system::error_code error_code;
+  int count(0), limit(100);
+  while (fs::file_size(profile_picture_path, error_code) !=
+         profile_picture_contents.size() && count++ < limit)
+    Sleep(bptime::milliseconds(50));
+  if (count == limit || error_code) {
+    DLOG(ERROR) << "Failed to obtain correct size after write";
     return kGeneralError;
   }
 
@@ -486,7 +484,7 @@ int LifeStuff::ChangeProfilePicture(
   message.content.push_back(data_map);
 
   // Send to everybody
-
+  lifestuff_elements->message_handler->SendEveryone(message);
 
   return kSuccess;
 }
@@ -542,7 +540,6 @@ std::string LifeStuff::GetContactProfilePicture(
             contact.profile_picture_data_map);
 }
 
-
 ContactMap LifeStuff::GetContacts(const std::string &my_public_id,
                                   uint16_t bitwise_status) {
   int result(PreContactChecks(lifestuff_elements->state,
@@ -559,6 +556,11 @@ ContactMap LifeStuff::GetContacts(const std::string &my_public_id,
 
 std::vector<std::string> LifeStuff::PublicIdsList() const {
   std::vector<std::string> public_ids;
+  if (lifestuff_elements->state != kLoggedIn) {
+    DLOG(ERROR) << "Wrong state: " << lifestuff_elements->state;
+    return public_ids;
+  }
+
 
   // Retrieve all keys
   std::transform(lifestuff_elements->session->contact_handler_map().begin(),
@@ -574,6 +576,11 @@ std::vector<std::string> LifeStuff::PublicIdsList() const {
 int LifeStuff::SendChatMessage(const std::string &sender_public_id,
                                const std::string &receiver_public_id,
                                const std::string &message) {
+  if (lifestuff_elements->state != kLoggedIn) {
+    DLOG(ERROR) << "Wrong state: " << lifestuff_elements->state;
+    return kGeneralError;
+  }
+
   if (message.size() > kMaxChatMessageSize) {
     DLOG(ERROR) << "Message too large: " << message.size();
     return kGeneralError;
@@ -592,6 +599,11 @@ int LifeStuff::SendChatMessage(const std::string &sender_public_id,
 int LifeStuff::SendFile(const std::string &sender_public_id,
                         const std::string &receiver_public_id,
                         const fs::path absolute_path) {
+  if (lifestuff_elements->state != kLoggedIn) {
+    DLOG(ERROR) << "Wrong state: " << lifestuff_elements->state;
+    return kGeneralError;
+  }
+
   std::string serialised_datamap;
   int result(lifestuff_elements->user_storage->GetDataMap(absolute_path,
                                                           &serialised_datamap));
@@ -617,8 +629,13 @@ int LifeStuff::SendFile(const std::string &sender_public_id,
   return kSuccess;
 }
 
-int LifeStuff::ProcessAcceptedFile(const fs::path absolute_path,
-                                   const std::string &identifier) {
+int LifeStuff::AcceptSentFile(const fs::path absolute_path,
+                              const std::string &identifier) {
+  if (lifestuff_elements->state != kLoggedIn) {
+    DLOG(ERROR) << "Wrong state: " << lifestuff_elements->state;
+    return kGeneralError;
+  }
+
   std::string serialised_data_map;
   int result(
       lifestuff_elements->user_storage->ReadHiddenFile(
@@ -646,9 +663,26 @@ int LifeStuff::ProcessAcceptedFile(const fs::path absolute_path,
   return kSuccess;
 }
 
+int LifeStuff::RejectSentFile(const std::string &identifier) {
+  if (lifestuff_elements->state != kLoggedIn) {
+    DLOG(ERROR) << "Wrong state: " << lifestuff_elements->state;
+    return kGeneralError;
+  }
+
+  fs::path hidden_file(mount_path() /
+                       fs::path("/").make_preferred() /
+                       std::string(identifier + drive::kMsHidden.string()));
+  return lifestuff_elements->user_storage->DeleteHiddenFile(hidden_file);
+}
+
 /// Filesystem
 int LifeStuff::ReadHiddenFile(const fs::path &absolute_path,
                                 std::string *content) const {
+  if (lifestuff_elements->state != kLoggedIn) {
+    DLOG(ERROR) << "Wrong state: " << lifestuff_elements->state;
+    return kGeneralError;
+  }
+
   return lifestuff_elements->user_storage->ReadHiddenFile(absolute_path,
                                                           content);
 }
@@ -656,12 +690,22 @@ int LifeStuff::ReadHiddenFile(const fs::path &absolute_path,
 int LifeStuff::WriteHiddenFile(const fs::path &absolute_path,
                                  const std::string &content,
                                  bool overwrite_existing) {
+  if (lifestuff_elements->state != kLoggedIn) {
+    DLOG(ERROR) << "Wrong state: " << lifestuff_elements->state;
+    return kGeneralError;
+  }
+
   return lifestuff_elements->user_storage->WriteHiddenFile(absolute_path,
                                                            content,
                                                            overwrite_existing);
 }
 
 int LifeStuff::DeleteHiddenFile(const fs::path &absolute_path) {
+  if (lifestuff_elements->state != kLoggedIn) {
+    DLOG(ERROR) << "Wrong state: " << lifestuff_elements->state;
+    return kGeneralError;
+  }
+
   return lifestuff_elements->user_storage->DeleteHiddenFile(absolute_path);
 }
 

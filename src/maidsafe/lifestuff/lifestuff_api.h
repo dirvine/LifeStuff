@@ -24,6 +24,7 @@
 #ifndef MAIDSAFE_LIFESTUFF_LIFESTUFF_API_H_
 #define MAIDSAFE_LIFESTUFF_LIFESTUFF_API_H_
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -52,11 +53,9 @@ class LifeStuff {
   /// State operations
   int Initialise(const boost::filesystem::path &base_directory);
   int ConnectToSignals(
-//       drive::DriveChangedSlotPtr drive_change_slot,
-//       drive::ShareChangedSlotPtr share_change_slot,
       const ChatFunction &chat_slot,
       const FileTransferFunction &file_slot,
-      const ShareFunction &share_slot,
+      const ShareInvitationFunction &share_slot,
       const NewContactFunction &new_contact_slot,
       const ContactConfirmationFunction &confirmed_contact_slot,
       const ContactProfilePictureFunction &profile_picture_slot,
@@ -98,8 +97,9 @@ class LifeStuff {
   int SendFile(const std::string &sender_public_id,
                const std::string &receiver_public_id,
                const fs::path absolute_path);
-  int ProcessAcceptedFile(const fs::path absolute_path,
-                          const std::string &identifier);
+  int AcceptSentFile(const fs::path absolute_path,
+                     const std::string &identifier);
+  int RejectSentFile(const std::string &identifier);
 
   /// Filesystem
   int ReadHiddenFile(const fs::path &absolute_path, std::string *content) const;
@@ -107,6 +107,34 @@ class LifeStuff {
                       const std::string &content,
                       bool overwrite_existing);
   int DeleteHiddenFile(const fs::path &absolute_path);
+
+  /// Shares
+  // If error code is given, map of rsults should be empty. If nobody added,
+  // revert everything. Directory has to be moved, not copied. If directory
+  // already exists in shared stuff, append ending as dropbox does.
+  int CreateShare(const std::string &my_public_id,
+                  const fs::path &directory_in_lifestuff_drive,
+                  const StringIntMap &contacts,
+                  StringIntMap *results);
+  int GetShareList(const std::string &my_public_id,
+                   std::map<std::string, StringIntMap> *shares_with_members);
+  // Should create a directory adapting to other possible shares
+  int AcceptShareInvitation(const std::string &share_name,
+                            const std::string &my_public_id,
+                            const std::string &share_id);
+  int RejectShareInvitation(const std::string &my_public_id,
+                            const std::string &share_id);
+  int ChangeShareMembers(const std::string &my_public_id,
+                         const StringIntMap &contact_public_id,
+                         const std::string &share_name);
+  int RenameShare(const std::string &my_public_id,
+                  const std::string &current_share_name,
+                  const std::string &new_share_name);
+  int DeleteShare(const std::string &my_public_id,
+                  const std::string &share_name);
+  // Should work for RO and full access
+  int LeaveShare(const std::string &my_public_id,
+                 const std::string &share_name);
 
   ///
   int state() const;
