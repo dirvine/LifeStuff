@@ -447,32 +447,48 @@ int LifeStuff::ChangeProfilePicture(
   // Write contents somewhere
   fs::path profile_picture_path(lifestuff_elements->user_storage->mount_dir() /
                                 fs::path("/").make_preferred() /
-                                std::string(my_public_id + ".profile_picture"));
-  if (!WriteFile(profile_picture_path, profile_picture_contents)) {
+                                std::string(my_public_id +
+                                            "_profile_picture" +
+                                            drive::kMsHidden.string()));
+  if (WriteHiddenFile(profile_picture_path,
+                      profile_picture_contents,
+                      true) != kSuccess) {
     DLOG(ERROR) << "Failed to write profile picture file: "
                 << profile_picture_path;
     return kGeneralError;
   }
 
-  boost::system::error_code error_code;
-  int count(0), limit(100);
-  while (fs::file_size(profile_picture_path, error_code) !=
-         profile_picture_contents.size() && count++ < limit)
-    Sleep(bptime::milliseconds(50));
-  if (count == limit || error_code) {
-    DLOG(ERROR) << "Failed to obtain correct size after write";
-    return kGeneralError;
-  }
 
   // Get datamap
   std::string data_map;
-  result = lifestuff_elements->user_storage->GetDataMap(profile_picture_path,
-                                                        &data_map);
-  if (result != kSuccess || data_map.empty()) {
-    DLOG(ERROR) << "Failed obtaining DM of profile picture: " << result
-                << ", file: " << profile_picture_path;
-    return result;
+  std::string reconstructed;
+  int count(0), limit(100);
+  while (reconstructed != profile_picture_contents && count++ < limit) {
+    data_map.clear();
+    result = lifestuff_elements->user_storage->GetHiddenFileDataMap(
+                profile_picture_path,
+                &data_map);
+    if ((result != kSuccess || data_map.empty()) && count == limit) {
+      DLOG(ERROR) << "Failed obtaining DM of profile picture: " << result
+                  << ", file: " << profile_picture_path;
+      return result;
+    }
+
+    reconstructed = lifestuff_elements->user_storage->ConstructFile(data_map);
+    Sleep(bptime::milliseconds(50));
   }
+
+//   boost::system::error_code error_code;
+//   int count(0), limit(100);
+//   std::string reconstructed();
+//   while (fs::file_size(profile_picture_path, error_code) !=
+//          profile_picture_contents.size() && count++ < limit)
+//     Sleep(bptime::milliseconds(50));
+//   if (count == limit || error_code) {
+//     DLOG(ERROR) << "Failed to obtain correct size after write, error_code: "
+//                 << error_code.value() << ", count: " << count;
+//     return kGeneralError;
+//   }
 
   // Set in session
   lifestuff_elements->session->set_profile_picture_data_map(my_public_id,
@@ -503,9 +519,11 @@ std::string LifeStuff::GetOwnProfilePicture(const std::string &my_public_id) {
   fs::path profile_picture_path(lifestuff_elements->user_storage->mount_dir() /
                                 fs::path("/").make_preferred() /
                                 std::string(my_public_id +
-                                            ".profile_picture"));
+                                            "_profile_picture" +
+                                            drive::kMsHidden.string()));
   std::string profile_picture_contents;
-  if (!ReadFile(profile_picture_path, &profile_picture_contents) ||
+  if (ReadHiddenFile(profile_picture_path,
+                     &profile_picture_contents) != kSuccess ||
       profile_picture_contents.empty()) {
     DLOG(ERROR) << "Failed reading profile picture: " << profile_picture_path;
     return "";
@@ -677,7 +695,7 @@ int LifeStuff::RejectSentFile(const std::string &identifier) {
 
 /// Filesystem
 int LifeStuff::ReadHiddenFile(const fs::path &absolute_path,
-                                std::string *content) const {
+                              std::string *content) const {
   if (lifestuff_elements->state != kLoggedIn) {
     DLOG(ERROR) << "Wrong state: " << lifestuff_elements->state;
     return kGeneralError;
@@ -688,8 +706,8 @@ int LifeStuff::ReadHiddenFile(const fs::path &absolute_path,
 }
 
 int LifeStuff::WriteHiddenFile(const fs::path &absolute_path,
-                                 const std::string &content,
-                                 bool overwrite_existing) {
+                               const std::string &content,
+                               bool overwrite_existing) {
   if (lifestuff_elements->state != kLoggedIn) {
     DLOG(ERROR) << "Wrong state: " << lifestuff_elements->state;
     return kGeneralError;

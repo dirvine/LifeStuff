@@ -755,6 +755,14 @@ int UserStorage::SearchHiddenFiles(const fs::path &absolute_path,
              results);
 }
 
+int UserStorage::GetHiddenFileDataMap(
+    const boost::filesystem3::path &absolute_path,
+    std::string *data_map) {
+  return drive_in_user_space_->GetDataMapHidden(
+             drive_in_user_space_->RelativePath(absolute_path),
+             data_map);
+}
+
 bs2::connection UserStorage::ConnectToDriveChanged(
     drive::DriveChangedSlotPtr slot) const {
   return drive_in_user_space_->ConnectToDriveChanged(slot);

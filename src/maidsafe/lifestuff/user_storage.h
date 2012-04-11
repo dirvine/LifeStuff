@@ -142,6 +142,8 @@ class UserStorage {
   int SearchHiddenFiles(const fs::path &absolute_path,
                         const std::string &regex,
                         std::list<std::string> *results);
+  int GetHiddenFileDataMap(const boost::filesystem3::path &absolute_path,
+                           std::string *data_map);
 
   // ************************* Signals Handling ********************************
   bs2::connection ConnectToDriveChanged(drive::DriveChangedSlotPtr slot) const;
