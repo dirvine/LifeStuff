@@ -106,16 +106,10 @@ typedef std::function<void(const std::string&,    // Own public ID
         ShareInvitationFunction;
 typedef TwoStringsFunction ShareDeletionFunction;  // own public ID, share name
 typedef std::function<void(const std::string&,  // Own public ID
-                           const std::string&,  // New contact public ID
+                           const std::string&,  // Contact public ID
                            const std::string&,  // Share name
                            int)>                // Access level
         MemberAccessLevelFunction;
-typedef MemberAccessLevelFunction NewMemberFunction;
-typedef MemberAccessLevelFunction ModifiedMemberFunction;
-typedef std::function<void(const std::string&,    // Own public ID
-                           const std::string&,    // Deleted contact public ID
-                           const std::string&)>   // Share name
-        DeletedMemberFunction;
 
 /// Chat
 typedef std::function<void(const std::string&,    // Own public ID

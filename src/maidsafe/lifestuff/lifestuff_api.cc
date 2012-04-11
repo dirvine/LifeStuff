@@ -413,7 +413,8 @@ int LifeStuff::DeclineContact(const std::string &my_public_id,
 }
 
 int LifeStuff::RemoveContact(const std::string &my_public_id,
-                             const std::string &contact_public_id) {
+                             const std::string &contact_public_id,
+                             const std::string &removal_message) {
   int result(PreContactChecks(lifestuff_elements->state,
                               my_public_id,
                               lifestuff_elements->session));
@@ -477,18 +478,6 @@ int LifeStuff::ChangeProfilePicture(
     reconstructed = lifestuff_elements->user_storage->ConstructFile(data_map);
     Sleep(bptime::milliseconds(50));
   }
-
-//   boost::system::error_code error_code;
-//   int count(0), limit(100);
-//   std::string reconstructed();
-//   while (fs::file_size(profile_picture_path, error_code) !=
-//          profile_picture_contents.size() && count++ < limit)
-//     Sleep(bptime::milliseconds(50));
-//   if (count == limit || error_code) {
-//     DLOG(ERROR) << "Failed to obtain correct size after write, error_code: "
-//                 << error_code.value() << ", count: " << count;
-//     return kGeneralError;
-//   }
 
   // Set in session
   lifestuff_elements->session->set_profile_picture_data_map(my_public_id,

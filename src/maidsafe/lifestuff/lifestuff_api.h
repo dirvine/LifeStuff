@@ -80,7 +80,8 @@ class LifeStuff {
   int DeclineContact(const std::string &my_public_id,
                      const std::string &contact_public_id);
   int RemoveContact(const std::string &my_public_id,
-                    const std::string &contact_public_id);
+                    const std::string &contact_public_id,
+                    const std::string &removal_message);
   int ChangeProfilePicture(const std::string &my_public_id,
                            const std::string &profile_picture_contents);
   std::string GetOwnProfilePicture(const std::string &my_public_id);
@@ -108,33 +109,56 @@ class LifeStuff {
                       bool overwrite_existing);
   int DeleteHiddenFile(const fs::path &absolute_path);
 
-  /// Shares
+  /// Private Shares
   // If error code is given, map of rsults should be empty. If nobody added,
   // revert everything. Directory has to be moved, not copied. If directory
-  // already exists in shared stuff, append ending as dropbox does.
-  int CreateShare(const std::string &my_public_id,
-                  const fs::path &directory_in_lifestuff_drive,
-                  const StringIntMap &contacts,
-                  StringIntMap *results);
-  int GetShareList(const std::string &my_public_id,
-                   std::map<std::string, StringIntMap> *shares_with_members);
+  // already exists in shared stuff, append ending as dropbox does. If a
+  // contact is passed in as owner, it should fail for that contact.
+  int CreatePrivateShareFromExistingDirectory(
+      const std::string &my_public_id,
+      const fs::path &directory_in_lifestuff_drive,
+      const StringIntMap &contacts,
+      StringIntMap *results);
+  int CreateEmptyPrivateShare(const std::string &my_public_id,
+                              const std::string &share_name,
+                              const StringIntMap &contacts,
+                              StringIntMap *results);
+  int GetPrivateShareList(const std::string &my_public_id,
+                          StringIntMap *shares_names);
+  // For owners only
+  int GetPrivateShareMemebers(const std::string &my_public_id,
+                              const std::string &share_name,
+                              StringIntMap *shares_members);
+  int GetPrivateSharesIncludingMember(const std::string &my_public_id,
+                                      const std::string &contact_public_id,
+                                      std::vector<std::string> *shares_names);
   // Should create a directory adapting to other possible shares
-  int AcceptShareInvitation(const std::string &share_name,
-                            const std::string &my_public_id,
-                            const std::string &share_id);
-  int RejectShareInvitation(const std::string &my_public_id,
-                            const std::string &share_id);
-  int ChangeShareMembers(const std::string &my_public_id,
-                         const StringIntMap &contact_public_id,
+  int AcceptPrivateShareInvitation(const std::string &share_name,
+                                   const std::string &my_public_id,
+                                   const std::string &share_id);
+  int RejectPrivateShareInvitation(const std::string &my_public_id,
+                                   const std::string &share_id);
+  // Only for owners
+  int AddPrivateShareMembers(const std::string &my_public_id,
+                             const StringIntMap &public_ids,
+                             const std::string &share_name,
+                             StringIntMap *results);
+  // Only for owners
+  int RemovePrivateShareMembers(const std::string &my_public_id,
+                                const std::vector<std::string> &public_ids,
+                                const std::string &share_name,
+                                StringIntMap *results);
+  // Only for owners
+  int EditPrivateShareMembers(const std::string &my_public_id,
+                              const StringIntMap &public_ids,
+                              const std::string &share_name,
+                              StringIntMap *results);
+  // Only for owners
+  int DeletePrivateShare(const std::string &my_public_id,
                          const std::string &share_name);
-  int RenameShare(const std::string &my_public_id,
-                  const std::string &current_share_name,
-                  const std::string &new_share_name);
-  int DeleteShare(const std::string &my_public_id,
-                  const std::string &share_name);
-  // Should work for RO and full access
-  int LeaveShare(const std::string &my_public_id,
-                 const std::string &share_name);
+  // Should work for RO and full access. Only for non-owners
+  int LeavePrivateShare(const std::string &my_public_id,
+                        const std::string &share_name);
 
   ///
   int state() const;
