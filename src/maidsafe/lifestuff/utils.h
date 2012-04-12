@@ -49,13 +49,12 @@ namespace lifestuff {
 enum InboxItemType {
   kChat,
   kFileTransfer,
-  kSharedDirectory,
   kContactPresence,
   kContactProfilePicture,
+  kContactDeletion,
 
-  // First and last markers
-  kInboxItemTypeFirst = kChat,
-  kInboxItemTypeLast = kContactProfilePicture
+  // Max
+  kMaxInboxItemType = kContactDeletion
 };
 
 struct InboxItem {

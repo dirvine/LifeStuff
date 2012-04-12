@@ -201,6 +201,15 @@ void ConfirmContactSlot(const std::string&,
   *done = true;
 }
 
+void DeleteContactSlot(const std::string&,
+                       const std::string&,
+                       const std::string &signal_message,
+                       std::string *slot_message,
+                       volatile bool *done) {
+  *slot_message = signal_message;
+  *done = true;
+}
+
 void PresenceSlot(const std::string&,
                   const std::string&,
                   ContactPresence,
@@ -545,13 +554,13 @@ TEST(IndependentFullTest, FUNC_SendFile) {
     EXPECT_EQ(kSuccess,
               test_elements1.ConnectToSignals(ChatFunction(),
                                               FileTransferFunction(),
-                                              ShareInvitationFunction(),
                                               NewContactFunction(),
                                               ContactConfirmationFunction(),
                                               ContactProfilePictureFunction(),
                                               std::bind(&PresenceSlot, args::_1,
                                                         args::_2, args::_3,
-                                                        &done)));
+                                                        &done),
+                                              ContactDeletionFunction()));
     EXPECT_EQ(kSuccess, test_elements1.CreateUser(username1, pin1, password1));
     EXPECT_EQ(kSuccess, test_elements1.CreatePublicId(public_username1));
 
@@ -576,13 +585,13 @@ TEST(IndependentFullTest, FUNC_SendFile) {
     EXPECT_EQ(kSuccess,
               test_elements2.ConnectToSignals(ChatFunction(),
                                               FileTransferFunction(),
-                                              ShareInvitationFunction(),
                                               NewContactFunction(),
                                               ContactConfirmationFunction(),
                                               ContactProfilePictureFunction(),
                                               std::bind(&PresenceSlot, args::_1,
                                                         args::_2, args::_3,
-                                                        &done)));
+                                                        &done),
+                                              ContactDeletionFunction()));
     EXPECT_EQ(kSuccess, test_elements2.CreateUser(username2, pin2, password2));
     EXPECT_EQ(kSuccess, test_elements2.CreatePublicId(public_username2));
     EXPECT_EQ(kSuccess, test_elements2.AddContact(public_username2,
@@ -597,13 +606,13 @@ TEST(IndependentFullTest, FUNC_SendFile) {
     EXPECT_EQ(kSuccess,
               test_elements1.ConnectToSignals(ChatFunction(),
                                               FileTransferFunction(),
-                                              ShareInvitationFunction(),
                                               std::bind(&TwoStringsAndBoolSlot,
                                                         args::_1, args::_2,
                                                         &done),
                                               ContactConfirmationFunction(),
                                               ContactProfilePictureFunction(),
-                                              ContactPresenceFunction()));
+                                              ContactPresenceFunction(),
+                                              ContactDeletionFunction()));
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     while (!done)
       Sleep(bptime::milliseconds(100));
@@ -632,13 +641,13 @@ TEST(IndependentFullTest, FUNC_SendFile) {
                                                         args::_2, args::_3,
                                                         args::_4, &file_id,
                                                         &file_received),
-                                              ShareInvitationFunction(),
                                               NewContactFunction(),
                                               std::bind(&TwoStringsAndBoolSlot,
                                                         args::_1, args::_2,
                                                         &done),
                                               ContactProfilePictureFunction(),
-                                              ContactPresenceFunction()));
+                                              ContactPresenceFunction(),
+                                              ContactDeletionFunction()));
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!done && !file_received)
       Sleep(bptime::milliseconds(100));
@@ -671,13 +680,13 @@ TEST(IndependentFullTest, FUNC_PresenceOnLogIn) {
     EXPECT_EQ(kSuccess,
               test_elements1.ConnectToSignals(ChatFunction(),
                                               FileTransferFunction(),
-                                              ShareInvitationFunction(),
                                               NewContactFunction(),
                                               ContactConfirmationFunction(),
                                               ContactProfilePictureFunction(),
                                               std::bind(&PresenceSlot, args::_1,
                                                         args::_2, args::_3,
-                                                        &done)));
+                                                        &done),
+                                              ContactDeletionFunction()));
     EXPECT_EQ(kSuccess, test_elements1.CreateUser(username1, pin1, password1));
     EXPECT_EQ(kSuccess, test_elements1.CreatePublicId(public_username1));
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -694,13 +703,13 @@ TEST(IndependentFullTest, FUNC_PresenceOnLogIn) {
     EXPECT_EQ(kSuccess,
               test_elements2.ConnectToSignals(ChatFunction(),
                                               FileTransferFunction(),
-                                              ShareInvitationFunction(),
                                               NewContactFunction(),
                                               ContactConfirmationFunction(),
                                               ContactProfilePictureFunction(),
                                               std::bind(&PresenceSlot, args::_1,
                                                         args::_2, args::_3,
-                                                        &done)));
+                                                        &done),
+                                              ContactDeletionFunction()));
     EXPECT_EQ(kSuccess, test_elements2.CreateUser(username2, pin2, password2));
     EXPECT_EQ(kSuccess, test_elements2.CreatePublicId(public_username2));
     EXPECT_EQ(kSuccess, test_elements2.AddContact(public_username2,
@@ -716,13 +725,13 @@ TEST(IndependentFullTest, FUNC_PresenceOnLogIn) {
     EXPECT_EQ(kSuccess,
               test_elements1.ConnectToSignals(ChatFunction(),
                                               FileTransferFunction(),
-                                              ShareInvitationFunction(),
                                               std::bind(&TwoStringsAndBoolSlot,
                                                         args::_1, args::_2,
                                                         &done),
                                               ContactConfirmationFunction(),
                                               ContactProfilePictureFunction(),
-                                              ContactPresenceFunction()));
+                                              ContactPresenceFunction(),
+                                              ContactDeletionFunction()));
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     while (!done)
       Sleep(bptime::milliseconds(100));
@@ -739,13 +748,13 @@ TEST(IndependentFullTest, FUNC_PresenceOnLogIn) {
     EXPECT_EQ(kSuccess,
               test_elements2.ConnectToSignals(ChatFunction(),
                                               FileTransferFunction(),
-                                              ShareInvitationFunction(),
                                               NewContactFunction(),
                                               std::bind(&TwoStringsAndBoolSlot,
                                                         args::_1, args::_2,
                                                         &done),
                                               ContactProfilePictureFunction(),
-                                              ContactPresenceFunction()));
+                                              ContactPresenceFunction(),
+                                              ContactDeletionFunction()));
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!done)
       Sleep(bptime::milliseconds(100));
@@ -759,13 +768,13 @@ TEST(IndependentFullTest, FUNC_PresenceOnLogIn) {
     EXPECT_EQ(kSuccess,
               test_elements1.ConnectToSignals(ChatFunction(),
                                               FileTransferFunction(),
-                                              ShareInvitationFunction(),
                                               NewContactFunction(),
                                               ContactConfirmationFunction(),
                                               ContactProfilePictureFunction(),
                                               std::bind(&PresenceSlot, args::_1,
                                                         args::_2, args::_3,
-                                                        &done)));
+                                                        &done),
+                                              ContactDeletionFunction()));
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     EXPECT_FALSE(done);
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -778,8 +787,7 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
   std::string username1(RandomString(6)),
               pin1(CreatePin()),
               password1(RandomString(6)),
-//               public_username1(RandomAlphaNumericString(5)),
-              public_username1("public_username1"),
+              public_username1(RandomAlphaNumericString(5)),
               file_content1,
               file_content2(RandomString(900 * 1024));
   boost::system::error_code error_code;
@@ -792,13 +800,13 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
     EXPECT_EQ(kSuccess,
               test_elements1.ConnectToSignals(ChatFunction(),
                                               FileTransferFunction(),
-                                              ShareInvitationFunction(),
                                               NewContactFunction(),
                                               ContactConfirmationFunction(),
                                               ContactProfilePictureFunction(),
                                               std::bind(&PresenceSlot, args::_1,
                                                         args::_2, args::_3,
-                                                        &done)));
+                                                        &done),
+                                              ContactDeletionFunction()));
     EXPECT_EQ(kSuccess, test_elements1.CreateUser(username1, pin1, password1));
     EXPECT_EQ(kSuccess, test_elements1.CreatePublicId(public_username1));
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -807,8 +815,7 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
   std::string username2(RandomString(6)),
               pin2(CreatePin()),
               password2(RandomString(6)),
-//               public_username2(RandomAlphaNumericString(5));
-              public_username2("public_username2");
+              public_username2(RandomAlphaNumericString(5));
   DLOG(ERROR) << "\n\n\n\nCreating " << public_username2;
   {
     LifeStuff test_elements2;
@@ -816,13 +823,13 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
     EXPECT_EQ(kSuccess,
               test_elements2.ConnectToSignals(ChatFunction(),
                                               FileTransferFunction(),
-                                              ShareInvitationFunction(),
                                               NewContactFunction(),
                                               ContactConfirmationFunction(),
                                               ContactProfilePictureFunction(),
                                               std::bind(&PresenceSlot, args::_1,
                                                         args::_2, args::_3,
-                                                        &done)));
+                                                        &done),
+                                              ContactDeletionFunction()));
     EXPECT_EQ(kSuccess, test_elements2.CreateUser(username2, pin2, password2));
     EXPECT_EQ(kSuccess, test_elements2.CreatePublicId(public_username2));
     EXPECT_EQ(kSuccess, test_elements2.AddContact(public_username2,
@@ -838,13 +845,13 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
     EXPECT_EQ(kSuccess,
               test_elements1.ConnectToSignals(ChatFunction(),
                                               FileTransferFunction(),
-                                              ShareInvitationFunction(),
                                               std::bind(&TwoStringsAndBoolSlot,
                                                         args::_1, args::_2,
                                                         &done),
                                               ContactConfirmationFunction(),
                                               ContactProfilePictureFunction(),
-                                              ContactPresenceFunction()));
+                                              ContactPresenceFunction(),
+                                              ContactDeletionFunction()));
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     while (!done)
       Sleep(bptime::milliseconds(100));
@@ -861,13 +868,13 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
     EXPECT_EQ(kSuccess,
               test_elements2.ConnectToSignals(ChatFunction(),
                                               FileTransferFunction(),
-                                              ShareInvitationFunction(),
                                               NewContactFunction(),
                                               std::bind(&TwoStringsAndBoolSlot,
                                                         args::_1, args::_2,
                                                         &done),
                                               ContactProfilePictureFunction(),
-                                              ContactPresenceFunction()));
+                                              ContactPresenceFunction(),
+                                              ContactDeletionFunction()));
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!done)
       Sleep(bptime::milliseconds(100));
@@ -888,13 +895,13 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
     EXPECT_EQ(kSuccess,
               test_elements1.ConnectToSignals(ChatFunction(),
                                               FileTransferFunction(),
-                                              ShareInvitationFunction(),
                                               NewContactFunction(),
                                               ContactConfirmationFunction(),
                                               std::bind(&TwoStringsAndBoolSlot,
                                                         args::_1, args::_2,
                                                         &done),
-                                              ContactPresenceFunction()));
+                                              ContactPresenceFunction(),
+                                              ContactDeletionFunction()));
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     while (!done)
       Sleep(bptime::milliseconds(100));
@@ -905,6 +912,166 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
     EXPECT_EQ(kSuccess, test_elements1.Finalise());
+  }
+}
+
+TEST(IndependentFullTest, FUNC_RemoveContact) {
+  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
+  std::string username1(RandomString(6)),
+              pin1(CreatePin()),
+              password1(RandomString(6)),
+              public_username1(RandomAlphaNumericString(5)),
+              file_content1,
+              file_content2(RandomString(900 * 1024));
+  boost::system::error_code error_code;
+  volatile bool done;
+
+  DLOG(ERROR) << "\n\nCreating " << public_username1;
+  {
+    LifeStuff test_elements1;
+    EXPECT_EQ(kSuccess, test_elements1.Initialise(*test_dir));
+    EXPECT_EQ(kSuccess,
+              test_elements1.ConnectToSignals(ChatFunction(),
+                                              FileTransferFunction(),
+                                              NewContactFunction(),
+                                              ContactConfirmationFunction(),
+                                              ContactProfilePictureFunction(),
+                                              std::bind(&PresenceSlot, args::_1,
+                                                        args::_2, args::_3,
+                                                        &done),
+                                              ContactDeletionFunction()));
+    EXPECT_EQ(kSuccess, test_elements1.CreateUser(username1, pin1, password1));
+    EXPECT_EQ(kSuccess, test_elements1.CreatePublicId(public_username1));
+    EXPECT_EQ(kSuccess, test_elements1.LogOut());
+    EXPECT_EQ(kSuccess, test_elements1.Finalise());
+  }
+  std::string username2(RandomString(6)),
+              pin2(CreatePin()),
+              password2(RandomString(6)),
+              public_username2(RandomAlphaNumericString(5));
+  DLOG(ERROR) << "\n\n\n\nCreating " << public_username2;
+  {
+    LifeStuff test_elements2;
+    EXPECT_EQ(kSuccess, test_elements2.Initialise(*test_dir));
+    EXPECT_EQ(kSuccess,
+              test_elements2.ConnectToSignals(ChatFunction(),
+                                              FileTransferFunction(),
+                                              NewContactFunction(),
+                                              ContactConfirmationFunction(),
+                                              ContactProfilePictureFunction(),
+                                              std::bind(&PresenceSlot, args::_1,
+                                                        args::_2, args::_3,
+                                                        &done),
+                                              ContactDeletionFunction()));
+    EXPECT_EQ(kSuccess, test_elements2.CreateUser(username2, pin2, password2));
+    EXPECT_EQ(kSuccess, test_elements2.CreatePublicId(public_username2));
+    EXPECT_EQ(kSuccess, test_elements2.AddContact(public_username2,
+                                                  public_username1));
+    EXPECT_EQ(kSuccess, test_elements2.LogOut());
+    EXPECT_EQ(kSuccess, test_elements2.Finalise());
+  }
+  DLOG(ERROR) << "\n\n\n\nLoggin in " << public_username1;
+  {
+    done = false;
+    LifeStuff test_elements1;
+    EXPECT_EQ(kSuccess, test_elements1.Initialise(*test_dir));
+    EXPECT_EQ(kSuccess,
+              test_elements1.ConnectToSignals(ChatFunction(),
+                                              FileTransferFunction(),
+                                              std::bind(&TwoStringsAndBoolSlot,
+                                                        args::_1, args::_2,
+                                                        &done),
+                                              ContactConfirmationFunction(),
+                                              ContactProfilePictureFunction(),
+                                              ContactPresenceFunction(),
+                                              ContactDeletionFunction()));
+    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+    while (!done)
+      Sleep(bptime::milliseconds(100));
+    EXPECT_EQ(kSuccess, test_elements1.ConfirmContact(public_username1,
+                                                      public_username2));
+    EXPECT_EQ(kSuccess, test_elements1.LogOut());
+    EXPECT_EQ(kSuccess, test_elements1.Finalise());
+  }
+  DLOG(ERROR) << "\n\n\n\nLogging in " << public_username2;
+  {
+    done = false;
+    LifeStuff test_elements2;
+    EXPECT_EQ(kSuccess, test_elements2.Initialise(*test_dir));
+    EXPECT_EQ(kSuccess,
+              test_elements2.ConnectToSignals(ChatFunction(),
+                                              FileTransferFunction(),
+                                              NewContactFunction(),
+                                              std::bind(&TwoStringsAndBoolSlot,
+                                                        args::_1, args::_2,
+                                                        &done),
+                                              ContactProfilePictureFunction(),
+                                              ContactPresenceFunction(),
+                                              ContactDeletionFunction()));
+    EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
+    while (!done)
+      Sleep(bptime::milliseconds(100));
+
+    EXPECT_EQ(kSuccess, test_elements2.LogOut());
+    EXPECT_EQ(kSuccess, test_elements2.Finalise());
+  }
+  DLOG(ERROR) << "\n\n\n\nLogging in " << public_username1;
+  std::string removal_message("It's not me, it's you.");
+  {
+    done = false;
+    LifeStuff test_elements1;
+    EXPECT_EQ(kSuccess, test_elements1.Initialise(*test_dir));
+    EXPECT_EQ(kSuccess,
+              test_elements1.ConnectToSignals(ChatFunction(),
+                                              FileTransferFunction(),
+                                              NewContactFunction(),
+                                              ContactConfirmationFunction(),
+                                              std::bind(&TwoStringsAndBoolSlot,
+                                                        args::_1, args::_2,
+                                                        &done),
+                                              ContactPresenceFunction(),
+                                              ContactDeletionFunction()));
+    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+
+    EXPECT_EQ(kSuccess, test_elements1.RemoveContact(public_username1,
+                                                     public_username2,
+                                                     removal_message));
+    EXPECT_TRUE(test_elements1.GetContacts(public_username1).empty());
+
+    EXPECT_EQ(kSuccess, test_elements1.LogOut());
+    EXPECT_EQ(kSuccess, test_elements1.Finalise());
+  }
+  DLOG(ERROR) << "\n\n\n\nLogging in " << public_username2;
+  {
+    done = false;
+    std::string message2;
+    LifeStuff test_elements2;
+    EXPECT_EQ(kSuccess, test_elements2.Initialise(*test_dir));
+    EXPECT_EQ(kSuccess,
+              test_elements2.ConnectToSignals(ChatFunction(),
+                                              FileTransferFunction(),
+                                              NewContactFunction(),
+                                              ContactConfirmationFunction(),
+                                              ContactProfilePictureFunction(),
+                                              ContactPresenceFunction(),
+                                              std::bind(&DeleteContactSlot,
+                                                        args::_1, args::_2,
+                                                        args::_3, &message2,
+                                                        &done)));
+    DLOG(ERROR) << "beofre Login";
+    EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
+    DLOG(ERROR) << "After Login";
+    while (!done)
+      Sleep(bptime::milliseconds(100));
+
+    EXPECT_EQ(removal_message, message2);
+    bool contact_deleted(false);
+    while (!contact_deleted)
+      contact_deleted = test_elements2.GetContacts(public_username2).empty();
+    EXPECT_TRUE(contact_deleted);
+
+    EXPECT_EQ(kSuccess, test_elements2.LogOut());
+    EXPECT_EQ(kSuccess, test_elements2.Finalise());
   }
 }
 

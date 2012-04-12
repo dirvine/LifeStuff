@@ -113,6 +113,10 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
       std::bind(&MessageHandler::InformConfirmedContactOnline,
                 lifestuff_elements->message_handler, args::_1, args::_2));
 
+  lifestuff_elements->message_handler->ConnectToContactDeletionSignal(
+      std::bind(&PublicId::RemoveContactHandle,
+                lifestuff_elements->public_id, args::_1, args::_2));
+
   lifestuff_elements->base_directory = base_directory;
   lifestuff_elements->state = kInitialised;
 
@@ -122,11 +126,11 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
 int LifeStuff::ConnectToSignals(
     const ChatFunction &chat_slot,
     const FileTransferFunction &file_slot,
-    const ShareInvitationFunction &/*share_slot*/,
     const NewContactFunction &new_contact_slot,
     const ContactConfirmationFunction &confirmed_contact_slot,
     const ContactProfilePictureFunction &profile_picture_slot,
-    const ContactPresenceFunction &contact_presence_slot) {
+    const ContactPresenceFunction &contact_presence_slot,
+    const ContactDeletionFunction &contact_deletion_function) {
   if (lifestuff_elements->state != kInitialised) {
     DLOG(ERROR) << "Make sure that object is initialised";
     return kGeneralError;
@@ -141,10 +145,6 @@ int LifeStuff::ConnectToSignals(
     lifestuff_elements->message_handler->ConnectToFileTransferSignal(file_slot);
     ++connects;
   }
-//   if (share_slot) {
-//     lifestuff_elements->message_handler->ConnectToShareSignal(share_slot);
-//     ++connects;
-//   }
   if (new_contact_slot) {
     lifestuff_elements->public_id->ConnectToNewContactSignal(new_contact_slot);
     ++connects;
@@ -162,6 +162,11 @@ int LifeStuff::ConnectToSignals(
   if (contact_presence_slot) {
     lifestuff_elements->message_handler->ConnectToContactPresenceSignal(
         contact_presence_slot);
+    ++connects;
+  }
+  if (contact_deletion_function) {
+    lifestuff_elements->message_handler->ConnectToContactDeletionSignal(
+        contact_deletion_function);
     ++connects;
   }
 
@@ -422,6 +427,16 @@ int LifeStuff::RemoveContact(const std::string &my_public_id,
     DLOG(ERROR) << "Failed pre checks in RemoveContact.";
     return result;
   }
+
+  // Send message to removal
+  InboxItem inbox_item(kContactDeletion);
+  inbox_item.receiver_public_id = contact_public_id;
+  inbox_item.sender_public_id = my_public_id;
+  inbox_item.content.push_back(removal_message);
+
+  result = lifestuff_elements->message_handler->Send(my_public_id,
+                                                     contact_public_id,
+                                                     inbox_item);
 
   return lifestuff_elements->public_id->RemoveContact(my_public_id,
                                                       contact_public_id);

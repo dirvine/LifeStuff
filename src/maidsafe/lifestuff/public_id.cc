@@ -184,7 +184,8 @@ PublicId::PublicId(
       get_new_contacts_timer_(asio_service),
       check_online_contacts_timer_(asio_service),
       new_contact_signal_(new NewContactSignal),
-      contact_confirmed_signal_(new ContactConfirmedSignal) {}
+      contact_confirmed_signal_(new ContactConfirmedSignal),
+      asio_service_(asio_service) {}
 
 PublicId::~PublicId() {
   StopCheckingForNewContacts();
@@ -592,6 +593,12 @@ int PublicId::ConfirmContact(const std::string &own_public_username,
   }
 }
 
+void PublicId::RemoveContactHandle(const std::string &public_username,
+                                   const std::string &contact_name) {
+  asio_service_.post(std::bind(&PublicId::RemoveContact, this,
+                               public_username, contact_name));
+}
+
 int PublicId::RemoveContact(const std::string &public_username,
                             const std::string &contact_name) {
   if (public_username.empty() || contact_name.empty()) {
@@ -599,8 +606,8 @@ int PublicId::RemoveContact(const std::string &public_username,
     return kPublicIdEmpty;
   }
 
-  if (session_->contact_handler_map()[public_username]->TouchContact(
-               contact_name) != kSuccess)
+  if (session_->contact_handler_map()
+          [public_username]->TouchContact(contact_name) != kSuccess)
     return kLiveContactNotFound;
 
   asymm::PrivateKey old_inbox_private_key(

@@ -92,6 +92,10 @@ const std::string kLiteralOffline("kOffline");
 /// General
 typedef std::function<void(const std::string&, const std::string&)>
         TwoStringsFunction;
+typedef std::function<void(const std::string&,
+                           const std::string&,
+                           const std::string&)>
+        ThreeStringsFunction;
 typedef std::function<void(int)> VoidFunctionOneInt;  // NOLINT (Dan)
 typedef std::function<void(bool)> VoidFunctionOneBool;  // NOLINT (Dan)
 typedef std::map<std::string, int> StringIntMap;
@@ -112,10 +116,8 @@ typedef std::function<void(const std::string&,  // Own public ID
         MemberAccessLevelFunction;
 
 /// Chat
-typedef std::function<void(const std::string&,    // Own public ID
-                           const std::string&,    // Contact public ID
-                           const std::string&)>   // Message
-        ChatFunction;
+// Own public ID, Contact public ID, Message
+typedef ThreeStringsFunction ChatFunction;
 
 /// File transfer
 typedef std::function<void(const std::string&,    // Own public ID
@@ -133,6 +135,8 @@ typedef std::function<void(const std::string&,          // Own public ID
                            const std::string&,          // Contact public ID
                            ContactPresence presence)>   // online/offline
         ContactPresenceFunction;
+// Own public ID, Contact public ID, Message
+typedef ThreeStringsFunction ContactDeletionFunction;
 
 namespace args = std::placeholders;
 
