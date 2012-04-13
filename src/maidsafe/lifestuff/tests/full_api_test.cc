@@ -560,7 +560,10 @@ TEST(IndependentFullTest, FUNC_SendFile) {
                                               std::bind(&PresenceSlot, args::_1,
                                                         args::_2, args::_3,
                                                         &done),
-                                              ContactDeletionFunction()));
+                                              ContactDeletionFunction(),
+                                              ShareInvitationFunction(),
+                                              ShareDeletionFunction(),
+                                              MemberAccessLevelFunction()));
     EXPECT_EQ(kSuccess, test_elements1.CreateUser(username1, pin1, password1));
     EXPECT_EQ(kSuccess, test_elements1.CreatePublicId(public_username1));
 
@@ -591,7 +594,10 @@ TEST(IndependentFullTest, FUNC_SendFile) {
                                               std::bind(&PresenceSlot, args::_1,
                                                         args::_2, args::_3,
                                                         &done),
-                                              ContactDeletionFunction()));
+                                              ContactDeletionFunction(),
+                                              ShareInvitationFunction(),
+                                              ShareDeletionFunction(),
+                                              MemberAccessLevelFunction()));
     EXPECT_EQ(kSuccess, test_elements2.CreateUser(username2, pin2, password2));
     EXPECT_EQ(kSuccess, test_elements2.CreatePublicId(public_username2));
     EXPECT_EQ(kSuccess, test_elements2.AddContact(public_username2,
@@ -612,7 +618,10 @@ TEST(IndependentFullTest, FUNC_SendFile) {
                                               ContactConfirmationFunction(),
                                               ContactProfilePictureFunction(),
                                               ContactPresenceFunction(),
-                                              ContactDeletionFunction()));
+                                              ContactDeletionFunction(),
+                                              ShareInvitationFunction(),
+                                              ShareDeletionFunction(),
+                                              MemberAccessLevelFunction()));
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     while (!done)
       Sleep(bptime::milliseconds(100));
@@ -647,7 +656,10 @@ TEST(IndependentFullTest, FUNC_SendFile) {
                                                         &done),
                                               ContactProfilePictureFunction(),
                                               ContactPresenceFunction(),
-                                              ContactDeletionFunction()));
+                                              ContactDeletionFunction(),
+                                              ShareInvitationFunction(),
+                                              ShareDeletionFunction(),
+                                              MemberAccessLevelFunction()));
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!done && !file_received)
       Sleep(bptime::milliseconds(100));
@@ -686,7 +698,10 @@ TEST(IndependentFullTest, FUNC_PresenceOnLogIn) {
                                               std::bind(&PresenceSlot, args::_1,
                                                         args::_2, args::_3,
                                                         &done),
-                                              ContactDeletionFunction()));
+                                              ContactDeletionFunction(),
+                                              ShareInvitationFunction(),
+                                              ShareDeletionFunction(),
+                                              MemberAccessLevelFunction()));
     EXPECT_EQ(kSuccess, test_elements1.CreateUser(username1, pin1, password1));
     EXPECT_EQ(kSuccess, test_elements1.CreatePublicId(public_username1));
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -709,7 +724,10 @@ TEST(IndependentFullTest, FUNC_PresenceOnLogIn) {
                                               std::bind(&PresenceSlot, args::_1,
                                                         args::_2, args::_3,
                                                         &done),
-                                              ContactDeletionFunction()));
+                                              ContactDeletionFunction(),
+                                              ShareInvitationFunction(),
+                                              ShareDeletionFunction(),
+                                              MemberAccessLevelFunction()));
     EXPECT_EQ(kSuccess, test_elements2.CreateUser(username2, pin2, password2));
     EXPECT_EQ(kSuccess, test_elements2.CreatePublicId(public_username2));
     EXPECT_EQ(kSuccess, test_elements2.AddContact(public_username2,
@@ -731,7 +749,10 @@ TEST(IndependentFullTest, FUNC_PresenceOnLogIn) {
                                               ContactConfirmationFunction(),
                                               ContactProfilePictureFunction(),
                                               ContactPresenceFunction(),
-                                              ContactDeletionFunction()));
+                                              ContactDeletionFunction(),
+                                              ShareInvitationFunction(),
+                                              ShareDeletionFunction(),
+                                              MemberAccessLevelFunction()));
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     while (!done)
       Sleep(bptime::milliseconds(100));
@@ -754,7 +775,10 @@ TEST(IndependentFullTest, FUNC_PresenceOnLogIn) {
                                                         &done),
                                               ContactProfilePictureFunction(),
                                               ContactPresenceFunction(),
-                                              ContactDeletionFunction()));
+                                              ContactDeletionFunction(),
+                                              ShareInvitationFunction(),
+                                              ShareDeletionFunction(),
+                                              MemberAccessLevelFunction()));
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!done)
       Sleep(bptime::milliseconds(100));
@@ -774,7 +798,10 @@ TEST(IndependentFullTest, FUNC_PresenceOnLogIn) {
                                               std::bind(&PresenceSlot, args::_1,
                                                         args::_2, args::_3,
                                                         &done),
-                                              ContactDeletionFunction()));
+                                              ContactDeletionFunction(),
+                                              ShareInvitationFunction(),
+                                              ShareDeletionFunction(),
+                                              MemberAccessLevelFunction()));
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     EXPECT_FALSE(done);
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -806,7 +833,10 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
                                               std::bind(&PresenceSlot, args::_1,
                                                         args::_2, args::_3,
                                                         &done),
-                                              ContactDeletionFunction()));
+                                              ContactDeletionFunction(),
+                                              ShareInvitationFunction(),
+                                              ShareDeletionFunction(),
+                                              MemberAccessLevelFunction()));
     EXPECT_EQ(kSuccess, test_elements1.CreateUser(username1, pin1, password1));
     EXPECT_EQ(kSuccess, test_elements1.CreatePublicId(public_username1));
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -829,7 +859,10 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
                                               std::bind(&PresenceSlot, args::_1,
                                                         args::_2, args::_3,
                                                         &done),
-                                              ContactDeletionFunction()));
+                                              ContactDeletionFunction(),
+                                              ShareInvitationFunction(),
+                                              ShareDeletionFunction(),
+                                              MemberAccessLevelFunction()));
     EXPECT_EQ(kSuccess, test_elements2.CreateUser(username2, pin2, password2));
     EXPECT_EQ(kSuccess, test_elements2.CreatePublicId(public_username2));
     EXPECT_EQ(kSuccess, test_elements2.AddContact(public_username2,
@@ -851,7 +884,10 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
                                               ContactConfirmationFunction(),
                                               ContactProfilePictureFunction(),
                                               ContactPresenceFunction(),
-                                              ContactDeletionFunction()));
+                                              ContactDeletionFunction(),
+                                              ShareInvitationFunction(),
+                                              ShareDeletionFunction(),
+                                              MemberAccessLevelFunction()));
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     while (!done)
       Sleep(bptime::milliseconds(100));
@@ -874,7 +910,10 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
                                                         &done),
                                               ContactProfilePictureFunction(),
                                               ContactPresenceFunction(),
-                                              ContactDeletionFunction()));
+                                              ContactDeletionFunction(),
+                                              ShareInvitationFunction(),
+                                              ShareDeletionFunction(),
+                                              MemberAccessLevelFunction()));
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!done)
       Sleep(bptime::milliseconds(100));
@@ -901,7 +940,10 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
                                                         args::_1, args::_2,
                                                         &done),
                                               ContactPresenceFunction(),
-                                              ContactDeletionFunction()));
+                                              ContactDeletionFunction(),
+                                              ShareInvitationFunction(),
+                                              ShareDeletionFunction(),
+                                              MemberAccessLevelFunction()));
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     while (!done)
       Sleep(bptime::milliseconds(100));
@@ -939,7 +981,10 @@ TEST(IndependentFullTest, FUNC_RemoveContact) {
                                               std::bind(&PresenceSlot, args::_1,
                                                         args::_2, args::_3,
                                                         &done),
-                                              ContactDeletionFunction()));
+                                              ContactDeletionFunction(),
+                                              ShareInvitationFunction(),
+                                              ShareDeletionFunction(),
+                                              MemberAccessLevelFunction()));
     EXPECT_EQ(kSuccess, test_elements1.CreateUser(username1, pin1, password1));
     EXPECT_EQ(kSuccess, test_elements1.CreatePublicId(public_username1));
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -962,7 +1007,10 @@ TEST(IndependentFullTest, FUNC_RemoveContact) {
                                               std::bind(&PresenceSlot, args::_1,
                                                         args::_2, args::_3,
                                                         &done),
-                                              ContactDeletionFunction()));
+                                              ContactDeletionFunction(),
+                                              ShareInvitationFunction(),
+                                              ShareDeletionFunction(),
+                                              MemberAccessLevelFunction()));
     EXPECT_EQ(kSuccess, test_elements2.CreateUser(username2, pin2, password2));
     EXPECT_EQ(kSuccess, test_elements2.CreatePublicId(public_username2));
     EXPECT_EQ(kSuccess, test_elements2.AddContact(public_username2,
@@ -984,7 +1032,10 @@ TEST(IndependentFullTest, FUNC_RemoveContact) {
                                               ContactConfirmationFunction(),
                                               ContactProfilePictureFunction(),
                                               ContactPresenceFunction(),
-                                              ContactDeletionFunction()));
+                                              ContactDeletionFunction(),
+                                              ShareInvitationFunction(),
+                                              ShareDeletionFunction(),
+                                              MemberAccessLevelFunction()));
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     while (!done)
       Sleep(bptime::milliseconds(100));
@@ -1007,7 +1058,10 @@ TEST(IndependentFullTest, FUNC_RemoveContact) {
                                                         &done),
                                               ContactProfilePictureFunction(),
                                               ContactPresenceFunction(),
-                                              ContactDeletionFunction()));
+                                              ContactDeletionFunction(),
+                                              ShareInvitationFunction(),
+                                              ShareDeletionFunction(),
+                                              MemberAccessLevelFunction()));
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!done)
       Sleep(bptime::milliseconds(100));
@@ -1030,7 +1084,10 @@ TEST(IndependentFullTest, FUNC_RemoveContact) {
                                                         args::_1, args::_2,
                                                         &done),
                                               ContactPresenceFunction(),
-                                              ContactDeletionFunction()));
+                                              ContactDeletionFunction(),
+                                              ShareInvitationFunction(),
+                                              ShareDeletionFunction(),
+                                              MemberAccessLevelFunction()));
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
 
     EXPECT_EQ(kSuccess, test_elements1.RemoveContact(public_username1,
@@ -1057,7 +1114,10 @@ TEST(IndependentFullTest, FUNC_RemoveContact) {
                                               std::bind(&DeleteContactSlot,
                                                         args::_1, args::_2,
                                                         args::_3, &message2,
-                                                        &done)));
+                                                        &done),
+                                              ShareInvitationFunction(),
+                                              ShareDeletionFunction(),
+                                              MemberAccessLevelFunction()));
     DLOG(ERROR) << "beofre Login";
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     DLOG(ERROR) << "After Login";

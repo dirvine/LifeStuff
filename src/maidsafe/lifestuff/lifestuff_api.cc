@@ -130,7 +130,10 @@ int LifeStuff::ConnectToSignals(
     const ContactConfirmationFunction &confirmed_contact_slot,
     const ContactProfilePictureFunction &profile_picture_slot,
     const ContactPresenceFunction &contact_presence_slot,
-    const ContactDeletionFunction &contact_deletion_function) {
+    const ContactDeletionFunction &contact_deletion_function,
+    const ShareInvitationFunction &share_invitation_function,
+    const ShareDeletionFunction &share_deletion_function,
+    const MemberAccessLevelFunction &access_level_function) {
   if (lifestuff_elements->state != kInitialised) {
     DLOG(ERROR) << "Make sure that object is initialised";
     return kGeneralError;
