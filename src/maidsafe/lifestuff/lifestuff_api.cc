@@ -419,7 +419,7 @@ int LifeStuff::DeclineContact(const std::string &my_public_id,
 
 int LifeStuff::RemoveContact(const std::string &my_public_id,
                              const std::string &contact_public_id,
-                             const std::string /*&removal_message*/) {
+                             const std::string &removal_message) {
   int result(PreContactChecks(lifestuff_elements->state,
                               my_public_id,
                               lifestuff_elements->session));

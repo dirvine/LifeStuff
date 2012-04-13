@@ -81,7 +81,7 @@ class LifeStuff {
                      const std::string &contact_public_id);
   int RemoveContact(const std::string &my_public_id,
                     const std::string &contact_public_id,
-                    const std::string /*&removal_message*/);
+                    const std::string &removal_message);
   int ChangeProfilePicture(const std::string &my_public_id,
                            const std::string &profile_picture_contents);
   std::string GetOwnProfilePicture(const std::string &my_public_id);
