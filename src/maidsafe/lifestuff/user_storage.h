@@ -98,8 +98,9 @@ class UserStorage {
   // ****************************** Shares *************************************
   int CreateShare(const std::string &sender_public_username,
                   const fs::path &absolute_path,
-                  const std::map<std::string, bool> &contacts,
-                  std::string *share_id_result = nullptr);
+                  const StringIntMap &contacts,
+                  StringIntMap *contacts_results = nullptr);
+  int GetAllShares(StringIntMap *shares_names);
   int InsertShare(const fs::path &absolute_path,
                   const std::string &share_id,
                   const std::string &directory_id,
@@ -114,9 +115,10 @@ class UserStorage {
                   const asymm::Keys *new_key_ring);
   int AddShareUsers(const std::string &sender_public_username,
                     const fs::path &absolute_path,
-                    const std::map<std::string, bool> &contacts);
+                    const StringIntMap &contacts,
+                    StringIntMap *contacts_results = nullptr);
   int GetAllShareUsers(const fs::path &absolute_path,
-                       std::map<std::string, bool> *all_share_users) const;
+                       StringIntMap *all_share_users) const;
   int RemoveShareUsers(const std::string &sender_public_username,
                        const fs::path &absolute_path,
                        const std::vector<std::string> &user_ids);
@@ -155,12 +157,13 @@ class UserStorage {
   template<typename Operation>
   int InformContactsOperation(
       const std::string &sender_public_username,
-      const std::map<std::string, bool> &contacts,
+      const StringIntMap &contacts,
       const std::string &share_id,
       const std::string &absolute_path = "",
       const std::string &directory_id = "",
       const asymm::Keys &key_ring = asymm::Keys(),
-      const std::string &new_share_id = "");
+      const std::string &new_share_id = "",
+      StringIntMap *contacts_results = nullptr);
   pcs::RemoteChunkStore::ValidationData PopulateValidationData(
       const asymm::Keys &key_ring);
 

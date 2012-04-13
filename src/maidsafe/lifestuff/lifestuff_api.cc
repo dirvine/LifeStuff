@@ -414,7 +414,7 @@ int LifeStuff::DeclineContact(const std::string &my_public_id,
 
 int LifeStuff::RemoveContact(const std::string &my_public_id,
                              const std::string &contact_public_id,
-                             const std::string &removal_message) {
+                             const std::string /*&removal_message*/) {
   int result(PreContactChecks(lifestuff_elements->state,
                               my_public_id,
                               lifestuff_elements->session));
@@ -714,6 +714,188 @@ int LifeStuff::DeleteHiddenFile(const fs::path &absolute_path) {
   }
 
   return lifestuff_elements->user_storage->DeleteHiddenFile(absolute_path);
+}
+
+int LifeStuff::CreatePrivateShareFromExistingDirectory(
+      const std::string &my_public_id,
+      const fs::path &directory_in_lifestuff_drive,
+      const StringIntMap &contacts,
+      std::string *share_name,
+      StringIntMap *results) {
+  BOOST_ASSERT(share_name);
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks in "
+                << "CreatePrivateShareFromExistingDirectory.";
+    return result;
+  }
+
+  *share_name =  directory_in_lifestuff_drive.filename().string();
+  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+                     fs::path("/").make_preferred() / (*share_name));
+  boost::system::error_code error_code;
+  if (fs::exists(share_dir, error_code)) {
+    // Drive Create Share method can only create a share from an existing folder
+    result = CreateEmptyPrivateShare(my_public_id,
+                                     contacts, share_name, results);
+    if (result != kSuccess)
+      return result;
+    return CopyDir(lifestuff_elements->user_storage->mount_dir() /
+                      fs::path("/").make_preferred() /
+                      directory_in_lifestuff_drive,
+                   lifestuff_elements->user_storage->mount_dir() /
+                        fs::path("/").make_preferred() / (*share_name));
+  } else {
+    return lifestuff_elements->user_storage->CreateShare(my_public_id,
+              share_dir, contacts, results);
+  }
+}
+
+int LifeStuff::CreateEmptyPrivateShare(
+      const std::string &my_public_id,
+      const StringIntMap &contacts,
+      std::string *share_name,
+      StringIntMap *results) {
+  BOOST_ASSERT(share_name);
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks in CreateEmptyPrivateShare.";
+    return result;
+  }
+
+  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+                     fs::path("/").make_preferred() / (*share_name));
+  boost::system::error_code error_code;
+  int index(0);
+  // TODO: shall use function via drive to test the existence of the directory
+  while (fs::exists(share_dir, error_code)) {
+    share_dir = lifestuff_elements->user_storage->mount_dir() /
+                     fs::path("/").make_preferred() /
+                     ((*share_name) + "_" + IntToString(index));
+    ++index;
+  }
+  fs::create_directory(share_dir, error_code);
+  if (error_code) {
+    DLOG(ERROR) << "Failed creating My Stuff: " << error_code.message();
+    return kGeneralError;
+  }
+  *share_name = share_dir.filename().string();
+
+  return lifestuff_elements->user_storage->CreateShare(my_public_id,
+            share_dir, contacts, results);
+}
+
+int LifeStuff::GetPrivateShareList(const std::string &my_public_id,
+                                   StringIntMap *shares_names) {
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks in GetPrivateShareList.";
+    return result;
+  }
+
+  return lifestuff_elements->user_storage->GetAllShares(shares_names);
+}
+
+int LifeStuff::GetPrivateShareMemebers(const std::string &my_public_id,
+                                       const std::string &share_name,
+                                       StringIntMap *shares_members) {
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks in GetPrivateShareMemebers.";
+    return result;
+  }
+  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+                     fs::path("/").make_preferred() / share_name);
+  return lifestuff_elements->user_storage->GetAllShareUsers(share_dir,
+                                                            shares_members);
+}
+
+int LifeStuff::GetPrivateSharesIncludingMember(const std::string &my_public_id,
+        const std::string &contact_public_id,
+        std::vector<std::string> *shares_names) {
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks in GetPrivateShareList.";
+    return result;
+  }
+
+  StringIntMap all_shares_names;
+  result = lifestuff_elements->user_storage->GetAllShares(&all_shares_names);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed getting all shares in "
+                << "GetPrivateSharesIncludingMember.";
+    return result;
+  }
+
+  for (auto it = all_shares_names.begin(); it != all_shares_names.end(); ++it) {
+    StringIntMap share_members;
+    fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+                      fs::path("/").make_preferred() / (*it).first);
+    result = lifestuff_elements->user_storage->GetAllShareUsers(share_dir,
+                                                  &share_members);
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed to get members for " << share_dir.string();
+    } else {
+      std::vector<std::string> member_ids;
+      for (auto itr = share_members.begin();
+           itr != share_members.end(); ++itr)
+        member_ids.push_back((*itr).first);
+      auto itr(std::find(member_ids.begin(), member_ids.end(),
+                         contact_public_id));
+      if (itr != member_ids.end())
+        shares_names->push_back((*it).first);
+    }
+  }
+  return kSuccess;
+}
+
+int LifeStuff::CopyDir(const fs::path& source, const fs::path& dest) {
+  try {
+    // Check whether the function call is valid
+    if(!fs::exists(source) || !fs::is_directory(source)) {
+      DLOG(ERROR) << "Source directory " << source.string()
+                  << " does not exist or is not a directory.";
+      return kGeneralError;
+    }
+    if(fs::exists(dest)) {
+      DLOG(ERROR) << "Destination directory " << dest.string()
+                  << " already exists.";
+      return kGeneralError;
+    }
+  }
+  catch(fs::filesystem_error& e) {
+    DLOG(ERROR) << e.what();
+    return kGeneralError;
+  }
+  // Iterate through the source directory
+  for(fs::directory_iterator it(source);
+      it != fs::directory_iterator(); it++) {
+    try {
+      fs::path current(it->path());
+      if(fs::is_directory(current)) {
+        // Found directory: Recursion
+        CopyDir(current, dest / current.filename());
+      }
+      else {
+        // Found file: Copy
+        fs::copy_file(current, fs::path(dest / current.filename()));
+      }
+    }
+    catch(fs::filesystem_error& e) {
+      DLOG(ERROR) << e.what();
+    }
+  }
+  return kSuccess;
 }
 
 ///

@@ -81,7 +81,7 @@ class LifeStuff {
                      const std::string &contact_public_id);
   int RemoveContact(const std::string &my_public_id,
                     const std::string &contact_public_id,
-                    const std::string &removal_message);
+                    const std::string /*&removal_message*/);
   int ChangeProfilePicture(const std::string &my_public_id,
                            const std::string &profile_picture_contents);
   std::string GetOwnProfilePicture(const std::string &my_public_id);
@@ -118,10 +118,11 @@ class LifeStuff {
       const std::string &my_public_id,
       const fs::path &directory_in_lifestuff_drive,
       const StringIntMap &contacts,
+      std::string *share_name,
       StringIntMap *results);
   int CreateEmptyPrivateShare(const std::string &my_public_id,
-                              const std::string &share_name,
                               const StringIntMap &contacts,
+                              std::string *share_name,
                               StringIntMap *results);
   int GetPrivateShareList(const std::string &my_public_id,
                           StringIntMap *shares_names);
@@ -135,19 +136,10 @@ class LifeStuff {
   // Should create a directory adapting to other possible shares
   int AcceptPrivateShareInvitation(const std::string &share_name,
                                    const std::string &my_public_id,
+                                   const std::string &contact_public_id,
                                    const std::string &share_id);
   int RejectPrivateShareInvitation(const std::string &my_public_id,
                                    const std::string &share_id);
-  // Only for owners
-  int AddPrivateShareMembers(const std::string &my_public_id,
-                             const StringIntMap &public_ids,
-                             const std::string &share_name,
-                             StringIntMap *results);
-  // Only for owners
-  int RemovePrivateShareMembers(const std::string &my_public_id,
-                                const std::vector<std::string> &public_ids,
-                                const std::string &share_name,
-                                StringIntMap *results);
   // Only for owners
   int EditPrivateShareMembers(const std::string &my_public_id,
                               const StringIntMap &public_ids,
@@ -165,6 +157,8 @@ class LifeStuff {
   fs::path mount_path() const;
 
  private:
+  int CopyDir(const fs::path& source, const fs::path& dest);
+
   struct Elements;
   std::shared_ptr<Elements> lifestuff_elements;
 };
