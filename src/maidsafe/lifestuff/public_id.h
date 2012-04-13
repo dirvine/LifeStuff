@@ -88,8 +88,11 @@ class PublicId {
                      bool confirm = true);
   // Remove a contact from current contact list, and inform other contacts the
   // new MMID
+  void RemoveContactHandle(const std::string &public_username,
+                           const std::string &contact_name);
   int RemoveContact(const std::string &public_username,
                     const std::string &contact_name);
+
 
   // Signals
   bs2::connection ConnectToNewContactSignal(
@@ -134,6 +137,7 @@ class PublicId {
   ba::deadline_timer get_new_contacts_timer_, check_online_contacts_timer_;
   NewContactSignalPtr new_contact_signal_;
   ContactConfirmedSignalPtr contact_confirmed_signal_;
+  boost::asio::io_service &asio_service_;
 };
 
 }  // namespace lifestuff

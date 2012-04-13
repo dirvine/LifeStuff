@@ -75,9 +75,10 @@ MessageHandler::MessageHandler(
       share_signal_(new NewItemSignal),
       contact_presence_signal_(new ContactPresenceSignal),
       contact_profile_picture_signal_(new ContactProfilePictureSignal),
+      contact_deletion_signal_(new ContactDeletionSignal),
+      parse_and_save_data_map_signal_(new ParseAndSaveDataMapSignal),
       received_messages_(),
       asio_service_(asio_service),
-      parse_and_save_data_map_signal_(new ParseAndSaveDataMapSignal),
       start_up_done_(false) {}
 
 MessageHandler::~MessageHandler() {
@@ -309,11 +310,11 @@ void MessageHandler::ProcessRetrieved(const passport::SelectableIdData &data,
                     break;
         case kFileTransfer: SignalFileTransfer(inbox_item);
                             break;
-        case kSharedDirectory: (*share_signal_)(inbox_item);
-                               break;
         case kContactProfilePicture: ContactProfilePictureSlot(inbox_item);
                                      break;
         case kContactPresence: ContactPresenceSlot(inbox_item);
+                               break;
+        case kContactDeletion: ContactDeletionSlot(inbox_item);
                                break;
       }
     }
@@ -332,7 +333,7 @@ bool MessageHandler::ProtobufToInbox(const Message &message,
     return false;
   }
 
-  if (message.type() > kContactProfilePicture) {
+  if (message.type() > kMaxInboxItemType) {
     DLOG(WARNING) << "Message type out of range.";
     return false;
   }
@@ -590,6 +591,18 @@ void MessageHandler::SendEveryone(const InboxItem &message) {
   }
 }
 
+void MessageHandler::ContactDeletionSlot(const InboxItem &deletion_item) {
+  DLOG(ERROR) << "MessageHandler::ContactDeletionSlot";
+  std::string my_public_id(deletion_item.receiver_public_id),
+              contact_public_id(deletion_item.sender_public_id);
+  // PublicId - To run RemoveContact
+  // UserStorage - To remove contact from all shares
+  // UI - To do whatever it is they do out there, in that crazy world
+  (*contact_deletion_signal_)(my_public_id,
+                              contact_public_id,
+                              deletion_item.content.at(0));
+}
+
 bs2::connection MessageHandler::ConnectToChatSignal(
     const ChatFunction &function) {
   return chat_signal_->connect(function);
@@ -600,11 +613,6 @@ bs2::connection MessageHandler::ConnectToFileTransferSignal(
   return file_transfer_signal_->connect(function);
 }
 
-// bs2::connection MessageHandler::ConnectToShareSignal(
-//     const ShareFunction &function) {
-//   return share_signal_->connect(function);
-// }
-//
 bs2::connection MessageHandler::ConnectToContactPresenceSignal(
     const ContactPresenceFunction &function) {
   return contact_presence_signal_->connect(function);
@@ -618,6 +626,11 @@ bs2::connection MessageHandler::ConnectToContactProfilePictureSignal(
 bs2::connection MessageHandler::ConnectToParseAndSaveDataMapSignal(
     const ParseAndSaveDataMapSignal::slot_type &function) {
   return parse_and_save_data_map_signal_->connect(function);
+}
+
+bs2::connection MessageHandler::ConnectToContactDeletionSignal(
+    const ContactDeletionFunction &function) {
+  return contact_deletion_signal_->connect(function);
 }
 
 }  // namespace lifestuff

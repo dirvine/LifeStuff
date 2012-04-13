@@ -806,10 +806,10 @@ int UserStorage::InformContactsOperation(
   InboxItem admin_message, non_admin_message;
   std::string public_key, private_key;
 
-  admin_message.item_type = kSharedDirectory;
+//   admin_message.item_type = kSharedDirectory;
   admin_message.sender_public_id = sender_public_username;
   admin_message.content.push_back(share_id);
-  non_admin_message.item_type = kSharedDirectory;
+//   non_admin_message.item_type = kSharedDirectory;
   non_admin_message.sender_public_id = sender_public_username;
   non_admin_message.content.push_back(share_id);
   AddMessageDetails<Operation>()(absolute_path,

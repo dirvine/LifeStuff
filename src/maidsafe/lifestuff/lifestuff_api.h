@@ -55,11 +55,11 @@ class LifeStuff {
   int ConnectToSignals(
       const ChatFunction &chat_slot,
       const FileTransferFunction &file_slot,
-      const ShareInvitationFunction &share_slot,
       const NewContactFunction &new_contact_slot,
       const ContactConfirmationFunction &confirmed_contact_slot,
       const ContactProfilePictureFunction &profile_picture_slot,
-      const ContactPresenceFunction &contact_presence_slot);
+      const ContactPresenceFunction &contact_presence_slot,
+      const ContactDeletionFunction &contact_deletion_function);
   int Finalise();
 
   /// Credential operations

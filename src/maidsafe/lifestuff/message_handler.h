@@ -70,6 +70,11 @@ class MessageHandler {
 
   typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
                            const std::string&,
+                           const std::string&)> ContactDeletionSignal;
+  typedef std::shared_ptr<ContactDeletionSignal> ContactDeletionSignalPtr;
+
+  typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
+                           const std::string&,
                            const std::string&,
                            const std::string&)> FileTransferSignal;
   typedef std::shared_ptr<FileTransferSignal> FileTransferSignalPtr;
@@ -113,13 +118,14 @@ class MessageHandler {
   bs2::connection ConnectToChatSignal(const ChatFunction &function);
   bs2::connection ConnectToFileTransferSignal(
       const FileTransferFunction &function);
-//   bs2::connection ConnectToShareSignal(const ShareFunction &function);
   bs2::connection ConnectToContactPresenceSignal(
       const ContactPresenceFunction &function);
   bs2::connection ConnectToContactProfilePictureSignal(
       const ContactProfilePictureFunction &function);
   bs2::connection ConnectToParseAndSaveDataMapSignal(
       const ParseAndSaveDataMapSignal::slot_type &function);
+  bs2::connection ConnectToContactDeletionSignal(
+      const ContactDeletionFunction &function);
 
  private:
   MessageHandler(const MessageHandler&);
@@ -145,6 +151,7 @@ class MessageHandler {
   void ContentsDontParseAsDataMap(const std::string& serialised_dm,
                                   std::string* data_map);
   void ProcessPresenceMessages();
+  void ContactDeletionSlot(const InboxItem &deletion_item);
 
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<Session> session_;
@@ -154,9 +161,10 @@ class MessageHandler {
   NewItemSignalPtr share_signal_;
   ContactPresenceSignalPtr contact_presence_signal_;
   ContactProfilePictureSignalPtr contact_profile_picture_signal_;
+  ContactDeletionSignalPtr contact_deletion_signal_;
+  ParseAndSaveDataMapSignalPtr parse_and_save_data_map_signal_;
   ReceivedMessagesMap received_messages_;
   ba::io_service &asio_service_;  // NOLINT (Dan)
-  ParseAndSaveDataMapSignalPtr parse_and_save_data_map_signal_;
   bool start_up_done_;
 };
 
