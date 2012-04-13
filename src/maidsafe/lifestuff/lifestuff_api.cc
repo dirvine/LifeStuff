@@ -874,43 +874,115 @@ int LifeStuff::GetPrivateSharesIncludingMember(const std::string &my_public_id,
   return kSuccess;
 }
 
-int LifeStuff::CopyDir(const fs::path& source, const fs::path& dest) {
-  try {
-    // Check whether the function call is valid
-    if(!fs::exists(source) || !fs::is_directory(source)) {
-      DLOG(ERROR) << "Source directory " << source.string()
-                  << " does not exist or is not a directory.";
-      return kGeneralError;
-    }
-    if(fs::exists(dest)) {
-      DLOG(ERROR) << "Destination directory " << dest.string()
-                  << " already exists.";
-      return kGeneralError;
+int LifeStuff::RejectPrivateShareInvitation(const std::string &my_public_id,
+                                            const std::string &share_id) {
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks in GetPrivateShareList.";
+    return result;
+  }
+
+  fs::path hidden_file(mount_path() /
+                       fs::path("/").make_preferred() /
+                       std::string(share_id + drive::kMsHidden.string()));
+  return lifestuff_elements->user_storage->DeleteHiddenFile(hidden_file);
+}
+
+int LifeStuff::EditPrivateShareMembers(const std::string &my_public_id,
+                            const StringIntMap &public_ids,
+                            const std::string &share_name,
+                            StringIntMap *results) {
+  StringIntMap share_members;
+  int result(GetPrivateShareMemebers(my_public_id, share_name, &share_members));
+  if (result != kSuccess)
+    return result;
+
+  std::vector<std::string> member_ids;
+  for (auto it = share_members.begin(); it != share_members.end(); ++it)
+    member_ids.push_back((*it).first);
+
+  StringIntMap members_to_add, members_to_update;
+  std::vector<std::string> members_to_remove;
+  for (auto it = public_ids.begin(); it != public_ids.end(); ++it) {
+    auto itr(std::find(member_ids.begin(), member_ids.end(), (*it).first));
+    if (itr != member_ids.end()) {
+      // -1 indicates removing the existing member
+      // other value indicates an updating
+      if ((*it).second == -1)
+        members_to_remove.push_back(*itr);
+      else
+        members_to_update.insert(*it);
+    } else {
+      // a non-existing user indicates an adding
+      members_to_add.insert(*it);
     }
   }
-  catch(fs::filesystem_error& e) {
-    DLOG(ERROR) << e.what();
-    return kGeneralError;
+  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+                    fs::path("/").make_preferred() / share_name);
+  // Add new users
+  if (!members_to_add.empty()) {
+    StringIntMap add_users_results;
+    lifestuff_elements->user_storage->AddShareUsers(my_public_id,
+                                                    share_dir,
+                                                    members_to_add,
+                                                    &add_users_results);
+    results->insert(add_users_results.begin(), add_users_results.end());
   }
-  // Iterate through the source directory
-  for(fs::directory_iterator it(source);
-      it != fs::directory_iterator(); it++) {
-    try {
-      fs::path current(it->path());
-      if(fs::is_directory(current)) {
-        // Found directory: Recursion
-        CopyDir(current, dest / current.filename());
-      }
-      else {
-        // Found file: Copy
-        fs::copy_file(current, fs::path(dest / current.filename()));
-      }
-    }
-    catch(fs::filesystem_error& e) {
-      DLOG(ERROR) << e.what();
+  // Remove users
+  if (!members_to_remove.empty()) {
+    result = lifestuff_elements->user_storage->RemoveShareUsers(
+                my_public_id, share_dir, members_to_remove);
+    if (result == kSuccess)
+      for (auto it = members_to_remove.begin();
+           it != members_to_remove.end(); ++it)
+        results->insert(std::make_pair(*it, kSuccess));
+    else
+      for (auto it = members_to_remove.begin();
+           it != members_to_remove.end(); ++it)
+        results->insert(std::make_pair(*it, result));
+  }
+  // Update users
+  if (!members_to_update.empty()) {
+    for (auto it = members_to_update.begin();
+              it != members_to_update.end(); ++it) {
+      result = lifestuff_elements->user_storage->SetShareUsersRights(
+                  my_public_id, share_dir, (*it).first, (*it).second);
+      results->insert(std::make_pair((*it).first, result));
     }
   }
   return kSuccess;
+}
+
+int LifeStuff::DeletePrivateShare(const std::string &my_public_id,
+                                  const std::string &share_name) {
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks in GetPrivateShareList.";
+    return result;
+  }
+
+  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+                     fs::path("/").make_preferred() / share_name);
+  return lifestuff_elements->user_storage->StopShare(my_public_id, share_dir);
+}
+
+int LifeStuff::LeavePrivateShare(const std::string &my_public_id,
+                                 const std::string &share_name) {
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks in GetPrivateShareList.";
+    return result;
+  }
+
+  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+                     fs::path("/").make_preferred() / share_name);
+  return lifestuff_elements->user_storage->RemoveShare(share_dir);
 }
 
 ///

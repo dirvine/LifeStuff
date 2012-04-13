@@ -100,6 +100,8 @@ std::string ComposeSignaturePacketValue(
 std::shared_ptr<encrypt::DataMap> ParseSerialisedDataMap(
     const std::string &serialised_data_map);
 
+int CopyDir(const fs::path& source, const fs::path& dest);
+
 #ifndef LOCAL_TARGETS_ONLY
 int RetrieveBootstrapContacts(const fs::path &download_dir,
                               std::vector<dht::Contact> *bootstrap_contacts);

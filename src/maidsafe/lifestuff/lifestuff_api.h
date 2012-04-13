@@ -134,7 +134,7 @@ class LifeStuff {
                                       const std::string &contact_public_id,
                                       std::vector<std::string> *shares_names);
   // Should create a directory adapting to other possible shares
-  int AcceptPrivateShareInvitation(const std::string &share_name,
+  int AcceptPrivateShareInvitation(std::string *share_name,
                                    const std::string &my_public_id,
                                    const std::string &contact_public_id,
                                    const std::string &share_id);
@@ -157,8 +157,6 @@ class LifeStuff {
   fs::path mount_path() const;
 
  private:
-  int CopyDir(const fs::path& source, const fs::path& dest);
-
   struct Elements;
   std::shared_ptr<Elements> lifestuff_elements;
 };

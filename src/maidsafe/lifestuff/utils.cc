@@ -232,6 +232,45 @@ encrypt::DataMapPtr ParseSerialisedDataMap(
   return data_map;
 }
 
+int CopyDir(const fs::path& source, const fs::path& dest) {
+  try {
+    // Check whether the function call is valid
+    if(!fs::exists(source) || !fs::is_directory(source)) {
+      DLOG(ERROR) << "Source directory " << source.string()
+                  << " does not exist or is not a directory.";
+      return kGeneralError;
+    }
+    if(fs::exists(dest)) {
+      DLOG(ERROR) << "Destination directory " << dest.string()
+                  << " already exists.";
+      return kGeneralError;
+    }
+  }
+  catch(fs::filesystem_error& e) {
+    DLOG(ERROR) << e.what();
+    return kGeneralError;
+  }
+  // Iterate through the source directory
+  for(fs::directory_iterator it(source);
+      it != fs::directory_iterator(); it++) {
+    try {
+      fs::path current(it->path());
+      if(fs::is_directory(current)) {
+        // Found directory: Recursion
+        CopyDir(current, dest / current.filename());
+      }
+      else {
+        // Found file: Copy
+        fs::copy_file(current, fs::path(dest / current.filename()));
+      }
+    }
+    catch(fs::filesystem_error& e) {
+      DLOG(ERROR) << e.what();
+    }
+  }
+  return kSuccess;
+}
+
 #ifndef LOCAL_TARGETS_ONLY
 
 int RetrieveBootstrapContacts(const fs::path &download_dir,
@@ -373,7 +412,6 @@ ClientContainerPtr SetUpClientContainer(const fs::path &test_dir) {
   DLOG(INFO) << "Started client_container.";
   return client_container;
 }
-
 #endif
 
 }  // namespace lifestuff
