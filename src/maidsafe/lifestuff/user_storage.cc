@@ -336,6 +336,8 @@ int UserStorage::GetAllShares(StringIntMap *shares_names) {
 
 int UserStorage::InsertShare(const fs::path &absolute_path,
                              const std::string &share_id,
+                             const std::string &inviter_id,
+                             std::string *share_name,
                              const std::string &directory_id,
                              const asymm::Keys &share_keyring) {
   if (!message_handler_) {
@@ -343,11 +345,21 @@ int UserStorage::InsertShare(const fs::path &absolute_path,
     return kMessageHandlerNotInitialised;
   }
 
-  return drive_in_user_space_->InsertShare(
-             drive_in_user_space_->RelativePath(absolute_path),
-             directory_id,
-             share_id,
-             share_keyring);
+  fs::path share_dir(absolute_path);
+  int index(1);
+  int result(drive_in_user_space_->InsertShare(
+                drive_in_user_space_->RelativePath(share_dir), inviter_id,
+                directory_id, share_id, share_keyring));
+  while (result == -500317) {  // drive::kInvalidPath
+    share_dir = mount_dir() / fs::path("/").make_preferred() /
+                ((*share_name) + "_" + IntToString(index));
+    result = drive_in_user_space_->InsertShare(
+                drive_in_user_space_->RelativePath(share_dir), inviter_id,
+                directory_id, share_id, share_keyring);
+    ++index;
+  }
+  *share_name = share_dir.filename().string();
+  return result;
 }
 
 int UserStorage::StopShare(const std::string &sender_public_username,
@@ -715,6 +727,18 @@ int UserStorage::SetShareUsersRights(const std::string &sender_public_username,
     }
   }
   return kSuccess;
+}
+
+int UserStorage::GetShareDetails(const std::string &share_id,
+                                 fs::path *relative_path,
+                                 asymm::Keys *share_keyring,
+                                 std::string *directory_id,
+                                 StringIntMap *share_users) {
+  return drive_in_user_space_->GetShareDetails(share_id,
+                                               relative_path,
+                                               share_keyring,
+                                               directory_id,
+                                               share_users);
 }
 
 int UserStorage::GetNotes(const fs::path &absolute_path,

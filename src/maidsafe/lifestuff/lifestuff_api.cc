@@ -874,13 +874,55 @@ int LifeStuff::GetPrivateSharesIncludingMember(const std::string &my_public_id,
   return kSuccess;
 }
 
+int LifeStuff::AcceptPrivateShareInvitation(std::string *share_name,
+                  const std::string &my_public_id,
+                  const std::string &contact_public_id,
+                  const std::string &share_id) {
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks in AcceptPrivateShareInvitation.";
+    return result;
+  }
+
+  fs::path relative_path;
+  asymm::Keys share_keyring;
+  std::string directory_id;
+  StringIntMap share_users;
+  result = lifestuff_elements->user_storage->GetShareDetails(share_id,
+                                                             &relative_path,
+                                                             &share_keyring,
+                                                             &directory_id,
+                                                             &share_users);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to get share details.";
+    return result;
+  }
+
+  // remove the temp share invitation file no matter insertion succeed or not
+  fs::path hidden_file(mount_path() /
+                       fs::path("/").make_preferred() /
+                       std::string(share_id + drive::kMsHidden.string()));
+  lifestuff_elements->user_storage->DeleteHiddenFile(hidden_file);
+
+  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+                    fs::path("/").make_preferred() / *share_name);
+  return lifestuff_elements->user_storage->InsertShare(share_dir,
+                                                       share_id,
+                                                       contact_public_id,
+                                                       share_name,
+                                                       directory_id,
+                                                       share_keyring);
+}
+
 int LifeStuff::RejectPrivateShareInvitation(const std::string &my_public_id,
                                             const std::string &share_id) {
   int result(PreContactChecks(lifestuff_elements->state,
                               my_public_id,
                               lifestuff_elements->session));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed pre checks in GetPrivateShareList.";
+    DLOG(ERROR) << "Failed pre checks in RejectPrivateShareInvitation.";
     return result;
   }
 
@@ -961,7 +1003,7 @@ int LifeStuff::DeletePrivateShare(const std::string &my_public_id,
                               my_public_id,
                               lifestuff_elements->session));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed pre checks in GetPrivateShareList.";
+    DLOG(ERROR) << "Failed pre checks in DeletePrivateShare.";
     return result;
   }
 
@@ -976,7 +1018,7 @@ int LifeStuff::LeavePrivateShare(const std::string &my_public_id,
                               my_public_id,
                               lifestuff_elements->session));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed pre checks in GetPrivateShareList.";
+    DLOG(ERROR) << "Failed pre checks in LeavePrivateShare.";
     return result;
   }
 
