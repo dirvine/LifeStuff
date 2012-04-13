@@ -113,10 +113,10 @@ class UserCredentials {
   bool logging_out_;
   bool logged_in_;
 
-  boost::asio::io_service &service_;
 #ifndef LOCAL_TARGETS_ONLY
   std::shared_ptr<pd::ClientContainer> client_container_;
 #endif
+  boost::asio::io_service &service_;
 };
 
 }  // namespace lifestuff
