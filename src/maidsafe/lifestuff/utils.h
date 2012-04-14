@@ -72,6 +72,10 @@ struct InboxItem {
   std::string timestamp;
 };
 
+std::string CreatePin();
+
+fs::path CreateTestDirectory(fs::path const& parent, std::string *tail);
+
 int GetValidatedMpidPublicKey(
     const std::string &public_username,
     const pcs::RemoteChunkStore::ValidationData &validation_data,
@@ -100,6 +104,16 @@ std::string ComposeSignaturePacketValue(
 
 std::shared_ptr<encrypt::DataMap> ParseSerialisedDataMap(
     const std::string &serialised_data_map);
+
+#ifdef LOCAL_TARGETS_ONLY
+std::shared_ptr<priv::chunk_store::RemoteChunkStore> BuildChunkStore(
+    const fs::path &base_dir,
+    boost::asio::io_service &service);
+#else
+std::shared_ptr<priv::chunk_store::RemoteChunkStore> BuildChunkStore(
+    const fs::path &base_dir,
+    std::shared_ptr<pd::ClientContainer> client_container);
+#endif
 
 #ifndef LOCAL_TARGETS_ONLY
 int RetrieveBootstrapContacts(const fs::path &download_dir,

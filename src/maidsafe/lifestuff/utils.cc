@@ -51,6 +51,23 @@ namespace maidsafe {
 
 namespace lifestuff {
 
+std::string CreatePin() {
+  std::stringstream pin_stream;
+  uint32_t pin(0);
+  while (pin == 0)
+    pin = RandomUint32();
+  pin_stream << pin;
+  return pin_stream.str();
+}
+
+fs::path CreateTestDirectory(fs::path const& parent, std::string *tail) {
+  *tail = RandomAlphaNumericString(5);
+  fs::path directory(parent / (*tail));
+  boost::system::error_code error_code;
+  fs::create_directories(directory, error_code);
+  return directory;
+}
+
 int GetValidatedMpidPublicKey(
     const std::string &public_username,
     const pcs::RemoteChunkStore::ValidationData &validation_data,
@@ -231,6 +248,35 @@ encrypt::DataMapPtr ParseSerialisedDataMap(
   }
   return data_map;
 }
+
+#ifdef LOCAL_TARGETS_ONLY
+std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
+    const fs::path &base_dir,
+    boost::asio::io_service &service) {  // NOLINT (Dan)
+  fs::path buffered_chunk_store_path;
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store(
+      pcs::CreateLocalChunkStore(base_dir,
+                                 service,
+                                 &buffered_chunk_store_path));
+  return remote_chunk_store;
+}
+#else
+std::shared_ptr<priv::chunk_store::RemoteChunkStore> BuildChunkStore(
+    const fs::path &base_dir,
+    std::shared_ptr<pd::ClientContainer> client_container) {
+  client_container = SetUpClientContainer(base_dir);
+  if (client_container) {
+    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store(
+        new pcs::RemoteChunkStore(client_container->chunk_store(),
+                                  client_container->chunk_manager(),
+                                  client_container->chunk_action_authority()));
+  } else {
+    DLOG(ERROR) << "Failed to initialise client container.";
+    return;
+  }
+}
+#endif
+
 
 #ifndef LOCAL_TARGETS_ONLY
 

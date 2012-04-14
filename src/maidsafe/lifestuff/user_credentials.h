@@ -68,12 +68,11 @@ class Session;
 
 class UserCredentials {
  public:
-  explicit UserCredentials(boost::asio::io_service &service,  // NOLINT (Dan)
-                            std::shared_ptr<Session> session);
+  UserCredentials(std::shared_ptr<pcs::RemoteChunkStore> chunk_store,
+                  std::shared_ptr<Session> session);
 
   ~UserCredentials();
   void Init(const fs::path &chunk_store_dir);
-  bool initialised() const { return initialised_; }
 
   // User credential operations
   int CheckUserExists(const std::string &username,
@@ -87,13 +86,6 @@ class UserCredentials {
   bool ChangeUsername(const std::string &new_username);
   bool ChangePin(const std::string &new_pin);
   bool ChangePassword(const std::string &new_password);
-
-  std::string SessionName();
-  std::string Username();
-  std::string Pin();
-  std::string Password();
-
-  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store();
 
   friend class test::UserCredentialsTest;
   friend class test::UserStorageTest;
@@ -109,14 +101,8 @@ class UserCredentials {
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<Authentication> authentication_;
   std::string serialised_da_, surrogate_serialised_da_;
-  bool initialised_;
   bool logging_out_;
   bool logged_in_;
-
-  boost::asio::io_service &service_;
-#ifndef LOCAL_TARGETS_ONLY
-  std::shared_ptr<pd::ClientContainer> client_container_;
-#endif
 };
 
 }  // namespace lifestuff

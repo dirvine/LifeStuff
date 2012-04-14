@@ -60,54 +60,23 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-UserCredentials::UserCredentials(boost::asio::io_service &service,  // NOLINT (Dan)
-                                 std::shared_ptr<Session> session)
+UserCredentials::UserCredentials(
+    std::shared_ptr<pcs::RemoteChunkStore> chunk_store,
+    std::shared_ptr<Session> session)
     : session_(session),
-      remote_chunk_store_(),
-      authentication_(new Authentication(session)),
+      remote_chunk_store_(chunk_store),
+      authentication_(new Authentication(chunk_store, session)),
       serialised_da_(),
       surrogate_serialised_da_(),
-      initialised_(false),
-      logging_out_(false),
-      logged_in_(false),
 #ifndef LOCAL_TARGETS_ONLY
       client_container_(),
 #endif
-      service_(service) {}
+      logging_out_(false),
+      logged_in_(false) {}
 
 UserCredentials::~UserCredentials() {}
 
-void UserCredentials::Init(const fs::path &base_dir) {
-  if (initialised_)
-    return;
-
-#ifdef LOCAL_TARGETS_ONLY
-  fs::path buffered_chunk_store_path;
-  remote_chunk_store_ = pcs::CreateLocalChunkStore(base_dir,
-                                                   service_,
-                                                   &buffered_chunk_store_path);
-#else
-  client_container_ = SetUpClientContainer(base_dir);
-  if (client_container_) {
-    remote_chunk_store_.reset(new pcs::RemoteChunkStore(
-        client_container_->chunk_store(),
-        client_container_->chunk_manager(),
-        client_container_->chunk_action_authority()));
-  } else {
-    DLOG(ERROR) << "Failed to initialise client container.";
-    return;
-  }
-#endif
-
-  authentication_->Init(remote_chunk_store_);
-  initialised_ = true;
-}
-
 int UserCredentials::ParseDa() {
-  if (!initialised_) {
-    DLOG(ERROR) << "Not initialised.";
-    return kUserCredentialsNotInitialised;
-  }
   DataAtlas data_atlas;
   if (serialised_da_.empty() && surrogate_serialised_da_.empty()) {
     DLOG(ERROR) << "TMID brought is empty.";
@@ -170,11 +139,6 @@ int UserCredentials::ParseDa() {
 }
 
 int UserCredentials::SerialiseDa() {
-  if (!initialised_) {
-    DLOG(ERROR) << "Not initialised.";
-    return kUserCredentialsNotInitialised;
-  }
-
   DataAtlas data_atlas;
   data_atlas.set_unique_user_id(session_->unique_user_id());
   data_atlas.set_root_parent_id(session_->root_parent_id());
@@ -229,11 +193,6 @@ int UserCredentials::SerialiseDa() {
 bool UserCredentials::CreateUser(const std::string &username,
                                  const std::string &pin,
                                  const std::string &password) {
-  if (!initialised_) {
-    DLOG(ERROR) << "Not initialised.";
-    return false;
-  }
-
   session_->Reset();
   int result = authentication_->CreateUserSysPackets(username, pin);
   if (result != kSuccess) {
@@ -280,10 +239,6 @@ bool UserCredentials::CreateUser(const std::string &username,
 
 int UserCredentials::CheckUserExists(const std::string &username,
                                      const std::string &pin) {
-  if (!initialised_) {
-    DLOG(ERROR) << "Not initialised.";
-    return kUserCredentialsNotInitialised;
-  }
   session_->Reset();
   session_->set_def_con_level(kDefCon1);
   serialised_da_.clear();
@@ -291,11 +246,6 @@ int UserCredentials::CheckUserExists(const std::string &username,
 }
 
 bool UserCredentials::ValidateUser(const std::string &password) {
-  if (!initialised_) {
-    DLOG(ERROR) << "CC::ValidateUser - Not initialised.";
-    return false;
-  }
-
   std::string serialised_data_atlas, surrogate_serialised_data_atlas;
   authentication_->GetMasterDataMap(password,
                           &serialised_data_atlas,
@@ -326,11 +276,6 @@ bool UserCredentials::ValidateUser(const std::string &password) {
 }
 
 bool UserCredentials::Logout() {
-  if (!initialised_) {
-    DLOG(ERROR) << "Not initialised.";
-    return false;
-  }
-
   logging_out_ = true;
 //  clear_messages_thread_.join();
   int result = SaveSession();
@@ -347,11 +292,6 @@ bool UserCredentials::Logout() {
 }
 
 int UserCredentials::SaveSession() {
-  if (!initialised_) {
-    DLOG(ERROR) << "Not initialised.";
-    return kUserCredentialsNotInitialised;
-  }
-
   int n = SerialiseDa();
   if (n != kSuccess) {
     DLOG(ERROR) << "Failed to serialise DA.";
@@ -370,19 +310,7 @@ int UserCredentials::SaveSession() {
   return kSuccess;
 }
 
-std::string UserCredentials::SessionName() {
-  if (!initialised_) {
-    DLOG(ERROR) << "Not initialised.";
-    return "";
-  }
-  return session_->session_name();
-}
-
 bool UserCredentials::ChangeUsername(const std::string &new_username) {
-  if (!initialised_) {
-    DLOG(ERROR) << "Not initialised.";
-    return false;
-  }
   SerialiseDa();
 
   int result = authentication_->ChangeUsername(serialised_da_, new_username);
@@ -399,10 +327,6 @@ bool UserCredentials::ChangeUsername(const std::string &new_username) {
 }
 
 bool UserCredentials::ChangePin(const std::string &new_pin) {
-  if (!initialised_) {
-    DLOG(ERROR) << "Not initialised.";
-    return false;
-  }
   SerialiseDa();
 
   int result = authentication_->ChangePin(serialised_da_, new_pin);
@@ -420,10 +344,6 @@ bool UserCredentials::ChangePin(const std::string &new_pin) {
 }
 
 bool UserCredentials::ChangePassword(const std::string &new_password) {
-  if (!initialised_) {
-    DLOG(ERROR) << " Not initialised.";
-    return false;
-  }
   SerialiseDa();
 
   int result = authentication_->ChangePassword(serialised_da_, new_password);
@@ -432,22 +352,6 @@ bool UserCredentials::ChangePassword(const std::string &new_password) {
     return false;
   }
   return true;
-}
-
-std::string UserCredentials::Username() {
-  return session_->username();
-}
-
-std::string UserCredentials::Pin() {
-  return session_->pin();
-}
-
-std::string UserCredentials::Password() {
-  return session_->password();
-}
-
-std::shared_ptr<pcs::RemoteChunkStore> UserCredentials::remote_chunk_store() {
-  return remote_chunk_store_;
 }
 
 }  // namespace lifestuff

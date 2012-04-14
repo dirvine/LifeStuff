@@ -52,6 +52,10 @@ struct LifeStuff::Elements {
                base_directory(),
                interval(kSecondsInterval),
                asio_service(),
+               remote_chunk_store(),
+#ifndef LOCAL_TARGETS_ONLY
+               client_container(),
+#endif
                session(),
                user_credentials(),
                user_storage(),
@@ -63,6 +67,10 @@ struct LifeStuff::Elements {
   boost::filesystem::path base_directory;
   bptime::seconds interval;
   AsioService asio_service;
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store;
+#ifndef LOCAL_TARGETS_ONLY
+  std::shared_ptr<pd::ClientContainer> client_container;
+#endif
   std::shared_ptr<Session> session;
   std::shared_ptr<UserCredentials> user_credentials;
   std::shared_ptr<UserStorage> user_storage;
@@ -84,26 +92,32 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
   // Initialisation
   lifestuff_elements->asio_service.Start(lifestuff_elements->thread_count);
   lifestuff_elements->session.reset(new Session);
+#ifdef LOCAL_TARGETS_ONLY
+  lifestuff_elements->remote_chunk_store =
+      BuildChunkStore(base_directory,
+                      lifestuff_elements->asio_service.service());
+#else
+  lifestuff_elements->remote_chunk_store =
+      BuildChunkStore(base_directory,
+                      lifestuff_elements->client_container);
+#endif
   lifestuff_elements->user_credentials.reset(
-      new UserCredentials(lifestuff_elements->asio_service.service(),
+      new UserCredentials(lifestuff_elements->remote_chunk_store,
                           lifestuff_elements->session));
-  lifestuff_elements->user_credentials->Init(base_directory);
 
   lifestuff_elements->public_id.reset(
-      new PublicId(lifestuff_elements->user_credentials->remote_chunk_store(),
+      new PublicId(lifestuff_elements->remote_chunk_store,
                    lifestuff_elements->session,
                    lifestuff_elements->asio_service.service()));
 
   lifestuff_elements->message_handler.reset(
-      new MessageHandler(
-          lifestuff_elements->user_credentials->remote_chunk_store(),
-          lifestuff_elements->session,
-          lifestuff_elements->asio_service.service()));
+      new MessageHandler(lifestuff_elements->remote_chunk_store,
+                         lifestuff_elements->session,
+                         lifestuff_elements->asio_service.service()));
 
   lifestuff_elements->user_storage.reset(
-      new UserStorage(
-          lifestuff_elements->user_credentials->remote_chunk_store(),
-          lifestuff_elements->message_handler));
+      new UserStorage(lifestuff_elements->remote_chunk_store,
+                      lifestuff_elements->message_handler));
 
   lifestuff_elements->message_handler->ConnectToParseAndSaveDataMapSignal(
       std::bind(&UserStorage::ParseAndSaveDataMap,
@@ -310,8 +324,7 @@ int LifeStuff::LogOut() {
     return kGeneralError;
   }
 
-  if (!lifestuff_elements->user_credentials->remote_chunk_store()
-          ->WaitForCompletion()) {
+  if (!lifestuff_elements->remote_chunk_store->WaitForCompletion()) {
     DLOG(ERROR) << "Failed complete chunk operations.";
     return kGeneralError;
   }
