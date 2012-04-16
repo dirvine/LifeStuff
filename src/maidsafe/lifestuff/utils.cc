@@ -251,13 +251,13 @@ encrypt::DataMapPtr ParseSerialisedDataMap(
 
 #ifdef LOCAL_TARGETS_ONLY
 std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
-    const fs::path &base_dir,
-    boost::asio::io_service &service) {  // NOLINT (Dan)
-  fs::path buffered_chunk_store_path;
+    const fs::path &buffered_chunk_store_path,
+    const fs::path &local_chunk_manager_path,
+    boost::asio::io_service &asio_service) {  // NOLINT (Dan)
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store(
-      pcs::CreateLocalChunkStore(base_dir,
-                                 service,
-                                 &buffered_chunk_store_path));
+      pcs::CreateLocalChunkStore(buffered_chunk_store_path,
+                                 local_chunk_manager_path,
+                                 asio_service));
   return remote_chunk_store;
 }
 #else
@@ -376,29 +376,10 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
   return kSuccess;
 }
 
-ClientContainerPtr SetUpClientContainer(const fs::path &test_dir) {
-  std::shared_ptr<asymm::Keys> key_pair(new asymm::Keys);
-  int result(asymm::GenerateKeyPair(key_pair.get()));
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to generate key pair.  Result: " << result;
-    return ClientContainerPtr();
-  }
-
-  std::string pub_key;
-  asymm::EncodePublicKey(key_pair->public_key, &pub_key);
-  result = asymm::Sign(pub_key, key_pair->private_key,
-                       &key_pair->validation_token);
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to sign public key.  Result: " << result;
-    return ClientContainerPtr();
-  }
-
-  key_pair->identity =
-      crypto::Hash<crypto::SHA512>(pub_key + key_pair->validation_token);
-
+ClientContainerPtr SetUpClientContainer(
+    const fs::path &buffered_chunk_store_directory) {
   ClientContainerPtr client_container(new pd::ClientContainer);
-  client_container->set_key_pair(key_pair);
-  if (!client_container->Init(test_dir / "buffered_chunk_store", 10, 4)) {
+  if (!client_container->Init(buffered_chunk_store_dir, 10, 4)) {
     DLOG(ERROR) << "Failed to Init client_container.";
     return ClientContainerPtr();
   }

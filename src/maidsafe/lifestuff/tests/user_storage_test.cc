@@ -165,9 +165,13 @@ class UserStorageTest : public testing::Test {
  protected:
   void CreateUserCredentials() {
 #ifdef LOCAL_TARGETS_ONLY
-    remote_chunk_store1_ = BuildChunkStore(*test_dir_,
+    remote_chunk_store1_ = BuildChunkStore(*test_dir_ /
+                                               RandomAlphaNumericString(8),
+                                           *test_dir_ / "simulation",
                                            asio_service1_.service());
-    remote_chunk_store2_ = BuildChunkStore(*test_dir_,
+    remote_chunk_store2_ = BuildChunkStore(*test_dir_ /
+                                               RandomAlphaNumericString(8),
+                                           *test_dir_ / "simulation",
                                            asio_service2_.service());
 #else
     remote_chunk_store1_ = BuildChunkStore(*test_dir_, client_container1_);

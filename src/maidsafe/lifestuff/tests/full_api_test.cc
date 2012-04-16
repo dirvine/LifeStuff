@@ -118,7 +118,10 @@ class FixtureFullTest : public testing::Test {
   void SetUp() {
     asio_service_.Start(5);
 #ifdef LOCAL_TARGETS_ONLY
-    remote_chunk_store_ = BuildChunkStore(*test_dir_, asio_service_.service());
+    remote_chunk_store_ = BuildChunkStore(*test_dir_ /
+                                               RandomAlphaNumericString(8),
+                                          *test_dir_ / "simulation",
+                                          asio_service_.service());
 #else
     remote_chunk_store_ = BuildChunkStore(*test_dir_, client_container_);
 #endif
