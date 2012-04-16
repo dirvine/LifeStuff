@@ -42,6 +42,10 @@ ENDIF()
 
 SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_DIR} CACHE INTERNAL "Except for MSVC, the build type is set by running cmake from the appropriate build subdirectory e.g. for a Debug build, \"cd build/Linux/Debug && cmake ../../..\"." FORCE)
 
+IF(NOT LOCAL_TARGETS_ONLY)
+  SET(LOCAL_TARGETS_ONLY OFF)
+ENDIF()
+
 
 ###################################################################################################
 # MaidSafe Common, Private, Encrypt, DHT, Drive, PKI and Passport library search                  #
@@ -166,7 +170,7 @@ ENDIF()
 ###################################################################################################
 INCLUDE(maidsafe_standard_flags)
 
-IF(${LOCAL_TARGETS_ONLY} MATCHES ON)
+IF(NOT ${LOCAL_TARGETS_ONLY} MATCHES OFF)
   ADD_DEFINITIONS(-DLOCAL_TARGETS_ONLY)
 ENDIF()
 
@@ -210,7 +214,7 @@ TEST_SUMMARY_OUTPUT()
 ###################################################################################################
 FINAL_MESSAGE()
 
-IF(LOCAL_TARGETS_ONLY)
+IF(${LOCAL_TARGETS_ONLY} MATCHES ON)
   SET(JUST_LOCAL "The local targets flag is currently set to -DLOCAL_TARGETS_ONLY=ON\n")
   SET(JUST_LOCAL "${JUST_LOCAL}To switch to the all-inclusive version, please use -DLOCAL_TARGETS_ONLY=OFF\n")
 ELSE()

@@ -745,7 +745,7 @@ void Authentication::ProcessingSaveSession(
 }
 
 int Authentication::SaveSession(const std::string &serialised_data_atlas) {
-  int result(kPending);
+  int result(kPendingResult);
   VoidFunctionOneInt functor(std::bind(&Authentication::SaveSessionCallback,
                                        this, args::_1, &result));
   SaveSession(serialised_data_atlas, functor);
