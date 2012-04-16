@@ -103,6 +103,8 @@ class UserStorage {
   int GetAllShares(StringIntMap *shares_names);
   int InsertShare(const fs::path &absolute_path,
                   const std::string &share_id,
+                  const std::string &inviter_id,
+                  std::string *share_name,
                   const std::string &directory_id,
                   const asymm::Keys &share_keyring);
   int StopShare(const std::string &sender_public_username,
@@ -129,6 +131,11 @@ class UserStorage {
                           const fs::path &absolute_path,
                           const std::string &user_id,
                           bool admin_rights);
+  int GetShareDetails(const std::string &share_id,
+                      fs::path *relative_path,
+                      asymm::Keys *share_keyring,
+                      std::string *directory_id,
+                      StringIntMap *share_users);
 
   // **************************** File Notes ***********************************
   int GetNotes(const fs::path &absolute_path,

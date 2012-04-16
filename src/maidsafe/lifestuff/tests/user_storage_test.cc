@@ -133,8 +133,11 @@ class UserStorageTest : public testing::Test {
       asymm::DecodePublicKey(message.content[7], &(key_ring.public_key));
     }
     // fs::path("/").make_preferred() / message.content(1)
+    std::string share_name(absolute_path.filename().string());
     EXPECT_EQ(kSuccess, user_storage->InsertShare(absolute_path,
                                                   message.content[0],
+                                                  message.sender_public_id,
+                                                  &share_name,
                                                   message.content[3],
                                                   key_ring));
   }
