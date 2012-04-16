@@ -58,10 +58,9 @@ namespace test { class UserCredentialsTest; }
 
 class Authentication {
  public:
-  explicit Authentication(std::shared_ptr<Session> session);
+  Authentication(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
+                 std::shared_ptr<Session> session);
   ~Authentication();
-  // Used to intialise passport_ in all cases.
-  void Init(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store);
   // Used to intialise passport_ in all cases.
   int GetUserInfo(const std::string &username, const std::string &pin);
   // Used when creating a new user.

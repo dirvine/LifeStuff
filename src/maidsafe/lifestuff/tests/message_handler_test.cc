@@ -127,38 +127,22 @@ class MessageHandlerTest : public testing::Test {
     asio_service3_.Start(10);
 
 #ifdef LOCAL_TARGETS_ONLY
-    fs::path buffered_chunk_store_path;
-    remote_chunk_store1_ =
-        pcs::CreateLocalChunkStore(*test_dir_,
-                                   asio_service1_.service(),
-                                   &buffered_chunk_store_path);
-    remote_chunk_store2_ =
-        pcs::CreateLocalChunkStore(*test_dir_,
-                                   asio_service2_.service(),
-                                   &buffered_chunk_store_path);
-    remote_chunk_store3_ =
-        pcs::CreateLocalChunkStore(*test_dir_,
-                                   asio_service3_.service(),
-                                   &buffered_chunk_store_path);
+    remote_chunk_store1_ = BuildChunkStore(*test_dir_ /
+                                               RandomAlphaNumericString(8),
+                                           *test_dir_ / "simulation",
+                                           asio_service1_.service());
+    remote_chunk_store2_ = BuildChunkStore(*test_dir_ /
+                                               RandomAlphaNumericString(8),
+                                           *test_dir_ / "simulation",
+                                           asio_service2_.service());
+    remote_chunk_store3_ = BuildChunkStore(*test_dir_ /
+                                               RandomAlphaNumericString(8),
+                                           *test_dir_ / "simulation",
+                                           asio_service3_.service());
 #else
-    client_container1_ = SetUpClientContainer(*test_dir_);
-    ASSERT_TRUE(client_container1_.get() != nullptr);
-    remote_chunk_store1_.reset(new pcs::RemoteChunkStore(
-        client_container1_->chunk_store(),
-        client_container1_->chunk_manager(),
-        client_container1_->chunk_action_authority()));
-    client_container2_ = SetUpClientContainer(*test_dir_);
-    ASSERT_TRUE(client_container2_.get() != nullptr);
-    remote_chunk_store2_.reset(new pcs::RemoteChunkStore(
-        client_container2_->chunk_store(),
-        client_container2_->chunk_manager(),
-        client_container2_->chunk_action_authority()));
-    client_container3_ = SetUpClientContainer(*test_dir_);
-    ASSERT_TRUE(client_container3_.get() != nullptr);
-    remote_chunk_store3_.reset(new pcs::RemoteChunkStore(
-        client_container3_->chunk_store(),
-        client_container3_->chunk_manager(),
-        client_container3_->chunk_action_authority()));
+    remote_chunk_store1_ = BuildChunkStore(*test_dir_, client_container1_);
+    remote_chunk_store2_ = BuildChunkStore(*test_dir_, client_container2_);
+    remote_chunk_store3_ = BuildChunkStore(*test_dir_, client_container3_);
 #endif
 
     public_id1_.reset(new PublicId(remote_chunk_store1_,

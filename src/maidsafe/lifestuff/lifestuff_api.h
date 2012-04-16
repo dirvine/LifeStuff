@@ -40,7 +40,7 @@
     Please update the maidsafe-lifestuff library.
 #endif
 
-
+namespace fs = boost::filesystem;
 namespace maidsafe {
 
 namespace lifestuff {
@@ -51,7 +51,7 @@ class LifeStuff {
   ~LifeStuff();
 
   /// State operations
-  int Initialise(const boost::filesystem::path &base_directory);
+  int Initialise(const fs::path &base_directory = fs::path());
   int ConnectToSignals(
       const ChatFunction &chat_slot,
       const FileTransferFunction &file_slot,
