@@ -109,6 +109,15 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
       std::bind(&UserStorage::ParseAndSaveDataMap,
                 lifestuff_elements->user_storage, args::_1, args::_2));
 
+  lifestuff_elements->message_handler->ConnectToSaveShareDataSignal(
+      std::bind(&UserStorage::SaveShareData,
+                lifestuff_elements->user_storage, args::_1, args::_2));
+
+  lifestuff_elements->message_handler->ConnectToShareUpdateSignal(
+      std::bind(&UserStorage::UpdateShare,
+                lifestuff_elements->user_storage, args::_1, args::_2,
+                                                  args::_3, args::_4));
+
   lifestuff_elements->public_id->ConnectToContactConfirmedSignal(
       std::bind(&MessageHandler::InformConfirmedContactOnline,
                 lifestuff_elements->message_handler, args::_1, args::_2));
@@ -886,18 +895,26 @@ int LifeStuff::AcceptPrivateShareInvitation(std::string *share_name,
     return result;
   }
 
-  fs::path relative_path;
+  std::string serialised_share_data;
+  result = lifestuff_elements->user_storage->ReadHiddenFile(
+                mount_path() / fs::path("/").make_preferred() /
+                    std::string(share_id + drive::kMsHidden.string()),
+                &serialised_share_data);
+  if (result != kSuccess || serialised_share_data.empty()) {
+    DLOG(ERROR) << "No such identifier found: " << result;
+    return result == kSuccess ? kGeneralError : result;
+  }
+  Message message;
+  message.ParseFromString(serialised_share_data);
+
+  fs::path relative_path(message.content(2));
+  std::string directory_id(message.content(3));
   asymm::Keys share_keyring;
-  std::string directory_id;
-  StringIntMap share_users;
-  result = lifestuff_elements->user_storage->GetShareDetails(share_id,
-                                                             &relative_path,
-                                                             &share_keyring,
-                                                             &directory_id,
-                                                             &share_users);
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to get share details.";
-    return result;
+  if (message.content_size() > 4) {
+      share_keyring.identity = message.content(4);
+      share_keyring.validation_token = message.content(5);
+      asymm::DecodePrivateKey(message.content(6), &(share_keyring.private_key));
+      asymm::DecodePublicKey(message.content(7), &(share_keyring.public_key));
   }
 
   // remove the temp share invitation file no matter insertion succeed or not

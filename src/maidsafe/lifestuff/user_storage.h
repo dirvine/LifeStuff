@@ -96,6 +96,8 @@ class UserStorage {
                              const std::string &directory_id);
 
   // ****************************** Shares *************************************
+  bool SaveShareData(const std::string &serialised_share_data,
+                     const std::string &share_id);
   int CreateShare(const std::string &sender_public_username,
                   const fs::path &absolute_path,
                   const StringIntMap &contacts,
@@ -110,8 +112,7 @@ class UserStorage {
   int StopShare(const std::string &sender_public_username,
                 const fs::path &absolute_path);
   int RemoveShare(const fs::path &absolute_path);
-  int UpdateShare(const fs::path &absolute_path,
-                  const std::string &share_id,
+  int UpdateShare(const std::string &share_id,
                   const std::string *new_share_id,
                   const std::string *new_directory_id,
                   const asymm::Keys *new_key_ring);

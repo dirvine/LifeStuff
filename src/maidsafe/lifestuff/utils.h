@@ -52,6 +52,7 @@ enum InboxItemType {
   kContactPresence,
   kContactProfilePicture,
   kContactDeletion,
+  kShare,
 
   // Max
   kMaxInboxItemType = kContactDeletion

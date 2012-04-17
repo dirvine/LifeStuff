@@ -72,7 +72,11 @@ MessageHandler::MessageHandler(
       get_new_messages_timer_(asio_service),
       chat_signal_(new ChatMessageSignal),
       file_transfer_signal_(new FileTransferSignal),
-      share_signal_(new NewItemSignal),
+      share_invitation_signal_(new ShareInvitationSignal),
+      share_deletion_signal_(new ShareDeletionSignal),
+      share_update_signal_(new ShareUpdateSignal),
+      member_access_level_signal_(new MemberAccessLevelSignal),
+      save_share_data_signal_(new SaveShareDataSignal),
       contact_presence_signal_(new ContactPresenceSignal),
       contact_profile_picture_signal_(new ContactProfilePictureSignal),
       contact_deletion_signal_(new ContactDeletionSignal),
@@ -316,6 +320,8 @@ void MessageHandler::ProcessRetrieved(const passport::SelectableIdData &data,
                                break;
         case kContactDeletion: ContactDeletionSlot(inbox_item);
                                break;
+        case kShare: SignalShare(inbox_item);
+                     break;
       }
     }
   }
@@ -572,6 +578,46 @@ void MessageHandler::SignalFileTransfer(const InboxItem &inbox_item) {
                            data_map_hash);
 }
 
+void MessageHandler::SignalShare(const InboxItem &inbox_item) {
+  if (inbox_item.content[1] == "remove_share") {
+    (*share_deletion_signal_)(inbox_item.receiver_public_id,
+                              inbox_item.content[0]);
+  } else if (inbox_item.content[1] == "update_share") {
+    asymm::Keys key_ring;
+    if (inbox_item.content.size() > 4) {
+      key_ring.identity = inbox_item.content[4];
+      key_ring.validation_token = inbox_item.content[5];
+      asymm::DecodePrivateKey(inbox_item.content[6], &(key_ring.private_key));
+      asymm::DecodePublicKey(inbox_item.content[7], &(key_ring.public_key));
+    }
+
+    (*share_update_signal_)(inbox_item.content[0],
+                        &inbox_item.content[2],
+                        &inbox_item.content[3],
+                        inbox_item.content.size() > 4 ? &key_ring : nullptr);
+  } else {
+    Message message;
+    InboxToProtobuf(inbox_item, &message);
+    if (!(*save_share_data_signal_)(message.SerializeAsString(),
+                                    inbox_item.content[0])) {
+      DLOG(ERROR) << "Failed to save received share data";
+      return;
+    }
+  }
+
+  if (inbox_item.content[1] == "insert_share")
+    (*share_invitation_signal_)(inbox_item.receiver_public_id,
+                                inbox_item.sender_public_id,
+                                inbox_item.content[0],
+                                inbox_item.content[0]);
+
+  if (inbox_item.content[1] == "upgrade_share")
+    (*member_access_level_signal_)(inbox_item.receiver_public_id,
+                                   inbox_item.sender_public_id,
+                                   inbox_item.content[0],
+                                   1);
+}
+
 void MessageHandler::SendEveryone(const InboxItem &message) {
   std::vector<Contact> contacts;
   session_->contact_handler_map()
@@ -611,6 +657,31 @@ bs2::connection MessageHandler::ConnectToChatSignal(
 bs2::connection MessageHandler::ConnectToFileTransferSignal(
     const FileTransferFunction &function) {
   return file_transfer_signal_->connect(function);
+}
+
+bs2::connection MessageHandler::ConnectToShareInvitationSignal(
+    const ShareInvitationFunction &function) {
+  return share_invitation_signal_->connect(function);
+}
+
+bs2::connection MessageHandler::ConnectToShareDeletionSignal(
+    const ShareDeletionFunction &function) {
+  return share_deletion_signal_->connect(function);
+}
+
+bs2::connection MessageHandler::ConnectToShareUpdateSignal(
+    const ShareUpdateSignal::slot_type &function) {
+  return share_update_signal_->connect(function);
+}
+
+bs2::connection MessageHandler::ConnectToMemberAccessLevelSignal(
+    const MemberAccessLevelFunction &function) {
+  return member_access_level_signal_->connect(function);
+}
+
+bs2::connection MessageHandler::ConnectToSaveShareDataSignal(
+    const SaveShareDataSignal::slot_type &function) {
+  return save_share_data_signal_->connect(function);
 }
 
 bs2::connection MessageHandler::ConnectToContactPresenceSignal(

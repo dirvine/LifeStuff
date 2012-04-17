@@ -116,9 +116,9 @@ class UserStorageTest : public testing::Test {
     if (message.content[1] == "stop_share")
       return StopShareTest(sender, user_storage, message, absolute_path);
     if (message.content[1] == "update_share")
-      return MoveShareTest(user_storage, message, absolute_path);
+      return MoveShareTest(user_storage, message);
     if (message.content[1] == "upgrade_share")
-      return UpgradeShareTest(user_storage, message, absolute_path);
+      return UpgradeShareTest(user_storage, message);
   }
 
   void InsertShareTest(const std::shared_ptr<UserStorage> &user_storage,
@@ -158,24 +158,21 @@ class UserStorageTest : public testing::Test {
   }
 
   void UpgradeShareTest(const std::shared_ptr<UserStorage> &user_storage,
-                        const InboxItem &message,
-                        const fs::path &absolute_path) {
+                        const InboxItem &message) {
     EXPECT_EQ(message.content[1], "upgrade_share");
     asymm::Keys key_ring;
     key_ring.identity = message.content[2];
     key_ring.validation_token = message.content[3];
     asymm::DecodePrivateKey(message.content[4], &(key_ring.private_key));
     asymm::DecodePublicKey(message.content[5], &(key_ring.public_key));
-    EXPECT_EQ(kSuccess, user_storage->UpdateShare(absolute_path,
-                                                  message.content[0],
+    EXPECT_EQ(kSuccess, user_storage->UpdateShare(message.content[0],
                                                   nullptr,
                                                   nullptr,
                                                   &key_ring));
   }
 
   void MoveShareTest(const std::shared_ptr<UserStorage> &user_storage,
-                     const InboxItem &message,
-                     const fs::path &absolute_path) {
+                     const InboxItem &message) {
     EXPECT_EQ(message.content[1], "update_share");
     asymm::Keys key_ring;
     if (message.content.size() > 5) {
@@ -184,8 +181,7 @@ class UserStorageTest : public testing::Test {
       asymm::DecodePrivateKey(message.content[6], &(key_ring.private_key));
       asymm::DecodePublicKey(message.content[7], &(key_ring.public_key));
     }
-    EXPECT_EQ(kSuccess, user_storage->UpdateShare(absolute_path,
-                                                  message.content[0],
+    EXPECT_EQ(kSuccess, user_storage->UpdateShare(message.content[0],
                                                   &message.content[2],
                                                   &message.content[3],
                                                   &key_ring));
