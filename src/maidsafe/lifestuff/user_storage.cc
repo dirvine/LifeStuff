@@ -231,7 +231,9 @@ bool UserStorage::ParseAndSaveDataMap(const std::string &serialised_data_map,
   }
 
   *data_map_hash =
-      EncodeToBase32(crypto::Hash<crypto::SHA1>(serialised_data_map));
+      EncodeToBase32(crypto::Hash<crypto::SHA1>(serialised_data_map)) +
+      crypto::Hash<crypto::SHA1>(boost::lexical_cast<std::string>(
+          GetDurationSinceEpoch().total_microseconds()));
   int result(WriteHiddenFile(
                  mount_dir_ / fs::path("/").make_preferred() /
                      std::string(*data_map_hash + drive::kMsHidden.string()),
