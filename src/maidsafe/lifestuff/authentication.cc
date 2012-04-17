@@ -1397,12 +1397,14 @@ bool Authentication::PacketOpDone(int *return_code) {
 void Authentication::SaveSessionCallback(const int& return_code, int* result) {
   boost::mutex::scoped_lock lock(mutex_);
   *result = return_code;
+  cond_var_.notify_one();
 }
 
 void Authentication::ChangeUserDataCallback(const int& return_code,
                                             int* result) {
   boost::mutex::scoped_lock lock(mutex_);
   *result = return_code;
+  cond_var_.notify_one();
 }
 
 }  // namespace lifestuff
