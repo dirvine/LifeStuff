@@ -67,8 +67,7 @@ class Session;
 
 class UserStorage {
  public:
-  explicit UserStorage(
-              std::shared_ptr<pcs::RemoteChunkStore> chunk_store,
+  UserStorage(std::shared_ptr<pcs::RemoteChunkStore> chunk_store,
               std::shared_ptr<MessageHandler> message_handler);
   virtual ~UserStorage() {}
 

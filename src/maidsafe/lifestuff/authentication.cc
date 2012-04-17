@@ -147,15 +147,17 @@ Authentication::PacketData::PacketData(
 }
 
 
-Authentication::Authentication(std::shared_ptr<Session> session)
-    : remote_chunk_store_(),
+Authentication::Authentication(
+    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
+    std::shared_ptr<Session> session)
+    : remote_chunk_store_(remote_chunk_store),
       session_(session),
       mutex_(),
       mid_mutex_(),
       smid_mutex_(),
       cond_var_(),
-      tmid_op_status_(kPendingMid),
-      stmid_op_status_(kPendingMid),
+      tmid_op_status_(kNoUser),
+      stmid_op_status_(kNoUser),
       encrypted_tmid_(),
       encrypted_stmid_(),
       serialised_data_atlas_(),
@@ -189,13 +191,6 @@ Authentication::~Authentication() {
                     << stmid_op_status_;
 #endif
   }
-}
-
-void Authentication::Init(
-    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store) {
-  remote_chunk_store_ = remote_chunk_store;
-  tmid_op_status_ = kNoUser;
-  stmid_op_status_ = kNoUser;
 }
 
 int Authentication::GetUserInfo(const std::string &username,

@@ -52,52 +52,26 @@ namespace lifestuff {
 
 namespace test {
 
-namespace {
-
-fs::path CreateTestDirectory(fs::path const& parent,
-                             std::string *tail) {
-  *tail = RandomAlphaNumericString(5);
-  fs::path directory(parent / (*tail));
-  boost::system::error_code error_code;
-  fs::create_directories(directory, error_code);
-  return directory;
-}
-
-std::shared_ptr<UserCredentials> CreateUserCredentials(
-    boost::asio::io_service &service,
-    const fs::path &test_dir) {
-  std::shared_ptr<Session> session(new Session);
-  std::shared_ptr<UserCredentials> client_controller(
-      new UserCredentials(service, session));
-  client_controller->Init(test_dir);
-
-  std::stringstream pin_stream;
-  uint32_t pin(0);
-  while (pin == 0)
-    pin = RandomUint32();
-  pin_stream << pin;
-  client_controller->CreateUser(RandomString(6),
-                                pin_stream.str(),
-                                RandomString(6));
-  return client_controller;
-}
-
-}  // namespace
-
 class UserStorageTest : public testing::Test {
  public:
   UserStorageTest()
     : test_dir_(maidsafe::test::CreateTestPath()),
       mount_dir_(new fs::path(fs::initial_path() / "LifeStuff")),
-      client_controller1_(),
-      client_controller2_(),
-      user_storage1_(),
-      user_storage2_(),
-      session1_(),
-      session2_(),
+      interval_(1),
       asio_service1_(),
       asio_service2_(),
-      interval_(1),
+#ifndef LOCAL_TARGETS_ONLY
+      client_container1_(),
+      client_container2_(),
+#endif
+      remote_chunk_store1_(),
+      remote_chunk_store2_(),
+      session1_(new Session),
+      session2_(new Session),
+      user_credentials1_(),
+      user_credentials2_(),
+      user_storage1_(),
+      user_storage2_(),
       public_id1_(),
       public_id2_(),
       message_handler1_(),
@@ -188,38 +162,55 @@ class UserStorageTest : public testing::Test {
   }
 
  protected:
+  void CreateUserCredentials() {
+#ifdef LOCAL_TARGETS_ONLY
+    remote_chunk_store1_ = BuildChunkStore(*test_dir_ /
+                                               RandomAlphaNumericString(8),
+                                           *test_dir_ / "simulation",
+                                           asio_service1_.service());
+    remote_chunk_store2_ = BuildChunkStore(*test_dir_ /
+                                               RandomAlphaNumericString(8),
+                                           *test_dir_ / "simulation",
+                                           asio_service2_.service());
+#else
+    remote_chunk_store1_ = BuildChunkStore(*test_dir_, client_container1_);
+    remote_chunk_store2_ = BuildChunkStore(*test_dir_, client_container2_);
+#endif
+    user_credentials1_.reset(new UserCredentials(remote_chunk_store1_,
+                                                  session1_));
+    EXPECT_TRUE(user_credentials1_->CreateUser(RandomString(6),
+                                               CreatePin(),
+                                               RandomString(6)));
+    user_credentials2_.reset(new UserCredentials(remote_chunk_store2_,
+                                                 session2_));
+    EXPECT_TRUE(user_credentials2_->CreateUser(RandomString(6),
+                                               CreatePin(),
+                                               RandomString(6)));
+  }
+
   void SetUp() {
     asio_service1_.Start(5);
     asio_service2_.Start(5);
-    client_controller1_ = CreateUserCredentials(asio_service1_.service(),
-                                                *test_dir_);
-    session1_ = client_controller1_->session_;
-    client_controller2_ = CreateUserCredentials(asio_service2_.service(),
-                                                *test_dir_);
-    session2_ = client_controller2_->session_;
+    CreateUserCredentials();
 
-    public_id1_.reset(new PublicId(client_controller1_->remote_chunk_store(),
+    public_id1_.reset(new PublicId(remote_chunk_store1_,
                                    session1_,
                                    asio_service1_.service()));
-    public_id2_.reset(new PublicId(client_controller2_->remote_chunk_store(),
+    public_id2_.reset(new PublicId(remote_chunk_store2_,
                                    session2_,
                                    asio_service2_.service()));
 
-    message_handler1_.reset(
-        new MessageHandler(client_controller1_->remote_chunk_store(),
-                           session1_,
-                           asio_service1_.service()));
-    message_handler2_.reset(
-        new MessageHandler(client_controller2_->remote_chunk_store(),
-                           session2_,
-                           asio_service2_.service()));
+    message_handler1_.reset(new MessageHandler(remote_chunk_store1_,
+                                               session1_,
+                                               asio_service1_.service()));
+    message_handler2_.reset(new MessageHandler(remote_chunk_store2_,
+                                               session2_,
+                                               asio_service2_.service()));
 
-    user_storage1_.reset(
-        new UserStorage(client_controller1_->remote_chunk_store(),
-                        message_handler1_));
-    user_storage2_.reset(
-        new UserStorage(client_controller2_->remote_chunk_store(),
-                        message_handler1_));
+    user_storage1_.reset(new UserStorage(remote_chunk_store1_,
+                                         message_handler1_));
+    user_storage2_.reset(new UserStorage(remote_chunk_store2_,
+                                         message_handler2_));
 
     public_id1_->CreatePublicId(pub_name1_, true);
     public_id2_->CreatePublicId(pub_name2_, true);
@@ -243,11 +234,16 @@ class UserStorageTest : public testing::Test {
   }
 
   maidsafe::test::TestPath test_dir_, mount_dir_;
-  std::shared_ptr<UserCredentials> client_controller1_, client_controller2_;
-  std::shared_ptr<UserStorage> user_storage1_, user_storage2_;
-  std::shared_ptr<Session> session1_, session2_;
-  AsioService asio_service1_, asio_service2_;
   bptime::seconds interval_;
+  AsioService asio_service1_, asio_service2_;
+#ifndef LOCAL_TARGETS_ONLY
+  ClientContainerPtr client_container1_, client_container2_;
+#endif
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store1_,
+                                         remote_chunk_store2_;
+  std::shared_ptr<Session> session1_, session2_;
+  std::shared_ptr<UserCredentials> user_credentials1_, user_credentials2_;
+  std::shared_ptr<UserStorage> user_storage1_, user_storage2_;
   std::shared_ptr<PublicId> public_id1_, public_id2_;
   std::shared_ptr<MessageHandler> message_handler1_, message_handler2_;
   std::string pub_name1_, pub_name2_;
@@ -545,7 +541,7 @@ class UserStorageTest : public testing::Test {
 //
 //   // Sleep(interval_ * 2);
 //   // user_storage1_->MountDrive(*mount_dir_,
-//   //                            client_controller1_->SessionName(),
+//   //                            user_credentials1_->SessionName(),
 //   //                            session1_,
 //   //                            false);
 //   // Sleep(interval_ * 2);

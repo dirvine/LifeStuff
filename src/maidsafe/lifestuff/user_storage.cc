@@ -170,11 +170,7 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
   mount_dir_ = drive_name;
   drive_in_user_space_->Mount(mount_dir_, drive_logo);
 #else
-  mount_dir_ = mount_dir_path / session->session_name();
-  boost::system::error_code ec;
-  if (fs::exists(mount_dir_, ec))
-    fs::remove_all(mount_dir_, ec);
-  fs::create_directories(mount_dir_, ec);
+  mount_dir_ = mount_dir_path;
   boost::thread(std::bind(&MaidDriveInUserSpace::Mount,
                           drive_in_user_space_,
                           mount_dir_,

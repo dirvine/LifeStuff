@@ -87,7 +87,7 @@ const uint8_t kThreads(10);
 const uint8_t kSecondsInterval(5);
 const std::string kLiteralOnline("kOnline");
 const std::string kLiteralOffline("kOffline");
-
+const std::string kAppHomeDirectory(".lifestuff");
 
 /// General
 typedef std::function<void(const std::string&, const std::string&)>
