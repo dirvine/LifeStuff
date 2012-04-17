@@ -227,7 +227,7 @@ int LifeStuff::CreateUser(const std::string &username,
   fs::path mount_dir(GetHomeDir() /
                      kAppHomeDirectory /
                      lifestuff_elements->session->session_name());
-  if (!fs::exists(kAppHomeDirectory, error_code)) {
+  if (!fs::exists(mount_dir, error_code)) {
     fs::create_directories(mount_dir, error_code);
     if (error_code) {
       DLOG(ERROR) << "Failed to create app directories - " << error_code.value()
@@ -321,7 +321,7 @@ int LifeStuff::LogIn(const std::string &username,
   fs::path mount_dir(GetHomeDir() /
                      kAppHomeDirectory /
                      lifestuff_elements->session->session_name());
-  if (!fs::exists(kAppHomeDirectory, error_code)) {
+  if (!fs::exists(mount_dir, error_code)) {
     fs::create_directories(mount_dir, error_code);
     if (error_code) {
       DLOG(ERROR) << "Failed to create app directories - " << error_code.value()
