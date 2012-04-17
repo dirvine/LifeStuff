@@ -221,6 +221,21 @@ int LifeStuff::ConnectToSignals(
         contact_deletion_function);
     ++connects;
   }
+  if (share_invitation_function) {
+    lifestuff_elements->message_handler->ConnectToShareInvitationSignal(
+        share_invitation_function);
+    ++connects;
+  }
+  if (share_deletion_function) {
+    lifestuff_elements->message_handler->ConnectToShareDeletionSignal(
+        share_deletion_function);
+    ++connects;
+  }
+  if (access_level_function) {
+    lifestuff_elements->message_handler->ConnectToMemberAccessLevelSignal(
+        access_level_function);
+    ++connects;
+  }
 
   if (connects > 0) {
     lifestuff_elements->state = kConnected;
