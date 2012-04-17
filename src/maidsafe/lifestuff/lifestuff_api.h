@@ -130,9 +130,9 @@ class LifeStuff {
   int GetPrivateShareList(const std::string &my_public_id,
                           StringIntMap *shares_names);
   // For owners only
-  int GetPrivateShareMemebers(const std::string &my_public_id,
-                              const std::string &share_name,
-                              StringIntMap *shares_members);
+  int GetPrivateShareMembers(const std::string &my_public_id,
+                             const std::string &share_name,
+                             StringIntMap *shares_members);
   int GetPrivateSharesIncludingMember(const std::string &my_public_id,
                                       const std::string &contact_public_id,
                                       std::vector<std::string> *shares_names);
@@ -172,9 +172,9 @@ class LifeStuff {
                                StringIntMap *results);
   int GetOpenShareList(const std::string &my_public_id,
                        std::vector<std::string> *shares_names);
-  int GetOpenShareMemebers(const std::string &my_public_id,
-                           const std::string &share_name,
-                           std::vector<std::string> *shares_members);
+  int GetOpenShareMembers(const std::string &my_public_id,
+                          const std::string &share_name,
+                          std::vector<std::string> *shares_members);
   // Should create a directory adapting to other possible shares
   int AcceptOpenShareInvitation(const std::string &my_public_id,
                                 const std::string &contact_public_id,

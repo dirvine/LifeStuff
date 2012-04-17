@@ -897,9 +897,9 @@ int LifeStuff::GetPrivateShareList(const std::string &my_public_id,
   return lifestuff_elements->user_storage->GetAllShares(shares_names);
 }
 
-int LifeStuff::GetPrivateShareMemebers(const std::string &my_public_id,
-                                       const std::string &share_name,
-                                       StringIntMap *shares_members) {
+int LifeStuff::GetPrivateShareMembers(const std::string &my_public_id,
+                                      const std::string &share_name,
+                                      StringIntMap *shares_members) {
   int result(PreContactChecks(lifestuff_elements->state,
                               my_public_id,
                               lifestuff_elements->session));
@@ -1017,7 +1017,7 @@ int LifeStuff::EditPrivateShareMembers(const std::string &my_public_id,
                             const std::string &share_name,
                             StringIntMap *results) {
   StringIntMap share_members;
-  int result(GetPrivateShareMemebers(my_public_id, share_name, &share_members));
+  int result(GetPrivateShareMembers(my_public_id, share_name, &share_members));
   if (result != kSuccess)
     return result;
 
@@ -1105,6 +1105,94 @@ int LifeStuff::LeavePrivateShare(const std::string &my_public_id,
   fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
                      fs::path("/").make_preferred() / share_name);
   return lifestuff_elements->user_storage->RemoveShare(share_dir);
+}
+
+int LifeStuff::CreateOpenShareFromExistingDirectory(
+      const std::string &my_public_id,
+      const fs::path &directory_in_lifestuff_drive,
+      const std::vector<std::string> &contacts,
+      std::string *share_name,
+      StringIntMap *results) {
+  StringIntMap map_contacts;
+  for (int i = 0; i != contacts.size(); ++i)
+    map_contacts.insert(std::make_pair(contacts[i], 1));
+  return CreatePrivateShareFromExistingDirectory(my_public_id,
+                                                 directory_in_lifestuff_drive,
+                                                 map_contacts,
+                                                 share_name,
+                                                 results);
+}
+
+int LifeStuff::CreateEmptyOpenShare(const std::string &my_public_id,
+                                    const std::vector<std::string> &contacts,
+                                    std::string *share_name,
+                                    StringIntMap *results) {
+  StringIntMap map_contacts;
+  for (int i = 0; i != contacts.size(); ++i)
+    map_contacts.insert(std::make_pair(contacts[i], 1));
+  return CreateEmptyPrivateShare(my_public_id,
+                                 map_contacts,
+                                 share_name,
+                                 results);
+}
+
+int LifeStuff::InviteMembersToOpenShare(const std::string &my_public_id,
+                                        const std::vector<std::string> &contacts,
+                                        const std::string &share_name,
+                                        StringIntMap *results) {
+
+}
+
+int LifeStuff::GetOpenShareList(const std::string &my_public_id,
+                                std::vector<std::string> *shares_names) {
+  StringIntMap map_names;
+  int result(GetPrivateShareList(my_public_id, &map_names));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to get open share list.";
+    return result;
+  }
+  shares_names->clear();
+  auto end(map_names.end());
+  for (auto it = map_names.begin(); it != end; ++it)
+    shares_names->push_back(it->first);
+  return kSuccess;
+}
+
+int LifeStuff::GetOpenShareMembers(const std::string &my_public_id,
+                                   const std::string &share_name,
+                                   std::vector<std::string> *shares_members) {
+  StringIntMap map_names;
+  int result(GetPrivateShareMembers(my_public_id, share_name, &map_names));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to get open share members.";
+    return result;
+  }
+  shares_members->clear();
+  auto end(map_names.end());
+  for (auto it = map_names.begin(); it != end; ++it)
+    shares_members->push_back(it->first);
+  return kSuccess;
+}
+
+// Should create a directory adapting to other possible shares
+int LifeStuff::AcceptOpenShareInvitation(const std::string &my_public_id,
+                                         const std::string &contact_public_id,
+                                         const std::string &share_id,
+                                         std::string *share_name) {
+  return AcceptPrivateShareInvitation(share_name,
+                                      my_public_id,
+                                      contact_public_id,
+                                      share_id);
+}
+
+int LifeStuff::RejectOpenShareInvitation(const std::string &my_public_id,
+                                         const std::string &share_id) {
+  return RejectPrivateShareInvitation(my_public_id, share_id);
+}
+
+int LifeStuff::LeaveOpenShare(const std::string &my_public_id,
+                              const std::string &share_name) {
+  return LeavePrivateShare(my_public_id, share_name);
 }
 
 ///
