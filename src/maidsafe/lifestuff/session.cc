@@ -86,7 +86,10 @@ PublicIdContactMap Session::GetAllContacts(ContactStatus status) {
   auto it(contact_handler_map_.begin());
   for (; it != contact_handler_map_.end(); ++it) {
     result[(*it).first] = std::set<std::string>();
-    (*it).second->OrderedContacts(&contacts, kAlphabetical, status);
+    BOOST_ASSERT(status <= std::numeric_limits<uint16_t>::max());
+    (*it).second->OrderedContacts(&contacts,
+                                  kAlphabetical,
+                                  static_cast<uint16_t>(status));
     for (auto item(contacts.begin()); item != contacts.end(); ++item)
       result[(*it).first].insert((*item).public_username);
   }
