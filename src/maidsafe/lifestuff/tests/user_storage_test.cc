@@ -103,8 +103,8 @@ class UserStorageTest : public testing::TestWithParam<bool> {
                    const std::string &share_id,
                    const std::string &share_tag) {
     fs::path hidden_file(user_storage->mount_dir() /
-                        fs::path("/").make_preferred() /
-                        std::string(share_id + drive::kMsHidden.string()));
+                         fs::path("/").make_preferred() /
+                         std::string(share_id + drive::kMsHidden.string()));
     std::string serialised_share_data;
     EXPECT_EQ(kSuccess, user_storage->ReadHiddenFile(hidden_file,
                                                      &serialised_share_data));
@@ -126,9 +126,12 @@ class UserStorageTest : public testing::TestWithParam<bool> {
     std::string share_name(share_tag);
     fs::path share_dir(user_storage->mount_dir() /
                       fs::path("/").make_preferred() / share_name);
-    EXPECT_EQ(kSuccess, user_storage->InsertShare(share_dir, share_id,
-                                              sender, &share_name,
-                                              directory_id, share_keyring));
+    EXPECT_EQ(kSuccess, user_storage->InsertShare(share_dir,
+                                                  share_id,
+                                                  sender,
+                                                  &share_name,
+                                                  directory_id,
+                                                  share_keyring));
   }
 
   void InsertShareTest(const std::shared_ptr<UserStorage> &user_storage,
@@ -293,14 +296,18 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
   user_storage1_->MountDrive(*mount_dir_, session1_, true);
   Sleep(interval_ * 2);
   StringIntMap users;
-  users.insert(std::make_pair(pub_name2_, 0));
+  if (private_share_)
+    users.insert(std::make_pair(pub_name2_, 0));
+  else
+    users.insert(std::make_pair(pub_name2_, 1));
   std::string tail;
   fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir() /
                                               fs::path("/").make_preferred(),
                                           &tail));
-  EXPECT_EQ(kSuccess,
-            user_storage1_->CreateShare(pub_name1_, directory0,
-                                        users, private_share_));
+  EXPECT_EQ(kSuccess, user_storage1_->CreateShare(pub_name1_,
+                                                  directory0,
+                                                  users,
+                                                  private_share_));
   user_storage1_->UnMountDrive();
 
   user_storage2_->MountDrive(*mount_dir_, session2_, true);
@@ -310,8 +317,12 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
   bs2::connection connection(
     message_handler2_->ConnectToShareInvitationSignal(
         std::bind(&UserStorageTest::DoAcceptShareInvitationTest,
-                  this, user_storage2_,
-                  args::_1, args::_2, args::_3, args::_4)));
+                  this,
+                  user_storage2_,
+                  args::_1,
+                  args::_2,
+                  args::_3,
+                  args::_4)));
   Sleep(interval_ * 2);
   boost::system::error_code error_code;
   EXPECT_FALSE(fs::exists(directory1, error_code))

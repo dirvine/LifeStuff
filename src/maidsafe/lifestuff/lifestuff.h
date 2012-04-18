@@ -109,7 +109,7 @@ typedef std::function<void(const std::string&,    // Own public ID
                            const std::string&)>   // Unique ID
         ShareInvitationFunction;
 // own public ID, share name
-typedef TwoStringsFunction ShareDeletionFunction; // PrivateShareDeletionFunction;
+typedef TwoStringsFunction ShareDeletionFunction;
 typedef std::function<void(const std::string&,  // Own public ID
                            const std::string&,  // Contact public ID
                            const std::string&,  // Share name

@@ -1149,8 +1149,7 @@ int LifeStuff::CreateOpenShareFromExistingDirectory(
                               my_public_id,
                               lifestuff_elements->session));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed pre checks in "
-                << "CreatePrivateShareFromExistingDirectory.";
+    DLOG(ERROR) << "Failed pre checks.";
     return result;
   }
 
@@ -1186,7 +1185,7 @@ int LifeStuff::CreateEmptyOpenShare(const std::string &my_public_id,
                               my_public_id,
                               lifestuff_elements->session));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed pre checks in CreateEmptyPrivateShare.";
+    DLOG(ERROR) << "Failed pre checks.";
     return result;
   }
 
