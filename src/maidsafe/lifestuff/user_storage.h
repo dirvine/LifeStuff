@@ -95,9 +95,12 @@ class UserStorage {
                              const std::string &directory_id);
 
   // ****************************** Shares *************************************
+  bool SaveShareData(const std::string &serialised_share_data,
+                     const std::string &share_id);
   int CreateShare(const std::string &sender_public_username,
                   const fs::path &absolute_path,
                   const StringIntMap &contacts,
+                  bool private_share,
                   StringIntMap *contacts_results = nullptr);
   int GetAllShares(StringIntMap *shares_names);
   int InsertShare(const fs::path &absolute_path,
@@ -109,14 +112,14 @@ class UserStorage {
   int StopShare(const std::string &sender_public_username,
                 const fs::path &absolute_path);
   int RemoveShare(const fs::path &absolute_path);
-  int UpdateShare(const fs::path &absolute_path,
-                  const std::string &share_id,
+  int UpdateShare(const std::string &share_id,
                   const std::string *new_share_id,
                   const std::string *new_directory_id,
                   const asymm::Keys *new_key_ring);
   int AddShareUsers(const std::string &sender_public_username,
                     const fs::path &absolute_path,
                     const StringIntMap &contacts,
+                    bool private_share,
                     StringIntMap *contacts_results = nullptr);
   int GetAllShareUsers(const fs::path &absolute_path,
                        StringIntMap *all_share_users) const;
@@ -129,7 +132,8 @@ class UserStorage {
   int SetShareUsersRights(const std::string &sender_public_username,
                           const fs::path &absolute_path,
                           const std::string &user_id,
-                          bool admin_rights);
+                          bool admin_rights,
+                          bool private_share);
   int GetShareDetails(const std::string &share_id,
                       fs::path *relative_path,
                       asymm::Keys *share_keyring,

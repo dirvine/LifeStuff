@@ -47,7 +47,6 @@ namespace lifestuff {
 namespace {
 
 struct InsertShareTag;
-struct StopShareTag;
 struct RemoveShareTag;
 struct UpdateShareTag;
 struct UpgradeShareTag;
@@ -68,18 +67,6 @@ struct AddMessageDetails<InsertShareTag> {
     non_admin_message->content.push_back("insert_share");
     non_admin_message->content.push_back(path.filename().string());
     non_admin_message->content.push_back(directory_id);
-  }
-};
-
-template<>
-struct AddMessageDetails<StopShareTag> {
-  void operator()(const fs::path&,
-                  const std::string&,
-                  const std::string&,
-                  InboxItem* admin_message,
-                  InboxItem* non_admin_message) {
-    admin_message->content.push_back("stop_share");
-    non_admin_message->content.push_back("stop_share");
   }
 };
 
@@ -259,9 +246,25 @@ int UserStorage::InsertDataMap(const fs::path &absolute_path,
              serialised_data_map);
 }
 
+bool UserStorage::SaveShareData(const std::string &serialised_share_data,
+                                const std::string &share_id) {
+  int result(WriteHiddenFile(
+                 mount_dir_ / fs::path("/").make_preferred() /
+                     std::string(share_id + drive::kMsHidden.string()),
+                 serialised_share_data,
+                 true));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to create file: " << result;
+    return false;
+  }
+
+  return true;
+}
+
 int UserStorage::CreateShare(const std::string &sender_public_username,
                              const fs::path &absolute_path,
                              const StringIntMap &contacts,
+                             bool private_share,
                              StringIntMap *contacts_results) {
   if (!message_handler_) {
     DLOG(WARNING) << "Uninitialised message handler.";
@@ -309,6 +312,7 @@ int UserStorage::CreateShare(const std::string &sender_public_username,
                share_id,
                key_ring,
                sender_public_username,
+               private_share,
                &directory_id);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed in creating share of " << absolute_path.string()
@@ -318,7 +322,7 @@ int UserStorage::CreateShare(const std::string &sender_public_username,
 
   // AddShareUser will send out the informing msg to contacts
   result = AddShareUsers(sender_public_username, absolute_path,
-                         contacts, contacts_results);
+                         contacts, private_share, contacts_results);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to add users to share at " << absolute_path;
     return result;
@@ -382,6 +386,7 @@ int UserStorage::StopShare(const std::string &sender_public_username,
                                                  "",
                                                  key_ring,
                                                  sender_public_username,
+                                                 true, // value doesn't matter
                                                  &directory_id);
   if (result != kSuccess)
     return result;
@@ -422,8 +427,7 @@ int UserStorage::RemoveShare(const fs::path& absolute_path) {
              drive_in_user_space_->RelativePath(absolute_path));
 }
 
-int UserStorage::UpdateShare(const fs::path &absolute_path,
-                             const std::string &share_id,
+int UserStorage::UpdateShare(const std::string &share_id,
                              const std::string *new_share_id,
                              const std::string *new_directory_id,
                              const asymm::Keys *new_key_ring) {
@@ -432,17 +436,23 @@ int UserStorage::UpdateShare(const fs::path &absolute_path,
     return kMessageHandlerNotInitialised;
   }
 
-  return drive_in_user_space_->UpdateShare(
-             drive_in_user_space_->RelativePath(absolute_path),
-             share_id,
-             new_share_id,
-             new_directory_id,
-             new_key_ring);
+  fs::path relative_path;
+  int result(GetShareDetails(share_id, &relative_path,
+                             nullptr, nullptr, nullptr));
+  if (result != kSuccess)
+    return result;
+
+  return drive_in_user_space_->UpdateShare(relative_path,
+                                           share_id,
+                                           new_share_id,
+                                           new_directory_id,
+                                           new_key_ring);
 }
 
 int UserStorage::AddShareUsers(const std::string &sender_public_username,
                                const fs::path &absolute_path,
                                const StringIntMap &contacts,
+                               bool private_share,
                                StringIntMap *contacts_results) {
   if (!message_handler_) {
     DLOG(WARNING) << "Uninitialised message handler.";
@@ -450,7 +460,10 @@ int UserStorage::AddShareUsers(const std::string &sender_public_username,
   }
 
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
-  int result(drive_in_user_space_->AddShareUsers(relative_path, contacts));
+
+  int result(drive_in_user_space_->AddShareUsers(relative_path,
+                                                 contacts,
+                                                 private_share));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to add users to share: " << absolute_path.string();
     return result;
@@ -481,7 +494,7 @@ int UserStorage::AddShareUsers(const std::string &sender_public_username,
                                               "",
                                               contacts_results);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to get share details: " << absolute_path.string();
+    DLOG(ERROR) << "Failed to inform contacts: " << absolute_path.string();
     return result;
   }
 
@@ -577,6 +590,7 @@ int UserStorage::RemoveShareUsers(const std::string &sender_public_username,
                                                  new_share_id,
                                                  key_ring,
                                                  sender_public_username,
+                                                 true, // value doesn't matter
                                                  &directory_id);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed in updating share of " << Base32Substr(share_id)
@@ -645,7 +659,8 @@ int UserStorage::GetShareUsersRights(const fs::path &absolute_path,
 int UserStorage::SetShareUsersRights(const std::string &sender_public_username,
                                      const fs::path &absolute_path,
                                      const std::string &user_id,
-                                     bool admin_rights) {
+                                     bool admin_rights,
+                                     bool private_share) {
   if (!message_handler_) {
     DLOG(WARNING) << "Uninitialised message handler.";
     return kMessageHandlerNotInitialised;
@@ -714,7 +729,8 @@ int UserStorage::SetShareUsersRights(const std::string &sender_public_username,
                   << ", with result of : " << result;
       return result;
     }
-    result = AddShareUsers(sender_public_username, absolute_path, contacts);
+    result = AddShareUsers(sender_public_username, absolute_path,
+                           contacts, private_share);
     if (result != kSuccess) {
       DLOG(ERROR) << "Failed in add contact " << user_id
                   << "  during the downgrading "
@@ -823,7 +839,7 @@ int UserStorage::InformContactsOperation(
     const asymm::Keys &key_ring,
     const std::string &new_share_id,
     StringIntMap *contacts_results) {
-  InboxItem admin_message, non_admin_message;
+  InboxItem admin_message(kShare), non_admin_message(kShare);
   std::string public_key, private_key;
 
 //   admin_message.item_type = kSharedDirectory;

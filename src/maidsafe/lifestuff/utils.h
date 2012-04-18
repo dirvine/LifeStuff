@@ -52,9 +52,10 @@ enum InboxItemType {
   kContactPresence,
   kContactProfilePicture,
   kContactDeletion,
+  kShare,
 
   // Max
-  kMaxInboxItemType = kContactDeletion
+  kMaxInboxItemType = kShare
 };
 
 struct InboxItem {
