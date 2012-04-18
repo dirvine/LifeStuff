@@ -180,9 +180,9 @@ int LifeStuff::ConnectToSignals(
     const ContactProfilePictureFunction &profile_picture_slot,
     const ContactPresenceFunction &contact_presence_slot,
     const ContactDeletionFunction &contact_deletion_function,
-    const PrivateShareInvitationFunction &share_invitation_function,
-    const PrivateShareDeletionFunction &share_deletion_function,
-    const PrivateMemberAccessLevelFunction &access_level_function) {
+    const ShareInvitationFunction &share_invitation_function,
+    const ShareDeletionFunction &share_deletion_function,
+    const MemberAccessLevelFunction &access_level_function) {
   if (lifestuff_elements->state != kInitialised) {
     DLOG(ERROR) << "Make sure that object is initialised";
     return kGeneralError;
@@ -868,7 +868,7 @@ int LifeStuff::CreatePrivateShareFromExistingDirectory(
                         fs::path("/").make_preferred() / (*share_name));
   } else {
     return lifestuff_elements->user_storage->CreateShare(my_public_id,
-              share_dir, contacts, results);
+              share_dir, contacts, true, results);
   }
 }
 
@@ -905,7 +905,7 @@ int LifeStuff::CreateEmptyPrivateShare(
   *share_name = share_dir.filename().string();
 
   return lifestuff_elements->user_storage->CreateShare(my_public_id,
-            share_dir, contacts, results);
+            share_dir, contacts, true, results);
 }
 
 int LifeStuff::GetPrivateShareList(const std::string &my_public_id,
@@ -1144,27 +1144,73 @@ int LifeStuff::CreateOpenShareFromExistingDirectory(
       const std::vector<std::string> &contacts,
       std::string *share_name,
       StringIntMap *results) {
-  StringIntMap map_contacts;
-  for (int i = 0; i != contacts.size(); ++i)
-    map_contacts.insert(std::make_pair(contacts[i], 1));
-  return CreatePrivateShareFromExistingDirectory(my_public_id,
-                                                 directory_in_lifestuff_drive,
-                                                 map_contacts,
-                                                 share_name,
-                                                 results);
+  BOOST_ASSERT(share_name);
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks in "
+                << "CreatePrivateShareFromExistingDirectory.";
+    return result;
+  }
+
+  *share_name =  directory_in_lifestuff_drive.filename().string();
+  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+                     fs::path("/").make_preferred() / (*share_name));
+  boost::system::error_code error_code;
+  if (fs::exists(share_dir, error_code)) {
+    // Drive Create Share method can only create a share from an existing folder
+    result = CreateEmptyOpenShare(my_public_id, contacts, share_name, results);
+    if (result != kSuccess)
+      return result;
+    return CopyDir(lifestuff_elements->user_storage->mount_dir() /
+                      fs::path("/").make_preferred() /
+                      directory_in_lifestuff_drive,
+                   lifestuff_elements->user_storage->mount_dir() /
+                        fs::path("/").make_preferred() / (*share_name));
+  } else {
+    StringIntMap map_contacts;
+    for (uint32_t i = 0; i != contacts.size(); ++i)
+      map_contacts.insert(std::make_pair(contacts[i], 1));
+    return lifestuff_elements->user_storage->CreateShare(my_public_id,
+              share_dir, map_contacts, false, results);
+  }
 }
 
 int LifeStuff::CreateEmptyOpenShare(const std::string &my_public_id,
                                     const std::vector<std::string> &contacts,
                                     std::string *share_name,
                                     StringIntMap *results) {
+  BOOST_ASSERT(share_name);
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks in CreateEmptyPrivateShare.";
+    return result;
+  }
+
+  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+                     fs::path("/").make_preferred() / (*share_name));
+  boost::system::error_code error_code;
+  int index(0);
+  while (fs::exists(share_dir, error_code)) {
+    share_dir = lifestuff_elements->user_storage->mount_dir() /
+                     fs::path("/").make_preferred() /
+                     ((*share_name) + "_" + IntToString(index));
+    ++index;
+  }
+  fs::create_directory(share_dir, error_code);
+  if (error_code) {
+    DLOG(ERROR) << "Failed creating directory: " << error_code.message();
+    return kGeneralError;
+  }
+  *share_name = share_dir.filename().string();
   StringIntMap map_contacts;
-  for (int i = 0; i != contacts.size(); ++i)
+  for (uint32_t i = 0; i != contacts.size(); ++i)
     map_contacts.insert(std::make_pair(contacts[i], 1));
-  return CreateEmptyPrivateShare(my_public_id,
-                                 map_contacts,
-                                 share_name,
-                                 results);
+  return lifestuff_elements->user_storage->CreateShare(my_public_id,
+            share_dir, map_contacts, false, results);
 }
 
 int LifeStuff::InviteMembersToOpenShare(const std::string &my_public_id,
@@ -1172,11 +1218,12 @@ int LifeStuff::InviteMembersToOpenShare(const std::string &my_public_id,
                                         const fs::path &absolute_path,
                                         StringIntMap *results) {
   StringIntMap map_contacts;
-  for (int i = 0; i != contacts.size(); ++i)
+  for (uint32_t i = 0; i != contacts.size(); ++i)
     map_contacts.insert(std::make_pair(contacts[i], 1));
   return lifestuff_elements->user_storage->AddShareUsers(my_public_id,
                                                          absolute_path,
                                                          map_contacts,
+                                                         false,
                                                          results);
 }
 

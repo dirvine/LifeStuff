@@ -102,26 +102,19 @@ typedef std::map<std::string, int> StringIntMap;
 typedef std::map<std::string, std::pair<ContactStatus, ContactPresence>>
         ContactMap;
 
-/// Private Shares
+/// Private/Open Shares
 typedef std::function<void(const std::string&,    // Own public ID
                            const std::string&,    // Contact public ID
                            const std::string&,    // Share Tag
                            const std::string&)>   // Unique ID
-        PrivateShareInvitationFunction;
+        ShareInvitationFunction;
 // own public ID, share name
-typedef TwoStringsFunction PrivateShareDeletionFunction;
+typedef TwoStringsFunction ShareDeletionFunction; // PrivateShareDeletionFunction;
 typedef std::function<void(const std::string&,  // Own public ID
                            const std::string&,  // Contact public ID
                            const std::string&,  // Share name
                            int)>                // Access level
-        PrivateMemberAccessLevelFunction;
-
-/// Open Shares
-typedef std::function<void(const std::string&,    // Own public ID
-                           const std::string&,    // Contact public ID
-                           const std::string&,    // Share Tag
-                           const std::string&)>   // Unique ID
-        OpenShareInvitationFunction;
+        MemberAccessLevelFunction;
 
 /// Chat
 // Own public ID, Contact public ID, Message

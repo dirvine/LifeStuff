@@ -60,9 +60,12 @@ class LifeStuff {
       const ContactProfilePictureFunction &profile_picture_slot,
       const ContactPresenceFunction &contact_presence_slot,
       const ContactDeletionFunction &contact_deletion_function,
-      const PrivateShareInvitationFunction &share_invitation_function,
+      const ShareInvitationFunction &share_invitation_function,
+      const ShareDeletionFunction &share_deletion_function,
+      const MemberAccessLevelFunction &access_level_function);
+      /*const PrivateShareInvitationFunction &share_invitation_function,
       const PrivateShareDeletionFunction &share_deletion_function,
-      const PrivateMemberAccessLevelFunction &access_level_function);
+      const PrivateMemberAccessLevelFunction &access_level_function);*/
   int Finalise();
 
   /// Credential operations
