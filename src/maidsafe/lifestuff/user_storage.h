@@ -100,6 +100,7 @@ class UserStorage {
   int CreateShare(const std::string &sender_public_username,
                   const fs::path &absolute_path,
                   const StringIntMap &contacts,
+                  bool private_share,
                   StringIntMap *contacts_results = nullptr);
   int GetAllShares(StringIntMap *shares_names);
   int InsertShare(const fs::path &absolute_path,
@@ -118,6 +119,7 @@ class UserStorage {
   int AddShareUsers(const std::string &sender_public_username,
                     const fs::path &absolute_path,
                     const StringIntMap &contacts,
+                    bool private_share,
                     StringIntMap *contacts_results = nullptr);
   int GetAllShareUsers(const fs::path &absolute_path,
                        StringIntMap *all_share_users) const;
@@ -130,7 +132,8 @@ class UserStorage {
   int SetShareUsersRights(const std::string &sender_public_username,
                           const fs::path &absolute_path,
                           const std::string &user_id,
-                          bool admin_rights);
+                          bool admin_rights,
+                          bool private_share);
   int GetShareDetails(const std::string &share_id,
                       fs::path *relative_path,
                       asymm::Keys *share_keyring,

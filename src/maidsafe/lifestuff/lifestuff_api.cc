@@ -990,10 +990,11 @@ int LifeStuff::AcceptPrivateShareInvitation(std::string *share_name,
     return result;
   }
 
+  fs::path hidden_file(mount_path() /
+                       fs::path("/").make_preferred() /
+                       std::string(share_id + drive::kMsHidden.string()));
   std::string serialised_share_data;
-  result = lifestuff_elements->user_storage->ReadHiddenFile(
-                mount_path() / fs::path("/").make_preferred() /
-                    std::string(share_id + drive::kMsHidden.string()),
+  result = lifestuff_elements->user_storage->ReadHiddenFile(hidden_file,
                 &serialised_share_data);
   if (result != kSuccess || serialised_share_data.empty()) {
     DLOG(ERROR) << "No such identifier found: " << result;
@@ -1013,9 +1014,6 @@ int LifeStuff::AcceptPrivateShareInvitation(std::string *share_name,
   }
 
   // remove the temp share invitation file no matter insertion succeed or not
-  fs::path hidden_file(mount_path() /
-                       fs::path("/").make_preferred() /
-                       std::string(share_id + drive::kMsHidden.string()));
   lifestuff_elements->user_storage->DeleteHiddenFile(hidden_file);
 
   fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
@@ -1081,6 +1079,7 @@ int LifeStuff::EditPrivateShareMembers(const std::string &my_public_id,
     lifestuff_elements->user_storage->AddShareUsers(my_public_id,
                                                     share_dir,
                                                     members_to_add,
+                                                    true,
                                                     &add_users_results);
     results->insert(add_users_results.begin(), add_users_results.end());
   }
@@ -1102,7 +1101,7 @@ int LifeStuff::EditPrivateShareMembers(const std::string &my_public_id,
     for (auto it = members_to_update.begin();
               it != members_to_update.end(); ++it) {
       result = lifestuff_elements->user_storage->SetShareUsersRights(
-                  my_public_id, share_dir, (*it).first, (*it).second);
+                  my_public_id, share_dir, (*it).first, (*it).second, true);
       results->insert(std::make_pair((*it).first, result));
     }
   }
