@@ -51,6 +51,23 @@ namespace maidsafe {
 
 namespace lifestuff {
 
+std::string CreatePin() {
+  std::stringstream pin_stream;
+  uint32_t pin(0);
+  while (pin == 0)
+    pin = RandomUint32();
+  pin_stream << pin;
+  return pin_stream.str();
+}
+
+fs::path CreateTestDirectory(fs::path const& parent, std::string *tail) {
+  *tail = RandomAlphaNumericString(5);
+  fs::path directory(parent / (*tail));
+  boost::system::error_code error_code;
+  fs::create_directories(directory, error_code);
+  return directory;
+}
+
 int GetValidatedMpidPublicKey(
     const std::string &public_username,
     const pcs::RemoteChunkStore::ValidationData &validation_data,
@@ -232,6 +249,36 @@ encrypt::DataMapPtr ParseSerialisedDataMap(
   return data_map;
 }
 
+#ifdef LOCAL_TARGETS_ONLY
+std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
+    const fs::path &buffered_chunk_store_path,
+    const fs::path &local_chunk_manager_path,
+    boost::asio::io_service &asio_service) {  // NOLINT (Dan)
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store(
+      pcs::CreateLocalChunkStore(buffered_chunk_store_path,
+                                 local_chunk_manager_path,
+                                 asio_service));
+  return remote_chunk_store;
+}
+#else
+std::shared_ptr<priv::chunk_store::RemoteChunkStore> BuildChunkStore(
+    const fs::path &base_dir,
+    std::shared_ptr<pd::ClientContainer> *client_container) {
+  *client_container = SetUpClientContainer(base_dir);
+  if (client_container) {
+    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store(
+        new pcs::RemoteChunkStore((*client_container)->chunk_store(),
+            (*client_container)->chunk_manager(),
+            (*client_container)->chunk_action_authority()));
+    return remote_chunk_store;
+  } else {
+    DLOG(ERROR) << "Failed to initialise client container.";
+    return nullptr;
+  }
+}
+#endif
+
+
 #ifndef LOCAL_TARGETS_ONLY
 
 int RetrieveBootstrapContacts(const fs::path &download_dir,
@@ -330,35 +377,17 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
   return kSuccess;
 }
 
-ClientContainerPtr SetUpClientContainer(const fs::path &test_dir) {
-  std::shared_ptr<asymm::Keys> key_pair(new asymm::Keys);
-  int result(asymm::GenerateKeyPair(key_pair.get()));
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to generate key pair.  Result: " << result;
-    return ClientContainerPtr();
-  }
-
-  std::string pub_key;
-  asymm::EncodePublicKey(key_pair->public_key, &pub_key);
-  result = asymm::Sign(pub_key, key_pair->private_key,
-                       &key_pair->validation_token);
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to sign public key.  Result: " << result;
-    return ClientContainerPtr();
-  }
-
-  key_pair->identity =
-      crypto::Hash<crypto::SHA512>(pub_key + key_pair->validation_token);
-
+ClientContainerPtr SetUpClientContainer(
+    const fs::path &base_dir) {
   ClientContainerPtr client_container(new pd::ClientContainer);
-  client_container->set_key_pair(key_pair);
-  if (!client_container->Init(test_dir / "buffered_chunk_store", 10, 4)) {
+  if (!client_container->Init(base_dir / "buffered_chunk_store", 10, 4)) {
     DLOG(ERROR) << "Failed to Init client_container.";
     return ClientContainerPtr();
   }
 
   std::vector<dht::Contact> bootstrap_contacts;
-  result = RetrieveBootstrapContacts(test_dir, &bootstrap_contacts);
+  int result = RetrieveBootstrapContacts(base_dir,
+                                         &bootstrap_contacts);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to retrieve bootstrap contacts.  Result: " << result;
     return ClientContainerPtr();

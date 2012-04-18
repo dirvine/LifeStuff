@@ -183,11 +183,7 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
   mount_dir_ = drive_name;
   drive_in_user_space_->Mount(mount_dir_, drive_logo);
 #else
-  mount_dir_ = mount_dir_path / session->session_name();
-  boost::system::error_code ec;
-  if (fs::exists(mount_dir_, ec))
-    fs::remove_all(mount_dir_, ec);
-  fs::create_directories(mount_dir_, ec);
+  mount_dir_ = mount_dir_path;
   boost::thread(std::bind(&MaidDriveInUserSpace::Mount,
                           drive_in_user_space_,
                           mount_dir_,
@@ -235,7 +231,9 @@ bool UserStorage::ParseAndSaveDataMap(const std::string &serialised_data_map,
   }
 
   *data_map_hash =
-      EncodeToBase32(crypto::Hash<crypto::SHA1>(serialised_data_map));
+      EncodeToBase32(crypto::Hash<crypto::SHA1>(serialised_data_map)) +
+      boost::lexical_cast<std::string>(
+          GetDurationSinceEpoch().total_microseconds());
   int result(WriteHiddenFile(
                  mount_dir_ / fs::path("/").make_preferred() /
                      std::string(*data_map_hash + drive::kMsHidden.string()),

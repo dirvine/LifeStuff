@@ -33,6 +33,7 @@
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/user_credentials.h"
+#include "maidsafe/lifestuff/utils.h"
 
 namespace args = std::placeholders;
 namespace fs = boost::filesystem;
@@ -49,9 +50,17 @@ class UserCredentialsTest : public testing::Test {
   UserCredentialsTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
         session_(new Session),
+        session2_(),
         asio_service_(),
         asio_service2_(),
-        cc_(),
+#ifndef LOCAL_TARGETS_ONLY
+        client_container_(),
+        client_container2_(),
+#endif
+        remote_chunk_store_(),
+        remote_chunk_store2_(),
+        user_credentials_(),
+        user_credentials2_(),
         username_(RandomAlphaNumericString(8)),
         pin_("1234"),
         password_(RandomAlphaNumericString(8)) {}
@@ -60,31 +69,47 @@ class UserCredentialsTest : public testing::Test {
   void SetUp() {
     asio_service_.Start(10);
     asio_service2_.Start(10);
-    cc_.reset(new UserCredentials(asio_service_.service(), session_));
+#ifdef LOCAL_TARGETS_ONLY
+  remote_chunk_store_ = BuildChunkStore(*test_dir_ /
+                                            RandomAlphaNumericString(8),
+                                        *test_dir_ / "simulation",
+                                        asio_service_.service());
+#else
+  remote_chunk_store_ = BuildChunkStore(*test_dir_, &client_container_);
+#endif
+    user_credentials_.reset(new UserCredentials(remote_chunk_store_, session_));
     session_->Reset();
-
-    cc_->Init(*test_dir_);
   }
 
   void TearDown() {
     asio_service_.Stop();
     asio_service2_.Stop();
-    cc_->initialised_ = false;
   }
 
-  std::shared_ptr<UserCredentials> CreateSecondUserCredentials() {
-    std::shared_ptr<Session> ss2(new Session);
-    std::shared_ptr<UserCredentials> cc2(
-        new UserCredentials(asio_service2_.service(), ss2));
-    ss2->Reset();
-    cc2->Init(*test_dir_);
-    return cc2;
+  void CreateSecondUserCredentials() {
+#ifdef LOCAL_TARGETS_ONLY
+    remote_chunk_store2_ = BuildChunkStore(*test_dir_ /
+                                               RandomAlphaNumericString(8),
+                                           *test_dir_ / "simulation",
+                                           asio_service2_.service());
+#else
+    remote_chunk_store2_ = BuildChunkStore(*test_dir_, &client_container2_);
+#endif
+    session2_.reset(new Session);
+    user_credentials2_.reset(new UserCredentials(remote_chunk_store2_,
+                                                 session2_));
+    session2_->Reset();
   }
 
   std::shared_ptr<fs::path> test_dir_;
-  std::shared_ptr<Session> session_;
+  std::shared_ptr<Session> session_, session2_;
   AsioService asio_service_, asio_service2_;
-  std::shared_ptr<UserCredentials> cc_;
+#ifndef LOCAL_TARGETS_ONLY
+  std::shared_ptr<pd::ClientContainer> client_container_, client_container2_;
+#endif
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_,
+                                         remote_chunk_store2_;
+  std::shared_ptr<UserCredentials> user_credentials_, user_credentials2_;
   std::string username_, pin_, password_;
 
  private:
@@ -98,7 +123,7 @@ TEST_F(UserCredentialsTest, FUNC_DirectCreate) {
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Preconditions fulfilled.\n===================\n";
 
-  ASSERT_TRUE(cc_->CreateUser(username_, pin_, password_));
+  ASSERT_TRUE(user_credentials_->CreateUser(username_, pin_, password_));
   ASSERT_EQ(username_, session_->username());
   ASSERT_EQ(pin_, session_->pin());
   ASSERT_EQ(password_, session_->password());
@@ -111,33 +136,34 @@ TEST_F(UserCredentialsTest, FUNC_LoginSequence) {
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Preconditions fulfilled.\n===================\n";
 
-  ASSERT_NE(kUserExists, cc_->CheckUserExists(username_, pin_));
-  ASSERT_TRUE(cc_->CreateUser(username_, pin_, password_));
+  ASSERT_NE(kUserExists, user_credentials_->CheckUserExists(username_, pin_));
+  ASSERT_TRUE(user_credentials_->CreateUser(username_, pin_, password_));
   ASSERT_EQ(username_, session_->username());
   ASSERT_EQ(pin_, session_->pin());
   ASSERT_EQ(password_, session_->password());
   DLOG(INFO) << "User created.\n===================\n";
 
-  ASSERT_TRUE(cc_->Logout());
+  ASSERT_TRUE(user_credentials_->Logout());
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Logged out.\n===================\n";
 
-  ASSERT_EQ(kUserExists, cc_->CheckUserExists(username_, pin_));
-  ASSERT_TRUE(cc_->ValidateUser(password_));
+  ASSERT_EQ(kUserExists, user_credentials_->CheckUserExists(username_, pin_));
+  ASSERT_TRUE(user_credentials_->ValidateUser(password_));
   ASSERT_EQ(username_, session_->username());
   ASSERT_EQ(pin_, session_->pin());
   ASSERT_EQ(password_, session_->password());
   DLOG(INFO) << "Logged in.\n===================\n";
 
-  ASSERT_TRUE(cc_->Logout());
+  ASSERT_TRUE(user_credentials_->Logout());
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Logged out.\n===================\n";
 
-  ASSERT_NE(kUserExists, cc_->CheckUserExists(RandomAlphaNumericString(9),
+  ASSERT_NE(kUserExists,
+            user_credentials_->CheckUserExists(RandomAlphaNumericString(9),
                                               pin_));
   DLOG(INFO) << "Can't log in with fake details.";
 }
@@ -148,32 +174,32 @@ TEST_F(UserCredentialsTest, FUNC_RepeatedValidateUser) {
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Preconditions fulfilled.\n===================\n";
 
-  ASSERT_NE(kUserExists, cc_->CheckUserExists(username_, pin_));
-  ASSERT_TRUE(cc_->CreateUser(username_, pin_, password_));
+  ASSERT_NE(kUserExists, user_credentials_->CheckUserExists(username_, pin_));
+  ASSERT_TRUE(user_credentials_->CreateUser(username_, pin_, password_));
   ASSERT_EQ(username_, session_->username());
   ASSERT_EQ(pin_, session_->pin());
   ASSERT_EQ(password_, session_->password());
   DLOG(INFO) << "User created.\n===================\n";
 
-  ASSERT_TRUE(cc_->Logout());
+  ASSERT_TRUE(user_credentials_->Logout());
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Logged out.\n===================\n";
 
-  ASSERT_EQ(kUserExists, cc_->CheckUserExists(username_, pin_));
+  ASSERT_EQ(kUserExists, user_credentials_->CheckUserExists(username_, pin_));
 
   DLOG(INFO) << "\n\n\n\n";
-  ASSERT_FALSE(cc_->ValidateUser(password_ + "aaaa"));
+  ASSERT_FALSE(user_credentials_->ValidateUser(password_ + "aaaa"));
   DLOG(INFO) << "\n\n\n\n";
-  ASSERT_TRUE(cc_->ValidateUser(password_));
+  ASSERT_TRUE(user_credentials_->ValidateUser(password_));
   DLOG(INFO) << "\n\n\n\n";
   ASSERT_EQ(username_, session_->username());
   ASSERT_EQ(pin_, session_->pin());
   ASSERT_EQ(password_, session_->password());
   DLOG(INFO) << "Logged in.\n===================\n";
 
-  ASSERT_TRUE(cc_->Logout());
+  ASSERT_TRUE(user_credentials_->Logout());
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
@@ -184,100 +210,101 @@ TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
-  ASSERT_NE(kUserExists, cc_->CheckUserExists(username_, pin_));
+  ASSERT_NE(kUserExists, user_credentials_->CheckUserExists(username_, pin_));
   DLOG(INFO) << "Preconditions fulfilled.\n===================\n";
 
-  ASSERT_TRUE(cc_->CreateUser(username_, pin_, password_));
+  ASSERT_TRUE(user_credentials_->CreateUser(username_, pin_, password_));
   ASSERT_EQ(username_, session_->username());
   ASSERT_EQ(pin_, session_->pin());
   ASSERT_EQ(password_, session_->password());
   DLOG(INFO) << "User created.\n===================\n";
 
-  ASSERT_TRUE(cc_->Logout());
+  ASSERT_TRUE(user_credentials_->Logout());
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Logged out.\n===================\n";
 
-  ASSERT_EQ(kUserExists, cc_->CheckUserExists(username_, pin_));
+  ASSERT_EQ(kUserExists, user_credentials_->CheckUserExists(username_, pin_));
 
-  ASSERT_TRUE(cc_->ValidateUser(password_));
+  ASSERT_TRUE(user_credentials_->ValidateUser(password_));
   ASSERT_EQ(username_, session_->username());
   ASSERT_EQ(pin_, session_->pin());
   ASSERT_EQ(password_, session_->password());
 
   DLOG(INFO) << "Logged in.\n===================\n";
   const std::string kNewUser(RandomAlphaNumericString(9));
-  ASSERT_TRUE(cc_->ChangeUsername(kNewUser));
+  ASSERT_TRUE(user_credentials_->ChangeUsername(kNewUser));
   ASSERT_EQ(kNewUser, session_->username());
   ASSERT_EQ(pin_, session_->pin());
   ASSERT_EQ(password_, session_->password());
   DLOG(INFO) << "Changed username.\n===================\n";
 
-  ASSERT_TRUE(cc_->Logout());
+  ASSERT_TRUE(user_credentials_->Logout());
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Logged out.\n===================\n";
 
-  ASSERT_EQ(kUserExists, cc_->CheckUserExists(kNewUser, pin_));
-  ASSERT_TRUE(cc_->ValidateUser(password_));
+  ASSERT_EQ(kUserExists, user_credentials_->CheckUserExists(kNewUser, pin_));
+  ASSERT_TRUE(user_credentials_->ValidateUser(password_));
   ASSERT_EQ(kNewUser, session_->username());
   ASSERT_EQ(pin_, session_->pin());
   ASSERT_EQ(password_, session_->password());
   DLOG(INFO) << "Logged in.\n===================\n";
 
   const std::string kNewPin("2207");
-  ASSERT_TRUE(cc_->ChangePin(kNewPin));
+  ASSERT_TRUE(user_credentials_->ChangePin(kNewPin));
   ASSERT_EQ(kNewUser, session_->username());
   ASSERT_EQ(kNewPin, session_->pin());
   ASSERT_EQ(password_, session_->password());
   DLOG(INFO) << "Changed pin.\n===================\n";
 
-  ASSERT_TRUE(cc_->Logout());
+  ASSERT_TRUE(user_credentials_->Logout());
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Logged out.\n===================\n";
 
-  ASSERT_EQ(kUserExists, cc_->CheckUserExists(kNewUser, kNewPin));
-  ASSERT_TRUE(cc_->ValidateUser(password_));
+  ASSERT_EQ(kUserExists, user_credentials_->CheckUserExists(kNewUser, kNewPin));
+  ASSERT_TRUE(user_credentials_->ValidateUser(password_));
   ASSERT_EQ(kNewUser, session_->username());
   ASSERT_EQ(kNewPin, session_->pin());
   ASSERT_EQ(password_, session_->password());
   DLOG(INFO) << "Logged in.\n===================\n";
 
   const std::string kNewPassword(RandomAlphaNumericString(9));
-  ASSERT_TRUE(cc_->ChangePassword(kNewPassword));
+  ASSERT_TRUE(user_credentials_->ChangePassword(kNewPassword));
   ASSERT_EQ(kNewUser, session_->username());
   ASSERT_EQ(kNewPin, session_->pin());
   ASSERT_EQ(kNewPassword, session_->password());
   DLOG(INFO) << "Changed password.\n===================\n";
 
-  ASSERT_TRUE(cc_->Logout());
+  ASSERT_TRUE(user_credentials_->Logout());
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Logged out.\n===================\n";
 
-  ASSERT_EQ(kUserExists, cc_->CheckUserExists(kNewUser, kNewPin));
+  ASSERT_EQ(kUserExists, user_credentials_->CheckUserExists(kNewUser, kNewPin));
   std::string new_pwd(kNewPassword);
-  ASSERT_TRUE(cc_->ValidateUser(new_pwd));
+  ASSERT_TRUE(user_credentials_->ValidateUser(new_pwd));
   ASSERT_EQ(kNewUser, session_->username());
   ASSERT_EQ(kNewPin, session_->pin());
   ASSERT_EQ(new_pwd, session_->password());
   DLOG(INFO) << "Logged in. New u/p/w.\n===================\n";
 
-  ASSERT_TRUE(cc_->Logout());
+  ASSERT_TRUE(user_credentials_->Logout());
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Logged out.\n===================\n";
 
-  ASSERT_NE(kUserExists, cc_->CheckUserExists(username_, pin_));
-  ASSERT_NE(kUserExists, cc_->CheckUserExists(kNewUser, pin_));
-  ASSERT_NE(kUserExists, cc_->CheckUserExists(username_, kNewPin));
-  ASSERT_FALSE(cc_->ValidateUser(password_))
+  ASSERT_NE(kUserExists, user_credentials_->CheckUserExists(username_, pin_));
+  ASSERT_NE(kUserExists, user_credentials_->CheckUserExists(kNewUser, pin_));
+  ASSERT_NE(kUserExists, user_credentials_->CheckUserExists(username_,
+                                                            kNewPin));
+  ASSERT_FALSE(user_credentials_->ValidateUser(password_))
                << "old details still work, damn it, damn the devil to hell";
   session_->Reset();
   ASSERT_TRUE(session_->username().empty());
@@ -292,16 +319,16 @@ TEST_F(UserCredentialsTest, FUNC_ParallelLogin) {
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Preconditions fulfilled.\n===================\n";
 
-  ASSERT_NE(kUserExists, cc_->CheckUserExists(username_, pin_));
-  ASSERT_TRUE(cc_->CreateUser(username_, pin_, password_));
+  ASSERT_NE(kUserExists, user_credentials_->CheckUserExists(username_, pin_));
+  ASSERT_TRUE(user_credentials_->CreateUser(username_, pin_, password_));
   ASSERT_EQ(username_, session_->username());
   ASSERT_EQ(pin_, session_->pin());
   ASSERT_EQ(password_, session_->password());
   DLOG(INFO) << "User created.\n===================\n";
 
-  std::shared_ptr<UserCredentials> cc2 = CreateSecondUserCredentials();
-  ASSERT_EQ(kUserExists, cc2->CheckUserExists(username_, pin_));
-  ASSERT_TRUE(cc2->ValidateUser(password_));
+  CreateSecondUserCredentials();
+  ASSERT_EQ(kUserExists, user_credentials2_->CheckUserExists(username_, pin_));
+  ASSERT_TRUE(user_credentials2_->ValidateUser(password_));
   DLOG(INFO) << "Successful parallel log in.";
 }
 
@@ -311,24 +338,24 @@ TEST_F(UserCredentialsTest, FUNC_MultiUserCredentialsLoginandLogout) {
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Preconditions fulfilled.\n===================\n";
 
-  ASSERT_NE(kUserExists, cc_->CheckUserExists(username_, pin_));
-  ASSERT_TRUE(cc_->CreateUser(username_, pin_, password_));
+  ASSERT_NE(kUserExists, user_credentials_->CheckUserExists(username_, pin_));
+  ASSERT_TRUE(user_credentials_->CreateUser(username_, pin_, password_));
   ASSERT_EQ(username_, session_->username());
   ASSERT_EQ(pin_, session_->pin());
   ASSERT_EQ(password_, session_->password());
   DLOG(INFO) << "User created.\n===================\n";
 
-  ASSERT_TRUE(cc_->Logout());
+  ASSERT_TRUE(user_credentials_->Logout());
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Logged out.\n===================\n";
 
-  std::shared_ptr<UserCredentials> cc2 = CreateSecondUserCredentials();
-  ASSERT_EQ(kUserExists, cc2->CheckUserExists(username_, pin_));
-  ASSERT_TRUE(cc2->ValidateUser(password_));
+  CreateSecondUserCredentials();
+  ASSERT_EQ(kUserExists, user_credentials2_->CheckUserExists(username_, pin_));
+  ASSERT_TRUE(user_credentials2_->ValidateUser(password_));
   DLOG(INFO) << "Successful parallel log in.";
-  ASSERT_TRUE(cc2->Logout());
+  ASSERT_TRUE(user_credentials2_->Logout());
   ASSERT_TRUE(session_->username().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());

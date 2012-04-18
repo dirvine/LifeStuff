@@ -49,9 +49,16 @@ namespace lifestuff {
 struct LifeStuff::Elements {
   Elements() : thread_count(kThreads),
                state(kZeroth),
-               base_directory(),
+               buffered_path(),
+#ifdef LOCAL_TARGETS_ONLY
+               simulation_path(),
+#endif
                interval(kSecondsInterval),
                asio_service(),
+               remote_chunk_store(),
+#ifndef LOCAL_TARGETS_ONLY
+               client_container(),
+#endif
                session(),
                user_credentials(),
                user_storage(),
@@ -60,9 +67,16 @@ struct LifeStuff::Elements {
 
   int thread_count;
   LifeStuffState state;
-  boost::filesystem::path base_directory;
+  fs::path buffered_path;
+#ifdef LOCAL_TARGETS_ONLY
+  fs::path simulation_path;
+#endif
   bptime::seconds interval;
   AsioService asio_service;
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store;
+#ifndef LOCAL_TARGETS_ONLY
+  std::shared_ptr<pd::ClientContainer> client_container;
+#endif
   std::shared_ptr<Session> session;
   std::shared_ptr<UserCredentials> user_credentials;
   std::shared_ptr<UserStorage> user_storage;
@@ -84,26 +98,52 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
   // Initialisation
   lifestuff_elements->asio_service.Start(lifestuff_elements->thread_count);
   lifestuff_elements->session.reset(new Session);
+
+  fs::path base_path, buffered_chunk_store_path, network_simulation_path;
+  if (base_directory.empty()) {
+    // Not a test: everything in $HOME/.lifestuff
+    base_path = GetHomeDir() / kAppHomeDirectory;
+    buffered_chunk_store_path = base_path / RandomAlphaNumericString(16);
+    boost::system::error_code error_code;
+    network_simulation_path = fs::temp_directory_path(error_code) /
+                              "lifestuff_simulation";
+  } else {
+    // Presumably a test
+    base_path = base_directory;
+    buffered_chunk_store_path = base_path / RandomAlphaNumericString(16);
+    network_simulation_path = base_path / "simulated_network";
+  }
+
+#ifdef LOCAL_TARGETS_ONLY
+  lifestuff_elements->remote_chunk_store =
+      BuildChunkStore(buffered_chunk_store_path,
+                      network_simulation_path,
+                      lifestuff_elements->asio_service.service());
+  lifestuff_elements->simulation_path = network_simulation_path;
+#else
+  lifestuff_elements->remote_chunk_store =
+      BuildChunkStore(buffered_chunk_store_path,
+                      &lifestuff_elements->client_container);
+#endif
+  lifestuff_elements->buffered_path = buffered_chunk_store_path;
+
   lifestuff_elements->user_credentials.reset(
-      new UserCredentials(lifestuff_elements->asio_service.service(),
+      new UserCredentials(lifestuff_elements->remote_chunk_store,
                           lifestuff_elements->session));
-  lifestuff_elements->user_credentials->Init(base_directory);
 
   lifestuff_elements->public_id.reset(
-      new PublicId(lifestuff_elements->user_credentials->remote_chunk_store(),
+      new PublicId(lifestuff_elements->remote_chunk_store,
                    lifestuff_elements->session,
                    lifestuff_elements->asio_service.service()));
 
   lifestuff_elements->message_handler.reset(
-      new MessageHandler(
-          lifestuff_elements->user_credentials->remote_chunk_store(),
-          lifestuff_elements->session,
-          lifestuff_elements->asio_service.service()));
+      new MessageHandler(lifestuff_elements->remote_chunk_store,
+                         lifestuff_elements->session,
+                         lifestuff_elements->asio_service.service()));
 
   lifestuff_elements->user_storage.reset(
-      new UserStorage(
-          lifestuff_elements->user_credentials->remote_chunk_store(),
-          lifestuff_elements->message_handler));
+      new UserStorage(lifestuff_elements->remote_chunk_store,
+                      lifestuff_elements->message_handler));
 
   lifestuff_elements->message_handler->ConnectToParseAndSaveDataMapSignal(
       std::bind(&UserStorage::ParseAndSaveDataMap,
@@ -113,7 +153,6 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
       std::bind(&MessageHandler::InformConfirmedContactOnline,
                 lifestuff_elements->message_handler, args::_1, args::_2));
 
-  lifestuff_elements->base_directory = base_directory;
   lifestuff_elements->state = kInitialised;
 
   return kSuccess;
@@ -141,10 +180,6 @@ int LifeStuff::ConnectToSignals(
     lifestuff_elements->message_handler->ConnectToFileTransferSignal(file_slot);
     ++connects;
   }
-//   if (share_slot) {
-//     lifestuff_elements->message_handler->ConnectToShareSignal(share_slot);
-//     ++connects;
-//   }
   if (new_contact_slot) {
     lifestuff_elements->public_id->ConnectToNewContactSignal(new_contact_slot);
     ++connects;
@@ -188,16 +223,27 @@ int LifeStuff::CreateUser(const std::string &username,
     return kGeneralError;
   }
 
-  lifestuff_elements->user_storage->MountDrive(
-      lifestuff_elements->base_directory,
-      lifestuff_elements->session,
-      true);
+  boost::system::error_code error_code;
+  fs::path mount_dir(GetHomeDir() /
+                     kAppHomeDirectory /
+                     lifestuff_elements->session->session_name());
+  if (!fs::exists(mount_dir, error_code)) {
+    fs::create_directories(mount_dir, error_code);
+    if (error_code) {
+      DLOG(ERROR) << "Failed to create app directories - " << error_code.value()
+                  << ": " << error_code.message();
+      return kGeneralError;
+    }
+  }
+
+  lifestuff_elements->user_storage->MountDrive(mount_dir,
+                                               lifestuff_elements->session,
+                                               true);
   if (!lifestuff_elements->user_storage->mount_status()) {
     DLOG(ERROR) << "Failed to mount";
     return kGeneralError;
   }
 
-  boost::system::error_code error_code;
   fs::create_directory(lifestuff_elements->user_storage->mount_dir() /
                        fs::path("/").make_preferred() /
                        "My Stuff", error_code);
@@ -206,8 +252,8 @@ int LifeStuff::CreateUser(const std::string &username,
     return kGeneralError;
   }
   fs::create_directory(lifestuff_elements->user_storage->mount_dir() /
-                       fs::path("/").make_preferred() /
-                       "Shared Stuff", error_code);
+                           fs::path("/").make_preferred() / "Shared Stuff",
+                       error_code);
   if (error_code) {
     DLOG(ERROR) << "Failed creating Shared Stuff: " << error_code.message();
     return kGeneralError;
@@ -253,7 +299,8 @@ int LifeStuff::CreatePublicId(const std::string &public_id) {
 int LifeStuff::LogIn(const std::string &username,
                      const std::string &pin,
                      const std::string &password) {
-  if (lifestuff_elements->state != kConnected) {
+  if (!(lifestuff_elements->state == kConnected ||
+        lifestuff_elements->state == kLoggedOut)) {
     DLOG(ERROR) << "Make sure that object is initialised and connected";
     return kGeneralError;
   }
@@ -270,10 +317,22 @@ int LifeStuff::LogIn(const std::string &username,
     return kGeneralError;
   }
 
-  lifestuff_elements->user_storage->MountDrive(
-      lifestuff_elements->base_directory,
-      lifestuff_elements->session,
-      false);
+  boost::system::error_code error_code;
+  fs::path mount_dir(GetHomeDir() /
+                     kAppHomeDirectory /
+                     lifestuff_elements->session->session_name());
+  if (!fs::exists(mount_dir, error_code)) {
+    fs::create_directories(mount_dir, error_code);
+    if (error_code) {
+      DLOG(ERROR) << "Failed to create app directories - " << error_code.value()
+                  << ": " << error_code.message();
+      return kGeneralError;
+    }
+  }
+
+  lifestuff_elements->user_storage->MountDrive(mount_dir,
+                                               lifestuff_elements->session,
+                                               false);
 
   if (!lifestuff_elements->user_storage->mount_status()) {
     DLOG(ERROR) << "Failed to mount";
@@ -310,11 +369,17 @@ int LifeStuff::LogOut() {
     return kGeneralError;
   }
 
-  if (!lifestuff_elements->user_credentials->remote_chunk_store()
-          ->WaitForCompletion()) {
+  if (!lifestuff_elements->remote_chunk_store->WaitForCompletion()) {
     DLOG(ERROR) << "Failed complete chunk operations.";
     return kGeneralError;
   }
+
+  // Delete mount directory
+  boost::system::error_code error_code;
+  fs::remove_all(lifestuff_elements->user_storage->mount_dir(), error_code);
+  if (error_code)
+    DLOG(WARNING) << "Failed to delete mount directory: "
+                  << lifestuff_elements->user_storage->mount_dir();
   lifestuff_elements->session->Reset();
 
   lifestuff_elements->state = kLoggedOut;
@@ -328,8 +393,15 @@ int LifeStuff::Finalise() {
     return kGeneralError;
   }
 
+  boost::system::error_code error_code;
+  fs::remove_all(lifestuff_elements->buffered_path, error_code);
+
+
   lifestuff_elements->asio_service.Stop();
-  lifestuff_elements->base_directory = fs::path();
+  lifestuff_elements->remote_chunk_store.reset();
+#ifndef LOCAL_TARGETS_ONLY
+  lifestuff_elements->client_container.reset();
+#endif
   lifestuff_elements->message_handler.reset();
   lifestuff_elements->public_id.reset();
   lifestuff_elements->session.reset();
