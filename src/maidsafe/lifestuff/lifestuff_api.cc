@@ -282,14 +282,14 @@ int LifeStuff::CreateUser(const std::string &username,
   }
 
   fs::create_directory(lifestuff_elements->user_storage->mount_dir() /
-                       fs::path("/").make_preferred() /
-                       "My Stuff", error_code);
+                           fs::path("/").make_preferred() / kMyStuff,
+                       error_code);
   if (error_code) {
     DLOG(ERROR) << "Failed creating My Stuff: " << error_code.message();
     return kGeneralError;
   }
   fs::create_directory(lifestuff_elements->user_storage->mount_dir() /
-                           fs::path("/").make_preferred() / "Shared Stuff",
+                           fs::path("/").make_preferred() / kSharedStuff,
                        error_code);
   if (error_code) {
     DLOG(ERROR) << "Failed creating Shared Stuff: " << error_code.message();
