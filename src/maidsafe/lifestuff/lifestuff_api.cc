@@ -875,7 +875,7 @@ int LifeStuff::CreateEmptyPrivateShare(
   }
   fs::create_directory(share_dir, error_code);
   if (error_code) {
-    DLOG(ERROR) << "Failed creating My Stuff: " << error_code.message();
+    DLOG(ERROR) << "Failed creating directory: " << error_code.message();
     return kGeneralError;
   }
   *share_name = share_dir.filename().string();
@@ -1138,9 +1138,15 @@ int LifeStuff::CreateEmptyOpenShare(const std::string &my_public_id,
 
 int LifeStuff::InviteMembersToOpenShare(const std::string &my_public_id,
                                         const std::vector<std::string> &contacts,
-                                        const std::string &share_name,
+                                        const fs::path &absolute_path,
                                         StringIntMap *results) {
-
+  StringIntMap map_contacts;
+  for (int i = 0; i != contacts.size(); ++i)
+    map_contacts.insert(std::make_pair(contacts[i], 1));
+  return lifestuff_elements->user_storage->AddShareUsers(my_public_id,
+                                                         absolute_path,
+                                                         map_contacts,
+                                                         results);
 }
 
 int LifeStuff::GetOpenShareList(const std::string &my_public_id,
