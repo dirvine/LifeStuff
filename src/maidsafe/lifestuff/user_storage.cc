@@ -248,9 +248,10 @@ int UserStorage::InsertDataMap(const fs::path &absolute_path,
 
 bool UserStorage::SaveShareData(const std::string &serialised_share_data,
                                 const std::string &share_id) {
+  std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
   int result(WriteHiddenFile(
                  mount_dir_ / fs::path("/").make_preferred() /
-                     std::string(share_id + drive::kMsHidden.string()),
+                     std::string(temp_name + drive::kMsHidden.string()),
                  serialised_share_data,
                  true));
   if (result != kSuccess) {
