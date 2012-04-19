@@ -77,6 +77,7 @@ MessageHandler::MessageHandler(
       share_update_signal_(new ShareUpdateSignal),
       member_access_level_signal_(new MemberAccessLevelSignal),
       save_share_data_signal_(new SaveShareDataSignal),
+      save_open_share_data_signal_(new SaveOpenShareDataSignal),
       contact_presence_signal_(new ContactPresenceSignal),
       contact_profile_picture_signal_(new ContactProfilePictureSignal),
       contact_deletion_signal_(new ContactDeletionSignal),
@@ -320,6 +321,8 @@ void MessageHandler::ProcessRetrieved(const passport::SelectableIdData &data,
                                break;
         case kContactDeletion: ContactDeletionSlot(inbox_item);
                                break;
+        case kOpenShareInvitation: OpenShareInvitationSlot(inbox_item);
+                                   break;
         case kShare: SignalShare(inbox_item);
                      break;
       }
@@ -482,6 +485,21 @@ void MessageHandler::ContactProfilePictureSlot(
   }
 
   (*contact_profile_picture_signal_)(receiver, sender);
+}
+
+void MessageHandler::OpenShareInvitationSlot(const InboxItem &inbox_item) {
+  BOOST_ASSERT(inbox_item.item_type == kOpenShareInvitation);
+  Message message;
+  InboxToProtobuf(inbox_item, &message);
+  if (!(*save_open_share_data_signal_)(message.SerializeAsString(),
+                                       inbox_item.content[0])) {
+    DLOG(ERROR) << "Failed to save received share data";
+    return;
+  }
+  (*open_share_invitation_signal_)(inbox_item.receiver_public_id,
+                                   inbox_item.sender_public_id,
+                                   inbox_item.content[0],
+                                   inbox_item.content[1]);
 }
 
 void MessageHandler::RetrieveMessagesForAllIds() {
@@ -682,6 +700,11 @@ bs2::connection MessageHandler::ConnectToMemberAccessLevelSignal(
 bs2::connection MessageHandler::ConnectToSaveShareDataSignal(
     const SaveShareDataSignal::slot_type &function) {
   return save_share_data_signal_->connect(function);
+}
+
+bs2::connection MessageHandler::ConnectToSaveOpenShareDataSignal(
+    const SaveOpenShareDataSignal::slot_type &function) {
+  return save_open_share_data_signal_->connect(function);
 }
 
 bs2::connection MessageHandler::ConnectToContactPresenceSignal(

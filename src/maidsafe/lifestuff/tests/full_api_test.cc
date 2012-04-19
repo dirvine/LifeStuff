@@ -49,251 +49,302 @@ namespace test {
 
 namespace {
 
-void TwoStringsAndBoolSlot(const std::string&,
-                           const std::string&,
-                           volatile bool *done) {
+struct TestingVariables {
+  TestingVariables()
+      : chat_message(),
+        chat_message_received(false),
+        file_name(),
+        file_id(),
+        file_transfer_received(false),
+        newly_contacted(false),
+        confirmed(false),
+        picture_updated(false),
+        presence_announced(false),
+        removal_message(),
+        removed(false),
+        new_private_share_id(),
+        privately_invited(false),
+        deleted_private_share_name(),
+        private_share_deleted(false),
+        access_private_share_name(),
+        private_member_access(0),
+        private_member_access_changed(false) {}
+  std::string chat_message;
+  bool chat_message_received;
+  std::string file_name, file_id;
+  bool file_transfer_received,
+       newly_contacted,
+       confirmed,
+       picture_updated,
+       presence_announced;
+  std::string removal_message;
+  bool removed;
+  std::string new_private_share_id;
+  bool privately_invited;
+  std::string deleted_private_share_name;
+  bool private_share_deleted;
+  std::string access_private_share_name;
+  int private_member_access;
+  bool private_member_access_changed;
+};
+
+void ChatSlot(const std::string&,
+              const std::string&,
+              const std::string &signal_message,
+              std::string *slot_message,
+              volatile bool *done) {
+  if (slot_message)
+    *slot_message = signal_message;
   *done = true;
 }
 
-void FileRecieved(const std::string&,
-                  const std::string&,
-                  const std::string&,
-                  const std::string &signal_file_id,
-                  std::string *slot_file_id,
-                  volatile bool *done) {
-  *slot_file_id = signal_file_id;
+void FileTransferSlot(const std::string&,
+                      const std::string&,
+                      const std::string &signal_file_name,
+                      const std::string &signal_file_id,
+                      std::string *slot_file_name,
+                      std::string *slot_file_id,
+                      volatile bool *done) {
+  if (slot_file_name)
+    *slot_file_name = signal_file_name;
+  if (slot_file_id)
+    *slot_file_id = signal_file_id;
   *done = true;
 }
 
-void ConfirmContactSlot(const std::string&,
-                        const std::string&,
-                        volatile bool *done) {
+void NewContactSlot(const std::string&,
+                    const std::string&,
+                    volatile bool *done) {
   *done = true;
 }
 
-void DeleteContactSlot(const std::string&,
-                       const std::string&,
-                       const std::string &signal_message,
-                       std::string *slot_message,
+
+void ContactConfirmationSlot(const std::string&,
+                             const std::string&,
+                             volatile bool *done) {
+  *done = true;
+}
+
+void ContactProfilePictureSlot(const std::string&,
+                               const std::string&,
+                               volatile bool *done) {
+  *done = true;
+}
+
+void ContactPresenceSlot(const std::string&,
+                         const std::string&,
+                         ContactPresence,
+                         volatile bool *done) {
+  *done = true;
+}
+
+void ContactDeletionSlot(const std::string&,
+                         const std::string&,
+                         const std::string &signal_message,
+                         std::string *slot_message,
+                         volatile bool *done) {
+  if (slot_message)
+    *slot_message = signal_message;
+  *done = true;
+}
+
+void ShareInvitationSlot(const std::string&,
+                         const std::string&,
+                         const std::string&,
+                         const std::string &signal_share_id,
+                         std::string *slot_share_id,
+                         volatile bool *done) {
+  if (slot_share_id)
+    *slot_share_id = signal_share_id;
+  *done = true;
+}
+
+void ShareDeletionSlot(const std::string&,
+                       const std::string &signal_share_name,
+                       std::string *slot_share_name,
                        volatile bool *done) {
-  *slot_message = signal_message;
+  if (slot_share_name)
+    *slot_share_name = signal_share_name;
   *done = true;
 }
 
-void PresenceSlot(const std::string&,
-                  const std::string&,
-                  ContactPresence,
-                  volatile bool *done) {
+void MemberAccessLevelSlot(const std::string&,
+                           const std::string&,
+                           const std::string &signal_share_name,
+                           int signal_member_access,
+                           std::string *slot_share_name,
+                           int *slot_member_access,
+                           volatile bool *done) {
+  if (slot_share_name)
+    *slot_share_name = signal_share_name;
+  if (slot_member_access)
+    *slot_member_access = signal_member_access;
   *done = true;
 }
 
-InboxItem CreatePresenceMessage(const std::string &sender,
-                                const std::string &receiver,
-                                bool logged_in) {
-  InboxItem message(kContactPresence);
-  message.sender_public_id = sender;
-  message.receiver_public_id = receiver;
-  if (logged_in)
-    message.content.push_back(kLiteralOnline);
-  else
-    message.content.push_back(kLiteralOffline);
-  return message;
+int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
+                                 LifeStuff &test_elements2,  // NOLINT (Dan)
+                                 TestingVariables &testing_variables1,  // NOLINT (Dan)
+                                 TestingVariables &testing_variables2,  // NOLINT (Dan)
+                                 const fs::path &test_dir,
+                                 const std::string &username1,
+                                 const std::string &pin1,
+                                 const std::string &password1,
+                                 const std::string &public_id1,
+                                 const std::string &username2,
+                                 const std::string &pin2,
+                                 const std::string &password2,
+                                 const std::string &public_id2) {
+  int result(0);
+  // Initialise and connect
+  result += test_elements1.Initialise(test_dir);
+  result += test_elements2.Initialise(test_dir);
+  result += test_elements1.ConnectToSignals(
+                std::bind(&ChatSlot, args::_1, args::_2, args::_3,
+                          &testing_variables1.chat_message,
+                          &testing_variables1.chat_message_received),
+                std::bind(&FileTransferSlot,
+                          args::_1, args::_2, args::_3, args::_4,
+                          &testing_variables1.file_name,
+                          &testing_variables1.file_id,
+                          &testing_variables1.file_transfer_received),
+                std::bind(&NewContactSlot, args::_1, args::_2,
+                          &testing_variables1.newly_contacted),
+                std::bind(&ContactConfirmationSlot, args::_1, args::_2,
+                          &testing_variables1.confirmed),
+                std::bind(&ContactProfilePictureSlot, args::_1, args::_2,
+                          &testing_variables1.picture_updated),
+                std::bind(&ContactPresenceSlot, args::_1, args::_2, args::_3,
+                          &testing_variables1.presence_announced),
+                std::bind(&ContactDeletionSlot, args::_1, args::_2, args::_3,
+                          &testing_variables1.removal_message,
+                          &testing_variables1.removed),
+                std::bind(&ShareInvitationSlot,
+                          args::_1, args::_2, args::_3, args::_4,
+                          &testing_variables1.new_private_share_id,
+                          &testing_variables1.privately_invited),
+                std::bind(&ShareDeletionSlot, args::_1, args::_2,
+                          &testing_variables1.deleted_private_share_name,
+                          &testing_variables1.private_share_deleted),
+                std::bind(&MemberAccessLevelSlot,
+                          args::_1, args::_2, args::_3, args::_4,
+                          &testing_variables1.access_private_share_name,
+                          &testing_variables1.private_member_access,
+                          &testing_variables1.private_member_access_changed));
+  result += test_elements2.ConnectToSignals(
+                std::bind(&ChatSlot, args::_1, args::_2, args::_3,
+                          &testing_variables2.chat_message,
+                          &testing_variables2.chat_message_received),
+                std::bind(&FileTransferSlot,
+                          args::_1, args::_2, args::_3, args::_4,
+                          &testing_variables2.file_name,
+                          &testing_variables2.file_id,
+                          &testing_variables2.file_transfer_received),
+                std::bind(&NewContactSlot, args::_1, args::_2,
+                          &testing_variables2.newly_contacted),
+                std::bind(&ContactConfirmationSlot, args::_1, args::_2,
+                          &testing_variables2.confirmed),
+                std::bind(&ContactProfilePictureSlot, args::_1, args::_2,
+                          &testing_variables2.picture_updated),
+                std::bind(&ContactPresenceSlot, args::_1, args::_2, args::_3,
+                          &testing_variables2.presence_announced),
+                std::bind(&ContactDeletionSlot, args::_1, args::_2, args::_3,
+                          &testing_variables2.removal_message,
+                          &testing_variables2.removed),
+                std::bind(&ShareInvitationSlot,
+                          args::_1, args::_2, args::_3, args::_4,
+                          &testing_variables2.new_private_share_id,
+                          &testing_variables2.privately_invited),
+                std::bind(&ShareDeletionSlot, args::_1, args::_2,
+                          &testing_variables2.deleted_private_share_name,
+                          &testing_variables2.private_share_deleted),
+                std::bind(&MemberAccessLevelSlot,
+                          args::_1, args::_2, args::_3, args::_4,
+                          &testing_variables2.access_private_share_name,
+                          &testing_variables2.private_member_access,
+                          &testing_variables2.private_member_access_changed));
+  if (result != kSuccess)
+    return result;
+
+  {
+    result += test_elements1.CreateUser(username1, pin1, password1);
+    result += test_elements1.CreatePublicId(public_id1);
+    result += test_elements1.LogOut();
+    if (result != kSuccess)
+      return result;
+  }
+  {
+    result += test_elements2.CreateUser(username2, pin2, password2);
+    result += test_elements2.CreatePublicId(public_id2);
+    result += test_elements2.AddContact(public_id2, public_id1);
+    result += test_elements2.LogOut();
+    if (result != kSuccess)
+      return result;
+  }
+  {
+    result += test_elements1.LogIn(username1, pin1, password1);
+
+    while (!testing_variables1.newly_contacted)
+      Sleep(bptime::milliseconds(100));
+
+    result += test_elements1.ConfirmContact(public_id1, public_id2);
+    result += test_elements1.LogOut();
+    if (result != kSuccess)
+      return result;
+  }
+  {
+    result += test_elements2.LogIn(username2, pin2, password2);
+    while (!testing_variables2.confirmed)
+      Sleep(bptime::milliseconds(100));
+    result += test_elements2.LogOut();
+    if (result != kSuccess)
+      return result;
+  }
+
+  return result;
 }
 
 }  // namespace
 
-class FixtureFullTest : public testing::Test {
- public:
-  FixtureFullTest()
-      : test_dir_(maidsafe::test::CreateTestPath()),
-        mount_dir_(fs::initial_path() / "LifeStuff"),
-        asio_service_(),
-        interval_(1),
-#ifndef LOCAL_TARGETS_ONLY
-        client_container_(),
-#endif
-        remote_chunk_store_(),
-        user_credentials_(),
-        user_storage_(),
-        session_(new Session),
-        public_id_(),
-        message_handler_(),
-        public_username_(RandomAlphaNumericString(5)),
-        username_(RandomString(6)),
-        pin_(CreatePin()),
-        password_(RandomString(6)) {}
+TEST(IndependentFullTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
+  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
+  std::string username(RandomString(6)),
+              pin(CreatePin()),
+              password(RandomString(6));
+  boost::system::error_code error_code;
+  volatile bool done;
 
- protected:
-  void SetUp() {
-    asio_service_.Start(5);
-#ifdef LOCAL_TARGETS_ONLY
-    remote_chunk_store_ = BuildChunkStore(*test_dir_ /
-                                               RandomAlphaNumericString(8),
-                                          *test_dir_ / "simulation",
-                                          asio_service_.service());
-#else
-    remote_chunk_store_ = BuildChunkStore(*test_dir_, client_container_);
-#endif
-    EXPECT_TRUE(remote_chunk_store_.get() != nullptr);
-    user_credentials_.reset(new UserCredentials(remote_chunk_store_, session_));
-
-    public_id_.reset(new PublicId(remote_chunk_store_,
-                                  session_,
-                                  asio_service_.service()));
-
-    message_handler_.reset(new MessageHandler(remote_chunk_store_,
-                                              session_,
-                                              asio_service_.service()));
-
-    user_storage_.reset(new UserStorage(remote_chunk_store_, message_handler_));
-
-    EXPECT_TRUE(user_credentials_->CreateUser(username_, pin_, password_));
-    EXPECT_EQ(kSuccess, public_id_->CreatePublicId(public_username_, true));
-    public_id_->StartCheckingForNewContacts(interval_);
-    message_handler_->StartCheckingForNewMessages(interval_);
-    user_storage_->MountDrive(mount_dir_, session_, true);
-  }
-
-  void TearDown() {
-    Quit();
-    asio_service_.Stop();
-  }
-
-  void Quit() {
-    user_storage_->UnMountDrive();
-    public_id_->StopCheckingForNewContacts();
-    message_handler_->StopCheckingForNewMessages();
-    user_credentials_->Logout();
-    session_->Reset();
-  }
-
-  void LogIn() {
-    EXPECT_EQ(-201004, user_credentials_->CheckUserExists(username_, pin_));
-    EXPECT_TRUE(user_credentials_->ValidateUser(password_));
-    public_id_->StartCheckingForNewContacts(interval_);
-    message_handler_->StartCheckingForNewMessages(interval_);
-    user_storage_->MountDrive(mount_dir_, session_, false);
-  }
-
-  maidsafe::test::TestPath test_dir_;
-  fs::path mount_dir_;
-  AsioService asio_service_;
-  bptime::seconds interval_;
-#ifndef LOCAL_TARGETS_ONLY
-  ClientContainerPtr client_container_;
-#endif
-  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
-  std::shared_ptr<UserCredentials> user_credentials_;
-  std::shared_ptr<UserStorage> user_storage_;
-  std::shared_ptr<Session> session_;
-  std::shared_ptr<PublicId> public_id_;
-  std::shared_ptr<MessageHandler> message_handler_;
-  std::string public_username_, username_, pin_, password_;
-};
-
-TEST_F(FixtureFullTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
+  LifeStuff test_elements1;
+  EXPECT_EQ(kSuccess, test_elements1.Initialise(*test_dir));
+  EXPECT_EQ(kSuccess,
+            test_elements1.ConnectToSignals(ChatFunction(),
+                                            FileTransferFunction(),
+                                            NewContactFunction(),
+                                            ContactConfirmationFunction(),
+                                            ContactProfilePictureFunction(),
+                                            std::bind(&ContactPresenceSlot,
+                                                      args::_1, args::_2,
+                                                      args::_3, &done),
+                                            ContactDeletionFunction(),
+                                            ShareInvitationFunction(),
+                                            ShareDeletionFunction(),
+                                            MemberAccessLevelFunction()));
+  EXPECT_EQ(kSuccess, test_elements1.CreateUser(username, pin, password));
   // Create directory
   std::string tail;
-  boost::system::error_code error_code;
-  fs::path test(CreateTestDirectory(user_storage_->mount_dir(), &tail));
+  fs::path test(CreateTestDirectory(test_elements1.mount_path(), &tail));
   EXPECT_TRUE(fs::exists(test, error_code));
   EXPECT_EQ(0, error_code.value());
 
-  // Logout
-  Quit();
-
-  // Login
-  LogIn();
+  // Log out - Log in
+  EXPECT_EQ(kSuccess, test_elements1.LogOut());
+  EXPECT_EQ(kSuccess, test_elements1.LogIn(username, pin, password));
 
   // Check directory exists
   EXPECT_TRUE(fs::exists(test, error_code));
   EXPECT_EQ(0, error_code.value());
-}
-
-TEST_F(FixtureFullTest, FUNC_ChangeProfilePictureDataMap) {
-  // Create file
-  std::string file_name(RandomAlphaNumericString(8)),
-              file_content(RandomString(5 * 1024));
-  fs::path file_path(user_storage_->mount_dir() / file_name);
-  std::ofstream ofstream(file_path.c_str(), std::ios::binary);
-  ofstream << file_content;
-  ofstream.close();
-
-  boost::system::error_code error_code;
-  EXPECT_TRUE(fs::exists(file_path, error_code));
-  EXPECT_EQ(0, error_code.value());
-
-  std::string new_data_map;
-  user_storage_->GetDataMap(file_path, &new_data_map);
-  EXPECT_FALSE(new_data_map.empty());
-  session_->set_profile_picture_data_map(public_username_, new_data_map);
-
-  // Logout
-  Quit();
-
-  // Login
-  LogIn();
-
-  // Check directory exists
-  EXPECT_TRUE(fs::exists(file_path, error_code));
-  EXPECT_EQ(0, error_code.value());
-  EXPECT_EQ(new_data_map, session_->profile_picture_data_map(public_username_));
-  new_data_map.clear();
-  user_storage_->GetDataMap(file_path, &new_data_map);
-  EXPECT_EQ(new_data_map, session_->profile_picture_data_map(public_username_));
-}
-
-TEST_F(FixtureFullTest, FUNC_ReconstructFileFromDataMap) {
-  // Create file
-  std::string file_name(RandomAlphaNumericString(8)),
-              file_content(RandomString(5 * 1024));
-  fs::path file_path(user_storage_->mount_dir() / file_name);
-  std::ofstream ofstream(file_path.c_str(), std::ios::binary);
-  ofstream << file_content;
-  ofstream.close();
-
-  std::string large_file_name(RandomAlphaNumericString(8)),
-              large_file_content(RandomString(20 * 1024 * 1024) +
-                                 std::string("a"));
-  fs::path large_file_path(user_storage_->mount_dir() / large_file_name);
-  std::ofstream large_ofstream(large_file_path.c_str(), std::ios::binary);
-  large_ofstream << large_file_content;
-  large_ofstream.close();
-
-  boost::system::error_code error_code;
-  EXPECT_TRUE(fs::exists(file_path, error_code));
-  EXPECT_EQ(0, error_code.value());
-  EXPECT_TRUE(fs::exists(large_file_path, error_code));
-  EXPECT_EQ(0, error_code.value());
-
-  std::string new_data_map, large_data_map;
-  user_storage_->GetDataMap(file_path, &new_data_map);
-  EXPECT_FALSE(new_data_map.empty());
-  session_->set_profile_picture_data_map(public_username_, new_data_map);
-  user_storage_->GetDataMap(file_path, &large_data_map);
-  EXPECT_FALSE(large_data_map.empty());
-
-  // Logout
-  Quit();
-
-  // Login
-  LogIn();
-
-  // Check directory exists
-  EXPECT_TRUE(fs::exists(file_path, error_code));
-  EXPECT_EQ(0, error_code.value());
-  EXPECT_EQ(new_data_map, session_->profile_picture_data_map(public_username_));
-  new_data_map.clear();
-  user_storage_->GetDataMap(file_path, &new_data_map);
-  EXPECT_EQ(new_data_map, session_->profile_picture_data_map(public_username_));
-  large_data_map.clear();
-  user_storage_->GetDataMap(large_file_path, &large_data_map);
-
-  std::string reconstructed_content(user_storage_->ConstructFile(new_data_map));
-  EXPECT_EQ(file_content, reconstructed_content);
-  std::string large_reconstructed_content(
-      user_storage_->ConstructFile(large_data_map));
-  EXPECT_TRUE(large_reconstructed_content.empty());
+  EXPECT_EQ(kSuccess, test_elements1.LogOut());
+  EXPECT_EQ(kSuccess, test_elements1.Finalise());
 }
 
 TEST(IndependentFullTest, FUNC_SendFile) {
@@ -301,32 +352,31 @@ TEST(IndependentFullTest, FUNC_SendFile) {
   std::string username1(RandomString(6)),
               pin1(CreatePin()),
               password1(RandomString(6)),
-              public_username1(RandomAlphaNumericString(5)),
-              file_name1(RandomAlphaNumericString(8)),
-              file_content1(RandomString(5 * 1024)),
-              file_name2(RandomAlphaNumericString(8));
+              public_id1(RandomAlphaNumericString(5));
+  std::string username2(RandomString(6)),
+              pin2(CreatePin()),
+              password2(RandomString(6)),
+              public_id2(RandomAlphaNumericString(5));
+  LifeStuff test_elements1, test_elements2;
+  TestingVariables testing_variables1, testing_variables2;
+  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+                                                   test_elements2,
+                                                   testing_variables1,
+                                                   testing_variables2,
+                                                   *test_dir,
+                                                   username1, pin1, password1,
+                                                   public_id1,
+                                                   username2, pin2, password2,
+                                                   public_id2));
+
   boost::system::error_code error_code;
   fs::path file_path1, file_path2;
-  volatile bool done;
-
+  std::string file_name1(RandomAlphaNumericString(8)),
+              file_content1(RandomString(5 * 1024)),
+              file_name2(RandomAlphaNumericString(8));
+  DLOG(ERROR) << "\n\n\n\n";
   {
-    LifeStuff test_elements1;
-    EXPECT_EQ(kSuccess, test_elements1.Initialise(*test_dir));
-    EXPECT_EQ(kSuccess,
-              test_elements1.ConnectToSignals(ChatFunction(),
-                                              FileTransferFunction(),
-                                              NewContactFunction(),
-                                              ContactConfirmationFunction(),
-                                              ContactProfilePictureFunction(),
-                                              std::bind(&PresenceSlot, args::_1,
-                                                        args::_2, args::_3,
-                                                        &done),
-                                              ContactDeletionFunction(),
-                                              PrivateShareInvitationFunction(),
-                                              PrivateShareDeletionFunction(),
-                                              PrivateMemberAccessLevelFunction()));
-    EXPECT_EQ(kSuccess, test_elements1.CreateUser(username1, pin1, password1));
-    EXPECT_EQ(kSuccess, test_elements1.CreatePublicId(public_username1));
+    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
 
     file_path1 = test_elements1.mount_path() / file_name1;
     std::ofstream ofstream(file_path1.c_str(), std::ios::binary);
@@ -334,240 +384,32 @@ TEST(IndependentFullTest, FUNC_SendFile) {
     ofstream.close();
     EXPECT_TRUE(fs::exists(file_path1, error_code));
     EXPECT_EQ(0, error_code.value());
+    EXPECT_EQ(kSuccess,
+              test_elements1.SendFile(public_id1, public_id2, file_path1));
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
-    EXPECT_EQ(kSuccess, test_elements1.Finalise());
-  }
-  std::string username2(RandomString(6)),
-              pin2(CreatePin()),
-              password2(RandomString(6)),
-              public_username2(RandomAlphaNumericString(5));
-  DLOG(ERROR) << "\n\n\n\n";
-  {
-    LifeStuff test_elements2;
-    EXPECT_EQ(kSuccess, test_elements2.Initialise(*test_dir));
-    EXPECT_EQ(kSuccess,
-              test_elements2.ConnectToSignals(ChatFunction(),
-                                              FileTransferFunction(),
-                                              NewContactFunction(),
-                                              ContactConfirmationFunction(),
-                                              ContactProfilePictureFunction(),
-                                              std::bind(&PresenceSlot, args::_1,
-                                                        args::_2, args::_3,
-                                                        &done),
-                                              ContactDeletionFunction(),
-                                              PrivateShareInvitationFunction(),
-                                              PrivateShareDeletionFunction(),
-                                              PrivateMemberAccessLevelFunction()));
-    EXPECT_EQ(kSuccess, test_elements2.CreateUser(username2, pin2, password2));
-    EXPECT_EQ(kSuccess, test_elements2.CreatePublicId(public_username2));
-    EXPECT_EQ(kSuccess, test_elements2.AddContact(public_username2,
-                                                  public_username1));
-    EXPECT_EQ(kSuccess, test_elements2.LogOut());
-    EXPECT_EQ(kSuccess, test_elements2.Finalise());
   }
   DLOG(ERROR) << "\n\n\n\n";
   {
-    LifeStuff test_elements1;
-    EXPECT_EQ(kSuccess, test_elements1.Initialise(*test_dir));
-    EXPECT_EQ(kSuccess,
-              test_elements1.ConnectToSignals(ChatFunction(),
-                                              FileTransferFunction(),
-                                              std::bind(&TwoStringsAndBoolSlot,
-                                                        args::_1, args::_2,
-                                                        &done),
-                                              ContactConfirmationFunction(),
-                                              ContactProfilePictureFunction(),
-                                              ContactPresenceFunction(),
-                                              ContactDeletionFunction(),
-                                              PrivateShareInvitationFunction(),
-                                              PrivateShareDeletionFunction(),
-                                              PrivateMemberAccessLevelFunction()));
-    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
-    while (!done)
-      Sleep(bptime::milliseconds(100));
-    EXPECT_EQ(kSuccess, test_elements1.ConfirmContact(public_username1,
-                                                      public_username2));
-
-    EXPECT_TRUE(fs::exists(file_path1, error_code));
-    EXPECT_EQ(0, error_code.value());
-    EXPECT_EQ(kSuccess, test_elements1.SendFile(public_username1,
-                                                public_username2,
-                                                file_path1));
-
-    EXPECT_EQ(kSuccess, test_elements1.LogOut());
-    EXPECT_EQ(kSuccess, test_elements1.Finalise());
-  }
-  DLOG(ERROR) << "\n\n\n\n";
-  {
-    done = false;
-    volatile bool file_received(false);
-    std::string file_id;
-    LifeStuff test_elements2;
-    EXPECT_EQ(kSuccess, test_elements2.Initialise(*test_dir));
-    EXPECT_EQ(kSuccess,
-              test_elements2.ConnectToSignals(ChatFunction(),
-                                              std::bind(&FileRecieved, args::_1,
-                                                        args::_2, args::_3,
-                                                        args::_4, &file_id,
-                                                        &file_received),
-                                              NewContactFunction(),
-                                              std::bind(&TwoStringsAndBoolSlot,
-                                                        args::_1, args::_2,
-                                                        &done),
-                                              ContactProfilePictureFunction(),
-                                              ContactPresenceFunction(),
-                                              ContactDeletionFunction(),
-                                              PrivateShareInvitationFunction(),
-                                              PrivateShareDeletionFunction(),
-                                              PrivateMemberAccessLevelFunction()));
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
-    while (!done && !file_received)
+    while (!testing_variables2.file_transfer_received)
       Sleep(bptime::milliseconds(100));
-    EXPECT_FALSE(file_id.empty());
+    EXPECT_FALSE(testing_variables2.file_id.empty());
+    EXPECT_EQ(file_name1, testing_variables2.file_name);
     EXPECT_EQ(kSuccess,
               test_elements2.AcceptSentFile(test_elements2.mount_path() /
                                                 file_name2,
-                                            file_id));
+                                            testing_variables2.file_id));
 
     EXPECT_TRUE(fs::exists(test_elements2.mount_path() / file_name2,
                            error_code));
     EXPECT_EQ(0, error_code.value());
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
-    EXPECT_EQ(kSuccess, test_elements2.Finalise());
   }
-}
 
-TEST(IndependentFullTest, FUNC_PresenceOnLogIn) {
-  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomString(6)),
-              pin1(CreatePin()),
-              password1(RandomString(6)),
-              public_username1(RandomAlphaNumericString(5));
-  volatile bool done;
-
-  {
-    LifeStuff test_elements1;
-    EXPECT_EQ(kSuccess, test_elements1.Initialise(*test_dir));
-    EXPECT_EQ(kSuccess,
-              test_elements1.ConnectToSignals(ChatFunction(),
-                                              FileTransferFunction(),
-                                              NewContactFunction(),
-                                              ContactConfirmationFunction(),
-                                              ContactProfilePictureFunction(),
-                                              std::bind(&PresenceSlot, args::_1,
-                                                        args::_2, args::_3,
-                                                        &done),
-                                              ContactDeletionFunction(),
-                                              PrivateShareInvitationFunction(),
-                                              PrivateShareDeletionFunction(),
-                                              PrivateMemberAccessLevelFunction()));
-    EXPECT_EQ(kSuccess, test_elements1.CreateUser(username1, pin1, password1));
-    EXPECT_EQ(kSuccess, test_elements1.CreatePublicId(public_username1));
-    EXPECT_EQ(kSuccess, test_elements1.LogOut());
-    EXPECT_EQ(kSuccess, test_elements1.Finalise());
-  }
-  std::string username2(RandomString(6)),
-              pin2(CreatePin()),
-              password2(RandomString(6)),
-              public_username2(RandomAlphaNumericString(5));
-  DLOG(ERROR) << "\n\n\n\n";
-  {
-    LifeStuff test_elements2;
-    EXPECT_EQ(kSuccess, test_elements2.Initialise(*test_dir));
-    EXPECT_EQ(kSuccess,
-              test_elements2.ConnectToSignals(ChatFunction(),
-                                              FileTransferFunction(),
-                                              NewContactFunction(),
-                                              ContactConfirmationFunction(),
-                                              ContactProfilePictureFunction(),
-                                              std::bind(&PresenceSlot, args::_1,
-                                                        args::_2, args::_3,
-                                                        &done),
-                                              ContactDeletionFunction(),
-                                              PrivateShareInvitationFunction(),
-                                              PrivateShareDeletionFunction(),
-                                              PrivateMemberAccessLevelFunction()));
-    EXPECT_EQ(kSuccess, test_elements2.CreateUser(username2, pin2, password2));
-    EXPECT_EQ(kSuccess, test_elements2.CreatePublicId(public_username2));
-    EXPECT_EQ(kSuccess, test_elements2.AddContact(public_username2,
-                                                  public_username1));
-    EXPECT_EQ(kSuccess, test_elements2.LogOut());
-    EXPECT_EQ(kSuccess, test_elements2.Finalise());
-  }
-  DLOG(ERROR) << "\n\n\n\n";
-  {
-    done = false;
-    LifeStuff test_elements1;
-    EXPECT_EQ(kSuccess, test_elements1.Initialise(*test_dir));
-    EXPECT_EQ(kSuccess,
-              test_elements1.ConnectToSignals(ChatFunction(),
-                                              FileTransferFunction(),
-                                              std::bind(&TwoStringsAndBoolSlot,
-                                                        args::_1, args::_2,
-                                                        &done),
-                                              ContactConfirmationFunction(),
-                                              ContactProfilePictureFunction(),
-                                              ContactPresenceFunction(),
-                                              ContactDeletionFunction(),
-                                              PrivateShareInvitationFunction(),
-                                              PrivateShareDeletionFunction(),
-                                              PrivateMemberAccessLevelFunction()));
-    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
-    while (!done)
-      Sleep(bptime::milliseconds(100));
-    EXPECT_EQ(kSuccess, test_elements1.ConfirmContact(public_username1,
-                                                      public_username2));
-    EXPECT_EQ(kSuccess, test_elements1.LogOut());
-    EXPECT_EQ(kSuccess, test_elements1.Finalise());
-  }
-  DLOG(ERROR) << "\n\n\n\n";
-  {
-    done = false;
-    LifeStuff test_elements2;
-    EXPECT_EQ(kSuccess, test_elements2.Initialise(*test_dir));
-    EXPECT_EQ(kSuccess,
-              test_elements2.ConnectToSignals(ChatFunction(),
-                                              FileTransferFunction(),
-                                              NewContactFunction(),
-                                              std::bind(&TwoStringsAndBoolSlot,
-                                                        args::_1, args::_2,
-                                                        &done),
-                                              ContactProfilePictureFunction(),
-                                              ContactPresenceFunction(),
-                                              ContactDeletionFunction(),
-                                              PrivateShareInvitationFunction(),
-                                              PrivateShareDeletionFunction(),
-                                              PrivateMemberAccessLevelFunction()));
-    EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
-    while (!done)
-      Sleep(bptime::milliseconds(100));
-    EXPECT_EQ(kSuccess, test_elements2.LogOut());
-    EXPECT_EQ(kSuccess, test_elements2.Finalise());
-  }
-  {
-    done = false;
-    LifeStuff test_elements1;
-    EXPECT_EQ(kSuccess, test_elements1.Initialise(*test_dir));
-    EXPECT_EQ(kSuccess,
-              test_elements1.ConnectToSignals(ChatFunction(),
-                                              FileTransferFunction(),
-                                              NewContactFunction(),
-                                              ContactConfirmationFunction(),
-                                              ContactProfilePictureFunction(),
-                                              std::bind(&PresenceSlot, args::_1,
-                                                        args::_2, args::_3,
-                                                        &done),
-                                              ContactDeletionFunction(),
-                                              PrivateShareInvitationFunction(),
-                                              PrivateShareDeletionFunction(),
-                                              PrivateMemberAccessLevelFunction()));
-    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
-    EXPECT_FALSE(done);
-    EXPECT_EQ(kSuccess, test_elements1.LogOut());
-    EXPECT_EQ(kSuccess, test_elements1.Finalise());
-  }
+  EXPECT_EQ(kSuccess, test_elements1.Finalise());
+  EXPECT_EQ(kSuccess, test_elements2.Finalise());
 }
 
 TEST(IndependentFullTest, FUNC_ProfilePicture) {
@@ -575,147 +417,49 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
   std::string username1(RandomString(6)),
               pin1(CreatePin()),
               password1(RandomString(6)),
-              public_username1(RandomAlphaNumericString(5)),
-              file_content1,
-              file_content2(RandomString(900 * 1024));
-  boost::system::error_code error_code;
-  volatile bool done;
-
-  DLOG(ERROR) << "\n\nCreating " << public_username1;
-  {
-    LifeStuff test_elements1;
-    EXPECT_EQ(kSuccess, test_elements1.Initialise(*test_dir));
-    EXPECT_EQ(kSuccess,
-              test_elements1.ConnectToSignals(ChatFunction(),
-                                              FileTransferFunction(),
-                                              NewContactFunction(),
-                                              ContactConfirmationFunction(),
-                                              ContactProfilePictureFunction(),
-                                              std::bind(&PresenceSlot, args::_1,
-                                                        args::_2, args::_3,
-                                                        &done),
-                                              ContactDeletionFunction(),
-                                              PrivateShareInvitationFunction(),
-                                              PrivateShareDeletionFunction(),
-                                              PrivateMemberAccessLevelFunction()));
-    EXPECT_EQ(kSuccess, test_elements1.CreateUser(username1, pin1, password1));
-    EXPECT_EQ(kSuccess, test_elements1.CreatePublicId(public_username1));
-    EXPECT_EQ(kSuccess, test_elements1.LogOut());
-    EXPECT_EQ(kSuccess, test_elements1.Finalise());
-  }
+              public_id1(RandomAlphaNumericString(5));
   std::string username2(RandomString(6)),
               pin2(CreatePin()),
               password2(RandomString(6)),
-              public_username2(RandomAlphaNumericString(5));
-  DLOG(ERROR) << "\n\n\n\nCreating " << public_username2;
-  {
-    LifeStuff test_elements2;
-    EXPECT_EQ(kSuccess, test_elements2.Initialise(*test_dir));
-    EXPECT_EQ(kSuccess,
-              test_elements2.ConnectToSignals(ChatFunction(),
-                                              FileTransferFunction(),
-                                              NewContactFunction(),
-                                              ContactConfirmationFunction(),
-                                              ContactProfilePictureFunction(),
-                                              std::bind(&PresenceSlot, args::_1,
-                                                        args::_2, args::_3,
-                                                        &done),
-                                              ContactDeletionFunction(),
-                                              PrivateShareInvitationFunction(),
-                                              PrivateShareDeletionFunction(),
-                                              PrivateMemberAccessLevelFunction()));
-    EXPECT_EQ(kSuccess, test_elements2.CreateUser(username2, pin2, password2));
-    EXPECT_EQ(kSuccess, test_elements2.CreatePublicId(public_username2));
-    EXPECT_EQ(kSuccess, test_elements2.AddContact(public_username2,
-                                                  public_username1));
-    EXPECT_EQ(kSuccess, test_elements2.LogOut());
-    EXPECT_EQ(kSuccess, test_elements2.Finalise());
-  }
-  DLOG(ERROR) << "\n\n\n\nLoggin in " << public_username1;
-  {
-    done = false;
-    LifeStuff test_elements1;
-    EXPECT_EQ(kSuccess, test_elements1.Initialise(*test_dir));
-    EXPECT_EQ(kSuccess,
-              test_elements1.ConnectToSignals(ChatFunction(),
-                                              FileTransferFunction(),
-                                              std::bind(&TwoStringsAndBoolSlot,
-                                                        args::_1, args::_2,
-                                                        &done),
-                                              ContactConfirmationFunction(),
-                                              ContactProfilePictureFunction(),
-                                              ContactPresenceFunction(),
-                                              ContactDeletionFunction(),
-                                              PrivateShareInvitationFunction(),
-                                              PrivateShareDeletionFunction(),
-                                              PrivateMemberAccessLevelFunction()));
-    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
-    while (!done)
-      Sleep(bptime::milliseconds(100));
-    EXPECT_EQ(kSuccess, test_elements1.ConfirmContact(public_username1,
-                                                      public_username2));
-    EXPECT_EQ(kSuccess, test_elements1.LogOut());
-    EXPECT_EQ(kSuccess, test_elements1.Finalise());
-  }
-  DLOG(ERROR) << "\n\n\n\nLogging in " << public_username2;
-  {
-    done = false;
-    LifeStuff test_elements2;
-    EXPECT_EQ(kSuccess, test_elements2.Initialise(*test_dir));
-    EXPECT_EQ(kSuccess,
-              test_elements2.ConnectToSignals(ChatFunction(),
-                                              FileTransferFunction(),
-                                              NewContactFunction(),
-                                              std::bind(&TwoStringsAndBoolSlot,
-                                                        args::_1, args::_2,
-                                                        &done),
-                                              ContactProfilePictureFunction(),
-                                              ContactPresenceFunction(),
-                                              ContactDeletionFunction(),
-                                              PrivateShareInvitationFunction(),
-                                              PrivateShareDeletionFunction(),
-                                              PrivateMemberAccessLevelFunction()));
-    EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
-    while (!done)
-      Sleep(bptime::milliseconds(100));
+              public_id2(RandomAlphaNumericString(5));
+  LifeStuff test_elements1, test_elements2;
+  TestingVariables testing_variables1, testing_variables2;
+  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+                                                   test_elements2,
+                                                   testing_variables1,
+                                                   testing_variables2,
+                                                   *test_dir,
+                                                   username1, pin1, password1,
+                                                   public_id1,
+                                                   username2, pin2, password2,
+                                                   public_id2));
 
+  std::string file_content1, file_content2(RandomString(5 * 1024));
+  DLOG(ERROR) << "\n\n\n\n";
+  {
+    EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     // Setting of profile image
-    EXPECT_EQ(kSuccess, test_elements2.ChangeProfilePicture(public_username2,
+    EXPECT_EQ(kSuccess, test_elements2.ChangeProfilePicture(public_id2,
                                                             file_content2));
     Sleep(bptime::seconds(1));
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
-    EXPECT_EQ(kSuccess, test_elements2.Finalise());
   }
-  DLOG(ERROR) << "\n\n\n\nLogging in " << public_username1;
+  DLOG(ERROR) << "\n\n\n\n";
   {
-    done = false;
-    LifeStuff test_elements1;
-    EXPECT_EQ(kSuccess, test_elements1.Initialise(*test_dir));
-    EXPECT_EQ(kSuccess,
-              test_elements1.ConnectToSignals(ChatFunction(),
-                                              FileTransferFunction(),
-                                              NewContactFunction(),
-                                              ContactConfirmationFunction(),
-                                              std::bind(&TwoStringsAndBoolSlot,
-                                                        args::_1, args::_2,
-                                                        &done),
-                                              ContactPresenceFunction(),
-                                              ContactDeletionFunction(),
-                                              PrivateShareInvitationFunction(),
-                                              PrivateShareDeletionFunction(),
-                                              PrivateMemberAccessLevelFunction()));
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
-    while (!done)
+    while (!testing_variables1.picture_updated)
       Sleep(bptime::milliseconds(100));
 
-    file_content1 = test_elements1.GetContactProfilePicture(public_username1,
-                                                            public_username2);
+    file_content1 = test_elements1.GetContactProfilePicture(public_id1,
+                                                            public_id2);
     EXPECT_TRUE(file_content2 == file_content1);
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
-    EXPECT_EQ(kSuccess, test_elements1.Finalise());
   }
+
+  EXPECT_EQ(kSuccess, test_elements1.Finalise());
+  EXPECT_EQ(kSuccess, test_elements2.Finalise());
 }
 
 TEST(IndependentFullTest, FUNC_RemoveContact) {
@@ -723,178 +467,193 @@ TEST(IndependentFullTest, FUNC_RemoveContact) {
   std::string username1(RandomString(6)),
               pin1(CreatePin()),
               password1(RandomString(6)),
-              public_username1(RandomAlphaNumericString(5)),
-              file_content1,
-              file_content2(RandomString(900 * 1024));
-  boost::system::error_code error_code;
-  volatile bool done;
-
-  DLOG(ERROR) << "\n\nCreating " << public_username1;
-  {
-    LifeStuff test_elements1;
-    EXPECT_EQ(kSuccess, test_elements1.Initialise(*test_dir));
-    EXPECT_EQ(kSuccess,
-              test_elements1.ConnectToSignals(ChatFunction(),
-                                              FileTransferFunction(),
-                                              NewContactFunction(),
-                                              ContactConfirmationFunction(),
-                                              ContactProfilePictureFunction(),
-                                              std::bind(&PresenceSlot, args::_1,
-                                                        args::_2, args::_3,
-                                                        &done),
-                                              ContactDeletionFunction(),
-                                              PrivateShareInvitationFunction(),
-                                              PrivateShareDeletionFunction(),
-                                              PrivateMemberAccessLevelFunction()));
-    EXPECT_EQ(kSuccess, test_elements1.CreateUser(username1, pin1, password1));
-    EXPECT_EQ(kSuccess, test_elements1.CreatePublicId(public_username1));
-    EXPECT_EQ(kSuccess, test_elements1.LogOut());
-    EXPECT_EQ(kSuccess, test_elements1.Finalise());
-  }
+              public_id1(RandomAlphaNumericString(5));
   std::string username2(RandomString(6)),
               pin2(CreatePin()),
               password2(RandomString(6)),
-              public_username2(RandomAlphaNumericString(5));
-  DLOG(ERROR) << "\n\n\n\nCreating " << public_username2;
-  {
-    LifeStuff test_elements2;
-    EXPECT_EQ(kSuccess, test_elements2.Initialise(*test_dir));
-    EXPECT_EQ(kSuccess,
-              test_elements2.ConnectToSignals(ChatFunction(),
-                                              FileTransferFunction(),
-                                              NewContactFunction(),
-                                              ContactConfirmationFunction(),
-                                              ContactProfilePictureFunction(),
-                                              std::bind(&PresenceSlot, args::_1,
-                                                        args::_2, args::_3,
-                                                        &done),
-                                              ContactDeletionFunction(),
-                                              PrivateShareInvitationFunction(),
-                                              PrivateShareDeletionFunction(),
-                                              PrivateMemberAccessLevelFunction()));
-    EXPECT_EQ(kSuccess, test_elements2.CreateUser(username2, pin2, password2));
-    EXPECT_EQ(kSuccess, test_elements2.CreatePublicId(public_username2));
-    EXPECT_EQ(kSuccess, test_elements2.AddContact(public_username2,
-                                                  public_username1));
-    EXPECT_EQ(kSuccess, test_elements2.LogOut());
-    EXPECT_EQ(kSuccess, test_elements2.Finalise());
-  }
-  DLOG(ERROR) << "\n\n\n\nLoggin in " << public_username1;
-  {
-    done = false;
-    LifeStuff test_elements1;
-    EXPECT_EQ(kSuccess, test_elements1.Initialise(*test_dir));
-    EXPECT_EQ(kSuccess,
-              test_elements1.ConnectToSignals(ChatFunction(),
-                                              FileTransferFunction(),
-                                              std::bind(&TwoStringsAndBoolSlot,
-                                                        args::_1, args::_2,
-                                                        &done),
-                                              ContactConfirmationFunction(),
-                                              ContactProfilePictureFunction(),
-                                              ContactPresenceFunction(),
-                                              ContactDeletionFunction(),
-                                              PrivateShareInvitationFunction(),
-                                              PrivateShareDeletionFunction(),
-                                              PrivateMemberAccessLevelFunction()));
-    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
-    while (!done)
-      Sleep(bptime::milliseconds(100));
-    EXPECT_EQ(kSuccess, test_elements1.ConfirmContact(public_username1,
-                                                      public_username2));
-    EXPECT_EQ(kSuccess, test_elements1.LogOut());
-    EXPECT_EQ(kSuccess, test_elements1.Finalise());
-  }
-  DLOG(ERROR) << "\n\n\n\nLogging in " << public_username2;
-  {
-    done = false;
-    LifeStuff test_elements2;
-    EXPECT_EQ(kSuccess, test_elements2.Initialise(*test_dir));
-    EXPECT_EQ(kSuccess,
-              test_elements2.ConnectToSignals(ChatFunction(),
-                                              FileTransferFunction(),
-                                              NewContactFunction(),
-                                              std::bind(&TwoStringsAndBoolSlot,
-                                                        args::_1, args::_2,
-                                                        &done),
-                                              ContactProfilePictureFunction(),
-                                              ContactPresenceFunction(),
-                                              ContactDeletionFunction(),
-                                              PrivateShareInvitationFunction(),
-                                              PrivateShareDeletionFunction(),
-                                              PrivateMemberAccessLevelFunction()));
-    EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
-    while (!done)
-      Sleep(bptime::milliseconds(100));
+              public_id2(RandomAlphaNumericString(5));
+  LifeStuff test_elements1, test_elements2;
+  TestingVariables testing_variables1, testing_variables2;
+  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+                                                   test_elements2,
+                                                   testing_variables1,
+                                                   testing_variables2,
+                                                   *test_dir,
+                                                   username1, pin1, password1,
+                                                   public_id1,
+                                                   username2, pin2, password2,
+                                                   public_id2));
 
-    EXPECT_EQ(kSuccess, test_elements2.LogOut());
-    EXPECT_EQ(kSuccess, test_elements2.Finalise());
-  }
-  DLOG(ERROR) << "\n\n\n\nLogging in " << public_username1;
+  DLOG(ERROR) << "\n\n\n\n";
   std::string removal_message("It's not me, it's you.");
   {
-    done = false;
-    LifeStuff test_elements1;
-    EXPECT_EQ(kSuccess, test_elements1.Initialise(*test_dir));
-    EXPECT_EQ(kSuccess,
-              test_elements1.ConnectToSignals(ChatFunction(),
-                                              FileTransferFunction(),
-                                              NewContactFunction(),
-                                              ContactConfirmationFunction(),
-                                              std::bind(&TwoStringsAndBoolSlot,
-                                                        args::_1, args::_2,
-                                                        &done),
-                                              ContactPresenceFunction(),
-                                              ContactDeletionFunction(),
-                                              PrivateShareInvitationFunction(),
-                                              PrivateShareDeletionFunction(),
-                                              PrivateMemberAccessLevelFunction()));
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
 
-    EXPECT_EQ(kSuccess, test_elements1.RemoveContact(public_username1,
-                                                     public_username2,
+    EXPECT_EQ(kSuccess, test_elements1.RemoveContact(public_id1,
+                                                     public_id2,
                                                      removal_message));
-    EXPECT_TRUE(test_elements1.GetContacts(public_username1).empty());
+    EXPECT_TRUE(test_elements1.GetContacts(public_id1).empty());
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
-    EXPECT_EQ(kSuccess, test_elements1.Finalise());
   }
-  DLOG(ERROR) << "\n\n\n\nLogging in " << public_username2;
+  DLOG(ERROR) << "\n\n\n\n";
   {
-    done = false;
-    std::string message2;
-    LifeStuff test_elements2;
-    EXPECT_EQ(kSuccess, test_elements2.Initialise(*test_dir));
-    EXPECT_EQ(kSuccess,
-              test_elements2.ConnectToSignals(ChatFunction(),
-                                              FileTransferFunction(),
-                                              NewContactFunction(),
-                                              ContactConfirmationFunction(),
-                                              ContactProfilePictureFunction(),
-                                              ContactPresenceFunction(),
-                                              std::bind(&DeleteContactSlot,
-                                                        args::_1, args::_2,
-                                                        args::_3, &message2,
-                                                        &done),
-                                              PrivateShareInvitationFunction(),
-                                              PrivateShareDeletionFunction(),
-                                              PrivateMemberAccessLevelFunction()));
-    DLOG(ERROR) << "beofre Login";
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
-    DLOG(ERROR) << "After Login";
-    while (!done)
+    while (!testing_variables2.removed)
       Sleep(bptime::milliseconds(100));
 
-    EXPECT_EQ(removal_message, message2);
+    EXPECT_EQ(removal_message, testing_variables2.removal_message);
     bool contact_deleted(false);
     while (!contact_deleted)
-      contact_deleted = test_elements2.GetContacts(public_username2).empty();
+      contact_deleted = test_elements2.GetContacts(public_id2).empty();
     EXPECT_TRUE(contact_deleted);
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
-    EXPECT_EQ(kSuccess, test_elements2.Finalise());
   }
+
+  EXPECT_EQ(kSuccess, test_elements1.Finalise());
+  EXPECT_EQ(kSuccess, test_elements2.Finalise());
 }
+
+class PrivateSharesApiTest : public ::testing::TestWithParam<int> {
+ public:
+  PrivateSharesApiTest() : rights_(GetParam()) {}
+
+ protected:
+  int rights_;
+};
+
+TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
+  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
+  std::string username1(RandomString(6)),
+              pin1(CreatePin()),
+              password1(RandomString(6)),
+              public_id1(RandomAlphaNumericString(5));
+  std::string username2(RandomString(6)),
+              pin2(CreatePin()),
+              password2(RandomString(6)),
+              public_id2(RandomAlphaNumericString(5));
+  LifeStuff test_elements1, test_elements2;
+  TestingVariables testing_variables1, testing_variables2;
+  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+                                                   test_elements2,
+                                                   testing_variables1,
+                                                   testing_variables2,
+                                                   *test_dir,
+                                                   username1, pin1, password1,
+                                                   public_id1,
+                                                   username2, pin2, password2,
+                                                   public_id2));
+
+  DLOG(ERROR) << "\n\n\n\n";
+  std::string share_name1(RandomAlphaNumericString(5)),
+              file_name1(RandomAlphaNumericString(5)),
+              file_content1(RandomString(20)),
+              file_content2(RandomString(20));
+  boost::system::error_code error_code;
+  {
+    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+
+    // Create empty private share
+    StringIntMap contacts, results;
+    contacts.insert(std::make_pair(public_id2, rights_));
+    results.insert(std::make_pair(public_id2, kGeneralError));
+
+    EXPECT_EQ(kSuccess, test_elements1.CreateEmptyPrivateShare(public_id1,
+                                                               contacts,
+                                                               &share_name1,
+                                                               &results));
+
+    fs::path share_path(test_elements1.mount_path() /
+                        fs::path("/").make_preferred() /
+                        kSharedStuff /
+                        share_name1);
+    EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
+    EXPECT_EQ(0, error_code.value());
+    EXPECT_EQ(kSuccess, results[public_id2]);
+
+    EXPECT_EQ(kSuccess, test_elements1.LogOut());
+  }
+  DLOG(ERROR) << "\n\n\n\n";
+  {
+    EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
+    while (!testing_variables2.privately_invited)
+      Sleep(bptime::milliseconds(100));
+
+    EXPECT_FALSE(testing_variables2.new_private_share_id.empty());
+    EXPECT_EQ(kSuccess,
+              test_elements2.AcceptPrivateShareInvitation(
+                  &share_name1,
+                  public_id2,
+                  public_id1,
+                  testing_variables2.new_private_share_id));
+
+    fs::path share_path(test_elements2.mount_path() /
+                        fs::path("/").make_preferred() /
+                        kSharedStuff /
+                        share_name1);
+    EXPECT_TRUE(fs::is_directory(share_path, error_code));
+
+    fs::path a_file_path(share_path / file_name1);
+    if (rights_ == 0) {
+      EXPECT_FALSE(WriteFile(a_file_path, file_content2));
+      EXPECT_FALSE(fs::exists(a_file_path, error_code));
+      EXPECT_NE(0, error_code.value());
+    } else {
+      EXPECT_TRUE(WriteFile(a_file_path, file_content2));
+      EXPECT_TRUE(fs::exists(a_file_path, error_code));
+      EXPECT_EQ(0, error_code.value());
+    }
+
+    EXPECT_EQ(kSuccess, test_elements2.LogOut());
+  }
+  DLOG(ERROR) << "\n\n\n\n";
+  {
+    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+    fs::path share_path(test_elements1.mount_path() /
+                        fs::path("/").make_preferred() /
+                        kSharedStuff /
+                        share_name1);
+    fs::path a_file_path(share_path / file_name1);
+    if (rights_ == 0) {
+      EXPECT_TRUE(WriteFile(a_file_path, file_content1));
+      EXPECT_TRUE(fs::exists(a_file_path, error_code));
+      EXPECT_EQ(0, error_code.value());
+    } else {
+      std::string file_stuff;
+      EXPECT_TRUE(ReadFile(a_file_path, &file_stuff));
+      EXPECT_EQ(file_content2, file_stuff);
+      EXPECT_TRUE(WriteFile(a_file_path, file_content1));
+    }
+
+    EXPECT_EQ(kSuccess, test_elements1.LogOut());
+  }
+  DLOG(ERROR) << "\n\n\n\n";
+  {
+    EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
+
+    fs::path share_path(test_elements2.mount_path() /
+                        fs::path("/").make_preferred() /
+                        kSharedStuff /
+                        share_name1);
+    fs::path a_file_path(share_path / file_name1);
+    EXPECT_TRUE(fs::exists(a_file_path, error_code)) << a_file_path;
+    EXPECT_NE(0, error_code.value());
+
+    std::string a_file_content;
+    EXPECT_TRUE(ReadFile(a_file_path, &a_file_content));
+    EXPECT_EQ(file_content1, a_file_content);
+
+    EXPECT_EQ(kSuccess, test_elements2.LogOut());
+  }
+
+  EXPECT_EQ(kSuccess, test_elements1.Finalise());
+  EXPECT_EQ(kSuccess, test_elements2.Finalise());
+}
+
+INSTANTIATE_TEST_CASE_P(ReadOnlyReadWrite,
+                        PrivateSharesApiTest,
+                        testing::Values(0, 1));
 
 }  // namespace test
 

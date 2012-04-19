@@ -218,7 +218,9 @@ bool UserStorage::ParseAndSaveDataMap(const std::string &serialised_data_map,
   }
 
   *data_map_hash =
-      EncodeToBase32(crypto::Hash<crypto::SHA1>(serialised_data_map));
+      EncodeToBase32(crypto::Hash<crypto::SHA1>(serialised_data_map)) +
+      boost::lexical_cast<std::string>(
+          GetDurationSinceEpoch().total_microseconds());
   int result(WriteHiddenFile(
                  mount_dir_ / fs::path("/").make_preferred() /
                      std::string(*data_map_hash + drive::kMsHidden.string()),
@@ -248,9 +250,10 @@ int UserStorage::InsertDataMap(const fs::path &absolute_path,
 
 bool UserStorage::SaveShareData(const std::string &serialised_share_data,
                                 const std::string &share_id) {
+  std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
   int result(WriteHiddenFile(
                  mount_dir_ / fs::path("/").make_preferred() /
-                     std::string(share_id + drive::kMsHidden.string()),
+                     std::string(temp_name + drive::kMsHidden.string()),
                  serialised_share_data,
                  true));
   if (result != kSuccess) {
@@ -386,7 +389,7 @@ int UserStorage::StopShare(const std::string &sender_public_username,
                                                  "",
                                                  key_ring,
                                                  sender_public_username,
-                                                 true, // value doesn't matter
+                                                 true,  // value doesn't matter
                                                  &directory_id);
   if (result != kSuccess)
     return result;
@@ -590,7 +593,7 @@ int UserStorage::RemoveShareUsers(const std::string &sender_public_username,
                                                  new_share_id,
                                                  key_ring,
                                                  sender_public_username,
-                                                 true, // value doesn't matter
+                                                 true,  // value doesn't matter
                                                  &directory_id);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed in updating share of " << Base32Substr(share_id)

@@ -68,9 +68,6 @@ UserCredentials::UserCredentials(
       authentication_(new Authentication(chunk_store, session)),
       serialised_da_(),
       surrogate_serialised_da_(),
-#ifndef LOCAL_TARGETS_ONLY
-      client_container_(),
-#endif
       logging_out_(false),
       logged_in_(false) {}
 

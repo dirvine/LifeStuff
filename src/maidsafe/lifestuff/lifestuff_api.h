@@ -62,10 +62,8 @@ class LifeStuff {
       const ContactDeletionFunction &contact_deletion_function,
       const ShareInvitationFunction &share_invitation_function,
       const ShareDeletionFunction &share_deletion_function,
-      const MemberAccessLevelFunction &access_level_function);
-      /*const PrivateShareInvitationFunction &share_invitation_function,
-      const PrivateShareDeletionFunction &share_deletion_function,
-      const PrivateMemberAccessLevelFunction &access_level_function);*/
+      const MemberAccessLevelFunction &access_level_function,
+      const OpenShareInvitationFunction &open_share_invitation_function);
   int Finalise();
 
   /// Credential operations

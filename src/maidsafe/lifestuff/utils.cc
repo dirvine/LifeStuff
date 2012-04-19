@@ -252,36 +252,35 @@ encrypt::DataMapPtr ParseSerialisedDataMap(
 int CopyDir(const fs::path& source, const fs::path& dest) {
   try {
     // Check whether the function call is valid
-    if(!fs::exists(source) || !fs::is_directory(source)) {
+    if (!fs::exists(source) || !fs::is_directory(source)) {
       DLOG(ERROR) << "Source directory " << source.string()
                   << " does not exist or is not a directory.";
       return kGeneralError;
     }
-    if(fs::exists(dest)) {
+    if (fs::exists(dest)) {
       DLOG(ERROR) << "Destination directory " << dest.string()
                   << " already exists.";
       return kGeneralError;
     }
   }
-  catch(fs::filesystem_error& e) {
+  catch(const fs::filesystem_error &e) {
     DLOG(ERROR) << e.what();
     return kGeneralError;
   }
   // Iterate through the source directory
-  for(fs::directory_iterator it(source);
+  for (fs::directory_iterator it(source);
       it != fs::directory_iterator(); it++) {
     try {
       fs::path current(it->path());
-      if(fs::is_directory(current)) {
+      if (fs::is_directory(current)) {
         // Found directory: Recursion
         CopyDir(current, dest / current.filename());
-      }
-      else {
+      } else {
         // Found file: Copy
         fs::copy_file(current, fs::path(dest / current.filename()));
       }
     }
-    catch(fs::filesystem_error& e) {
+    catch(const fs::filesystem_error &e) {
       DLOG(ERROR) << e.what();
     }
   }
@@ -302,16 +301,17 @@ std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
 #else
 std::shared_ptr<priv::chunk_store::RemoteChunkStore> BuildChunkStore(
     const fs::path &base_dir,
-    std::shared_ptr<pd::ClientContainer> client_container) {
-  client_container = SetUpClientContainer(base_dir);
+    std::shared_ptr<pd::ClientContainer> *client_container) {
+  *client_container = SetUpClientContainer(base_dir);
   if (client_container) {
     std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store(
-        new pcs::RemoteChunkStore(client_container->chunk_store(),
-                                  client_container->chunk_manager(),
-                                  client_container->chunk_action_authority()));
+        new pcs::RemoteChunkStore((*client_container)->chunk_store(),
+            (*client_container)->chunk_manager(),
+            (*client_container)->chunk_action_authority()));
+    return remote_chunk_store;
   } else {
     DLOG(ERROR) << "Failed to initialise client container.";
-    return;
+    return nullptr;
   }
 }
 
@@ -324,7 +324,7 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
     // Get a list of endpoints corresponding to the server name.
     bai::tcp::resolver resolver(io_service);
 //    bai::tcp::resolver::query query("96.126.103.209", "http");
-    bai::tcp::resolver::query query("192.168.1.53", "http");
+    bai::tcp::resolver::query query("192.168.1.113", "http");
     bai::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
 
     // Try each endpoint until we successfully establish a connection.
@@ -412,15 +412,16 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
 }
 
 ClientContainerPtr SetUpClientContainer(
-    const fs::path &buffered_chunk_store_directory) {
+    const fs::path &base_dir) {
   ClientContainerPtr client_container(new pd::ClientContainer);
-  if (!client_container->Init(buffered_chunk_store_dir, 10, 4)) {
+  if (!client_container->Init(base_dir / "buffered_chunk_store", 10, 4)) {
     DLOG(ERROR) << "Failed to Init client_container.";
     return ClientContainerPtr();
   }
 
   std::vector<dht::Contact> bootstrap_contacts;
-  result = RetrieveBootstrapContacts(test_dir, &bootstrap_contacts);
+  int result = RetrieveBootstrapContacts(base_dir,
+                                         &bootstrap_contacts);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to retrieve bootstrap contacts.  Result: " << result;
     return ClientContainerPtr();

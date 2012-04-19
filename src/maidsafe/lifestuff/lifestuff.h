@@ -88,6 +88,8 @@ const uint8_t kSecondsInterval(5);
 const std::string kLiteralOnline("kOnline");
 const std::string kLiteralOffline("kOffline");
 const std::string kAppHomeDirectory(".lifestuff");
+const std::string kMyStuff("MyStuff");
+const std::string kSharedStuff("SharedStuff");
 
 /// General
 typedef std::function<void(const std::string&, const std::string&)>
@@ -102,7 +104,7 @@ typedef std::map<std::string, int> StringIntMap;
 typedef std::map<std::string, std::pair<ContactStatus, ContactPresence>>
         ContactMap;
 
-/// Private/Open Shares
+/// Private Shares
 typedef std::function<void(const std::string&,    // Own public ID
                            const std::string&,    // Contact public ID
                            const std::string&,    // Share Tag
@@ -115,6 +117,13 @@ typedef std::function<void(const std::string&,  // Own public ID
                            const std::string&,  // Share name
                            int)>                // Access level
         MemberAccessLevelFunction;
+
+/// Open Shares
+typedef std::function<void(const std::string&,    // Own public ID
+                           const std::string&,    // Contact public ID
+                           const std::string&,    // Share Tag
+                           const std::string&)>   // Unique ID
+        OpenShareInvitationFunction;
 
 /// Chat
 // Own public ID, Contact public ID, Message
