@@ -138,7 +138,6 @@ void ContactPresenceSlot(const std::string&,
   *done = true;
 }
 
-
 void ContactDeletionSlot(const std::string&,
                          const std::string&,
                          const std::string &signal_message,

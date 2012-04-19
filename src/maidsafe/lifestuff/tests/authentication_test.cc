@@ -71,11 +71,11 @@ class AuthenticationTest : public testing::Test {
     asio_service_.Start(10);
 #ifdef LOCAL_TARGETS_ONLY
     remote_chunk_store_ = BuildChunkStore(*test_dir_ /
-                                               RandomAlphaNumericString(8),
+                                          RandomAlphaNumericString(8),
                                           *test_dir_ / "simulation",
                                           asio_service_.service());
 #else
-    remote_chunk_store_ = BuildChunkStore(*test_dir_, client_container_);
+    remote_chunk_store_ = BuildChunkStore(*test_dir_, &client_container_);
 #endif
     authentication_.reset(new Authentication(remote_chunk_store_, session_));
     session_->Reset();

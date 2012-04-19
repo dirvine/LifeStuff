@@ -170,8 +170,8 @@ class UserStorageTest : public testing::TestWithParam<bool> {
                                            *test_dir_ / "simulation",
                                            asio_service2_.service());
 #else
-    remote_chunk_store1_ = BuildChunkStore(*test_dir_, client_container1_);
-    remote_chunk_store2_ = BuildChunkStore(*test_dir_, client_container2_);
+    remote_chunk_store1_ = BuildChunkStore(*test_dir_, &client_container1_);
+    remote_chunk_store2_ = BuildChunkStore(*test_dir_, &client_container2_);
 #endif
     user_credentials1_.reset(new UserCredentials(remote_chunk_store1_,
                                                   session1_));

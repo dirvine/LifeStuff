@@ -740,7 +740,7 @@ void Authentication::ProcessingSaveSession(
 }
 
 int Authentication::SaveSession(const std::string &serialised_data_atlas) {
-  int result(kPending);
+  int result(kPendingResult);
   VoidFunctionOneInt functor(std::bind(&Authentication::SaveSessionCallback,
                                        this, args::_1, &result));
   SaveSession(serialised_data_atlas, functor);
@@ -1392,12 +1392,14 @@ bool Authentication::PacketOpDone(int *return_code) {
 void Authentication::SaveSessionCallback(const int& return_code, int* result) {
   boost::mutex::scoped_lock lock(mutex_);
   *result = return_code;
+  cond_var_.notify_one();
 }
 
 void Authentication::ChangeUserDataCallback(const int& return_code,
                                             int* result) {
   boost::mutex::scoped_lock lock(mutex_);
   *result = return_code;
+  cond_var_.notify_one();
 }
 
 }  // namespace lifestuff

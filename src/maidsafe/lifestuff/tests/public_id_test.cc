@@ -129,8 +129,8 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
                                            *test_dir_ / "simulation",
                                            asio_service2_.service());
 #else
-    remote_chunk_store1_ = BuildChunkStore(*test_dir_, client_container1_);
-    remote_chunk_store2_ = BuildChunkStore(*test_dir_, client_container2_);
+    remote_chunk_store1_ = BuildChunkStore(*test_dir_, &client_container1_);
+    remote_chunk_store2_ = BuildChunkStore(*test_dir_, &client_container2_);
 #endif
 
     public_id1_.reset(new PublicId(remote_chunk_store1_,

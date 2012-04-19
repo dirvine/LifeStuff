@@ -123,7 +123,7 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
 #else
   lifestuff_elements->remote_chunk_store =
       BuildChunkStore(buffered_chunk_store_path,
-                      lifestuff_elements->client_container);
+                      &lifestuff_elements->client_container);
 #endif
   lifestuff_elements->buffered_path = buffered_chunk_store_path;
 
@@ -264,7 +264,7 @@ int LifeStuff::CreateUser(const std::string &username,
   fs::path mount_dir(GetHomeDir() /
                      kAppHomeDirectory /
                      lifestuff_elements->session->session_name());
-  if (!fs::exists(kAppHomeDirectory, error_code)) {
+  if (!fs::exists(mount_dir, error_code)) {
     fs::create_directories(mount_dir, error_code);
     if (error_code) {
       DLOG(ERROR) << "Failed to create app directories - " << error_code.value()
@@ -358,7 +358,7 @@ int LifeStuff::LogIn(const std::string &username,
   fs::path mount_dir(GetHomeDir() /
                      kAppHomeDirectory /
                      lifestuff_elements->session->session_name());
-  if (!fs::exists(kAppHomeDirectory, error_code)) {
+  if (!fs::exists(mount_dir, error_code)) {
     fs::create_directories(mount_dir, error_code);
     if (error_code) {
       DLOG(ERROR) << "Failed to create app directories - " << error_code.value()
