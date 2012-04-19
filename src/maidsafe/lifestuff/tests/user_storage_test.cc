@@ -117,8 +117,10 @@ class UserStorageTest : public testing::TestWithParam<bool> {
     if (message.content_size() > 4) {
         share_keyring.identity = message.content(4);
         share_keyring.validation_token = message.content(5);
-        asymm::DecodePrivateKey(message.content(6), &(share_keyring.private_key));
-        asymm::DecodePublicKey(message.content(7), &(share_keyring.public_key));
+        asymm::DecodePrivateKey(message.content(6),
+                                &(share_keyring.private_key));
+        asymm::DecodePublicKey(message.content(7),
+                               &(share_keyring.public_key));
     }
 
     EXPECT_EQ(kSuccess, user_storage->DeleteHiddenFile(hidden_file));
@@ -355,7 +357,7 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 //                     user_storage2_,
 //                     args::_1,
 //                     directory1)));
-// 
+//
 //   boost::system::error_code error_code;
 //   EXPECT_FALSE(fs::exists(directory1, error_code))
 //                << directory1 << error_code.message();
@@ -367,7 +369,7 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 //   message_handler2_->StopCheckingForNewMessages();
 //   user_storage2_->UnMountDrive();
 //   Sleep(interval_ * 2);
-// 
+//
 //   user_storage1_->MountDrive(*mount_dir_, session1_, false);
 //   Sleep(interval_ * 2);
 //   EXPECT_TRUE(fs::exists(directory0, error_code)) << directory0
@@ -377,7 +379,7 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 //             user_storage1_->AddShareUsers(pub_name1_, directory0, users));
 //   user_storage1_->UnMountDrive();
 //   Sleep(interval_ * 2);
-// 
+//
 //   user_storage2_->MountDrive(*mount_dir_, session2_, false);
 //   Sleep(interval_ * 2);
 //   EXPECT_FALSE(fs::exists(directory1, error_code))
@@ -390,7 +392,7 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 //   message_handler2_->StopCheckingForNewMessages();
 //   user_storage2_->UnMountDrive();
 // }
-// 
+//
 // TEST_P(UserStorageTest, FUNC_AddAdminUser) {
 //   user_storage1_->MountDrive(*mount_dir_, session1_, true);
 //   Sleep(interval_ * 2);
@@ -421,7 +423,7 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 //                     user_storage2_,
 //                     args::_1,
 //                     directory1)));
-// 
+//
 //   Sleep(interval_ * 2);
 //   EXPECT_EQ(kSuccess,
 //             message_handler2_->StartCheckingForNewMessages(interval_));
@@ -432,13 +434,13 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 //   message_handler2_->StopCheckingForNewMessages();
 //   user_storage2_->UnMountDrive();
 //   Sleep(interval_ * 2);
-// 
+//
 //   user_storage1_->MountDrive(*mount_dir_, session1_, false);
 //   Sleep(interval_ * 2);
 //   EXPECT_TRUE(fs::exists(directory0 / tail, error_code));
 //   user_storage1_->UnMountDrive();
 //   Sleep(interval_ * 2);
-// 
+//
 //   user_storage2_->MountDrive(*mount_dir_, session2_, false);
 //   Sleep(interval_ * 2);
 //   EXPECT_TRUE(fs::exists(directory1, error_code)) << directory1;
@@ -446,7 +448,7 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 //   user_storage2_->UnMountDrive();
 //   Sleep(interval_ * 2);
 // }
-// 
+//
 // TEST_P(UserStorageTest, FUNC_UpgradeUserToAdmin) {
 //   user_storage1_->MountDrive(*mount_dir_, session1_, true);
 //   Sleep(interval_ * 2);
@@ -463,9 +465,9 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 //                                                   &share_id));
 //   user_storage1_->UnMountDrive();
 //   Sleep(interval_ * 2);
-// 
+//
 //   user_storage2_->MountDrive(*mount_dir_, session2_, true);
-// 
+//
 //   fs::path directory1(user_storage2_->mount_dir() /
 //                       fs::path("/").make_preferred() /
 //                       tail);
@@ -477,7 +479,7 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 //                     user_storage2_,
 //                     args::_1,
 //                     directory1)));
-// 
+//
 //   Sleep(interval_ * 2);
 //   EXPECT_EQ(kSuccess,
 //             message_handler2_->StartCheckingForNewMessages(interval_));
@@ -489,7 +491,7 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 //   message_handler2_->StopCheckingForNewMessages();
 //   user_storage2_->UnMountDrive();
 //   Sleep(interval_ * 2);
-// 
+//
 //   user_storage1_->MountDrive(*mount_dir_, session1_, false);
 //   Sleep(interval_ * 2);
 //   EXPECT_EQ(kSuccess,
@@ -499,7 +501,7 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 //                                                 true));
 //   user_storage1_->UnMountDrive();
 //   Sleep(interval_ * 2);
-// 
+//
 //   user_storage2_->MountDrive(*mount_dir_, session2_, false);
 //   Sleep(interval_ * 2);
 //   sub_directory = CreateTestDirectory(directory1, &tail);
@@ -512,7 +514,7 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 //   message_handler2_->StopCheckingForNewMessages();
 //   user_storage2_->UnMountDrive();
 // }
-// 
+//
 // TEST_P(UserStorageTest, FUNC_StopShareByOwner) {
 //   user_storage1_->MountDrive(*mount_dir_, session1_, true);
 //   Sleep(interval_ * 2);
@@ -533,7 +535,7 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 //                                         &share_id));
 //   user_storage1_->UnMountDrive();
 //   Sleep(interval_ * 2);
-// 
+//
 //   user_storage2_->MountDrive(*mount_dir_, session2_, true);
 //   Sleep(interval_ * 2);
 //   fs::path directory1(user_storage2_->mount_dir() /
@@ -547,7 +549,7 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 //                   user_storage2_,
 //                   args::_1,
 //                   directory1)));
-// 
+//
 //   EXPECT_FALSE(fs::exists(directory1, error_code)) << directory1;
 //   EXPECT_EQ(kSuccess,
 //             message_handler2_->StartCheckingForNewMessages(interval_));
@@ -556,7 +558,7 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 //   message_handler2_->StopCheckingForNewMessages();
 //   user_storage2_->UnMountDrive();
 //   Sleep(interval_ * 2);
-// 
+//
 //   user_storage1_->MountDrive(*mount_dir_, session1_, false);
 //   Sleep(interval_ * 2);
 //   EXPECT_TRUE(fs::exists(directory0, error_code)) << directory0;
@@ -565,7 +567,7 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 //   // EXPECT_FALSE(fs::exists(directory0, error_code)) << directory0;
 //   user_storage1_->UnMountDrive();
 //   Sleep(interval_ * 2);
-// 
+//
 //   user_storage2_->MountDrive(*mount_dir_, session2_, false);
 //   Sleep(interval_ * 2);
 //   EXPECT_TRUE(fs::exists(directory1, error_code)) << directory1;
@@ -576,7 +578,7 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 //                                                    << error_code.message();
 //   message_handler2_->StopCheckingForNewMessages();
 //   user_storage2_->UnMountDrive();
-// 
+//
 //   // Sleep(interval_ * 2);
 //   // user_storage1_->MountDrive(*mount_dir_,
 //   //                            user_credentials1_->SessionName(),
@@ -588,7 +590,7 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 //   // user_storage1_->UnMountDrive();
 //   // Sleep(interval_ * 2);
 // }
-// 
+//
 // TEST_P(UserStorageTest, FUNC_RemoveUserByOwner) {
 //   user_storage1_->MountDrive(*mount_dir_, session1_, true);
 //   Sleep(interval_ * 2);
@@ -605,7 +607,7 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 //   boost::system::error_code error_code;
 //   fs::create_directory(directory0, error_code);
 //   EXPECT_EQ(0, error_code.value());
-// 
+//
 //   DLOG(ERROR) << directory0 << "\n\n\n\n";
 //   std::string share_id;
 //   EXPECT_EQ(kSuccess, user_storage1_->CreateShare(pub_name1_,
@@ -614,7 +616,7 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 //                                                   &share_id));
 //   user_storage1_->UnMountDrive();
 //   Sleep(interval_ * 2);
-// 
+//
 //   DLOG(ERROR) << "Guy 1 unmounted\n\n\n\n";
 //   user_storage2_->MountDrive(*mount_dir_, session2_, true);
 //   Sleep(interval_ * 2);
@@ -640,7 +642,7 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 //   message_handler2_->StopCheckingForNewMessages();
 //   user_storage2_->UnMountDrive();
 //   Sleep(interval_ * 2);
-// 
+//
 //   DLOG(ERROR) << "Guy 2 unmounted\n\n\n\n";
 //   user_storage1_->MountDrive(*mount_dir_, session1_, false);
 //   Sleep(interval_ * 2);
@@ -651,18 +653,18 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 //   EXPECT_EQ(kSuccess, user_storage1_->RemoveShareUsers(pub_name1_,
 //                                                        directory0,
 //                                                        user_ids));
-// 
+//
 // //  fs::path sub_directory0(CreateTestDirectory(directory0, &tail));
 //   tail = "I0E1k";
 //   fs::path sub_directory0(directory0 / tail);
 //   fs::create_directory(sub_directory0, error_code);
 //   EXPECT_EQ(0, error_code.value());
-// 
+//
 //   DLOG(ERROR) << sub_directory0 << "\n\n\n\n";
 //   EXPECT_TRUE(fs::exists(sub_directory0, error_code)) << sub_directory0;
 //   user_storage1_->UnMountDrive();
 //   Sleep(interval_ * 2);
-// 
+//
 //   DLOG(ERROR) << "Guy 1 unmounted\n\n\n\n";
 //   user_storage2_->MountDrive(*mount_dir_, session2_, false);
 //   Sleep(interval_ * 2);
@@ -681,7 +683,7 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 //   message_handler2_->StopCheckingForNewMessages();
 //   user_storage2_->UnMountDrive();
 //   Sleep(interval_ * 2);
-// 
+//
 //   DLOG(ERROR) << "Guy 2 unmounted\n\n\n\n";
 //   user_storage1_->MountDrive(*mount_dir_, session1_, false);
 //   Sleep(interval_ * 2);

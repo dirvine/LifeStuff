@@ -67,7 +67,7 @@ class MessageHandler {
 
   typedef bs2::signal<void(const std::string&,  // share id
                            const std::string*,  // directory id
-                           const std::string*, // new share id
+                           const std::string*,  // new share id
                            const asymm::Keys*)> ShareUpdateSignal;  // new key
   typedef std::shared_ptr<ShareUpdateSignal> ShareUpdateSignalPtr;
 

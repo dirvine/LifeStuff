@@ -386,7 +386,7 @@ int UserStorage::StopShare(const std::string &sender_public_username,
                                                  "",
                                                  key_ring,
                                                  sender_public_username,
-                                                 true, // value doesn't matter
+                                                 true,  // value doesn't matter
                                                  &directory_id);
   if (result != kSuccess)
     return result;
@@ -590,7 +590,7 @@ int UserStorage::RemoveShareUsers(const std::string &sender_public_username,
                                                  new_share_id,
                                                  key_ring,
                                                  sender_public_username,
-                                                 true, // value doesn't matter
+                                                 true,  // value doesn't matter
                                                  &directory_id);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed in updating share of " << Base32Substr(share_id)

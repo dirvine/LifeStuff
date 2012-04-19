@@ -252,36 +252,35 @@ encrypt::DataMapPtr ParseSerialisedDataMap(
 int CopyDir(const fs::path& source, const fs::path& dest) {
   try {
     // Check whether the function call is valid
-    if(!fs::exists(source) || !fs::is_directory(source)) {
+    if (!fs::exists(source) || !fs::is_directory(source)) {
       DLOG(ERROR) << "Source directory " << source.string()
                   << " does not exist or is not a directory.";
       return kGeneralError;
     }
-    if(fs::exists(dest)) {
+    if (fs::exists(dest)) {
       DLOG(ERROR) << "Destination directory " << dest.string()
                   << " already exists.";
       return kGeneralError;
     }
   }
-  catch(fs::filesystem_error& e) {
+  catch(const fs::filesystem_error &e) {
     DLOG(ERROR) << e.what();
     return kGeneralError;
   }
   // Iterate through the source directory
-  for(fs::directory_iterator it(source);
+  for (fs::directory_iterator it(source);
       it != fs::directory_iterator(); it++) {
     try {
       fs::path current(it->path());
-      if(fs::is_directory(current)) {
+      if (fs::is_directory(current)) {
         // Found directory: Recursion
         CopyDir(current, dest / current.filename());
-      }
-      else {
+      } else {
         // Found file: Copy
         fs::copy_file(current, fs::path(dest / current.filename()));
       }
     }
-    catch(fs::filesystem_error& e) {
+    catch(const fs::filesystem_error &e) {
       DLOG(ERROR) << e.what();
     }
   }

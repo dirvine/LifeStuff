@@ -890,7 +890,7 @@ int LifeStuff::CreateEmptyPrivateShare(
                      fs::path("/").make_preferred() / (*share_name));
   boost::system::error_code error_code;
   int index(0);
-  // TODO: shall use function via drive to test the existence of the directory
+  // TODO(Team): shall use function via drive to test the existence of directory
   while (fs::exists(share_dir, error_code)) {
     share_dir = lifestuff_elements->user_storage->mount_dir() /
                      fs::path("/").make_preferred() /

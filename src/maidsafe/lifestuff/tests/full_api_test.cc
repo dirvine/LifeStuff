@@ -516,7 +516,15 @@ TEST(IndependentFullTest, FUNC_RemoveContact) {
   EXPECT_EQ(kSuccess, test_elements2.Finalise());
 }
 
-TEST(IndependentFullTest, FUNC_CreateEmptyPrivateShareReadOnly) {
+class PrivateSharesApiTest : public ::testing::TestWithParam<int> {
+ public:
+  PrivateSharesApiTest() : rights_(GetParam()) {}
+
+ protected:
+  int rights_;
+};
+
+TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   std::string username1(RandomString(6)),
               pin1(CreatePin()),
@@ -539,16 +547,17 @@ TEST(IndependentFullTest, FUNC_CreateEmptyPrivateShareReadOnly) {
                                                    public_id2));
 
   DLOG(ERROR) << "\n\n\n\n";
-  std::string share_name1("Publi_Id1_Share"),
-              file_name1("Fileski.ru"),
-              file_content1("summat");
+  std::string share_name1(RandomAlphaNumericString(5)),
+              file_name1(RandomAlphaNumericString(5)),
+              file_content1(RandomString(20)),
+              file_content2(RandomString(20));
   boost::system::error_code error_code;
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
 
     // Create empty private share
     StringIntMap contacts, results;
-    contacts.insert(std::make_pair(public_id2, 0));  // Read only contact
+    contacts.insert(std::make_pair(public_id2, rights_));
     results.insert(std::make_pair(public_id2, kGeneralError));
 
     EXPECT_EQ(kSuccess, test_elements1.CreateEmptyPrivateShare(public_id1,
@@ -587,17 +596,15 @@ TEST(IndependentFullTest, FUNC_CreateEmptyPrivateShareReadOnly) {
     EXPECT_TRUE(fs::is_directory(share_path, error_code));
 
     fs::path a_file_path(share_path / file_name1);
-    bool fail(false);
-    try {
-      std::ofstream a_file(a_file_path.c_str(), std::ios::binary);
-      a_file << file_content1;
+    if (rights_ == 0) {
+      EXPECT_FALSE(WriteFile(a_file_path, file_content2));
+      EXPECT_FALSE(fs::exists(a_file_path, error_code));
+      EXPECT_NE(0, error_code.value());
+    } else {
+      EXPECT_TRUE(WriteFile(a_file_path, file_content2));
+      EXPECT_TRUE(fs::exists(a_file_path, error_code));
+      EXPECT_EQ(0, error_code.value());
     }
-    catch(const std::exception&) {
-      fail = true;
-    }
-    EXPECT_TRUE(fail);
-    EXPECT_FALSE(fs::exists(a_file_path, error_code));
-    EXPECT_NE(0, error_code.value());
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
@@ -609,20 +616,16 @@ TEST(IndependentFullTest, FUNC_CreateEmptyPrivateShareReadOnly) {
                         kSharedStuff /
                         share_name1);
     fs::path a_file_path(share_path / file_name1);
-    bool fail(false);
-    try {
-      std::ofstream a_file(a_file_path.c_str(), std::ios::binary);
-      a_file << file_content1;
-      a_file.close();
+    if (rights_ == 0) {
+      EXPECT_TRUE(WriteFile(a_file_path, file_content1));
+      EXPECT_TRUE(fs::exists(a_file_path, error_code));
+      EXPECT_EQ(0, error_code.value());
+    } else {
+      std::string file_stuff;
+      EXPECT_TRUE(ReadFile(a_file_path, &file_stuff));
+      EXPECT_EQ(file_content2, file_stuff);
+      EXPECT_TRUE(WriteFile(a_file_path, file_content1));
     }
-    catch(const std::exception &e) {
-      DLOG(ERROR) << e.what();
-      fail = true;
-    }
-
-    EXPECT_FALSE(fail);
-    EXPECT_TRUE(fs::exists(a_file_path, error_code)) << a_file_path;
-    EXPECT_NE(0, error_code.value());
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
@@ -637,18 +640,9 @@ TEST(IndependentFullTest, FUNC_CreateEmptyPrivateShareReadOnly) {
     fs::path a_file_path(share_path / file_name1);
     EXPECT_TRUE(fs::exists(a_file_path, error_code)) << a_file_path;
     EXPECT_NE(0, error_code.value());
-    bool fail(false);
+
     std::string a_file_content;
-    try {
-      std::ifstream a_file(a_file_path.c_str(), std::ios::binary);
-      a_file >> a_file_content;
-      a_file.close();
-    }
-    catch(const std::exception &e) {
-      DLOG(ERROR) << e.what();
-      fail = true;
-    }
-    EXPECT_FALSE(fail);
+    EXPECT_TRUE(ReadFile(a_file_path, &a_file_content));
     EXPECT_EQ(file_content1, a_file_content);
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
@@ -657,6 +651,10 @@ TEST(IndependentFullTest, FUNC_CreateEmptyPrivateShareReadOnly) {
   EXPECT_EQ(kSuccess, test_elements1.Finalise());
   EXPECT_EQ(kSuccess, test_elements2.Finalise());
 }
+
+INSTANTIATE_TEST_CASE_P(ReadOnlyReadWrite,
+                        PrivateSharesApiTest,
+                        testing::Values(0, 1));
 
 }  // namespace test
 
