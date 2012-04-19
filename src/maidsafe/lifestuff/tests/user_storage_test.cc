@@ -101,10 +101,11 @@ class UserStorageTest : public testing::TestWithParam<bool> {
                    const std::string &/*receiver*/,
                    const std::string &sender,
                    const std::string &share_id,
-                   const std::string &share_tag) {
+                   const std::string &/*share_tag*/) {
+    std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
     fs::path hidden_file(user_storage->mount_dir() /
                         fs::path("/").make_preferred() /
-                        std::string(share_id + drive::kMsHidden.string()));
+                        std::string(temp_name + drive::kMsHidden.string()));
     std::string serialised_share_data;
     EXPECT_EQ(kSuccess, user_storage->ReadHiddenFile(hidden_file,
                                                      &serialised_share_data));
@@ -123,7 +124,7 @@ class UserStorageTest : public testing::TestWithParam<bool> {
 
     EXPECT_EQ(kSuccess, user_storage->DeleteHiddenFile(hidden_file));
 
-    std::string share_name(share_tag);
+    std::string share_name(relative_path.filename().string());
     fs::path share_dir(user_storage->mount_dir() /
                       fs::path("/").make_preferred() / share_name);
     EXPECT_EQ(kSuccess, user_storage->InsertShare(share_dir, share_id,
@@ -303,15 +304,19 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
                                         users, private_share_));
   user_storage1_->UnMountDrive();
 
-  user_storage2_->MountDrive(*mount_dir_, session2_, true);
-  fs::path directory1(user_storage2_->mount_dir() /
-                      fs::path("/").make_preferred() /
-                      tail);
-  bs2::connection connection(
+  bs2::connection accept_share_invitation_connection(
     message_handler2_->ConnectToShareInvitationSignal(
         std::bind(&UserStorageTest::DoAcceptShareInvitationTest,
                   this, user_storage2_,
                   args::_1, args::_2, args::_3, args::_4)));
+  bs2::connection save_share_data_connection(
+    message_handler2_->ConnectToSaveShareDataSignal(
+        std::bind(&UserStorage::SaveShareData,
+                  user_storage2_, args::_1, args::_2)));
+  user_storage2_->MountDrive(*mount_dir_, session2_, true);
+  fs::path directory1(user_storage2_->mount_dir() /
+                      fs::path("/").make_preferred() /
+                      tail);
   Sleep(interval_ * 2);
   boost::system::error_code error_code;
   EXPECT_FALSE(fs::exists(directory1, error_code))

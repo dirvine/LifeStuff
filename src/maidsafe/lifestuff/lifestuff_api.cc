@@ -989,10 +989,10 @@ int LifeStuff::AcceptPrivateShareInvitation(std::string *share_name,
     DLOG(ERROR) << "Failed pre checks in AcceptPrivateShareInvitation.";
     return result;
   }
-
+  std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
   fs::path hidden_file(mount_path() /
                        fs::path("/").make_preferred() /
-                       std::string(share_id + drive::kMsHidden.string()));
+                       std::string(temp_name + drive::kMsHidden.string()));
   std::string serialised_share_data;
   result = lifestuff_elements->user_storage->ReadHiddenFile(hidden_file,
                 &serialised_share_data);
@@ -1035,10 +1035,10 @@ int LifeStuff::RejectPrivateShareInvitation(const std::string &my_public_id,
     DLOG(ERROR) << "Failed pre checks in RejectPrivateShareInvitation.";
     return result;
   }
-
+  std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
   fs::path hidden_file(mount_path() /
                        fs::path("/").make_preferred() /
-                       std::string(share_id + drive::kMsHidden.string()));
+                       std::string(temp_name + drive::kMsHidden.string()));
   return lifestuff_elements->user_storage->DeleteHiddenFile(hidden_file);
 }
 
