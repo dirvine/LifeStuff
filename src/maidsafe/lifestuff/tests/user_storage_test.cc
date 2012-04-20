@@ -102,8 +102,10 @@ class UserStorageTest : public testing::TestWithParam<bool> {
     if (message.content_size() > 4) {
         share_keyring.identity = message.content(4);
         share_keyring.validation_token = message.content(5);
-        asymm::DecodePrivateKey(message.content(6), &(share_keyring.private_key));
-        asymm::DecodePublicKey(message.content(7), &(share_keyring.public_key));
+        asymm::DecodePrivateKey(message.content(6),
+                                &(share_keyring.private_key));
+        asymm::DecodePublicKey(message.content(7),
+                               &(share_keyring.public_key));
     }
 
     EXPECT_EQ(kSuccess, user_storage->DeleteHiddenFile(hidden_file));
@@ -168,8 +170,8 @@ class UserStorageTest : public testing::TestWithParam<bool> {
                                            *test_dir_ / "simulation",
                                            asio_service2_.service());
 #else
-    remote_chunk_store1_ = BuildChunkStore(*test_dir_, client_container1_);
-    remote_chunk_store2_ = BuildChunkStore(*test_dir_, client_container2_);
+    remote_chunk_store1_ = BuildChunkStore(*test_dir_, &client_container1_);
+    remote_chunk_store2_ = BuildChunkStore(*test_dir_, &client_container2_);
 #endif
     user_credentials1_.reset(new UserCredentials(remote_chunk_store1_,
                                                  session1_));
@@ -664,7 +666,7 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
 #ifndef LOCAL_TARGETS_ONLY
   ClientContainerPtr client_container3;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store3(
-                          BuildChunkStore(*test_dir_, client_container3));
+                          BuildChunkStore(*test_dir_, &client_container3));
 #else
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store3(
       BuildChunkStore(*test_dir_ / RandomAlphaNumericString(8),

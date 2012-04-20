@@ -218,7 +218,9 @@ bool UserStorage::ParseAndSaveDataMap(const std::string &serialised_data_map,
   }
 
   *data_map_hash =
-      EncodeToBase32(crypto::Hash<crypto::SHA1>(serialised_data_map));
+      EncodeToBase32(crypto::Hash<crypto::SHA1>(serialised_data_map)) +
+      boost::lexical_cast<std::string>(
+          GetDurationSinceEpoch().total_microseconds());
   int result(WriteHiddenFile(
                  mount_dir_ / fs::path("/").make_preferred() /
                      std::string(*data_map_hash + drive::kMsHidden.string()),
@@ -387,7 +389,7 @@ int UserStorage::StopShare(const std::string &sender_public_username,
                                                  "",
                                                  key_ring,
                                                  sender_public_username,
-                                                 true, // value doesn't matter
+                                                 true,  // value doesn't matter
                                                  &directory_id);
   if (result != kSuccess)
     return result;

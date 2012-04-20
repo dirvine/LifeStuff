@@ -116,14 +116,14 @@ std::shared_ptr<priv::chunk_store::RemoteChunkStore> BuildChunkStore(
 #else
 std::shared_ptr<priv::chunk_store::RemoteChunkStore> BuildChunkStore(
     const fs::path &base_dir,
-    std::shared_ptr<pd::ClientContainer> client_container);
+    std::shared_ptr<pd::ClientContainer> *client_container);
 
 int RetrieveBootstrapContacts(const fs::path &download_dir,
                               std::vector<dht::Contact> *bootstrap_contacts);
 
 typedef std::shared_ptr<pd::ClientContainer> ClientContainerPtr;
 ClientContainerPtr SetUpClientContainer(
-    const fs::path &buffered_chunk_store_directory);
+    const fs::path &base_dir);
 #endif
 
 }  // namespace lifestuff

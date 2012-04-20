@@ -123,7 +123,7 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
 #else
   lifestuff_elements->remote_chunk_store =
       BuildChunkStore(buffered_chunk_store_path,
-                      lifestuff_elements->client_container);
+                      &lifestuff_elements->client_container);
 #endif
   lifestuff_elements->buffered_path = buffered_chunk_store_path;
 
@@ -264,7 +264,7 @@ int LifeStuff::CreateUser(const std::string &username,
   fs::path mount_dir(GetHomeDir() /
                      kAppHomeDirectory /
                      lifestuff_elements->session->session_name());
-  if (!fs::exists(kAppHomeDirectory, error_code)) {
+  if (!fs::exists(mount_dir, error_code)) {
     fs::create_directories(mount_dir, error_code);
     if (error_code) {
       DLOG(ERROR) << "Failed to create app directories - " << error_code.value()
@@ -282,14 +282,14 @@ int LifeStuff::CreateUser(const std::string &username,
   }
 
   fs::create_directory(lifestuff_elements->user_storage->mount_dir() /
-                       fs::path("/").make_preferred() /
-                       "My Stuff", error_code);
+                           fs::path("/").make_preferred() / kMyStuff,
+                       error_code);
   if (error_code) {
     DLOG(ERROR) << "Failed creating My Stuff: " << error_code.message();
     return kGeneralError;
   }
   fs::create_directory(lifestuff_elements->user_storage->mount_dir() /
-                           fs::path("/").make_preferred() / "Shared Stuff",
+                           fs::path("/").make_preferred() / kSharedStuff,
                        error_code);
   if (error_code) {
     DLOG(ERROR) << "Failed creating Shared Stuff: " << error_code.message();
@@ -358,7 +358,7 @@ int LifeStuff::LogIn(const std::string &username,
   fs::path mount_dir(GetHomeDir() /
                      kAppHomeDirectory /
                      lifestuff_elements->session->session_name());
-  if (!fs::exists(kAppHomeDirectory, error_code)) {
+  if (!fs::exists(mount_dir, error_code)) {
     fs::create_directories(mount_dir, error_code);
     if (error_code) {
       DLOG(ERROR) << "Failed to create app directories - " << error_code.value()
@@ -890,7 +890,7 @@ int LifeStuff::CreateEmptyPrivateShare(
                      fs::path("/").make_preferred() / (*share_name));
   boost::system::error_code error_code;
   int index(0);
-  // TODO: shall use function via drive to test the existence of the directory
+  // TODO(Team): shall use function via drive to test the existence of directory
   while (fs::exists(share_dir, error_code)) {
     share_dir = lifestuff_elements->user_storage->mount_dir() /
                      fs::path("/").make_preferred() /
