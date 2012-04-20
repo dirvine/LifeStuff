@@ -77,6 +77,7 @@ MessageHandler::MessageHandler(
       share_update_signal_(new ShareUpdateSignal),
       member_access_level_signal_(new MemberAccessLevelSignal),
       save_share_data_signal_(new SaveShareDataSignal),
+      share_user_leaving_signal_(new ShareUserLeavingSignal),
       contact_presence_signal_(new ContactPresenceSignal),
       contact_profile_picture_signal_(new ContactProfilePictureSignal),
       contact_deletion_signal_(new ContactDeletionSignal),
@@ -595,6 +596,9 @@ void MessageHandler::SignalShare(const InboxItem &inbox_item) {
                         &inbox_item.content[3],
                         &inbox_item.content[2],
                         inbox_item.content.size() > 4 ? &key_ring : nullptr);
+  } else if (inbox_item.content[1] == "leave_share") {
+    (*share_user_leaving_signal_)(inbox_item.content[0],
+                                  inbox_item.sender_public_id);
   } else {
     Message message;
     InboxToProtobuf(inbox_item, &message);
@@ -682,6 +686,11 @@ bs2::connection MessageHandler::ConnectToMemberAccessLevelSignal(
 bs2::connection MessageHandler::ConnectToSaveShareDataSignal(
     const SaveShareDataSignal::slot_type &function) {
   return save_share_data_signal_->connect(function);
+}
+
+bs2::connection MessageHandler::ConnectToShareUserLeavingSignal(
+    const ShareUserLeavingSignal::slot_type &function) {
+  return share_user_leaving_signal_->connect(function);
 }
 
 bs2::connection MessageHandler::ConnectToContactPresenceSignal(

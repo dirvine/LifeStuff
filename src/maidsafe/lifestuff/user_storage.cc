@@ -50,6 +50,7 @@ struct InsertShareTag;
 struct RemoveShareTag;
 struct UpdateShareTag;
 struct UpgradeShareTag;
+struct LeaveShareTag;
 
 template<typename Operation>
 struct AddMessageDetails {};
@@ -107,6 +108,18 @@ struct AddMessageDetails<UpgradeShareTag> {
                   InboxItem* non_admin_message) {
     admin_message->content.push_back("upgrade_share");
     non_admin_message->content.push_back("upgrade_share");
+  }
+};
+
+template<>
+struct AddMessageDetails<LeaveShareTag> {
+  void operator()(const fs::path&,
+                  const std::string&,
+                  const std::string&,
+                  InboxItem* admin_message,
+                  InboxItem* non_admin_message) {
+    admin_message->content.push_back("leave_share");
+    non_admin_message->content.push_back("leave_share");
   }
 };
 
@@ -420,14 +433,44 @@ int UserStorage::StopShare(const std::string &sender_public_username,
   return kSuccess;
 }
 
-int UserStorage::RemoveShare(const fs::path& absolute_path) {
+int UserStorage::RemoveShare(const fs::path& absolute_path,
+                             const std::string &sender_public_username) {
   if (!message_handler_) {
     DLOG(WARNING) << "Uninitialised message handler.";
     return kMessageHandlerNotInitialised;
   }
 
-  return drive_in_user_space_->RemoveShare(
+  // in case of none own name provided, idicates being asked to leave
+  // i.e. no notification of leaving to the owner required to be sent
+  if (sender_public_username.empty()) {
+    return drive_in_user_space_->RemoveShare(
              drive_in_user_space_->RelativePath(absolute_path));
+  }
+
+  fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
+  asymm::Keys key_ring;
+  std::string share_id;
+  std::string owner_id;
+  int result(drive_in_user_space_->GetShareDetails(relative_path,
+                                                   nullptr,
+                                                   nullptr,
+                                                   &share_id,
+                                                   nullptr,
+                                                   nullptr,
+                                                   &owner_id));
+  if (result != kSuccess)
+    return result;
+
+  result = drive_in_user_space_->RemoveShare(
+             drive_in_user_space_->RelativePath(absolute_path));
+  if (result != kSuccess)
+    return result;
+
+  std::map<std::string, int> owner;
+  owner.insert(std::make_pair(owner_id , 0));
+  return InformContactsOperation<LeaveShareTag>(sender_public_username,
+                                                owner,
+                                                share_id);
 }
 
 int UserStorage::UpdateShare(const std::string &share_id,
@@ -528,6 +571,13 @@ int UserStorage::GetAllShareUsers(
     return result;
   }
   return kSuccess;
+}
+
+int UserStorage::UserLeavingShare(const std::string &share_id,
+                                  const std::string &user_id) {
+  std::vector<std::string> user_ids;
+  user_ids.push_back(user_id);
+  return drive_in_user_space_->RemoveShareUsers(share_id, user_ids);
 }
 
 int UserStorage::RemoveShareUsers(const std::string &sender_public_username,

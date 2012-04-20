@@ -111,7 +111,8 @@ class UserStorage {
                   const asymm::Keys &share_keyring);
   int StopShare(const std::string &sender_public_username,
                 const fs::path &absolute_path);
-  int RemoveShare(const fs::path &absolute_path);
+  int RemoveShare(const fs::path &absolute_path,
+                  const std::string &sender_public_username = "");
   int UpdateShare(const std::string &share_id,
                   const std::string *new_share_id,
                   const std::string *new_directory_id,
@@ -127,6 +128,8 @@ class UserStorage {
                        const fs::path &absolute_path,
                        const std::vector<std::string> &user_ids,
                        bool private_share);
+  int UserLeavingShare(const std::string &share_id,
+                       const std::string &user_id);
   int GetShareUsersRights(const fs::path &absolute_path,
                           const std::string &user_id,
                           bool *admin_rights) const;
