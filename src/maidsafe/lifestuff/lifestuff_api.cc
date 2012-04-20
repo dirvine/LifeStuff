@@ -1086,7 +1086,7 @@ int LifeStuff::EditPrivateShareMembers(const std::string &my_public_id,
   // Remove users
   if (!members_to_remove.empty()) {
     result = lifestuff_elements->user_storage->RemoveShareUsers(
-                my_public_id, share_dir, members_to_remove);
+                my_public_id, share_dir, members_to_remove, true);
     if (result == kSuccess)
       for (auto it = members_to_remove.begin();
            it != members_to_remove.end(); ++it)

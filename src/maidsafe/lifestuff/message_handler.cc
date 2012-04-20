@@ -592,8 +592,8 @@ void MessageHandler::SignalShare(const InboxItem &inbox_item) {
     }
 
     (*share_update_signal_)(inbox_item.content[0],
-                        &inbox_item.content[2],
                         &inbox_item.content[3],
+                        &inbox_item.content[2],
                         inbox_item.content.size() > 4 ? &key_ring : nullptr);
   } else {
     Message message;

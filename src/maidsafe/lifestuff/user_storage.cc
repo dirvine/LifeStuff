@@ -448,6 +448,10 @@ int UserStorage::UpdateShare(const std::string &share_id,
                                            new_share_id,
                                            new_directory_id,
                                            new_key_ring);
+
+//   drive_in_user_space_->RemoveShare(relative_path);
+//   return drive_in_user_space_->InsertShare(relative_path, "",
+//                 *new_directory_id, *new_share_id, *new_key_ring);
 }
 
 int UserStorage::AddShareUsers(const std::string &sender_public_username,
@@ -526,7 +530,8 @@ int UserStorage::GetAllShareUsers(
 
 int UserStorage::RemoveShareUsers(const std::string &sender_public_username,
                                   const fs::path &absolute_path,
-                                  const std::vector<std::string> &user_ids) {
+                                  const std::vector<std::string> &user_ids,
+                                  bool private_share) {
   if (!message_handler_) {
     DLOG(WARNING) << "Uninitialised message handler.";
     return kMessageHandlerNotInitialised;
@@ -591,7 +596,7 @@ int UserStorage::RemoveShareUsers(const std::string &sender_public_username,
                                                  new_share_id,
                                                  key_ring,
                                                  sender_public_username,
-                                                 true, // value doesn't matter
+                                                 private_share,
                                                  &directory_id);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed in updating share of " << Base32Substr(share_id)
@@ -723,7 +728,8 @@ int UserStorage::SetShareUsersRights(const std::string &sender_public_username,
     // however this may cause the receiver's path to be changed when re-added.
     std::vector<std::string> user;
     user.push_back(user_id);
-    int result(RemoveShareUsers(sender_public_username, absolute_path, user));
+    int result(RemoveShareUsers(sender_public_username, absolute_path,
+                                user, private_share));
     if (result != kSuccess) {
       DLOG(ERROR) << "Failed in remove contact " << user_id
                   << "  during the downgrading "

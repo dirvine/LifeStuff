@@ -125,7 +125,8 @@ class UserStorage {
                        StringIntMap *all_share_users) const;
   int RemoveShareUsers(const std::string &sender_public_username,
                        const fs::path &absolute_path,
-                       const std::vector<std::string> &user_ids);
+                       const std::vector<std::string> &user_ids,
+                       bool private_share);
   int GetShareUsersRights(const fs::path &absolute_path,
                           const std::string &user_id,
                           bool *admin_rights) const;
