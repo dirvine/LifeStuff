@@ -149,6 +149,8 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
     public_id2_->StopCheckingForNewContacts();
     asio_service1_.Stop();
     asio_service2_.Stop();
+    remote_chunk_store1_->WaitForCompletion();
+    remote_chunk_store2_->WaitForCompletion();
   }
 
   void CreateTestSignaturePackets(std::shared_ptr<Session> session) {

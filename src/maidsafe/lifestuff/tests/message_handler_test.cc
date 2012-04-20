@@ -182,6 +182,9 @@ class MessageHandlerTest : public testing::Test {
     asio_service1_.Stop();
     asio_service2_.Stop();
     asio_service3_.Stop();
+    remote_chunk_store1_->WaitForCompletion();
+    remote_chunk_store2_->WaitForCompletion();
+    remote_chunk_store3_->WaitForCompletion();
   }
 
   bool MessagesEqual(const InboxItem &left,
