@@ -53,6 +53,7 @@ enum InboxItemType {
   kContactProfilePicture,
   kContactDeletion,
   kOpenShareInvitation,
+  kUpdateOpenShare,
   kShare,
 
   // Max

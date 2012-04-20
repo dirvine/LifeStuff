@@ -63,7 +63,9 @@ struct TestingVariables {
         removal_message(),
         removed(false),
         new_private_share_id(),
+        new_open_share_id(),
         privately_invited(false),
+        openly_invited(false),
         deleted_private_share_name(),
         private_share_deleted(false),
         access_private_share_name(),
@@ -80,7 +82,9 @@ struct TestingVariables {
   std::string removal_message;
   bool removed;
   std::string new_private_share_id;
+  std::string new_open_share_id;
   bool privately_invited;
+  bool openly_invited;
   std::string deleted_private_share_name;
   bool private_share_deleted;
   std::string access_private_share_name;
@@ -182,6 +186,17 @@ void MemberAccessLevelSlot(const std::string&,
   *done = true;
 }
 
+void OpenShareInvitationSlot(const std::string&,
+                             const std::string&,
+                             const std::string&,
+                             const std::string &signal_share_id,
+                             std::string *slot_share_id,
+                             volatile bool *done) {
+  if (slot_share_id)
+    *slot_share_id = signal_share_id;
+  *done = true;
+}
+
 int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
                                  LifeStuff &test_elements2,  // NOLINT (Dan)
                                  TestingVariables &testing_variables1,  // NOLINT (Dan)
@@ -230,7 +245,11 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
                           args::_1, args::_2, args::_3, args::_4,
                           &testing_variables1.access_private_share_name,
                           &testing_variables1.private_member_access,
-                          &testing_variables1.private_member_access_changed));
+                          &testing_variables1.private_member_access_changed),
+                std::bind(&OpenShareInvitationSlot,
+                          args::_1, args::_2, args::_3, args::_4,
+                          &testing_variables2.new_open_share_id,
+                          &testing_variables2.openly_invited));
   result += test_elements2.ConnectToSignals(
                 std::bind(&ChatSlot, args::_1, args::_2, args::_3,
                           &testing_variables2.chat_message,
@@ -262,7 +281,11 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
                           args::_1, args::_2, args::_3, args::_4,
                           &testing_variables2.access_private_share_name,
                           &testing_variables2.private_member_access,
-                          &testing_variables2.private_member_access_changed));
+                          &testing_variables2.private_member_access_changed),
+                std::bind(&OpenShareInvitationSlot,
+                          args::_1, args::_2, args::_3, args::_4,
+                          &testing_variables2.new_open_share_id,
+                          &testing_variables2.openly_invited));
   if (result != kSuccess)
     return result;
 
@@ -328,7 +351,8 @@ TEST(IndependentFullTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
                                             ContactDeletionFunction(),
                                             ShareInvitationFunction(),
                                             ShareDeletionFunction(),
-                                            MemberAccessLevelFunction()));
+                                            MemberAccessLevelFunction(),
+                                            OpenShareInvitationFunction()));
   EXPECT_EQ(kSuccess, test_elements1.CreateUser(username, pin, password));
   // Create directory
   std::string tail;
@@ -507,6 +531,116 @@ TEST(IndependentFullTest, FUNC_RemoveContact) {
     while (!contact_deleted)
       contact_deleted = test_elements2.GetContacts(public_id2).empty();
     EXPECT_TRUE(contact_deleted);
+
+    EXPECT_EQ(kSuccess, test_elements2.LogOut());
+  }
+
+  EXPECT_EQ(kSuccess, test_elements1.Finalise());
+  EXPECT_EQ(kSuccess, test_elements2.Finalise());
+}
+
+TEST(IndependentFullTest, FUNC_CreateEmptyOpenShare) {
+  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
+  std::string username1(RandomString(6)),
+              pin1(CreatePin()),
+              password1(RandomString(6)),
+              public_id1(RandomAlphaNumericString(5));
+  std::string username2(RandomString(6)),
+              pin2(CreatePin()),
+              password2(RandomString(6)),
+              public_id2(RandomAlphaNumericString(5));
+  LifeStuff test_elements1, test_elements2;
+  TestingVariables testing_variables1, testing_variables2;
+  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+                                                   test_elements2,
+                                                   testing_variables1,
+                                                   testing_variables2,
+                                                   *test_dir,
+                                                   username1, pin1, password1,
+                                                   public_id1,
+                                                   username2, pin2, password2,
+                                                   public_id2));
+  DLOG(ERROR) << "\n\n\n\n";
+  std::string share_name1(RandomAlphaNumericString(5)),
+              file_name1(RandomAlphaNumericString(5)),
+              file_content1(RandomString(20)),
+              file_content2(RandomString(20));
+  boost::system::error_code error_code;
+  {
+    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+    // Create empty open share
+    StringIntMap  results;
+    std::vector<std::string> contacts;
+    contacts.push_back(public_id2);
+    results.insert(std::make_pair(public_id2, kGeneralError));
+    EXPECT_EQ(kSuccess, test_elements1.CreateEmptyOpenShare(public_id1,
+                                                            contacts,
+                                                            &share_name1,
+                                                            &results));
+    fs::path share_path(test_elements1.mount_path() /
+                        fs::path("/").make_preferred() /
+                        kSharedStuff /
+                        share_name1);
+    EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
+    EXPECT_EQ(0, error_code.value());
+    EXPECT_EQ(kSuccess, results[public_id2]);
+    EXPECT_EQ(kSuccess, test_elements1.LogOut());
+  }
+  DLOG(ERROR) << "\n\n\n\n";
+  {
+    EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
+    while (!testing_variables2.openly_invited)
+      Sleep(bptime::milliseconds(100));
+    EXPECT_FALSE(testing_variables2.new_open_share_id.empty());
+    EXPECT_EQ(kSuccess,
+              test_elements2.AcceptOpenShareInvitation(
+                  public_id2,
+                  public_id1,
+                  testing_variables2.new_open_share_id,
+                  &share_name1));
+
+    fs::path share_path(test_elements2.mount_path() /
+                        fs::path("/").make_preferred() /
+                        kSharedStuff /
+                        share_name1);
+    EXPECT_TRUE(fs::is_directory(share_path, error_code));
+
+    fs::path a_file_path(share_path / file_name1);
+    EXPECT_TRUE(WriteFile(a_file_path, file_content2));
+    EXPECT_TRUE(fs::exists(a_file_path, error_code));
+    EXPECT_EQ(0, error_code.value());
+    EXPECT_EQ(kSuccess, test_elements2.LogOut());
+  }
+  DLOG(ERROR) << "\n\n\n\n";
+  {
+    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+    fs::path share_path(test_elements1.mount_path() /
+                        fs::path("/").make_preferred() /
+                        kSharedStuff /
+                        share_name1);
+    fs::path a_file_path(share_path / file_name1);
+    std::string file_stuff;
+    EXPECT_TRUE(ReadFile(a_file_path, &file_stuff));
+    EXPECT_EQ(file_content2, file_stuff);
+    EXPECT_TRUE(WriteFile(a_file_path, file_content1));
+
+    EXPECT_EQ(kSuccess, test_elements1.LogOut());
+  }
+  DLOG(ERROR) << "\n\n\n\n";
+  {
+    EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
+
+    fs::path share_path(test_elements2.mount_path() /
+                        fs::path("/").make_preferred() /
+                        kSharedStuff /
+                        share_name1);
+    fs::path a_file_path(share_path / file_name1);
+    EXPECT_TRUE(fs::exists(a_file_path, error_code)) << a_file_path;
+    EXPECT_NE(0, error_code.value());
+
+    std::string a_file_content;
+    EXPECT_TRUE(ReadFile(a_file_path, &a_file_content));
+    EXPECT_EQ(file_content1, a_file_content);
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }

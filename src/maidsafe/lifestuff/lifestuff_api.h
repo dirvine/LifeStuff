@@ -158,11 +158,11 @@ class LifeStuff {
 
   /// Open Shares
   int CreateOpenShareFromExistingDirectory(
-      const std::string &my_public_id,
-      const fs::path &directory_in_lifestuff_drive,
-      const std::vector<std::string> &contacts,
-      std::string *share_name,
-      StringIntMap *results);
+        const std::string &my_public_id,
+        const fs::path &directory_in_lifestuff_drive,
+        const std::vector<std::string> &contacts,
+        std::string *share_name,
+        StringIntMap *results);
   int CreateEmptyOpenShare(const std::string &my_public_id,
                            const std::vector<std::string> &contacts,
                            std::string *share_name,

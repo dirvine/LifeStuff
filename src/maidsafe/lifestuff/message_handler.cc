@@ -73,6 +73,7 @@ MessageHandler::MessageHandler(
       chat_signal_(new ChatMessageSignal),
       file_transfer_signal_(new FileTransferSignal),
       share_invitation_signal_(new ShareInvitationSignal),
+      open_share_invitation_signal_(new OpenShareInvitationSignal),
       share_deletion_signal_(new ShareDeletionSignal),
       share_update_signal_(new ShareUpdateSignal),
       member_access_level_signal_(new MemberAccessLevelSignal),
@@ -680,6 +681,11 @@ bs2::connection MessageHandler::ConnectToFileTransferSignal(
 bs2::connection MessageHandler::ConnectToShareInvitationSignal(
     const ShareInvitationFunction &function) {
   return share_invitation_signal_->connect(function);
+}
+
+bs2::connection MessageHandler::ConnectToOpenShareInvitationSignal(
+    const OpenShareInvitationFunction &function) {
+  return open_share_invitation_signal_->connect(function);
 }
 
 bs2::connection MessageHandler::ConnectToShareDeletionSignal(

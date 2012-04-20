@@ -1158,30 +1158,46 @@ int LifeStuff::CreateOpenShareFromExistingDirectory(
     DLOG(ERROR) << "Failed pre checks.";
     return result;
   }
-  *share_name = directory_in_lifestuff_drive.filename().string();
+  *share_name =  directory_in_lifestuff_drive.filename().string();
   fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
                      fs::path("/").make_preferred() / (*share_name));
   boost::system::error_code error_code;
   if (fs::exists(share_dir, error_code)) {
-    // Can only create a share from an existing folder...
+    // Drive Create Share method can only create a share from an existing folder
     result = CreateEmptyOpenShare(my_public_id, contacts, share_name, results);
     if (result != kSuccess)
       return result;
-    return CopyDir(lifestuff_elements->user_storage->mount_dir() /
-                      fs::path("/").make_preferred() /
-                      directory_in_lifestuff_drive,
-                   lifestuff_elements->user_storage->mount_dir() /
+    result = CopyDir(lifestuff_elements->user_storage->mount_dir() /
+                        fs::path("/").make_preferred() /
+                        directory_in_lifestuff_drive,
+                     lifestuff_elements->user_storage->mount_dir() /
                         fs::path("/").make_preferred() / (*share_name));
+    if (result != kSuccess)
+      return result;
   } else {
     StringIntMap map_contacts;
     for (uint32_t i = 0; i != contacts.size(); ++i)
       map_contacts.insert(std::make_pair(contacts[i], 1));
-    return lifestuff_elements->user_storage->CreateShare(my_public_id,
-                                                         share_dir,
-                                                         map_contacts,
-                                                         false,
-                                                         results);
+    result = lifestuff_elements->user_storage->CreateShare(my_public_id,
+              share_dir, map_contacts, false, results);
+    if (result != kSuccess)
+      return result;
   }
+  try {
+    fs::remove_all(lifestuff_elements->user_storage->mount_dir() /
+                      fs::path("/").make_preferred() /
+                      directory_in_lifestuff_drive,
+                   error_code);
+    if (error_code.value() != 0) {
+      DLOG(ERROR) << "Failed to remove source directory "
+                  << error_code.value();
+      return error_code.value();
+    }
+  } catch (...) {
+    DLOG(ERROR) << "Exception thrown removing source directory.";
+    return kGeneralError;
+  }
+  return kSuccess;
 }
 
 int LifeStuff::CreateEmptyOpenShare(const std::string &my_public_id,
@@ -1227,11 +1243,10 @@ int LifeStuff::InviteMembersToOpenShare(const std::string &my_public_id,
   StringIntMap map_contacts;
   for (uint32_t i = 0; i != contacts.size(); ++i)
     map_contacts.insert(std::make_pair(contacts[i], 1));
-  return lifestuff_elements->user_storage->AddShareUsers(my_public_id,
-                                                         absolute_path,
-                                                         map_contacts,
-                                                         false,
-                                                         results);
+  return lifestuff_elements->user_storage->OpenShareInvitation(my_public_id,
+                                                               absolute_path,
+                                                               map_contacts,
+                                                               results);
 }
 
 int LifeStuff::GetOpenShareList(const std::string &my_public_id,

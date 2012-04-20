@@ -121,6 +121,10 @@ class UserStorage {
                     const StringIntMap &contacts,
                     bool private_share,
                     StringIntMap *contacts_results = nullptr);
+  int OpenShareInvitation(const std::string &sender_public_username,
+                          const fs::path &absolute_path,
+                          const StringIntMap &contacts,
+                          StringIntMap *contacts_results);
   int GetAllShareUsers(const fs::path &absolute_path,
                        StringIntMap *all_share_users) const;
   int RemoveShareUsers(const std::string &sender_public_username,
@@ -166,14 +170,24 @@ class UserStorage {
  private:
   template<typename Operation>
   int InformContactsOperation(
-      const std::string &sender_public_username,
-      const StringIntMap &contacts,
-      const std::string &share_id,
-      const std::string &absolute_path = "",
-      const std::string &directory_id = "",
-      const asymm::Keys &key_ring = asymm::Keys(),
-      const std::string &new_share_id = "",
-      StringIntMap *contacts_results = nullptr);
+        const std::string &sender_public_username,
+        const StringIntMap &contacts,
+        const std::string &share_id,
+        const std::string &absolute_path = "",
+        const std::string &directory_id = "",
+        const asymm::Keys &key_ring = asymm::Keys(),
+        const std::string &new_share_id = "",
+        StringIntMap *contacts_results = nullptr);
+  template<uint32_t ItemType>
+  int InformOpenShareContacts(
+        const std::string &sender_public_username,
+        const StringIntMap &contacts,
+        const std::string &share_id,
+        const std::string &absolute_path = "",
+        const std::string &directory_id = "",
+        const asymm::Keys &key_ring = asymm::Keys(),
+        const std::string &new_share_id = "",
+        StringIntMap *contacts_results = nullptr);
   pcs::RemoteChunkStore::ValidationData PopulateValidationData(
       const asymm::Keys &key_ring);
 
