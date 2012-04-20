@@ -292,6 +292,69 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
   user_storage2_->UnMountDrive();
 }
 
+TEST_P(UserStorageTest, FUNC_LeaveShare) {
+  user_storage1_->MountDrive(*mount_dir_, session1_, true);
+  Sleep(interval_ * 2);
+  StringIntMap users;
+  users.insert(std::make_pair(pub_name2_, 0));
+  std::string tail;
+  fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir() /
+                                              fs::path("/").make_preferred(),
+                                          &tail));
+  EXPECT_EQ(kSuccess,
+            user_storage1_->CreateShare(pub_name1_, directory0,
+                                        users, private_share_));
+  user_storage1_->UnMountDrive();
+
+  bs2::connection accept_share_invitation_connection(
+    message_handler2_->ConnectToShareInvitationSignal(
+        std::bind(&UserStorageTest::DoAcceptShareInvitationTest,
+                  this, user_storage2_,
+                  args::_1, args::_2, args::_3, args::_4)));
+  bs2::connection save_share_data_connection(
+    message_handler2_->ConnectToSaveShareDataSignal(
+        std::bind(&UserStorage::SaveShareData,
+                  user_storage2_, args::_1, args::_2)));
+  user_storage2_->MountDrive(*mount_dir_, session2_, true);
+  fs::path directory1(user_storage2_->mount_dir() /
+                      fs::path("/").make_preferred() /
+                      tail);
+  Sleep(interval_ * 2);
+  boost::system::error_code error_code;
+  EXPECT_FALSE(fs::exists(directory1, error_code))
+               << directory1 << " : " << error_code.message();
+  EXPECT_EQ(kSuccess,
+            message_handler2_->StartCheckingForNewMessages(interval_));
+  Sleep(interval_ * 2);
+  EXPECT_TRUE(fs::exists(directory1, error_code))
+              << directory1 << " : " << error_code.message();
+
+  EXPECT_EQ(kSuccess, user_storage2_->RemoveShare(directory1, pub_name2_));
+
+  message_handler2_->StopCheckingForNewMessages();
+  user_storage2_->UnMountDrive();
+  Sleep(interval_ * 2);
+
+  bs2::connection share_user_leaving_connection(
+    message_handler1_->ConnectToShareUserLeavingSignal(
+        std::bind(&UserStorage::UserLeavingShare,
+                  user_storage1_, args::_1, args::_2)));
+
+  user_storage1_->MountDrive(*mount_dir_, session1_, false);
+  Sleep(interval_ * 2);
+  users.clear();
+  EXPECT_EQ(kSuccess, user_storage1_->GetAllShareUsers(directory0, &users));
+  EXPECT_EQ(2, users.size());
+  EXPECT_EQ(kSuccess,
+            message_handler1_->StartCheckingForNewMessages(interval_));
+  Sleep(interval_ * 2);
+  users.clear();
+  EXPECT_EQ(kSuccess, user_storage1_->GetAllShareUsers(directory0, &users));
+  EXPECT_EQ(1, users.size());
+  message_handler1_->StopCheckingForNewMessages();
+  user_storage1_->UnMountDrive();
+}
+
 TEST_P(UserStorageTest, FUNC_AddUser) {
   user_storage1_->MountDrive(*mount_dir_, session1_, true);
   Sleep(interval_ * 2);
