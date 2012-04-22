@@ -109,6 +109,7 @@ std::shared_ptr<encrypt::DataMap> ParseSerialisedDataMap(
 
 
 int CopyDir(const fs::path& source, const fs::path& dest);
+int CopyDirectory(const fs::path& from, const fs::path& to);
 
 #ifdef LOCAL_TARGETS_ONLY
 std::shared_ptr<priv::chunk_store::RemoteChunkStore> BuildChunkStore(

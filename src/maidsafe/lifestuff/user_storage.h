@@ -97,11 +97,17 @@ class UserStorage {
   // ****************************** Shares *************************************
   bool SaveShareData(const std::string &serialised_share_data,
                      const std::string &share_id);
+  bool SaveOpenShareData(const std::string &serialised_share_data,
+                         const std::string &share_id);
   int CreateShare(const std::string &sender_public_username,
                   const fs::path &absolute_path,
                   const StringIntMap &contacts,
                   bool private_share,
                   StringIntMap *contacts_results = nullptr);
+  int CreateOpenShare(const std::string &sender_public_username,
+                      const fs::path &absolute_path,
+                      const StringIntMap &contacts,
+                      StringIntMap *contacts_results = nullptr);
   int GetAllShares(StringIntMap *shares_names);
   int InsertShare(const fs::path &absolute_path,
                   const std::string &share_id,
@@ -121,6 +127,8 @@ class UserStorage {
                     const StringIntMap &contacts,
                     bool private_share,
                     StringIntMap *contacts_results = nullptr);
+  int AddOpenShareUser(const fs::path &absolute_path,
+                       const StringIntMap &contacts);
   int OpenShareInvitation(const std::string &sender_public_username,
                           const fs::path &absolute_path,
                           const StringIntMap &contacts,
@@ -179,11 +187,11 @@ class UserStorage {
         const std::string &new_share_id = "",
         StringIntMap *contacts_results = nullptr);
   template<uint32_t ItemType>
-  int InformOpenShareContacts(
+  int InformContacts(
         const std::string &sender_public_username,
         const StringIntMap &contacts,
         const std::string &share_id,
-        const std::string &absolute_path = "",
+        const fs::path &relative_path = "", // const std::string &absolute_path = "",
         const std::string &directory_id = "",
         const asymm::Keys &key_ring = asymm::Keys(),
         const std::string &new_share_id = "",

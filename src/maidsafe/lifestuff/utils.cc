@@ -287,6 +287,52 @@ int CopyDir(const fs::path& source, const fs::path& dest) {
   return kSuccess;
 }
 
+int CopyDirectory(const fs::path& from, const fs::path& to) {
+  boost::system::error_code error_code;
+  int result;
+  fs::directory_iterator it(from), end;
+  if (!fs::exists(to / from.filename())) {
+    fs::create_directory(to / from.filename(), error_code);
+    if (error_code) {
+      DLOG(ERROR) << "Failed to create directory " << to / from.filename()
+                  << error_code.value();
+      return kGeneralError;
+    }
+  }
+  try {
+    for (; it != end; ++it) {
+      if (fs::is_directory(*it)) {
+        result = CopyDirectory((*it).path(), to / from.filename());
+        if (result != kSuccess) {
+          DLOG(ERROR) << "Failed to create directory " << to / from.filename()
+                      << error_code.value();
+          return kGeneralError;
+        }
+      } else if (fs::is_regular_file(*it)) {
+        fs::copy_file((*it).path(),
+                      to / from.filename() / (*it).path().filename(),
+                      error_code);
+        if (error_code) {
+          DLOG(ERROR) << "Failed to create file " << to / from.filename() /
+                         (*it).path().filename() << error_code.value();
+          return kGeneralError;
+        }
+      } else {
+        if (fs::exists(*it))
+          DLOG(ERROR) << "Unknown file type found.";
+        else
+          DLOG(ERROR) << "Nonexistant file type found.";
+        return kGeneralError;
+      }
+    }
+  }
+  catch(...) {
+    DLOG(ERROR) << "Failed copying directory " << from << " to " << to;
+    return kGeneralError;
+  }
+  return kSuccess;
+}
+
 #ifdef LOCAL_TARGETS_ONLY
 std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
     const fs::path &buffered_chunk_store_path,

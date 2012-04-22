@@ -260,7 +260,22 @@ bool UserStorage::SaveShareData(const std::string &serialised_share_data,
     DLOG(ERROR) << "Failed to create file: " << result;
     return false;
   }
+  return true;
+}
 
+bool UserStorage::SaveOpenShareData(const std::string &serialised_share_data,
+                                    const std::string &share_id) {
+  std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
+  int result(WriteHiddenFile(
+                 mount_dir_ / fs::path("/").make_preferred() /
+                    kSharedStuff /
+                    std::string(temp_name + drive::kMsHidden.string()),
+                 serialised_share_data,
+                 true));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to create file: " << result;
+    return false;
+  }
   return true;
 }
 
@@ -293,8 +308,11 @@ int UserStorage::CreateShare(const std::string &sender_public_username,
   pcs::RemoteChunkStore::ValidationData validation_data(
       PopulateValidationData(key_ring));
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
-  VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback, args::_1,
-                                         &mutex, &cond_var, &results[0]));
+  VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback,
+                                         args::_1,
+                                         &mutex,
+                                         &cond_var,
+                                         &results[0]));
   chunk_store_->Store(packet_id,
                       ComposeSignaturePacketValue(*signature_packets[0]),
                       callback,
@@ -323,10 +341,79 @@ int UserStorage::CreateShare(const std::string &sender_public_username,
     return result;
   }
   // AddShareUser will send out the informing msg to contacts
-  result = AddShareUsers(sender_public_username, absolute_path,
-                         contacts, private_share, contacts_results);
+  result = AddShareUsers(sender_public_username,
+                         absolute_path,
+                         contacts,
+                         private_share,
+                         contacts_results);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to add users to share at " << absolute_path;
+    return result;
+  }
+  return kSuccess;
+}
+
+int UserStorage::CreateOpenShare(const std::string &sender_public_username,
+                                 const fs::path &absolute_path,
+                                 const StringIntMap &contacts,
+                                 StringIntMap *contacts_results) {
+  if (!message_handler_) {
+    DLOG(WARNING) << "Uninitialised message handler.";
+    return kMessageHandlerNotInitialised;
+  }
+  std::string share_id(crypto::Hash<crypto::SHA512>(absolute_path.string()));
+  std::vector<pki::SignaturePacketPtr> signature_packets;
+  pki::CreateChainedId(&signature_packets, 1);
+  asymm::Keys key_ring;
+  key_ring.identity = signature_packets[0]->name();
+  key_ring.public_key = signature_packets[0]->value();
+  key_ring.private_key = signature_packets[0]->private_key();
+  key_ring.validation_token = signature_packets[0]->signature();
+  // Store packets
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  std::vector<int> results;
+  results.push_back(kPendingResult);
+  pcs::RemoteChunkStore::ValidationData validation_data(
+      PopulateValidationData(key_ring));
+  std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
+  VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback,
+                                         args::_1,
+                                         &mutex,
+                                         &cond_var,
+                                         &results[0]));
+  chunk_store_->Store(packet_id,
+                      ComposeSignaturePacketValue(*signature_packets[0]),
+                      callback,
+                      validation_data);
+  int result(AwaitingResponse(&mutex, &cond_var, &results));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Timed out waiting for the response";
+    return result;
+  }
+  if (results[0] != kSuccess) {
+    DLOG(ERROR) << "Failed to store packet.  Packet 1 : " << results[0];
+    return results[0];
+  }
+  std::string directory_id;
+  result = drive_in_user_space_->SetShareDetails(
+               drive_in_user_space_->RelativePath(absolute_path),
+               share_id,
+               key_ring,
+               sender_public_username,
+               false,
+               &directory_id);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed in creating share of " << absolute_path.string()
+                << ", with result of : " << result;
+    return result;
+  }
+  result = OpenShareInvitation(sender_public_username,
+                               absolute_path,
+                               contacts,
+                               contacts_results);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to invite users to share " << absolute_path;
     return result;
   }
   return kSuccess;
@@ -508,6 +595,23 @@ int UserStorage::AddShareUsers(const std::string &sender_public_username,
   return kSuccess;
 }
 
+int UserStorage::AddOpenShareUser(const fs::path &absolute_path,
+                                  const StringIntMap &contacts) {
+  if (!message_handler_) {
+    DLOG(WARNING) << "Uninitialised message handler.";
+    return kMessageHandlerNotInitialised;
+  }
+  fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
+  int result(drive_in_user_space_->AddShareUsers(relative_path,
+                                                 contacts,
+                                                 false));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to add users to share: " << absolute_path.string();
+    return result;
+  }
+  return kSuccess;
+}
+
 int UserStorage::OpenShareInvitation(const std::string &sender_public_username,
                                      const fs::path &absolute_path,
                                      const StringIntMap &contacts,
@@ -531,15 +635,14 @@ int UserStorage::OpenShareInvitation(const std::string &sender_public_username,
     DLOG(ERROR) << "Failed to get share details: " << absolute_path.string();
     return result;
   }
-  result =
-      InformOpenShareContacts<kOpenShareInvitation>(sender_public_username,
-                                                    contacts,
-                                                    share_id,
-                                                    absolute_path.filename().string(),
-                                                    directory_id,
-                                                    key_ring,
-                                                    "",
-                                                    contacts_results);
+  result = InformContacts<kOpenShareInvitation>(sender_public_username,
+                                                contacts,
+                                                share_id,
+                                                relative_path, // absolute_path.filename().string(),
+                                                directory_id,
+                                                key_ring,
+                                                "",
+                                                contacts_results);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to inform contacts: " << absolute_path.string();
     return result;
@@ -938,11 +1041,11 @@ int UserStorage::InformContactsOperation(
 }
 
 template<uint32_t ItemType>
-int UserStorage::InformOpenShareContacts(
+int UserStorage::InformContacts(
         const std::string &sender_public_username,
         const std::map<std::string, int> &contacts,
         const std::string &share_id,
-        const std::string &absolute_path,
+        const fs::path &relative_path, // const std::string &absolute_path
         const std::string &directory_id,
         const asymm::Keys &key_ring,
         const std::string &new_share_id,
@@ -954,7 +1057,7 @@ int UserStorage::InformOpenShareContacts(
   message.content.push_back(share_id);
   switch (ItemType) {
     case kOpenShareInvitation:
-      message.content.push_back(absolute_path);
+      message.content.push_back(relative_path.string()); // fs::path(absolute_path).filename().string());
       message.content.push_back(directory_id);
       break;
     case kUpdateOpenShare:

@@ -188,8 +188,8 @@ void MemberAccessLevelSlot(const std::string&,
 
 void OpenShareInvitationSlot(const std::string&,
                              const std::string&,
+                             const std::string& signal_share_id,
                              const std::string&,
-                             const std::string &signal_share_id,
                              std::string *slot_share_id,
                              volatile bool *done) {
   if (slot_share_id)
@@ -636,13 +636,127 @@ TEST(IndependentFullTest, FUNC_CreateEmptyOpenShare) {
                         share_name1);
     fs::path a_file_path(share_path / file_name1);
     EXPECT_TRUE(fs::exists(a_file_path, error_code)) << a_file_path;
-    EXPECT_NE(0, error_code.value());
+    EXPECT_EQ(0, error_code.value());
 
     std::string a_file_content;
     EXPECT_TRUE(ReadFile(a_file_path, &a_file_content));
     EXPECT_EQ(file_content1, a_file_content);
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
+  }
+
+  EXPECT_EQ(kSuccess, test_elements1.Finalise());
+  EXPECT_EQ(kSuccess, test_elements2.Finalise());
+}
+
+TEST(IndependentFullTest, FUNC_CreateOpenShare) {
+  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
+  std::string username1(RandomString(6)),
+              pin1(CreatePin()),
+              password1(RandomString(6)),
+              public_id1(RandomAlphaNumericString(5));
+  std::string username2(RandomString(6)),
+              pin2(CreatePin()),
+              password2(RandomString(6)),
+              public_id2(RandomAlphaNumericString(5));
+  LifeStuff test_elements1, test_elements2;
+  TestingVariables testing_variables1, testing_variables2;
+  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+                                                   test_elements2,
+                                                   testing_variables1,
+                                                   testing_variables2,
+                                                   *test_dir,
+                                                   username1, pin1, password1,
+                                                   public_id1,
+                                                   username2, pin2, password2,
+                                                   public_id2));
+  DLOG(ERROR) << "\n\n\n\n";
+  std::string directory_name(RandomAlphaNumericString(5)),
+              share_name(RandomAlphaNumericString(5)),
+              file1_name(RandomAlphaNumericString(5)),
+              file2_name(RandomAlphaNumericString(5)),
+              file_content1(RandomString(20)),
+              file_content2(RandomString(20));
+  boost::system::error_code error_code;
+  {
+    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+    // create some directories and files in MyStuff directory...
+    fs::path directory(test_elements1.mount_path() /
+                          fs::path("/").make_preferred() /
+                          kMyStuff /
+                          directory_name);
+    EXPECT_TRUE(fs::create_directory(directory, error_code));
+    EXPECT_EQ(0, error_code.value());
+    fs::path file1_path(directory / file1_name);
+    EXPECT_TRUE(WriteFile(file1_path, file_content1));
+    EXPECT_TRUE(fs::exists(file1_path, error_code));
+    EXPECT_EQ(0, error_code.value());
+    fs::path share_directory(directory / share_name);
+    EXPECT_TRUE(fs::create_directory(share_directory, error_code));
+    EXPECT_EQ(0, error_code.value());
+    fs::path file2_path(share_directory / file2_name);
+    EXPECT_TRUE(WriteFile(file2_path, file_content2));
+    EXPECT_TRUE(fs::exists(file2_path, error_code));
+    EXPECT_EQ(0, error_code.value());
+    // create share...
+    StringIntMap  results;
+    std::vector<std::string> contacts;
+    contacts.push_back(public_id2);
+    results.insert(std::make_pair(public_id2, kGeneralError));
+    EXPECT_EQ(kSuccess, test_elements1.CreateOpenShareFromExistingDirectory(
+                                          public_id1,
+                                          share_directory,
+                                          contacts,
+                                          &share_name,
+                                          &results));
+    fs::path share(test_elements1.mount_path() /
+                      fs::path("/").make_preferred() /
+                      kSharedStuff /
+                      share_name);
+    EXPECT_EQ(kSuccess, results[public_id2]);
+    EXPECT_TRUE(fs::exists(share, error_code));
+    EXPECT_EQ(0, error_code.value());
+    EXPECT_TRUE(fs::exists(share / file2_name, error_code));
+    EXPECT_EQ(0, error_code.value());
+    // shared directory gets moved...
+    EXPECT_FALSE(fs::exists(directory / share_name, error_code));
+    EXPECT_NE(0, error_code.value());
+    EXPECT_EQ(kSuccess, test_elements1.LogOut());
+  }
+  DLOG(ERROR) << "\n\n\n\n";
+  {
+    EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
+    while (!testing_variables2.openly_invited)
+      Sleep(bptime::milliseconds(100));
+    EXPECT_FALSE(testing_variables2.new_open_share_id.empty());
+    EXPECT_EQ(kSuccess, test_elements2.RejectOpenShareInvitation(
+                            public_id2,
+                            testing_variables2.new_open_share_id));
+    fs::path share(test_elements2.mount_path() /
+                       fs::path("/").make_preferred() /
+                       kSharedStuff /
+                       share_name),
+             file_path(share / file2_name);
+    EXPECT_FALSE(fs::exists(share, error_code));
+    EXPECT_NE(0, error_code.value());
+    EXPECT_FALSE(fs::exists(file_path, error_code));
+    EXPECT_NE(0, error_code.value());
+    EXPECT_EQ(kSuccess, test_elements2.LogOut());
+  }
+  DLOG(ERROR) << "\n\n\n\n";
+  {
+    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+    fs::path share(test_elements1.mount_path() /
+                      fs::path("/").make_preferred() /
+                      kSharedStuff /
+                      share_name);
+    fs::path file_path(share / file2_name);
+    std::string file_stuff;
+    EXPECT_TRUE(ReadFile(file_path, &file_stuff));
+    EXPECT_EQ(file_content2, file_stuff);
+    EXPECT_TRUE(WriteFile(file_path, file_content1));
+
+    EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
 
   EXPECT_EQ(kSuccess, test_elements1.Finalise());

@@ -176,7 +176,6 @@ class LifeStuff {
   int GetOpenShareMembers(const std::string &my_public_id,
                           const std::string &share_name,
                           std::vector<std::string> *shares_members);
-  // Should create a directory adapting to other possible shares
   int AcceptOpenShareInvitation(const std::string &my_public_id,
                                 const std::string &contact_public_id,
                                 const std::string &share_id,
