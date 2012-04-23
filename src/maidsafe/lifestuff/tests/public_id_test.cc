@@ -1,7 +1,7 @@
 /*
 * ============================================================================
 *
-* Copyright [2011 maidsafe.net limited
+* Copyright [2011] maidsafe.net limited
 *
 * The following source code is property of maidsafe.net limited and is not
 * meant for external use.  The use of this code is governed by the license
