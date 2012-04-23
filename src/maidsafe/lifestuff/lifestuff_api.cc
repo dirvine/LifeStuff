@@ -983,7 +983,7 @@ int LifeStuff::CreateEmptyPrivateShare(
   *share_name = share_dir.filename().string();
 
   return lifestuff_elements->user_storage->CreateShare(my_public_id,
-            share_dir, contacts, results);
+            share_dir, contacts, true, results);
 }
 
 int LifeStuff::GetPrivateShareList(const std::string &my_public_id,
