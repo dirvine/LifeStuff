@@ -791,6 +791,27 @@ int UserStorage::RemoveShareUsers(const std::string &sender_public_username,
   return kSuccess;
 }
 
+int UserStorage::RemoveOpenShareUsers(const std::string &sender_public_username,
+                                      const fs::path &absolute_path,
+                                      const std::vector<std::string> &user_ids) {
+  if (!message_handler_) {
+    DLOG(WARNING) << "Uninitialised message handler.";
+    return kMessageHandlerNotInitialised;
+  }
+  fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
+  std::string share_id;
+  drive_in_user_space_->GetShareDetails(relative_path,
+                                        nullptr,
+                                        nullptr,
+                                        &share_id,
+                                        nullptr,
+                                        nullptr);
+  int result(drive_in_user_space_->RemoveShareUsers(share_id, user_ids));
+  if (result != kSuccess)
+    return result;
+  return kSuccess;
+}
+
 int UserStorage::GetShareUsersRights(const fs::path &absolute_path,
                                      const std::string &user_id,
                                      bool *admin_rights) const {

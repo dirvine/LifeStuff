@@ -40,13 +40,13 @@ int main(int argc, char **argv) {
   FLAGS_ms_logging_pki = google::FATAL;
   FLAGS_ms_logging_passport = google::FATAL;
   FLAGS_ms_logging_encrypt = google::FATAL;
-  FLAGS_ms_logging_drive = google::ERROR;
+  FLAGS_ms_logging_drive = google::FATAL;
 #ifndef LOCAL_TARGETS_ONLY
   FLAGS_ms_logging_transport = google::FATAL;
   FLAGS_ms_logging_dht = google::FATAL;
   FLAGS_ms_logging_pd = google::FATAL;
 #endif
-  FLAGS_ms_logging_lifestuff = google::INFO;
+  FLAGS_ms_logging_lifestuff = google::FATAL;
 
   testing::InitGoogleTest(&argc, argv);
 

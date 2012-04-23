@@ -1178,12 +1178,12 @@ int LifeStuff::CreateOpenShareFromExistingDirectory(
     if (result != kSuccess)
       return result;
   }
-  StringIntMap map_contacts;
+  StringIntMap liaisons;
   for (uint32_t i = 0; i != contacts.size(); ++i)
-    map_contacts.insert(std::make_pair(contacts[i], 1));
+    liaisons.insert(std::make_pair(contacts[i], 1));
   result = lifestuff_elements->user_storage->CreateOpenShare(my_public_id,
                                                              share_dir,
-                                                             map_contacts,
+                                                             liaisons,
                                                              results);
   if (result != kSuccess)
     return result;
@@ -1233,12 +1233,12 @@ int LifeStuff::CreateEmptyOpenShare(const std::string &my_public_id,
     return kGeneralError;
   }
   *share_name = share_dir.filename().string();
-  StringIntMap map_contacts;
+  StringIntMap liaisons;
   for (uint32_t i = 0; i != contacts.size(); ++i)
-    map_contacts.insert(std::make_pair(contacts[i], 1));
+    liaisons.insert(std::make_pair(contacts[i], 1));
   return lifestuff_elements->user_storage->CreateOpenShare(my_public_id,
                                                            share_dir,
-                                                           map_contacts,
+                                                           liaisons,
                                                            results);
 }
 
@@ -1246,43 +1246,55 @@ int LifeStuff::InviteMembersToOpenShare(const std::string &my_public_id,
                                         const std::vector<std::string> &contacts,
                                         const fs::path &absolute_path,
                                         StringIntMap *results) {
-  StringIntMap map_contacts;
+  StringIntMap liaisons;
   for (uint32_t i = 0; i != contacts.size(); ++i)
-    map_contacts.insert(std::make_pair(contacts[i], 1));
+    liaisons.insert(std::make_pair(contacts[i], 1));
   return lifestuff_elements->user_storage->OpenShareInvitation(my_public_id,
                                                                absolute_path,
-                                                               map_contacts,
+                                                               liaisons,
                                                                results);
 }
 
 int LifeStuff::GetOpenShareList(const std::string &my_public_id,
                                 std::vector<std::string> *shares_names) {
-  StringIntMap map_names;
-  int result(GetPrivateShareList(my_public_id, &map_names));
+  StringIntMap shares;
+  int result(GetPrivateShareList(my_public_id, &shares));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to get open share list.";
     return result;
   }
   shares_names->clear();
-  auto end(map_names.end());
-  for (auto it = map_names.begin(); it != end; ++it)
+  auto end(shares.end());
+  for (auto it = shares.begin(); it != end; ++it)
     shares_names->push_back(it->first);
   return kSuccess;
 }
 
 int LifeStuff::GetOpenShareMembers(const std::string &my_public_id,
                                    const std::string &share_name,
-                                   std::vector<std::string> *shares_members) {
-  StringIntMap map_names;
-  int result(GetPrivateShareMembers(my_public_id, share_name, &map_names));
+                                   std::vector<std::string> *share_members) {
+  StringIntMap share_users;
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks.";
+    return result;
+  }
+  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+                     fs::path("/").make_preferred() /
+                     kSharedStuff /
+                     share_name);
+  result = lifestuff_elements->user_storage->GetAllShareUsers(share_dir,
+                                                              &share_users);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to get open share members.";
     return result;
   }
-  shares_members->clear();
-  auto end(map_names.end());
-  for (auto it = map_names.begin(); it != end; ++it)
-    shares_members->push_back(it->first);
+  share_members->clear();
+  auto end(share_users.end());
+  for (auto it = share_users.begin(); it != end; ++it)
+    share_members->push_back(it->first);
   return kSuccess;
 }
 
@@ -1362,7 +1374,51 @@ int LifeStuff::RejectOpenShareInvitation(const std::string &my_public_id,
 
 int LifeStuff::LeaveOpenShare(const std::string &my_public_id,
                               const std::string &share_name) {
-  return LeavePrivateShare(my_public_id, share_name);
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks.";
+    return result;
+  }
+  fs::path share(lifestuff_elements->user_storage->mount_dir() /
+                     fs::path("/").make_preferred() /
+                     kSharedStuff /
+                     share_name);
+  std::vector<std::string> members;
+  result = GetOpenShareMembers(my_public_id, share_name, &members);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to get members of share " << share;
+    return result;
+  }
+  if (members.size() == 1) {
+    BOOST_ASSERT(members[0] == my_public_id);
+    result = lifestuff_elements->user_storage->RemoveOpenShareUsers(my_public_id,
+                                                                    share,
+                                                                    members);
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed to remove share user " << my_public_id
+                  << " from share " << share;
+      return result;
+    }
+    result = lifestuff_elements->user_storage->RemoveShare(share);
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed to remove share " << share;
+      return result;
+    }
+  } else {
+    members.clear();
+    members.push_back(my_public_id);
+    result = lifestuff_elements->user_storage->RemoveOpenShareUsers(my_public_id,
+                                                                    share,
+                                                                    members);
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed to remove share user " << my_public_id
+                  << " from share " << share;
+      return result;
+    }
+  }
+  return kSuccess;
 }
 
 ///

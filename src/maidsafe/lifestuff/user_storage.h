@@ -138,6 +138,9 @@ class UserStorage {
   int RemoveShareUsers(const std::string &sender_public_username,
                        const fs::path &absolute_path,
                        const std::vector<std::string> &user_ids);
+  int RemoveOpenShareUsers(const std::string &sender_public_username,
+                           const fs::path &absolute_path,
+                           const std::vector<std::string> &user_ids);
   int GetShareUsersRights(const fs::path &absolute_path,
                           const std::string &user_id,
                           bool *admin_rights) const;
