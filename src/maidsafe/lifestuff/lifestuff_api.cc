@@ -459,6 +459,11 @@ int LifeStuff::ChangePin(const std::string &old_pin,
     return result;
   }
 
+  if (lifestuff_elements->session->pin() != old_pin) {
+    DLOG(ERROR) << "Keyword verification failed.";
+    return kGeneralError;
+  }
+
   return lifestuff_elements->user_credentials->ChangePin(new_pin);
 }
 
