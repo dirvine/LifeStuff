@@ -82,8 +82,10 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
   }
 
   void NewContactSlot(const std::string&,
-                      const std::string &other_public_username) {
+                      const std::string &other_public_username,
+                      volatile bool *done) {
     received_public_username_ = other_public_username;
+    *done = true;
   }
 
   void NewContactCounterSlot(const std::string&,
@@ -147,6 +149,8 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
     public_id2_->StopCheckingForNewContacts();
     asio_service1_.Stop();
     asio_service2_.Stop();
+    remote_chunk_store1_->WaitForCompletion();
+    remote_chunk_store2_->WaitForCompletion();
   }
 
   void CreateTestSignaturePackets(std::shared_ptr<Session> session) {
@@ -252,14 +256,17 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdAntiSocial) {
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_username1_, false));
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_username2_, true));
 
+  volatile bool done(false);
   public_id1_->ConnectToNewContactSignal(
-      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, args::_2));
+      std::bind(&PublicIdTest::NewContactSlot,
+                this, args::_1, args::_2, &done));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
 
   ASSERT_EQ(kSendContactInfoFailure,
             public_id2_->SendContactInfo(public_username2_, public_username1_));
 
   Sleep(interval_ * 2);
+  ASSERT_FALSE(done);
   ASSERT_TRUE(received_public_username_.empty());
 }
 
@@ -269,14 +276,16 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_username2_, true));
 
   // Connect a slot which will reject the new contact
+  volatile bool done(false);
   bs2::connection connection(public_id1_->ConnectToNewContactSignal(
       std::bind(&PublicIdTest::NewContactSlot,
-                this, args::_1, args::_2)));
+                this, args::_1, args::_2, &done)));
   ASSERT_EQ(kSuccess,
             public_id2_->SendContactInfo(public_username2_, public_username1_));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
 
-  Sleep(interval_ * 2);
+  while (!done)
+    Sleep(bptime::milliseconds(100));
 
   ASSERT_EQ(public_username2_, received_public_username_);
   Contact received_contact;
@@ -286,13 +295,16 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
                 &received_contact));
   ASSERT_EQ(kPendingResponse, received_contact.status);
 
+  done = false;
   received_contact = Contact();
   std::string public_username3(public_username2_ + "1");
   ASSERT_EQ(kSuccess,
             public_id2_->CreatePublicId(public_username3, true));
   ASSERT_EQ(kSuccess,
             public_id2_->SendContactInfo(public_username3, public_username1_));
-  Sleep(interval_ * 2);
+  while (!done)
+    Sleep(bptime::milliseconds(100));
+
   ASSERT_EQ(public_username3, received_public_username_);
   ASSERT_EQ(kSuccess,
             session1_->contact_handler_map()[public_username1_]->ContactInfo(
@@ -432,12 +444,15 @@ TEST_F(PublicIdTest, FUNC_DisablePublicId) {
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_username2_, true));
 
   // Check user2 can't add itself to user1's MCID
+  volatile bool done(false);
   public_id1_->ConnectToNewContactSignal(
-      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, args::_2));
+      std::bind(&PublicIdTest::NewContactSlot,
+                this, args::_1, args::_2, &done));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   ASSERT_EQ(kSendContactInfoFailure,
             public_id2_->SendContactInfo(public_username2_, public_username1_));
   Sleep(interval_ * 2);
+  ASSERT_FALSE(done);
   ASSERT_TRUE(received_public_username_.empty());
 
   // TODO(Qi,Ma): 2012-01-12 -Check if user2 alread in the MCID,
@@ -454,24 +469,27 @@ TEST_F(PublicIdTest, FUNC_EnablePublicId) {
   ASSERT_EQ(kSuccess, public_id1_->DisablePublicId(public_username1_));
 
   // Check user2 can't add itself to user1's MCID
+  volatile bool done(false);
   public_id1_->ConnectToNewContactSignal(
-      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, args::_2));
+      std::bind(&PublicIdTest::NewContactSlot,
+                this, args::_1, args::_2, &done));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   ASSERT_EQ(kSendContactInfoFailure,
             public_id2_->SendContactInfo(public_username2_, public_username1_));
   Sleep(interval_ * 2);
+  ASSERT_FALSE(done);
   ASSERT_TRUE(received_public_username_.empty());
 
   ASSERT_EQ(kSuccess, public_id1_->EnablePublicId(public_username1_));
 
   // Check user2 can now add itself to user1's MCID
-  public_id1_->ConnectToNewContactSignal(
-      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, args::_2));
+  done = false;
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   ASSERT_EQ(kSuccess,
             public_id2_->SendContactInfo(public_username2_, public_username1_));
-  Sleep(interval_ * 2);
-  ASSERT_FALSE(received_public_username_.empty());
+  while (!done)
+    Sleep(bptime::milliseconds(100));
+  ASSERT_EQ(public_username2_, received_public_username_);
 }
 
 TEST_F(PublicIdTest, FUNC_RemoveContact) {
@@ -486,27 +504,32 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
   ASSERT_EQ(kLiveContactNotFound,
             public_id1_->RemoveContact(public_username1_, public_username2_));
 
+  volatile bool done(false);
   public_id1_->ConnectToNewContactSignal(
-      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, args::_2));
+      std::bind(&PublicIdTest::NewContactSlot,
+                this, args::_1, args::_2, &done));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   ASSERT_EQ(kSuccess,
             public_id2_->SendContactInfo(public_username2_, public_username1_));
-  Sleep(interval_ * 2);
-  ASSERT_FALSE(received_public_username_.empty());
+  while (!done)
+    Sleep(bptime::milliseconds(100));
+  ASSERT_EQ(public_username2_, received_public_username_);
 
   ASSERT_EQ(kSuccess,
             public_id1_->RemoveContact(public_username1_, public_username2_));
 
   // Although sending msg is disallowed, sending contact_info shall be allowed
   received_public_username_.clear();
+  done = false;
   ASSERT_EQ(-77,
             public_id2_->SendContactInfo(public_username2_, public_username1_));
   ASSERT_EQ(kSuccess,
             public_id2_->RemoveContact(public_username2_, public_username1_));
   ASSERT_EQ(kSuccess,
             public_id2_->SendContactInfo(public_username2_, public_username1_));
-  Sleep(interval_ * 2);
-  ASSERT_FALSE(received_public_username_.empty());
+  while (!done)
+    Sleep(bptime::milliseconds(100));
+  ASSERT_EQ(public_username2_, received_public_username_);
 }
 
 TEST_F(PublicIdTest, FUNC_ContactList) {
