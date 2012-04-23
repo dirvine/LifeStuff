@@ -287,34 +287,25 @@ int CopyDir(const fs::path& source, const fs::path& dest) {
   return kSuccess;
 }
 
-int CopyDirectory(const fs::path& from, const fs::path& to) {
+int CopyDirectoryContent(const fs::path& from, const fs::path& to) {
   boost::system::error_code error_code;
   int result;
   fs::directory_iterator it(from), end;
-  if (!fs::exists(to / from.filename())) {
-    fs::create_directory(to / from.filename(), error_code);
-    if (error_code) {
-      DLOG(ERROR) << "Failed to create directory " << to / from.filename()
-                  << error_code.value();
-      return kGeneralError;
-    }
-  }
   try {
     for (; it != end; ++it) {
+      fs::path current(it->path());
       if (fs::is_directory(*it)) {
-        result = CopyDirectory((*it).path(), to / from.filename());
+        result = CopyDirectoryContent(current, to / current.filename());
         if (result != kSuccess) {
-          DLOG(ERROR) << "Failed to create directory " << to / from.filename()
-                      << error_code.value();
+          DLOG(ERROR) << "Failed to create directory "
+                      << to / current.filename() << error_code.value();
           return kGeneralError;
         }
       } else if (fs::is_regular_file(*it)) {
-        fs::copy_file((*it).path(),
-                      to / from.filename() / (*it).path().filename(),
-                      error_code);
+        fs::copy_file(current, to / current.filename(), error_code);
         if (error_code) {
-          DLOG(ERROR) << "Failed to create file " << to / from.filename() /
-                         (*it).path().filename() << error_code.value();
+          DLOG(ERROR) << "Failed to create file " << to / current.filename()
+                      << error_code.value();
           return kGeneralError;
         }
       } else {

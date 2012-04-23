@@ -1157,6 +1157,7 @@ int LifeStuff::CreateOpenShareFromExistingDirectory(
       std::string *share_name,
       StringIntMap *results) {
   BOOST_ASSERT(share_name);
+  boost::system::error_code error_code;
   int result(PreContactChecks(lifestuff_elements->state,
                               my_public_id,
                               lifestuff_elements->session));
@@ -1164,25 +1165,39 @@ int LifeStuff::CreateOpenShareFromExistingDirectory(
     DLOG(ERROR) << "Failed pre checks.";
     return result;
   }
-  *share_name =  directory_in_lifestuff_drive.filename().string();
-  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
-                     fs::path("/").make_preferred() /
-                     kSharedStuff /
-                     (*share_name));
-  boost::system::error_code error_code;
-  if (!fs::exists(share_dir, error_code)) {
-    result = CopyDirectory(directory_in_lifestuff_drive,
-                           lifestuff_elements->user_storage->mount_dir() /
-                              fs::path("/").make_preferred() /
-                              kSharedStuff);
-    if (result != kSuccess)
-      return result;
+  if (!fs::exists(directory_in_lifestuff_drive)) {
+    DLOG(ERROR) << "Share directory nonexistant.";
+    return kGeneralError;
   }
+  *share_name = directory_in_lifestuff_drive.filename().string();
+  fs::path share(lifestuff_elements->user_storage->mount_dir() /
+                   fs::path("/").make_preferred() /
+                   kSharedStuff /
+                   (*share_name));
+  int index(0);
+  while (fs::exists(share, error_code)) {
+    share = lifestuff_elements->user_storage->mount_dir() /
+                fs::path("/").make_preferred() /
+                kSharedStuff /
+                ((*share_name) + "_" + IntToString(index));
+    ++index;
+  }
+  fs::create_directory(share, error_code);
+  if (error_code) {
+    DLOG(ERROR) << "Failed to create directory: " << share
+                << " " << error_code.message();
+    return kGeneralError;
+  }
+  BOOST_ASSERT(fs::exists(share));
+  *share_name = share.filename().string();
+  result = CopyDirectoryContent(directory_in_lifestuff_drive, share);
+  if (result != kSuccess)
+    return result;
   StringIntMap liaisons;
   for (uint32_t i = 0; i != contacts.size(); ++i)
     liaisons.insert(std::make_pair(contacts[i], 1));
   result = lifestuff_elements->user_storage->CreateOpenShare(my_public_id,
-                                                             share_dir,
+                                                             share,
                                                              liaisons,
                                                              results);
   if (result != kSuccess)
@@ -1393,8 +1408,34 @@ int LifeStuff::LeaveOpenShare(const std::string &my_public_id,
   }
   if (members.size() == 1) {
     BOOST_ASSERT(members[0] == my_public_id);
-    result = lifestuff_elements->user_storage->RemoveOpenShareUsers(my_public_id,
-                                                                    share,
+    result = lifestuff_elements->user_storage->DeleteHiddenFile(
+                share / maidsafe::drive::kMsShareUsers);
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed to delete "
+                  << share / maidsafe::drive::kMsShareUsers;
+      return result;
+    }
+    result = lifestuff_elements->user_storage->RemoveShare(share);
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed to remove share " << share;
+      return result;
+    }
+    try {
+      boost::system::error_code error_code;
+      fs::remove_all(share, error_code);
+      if (error_code) {
+        DLOG(ERROR) << "Failed to remove share directory "
+                    << share << " " << error_code.value();
+        return error_code.value();
+      }
+    } catch (...) {
+      DLOG(ERROR) << "Exception thrown removing share directory " << share;
+      return kGeneralError;
+    }
+  } else {
+    members.clear();
+    members.push_back(my_public_id);
+    result = lifestuff_elements->user_storage->RemoveOpenShareUsers(share,
                                                                     members);
     if (result != kSuccess) {
       DLOG(ERROR) << "Failed to remove share user " << my_public_id
@@ -1404,17 +1445,6 @@ int LifeStuff::LeaveOpenShare(const std::string &my_public_id,
     result = lifestuff_elements->user_storage->RemoveShare(share);
     if (result != kSuccess) {
       DLOG(ERROR) << "Failed to remove share " << share;
-      return result;
-    }
-  } else {
-    members.clear();
-    members.push_back(my_public_id);
-    result = lifestuff_elements->user_storage->RemoveOpenShareUsers(my_public_id,
-                                                                    share,
-                                                                    members);
-    if (result != kSuccess) {
-      DLOG(ERROR) << "Failed to remove share user " << my_public_id
-                  << " from share " << share;
       return result;
     }
   }

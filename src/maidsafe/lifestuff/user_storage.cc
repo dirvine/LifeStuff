@@ -791,8 +791,7 @@ int UserStorage::RemoveShareUsers(const std::string &sender_public_username,
   return kSuccess;
 }
 
-int UserStorage::RemoveOpenShareUsers(const std::string &sender_public_username,
-                                      const fs::path &absolute_path,
+int UserStorage::RemoveOpenShareUsers(const fs::path &absolute_path,
                                       const std::vector<std::string> &user_ids) {
   if (!message_handler_) {
     DLOG(WARNING) << "Uninitialised message handler.";
