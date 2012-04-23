@@ -393,7 +393,7 @@ ClientContainerPtr SetUpClientContainer(
     return ClientContainerPtr();
   }
 
-  result = client_container->Start(&bootstrap_contacts);
+  result = client_container->Start(bootstrap_contacts);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to start client_container.  Result: " << result;
     return ClientContainerPtr();
