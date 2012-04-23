@@ -570,7 +570,7 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
 
     fs::path share_path(test_elements1.mount_path() /
                         fs::path("/").make_preferred() /
-                        kSharedStuff /
+//                         kSharedStuff /
                         share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
     EXPECT_EQ(0, error_code.value());
@@ -594,7 +594,7 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
 
     fs::path share_path(test_elements2.mount_path() /
                         fs::path("/").make_preferred() /
-                        kSharedStuff /
+//                         kSharedStuff /
                         share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code));
 
@@ -616,7 +616,7 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     fs::path share_path(test_elements1.mount_path() /
                         fs::path("/").make_preferred() /
-                        kSharedStuff /
+//                         kSharedStuff /
                         share_name1);
     fs::path a_file_path(share_path / file_name1);
     if (rights_ == 0) {
@@ -628,6 +628,7 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
       EXPECT_TRUE(ReadFile(a_file_path, &file_stuff));
       EXPECT_EQ(file_content2, file_stuff);
       EXPECT_TRUE(WriteFile(a_file_path, file_content1));
+      EXPECT_TRUE(fs::exists(a_file_path, error_code));
     }
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -638,11 +639,11 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
 
     fs::path share_path(test_elements2.mount_path() /
                         fs::path("/").make_preferred() /
-                        kSharedStuff /
+//                         kSharedStuff /
                         share_name1);
     fs::path a_file_path(share_path / file_name1);
     EXPECT_TRUE(fs::exists(a_file_path, error_code)) << a_file_path;
-    EXPECT_NE(0, error_code.value());
+    EXPECT_EQ(0, error_code.value());
 
     std::string a_file_content;
     EXPECT_TRUE(ReadFile(a_file_path, &a_file_content));
