@@ -347,6 +347,72 @@ TEST(IndependentFullTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
   EXPECT_EQ(kSuccess, test_elements1.Finalise());
 }
 
+TEST(IndependentFullTest, FUNC_ChangeCredentials) {
+  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
+  std::string username(RandomString(6)),
+              pin(CreatePin()),
+              password(RandomString(6));
+  volatile bool done;
+
+  LifeStuff test_elements1;
+  EXPECT_EQ(kSuccess, test_elements1.Initialise(*test_dir));
+  EXPECT_EQ(kSuccess,
+            test_elements1.ConnectToSignals(ChatFunction(),
+                                            FileTransferFunction(),
+                                            NewContactFunction(),
+                                            ContactConfirmationFunction(),
+                                            ContactProfilePictureFunction(),
+                                            std::bind(&ContactPresenceSlot,
+                                                      args::_1, args::_2,
+                                                      args::_3, &done),
+                                            ContactDeletionFunction(),
+                                            ShareInvitationFunction(),
+                                            ShareDeletionFunction(),
+                                            MemberAccessLevelFunction()));
+  EXPECT_EQ(kSuccess, test_elements1.CreateUser(username, pin, password));
+  EXPECT_EQ(kSuccess, test_elements1.CheckPassword(password));
+  EXPECT_EQ(kSuccess, test_elements1.LogOut());
+
+  EXPECT_EQ(kSuccess, test_elements1.LogIn(username, pin, password));
+  EXPECT_EQ(kSuccess, test_elements1.CheckPassword(password));
+
+  // Change credentials
+  EXPECT_EQ(kSuccess, test_elements1.ChangeKeyword(username,
+                                                   username + username,
+                                                   password));
+  EXPECT_EQ(kSuccess, test_elements1.ChangePin(pin, pin + "0", password));
+  EXPECT_EQ(kSuccess, test_elements1.ChangePassword(password,
+                                                    password + password));
+
+  EXPECT_EQ(kSuccess, test_elements1.LogOut());
+
+  EXPECT_EQ(kSuccess, test_elements1.LogIn(username + username,
+                                           pin + "0",
+                                           password + password));
+  EXPECT_EQ(kSuccess, test_elements1.ChangeKeyword(username + username,
+                                                   username,
+                                                   password + password));
+  EXPECT_EQ(kSuccess, test_elements1.LogOut());
+
+  EXPECT_EQ(kSuccess, test_elements1.LogIn(username,
+                                           pin + "0",
+                                           password + password));
+  EXPECT_EQ(kSuccess, test_elements1.ChangePin(pin + "0",
+                                               pin,
+                                               password + password));
+  EXPECT_EQ(kSuccess, test_elements1.LogOut());
+
+  EXPECT_EQ(kSuccess, test_elements1.LogIn(username, pin, password + password));
+  EXPECT_EQ(kSuccess, test_elements1.ChangePassword(password + password,
+                                                    password));
+  EXPECT_EQ(kSuccess, test_elements1.LogOut());
+
+  EXPECT_EQ(kSuccess, test_elements1.LogIn(username, pin, password));
+  EXPECT_EQ(kSuccess, test_elements1.CheckPassword(password));
+  EXPECT_EQ(kSuccess, test_elements1.LogOut());
+  EXPECT_EQ(kSuccess, test_elements1.Finalise());
+}
+
 TEST(IndependentFullTest, FUNC_SendFile) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   std::string username1(RandomString(6)),

@@ -483,7 +483,8 @@ int LifeStuff::ChangeKeyword(const std::string &old_username,
     return kGeneralError;
   }
 
-  return lifestuff_elements->user_credentials->ChangeUsername(new_username);
+  return lifestuff_elements->user_credentials->ChangeUsername(new_username) ?
+         kSuccess : kGeneralError;
 }
 
 int LifeStuff::ChangePin(const std::string &old_pin,
@@ -505,7 +506,8 @@ int LifeStuff::ChangePin(const std::string &old_pin,
     return kGeneralError;
   }
 
-  return lifestuff_elements->user_credentials->ChangePin(new_pin);
+  return lifestuff_elements->user_credentials->ChangePin(new_pin) ?
+         kSuccess : kGeneralError;
 }
 
 int LifeStuff::ChangePassword(const std::string &old_password,
@@ -521,7 +523,8 @@ int LifeStuff::ChangePassword(const std::string &old_password,
     return result;
   }
 
-  return lifestuff_elements->user_credentials->ChangePassword(new_password);
+  return lifestuff_elements->user_credentials->ChangePassword(new_password) ?
+         kSuccess : kGeneralError;
 }
 
 /// Contact operations

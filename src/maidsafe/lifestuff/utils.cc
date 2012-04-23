@@ -54,8 +54,8 @@ namespace lifestuff {
 std::string CreatePin() {
   std::stringstream pin_stream;
   uint32_t pin(0);
-  while (pin == 0)
-    pin = RandomUint32();
+  while (pin < 1000)
+    pin = RandomUint32() % 10000;
   pin_stream << pin;
   return pin_stream.str();
 }
