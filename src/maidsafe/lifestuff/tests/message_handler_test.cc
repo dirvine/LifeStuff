@@ -171,6 +171,14 @@ class MessageHandlerTest : public testing::Test {
     asio_service1_.Stop();
     asio_service2_.Stop();
     asio_service3_.Stop();
+#ifndef LOCAL_TARGETS_ONLY
+    client_container1_->Stop(nullptr);
+    client_container2_->Stop(nullptr);
+    client_container3_->Stop(nullptr);
+#endif
+    remote_chunk_store1_->WaitForCompletion();
+    remote_chunk_store2_->WaitForCompletion();
+    remote_chunk_store3_->WaitForCompletion();
   }
 
   bool MessagesEqual(const InboxItem &left,
