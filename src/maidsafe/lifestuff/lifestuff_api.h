@@ -75,6 +75,18 @@ class LifeStuff {
             const std::string &password);
   int LogOut();
 
+  int CheckPassword(const std::string &password);
+  int ChangeKeyword(const std::string &old_username,
+                    const std::string &new_username,
+                    const std::string &password);
+  int ChangePin(const std::string &old_pin,
+                const std::string &new_pin,
+                const std::string &password);
+  int ChangePassword(const std::string &old_password,
+                     const std::string &new_password);
+  int ChangePublicId(const std::string &public_id,
+                     const std::string &password);
+
   /// Contact operations
   int AddContact(const std::string &my_public_id,
                  const std::string &contact_public_id);
