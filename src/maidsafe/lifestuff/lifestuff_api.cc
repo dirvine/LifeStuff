@@ -1076,7 +1076,7 @@ int LifeStuff::AcceptPrivateShareInvitation(std::string *share_name,
     return result;
   }
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
-  fs::path hidden_file(mount_path() /
+  fs::path hidden_file(mount_path() / drive::kMsShareRoot /
                        fs::path("/").make_preferred() /
                        std::string(temp_name + drive::kMsHidden.string()));
   std::string serialised_share_data;
@@ -1122,7 +1122,7 @@ int LifeStuff::RejectPrivateShareInvitation(const std::string &my_public_id,
     return result;
   }
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
-  fs::path hidden_file(mount_path() /
+  fs::path hidden_file(mount_path() / drive::kMsShareRoot /
                        fs::path("/").make_preferred() /
                        std::string(temp_name + drive::kMsHidden.string()));
   return lifestuff_elements->user_storage->DeleteHiddenFile(hidden_file);

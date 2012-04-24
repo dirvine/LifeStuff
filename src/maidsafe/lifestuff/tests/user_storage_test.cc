@@ -87,9 +87,9 @@ class UserStorageTest : public testing::TestWithParam<bool> {
                    const std::string &share_id,
                    const std::string &/*share_tag*/) {
     std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
-    fs::path hidden_file(user_storage->mount_dir() /
-                        fs::path("/").make_preferred() /
-                        std::string(temp_name + drive::kMsHidden.string()));
+    fs::path hidden_file(user_storage->mount_dir() / drive::kMsShareRoot /
+                         fs::path("/").make_preferred() /
+                         std::string(temp_name + drive::kMsHidden.string()));
     std::string serialised_share_data;
     EXPECT_EQ(kSuccess, user_storage->ReadHiddenFile(hidden_file,
                                                      &serialised_share_data));
@@ -127,7 +127,7 @@ class UserStorageTest : public testing::TestWithParam<bool> {
                      const std::string &share_id,
                      int /*access_level*/) {
     std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
-    fs::path hidden_file(user_storage->mount_dir() /
+    fs::path hidden_file(user_storage->mount_dir() / drive::kMsShareRoot /
                         fs::path("/").make_preferred() /
                         std::string(temp_name + drive::kMsHidden.string()));
     std::string serialised_share_data;
@@ -227,10 +227,17 @@ class UserStorageTest : public testing::TestWithParam<bool> {
   }
 
   void TearDown() {
+    public_id1_->StopCheckingForNewContacts();
+    public_id2_->StopCheckingForNewContacts();
+    message_handler1_->StopCheckingForNewMessages();
+    message_handler2_->StopCheckingForNewMessages();
+
     session1_->Reset();
     session2_->Reset();
     asio_service1_.Stop();
     asio_service2_.Stop();
+    remote_chunk_store1_->WaitForCompletion();
+    remote_chunk_store2_->WaitForCompletion();
   }
 
   maidsafe::test::TestPath test_dir_, mount_dir_;
@@ -256,6 +263,12 @@ INSTANTIATE_TEST_CASE_P(PivateAndOpenShareTests, UserStorageTest,
 TEST_P(UserStorageTest, FUNC_CreateShare) {
   user_storage1_->MountDrive(*mount_dir_, session1_, true);
   Sleep(interval_ * 2);
+  boost::system::error_code error_code;
+  fs::path share_root_directory_1(user_storage1_->mount_dir() /
+                                  maidsafe::drive::kMsShareRoot);
+  EXPECT_TRUE(fs::create_directories(share_root_directory_1, error_code))
+              << share_root_directory_1 << ": " << error_code.message();
+
   StringIntMap users;
   if (private_share_)
     users.insert(std::make_pair(pub_name2_, 0));
@@ -281,11 +294,15 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
         std::bind(&UserStorage::SaveShareData,
                   user_storage2_, args::_1, args::_2)));
   user_storage2_->MountDrive(*mount_dir_, session2_, true);
+  Sleep(interval_ * 2);
+  fs::path share_root_directory_2(user_storage2_->mount_dir() /
+                                  maidsafe::drive::kMsShareRoot);
+  EXPECT_TRUE(fs::create_directories(share_root_directory_2, error_code))
+              << share_root_directory_2 << ": " << error_code.message();
+
   fs::path directory1(user_storage2_->mount_dir() /
                       fs::path("/").make_preferred() /
                       tail);
-  Sleep(interval_ * 2);
-  boost::system::error_code error_code;
   EXPECT_FALSE(fs::exists(directory1, error_code))
                << directory1 << " : " << error_code.message();
 
@@ -302,6 +319,12 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 TEST_P(UserStorageTest, FUNC_LeaveShare) {
   user_storage1_->MountDrive(*mount_dir_, session1_, true);
   Sleep(interval_ * 2);
+  boost::system::error_code error_code;
+  fs::path share_root_directory_1(user_storage1_->mount_dir() /
+                                  maidsafe::drive::kMsShareRoot);
+  EXPECT_TRUE(fs::create_directories(share_root_directory_1, error_code))
+              << share_root_directory_1 << ": " << error_code.message();
+
   StringIntMap users;
   users.insert(std::make_pair(pub_name2_, 0));
   std::string tail;
@@ -322,12 +345,17 @@ TEST_P(UserStorageTest, FUNC_LeaveShare) {
     message_handler2_->ConnectToSaveShareDataSignal(
         std::bind(&UserStorage::SaveShareData,
                   user_storage2_, args::_1, args::_2)));
+
   user_storage2_->MountDrive(*mount_dir_, session2_, true);
+  Sleep(interval_ * 2);
+  fs::path share_root_directory_2(user_storage2_->mount_dir() /
+                                  maidsafe::drive::kMsShareRoot);
+  EXPECT_TRUE(fs::create_directories(share_root_directory_2, error_code))
+              << share_root_directory_2 << ": " << error_code.message();
+
   fs::path directory1(user_storage2_->mount_dir() /
                       fs::path("/").make_preferred() /
                       tail);
-  Sleep(interval_ * 2);
-  boost::system::error_code error_code;
   EXPECT_FALSE(fs::exists(directory1, error_code))
                << directory1 << " : " << error_code.message();
   EXPECT_EQ(kSuccess,
@@ -365,6 +393,12 @@ TEST_P(UserStorageTest, FUNC_LeaveShare) {
 TEST_P(UserStorageTest, FUNC_AddUser) {
   user_storage1_->MountDrive(*mount_dir_, session1_, true);
   Sleep(interval_ * 2);
+  boost::system::error_code error_code;
+  fs::path share_root_directory_1(user_storage1_->mount_dir() /
+                                  maidsafe::drive::kMsShareRoot);
+  EXPECT_TRUE(fs::create_directories(share_root_directory_1, error_code))
+              << share_root_directory_1 << ": " << error_code.message();
+
   StringIntMap users;
   std::string tail;
   fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir()  /
@@ -393,11 +427,15 @@ TEST_P(UserStorageTest, FUNC_AddUser) {
 
   user_storage2_->MountDrive(*mount_dir_, session2_, true);
   Sleep(interval_ * 2);
+  fs::path share_root_directory_2(user_storage2_->mount_dir() /
+                                  maidsafe::drive::kMsShareRoot);
+  EXPECT_TRUE(fs::create_directories(share_root_directory_2, error_code))
+              << share_root_directory_2 << ": " << error_code.message();
+
   fs::path directory1(user_storage2_->mount_dir() /
                       fs::path("/").make_preferred() /
                       tail);
 
-  boost::system::error_code error_code;
   EXPECT_FALSE(fs::exists(directory1, error_code))
                << directory1 << error_code.message();
   EXPECT_EQ(kSuccess,
@@ -436,13 +474,18 @@ TEST_P(UserStorageTest, FUNC_AddUser) {
 TEST_P(UserStorageTest, FUNC_AddAdminUser) {
   user_storage1_->MountDrive(*mount_dir_, session1_, true);
   Sleep(interval_ * 2);
+  boost::system::error_code error_code;
+  fs::path share_root_directory_1(user_storage1_->mount_dir() /
+                                  maidsafe::drive::kMsShareRoot);
+  EXPECT_TRUE(fs::create_directories(share_root_directory_1, error_code))
+              << share_root_directory_1 << ": " << error_code.message();
+
   StringIntMap users;
   users.insert(std::make_pair(pub_name2_, 1));
   std::string tail;
   fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir() /
                                               fs::path("/").make_preferred(),
                                           &tail));
-  boost::system::error_code error_code;
   EXPECT_TRUE(fs::exists(directory0, error_code)) << directory0;
   EXPECT_EQ(kSuccess, user_storage1_->CreateShare(pub_name1_,
                                                   directory0,
@@ -466,6 +509,11 @@ TEST_P(UserStorageTest, FUNC_AddAdminUser) {
                       fs::path("/").make_preferred() /
                       tail);
   Sleep(interval_ * 2);
+  fs::path share_root_directory_2(user_storage2_->mount_dir() /
+                                  maidsafe::drive::kMsShareRoot);
+  EXPECT_TRUE(fs::create_directories(share_root_directory_2, error_code))
+              << share_root_directory_2 << ": " << error_code.message();
+
   EXPECT_EQ(kSuccess,
             message_handler2_->StartCheckingForNewMessages(interval_));
   Sleep(interval_ * 2);
@@ -493,6 +541,12 @@ TEST_P(UserStorageTest, FUNC_AddAdminUser) {
 TEST_P(UserStorageTest, FUNC_UpgradeUserToAdmin) {
   user_storage1_->MountDrive(*mount_dir_, session1_, true);
   Sleep(interval_ * 2);
+  boost::system::error_code error_code;
+  fs::path share_root_directory_1(user_storage1_->mount_dir() /
+                                  maidsafe::drive::kMsShareRoot);
+  EXPECT_TRUE(fs::create_directories(share_root_directory_1, error_code))
+              << share_root_directory_1 << ": " << error_code.message();
+
   StringIntMap users;
   users.insert(std::make_pair(pub_name2_, 0));
   std::string tail;
@@ -522,14 +576,19 @@ TEST_P(UserStorageTest, FUNC_UpgradeUserToAdmin) {
                   user_storage2_, args::_1, args::_2)));
 
   user_storage2_->MountDrive(*mount_dir_, session2_, true);
+  Sleep(interval_ * 2);
+  fs::path share_root_directory_2(user_storage2_->mount_dir() /
+                                  maidsafe::drive::kMsShareRoot);
+  EXPECT_TRUE(fs::create_directories(share_root_directory_2, error_code))
+              << share_root_directory_2 << ": " << error_code.message();
+
   fs::path directory1(user_storage2_->mount_dir() /
                       fs::path("/").make_preferred() /
                       tail);
-  Sleep(interval_ * 2);
   EXPECT_EQ(kSuccess,
             message_handler2_->StartCheckingForNewMessages(interval_));
   Sleep(interval_ * 2);
-  boost::system::error_code error_code;
+
   EXPECT_TRUE(fs::exists(directory1, error_code)) << directory1;
   fs::path sub_directory(CreateTestDirectory(directory1, &tail));
   EXPECT_FALSE(fs::exists(sub_directory, error_code)) << sub_directory;
@@ -564,13 +623,18 @@ TEST_P(UserStorageTest, FUNC_UpgradeUserToAdmin) {
 TEST_P(UserStorageTest, FUNC_StopShareByOwner) {
   user_storage1_->MountDrive(*mount_dir_, session1_, true);
   Sleep(interval_ * 2);
+  boost::system::error_code error_code;
+  fs::path share_root_directory_1(user_storage1_->mount_dir() /
+                                  maidsafe::drive::kMsShareRoot);
+  EXPECT_TRUE(fs::create_directories(share_root_directory_1, error_code))
+              << share_root_directory_1 << ": " << error_code.message();
+
   StringIntMap users;
   users.insert(std::make_pair(pub_name2_, 0));
   std::string tail;
   fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir() /
                                               fs::path("/").make_preferred(),
                                           &tail));
-  boost::system::error_code error_code;
   EXPECT_TRUE(fs::exists(directory0, error_code)) << directory0
                                                   << error_code.message();
   EXPECT_EQ(kSuccess,
@@ -597,10 +661,14 @@ TEST_P(UserStorageTest, FUNC_StopShareByOwner) {
 
   user_storage2_->MountDrive(*mount_dir_, session2_, true);
   Sleep(interval_ * 2);
+  fs::path share_root_directory_2(user_storage2_->mount_dir() /
+                                  maidsafe::drive::kMsShareRoot);
+  EXPECT_TRUE(fs::create_directories(share_root_directory_2, error_code))
+              << share_root_directory_2 << ": " << error_code.message();
+
   fs::path directory1(user_storage2_->mount_dir() /
                       fs::path("/").make_preferred() /
                       tail);
-
   EXPECT_FALSE(fs::exists(directory1, error_code)) << directory1;
   EXPECT_EQ(kSuccess,
             message_handler2_->StartCheckingForNewMessages(interval_));
@@ -645,6 +713,11 @@ TEST_P(UserStorageTest, FUNC_StopShareByOwner) {
 TEST_P(UserStorageTest, FUNC_RemoveUserByOwner) {
   user_storage1_->MountDrive(*mount_dir_, session1_, true);
   Sleep(interval_ * 2);
+  boost::system::error_code error_code;
+  fs::path share_root_directory_1(user_storage1_->mount_dir() /
+                                  maidsafe::drive::kMsShareRoot);
+  EXPECT_TRUE(fs::create_directories(share_root_directory_1, error_code))
+              << share_root_directory_1 << ": " << error_code.message();
 
   StringIntMap users;
   users.insert(std::make_pair(pub_name2_, 0));
@@ -652,7 +725,6 @@ TEST_P(UserStorageTest, FUNC_RemoveUserByOwner) {
   fs::path directory0(user_storage1_->mount_dir() /
                       fs::path("/").make_preferred() /
                       tail);
-  boost::system::error_code error_code;
   fs::create_directory(directory0, error_code);
   EXPECT_EQ(0, error_code.value());
 
@@ -679,10 +751,14 @@ TEST_P(UserStorageTest, FUNC_RemoveUserByOwner) {
 
   user_storage2_->MountDrive(*mount_dir_, session2_, true);
   Sleep(interval_ * 2);
+  fs::path share_root_directory_2(user_storage2_->mount_dir() /
+                                  maidsafe::drive::kMsShareRoot);
+  EXPECT_TRUE(fs::create_directories(share_root_directory_2, error_code))
+              << share_root_directory_2 << ": " << error_code.message();
+
   fs::path directory1(user_storage2_->mount_dir() /
                       fs::path("/").make_preferred() /
                       tail);
-
   EXPECT_FALSE(fs::exists(directory1, error_code)) << directory1;
   EXPECT_EQ(kSuccess,
             message_handler2_->StartCheckingForNewMessages(interval_));
@@ -778,6 +854,11 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
 
   user_storage1_->MountDrive(*mount_dir_, session1_, true);
   Sleep(interval_ * 2);
+  boost::system::error_code error_code;
+  fs::path share_root_directory_1(user_storage1_->mount_dir() /
+                                  maidsafe::drive::kMsShareRoot);
+  EXPECT_TRUE(fs::create_directories(share_root_directory_1, error_code))
+              << share_root_directory_1 << ": " << error_code.message();
 
   StringIntMap users;
   users.insert(std::make_pair(pub_name2_, 0));
@@ -786,7 +867,6 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
   fs::path directory0(user_storage1_->mount_dir() /
                       fs::path("/").make_preferred() /
                       tail);
-  boost::system::error_code error_code;
   fs::create_directory(directory0, error_code);
   EXPECT_EQ(0, error_code.value());
 
@@ -813,6 +893,11 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
 
   user_storage2_->MountDrive(*mount_dir_, session2_, true);
   Sleep(interval_ * 2);
+  fs::path share_root_directory_2(user_storage2_->mount_dir() /
+                                  maidsafe::drive::kMsShareRoot);
+  EXPECT_TRUE(fs::create_directories(share_root_directory_2, error_code))
+              << share_root_directory_2 << ": " << error_code.message();
+
   fs::path directory1(user_storage2_->mount_dir() /
                       fs::path("/").make_preferred() /
                       tail);
@@ -841,6 +926,11 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
 
   user_storage3->MountDrive(*mount_dir_, session3, true);
   Sleep(interval_ * 2);
+  fs::path share_root_directory_3(user_storage3->mount_dir() /
+                                  maidsafe::drive::kMsShareRoot);
+  EXPECT_TRUE(fs::create_directories(share_root_directory_3, error_code))
+              << share_root_directory_3 << ": " << error_code.message();
+
   fs::path directory2(user_storage3->mount_dir() /
                       fs::path("/").make_preferred() /
                       tail);
@@ -911,8 +1001,11 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
   Sleep(interval_ * 2);
 
   // tear down
+  public_id3->StopCheckingForNewContacts();
+  message_handler3->StopCheckingForNewMessages();
   session3->Reset();
   asio_service3.Stop();
+  remote_chunk_store3->WaitForCompletion();
 }
 
 }  // namespace test

@@ -265,7 +265,8 @@ bool UserStorage::SaveShareData(const std::string &serialised_share_data,
                                 const std::string &share_id) {
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
   int result(WriteHiddenFile(
-                 mount_dir_ / fs::path("/").make_preferred() /
+                 mount_dir_ / drive::kMsShareRoot /
+                     fs::path("/").make_preferred() /
                      std::string(temp_name + drive::kMsHidden.string()),
                  serialised_share_data,
                  true));
