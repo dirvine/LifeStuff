@@ -392,7 +392,8 @@ TEST(IndependentFullTest, FUNC_ChangeCredentials) {
                                             ContactDeletionFunction(),
                                             ShareInvitationFunction(),
                                             ShareDeletionFunction(),
-                                            MemberAccessLevelFunction()));
+                                            MemberAccessLevelFunction(),
+                                            OpenShareInvitationFunction()));
   EXPECT_EQ(kSuccess, test_elements1.CreateUser(username, pin, password));
   EXPECT_EQ(kSuccess, test_elements1.CheckPassword(password));
   EXPECT_EQ(kSuccess, test_elements1.LogOut());
