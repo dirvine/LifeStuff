@@ -24,6 +24,7 @@
 
 #include "boost/asio.hpp"
 #include "boost/archive/text_iarchive.hpp"
+#include "boost/regex.hpp"
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
 
@@ -41,6 +42,7 @@
 #include "maidsafe/pd/client/utils.h"
 #endif
 
+#include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
 
@@ -58,6 +60,56 @@ std::string CreatePin() {
     pin = RandomUint32() % 10000;
   pin_stream << pin;
   return pin_stream.str();
+}
+
+bool AcceptableWordSize(const std::string &word) {
+  return word.size() >= kMinWordSize && word.size() <= kMaxWordSize;
+}
+
+bool AcceptableWordPattern(const std::string &word) {
+  boost::regex space(" ");
+  return !boost::regex_search(word.begin(), word.end(), space);
+}
+
+bool CheckWordValidity(const std::string &word) {
+  if (!AcceptableWordSize(word)) {
+    DLOG(ERROR) << "Unacceptable size: " << word.size();
+    return false;
+  }
+
+  if (!AcceptableWordPattern(word)) {
+    DLOG(ERROR) << "Unacceptable pattern: '" << word << "'";
+    return false;
+  }
+
+  return true;
+}
+
+bool CheckKeywordValidity(const std::string &keyword) {
+  return CheckWordValidity(keyword);
+}
+
+bool CheckPasswordValidity(const std::string &password) {
+  return CheckWordValidity(password);
+}
+
+bool CheckPinValidity(const std::string &pin) {
+  try {
+    int peen(boost::lexical_cast<int>(pin));
+    if (peen < 1) {
+      DLOG(ERROR) << "PIN out of range: " << peen;
+      return false;
+    }
+    std::string pattern("[0-9]{" +
+                        boost::lexical_cast<std::string>(kPinSize) +
+                        "}");
+    boost::regex rx(pattern);
+    return boost::regex_match(pin.begin(), pin.end(), rx);
+  }
+  catch(const std::exception &e) {
+    DLOG(ERROR) << e.what();
+    return false;
+  }
 }
 
 fs::path CreateTestDirectory(fs::path const& parent, std::string *tail) {

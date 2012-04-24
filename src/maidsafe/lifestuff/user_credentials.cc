@@ -190,6 +190,12 @@ int UserCredentials::SerialiseDa() {
 bool UserCredentials::CreateUser(const std::string &username,
                                  const std::string &pin,
                                  const std::string &password) {
+  if (!CheckKeywordValidity(username) ||
+      !CheckPinValidity(pin) ||
+      !CheckPasswordValidity(password)) {
+    DLOG(ERROR) << "Incorrect inputs.";
+    return false;
+  }
   session_->Reset();
   int result = authentication_->CreateUserSysPackets(username, pin);
   if (result != kSuccess) {
@@ -236,6 +242,10 @@ bool UserCredentials::CreateUser(const std::string &username,
 
 int UserCredentials::CheckUserExists(const std::string &username,
                                      const std::string &pin) {
+  if (!CheckKeywordValidity(username) || !CheckPinValidity(pin)) {
+    DLOG(ERROR) << "Incorrect inputs.";
+    return false;
+  }
   session_->Reset();
   session_->set_def_con_level(kDefCon1);
   serialised_da_.clear();
@@ -243,6 +253,11 @@ int UserCredentials::CheckUserExists(const std::string &username,
 }
 
 bool UserCredentials::ValidateUser(const std::string &password) {
+  if (!CheckPasswordValidity(password)) {
+    DLOG(ERROR) << "Incorrect input.";
+    return false;
+  }
+
   std::string serialised_data_atlas, surrogate_serialised_data_atlas;
   authentication_->GetMasterDataMap(password,
                           &serialised_data_atlas,
@@ -308,6 +323,11 @@ int UserCredentials::SaveSession() {
 }
 
 bool UserCredentials::ChangeUsername(const std::string &new_username) {
+  if (!CheckKeywordValidity(new_username)) {
+    DLOG(ERROR) << "Incorrect input.";
+    return false;
+  }
+
   SerialiseDa();
 
   int result = authentication_->ChangeUsername(serialised_da_, new_username);
@@ -324,6 +344,11 @@ bool UserCredentials::ChangeUsername(const std::string &new_username) {
 }
 
 bool UserCredentials::ChangePin(const std::string &new_pin) {
+  if (!CheckPinValidity(new_pin)) {
+    DLOG(ERROR) << "Incorrect input.";
+    return false;
+  }
+
   SerialiseDa();
 
   int result = authentication_->ChangePin(serialised_da_, new_pin);
@@ -341,6 +366,11 @@ bool UserCredentials::ChangePin(const std::string &new_pin) {
 }
 
 bool UserCredentials::ChangePassword(const std::string &new_password) {
+  if (!CheckPasswordValidity(new_password)) {
+    DLOG(ERROR) << "Incorrect input.";
+    return false;
+  }
+
   SerialiseDa();
 
   int result = authentication_->ChangePassword(serialised_da_, new_password);

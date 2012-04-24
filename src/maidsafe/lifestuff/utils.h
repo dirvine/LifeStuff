@@ -74,6 +74,10 @@ struct InboxItem {
 
 std::string CreatePin();
 
+bool CheckKeywordValidity(const std::string &keyword);
+bool CheckPinValidity(const std::string &pin);
+bool CheckPasswordValidity(const std::string &password);
+
 fs::path CreateTestDirectory(fs::path const& parent, std::string *tail);
 
 int GetValidatedMpidPublicKey(

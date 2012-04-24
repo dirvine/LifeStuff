@@ -350,7 +350,7 @@ TEST(IndependentFullTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
 TEST(IndependentFullTest, FUNC_ChangeCredentials) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   std::string username(RandomString(6)),
-              pin(CreatePin()),
+              pin(CreatePin()), new_pin(CreatePin()),
               password(RandomString(6));
   volatile bool done;
 
@@ -380,14 +380,14 @@ TEST(IndependentFullTest, FUNC_ChangeCredentials) {
   EXPECT_EQ(kSuccess, test_elements1.ChangeKeyword(username,
                                                    username + username,
                                                    password));
-  EXPECT_EQ(kSuccess, test_elements1.ChangePin(pin, pin + "0", password));
+  EXPECT_EQ(kSuccess, test_elements1.ChangePin(pin, new_pin, password));
   EXPECT_EQ(kSuccess, test_elements1.ChangePassword(password,
                                                     password + password));
 
   EXPECT_EQ(kSuccess, test_elements1.LogOut());
 
   EXPECT_EQ(kSuccess, test_elements1.LogIn(username + username,
-                                           pin + "0",
+                                           new_pin,
                                            password + password));
   EXPECT_EQ(kSuccess, test_elements1.ChangeKeyword(username + username,
                                                    username,
@@ -395,9 +395,9 @@ TEST(IndependentFullTest, FUNC_ChangeCredentials) {
   EXPECT_EQ(kSuccess, test_elements1.LogOut());
 
   EXPECT_EQ(kSuccess, test_elements1.LogIn(username,
-                                           pin + "0",
+                                           new_pin,
                                            password + password));
-  EXPECT_EQ(kSuccess, test_elements1.ChangePin(pin + "0",
+  EXPECT_EQ(kSuccess, test_elements1.ChangePin(new_pin,
                                                pin,
                                                password + password));
   EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -409,7 +409,13 @@ TEST(IndependentFullTest, FUNC_ChangeCredentials) {
 
   EXPECT_EQ(kSuccess, test_elements1.LogIn(username, pin, password));
   EXPECT_EQ(kSuccess, test_elements1.CheckPassword(password));
+  EXPECT_EQ(kSuccess, test_elements1.ChangeKeyword(username,
+                                                   username,
+                                                   password));
+  EXPECT_EQ(kSuccess, test_elements1.ChangePin(pin, pin, password));
+  EXPECT_EQ(kSuccess, test_elements1.ChangePassword(password, password));
   EXPECT_EQ(kSuccess, test_elements1.LogOut());
+
   EXPECT_EQ(kSuccess, test_elements1.Finalise());
 }
 

@@ -483,6 +483,11 @@ int LifeStuff::ChangeKeyword(const std::string &old_username,
     return kGeneralError;
   }
 
+  if (old_username.compare(new_username) == 0) {
+    DLOG(INFO) << "Same value for old and new.";
+    return kSuccess;
+  }
+
   return lifestuff_elements->user_credentials->ChangeUsername(new_username) ?
          kSuccess : kGeneralError;
 }
@@ -506,6 +511,11 @@ int LifeStuff::ChangePin(const std::string &old_pin,
     return kGeneralError;
   }
 
+  if (old_pin.compare(new_pin) == 0) {
+    DLOG(INFO) << "Same value for old and new.";
+    return kSuccess;
+  }
+
   return lifestuff_elements->user_credentials->ChangePin(new_pin) ?
          kSuccess : kGeneralError;
 }
@@ -521,6 +531,11 @@ int LifeStuff::ChangePassword(const std::string &old_password,
   if (result != kSuccess) {
     DLOG(ERROR) << "Password verification failed.";
     return result;
+  }
+
+  if (old_password.compare(new_password) == 0) {
+    DLOG(INFO) << "Same value for old and new.";
+    return kSuccess;
   }
 
   return lifestuff_elements->user_credentials->ChangePassword(new_password) ?
