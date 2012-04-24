@@ -172,6 +172,14 @@ void Session::SerialiseKeyChain(std::string *serialised_keyring,
   passport_->SerialiseKeyChain(serialised_keyring, serialised_selectables);
 }
 
+std::shared_ptr<asymm::Keys> Session::GetPmidKeys() {
+  std::shared_ptr<asymm::Keys> key_pair(new asymm::Keys);
+  key_pair->identity = passport_->PacketName(passport::kPmid, true);
+  key_pair->public_key = passport_->SignaturePacketValue(passport::kPmid, true);
+  key_pair->private_key = passport_->PacketPrivateKey(passport::kPmid, true);
+  return key_pair;
+}
+
 bool Session::CreateTestPackets() {
   if (passport_->CreateSigningPackets() != kSuccess)
     return false;

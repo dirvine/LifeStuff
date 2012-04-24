@@ -103,16 +103,17 @@ class Session {
                     const std::string &serialised_selectables);
   void SerialiseKeyChain(std::string *serialised_keyring,
                          std::string *serialised_selectables);
+  std::shared_ptr<asymm::Keys> GetPmidKeys();
 
-  friend void GetKeyring(const std::string&,
-                         std::shared_ptr<Session>,
-                         asymm::Keys*);
-  friend void GetPublicKey(const std::string&,
-                           std::shared_ptr<Session>,
-                           asymm::PublicKey*);
-  friend void GetPrivateKey(const std::string&,
-                            std::shared_ptr<Session>,
-                            asymm::PrivateKey*);
+//   friend void GetKeyring(const std::string&,
+//                          std::shared_ptr<Session>,
+//                          asymm::Keys*);
+//   friend void GetPublicKey(const std::string&,
+//                            std::shared_ptr<Session>,
+//                            asymm::PublicKey*);
+//   friend void GetPrivateKey(const std::string&,
+//                             std::shared_ptr<Session>,
+//                             asymm::PrivateKey*);
   friend class Authentication;
   friend class MessageHandler;
   friend class PublicId;

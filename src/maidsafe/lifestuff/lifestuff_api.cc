@@ -30,6 +30,7 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/encrypt/data_map.h"
+#include "maidsafe/pd/client/client_container.h"
 
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
@@ -233,6 +234,18 @@ int LifeStuff::Finalise() {
   return kSuccess;
 }
 
+void LifeStuff::SetValidPmid() {
+#ifndef LOCAL_TARGETS_ONLY
+  std::vector<dht::Contact> bootstrap_contacts;
+  lifestuff_elements->client_container->Stop(&bootstrap_contacts);
+  lifestuff_elements->client_container->set_key_pair(
+      lifestuff_elements->session->GetPmidKeys());
+  lifestuff_elements->client_container->Init(
+      lifestuff_elements->buffered_path / "buffered_chunk_store", 10, 4);
+  lifestuff_elements->client_container->Start(bootstrap_contacts);
+#endif
+}
+
 /// Credential operations
 int LifeStuff::CreateUser(const std::string &username,
                           const std::string &pin,
@@ -248,6 +261,8 @@ int LifeStuff::CreateUser(const std::string &username,
     DLOG(ERROR) << "Failed to Create User.";
     return kGeneralError;
   }
+
+  SetValidPmid();
 
   boost::system::error_code error_code;
   fs::path mount_dir(GetHomeDir() /
@@ -342,6 +357,8 @@ int LifeStuff::LogIn(const std::string &username,
     DLOG(ERROR) << "Wrong password.";
     return kGeneralError;
   }
+
+  SetValidPmid();
 
   boost::system::error_code error_code;
   fs::path mount_dir(GetHomeDir() /
