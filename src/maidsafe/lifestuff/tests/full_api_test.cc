@@ -2026,7 +2026,7 @@ TEST(IndependentFullTest, FUNC_MembershipDowngradePrivateShare) {
                                                                &results));
     EXPECT_EQ(kSuccess, results[public_id2]);
     results[public_id2] = -1;
-    EXPECT_EQ(kSuccess, test_elements1.GetPrivateShareMemebers(public_id1,
+    EXPECT_EQ(kSuccess, test_elements1.GetPrivateShareMembers(public_id1,
                                                                share_name1,
                                                                &results));
     EXPECT_EQ(0, results[public_id2]);  // ro now
@@ -2155,7 +2155,7 @@ TEST(IndependentFullTest, FUNC_MembershipUpgradePrivateShare) {
                                                                &results));
     EXPECT_EQ(kSuccess, results[public_id2]);
     results[public_id2] = -1;
-    EXPECT_EQ(kSuccess, test_elements1.GetPrivateShareMemebers(public_id1,
+    EXPECT_EQ(kSuccess, test_elements1.GetPrivateShareMembers(public_id1,
                                                                share_name1,
                                                                &results));
     EXPECT_EQ(1U, results[public_id2]);  // rq now
