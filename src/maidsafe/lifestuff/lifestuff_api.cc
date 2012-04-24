@@ -938,23 +938,31 @@ int LifeStuff::CreatePrivateShareFromExistingDirectory(
   }
 
   *share_name =  directory_in_lifestuff_drive.filename().string();
-  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
-                     fs::path("/").make_preferred() / (*share_name));
   boost::system::error_code error_code;
-  if (fs::exists(share_dir, error_code)) {
-    // Drive Create Share method can only create a share from an existing folder
-    result = CreateEmptyPrivateShare(my_public_id,
-                                     contacts, share_name, results);
+  if (fs::exists(directory_in_lifestuff_drive, error_code)) {
+    fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+                       drive::kMsShareRoot /
+                       fs::path("/").make_preferred() / (*share_name));
+    int index(0);
+    while (fs::exists(share_dir, error_code)) {
+      share_dir = lifestuff_elements->user_storage->mount_dir() /
+                        drive::kMsShareRoot /
+                        fs::path("/").make_preferred() /
+                        ((*share_name) + "_" + IntToString(index));
+      ++index;
+    }
+
+    result = CopyDir(directory_in_lifestuff_drive, share_dir);
     if (result != kSuccess)
       return result;
-    return CopyDir(lifestuff_elements->user_storage->mount_dir() /
-                      fs::path("/").make_preferred() /
-                      directory_in_lifestuff_drive,
-                   lifestuff_elements->user_storage->mount_dir() /
-                        fs::path("/").make_preferred() / (*share_name));
-  } else {
+    if (!fs::remove_all(directory_in_lifestuff_drive, error_code))
+      return kGeneralError;
+
     return lifestuff_elements->user_storage->CreateShare(my_public_id,
               share_dir, contacts, true, results);
+  } else {
+    DLOG(ERROR) << "Target Directory doesn't exist";
+    return kNoShareTarget;
   }
 }
 
@@ -973,14 +981,16 @@ int LifeStuff::CreateEmptyPrivateShare(
   }
 
   fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+                     drive::kMsShareRoot /
                      fs::path("/").make_preferred() / (*share_name));
   boost::system::error_code error_code;
   int index(0);
   // TODO(Team): shall use function via drive to test the existence of directory
   while (fs::exists(share_dir, error_code)) {
     share_dir = lifestuff_elements->user_storage->mount_dir() /
-                     fs::path("/").make_preferred() /
-                     ((*share_name) + "_" + IntToString(index));
+                      drive::kMsShareRoot /
+                      fs::path("/").make_preferred() /
+                      ((*share_name) + "_" + IntToString(index));
     ++index;
   }
   fs::create_directory(share_dir, error_code);
@@ -1103,7 +1113,8 @@ int LifeStuff::AcceptPrivateShareInvitation(std::string *share_name,
   lifestuff_elements->user_storage->DeleteHiddenFile(hidden_file);
 
   fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
-                    fs::path("/").make_preferred() / *share_name);
+                     drive::kMsShareRoot /
+                     fs::path("/").make_preferred() / *share_name);
   return lifestuff_elements->user_storage->InsertShare(share_dir,
                                                        share_id,
                                                        contact_public_id,
@@ -1205,6 +1216,7 @@ int LifeStuff::DeletePrivateShare(const std::string &my_public_id,
   }
 
   fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+                     drive::kMsShareRoot /
                      fs::path("/").make_preferred() / share_name);
   return lifestuff_elements->user_storage->StopShare(my_public_id, share_dir);
 }
@@ -1220,6 +1232,7 @@ int LifeStuff::LeavePrivateShare(const std::string &my_public_id,
   }
 
   fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+                     drive::kMsShareRoot /
                      fs::path("/").make_preferred() / share_name);
   return lifestuff_elements->user_storage->RemoveShare(share_dir, my_public_id);
 }
