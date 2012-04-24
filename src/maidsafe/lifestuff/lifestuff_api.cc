@@ -257,6 +257,32 @@ int LifeStuff::ConnectToSignals(
   return kGeneralError;
 }
 
+int LifeStuff::Finalise() {
+  if (lifestuff_elements->state != kLoggedOut) {
+    DLOG(ERROR) << "Need to be logged out to finalise.";
+    return kGeneralError;
+  }
+
+  boost::system::error_code error_code;
+  fs::remove_all(lifestuff_elements->buffered_path, error_code);
+
+
+  lifestuff_elements->asio_service.Stop();
+  lifestuff_elements->remote_chunk_store.reset();
+#ifndef LOCAL_TARGETS_ONLY
+  lifestuff_elements->client_container.reset();
+#endif
+  lifestuff_elements->message_handler.reset();
+  lifestuff_elements->public_id.reset();
+  lifestuff_elements->session.reset();
+  lifestuff_elements->user_credentials.reset();
+  lifestuff_elements->user_storage.reset();
+  lifestuff_elements->state = kZeroth;
+
+  return kSuccess;
+}
+
+/// Credential operations
 int LifeStuff::CreateUser(const std::string &username,
                           const std::string &pin,
                           const std::string &password) {
@@ -436,29 +462,77 @@ int LifeStuff::LogOut() {
   return kSuccess;
 }
 
-int LifeStuff::Finalise() {
-  if (lifestuff_elements->state != kLoggedOut) {
-    DLOG(ERROR) << "Need to be logged out to finalise.";
+int LifeStuff::CheckPassword(const std::string &password) {
+  if (lifestuff_elements->state != kLoggedIn) {
+    DLOG(ERROR) << "Should be logged in to log out.";
     return kGeneralError;
   }
 
-  boost::system::error_code error_code;
-  fs::remove_all(lifestuff_elements->buffered_path, error_code);
+  return lifestuff_elements->session->password() == password ? kSuccess :
+                                                               kGeneralError;
+}
 
+int LifeStuff::ChangeKeyword(const std::string &old_username,
+                             const std::string &new_username,
+                             const std::string &password) {
+  if (lifestuff_elements->state != kLoggedIn) {
+    DLOG(ERROR) << "Should be logged in to log out.";
+    return kGeneralError;
+  }
 
-  lifestuff_elements->asio_service.Stop();
-  lifestuff_elements->remote_chunk_store.reset();
-#ifndef LOCAL_TARGETS_ONLY
-  lifestuff_elements->client_container.reset();
-#endif
-  lifestuff_elements->message_handler.reset();
-  lifestuff_elements->public_id.reset();
-  lifestuff_elements->session.reset();
-  lifestuff_elements->user_credentials.reset();
-  lifestuff_elements->user_storage.reset();
-  lifestuff_elements->state = kZeroth;
+  int result(CheckPassword(password));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Password verification failed.";
+    return result;
+  }
 
-  return kSuccess;
+  if (lifestuff_elements->session->username() != old_username) {
+    DLOG(ERROR) << "Keyword verification failed.";
+    return kGeneralError;
+  }
+
+  return lifestuff_elements->user_credentials->ChangeUsername(new_username) ?
+         kSuccess : kGeneralError;
+}
+
+int LifeStuff::ChangePin(const std::string &old_pin,
+                         const std::string &new_pin,
+                         const std::string &password) {
+  if (lifestuff_elements->state != kLoggedIn) {
+    DLOG(ERROR) << "Should be logged in to log out.";
+    return kGeneralError;
+  }
+
+  int result(CheckPassword(password));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Password verification failed.";
+    return result;
+  }
+
+  if (lifestuff_elements->session->pin() != old_pin) {
+    DLOG(ERROR) << "Keyword verification failed.";
+    return kGeneralError;
+  }
+
+  return lifestuff_elements->user_credentials->ChangePin(new_pin) ?
+         kSuccess : kGeneralError;
+}
+
+int LifeStuff::ChangePassword(const std::string &old_password,
+                              const std::string &new_password) {
+  if (lifestuff_elements->state != kLoggedIn) {
+    DLOG(ERROR) << "Should be logged in to log out.";
+    return kGeneralError;
+  }
+
+  int result(CheckPassword(old_password));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Password verification failed.";
+    return result;
+  }
+
+  return lifestuff_elements->user_credentials->ChangePassword(new_password) ?
+         kSuccess : kGeneralError;
 }
 
 /// Contact operations
@@ -1098,7 +1172,7 @@ int LifeStuff::EditPrivateShareMembers(const std::string &my_public_id,
   // Remove users
   if (!members_to_remove.empty()) {
     result = lifestuff_elements->user_storage->RemoveShareUsers(
-                my_public_id, share_dir, members_to_remove);
+                my_public_id, share_dir, members_to_remove, true);
     if (result == kSuccess)
       for (auto it = members_to_remove.begin();
            it != members_to_remove.end(); ++it)
@@ -1147,7 +1221,7 @@ int LifeStuff::LeavePrivateShare(const std::string &my_public_id,
 
   fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
                      fs::path("/").make_preferred() / share_name);
-  return lifestuff_elements->user_storage->RemoveShare(share_dir);
+  return lifestuff_elements->user_storage->RemoveShare(share_dir, my_public_id);
 }
 
 int LifeStuff::CreateOpenShareFromExistingDirectory(

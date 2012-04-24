@@ -91,6 +91,10 @@ class MessageHandler {
                            const std::string&)> SaveOpenShareDataSignal;
   typedef std::shared_ptr<SaveOpenShareDataSignal> SaveOpenShareDataSignalPtr;
 
+  typedef bs2::signal<void(const std::string&,  // share id
+                           const std::string&)> ShareUserLeavingSignal;  // user_id  // NOLINT
+  typedef std::shared_ptr<ShareUserLeavingSignal> ShareUserLeavingSignalPtr;
+
   typedef bs2::signal<void(const InboxItem&)> NewItemSignal;  // NOLINT (Dan)
   typedef std::shared_ptr<NewItemSignal> NewItemSignalPtr;
 
@@ -168,6 +172,8 @@ class MessageHandler {
       const SaveShareDataSignal::slot_type &function);
   bs2::connection ConnectToSaveOpenShareDataSignal(
       const SaveOpenShareDataSignal::slot_type &function);
+  bs2::connection ConnectToShareUserLeavingSignal(
+      const ShareUserLeavingSignal::slot_type &function);
   bs2::connection ConnectToContactPresenceSignal(
       const ContactPresenceFunction &function);
   bs2::connection ConnectToContactProfilePictureSignal(
@@ -217,6 +223,7 @@ class MessageHandler {
   MemberAccessLevelSignalPtr member_access_level_signal_;
   SaveShareDataSignalPtr save_share_data_signal_;
   SaveOpenShareDataSignalPtr save_open_share_data_signal_;
+  ShareUserLeavingSignalPtr share_user_leaving_signal_;
   ContactPresenceSignalPtr contact_presence_signal_;
   ContactProfilePictureSignalPtr contact_profile_picture_signal_;
   ContactDeletionSignalPtr contact_deletion_signal_;
