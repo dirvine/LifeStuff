@@ -686,7 +686,7 @@ TEST(IndependentFullTest, FUNC_CreateOpenShare) {
   boost::system::error_code error_code;
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
-    // create some directories and files in MyStuff directory...
+
     fs::path directory(test_elements1.mount_path() /
                           fs::path("/").make_preferred() /
                           kMyStuff /
@@ -704,7 +704,7 @@ TEST(IndependentFullTest, FUNC_CreateOpenShare) {
     EXPECT_TRUE(WriteFile(file2_path, file_content2));
     EXPECT_TRUE(fs::exists(file2_path, error_code));
     EXPECT_EQ(0, error_code.value());
-    // create share...
+
     StringIntMap  results;
     std::vector<std::string> contacts;
     contacts.push_back(public_id2);
@@ -724,7 +724,7 @@ TEST(IndependentFullTest, FUNC_CreateOpenShare) {
     EXPECT_EQ(0, error_code.value());
     EXPECT_TRUE(fs::exists(share / file2_name, error_code));
     EXPECT_EQ(0, error_code.value());
-    // shared directory gets moved...
+
     EXPECT_FALSE(fs::exists(directory / share_name, error_code));
     EXPECT_NE(0, error_code.value());
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -1093,8 +1093,6 @@ TEST(IndependentFullTest, FUNC_LeaveOpenShare) {
   DLOG(ERROR) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
-    while (!testing_variables2.openly_invited)
-      Sleep(bptime::milliseconds(100));
     fs::path share(test_elements2.mount_path() /
                       fs::path("/").make_preferred() /
                       kSharedStuff /
@@ -1154,12 +1152,18 @@ TEST(IndependentFullTest, FUNC_SameOpenShareName) {
   std::string directory0_name(RandomAlphaNumericString(5)),
               directory1_name(RandomAlphaNumericString(5)),
               directory2_name(RandomAlphaNumericString(5)),
-              share_name(RandomAlphaNumericString(5)),
-              stored_share_name(share_name),
+              directory3_name(RandomAlphaNumericString(5)),
+              directory4_name(RandomAlphaNumericString(5)),
               file1_name(RandomAlphaNumericString(5)),
               file2_name(RandomAlphaNumericString(5)),
+              file3_name(RandomAlphaNumericString(5)),
+              file4_name(RandomAlphaNumericString(5)),
               file_content1(RandomString(20)),
-              file_content2(RandomString(20));
+              file_content2(RandomString(20)),
+              file_content3(RandomString(20)),
+              file_content4(RandomString(20)),
+              share_name(RandomAlphaNumericString(5)),
+              stored_share_name(share_name);
   boost::system::error_code error_code;
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
@@ -1191,6 +1195,22 @@ TEST(IndependentFullTest, FUNC_SameOpenShareName) {
     fs::path file2_path(share_directory2 / file2_name);
     EXPECT_TRUE(WriteFile(file2_path, file_content2));
     EXPECT_TRUE(fs::exists(file2_path, error_code));
+    EXPECT_EQ(0, error_code.value());
+
+    fs::path directory3(share_directory1 / directory3_name);
+    EXPECT_TRUE(fs::create_directory(directory3, error_code));
+    EXPECT_EQ(0, error_code.value());
+    fs::path directory4(share_directory2 / directory4_name);
+    EXPECT_TRUE(fs::create_directory(directory4, error_code));
+    EXPECT_EQ(0, error_code.value());
+
+    fs::path file3_path(directory3 / file3_name);
+    EXPECT_TRUE(WriteFile(file3_path, file_content3));
+    EXPECT_TRUE(fs::exists(file3_path, error_code));
+    EXPECT_EQ(0, error_code.value());
+    fs::path file4_path(directory4 / file4_name);
+    EXPECT_TRUE(WriteFile(file4_path, file_content4));
+    EXPECT_TRUE(fs::exists(file4_path, error_code));
     EXPECT_EQ(0, error_code.value());
 
     StringIntMap  results;

@@ -1068,7 +1068,7 @@ int UserStorage::InformContacts(
         const fs::path &relative_path, // const std::string &absolute_path
         const std::string &directory_id,
         const asymm::Keys &key_ring,
-        const std::string &new_share_id,
+        const std::string &/*new_share_id*/,
         StringIntMap *contacts_results) {
   InboxItemType item_type(static_cast<InboxItemType>(ItemType));
   InboxItem message(item_type);
@@ -1080,10 +1080,8 @@ int UserStorage::InformContacts(
       message.content.push_back(relative_path.string()); // fs::path(absolute_path).filename().string());
       message.content.push_back(directory_id);
       break;
-    case kUpdateOpenShare:
-      message.content.push_back(directory_id);
-      message.content.push_back(new_share_id);
-      break;
+    default:
+      DLOG(ERROR) << "Unknown constant";
   }
   message.content.push_back(key_ring.identity);
   message.content.push_back(key_ring.validation_token);

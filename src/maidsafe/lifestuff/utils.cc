@@ -295,6 +295,13 @@ int CopyDirectoryContent(const fs::path& from, const fs::path& to) {
     for (; it != end; ++it) {
       fs::path current(it->path());
       if (fs::is_directory(*it)) {
+        fs::create_directory(to / current.filename(), error_code);
+        if (error_code) {
+          DLOG(ERROR) << "Failed to create directory: "
+                      << to / current.filename()
+                      << " " << error_code.message();
+          return kGeneralError;
+        }
         result = CopyDirectoryContent(current, to / current.filename());
         if (result != kSuccess) {
           DLOG(ERROR) << "Failed to create directory "
