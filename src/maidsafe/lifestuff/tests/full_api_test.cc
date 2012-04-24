@@ -636,7 +636,7 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
 
     fs::path share_path(test_elements1.mount_path() /
                         fs::path("/").make_preferred() /
-//                         kSharedStuff /
+                        kSharedStuff /
                         share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
     EXPECT_EQ(0, error_code.value());
@@ -660,7 +660,7 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
 
     fs::path share_path(test_elements2.mount_path() /
                         fs::path("/").make_preferred() /
-//                         kSharedStuff /
+                        kSharedStuff /
                         share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code));
 
@@ -682,7 +682,7 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     fs::path share_path(test_elements1.mount_path() /
                         fs::path("/").make_preferred() /
-//                         kSharedStuff /
+                        kSharedStuff /
                         share_name1);
     fs::path a_file_path(share_path / file_name1);
     if (rights_ == 0) {
@@ -705,7 +705,7 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
 
     fs::path share_path(test_elements2.mount_path() /
                         fs::path("/").make_preferred() /
-//                         kSharedStuff /
+                        kSharedStuff /
                         share_name1);
     fs::path a_file_path(share_path / file_name1);
     EXPECT_TRUE(fs::exists(a_file_path, error_code)) << a_file_path;
@@ -845,6 +845,7 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
       EXPECT_EQ(file_content2, file_stuff);
     }
     EXPECT_TRUE(WriteFile(a_file_path, file_content1));
+    EXPECT_TRUE(fs::exists(a_file_path, error_code));
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
@@ -1053,7 +1054,8 @@ TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
     while (!testing_variables2.private_share_deleted)
       Sleep(bptime::milliseconds(100));
 
-    EXPECT_EQ(share_name1, testing_variables2.deleted_private_share_name);
+    // Still using share_id to identify the share, instead of share_name
+//     EXPECT_EQ(share_name1, testing_variables2.deleted_private_share_name);
     fs::path share_path(test_elements1.mount_path() /
                         fs::path("/").make_preferred() /
                         kSharedStuff /
@@ -1118,8 +1120,8 @@ TEST_P(PrivateSharesApiTest, FUNC_LeavePrivateShare) {
     EXPECT_EQ(kSuccess, results[public_id2]);
 
     // Check owner can't leave
-    EXPECT_NE(kSuccess, test_elements1.LeavePrivateShare(public_id1,
-                                                         share_name1));
+    EXPECT_EQ(kOwnerTryingToLeave,
+              test_elements1.LeavePrivateShare(public_id1, share_name1));
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
     EXPECT_EQ(0, error_code.value());
 
@@ -1161,7 +1163,9 @@ TEST_P(PrivateSharesApiTest, FUNC_LeavePrivateShare) {
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
 
-    EXPECT_EQ(share_name1, testing_variables2.deleted_private_share_name);
+    // Still using share_id to identify the share, instead of share_name
+    // And when leaving, Deletion Signal won't get fired
+//     EXPECT_EQ(share_name1, testing_variables2.deleted_private_share_name);
     fs::path share_path(test_elements1.mount_path() /
                         fs::path("/").make_preferred() /
                         kSharedStuff /

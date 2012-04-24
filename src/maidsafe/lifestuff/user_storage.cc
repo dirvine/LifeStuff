@@ -441,7 +441,7 @@ int UserStorage::RemoveShare(const fs::path& absolute_path,
     return kMessageHandlerNotInitialised;
   }
 
-  // in case of none own name provided, idicates being asked to leave
+  // when own name non provided, this indicates being asked to leave
   // i.e. no notification of leaving to the owner required to be sent
   if (sender_public_username.empty()) {
     return drive_in_user_space_->RemoveShare(
@@ -461,6 +461,9 @@ int UserStorage::RemoveShare(const fs::path& absolute_path,
                                                    &owner_id));
   if (result != kSuccess)
     return result;
+  // Owner doesn't allow to leave (shall use StopShare method)
+  if (owner_id == sender_public_username)
+    return kOwnerTryingToLeave;
 
   result = drive_in_user_space_->RemoveShare(
              drive_in_user_space_->RelativePath(absolute_path));
