@@ -526,6 +526,30 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
     file_content1 = test_elements1.GetContactProfilePicture(public_id1,
                                                             public_id2);
     EXPECT_TRUE(file_content2 == file_content1);
+    EXPECT_NE(kSuccess, test_elements1.ChangeProfilePicture(public_id1, ""));
+
+    EXPECT_EQ(kSuccess, test_elements1.LogOut());
+  }
+  DLOG(ERROR) << "\n\n\n\n";
+  {
+    EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
+    // Setting of profile image
+    EXPECT_EQ(kSuccess,
+              test_elements2.ChangeProfilePicture(public_id2,
+                                                  kBlankProfilePicture));
+
+    EXPECT_EQ(kSuccess, test_elements2.LogOut());
+  }
+  DLOG(ERROR) << "\n\n\n\n";
+  {
+    testing_variables1.picture_updated = false;
+    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+    while (!testing_variables1.picture_updated)
+      Sleep(bptime::milliseconds(100));
+
+    file_content1 = test_elements1.GetContactProfilePicture(public_id1,
+                                                            public_id2);
+    EXPECT_TRUE(kBlankProfilePicture == file_content1);
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }

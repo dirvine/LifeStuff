@@ -657,48 +657,52 @@ int LifeStuff::ChangeProfilePicture(
     return kGeneralError;
   }
 
-  // Write contents somewhere
-  fs::path profile_picture_path(lifestuff_elements->user_storage->mount_dir() /
-                                fs::path("/").make_preferred() /
-                                std::string(my_public_id +
-                                            "_profile_picture" +
-                                            drive::kMsHidden.string()));
-  if (WriteHiddenFile(profile_picture_path,
-                      profile_picture_contents,
-                      true) != kSuccess) {
-    DLOG(ERROR) << "Failed to write profile picture file: "
-                << profile_picture_path;
-    return kGeneralError;
-  }
+  // Message construction
+  InboxItem message(kContactProfilePicture);
+  message.sender_public_id = my_public_id;
 
-
-  // Get datamap
-  std::string data_map;
-  std::string reconstructed;
-  int count(0), limit(100);
-  while (reconstructed != profile_picture_contents && count++ < limit) {
-    data_map.clear();
-    result = lifestuff_elements->user_storage->GetHiddenFileDataMap(
-                profile_picture_path,
-                &data_map);
-    if ((result != kSuccess || data_map.empty()) && count == limit) {
-      DLOG(ERROR) << "Failed obtaining DM of profile picture: " << result
-                  << ", file: " << profile_picture_path;
-      return result;
+  if (profile_picture_contents != kBlankProfilePicture) {
+    // Write contents
+    fs::path profile_picture_path(lifestuff_elements->user_storage->mount_dir() /
+                                  fs::path("/").make_preferred() /
+                                  std::string(my_public_id +
+                                              "_profile_picture" +
+                                              drive::kMsHidden.string()));
+    if (WriteHiddenFile(profile_picture_path,
+                        profile_picture_contents,
+                        true) != kSuccess) {
+      DLOG(ERROR) << "Failed to write profile picture file: "
+                  << profile_picture_path;
+      return kGeneralError;
     }
 
-    reconstructed = lifestuff_elements->user_storage->ConstructFile(data_map);
-    Sleep(bptime::milliseconds(50));
+
+    // Get datamap
+    std::string data_map;
+    std::string reconstructed;
+    int count(0), limit(100);
+    while (reconstructed != profile_picture_contents && count++ < limit) {
+      data_map.clear();
+      result = lifestuff_elements->user_storage->GetHiddenFileDataMap(
+                  profile_picture_path,
+                  &data_map);
+      if ((result != kSuccess || data_map.empty()) && count == limit) {
+        DLOG(ERROR) << "Failed obtaining DM of profile picture: " << result
+                    << ", file: " << profile_picture_path;
+        return result;
+      }
+
+      reconstructed = lifestuff_elements->user_storage->ConstructFile(data_map);
+      Sleep(bptime::milliseconds(50));
+    }
+    message.content.push_back(data_map);
+  } else {
+    message.content.push_back(kBlankProfilePicture);
   }
 
   // Set in session
   lifestuff_elements->session->set_profile_picture_data_map(my_public_id,
-                                                            data_map);
-
-  // Message construction
-  InboxItem message(kContactProfilePicture);
-  message.sender_public_id = my_public_id;
-  message.content.push_back(data_map);
+                                                            message.content[0]);
 
   // Send to everybody
   lifestuff_elements->message_handler->SendEveryone(message);
@@ -751,6 +755,12 @@ std::string LifeStuff::GetContactProfilePicture(
   if (result != kSuccess || contact.profile_picture_data_map.empty()) {
     DLOG(ERROR) << "No such contact(" << result << "): " << contact_public_id;
     return "";
+  }
+
+  // Might be blank
+  if (contact.profile_picture_data_map == kBlankProfilePicture) {
+    DLOG(INFO) << "Blank image detected. No reconstruction needed.";
+    return kBlankProfilePicture;
   }
 
   // Read contents, put them in a string, give them back. Should not be

@@ -33,7 +33,7 @@ message PublicContact {
 
 message PublicUsername {
   required bytes own_public_username = 1;
-  optional bytes own_profile_picture_data_map = 2;
+  required bytes own_profile_picture_data_map = 2;
   repeated PublicContact contacts = 3;
 }
 

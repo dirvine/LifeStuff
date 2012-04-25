@@ -466,11 +466,13 @@ void MessageHandler::ContactProfilePictureSlot(
 
   std::string sender(profile_picture_message.sender_public_id),
               receiver(profile_picture_message.receiver_public_id);
-  encrypt::DataMapPtr data_map(
-      ParseSerialisedDataMap(profile_picture_message.content[0]));
-  if (!data_map) {
-    DLOG(WARNING) << "Data map didn't parse.";
-    return;
+  if (profile_picture_message.content[0] != kBlankProfilePicture) {
+    encrypt::DataMapPtr data_map(
+        ParseSerialisedDataMap(profile_picture_message.content[0]));
+    if (!data_map) {
+      DLOG(WARNING) << "Data map didn't parse.";
+      return;
+    }
   }
 
   int result(session_->contact_handler_map()
