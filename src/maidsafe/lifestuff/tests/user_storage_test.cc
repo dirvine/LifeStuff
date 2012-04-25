@@ -175,14 +175,14 @@ class UserStorageTest : public testing::TestWithParam<bool> {
 #endif
     user_credentials1_.reset(new UserCredentials(remote_chunk_store1_,
                                                  session1_));
-    EXPECT_TRUE(user_credentials1_->CreateUser(RandomString(6),
+    EXPECT_TRUE(user_credentials1_->CreateUser(RandomAlphaNumericString(6),
                                                CreatePin(),
-                                               RandomString(6)));
+                                               RandomAlphaNumericString(6)));
     user_credentials2_.reset(new UserCredentials(remote_chunk_store2_,
                                                  session2_));
-    EXPECT_TRUE(user_credentials2_->CreateUser(RandomString(6),
+    EXPECT_TRUE(user_credentials2_->CreateUser(RandomAlphaNumericString(6),
                                                CreatePin(),
-                                               RandomString(6)));
+                                               RandomAlphaNumericString(6)));
   }
 
   void SetUp() {
@@ -815,9 +815,9 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
   std::shared_ptr<Session> session3(new Session);
   std::shared_ptr<UserCredentials> user_credentials3(
       new UserCredentials(remote_chunk_store3, session3));
-  EXPECT_TRUE(user_credentials3->CreateUser(RandomString(6),
+  EXPECT_TRUE(user_credentials3->CreateUser(RandomAlphaNumericString(6),
                                             CreatePin(),
-                                            RandomString(6)));
+                                            RandomAlphaNumericString(6)));
   std::shared_ptr<PublicId> public_id3(
       new PublicId(remote_chunk_store3, session3, asio_service3.service()));
   std::shared_ptr<MessageHandler> message_handler3(
