@@ -308,9 +308,9 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
 
 TEST(IndependentFullTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username(RandomString(6)),
+  std::string username(RandomAlphaNumericString(6)),
               pin(CreatePin()),
-              password(RandomString(6));
+              password(RandomAlphaNumericString(6));
   boost::system::error_code error_code;
   volatile bool done;
 
@@ -349,9 +349,9 @@ TEST(IndependentFullTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
 
 TEST(IndependentFullTest, FUNC_ChangeCredentials) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username(RandomString(6)),
+  std::string username(RandomAlphaNumericString(6)),
               pin(CreatePin()), new_pin(CreatePin()),
-              password(RandomString(6));
+              password(RandomAlphaNumericString(6));
   volatile bool done;
 
   LifeStuff test_elements1;
@@ -421,13 +421,13 @@ TEST(IndependentFullTest, FUNC_ChangeCredentials) {
 
 TEST(IndependentFullTest, FUNC_SendFile) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomString(6)),
+  std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
-              password1(RandomString(6)),
+              password1(RandomAlphaNumericString(6)),
               public_id1(RandomAlphaNumericString(5));
-  std::string username2(RandomString(6)),
+  std::string username2(RandomAlphaNumericString(6)),
               pin2(CreatePin()),
-              password2(RandomString(6)),
+              password2(RandomAlphaNumericString(6)),
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
@@ -486,13 +486,13 @@ TEST(IndependentFullTest, FUNC_SendFile) {
 
 TEST(IndependentFullTest, FUNC_ProfilePicture) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomString(6)),
+  std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
-              password1(RandomString(6)),
+              password1(RandomAlphaNumericString(6)),
               public_id1(RandomAlphaNumericString(5));
-  std::string username2(RandomString(6)),
+  std::string username2(RandomAlphaNumericString(6)),
               pin2(CreatePin()),
-              password2(RandomString(6)),
+              password2(RandomAlphaNumericString(6)),
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
@@ -536,13 +536,13 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
 
 TEST(IndependentFullTest, FUNC_RemoveContact) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomString(6)),
+  std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
-              password1(RandomString(6)),
+              password1(RandomAlphaNumericString(6)),
               public_id1(RandomAlphaNumericString(5));
-  std::string username2(RandomString(6)),
+  std::string username2(RandomAlphaNumericString(6)),
               pin2(CreatePin()),
-              password2(RandomString(6)),
+              password2(RandomAlphaNumericString(6)),
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
@@ -601,13 +601,13 @@ INSTANTIATE_TEST_CASE_P(ReadOnlyReadWrite,
 
 TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomString(6)),
+  std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
-              password1(RandomString(6)),
+              password1(RandomAlphaNumericString(6)),
               public_id1(RandomAlphaNumericString(5));
-  std::string username2(RandomString(6)),
+  std::string username2(RandomAlphaNumericString(6)),
               pin2(CreatePin()),
-              password2(RandomString(6)),
+              password2(RandomAlphaNumericString(6)),
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
@@ -624,8 +624,8 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
   DLOG(ERROR) << "\n\n\n\n";
   std::string share_name1(RandomAlphaNumericString(5)),
               file_name1(RandomAlphaNumericString(5)),
-              file_content1(RandomString(20)),
-              file_content2(RandomString(20));
+              file_content1(RandomAlphaNumericString(20)),
+              file_content2(RandomAlphaNumericString(20));
   boost::system::error_code error_code;
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
@@ -730,13 +730,13 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
 
 TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomString(6)),
+  std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
-              password1(RandomString(6)),
+              password1(RandomAlphaNumericString(6)),
               public_id1(RandomAlphaNumericString(5));
-  std::string username2(RandomString(6)),
+  std::string username2(RandomAlphaNumericString(6)),
               pin2(CreatePin()),
-              password2(RandomString(6)),
+              password2(RandomAlphaNumericString(6)),
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
@@ -754,8 +754,8 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
   std::string share_name1(RandomAlphaNumericString(5)),
               file_name1(RandomAlphaNumericString(5)),
               file_name2(RandomAlphaNumericString(5)),
-              file_content1(RandomString(20)),
-              file_content2(RandomString(20));
+              file_content1(RandomAlphaNumericString(20)),
+              file_content2(RandomAlphaNumericString(20));
   boost::system::error_code error_code;
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
@@ -878,13 +878,13 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
 
 TEST_P(PrivateSharesApiTest, FUNC_RejectInvitationPrivateShare) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomString(6)),
+  std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
-              password1(RandomString(6)),
+              password1(RandomAlphaNumericString(6)),
               public_id1(RandomAlphaNumericString(5));
-  std::string username2(RandomString(6)),
+  std::string username2(RandomAlphaNumericString(6)),
               pin2(CreatePin()),
-              password2(RandomString(6)),
+              password2(RandomAlphaNumericString(6)),
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
@@ -902,8 +902,8 @@ TEST_P(PrivateSharesApiTest, FUNC_RejectInvitationPrivateShare) {
   std::string share_name1(RandomAlphaNumericString(5)),
               file_name1(RandomAlphaNumericString(5)),
               file_name2(RandomAlphaNumericString(5)),
-              file_content1(RandomString(20)),
-              file_content2(RandomString(20));
+              file_content1(RandomAlphaNumericString(20)),
+              file_content2(RandomAlphaNumericString(20));
   boost::system::error_code error_code;
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
@@ -969,13 +969,13 @@ TEST_P(PrivateSharesApiTest, FUNC_RejectInvitationPrivateShare) {
 
 TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomString(6)),
+  std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
-              password1(RandomString(6)),
+              password1(RandomAlphaNumericString(6)),
               public_id1(RandomAlphaNumericString(5));
-  std::string username2(RandomString(6)),
+  std::string username2(RandomAlphaNumericString(6)),
               pin2(CreatePin()),
-              password2(RandomString(6)),
+              password2(RandomAlphaNumericString(6)),
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
@@ -992,8 +992,8 @@ TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
   DLOG(ERROR) << "\n\n\n\n";
   std::string share_name1(RandomAlphaNumericString(5)),
               file_name1(RandomAlphaNumericString(5)),
-              file_content1(RandomString(20)),
-              file_content2(RandomString(20));
+              file_content1(RandomAlphaNumericString(20)),
+              file_content2(RandomAlphaNumericString(20));
   boost::system::error_code error_code;
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
@@ -1078,13 +1078,13 @@ TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
 
 TEST_P(PrivateSharesApiTest, FUNC_LeavePrivateShare) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomString(6)),
+  std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
-              password1(RandomString(6)),
+              password1(RandomAlphaNumericString(6)),
               public_id1(RandomAlphaNumericString(5));
-  std::string username2(RandomString(6)),
+  std::string username2(RandomAlphaNumericString(6)),
               pin2(CreatePin()),
-              password2(RandomString(6)),
+              password2(RandomAlphaNumericString(6)),
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
@@ -1101,8 +1101,8 @@ TEST_P(PrivateSharesApiTest, FUNC_LeavePrivateShare) {
   DLOG(ERROR) << "\n\n\n\n";
   std::string share_name1(RandomAlphaNumericString(5)),
               file_name1(RandomAlphaNumericString(5)),
-              file_content1(RandomString(20)),
-              file_content2(RandomString(20));
+              file_content1(RandomAlphaNumericString(20)),
+              file_content2(RandomAlphaNumericString(20));
   boost::system::error_code error_code;
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
@@ -1189,13 +1189,13 @@ TEST_P(PrivateSharesApiTest, FUNC_LeavePrivateShare) {
 
 TEST(IndependentFullTest, FUNC_MembershipDowngradePrivateShare) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomString(6)),
+  std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
-              password1(RandomString(6)),
+              password1(RandomAlphaNumericString(6)),
               public_id1(RandomAlphaNumericString(5));
-  std::string username2(RandomString(6)),
+  std::string username2(RandomAlphaNumericString(6)),
               pin2(CreatePin()),
-              password2(RandomString(6)),
+              password2(RandomAlphaNumericString(6)),
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
@@ -1212,8 +1212,8 @@ TEST(IndependentFullTest, FUNC_MembershipDowngradePrivateShare) {
   DLOG(ERROR) << "\n\n\n\n";
   std::string share_name1(RandomAlphaNumericString(5)),
               file_name1(RandomAlphaNumericString(5)),
-              file_content1(RandomString(20)),
-              file_content2(RandomString(20));
+              file_content1(RandomAlphaNumericString(20)),
+              file_content2(RandomAlphaNumericString(20));
   boost::system::error_code error_code;
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
@@ -1318,13 +1318,13 @@ TEST(IndependentFullTest, FUNC_MembershipDowngradePrivateShare) {
 
 TEST(IndependentFullTest, FUNC_MembershipUpgradePrivateShare) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomString(6)),
+  std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
-              password1(RandomString(6)),
+              password1(RandomAlphaNumericString(6)),
               public_id1(RandomAlphaNumericString(5));
-  std::string username2(RandomString(6)),
+  std::string username2(RandomAlphaNumericString(6)),
               pin2(CreatePin()),
-              password2(RandomString(6)),
+              password2(RandomAlphaNumericString(6)),
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
@@ -1341,8 +1341,8 @@ TEST(IndependentFullTest, FUNC_MembershipUpgradePrivateShare) {
   DLOG(ERROR) << "\n\n\n\n";
   std::string share_name1(RandomAlphaNumericString(5)),
               file_name1(RandomAlphaNumericString(5)),
-              file_content1(RandomString(20)),
-              file_content2(RandomString(20));
+              file_content1(RandomAlphaNumericString(20)),
+              file_content2(RandomAlphaNumericString(20));
   boost::system::error_code error_code;
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
