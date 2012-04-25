@@ -309,11 +309,8 @@ int CopyDir(const fs::path& source, const fs::path& dest) {
                   << " does not exist or is not a directory.";
       return kGeneralError;
     }
-    if (fs::exists(dest)) {
-      DLOG(ERROR) << "Destination directory " << dest.string()
-                  << " already exists.";
-      return kGeneralError;
-    }
+    if (!fs::exists(dest))
+      fs::create_directory(dest);
   }
   catch(const fs::filesystem_error &e) {
     DLOG(ERROR) << e.what();
@@ -325,7 +322,8 @@ int CopyDir(const fs::path& source, const fs::path& dest) {
     try {
       fs::path current(it->path());
       if (fs::is_directory(current)) {
-        // Found directory: Recursion
+        // Found directory: Create directory and Recursion
+        fs::create_directory(dest / current.filename());
         CopyDir(current, dest / current.filename());
       } else {
         // Found file: Copy

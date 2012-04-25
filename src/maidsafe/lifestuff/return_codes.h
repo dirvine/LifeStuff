@@ -77,7 +77,11 @@ enum ReturnCode {
   // MessageHandler
   kMessageHandlerException = -207001,
   kMessageHandlerNotInitialised = -207002,
-  kMessageHandlerError = -207003
+  kMessageHandlerError = -207003,
+
+  // Share
+  kNoShareTarget = -208001,
+  kOwnerTryingToLeave = -208002
 };
 
 }  // namespace lifestuff
