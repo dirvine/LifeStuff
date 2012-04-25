@@ -800,6 +800,46 @@ int UserStorage::SetShareUsersRights(const std::string &sender_public_username,
                                                   key_ring);
 }
 
+int UserStorage::DowngradeShareUsersRights(
+        const std::string &sender_public_username,
+        const fs::path &absolute_path,
+        const StringIntMap &contacts,
+        StringIntMap *results,
+        bool private_share) {
+  if (!message_handler_) {
+    DLOG(WARNING) << "Uninitialised message handler.";
+    return kMessageHandlerNotInitialised;
+  }
+
+  fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
+
+  for (auto it = contacts.begin(); it != contacts.end(); ++it)
+    results->insert(std::make_pair((*it).first,
+                       drive_in_user_space_->SetShareUsersRights(relative_path,
+                                                              (*it).first,
+                                                              (*it).second)));
+
+  asymm::Keys old_key_ring;
+  std::string share_id;
+  drive_in_user_space_->GetShareDetails(relative_path,
+                                        nullptr,
+                                        &old_key_ring,
+                                        &share_id,
+                                        nullptr,
+                                        nullptr);
+  int result(MovingShare(sender_public_username, share_id, relative_path,
+                         old_key_ring, private_share, &share_id));
+  if (result != kSuccess)
+    return result;
+
+  return InformContactsOperation<MemberAccessTag>(sender_public_username,
+                                                  contacts,
+                                                  share_id,
+                                                  "",
+                                                  "",
+                                                  old_key_ring);
+}
+
 int UserStorage::GetShareDetails(const std::string &share_id,
                                  fs::path *relative_path,
                                  asymm::Keys *share_keyring,

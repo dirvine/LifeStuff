@@ -1175,17 +1175,22 @@ int LifeStuff::EditPrivateShareMembers(const std::string &my_public_id,
   for (auto it = share_members.begin(); it != share_members.end(); ++it)
     member_ids.push_back((*it).first);
 
-  StringIntMap members_to_add, members_to_update;
+  StringIntMap members_to_add, members_to_upgrade, members_to_downgrade;
   std::vector<std::string> members_to_remove;
   for (auto it = public_ids.begin(); it != public_ids.end(); ++it) {
     auto itr(std::find(member_ids.begin(), member_ids.end(), (*it).first));
     if (itr != member_ids.end()) {
       // -1 indicates removing the existing member
-      // other value indicates an updating
+      // 0 indicates downgrading the existing member
+      // 1 indicates upgrading the existing member
       if ((*it).second == -1)
         members_to_remove.push_back(*itr);
-      else
-        members_to_update.insert(*it);
+      if (share_members[(*it).first] != (*it).second) {
+        if ((*it).second == 0)
+            members_to_downgrade.insert(*it);
+        if ((*it).second == 1)
+            members_to_upgrade.insert(*it);
+      }
     } else {
       // a non-existing user indicates an adding
       members_to_add.insert(*it);
@@ -1217,14 +1222,22 @@ int LifeStuff::EditPrivateShareMembers(const std::string &my_public_id,
            it != members_to_remove.end(); ++it)
         results->insert(std::make_pair(*it, result));
   }
-  // Update users
-  if (!members_to_update.empty()) {
-    for (auto it = members_to_update.begin();
-              it != members_to_update.end(); ++it) {
+  // Upgrade users
+  if (!members_to_upgrade.empty()) {
+    for (auto it = members_to_upgrade.begin();
+              it != members_to_upgrade.end(); ++it) {
       result = lifestuff_elements->user_storage->SetShareUsersRights(
                   my_public_id, share_dir, (*it).first, (*it).second, true);
       results->insert(std::make_pair((*it).first, result));
     }
+  }
+  // Downgrade users
+  if (!members_to_downgrade.empty()) {
+    result = lifestuff_elements->user_storage->DowngradeShareUsersRights(
+                    my_public_id, share_dir,
+                    members_to_downgrade, results, true);
+    if (result != kSuccess)
+      return result;
   }
   return kSuccess;
 }

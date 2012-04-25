@@ -153,6 +153,11 @@ class UserStorage {
                   const asymm::Keys &old_key_ring,
                   bool private_share,
                   std::string *new_share_id_return = nullptr);
+  int DowngradeShareUsersRights(const std::string &sender_public_username,
+                                const fs::path &absolute_path,
+                                const StringIntMap &contacts,
+                                StringIntMap *results,
+                                bool private_share);
 
   // **************************** File Notes ***********************************
   int GetNotes(const fs::path &absolute_path,
