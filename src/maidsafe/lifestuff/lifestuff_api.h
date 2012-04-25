@@ -153,7 +153,7 @@ class LifeStuff {
   fs::path mount_path() const;
 
  private:
-  void SetValidPmid();
+  int SetValidPmid();
   struct Elements;
   std::shared_ptr<Elements> lifestuff_elements;
 };

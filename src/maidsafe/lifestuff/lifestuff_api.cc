@@ -234,7 +234,8 @@ int LifeStuff::Finalise() {
   return kSuccess;
 }
 
-void LifeStuff::SetValidPmid() {
+int LifeStuff::SetValidPmid() {
+  int result = dht::kSuccess;
 #ifndef LOCAL_TARGETS_ONLY
   std::vector<dht::Contact> bootstrap_contacts;
   lifestuff_elements->client_container->Stop(&bootstrap_contacts);
@@ -242,8 +243,9 @@ void LifeStuff::SetValidPmid() {
       lifestuff_elements->session->GetPmidKeys());
   lifestuff_elements->client_container->Init(
       lifestuff_elements->buffered_path / "buffered_chunk_store", 10, 4);
-  lifestuff_elements->client_container->Start(bootstrap_contacts);
+  result = lifestuff_elements->client_container->Start(bootstrap_contacts);
 #endif
+  return result;
 }
 
 /// Credential operations
@@ -262,7 +264,10 @@ int LifeStuff::CreateUser(const std::string &username,
     return kGeneralError;
   }
 
-  SetValidPmid();
+  if (SetValidPmid() != dht::kSuccess)  {
+    DLOG(ERROR) << "Failed to set valid PMID";
+    return kGeneralError;
+  }
 
   boost::system::error_code error_code;
   fs::path mount_dir(GetHomeDir() /
@@ -358,7 +363,10 @@ int LifeStuff::LogIn(const std::string &username,
     return kGeneralError;
   }
 
-  SetValidPmid();
+  if (SetValidPmid() != dht::kSuccess)  {
+    DLOG(ERROR) << "Failed to set valid PMID";
+    return kGeneralError;
+  }
 
   boost::system::error_code error_code;
   fs::path mount_dir(GetHomeDir() /
