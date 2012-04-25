@@ -599,6 +599,14 @@ void MessageHandler::SignalShare(const InboxItem &inbox_item) {
   } else if (inbox_item.content[1] == "leave_share") {
     (*share_user_leaving_signal_)(inbox_item.content[0],
                                   inbox_item.sender_public_id);
+  } if ((inbox_item.content[1] == "member_access") &&
+        (inbox_item.content.size() < 4)) {
+    // downgrading
+    (*member_access_level_signal_)(inbox_item.receiver_public_id,
+                                   inbox_item.sender_public_id,
+                                   inbox_item.content[0],
+                                   0);
+    return;
   } else {
     Message message;
     InboxToProtobuf(inbox_item, &message);
@@ -615,7 +623,8 @@ void MessageHandler::SignalShare(const InboxItem &inbox_item) {
                                 inbox_item.content[0],
                                 inbox_item.content[0]);
 
-  if (inbox_item.content[1] == "upgrade_share")
+  if (inbox_item.content[1] == "member_access")
+    // upgrading
     (*member_access_level_signal_)(inbox_item.receiver_public_id,
                                    inbox_item.sender_public_id,
                                    inbox_item.content[0],

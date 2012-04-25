@@ -162,6 +162,11 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
                 lifestuff_elements->user_storage, args::_1, args::_2,
                                                   args::_3, args::_4));
 
+  lifestuff_elements->message_handler->ConnectToMemberAccessLevelSignal(
+      std::bind(&UserStorage::MemberAccessChange,
+                lifestuff_elements->user_storage, args::_1, args::_2,
+                                                  args::_3, args::_4));
+
   lifestuff_elements->public_id->ConnectToContactConfirmedSignal(
       std::bind(&MessageHandler::InformConfirmedContactOnline,
                 lifestuff_elements->message_handler, args::_1, args::_2));
@@ -1035,6 +1040,7 @@ int LifeStuff::GetPrivateShareMemebers(const std::string &my_public_id,
     return result;
   }
   fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+                     drive::kMsShareRoot /
                      fs::path("/").make_preferred() / share_name);
   return lifestuff_elements->user_storage->GetAllShareUsers(share_dir,
                                                             shares_members);
@@ -1176,7 +1182,8 @@ int LifeStuff::EditPrivateShareMembers(const std::string &my_public_id,
     }
   }
   fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
-                    fs::path("/").make_preferred() / share_name);
+                     drive::kMsShareRoot /
+                     fs::path("/").make_preferred() / share_name);
   // Add new users
   if (!members_to_add.empty()) {
     StringIntMap add_users_results;

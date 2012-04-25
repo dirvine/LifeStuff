@@ -81,7 +81,8 @@ enum ReturnCode {
 
   // Share
   kNoShareTarget = -208001,
-  kOwnerTryingToLeave = -208002
+  kOwnerTryingToLeave = -208002,
+  kNoKeyForUpgrade = -208003
 };
 
 }  // namespace lifestuff
