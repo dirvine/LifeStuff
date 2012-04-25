@@ -334,6 +334,12 @@ int PublicId::CreatePublicId(const std::string &public_username,
     return result;
   }
 
+  if (!session_->set_profile_picture_data_map(public_username,
+                                              kBlankProfilePicture)) {
+    DLOG(ERROR) << "Failed to add contact handler for " << public_username;
+    return kSetProfilePictureError;
+  }
+
   return kSuccess;
 }
 

@@ -73,6 +73,7 @@ enum ReturnCode {
   kModifyAppendabilityFailure = -206011,
   kGenerateNewMMIDFailure = -206012,
   kRemoveContactFailure = -206013,
+  kSetProfilePictureError = -206014,
 
   // MessageHandler
   kMessageHandlerException = -207001,

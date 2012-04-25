@@ -32,6 +32,7 @@
 #include <utility>
 #include <vector>
 
+#include "maidsafe/drive/config.h"
 #include "maidsafe/lifestuff/version.h"
 
 #if MAIDSAFE_LIFESTUFF_VERSION != 400
@@ -92,7 +93,9 @@ const std::string kLiteralOnline("kOnline");
 const std::string kLiteralOffline("kOffline");
 const std::string kAppHomeDirectory(".lifestuff");
 const std::string kMyStuff("MyStuff");
+// const std::string kSharedStuff(drive::kMsShareRoot.filename().string());
 const std::string kSharedStuff("SharedStuff");
+const std::string kBlankProfilePicture("BlankPicture");
 
 /// General
 typedef std::function<void(const std::string&, const std::string&)>

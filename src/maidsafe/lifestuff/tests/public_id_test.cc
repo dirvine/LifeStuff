@@ -202,6 +202,8 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
       contacts.clear();
       PublicUsername *pub_name = data_atlas.add_public_usernames();
       pub_name->set_own_public_username((*it).first);
+      pub_name->set_own_profile_picture_data_map(
+          session->profile_picture_data_map((*it).first));
       (*it).second->OrderedContacts(&contacts, kAlphabetical, kRequestSent |
                                                               kPendingResponse |
                                                               kConfirmed |
@@ -234,6 +236,9 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
       session->contact_handler_map().insert(
           std::make_pair(pub_name,
                          std::make_shared<ContactsHandler>()));
+      session->set_profile_picture_data_map(
+          pub_name,
+          data_atlas.public_usernames(n).own_profile_picture_data_map());
       for (int a(0); a < data_atlas.public_usernames(n).contacts_size(); ++a) {
         Contact c(data_atlas.public_usernames(n).contacts(a));
         session->contact_handler_map()[pub_name]->AddContact(c);
