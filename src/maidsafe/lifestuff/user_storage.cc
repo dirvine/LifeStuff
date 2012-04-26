@@ -477,6 +477,20 @@ int UserStorage::RemoveShare(const fs::path& absolute_path,
                                                 share_id);
 }
 
+int UserStorage::LeaveShare(const std::string &/*sender_public_username*/,
+                            const std::string &share_id) {
+  fs::path relative_path;
+  int result(GetShareDetails(share_id, &relative_path,
+                             nullptr, nullptr, nullptr));
+  if (result != kSuccess)
+    return result;
+
+  fs::path share_dir(mount_dir_ / drive::kMsShareRoot /
+                     fs::path("/").make_preferred() /
+                     relative_path.filename());
+  return RemoveShare(share_dir);
+}
+
 int UserStorage::UpdateShare(const std::string &share_id,
                              const std::string *new_share_id,
                              const std::string *new_directory_id,
@@ -900,6 +914,25 @@ void UserStorage::MemberAccessChange(
                                             nullptr,
                                             &share_keyring,
                                             &access_right);
+}
+
+int UserStorage::GetPrivateSharesContactBeingOwner(
+    const std::string &/*my_public_id*/,
+    const std::string &contact_public_id,
+    std::vector<std::string> *shares_names) {
+  StringIntMap all_shares;
+  GetAllShares(&all_shares);
+  for (auto it = all_shares.begin(); it != all_shares.end(); ++it) {
+    std::string owner_id;
+    fs::path share_dir("" / drive::kMsShareRoot /
+                       fs::path("/").make_preferred() / (*it).first);
+    drive_in_user_space_->GetShareDetails(share_dir, nullptr, nullptr,
+                                          nullptr, nullptr, nullptr,
+                                          &owner_id);
+    if (owner_id == contact_public_id)
+      shares_names->push_back((*it).first);
+  }
+  return kSuccess;
 }
 
 int UserStorage::GetNotes(const fs::path &absolute_path,

@@ -157,6 +157,10 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
       std::bind(&UserStorage::UserLeavingShare,
                 lifestuff_elements->user_storage, args::_1, args::_2));
 
+  lifestuff_elements->message_handler->ConnectToShareDeletionSignal(
+      std::bind(&UserStorage::LeaveShare,
+                lifestuff_elements->user_storage, args::_1, args::_2));
+
   lifestuff_elements->message_handler->ConnectToShareUpdateSignal(
       std::bind(&UserStorage::UpdateShare,
                 lifestuff_elements->user_storage, args::_1, args::_2,
@@ -630,6 +634,25 @@ int LifeStuff::RemoveContact(const std::string &my_public_id,
     return result;
   }
 
+  // For private shares, if share_members can be fetched, indicates owner
+  // otherwise, only the owner(inviter) of the share can be fetched
+  std::vector<std::string> shares_names;
+  GetPrivateSharesIncludingMember(my_public_id,
+                                  contact_public_id,
+                                  &shares_names);
+  StringIntMap contact_to_remove;
+  contact_to_remove.insert(std::make_pair(contact_public_id, kShareRemover));
+  for (auto it = shares_names.begin(); it != shares_names.end(); ++it) {
+    StringIntMap results;
+    EditPrivateShareMembers(my_public_id, contact_to_remove, *it, &results);
+  }
+  shares_names.clear();
+  lifestuff_elements->user_storage->GetPrivateSharesContactBeingOwner(
+                              my_public_id, contact_public_id, &shares_names);
+  for (auto it = shares_names.begin(); it != shares_names.end(); ++it) {
+    LeavePrivateShare(my_public_id, *it);
+  }
+
   // Send message to removal
   InboxItem inbox_item(kContactDeletion);
   inbox_item.receiver_public_id = contact_public_id;
@@ -639,9 +662,16 @@ int LifeStuff::RemoveContact(const std::string &my_public_id,
   result = lifestuff_elements->message_handler->Send(my_public_id,
                                                      contact_public_id,
                                                      inbox_item);
+  if (result != kSuccess)
+    DLOG(ERROR) << "Failed in sending out removal message.";
 
-  return lifestuff_elements->public_id->RemoveContact(my_public_id,
-                                                      contact_public_id);
+  // Remove the contact
+  result = lifestuff_elements->public_id->RemoveContact(my_public_id,
+                                                        contact_public_id);
+  if (result != kSuccess)
+    DLOG(ERROR) << "Failed remove contact in RemoveContact.";
+
+  return result;
 }
 
 int LifeStuff::ChangeProfilePicture(
@@ -1079,6 +1109,7 @@ int LifeStuff::GetPrivateSharesIncludingMember(const std::string &my_public_id,
   for (auto it = all_shares_names.begin(); it != all_shares_names.end(); ++it) {
     StringIntMap share_members;
     fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+                       drive::kMsShareRoot /
                       fs::path("/").make_preferred() / (*it).first);
     result = lifestuff_elements->user_storage->GetAllShareUsers(share_dir,
                                                   &share_members);

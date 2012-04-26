@@ -113,6 +113,8 @@ class UserStorage {
                 const fs::path &absolute_path);
   int RemoveShare(const fs::path &absolute_path,
                   const std::string &sender_public_username = "");
+  int LeaveShare(const std::string &sender_public_username,
+                 const std::string &share_id);
   int UpdateShare(const std::string &share_id,
                   const std::string *new_share_id,
                   const std::string *new_directory_id,
@@ -158,7 +160,9 @@ class UserStorage {
                                 const StringIntMap &contacts,
                                 StringIntMap *results,
                                 bool private_share);
-
+  int GetPrivateSharesContactBeingOwner(const std::string &my_public_id,
+                                        const std::string &contact_public_id,
+                                        std::vector<std::string> *shares_names);
   // **************************** File Notes ***********************************
   int GetNotes(const fs::path &absolute_path,
                std::vector<std::string> *notes) const;
