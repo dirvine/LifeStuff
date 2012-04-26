@@ -872,7 +872,7 @@ int UserStorage::RemoveOpenShareUsers(const fs::path &absolute_path,
 
 int UserStorage::GetShareUsersRights(const fs::path &absolute_path,
                                      const std::string &user_id,
-                                     bool *admin_rights) const {
+                                     int *admin_rights) const {
   if (!message_handler_) {
     DLOG(WARNING) << "Uninitialised message handler.";
     return kMessageHandlerNotInitialised;
@@ -887,7 +887,7 @@ int UserStorage::GetShareUsersRights(const fs::path &absolute_path,
 int UserStorage::SetShareUsersRights(const std::string &sender_public_username,
                                      const fs::path &absolute_path,
                                      const std::string &user_id,
-                                     bool admin_rights,
+                                     int admin_rights,
                                      bool private_share) {
   if (!message_handler_) {
     DLOG(WARNING) << "Uninitialised message handler.";
@@ -895,7 +895,7 @@ int UserStorage::SetShareUsersRights(const std::string &sender_public_username,
   }
 
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
-  bool old_admin_right;
+  int old_admin_right;
   int result(drive_in_user_space_->GetShareUsersRights(relative_path,
                                                        user_id,
                                                        &old_admin_right));

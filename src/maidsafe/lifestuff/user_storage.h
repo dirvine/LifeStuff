@@ -146,11 +146,11 @@ class UserStorage {
                            const std::vector<std::string> &user_ids);
   int GetShareUsersRights(const fs::path &absolute_path,
                           const std::string &user_id,
-                          bool *admin_rights) const;
+                          int *admin_rights) const;
   int SetShareUsersRights(const std::string &sender_public_username,
                           const fs::path &absolute_path,
                           const std::string &user_id,
-                          bool admin_rights,
+                          int admin_rights,
                           bool private_share);
   int GetShareDetails(const std::string &share_id,
                       fs::path *relative_path,
