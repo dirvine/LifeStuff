@@ -608,7 +608,7 @@ void MessageHandler::SignalShare(const InboxItem &inbox_item) {
     (*member_access_level_signal_)(inbox_item.receiver_public_id,
                                    inbox_item.sender_public_id,
                                    inbox_item.content[0],
-                                   0);
+                                   drive::kShareReadOnly);
     return;
   } else {
     Message message;
@@ -631,7 +631,7 @@ void MessageHandler::SignalShare(const InboxItem &inbox_item) {
     (*member_access_level_signal_)(inbox_item.receiver_public_id,
                                    inbox_item.sender_public_id,
                                    inbox_item.content[0],
-                                   1);
+                                   drive::kShareReadWrite);
 }
 
 void MessageHandler::SendEveryone(const InboxItem &message) {

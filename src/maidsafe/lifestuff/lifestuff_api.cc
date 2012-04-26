@@ -982,7 +982,7 @@ int LifeStuff::CreatePrivateShareFromExistingDirectory(
       return kGeneralError;
 
     return lifestuff_elements->user_storage->CreateShare(my_public_id,
-              share_dir, contacts, true, results);
+              share_dir, contacts, drive::kMsPrivateShare, results);
   } else {
     DLOG(ERROR) << "Target Directory doesn't exist";
     return kNoShareTarget;
@@ -1024,7 +1024,7 @@ int LifeStuff::CreateEmptyPrivateShare(
   *share_name = share_dir.filename().string();
 
   return lifestuff_elements->user_storage->CreateShare(my_public_id,
-            share_dir, contacts, true, results);
+            share_dir, contacts, drive::kMsPrivateShare, results);
 }
 
 int LifeStuff::GetPrivateShareList(const std::string &my_public_id,
@@ -1184,12 +1184,12 @@ int LifeStuff::EditPrivateShareMembers(const std::string &my_public_id,
       // -1 indicates removing the existing member
       // 0 indicates downgrading the existing member
       // 1 indicates upgrading the existing member
-      if ((*it).second == -1)
+      if ((*it).second == kShareRemover)
         members_to_remove.push_back(*itr);
       if (share_members[(*it).first] != (*it).second) {
-        if ((*it).second == 0)
+        if ((*it).second == kShareReadOnly)
             members_to_downgrade.insert(*it);
-        if ((*it).second == 1)
+        if ((*it).second >= kShareReadWrite)
             members_to_upgrade.insert(*it);
       }
     } else {
@@ -1206,14 +1206,14 @@ int LifeStuff::EditPrivateShareMembers(const std::string &my_public_id,
     lifestuff_elements->user_storage->AddShareUsers(my_public_id,
                                                     share_dir,
                                                     members_to_add,
-                                                    true,
+                                                    drive::kMsPrivateShare,
                                                     &add_users_results);
     results->insert(add_users_results.begin(), add_users_results.end());
   }
   // Remove users
   if (!members_to_remove.empty()) {
     result = lifestuff_elements->user_storage->RemoveShareUsers(
-                my_public_id, share_dir, members_to_remove, true);
+           my_public_id, share_dir, members_to_remove, drive::kMsPrivateShare);
     if (result == kSuccess)
       for (auto it = members_to_remove.begin();
            it != members_to_remove.end(); ++it)
@@ -1228,8 +1228,8 @@ int LifeStuff::EditPrivateShareMembers(const std::string &my_public_id,
     for (auto it = members_to_upgrade.begin();
               it != members_to_upgrade.end(); ++it) {
       result = lifestuff_elements->user_storage->SetShareUsersRights(
-                  my_public_id, share_dir, (*it).first, ((*it).second != 0),
-                  true);
+                          my_public_id, share_dir, (*it).first, (*it).second,
+                          drive::kMsPrivateShare);
       results->insert(std::make_pair((*it).first, result));
     }
   }
@@ -1237,7 +1237,7 @@ int LifeStuff::EditPrivateShareMembers(const std::string &my_public_id,
   if (!members_to_downgrade.empty()) {
     result = lifestuff_elements->user_storage->DowngradeShareUsersRights(
                     my_public_id, share_dir,
-                    members_to_downgrade, results, true);
+                    members_to_downgrade, results, drive::kMsPrivateShare);
     if (result != kSuccess)
       return result;
   }

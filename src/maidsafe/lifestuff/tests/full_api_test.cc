@@ -621,7 +621,8 @@ class PrivateSharesApiTest : public ::testing::TestWithParam<int> {
 
 INSTANTIATE_TEST_CASE_P(ReadOnlyReadWrite,
                         PrivateSharesApiTest,
-                        testing::Values(0, 1));
+                        testing::Values(kShareReadOnly,
+                                        kShareReadWrite));
 
 TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
@@ -695,7 +696,7 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
     EXPECT_TRUE(fs::is_directory(share_path, error_code));
 
     fs::path a_file_path(share_path / file_name1);
-    if (rights_ == 0) {
+    if (rights_ == kShareReadOnly) {
       EXPECT_FALSE(WriteFile(a_file_path, file_content2));
       EXPECT_FALSE(fs::exists(a_file_path, error_code));
       EXPECT_NE(0, error_code.value());
@@ -715,7 +716,7 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
                         kSharedStuff /
                         share_name1);
     fs::path a_file_path(share_path / file_name1);
-    if (rights_ == 0) {
+    if (rights_ == kShareReadOnly) {
       EXPECT_TRUE(WriteFile(a_file_path, file_content1));
       EXPECT_TRUE(fs::exists(a_file_path, error_code));
       EXPECT_EQ(0, error_code.value());
@@ -846,7 +847,7 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
     EXPECT_EQ(file_content1, file_in_share_content);
 
     fs::path a_file_path(share_path / file_name2);
-    if (rights_ == 0) {
+    if (rights_ == kShareReadOnly) {
       EXPECT_FALSE(WriteFile(a_file_path, file_content2));
       EXPECT_FALSE(fs::exists(a_file_path, error_code));
       EXPECT_NE(0, error_code.value());
@@ -867,7 +868,7 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
                         share_name1);
     fs::path a_file_path(share_path / file_name2);
     std::string file_stuff;
-    if (rights_ == 0) {
+    if (rights_ == kShareReadOnly) {
       EXPECT_FALSE(ReadFile(a_file_path, &file_stuff));
       EXPECT_TRUE(file_stuff.empty());
     } else {
@@ -1244,7 +1245,7 @@ TEST(IndependentFullTest, FUNC_MembershipDowngradePrivateShare) {
 
     // Create empty private share
     StringIntMap contacts, results;
-    contacts.insert(std::make_pair(public_id2, 1));  // Admin rights
+    contacts.insert(std::make_pair(public_id2, kShareReadWrite));
     results.insert(std::make_pair(public_id2, kGeneralError));
 
     EXPECT_EQ(kSuccess, test_elements1.CreateEmptyPrivateShare(public_id1,
@@ -1294,7 +1295,7 @@ TEST(IndependentFullTest, FUNC_MembershipDowngradePrivateShare) {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
 
     StringIntMap amendments, results;
-    amendments.insert(std::make_pair(public_id2, 0));
+    amendments.insert(std::make_pair(public_id2, kShareReadOnly));
     EXPECT_EQ(kSuccess, test_elements1.EditPrivateShareMembers(public_id1,
                                                                amendments,
                                                                share_name1,
@@ -1320,7 +1321,7 @@ TEST(IndependentFullTest, FUNC_MembershipDowngradePrivateShare) {
 
     EXPECT_EQ(1U, shares.size());
     EXPECT_FALSE(shares.find(share_name1) == shares.end());
-    EXPECT_EQ(0, shares[share_name1]);  // ro
+    EXPECT_EQ(kShareReadOnly, shares[share_name1]);
 
     fs::path share_path(test_elements2.mount_path() /
                         fs::path("/").make_preferred() /
@@ -1373,7 +1374,7 @@ TEST(IndependentFullTest, FUNC_MembershipUpgradePrivateShare) {
 
     // Create empty private share
     StringIntMap contacts, results;
-    contacts.insert(std::make_pair(public_id2, 0));  // Read only rights
+    contacts.insert(std::make_pair(public_id2, kShareReadOnly));
     results.insert(std::make_pair(public_id2, kGeneralError));
 
     EXPECT_EQ(kSuccess, test_elements1.CreateEmptyPrivateShare(public_id1,
@@ -1423,7 +1424,7 @@ TEST(IndependentFullTest, FUNC_MembershipUpgradePrivateShare) {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
 
     StringIntMap amendments, results;
-    amendments.insert(std::make_pair(public_id2, 1));  // rw
+    amendments.insert(std::make_pair(public_id2, kShareReadWrite));
     EXPECT_EQ(kSuccess, test_elements1.EditPrivateShareMembers(public_id1,
                                                                amendments,
                                                                share_name1,
@@ -1433,7 +1434,7 @@ TEST(IndependentFullTest, FUNC_MembershipUpgradePrivateShare) {
     EXPECT_EQ(kSuccess, test_elements1.GetPrivateShareMemebers(public_id1,
                                                                share_name1,
                                                                &results));
-    EXPECT_EQ(1U, results[public_id2]);  // rq now
+    EXPECT_EQ(kShareReadWrite, results[public_id2]);
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
@@ -1449,7 +1450,7 @@ TEST(IndependentFullTest, FUNC_MembershipUpgradePrivateShare) {
 
     EXPECT_EQ(1U, shares.size());
     EXPECT_FALSE(shares.find(share_name1) == shares.end());
-    EXPECT_EQ(1U, shares[share_name1]);
+    EXPECT_EQ(kShareReadWrite, shares[share_name1]);
 
     fs::path share_path(test_elements2.mount_path() /
                     fs::path("/").make_preferred() /

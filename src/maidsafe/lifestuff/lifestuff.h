@@ -81,6 +81,13 @@ enum LifeStuffState {
   kLoggedOut
 };
 
+enum PrivateShareRoles {
+  kShareRemover = drive::kShareRemover,
+  kShareReadOnly = drive::kShareReadOnly,
+  kShareReadWrite = drive::kShareReadWrite,
+  kShareOwner = drive::kShareOwner
+};
+
 const size_t kMaxChatMessageSize(1 * 1024 * 1024);
 const uint32_t kFileRecontructionLimit(20 * 1024 * 1024);
 const uint16_t kIntervalSeconds(5000);
@@ -93,7 +100,6 @@ const std::string kLiteralOnline("kOnline");
 const std::string kLiteralOffline("kOffline");
 const std::string kAppHomeDirectory(".lifestuff");
 const std::string kMyStuff("MyStuff");
-// const std::string kSharedStuff(drive::kMsShareRoot.filename().string());
 const std::string kSharedStuff("SharedStuff");
 const std::string kBlankProfilePicture("BlankPicture");
 
