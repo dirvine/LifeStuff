@@ -1228,7 +1228,8 @@ int LifeStuff::EditPrivateShareMembers(const std::string &my_public_id,
     for (auto it = members_to_upgrade.begin();
               it != members_to_upgrade.end(); ++it) {
       result = lifestuff_elements->user_storage->SetShareUsersRights(
-                  my_public_id, share_dir, (*it).first, (*it).second, true);
+                  my_public_id, share_dir, (*it).first, ((*it).second != 0),
+                  true);
       results->insert(std::make_pair((*it).first, result));
     }
   }

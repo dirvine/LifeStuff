@@ -815,9 +815,10 @@ int UserStorage::DowngradeShareUsersRights(
 
   for (auto it = contacts.begin(); it != contacts.end(); ++it)
     results->insert(std::make_pair((*it).first,
-                       drive_in_user_space_->SetShareUsersRights(relative_path,
-                                                              (*it).first,
-                                                              (*it).second)));
+                    drive_in_user_space_->SetShareUsersRights(
+                        relative_path,
+                        (*it).first,
+                        ((*it).second != 0))));
 
   asymm::Keys old_key_ring;
   std::string share_id;
@@ -852,15 +853,16 @@ int UserStorage::GetShareDetails(const std::string &share_id,
                                                share_users);
 }
 
-int UserStorage::MemberAccessChange(const std::string &/*my_public_id*/,
-                                const std::string &/*sender_public_username*/,
-                                const std::string &share_id,
-                                int access_right) {
+void UserStorage::MemberAccessChange(
+    const std::string &/*my_public_id*/,
+    const std::string &/*sender_public_username*/,
+    const std::string &share_id,
+    int access_right) {
   fs::path relative_path;
   int result(GetShareDetails(share_id, &relative_path,
                              nullptr, nullptr, nullptr));
   if (result != kSuccess)
-    return result;
+    return /*result*/;
 
   asymm::Keys share_keyring;
   if (access_right) {
@@ -872,7 +874,7 @@ int UserStorage::MemberAccessChange(const std::string &/*my_public_id*/,
     result = ReadHiddenFile(hidden_file, &serialised_share_data);
     if (result != kSuccess || serialised_share_data.empty()) {
       DLOG(ERROR) << "No such identifier found: " << result;
-      return result == kSuccess ? kGeneralError : result;
+      return/* result == kSuccess ? kGeneralError : result*/;
     }
     // remove the temp share invitation file no matter insertion succeed or not
     DeleteHiddenFile(hidden_file);
@@ -889,11 +891,11 @@ int UserStorage::MemberAccessChange(const std::string &/*my_public_id*/,
         asymm::DecodePublicKey(message.content(5), &(share_keyring.public_key));
     } else {
       DLOG(ERROR) << "Key not received when being upgraded";
-      return kNoKeyForUpgrade;
+      return /*kNoKeyForUpgrade*/;
     }
   }
 
-  return drive_in_user_space_->UpdateShare(relative_path,
+  /*return */drive_in_user_space_->UpdateShare(relative_path,
                                             share_id,
                                             nullptr,
                                             nullptr,
