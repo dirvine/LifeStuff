@@ -595,13 +595,14 @@ void MessageHandler::SignalShare(const InboxItem &inbox_item) {
     }
 
     (*share_update_signal_)(inbox_item.content[0],
-                        &inbox_item.content[3],
-                        &inbox_item.content[2],
-                        inbox_item.content.size() > 4 ? &key_ring : nullptr);
+                            &inbox_item.content[3],
+                            &inbox_item.content[2],
+                            inbox_item.content.size() > 4 ?
+                                &key_ring : nullptr);
   } else if (inbox_item.content[1] == "leave_share") {
     (*share_user_leaving_signal_)(inbox_item.content[0],
                                   inbox_item.sender_public_id);
-  } if ((inbox_item.content[1] == "member_access") &&
+  } else if ((inbox_item.content[1] == "member_access") &&
         (inbox_item.content.size() < 4)) {
     // downgrading
     (*member_access_level_signal_)(inbox_item.receiver_public_id,

@@ -668,11 +668,12 @@ int LifeStuff::ChangeProfilePicture(
 
   if (profile_picture_contents != kBlankProfilePicture) {
     // Write contents
-    fs::path profile_picture_path(lifestuff_elements->user_storage->mount_dir() /
-                                  fs::path("/").make_preferred() /
-                                  std::string(my_public_id +
-                                              "_profile_picture" +
-                                              drive::kMsHidden.string()));
+    fs::path profile_picture_path(
+        lifestuff_elements->user_storage->mount_dir() /
+        fs::path("/").make_preferred() /
+        std::string(my_public_id +
+                    "_profile_picture" +
+                    drive::kMsHidden.string()));
     if (WriteHiddenFile(profile_picture_path,
                         profile_picture_contents,
                         true) != kSuccess) {
