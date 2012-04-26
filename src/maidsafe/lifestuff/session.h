@@ -99,14 +99,12 @@ class Session {
       const std::string &public_id,
       const std::string &profile_picture_data_map);
 
-  int ParseKeyChain(const std::string &serialised_keyring,
-                    const std::string &serialised_selectables);
-  void SerialiseKeyChain(std::string *serialised_keyring,
-                         std::string *serialised_selectables);
+  int ParseDataAtlas(const std::string &serialised_data_atlas);
+  int SerialiseDataAtlas(std::string *serialised_data_atlas);
 
-  friend void GetKeyring(const std::string&,
-                         std::shared_ptr<Session>,
-                         asymm::Keys*);
+//   friend void GetKeyring(const std::string&,
+//                          std::shared_ptr<Session>,
+//                          asymm::Keys*);
   friend void GetPublicKey(const std::string&,
                            std::shared_ptr<Session>,
                            asymm::PublicKey*);
@@ -131,6 +129,10 @@ class Session {
   void set_pin(const std::string &pin);
   void set_password(const std::string &password);
   bool CreateTestPackets();
+  int ParseKeyChain(const std::string &serialised_keyring,
+                    const std::string &serialised_selectables);
+  void SerialiseKeyChain(std::string *serialised_keyring,
+                         std::string *serialised_selectables);
 
   std::shared_ptr<UserDetails> user_details_;
   std::shared_ptr<passport::Passport> passport_;

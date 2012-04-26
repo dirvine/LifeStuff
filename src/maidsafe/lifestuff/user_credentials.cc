@@ -73,120 +73,6 @@ UserCredentials::UserCredentials(
 
 UserCredentials::~UserCredentials() {}
 
-int UserCredentials::ParseDa() {
-  DataAtlas data_atlas;
-  if (serialised_da_.empty() && surrogate_serialised_da_.empty()) {
-    DLOG(ERROR) << "TMID brought is empty.";
-    return -9000;
-  }
-  if (!data_atlas.ParseFromString(serialised_da_)) {
-    DLOG(ERROR) << "TMID doesn't parse.";
-    return -9000;
-  }
-  if (!data_atlas.has_timestamp()) {
-    DLOG(ERROR) << "DA doesn't have a timestamp.";
-    return -9001;
-  }
-  if (!data_atlas.has_unique_user_id() || !data_atlas.has_root_parent_id()) {
-    DLOG(ERROR) << "DA doesn't have keys for root directory.";
-    return -9001;
-  }
-  session_->set_unique_user_id(data_atlas.unique_user_id());
-  session_->set_root_parent_id(data_atlas.root_parent_id());
-  DLOG(INFO) << "UUID: " << Base32Substr(session_->unique_user_id());
-  DLOG(INFO) << "PID: " << Base32Substr(session_->root_parent_id());
-
-  if (!data_atlas.has_serialised_keyring()) {
-    DLOG(ERROR) << "Missing serialised keyring.";
-    return -9003;
-  }
-
-  int n(session_->ParseKeyChain(data_atlas.serialised_keyring(),
-                                data_atlas.serialised_selectables()));
-  if (n != kSuccess) {
-    DLOG(ERROR) << "Failed ParseKeyChain: " << n;
-    return -9003;
-  }
-
-  n = authentication_->SetLoggedInData(serialised_da_,
-                                       surrogate_serialised_da_);
-  if (n != kSuccess) {
-    DLOG(ERROR) << "Failed SetLoggedInData: " << n;
-    return -9003;
-  }
-
-  std::string pub_name;
-  for (int n(0); n < data_atlas.public_usernames_size(); ++n) {
-    pub_name = data_atlas.public_usernames(n).own_public_username();
-    session_->contact_handler_map().insert(
-        std::make_pair(pub_name,
-                       std::make_shared<ContactsHandler>()));
-    session_->set_profile_picture_data_map(
-        pub_name,
-        data_atlas.public_usernames(n).own_profile_picture_data_map());
-    for (int a(0); a < data_atlas.public_usernames(n).contacts_size(); ++a) {
-      Contact c(data_atlas.public_usernames(n).contacts(a));
-      int res(session_->contact_handler_map()[pub_name]->AddContact(c));
-      DLOG(ERROR) << "Result of adding to own(" << pub_name << ") - "
-                  << c.public_username << ": " << res;
-    }
-  }
-
-  return 0;
-}
-
-int UserCredentials::SerialiseDa() {
-  DataAtlas data_atlas;
-  data_atlas.set_unique_user_id(session_->unique_user_id());
-  data_atlas.set_root_parent_id(session_->root_parent_id());
-  DLOG(INFO) << "UUID: " << Base32Substr(session_->unique_user_id());
-  DLOG(INFO) << "PID: " << Base32Substr(session_->root_parent_id());
-  data_atlas.set_timestamp(boost::lexical_cast<std::string>(
-      GetDurationSinceEpoch().total_microseconds()));
-  DLOG(INFO) << "data_atlas.set_timestamp: " << data_atlas.timestamp();
-
-  std::string serialised_keyring, serialised_selectables;
-  session_->SerialiseKeyChain(&serialised_keyring, &serialised_selectables);
-  if (serialised_keyring.empty()) {
-    DLOG(ERROR) << "Serialising keyring failed.";
-    return -1;
-  }
-  data_atlas.set_serialised_keyring(serialised_keyring);
-  data_atlas.set_serialised_selectables(serialised_selectables);
-
-  std::vector<Contact> contacts;
-  for (auto it(session_->contact_handler_map().begin());
-       it != session_->contact_handler_map().end();
-       ++it) {
-    contacts.clear();
-    PublicUsername *pub_name = data_atlas.add_public_usernames();
-    pub_name->set_own_public_username((*it).first);
-    pub_name->set_own_profile_picture_data_map(
-        session_->profile_picture_data_map((*it).first));
-    (*it).second->OrderedContacts(&contacts, kAlphabetical, kRequestSent |
-                                                            kPendingResponse |
-                                                            kConfirmed |
-                                                            kBlocked);
-    for (size_t n(0); n < contacts.size(); ++n) {
-      PublicContact *pc = pub_name->add_contacts();
-      pc->set_public_username(contacts[n].public_username);
-      pc->set_mpid_name(contacts[n].mpid_name);
-      pc->set_mmid_name(contacts[n].mmid_name);
-      pc->set_status(contacts[n].status);
-      pc->set_rank(contacts[n].rank);
-      pc->set_last_contact(contacts[n].last_contact);
-      pc->set_profile_picture_data_map(contacts[n].profile_picture_data_map);
-      DLOG(ERROR) << "Added contact " << contacts[n].public_username
-                  << " of own pubname " << (*it).first;
-    }
-  }
-
-  serialised_da_.clear();
-  data_atlas.SerializeToString(&serialised_da_);
-
-  return 0;
-}
-
 bool UserCredentials::CreateUser(const std::string &username,
                                  const std::string &pin,
                                  const std::string &password) {
@@ -206,27 +92,23 @@ bool UserCredentials::CreateUser(const std::string &username,
     DLOG(INFO) << "authentication_->CreateUserSysPackets DONE.";
   }
 
-  int n = SerialiseDa();
+  int n = session_->SerialiseDataAtlas(&serialised_data_atlas_);
   if (n != 0) {
     DLOG(ERROR) << "Failed to serialise DA.";
     return false;
   }
-  std::string serialised_da(serialised_da_);
 
   // Need different timestamps
   Sleep(boost::posix_time::milliseconds(1));
-  n = SerialiseDa();
+  n = session_->SerialiseDataAtlas(&surrogate_serialised_data_atlas_);
   if (n != 0) {
     DLOG(ERROR) << "Failed to serialise DA.";
     return false;
   }
-  std::string surrogate_serialised_da(serialised_da_);
-
-  serialised_da_ = serialised_da;
 
   result = authentication_->CreateTmidPacket(password,
-                                             serialised_da,
-                                             surrogate_serialised_da);
+                                             serialised_data_atlas_,
+                                             surrogate_serialised_data_atlas_);
   if (result != kSuccess) {
     DLOG(ERROR) << "Cannot create tmid packet.";
     session_->Reset();
@@ -248,7 +130,7 @@ int UserCredentials::CheckUserExists(const std::string &username,
   }
   session_->Reset();
   session_->set_def_con_level(kDefCon1);
-  serialised_da_.clear();
+
   return authentication_->GetUserInfo(username, pin);
 }
 
@@ -258,22 +140,16 @@ bool UserCredentials::ValidateUser(const std::string &password) {
     return false;
   }
 
-  std::string serialised_data_atlas, surrogate_serialised_data_atlas;
   authentication_->GetMasterDataMap(password,
-                          &serialised_data_atlas,
-                          &surrogate_serialised_data_atlas);
+                                    &serialised_data_atlas_,
+                                    &surrogate_serialised_data_atlas_);
 
-  if (!serialised_data_atlas.empty()) {
-    DLOG(INFO) << "UserCredentials::ValidateUser - Using TMID";
-    serialised_da_ = serialised_data_atlas;
-    surrogate_serialised_da_ = surrogate_serialised_data_atlas;
-  } else if (!surrogate_serialised_data_atlas.empty()) {
-    DLOG(INFO) << "UserCredentials::ValidateUser - Using STMID";
-    surrogate_serialised_da_ = surrogate_serialised_data_atlas;
-  } else {
-    // Password validation failed
+  if (serialised_data_atlas_.empty() &&
+      surrogate_serialised_data_atlas_.empty()) {
     DLOG(INFO) << "UserCredentials::ValidateUser - Invalid password";
     return false;
+  } else if (!serialised_data_atlas_.empty()) {
+
   }
 
   session_->set_password(password);

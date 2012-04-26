@@ -180,6 +180,106 @@ bool Session::CreateTestPackets() {
   return true;
 }
 
+int Session::ParseDataAtlas(const std::string &serialised_data_atlas) {
+  DataAtlas data_atlas;
+  if (serialised_data_atlas.empty()) {
+    DLOG(ERROR) << "TMID brought is empty.";
+    return -9000;
+  }
+  if (!data_atlas.ParseFromString(serialised_data_atlas)) {
+    DLOG(ERROR) << "TMID doesn't parse.";
+    return -9000;
+  }
+
+  set_unique_user_id(data_atlas.drive_data.unique_user_id());
+  set_root_parent_id(data_atlas.drive_data.root_parent_id());
+
+  int n(ParseKeyChain(data_atlas.passport_data().serialised_keyring(),
+                      data_atlas.passport_data().serialised_selectables()));
+  if (n != kSuccess) {
+    DLOG(ERROR) << "Failed ParseKeyChain: " << n;
+    return -9003;
+  }
+
+//   n = authentication_->SetLoggedInData(serialised_da_,
+//                                        surrogate_serialised_da_);
+//   if (n != kSuccess) {
+//     DLOG(ERROR) << "Failed SetLoggedInData: " << n;
+//     return -9003;
+//   }
+
+  std::string pub_name;
+  for (int y(0); y < data_atlas.public_ids_size(); ++y) {
+    pub_name = data_atlas.public_ids(n).public_id();
+    contact_handler_map().insert(
+        std::make_pair(pub_name,
+                       std::make_shared<ContactsHandler>()));
+    set_profile_picture_data_map(
+        pub_name,
+        data_atlas.public_ids(y).profile_picture_data_map());
+    for (int a(0); a < data_atlas.public_ids(a).contacts_size(); ++a) {
+      Contact c(data_atlas.public_ids(y).contacts(a));
+      int result(contact_handler_map()[pub_name]->AddContact(c));
+      DLOG(INFO) << "Result of adding contact " << c.public_username << " to "
+                 << pub_name << ":  " << result;
+    }
+  }
+
+  return 0;
+}
+
+int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
+  BOOST_ASSERT(serialised_data_atlas);
+  DataAtlas data_atlas;
+  DriveData &drive_data(data_atlas.mutable_drive_data());
+  drive_data.set_unique_user_id(unique_user_id());
+  drive_data.set_root_parent_id(root_parent_id());
+
+  data_atlas.set_timestamp(boost::lexical_cast<std::string>(
+      GetDurationSinceEpoch().total_microseconds()));
+
+  std::string serialised_keyring, serialised_selectables;
+  SerialiseKeyChain(&serialised_keyring, &serialised_selectables);
+  if (serialised_keyring.empty()) {
+    DLOG(ERROR) << "Serialising keyring failed.";
+    return -1;
+  }
+
+  PassportData &passport_data(data_atlas.mutable_passport_data());
+  passport_data.set_serialised_keyring(serialised_keyring);
+  passport_data.set_serialised_selectables(serialised_selectables);
+
+  std::vector<Contact> contacts;
+  for (auto it(contact_handler_map().begin());
+       it != contact_handler_map().end();
+       ++it) {
+    contacts.clear();
+    PublicId &pub_id(data_atlas.add_public_ids());
+    pub_id.set_public_id((*it).first);
+    pub_id.set_profile_picture_data_map(profile_picture_data_map((*it).first));
+    (*it).second->OrderedContacts(&contacts, kAlphabetical, kRequestSent |
+                                                            kPendingResponse |
+                                                            kConfirmed |
+                                                            kBlocked);
+    for (size_t n(0); n < contacts.size(); ++n) {
+      PublicContact &pc(pub_id.add_contacts());
+      pc.set_public_username(contacts[n].public_username);
+      pc.set_mpid_name(contacts[n].mpid_name);
+      pc.set_inbox_name(contacts[n].inbox_name);
+      pc.set_status(contacts[n].status);
+      pc.set_rank(contacts[n].rank);
+      pc.set_last_contact(contacts[n].last_contact);
+      pc.set_profile_picture_data_map(contacts[n].profile_picture_data_map);
+      DLOG(INFO) << "Added contact " << contacts[n].public_username
+                  << " to " << (*it).first << " map.";
+    }
+  }
+
+  BOOST_ASSERT(data_atlas.SerializeToString(serialised_data_atlas));
+
+  return 0;
+}
+
 }  // namespace lifestuff
 
 }  // namespace maidsafe

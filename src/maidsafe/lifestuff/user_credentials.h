@@ -94,15 +94,11 @@ class UserCredentials {
   UserCredentials &operator=(const UserCredentials&);
   UserCredentials(const UserCredentials&);
 
-  int ParseDa();
-  int SerialiseDa();
-
   std::shared_ptr<Session> session_;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<Authentication> authentication_;
-  std::string serialised_da_, surrogate_serialised_da_;
-  bool logging_out_;
-  bool logged_in_;
+  std::string serialised_data_atlas_, surrogate_serialised_data_atlas_;
+  bool logging_out_, logged_in_;
 };
 
 }  // namespace lifestuff

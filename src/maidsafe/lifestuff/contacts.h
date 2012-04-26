@@ -61,14 +61,14 @@ struct Contact {
   Contact();
   Contact(const std::string &public_username_in,
           const std::string &mpid_name_in,
-          const std::string &mmid_name_in,
+          const std::string &inbox_name_in,
           const std::string &profile_picture_data_map,
           const asymm::PublicKey &mpid_public_key_in,
           const asymm::PublicKey &mmid_public_key_in,
           ContactStatus status);
   explicit Contact(const PublicContact &contact);
 
-  std::string public_username, mpid_name, mmid_name, profile_picture_data_map;
+  std::string public_username, mpid_name, inbox_name, profile_picture_data_map;
   asymm::PublicKey mpid_public_key, mmid_public_key;
   ContactStatus status;
   uint32_t rank;
@@ -116,7 +116,7 @@ class ContactsHandler {
   ContactsHandler() : contact_set_() { }
   int AddContact(const std::string &public_username,
                  const std::string &mpid_name,
-                 const std::string &mmid_name,
+                 const std::string &inbox_name,
                  const std::string &profile_picture_data_map,
                  const asymm::PublicKey &mpid_public_key,
                  const asymm::PublicKey &mmid_public_key,
@@ -129,7 +129,7 @@ class ContactsHandler {
   int UpdateMpidName(const std::string &public_username,
                      const std::string &new_mpid_name);
   int UpdateMmidName(const std::string &public_username,
-                     const std::string &new_mmid_name);
+                     const std::string &new_inbox_name);
   int UpdateProfilePictureDataMap(const std::string &public_username,
                                   const std::string &profile_picture_data_map);
   int UpdateMpidPublicKey(const std::string &public_username,

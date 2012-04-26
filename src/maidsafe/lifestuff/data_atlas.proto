@@ -3,8 +3,8 @@ package maidsafe.lifestuff;
 // Message used to send owner's contact info to recipient for acceptance into
 // recipient's contact list
 message Introduction {
-  required bytes mmid_name = 1;
-  required bytes public_username = 2;
+  required bytes inbox_name = 1;
+  required bytes public_id = 2;
   required bytes profile_picture_data_map = 3;
 }
 
@@ -12,37 +12,45 @@ message Introduction {
 // annotating files, etc.
 message Message {
   required uint32 type = 1;
-  required bytes sender_public_username = 4;
-  required bytes receiver_public_username = 5;
-  repeated bytes content = 6;
-  optional bytes timestamp = 7;
+  required bytes sender_public_id = 2;
+  required bytes receiver_public_id = 3;
+  repeated bytes content = 4;
+  optional bytes timestamp = 5;
 }
 
 message PublicContact {
-  required bytes public_username = 2;
-  optional bytes mpid_name = 3;
-  required bytes mmid_name = 4;
+  required bytes public_username = 1;
+  optional bytes mpid_name = 2;
+  required bytes inbox_name = 3;
   optional bytes profile_picture_data_map = 5;
   optional bytes mpid_public_key = 6;
-  optional bytes mmid_public_key = 7;
+  optional bytes inbox_public_key = 7;
   required uint32 status = 8;
   required uint32 rank = 9;
   required uint32 last_contact = 10;
   optional bytes pointer_to_info = 11;
 }
 
-message PublicUsername {
-  required bytes own_public_username = 1;
-  required bytes own_profile_picture_data_map = 2;
+message PublicId {
+  required bytes public_id = 1;
+  required bytes profile_picture_data_map = 2;
   repeated PublicContact contacts = 3;
 }
 
+message PassportData {
+  required bytes serialised_keyring = 3;
+  required bytes serialised_selectables = 4;
+}
+
+message DriveData {
+  required bytes unique_user_id = 1;
+  required bytes root_parent_id = 2;
+}
+
 message DataAtlas {
-  optional bytes unique_user_id = 1;
-  optional bytes root_parent_id = 2;
-  optional bytes serialised_keyring = 3;
-  optional bytes serialised_selectables = 4;
-  optional bytes timestamp = 5;
-  repeated PublicUsername public_usernames = 7;
+  required DriveData drive_data = 1;
+  required PassportData passport_data = 2;
+  required bytes timestamp = 3;
+  repeated PublicId public_ids = 4;
 }
 

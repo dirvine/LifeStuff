@@ -37,7 +37,7 @@ namespace lifestuff {
 Contact::Contact()
     : public_username(),
       mpid_name(),
-      mmid_name(),
+      inbox_name(),
       profile_picture_data_map(),
       mpid_public_key(),
       mmid_public_key(),
@@ -48,14 +48,14 @@ Contact::Contact()
 
 Contact::Contact(const std::string &public_name_in,
                  const std::string &mpid_name_in,
-                 const std::string &mmid_name_in,
+                 const std::string &inbox_name_in,
                  const std::string &profile_picture_data_map_in,
                  const asymm::PublicKey &mpid_public_key_in,
                  const asymm::PublicKey &mmid_public_key_in,
                  ContactStatus status)
     : public_username(public_name_in),
       mpid_name(mpid_name_in),
-      mmid_name(mmid_name_in),
+      inbox_name(inbox_name_in),
       profile_picture_data_map(profile_picture_data_map_in),
       mpid_public_key(mpid_public_key_in),
       mmid_public_key(mmid_public_key_in),
@@ -66,7 +66,7 @@ Contact::Contact(const std::string &public_name_in,
 Contact::Contact(const PublicContact &contact)
     : public_username(contact.public_username()),
       mpid_name(),
-      mmid_name(contact.mmid_name()),
+      inbox_name(contact.inbox_name()),
       profile_picture_data_map(contact.profile_picture_data_map()),
       mpid_public_key(),
       mmid_public_key(),
@@ -78,7 +78,7 @@ Contact::Contact(const PublicContact &contact)
 //  ContactsHandler
 int ContactsHandler::AddContact(const std::string &public_username,
                                 const std::string &mpid_name,
-                                const std::string &mmid_name,
+                                const std::string &inbox_name,
                                 const std::string &profile_picture_data_map,
                                 const asymm::PublicKey &mpid_public_key,
                                 const asymm::PublicKey &mmid_public_key,
@@ -87,7 +87,7 @@ int ContactsHandler::AddContact(const std::string &public_username,
                                 const uint32_t &last_contact) {
   Contact contact(public_username,
                   mpid_name,
-                  mmid_name,
+                  inbox_name,
                   profile_picture_data_map,
                   mpid_public_key,
                   mmid_public_key,
@@ -134,7 +134,7 @@ int ContactsHandler::UpdateContact(const Contact &contact) {
   Contact local_contact = *it;
   local_contact.public_username = contact.public_username;
   local_contact.mpid_name = contact.mpid_name;
-  local_contact.mmid_name = contact.mmid_name;
+  local_contact.inbox_name = contact.inbox_name;
   local_contact.mpid_public_key = contact.mpid_public_key;
   local_contact.mmid_public_key = contact.mmid_public_key;
   local_contact.status = contact.status;
@@ -173,7 +173,7 @@ int ContactsHandler::UpdateMpidName(const std::string &public_username,
 }
 
 int ContactsHandler::UpdateMmidName(const std::string &public_username,
-                                    const std::string &new_mmid_name) {
+                                    const std::string &new_inbox_name) {
   ContactSet::iterator it = contact_set_.find(public_username);
   if (it == contact_set_.end()) {
     DLOG(ERROR) << "Contact(" << public_username << ") not present in list.";
@@ -181,7 +181,7 @@ int ContactsHandler::UpdateMmidName(const std::string &public_username,
   }
 
   Contact contact = *it;
-  contact.mmid_name = new_mmid_name;
+  contact.inbox_name = new_inbox_name;
 
   if (!contact_set_.replace(it, contact)) {
     DLOG(ERROR) << "Failed to replace contact in set "
