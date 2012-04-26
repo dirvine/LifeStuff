@@ -111,7 +111,7 @@ class UserStorageTest : public testing::TestWithParam<bool> {
     EXPECT_EQ(kSuccess, user_storage->DeleteHiddenFile(hidden_file));
 
     std::string share_name(relative_path.filename().string());
-    fs::path share_dir(user_storage->mount_dir() /
+    fs::path share_dir(user_storage->mount_dir() / drive::kMsShareRoot /
                       fs::path("/").make_preferred() / share_name);
     EXPECT_EQ(kSuccess, user_storage->InsertShare(share_dir, share_id,
                                               sender, &share_name,
@@ -152,7 +152,7 @@ class UserStorageTest : public testing::TestWithParam<bool> {
     fs::path relative_path;
     user_storage->GetShareDetails(share_id, &relative_path,
                                   nullptr, nullptr, nullptr);
-    fs::path share_dir(user_storage->mount_dir() /
+    fs::path share_dir(user_storage->mount_dir() / drive::kMsShareRoot /
                        fs::path("/").make_preferred() /
                        relative_path.filename());
     EXPECT_EQ(kSuccess, user_storage->RemoveShare(share_dir));
@@ -294,7 +294,7 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
   EXPECT_TRUE(fs::create_directories(share_root_directory_2, error_code))
               << share_root_directory_2 << ": " << error_code.message();
 
-  fs::path directory1(user_storage2_->mount_dir() /
+  fs::path directory1(user_storage2_->mount_dir() / drive::kMsShareRoot /
                       fs::path("/").make_preferred() /
                       tail);
   EXPECT_FALSE(fs::exists(directory1, error_code))
@@ -347,7 +347,7 @@ TEST_P(UserStorageTest, FUNC_LeaveShare) {
   EXPECT_TRUE(fs::create_directories(share_root_directory_2, error_code))
               << share_root_directory_2 << ": " << error_code.message();
 
-  fs::path directory1(user_storage2_->mount_dir() /
+  fs::path directory1(user_storage2_->mount_dir() / drive::kMsShareRoot /
                       fs::path("/").make_preferred() /
                       tail);
   EXPECT_FALSE(fs::exists(directory1, error_code))
@@ -422,7 +422,7 @@ TEST_P(UserStorageTest, FUNC_AddUser) {
   EXPECT_TRUE(fs::create_directories(share_root_directory_2, error_code))
               << share_root_directory_2 << ": " << error_code.message();
 
-  fs::path directory1(user_storage2_->mount_dir() /
+  fs::path directory1(user_storage2_->mount_dir() / drive::kMsShareRoot /
                       fs::path("/").make_preferred() /
                       tail);
 
@@ -495,7 +495,7 @@ TEST_P(UserStorageTest, FUNC_AddReadWriteUser) {
                   user_storage2_, args::_1, args::_2)));
 
   user_storage2_->MountDrive(*mount_dir_, session2_, true);
-  fs::path directory1(user_storage2_->mount_dir() /
+  fs::path directory1(user_storage2_->mount_dir() / drive::kMsShareRoot /
                       fs::path("/").make_preferred() /
                       tail);
   Sleep(interval_ * 2);
@@ -572,7 +572,7 @@ TEST_P(UserStorageTest, FUNC_UpgradeUserToReadWrite) {
   EXPECT_TRUE(fs::create_directories(share_root_directory_2, error_code))
               << share_root_directory_2 << ": " << error_code.message();
 
-  fs::path directory1(user_storage2_->mount_dir() /
+  fs::path directory1(user_storage2_->mount_dir() / drive::kMsShareRoot /
                       fs::path("/").make_preferred() /
                       tail);
   EXPECT_EQ(kSuccess,
@@ -656,7 +656,7 @@ TEST_P(UserStorageTest, FUNC_StopShareByOwner) {
   EXPECT_TRUE(fs::create_directories(share_root_directory_2, error_code))
               << share_root_directory_2 << ": " << error_code.message();
 
-  fs::path directory1(user_storage2_->mount_dir() /
+  fs::path directory1(user_storage2_->mount_dir() / drive::kMsShareRoot /
                       fs::path("/").make_preferred() /
                       tail);
   EXPECT_FALSE(fs::exists(directory1, error_code)) << directory1;
@@ -746,7 +746,7 @@ TEST_P(UserStorageTest, FUNC_RemoveUserByOwner) {
   EXPECT_TRUE(fs::create_directories(share_root_directory_2, error_code))
               << share_root_directory_2 << ": " << error_code.message();
 
-  fs::path directory1(user_storage2_->mount_dir() /
+  fs::path directory1(user_storage2_->mount_dir() / drive::kMsShareRoot /
                       fs::path("/").make_preferred() /
                       tail);
   EXPECT_FALSE(fs::exists(directory1, error_code)) << directory1;
@@ -888,7 +888,7 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
   EXPECT_TRUE(fs::create_directories(share_root_directory_2, error_code))
               << share_root_directory_2 << ": " << error_code.message();
 
-  fs::path directory1(user_storage2_->mount_dir() /
+  fs::path directory1(user_storage2_->mount_dir() / drive::kMsShareRoot /
                       fs::path("/").make_preferred() /
                       tail);
   EXPECT_FALSE(fs::exists(directory1, error_code)) << directory1;
@@ -921,7 +921,7 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
   EXPECT_TRUE(fs::create_directories(share_root_directory_3, error_code))
               << share_root_directory_3 << ": " << error_code.message();
 
-  fs::path directory2(user_storage3->mount_dir() /
+  fs::path directory2(user_storage3->mount_dir() / drive::kMsShareRoot /
                       fs::path("/").make_preferred() /
                       tail);
   EXPECT_FALSE(fs::exists(directory2, error_code)) << directory2;
