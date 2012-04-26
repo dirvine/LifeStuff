@@ -403,7 +403,7 @@ int UserStorage::StopShare(const std::string &sender_public_username,
                                                  "",
                                                  key_ring,
                                                  sender_public_username,
-                                                 true,  // value doesn't matter
+                                                 drive::kMsPrivateShare,  // value doesn't matter  // NOLINT
                                                  &directory_id);
   if (result != kSuccess)
     return result;
@@ -441,7 +441,7 @@ int UserStorage::RemoveShare(const fs::path& absolute_path,
     return kMessageHandlerNotInitialised;
   }
 
-  // when own name non provided, this indicates being asked to leave
+  // when own name not provided, this indicates being asked to leave
   // i.e. no notification of leaving to the owner required to be sent
   if (sender_public_username.empty()) {
     return drive_in_user_space_->RemoveShare(
@@ -608,7 +608,7 @@ int UserStorage::RemoveShareUsers(const std::string &sender_public_username,
 
   StringIntMap removed_contacts;
   for (auto it = user_ids.begin(); it != user_ids.end(); ++it) {
-    removed_contacts.insert(std::make_pair(*it, false));
+    removed_contacts.insert(std::make_pair(*it, drive::kShareReadOnly));
   }
   InformContactsOperation<RemoveShareTag>(sender_public_username,
                                           removed_contacts,
@@ -719,7 +719,7 @@ int UserStorage::MovingShare(const std::string &sender_public_username,
 
 int UserStorage::GetShareUsersRights(const fs::path &absolute_path,
                                      const std::string &user_id,
-                                     bool *admin_rights) const {
+                                     int *admin_rights) const {
   if (!message_handler_) {
     DLOG(WARNING) << "Uninitialised message handler.";
     return kMessageHandlerNotInitialised;
@@ -734,7 +734,7 @@ int UserStorage::GetShareUsersRights(const fs::path &absolute_path,
 int UserStorage::SetShareUsersRights(const std::string &sender_public_username,
                                      const fs::path &absolute_path,
                                      const std::string &user_id,
-                                     bool admin_rights,
+                                     int admin_rights,
                                      bool private_share) {
   if (!message_handler_) {
     DLOG(WARNING) << "Uninitialised message handler.";
@@ -742,7 +742,7 @@ int UserStorage::SetShareUsersRights(const std::string &sender_public_username,
   }
 
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
-  bool old_admin_right;
+  int old_admin_right;
   int result(drive_in_user_space_->GetShareUsersRights(relative_path,
                                                        user_id,
                                                        &old_admin_right));
@@ -785,7 +785,7 @@ int UserStorage::SetShareUsersRights(const std::string &sender_public_username,
 
   // In case of downgrading : generate new share_id/key and inform all
   // In case of upgrading : just inform the contact of the share key_ring.
-  if (old_admin_right && (!admin_rights)) {
+  if (old_admin_right > admin_rights) {
     result = MovingShare(sender_public_username, share_id, relative_path,
                          key_ring, private_share, &share_id);
     if (result != kSuccess)
@@ -863,7 +863,7 @@ int UserStorage::MemberAccessChange(const std::string &/*my_public_id*/,
     return result;
 
   asymm::Keys share_keyring;
-  if (access_right) {
+  if (access_right >= drive::kShareReadWrite) {
     std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
     fs::path hidden_file(mount_dir_ / drive::kMsShareRoot /
                         fs::path("/").make_preferred() /
@@ -879,7 +879,6 @@ int UserStorage::MemberAccessChange(const std::string &/*my_public_id*/,
 
     Message message;
     message.ParseFromString(serialised_share_data);
-
 
     if (message.content_size() > 4) {
         share_keyring.identity = message.content(2);
@@ -1014,7 +1013,7 @@ int UserStorage::InformContactsOperation(
   for (auto it = contacts.begin(); it != contacts.end(); ++it) {
     // do nothing if trying to send a msg to itself
     if ((*it).first != sender_public_username) {
-      if ((*it).second) {
+      if ((*it).second >= drive::kShareReadWrite) {
         admin_message.receiver_public_id = (*it).first;
         result = message_handler_->Send(sender_public_username,
                                         (*it).first,

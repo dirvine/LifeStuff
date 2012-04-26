@@ -255,7 +255,8 @@ class UserStorageTest : public testing::TestWithParam<bool> {
 };
 
 INSTANTIATE_TEST_CASE_P(PivateAndOpenShareTests, UserStorageTest,
-                        testing::Values(false, true));
+                        testing::Values(drive::kMsOpenShare,
+                                        drive::kMsPrivateShare));
 
 TEST_P(UserStorageTest, FUNC_CreateShare) {
   user_storage1_->MountDrive(*mount_dir_, session1_, true);
@@ -267,7 +268,7 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
               << share_root_directory_1 << ": " << error_code.message();
 
   StringIntMap users;
-  users.insert(std::make_pair(pub_name2_, 0));
+  users.insert(std::make_pair(pub_name2_, drive::kShareReadOnly));
   std::string tail;
   fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir() /
                                               fs::path("/").make_preferred(),
@@ -319,7 +320,7 @@ TEST_P(UserStorageTest, FUNC_LeaveShare) {
               << share_root_directory_1 << ": " << error_code.message();
 
   StringIntMap users;
-  users.insert(std::make_pair(pub_name2_, 0));
+  users.insert(std::make_pair(pub_name2_, drive::kShareReadOnly));
   std::string tail;
   fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir() /
                                               fs::path("/").make_preferred(),
@@ -440,7 +441,7 @@ TEST_P(UserStorageTest, FUNC_AddUser) {
   Sleep(interval_ * 2);
   EXPECT_TRUE(fs::exists(directory0, error_code)) << directory0
                                                   << error_code.message();
-  users.insert(std::make_pair(pub_name2_, 0));
+  users.insert(std::make_pair(pub_name2_, drive::kShareReadOnly));
   EXPECT_EQ(kSuccess,
             user_storage1_->AddShareUsers(pub_name1_, directory0,
                                           users, private_share_));
@@ -460,7 +461,7 @@ TEST_P(UserStorageTest, FUNC_AddUser) {
   user_storage2_->UnMountDrive();
 }
 
-TEST_P(UserStorageTest, FUNC_AddAdminUser) {
+TEST_P(UserStorageTest, FUNC_AddReadWriteUser) {
   user_storage1_->MountDrive(*mount_dir_, session1_, true);
   Sleep(interval_ * 2);
   boost::system::error_code error_code;
@@ -470,7 +471,7 @@ TEST_P(UserStorageTest, FUNC_AddAdminUser) {
               << share_root_directory_1 << ": " << error_code.message();
 
   StringIntMap users;
-  users.insert(std::make_pair(pub_name2_, 1));
+  users.insert(std::make_pair(pub_name2_, drive::kShareReadWrite));
   std::string tail;
   fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir() /
                                               fs::path("/").make_preferred(),
@@ -527,7 +528,7 @@ TEST_P(UserStorageTest, FUNC_AddAdminUser) {
   Sleep(interval_ * 2);
 }
 
-TEST_P(UserStorageTest, FUNC_UpgradeUserToAdmin) {
+TEST_P(UserStorageTest, FUNC_UpgradeUserToReadWrite) {
   user_storage1_->MountDrive(*mount_dir_, session1_, true);
   Sleep(interval_ * 2);
   boost::system::error_code error_code;
@@ -537,7 +538,7 @@ TEST_P(UserStorageTest, FUNC_UpgradeUserToAdmin) {
               << share_root_directory_1 << ": " << error_code.message();
 
   StringIntMap users;
-  users.insert(std::make_pair(pub_name2_, 0));
+  users.insert(std::make_pair(pub_name2_, drive::kShareReadOnly));
   std::string tail;
   fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir() /
                                             fs::path("/").make_preferred(),
@@ -591,7 +592,7 @@ TEST_P(UserStorageTest, FUNC_UpgradeUserToAdmin) {
             user_storage1_->SetShareUsersRights(pub_name1_,
                                                 directory0,
                                                 pub_name2_,
-                                                true,
+                                                drive::kShareReadWrite,
                                                 private_share_));
   user_storage1_->UnMountDrive();
   Sleep(interval_ * 2);
@@ -619,7 +620,7 @@ TEST_P(UserStorageTest, FUNC_StopShareByOwner) {
               << share_root_directory_1 << ": " << error_code.message();
 
   StringIntMap users;
-  users.insert(std::make_pair(pub_name2_, 0));
+  users.insert(std::make_pair(pub_name2_, drive::kShareReadOnly));
   std::string tail;
   fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir() /
                                               fs::path("/").make_preferred(),
@@ -709,7 +710,7 @@ TEST_P(UserStorageTest, FUNC_RemoveUserByOwner) {
               << share_root_directory_1 << ": " << error_code.message();
 
   StringIntMap users;
-  users.insert(std::make_pair(pub_name2_, 0));
+  users.insert(std::make_pair(pub_name2_, drive::kShareReadOnly));
   std::string tail("OTJUP");
   fs::path directory0(user_storage1_->mount_dir() /
                       fs::path("/").make_preferred() /
@@ -850,8 +851,8 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
               << share_root_directory_1 << ": " << error_code.message();
 
   StringIntMap users;
-  users.insert(std::make_pair(pub_name2_, 0));
-  users.insert(std::make_pair(pub_name3, 1));
+  users.insert(std::make_pair(pub_name2_, drive::kShareReadOnly));
+  users.insert(std::make_pair(pub_name3, drive::kShareReadWrite));
   std::string tail("OTJUP");
   fs::path directory0(user_storage1_->mount_dir() /
                       fs::path("/").make_preferred() /
