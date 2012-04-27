@@ -84,8 +84,8 @@ class UserStorageTest : public testing::TestWithParam<bool> {
                    const std::shared_ptr<UserStorage> &user_storage,
                    const std::string &/*receiver*/,
                    const std::string &sender,
-                   const std::string &share_id,
-                   const std::string &/*share_tag*/) {
+                   const std::string &/*share_tag*/,
+                   const std::string &share_id) {
     std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
     fs::path hidden_file(user_storage->mount_dir() / drive::kMsShareRoot /
                          fs::path("/").make_preferred() /

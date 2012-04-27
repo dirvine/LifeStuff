@@ -620,11 +620,13 @@ void MessageHandler::SignalShare(const InboxItem &inbox_item) {
     }
   }
 
-  if (inbox_item.content[1] == "insert_share")
+  if (inbox_item.content[1] == "insert_share") {
+    fs::path relative_path(inbox_item.content[2]);
     (*share_invitation_signal_)(inbox_item.receiver_public_id,
                                 inbox_item.sender_public_id,
-                                inbox_item.content[0],
+                                relative_path.filename().string(),
                                 inbox_item.content[0]);
+  }
 
   if (inbox_item.content[1] == "member_access")
     // upgrading

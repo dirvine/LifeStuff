@@ -119,8 +119,8 @@ typedef std::map<std::string, std::pair<ContactStatus, ContactPresence>>
 /// Shares
 typedef std::function<void(const std::string&,    // Own public ID
                            const std::string&,    // Contact public ID
-                           const std::string&,    // Share Tag
-                           const std::string&)>   // Unique ID
+                           const std::string&,    // Share Tag (share_name)
+                           const std::string&)>   // Unique ID (share_id)
         ShareInvitationFunction;
 typedef TwoStringsFunction ShareDeletionFunction;  // own public ID, share name
 typedef std::function<void(const std::string&,  // Own public ID
