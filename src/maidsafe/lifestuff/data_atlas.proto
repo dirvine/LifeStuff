@@ -19,7 +19,7 @@ message Message {
 }
 
 message PublicContact {
-  required bytes public_username = 1;
+  required bytes public_id = 1;
   optional bytes mpid_name = 2;
   required bytes inbox_name = 3;
   optional bytes profile_picture_data_map = 5;
@@ -31,7 +31,7 @@ message PublicContact {
   optional bytes pointer_to_info = 11;
 }
 
-message PublicId {
+message PublicIdentity {
   required bytes public_id = 1;
   required bytes profile_picture_data_map = 2;
   repeated PublicContact contacts = 3;
@@ -51,6 +51,6 @@ message DataAtlas {
   required DriveData drive_data = 1;
   required PassportData passport_data = 2;
   required bytes timestamp = 3;
-  repeated PublicId public_ids = 4;
+  repeated PublicIdentity public_ids = 4;
 }
 

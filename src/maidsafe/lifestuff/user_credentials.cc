@@ -48,7 +48,6 @@
 
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/contacts.h"
-#include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/utils.h"
@@ -66,8 +65,8 @@ UserCredentials::UserCredentials(
     : session_(session),
       remote_chunk_store_(chunk_store),
       authentication_(new Authentication(chunk_store, session)),
-      serialised_da_(),
-      surrogate_serialised_da_(),
+      serialised_data_atlas_(),
+      surrogate_serialised_data_atlas_(),
       logging_out_(false),
       logged_in_(false) {}
 
@@ -113,11 +112,9 @@ bool UserCredentials::CreateUser(const std::string &username,
     DLOG(ERROR) << "Cannot create tmid packet.";
     session_->Reset();
     return false;
-  } else {
-    DLOG(INFO) << "authentication_->CreateTmidPacket DONE.";
   }
 
-  session_->set_session_name(false);
+  session_->set_session_name();
   logged_in_ = true;
   return true;
 }
@@ -148,31 +145,35 @@ bool UserCredentials::ValidateUser(const std::string &password) {
       surrogate_serialised_data_atlas_.empty()) {
     DLOG(INFO) << "UserCredentials::ValidateUser - Invalid password";
     return false;
-  } else if (!serialised_data_atlas_.empty()) {
-
+  } else {
+    int result(0);
+    if (!serialised_data_atlas_.empty())
+      result = session_->ParseDataAtlas(serialised_data_atlas_);
+    else
+      result = session_->ParseDataAtlas(surrogate_serialised_data_atlas_);
+    if (result != kSuccess) {
+      DLOG(INFO) << "UserCredentials::ValidateUser - Can't parse DA";
+      return false;
+    }
   }
 
   session_->set_password(password);
-  session_->set_session_name(false);
-
-  if (ParseDa() != 0) {
-    DLOG(INFO) << "UserCredentials::ValidateUser - Cannot parse DA";
-    return false;
-  }
+  session_->set_session_name();
   logged_in_ = true;
+
   return true;
 }
 
 bool UserCredentials::Logout() {
   logging_out_ = true;
-//  clear_messages_thread_.join();
   int result = SaveSession();
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to save session " << result;
     return false;
   }
 
-  serialised_da_.clear();
+  serialised_data_atlas_.clear();
+  surrogate_serialised_data_atlas_.clear();
   logging_out_ = false;
   logged_in_ = false;
   session_->Reset();
@@ -180,19 +181,19 @@ bool UserCredentials::Logout() {
 }
 
 int UserCredentials::SaveSession() {
-  int n = SerialiseDa();
-  if (n != kSuccess) {
+  int result(session_->SerialiseDataAtlas(&serialised_data_atlas_));
+  if (result != kSuccess) {
     DLOG(ERROR) << "Failed to serialise DA.";
-    return n;
+    return result;
   }
 
-  n = authentication_->SaveSession(serialised_da_);
-  if (n != kSuccess) {
-    if (n == kFailedToDeleteOldPacket) {
+  result = authentication_->SaveSession(serialised_data_atlas_);
+  if (result != kSuccess) {
+    if (result == kFailedToDeleteOldPacket) {
       DLOG(WARNING) << "Failed to delete old TMID otherwise saved session OK.";
     } else {
       DLOG(ERROR) << "Failed to Save Session.";
-      return n;
+      return result;
     }
   }
   return kSuccess;
@@ -204,15 +205,20 @@ bool UserCredentials::ChangeUsername(const std::string &new_username) {
     return false;
   }
 
-  SerialiseDa();
+  int result(session_->SerialiseDataAtlas(&serialised_data_atlas_));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to serialise session elements: " << result;
+    return false;
+  }
 
-  int result = authentication_->ChangeUsername(serialised_da_, new_username);
+  result = authentication_->ChangeUsername(serialised_data_atlas_,
+                                           new_username);
   if (result != kSuccess) {
     if (result == kFailedToDeleteOldPacket) {
       DLOG(WARNING) << "Failed to delete old packets, changed username OK.";
       return true;
     } else {
-      DLOG(ERROR) << "Failed to change username.";
+      DLOG(ERROR) << "Failed to change username: " << result;
       return false;
     }
   }
@@ -225,16 +231,20 @@ bool UserCredentials::ChangePin(const std::string &new_pin) {
     return false;
   }
 
-  SerialiseDa();
+  int result(session_->SerialiseDataAtlas(&serialised_data_atlas_));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to serialise session elements: " << result;
+    return false;
+  }
 
-  int result = authentication_->ChangePin(serialised_da_, new_pin);
+  result = authentication_->ChangePin(serialised_data_atlas_, new_pin);
   if (result != kSuccess) {
     if (result == kFailedToDeleteOldPacket) {
       DLOG(WARNING) <<
           "Failed to delete old packets, otherwise changed PIN OK.";
       return true;
     } else {
-      DLOG(ERROR) << "Failed to change PIN.";
+      DLOG(ERROR) << "Failed to change PIN: " << result;
       return false;
     }
   }
@@ -247,11 +257,16 @@ bool UserCredentials::ChangePassword(const std::string &new_password) {
     return false;
   }
 
-  SerialiseDa();
-
-  int result = authentication_->ChangePassword(serialised_da_, new_password);
+  int result(session_->SerialiseDataAtlas(&serialised_data_atlas_));
   if (result != kSuccess) {
-    DLOG(ERROR) << " Authentication failed: " << result;
+    DLOG(ERROR) << "Failed to serialise session elements: " << result;
+    return false;
+  }
+
+  result = authentication_->ChangePassword(serialised_data_atlas_,
+                                           new_password);
+  if (result != kSuccess) {
+    DLOG(ERROR) << " change password failed: " << result;
     return false;
   }
   return true;

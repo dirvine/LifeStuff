@@ -99,8 +99,8 @@ const size_t kPinSize(4);
 const std::string kLiteralOnline("kOnline");
 const std::string kLiteralOffline("kOffline");
 const std::string kAppHomeDirectory(".lifestuff");
-const std::string kMyStuff("MyStuff");
-const std::string kSharedStuff("SharedStuff");
+const std::string kMyStuff("My Stuff");
+const std::string kSharedStuff("Shared Stuff");
 const std::string kBlankProfilePicture("BlankPicture");
 
 /// General
@@ -151,8 +151,6 @@ typedef std::function<void(const std::string&,          // Own public ID
         ContactPresenceFunction;
 // Own public ID, Contact public ID, Message
 typedef ThreeStringsFunction ContactDeletionFunction;
-
-namespace args = std::placeholders;
 
 }  // namespace lifestuff
 

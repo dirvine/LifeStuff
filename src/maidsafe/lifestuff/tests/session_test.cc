@@ -72,7 +72,7 @@ TEST_F(SessionTest, BEH_SetsGetsAndReset) {
   // Modify session
   session_->set_def_con_level(kDefCon1);
   SetUnamePinWord("aaa", "bbb", "ccc");
-  ASSERT_TRUE(session_->set_session_name(false));
+  ASSERT_TRUE(session_->set_session_name());
   session_->set_unique_user_id("ddd1");
   session_->set_root_parent_id("ddd2");
   auto result(session_->contact_handler_map().insert(std::make_pair(
@@ -82,7 +82,7 @@ TEST_F(SessionTest, BEH_SetsGetsAndReset) {
             session_->contact_handler_map()["My pub name"]->AddContact(
                 "pub_name",
                 "mpid_name",
-                "mmid_name",
+                "inbox_name",
                 "profile_picture_data_map",
                 asymm::PublicKey(),
                 asymm::PublicKey(),
@@ -99,9 +99,9 @@ TEST_F(SessionTest, BEH_SetsGetsAndReset) {
   std::vector<Contact> list;
   session_->contact_handler_map()["My pub name"]->OrderedContacts(&list);
   ASSERT_EQ(size_t(1), list.size());
-  ASSERT_EQ("pub_name", list[0].public_username);
+  ASSERT_EQ("pub_name", list[0].public_id);
   ASSERT_EQ("mpid_name", list[0].mpid_name);
-  ASSERT_EQ("mmid_name", list[0].mmid_name);
+  ASSERT_EQ("inbox_name", list[0].inbox_name);
   ASSERT_EQ("profile_picture_data_map", list[0].profile_picture_data_map);
   ASSERT_FALSE(asymm::ValidateKey(list[0].mpid_public_key));
   ASSERT_FALSE(asymm::ValidateKey(list[0].mmid_public_key));
@@ -130,7 +130,7 @@ TEST_F(SessionTest, BEH_SessionName) {
   ASSERT_EQ("", session_->pin());
 
   // Check username and pin are needed
-  ASSERT_FALSE(session_->set_session_name(false));
+  ASSERT_FALSE(session_->set_session_name());
   ASSERT_EQ("", session_->session_name());
 
   std::string username(RandomAlphaNumericString(6));
@@ -140,13 +140,13 @@ TEST_F(SessionTest, BEH_SessionName) {
 
   // Set the session values
   SetUnamePinWord(username, pin, "ccc");
-  ASSERT_TRUE(session_->set_session_name(false));
+  ASSERT_TRUE(session_->set_session_name());
 
   // Check session name
   ASSERT_EQ(session_name, session_->session_name());
 
   // Reset value and check empty again
-  session_->set_session_name(true);
+  session_->clear_session_name();
   ASSERT_EQ("", session_->session_name());
 }
 

@@ -92,7 +92,7 @@ PublicIdContactMap Session::GetAllContacts(ContactStatus status) {
                                   kAlphabetical,
                                   static_cast<uint16_t>(status));
     for (auto item(contacts.begin()); item != contacts.end(); ++item)
-      result[(*it).first].insert((*item).public_username);
+      result[(*it).first].insert((*item).public_id);
   }
 
   return result;
@@ -134,17 +134,17 @@ void Session::set_pin(const std::string &pin) { user_details_->pin = pin; }
 void Session::set_password(const std::string &password) {
   user_details_->password = password;
 }
-bool Session::set_session_name(bool clear) {
-  if (clear) {
-    user_details_->session_name.clear();
-  } else {
-    if (username().empty() || pin().empty())
-      return false;
-    user_details_->session_name = EncodeToHex(crypto::Hash<crypto::SHA1>(pin() +
-                                                              username()));
+bool Session::set_session_name() {
+  if (username().empty() || pin().empty()) {
+    DLOG(ERROR) << "username: " << std::boolalpha << username().empty()
+                << ", pin: " << std::boolalpha << pin().empty();
+    return false;
   }
+  user_details_->session_name =
+      EncodeToHex(crypto::Hash<crypto::SHA1>(pin() + username()));
   return true;
 }
+void Session::clear_session_name() { user_details_->session_name.clear(); }
 void Session::set_unique_user_id(const std::string &unique_user_id) {
   user_details_->unique_user_id = unique_user_id;
 }
@@ -191,8 +191,8 @@ int Session::ParseDataAtlas(const std::string &serialised_data_atlas) {
     return -9000;
   }
 
-  set_unique_user_id(data_atlas.drive_data.unique_user_id());
-  set_root_parent_id(data_atlas.drive_data.root_parent_id());
+  set_unique_user_id(data_atlas.drive_data().unique_user_id());
+  set_root_parent_id(data_atlas.drive_data().root_parent_id());
 
   int n(ParseKeyChain(data_atlas.passport_data().serialised_keyring(),
                       data_atlas.passport_data().serialised_selectables()));
@@ -220,7 +220,7 @@ int Session::ParseDataAtlas(const std::string &serialised_data_atlas) {
     for (int a(0); a < data_atlas.public_ids(a).contacts_size(); ++a) {
       Contact c(data_atlas.public_ids(y).contacts(a));
       int result(contact_handler_map()[pub_name]->AddContact(c));
-      DLOG(INFO) << "Result of adding contact " << c.public_username << " to "
+      DLOG(INFO) << "Result of adding contact " << c.public_id << " to "
                  << pub_name << ":  " << result;
     }
   }
@@ -231,9 +231,9 @@ int Session::ParseDataAtlas(const std::string &serialised_data_atlas) {
 int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
   BOOST_ASSERT(serialised_data_atlas);
   DataAtlas data_atlas;
-  DriveData &drive_data(data_atlas.mutable_drive_data());
-  drive_data.set_unique_user_id(unique_user_id());
-  drive_data.set_root_parent_id(root_parent_id());
+  DriveData *drive_data(data_atlas.mutable_drive_data());
+  drive_data->set_unique_user_id(unique_user_id());
+  drive_data->set_root_parent_id(root_parent_id());
 
   data_atlas.set_timestamp(boost::lexical_cast<std::string>(
       GetDurationSinceEpoch().total_microseconds()));
@@ -245,32 +245,32 @@ int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
     return -1;
   }
 
-  PassportData &passport_data(data_atlas.mutable_passport_data());
-  passport_data.set_serialised_keyring(serialised_keyring);
-  passport_data.set_serialised_selectables(serialised_selectables);
+  PassportData *passport_data(data_atlas.mutable_passport_data());
+  passport_data->set_serialised_keyring(serialised_keyring);
+  passport_data->set_serialised_selectables(serialised_selectables);
 
   std::vector<Contact> contacts;
   for (auto it(contact_handler_map().begin());
        it != contact_handler_map().end();
        ++it) {
     contacts.clear();
-    PublicId &pub_id(data_atlas.add_public_ids());
-    pub_id.set_public_id((*it).first);
-    pub_id.set_profile_picture_data_map(profile_picture_data_map((*it).first));
+    PublicIdentity *pub_id(data_atlas.add_public_ids());
+    pub_id->set_public_id((*it).first);
+    pub_id->set_profile_picture_data_map(profile_picture_data_map((*it).first));
     (*it).second->OrderedContacts(&contacts, kAlphabetical, kRequestSent |
                                                             kPendingResponse |
                                                             kConfirmed |
                                                             kBlocked);
     for (size_t n(0); n < contacts.size(); ++n) {
-      PublicContact &pc(pub_id.add_contacts());
-      pc.set_public_username(contacts[n].public_username);
-      pc.set_mpid_name(contacts[n].mpid_name);
-      pc.set_inbox_name(contacts[n].inbox_name);
-      pc.set_status(contacts[n].status);
-      pc.set_rank(contacts[n].rank);
-      pc.set_last_contact(contacts[n].last_contact);
-      pc.set_profile_picture_data_map(contacts[n].profile_picture_data_map);
-      DLOG(INFO) << "Added contact " << contacts[n].public_username
+      PublicContact *pc(pub_id->add_contacts());
+      pc->set_public_id(contacts[n].public_id);
+      pc->set_mpid_name(contacts[n].mpid_name);
+      pc->set_inbox_name(contacts[n].inbox_name);
+      pc->set_status(contacts[n].status);
+      pc->set_rank(contacts[n].rank);
+      pc->set_last_contact(contacts[n].last_contact);
+      pc->set_profile_picture_data_map(contacts[n].profile_picture_data_map);
+      DLOG(INFO) << "Added contact " << contacts[n].public_id
                   << " to " << (*it).first << " map.";
     }
   }

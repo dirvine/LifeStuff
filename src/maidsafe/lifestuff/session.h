@@ -90,7 +90,8 @@ class Session {
   std::string profile_picture_data_map(const std::string &public_id) const;
 
   void set_def_con_level(DefConLevels defconlevel);
-  bool set_session_name(bool clear);
+  bool set_session_name();
+  void clear_session_name();
   void set_unique_user_id(const std::string &unique_user_id);
   void set_root_parent_id(const std::string &root_parent_id);
   void set_mounted(int mounted);
