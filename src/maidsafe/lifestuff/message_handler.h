@@ -135,11 +135,11 @@ class MessageHandler {
   int StartCheckingForNewMessages(boost::posix_time::seconds interval);
   void StopCheckingForNewMessages();
 
-  int Send(const std::string &own_public_username,
-           const std::string &recipient_public_username,
+  int Send(const std::string &own_public_id,
+           const std::string &recipient_public_id,
            const InboxItem &message);
-  int SendPresenceMessage(const std::string &own_public_username,
-                          const std::string &recipient_public_username,
+  int SendPresenceMessage(const std::string &own_public_id,
+                          const std::string &recipient_public_id,
                           const ContactPresence &presence);
   void InformConfirmedContactOnline(const std::string &own_public_id,
                                     const std::string &recipient_public_id);
@@ -181,7 +181,7 @@ class MessageHandler {
                         const std::string &mmid_value);
   bool MessagePreviouslyReceived(const std::string &message);
   void ClearExpiredReceivedMessages();
-  void KeysAndProof(const std::string &public_username,
+  void KeysAndProof(const std::string &public_id,
                     passport::PacketType pt,
                     bool confirmed,
                     pcs::RemoteChunkStore::ValidationData *validation_data);

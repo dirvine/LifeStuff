@@ -14,6 +14,7 @@
 * ============================================================================
 */
 
+#include <functional>
 #include <sstream>
 
 #include "maidsafe/common/asio_service.h"
@@ -35,6 +36,7 @@
 #include "maidsafe/lifestuff/user_credentials.h"
 #include "maidsafe/lifestuff/user_storage.h"
 
+namespace args = std::placeholders;
 namespace ba = boost::asio;
 namespace bptime = boost::posix_time;
 namespace bs2 = boost::signals2;
@@ -446,7 +448,7 @@ TEST(IndependentFullTest, FUNC_SendFile) {
   std::string file_name1(RandomAlphaNumericString(8)),
               file_content1(RandomString(5 * 1024)),
               file_name2(RandomAlphaNumericString(8));
-  DLOG(ERROR) << "\n\n\n\n";
+
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
 
@@ -461,7 +463,6 @@ TEST(IndependentFullTest, FUNC_SendFile) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.file_transfer_received)
@@ -479,7 +480,6 @@ TEST(IndependentFullTest, FUNC_SendFile) {
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-
   EXPECT_EQ(kSuccess, test_elements1.Finalise());
   EXPECT_EQ(kSuccess, test_elements2.Finalise());
 }

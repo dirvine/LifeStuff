@@ -111,7 +111,7 @@ void MessageHandler::EnqueuePresenceMessages(ContactPresence presence) {
        ++it) {
     (*it).second->OrderedContacts(&contacts, kAlphabetical, kConfirmed);
     for (auto item(contacts.begin()); item != contacts.end(); ++item) {
-      SendPresenceMessage((*it).first, (*item).public_username, presence);
+      SendPresenceMessage((*it).first, (*item).public_id, presence);
     }
   }
 }
@@ -136,8 +136,8 @@ void MessageHandler::StopCheckingForNewMessages() {
   get_new_messages_timer_.expires_at(boost::posix_time::pos_infin);
 }
 
-int MessageHandler::Send(const std::string &public_username,
-                         const std::string &recipient_public_username,
+int MessageHandler::Send(const std::string &public_id,
+                         const std::string &recipient_public_id,
                          const InboxItem &inbox_item) {
   Message message;
   if (!InboxToProtobuf(inbox_item, &message)) {
@@ -145,18 +145,18 @@ int MessageHandler::Send(const std::string &public_username,
     return -7;
   }
   Contact recipient_contact;
-  int result(session_->contact_handler_map()[public_username]->ContactInfo(
-                 recipient_public_username,
+  int result(session_->contact_handler_map()[public_id]->ContactInfo(
+                 recipient_public_id,
                  &recipient_contact));
-  if (result != kSuccess || recipient_contact.mmid_name.empty()) {
-    DLOG(ERROR) << "Failed to get MMID for " << recipient_public_username
+  if (result != kSuccess || recipient_contact.inbox_name.empty()) {
+    DLOG(ERROR) << "Failed to get MMID for " << recipient_public_id
                 << ", type: " <<inbox_item.item_type;
     return result == kSuccess ? kGeneralError : result;
   }
 
   // Retrieves ANMPID, MPID, and MMID's <name, value, signature>
   passport::SelectableIdentityData data;
-  result = session_->passport_->GetSelectableIdentityData(public_username,
+  result = session_->passport_->GetSelectableIdentityData(public_id,
                                                           true,
                                                           &data);
   if (result != kSuccess) {
@@ -167,17 +167,17 @@ int MessageHandler::Send(const std::string &public_username,
 
   // Get recipient's public key
   pcs::RemoteChunkStore::ValidationData validation_data_mmid;
-  KeysAndProof(public_username,
+  KeysAndProof(public_id,
                   passport::kMmid,
                   true,
                   &validation_data_mmid);
   asymm::PublicKey recipient_public_key;
-  result = GetValidatedMmidPublicKey(recipient_contact.mmid_name,
+  result = GetValidatedMmidPublicKey(recipient_contact.inbox_name,
                                      validation_data_mmid,
                                      remote_chunk_store_,
                                      &recipient_public_key);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to get public key for " << recipient_public_username;
+    DLOG(ERROR) << "Failed to get public key for " << recipient_public_id;
     return result;
   }
 
@@ -198,7 +198,7 @@ int MessageHandler::Send(const std::string &public_username,
   asymm::PrivateKey mmid_private_key(session_->passport_->PacketPrivateKey(
                                          passport::kMmid,
                                          true,
-                                         public_username));
+                                         public_id));
 
   std::string message_signature;
   result = asymm::Sign(signed_data.data(),
@@ -216,7 +216,7 @@ int MessageHandler::Send(const std::string &public_username,
   boost::condition_variable cond_var;
   result = kPendingResult;
 
-  std::string inbox_id(AppendableByAllType(recipient_contact.mmid_name));
+  std::string inbox_id(AppendableByAllType(recipient_contact.inbox_name));
   VoidFunctionOneBool callback(std::bind(&SendMessageCallback, args::_1, &mutex,
                                          &cond_var, &result));
   remote_chunk_store_->Modify(inbox_id,
@@ -346,8 +346,8 @@ bool MessageHandler::ProtobufToInbox(const Message &message,
   }
 
   inbox_item->item_type = static_cast<InboxItemType>(message.type());
-  inbox_item->sender_public_id = message.sender_public_username();
-  inbox_item->receiver_public_id = message.receiver_public_username();
+  inbox_item->sender_public_id = message.sender_public_id();
+  inbox_item->receiver_public_id = message.receiver_public_id();
   inbox_item->timestamp = message.timestamp();
   for (auto n(0); n < message.content_size(); ++n)
     inbox_item->content.push_back(message.content(n));
@@ -361,8 +361,8 @@ bool MessageHandler::InboxToProtobuf(const InboxItem &inbox_item,
     return false;
 
   message->set_type(inbox_item.item_type);
-  message->set_sender_public_username(inbox_item.sender_public_id);
-  message->set_receiver_public_username(inbox_item.receiver_public_id);
+  message->set_sender_public_id(inbox_item.sender_public_id);
+  message->set_receiver_public_id(inbox_item.receiver_public_id);
   message->set_timestamp(inbox_item.timestamp);
   for (size_t n(0); n < inbox_item.content.size(); ++n)
     message->add_content(inbox_item.content[n]);
@@ -393,7 +393,7 @@ void MessageHandler::ClearExpiredReceivedMessages() {
 }
 
 void MessageHandler::KeysAndProof(
-    const std::string &public_username,
+    const std::string &public_id,
     passport::PacketType pt,
     bool confirmed,
     pcs::RemoteChunkStore::ValidationData *validation_data) {
@@ -405,13 +405,13 @@ void MessageHandler::KeysAndProof(
   }
 
   validation_data->key_pair.identity =
-      session_->passport_->PacketName(pt, confirmed, public_username);
+      session_->passport_->PacketName(pt, confirmed, public_id);
   validation_data->key_pair.public_key =
-      session_->passport_->SignaturePacketValue(pt, confirmed, public_username);
+      session_->passport_->SignaturePacketValue(pt, confirmed, public_id);
   validation_data->key_pair.private_key =
-      session_->passport_->PacketPrivateKey(pt, confirmed, public_username);
+      session_->passport_->PacketPrivateKey(pt, confirmed, public_id);
   validation_data->key_pair.validation_token =
-      session_->passport_->PacketSignature(pt, confirmed, public_username);
+      session_->passport_->PacketSignature(pt, confirmed, public_id);
   pca::SignedData signed_data;
   signed_data.set_data(RandomString(64));
   asymm::Sign(signed_data.data(),
@@ -521,25 +521,25 @@ void MessageHandler::RetrieveMessagesForAllIds() {
 }
 
 int MessageHandler::SendPresenceMessage(
-    const std::string &own_public_username,
-    const std::string &recipient_public_username,
+    const std::string &own_public_id,
+    const std::string &recipient_public_id,
     const ContactPresence &presence) {
   InboxItem inbox_item(kContactPresence);
-  inbox_item.sender_public_id  = own_public_username;
-  inbox_item.receiver_public_id = recipient_public_username;
+  inbox_item.sender_public_id  = own_public_id;
+  inbox_item.receiver_public_id = recipient_public_id;
 
   if (presence == kOnline)
     inbox_item.content.push_back("kOnline");
   else
     inbox_item.content.push_back("kOffline");
 
-  int result(Send(own_public_username, recipient_public_username, inbox_item));
+  int result(Send(own_public_id, recipient_public_id, inbox_item));
   if (result != kSuccess) {
-    DLOG(ERROR) << own_public_username << " failed to inform "
-                << recipient_public_username << " of presence state "
+    DLOG(ERROR) << own_public_id << " failed to inform "
+                << recipient_public_id << " of presence state "
                 << presence << ", result: " << result;
     session_->contact_handler_map()
-        [own_public_username]->UpdatePresence(recipient_public_username,
+        [own_public_id]->UpdatePresence(recipient_public_id,
                                               kOffline);
   }
 
@@ -645,7 +645,7 @@ void MessageHandler::SendEveryone(const InboxItem &message) {
   auto it_map(contacts.begin());
   while (it_map != contacts.end()) {
     InboxItem local_message(message);
-    local_message.receiver_public_id = (*it_map++).public_username;
+    local_message.receiver_public_id = (*it_map++).public_id;
     DLOG(ERROR) << "local_message: " << local_message.content[0].size();
     asio_service_.post(std::bind(&MessageHandler::Send,
                                  this,
