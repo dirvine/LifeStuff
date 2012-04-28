@@ -163,23 +163,6 @@ bool Session::set_profile_picture_data_map(
   return true;
 }
 
-int Session::ParseKeyChain(const std::string &serialised_keyring,
-                           const std::string &serialised_selectables) {
-  return passport_->ParseKeyChain(serialised_keyring, serialised_selectables);
-}
-void Session::SerialiseKeyChain(std::string *serialised_keyring,
-                                std::string *serialised_selectables) {
-  passport_->SerialiseKeyChain(serialised_keyring, serialised_selectables);
-}
-
-bool Session::CreateTestPackets() {
-  if (passport_->CreateSigningPackets() != kSuccess)
-    return false;
-  if (passport_->ConfirmSigningPackets() != kSuccess)
-    return false;
-  return true;
-}
-
 int Session::ParseDataAtlas(const std::string &serialised_data_atlas) {
   DataAtlas data_atlas;
   if (serialised_data_atlas.empty()) {
@@ -194,34 +177,30 @@ int Session::ParseDataAtlas(const std::string &serialised_data_atlas) {
   set_unique_user_id(data_atlas.drive_data().unique_user_id());
   set_root_parent_id(data_atlas.drive_data().root_parent_id());
 
-  int n(ParseKeyChain(data_atlas.passport_data().serialised_keyring(),
-                      data_atlas.passport_data().serialised_selectables()));
-  if (n != kSuccess) {
-    DLOG(ERROR) << "Failed ParseKeyChain: " << n;
+  int result(0);
+  result = ParseKeyChain(data_atlas.passport_data().serialised_keyring(),
+                         data_atlas.passport_data().serialised_selectables());
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed ParseKeyChain: " << result;
     return -9003;
   }
 
-//   n = authentication_->SetLoggedInData(serialised_da_,
-//                                        surrogate_serialised_da_);
-//   if (n != kSuccess) {
-//     DLOG(ERROR) << "Failed SetLoggedInData: " << n;
-//     return -9003;
-//   }
-
-  std::string pub_name;
-  for (int y(0); y < data_atlas.public_ids_size(); ++y) {
-    pub_name = data_atlas.public_ids(n).public_id();
+  std::string pub_id;
+  for (int id_count(0); id_count < data_atlas.public_ids_size(); ++id_count) {
+    pub_id = data_atlas.public_ids(id_count).public_id();
     contact_handler_map().insert(
-        std::make_pair(pub_name,
+        std::make_pair(pub_id,
                        std::make_shared<ContactsHandler>()));
     set_profile_picture_data_map(
-        pub_name,
-        data_atlas.public_ids(y).profile_picture_data_map());
-    for (int a(0); a < data_atlas.public_ids(a).contacts_size(); ++a) {
-      Contact c(data_atlas.public_ids(y).contacts(a));
-      int result(contact_handler_map()[pub_name]->AddContact(c));
-      DLOG(INFO) << "Result of adding contact " << c.public_id << " to "
-                 << pub_name << ":  " << result;
+        pub_id,
+        data_atlas.public_ids(id_count).profile_picture_data_map());
+    for (int contact_count(0);
+         contact_count < data_atlas.public_ids(id_count).contacts_size();
+         ++contact_count) {
+      Contact contact(data_atlas.public_ids(id_count).contacts(contact_count));
+      int result(contact_handler_map()[pub_id]->AddContact(contact));
+      DLOG(INFO) << "Result of adding contact " << contact.public_id << " to "
+                 << pub_id << ":  " << result;
     }
   }
 
@@ -278,6 +257,44 @@ int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
   BOOST_ASSERT(data_atlas.SerializeToString(serialised_data_atlas));
 
   return 0;
+}
+
+int Session::ParseKeyChain(const std::string &serialised_keyring,
+                           const std::string &serialised_selectables) {
+  return passport_->ParseKeyChain(serialised_keyring, serialised_selectables);
+}
+void Session::SerialiseKeyChain(std::string *serialised_keyring,
+                                std::string *serialised_selectables) {
+  passport_->SerialiseKeyChain(serialised_keyring, serialised_selectables);
+}
+
+bool Session::CreateTestPackets(bool with_public_ids) {
+  if (passport_->CreateSigningPackets() != kSuccess)
+    return false;
+  if (passport_->ConfirmSigningPackets() != kSuccess)
+    return false;
+
+  if (with_public_ids) {
+    for (size_t n(0); n < 5; ++n) {
+      std::string public_id(RandomAlphaNumericString(5));
+      if (passport_->CreateSelectableIdentity(public_id) != kSuccess)
+        return false;
+      if (passport_->ConfirmSelectableIdentity(public_id) != kSuccess)
+        return false;
+    }
+  }
+
+  return true;
+}
+
+std::vector<std::string> Session::GetPublicIdentities() {
+  std::vector<std::string> public_identities;
+  std::for_each(contact_handler_map_.begin(),
+                contact_handler_map_.end(),
+                [&public_identities] (const ContactHandlerMap::value_type &el) {
+                  public_identities.push_back(el.first);
+                });
+  return public_identities;
 }
 
 }  // namespace lifestuff

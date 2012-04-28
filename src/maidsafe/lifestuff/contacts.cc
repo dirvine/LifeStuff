@@ -75,6 +75,43 @@ Contact::Contact(const PublicContact &contact)
       last_contact(contact.last_contact()),
       presence(kOffline) {}
 
+bool Contact::Equals(const Contact &other) {
+  if (public_id != other.public_id ||
+      mpid_name != other.mpid_name ||
+      inbox_name != other.inbox_name ||
+      profile_picture_data_map != other.profile_picture_data_map ||
+      status != other.status ||
+      rank != other.rank ||
+      last_contact != other.last_contact ||
+      presence != other.presence) {
+    return false;
+  }
+
+  bool valid_public(asymm::ValidateKey(mpid_public_key)),
+       other_valid_public(asymm::ValidateKey(other.mpid_public_key));
+  if ((valid_public && !other_valid_public) ||
+      (!valid_public && other_valid_public)) {
+    return false;
+  }
+  if (valid_public && other_valid_public) {
+    if (!asymm::MatchingPublicKeys(mpid_public_key, other.mpid_public_key))
+      return false;
+  }
+
+  valid_public = asymm::ValidateKey(mmid_public_key);
+  other_valid_public = asymm::ValidateKey(other.mmid_public_key);
+  if ((valid_public && !other_valid_public) ||
+      (!valid_public && other_valid_public)) {
+    return false;
+  }
+  if (valid_public && other_valid_public) {
+    if (!asymm::MatchingPublicKeys(mmid_public_key, other.mmid_public_key))
+      return false;
+  }
+
+  return true;
+}
+
 //  ContactsHandler
 int ContactsHandler::AddContact(const std::string &public_id,
                                 const std::string &mpid_name,
@@ -329,34 +366,35 @@ int ContactsHandler::ContactInfo(const std::string &public_id,
   return kSuccess;
 }
 
-void ContactsHandler::OrderedContacts(std::vector<Contact> *list,
+void ContactsHandler::OrderedContacts(std::vector<Contact> *contacts,
                                       ContactOrder type,
                                       uint16_t bitwise_status) {
-  list->clear();
+  BOOST_ASSERT(contacts);
+  contacts->clear();
   ContactSet *enquiry_pool = &contact_set_;
-  ContactSet contacts;
+  ContactSet contacts_set;
   if (bitwise_status != 0x00) {
     if (kUnitialised & bitwise_status)
-      GetContactsByStatus(&contacts, kUnitialised);
+      GetContactsByStatus(&contacts_set, kUnitialised);
     if (kRequestSent & bitwise_status)
-      GetContactsByStatus(&contacts, kRequestSent);
+      GetContactsByStatus(&contacts_set, kRequestSent);
     if (kPendingResponse & bitwise_status)
-      GetContactsByStatus(&contacts, kPendingResponse);
+      GetContactsByStatus(&contacts_set, kPendingResponse);
     if (kConfirmed & bitwise_status)
-      GetContactsByStatus(&contacts, kConfirmed);
+      GetContactsByStatus(&contacts_set, kConfirmed);
     if (kBlocked & bitwise_status)
-      GetContactsByStatus(&contacts, kBlocked);
-    enquiry_pool = &contacts;
+      GetContactsByStatus(&contacts_set, kBlocked);
+    enquiry_pool = &contacts_set;
   }
   switch (type) {
     case kAlphabetical:
-        GetContactsByOrder<Alphabetical>(enquiry_pool, list);
+        GetContactsByOrder<Alphabetical>(enquiry_pool, contacts);
         break;
     case kPopular:
-        GetContactsByOrder<Popular>(enquiry_pool, list);
+        GetContactsByOrder<Popular>(enquiry_pool, contacts);
         break;
     case kLastContacted:
-        GetContactsByOrder<LastContacted>(enquiry_pool, list);
+        GetContactsByOrder<LastContacted>(enquiry_pool, contacts);
         break;
   }
 }

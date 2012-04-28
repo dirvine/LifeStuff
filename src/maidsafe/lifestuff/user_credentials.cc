@@ -145,19 +145,26 @@ bool UserCredentials::ValidateUser(const std::string &password) {
       surrogate_serialised_data_atlas_.empty()) {
     DLOG(INFO) << "UserCredentials::ValidateUser - Invalid password";
     return false;
-  } else {
-    int result(0);
-    if (!serialised_data_atlas_.empty())
-      result = session_->ParseDataAtlas(serialised_data_atlas_);
-    else
-      result = session_->ParseDataAtlas(surrogate_serialised_data_atlas_);
-    if (result != kSuccess) {
-      DLOG(INFO) << "UserCredentials::ValidateUser - Can't parse DA";
-      return false;
-    }
+  }
+
+  int result(0);
+  if (!serialised_data_atlas_.empty())
+    result = session_->ParseDataAtlas(serialised_data_atlas_);
+  else
+    result = session_->ParseDataAtlas(surrogate_serialised_data_atlas_);
+  if (result != kSuccess) {
+    DLOG(INFO) << "UserCredentials::ValidateUser - Can't parse DA";
+    return false;
   }
 
   session_->set_password(password);
+  result = authentication_->SetLoggedInData(serialised_data_atlas_,
+                                            surrogate_serialised_data_atlas_);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed SetLoggedInData: " << result;
+    return false;
+  }
+
   session_->set_session_name();
   logged_in_ = true;
 

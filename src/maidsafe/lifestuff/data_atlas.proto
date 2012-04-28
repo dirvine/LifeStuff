@@ -22,7 +22,7 @@ message PublicContact {
   required bytes public_id = 1;
   optional bytes mpid_name = 2;
   required bytes inbox_name = 3;
-  optional bytes profile_picture_data_map = 5;
+  required bytes profile_picture_data_map = 5;
   optional bytes mpid_public_key = 6;
   optional bytes inbox_public_key = 7;
   required uint32 status = 8;

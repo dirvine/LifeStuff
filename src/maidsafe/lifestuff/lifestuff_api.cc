@@ -24,6 +24,7 @@
 #include "maidsafe/lifestuff/lifestuff_api.h"
 
 #include <algorithm>
+#include <functional>
 #include <vector>
 
 #include "maidsafe/common/asio_service.h"
@@ -41,6 +42,8 @@
 #include "maidsafe/lifestuff/user_credentials.h"
 #include "maidsafe/lifestuff/user_storage.h"
 #include "maidsafe/lifestuff/utils.h"
+
+namespace args = std::placeholders;
 
 namespace maidsafe {
 

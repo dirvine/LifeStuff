@@ -67,6 +67,7 @@ struct Contact {
           const asymm::PublicKey &mmid_public_key_in,
           ContactStatus status);
   explicit Contact(const PublicContact &contact);
+  bool Equals(const Contact &other);
 
   std::string public_id, mpid_name, inbox_name, profile_picture_data_map;
   asymm::PublicKey mpid_public_key, mmid_public_key;
@@ -142,7 +143,7 @@ class ContactsHandler {
                      const ContactPresence &presence);
   int TouchContact(const std::string &public_id);
   int ContactInfo(const std::string &public_id, Contact *contact);
-  void OrderedContacts(std::vector<Contact> *list,
+  void OrderedContacts(std::vector<Contact> *contacts,
                        ContactOrder type = kAlphabetical,
                        uint16_t bitwise_status = 0x00);
   void OnlineContacts(std::vector<Contact> *online_contacts);
