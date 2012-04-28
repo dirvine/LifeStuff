@@ -88,8 +88,8 @@ const uint8_t kSecondsInterval(5);
 const std::string kLiteralOnline("kOnline");
 const std::string kLiteralOffline("kOffline");
 const std::string kAppHomeDirectory(".lifestuff");
-const std::string kMyStuff("MyStuff");
-const std::string kSharedStuff("SharedStuff");
+const std::string kMyStuff("My Stuff");
+const std::string kSharedStuff("Shared Stuff");
 
 /// General
 typedef std::function<void(const std::string&, const std::string&)>
