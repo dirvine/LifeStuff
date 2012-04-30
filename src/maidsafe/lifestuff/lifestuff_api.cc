@@ -150,7 +150,8 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
 
   lifestuff_elements->message_handler->ConnectToParseAndSaveDataMapSignal(
       std::bind(&UserStorage::ParseAndSaveDataMap,
-                lifestuff_elements->user_storage, args::_1, args::_2));
+                lifestuff_elements->user_storage,
+                args::_1, args::_2, args::_3));
 
   lifestuff_elements->message_handler->ConnectToSaveShareDataSignal(
       std::bind(&UserStorage::SaveShareData,
@@ -323,9 +324,10 @@ int LifeStuff::CreateUser(const std::string &username,
     return kGeneralError;
   }
 
-  fs::create_directory(lifestuff_elements->user_storage->mount_dir() /
-                           fs::path("/").make_preferred() / kMyStuff,
-                       error_code);
+  fs::create_directories(lifestuff_elements->user_storage->mount_dir() /
+                             fs::path("/").make_preferred() /
+                             kMyStuff / kDownloadStuff,
+                         error_code);
   if (error_code) {
     DLOG(ERROR) << "Failed creating My Stuff: " << error_code.message();
     return kGeneralError;
@@ -866,7 +868,7 @@ int LifeStuff::SendChatMessage(const std::string &sender_public_id,
 
 int LifeStuff::SendFile(const std::string &sender_public_id,
                         const std::string &receiver_public_id,
-                        const fs::path absolute_path) {
+                        const fs::path &absolute_path) {
   if (lifestuff_elements->state != kLoggedIn) {
     DLOG(ERROR) << "Wrong state: " << lifestuff_elements->state;
     return kGeneralError;
@@ -897,22 +899,28 @@ int LifeStuff::SendFile(const std::string &sender_public_id,
   return kSuccess;
 }
 
-int LifeStuff::AcceptSentFile(const fs::path absolute_path,
-                              const std::string &identifier) {
+int LifeStuff::AcceptSentFile(const std::string &identifier,
+                              const fs::path &absolute_path) {
   if (lifestuff_elements->state != kLoggedIn) {
     DLOG(ERROR) << "Wrong state: " << lifestuff_elements->state;
     return kGeneralError;
   }
 
-  std::string serialised_data_map;
+  std::string serialised_identifier, file_name, serialised_data_map;
   int result(
       lifestuff_elements->user_storage->ReadHiddenFile(
           mount_path() / fs::path("/").make_preferred() /
               std::string(identifier + drive::kMsHidden.string()),
-          &serialised_data_map));
-  if (result != kSuccess || serialised_data_map.empty()) {
+          &serialised_identifier));
+  if (result != kSuccess || serialised_identifier.empty()) {
     DLOG(ERROR) << "No such identifier found: " << result;
     return result == kSuccess ? kGeneralError : result;
+  }
+
+  GetFilenameData(serialised_identifier, &file_name, &serialised_data_map);
+  if (file_name.empty() || serialised_data_map.empty()) {
+    DLOG(ERROR) << "Failed to get filename or datamap.";
+    return kGeneralError;
   }
 
   drive::DataMapPtr data_map_ptr(ParseSerialisedDataMap(serialised_data_map));
@@ -921,8 +929,21 @@ int LifeStuff::AcceptSentFile(const fs::path absolute_path,
     return kGeneralError;
   }
 
-  result = lifestuff_elements->user_storage->InsertDataMap(absolute_path,
-                                                           serialised_data_map);
+  if (absolute_path.empty()) {
+    fs::path store_path(mount_path() / kMyStuff / kDownloadStuff);
+    std::string adequate_name(GetNameInPath(store_path, file_name));
+    if (adequate_name.empty()) {
+      DLOG(ERROR) << "No name found to work for saving the file.";
+      return kGeneralError;
+    }
+    result = lifestuff_elements->user_storage->InsertDataMap(
+                 store_path / adequate_name,
+                 serialised_data_map);
+  } else {
+    result = lifestuff_elements->user_storage->InsertDataMap(
+                 absolute_path,
+                 serialised_data_map);
+  }
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed inserting DM: " << result;
     return result;
@@ -977,12 +998,13 @@ int LifeStuff::DeleteHiddenFile(const fs::path &absolute_path) {
   return lifestuff_elements->user_storage->DeleteHiddenFile(absolute_path);
 }
 
+/// Private Shares
 int LifeStuff::CreatePrivateShareFromExistingDirectory(
-      const std::string &my_public_id,
-      const fs::path &directory_in_lifestuff_drive,
-      const StringIntMap &contacts,
-      std::string *share_name,
-      StringIntMap *results) {
+    const std::string &my_public_id,
+    const fs::path &directory_in_lifestuff_drive,
+    const StringIntMap &contacts,
+    std::string *share_name,
+    StringIntMap *results) {
   BOOST_ASSERT(share_name);
   int result(PreContactChecks(lifestuff_elements->state,
                               my_public_id,
@@ -1022,11 +1044,10 @@ int LifeStuff::CreatePrivateShareFromExistingDirectory(
   }
 }
 
-int LifeStuff::CreateEmptyPrivateShare(
-      const std::string &my_public_id,
-      const StringIntMap &contacts,
-      std::string *share_name,
-      StringIntMap *results) {
+int LifeStuff::CreateEmptyPrivateShare(const std::string &my_public_id,
+                                       const StringIntMap &contacts,
+                                       std::string *share_name,
+                                       StringIntMap *results) {
   BOOST_ASSERT(share_name);
   int result(PreContactChecks(lifestuff_elements->state,
                               my_public_id,
@@ -1090,9 +1111,10 @@ int LifeStuff::GetPrivateShareMemebers(const std::string &my_public_id,
                                                             shares_members);
 }
 
-int LifeStuff::GetPrivateSharesIncludingMember(const std::string &my_public_id,
-        const std::string &contact_public_id,
-        std::vector<std::string> *shares_names) {
+int LifeStuff::GetPrivateSharesIncludingMember(
+    const std::string &my_public_id,
+    const std::string &contact_public_id,
+    std::vector<std::string> *shares_names) {
   int result(PreContactChecks(lifestuff_elements->state,
                               my_public_id,
                               lifestuff_elements->session));
@@ -1132,10 +1154,11 @@ int LifeStuff::GetPrivateSharesIncludingMember(const std::string &my_public_id,
   return kSuccess;
 }
 
-int LifeStuff::AcceptPrivateShareInvitation(std::string *share_name,
-                  const std::string &my_public_id,
-                  const std::string &contact_public_id,
-                  const std::string &share_id) {
+int LifeStuff::AcceptPrivateShareInvitation(
+    std::string *share_name,
+    const std::string &my_public_id,
+    const std::string &contact_public_id,
+    const std::string &share_id) {
   int result(PreContactChecks(lifestuff_elements->state,
                               my_public_id,
                               lifestuff_elements->session));
@@ -1198,9 +1221,9 @@ int LifeStuff::RejectPrivateShareInvitation(const std::string &my_public_id,
 }
 
 int LifeStuff::EditPrivateShareMembers(const std::string &my_public_id,
-                            const StringIntMap &public_ids,
-                            const std::string &share_name,
-                            StringIntMap *results) {
+                                       const StringIntMap &public_ids,
+                                       const std::string &share_name,
+                                       StringIntMap *results) {
   StringIntMap share_members;
   int result(GetPrivateShareMemebers(my_public_id, share_name, &share_members));
   if (result != kSuccess)
@@ -1314,6 +1337,11 @@ int LifeStuff::LeavePrivateShare(const std::string &my_public_id,
 int LifeStuff::state() const { return lifestuff_elements->state; }
 
 fs::path LifeStuff::mount_path() const {
+  if (lifestuff_elements->state != kLoggedIn) {
+    DLOG(ERROR) << "Wrong state: " << lifestuff_elements->state;
+    return fs::path();
+  }
+
   return lifestuff_elements->user_storage->mount_dir();
 }
 

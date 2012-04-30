@@ -112,9 +112,9 @@ class LifeStuff {
                       const std::string &message);
   int SendFile(const std::string &sender_public_id,
                const std::string &receiver_public_id,
-               const fs::path absolute_path);
-  int AcceptSentFile(const fs::path absolute_path,
-                     const std::string &identifier);
+               const fs::path &absolute_path);
+  int AcceptSentFile(const std::string &identifier,
+                     const fs::path &absolute_path = fs::path());
   int RejectSentFile(const std::string &identifier);
 
   /// Filesystem

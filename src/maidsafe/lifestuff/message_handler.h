@@ -115,6 +115,7 @@ class MessageHandler {
           ContactProfilePictureSignalPtr;
 
   typedef bs2::signal<bool(const std::string&,  // NOLINT (Dan)
+                           const std::string&,
                            std::string*)> ParseAndSaveDataMapSignal;
   typedef std::shared_ptr<ParseAndSaveDataMapSignal>
           ParseAndSaveDataMapSignalPtr;

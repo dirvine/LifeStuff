@@ -217,12 +217,8 @@ bool UserStorage::mount_status() {
   return mount_status_;
 }
 
-void UserStorage::set_message_handler(
-    std::shared_ptr<MessageHandler> message_handler) {
-  message_handler_ = message_handler;
-}
-
-bool UserStorage::ParseAndSaveDataMap(const std::string &serialised_data_map,
+bool UserStorage::ParseAndSaveDataMap(const std::string &file_name,
+                                      const std::string &serialised_data_map,
                                       std::string *data_map_hash) {
   encrypt::DataMapPtr data_map(ParseSerialisedDataMap(serialised_data_map));
   if (!data_map) {
@@ -234,10 +230,17 @@ bool UserStorage::ParseAndSaveDataMap(const std::string &serialised_data_map,
       EncodeToBase32(crypto::Hash<crypto::SHA1>(serialised_data_map)) +
       boost::lexical_cast<std::string>(
           GetDurationSinceEpoch().total_microseconds());
+  std::string filename_data(PutFilenameData(file_name));
+  if (filename_data.empty()) {
+    DLOG(ERROR) << "No suitable filename given: " << file_name;
+    return false;
+  }
+
   int result(WriteHiddenFile(
-                 mount_dir_ / fs::path("/").make_preferred() /
+                 mount_dir_ /
+                     fs::path("/").make_preferred() /
                      std::string(*data_map_hash + drive::kMsHidden.string()),
-                 serialised_data_map,
+                 filename_data + serialised_data_map,
                  true));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to create file: " << result;

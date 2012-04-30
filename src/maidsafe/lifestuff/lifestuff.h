@@ -100,6 +100,7 @@ const std::string kLiteralOnline("kOnline");
 const std::string kLiteralOffline("kOffline");
 const std::string kAppHomeDirectory(".lifestuff");
 const std::string kMyStuff("My Stuff");
+const std::string kDownloadStuff("Download Stuff");
 const std::string kSharedStuff("Shared Stuff");
 const std::string kBlankProfilePicture("BlankPicture");
 

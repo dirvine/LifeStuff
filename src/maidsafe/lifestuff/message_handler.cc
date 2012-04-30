@@ -565,7 +565,8 @@ void MessageHandler::SignalFileTransfer(const InboxItem &inbox_item) {
   }
 
   std::string data_map_hash;
-  if (!(*parse_and_save_data_map_signal_)(inbox_item.content[1],
+  if (!(*parse_and_save_data_map_signal_)(inbox_item.content[0],
+                                          inbox_item.content[1],
                                           &data_map_hash)) {
     DLOG(ERROR) << "Failed to parse file DM";
     (*file_transfer_signal_)(inbox_item.receiver_public_id,

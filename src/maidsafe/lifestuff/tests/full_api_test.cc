@@ -470,13 +470,86 @@ TEST(IndependentFullTest, FUNC_SendFile) {
     EXPECT_FALSE(testing_variables2.file_id.empty());
     EXPECT_EQ(file_name1, testing_variables2.file_name);
     EXPECT_EQ(kSuccess,
-              test_elements2.AcceptSentFile(test_elements2.mount_path() /
-                                                file_name2,
-                                            testing_variables2.file_id));
+              test_elements2.AcceptSentFile(testing_variables2.file_id,
+                                            test_elements2.mount_path() /
+                                                file_name2));
 
     EXPECT_TRUE(fs::exists(test_elements2.mount_path() / file_name2,
                            error_code));
     EXPECT_EQ(0, error_code.value());
+
+    EXPECT_EQ(kSuccess, test_elements2.LogOut());
+  }
+  {
+    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+
+    file_path1 = test_elements1.mount_path() / file_name1;
+    std::ofstream ofstream(file_path1.c_str(), std::ios::binary);
+    ofstream << file_content1;
+    ofstream.close();
+    EXPECT_TRUE(fs::exists(file_path1, error_code));
+    EXPECT_EQ(0, error_code.value());
+    EXPECT_EQ(kSuccess,
+              test_elements1.SendFile(public_id1, public_id2, file_path1));
+
+    EXPECT_EQ(kSuccess, test_elements1.LogOut());
+  }
+  {
+    testing_variables2.file_transfer_received = false;
+    EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
+    while (!testing_variables2.file_transfer_received)
+      Sleep(bptime::milliseconds(100));
+
+    EXPECT_FALSE(testing_variables2.file_id.empty());
+    EXPECT_EQ(file_name1, testing_variables2.file_name);
+    EXPECT_EQ(kSuccess,
+              test_elements2.AcceptSentFile(testing_variables2.file_id));
+    fs::path path2(test_elements2.mount_path() /
+                       kMyStuff / kDownloadStuff / file_name1);
+    EXPECT_TRUE(fs::exists(path2, error_code));
+    EXPECT_EQ(0, error_code.value());
+    std::string file_content2;
+    EXPECT_TRUE(ReadFile(path2, &file_content2));
+    EXPECT_EQ(file_content1, file_content2);
+
+    EXPECT_EQ(kSuccess, test_elements2.LogOut());
+  }
+  {
+    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+
+    file_path1 = test_elements1.mount_path() / file_name1;
+    std::ofstream ofstream(file_path1.c_str(), std::ios::binary);
+    ofstream << file_content1;
+    ofstream.close();
+    EXPECT_TRUE(fs::exists(file_path1, error_code));
+    EXPECT_EQ(0, error_code.value());
+    EXPECT_EQ(kSuccess,
+              test_elements1.SendFile(public_id1, public_id2, file_path1));
+
+    EXPECT_EQ(kSuccess, test_elements1.LogOut());
+  }
+  {
+    testing_variables2.file_transfer_received = false;
+    EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
+    while (!testing_variables2.file_transfer_received)
+      Sleep(bptime::milliseconds(100));
+
+    EXPECT_FALSE(testing_variables2.file_id.empty());
+    EXPECT_EQ(file_name1, testing_variables2.file_name);
+    EXPECT_EQ(kSuccess,
+              test_elements2.AcceptSentFile(testing_variables2.file_id));
+    fs::path path2a(test_elements2.mount_path() /
+                       kMyStuff / kDownloadStuff / file_name1),
+             path2b(test_elements2.mount_path() /
+                       kMyStuff / kDownloadStuff / (file_name1 + " (1)"));
+
+    EXPECT_TRUE(fs::exists(path2a, error_code));
+    EXPECT_EQ(0, error_code.value());
+    EXPECT_TRUE(fs::exists(path2b, error_code));
+    EXPECT_EQ(0, error_code.value());
+    std::string file_content2;
+    EXPECT_TRUE(ReadFile(path2b, &file_content2));
+    EXPECT_TRUE(file_content1 == file_content2);
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
