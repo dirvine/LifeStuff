@@ -539,9 +539,9 @@ TEST(IndependentFullTest, FUNC_SendFile) {
     EXPECT_EQ(kSuccess,
               test_elements2.AcceptSentFile(testing_variables2.file_id));
     fs::path path2a(test_elements2.mount_path() /
-                       kMyStuff / kDownloadStuff / file_name1),
+                        kMyStuff / kDownloadStuff / file_name1),
              path2b(test_elements2.mount_path() /
-                       kMyStuff / kDownloadStuff / (file_name1 + " (1)"));
+                        kMyStuff / kDownloadStuff / (file_name1 + " (1)"));
 
     EXPECT_TRUE(fs::exists(path2a, error_code));
     EXPECT_EQ(0, error_code.value());

@@ -254,7 +254,10 @@ int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
     }
   }
 
-  BOOST_ASSERT(data_atlas.SerializeToString(serialised_data_atlas));
+  if (!data_atlas.SerializeToString(serialised_data_atlas)) {
+    DLOG(ERROR) << "Failed to serialise.";
+    return -1;
+  }
 
   return 0;
 }
