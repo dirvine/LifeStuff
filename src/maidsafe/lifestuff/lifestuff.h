@@ -32,6 +32,7 @@
 #include <utility>
 #include <vector>
 
+#include "maidsafe/drive/config.h"
 #include "maidsafe/lifestuff/version.h"
 
 #if MAIDSAFE_LIFESTUFF_VERSION != 400
@@ -80,18 +81,36 @@ enum LifeStuffState {
   kLoggedOut
 };
 
+enum PrivateShareRoles {
+  kShareRemover = drive::kShareRemover,
+  kShareReadOnly = drive::kShareReadOnly,
+  kShareReadWrite = drive::kShareReadWrite,
+  kShareOwner = drive::kShareOwner
+};
+
 const size_t kMaxChatMessageSize(1 * 1024 * 1024);
 const uint32_t kFileRecontructionLimit(20 * 1024 * 1024);
 const uint16_t kIntervalSeconds(5000);
 const uint8_t kThreads(10);
 const uint8_t kSecondsInterval(5);
+const size_t kMinWordSize(5);
+const size_t kMaxWordSize(30);
+const size_t kPinSize(4);
 const std::string kLiteralOnline("kOnline");
 const std::string kLiteralOffline("kOffline");
 const std::string kAppHomeDirectory(".lifestuff");
+const std::string kMyStuff("My Stuff");
+const std::string kDownloadStuff("Download Stuff");
+const std::string kSharedStuff("Shared Stuff");
+const std::string kBlankProfilePicture("BlankPicture");
 
 /// General
 typedef std::function<void(const std::string&, const std::string&)>
         TwoStringsFunction;
+typedef std::function<void(const std::string&,
+                           const std::string&,
+                           const std::string&)>
+        ThreeStringsFunction;
 typedef std::function<void(int)> VoidFunctionOneInt;  // NOLINT (Dan)
 typedef std::function<void(bool)> VoidFunctionOneBool;  // NOLINT (Dan)
 typedef std::map<std::string, int> StringIntMap;
@@ -101,27 +120,19 @@ typedef std::map<std::string, std::pair<ContactStatus, ContactPresence>>
 /// Shares
 typedef std::function<void(const std::string&,    // Own public ID
                            const std::string&,    // Contact public ID
-                           const std::string&,    // Share Tag
-                           const std::string&)>   // Unique ID
+                           const std::string&,    // Share Tag (share_name)
+                           const std::string&)>   // Unique ID (share_id)
         ShareInvitationFunction;
 typedef TwoStringsFunction ShareDeletionFunction;  // own public ID, share name
 typedef std::function<void(const std::string&,  // Own public ID
-                           const std::string&,  // New contact public ID
+                           const std::string&,  // Contact public ID
                            const std::string&,  // Share name
                            int)>                // Access level
         MemberAccessLevelFunction;
-typedef MemberAccessLevelFunction NewMemberFunction;
-typedef MemberAccessLevelFunction ModifiedMemberFunction;
-typedef std::function<void(const std::string&,    // Own public ID
-                           const std::string&,    // Deleted contact public ID
-                           const std::string&)>   // Share name
-        DeletedMemberFunction;
 
 /// Chat
-typedef std::function<void(const std::string&,    // Own public ID
-                           const std::string&,    // Contact public ID
-                           const std::string&)>   // Message
-        ChatFunction;
+// Own public ID, Contact public ID, Message
+typedef ThreeStringsFunction ChatFunction;
 
 /// File transfer
 typedef std::function<void(const std::string&,    // Own public ID
@@ -139,8 +150,8 @@ typedef std::function<void(const std::string&,          // Own public ID
                            const std::string&,          // Contact public ID
                            ContactPresence presence)>   // online/offline
         ContactPresenceFunction;
-
-namespace args = std::placeholders;
+// Own public ID, Contact public ID, Message
+typedef ThreeStringsFunction ContactDeletionFunction;
 
 }  // namespace lifestuff
 

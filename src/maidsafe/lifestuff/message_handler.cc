@@ -72,12 +72,18 @@ MessageHandler::MessageHandler(
       get_new_messages_timer_(asio_service),
       chat_signal_(new ChatMessageSignal),
       file_transfer_signal_(new FileTransferSignal),
-      share_signal_(new NewItemSignal),
+      share_invitation_signal_(new ShareInvitationSignal),
+      share_deletion_signal_(new ShareDeletionSignal),
+      share_update_signal_(new ShareUpdateSignal),
+      member_access_level_signal_(new MemberAccessLevelSignal),
+      save_share_data_signal_(new SaveShareDataSignal),
+      share_user_leaving_signal_(new ShareUserLeavingSignal),
       contact_presence_signal_(new ContactPresenceSignal),
       contact_profile_picture_signal_(new ContactProfilePictureSignal),
+      contact_deletion_signal_(new ContactDeletionSignal),
+      parse_and_save_data_map_signal_(new ParseAndSaveDataMapSignal),
       received_messages_(),
       asio_service_(asio_service),
-      parse_and_save_data_map_signal_(new ParseAndSaveDataMapSignal),
       start_up_done_(false) {}
 
 MessageHandler::~MessageHandler() {
@@ -105,7 +111,7 @@ void MessageHandler::EnqueuePresenceMessages(ContactPresence presence) {
        ++it) {
     (*it).second->OrderedContacts(&contacts, kAlphabetical, kConfirmed);
     for (auto item(contacts.begin()); item != contacts.end(); ++item) {
-      SendPresenceMessage((*it).first, (*item).public_username, presence);
+      SendPresenceMessage((*it).first, (*item).public_id, presence);
     }
   }
 }
@@ -130,8 +136,8 @@ void MessageHandler::StopCheckingForNewMessages() {
   get_new_messages_timer_.expires_at(boost::posix_time::pos_infin);
 }
 
-int MessageHandler::Send(const std::string &public_username,
-                         const std::string &recipient_public_username,
+int MessageHandler::Send(const std::string &public_id,
+                         const std::string &recipient_public_id,
                          const InboxItem &inbox_item) {
   Message message;
   if (!InboxToProtobuf(inbox_item, &message)) {
@@ -139,18 +145,18 @@ int MessageHandler::Send(const std::string &public_username,
     return -7;
   }
   Contact recipient_contact;
-  int result(session_->contact_handler_map()[public_username]->ContactInfo(
-                 recipient_public_username,
+  int result(session_->contact_handler_map()[public_id]->ContactInfo(
+                 recipient_public_id,
                  &recipient_contact));
-  if (result != kSuccess || recipient_contact.mmid_name.empty()) {
-    DLOG(ERROR) << "Failed to get MMID for " << recipient_public_username
+  if (result != kSuccess || recipient_contact.inbox_name.empty()) {
+    DLOG(ERROR) << "Failed to get MMID for " << recipient_public_id
                 << ", type: " <<inbox_item.item_type;
     return result == kSuccess ? kGeneralError : result;
   }
 
   // Retrieves ANMPID, MPID, and MMID's <name, value, signature>
   passport::SelectableIdentityData data;
-  result = session_->passport_->GetSelectableIdentityData(public_username,
+  result = session_->passport_->GetSelectableIdentityData(public_id,
                                                           true,
                                                           &data);
   if (result != kSuccess) {
@@ -161,17 +167,17 @@ int MessageHandler::Send(const std::string &public_username,
 
   // Get recipient's public key
   pcs::RemoteChunkStore::ValidationData validation_data_mmid;
-  KeysAndProof(public_username,
+  KeysAndProof(public_id,
                   passport::kMmid,
                   true,
                   &validation_data_mmid);
   asymm::PublicKey recipient_public_key;
-  result = GetValidatedMmidPublicKey(recipient_contact.mmid_name,
+  result = GetValidatedMmidPublicKey(recipient_contact.inbox_name,
                                      validation_data_mmid,
                                      remote_chunk_store_,
                                      &recipient_public_key);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to get public key for " << recipient_public_username;
+    DLOG(ERROR) << "Failed to get public key for " << recipient_public_id;
     return result;
   }
 
@@ -192,7 +198,7 @@ int MessageHandler::Send(const std::string &public_username,
   asymm::PrivateKey mmid_private_key(session_->passport_->PacketPrivateKey(
                                          passport::kMmid,
                                          true,
-                                         public_username));
+                                         public_id));
 
   std::string message_signature;
   result = asymm::Sign(signed_data.data(),
@@ -210,7 +216,7 @@ int MessageHandler::Send(const std::string &public_username,
   boost::condition_variable cond_var;
   result = kPendingResult;
 
-  std::string inbox_id(AppendableByAllType(recipient_contact.mmid_name));
+  std::string inbox_id(AppendableByAllType(recipient_contact.inbox_name));
   VoidFunctionOneBool callback(std::bind(&SendMessageCallback, args::_1, &mutex,
                                          &cond_var, &result));
   remote_chunk_store_->Modify(inbox_id,
@@ -309,12 +315,14 @@ void MessageHandler::ProcessRetrieved(const passport::SelectableIdData &data,
                     break;
         case kFileTransfer: SignalFileTransfer(inbox_item);
                             break;
-        case kSharedDirectory: (*share_signal_)(inbox_item);
-                               break;
         case kContactProfilePicture: ContactProfilePictureSlot(inbox_item);
                                      break;
         case kContactPresence: ContactPresenceSlot(inbox_item);
                                break;
+        case kContactDeletion: ContactDeletionSlot(inbox_item);
+                               break;
+        case kShare: SignalShare(inbox_item);
+                     break;
       }
     }
   }
@@ -332,14 +340,14 @@ bool MessageHandler::ProtobufToInbox(const Message &message,
     return false;
   }
 
-  if (message.type() > kContactProfilePicture) {
+  if (message.type() > kMaxInboxItemType) {
     DLOG(WARNING) << "Message type out of range.";
     return false;
   }
 
   inbox_item->item_type = static_cast<InboxItemType>(message.type());
-  inbox_item->sender_public_id = message.sender_public_username();
-  inbox_item->receiver_public_id = message.receiver_public_username();
+  inbox_item->sender_public_id = message.sender_public_id();
+  inbox_item->receiver_public_id = message.receiver_public_id();
   inbox_item->timestamp = message.timestamp();
   for (auto n(0); n < message.content_size(); ++n)
     inbox_item->content.push_back(message.content(n));
@@ -353,8 +361,8 @@ bool MessageHandler::InboxToProtobuf(const InboxItem &inbox_item,
     return false;
 
   message->set_type(inbox_item.item_type);
-  message->set_sender_public_username(inbox_item.sender_public_id);
-  message->set_receiver_public_username(inbox_item.receiver_public_id);
+  message->set_sender_public_id(inbox_item.sender_public_id);
+  message->set_receiver_public_id(inbox_item.receiver_public_id);
   message->set_timestamp(inbox_item.timestamp);
   for (size_t n(0); n < inbox_item.content.size(); ++n)
     message->add_content(inbox_item.content[n]);
@@ -385,7 +393,7 @@ void MessageHandler::ClearExpiredReceivedMessages() {
 }
 
 void MessageHandler::KeysAndProof(
-    const std::string &public_username,
+    const std::string &public_id,
     passport::PacketType pt,
     bool confirmed,
     pcs::RemoteChunkStore::ValidationData *validation_data) {
@@ -397,13 +405,13 @@ void MessageHandler::KeysAndProof(
   }
 
   validation_data->key_pair.identity =
-      session_->passport_->PacketName(pt, confirmed, public_username);
+      session_->passport_->PacketName(pt, confirmed, public_id);
   validation_data->key_pair.public_key =
-      session_->passport_->SignaturePacketValue(pt, confirmed, public_username);
+      session_->passport_->SignaturePacketValue(pt, confirmed, public_id);
   validation_data->key_pair.private_key =
-      session_->passport_->PacketPrivateKey(pt, confirmed, public_username);
+      session_->passport_->PacketPrivateKey(pt, confirmed, public_id);
   validation_data->key_pair.validation_token =
-      session_->passport_->PacketSignature(pt, confirmed, public_username);
+      session_->passport_->PacketSignature(pt, confirmed, public_id);
   pca::SignedData signed_data;
   signed_data.set_data(RandomString(64));
   asymm::Sign(signed_data.data(),
@@ -458,11 +466,13 @@ void MessageHandler::ContactProfilePictureSlot(
 
   std::string sender(profile_picture_message.sender_public_id),
               receiver(profile_picture_message.receiver_public_id);
-  encrypt::DataMapPtr data_map(
-      ParseSerialisedDataMap(profile_picture_message.content[0]));
-  if (!data_map) {
-    DLOG(WARNING) << "Data map didn't parse.";
-    return;
+  if (profile_picture_message.content[0] != kBlankProfilePicture) {
+    encrypt::DataMapPtr data_map(
+        ParseSerialisedDataMap(profile_picture_message.content[0]));
+    if (!data_map) {
+      DLOG(WARNING) << "Data map didn't parse.";
+      return;
+    }
   }
 
   int result(session_->contact_handler_map()
@@ -511,25 +521,25 @@ void MessageHandler::RetrieveMessagesForAllIds() {
 }
 
 int MessageHandler::SendPresenceMessage(
-    const std::string &own_public_username,
-    const std::string &recipient_public_username,
+    const std::string &own_public_id,
+    const std::string &recipient_public_id,
     const ContactPresence &presence) {
   InboxItem inbox_item(kContactPresence);
-  inbox_item.sender_public_id  = own_public_username;
-  inbox_item.receiver_public_id = recipient_public_username;
+  inbox_item.sender_public_id  = own_public_id;
+  inbox_item.receiver_public_id = recipient_public_id;
 
   if (presence == kOnline)
     inbox_item.content.push_back("kOnline");
   else
     inbox_item.content.push_back("kOffline");
 
-  int result(Send(own_public_username, recipient_public_username, inbox_item));
+  int result(Send(own_public_id, recipient_public_id, inbox_item));
   if (result != kSuccess) {
-    DLOG(ERROR) << own_public_username << " failed to inform "
-                << recipient_public_username << " of presence state "
+    DLOG(ERROR) << own_public_id << " failed to inform "
+                << recipient_public_id << " of presence state "
                 << presence << ", result: " << result;
     session_->contact_handler_map()
-        [own_public_username]->UpdatePresence(recipient_public_username,
+        [own_public_id]->UpdatePresence(recipient_public_id,
                                               kOffline);
   }
 
@@ -555,7 +565,8 @@ void MessageHandler::SignalFileTransfer(const InboxItem &inbox_item) {
   }
 
   std::string data_map_hash;
-  if (!(*parse_and_save_data_map_signal_)(inbox_item.content[1],
+  if (!(*parse_and_save_data_map_signal_)(inbox_item.content[0],
+                                          inbox_item.content[1],
                                           &data_map_hash)) {
     DLOG(ERROR) << "Failed to parse file DM";
     (*file_transfer_signal_)(inbox_item.receiver_public_id,
@@ -571,6 +582,61 @@ void MessageHandler::SignalFileTransfer(const InboxItem &inbox_item) {
                            data_map_hash);
 }
 
+void MessageHandler::SignalShare(const InboxItem &inbox_item) {
+  if (inbox_item.content[1] == "remove_share") {
+    (*share_deletion_signal_)(inbox_item.receiver_public_id,
+                              inbox_item.content[0]);
+  } else if (inbox_item.content[1] == "update_share") {
+    asymm::Keys key_ring;
+    if (inbox_item.content.size() > 4) {
+      key_ring.identity = inbox_item.content[4];
+      key_ring.validation_token = inbox_item.content[5];
+      asymm::DecodePrivateKey(inbox_item.content[6], &(key_ring.private_key));
+      asymm::DecodePublicKey(inbox_item.content[7], &(key_ring.public_key));
+    }
+
+    (*share_update_signal_)(inbox_item.content[0],
+                            &inbox_item.content[3],
+                            &inbox_item.content[2],
+                            inbox_item.content.size() > 4 ?
+                                &key_ring : nullptr);
+  } else if (inbox_item.content[1] == "leave_share") {
+    (*share_user_leaving_signal_)(inbox_item.content[0],
+                                  inbox_item.sender_public_id);
+  } else if ((inbox_item.content[1] == "member_access") &&
+        (inbox_item.content.size() < 4)) {
+    // downgrading
+    (*member_access_level_signal_)(inbox_item.receiver_public_id,
+                                   inbox_item.sender_public_id,
+                                   inbox_item.content[0],
+                                   drive::kShareReadOnly);
+    return;
+  } else {
+    Message message;
+    InboxToProtobuf(inbox_item, &message);
+    if (!(*save_share_data_signal_)(message.SerializeAsString(),
+                                    inbox_item.content[0])) {
+      DLOG(ERROR) << "Failed to save received share data";
+      return;
+    }
+  }
+
+  if (inbox_item.content[1] == "insert_share") {
+    fs::path relative_path(inbox_item.content[2]);
+    (*share_invitation_signal_)(inbox_item.receiver_public_id,
+                                inbox_item.sender_public_id,
+                                relative_path.filename().string(),
+                                inbox_item.content[0]);
+  }
+
+  if (inbox_item.content[1] == "member_access")
+    // upgrading
+    (*member_access_level_signal_)(inbox_item.receiver_public_id,
+                                   inbox_item.sender_public_id,
+                                   inbox_item.content[0],
+                                   drive::kShareReadWrite);
+}
+
 void MessageHandler::SendEveryone(const InboxItem &message) {
   std::vector<Contact> contacts;
   session_->contact_handler_map()
@@ -580,7 +646,7 @@ void MessageHandler::SendEveryone(const InboxItem &message) {
   auto it_map(contacts.begin());
   while (it_map != contacts.end()) {
     InboxItem local_message(message);
-    local_message.receiver_public_id = (*it_map++).public_username;
+    local_message.receiver_public_id = (*it_map++).public_id;
     DLOG(ERROR) << "local_message: " << local_message.content[0].size();
     asio_service_.post(std::bind(&MessageHandler::Send,
                                  this,
@@ -588,6 +654,18 @@ void MessageHandler::SendEveryone(const InboxItem &message) {
                                  local_message.receiver_public_id,
                                  local_message));
   }
+}
+
+void MessageHandler::ContactDeletionSlot(const InboxItem &deletion_item) {
+  DLOG(ERROR) << "MessageHandler::ContactDeletionSlot";
+  std::string my_public_id(deletion_item.receiver_public_id),
+              contact_public_id(deletion_item.sender_public_id);
+  // PublicId - To run RemoveContact
+  // UserStorage - To remove contact from all shares
+  // UI - To do whatever it is they do out there, in that crazy world
+  (*contact_deletion_signal_)(my_public_id,
+                              contact_public_id,
+                              deletion_item.content.at(0));
 }
 
 bs2::connection MessageHandler::ConnectToChatSignal(
@@ -600,11 +678,36 @@ bs2::connection MessageHandler::ConnectToFileTransferSignal(
   return file_transfer_signal_->connect(function);
 }
 
-// bs2::connection MessageHandler::ConnectToShareSignal(
-//     const ShareFunction &function) {
-//   return share_signal_->connect(function);
-// }
-//
+bs2::connection MessageHandler::ConnectToShareInvitationSignal(
+    const ShareInvitationFunction &function) {
+  return share_invitation_signal_->connect(function);
+}
+
+bs2::connection MessageHandler::ConnectToShareDeletionSignal(
+    const ShareDeletionFunction &function) {
+  return share_deletion_signal_->connect(function);
+}
+
+bs2::connection MessageHandler::ConnectToShareUpdateSignal(
+    const ShareUpdateSignal::slot_type &function) {
+  return share_update_signal_->connect(function);
+}
+
+bs2::connection MessageHandler::ConnectToMemberAccessLevelSignal(
+    const MemberAccessLevelFunction &function) {
+  return member_access_level_signal_->connect(function);
+}
+
+bs2::connection MessageHandler::ConnectToSaveShareDataSignal(
+    const SaveShareDataSignal::slot_type &function) {
+  return save_share_data_signal_->connect(function);
+}
+
+bs2::connection MessageHandler::ConnectToShareUserLeavingSignal(
+    const ShareUserLeavingSignal::slot_type &function) {
+  return share_user_leaving_signal_->connect(function);
+}
+
 bs2::connection MessageHandler::ConnectToContactPresenceSignal(
     const ContactPresenceFunction &function) {
   return contact_presence_signal_->connect(function);
@@ -618,6 +721,11 @@ bs2::connection MessageHandler::ConnectToContactProfilePictureSignal(
 bs2::connection MessageHandler::ConnectToParseAndSaveDataMapSignal(
     const ParseAndSaveDataMapSignal::slot_type &function) {
   return parse_and_save_data_map_signal_->connect(function);
+}
+
+bs2::connection MessageHandler::ConnectToContactDeletionSignal(
+    const ContactDeletionFunction &function) {
+  return contact_deletion_signal_->connect(function);
 }
 
 }  // namespace lifestuff

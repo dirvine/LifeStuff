@@ -24,6 +24,7 @@
 
 #include "boost/asio.hpp"
 #include "boost/archive/text_iarchive.hpp"
+#include "boost/regex.hpp"
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
 
@@ -41,6 +42,7 @@
 #include "maidsafe/pd/client/utils.h"
 #endif
 
+#include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
 
@@ -54,10 +56,60 @@ namespace lifestuff {
 std::string CreatePin() {
   std::stringstream pin_stream;
   uint32_t pin(0);
-  while (pin == 0)
-    pin = RandomUint32();
+  while (pin < 1000)
+    pin = RandomUint32() % 10000;
   pin_stream << pin;
   return pin_stream.str();
+}
+
+bool AcceptableWordSize(const std::string &word) {
+  return word.size() >= kMinWordSize && word.size() <= kMaxWordSize;
+}
+
+bool AcceptableWordPattern(const std::string &word) {
+  boost::regex space(" ");
+  return !boost::regex_search(word.begin(), word.end(), space);
+}
+
+bool CheckWordValidity(const std::string &word) {
+  if (!AcceptableWordSize(word)) {
+    DLOG(ERROR) << "Unacceptable size: " << word.size();
+    return false;
+  }
+
+  if (!AcceptableWordPattern(word)) {
+    DLOG(ERROR) << "Unacceptable pattern: '" << word << "'";
+    return false;
+  }
+
+  return true;
+}
+
+bool CheckKeywordValidity(const std::string &keyword) {
+  return CheckWordValidity(keyword);
+}
+
+bool CheckPasswordValidity(const std::string &password) {
+  return CheckWordValidity(password);
+}
+
+bool CheckPinValidity(const std::string &pin) {
+  try {
+    int peen(boost::lexical_cast<int>(pin));
+    if (peen < 1) {
+      DLOG(ERROR) << "PIN out of range: " << peen;
+      return false;
+    }
+    std::string pattern("[0-9]{" +
+                        boost::lexical_cast<std::string>(kPinSize) +
+                        "}");
+    boost::regex rx(pattern);
+    return boost::regex_match(pin.begin(), pin.end(), rx);
+  }
+  catch(const std::exception &e) {
+    DLOG(ERROR) << e.what();
+    return false;
+  }
 }
 
 fs::path CreateTestDirectory(fs::path const& parent, std::string *tail) {
@@ -226,13 +278,64 @@ std::string ComposeSignaturePacketName(const std::string &name) {
 }
 
 std::string ComposeSignaturePacketValue(
-    const maidsafe::pki::SignaturePacket &packet) {
+    const pki::SignaturePacket &packet) {
   std::string public_key;
   asymm::EncodePublicKey(packet.value(), &public_key);
   pca::SignedData signed_data;
   signed_data.set_data(public_key);
   signed_data.set_signature(packet.signature());
   return signed_data.SerializeAsString();
+}
+
+std::string PutFilenameData(const std::string &file_name) {
+  if (file_name.size() > 255U)
+    return "";
+  try {
+    std::string data(boost::lexical_cast<std::string>(file_name.size()));
+    while (data.size() < 3U)
+      data.insert(0, "0");
+    BOOST_ASSERT(data.size() == 3U);
+    data += file_name;
+    return data;
+  }
+  catch(const std::exception &e) {
+    DLOG(ERROR) << e.what();
+    return "";
+  }
+}
+
+void GetFilenameData(const std::string &content,
+                     std::string *file_name,
+                     std::string *serialised_data_map) {
+  if (content.size() < 5U)
+    return;
+
+  try {
+    int chars_to_read(boost::lexical_cast<int>(content.substr(0, 3)));
+    *file_name = content.substr(3, chars_to_read);
+    chars_to_read += 3;
+    *serialised_data_map = content.substr(chars_to_read);
+  }
+  catch(const std::exception &e) {
+    DLOG(ERROR) << e.what();
+  }
+}
+
+std::string GetNameInPath(const fs::path &save_path,
+                          const std::string &file_name) {
+  int index(0), limit(10);
+  fs::path path_file_name(file_name);
+  std::string stem(path_file_name.stem().string()),
+              extension(path_file_name.extension().string());
+  boost::system::error_code ec;
+  while (fs::exists(save_path / path_file_name, ec) && index++ < limit) {
+    if (ec)
+      continue;
+    path_file_name = (stem + " (" + IntToString(index) + ")" + extension);
+  }
+  if (index == limit)
+    path_file_name.clear();
+  return path_file_name.string();
 }
 
 encrypt::DataMapPtr ParseSerialisedDataMap(
@@ -247,6 +350,42 @@ encrypt::DataMapPtr ParseSerialisedDataMap(
     return encrypt::DataMapPtr();
   }
   return data_map;
+}
+
+int CopyDir(const fs::path& source, const fs::path& dest) {
+  try {
+    // Check whether the function call is valid
+    if (!fs::exists(source) || !fs::is_directory(source)) {
+      DLOG(ERROR) << "Source directory " << source.string()
+                  << " does not exist or is not a directory.";
+      return kGeneralError;
+    }
+    if (!fs::exists(dest))
+      fs::create_directory(dest);
+  }
+  catch(const fs::filesystem_error &e) {
+    DLOG(ERROR) << e.what();
+    return kGeneralError;
+  }
+  // Iterate through the source directory
+  for (fs::directory_iterator it(source);
+      it != fs::directory_iterator(); it++) {
+    try {
+      fs::path current(it->path());
+      if (fs::is_directory(current)) {
+        // Found directory: Create directory and Recursion
+        fs::create_directory(dest / current.filename());
+        CopyDir(current, dest / current.filename());
+      } else {
+        // Found file: Copy
+        fs::copy_file(current, fs::path(dest / current.filename()));
+      }
+    }
+    catch(const fs::filesystem_error &e) {
+      DLOG(ERROR) << e.what();
+    }
+  }
+  return kSuccess;
 }
 
 #ifdef LOCAL_TARGETS_ONLY
@@ -276,10 +415,6 @@ std::shared_ptr<priv::chunk_store::RemoteChunkStore> BuildChunkStore(
     return nullptr;
   }
 }
-#endif
-
-
-#ifndef LOCAL_TARGETS_ONLY
 
 int RetrieveBootstrapContacts(const fs::path &download_dir,
                               std::vector<dht::Contact> *bootstrap_contacts) {
@@ -403,7 +538,6 @@ ClientContainerPtr SetUpClientContainer(
   DLOG(INFO) << "Started client_container.";
   return client_container;
 }
-
 #endif
 
 }  // namespace lifestuff

@@ -55,11 +55,14 @@ class LifeStuff {
   int ConnectToSignals(
       const ChatFunction &chat_slot,
       const FileTransferFunction &file_slot,
-      const ShareInvitationFunction &share_slot,
       const NewContactFunction &new_contact_slot,
       const ContactConfirmationFunction &confirmed_contact_slot,
       const ContactProfilePictureFunction &profile_picture_slot,
-      const ContactPresenceFunction &contact_presence_slot);
+      const ContactPresenceFunction &contact_presence_slot,
+      const ContactDeletionFunction &contact_deletion_function,
+      const ShareInvitationFunction &share_invitation_function,
+      const ShareDeletionFunction &share_deletion_function,
+      const MemberAccessLevelFunction &access_level_function);
   int Finalise();
 
   /// Credential operations
@@ -92,7 +95,8 @@ class LifeStuff {
   int DeclineContact(const std::string &my_public_id,
                      const std::string &contact_public_id);
   int RemoveContact(const std::string &my_public_id,
-                    const std::string &contact_public_id);
+                    const std::string &contact_public_id,
+                    const std::string &removal_message);
   int ChangeProfilePicture(const std::string &my_public_id,
                            const std::string &profile_picture_contents);
   std::string GetOwnProfilePicture(const std::string &my_public_id);
@@ -108,9 +112,9 @@ class LifeStuff {
                       const std::string &message);
   int SendFile(const std::string &sender_public_id,
                const std::string &receiver_public_id,
-               const fs::path absolute_path);
-  int AcceptSentFile(const fs::path absolute_path,
-                     const std::string &identifier);
+               const fs::path &absolute_path);
+  int AcceptSentFile(const std::string &identifier,
+                     const fs::path &absolute_path = fs::path());
   int RejectSentFile(const std::string &identifier);
 
   /// Filesystem
@@ -120,33 +124,48 @@ class LifeStuff {
                       bool overwrite_existing);
   int DeleteHiddenFile(const fs::path &absolute_path);
 
-  /// Shares
+  /// Private Shares
   // If error code is given, map of rsults should be empty. If nobody added,
   // revert everything. Directory has to be moved, not copied. If directory
-  // already exists in shared stuff, append ending as dropbox does.
-  int CreateShare(const std::string &my_public_id,
-                  const fs::path &directory_in_lifestuff_drive,
-                  const StringIntMap &contacts,
-                  StringIntMap *results);
-  int GetShareList(const std::string &my_public_id,
-                   std::map<std::string, StringIntMap> *shares_with_members);
+  // already exists in shared stuff, append ending as dropbox does. If a
+  // contact is passed in as owner, it should fail for that contact.
+  int CreatePrivateShareFromExistingDirectory(
+      const std::string &my_public_id,
+      const fs::path &directory_in_lifestuff_drive,
+      const StringIntMap &contacts,
+      std::string *share_name,
+      StringIntMap *results);
+  int CreateEmptyPrivateShare(const std::string &my_public_id,
+                              const StringIntMap &contacts,
+                              std::string *share_name,
+                              StringIntMap *results);
+  int GetPrivateShareList(const std::string &my_public_id,
+                          StringIntMap *shares_names);
+  // For owners only
+  int GetPrivateShareMemebers(const std::string &my_public_id,
+                              const std::string &share_name,
+                              StringIntMap *shares_members);
+  int GetPrivateSharesIncludingMember(const std::string &my_public_id,
+                                      const std::string &contact_public_id,
+                                      std::vector<std::string> *shares_names);
   // Should create a directory adapting to other possible shares
-  int AcceptShareInvitation(const std::string &share_name,
-                            const std::string &my_public_id,
-                            const std::string &share_id);
-  int RejectShareInvitation(const std::string &my_public_id,
-                            const std::string &share_id);
-  int ChangeShareMembers(const std::string &my_public_id,
-                         const StringIntMap &contact_public_id,
+  int AcceptPrivateShareInvitation(std::string *share_name,
+                                   const std::string &my_public_id,
+                                   const std::string &contact_public_id,
+                                   const std::string &share_id);
+  int RejectPrivateShareInvitation(const std::string &my_public_id,
+                                   const std::string &share_id);
+  // Only for owners
+  int EditPrivateShareMembers(const std::string &my_public_id,
+                              const StringIntMap &public_ids,
+                              const std::string &share_name,
+                              StringIntMap *results);
+  // Only for owners
+  int DeletePrivateShare(const std::string &my_public_id,
                          const std::string &share_name);
-  int RenameShare(const std::string &my_public_id,
-                  const std::string &current_share_name,
-                  const std::string &new_share_name);
-  int DeleteShare(const std::string &my_public_id,
-                  const std::string &share_name);
-  // Should work for RO and full access
-  int LeaveShare(const std::string &my_public_id,
-                 const std::string &share_name);
+  // Should work for RO and full access. Only for non-owners
+  int LeavePrivateShare(const std::string &my_public_id,
+                        const std::string &share_name);
 
   ///
   int state() const;

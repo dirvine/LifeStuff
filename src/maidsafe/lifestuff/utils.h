@@ -49,13 +49,13 @@ namespace lifestuff {
 enum InboxItemType {
   kChat,
   kFileTransfer,
-  kSharedDirectory,
   kContactPresence,
   kContactProfilePicture,
+  kContactDeletion,
+  kShare,
 
-  // First and last markers
-  kInboxItemTypeFirst = kChat,
-  kInboxItemTypeLast = kContactProfilePicture
+  // Max
+  kMaxInboxItemType = kShare
 };
 
 struct InboxItem {
@@ -73,6 +73,10 @@ struct InboxItem {
 };
 
 std::string CreatePin();
+
+bool CheckKeywordValidity(const std::string &keyword);
+bool CheckPinValidity(const std::string &pin);
+bool CheckPasswordValidity(const std::string &password);
 
 fs::path CreateTestDirectory(fs::path const& parent, std::string *tail);
 
@@ -105,6 +109,15 @@ std::string ComposeSignaturePacketValue(
 std::shared_ptr<encrypt::DataMap> ParseSerialisedDataMap(
     const std::string &serialised_data_map);
 
+std::string PutFilenameData(const std::string &file_name);
+void GetFilenameData(const std::string &content,
+                     std::string *file_name,
+                     std::string *serialised_data_map);
+std::string GetNameInPath(const fs::path &save_path,
+                          const std::string &file_name);
+
+int CopyDir(const fs::path& source, const fs::path& dest);
+
 #ifdef LOCAL_TARGETS_ONLY
 std::shared_ptr<priv::chunk_store::RemoteChunkStore> BuildChunkStore(
     const fs::path &buffered_chunk_store_path,
@@ -114,9 +127,7 @@ std::shared_ptr<priv::chunk_store::RemoteChunkStore> BuildChunkStore(
 std::shared_ptr<priv::chunk_store::RemoteChunkStore> BuildChunkStore(
     const fs::path &base_dir,
     std::shared_ptr<pd::ClientContainer> *client_container);
-#endif
 
-#ifndef LOCAL_TARGETS_ONLY
 int RetrieveBootstrapContacts(const fs::path &download_dir,
                               std::vector<dht::Contact> *bootstrap_contacts);
 

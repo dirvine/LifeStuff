@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
   FLAGS_ms_logging_dht = google::INFO;
   FLAGS_ms_logging_pd = google::INFO;
 #endif
-  FLAGS_ms_logging_lifestuff = google::INFO;
+  FLAGS_ms_logging_lifestuff = google::ERROR;
 
   testing::InitGoogleTest(&argc, argv);
 

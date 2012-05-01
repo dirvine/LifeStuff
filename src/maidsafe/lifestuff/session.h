@@ -28,6 +28,7 @@
 #include <map>
 #include <string>
 #include <set>
+#include <vector>
 
 #ifdef __MSVC__
 #  pragma warning(push)
@@ -85,25 +86,20 @@ class Session {
   std::string session_name() const;
   std::string unique_user_id() const;
   std::string root_parent_id() const;
-  int mounted() const;
-  char win_drive() const;
   std::string profile_picture_data_map(const std::string &public_id) const;
 
   void set_def_con_level(DefConLevels defconlevel);
-  bool set_session_name(bool clear);
+  bool set_session_name();
+  void clear_session_name();
   void set_unique_user_id(const std::string &unique_user_id);
   void set_root_parent_id(const std::string &root_parent_id);
-  void set_mounted(int mounted);
-  void set_win_drive(char win_drive);
   bool set_profile_picture_data_map(
       const std::string &public_id,
       const std::string &profile_picture_data_map);
 
-  int ParseKeyChain(const std::string &serialised_keyring,
-                    const std::string &serialised_selectables);
-  void SerialiseKeyChain(std::string *serialised_keyring,
-                         std::string *serialised_selectables);
   std::shared_ptr<asymm::Keys> GetPmidKeys();
+  int ParseDataAtlas(const std::string &serialised_data_atlas);
+  int SerialiseDataAtlas(std::string *serialised_data_atlas);
 
 //   friend void GetKeyring(const std::string&,
 //                          std::shared_ptr<Session>,
@@ -131,7 +127,14 @@ class Session {
   void set_username(const std::string &username);
   void set_pin(const std::string &pin);
   void set_password(const std::string &password);
-  bool CreateTestPackets();
+
+  int ParseKeyChain(const std::string &serialised_keyring,
+                    const std::string &serialised_selectables);
+  void SerialiseKeyChain(std::string *serialised_keyring,
+                         std::string *serialised_selectables);
+
+  bool CreateTestPackets(bool with_public_ids);
+  std::vector<std::string> GetPublicIdentities();
 
   std::shared_ptr<UserDetails> user_details_;
   std::shared_ptr<passport::Passport> passport_;

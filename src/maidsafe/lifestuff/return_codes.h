@@ -73,11 +73,17 @@ enum ReturnCode {
   kModifyAppendabilityFailure = -206011,
   kGenerateNewMMIDFailure = -206012,
   kRemoveContactFailure = -206013,
+  kSetProfilePictureError = -206014,
 
   // MessageHandler
   kMessageHandlerException = -207001,
   kMessageHandlerNotInitialised = -207002,
-  kMessageHandlerError = -207003
+  kMessageHandlerError = -207003,
+
+  // Share
+  kNoShareTarget = -208001,
+  kOwnerTryingToLeave = -208002,
+  kNoKeyForUpgrade = -208003
 };
 
 }  // namespace lifestuff

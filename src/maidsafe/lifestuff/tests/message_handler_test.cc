@@ -81,12 +81,23 @@ class MessageHandlerTest : public testing::Test {
         client_container3_(),
 #endif
         interval_(3),
-        multiple_messages_(5) {}
+        multiple_messages_(5),
+        invitations_(0) {}
 
   void NewContactSlot(const std::string &/*own_public_username*/,
-                      const std::string &other_public_username) {
+                      const std::string &other_public_username,
+                      volatile bool *done) {
     received_public_username_ = other_public_username;
-    // return accept_new_contact;
+    *done = true;
+  }
+
+  void NewContactCountSlot(const std::string &/*own_public_username*/,
+                           const std::string &other_public_username,
+                           volatile bool *done) {
+    received_public_username_ = other_public_username;
+    ++invitations_;
+    if (invitations_ == 2U)
+      *done = true;
   }
 
   void NewMessageSlot(const std::string &own_public_username,
@@ -219,7 +230,7 @@ class MessageHandlerTest : public testing::Test {
   ClientContainerPtr client_container1_, client_container2_, client_container3_;
 #endif
   bptime::seconds interval_;
-  size_t multiple_messages_;
+  size_t multiple_messages_, invitations_;
 
  private:
   explicit MessageHandlerTest(const MessageHandlerTest&);
@@ -232,22 +243,22 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_username2_, true));
 
   // Connect a slot which will reject the new contact
+  volatile bool done(false);
   public_id1_->ConnectToNewContactSignal(
       std::bind(&MessageHandlerTest::NewContactSlot,
-                this, args::_1, args::_2));
+                this, args::_1, args::_2, &done));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   ASSERT_EQ(kSuccess,
             public_id2_->SendContactInfo(public_username2_, public_username1_));
 
-  Sleep(interval_ * 2);
+  while (!done)
+    Sleep(bptime::milliseconds(100));
   ASSERT_EQ(public_username2_, received_public_username_);
   Contact received_contact;
   ASSERT_EQ(kSuccess,
             session1_->contact_handler_map()[public_username1_]->ContactInfo(
                 received_public_username_,
                 &received_contact));
-  public_id1_->StopCheckingForNewContacts();
-  Sleep(interval_ * 2);
 
   InboxItem received;
   volatile bool invoked(false);
@@ -275,22 +286,21 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_username2_, true));
 
   // Connect a slot which will reject the new contact
+  volatile bool done(false);
   public_id1_->ConnectToNewContactSignal(
       std::bind(&MessageHandlerTest::NewContactSlot,
-                this, args::_1, args::_2));
+                this, args::_1, args::_2, &done));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   ASSERT_EQ(kSuccess,
             public_id2_->SendContactInfo(public_username2_, public_username1_));
-
-  Sleep(interval_ * 2);
+  while (!done)
+    Sleep(bptime::milliseconds(100));
   ASSERT_EQ(public_username2_, received_public_username_);
   Contact received_contact;
   ASSERT_EQ(kSuccess,
             session1_->contact_handler_map()[public_username1_]->ContactInfo(
                 received_public_username_,
                 &received_contact));
-  public_id1_->StopCheckingForNewContacts();
-  Sleep(interval_ * 2);
 
   InboxItem sent(CreateMessage(public_username1_, public_username2_));
   for (size_t n(0); n < multiple_messages_; ++n) {
@@ -302,7 +312,7 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
   }
 
   std::vector<InboxItem> received_messages;
-  volatile bool done(false);
+  volatile bool finished(false);
   bs2::connection connection(message_handler2_->ConnectToChatSignal(
                                  std::bind(
                                      &MessageHandlerTest::SeveralMessagesSlot,
@@ -311,11 +321,11 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
                                      args::_2,
                                      args::_3,
                                      &received_messages,
-                                     &done,
+                                     &finished,
                                      &multiple_messages_)));
   ASSERT_EQ(kSuccess,
             message_handler2_->StartCheckingForNewMessages(interval_));
-  while (!done)
+  while (!finished)
     Sleep(bptime::milliseconds(100));
 
   connection.disconnect();
@@ -363,29 +373,33 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_username2_, true));
   ASSERT_EQ(kSuccess, public_id3_->CreatePublicId(public_username3_, true));
 
-  public_id1_->ConnectToNewContactSignal(
-      std::bind(&MessageHandlerTest::NewContactSlot,
-                this, args::_1, args::_2));
+  volatile bool done1(false), done2(false), done3(false);
+  public_id1_->ConnectToContactConfirmedSignal(
+      std::bind(&MessageHandlerTest::NewContactCountSlot,
+                this, args::_1, args::_2, &done1));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   public_id2_->ConnectToNewContactSignal(
       std::bind(&MessageHandlerTest::NewContactSlot,
-                this, args::_1, args::_2));
+                this, args::_1, args::_2, &done2));
   ASSERT_EQ(kSuccess, public_id2_->StartCheckingForNewContacts(interval_));
   public_id3_->ConnectToNewContactSignal(
       std::bind(&MessageHandlerTest::NewContactSlot,
-                this, args::_1, args::_2));
+                this, args::_1, args::_2, &done3));
   ASSERT_EQ(kSuccess, public_id3_->StartCheckingForNewContacts(interval_));
 
   ASSERT_EQ(kSuccess,
             public_id1_->SendContactInfo(public_username1_, public_username2_));
   ASSERT_EQ(kSuccess,
             public_id1_->SendContactInfo(public_username1_, public_username3_));
-  Sleep(interval_ * 2);
+  while (!(done2 && done3))
+    Sleep(bptime::milliseconds(100));
+
   ASSERT_EQ(kSuccess,
             public_id2_->ConfirmContact(public_username2_, public_username1_));
   ASSERT_EQ(kSuccess,
             public_id3_->ConfirmContact(public_username3_, public_username1_));
-  Sleep(interval_ * 2);
+  while (!done1)
+    Sleep(bptime::milliseconds(100));
 
   InboxItem received;
   volatile bool invoked(false);
@@ -411,7 +425,6 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
   ASSERT_NE(kSuccess, message_handler2_->Send(public_username2_,
                                               public_username1_,
                                               sent));
-  Sleep(interval_ * 2);
   ASSERT_FALSE(MessagesEqual(sent, received));
 
   invoked = false;
