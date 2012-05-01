@@ -12,8 +12,6 @@
  *      Author: Team
  */
 
-#include "boost/filesystem.hpp"
-#include "boost/thread.hpp"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/lifestuff/contacts.h"
