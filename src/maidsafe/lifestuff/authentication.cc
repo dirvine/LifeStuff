@@ -514,6 +514,7 @@ void Authentication::StoreSignaturePacket(
     return;
   }
 
+  std::cout << "packet_name: " << Base32Substr(session_->passport_->PacketName(packet_type, false)) << std::endl;
   // Get packet
   std::string packet_name(
       pca::ApplyTypeToName(session_->passport_->PacketName(packet_type, false),
@@ -580,7 +581,8 @@ int Authentication::CreateTmidPacket(
              smid(passport::kSmid, session_->passport_, false),
              tmid(passport::kTmid, session_->passport_, false),
              stmid(passport::kStmid, session_->passport_, false);
-
+             
+  std::cout << "Create TmidPacket mid: " << Base32Substr(mid.name) << std::endl;
   pcs::RemoteChunkStore::ValidationData validation_data_mid;
   KeysAndProof(passport::kAnmid, &validation_data_mid, true);
   pcs::RemoteChunkStore::ValidationData validation_data_smid;
@@ -614,6 +616,7 @@ int Authentication::CreateTmidPacket(
 
 void Authentication::SaveSession(const std::string &serialised_data_atlas,
                                  const VoidFunctionOneInt &functor) {
+  std::cout << session_->username() << "username, pin:" << session_->pin() << ", password:" << ", " << session_->password() << std::endl;
   int result(session_->passport_->SetIdentityPackets(session_->username(),
                                                      session_->pin(),
                                                      session_->password(),
@@ -631,7 +634,9 @@ void Authentication::SaveSession(const std::string &serialised_data_atlas,
   std::string mid_name, serialised_mid, mid_signing_id;
   std::string smid_name, serialised_smid, smid_signing_id;
   std::string tmid_name, serialised_tmid, tmid_signing_id;
+  std::cout << "SaveSession mid name" << Base32Substr(mid.name) << std::endl;
   CreateSignedData(mid, true, &mid_name, &serialised_mid, &mid_signing_id);
+  std::cout << "SaveSession mid name" << Base32Substr(mid_name) << std::endl;  
   CreateSignedData(smid, true, &smid_name, &serialised_smid, &smid_signing_id);
   CreateSignedData(tmid, true, &tmid_name, &serialised_tmid, &tmid_signing_id);
 
@@ -749,7 +754,7 @@ int Authentication::SaveSession(const std::string &serialised_data_atlas) {
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(
                   lock,
-                  kSingleOpTimeout_ * 4,
+                  kSingleOpTimeout_ * 40,
                   std::bind(&Authentication::PacketOpDone, this, &result));
   }
   catch(const std::exception &e) {

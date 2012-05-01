@@ -237,6 +237,7 @@ int LifeStuff::Finalise() {
 int LifeStuff::SetValidPmid() {
   int result = dht::kSuccess;
 #ifndef LOCAL_TARGETS_ONLY
+  std::cout << lifestuff_elements->client_container->key_pair_->identity << std::endl;
   std::vector<dht::Contact> bootstrap_contacts;
   lifestuff_elements->client_container->Stop(&bootstrap_contacts);
   lifestuff_elements->client_container->set_key_pair(
@@ -244,6 +245,15 @@ int LifeStuff::SetValidPmid() {
   lifestuff_elements->client_container->Init(
       lifestuff_elements->buffered_path / "buffered_chunk_store", 10, 4);
   result = lifestuff_elements->client_container->Start(bootstrap_contacts);
+  lifestuff_elements->remote_chunk_store.reset(
+      new pcs::RemoteChunkStore(lifestuff_elements->client_container->chunk_store(),
+            lifestuff_elements->client_container->chunk_manager(),
+            lifestuff_elements->client_container->chunk_action_authority()));
+  lifestuff_elements->user_credentials.reset(
+      new UserCredentials(lifestuff_elements->remote_chunk_store,
+                          lifestuff_elements->session));  
+  std::cout << "Joined: " << lifestuff_elements->client_container->node_->joined() << std::endl;
+  std::cout << lifestuff_elements->client_container->key_pair_->identity << std::endl;  
 #endif
   return result;
 }
@@ -264,46 +274,46 @@ int LifeStuff::CreateUser(const std::string &username,
     return kGeneralError;
   }
 
-  if (SetValidPmid() != dht::kSuccess)  {
-    DLOG(ERROR) << "Failed to set valid PMID";
-    return kGeneralError;
-  }
+   if (SetValidPmid() != kSuccess)  {
+     DLOG(ERROR) << "Failed to set valid PMID";
+     return kGeneralError;
+   }
 
-  boost::system::error_code error_code;
-  fs::path mount_dir(GetHomeDir() /
-                     kAppHomeDirectory /
-                     lifestuff_elements->session->session_name());
-  if (!fs::exists(mount_dir, error_code)) {
-    fs::create_directories(mount_dir, error_code);
-    if (error_code) {
-      DLOG(ERROR) << "Failed to create app directories - " << error_code.value()
-                  << ": " << error_code.message();
-      return kGeneralError;
-    }
-  }
-
-  lifestuff_elements->user_storage->MountDrive(mount_dir,
-                                               lifestuff_elements->session,
-                                               true);
-  if (!lifestuff_elements->user_storage->mount_status()) {
-    DLOG(ERROR) << "Failed to mount";
-    return kGeneralError;
-  }
-
-  fs::create_directory(lifestuff_elements->user_storage->mount_dir() /
-                       fs::path("/").make_preferred() /
-                       "My Stuff", error_code);
-  if (error_code) {
-    DLOG(ERROR) << "Failed creating My Stuff: " << error_code.message();
-    return kGeneralError;
-  }
-  fs::create_directory(lifestuff_elements->user_storage->mount_dir() /
-                           fs::path("/").make_preferred() / "Shared Stuff",
-                       error_code);
-  if (error_code) {
-    DLOG(ERROR) << "Failed creating Shared Stuff: " << error_code.message();
-    return kGeneralError;
-  }
+//   boost::system::error_code error_code;
+//   fs::path mount_dir(GetHomeDir() /
+//                      kAppHomeDirectory /
+//                      lifestuff_elements->session->session_name());
+//   if (!fs::exists(mount_dir, error_code)) {
+//     fs::create_directories(mount_dir, error_code);
+//     if (error_code) {
+//       DLOG(ERROR) << "Failed to create app directories - " << error_code.value()
+//                   << ": " << error_code.message();
+//       return kGeneralError;
+//     }
+//   }
+// 
+//   lifestuff_elements->user_storage->MountDrive(mount_dir,
+//                                                lifestuff_elements->session,
+//                                                true);
+//   if (!lifestuff_elements->user_storage->mount_status()) {
+//     DLOG(ERROR) << "Failed to mount";
+//     return kGeneralError;
+//   }
+// 
+//   fs::create_directory(lifestuff_elements->user_storage->mount_dir() /
+//                        fs::path("/").make_preferred() /
+//                        "My Stuff", error_code);
+//   if (error_code) {
+//     DLOG(ERROR) << "Failed creating My Stuff: " << error_code.message();
+//     return kGeneralError;
+//   }
+//   fs::create_directory(lifestuff_elements->user_storage->mount_dir() /
+//                            fs::path("/").make_preferred() / "Shared Stuff",
+//                        error_code);
+//   if (error_code) {
+//     DLOG(ERROR) << "Failed creating Shared Stuff: " << error_code.message();
+//     return kGeneralError;
+//   }
 
   int result(lifestuff_elements->user_credentials->SaveSession());
   if (result != kSuccess) {
