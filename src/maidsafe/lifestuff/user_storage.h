@@ -113,8 +113,8 @@ class UserStorage {
                 const fs::path &absolute_path);
   int RemoveShare(const fs::path &absolute_path,
                   const std::string &sender_public_username = "");
-  int LeaveShare(const std::string &sender_public_username,
-                 const std::string &share_id);
+  void LeaveShare(const std::string &sender_public_username,
+                  const std::string &share_id);
   int UpdateShare(const std::string &share_id,
                   const std::string *new_share_id,
                   const std::string *new_directory_id,

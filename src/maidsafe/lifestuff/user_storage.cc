@@ -480,18 +480,18 @@ int UserStorage::RemoveShare(const fs::path& absolute_path,
                                                 share_id);
 }
 
-int UserStorage::LeaveShare(const std::string &/*sender_public_username*/,
-                            const std::string &share_id) {
+void UserStorage::LeaveShare(const std::string &/*sender_public_username*/,
+                             const std::string &share_id) {
   fs::path relative_path;
   int result(GetShareDetails(share_id, &relative_path,
                              nullptr, nullptr, nullptr));
   if (result != kSuccess)
-    return result;
+    return;
 
   fs::path share_dir(mount_dir_ / drive::kMsShareRoot /
                      fs::path("/").make_preferred() /
                      relative_path.filename());
-  return RemoveShare(share_dir);
+  RemoveShare(share_dir);
 }
 
 int UserStorage::UpdateShare(const std::string &share_id,
