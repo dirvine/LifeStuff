@@ -647,7 +647,6 @@ void MessageHandler::SendEveryone(const InboxItem &message) {
   while (it_map != contacts.end()) {
     InboxItem local_message(message);
     local_message.receiver_public_id = (*it_map++).public_id;
-    DLOG(ERROR) << "local_message: " << local_message.content[0].size();
     asio_service_.post(std::bind(&MessageHandler::Send,
                                  this,
                                  local_message.sender_public_id,
