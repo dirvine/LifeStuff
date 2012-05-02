@@ -59,7 +59,7 @@ class SessionTest : public testing::Test {
     std::vector<std::string> public_ids(session_.GetPublicIdentities());
     std::for_each(public_ids.begin(),
                   public_ids.end(),
-                  [&session_] (const std::string &pub_id) {
+                  [this] (const std::string &pub_id) {
                       for (int n(0); n < 5; ++n) {
                         Contact c(RandomAlphaNumericString(5),
                                   "",
@@ -68,7 +68,8 @@ class SessionTest : public testing::Test {
                                   asymm::PublicKey(),
                                   asymm::PublicKey(),
                                   kConfirmed);
-                        session_.contact_handler_map()[pub_id]->AddContact(c);
+                        this->session_.contact_handler_map()
+                            [pub_id]->AddContact(c);
                       }
                   });
   }

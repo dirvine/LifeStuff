@@ -181,7 +181,11 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
 
   char drive_name[3] = {'A' + static_cast<char>(count), ':', '\0'};
   mount_dir_ = drive_name;
-  drive_in_user_space_->Mount(mount_dir_, drive_logo);
+  int result(drive_in_user_space_->Mount(mount_dir_, drive_logo));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to Mount Drive: " << result;
+    return;
+  }
 #else
   mount_dir_ = mount_dir_path;
   boost::thread(std::bind(&MaidDriveInUserSpace::Mount,
