@@ -925,7 +925,9 @@ int LifeStuff::AcceptSentFile(const std::string &identifier,
     return result == kSuccess ? kGeneralError : result;
   }
 
-  GetFilenameData(serialised_identifier, &saved_file_name, &serialised_data_map);
+  GetFilenameData(serialised_identifier,
+                  &saved_file_name,
+                  &serialised_data_map);
   if (saved_file_name.empty() || serialised_data_map.empty()) {
     DLOG(ERROR) << "Failed to get filename or datamap.";
     return kGeneralError;
