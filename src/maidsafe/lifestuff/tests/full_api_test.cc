@@ -469,6 +469,13 @@ TEST(IndependentFullTest, FUNC_SendFile) {
       Sleep(bptime::milliseconds(100));
     EXPECT_FALSE(testing_variables2.file_id.empty());
     EXPECT_EQ(file_name1, testing_variables2.file_name);
+    EXPECT_NE(kSuccess,
+              test_elements2.AcceptSentFile(testing_variables2.file_id));
+    EXPECT_NE(kSuccess,
+              test_elements2.AcceptSentFile(testing_variables2.file_id,
+                                            test_elements2.mount_path() /
+                                                file_name2,
+                                            &file_name2));
     EXPECT_EQ(kSuccess,
               test_elements2.AcceptSentFile(testing_variables2.file_id,
                                             test_elements2.mount_path() /
@@ -502,10 +509,14 @@ TEST(IndependentFullTest, FUNC_SendFile) {
 
     EXPECT_FALSE(testing_variables2.file_id.empty());
     EXPECT_EQ(file_name1, testing_variables2.file_name);
+    std::string saved_file_name;
     EXPECT_EQ(kSuccess,
-              test_elements2.AcceptSentFile(testing_variables2.file_id));
+              test_elements2.AcceptSentFile(testing_variables2.file_id,
+                                            fs::path(),
+                                            &saved_file_name));
+    EXPECT_EQ(file_name1, saved_file_name);
     fs::path path2(test_elements2.mount_path() /
-                       kMyStuff / kDownloadStuff / file_name1);
+                       kMyStuff / kDownloadStuff / saved_file_name);
     EXPECT_TRUE(fs::exists(path2, error_code));
     EXPECT_EQ(0, error_code.value());
     std::string file_content2;
@@ -536,12 +547,16 @@ TEST(IndependentFullTest, FUNC_SendFile) {
 
     EXPECT_FALSE(testing_variables2.file_id.empty());
     EXPECT_EQ(file_name1, testing_variables2.file_name);
+    std::string saved_file_name;
     EXPECT_EQ(kSuccess,
-              test_elements2.AcceptSentFile(testing_variables2.file_id));
+              test_elements2.AcceptSentFile(testing_variables2.file_id,
+                                            fs::path(),
+                                            &saved_file_name));
+    EXPECT_EQ(file_name1 + " (1)", saved_file_name);
     fs::path path2a(test_elements2.mount_path() /
                         kMyStuff / kDownloadStuff / file_name1),
              path2b(test_elements2.mount_path() /
-                        kMyStuff / kDownloadStuff / (file_name1 + " (1)"));
+                        kMyStuff / kDownloadStuff / saved_file_name);
 
     EXPECT_TRUE(fs::exists(path2a, error_code));
     EXPECT_EQ(0, error_code.value());

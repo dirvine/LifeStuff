@@ -450,7 +450,7 @@ void PublicId::GetNewContacts(const bptime::seconds &interval,
     if (error_code != ba::error::operation_aborted) {
       DLOG(WARNING) << "Refresh timer error: " << error_code.message();
     } else {
-      DLOG(ERROR) << "The hutch's printout: " << error_code.message();
+      DLOG(INFO) << "Timer cancel triggered: " << error_code.message();
       return;
     }
   }

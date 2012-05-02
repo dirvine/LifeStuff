@@ -900,13 +900,21 @@ int LifeStuff::SendFile(const std::string &sender_public_id,
 }
 
 int LifeStuff::AcceptSentFile(const std::string &identifier,
-                              const fs::path &absolute_path) {
+                              const fs::path &absolute_path,
+                              std::string *file_name) {
   if (lifestuff_elements->state != kLoggedIn) {
     DLOG(ERROR) << "Wrong state: " << lifestuff_elements->state;
     return kGeneralError;
   }
 
-  std::string serialised_identifier, file_name, serialised_data_map;
+  if ((absolute_path.empty() && !file_name) ||
+      (!absolute_path.empty() && file_name)) {
+    DLOG(ERROR) << "Wrong parameters given. absolute_path and file_name are "
+                << "mutually exclusive.";
+    return kGeneralError;
+  }
+
+  std::string serialised_identifier, saved_file_name, serialised_data_map;
   int result(
       lifestuff_elements->user_storage->ReadHiddenFile(
           mount_path() / fs::path("/").make_preferred() /
@@ -917,8 +925,8 @@ int LifeStuff::AcceptSentFile(const std::string &identifier,
     return result == kSuccess ? kGeneralError : result;
   }
 
-  GetFilenameData(serialised_identifier, &file_name, &serialised_data_map);
-  if (file_name.empty() || serialised_data_map.empty()) {
+  GetFilenameData(serialised_identifier, &saved_file_name, &serialised_data_map);
+  if (saved_file_name.empty() || serialised_data_map.empty()) {
     DLOG(ERROR) << "Failed to get filename or datamap.";
     return kGeneralError;
   }
@@ -931,7 +939,7 @@ int LifeStuff::AcceptSentFile(const std::string &identifier,
 
   if (absolute_path.empty()) {
     fs::path store_path(mount_path() / kMyStuff / kDownloadStuff);
-    std::string adequate_name(GetNameInPath(store_path, file_name));
+    std::string adequate_name(GetNameInPath(store_path, saved_file_name));
     if (adequate_name.empty()) {
       DLOG(ERROR) << "No name found to work for saving the file.";
       return kGeneralError;
@@ -939,6 +947,7 @@ int LifeStuff::AcceptSentFile(const std::string &identifier,
     result = lifestuff_elements->user_storage->InsertDataMap(
                  store_path / adequate_name,
                  serialised_data_map);
+    *file_name = adequate_name;
   } else {
     result = lifestuff_elements->user_storage->InsertDataMap(
                  absolute_path,
