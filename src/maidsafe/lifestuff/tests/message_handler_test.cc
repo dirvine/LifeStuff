@@ -103,18 +103,21 @@ class MessageHandlerTest : public testing::Test {
   void NewMessageSlot(const std::string &own_public_username,
                       const std::string &other_public_username,
                       const std::string &message,
+                      const std::string &timestamp,
                       InboxItem *slot_message,
                       volatile bool *invoked) {
     slot_message->receiver_public_id = own_public_username;
     slot_message->sender_public_id = other_public_username;
     slot_message->content.push_back(message);
     slot_message->item_type = kChat;
+    slot_message->timestamp = timestamp;
     *invoked = true;
   }
 
   void SeveralMessagesSlot(const std::string &own_public_username,
                            const std::string &other_public_username,
                            const std::string &message,
+                           const std::string &timestamp,
                            std::vector<InboxItem> *messages,
                            volatile bool *invoked,
                            size_t *count) {
@@ -123,6 +126,7 @@ class MessageHandlerTest : public testing::Test {
     slot_message.sender_public_id = other_public_username;
     slot_message.content.push_back(message);
     slot_message.item_type = kChat;
+    slot_message.timestamp = timestamp;
     messages->push_back(slot_message);
     if (messages->size() == *count)
       *invoked = true;
@@ -194,21 +198,38 @@ class MessageHandlerTest : public testing::Test {
 
   bool MessagesEqual(const InboxItem &left,
                      const InboxItem &right) const {
-    if (left.item_type == right.item_type &&
-        left.content.size() == right.content.size() &&
-        left.receiver_public_id == right.receiver_public_id &&
-        left.sender_public_id == right.sender_public_id)
-      return true;
+    if (left.item_type != right.item_type) {
+      DLOG(ERROR) << "Different type.";
+      return false;
+    }
+    if (left.content.size() != right.content.size()) {
+      DLOG(ERROR) << "Different content size.";
+      return false;
+    }
+    if (left.receiver_public_id != right.receiver_public_id) {
+      DLOG(ERROR) << "Different receiver.";
+      return false;
+    }
+    if (left.sender_public_id != right.sender_public_id) {
+      DLOG(ERROR) << "Different sender.";
+      return false;
+    }
+    if (left.timestamp != right.timestamp) {
+      DLOG(ERROR) << "Different timestamp -left: " << left.timestamp
+                  << ", right: " << right.timestamp;
+      return false;
+    }
 
-    return false;
+    return true;
   }
 
   InboxItem CreateMessage(const std::string &sender,
-                          const std::string receiver) {
+                          const std::string &receiver) {
     InboxItem sent;
     sent.sender_public_id = sender;
     sent.receiver_public_id = receiver;
     sent.content.push_back("content");
+    sent.timestamp = IsoTimeWithMicroSeconds();
     return sent;
   }
 
@@ -263,8 +284,9 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
   InboxItem received;
   volatile bool invoked(false);
   message_handler2_->ConnectToChatSignal(
-      std::bind(&MessageHandlerTest::NewMessageSlot,
-                this, args::_1, args::_2, args::_3, &received, &invoked));
+      std::bind(&MessageHandlerTest::NewMessageSlot, this,
+                args::_1, args::_2, args::_3, args::_4,
+                &received, &invoked));
   ASSERT_EQ(kSuccess,
             message_handler2_->StartCheckingForNewMessages(interval_));
 
@@ -278,6 +300,18 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
     Sleep(bptime::milliseconds(100));
 
   ASSERT_TRUE(MessagesEqual(sent, received));
+
+  bptime::ptime sent_time(bptime::from_iso_string(sent.timestamp)),
+                received_time(bptime::from_iso_string(sent.timestamp));
+  ASSERT_FALSE(sent_time.is_not_a_date_time() || sent_time.is_special());
+  ASSERT_FALSE(received_time.is_not_a_date_time() ||
+               received_time.is_special());
+  ASSERT_EQ(sent_time.time_of_day(), received_time.time_of_day());
+  ASSERT_EQ(sent_time.date(), received_time.date());
+  ASSERT_EQ(sent_time.zone_abbrev(), received_time.zone_abbrev());
+  ASSERT_EQ(sent_time.zone_as_posix_string(),
+            received_time.zone_as_posix_string());
+  ASSERT_EQ(sent_time.zone_name(), received_time.zone_name());
 }
 
 TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
@@ -320,6 +354,7 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
                                      args::_1,
                                      args::_2,
                                      args::_3,
+                                     args::_4,
                                      &received_messages,
                                      &finished,
                                      &multiple_messages_)));
@@ -356,6 +391,7 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
                              args::_1,
                              args::_2,
                              args::_3,
+                             args::_4,
                              &received_messages,
                              &done,
                              &multiple_messages_));
@@ -404,8 +440,9 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
   InboxItem received;
   volatile bool invoked(false);
   message_handler1_->ConnectToChatSignal(
-      std::bind(&MessageHandlerTest::NewMessageSlot,
-                this, args::_1, args::_2, args::_3, &received, &invoked));
+      std::bind(&MessageHandlerTest::NewMessageSlot, this,
+                args::_1, args::_2, args::_3, args::_4,
+                &received, &invoked));
   ASSERT_EQ(kSuccess,
             message_handler1_->StartCheckingForNewMessages(interval_));
 

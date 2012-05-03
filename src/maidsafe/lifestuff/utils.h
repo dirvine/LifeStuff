@@ -60,6 +60,7 @@ enum InboxItemType {
 
 struct InboxItem {
   explicit InboxItem(InboxItemType inbox_item_type = kChat);
+
   InboxItemType item_type;
   std::string sender_public_id;
   std::string receiver_public_id;

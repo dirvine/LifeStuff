@@ -944,15 +944,19 @@ int LifeStuff::AcceptSentFile(const std::string &identifier,
     result = lifestuff_elements->user_storage->InsertDataMap(
                  store_path / adequate_name,
                  serialised_data_map);
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed inserting DM: " << result;
+      return result;
+    }
     *file_name = adequate_name;
   } else {
     result = lifestuff_elements->user_storage->InsertDataMap(
                  absolute_path,
                  serialised_data_map);
-  }
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed inserting DM: " << result;
-    return result;
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed inserting DM: " << result;
+      return result;
+    }
   }
 
   return kSuccess;
