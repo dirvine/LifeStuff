@@ -114,7 +114,8 @@ class LifeStuff {
                const std::string &receiver_public_id,
                const fs::path &absolute_path);
   int AcceptSentFile(const std::string &identifier,
-                     const fs::path &absolute_path = fs::path());
+                     const fs::path &absolute_path = fs::path(),
+                     std::string *file_name = nullptr);
   int RejectSentFile(const std::string &identifier);
 
   /// Filesystem
@@ -172,7 +173,7 @@ class LifeStuff {
   fs::path mount_path() const;
 
  private:
-  int SetValidPmid();
+  int SetValidPmid();   
   struct Elements;
   std::shared_ptr<Elements> lifestuff_elements;
 };

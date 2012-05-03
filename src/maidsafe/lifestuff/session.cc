@@ -58,7 +58,14 @@ Session::Session()
     : user_details_(new UserDetails),
       passport_(new passport::Passport),
       contact_handler_map_(),
-      profile_picture_map_() {}
+      profile_picture_map_(),
+      encrypted_tmid_(),
+      encrypted_stmid_(),
+      serialised_data_atlas_(),
+      uc_serialised_data_atlas_(),
+      surrogate_serialised_data_atlas_(),
+      logging_out_(false),
+      logged_in_(false) {}
 
 Session::~Session() {}
 
@@ -74,6 +81,13 @@ bool Session::Reset() {
   passport_->ClearKeyChain(true, true, true);
   contact_handler_map_.clear();
   profile_picture_map_.clear();
+  encrypted_tmid_.clear();
+  encrypted_stmid_.clear();
+  serialised_data_atlas_.clear();
+  uc_serialised_data_atlas_.clear();
+  surrogate_serialised_data_atlas_.clear();
+  logging_out_ = false;
+  logged_in_ = false;  
   return true;
 }
 
@@ -124,6 +138,34 @@ std::string Session::profile_picture_data_map(
   return (*it).second;
 }
 
+std::string Session::encrypted_tmid() const {
+  return encrypted_tmid_;
+}
+
+std::string Session::encrypted_stmid() const {
+  return encrypted_stmid_;
+}
+
+std::string Session::serialised_data_atlas() const {
+  return serialised_data_atlas_;
+}
+
+std::string Session::uc_serialised_data_atlas() const {
+  return uc_serialised_data_atlas_;
+}
+
+std::string Session::surrogate_serialised_data_atlas() const {
+  return surrogate_serialised_data_atlas_;
+}
+
+bool Session::logging_out() const {
+  return logging_out_;
+}
+
+bool Session::logged_in() const {
+  return logged_in_;
+}
+
 void Session::set_def_con_level(DefConLevels defconlevel) {
   user_details_->defconlevel = defconlevel;
 }
@@ -161,6 +203,37 @@ bool Session::set_profile_picture_data_map(
   profile_picture_map_[public_id] = profile_picture_data_map;
 
   return true;
+}
+
+void Session::set_encrypted_tmid(const std::string &encrypted_tmid) {
+  encrypted_tmid_ = encrypted_tmid;
+}
+
+void Session::set_encrypted_stmid(const std::string &encrypted_stmid) {
+  encrypted_stmid_ = encrypted_stmid;
+}
+
+void Session::set_serialised_data_atlas(
+    const std::string &serialised_data_atlas) {
+  serialised_data_atlas_ = serialised_data_atlas;
+}
+
+void Session::set_uc_serialised_data_atlas(
+    const std::string &uc_serialised_data_atlas) {
+  uc_serialised_data_atlas_ = uc_serialised_data_atlas;
+}
+
+void Session::set_surrogate_serialised_data_atlas(
+    const std::string &surrogate_serialised_data_atlas) {
+  surrogate_serialised_data_atlas_ = surrogate_serialised_data_atlas;
+}
+
+void Session::set_logging_out(const bool &logging_out) {
+  logging_out_ = logging_out;
+}
+
+void Session::set_logged_in(const bool &logged_in) {
+  logged_in_ = logged_in;
 }
 
 int Session::ParseDataAtlas(const std::string &serialised_data_atlas) {
@@ -269,14 +342,6 @@ int Session::ParseKeyChain(const std::string &serialised_keyring,
 void Session::SerialiseKeyChain(std::string *serialised_keyring,
                                 std::string *serialised_selectables) {
   passport_->SerialiseKeyChain(serialised_keyring, serialised_selectables);
-}
-
-std::shared_ptr<asymm::Keys> Session::GetPmidKeys() {
-  std::shared_ptr<asymm::Keys> key_pair(new asymm::Keys);
-  key_pair->identity = passport_->PacketName(passport::kPmid, true);
-  key_pair->public_key = passport_->SignaturePacketValue(passport::kPmid, true);
-  key_pair->private_key = passport_->PacketPrivateKey(passport::kPmid, true);
-  return key_pair;
 }
 
 bool Session::CreateTestPackets(bool with_public_ids) {
