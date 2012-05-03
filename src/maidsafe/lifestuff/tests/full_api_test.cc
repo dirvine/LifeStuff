@@ -754,7 +754,6 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
                                                                &results));
 
     fs::path share_path(test_elements1.mount_path() /
-                        fs::path("/").make_preferred() /
                         kSharedStuff /
                         share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
@@ -778,7 +777,6 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
                   testing_variables2.new_private_share_id));
 
     fs::path share_path(test_elements2.mount_path() /
-                        fs::path("/").make_preferred() /
                         kSharedStuff /
                         share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code));
@@ -800,7 +798,6 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     fs::path share_path(test_elements1.mount_path() /
-                        fs::path("/").make_preferred() /
                         kSharedStuff /
                         share_name1);
     fs::path a_file_path(share_path / file_name1);
@@ -823,7 +820,6 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
 
     fs::path share_path(test_elements2.mount_path() /
-                        fs::path("/").make_preferred() /
                         kSharedStuff /
                         share_name1);
     fs::path a_file_path(share_path / file_name1);
@@ -875,7 +871,6 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
 
     // Create directory with contents to share
     fs::path share_path(test_elements1.mount_path() /
-                        fs::path("/").make_preferred() /
                         kMyStuff /
                         share_name1);
     fs::create_directories(share_path, error_code);
@@ -899,7 +894,6 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
 
     EXPECT_FALSE(fs::exists(share_path, error_code)) << share_path;
     share_path = test_elements1.mount_path() /
-                 fs::path("/").make_preferred() /
                  kSharedStuff /
                  share_name1;
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
@@ -923,7 +917,6 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
                   testing_variables2.new_private_share_id));
 
     fs::path share_path(test_elements2.mount_path() /
-                        fs::path("/").make_preferred() /
                         kSharedStuff /
                         share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code));
@@ -951,7 +944,6 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     fs::path share_path(test_elements1.mount_path() /
-                        fs::path("/").make_preferred() /
                         kSharedStuff /
                         share_name1);
     fs::path a_file_path(share_path / file_name2);
@@ -973,7 +965,6 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
 
     fs::path share_path(test_elements2.mount_path() /
-                        fs::path("/").make_preferred() /
                         kSharedStuff /
                         share_name1);
     fs::path a_file_path(share_path / file_name2);
@@ -1023,7 +1014,6 @@ TEST_P(PrivateSharesApiTest, FUNC_RejectInvitationPrivateShare) {
 
     // Create directory with contents to share
     fs::path share_path(test_elements1.mount_path() /
-                        fs::path("/").make_preferred() /
                         kMyStuff /
                         share_name1);
     fs::create_directories(share_path, error_code);
@@ -1047,7 +1037,6 @@ TEST_P(PrivateSharesApiTest, FUNC_RejectInvitationPrivateShare) {
 
     EXPECT_FALSE(fs::exists(share_path, error_code)) << share_path;
     share_path = test_elements1.mount_path() /
-                 fs::path("/").make_preferred() /
                  kSharedStuff /
                  share_name1;
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
@@ -1069,7 +1058,6 @@ TEST_P(PrivateSharesApiTest, FUNC_RejectInvitationPrivateShare) {
                   testing_variables2.new_private_share_id));
 
     fs::path share_path(test_elements2.mount_path() /
-                        fs::path("/").make_preferred() /
                         kSharedStuff /
                         share_name1);
     EXPECT_FALSE(fs::exists(share_path, error_code));
@@ -1122,7 +1110,6 @@ TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
                                                                &results));
 
     fs::path share_path(test_elements1.mount_path() /
-                        fs::path("/").make_preferred() /
                         kSharedStuff /
                         share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
@@ -1146,7 +1133,6 @@ TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
                   testing_variables2.new_private_share_id));
 
     fs::path share_path(test_elements2.mount_path() /
-                        fs::path("/").make_preferred() /
                         kSharedStuff /
                         share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code));
@@ -1176,7 +1162,6 @@ TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
     // Still using share_id to identify the share, instead of share_name
 //     EXPECT_EQ(share_name1, testing_variables2.deleted_private_share_name);
     fs::path share_path(test_elements2.mount_path() /
-                        fs::path("/").make_preferred() /
                         kSharedStuff /
                         share_name1);
     EXPECT_FALSE(fs::is_directory(share_path, error_code)) << share_path;
@@ -1231,7 +1216,6 @@ TEST_P(PrivateSharesApiTest, FUNC_LeavePrivateShare) {
                                                                &results));
 
     fs::path share_path(test_elements1.mount_path() /
-                        fs::path("/").make_preferred() /
                         kSharedStuff /
                         share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
@@ -1261,7 +1245,6 @@ TEST_P(PrivateSharesApiTest, FUNC_LeavePrivateShare) {
                   testing_variables2.new_private_share_id));
 
     fs::path share_path(test_elements2.mount_path() /
-                        fs::path("/").make_preferred() /
                         kSharedStuff /
                         share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code));
@@ -1286,7 +1269,6 @@ TEST_P(PrivateSharesApiTest, FUNC_LeavePrivateShare) {
     // And when leaving, Deletion Signal won't get fired
 //     EXPECT_EQ(share_name1, testing_variables2.deleted_private_share_name);
     fs::path share_path(test_elements1.mount_path() /
-                        fs::path("/").make_preferred() /
                         kSharedStuff /
                         share_name1);
     EXPECT_FALSE(fs::is_directory(share_path, error_code)) << share_path;
@@ -1342,7 +1324,6 @@ TEST(IndependentFullTest, FUNC_MembershipDowngradePrivateShare) {
                                                                &results));
 
     fs::path share_path(test_elements1.mount_path() /
-                        fs::path("/").make_preferred() /
                         kSharedStuff /
                         share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
@@ -1366,7 +1347,6 @@ TEST(IndependentFullTest, FUNC_MembershipDowngradePrivateShare) {
                   testing_variables2.new_private_share_id));
 
     fs::path share_path(test_elements2.mount_path() /
-                        fs::path("/").make_preferred() /
                         kSharedStuff /
                         share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code));
@@ -1412,7 +1392,6 @@ TEST(IndependentFullTest, FUNC_MembershipDowngradePrivateShare) {
     EXPECT_EQ(kShareReadOnly, shares[share_name1]);
 
     fs::path share_path(test_elements2.mount_path() /
-                        fs::path("/").make_preferred() /
                         kSharedStuff /
                         share_name1);
     fs::path a_file_path(share_path / file_name1);
@@ -1471,7 +1450,6 @@ TEST(IndependentFullTest, FUNC_MembershipUpgradePrivateShare) {
                                                                &results));
 
     fs::path share_path(test_elements1.mount_path() /
-                        fs::path("/").make_preferred() /
                         kSharedStuff /
                         share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
@@ -1495,7 +1473,6 @@ TEST(IndependentFullTest, FUNC_MembershipUpgradePrivateShare) {
                   testing_variables2.new_private_share_id));
 
     fs::path share_path(test_elements2.mount_path() /
-                        fs::path("/").make_preferred() /
                         kSharedStuff /
                         share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code));
@@ -1541,9 +1518,8 @@ TEST(IndependentFullTest, FUNC_MembershipUpgradePrivateShare) {
     EXPECT_EQ(kShareReadWrite, shares[share_name1]);
 
     fs::path share_path(test_elements2.mount_path() /
-                    fs::path("/").make_preferred() /
-                    kSharedStuff /
-                    share_name1);
+                        kSharedStuff /
+                        share_name1);
     fs::path a_file_path(share_path / file_name1);
     EXPECT_TRUE(WriteFile(a_file_path, file_content2));
     EXPECT_TRUE(fs::exists(a_file_path, error_code));
@@ -1603,7 +1579,6 @@ TEST(IndependentFullTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
                                                                &results));
 
     fs::path share_path(test_elements1.mount_path() /
-                        fs::path("/").make_preferred() /
                         kSharedStuff /
                         share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
@@ -1632,7 +1607,6 @@ TEST(IndependentFullTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
                   testing_variables2.new_private_share_id));
 
     fs::path share_path(test_elements2.mount_path() /
-                        fs::path("/").make_preferred() /
                         kSharedStuff /
                         share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code));
@@ -1648,7 +1622,6 @@ TEST(IndependentFullTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
                                                      removal_message));
     EXPECT_TRUE(test_elements1.GetContacts(public_id1).empty());
     fs::path share_path(test_elements1.mount_path() /
-                        fs::path("/").make_preferred() /
                         kSharedStuff /
                         share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
@@ -1676,7 +1649,6 @@ TEST(IndependentFullTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
     while (!testing_variables2.private_share_deleted)
       Sleep(bptime::milliseconds(100));
     fs::path share_path(test_elements2.mount_path() /
-                        fs::path("/").make_preferred() /
                         kSharedStuff /
                         share_name1);
     Sleep(bptime::milliseconds(100));
@@ -1731,9 +1703,7 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
                                                                contacts,
                                                                &share_name1,
                                                                &results));
-    directory1 = test_elements1.mount_path() /
-                 fs::path("/").make_preferred() /
-                 kSharedStuff / share_name1;
+    directory1 = test_elements1.mount_path() / kSharedStuff / share_name1;
     EXPECT_TRUE(fs::is_directory(directory1, error_code)) << directory1;
     EXPECT_EQ(0, error_code.value());
     EXPECT_EQ(kSuccess, results[public_id2]);
@@ -1758,9 +1728,7 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
                   public_id2,
                   public_id1,
                   testing_variables2.new_private_share_id));
-    directory2 = test_elements2.mount_path() /
-                 fs::path("/").make_preferred() /
-                 kSharedStuff / share_name1;
+    directory2 = test_elements2.mount_path()/ kSharedStuff / share_name1;
     EXPECT_TRUE(fs::is_directory(directory2, error_code)) << directory2;
 
     EXPECT_EQ(kSuccess, test_elements2.RemoveContact(public_id2,
@@ -1907,9 +1875,7 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
                                                                contacts,
                                                                &share_name1,
                                                                &results));
-    directory1 = test_elements1.mount_path() /
-                 fs::path("/").make_preferred() /
-                 kSharedStuff / share_name1;
+    directory1 = test_elements1.mount_path() / kSharedStuff / share_name1;
     EXPECT_TRUE(fs::is_directory(directory1, error_code)) << directory1;
     EXPECT_EQ(0, error_code.value());
     EXPECT_EQ(kSuccess, results[public_id2]);
@@ -1934,9 +1900,7 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
                   public_id2,
                   public_id1,
                   testing_variables2.new_private_share_id));
-    directory2 = test_elements2.mount_path() /
-                 fs::path("/").make_preferred() /
-                 kSharedStuff / share_name1;
+    directory2 = test_elements2.mount_path() / kSharedStuff / share_name1;
     EXPECT_TRUE(fs::is_directory(directory2, error_code)) << directory2;
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
@@ -1954,9 +1918,7 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
                   public_id3,
                   public_id1,
                   testing_variables3.new_private_share_id));
-    directory3 = test_elements3.mount_path() /
-                 fs::path("/").make_preferred() /
-                 kSharedStuff / share_name1;
+    directory3 = test_elements3.mount_path() / kSharedStuff / share_name1;
     EXPECT_TRUE(fs::is_directory(directory3, error_code)) << directory3;
 
     EXPECT_EQ(kSuccess, test_elements3.RemoveContact(public_id3,
