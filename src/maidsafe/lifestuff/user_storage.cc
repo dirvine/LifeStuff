@@ -244,7 +244,7 @@ bool UserStorage::ParseAndSaveDataMap(const std::string &file_name,
     return false;
   }
 
-  int result(WriteHiddenFile(mount_dir_ /
+  int result(WriteHiddenFile(mount_dir() /
                                  std::string(*data_map_hash +
                                              drive::kMsHidden.string()),
                              filename_data + serialised_data_map,
@@ -275,7 +275,7 @@ bool UserStorage::SaveShareData(const std::string &serialised_share_data,
                                 const std::string &share_id) {
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
   int result(WriteHiddenFile(
-                 mount_dir_ /
+                 mount_dir() /
                      drive::kMsShareRoot /
                      std::string(temp_name + drive::kMsHidden.string()),
                  serialised_share_data,
@@ -494,7 +494,7 @@ void UserStorage::LeaveShare(const std::string &/*sender_public_username*/,
   if (result != kSuccess)
     return;
 
-  fs::path share_dir(mount_dir_ /
+  fs::path share_dir(mount_dir() /
                      drive::kMsShareRoot /
                      relative_path.filename());
   RemoveShare(share_dir);
@@ -890,7 +890,7 @@ void UserStorage::MemberAccessChange(
   asymm::Keys share_keyring;
   if (access_right >= drive::kShareReadWrite) {
     std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
-    fs::path hidden_file(mount_dir_ /
+    fs::path hidden_file(mount_dir() /
                          drive::kMsShareRoot /
                          std::string(temp_name + drive::kMsHidden.string()));
     std::string serialised_share_data;
