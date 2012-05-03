@@ -311,7 +311,8 @@ void MessageHandler::ProcessRetrieved(const passport::SelectableIdData &data,
       switch (inbox_item.item_type) {
         case kChat: (*chat_signal_)(inbox_item.receiver_public_id,
                                     inbox_item.sender_public_id,
-                                    inbox_item.content.at(0));
+                                    inbox_item.content.at(0),
+                                    inbox_item.timestamp);
                     break;
         case kFileTransfer: SignalFileTransfer(inbox_item);
                             break;
@@ -437,13 +438,19 @@ void MessageHandler::ContactPresenceSlot(const InboxItem &presence_message) {
     result = session_->contact_handler_map()[receiver]->UpdatePresence(sender,
                                                                        kOnline);
     if (result == kSuccess && start_up_done_)
-      (*contact_presence_signal_)(receiver, sender, kOnline);
+      (*contact_presence_signal_)(receiver,
+                                  sender,
+                                  presence_message.timestamp,
+                                  kOnline);
   } else if (presence_message.content[0] == "kOffline") {
     result =
         session_->contact_handler_map()[receiver]->UpdatePresence(sender,
                                                                   kOffline);
     if (result == kSuccess && start_up_done_)
-      (*contact_presence_signal_)(receiver, sender, kOffline);
+      (*contact_presence_signal_)(receiver,
+                                  sender,
+                                  presence_message.timestamp,
+                                  kOffline);
 
     // Send message so they know we're online when they come back
     asio_service_.post(std::bind(&MessageHandler::SendPresenceMessage,
@@ -484,7 +491,9 @@ void MessageHandler::ContactProfilePictureSlot(
     return;
   }
 
-  (*contact_profile_picture_signal_)(receiver, sender);
+  (*contact_profile_picture_signal_)(receiver,
+                                     sender,
+                                     profile_picture_message.timestamp);
 }
 
 void MessageHandler::RetrieveMessagesForAllIds() {
@@ -560,7 +569,9 @@ void MessageHandler::SignalFileTransfer(const InboxItem &inbox_item) {
     DLOG(ERROR) << "Wrong number of arguments for message.";
     (*file_transfer_signal_)(inbox_item.receiver_public_id,
                              inbox_item.sender_public_id,
-                             "", "");
+                             "",
+                             "",
+                             inbox_item.timestamp);
     return;
   }
 
@@ -572,20 +583,23 @@ void MessageHandler::SignalFileTransfer(const InboxItem &inbox_item) {
     (*file_transfer_signal_)(inbox_item.receiver_public_id,
                              inbox_item.sender_public_id,
                              inbox_item.content[0],
-                             "");
+                             "",
+                             inbox_item.timestamp);
     return;
   }
 
   (*file_transfer_signal_)(inbox_item.receiver_public_id,
                            inbox_item.sender_public_id,
                            inbox_item.content[0],
-                           data_map_hash);
+                           data_map_hash,
+                           inbox_item.timestamp);
 }
 
 void MessageHandler::SignalShare(const InboxItem &inbox_item) {
   if (inbox_item.content[1] == "remove_share") {
     (*share_deletion_signal_)(inbox_item.receiver_public_id,
-                              inbox_item.content[0]);
+                              inbox_item.content[0],
+                              inbox_item.timestamp);
   } else if (inbox_item.content[1] == "update_share") {
     asymm::Keys key_ring;
     if (inbox_item.content.size() > 4) {
@@ -609,7 +623,8 @@ void MessageHandler::SignalShare(const InboxItem &inbox_item) {
     (*member_access_level_signal_)(inbox_item.receiver_public_id,
                                    inbox_item.sender_public_id,
                                    inbox_item.content[0],
-                                   drive::kShareReadOnly);
+                                   drive::kShareReadOnly,
+                                   inbox_item.timestamp);
     return;
   } else {
     Message message;
@@ -626,7 +641,8 @@ void MessageHandler::SignalShare(const InboxItem &inbox_item) {
     (*share_invitation_signal_)(inbox_item.receiver_public_id,
                                 inbox_item.sender_public_id,
                                 relative_path.filename().string(),
-                                inbox_item.content[0]);
+                                inbox_item.content[0],
+                                inbox_item.timestamp);
   }
 
   if (inbox_item.content[1] == "member_access")
@@ -634,7 +650,8 @@ void MessageHandler::SignalShare(const InboxItem &inbox_item) {
     (*member_access_level_signal_)(inbox_item.receiver_public_id,
                                    inbox_item.sender_public_id,
                                    inbox_item.content[0],
-                                   drive::kShareReadWrite);
+                                   drive::kShareReadWrite,
+                                   inbox_item.timestamp);
 }
 
 void MessageHandler::SendEveryone(const InboxItem &message) {
@@ -664,7 +681,8 @@ void MessageHandler::ContactDeletionSlot(const InboxItem &deletion_item) {
   // UI - To do whatever it is they do out there, in that crazy world
   (*contact_deletion_signal_)(my_public_id,
                               contact_public_id,
-                              deletion_item.content.at(0));
+                              deletion_item.content.at(0),
+                              deletion_item.timestamp);
 }
 
 bs2::connection MessageHandler::ConnectToChatSignal(

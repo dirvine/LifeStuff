@@ -24,6 +24,7 @@
 
 #include "boost/asio.hpp"
 #include "boost/archive/text_iarchive.hpp"
+#include "boost/date_time/posix_time/posix_time.hpp"
 #include "boost/regex.hpp"
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
@@ -52,6 +53,13 @@ namespace bai = boost::asio::ip;
 namespace maidsafe {
 
 namespace lifestuff {
+
+InboxItem::InboxItem(InboxItemType inbox_item_type)
+    : item_type(inbox_item_type),
+      sender_public_id(),
+      receiver_public_id(),
+      content(),
+      timestamp(IsoTimeWithMicroSeconds()) {}
 
 std::string CreatePin() {
   std::stringstream pin_stream;
@@ -386,6 +394,10 @@ int CopyDir(const fs::path& source, const fs::path& dest) {
     }
   }
   return kSuccess;
+}
+
+std::string IsoTimeWithMicroSeconds() {
+  return bptime::to_iso_string(bptime::microsec_clock::universal_time());
 }
 
 #ifdef LOCAL_TARGETS_ONLY
