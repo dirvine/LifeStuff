@@ -396,6 +396,22 @@ int CopyDir(const fs::path& source, const fs::path& dest) {
   return kSuccess;
 }
 
+bool VerifyAndCreatePath(const fs::path& path) {
+  boost::system::error_code error_code;
+  if (fs::exists(path, error_code) && !error_code) {
+    DLOG(INFO) << path << " does exist.";
+    return true;
+  }
+
+  if (fs::create_directories(path, error_code) && !error_code) {
+    DLOG(INFO) << path << " created successfully.";
+    return true;
+  }
+
+  DLOG(ERROR) << path << " doesn't exist and couldn't be created.";
+  return false;
+}
+
 std::string IsoTimeWithMicroSeconds() {
   return bptime::to_iso_string(bptime::microsec_clock::universal_time());
 }

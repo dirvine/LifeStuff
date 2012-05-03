@@ -111,8 +111,8 @@ void GetFilenameData(const std::string &content,
                      std::string *serialised_data_map);
 std::string GetNameInPath(const fs::path &save_path,
                           const std::string &file_name);
-
 int CopyDir(const fs::path& source, const fs::path& dest);
+bool VerifyAndCreatePath(const fs::path& path);
 
 std::string IsoTimeWithMicroSeconds();
 

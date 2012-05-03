@@ -441,7 +441,7 @@ TEST(IndependentFullTest, FUNC_ChangeCredentials) {
   EXPECT_EQ(kSuccess, test_elements1.Finalise());
 }
 
-TEST(IndependentFullTest, FUNC_SendFile) {
+TEST(IndependentFullTest, FUNC_SendFileSaveToGivenPath) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
@@ -464,7 +464,7 @@ TEST(IndependentFullTest, FUNC_SendFile) {
                                                    public_id2));
 
   boost::system::error_code error_code;
-  fs::path file_path1, file_path2;
+  fs::path file_path1;
   std::string file_name1(RandomAlphaNumericString(8)),
               file_content1(RandomString(5 * 1024)),
               file_name2(RandomAlphaNumericString(8));
@@ -507,6 +507,36 @@ TEST(IndependentFullTest, FUNC_SendFile) {
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
+  EXPECT_EQ(kSuccess, test_elements1.Finalise());
+  EXPECT_EQ(kSuccess, test_elements2.Finalise());
+}
+
+TEST(IndependentFullTest, FUNC_SendFileSaveToDefaultLocation) {
+  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
+  std::string username1(RandomAlphaNumericString(6)),
+              pin1(CreatePin()),
+              password1(RandomAlphaNumericString(6)),
+              public_id1(RandomAlphaNumericString(5));
+  std::string username2(RandomAlphaNumericString(6)),
+              pin2(CreatePin()),
+              password2(RandomAlphaNumericString(6)),
+              public_id2(RandomAlphaNumericString(5));
+  LifeStuff test_elements1, test_elements2;
+  TestingVariables testing_variables1, testing_variables2;
+  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+                                                   test_elements2,
+                                                   testing_variables1,
+                                                   testing_variables2,
+                                                   *test_dir,
+                                                   username1, pin1, password1,
+                                                   public_id1,
+                                                   username2, pin2, password2,
+                                                   public_id2));
+
+  boost::system::error_code error_code;
+  fs::path file_path1;
+  std::string file_name1(RandomAlphaNumericString(8)),
+              file_content1(RandomString(5 * 1024));
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
 
@@ -522,7 +552,6 @@ TEST(IndependentFullTest, FUNC_SendFile) {
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
   {
-    testing_variables2.file_transfer_received = false;
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.file_transfer_received)
       Sleep(bptime::milliseconds(100));
@@ -536,7 +565,9 @@ TEST(IndependentFullTest, FUNC_SendFile) {
                                             &saved_file_name));
     EXPECT_EQ(file_name1, saved_file_name);
     fs::path path2(test_elements2.mount_path() /
-                       kMyStuff / kDownloadStuff / saved_file_name);
+                   kMyStuff /
+                   kDownloadStuff /
+                   saved_file_name);
     EXPECT_TRUE(fs::exists(path2, error_code));
     EXPECT_EQ(0, error_code.value());
     std::string file_content2;
@@ -574,9 +605,13 @@ TEST(IndependentFullTest, FUNC_SendFile) {
                                             &saved_file_name));
     EXPECT_EQ(file_name1 + " (1)", saved_file_name);
     fs::path path2a(test_elements2.mount_path() /
-                        kMyStuff / kDownloadStuff / file_name1),
+                    kMyStuff /
+                    kDownloadStuff /
+                    file_name1),
              path2b(test_elements2.mount_path() /
-                        kMyStuff / kDownloadStuff / saved_file_name);
+                    kMyStuff /
+                    kDownloadStuff /
+                    saved_file_name);
 
     EXPECT_TRUE(fs::exists(path2a, error_code));
     EXPECT_EQ(0, error_code.value());
@@ -585,6 +620,86 @@ TEST(IndependentFullTest, FUNC_SendFile) {
     std::string file_content2;
     EXPECT_TRUE(ReadFile(path2b, &file_content2));
     EXPECT_TRUE(file_content1 == file_content2);
+
+    EXPECT_EQ(kSuccess, test_elements2.LogOut());
+  }
+  EXPECT_EQ(kSuccess, test_elements1.Finalise());
+  EXPECT_EQ(kSuccess, test_elements2.Finalise());
+}
+
+TEST(IndependentFullTest, FUNC_SendFileDeleteAcceptedFiles) {
+  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
+  std::string username1(RandomAlphaNumericString(6)),
+              pin1(CreatePin()),
+              password1(RandomAlphaNumericString(6)),
+              public_id1(RandomAlphaNumericString(5));
+  std::string username2(RandomAlphaNumericString(6)),
+              pin2(CreatePin()),
+              password2(RandomAlphaNumericString(6)),
+              public_id2(RandomAlphaNumericString(5));
+  LifeStuff test_elements1, test_elements2;
+  TestingVariables testing_variables1, testing_variables2;
+  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+                                                   test_elements2,
+                                                   testing_variables1,
+                                                   testing_variables2,
+                                                   *test_dir,
+                                                   username1, pin1, password1,
+                                                   public_id1,
+                                                   username2, pin2, password2,
+                                                   public_id2));
+
+  boost::system::error_code error_code;
+  fs::path file_path1;
+  std::string file_name1(RandomAlphaNumericString(8)),
+              file_content1(RandomString(5 * 1024));
+
+  {
+    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+
+    file_path1 = test_elements1.mount_path() / file_name1;
+    std::ofstream ofstream(file_path1.c_str(), std::ios::binary);
+    ofstream << file_content1;
+    ofstream.close();
+    EXPECT_TRUE(fs::exists(file_path1, error_code));
+    EXPECT_EQ(0, error_code.value());
+    EXPECT_EQ(kSuccess,
+              test_elements1.SendFile(public_id1, public_id2, file_path1));
+
+    EXPECT_EQ(kSuccess, test_elements1.LogOut());
+  }
+  {
+    testing_variables2.file_transfer_received = false;
+    EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
+    while (!testing_variables2.file_transfer_received)
+      Sleep(bptime::milliseconds(100));
+
+    EXPECT_FALSE(testing_variables2.file_id.empty());
+    EXPECT_EQ(file_name1, testing_variables2.file_name);
+
+    // Delete accepted files dir
+    EXPECT_TRUE(fs::remove_all(test_elements2.mount_path() / kMyStuff,
+                               error_code));
+    EXPECT_EQ(0, error_code.value());
+    EXPECT_FALSE(fs::exists(test_elements2.mount_path() / kMyStuff,
+                            error_code));
+    EXPECT_NE(0, error_code.value());
+
+    std::string saved_file_name;
+    EXPECT_EQ(kSuccess,
+              test_elements2.AcceptSentFile(testing_variables2.file_id,
+                                            fs::path(),
+                                            &saved_file_name));
+    EXPECT_EQ(file_name1, saved_file_name);
+    fs::path path2(test_elements2.mount_path() /
+                   kMyStuff /
+                   kDownloadStuff /
+                   saved_file_name);
+    EXPECT_TRUE(fs::exists(path2, error_code));
+    EXPECT_EQ(0, error_code.value());
+    std::string file_content2;
+    EXPECT_TRUE(ReadFile(path2, &file_content2));
+    EXPECT_EQ(file_content1, file_content2);
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }

@@ -936,6 +936,10 @@ int LifeStuff::AcceptSentFile(const std::string &identifier,
 
   if (absolute_path.empty()) {
     fs::path store_path(mount_path() / kMyStuff / kDownloadStuff);
+    if (!VerifyAndCreatePath(store_path)) {
+      DLOG(ERROR) << "Failed finding and creating: " << store_path;
+      return kGeneralError;
+    }
     std::string adequate_name(GetNameInPath(store_path, saved_file_name));
     if (adequate_name.empty()) {
       DLOG(ERROR) << "No name found to work for saving the file.";
