@@ -52,8 +52,19 @@ namespace args = std::placeholders;
 namespace maidsafe {
 
 namespace lifestuff {
-  
+
 struct Slots {
+  Slots()
+      : chat_slot(),
+        file_slot(),
+        new_contact_slot(),
+        confirmed_contact_slot(),
+        profile_picture_slot(),
+        contact_presence_slot(),
+        contact_deletion_function(),
+        share_invitation_function(),
+        share_deletion_function(),
+        access_level_function() {}
   ChatFunction chat_slot;
   FileTransferFunction file_slot;
   NewContactFunction new_contact_slot;
@@ -64,7 +75,7 @@ struct Slots {
   ShareInvitationFunction share_invitation_function;
   ShareDeletionFunction share_deletion_function;
   MemberAccessLevelFunction access_level_function;
-};  
+};
 
 struct LifeStuff::Elements {
   Elements() : thread_count(kThreads),
@@ -83,7 +94,8 @@ struct LifeStuff::Elements {
                user_credentials(),
                user_storage(),
                public_id(),
-               message_handler() {}
+               message_handler(),
+               slots() {}
 
   int thread_count;
   LifeStuffState state;
@@ -102,7 +114,7 @@ struct LifeStuff::Elements {
   std::shared_ptr<UserStorage> user_storage;
   std::shared_ptr<PublicId> public_id;
   std::shared_ptr<MessageHandler> message_handler;
-  Slots slots;  
+  Slots slots;
 };
 
 LifeStuff::LifeStuff() : lifestuff_elements(new Elements) {}
@@ -308,7 +320,7 @@ int LifeStuff::Finalise() {
 int LifeStuff::SetValidPmid() {
   int result = kSuccess;
 #ifndef LOCAL_TARGETS_ONLY
-  std::cout << lifestuff_elements->client_container->key_pair_->identity << std::endl;
+//   std::cout << lifestuff_elements->client_container->key_pair_->identity << std::endl;
   std::vector<dht::Contact> bootstrap_contacts;
   lifestuff_elements->client_container->Stop(&bootstrap_contacts);
 //   lifestuff_elements->client_container->set_key_pair(
@@ -321,9 +333,10 @@ int LifeStuff::SetValidPmid() {
   }
 
   lifestuff_elements->remote_chunk_store.reset(
-      new pcs::RemoteChunkStore(lifestuff_elements->client_container->chunk_store(),
-            lifestuff_elements->client_container->chunk_manager(),
-            lifestuff_elements->client_container->chunk_action_authority()));
+      new pcs::RemoteChunkStore(
+          lifestuff_elements->client_container->chunk_store(),
+          lifestuff_elements->client_container->chunk_manager(),
+          lifestuff_elements->client_container->chunk_action_authority()));
   lifestuff_elements->user_credentials.reset(
       new UserCredentials(lifestuff_elements->remote_chunk_store,
                           lifestuff_elements->session));
@@ -379,7 +392,7 @@ int LifeStuff::SetValidPmid() {
                 lifestuff_elements->public_id, args::_1, args::_2));
 
   lifestuff_elements->state = kInitialised;
-  
+
    result = ConnectToSignals(lifestuff_elements->slots.chat_slot,
        lifestuff_elements->slots.file_slot,
        lifestuff_elements->slots.new_contact_slot,
@@ -390,9 +403,9 @@ int LifeStuff::SetValidPmid() {
        lifestuff_elements->slots.share_invitation_function,
        lifestuff_elements->slots.share_deletion_function,
        lifestuff_elements->slots.access_level_function);
-  
-  std::cout << "Joined: " << lifestuff_elements->client_container->node_->joined() << std::endl;
-  std::cout << lifestuff_elements->client_container->key_pair_->identity << std::endl;
+
+//   std::cout << "Joined: " << lifestuff_elements->client_container->node_->joined() << std::endl;
+//   std::cout << lifestuff_elements->client_container->key_pair_->identity << std::endl;
 #endif
   return result;
 }
@@ -412,12 +425,12 @@ int LifeStuff::CreateUser(const std::string &username,
     DLOG(ERROR) << "Failed to Create User.";
     return kGeneralError;
   }
-  
+
 //   if (SetValidPmid() != kSuccess)  {
 //     DLOG(ERROR) << "Failed to set valid PMID";
 //     return kGeneralError;
 //   }
-  
+
 
   boost::system::error_code error_code;
   fs::path mount_dir(GetHomeDir() /
@@ -513,11 +526,11 @@ int LifeStuff::LogIn(const std::string &username,
     DLOG(ERROR) << "Wrong password.";
     return kGeneralError;
   }
-  
+
 //   if (SetValidPmid() != kSuccess)  {
 //     DLOG(ERROR) << "Failed to set valid PMID";
 //     return kGeneralError;
-//   }  
+//   }
 
   boost::system::error_code error_code;
   fs::path mount_dir(GetHomeDir() /

@@ -87,7 +87,7 @@ bool Session::Reset() {
   uc_serialised_data_atlas_.clear();
   surrogate_serialised_data_atlas_.clear();
   logging_out_ = false;
-  logged_in_ = false;  
+  logged_in_ = false;
   return true;
 }
 
@@ -333,6 +333,16 @@ int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
   }
 
   return 0;
+}
+
+std::shared_ptr<asymm::Keys> Session::GetPmidKeys() {
+  std::shared_ptr<asymm::Keys> key_pair(new asymm::Keys);
+  key_pair->identity = passport_->PacketName(passport::kPmid, true);
+  key_pair->public_key = passport_->SignaturePacketValue(passport::kPmid, true);
+  key_pair->private_key = passport_->PacketPrivateKey(passport::kPmid, true);
+  key_pair->validation_token = passport_->PacketSignature(passport::kPmid,
+                                                          true);
+  return key_pair;
 }
 
 int Session::ParseKeyChain(const std::string &serialised_keyring,

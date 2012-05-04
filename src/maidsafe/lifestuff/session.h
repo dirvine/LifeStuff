@@ -96,7 +96,7 @@ class Session {
   std::string encrypted_tmid() const;
   std::string encrypted_stmid() const;
   std::string serialised_data_atlas() const;
-  std::string uc_serialised_data_atlas() const;  
+  std::string uc_serialised_data_atlas() const;
   std::string surrogate_serialised_data_atlas() const;
   bool logging_out() const;
   bool logged_in() const;
@@ -107,23 +107,25 @@ class Session {
   void set_encrypted_stmid(const std::string &encrypted_stmid);
   void set_serialised_data_atlas(const std::string &serialised_data_atlas);
   void set_uc_serialised_data_atlas(
-      const std::string &uc_serialised_data_atlas);  
+      const std::string &uc_serialised_data_atlas);
   void set_surrogate_serialised_data_atlas(
       const std::string &surrogate_serialised_data_atlas);
   void set_logging_out(const bool &logging_out);
-  void set_logged_in(const bool &logged_in);  
+  void set_logged_in(const bool &logged_in);
+
   int ParseDataAtlas(const std::string &serialised_data_atlas);
   int SerialiseDataAtlas(std::string *serialised_data_atlas);
+  std::shared_ptr<asymm::Keys> GetPmidKeys();
 
 //   friend void GetKeyring(const std::string&,
 //                          std::shared_ptr<Session>,
 //                          asymm::Keys*);
-  friend void GetPublicKey(const std::string&,
-                           std::shared_ptr<Session>,
-                           asymm::PublicKey*);
-  friend void GetPrivateKey(const std::string&,
-                            std::shared_ptr<Session>,
-                            asymm::PrivateKey*);
+//   friend void GetPublicKey(const std::string&,
+//                            std::shared_ptr<Session>,
+//                            asymm::PublicKey*);
+//   friend void GetPrivateKey(const std::string&,
+//                             std::shared_ptr<Session>,
+//                             asymm::PrivateKey*);
   friend class Authentication;
   friend class MessageHandler;
   friend class PublicId;
