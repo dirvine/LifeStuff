@@ -678,8 +678,7 @@ TEST(IndependentFullTest, FUNC_SendFileDeleteAcceptedFiles) {
     EXPECT_EQ(file_name1, testing_variables2.file_name);
 
     // Delete accepted files dir
-    EXPECT_TRUE(fs::remove_all(test_elements2.mount_path() / kMyStuff,
-                               error_code));
+    fs::remove_all(test_elements2.mount_path() / kMyStuff, error_code);
     EXPECT_EQ(0, error_code.value());
     EXPECT_FALSE(fs::exists(test_elements2.mount_path() / kMyStuff,
                             error_code));
