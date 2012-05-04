@@ -453,16 +453,14 @@ int LifeStuff::CreateUser(const std::string &username,
     return kGeneralError;
   }
 
-  fs::create_directories(lifestuff_elements->user_storage->mount_dir() /
-                             fs::path("/").make_preferred() /
-                             kMyStuff / kDownloadStuff,
+  fs::path mount_path(lifestuff_elements->user_storage->mount_dir());
+  fs::create_directories(mount_path / kMyStuff / kDownloadStuff,
                          error_code);
   if (error_code) {
     DLOG(ERROR) << "Failed creating My Stuff: " << error_code.message();
     return kGeneralError;
   }
-  fs::create_directory(lifestuff_elements->user_storage->mount_dir() /
-                           fs::path("/").make_preferred() / kSharedStuff,
+  fs::create_directory(mount_path / kSharedStuff,
                        error_code);
   if (error_code) {
     DLOG(ERROR) << "Failed creating Shared Stuff: " << error_code.message();
@@ -591,10 +589,10 @@ int LifeStuff::LogOut() {
 
   // Delete mount directory
   boost::system::error_code error_code;
-  fs::remove_all(lifestuff_elements->user_storage->mount_dir(), error_code);
+  fs::remove_all(mount_path(), error_code);
   if (error_code)
     DLOG(WARNING) << "Failed to delete mount directory: "
-                  << lifestuff_elements->user_storage->mount_dir();
+                  << mount_path();
   lifestuff_elements->session->Reset();
 
   lifestuff_elements->state = kLoggedOut;
@@ -838,8 +836,7 @@ int LifeStuff::ChangeProfilePicture(
   if (profile_picture_contents != kBlankProfilePicture) {
     // Write contents
     fs::path profile_picture_path(
-        lifestuff_elements->user_storage->mount_dir() /
-        fs::path("/").make_preferred() /
+        mount_path() /
         std::string(my_public_id +
                     "_profile_picture" +
                     drive::kMsHidden.string()));
@@ -896,8 +893,7 @@ std::string LifeStuff::GetOwnProfilePicture(const std::string &my_public_id) {
     return "";
   }
 
-  fs::path profile_picture_path(lifestuff_elements->user_storage->mount_dir() /
-                                fs::path("/").make_preferred() /
+  fs::path profile_picture_path(mount_path() /
                                 std::string(my_public_id +
                                             "_profile_picture" +
                                             drive::kMsHidden.string()));
@@ -1051,8 +1047,7 @@ int LifeStuff::AcceptSentFile(const std::string &identifier,
   std::string serialised_identifier, saved_file_name, serialised_data_map;
   int result(
       lifestuff_elements->user_storage->ReadHiddenFile(
-          mount_path() / fs::path("/").make_preferred() /
-              std::string(identifier + drive::kMsHidden.string()),
+          mount_path() / std::string(identifier + drive::kMsHidden.string()),
           &serialised_identifier));
   if (result != kSuccess || serialised_identifier.empty()) {
     DLOG(ERROR) << "No such identifier found: " << result;
@@ -1075,6 +1070,10 @@ int LifeStuff::AcceptSentFile(const std::string &identifier,
 
   if (absolute_path.empty()) {
     fs::path store_path(mount_path() / kMyStuff / kDownloadStuff);
+    if (!VerifyAndCreatePath(store_path)) {
+      DLOG(ERROR) << "Failed finding and creating: " << store_path;
+      return kGeneralError;
+    }
     std::string adequate_name(GetNameInPath(store_path, saved_file_name));
     if (adequate_name.empty()) {
       DLOG(ERROR) << "No name found to work for saving the file.";
@@ -1083,15 +1082,20 @@ int LifeStuff::AcceptSentFile(const std::string &identifier,
     result = lifestuff_elements->user_storage->InsertDataMap(
                  store_path / adequate_name,
                  serialised_data_map);
+
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed inserting DM: " << result;
+      return result;
+    }
     *file_name = adequate_name;
   } else {
     result = lifestuff_elements->user_storage->InsertDataMap(
                  absolute_path,
                  serialised_data_map);
-  }
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed inserting DM: " << result;
-    return result;
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed inserting DM: " << result;
+      return result;
+    }
   }
 
   return kSuccess;
@@ -1104,7 +1108,6 @@ int LifeStuff::RejectSentFile(const std::string &identifier) {
   }
 
   fs::path hidden_file(mount_path() /
-                       fs::path("/").make_preferred() /
                        std::string(identifier + drive::kMsHidden.string()));
   return lifestuff_elements->user_storage->DeleteHiddenFile(hidden_file);
 }
@@ -1163,14 +1166,13 @@ int LifeStuff::CreatePrivateShareFromExistingDirectory(
   *share_name =  directory_in_lifestuff_drive.filename().string();
   boost::system::error_code error_code;
   if (fs::exists(directory_in_lifestuff_drive, error_code)) {
-    fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+    fs::path share_dir(mount_path() /
                        drive::kMsShareRoot /
-                       fs::path("/").make_preferred() / (*share_name));
+                       (*share_name));
     int index(0);
     while (fs::exists(share_dir, error_code)) {
-      share_dir = lifestuff_elements->user_storage->mount_dir() /
+      share_dir = mount_path() /
                         drive::kMsShareRoot /
-                        fs::path("/").make_preferred() /
                         ((*share_name) + "_" + IntToString(index));
       ++index;
     }
@@ -1202,16 +1204,15 @@ int LifeStuff::CreateEmptyPrivateShare(const std::string &my_public_id,
     return result;
   }
 
-  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+  fs::path share_dir(mount_path() /
                      drive::kMsShareRoot /
-                     fs::path("/").make_preferred() / (*share_name));
+                     (*share_name));
   boost::system::error_code error_code;
   int index(0);
   // TODO(Team): shall use function via drive to test the existence of directory
   while (fs::exists(share_dir, error_code)) {
-    share_dir = lifestuff_elements->user_storage->mount_dir() /
+    share_dir = mount_path() /
                       drive::kMsShareRoot /
-                      fs::path("/").make_preferred() /
                       ((*share_name) + "_" + IntToString(index));
     ++index;
   }
@@ -1249,9 +1250,9 @@ int LifeStuff::GetPrivateShareMemebers(const std::string &my_public_id,
     DLOG(ERROR) << "Failed pre checks in GetPrivateShareMemebers.";
     return result;
   }
-  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+  fs::path share_dir(mount_path() /
                      drive::kMsShareRoot /
-                     fs::path("/").make_preferred() / share_name);
+                     share_name);
   return lifestuff_elements->user_storage->GetAllShareUsers(share_dir,
                                                             shares_members);
 }
@@ -1278,9 +1279,9 @@ int LifeStuff::GetPrivateSharesIncludingMember(
 
   for (auto it = all_shares_names.begin(); it != all_shares_names.end(); ++it) {
     StringIntMap share_members;
-    fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+    fs::path share_dir(mount_path() /
                        drive::kMsShareRoot /
-                      fs::path("/").make_preferred() / (*it).first);
+                       (*it).first);
     result = lifestuff_elements->user_storage->GetAllShareUsers(share_dir,
                                                   &share_members);
     if (result != kSuccess) {
@@ -1313,7 +1314,6 @@ int LifeStuff::AcceptPrivateShareInvitation(
   }
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
   fs::path hidden_file(mount_path() / drive::kMsShareRoot /
-                       fs::path("/").make_preferred() /
                        std::string(temp_name + drive::kMsHidden.string()));
   std::string serialised_share_data;
   result = lifestuff_elements->user_storage->ReadHiddenFile(hidden_file,
@@ -1338,9 +1338,9 @@ int LifeStuff::AcceptPrivateShareInvitation(
   // remove the temp share invitation file no matter insertion succeed or not
   lifestuff_elements->user_storage->DeleteHiddenFile(hidden_file);
 
-  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+  fs::path share_dir(mount_path() /
                      drive::kMsShareRoot /
-                     fs::path("/").make_preferred() / *share_name);
+                     *share_name);
   return lifestuff_elements->user_storage->InsertShare(share_dir,
                                                        share_id,
                                                        contact_public_id,
@@ -1360,7 +1360,6 @@ int LifeStuff::RejectPrivateShareInvitation(const std::string &my_public_id,
   }
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
   fs::path hidden_file(mount_path() / drive::kMsShareRoot /
-                       fs::path("/").make_preferred() /
                        std::string(temp_name + drive::kMsHidden.string()));
   return lifestuff_elements->user_storage->DeleteHiddenFile(hidden_file);
 }
@@ -1399,9 +1398,9 @@ int LifeStuff::EditPrivateShareMembers(const std::string &my_public_id,
       members_to_add.insert(*it);
     }
   }
-  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+  fs::path share_dir(mount_path() /
                      drive::kMsShareRoot /
-                     fs::path("/").make_preferred() / share_name);
+                     share_name);
   // Add new users
   if (!members_to_add.empty()) {
     StringIntMap add_users_results;
@@ -1456,9 +1455,9 @@ int LifeStuff::DeletePrivateShare(const std::string &my_public_id,
     return result;
   }
 
-  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+  fs::path share_dir(mount_path() /
                      drive::kMsShareRoot /
-                     fs::path("/").make_preferred() / share_name);
+                     share_name);
   return lifestuff_elements->user_storage->StopShare(my_public_id, share_dir);
 }
 
@@ -1472,9 +1471,9 @@ int LifeStuff::LeavePrivateShare(const std::string &my_public_id,
     return result;
   }
 
-  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+  fs::path share_dir(mount_path() /
                      drive::kMsShareRoot /
-                     fs::path("/").make_preferred() / share_name);
+                     share_name);
   return lifestuff_elements->user_storage->RemoveShare(share_dir, my_public_id);
 }
 

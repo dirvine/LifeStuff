@@ -181,7 +181,11 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
 
   char drive_name[3] = {'A' + static_cast<char>(count), ':', '\0'};
   mount_dir_ = drive_name;
-  drive_in_user_space_->Mount(mount_dir_, drive_logo);
+  int result(drive_in_user_space_->Mount(mount_dir_, drive_logo));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to Mount Drive: " << result;
+    return;
+  }
 #else
   mount_dir_ = mount_dir_path;
   boost::thread(std::bind(&MaidDriveInUserSpace::Mount,
@@ -210,7 +214,11 @@ void UserStorage::UnMountDrive() {
 }
 
 fs::path UserStorage::mount_dir() {
+#ifdef WIN32
+  return mount_dir_ / fs::path("/").make_preferred();
+#else
   return mount_dir_;
+#endif
 }
 
 bool UserStorage::mount_status() {
@@ -236,12 +244,11 @@ bool UserStorage::ParseAndSaveDataMap(const std::string &file_name,
     return false;
   }
 
-  int result(WriteHiddenFile(
-                 mount_dir_ /
-                     fs::path("/").make_preferred() /
-                     std::string(*data_map_hash + drive::kMsHidden.string()),
-                 filename_data + serialised_data_map,
-                 true));
+  int result(WriteHiddenFile(mount_dir() /
+                                 std::string(*data_map_hash +
+                                             drive::kMsHidden.string()),
+                             filename_data + serialised_data_map,
+                             true));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to create file: " << result;
     return false;
@@ -268,8 +275,8 @@ bool UserStorage::SaveShareData(const std::string &serialised_share_data,
                                 const std::string &share_id) {
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
   int result(WriteHiddenFile(
-                 mount_dir_ / drive::kMsShareRoot /
-                     fs::path("/").make_preferred() /
+                 mount_dir() /
+                     drive::kMsShareRoot /
                      std::string(temp_name + drive::kMsHidden.string()),
                  serialised_share_data,
                  true));
@@ -371,8 +378,7 @@ int UserStorage::InsertShare(const fs::path &absolute_path,
                 drive_in_user_space_->RelativePath(share_dir), inviter_id,
                 directory_id, share_id, share_keyring));
   while (result == -500317) {  // drive::kInvalidPath
-    share_dir = mount_dir() / fs::path("/").make_preferred() /
-                ((*share_name) + "_" + IntToString(index));
+    share_dir = mount_dir() / ((*share_name) + "_" + IntToString(index));
     result = drive_in_user_space_->InsertShare(
                 drive_in_user_space_->RelativePath(share_dir), inviter_id,
                 directory_id, share_id, share_keyring);
@@ -488,8 +494,8 @@ void UserStorage::LeaveShare(const std::string &/*sender_public_username*/,
   if (result != kSuccess)
     return;
 
-  fs::path share_dir(mount_dir_ / drive::kMsShareRoot /
-                     fs::path("/").make_preferred() /
+  fs::path share_dir(mount_dir() /
+                     drive::kMsShareRoot /
                      relative_path.filename());
   RemoveShare(share_dir);
 }
@@ -884,9 +890,9 @@ void UserStorage::MemberAccessChange(
   asymm::Keys share_keyring;
   if (access_right >= drive::kShareReadWrite) {
     std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
-    fs::path hidden_file(mount_dir_ / drive::kMsShareRoot /
-                        fs::path("/").make_preferred() /
-                        std::string(temp_name + drive::kMsHidden.string()));
+    fs::path hidden_file(mount_dir() /
+                         drive::kMsShareRoot /
+                         std::string(temp_name + drive::kMsHidden.string()));
     std::string serialised_share_data;
     result = ReadHiddenFile(hidden_file, &serialised_share_data);
     if (result != kSuccess || serialised_share_data.empty()) {
@@ -927,8 +933,7 @@ int UserStorage::GetPrivateSharesContactBeingOwner(
   GetAllShares(&all_shares);
   for (auto it = all_shares.begin(); it != all_shares.end(); ++it) {
     std::string owner_id;
-    fs::path share_dir("" / drive::kMsShareRoot /
-                       fs::path("/").make_preferred() / (*it).first);
+    fs::path share_dir("" / drive::kMsShareRoot / (*it).first);
     drive_in_user_space_->GetShareDetails(share_dir, nullptr, nullptr,
                                           nullptr, nullptr, nullptr,
                                           &owner_id);

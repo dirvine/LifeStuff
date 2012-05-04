@@ -6,6 +6,7 @@ message Introduction {
   required bytes inbox_name = 1;
   required bytes public_id = 2;
   required bytes profile_picture_data_map = 3;
+  required bytes timestamp = 4;
 }
 
 // Generic message for use in sending messages/files, sharing folders,
@@ -15,7 +16,7 @@ message Message {
   required bytes sender_public_id = 2;
   required bytes receiver_public_id = 3;
   repeated bytes content = 4;
-  optional bytes timestamp = 5;
+  required bytes timestamp = 5;
 }
 
 message PublicContact {
