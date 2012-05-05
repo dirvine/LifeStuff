@@ -161,6 +161,12 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
       std::bind(&UserStorage::UserLeavingShare,
                 lifestuff_elements->user_storage, args::_1, args::_2));
 
+  lifestuff_elements->message_handler->ConnectToSaveOpenShareDataSignal(
+      std::bind(&UserStorage::SaveOpenShareData,
+                lifestuff_elements->user_storage,
+                args::_1,
+                args::_2));
+
   lifestuff_elements->message_handler->ConnectToShareDeletionSignal(
       std::bind(&UserStorage::LeaveShare,
                 lifestuff_elements->user_storage, args::_1, args::_2));
@@ -199,7 +205,8 @@ int LifeStuff::ConnectToSignals(
     const ContactDeletionFunction &contact_deletion_function,
     const ShareInvitationFunction &share_invitation_function,
     const ShareDeletionFunction &share_deletion_function,
-    const MemberAccessLevelFunction &access_level_function) {
+    const MemberAccessLevelFunction &access_level_function,
+    const OpenShareInvitationFunction &open_share_invitation_function) {
   if (lifestuff_elements->state != kInitialised) {
     DLOG(ERROR) << "Make sure that object is initialised";
     return kGeneralError;
@@ -241,6 +248,11 @@ int LifeStuff::ConnectToSignals(
   if (share_invitation_function) {
     lifestuff_elements->message_handler->ConnectToShareInvitationSignal(
         share_invitation_function);
+    ++connects;
+  }
+  if (open_share_invitation_function) {
+    lifestuff_elements->message_handler->ConnectToOpenShareInvitationSignal(
+        open_share_invitation_function);
     ++connects;
   }
   if (share_deletion_function) {
@@ -1083,7 +1095,7 @@ int LifeStuff::CreateEmptyPrivateShare(const std::string &my_public_id,
   }
   fs::create_directory(share_dir, error_code);
   if (error_code) {
-    DLOG(ERROR) << "Failed creating My Stuff: " << error_code.message();
+    DLOG(ERROR) << "Failed creating directory: " << error_code.message();
     return kGeneralError;
   }
   *share_name = share_dir.filename().string();
@@ -1105,9 +1117,9 @@ int LifeStuff::GetPrivateShareList(const std::string &my_public_id,
   return lifestuff_elements->user_storage->GetAllShares(shares_names);
 }
 
-int LifeStuff::GetPrivateShareMemebers(const std::string &my_public_id,
-                                       const std::string &share_name,
-                                       StringIntMap *shares_members) {
+int LifeStuff::GetPrivateShareMembers(const std::string &my_public_id,
+                                      const std::string &share_name,
+                                      StringIntMap *shares_members) {
   int result(PreContactChecks(lifestuff_elements->state,
                               my_public_id,
                               lifestuff_elements->session));
@@ -1234,7 +1246,7 @@ int LifeStuff::EditPrivateShareMembers(const std::string &my_public_id,
                                        const std::string &share_name,
                                        StringIntMap *results) {
   StringIntMap share_members;
-  int result(GetPrivateShareMemebers(my_public_id, share_name, &share_members));
+  int result(GetPrivateShareMembers(my_public_id, share_name, &share_members));
   if (result != kSuccess)
     return result;
 
@@ -1340,6 +1352,303 @@ int LifeStuff::LeavePrivateShare(const std::string &my_public_id,
                      drive::kMsShareRoot /
                      share_name);
   return lifestuff_elements->user_storage->RemoveShare(share_dir, my_public_id);
+}
+
+int LifeStuff::CreateOpenShareFromExistingDirectory(
+      const std::string &my_public_id,
+      const fs::path &directory_in_lifestuff_drive,
+      const std::vector<std::string> &contacts,
+      std::string *share_name,
+      StringIntMap *results) {
+  BOOST_ASSERT(share_name);
+  boost::system::error_code error_code;
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks.";
+    return result;
+  }
+  if (!fs::exists(directory_in_lifestuff_drive)) {
+    DLOG(ERROR) << "Share directory nonexistant.";
+    return kGeneralError;
+  }
+  *share_name = directory_in_lifestuff_drive.filename().string();
+  fs::path share(mount_path() / kSharedStuff / (*share_name));
+  int index(0);
+  while (fs::exists(share, error_code)) {
+    share = mount_path() /
+            kSharedStuff /
+            ((*share_name) + "_" + IntToString(index));
+    ++index;
+  }
+  fs::create_directory(share, error_code);
+  if (error_code) {
+    DLOG(ERROR) << "Failed to create directory: " << share
+                << " " << error_code.message();
+    return kGeneralError;
+  }
+  BOOST_ASSERT(fs::exists(share));
+  *share_name = share.filename().string();
+  result = CopyDirectoryContent(directory_in_lifestuff_drive, share);
+  if (result != kSuccess)
+    return result;
+  StringIntMap liaisons;
+  for (uint32_t i = 0; i != contacts.size(); ++i)
+    liaisons.insert(std::make_pair(contacts[i], 1));
+  result = lifestuff_elements->user_storage->CreateOpenShare(my_public_id,
+                                                             share,
+                                                             liaisons,
+                                                             results);
+  if (result != kSuccess)
+    return result;
+  try {
+    fs::remove_all(directory_in_lifestuff_drive, error_code);
+    if (error_code) {
+      DLOG(ERROR) << "Failed to remove source directory "
+                  << directory_in_lifestuff_drive << " " << error_code.value();
+      return error_code.value();
+    }
+  }
+  catch(const std::exception &e) {
+    DLOG(ERROR) << "Exception thrown removing source directory "
+                << directory_in_lifestuff_drive << ": " << e.what();
+    return kGeneralError;
+  }
+  return kSuccess;
+}
+
+int LifeStuff::CreateEmptyOpenShare(const std::string &my_public_id,
+                                    const std::vector<std::string> &contacts,
+                                    std::string *share_name,
+                                    StringIntMap *results) {
+  BOOST_ASSERT(share_name);
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks.";
+    return result;
+  }
+  fs::path share_dir(mount_path() / kSharedStuff / (*share_name));
+  boost::system::error_code error_code;
+  int index(0);
+  while (fs::exists(share_dir, error_code)) {
+    share_dir = mount_path() /
+                kSharedStuff /
+                ((*share_name) + "_" + IntToString(index));
+    ++index;
+  }
+  fs::create_directory(share_dir, error_code);
+  if (error_code) {
+    DLOG(ERROR) << "Failed creating directory: " << error_code.message();
+    return kGeneralError;
+  }
+  *share_name = share_dir.filename().string();
+  StringIntMap liaisons;
+  for (uint32_t i = 0; i != contacts.size(); ++i)
+    liaisons.insert(std::make_pair(contacts[i], 1));
+  return lifestuff_elements->user_storage->CreateOpenShare(my_public_id,
+                                                           share_dir,
+                                                           liaisons,
+                                                           results);
+}
+
+int LifeStuff::InviteMembersToOpenShare(
+    const std::string &my_public_id,
+    const std::vector<std::string> &contacts,
+    const fs::path &absolute_path,
+    StringIntMap *results) {
+  StringIntMap liaisons;
+  for (uint32_t i = 0; i != contacts.size(); ++i)
+    liaisons.insert(std::make_pair(contacts[i], 1));
+  return lifestuff_elements->user_storage->OpenShareInvitation(my_public_id,
+                                                               absolute_path,
+                                                               liaisons,
+                                                               results);
+}
+
+int LifeStuff::GetOpenShareList(const std::string &my_public_id,
+                                std::vector<std::string> *shares_names) {
+  StringIntMap shares;
+  int result(GetPrivateShareList(my_public_id, &shares));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to get open share list.";
+    return result;
+  }
+  shares_names->clear();
+  auto end(shares.end());
+  for (auto it = shares.begin(); it != end; ++it)
+    shares_names->push_back(it->first);
+  return kSuccess;
+}
+
+int LifeStuff::GetOpenShareMembers(const std::string &my_public_id,
+                                   const std::string &share_name,
+                                   std::vector<std::string> *share_members) {
+  StringIntMap share_users;
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks.";
+    return result;
+  }
+  fs::path share_dir(mount_path() / kSharedStuff / share_name);
+  result = lifestuff_elements->user_storage->GetAllShareUsers(share_dir,
+                                                              &share_users);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to get open share members.";
+    return result;
+  }
+  share_members->clear();
+  auto end(share_users.end());
+  for (auto it = share_users.begin(); it != end; ++it)
+    share_members->push_back(it->first);
+  return kSuccess;
+}
+
+int LifeStuff::AcceptOpenShareInvitation(const std::string &my_public_id,
+                                         const std::string &contact_public_id,
+                                         const std::string &share_id,
+                                         std::string *share_name) {
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks.";
+    return result;
+  }
+  // Read hidden file...
+  std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
+  fs::path hidden_file(mount_path() /
+                       kSharedStuff /
+                       std::string(temp_name + drive::kMsHidden.string()));
+  std::string serialised_share_data;
+  result = lifestuff_elements->user_storage->ReadHiddenFile(hidden_file,
+                &serialised_share_data);
+  if (result != kSuccess || serialised_share_data.empty()) {
+    DLOG(ERROR) << "No such identifier found: " << result;
+    return result == kSuccess ? kGeneralError : result;
+  }
+  Message message;
+  message.ParseFromString(serialised_share_data);
+  fs::path relative_path(message.content(1));
+  std::string directory_id(message.content(2));
+  asymm::Keys share_keyring;
+  share_keyring.identity = message.content(3);
+  share_keyring.validation_token = message.content(4);
+  asymm::DecodePrivateKey(message.content(5), &(share_keyring.private_key));
+  asymm::DecodePublicKey(message.content(6), &(share_keyring.public_key));
+  // Delete hidden file...
+  lifestuff_elements->user_storage->DeleteHiddenFile(hidden_file);
+  fs::path share_dir(mount_path() / kSharedStuff / *share_name);
+  result = lifestuff_elements->user_storage->InsertShare(share_dir,
+                                                         share_id,
+                                                         contact_public_id,
+                                                         share_name,
+                                                         directory_id,
+                                                         share_keyring);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to insert share, result " << result;
+    return result;
+  }
+  StringIntMap contacts;
+  contacts.insert(std::make_pair(my_public_id, 1));
+  result = lifestuff_elements->user_storage->AddOpenShareUser(share_dir,
+                                                              contacts);
+  if (result != kSuccess)
+    DLOG(ERROR) << "Failed to add user to open share, result " << result;
+  return result;
+}
+
+int LifeStuff::RejectOpenShareInvitation(const std::string &my_public_id,
+                                         const std::string &share_id) {
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks.";
+    return result;
+  }
+  std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
+  fs::path hidden_file(mount_path() /
+                       kSharedStuff /
+                       std::string(temp_name + drive::kMsHidden.string()));
+  return lifestuff_elements->user_storage->DeleteHiddenFile(hidden_file);
+}
+
+int LifeStuff::LeaveOpenShare(const std::string &my_public_id,
+                              const std::string &share_name) {
+  int result(PreContactChecks(lifestuff_elements->state,
+                              my_public_id,
+                              lifestuff_elements->session));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks.";
+    return result;
+  }
+  fs::path share(mount_path() / kSharedStuff / share_name);
+  std::vector<std::string> members;
+  result = GetOpenShareMembers(my_public_id, share_name, &members);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to get members of share " << share;
+    return result;
+  }
+  if (members.size() == 1) {
+    BOOST_ASSERT(members[0] == my_public_id);
+    result = lifestuff_elements->user_storage->DeleteHiddenFile(
+                share / maidsafe::drive::kMsShareUsers);
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed to delete "
+                  << share / maidsafe::drive::kMsShareUsers;
+      return result;
+    }
+    result = lifestuff_elements->user_storage->RemoveShare(share);
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed to remove share " << share;
+      return result;
+    }
+
+    // TODO(Team): Should this block exist? Doesn't RemoveShare eliminate the
+    //             entry from the listing?
+    try {
+      boost::system::error_code error_code;
+      int count(0), limit(30);
+      while (count++ < limit && fs::exists(share, error_code) && !error_code)
+        Sleep(bptime::milliseconds(100));
+      if (count == limit) {
+        DLOG(ERROR) << "Failed to disappear directory.";
+        return kGeneralError;
+      }
+      fs::remove_all(share, error_code);
+      if (error_code) {
+        DLOG(ERROR) << "Failed to remove share directory "
+                    << share << " " << error_code.value();
+        return error_code.value();
+      }
+    }
+    catch(const std::exception &e) {
+      DLOG(ERROR) << "Exception thrown removing share directory " << share
+                  << ": " << e.what();
+      return kGeneralError;
+    }
+  } else {
+    members.clear();
+    members.push_back(my_public_id);
+    result = lifestuff_elements->user_storage->RemoveOpenShareUsers(share,
+                                                                    members);
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed to remove share user " << my_public_id
+                  << " from share " << share;
+      return result;
+    }
+    result = lifestuff_elements->user_storage->RemoveShare(share);
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed to remove share " << share;
+      return result;
+    }
+  }
+  return kSuccess;
 }
 
 ///

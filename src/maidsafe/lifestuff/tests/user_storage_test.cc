@@ -114,9 +114,12 @@ class UserStorageTest : public testing::TestWithParam<bool> {
     fs::path share_dir(user_storage->mount_dir() /
                        drive::kMsShareRoot /
                        share_name);
-    EXPECT_EQ(kSuccess, user_storage->InsertShare(share_dir, share_id,
-                                              sender, &share_name,
-                                              directory_id, share_keyring));
+    EXPECT_EQ(kSuccess, user_storage->InsertShare(share_dir,
+                                                  share_id,
+                                                  sender,
+                                                  &share_name,
+                                                  directory_id,
+                                                  share_keyring));
   }
 
   void DoUpgradeTest(const std::shared_ptr<UserStorage> &user_storage,
@@ -269,12 +272,19 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
               << share_root_directory_1 << ": " << error_code.message();
 
   StringIntMap users;
-  users.insert(std::make_pair(pub_name2_, kShareReadOnly));
+  if (private_share_)
+    users.insert(std::make_pair(pub_name2_, kShareReadOnly));
+  else
+    users.insert(std::make_pair(pub_name2_, kShareReadWrite));
   std::string tail;
-  fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir(), &tail));
-  EXPECT_EQ(kSuccess,
-            user_storage1_->CreateShare(pub_name1_, directory0,
-                                        users, private_share_));
+  fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir() /
+                                              fs::path("/").make_preferred(),
+                                          &tail));
+  EXPECT_EQ(kSuccess, user_storage1_->CreateShare(pub_name1_,
+                                                  directory0,
+                                                  users,
+                                                  private_share_));
+
   user_storage1_->UnMountDrive();
 
   bs2::connection accept_share_invitation_connection(
@@ -399,8 +409,12 @@ TEST_P(UserStorageTest, FUNC_AddUser) {
   bs2::connection accept_share_invitation_connection(
     message_handler2_->ConnectToShareInvitationSignal(
         std::bind(&UserStorageTest::DoAcceptShareInvitationTest,
-                  this, user_storage2_,
-                  args::_1, args::_2, args::_3, args::_4)));
+                  this,
+                  user_storage2_,
+                  args::_1,
+                  args::_2,
+                  args::_3,
+                  args::_4)));
   bs2::connection save_share_data_connection(
     message_handler2_->ConnectToSaveShareDataSignal(
         std::bind(&UserStorage::SaveShareData,

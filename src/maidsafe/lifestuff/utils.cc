@@ -396,6 +396,50 @@ int CopyDir(const fs::path& source, const fs::path& dest) {
   return kSuccess;
 }
 
+int CopyDirectoryContent(const fs::path& from, const fs::path& to) {
+  boost::system::error_code error_code;
+  int result;
+  fs::directory_iterator it(from), end;
+  try {
+    for (; it != end; ++it) {
+      fs::path current(it->path());
+      if (fs::is_directory(*it)) {
+        fs::create_directory(to / current.filename(), error_code);
+        if (error_code) {
+          DLOG(ERROR) << "Failed to create directory: "
+                      << to / current.filename()
+                      << " " << error_code.message();
+          return kGeneralError;
+        }
+        result = CopyDirectoryContent(current, to / current.filename());
+        if (result != kSuccess) {
+          DLOG(ERROR) << "Failed to create directory "
+                      << to / current.filename() << error_code.value();
+          return kGeneralError;
+        }
+      } else if (fs::is_regular_file(*it)) {
+        fs::copy_file(current, to / current.filename(), error_code);
+        if (error_code) {
+          DLOG(ERROR) << "Failed to create file " << to / current.filename()
+                      << error_code.value();
+          return kGeneralError;
+        }
+      } else {
+        if (fs::exists(*it))
+          DLOG(ERROR) << "Unknown file type found.";
+        else
+          DLOG(ERROR) << "Nonexistant file type found.";
+        return kGeneralError;
+      }
+    }
+  }
+  catch(...) {
+    DLOG(ERROR) << "Failed copying directory " << from << " to " << to;
+    return kGeneralError;
+  }
+  return kSuccess;
+}
+
 bool VerifyAndCreatePath(const fs::path& path) {
   boost::system::error_code error_code;
   if (fs::exists(path, error_code) && !error_code) {

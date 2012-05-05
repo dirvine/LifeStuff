@@ -52,6 +52,7 @@ enum InboxItemType {
   kContactPresence,
   kContactProfilePicture,
   kContactDeletion,
+  kOpenShareInvitation,
   kShare,
 
   // Max
@@ -112,6 +113,9 @@ void GetFilenameData(const std::string &content,
 std::string GetNameInPath(const fs::path &save_path,
                           const std::string &file_name);
 int CopyDir(const fs::path& source, const fs::path& dest);
+
+int CopyDirectoryContent(const fs::path& from, const fs::path& to);
+
 bool VerifyAndCreatePath(const fs::path& path);
 
 std::string IsoTimeWithMicroSeconds();
