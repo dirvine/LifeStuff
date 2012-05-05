@@ -157,6 +157,10 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
       std::bind(&UserStorage::SaveShareData,
                 lifestuff_elements->user_storage, args::_1, args::_2));
 
+  lifestuff_elements->message_handler->ConnectToShareUserLeavingSignal(
+      std::bind(&UserStorage::UserLeavingShare,
+                lifestuff_elements->user_storage, args::_1, args::_2));
+
   lifestuff_elements->message_handler->ConnectToSaveOpenShareDataSignal(
       std::bind(&UserStorage::SaveOpenShareData,
                 lifestuff_elements->user_storage,
@@ -1604,8 +1608,18 @@ int LifeStuff::LeaveOpenShare(const std::string &my_public_id,
       DLOG(ERROR) << "Failed to remove share " << share;
       return result;
     }
+
+    // TODO(Team): Should this block exist? Doesn't RemoveShare eliminate the
+    //             entry from the listing?
     try {
       boost::system::error_code error_code;
+      int count(0), limit(30);
+      while (count++ < limit && fs::exists(share, error_code) && !error_code)
+        Sleep(bptime::milliseconds(100));
+      if (count == limit) {
+        DLOG(ERROR) << "Failed to disappear directory.";
+        return kGeneralError;
+      }
       fs::remove_all(share, error_code);
       if (error_code) {
         DLOG(ERROR) << "Failed to remove share directory "

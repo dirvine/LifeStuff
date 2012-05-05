@@ -654,7 +654,7 @@ TEST(IndependentFullTest, FUNC_SendFileSaveToDefaultLocation) {
   EXPECT_EQ(kSuccess, test_elements2.Finalise());
 }
 
-TEST(IndependentFullTest, FUNC_SendFileDeleteAcceptedFiles) {
+TEST(IndependentFullTest, FUNC_SendFileAcceptToDeletedDefaultLocation) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
