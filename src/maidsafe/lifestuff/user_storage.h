@@ -78,10 +78,10 @@ class UserStorage {
   virtual void UnMountDrive();
   virtual fs::path mount_dir();
   virtual bool mount_status();
-  void set_message_handler(std::shared_ptr<MessageHandler> message_handler);
 
   // ********************* File / Folder Transfers *****************************
-  bool ParseAndSaveDataMap(const std::string &serialised_data_map,
+  bool ParseAndSaveDataMap(const std::string &file_name,
+                           const std::string &serialised_data_map,
                            std::string *data_map_hash);
   int GetDataMap(const fs::path &absolute_path,
                  std::string *serialised_data_map) const;
@@ -119,6 +119,8 @@ class UserStorage {
                 const fs::path &absolute_path);
   int RemoveShare(const fs::path &absolute_path,
                   const std::string &sender_public_username = "");
+  void LeaveShare(const std::string &sender_public_username,
+                  const std::string &share_id);
   int UpdateShare(const std::string &share_id,
                   const std::string *new_share_id,
                   const std::string *new_directory_id,
@@ -157,7 +159,24 @@ class UserStorage {
                       asymm::Keys *share_keyring,
                       std::string *directory_id,
                       StringIntMap *share_users);
-
+  void  MemberAccessChange(const std::string &my_public_id,
+                           const std::string &sender_public_username,
+                           const std::string &share_id,
+                           int access_right);
+  int MovingShare(const std::string &sender_public_username,
+                  const std::string &share_id,
+                  const fs::path &relative_path,
+                  const asymm::Keys &old_key_ring,
+                  bool private_share,
+                  std::string *new_share_id_return = nullptr);
+  int DowngradeShareUsersRights(const std::string &sender_public_username,
+                                const fs::path &absolute_path,
+                                const StringIntMap &contacts,
+                                StringIntMap *results,
+                                bool private_share);
+  int GetPrivateSharesContactBeingOwner(const std::string &my_public_id,
+                                        const std::string &contact_public_id,
+                                        std::vector<std::string> *shares_names);
   // **************************** File Notes ***********************************
   int GetNotes(const fs::path &absolute_path,
                std::vector<std::string> *notes) const;
@@ -197,7 +216,8 @@ class UserStorage {
         const std::string &sender_public_username,
         const StringIntMap &contacts,
         const std::string &share_id,
-        const fs::path &relative_path = "", // const std::string &absolute_path = "",
+        // const std::string &absolute_path = "",
+        const fs::path &relative_path = "",
         const std::string &directory_id = "",
         const asymm::Keys &key_ring = asymm::Keys(),
         const std::string &new_share_id = "",

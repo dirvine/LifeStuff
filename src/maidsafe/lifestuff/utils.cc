@@ -24,6 +24,8 @@
 
 #include "boost/asio.hpp"
 #include "boost/archive/text_iarchive.hpp"
+#include "boost/date_time/posix_time/posix_time.hpp"
+#include "boost/regex.hpp"
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
 
@@ -41,6 +43,7 @@
 #include "maidsafe/pd/client/utils.h"
 #endif
 
+#include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
 
@@ -51,6 +54,13 @@ namespace maidsafe {
 
 namespace lifestuff {
 
+InboxItem::InboxItem(InboxItemType inbox_item_type)
+    : item_type(inbox_item_type),
+      sender_public_id(),
+      receiver_public_id(),
+      content(),
+      timestamp(IsoTimeWithMicroSeconds()) {}
+
 std::string CreatePin() {
   std::stringstream pin_stream;
   uint32_t pin(0);
@@ -58,6 +68,56 @@ std::string CreatePin() {
     pin = RandomUint32() % 10000;
   pin_stream << pin;
   return pin_stream.str();
+}
+
+bool AcceptableWordSize(const std::string &word) {
+  return word.size() >= kMinWordSize && word.size() <= kMaxWordSize;
+}
+
+bool AcceptableWordPattern(const std::string &word) {
+  boost::regex space(" ");
+  return !boost::regex_search(word.begin(), word.end(), space);
+}
+
+bool CheckWordValidity(const std::string &word) {
+  if (!AcceptableWordSize(word)) {
+    DLOG(ERROR) << "Unacceptable size: " << word.size();
+    return false;
+  }
+
+  if (!AcceptableWordPattern(word)) {
+    DLOG(ERROR) << "Unacceptable pattern: '" << word << "'";
+    return false;
+  }
+
+  return true;
+}
+
+bool CheckKeywordValidity(const std::string &keyword) {
+  return CheckWordValidity(keyword);
+}
+
+bool CheckPasswordValidity(const std::string &password) {
+  return CheckWordValidity(password);
+}
+
+bool CheckPinValidity(const std::string &pin) {
+  try {
+    int peen(boost::lexical_cast<int>(pin));
+    if (peen < 1) {
+      DLOG(ERROR) << "PIN out of range: " << peen;
+      return false;
+    }
+    std::string pattern("[0-9]{" +
+                        boost::lexical_cast<std::string>(kPinSize) +
+                        "}");
+    boost::regex rx(pattern);
+    return boost::regex_match(pin.begin(), pin.end(), rx);
+  }
+  catch(const std::exception &e) {
+    DLOG(ERROR) << e.what();
+    return false;
+  }
 }
 
 fs::path CreateTestDirectory(fs::path const& parent, std::string *tail) {
@@ -226,13 +286,64 @@ std::string ComposeSignaturePacketName(const std::string &name) {
 }
 
 std::string ComposeSignaturePacketValue(
-    const maidsafe::pki::SignaturePacket &packet) {
+    const pki::SignaturePacket &packet) {
   std::string public_key;
   asymm::EncodePublicKey(packet.value(), &public_key);
   pca::SignedData signed_data;
   signed_data.set_data(public_key);
   signed_data.set_signature(packet.signature());
   return signed_data.SerializeAsString();
+}
+
+std::string PutFilenameData(const std::string &file_name) {
+  if (file_name.size() > 255U)
+    return "";
+  try {
+    std::string data(boost::lexical_cast<std::string>(file_name.size()));
+    while (data.size() < 3U)
+      data.insert(0, "0");
+    BOOST_ASSERT(data.size() == 3U);
+    data += file_name;
+    return data;
+  }
+  catch(const std::exception &e) {
+    DLOG(ERROR) << e.what();
+    return "";
+  }
+}
+
+void GetFilenameData(const std::string &content,
+                     std::string *file_name,
+                     std::string *serialised_data_map) {
+  if (content.size() < 5U)
+    return;
+
+  try {
+    int chars_to_read(boost::lexical_cast<int>(content.substr(0, 3)));
+    *file_name = content.substr(3, chars_to_read);
+    chars_to_read += 3;
+    *serialised_data_map = content.substr(chars_to_read);
+  }
+  catch(const std::exception &e) {
+    DLOG(ERROR) << e.what();
+  }
+}
+
+std::string GetNameInPath(const fs::path &save_path,
+                          const std::string &file_name) {
+  int index(0), limit(10);
+  fs::path path_file_name(file_name);
+  std::string stem(path_file_name.stem().string()),
+              extension(path_file_name.extension().string());
+  boost::system::error_code ec;
+  while (fs::exists(save_path / path_file_name, ec) && index++ < limit) {
+    if (ec)
+      continue;
+    path_file_name = (stem + " (" + IntToString(index) + ")" + extension);
+  }
+  if (index == limit)
+    path_file_name.clear();
+  return path_file_name.string();
 }
 
 encrypt::DataMapPtr ParseSerialisedDataMap(
@@ -327,6 +438,26 @@ int CopyDirectoryContent(const fs::path& from, const fs::path& to) {
     return kGeneralError;
   }
   return kSuccess;
+}
+
+bool VerifyAndCreatePath(const fs::path& path) {
+  boost::system::error_code error_code;
+  if (fs::exists(path, error_code) && !error_code) {
+    DLOG(INFO) << path << " does exist.";
+    return true;
+  }
+
+  if (fs::create_directories(path, error_code) && !error_code) {
+    DLOG(INFO) << path << " created successfully.";
+    return true;
+  }
+
+  DLOG(ERROR) << path << " doesn't exist and couldn't be created.";
+  return false;
+}
+
+std::string IsoTimeWithMicroSeconds() {
+  return bptime::to_iso_string(bptime::microsec_clock::universal_time());
 }
 
 #ifdef LOCAL_TARGETS_ONLY

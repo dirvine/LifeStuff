@@ -12,8 +12,6 @@
  *      Author: Team
  */
 
-#include "boost/filesystem.hpp"
-#include "boost/thread.hpp"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/lifestuff/contacts.h"
@@ -81,12 +79,12 @@ TEST_F(ContactsTest, BEH_AddContacts) {
   ASSERT_EQ(size_t(1), mi_list.size());
 
   Contact mic;
-  ASSERT_EQ(0, sch_->ContactInfo(msc.public_username, &mic));
-  ASSERT_EQ(msc.public_username, mic.public_username);
+  ASSERT_EQ(0, sch_->ContactInfo(msc.public_id, &mic));
+  ASSERT_EQ(msc.public_id, mic.public_id);
 
-  ASSERT_EQ(-77, sch_->AddContact(msc.public_username,
+  ASSERT_EQ(-77, sch_->AddContact(msc.public_id,
                                   msc.mpid_name,
-                                  msc.mmid_name,
+                                  msc.inbox_name,
                                   msc.profile_picture_data_map,
                                   msc.mpid_public_key,
                                   msc.mmid_public_key,
@@ -97,10 +95,10 @@ TEST_F(ContactsTest, BEH_AddContacts) {
   sch_->OrderedContacts(&mi_list);
   ASSERT_EQ(size_t(1), mi_list.size());
 
-  msc.public_username = "palo.feo.smer";
-  ASSERT_EQ(0, sch_->AddContact(msc.public_username,
+  msc.public_id = "palo.feo.smer";
+  ASSERT_EQ(0, sch_->AddContact(msc.public_id,
                                 msc.mpid_name,
-                                msc.mmid_name,
+                                msc.inbox_name,
                                 msc.profile_picture_data_map,
                                 msc.mpid_public_key,
                                 msc.mmid_public_key,
@@ -122,14 +120,14 @@ TEST_F(ContactsTest, BEH_DeleteContacts) {
   ASSERT_EQ(size_t(1), mi_list.size());
 
   Contact mic;
-  ASSERT_EQ(0, sch_->ContactInfo(msc.public_username, &mic));
-  ASSERT_EQ(msc.public_username, mic.public_username);
+  ASSERT_EQ(0, sch_->ContactInfo(msc.public_id, &mic));
+  ASSERT_EQ(msc.public_id, mic.public_id);
 
-  ASSERT_EQ(0, sch_->DeleteContact(msc.public_username));
-  ASSERT_EQ(-80, sch_->ContactInfo(msc.public_username, &mic));
+  ASSERT_EQ(0, sch_->DeleteContact(msc.public_id));
+  ASSERT_EQ(-80, sch_->ContactInfo(msc.public_id, &mic));
   sch_->OrderedContacts(&mi_list);
   ASSERT_EQ(size_t(0), mi_list.size());
-  ASSERT_EQ(-78, sch_->DeleteContact(msc.public_username));
+  ASSERT_EQ(-78, sch_->DeleteContact(msc.public_id));
 }
 
 TEST_F(ContactsTest, BEH_Update_Select_PubName_Contacts) {
@@ -143,61 +141,61 @@ TEST_F(ContactsTest, BEH_Update_Select_PubName_Contacts) {
   ASSERT_EQ(size_t(1), mi_list.size());
 
   Contact mic;
-  ASSERT_EQ(0, sch_->ContactInfo(msc.public_username, &mic));
-  ASSERT_EQ(msc.public_username, mic.public_username);
+  ASSERT_EQ(0, sch_->ContactInfo(msc.public_id, &mic));
+  ASSERT_EQ(msc.public_id, mic.public_id);
 
   Contact msc1(contact_);
   msc1.mpid_name = "new mpid name";
-  msc1.mmid_name = "new mmid name";
+  msc1.inbox_name = "new mmid name";
   msc1.mpid_public_key = keys_.public_key;
   msc1.mmid_public_key = keys_.public_key;
   msc1.status = kConfirmed;
 
   // Public key
-  ASSERT_EQ(0, sch_->UpdateMpidPublicKey(msc1.public_username,
+  ASSERT_EQ(0, sch_->UpdateMpidPublicKey(msc1.public_id,
                                          msc1.mpid_public_key));
-  ASSERT_EQ(0, sch_->ContactInfo(msc1.public_username, &mic));
+  ASSERT_EQ(0, sch_->ContactInfo(msc1.public_id, &mic));
   ASSERT_TRUE(asymm::MatchingPublicKeys(msc1.mpid_public_key,
                                         mic.mpid_public_key));
   ASSERT_FALSE(asymm::MatchingPublicKeys(msc1.mmid_public_key,
                                          mic.mmid_public_key));
-  ASSERT_EQ(0, sch_->UpdateMmidPublicKey(msc1.public_username,
+  ASSERT_EQ(0, sch_->UpdateMmidPublicKey(msc1.public_id,
                                          msc1.mmid_public_key));
-  ASSERT_EQ(0, sch_->ContactInfo(msc1.public_username, &mic));
+  ASSERT_EQ(0, sch_->ContactInfo(msc1.public_id, &mic));
   ASSERT_TRUE(asymm::MatchingPublicKeys(msc1.mpid_public_key,
                                         mic.mpid_public_key));
   ASSERT_TRUE(asymm::MatchingPublicKeys(msc1.mmid_public_key,
                                         mic.mmid_public_key));
 
   // Name
-  ASSERT_EQ(0, sch_->UpdateMpidName(msc1.public_username, msc1.mpid_name));
-  ASSERT_EQ(0, sch_->ContactInfo(msc1.public_username, &mic));
+  ASSERT_EQ(0, sch_->UpdateMpidName(msc1.public_id, msc1.mpid_name));
+  ASSERT_EQ(0, sch_->ContactInfo(msc1.public_id, &mic));
   ASSERT_EQ(msc1.mpid_name, mic.mpid_name);
-  ASSERT_NE(msc1.mmid_name, mic.mmid_name);
-  ASSERT_EQ(0, sch_->UpdateMmidName(msc1.public_username, msc1.mmid_name));
-  ASSERT_EQ(0, sch_->ContactInfo(msc1.public_username, &mic));
+  ASSERT_NE(msc1.inbox_name, mic.inbox_name);
+  ASSERT_EQ(0, sch_->UpdateMmidName(msc1.public_id, msc1.inbox_name));
+  ASSERT_EQ(0, sch_->ContactInfo(msc1.public_id, &mic));
   ASSERT_EQ(msc1.mpid_name, mic.mpid_name);
-  ASSERT_EQ(msc1.mmid_name, mic.mmid_name);
+  ASSERT_EQ(msc1.inbox_name, mic.inbox_name);
 
   // Status
-  ASSERT_EQ(0, sch_->UpdateStatus(msc1.public_username, msc1.status));
-  ASSERT_EQ(0, sch_->ContactInfo(msc1.public_username, &mic));
+  ASSERT_EQ(0, sch_->UpdateStatus(msc1.public_id, msc1.status));
+  ASSERT_EQ(0, sch_->ContactInfo(msc1.public_id, &mic));
   ASSERT_EQ(msc1.status, mic.status);
 
   // All together
   msc1.mpid_name = "latest mpid name";
-  msc1.mmid_name = "latest mmid name";
+  msc1.inbox_name = "latest mmid name";
   msc1.mpid_public_key = keys1_.public_key;
   msc1.mmid_public_key = keys1_.public_key;
   msc1.status = kPendingResponse;
   ASSERT_EQ(0, sch_->UpdateContact(msc1));
-  ASSERT_EQ(0, sch_->ContactInfo(msc1.public_username, &mic));
+  ASSERT_EQ(0, sch_->ContactInfo(msc1.public_id, &mic));
   ASSERT_TRUE(asymm::MatchingPublicKeys(msc1.mpid_public_key,
                                         mic.mpid_public_key));
   ASSERT_TRUE(asymm::MatchingPublicKeys(msc1.mmid_public_key,
                                         mic.mmid_public_key));
   ASSERT_EQ(msc1.mpid_name, mic.mpid_name);
-  ASSERT_EQ(msc1.mmid_name, mic.mmid_name);
+  ASSERT_EQ(msc1.inbox_name, mic.inbox_name);
   ASSERT_EQ(msc1.status, mic.status);
 }
 
@@ -210,7 +208,7 @@ TEST_F(ContactsTest, BEH_Update_Select_PubName_Contacts) {
 //              "List came back not empty after DB creation.";
 //
 //    Contact msc(contact_);
-//    ASSERT_EQ(0, sch_->AddContact(msc.public_username, msc.PublicKey(),
+//    ASSERT_EQ(0, sch_->AddContact(msc.public_id, msc.PublicKey(),
 //                 msc.FullName(), msc.OfficePhone(), msc.Birthday(),
 //                 msc.Gender(), msc.Language(), msc.Country(), msc.City(),
 //                 msc.Confirmed(), 0, 0))
@@ -220,13 +218,13 @@ TEST_F(ContactsTest, BEH_Update_Select_PubName_Contacts) {
 //    ASSERT_EQ(size_t(1), mi_list.size()) <<
 //              "MI - List came back empty after addition.";
 //
-//    pub_name = msc.public_username;
+//    pub_name = msc.public_id;
 //    Contact mic;
-//    ASSERT_EQ(0, sch_->SetLastContactRank(msc.public_username)) <<
+//    ASSERT_EQ(0, sch_->SetLastContactRank(msc.public_id)) <<
 //              "Problem modifying contact";
-//    ASSERT_EQ(0, sch_->ContactInfo(msc.public_username, &mic)) <<
+//    ASSERT_EQ(0, sch_->ContactInfo(msc.public_id, &mic)) <<
 //              "MI - Problem getting the contact";
-//    ASSERT_EQ(msc.public_username, mic.public_username) <<
+//    ASSERT_EQ(msc.public_id, mic.public_id) <<
 //              "MI - Public name not the same";
 //    ASSERT_LT(0, mic.last_contact_) <<
 //              "Last contact did not update";
@@ -234,11 +232,11 @@ TEST_F(ContactsTest, BEH_Update_Select_PubName_Contacts) {
 //    ASSERT_EQ(1, mic.rank_) << "Rank did not update";
 //
 //    Sleep(boost::posix_time::seconds(1));
-//    ASSERT_EQ(0, sch_->SetLastContactRank(msc.public_username)) <<
+//    ASSERT_EQ(0, sch_->SetLastContactRank(msc.public_id)) <<
 //              "Problem modifying contact";
-//    ASSERT_EQ(0, sch_->ContactInfo(msc.public_username, &mic)) <<
+//    ASSERT_EQ(0, sch_->ContactInfo(msc.public_id, &mic)) <<
 //              "MI - Problem getting the contact";
-//    ASSERT_EQ(msc.public_username, mic.public_username) <<
+//    ASSERT_EQ(msc.public_id, mic.public_id) <<
 //              "MI - Public name not the same";
 //    ASSERT_LT(time, static_cast<boost::uint32_t>(mic.last_contact_)) <<
 //              "Last contact did not update";
@@ -254,7 +252,7 @@ TEST_F(ContactsTest, BEH_ListContacts_Rank_LastContact) {
   for (int n = 1; n < 21; n++) {
     msc.rank = RandomUint32() % 10;
     msc.last_contact = RandomUint32() % 10;
-    msc.public_username = "pub_name_" + IntToString(n);
+    msc.public_id = "pub_name_" + IntToString(n);
     ASSERT_EQ(0, sch_->AddContact(msc));
   }
 
@@ -296,7 +294,7 @@ TEST_F(ContactsTest, BEH_ListContacts_Status) {
       msc.rank = RandomUint32() % 10;
       msc.last_contact = RandomUint32() % 10;
       msc.status = types[status_index];
-      msc.public_username = "pub_name_" + IntToString(indexing);
+      msc.public_id = "pub_name_" + IntToString(indexing);
       ASSERT_EQ(0, sch_->AddContact(msc));
       ++indexing;
     }

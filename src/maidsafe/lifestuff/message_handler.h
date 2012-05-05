@@ -58,6 +58,7 @@ class MessageHandler {
   typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
                            const std::string&,
                            const std::string&,
+                           const std::string&,
                            const std::string&)> ShareInvitationSignal;
   typedef std::shared_ptr<ShareInvitationSignal> ShareInvitationSignalPtr;
 
@@ -65,9 +66,11 @@ class MessageHandler {
                            const std::string&,
                            const std::string&,
                            const std::string&)> OpenShareInvitationSignal;
-  typedef std::shared_ptr<OpenShareInvitationSignal> OpenShareInvitationSignalPtr;
+  typedef std::shared_ptr<OpenShareInvitationSignal>
+          OpenShareInvitationSignalPtr;
 
   typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
+                           const std::string&,
                            const std::string&)> ShareDeletionSignal;
   typedef std::shared_ptr<ShareDeletionSignal> ShareDeletionSignalPtr;
 
@@ -80,7 +83,8 @@ class MessageHandler {
   typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
                            const std::string&,
                            const std::string&,
-                           int)> MemberAccessLevelSignal;
+                           int,
+                           const std::string&)> MemberAccessLevelSignal;
   typedef std::shared_ptr<MemberAccessLevelSignal> MemberAccessLevelSignalPtr;
 
   typedef bs2::signal<bool(const std::string&,  // NOLINT (Dan)
@@ -95,20 +99,20 @@ class MessageHandler {
                            const std::string&)> ShareUserLeavingSignal;  // user_id  // NOLINT
   typedef std::shared_ptr<ShareUserLeavingSignal> ShareUserLeavingSignalPtr;
 
-  typedef bs2::signal<void(const InboxItem&)> NewItemSignal;  // NOLINT (Dan)
-  typedef std::shared_ptr<NewItemSignal> NewItemSignalPtr;
-
   typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
+                           const std::string&,
                            const std::string&,
                            ContactPresence presence)> ContactPresenceSignal;
   typedef std::shared_ptr<ContactPresenceSignal> ContactPresenceSignalPtr;
 
   typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
                            const std::string&,
+                           const std::string&,
                            const std::string&)> ChatMessageSignal;
   typedef std::shared_ptr<ChatMessageSignal> ChatMessageSignalPtr;
 
   typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
+                           const std::string&,
                            const std::string&,
                            const std::string&)> ContactDeletionSignal;
   typedef std::shared_ptr<ContactDeletionSignal> ContactDeletionSignalPtr;
@@ -116,15 +120,18 @@ class MessageHandler {
   typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
                            const std::string&,
                            const std::string&,
+                           const std::string&,
                            const std::string&)> FileTransferSignal;
   typedef std::shared_ptr<FileTransferSignal> FileTransferSignalPtr;
 
   typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
+                           const std::string&,
                            const std::string&)> ContactProfilePictureSignal;
   typedef std::shared_ptr<ContactProfilePictureSignal>
           ContactProfilePictureSignalPtr;
 
   typedef bs2::signal<bool(const std::string&,  // NOLINT (Dan)
+                           const std::string&,
                            std::string*)> ParseAndSaveDataMapSignal;
   typedef std::shared_ptr<ParseAndSaveDataMapSignal>
           ParseAndSaveDataMapSignalPtr;
@@ -145,11 +152,11 @@ class MessageHandler {
   int StartCheckingForNewMessages(boost::posix_time::seconds interval);
   void StopCheckingForNewMessages();
 
-  int Send(const std::string &own_public_username,
-           const std::string &recipient_public_username,
+  int Send(const std::string &own_public_id,
+           const std::string &recipient_public_id,
            const InboxItem &message);
-  int SendPresenceMessage(const std::string &own_public_username,
-                          const std::string &recipient_public_username,
+  int SendPresenceMessage(const std::string &own_public_id,
+                          const std::string &recipient_public_id,
                           const ContactPresence &presence);
   void InformConfirmedContactOnline(const std::string &own_public_id,
                                     const std::string &recipient_public_id);
@@ -195,7 +202,7 @@ class MessageHandler {
                         const std::string &mmid_value);
   bool MessagePreviouslyReceived(const std::string &message);
   void ClearExpiredReceivedMessages();
-  void KeysAndProof(const std::string &public_username,
+  void KeysAndProof(const std::string &public_id,
                     passport::PacketType pt,
                     bool confirmed,
                     pcs::RemoteChunkStore::ValidationData *validation_data);

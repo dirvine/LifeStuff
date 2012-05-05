@@ -24,6 +24,7 @@
 #include "maidsafe/lifestuff/lifestuff_api.h"
 
 #include <algorithm>
+#include <functional>
 #include <vector>
 
 #include "maidsafe/common/asio_service.h"
@@ -41,6 +42,8 @@
 #include "maidsafe/lifestuff/user_credentials.h"
 #include "maidsafe/lifestuff/user_storage.h"
 #include "maidsafe/lifestuff/utils.h"
+
+namespace args = std::placeholders;
 
 namespace maidsafe {
 
@@ -147,7 +150,8 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
 
   lifestuff_elements->message_handler->ConnectToParseAndSaveDataMapSignal(
       std::bind(&UserStorage::ParseAndSaveDataMap,
-                lifestuff_elements->user_storage, args::_1, args::_2));
+                lifestuff_elements->user_storage,
+                args::_1, args::_2, args::_3));
 
   lifestuff_elements->message_handler->ConnectToSaveShareDataSignal(
       std::bind(&UserStorage::SaveShareData,
@@ -159,8 +163,17 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
                 args::_1,
                 args::_2));
 
+  lifestuff_elements->message_handler->ConnectToShareDeletionSignal(
+      std::bind(&UserStorage::LeaveShare,
+                lifestuff_elements->user_storage, args::_1, args::_2));
+
   lifestuff_elements->message_handler->ConnectToShareUpdateSignal(
       std::bind(&UserStorage::UpdateShare,
+                lifestuff_elements->user_storage, args::_1, args::_2,
+                                                  args::_3, args::_4));
+
+  lifestuff_elements->message_handler->ConnectToMemberAccessLevelSignal(
+      std::bind(&UserStorage::MemberAccessChange,
                 lifestuff_elements->user_storage, args::_1, args::_2,
                                                   args::_3, args::_4));
 
@@ -319,15 +332,14 @@ int LifeStuff::CreateUser(const std::string &username,
     return kGeneralError;
   }
 
-  fs::create_directory(lifestuff_elements->user_storage->mount_dir() /
-                           fs::path("/").make_preferred() / kMyStuff,
-                       error_code);
+  fs::path mount_path(lifestuff_elements->user_storage->mount_dir());
+  fs::create_directories(mount_path / kMyStuff / kDownloadStuff,
+                         error_code);
   if (error_code) {
     DLOG(ERROR) << "Failed creating My Stuff: " << error_code.message();
     return kGeneralError;
   }
-  fs::create_directory(lifestuff_elements->user_storage->mount_dir() /
-                           fs::path("/").make_preferred() / kSharedStuff,
+  fs::create_directory(mount_path / kSharedStuff,
                        error_code);
   if (error_code) {
     DLOG(ERROR) << "Failed creating Shared Stuff: " << error_code.message();
@@ -451,10 +463,10 @@ int LifeStuff::LogOut() {
 
   // Delete mount directory
   boost::system::error_code error_code;
-  fs::remove_all(lifestuff_elements->user_storage->mount_dir(), error_code);
+  fs::remove_all(mount_path(), error_code);
   if (error_code)
     DLOG(WARNING) << "Failed to delete mount directory: "
-                  << lifestuff_elements->user_storage->mount_dir();
+                  << mount_path();
   lifestuff_elements->session->Reset();
 
   lifestuff_elements->state = kLoggedOut;
@@ -491,6 +503,11 @@ int LifeStuff::ChangeKeyword(const std::string &old_username,
     return kGeneralError;
   }
 
+  if (old_username.compare(new_username) == 0) {
+    DLOG(INFO) << "Same value for old and new.";
+    return kSuccess;
+  }
+
   return lifestuff_elements->user_credentials->ChangeUsername(new_username) ?
          kSuccess : kGeneralError;
 }
@@ -514,6 +531,11 @@ int LifeStuff::ChangePin(const std::string &old_pin,
     return kGeneralError;
   }
 
+  if (old_pin.compare(new_pin) == 0) {
+    DLOG(INFO) << "Same value for old and new.";
+    return kSuccess;
+  }
+
   return lifestuff_elements->user_credentials->ChangePin(new_pin) ?
          kSuccess : kGeneralError;
 }
@@ -529,6 +551,11 @@ int LifeStuff::ChangePassword(const std::string &old_password,
   if (result != kSuccess) {
     DLOG(ERROR) << "Password verification failed.";
     return result;
+  }
+
+  if (old_password.compare(new_password) == 0) {
+    DLOG(INFO) << "Same value for old and new.";
+    return kSuccess;
   }
 
   return lifestuff_elements->user_credentials->ChangePassword(new_password) ?
@@ -618,6 +645,25 @@ int LifeStuff::RemoveContact(const std::string &my_public_id,
     return result;
   }
 
+  // For private shares, if share_members can be fetched, indicates owner
+  // otherwise, only the owner(inviter) of the share can be fetched
+  std::vector<std::string> shares_names;
+  GetPrivateSharesIncludingMember(my_public_id,
+                                  contact_public_id,
+                                  &shares_names);
+  StringIntMap contact_to_remove;
+  contact_to_remove.insert(std::make_pair(contact_public_id, kShareRemover));
+  for (auto it = shares_names.begin(); it != shares_names.end(); ++it) {
+    StringIntMap results;
+    EditPrivateShareMembers(my_public_id, contact_to_remove, *it, &results);
+  }
+  shares_names.clear();
+  lifestuff_elements->user_storage->GetPrivateSharesContactBeingOwner(
+                              my_public_id, contact_public_id, &shares_names);
+  for (auto it = shares_names.begin(); it != shares_names.end(); ++it) {
+    LeavePrivateShare(my_public_id, *it);
+  }
+
   // Send message to removal
   InboxItem inbox_item(kContactDeletion);
   inbox_item.receiver_public_id = contact_public_id;
@@ -627,9 +673,16 @@ int LifeStuff::RemoveContact(const std::string &my_public_id,
   result = lifestuff_elements->message_handler->Send(my_public_id,
                                                      contact_public_id,
                                                      inbox_item);
+  if (result != kSuccess)
+    DLOG(ERROR) << "Failed in sending out removal message.";
 
-  return lifestuff_elements->public_id->RemoveContact(my_public_id,
-                                                      contact_public_id);
+  // Remove the contact
+  result = lifestuff_elements->public_id->RemoveContact(my_public_id,
+                                                        contact_public_id);
+  if (result != kSuccess)
+    DLOG(ERROR) << "Failed remove contact in RemoveContact.";
+
+  return result;
 }
 
 int LifeStuff::ChangeProfilePicture(
@@ -650,48 +703,52 @@ int LifeStuff::ChangeProfilePicture(
     return kGeneralError;
   }
 
-  // Write contents somewhere
-  fs::path profile_picture_path(lifestuff_elements->user_storage->mount_dir() /
-                                fs::path("/").make_preferred() /
-                                std::string(my_public_id +
-                                            "_profile_picture" +
-                                            drive::kMsHidden.string()));
-  if (WriteHiddenFile(profile_picture_path,
-                      profile_picture_contents,
-                      true) != kSuccess) {
-    DLOG(ERROR) << "Failed to write profile picture file: "
-                << profile_picture_path;
-    return kGeneralError;
-  }
+  // Message construction
+  InboxItem message(kContactProfilePicture);
+  message.sender_public_id = my_public_id;
 
-
-  // Get datamap
-  std::string data_map;
-  std::string reconstructed;
-  int count(0), limit(100);
-  while (reconstructed != profile_picture_contents && count++ < limit) {
-    data_map.clear();
-    result = lifestuff_elements->user_storage->GetHiddenFileDataMap(
-                profile_picture_path,
-                &data_map);
-    if ((result != kSuccess || data_map.empty()) && count == limit) {
-      DLOG(ERROR) << "Failed obtaining DM of profile picture: " << result
-                  << ", file: " << profile_picture_path;
-      return result;
+  if (profile_picture_contents != kBlankProfilePicture) {
+    // Write contents
+    fs::path profile_picture_path(
+        mount_path() /
+        std::string(my_public_id +
+                    "_profile_picture" +
+                    drive::kMsHidden.string()));
+    if (WriteHiddenFile(profile_picture_path,
+                        profile_picture_contents,
+                        true) != kSuccess) {
+      DLOG(ERROR) << "Failed to write profile picture file: "
+                  << profile_picture_path;
+      return kGeneralError;
     }
 
-    reconstructed = lifestuff_elements->user_storage->ConstructFile(data_map);
-    Sleep(bptime::milliseconds(50));
+
+    // Get datamap
+    std::string data_map;
+    std::string reconstructed;
+    int count(0), limit(100);
+    while (reconstructed != profile_picture_contents && count++ < limit) {
+      data_map.clear();
+      result = lifestuff_elements->user_storage->GetHiddenFileDataMap(
+                  profile_picture_path,
+                  &data_map);
+      if ((result != kSuccess || data_map.empty()) && count == limit) {
+        DLOG(ERROR) << "Failed obtaining DM of profile picture: " << result
+                    << ", file: " << profile_picture_path;
+        return result;
+      }
+
+      reconstructed = lifestuff_elements->user_storage->ConstructFile(data_map);
+      Sleep(bptime::milliseconds(50));
+    }
+    message.content.push_back(data_map);
+  } else {
+    message.content.push_back(kBlankProfilePicture);
   }
 
   // Set in session
   lifestuff_elements->session->set_profile_picture_data_map(my_public_id,
-                                                            data_map);
-
-  // Message construction
-  InboxItem message(kContactProfilePicture);
-  message.sender_public_id = my_public_id;
-  message.content.push_back(data_map);
+                                                            message.content[0]);
 
   // Send to everybody
   lifestuff_elements->message_handler->SendEveryone(message);
@@ -710,8 +767,7 @@ std::string LifeStuff::GetOwnProfilePicture(const std::string &my_public_id) {
     return "";
   }
 
-  fs::path profile_picture_path(lifestuff_elements->user_storage->mount_dir() /
-                                fs::path("/").make_preferred() /
+  fs::path profile_picture_path(mount_path() /
                                 std::string(my_public_id +
                                             "_profile_picture" +
                                             drive::kMsHidden.string()));
@@ -744,6 +800,12 @@ std::string LifeStuff::GetContactProfilePicture(
   if (result != kSuccess || contact.profile_picture_data_map.empty()) {
     DLOG(ERROR) << "No such contact(" << result << "): " << contact_public_id;
     return "";
+  }
+
+  // Might be blank
+  if (contact.profile_picture_data_map == kBlankProfilePicture) {
+    DLOG(INFO) << "Blank image detected. No reconstruction needed.";
+    return kBlankProfilePicture;
   }
 
   // Read contents, put them in a string, give them back. Should not be
@@ -810,7 +872,7 @@ int LifeStuff::SendChatMessage(const std::string &sender_public_id,
 
 int LifeStuff::SendFile(const std::string &sender_public_id,
                         const std::string &receiver_public_id,
-                        const fs::path absolute_path) {
+                        const fs::path &absolute_path) {
   if (lifestuff_elements->state != kLoggedIn) {
     DLOG(ERROR) << "Wrong state: " << lifestuff_elements->state;
     return kGeneralError;
@@ -841,22 +903,37 @@ int LifeStuff::SendFile(const std::string &sender_public_id,
   return kSuccess;
 }
 
-int LifeStuff::AcceptSentFile(const fs::path absolute_path,
-                              const std::string &identifier) {
+int LifeStuff::AcceptSentFile(const std::string &identifier,
+                              const fs::path &absolute_path,
+                              std::string *file_name) {
   if (lifestuff_elements->state != kLoggedIn) {
     DLOG(ERROR) << "Wrong state: " << lifestuff_elements->state;
     return kGeneralError;
   }
 
-  std::string serialised_data_map;
+  if ((absolute_path.empty() && !file_name) ||
+      (!absolute_path.empty() && file_name)) {
+    DLOG(ERROR) << "Wrong parameters given. absolute_path and file_name are "
+                << "mutually exclusive.";
+    return kGeneralError;
+  }
+
+  std::string serialised_identifier, saved_file_name, serialised_data_map;
   int result(
       lifestuff_elements->user_storage->ReadHiddenFile(
-          mount_path() / fs::path("/").make_preferred() /
-              std::string(identifier + drive::kMsHidden.string()),
-          &serialised_data_map));
-  if (result != kSuccess || serialised_data_map.empty()) {
+          mount_path() / std::string(identifier + drive::kMsHidden.string()),
+          &serialised_identifier));
+  if (result != kSuccess || serialised_identifier.empty()) {
     DLOG(ERROR) << "No such identifier found: " << result;
     return result == kSuccess ? kGeneralError : result;
+  }
+
+  GetFilenameData(serialised_identifier,
+                  &saved_file_name,
+                  &serialised_data_map);
+  if (saved_file_name.empty() || serialised_data_map.empty()) {
+    DLOG(ERROR) << "Failed to get filename or datamap.";
+    return kGeneralError;
   }
 
   drive::DataMapPtr data_map_ptr(ParseSerialisedDataMap(serialised_data_map));
@@ -865,11 +942,33 @@ int LifeStuff::AcceptSentFile(const fs::path absolute_path,
     return kGeneralError;
   }
 
-  result = lifestuff_elements->user_storage->InsertDataMap(absolute_path,
-                                                           serialised_data_map);
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed inserting DM: " << result;
-    return result;
+  if (absolute_path.empty()) {
+    fs::path store_path(mount_path() / kMyStuff / kDownloadStuff);
+    if (!VerifyAndCreatePath(store_path)) {
+      DLOG(ERROR) << "Failed finding and creating: " << store_path;
+      return kGeneralError;
+    }
+    std::string adequate_name(GetNameInPath(store_path, saved_file_name));
+    if (adequate_name.empty()) {
+      DLOG(ERROR) << "No name found to work for saving the file.";
+      return kGeneralError;
+    }
+    result = lifestuff_elements->user_storage->InsertDataMap(
+                 store_path / adequate_name,
+                 serialised_data_map);
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed inserting DM: " << result;
+      return result;
+    }
+    *file_name = adequate_name;
+  } else {
+    result = lifestuff_elements->user_storage->InsertDataMap(
+                 absolute_path,
+                 serialised_data_map);
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed inserting DM: " << result;
+      return result;
+    }
   }
 
   return kSuccess;
@@ -882,7 +981,6 @@ int LifeStuff::RejectSentFile(const std::string &identifier) {
   }
 
   fs::path hidden_file(mount_path() /
-                       fs::path("/").make_preferred() /
                        std::string(identifier + drive::kMsHidden.string()));
   return lifestuff_elements->user_storage->DeleteHiddenFile(hidden_file);
 }
@@ -921,12 +1019,13 @@ int LifeStuff::DeleteHiddenFile(const fs::path &absolute_path) {
   return lifestuff_elements->user_storage->DeleteHiddenFile(absolute_path);
 }
 
+/// Private Shares
 int LifeStuff::CreatePrivateShareFromExistingDirectory(
-      const std::string &my_public_id,
-      const fs::path &directory_in_lifestuff_drive,
-      const StringIntMap &contacts,
-      std::string *share_name,
-      StringIntMap *results) {
+    const std::string &my_public_id,
+    const fs::path &directory_in_lifestuff_drive,
+    const StringIntMap &contacts,
+    std::string *share_name,
+    StringIntMap *results) {
   BOOST_ASSERT(share_name);
   int result(PreContactChecks(lifestuff_elements->state,
                               my_public_id,
@@ -940,14 +1039,13 @@ int LifeStuff::CreatePrivateShareFromExistingDirectory(
   *share_name =  directory_in_lifestuff_drive.filename().string();
   boost::system::error_code error_code;
   if (fs::exists(directory_in_lifestuff_drive, error_code)) {
-    fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+    fs::path share_dir(mount_path() /
                        drive::kMsShareRoot /
-                       fs::path("/").make_preferred() / (*share_name));
+                       (*share_name));
     int index(0);
     while (fs::exists(share_dir, error_code)) {
-      share_dir = lifestuff_elements->user_storage->mount_dir() /
+      share_dir = mount_path() /
                         drive::kMsShareRoot /
-                        fs::path("/").make_preferred() /
                         ((*share_name) + "_" + IntToString(index));
       ++index;
     }
@@ -959,18 +1057,17 @@ int LifeStuff::CreatePrivateShareFromExistingDirectory(
       return kGeneralError;
 
     return lifestuff_elements->user_storage->CreateShare(my_public_id,
-              share_dir, contacts, true, results);
+              share_dir, contacts, drive::kMsPrivateShare, results);
   } else {
     DLOG(ERROR) << "Target Directory doesn't exist";
     return kNoShareTarget;
   }
 }
 
-int LifeStuff::CreateEmptyPrivateShare(
-      const std::string &my_public_id,
-      const StringIntMap &contacts,
-      std::string *share_name,
-      StringIntMap *results) {
+int LifeStuff::CreateEmptyPrivateShare(const std::string &my_public_id,
+                                       const StringIntMap &contacts,
+                                       std::string *share_name,
+                                       StringIntMap *results) {
   BOOST_ASSERT(share_name);
   int result(PreContactChecks(lifestuff_elements->state,
                               my_public_id,
@@ -980,16 +1077,15 @@ int LifeStuff::CreateEmptyPrivateShare(
     return result;
   }
 
-  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+  fs::path share_dir(mount_path() /
                      drive::kMsShareRoot /
-                     fs::path("/").make_preferred() / (*share_name));
+                     (*share_name));
   boost::system::error_code error_code;
   int index(0);
   // TODO(Team): shall use function via drive to test the existence of directory
   while (fs::exists(share_dir, error_code)) {
-    share_dir = lifestuff_elements->user_storage->mount_dir() /
+    share_dir = mount_path() /
                       drive::kMsShareRoot /
-                      fs::path("/").make_preferred() /
                       ((*share_name) + "_" + IntToString(index));
     ++index;
   }
@@ -1001,7 +1097,7 @@ int LifeStuff::CreateEmptyPrivateShare(
   *share_name = share_dir.filename().string();
 
   return lifestuff_elements->user_storage->CreateShare(my_public_id,
-            share_dir, contacts, true, results);
+            share_dir, contacts, drive::kMsPrivateShare, results);
 }
 
 int LifeStuff::GetPrivateShareList(const std::string &my_public_id,
@@ -1027,15 +1123,17 @@ int LifeStuff::GetPrivateShareMembers(const std::string &my_public_id,
     DLOG(ERROR) << "Failed pre checks in GetPrivateShareMemebers.";
     return result;
   }
-  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
-                     fs::path("/").make_preferred() / share_name);
+  fs::path share_dir(mount_path() /
+                     drive::kMsShareRoot /
+                     share_name);
   return lifestuff_elements->user_storage->GetAllShareUsers(share_dir,
                                                             shares_members);
 }
 
-int LifeStuff::GetPrivateSharesIncludingMember(const std::string &my_public_id,
-        const std::string &contact_public_id,
-        std::vector<std::string> *shares_names) {
+int LifeStuff::GetPrivateSharesIncludingMember(
+    const std::string &my_public_id,
+    const std::string &contact_public_id,
+    std::vector<std::string> *shares_names) {
   int result(PreContactChecks(lifestuff_elements->state,
                               my_public_id,
                               lifestuff_elements->session));
@@ -1054,8 +1152,9 @@ int LifeStuff::GetPrivateSharesIncludingMember(const std::string &my_public_id,
 
   for (auto it = all_shares_names.begin(); it != all_shares_names.end(); ++it) {
     StringIntMap share_members;
-    fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
-                      fs::path("/").make_preferred() / (*it).first);
+    fs::path share_dir(mount_path() /
+                       drive::kMsShareRoot /
+                       (*it).first);
     result = lifestuff_elements->user_storage->GetAllShareUsers(share_dir,
                                                   &share_members);
     if (result != kSuccess) {
@@ -1074,10 +1173,11 @@ int LifeStuff::GetPrivateSharesIncludingMember(const std::string &my_public_id,
   return kSuccess;
 }
 
-int LifeStuff::AcceptPrivateShareInvitation(std::string *share_name,
-                  const std::string &my_public_id,
-                  const std::string &contact_public_id,
-                  const std::string &share_id) {
+int LifeStuff::AcceptPrivateShareInvitation(
+    std::string *share_name,
+    const std::string &my_public_id,
+    const std::string &contact_public_id,
+    const std::string &share_id) {
   int result(PreContactChecks(lifestuff_elements->state,
                               my_public_id,
                               lifestuff_elements->session));
@@ -1087,7 +1187,6 @@ int LifeStuff::AcceptPrivateShareInvitation(std::string *share_name,
   }
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
   fs::path hidden_file(mount_path() / drive::kMsShareRoot /
-                       fs::path("/").make_preferred() /
                        std::string(temp_name + drive::kMsHidden.string()));
   std::string serialised_share_data;
   result = lifestuff_elements->user_storage->ReadHiddenFile(hidden_file,
@@ -1112,9 +1211,9 @@ int LifeStuff::AcceptPrivateShareInvitation(std::string *share_name,
   // remove the temp share invitation file no matter insertion succeed or not
   lifestuff_elements->user_storage->DeleteHiddenFile(hidden_file);
 
-  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+  fs::path share_dir(mount_path() /
                      drive::kMsShareRoot /
-                     fs::path("/").make_preferred() / *share_name);
+                     *share_name);
   return lifestuff_elements->user_storage->InsertShare(share_dir,
                                                        share_id,
                                                        contact_public_id,
@@ -1134,15 +1233,14 @@ int LifeStuff::RejectPrivateShareInvitation(const std::string &my_public_id,
   }
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
   fs::path hidden_file(mount_path() / drive::kMsShareRoot /
-                       fs::path("/").make_preferred() /
                        std::string(temp_name + drive::kMsHidden.string()));
   return lifestuff_elements->user_storage->DeleteHiddenFile(hidden_file);
 }
 
 int LifeStuff::EditPrivateShareMembers(const std::string &my_public_id,
-                            const StringIntMap &public_ids,
-                            const std::string &share_name,
-                            StringIntMap *results) {
+                                       const StringIntMap &public_ids,
+                                       const std::string &share_name,
+                                       StringIntMap *results) {
   StringIntMap share_members;
   int result(GetPrivateShareMembers(my_public_id, share_name, &share_members));
   if (result != kSuccess)
@@ -1152,38 +1250,44 @@ int LifeStuff::EditPrivateShareMembers(const std::string &my_public_id,
   for (auto it = share_members.begin(); it != share_members.end(); ++it)
     member_ids.push_back((*it).first);
 
-  StringIntMap members_to_add, members_to_update;
+  StringIntMap members_to_add, members_to_upgrade, members_to_downgrade;
   std::vector<std::string> members_to_remove;
   for (auto it = public_ids.begin(); it != public_ids.end(); ++it) {
     auto itr(std::find(member_ids.begin(), member_ids.end(), (*it).first));
     if (itr != member_ids.end()) {
       // -1 indicates removing the existing member
-      // other value indicates an updating
-      if ((*it).second == -1)
+      // 0 indicates downgrading the existing member
+      // 1 indicates upgrading the existing member
+      if ((*it).second == kShareRemover)
         members_to_remove.push_back(*itr);
-      else
-        members_to_update.insert(*it);
+      if (share_members[(*it).first] != (*it).second) {
+        if ((*it).second == kShareReadOnly)
+            members_to_downgrade.insert(*it);
+        if ((*it).second >= kShareReadWrite)
+            members_to_upgrade.insert(*it);
+      }
     } else {
       // a non-existing user indicates an adding
       members_to_add.insert(*it);
     }
   }
-  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
-                    fs::path("/").make_preferred() / share_name);
+  fs::path share_dir(mount_path() /
+                     drive::kMsShareRoot /
+                     share_name);
   // Add new users
   if (!members_to_add.empty()) {
     StringIntMap add_users_results;
     lifestuff_elements->user_storage->AddShareUsers(my_public_id,
                                                     share_dir,
                                                     members_to_add,
-                                                    true,
+                                                    drive::kMsPrivateShare,
                                                     &add_users_results);
     results->insert(add_users_results.begin(), add_users_results.end());
   }
   // Remove users
   if (!members_to_remove.empty()) {
     result = lifestuff_elements->user_storage->RemoveShareUsers(
-                my_public_id, share_dir, members_to_remove, true);
+           my_public_id, share_dir, members_to_remove, drive::kMsPrivateShare);
     if (result == kSuccess)
       for (auto it = members_to_remove.begin();
            it != members_to_remove.end(); ++it)
@@ -1193,14 +1297,23 @@ int LifeStuff::EditPrivateShareMembers(const std::string &my_public_id,
            it != members_to_remove.end(); ++it)
         results->insert(std::make_pair(*it, result));
   }
-  // Update users
-  if (!members_to_update.empty()) {
-    for (auto it = members_to_update.begin();
-              it != members_to_update.end(); ++it) {
+  // Upgrade users
+  if (!members_to_upgrade.empty()) {
+    for (auto it = members_to_upgrade.begin();
+              it != members_to_upgrade.end(); ++it) {
       result = lifestuff_elements->user_storage->SetShareUsersRights(
-                  my_public_id, share_dir, (*it).first, (*it).second, true);
+                          my_public_id, share_dir, (*it).first, (*it).second,
+                          drive::kMsPrivateShare);
       results->insert(std::make_pair((*it).first, result));
     }
+  }
+  // Downgrade users
+  if (!members_to_downgrade.empty()) {
+    result = lifestuff_elements->user_storage->DowngradeShareUsersRights(
+                    my_public_id, share_dir,
+                    members_to_downgrade, results, drive::kMsPrivateShare);
+    if (result != kSuccess)
+      return result;
   }
   return kSuccess;
 }
@@ -1215,9 +1328,9 @@ int LifeStuff::DeletePrivateShare(const std::string &my_public_id,
     return result;
   }
 
-  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+  fs::path share_dir(mount_path() /
                      drive::kMsShareRoot /
-                     fs::path("/").make_preferred() / share_name);
+                     share_name);
   return lifestuff_elements->user_storage->StopShare(my_public_id, share_dir);
 }
 
@@ -1231,9 +1344,9 @@ int LifeStuff::LeavePrivateShare(const std::string &my_public_id,
     return result;
   }
 
-  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
+  fs::path share_dir(mount_path() /
                      drive::kMsShareRoot /
-                     fs::path("/").make_preferred() / share_name);
+                     share_name);
   return lifestuff_elements->user_storage->RemoveShare(share_dir, my_public_id);
 }
 
@@ -1257,16 +1370,12 @@ int LifeStuff::CreateOpenShareFromExistingDirectory(
     return kGeneralError;
   }
   *share_name = directory_in_lifestuff_drive.filename().string();
-  fs::path share(lifestuff_elements->user_storage->mount_dir() /
-                   fs::path("/").make_preferred() /
-                   kSharedStuff /
-                   (*share_name));
+  fs::path share(mount_path() / kSharedStuff / (*share_name));
   int index(0);
   while (fs::exists(share, error_code)) {
-    share = lifestuff_elements->user_storage->mount_dir() /
-                fs::path("/").make_preferred() /
-                kSharedStuff /
-                ((*share_name) + "_" + IntToString(index));
+    share = mount_path() /
+            kSharedStuff /
+            ((*share_name) + "_" + IntToString(index));
     ++index;
   }
   fs::create_directory(share, error_code);
@@ -1296,9 +1405,10 @@ int LifeStuff::CreateOpenShareFromExistingDirectory(
                   << directory_in_lifestuff_drive << " " << error_code.value();
       return error_code.value();
     }
-  } catch (...) {
+  }
+  catch(const std::exception &e) {
     DLOG(ERROR) << "Exception thrown removing source directory "
-                << directory_in_lifestuff_drive;
+                << directory_in_lifestuff_drive << ": " << e.what();
     return kGeneralError;
   }
   return kSuccess;
@@ -1316,17 +1426,13 @@ int LifeStuff::CreateEmptyOpenShare(const std::string &my_public_id,
     DLOG(ERROR) << "Failed pre checks.";
     return result;
   }
-  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
-                        fs::path("/").make_preferred() /
-                        kSharedStuff /
-                        (*share_name));
+  fs::path share_dir(mount_path() / kSharedStuff / (*share_name));
   boost::system::error_code error_code;
   int index(0);
   while (fs::exists(share_dir, error_code)) {
-    share_dir = lifestuff_elements->user_storage->mount_dir() /
-                     fs::path("/").make_preferred() /
-                     kSharedStuff /
-                     ((*share_name) + "_" + IntToString(index));
+    share_dir = mount_path() /
+                kSharedStuff /
+                ((*share_name) + "_" + IntToString(index));
     ++index;
   }
   fs::create_directory(share_dir, error_code);
@@ -1344,10 +1450,11 @@ int LifeStuff::CreateEmptyOpenShare(const std::string &my_public_id,
                                                            results);
 }
 
-int LifeStuff::InviteMembersToOpenShare(const std::string &my_public_id,
-                                        const std::vector<std::string> &contacts,
-                                        const fs::path &absolute_path,
-                                        StringIntMap *results) {
+int LifeStuff::InviteMembersToOpenShare(
+    const std::string &my_public_id,
+    const std::vector<std::string> &contacts,
+    const fs::path &absolute_path,
+    StringIntMap *results) {
   StringIntMap liaisons;
   for (uint32_t i = 0; i != contacts.size(); ++i)
     liaisons.insert(std::make_pair(contacts[i], 1));
@@ -1383,10 +1490,7 @@ int LifeStuff::GetOpenShareMembers(const std::string &my_public_id,
     DLOG(ERROR) << "Failed pre checks.";
     return result;
   }
-  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
-                     fs::path("/").make_preferred() /
-                     kSharedStuff /
-                     share_name);
+  fs::path share_dir(mount_path() / kSharedStuff / share_name);
   result = lifestuff_elements->user_storage->GetAllShareUsers(share_dir,
                                                               &share_users);
   if (result != kSuccess) {
@@ -1413,9 +1517,9 @@ int LifeStuff::AcceptOpenShareInvitation(const std::string &my_public_id,
   }
   // Read hidden file...
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
-  fs::path hidden_file(mount_path() / fs::path("/").make_preferred() /
-                          kSharedStuff /
-                          std::string(temp_name + drive::kMsHidden.string()));
+  fs::path hidden_file(mount_path() /
+                       kSharedStuff /
+                       std::string(temp_name + drive::kMsHidden.string()));
   std::string serialised_share_data;
   result = lifestuff_elements->user_storage->ReadHiddenFile(hidden_file,
                 &serialised_share_data);
@@ -1434,10 +1538,7 @@ int LifeStuff::AcceptOpenShareInvitation(const std::string &my_public_id,
   asymm::DecodePublicKey(message.content(6), &(share_keyring.public_key));
   // Delete hidden file...
   lifestuff_elements->user_storage->DeleteHiddenFile(hidden_file);
-  fs::path share_dir(lifestuff_elements->user_storage->mount_dir() /
-                        fs::path("/").make_preferred() /
-                        kSharedStuff /
-                        *share_name);
+  fs::path share_dir(mount_path() / kSharedStuff / *share_name);
   result = lifestuff_elements->user_storage->InsertShare(share_dir,
                                                          share_id,
                                                          contact_public_id,
@@ -1468,7 +1569,6 @@ int LifeStuff::RejectOpenShareInvitation(const std::string &my_public_id,
   }
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
   fs::path hidden_file(mount_path() /
-                       fs::path("/").make_preferred() /
                        kSharedStuff /
                        std::string(temp_name + drive::kMsHidden.string()));
   return lifestuff_elements->user_storage->DeleteHiddenFile(hidden_file);
@@ -1483,10 +1583,7 @@ int LifeStuff::LeaveOpenShare(const std::string &my_public_id,
     DLOG(ERROR) << "Failed pre checks.";
     return result;
   }
-  fs::path share(lifestuff_elements->user_storage->mount_dir() /
-                     fs::path("/").make_preferred() /
-                     kSharedStuff /
-                     share_name);
+  fs::path share(mount_path() / kSharedStuff / share_name);
   std::vector<std::string> members;
   result = GetOpenShareMembers(my_public_id, share_name, &members);
   if (result != kSuccess) {
@@ -1515,8 +1612,10 @@ int LifeStuff::LeaveOpenShare(const std::string &my_public_id,
                     << share << " " << error_code.value();
         return error_code.value();
       }
-    } catch (...) {
-      DLOG(ERROR) << "Exception thrown removing share directory " << share;
+    }
+    catch(const std::exception &e) {
+      DLOG(ERROR) << "Exception thrown removing share directory " << share
+                  << ": " << e.what();
       return kGeneralError;
     }
   } else {
@@ -1542,6 +1641,11 @@ int LifeStuff::LeaveOpenShare(const std::string &my_public_id,
 int LifeStuff::state() const { return lifestuff_elements->state; }
 
 fs::path LifeStuff::mount_path() const {
+  if (lifestuff_elements->state != kLoggedIn) {
+    DLOG(ERROR) << "Wrong state: " << lifestuff_elements->state;
+    return fs::path();
+  }
+
   return lifestuff_elements->user_storage->mount_dir();
 }
 

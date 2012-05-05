@@ -60,12 +60,8 @@ enum InboxItemType {
 };
 
 struct InboxItem {
-  explicit InboxItem(InboxItemType inbox_item_type = kChat)
-      : item_type(inbox_item_type),
-        sender_public_id(),
-        receiver_public_id(),
-        content(),
-        timestamp(boost::lexical_cast<std::string>(GetDurationSinceEpoch())) {}
+  explicit InboxItem(InboxItemType inbox_item_type = kChat);
+
   InboxItemType item_type;
   std::string sender_public_id;
   std::string receiver_public_id;
@@ -74,6 +70,10 @@ struct InboxItem {
 };
 
 std::string CreatePin();
+
+bool CheckKeywordValidity(const std::string &keyword);
+bool CheckPinValidity(const std::string &pin);
+bool CheckPasswordValidity(const std::string &password);
 
 fs::path CreateTestDirectory(fs::path const& parent, std::string *tail);
 
@@ -106,9 +106,19 @@ std::string ComposeSignaturePacketValue(
 std::shared_ptr<encrypt::DataMap> ParseSerialisedDataMap(
     const std::string &serialised_data_map);
 
-
+std::string PutFilenameData(const std::string &file_name);
+void GetFilenameData(const std::string &content,
+                     std::string *file_name,
+                     std::string *serialised_data_map);
+std::string GetNameInPath(const fs::path &save_path,
+                          const std::string &file_name);
 int CopyDir(const fs::path& source, const fs::path& dest);
+
 int CopyDirectoryContent(const fs::path& from, const fs::path& to);
+
+bool VerifyAndCreatePath(const fs::path& path);
+
+std::string IsoTimeWithMicroSeconds();
 
 #ifdef LOCAL_TARGETS_ONLY
 std::shared_ptr<priv::chunk_store::RemoteChunkStore> BuildChunkStore(
