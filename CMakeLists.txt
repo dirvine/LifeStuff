@@ -1,6 +1,6 @@
 #==============================================================================#
 #                                                                              #
-#  Copyright (c) 2011 MaidSafe.net limited                                     #
+#  Copyright (c) 2012 MaidSafe.net limited                                     #
 #                                                                              #
 #  The following source code is property of MaidSafe.net limited and is not    #
 #  meant for external use.  The use of this code is governed by the license    #
@@ -13,54 +13,30 @@
 #==============================================================================#
 
 
-set(MS_PROJECT_NAME lifestuff)
+set(CMAKE_DISABLE_SOURCE_CHANGES ON)
+set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 
-cmake_minimum_required(VERSION 2.8.4 FATAL_ERROR)
-message("================================================================================\n")
-
-get_filename_component(CMAKE_BUILD_TYPE_DIR ${CMAKE_BINARY_DIR} NAME)
-
-# Variable MSVC is not set until after "PROJECT" command below
-if(CMAKE_BUILD_TYPE_DIR MATCHES "Win_MSVC")
-  set(CMAKE_BUILD_TYPE_DIR Release)
-elseif(CMAKE_BUILD_TYPE_DIR MATCHES "kdev")
-  set(CMAKE_BUILD_TYPE_DIR Debug)
-  set(KDEV 1)
-endif()
-
-if(NOT ${CMAKE_C_COMPILER_WORKS})
-  message(FATAL_ERROR "No generator previously specified.\nTo see a full list of generators, run:\n\tcmake --help\n")
-endif()
-
-# This "PROJECT" command resets CMAKE_BUILD_TYPE, hence it's copied from CMAKE_BUILD_TYPE_DIR which is set above.
-if((CMAKE_BUILD_TYPE_DIR MATCHES "Release") OR (DEFINED ${KDEV}))
-  project(${MS_PROJECT_NAME})
-else()
-  string(TOLOWER ${CMAKE_BUILD_TYPE_DIR} MS_PROJECT_NAME_APPENDIX)
-  project(${MS_PROJECT_NAME}_${MS_PROJECT_NAME_APPENDIX})
-endif()
-
-set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_DIR} CACHE INTERNAL "Except for MSVC, the build type is set by running cmake from the appropriate build subdirectory e.g. for a Debug build, \"cd build/Linux/Debug && cmake ../../..\"." FORCE)
+cmake_minimum_required(VERSION 2.8.7 FATAL_ERROR)
+project(lifestuff)
 
 if(NOT LOCAL_TARGETS_ONLY)
   set(LOCAL_TARGETS_ONLY OFF)
 endif()
 
+set(PROTO_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
+file(GLOB_RECURSE PROTO_FILES RELATIVE ${PROTO_SOURCE_DIR} "${PROTO_SOURCE_DIR}/maidsafe/*.proto")
+include(../../cmake_modules/maidsafe_standard_setup.cmake)
 
-###################################################################################################
-# MaidSafe Common, Private, Encrypt, DHT, Drive, PKI and Passport library search                  #
-###################################################################################################
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/build)
-include(maidsafe_find_common)
-add_maidsafe_library(MaidSafe-Private)
-add_maidsafe_library(MaidSafe-Encrypt)
-add_maidsafe_library(MaidSafe-Drive)
-add_maidsafe_library(MaidSafe-PKI)
-add_maidsafe_library(MaidSafe-Passport)
-if(${LOCAL_TARGETS_ONLY} MATCHES OFF)
-  add_maidsafe_library(MaidSafe-Transport)
-  add_maidsafe_library(MaidSafe-DHT)
-  add_maidsafe_library(MaidSafe-PD)
+include_directories(${common_SOURCE_DIR}/include)
+include_directories(${private_SOURCE_DIR}/include)
+include_directories(${encrypt_SOURCE_DIR}/include)
+include_directories(${drive_SOURCE_DIR}/include)
+include_directories(${pki_SOURCE_DIR}/include)
+include_directories(${passport_SOURCE_DIR}/include)
+if(NOT ${LOCAL_TARGETS_ONLY})
+  include_directories(${transport_SOURCE_DIR}/include)
+  include_directories(${dht_SOURCE_DIR}/include)
+  include_directories(${pd_SOURCE_DIR}/include)
 endif()
 
 
@@ -74,15 +50,6 @@ if(WIN32)
   set(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Cbfs_LIBRARY_DIR})
   set(Fuse_LIBRARY ${Cbfs_LIBRARY})
 endif()
-
-
-###################################################################################################
-# Standard setup                                                                                  #
-###################################################################################################
-set(PROTO_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
-file(GLOB_RECURSE PROTO_FILES RELATIVE ${PROTO_SOURCE_DIR} "${PROTO_SOURCE_DIR}/maidsafe/*.proto")
-include(maidsafe_standard_setup)
-handle_versions(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/version.h)
 
 
 ###################################################################################################
@@ -136,39 +103,43 @@ ms_add_executable(TESTuser_credentials_local Tests ${CLIENT_CONTROLLER_TEST_CC} 
 ms_add_executable(TESTuser_storage_local Tests ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC})
 ms_add_executable(TESTapi_local Tests ${API_TEST_CC} ${TESTS_MAIN_CC})
 
-target_link_libraries(lifestuff_local_static maidsafe_drive_static maidsafe_passport_static boost_regex)
-target_link_libraries(TESTlifestuff_local lifestuff_local_static gtest_static)
-target_link_libraries(TESTauthentication_local lifestuff_local_static gtest_static)
-target_link_libraries(TESTpublic_id_local lifestuff_local_static gtest_static)
-target_link_libraries(TESTuser_credentials_local lifestuff_local_static gtest_static)
-target_link_libraries(TESTuser_storage_local lifestuff_local_static gtest_static)
-target_link_libraries(TESTapi_local lifestuff_local_static gtest_static)
+target_link_libraries(maidsafe_lifestuff_local maidsafe_drive maidsafe_passport boost_regex-static)
+target_link_libraries(TESTlifestuff_local maidsafe_lifestuff_local)
+target_link_libraries(TESTauthentication_local maidsafe_lifestuff_local)
+target_link_libraries(TESTpublic_id_local maidsafe_lifestuff_local)
+target_link_libraries(TESTuser_credentials_local maidsafe_lifestuff_local)
+target_link_libraries(TESTuser_storage_local maidsafe_lifestuff_local)
+target_link_libraries(TESTapi_local maidsafe_lifestuff_local)
 
-if(${LOCAL_TARGETS_ONLY} MATCHES OFF)
-  ms_add_static_library(${MS_PROJECT_NAME} ${ALL_FILES_LIFESTUFF_DIR})
+if(NOT ${LOCAL_TARGETS_ONLY})
+  ms_add_static_library(lifestuff ${ALL_FILES_LIFESTUFF_DIR})
   ms_add_executable(TESTlifestuff Tests ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${TESTS_MAIN_CC})
   ms_add_executable(TESTauthentication Tests ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
   ms_add_executable(TESTpublic_id Tests ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
   ms_add_executable(TESTuser_credentials Tests ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
   ms_add_executable(TESTuser_storage Tests ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC})
   ms_add_executable(TESTapi Tests ${API_TEST_CC} ${TESTS_MAIN_CC})
-  target_link_libraries(lifestuff_static maidsafe_drive_static maidsafe_passport_static maidsafe_pd_static boost_regex)
-  target_link_libraries(TESTlifestuff lifestuff_static gtest_static)
-  target_link_libraries(TESTauthentication lifestuff_static gtest_static)
-  target_link_libraries(TESTpublic_id lifestuff_static gtest_static)
-  target_link_libraries(TESTuser_credentials lifestuff_static gtest_static)
-  target_link_libraries(TESTuser_storage lifestuff_static gtest_static)
-  target_link_libraries(TESTapi lifestuff_static gtest_static)
+  target_link_libraries(maidsafe_lifestuff maidsafe_drive maidsafe_passport maidsafe_pd boost_regex-static)
+  target_link_libraries(TESTlifestuff maidsafe_lifestuff)
+  target_link_libraries(TESTauthentication maidsafe_lifestuff)
+  target_link_libraries(TESTpublic_id maidsafe_lifestuff)
+  target_link_libraries(TESTuser_credentials maidsafe_lifestuff)
+  target_link_libraries(TESTuser_storage maidsafe_lifestuff)
+  target_link_libraries(TESTapi maidsafe_lifestuff)
 endif()
 
+rename_outdated_built_exes()
 
 
 ###################################################################################################
 # Set compiler and linker flags                                                                   #
 ###################################################################################################
 include(maidsafe_standard_flags)
+ms_disable_warnings(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.cc
+                    ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_types.pb.cc
+                    ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_messages.pb.cc)
 
-set_target_properties(lifestuff_local_static
+set_target_properties(maidsafe_lifestuff_local
                       TESTlifestuff_local
                       TESTauthentication_local
                       TESTpublic_id_local
@@ -177,17 +148,8 @@ set_target_properties(lifestuff_local_static
                       TESTapi_local
                       PROPERTIES COMPILE_FLAGS -DLOCAL_TARGETS_ONLY)
 
-if(MSVC)
-  set_source_files_properties(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_types.pb.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_messages.pb.cc
-                                PROPERTIES COMPILE_FLAGS "/W0")
-elseif(UNIX)
+if(UNIX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
-  set_source_files_properties(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_types.pb.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_messages.pb.cc
-                                PROPERTIES COMPILE_FLAGS "-w")
 endif()
 
 
@@ -215,29 +177,23 @@ test_summary_output()
 ###################################################################################################
 # Install details                                                                                 #
 ###################################################################################################
-final_message()
-
 if(${LOCAL_TARGETS_ONLY} MATCHES ON)
-  set(JUST_LOCAL "The local targets flag IS currently set.\n")
-  set(JUST_LOCAL "${JUST_LOCAL}To switch to the all-inclusive version, please use -DLOCAL_TARGETS_ONLY=OFF\n")
+  message(STATUS "The local targets flag IS currently set.")
+  message(STATUS "To switch to the all-inclusive version, please use -DLOCAL_TARGETS_ONLY=OFF")
 else()
-  set(JUST_LOCAL "The local targets flag IS NOT currently set\n")
-  set(JUST_LOCAL "${JUST_LOCAL}To switch to the local targets only version, please use -DLOCAL_TARGETS_ONLY=ON\n")
+  message(STATUS "The local targets flag IS NOT currently set")
+  message(STATUS "To switch to the local targets only version, please use -DLOCAL_TARGETS_ONLY=ON")
 endif()
-message(${JUST_LOCAL})
-message("================================================================================")
 
-rename_outdated_built_exes()
-
-set(LIFESTUFF_INSTALL_FILES
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/return_codes.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/version.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_api.h)
-
-ms_install_libs(lifestuff_local_static)
-if(${LOCAL_TARGETS_ONLY} MATCHES OFF)
-  ms_install_libs(lifestuff_static)
-endif()
-ms_install_headers(lifestuff ${LIFESTUFF_INSTALL_FILES})
-ms_install_export()
+# set(LIFESTUFF_INSTALL_FILES
+#       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff.h
+#       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/return_codes.h
+#       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/version.h
+#       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_api.h)
+# 
+# ms_install_libs(lifestuff_local_static)
+# if(${LOCAL_TARGETS_ONLY} MATCHES OFF)
+#   ms_install_libs(lifestuff_static)
+# endif()
+# ms_install_headers(lifestuff ${LIFESTUFF_INSTALL_FILES})
+# ms_install_export()
