@@ -237,48 +237,61 @@ int LifeStuff::ConnectToSignals(
 
   int connects(0);
   if (chat_slot) {
+    lifestuff_elements->slots.chat_slot = chat_slot;
     lifestuff_elements->message_handler->ConnectToChatSignal(chat_slot);
     ++connects;
   }
   if (file_slot) {
+    lifestuff_elements->slots.file_slot = file_slot;
     lifestuff_elements->message_handler->ConnectToFileTransferSignal(file_slot);
     ++connects;
   }
   if (new_contact_slot) {
+    lifestuff_elements->slots.new_contact_slot = new_contact_slot;
     lifestuff_elements->public_id->ConnectToNewContactSignal(new_contact_slot);
     ++connects;
   }
   if (confirmed_contact_slot) {
+    lifestuff_elements->slots.confirmed_contact_slot = confirmed_contact_slot;
     lifestuff_elements->public_id->ConnectToContactConfirmedSignal(
         confirmed_contact_slot);
     ++connects;
   }
   if (profile_picture_slot) {
+    lifestuff_elements->slots.profile_picture_slot = profile_picture_slot;
     lifestuff_elements->message_handler->ConnectToContactProfilePictureSignal(
         profile_picture_slot);
     ++connects;
   }
   if (contact_presence_slot) {
+    lifestuff_elements->slots.contact_presence_slot = contact_presence_slot;
     lifestuff_elements->message_handler->ConnectToContactPresenceSignal(
         contact_presence_slot);
     ++connects;
   }
   if (contact_deletion_function) {
+    lifestuff_elements->slots.contact_deletion_function =
+        contact_deletion_function;
     lifestuff_elements->message_handler->ConnectToContactDeletionSignal(
         contact_deletion_function);
     ++connects;
   }
   if (share_invitation_function) {
+    lifestuff_elements->slots.share_invitation_function =
+        share_invitation_function;
     lifestuff_elements->message_handler->ConnectToShareInvitationSignal(
         share_invitation_function);
     ++connects;
   }
   if (share_deletion_function) {
+    lifestuff_elements->slots.share_invitation_function =
+        share_invitation_function;
     lifestuff_elements->message_handler->ConnectToShareDeletionSignal(
         share_deletion_function);
     ++connects;
   }
   if (access_level_function) {
+    lifestuff_elements->slots.access_level_function = access_level_function;
     lifestuff_elements->message_handler->ConnectToMemberAccessLevelSignal(
         access_level_function);
     ++connects;
@@ -320,11 +333,10 @@ int LifeStuff::Finalise() {
 int LifeStuff::SetValidPmid() {
   int result = kSuccess;
 #ifndef LOCAL_TARGETS_ONLY
-//   std::cout << lifestuff_elements->client_container->key_pair_->identity << std::endl;
   std::vector<dht::Contact> bootstrap_contacts;
   lifestuff_elements->client_container->Stop(&bootstrap_contacts);
-//   lifestuff_elements->client_container->set_key_pair(
-//       lifestuff_elements->session->GetPmidKeys());
+   lifestuff_elements->client_container->set_key_pair(
+       lifestuff_elements->session->GetPmidKeys());
   lifestuff_elements->client_container->Init(
       lifestuff_elements->buffered_path / "buffered_chunk_store", 10, 4);
   result = lifestuff_elements->client_container->Start(bootstrap_contacts);
@@ -403,9 +415,6 @@ int LifeStuff::SetValidPmid() {
        lifestuff_elements->slots.share_invitation_function,
        lifestuff_elements->slots.share_deletion_function,
        lifestuff_elements->slots.access_level_function);
-
-//   std::cout << "Joined: " << lifestuff_elements->client_container->node_->joined() << std::endl;
-//   std::cout << lifestuff_elements->client_container->key_pair_->identity << std::endl;
 #endif
   return result;
 }
@@ -426,10 +435,10 @@ int LifeStuff::CreateUser(const std::string &username,
     return kGeneralError;
   }
 
-//   if (SetValidPmid() != kSuccess)  {
-//     DLOG(ERROR) << "Failed to set valid PMID";
-//     return kGeneralError;
-//   }
+  if (SetValidPmid() != kSuccess)  {
+    DLOG(ERROR) << "Failed to set valid PMID";
+    return kGeneralError;
+  }
 
 
   boost::system::error_code error_code;
@@ -525,10 +534,10 @@ int LifeStuff::LogIn(const std::string &username,
     return kGeneralError;
   }
 
-//   if (SetValidPmid() != kSuccess)  {
-//     DLOG(ERROR) << "Failed to set valid PMID";
-//     return kGeneralError;
-//   }
+  if (SetValidPmid() != kSuccess)  {
+    DLOG(ERROR) << "Failed to set valid PMID";
+    return kGeneralError;
+  }
 
   boost::system::error_code error_code;
   fs::path mount_dir(GetHomeDir() /
