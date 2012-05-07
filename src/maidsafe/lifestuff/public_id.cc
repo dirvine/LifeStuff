@@ -534,7 +534,9 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
         int update(session_->contact_handler_map()
                        [std::get<0>(data)]->UpdateContact(mic));
         if (update == kSuccess) {
-          (*contact_confirmed_signal_)(std::get<0>(data), public_id);
+          (*contact_confirmed_signal_)(std::get<0>(data),
+                                       public_id,
+                                       introduction.timestamp());
         }
       } else if (mic.status == kConfirmed) {
         int mmid(
@@ -556,7 +558,9 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
               kPendingResponse,
               0, 0);
       if (n == kSuccess)
-        (*new_contact_signal_)(std::get<0>(data), public_id);
+        (*new_contact_signal_)(std::get<0>(data),
+                               public_id,
+                               introduction.timestamp());
     }
   }
 }
@@ -742,6 +746,7 @@ int PublicId::InformContactInfo(const std::string &public_id,
     introduction.set_public_id(public_id);
     introduction.set_profile_picture_data_map(
         session_->profile_picture_data_map(public_id));
+    introduction.set_timestamp(IsoTimeWithMicroSeconds());
 
     std::string encrypted_introduction;
     result = asymm::Encrypt(introduction.SerializeAsString(),

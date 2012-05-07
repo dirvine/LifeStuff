@@ -24,6 +24,7 @@
 
 #include "boost/asio.hpp"
 #include "boost/archive/text_iarchive.hpp"
+#include "boost/date_time/posix_time/posix_time.hpp"
 #include "boost/regex.hpp"
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
@@ -52,6 +53,13 @@ namespace bai = boost::asio::ip;
 namespace maidsafe {
 
 namespace lifestuff {
+
+InboxItem::InboxItem(InboxItemType inbox_item_type)
+    : item_type(inbox_item_type),
+      sender_public_id(),
+      receiver_public_id(),
+      content(),
+      timestamp(IsoTimeWithMicroSeconds()) {}
 
 std::string CreatePin() {
   std::stringstream pin_stream;
@@ -386,6 +394,70 @@ int CopyDir(const fs::path& source, const fs::path& dest) {
     }
   }
   return kSuccess;
+}
+
+int CopyDirectoryContent(const fs::path& from, const fs::path& to) {
+  boost::system::error_code error_code;
+  int result;
+  fs::directory_iterator it(from), end;
+  try {
+    for (; it != end; ++it) {
+      fs::path current(it->path());
+      if (fs::is_directory(*it)) {
+        fs::create_directory(to / current.filename(), error_code);
+        if (error_code) {
+          DLOG(ERROR) << "Failed to create directory: "
+                      << to / current.filename()
+                      << " " << error_code.message();
+          return kGeneralError;
+        }
+        result = CopyDirectoryContent(current, to / current.filename());
+        if (result != kSuccess) {
+          DLOG(ERROR) << "Failed to create directory "
+                      << to / current.filename() << error_code.value();
+          return kGeneralError;
+        }
+      } else if (fs::is_regular_file(*it)) {
+        fs::copy_file(current, to / current.filename(), error_code);
+        if (error_code) {
+          DLOG(ERROR) << "Failed to create file " << to / current.filename()
+                      << error_code.value();
+          return kGeneralError;
+        }
+      } else {
+        if (fs::exists(*it))
+          DLOG(ERROR) << "Unknown file type found.";
+        else
+          DLOG(ERROR) << "Nonexistant file type found.";
+        return kGeneralError;
+      }
+    }
+  }
+  catch(...) {
+    DLOG(ERROR) << "Failed copying directory " << from << " to " << to;
+    return kGeneralError;
+  }
+  return kSuccess;
+}
+
+bool VerifyAndCreatePath(const fs::path& path) {
+  boost::system::error_code error_code;
+  if (fs::exists(path, error_code) && !error_code) {
+    DLOG(INFO) << path << " does exist.";
+    return true;
+  }
+
+  if (fs::create_directories(path, error_code) && !error_code) {
+    DLOG(INFO) << path << " created successfully.";
+    return true;
+  }
+
+  DLOG(ERROR) << path << " doesn't exist and couldn't be created.";
+  return false;
+}
+
+std::string IsoTimeWithMicroSeconds() {
+  return bptime::to_iso_string(bptime::microsec_clock::universal_time());
 }
 
 #ifdef LOCAL_TARGETS_ONLY

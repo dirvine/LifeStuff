@@ -105,53 +105,67 @@ const std::string kSharedStuff("Shared Stuff");
 const std::string kBlankProfilePicture("BlankPicture");
 
 /// General
-typedef std::function<void(const std::string&, const std::string&)>
-        TwoStringsFunction;
 typedef std::function<void(const std::string&,
                            const std::string&,
                            const std::string&)>
         ThreeStringsFunction;
+typedef std::function<void(const std::string&,
+                           const std::string&,
+                           const std::string&,
+                           const std::string&)>
+        FourStringsFunction;
+typedef std::function<void(const std::string&,
+                           const std::string&,
+                           const std::string&,
+                           const std::string&,
+                           const std::string&)>
+        FiveStringsFunction;
 typedef std::function<void(int)> VoidFunctionOneInt;  // NOLINT (Dan)
 typedef std::function<void(bool)> VoidFunctionOneBool;  // NOLINT (Dan)
 typedef std::map<std::string, int> StringIntMap;
 typedef std::map<std::string, std::pair<ContactStatus, ContactPresence>>
         ContactMap;
 
-/// Shares
+/// Private Shares
+// Own public ID, Contact public ID, Share Tag/Name, Share ID, Timestamp
+typedef FiveStringsFunction ShareInvitationFunction;
+
+// own public ID, share name
+typedef ThreeStringsFunction ShareDeletionFunction;
+
 typedef std::function<void(const std::string&,    // Own public ID
                            const std::string&,    // Contact public ID
-                           const std::string&,    // Share Tag (share_name)
-                           const std::string&)>   // Unique ID (share_id)
-        ShareInvitationFunction;
-typedef TwoStringsFunction ShareDeletionFunction;  // own public ID, share name
-typedef std::function<void(const std::string&,  // Own public ID
-                           const std::string&,  // Contact public ID
-                           const std::string&,  // Share name
-                           int)>                // Access level
+                           const std::string&,    // Share name
+                           int,                   // Access level
+                           const std::string&)>   // Timestamp
         MemberAccessLevelFunction;
 
+/// Open Shares
+// Own public ID, Contact public ID, Share Tag, Unique ID
+typedef FourStringsFunction OpenShareInvitationFunction;
+
 /// Chat
-// Own public ID, Contact public ID, Message
-typedef ThreeStringsFunction ChatFunction;
+// Own public ID, Contact public ID, Message, Timestamp
+typedef FourStringsFunction ChatFunction;
 
 /// File transfer
-typedef std::function<void(const std::string&,    // Own public ID
-                           const std::string&,    // Contact public ID
-                           const std::string&,    // File name
-                           const std::string&)>   // File ID
-        FileTransferFunction;
+// Own public ID, Contact public ID, File name, File ID, Timestamp
+typedef FiveStringsFunction FileTransferFunction;
 
 /// Contact info
-typedef TwoStringsFunction NewContactFunction;  // Own & other public ID
-typedef TwoStringsFunction ContactConfirmationFunction;  // Own, other public ID
-typedef TwoStringsFunction
-        ContactProfilePictureFunction;  // Own & other public ID
+// Own & other public ID, Timestamp
+typedef ThreeStringsFunction NewContactFunction;
+// Own & other public ID, Timestamp
+typedef ThreeStringsFunction ContactConfirmationFunction;
+// Own & other public ID, Timestamp
+typedef ThreeStringsFunction ContactProfilePictureFunction;
 typedef std::function<void(const std::string&,          // Own public ID
                            const std::string&,          // Contact public ID
+                           const std::string&,          // Timestamp
                            ContactPresence presence)>   // online/offline
         ContactPresenceFunction;
-// Own public ID, Contact public ID, Message
-typedef ThreeStringsFunction ContactDeletionFunction;
+// Own public ID, Contact public ID, Message, Timestamp
+typedef FourStringsFunction ContactDeletionFunction;
 
 }  // namespace lifestuff
 
