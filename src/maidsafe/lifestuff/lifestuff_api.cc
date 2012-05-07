@@ -64,7 +64,8 @@ struct Slots {
         contact_deletion_function(),
         share_invitation_function(),
         share_deletion_function(),
-        access_level_function() {}
+        access_level_function(),
+        open_share_invitation_function() {}
   ChatFunction chat_slot;
   FileTransferFunction file_slot;
   NewContactFunction new_contact_slot;
@@ -75,6 +76,7 @@ struct Slots {
   ShareInvitationFunction share_invitation_function;
   ShareDeletionFunction share_deletion_function;
   MemberAccessLevelFunction access_level_function;
+  OpenShareInvitationFunction open_share_invitation_function;
 };
 
 struct LifeStuff::Elements {
@@ -291,6 +293,8 @@ int LifeStuff::ConnectToSignals(
     ++connects;
   }
   if (open_share_invitation_function) {
+    lifestuff_elements->slots.open_share_invitation_function =
+        lifestuff_elements->slots.open_share_invitation_function;
     lifestuff_elements->message_handler->ConnectToOpenShareInvitationSignal(
         open_share_invitation_function);
     ++connects;
@@ -426,7 +430,8 @@ int LifeStuff::SetValidPmid() {
        lifestuff_elements->slots.contact_deletion_function,
        lifestuff_elements->slots.share_invitation_function,
        lifestuff_elements->slots.share_deletion_function,
-       lifestuff_elements->slots.access_level_function);
+       lifestuff_elements->slots.access_level_function,
+       lifestuff_elements->slots.open_share_invitation_function);
 #endif
   return result;
 }
