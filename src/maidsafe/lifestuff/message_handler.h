@@ -62,6 +62,13 @@ class MessageHandler {
                            const std::string&)> ShareInvitationSignal;
   typedef std::shared_ptr<ShareInvitationSignal> ShareInvitationSignalPtr;
 
+  typedef bs2::signal<void(const std::string&,  // NOLINT
+                           const std::string&,
+                           const std::string&,
+                           const std::string&)> OpenShareInvitationSignal;
+  typedef std::shared_ptr<OpenShareInvitationSignal>
+          OpenShareInvitationSignalPtr;
+
   typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
                            const std::string&,
                            const std::string&)> ShareDeletionSignal;
@@ -83,6 +90,10 @@ class MessageHandler {
   typedef bs2::signal<bool(const std::string&,  // NOLINT (Dan)
                            const std::string&)> SaveShareDataSignal;
   typedef std::shared_ptr<SaveShareDataSignal> SaveShareDataSignalPtr;
+
+  typedef bs2::signal<bool(const std::string&,  // NOLINT
+                           const std::string&)> SaveOpenShareDataSignal;
+  typedef std::shared_ptr<SaveOpenShareDataSignal> SaveOpenShareDataSignalPtr;
 
   typedef bs2::signal<void(const std::string&,  // share id
                            const std::string&)> ShareUserLeavingSignal;  // user_id  // NOLINT
@@ -156,6 +167,8 @@ class MessageHandler {
       const FileTransferFunction &function);
   bs2::connection ConnectToShareInvitationSignal(
       const ShareInvitationFunction &function);
+  bs2::connection ConnectToOpenShareInvitationSignal(
+      const OpenShareInvitationFunction &function);
   bs2::connection ConnectToShareDeletionSignal(
       const ShareDeletionFunction &function);
   bs2::connection ConnectToShareUpdateSignal(
@@ -164,6 +177,8 @@ class MessageHandler {
       const MemberAccessLevelFunction &function);
   bs2::connection ConnectToSaveShareDataSignal(
       const SaveShareDataSignal::slot_type &function);
+  bs2::connection ConnectToSaveOpenShareDataSignal(
+      const SaveOpenShareDataSignal::slot_type &function);
   bs2::connection ConnectToShareUserLeavingSignal(
       const ShareUserLeavingSignal::slot_type &function);
   bs2::connection ConnectToContactPresenceSignal(
@@ -193,6 +208,7 @@ class MessageHandler {
                     pcs::RemoteChunkStore::ValidationData *validation_data);
   void ContactPresenceSlot(const InboxItem& information_message);
   void ContactProfilePictureSlot(const InboxItem& information_message);
+  void OpenShareInvitationSlot(const InboxItem& inbox_item);
   void RetrieveMessagesForAllIds();
   void EnqueuePresenceMessages(ContactPresence presence);
   void SignalFileTransfer(const InboxItem &inbox_item);
@@ -208,10 +224,12 @@ class MessageHandler {
   ChatMessageSignalPtr chat_signal_;
   FileTransferSignalPtr file_transfer_signal_;
   ShareInvitationSignalPtr share_invitation_signal_;
+  OpenShareInvitationSignalPtr open_share_invitation_signal_;
   ShareDeletionSignalPtr share_deletion_signal_;
   ShareUpdateSignalPtr share_update_signal_;
   MemberAccessLevelSignalPtr member_access_level_signal_;
   SaveShareDataSignalPtr save_share_data_signal_;
+  SaveOpenShareDataSignalPtr save_open_share_data_signal_;
   ShareUserLeavingSignalPtr share_user_leaving_signal_;
   ContactPresenceSignalPtr contact_presence_signal_;
   ContactProfilePictureSignalPtr contact_profile_picture_signal_;
