@@ -120,6 +120,7 @@ typedef std::function<void(const std::string&,
                            const std::string&,
                            const std::string&)>
         FiveStringsFunction;
+
 typedef std::function<void(int)> VoidFunctionOneInt;  // NOLINT (Dan)
 typedef std::function<void(bool)> VoidFunctionOneBool;  // NOLINT (Dan)
 typedef std::map<std::string, int> StringIntMap;
@@ -128,21 +129,22 @@ typedef std::map<std::string, std::pair<ContactStatus, ContactPresence>>
 
 /// Private Shares
 // Own public ID, Contact public ID, Share Tag/Name, Share ID, Timestamp
-typedef FiveStringsFunction ShareInvitationFunction;
+typedef FiveStringsFunction PrivateShareInvitationFunction;
 
-// own public ID, share name
-typedef ThreeStringsFunction ShareDeletionFunction;
+// Own public ID, Contact public ID, Share Name, Share ID, Timestamp
+typedef FiveStringsFunction PrivateShareDeletionFunction;
 
 typedef std::function<void(const std::string&,    // Own public ID
                            const std::string&,    // Contact public ID
                            const std::string&,    // Share name
+                           const std::string&,    // Share ID
                            int,                   // Access level
                            const std::string&)>   // Timestamp
-        MemberAccessLevelFunction;
+        PrivateMemberAccessLevelFunction;
 
 /// Open Shares
 // Own public ID, Contact public ID, Share Tag, Unique ID
-typedef FourStringsFunction OpenShareInvitationFunction;
+typedef FiveStringsFunction OpenShareInvitationFunction;
 
 /// Chat
 // Own public ID, Contact public ID, Message, Timestamp

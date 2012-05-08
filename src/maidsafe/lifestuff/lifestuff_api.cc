@@ -153,33 +153,31 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
                 lifestuff_elements->user_storage,
                 args::_1, args::_2, args::_3));
 
-  lifestuff_elements->message_handler->ConnectToSaveShareDataSignal(
-      std::bind(&UserStorage::SaveShareData,
+  lifestuff_elements->message_handler->ConnectToSavePrivateShareDataSignal(
+      std::bind(&UserStorage::SavePrivateShareData,
                 lifestuff_elements->user_storage, args::_1, args::_2));
 
-  lifestuff_elements->message_handler->ConnectToShareUserLeavingSignal(
+  lifestuff_elements->message_handler->ConnectToPrivateShareUserLeavingSignal(
       std::bind(&UserStorage::UserLeavingShare,
                 lifestuff_elements->user_storage, args::_1, args::_2));
 
   lifestuff_elements->message_handler->ConnectToSaveOpenShareDataSignal(
       std::bind(&UserStorage::SaveOpenShareData,
-                lifestuff_elements->user_storage,
-                args::_1,
-                args::_2));
+                lifestuff_elements->user_storage, args::_1, args::_2));
 
-  lifestuff_elements->message_handler->ConnectToShareDeletionSignal(
+  lifestuff_elements->message_handler->ConnectToPrivateShareDeletionSignal(
       std::bind(&UserStorage::LeaveShare,
                 lifestuff_elements->user_storage, args::_1, args::_2));
 
-  lifestuff_elements->message_handler->ConnectToShareUpdateSignal(
+  lifestuff_elements->message_handler->ConnectToPrivateShareUpdateSignal(
       std::bind(&UserStorage::UpdateShare,
-                lifestuff_elements->user_storage, args::_1, args::_2,
-                                                  args::_3, args::_4));
+                lifestuff_elements->user_storage,
+                args::_1, args::_2, args::_3, args::_4));
 
-  lifestuff_elements->message_handler->ConnectToMemberAccessLevelSignal(
+  lifestuff_elements->message_handler->ConnectToPrivateMemberAccessLevelSignal(
       std::bind(&UserStorage::MemberAccessChange,
-                lifestuff_elements->user_storage, args::_1, args::_2,
-                                                  args::_3, args::_4));
+                lifestuff_elements->user_storage,
+                args::_1, args::_2, args::_3, args::_5));
 
   lifestuff_elements->public_id->ConnectToContactConfirmedSignal(
       std::bind(&MessageHandler::InformConfirmedContactOnline,
@@ -189,6 +187,10 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
   lifestuff_elements->message_handler->ConnectToContactDeletionSignal(
       std::bind(&PublicId::RemoveContactHandle,
                 lifestuff_elements->public_id, args::_1, args::_2));
+
+  lifestuff_elements->message_handler->ConnectToPrivateShareDetailsSignal(
+      std::bind(&UserStorage::GetShareDetails, lifestuff_elements->user_storage,
+                args::_1, args::_2, nullptr, nullptr, nullptr));
 
   lifestuff_elements->state = kInitialised;
 
@@ -203,9 +205,9 @@ int LifeStuff::ConnectToSignals(
     const ContactProfilePictureFunction &profile_picture_slot,
     const ContactPresenceFunction &contact_presence_slot,
     const ContactDeletionFunction &contact_deletion_function,
-    const ShareInvitationFunction &share_invitation_function,
-    const ShareDeletionFunction &share_deletion_function,
-    const MemberAccessLevelFunction &access_level_function,
+    const PrivateShareInvitationFunction &share_invitation_function,
+    const PrivateShareDeletionFunction &share_deletion_function,
+    const PrivateMemberAccessLevelFunction &access_level_function,
     const OpenShareInvitationFunction &open_share_invitation_function) {
   if (lifestuff_elements->state != kInitialised) {
     DLOG(ERROR) << "Make sure that object is initialised";
@@ -246,7 +248,7 @@ int LifeStuff::ConnectToSignals(
     ++connects;
   }
   if (share_invitation_function) {
-    lifestuff_elements->message_handler->ConnectToShareInvitationSignal(
+    lifestuff_elements->message_handler->ConnectToPrivateShareInvitationSignal(
         share_invitation_function);
     ++connects;
   }
@@ -256,12 +258,12 @@ int LifeStuff::ConnectToSignals(
     ++connects;
   }
   if (share_deletion_function) {
-    lifestuff_elements->message_handler->ConnectToShareDeletionSignal(
+    lifestuff_elements->message_handler->ConnectToPrivateShareDeletionSignal(
         share_deletion_function);
     ++connects;
   }
   if (access_level_function) {
-    lifestuff_elements->message_handler->ConnectToMemberAccessLevelSignal(
+    lifestuff_elements->message_handler->ConnectToPrivateMemberAccessLevelSignal(
         access_level_function);
     ++connects;
   }
@@ -674,9 +676,7 @@ int LifeStuff::RemoveContact(const std::string &my_public_id,
   inbox_item.sender_public_id = my_public_id;
   inbox_item.content.push_back(removal_message);
 
-  result = lifestuff_elements->message_handler->Send(my_public_id,
-                                                     contact_public_id,
-                                                     inbox_item);
+  result = lifestuff_elements->message_handler->Send(inbox_item);
   if (result != kSuccess)
     DLOG(ERROR) << "Failed in sending out removal message.";
 
@@ -869,9 +869,7 @@ int LifeStuff::SendChatMessage(const std::string &sender_public_id,
   inbox_item.sender_public_id = sender_public_id;
   inbox_item.content.push_back(message);
 
-  return lifestuff_elements->message_handler->Send(sender_public_id,
-                                                   receiver_public_id,
-                                                   inbox_item);
+  return lifestuff_elements->message_handler->Send(inbox_item);
 }
 
 int LifeStuff::SendFile(const std::string &sender_public_id,
@@ -896,9 +894,7 @@ int LifeStuff::SendFile(const std::string &sender_public_id,
   inbox_item.content.push_back(absolute_path.filename().string());
   inbox_item.content.push_back(serialised_datamap);
 
-  result = lifestuff_elements->message_handler->Send(sender_public_id,
-                                                     receiver_public_id,
-                                                     inbox_item);
+  result = lifestuff_elements->message_handler->Send(inbox_item);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to send message: " << result;
     return result;

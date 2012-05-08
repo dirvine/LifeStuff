@@ -288,13 +288,13 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
   user_storage1_->UnMountDrive();
 
   bs2::connection accept_share_invitation_connection(
-    message_handler2_->ConnectToShareInvitationSignal(
+    message_handler2_->ConnectToPrivateShareInvitationSignal(
         std::bind(&UserStorageTest::DoAcceptShareInvitationTest,
                   this, user_storage2_,
                   args::_1, args::_2, args::_3, args::_4)));
   bs2::connection save_share_data_connection(
-    message_handler2_->ConnectToSaveShareDataSignal(
-        std::bind(&UserStorage::SaveShareData,
+    message_handler2_->ConnectToSavePrivateShareDataSignal(
+        std::bind(&UserStorage::SavePrivateShareData,
                   user_storage2_, args::_1, args::_2)));
   user_storage2_->MountDrive(*mount_dir_, session2_, true);
   Sleep(interval_ * 2);
@@ -336,13 +336,13 @@ TEST_P(UserStorageTest, FUNC_LeaveShare) {
   user_storage1_->UnMountDrive();
 
   bs2::connection accept_share_invitation_connection(
-    message_handler2_->ConnectToShareInvitationSignal(
+    message_handler2_->ConnectToPrivateShareInvitationSignal(
         std::bind(&UserStorageTest::DoAcceptShareInvitationTest,
                   this, user_storage2_,
                   args::_1, args::_2, args::_3, args::_4)));
   bs2::connection save_share_data_connection(
-    message_handler2_->ConnectToSaveShareDataSignal(
-        std::bind(&UserStorage::SaveShareData,
+    message_handler2_->ConnectToSavePrivateShareDataSignal(
+        std::bind(&UserStorage::SavePrivateShareData,
                   user_storage2_, args::_1, args::_2)));
 
   user_storage2_->MountDrive(*mount_dir_, session2_, true);
@@ -368,7 +368,7 @@ TEST_P(UserStorageTest, FUNC_LeaveShare) {
   Sleep(interval_ * 2);
 
   bs2::connection share_user_leaving_connection(
-    message_handler1_->ConnectToShareUserLeavingSignal(
+    message_handler1_->ConnectToPrivateShareUserLeavingSignal(
         std::bind(&UserStorage::UserLeavingShare,
                   user_storage1_, args::_1, args::_2)));
 
@@ -407,7 +407,7 @@ TEST_P(UserStorageTest, FUNC_AddUser) {
   Sleep(interval_ * 2);
 
   bs2::connection accept_share_invitation_connection(
-    message_handler2_->ConnectToShareInvitationSignal(
+    message_handler2_->ConnectToPrivateShareInvitationSignal(
         std::bind(&UserStorageTest::DoAcceptShareInvitationTest,
                   this,
                   user_storage2_,
@@ -416,8 +416,8 @@ TEST_P(UserStorageTest, FUNC_AddUser) {
                   args::_3,
                   args::_4)));
   bs2::connection save_share_data_connection(
-    message_handler2_->ConnectToSaveShareDataSignal(
-        std::bind(&UserStorage::SaveShareData,
+    message_handler2_->ConnectToSavePrivateShareDataSignal(
+        std::bind(&UserStorage::SavePrivateShareData,
                   user_storage2_, args::_1, args::_2)));
 
   user_storage2_->MountDrive(*mount_dir_, session2_, true);
@@ -486,13 +486,13 @@ TEST_P(UserStorageTest, FUNC_AddReadWriteUser) {
   Sleep(interval_ * 2);
 
   bs2::connection accept_share_invitation_connection(
-    message_handler2_->ConnectToShareInvitationSignal(
+    message_handler2_->ConnectToPrivateShareInvitationSignal(
         std::bind(&UserStorageTest::DoAcceptShareInvitationTest,
                   this, user_storage2_,
                   args::_1, args::_2, args::_3, args::_4)));
   bs2::connection save_share_data_connection(
-    message_handler2_->ConnectToSaveShareDataSignal(
-        std::bind(&UserStorage::SaveShareData,
+    message_handler2_->ConnectToSavePrivateShareDataSignal(
+        std::bind(&UserStorage::SavePrivateShareData,
                   user_storage2_, args::_1, args::_2)));
 
   user_storage2_->MountDrive(*mount_dir_, session2_, true);
@@ -548,18 +548,18 @@ TEST_P(UserStorageTest, FUNC_UpgradeUserToReadWrite) {
   Sleep(interval_ * 2);
 
   bs2::connection accept_share_invitation_connection(
-    message_handler2_->ConnectToShareInvitationSignal(
+    message_handler2_->ConnectToPrivateShareInvitationSignal(
         std::bind(&UserStorageTest::DoAcceptShareInvitationTest,
                   this, user_storage2_,
                   args::_1, args::_2, args::_3, args::_4)));
   bs2::connection member_access_level_connection(
-    message_handler2_->ConnectToMemberAccessLevelSignal(
+    message_handler2_->ConnectToPrivateMemberAccessLevelSignal(
         std::bind(&UserStorageTest::DoUpgradeTest,
                   this, user_storage2_,
-                  args::_1, args::_2, args::_3, args::_4)));
+                  args::_1, args::_2, args::_3, args::_5)));
   bs2::connection save_share_data_connection(
-    message_handler2_->ConnectToSaveShareDataSignal(
-        std::bind(&UserStorage::SaveShareData,
+    message_handler2_->ConnectToSavePrivateShareDataSignal(
+        std::bind(&UserStorage::SavePrivateShareData,
                   user_storage2_, args::_1, args::_2)));
 
   user_storage2_->MountDrive(*mount_dir_, session2_, true);
@@ -629,17 +629,17 @@ TEST_P(UserStorageTest, FUNC_StopShareByOwner) {
   Sleep(interval_ * 2);
 
   bs2::connection accept_share_invitation_connection(
-    message_handler2_->ConnectToShareInvitationSignal(
+    message_handler2_->ConnectToPrivateShareInvitationSignal(
         std::bind(&UserStorageTest::DoAcceptShareInvitationTest,
                   this, user_storage2_,
                   args::_1, args::_2, args::_3, args::_4)));
   bs2::connection leave_share_connection(
-    message_handler2_->ConnectToShareDeletionSignal(
+    message_handler2_->ConnectToPrivateShareDeletionSignal(
         std::bind(&UserStorageTest::DoLeaveTest,
                   this, user_storage2_, args::_1, args::_2)));
   bs2::connection save_share_data_connection(
-    message_handler2_->ConnectToSaveShareDataSignal(
-        std::bind(&UserStorage::SaveShareData,
+    message_handler2_->ConnectToSavePrivateShareDataSignal(
+        std::bind(&UserStorage::SavePrivateShareData,
                   user_storage2_, args::_1, args::_2)));
 
   user_storage2_->MountDrive(*mount_dir_, session2_, true);
@@ -715,17 +715,17 @@ TEST_P(UserStorageTest, FUNC_RemoveUserByOwner) {
   Sleep(interval_ * 2);
 
   bs2::connection accept_share_invitation_connection(
-    message_handler2_->ConnectToShareInvitationSignal(
+    message_handler2_->ConnectToPrivateShareInvitationSignal(
         std::bind(&UserStorageTest::DoAcceptShareInvitationTest,
                   this, user_storage2_,
                   args::_1, args::_2, args::_3, args::_4)));
   bs2::connection leave_share_connection(
-    message_handler2_->ConnectToShareDeletionSignal(
+    message_handler2_->ConnectToPrivateShareDeletionSignal(
         std::bind(&UserStorageTest::DoLeaveTest,
                   this, user_storage2_, args::_1, args::_2)));
   bs2::connection save_share_data_connection(
-    message_handler2_->ConnectToSaveShareDataSignal(
-        std::bind(&UserStorage::SaveShareData,
+    message_handler2_->ConnectToSavePrivateShareDataSignal(
+        std::bind(&UserStorage::SavePrivateShareData,
                   user_storage2_, args::_1, args::_2)));
 
   user_storage2_->MountDrive(*mount_dir_, session2_, true);
@@ -853,17 +853,17 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
   Sleep(interval_ * 2);
 
   bs2::connection accept_share_invitation_connection_1(
-    message_handler2_->ConnectToShareInvitationSignal(
+    message_handler2_->ConnectToPrivateShareInvitationSignal(
         std::bind(&UserStorageTest::DoAcceptShareInvitationTest,
                   this, user_storage2_,
                   args::_1, args::_2, args::_3, args::_4)));
   bs2::connection leave_share_connection_1(
-    message_handler2_->ConnectToShareDeletionSignal(
+    message_handler2_->ConnectToPrivateShareDeletionSignal(
         std::bind(&UserStorageTest::DoLeaveTest,
                   this, user_storage2_, args::_1, args::_2)));
   bs2::connection save_share_data_connection_1(
-    message_handler2_->ConnectToSaveShareDataSignal(
-        std::bind(&UserStorage::SaveShareData,
+    message_handler2_->ConnectToSavePrivateShareDataSignal(
+        std::bind(&UserStorage::SavePrivateShareData,
                   user_storage2_, args::_1, args::_2)));
 
   user_storage2_->MountDrive(*mount_dir_, session2_, true);
@@ -884,16 +884,16 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
   Sleep(interval_ * 2);
 
   bs2::connection accept_share_invitation_connection_2(
-    message_handler3->ConnectToShareInvitationSignal(
+    message_handler3->ConnectToPrivateShareInvitationSignal(
         std::bind(&UserStorageTest::DoAcceptShareInvitationTest,
                   this, user_storage3,
                   args::_1, args::_2, args::_3, args::_4)));
   bs2::connection save_share_data_connection_2(
-    message_handler3->ConnectToSaveShareDataSignal(
-        std::bind(&UserStorage::SaveShareData,
+    message_handler3->ConnectToSavePrivateShareDataSignal(
+        std::bind(&UserStorage::SavePrivateShareData,
                   user_storage3, args::_1, args::_2)));
   bs2::connection update_share_data_connection_2(
-    message_handler3->ConnectToShareUpdateSignal(
+    message_handler3->ConnectToPrivateShareUpdateSignal(
         std::bind(&UserStorage::UpdateShare,
                   user_storage3, args::_1, args::_2, args::_3, args::_4)));
 
