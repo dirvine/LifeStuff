@@ -705,8 +705,7 @@ TEST(IndependentFullTest, FUNC_SendFileAcceptToDeletedDefaultLocation) {
     EXPECT_EQ(file_name1, testing_variables2.file_name);
 
     // Delete accepted files dir
-    EXPECT_TRUE(fs::remove_all(test_elements2.mount_path() / kMyStuff,
-                               error_code));
+    fs::remove_all(test_elements2.mount_path() / kMyStuff, error_code);
     EXPECT_EQ(0, error_code.value());
     EXPECT_FALSE(fs::exists(test_elements2.mount_path() / kMyStuff,
                             error_code));
@@ -863,13 +862,13 @@ TEST(IndependentFullTest, FUNC_RemoveContact) {
 
 TEST(IndependentFullTest, FUNC_CreateEmptyOpenShare) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomString(6)),
+  std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
-              password1(RandomString(6)),
+              password1(RandomAlphaNumericString(6)),
               public_id1(RandomAlphaNumericString(5));
-  std::string username2(RandomString(6)),
+  std::string username2(RandomAlphaNumericString(6)),
               pin2(CreatePin()),
-              password2(RandomString(6)),
+              password2(RandomAlphaNumericString(6)),
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
@@ -969,13 +968,13 @@ TEST(IndependentFullTest, FUNC_CreateEmptyOpenShare) {
 
 TEST(IndependentFullTest, FUNC_CreateOpenShare) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomString(6)),
+  std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
-              password1(RandomString(6)),
+              password1(RandomAlphaNumericString(6)),
               public_id1(RandomAlphaNumericString(5));
-  std::string username2(RandomString(6)),
+  std::string username2(RandomAlphaNumericString(6)),
               pin2(CreatePin()),
-              password2(RandomString(6)),
+              password2(RandomAlphaNumericString(6)),
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
@@ -1071,13 +1070,13 @@ TEST(IndependentFullTest, FUNC_CreateOpenShare) {
 
 TEST(IndependentFullTest, FUNC_InviteOpenShareMembers) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomString(6)),
+  std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
-              password1(RandomString(6)),
+              password1(RandomAlphaNumericString(6)),
               public_id1(RandomAlphaNumericString(5));
-  std::string username2(RandomString(6)),
+  std::string username2(RandomAlphaNumericString(6)),
               pin2(CreatePin()),
-              password2(RandomString(6)),
+              password2(RandomAlphaNumericString(6)),
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
@@ -1256,13 +1255,13 @@ TEST(IndependentFullTest, FUNC_InviteOpenShareMembers) {
 
 TEST(IndependentFullTest, FUNC_LeaveOpenShare) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomString(6)),
+  std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
-              password1(RandomString(6)),
+              password1(RandomAlphaNumericString(6)),
               public_id1(RandomAlphaNumericString(5));
-  std::string username2(RandomString(6)),
+  std::string username2(RandomAlphaNumericString(6)),
               pin2(CreatePin()),
-              password2(RandomString(6)),
+              password2(RandomAlphaNumericString(6)),
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
@@ -1393,13 +1392,13 @@ TEST(IndependentFullTest, FUNC_LeaveOpenShare) {
 
 TEST(IndependentFullTest, FUNC_SameOpenShareName) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomString(6)),
+  std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
-              password1(RandomString(6)),
+              password1(RandomAlphaNumericString(6)),
               public_id1(RandomAlphaNumericString(5));
-  std::string username2(RandomString(6)),
+  std::string username2(RandomAlphaNumericString(6)),
               pin2(CreatePin()),
-              password2(RandomString(6)),
+              password2(RandomAlphaNumericString(6)),
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
