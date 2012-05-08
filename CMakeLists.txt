@@ -151,9 +151,6 @@ set_target_properties(maidsafe_lifestuff_local
 if(UNIX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
 endif()
-if(APPLE)
-  add_definitions(-D_FILE_OFFSET_BITS=64)
-endif()
 
 
 ###################################################################################################
