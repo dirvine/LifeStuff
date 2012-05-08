@@ -496,13 +496,14 @@ int UserStorage::RemoveShare(const fs::path& absolute_path,
                                  share_id);
 }
 
-void UserStorage::LeaveShare(const std::string &/*sender_public_id*/,
-                             const std::string &share_id) {
+void UserStorage::ShareDeleted(const std::string &share_id) {
   fs::path relative_path;
   int result(GetShareDetails(share_id, &relative_path,
                              nullptr, nullptr, nullptr));
-  if (result != kSuccess)
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to find share details.";
     return;
+  }
 
   fs::path share_dir(mount_dir() /
                      drive::kMsShareRoot /
@@ -511,9 +512,9 @@ void UserStorage::LeaveShare(const std::string &/*sender_public_id*/,
 }
 
 int UserStorage::UpdateShare(const std::string &share_id,
-                             const std::string *new_share_id,
-                             const std::string *new_directory_id,
-                             const asymm::Keys *new_key_ring) {
+                             const std::string &new_share_id,
+                             const std::string &new_directory_id,
+                             const asymm::Keys &new_key_ring) {
   if (!message_handler_) {
     DLOG(WARNING) << "Uninitialised message handler.";
     return kMessageHandlerNotInitialised;
@@ -525,11 +526,15 @@ int UserStorage::UpdateShare(const std::string &share_id,
   if (result != kSuccess)
     return result;
 
+  std::string drive_new_share_id(new_share_id),
+              drive_new_directory_id(new_directory_id);
+  asymm::Keys drive_new_key_ring(new_key_ring);
+
   return drive_in_user_space_->UpdateShare(relative_path,
                                            share_id,
-                                           new_share_id,
-                                           new_directory_id,
-                                           new_key_ring);
+                                           &drive_new_share_id,
+                                           &drive_new_directory_id,
+                                           &drive_new_key_ring);
 
 //   drive_in_user_space_->RemoveShare(relative_path);
 //   return drive_in_user_space_->InsertShare(relative_path, "",

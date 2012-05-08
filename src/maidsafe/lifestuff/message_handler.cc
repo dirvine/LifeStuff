@@ -518,7 +518,9 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
                                    inbox_item.timestamp);
   } else if (inbox_item.item_type == kPrivateShareKeysUpdate) {
     asymm::Keys key_ring;
-    if (inbox_item.content.size() > 3) {
+    if (inbox_item.content.size() != 7) {
+      DLOG(ERROR) << "Wrong number of elements for update.";
+      return;
       key_ring.identity = inbox_item.content[3];
       key_ring.validation_token = inbox_item.content[4];
       asymm::DecodePrivateKey(inbox_item.content[5], &(key_ring.private_key));
@@ -526,12 +528,12 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
     }
 
     private_share_update_signal_(inbox_item.content[0],
-                                 &inbox_item.content[2],
-                                 &inbox_item.content[1],
-                                 inbox_item.content.size() > 3 ?
-                                     &key_ring : nullptr);
+                                 inbox_item.content[2],
+                                 inbox_item.content[1],
+                                 key_ring);
   } else if (inbox_item.item_type == kPrivateShareMemberLeft) {
-    private_share_user_leaving_signal_(inbox_item.content[0],
+    private_share_user_leaving_signal_(share_name,
+                                       inbox_item.content[0],
                                        inbox_item.sender_public_id);
   } else if (inbox_item.item_type == kPrivateShareMembershipDowngrade) {
     // downgrading

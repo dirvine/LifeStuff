@@ -159,15 +159,16 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
 
   lifestuff_elements->message_handler->ConnectToPrivateShareUserLeavingSignal(
       std::bind(&UserStorage::UserLeavingShare,
-                lifestuff_elements->user_storage, args::_1, args::_2));
+                lifestuff_elements->user_storage, args::_2, args::_3));
 
   lifestuff_elements->message_handler->ConnectToSaveOpenShareDataSignal(
       std::bind(&UserStorage::SaveOpenShareData,
                 lifestuff_elements->user_storage, args::_1, args::_2));
 
   lifestuff_elements->message_handler->ConnectToPrivateShareDeletionSignal(
-      std::bind(&UserStorage::LeaveShare,
-                lifestuff_elements->user_storage, args::_1, args::_2));
+      std::bind(&UserStorage::ShareDeleted,
+                lifestuff_elements->user_storage,
+                args::_3));
 
   lifestuff_elements->message_handler->ConnectToPrivateShareUpdateSignal(
       std::bind(&UserStorage::UpdateShare,
