@@ -103,7 +103,7 @@ ms_add_executable(TESTuser_credentials_local Tests ${CLIENT_CONTROLLER_TEST_CC} 
 ms_add_executable(TESTuser_storage_local Tests ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC})
 ms_add_executable(TESTapi_local Tests ${API_TEST_CC} ${TESTS_MAIN_CC})
 
-target_link_libraries(maidsafe_lifestuff_local maidsafe_drive maidsafe_passport boost_regex-static)
+target_link_libraries(maidsafe_lifestuff_local maidsafe_drive maidsafe_passport)
 target_link_libraries(TESTlifestuff_local maidsafe_lifestuff_local)
 target_link_libraries(TESTauthentication_local maidsafe_lifestuff_local)
 target_link_libraries(TESTpublic_id_local maidsafe_lifestuff_local)
@@ -119,7 +119,7 @@ if(NOT ${LOCAL_TARGETS_ONLY})
   ms_add_executable(TESTuser_credentials Tests ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
   ms_add_executable(TESTuser_storage Tests ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC})
   ms_add_executable(TESTapi Tests ${API_TEST_CC} ${TESTS_MAIN_CC})
-  target_link_libraries(maidsafe_lifestuff maidsafe_drive maidsafe_passport maidsafe_pd boost_regex-static)
+  target_link_libraries(maidsafe_lifestuff maidsafe_drive maidsafe_passport maidsafe_pd)
   target_link_libraries(TESTlifestuff maidsafe_lifestuff)
   target_link_libraries(TESTauthentication maidsafe_lifestuff)
   target_link_libraries(TESTpublic_id maidsafe_lifestuff)
@@ -150,6 +150,9 @@ set_target_properties(maidsafe_lifestuff_local
 
 if(UNIX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
+endif()
+if(APPLE)
+  add_definitions(-D_FILE_OFFSET_BITS=64)
 endif()
 
 

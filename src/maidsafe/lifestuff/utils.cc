@@ -20,12 +20,13 @@
 #include <iostream>  // NOLINT (Fraser)
 #include <istream>  // NOLINT (Fraser)
 #include <ostream>  // NOLINT (Fraser)
+#include <regex>
 #include <vector>
 
 #include "boost/asio.hpp"
 #include "boost/archive/text_iarchive.hpp"
 #include "boost/date_time/posix_time/posix_time.hpp"
-#include "boost/regex.hpp"
+// #include "boost/regex.hpp"
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
 
@@ -75,8 +76,8 @@ bool AcceptableWordSize(const std::string &word) {
 }
 
 bool AcceptableWordPattern(const std::string &word) {
-  boost::regex space(" ");
-  return !boost::regex_search(word.begin(), word.end(), space);
+  std::regex space(" ");
+  return !std::regex_search(word.begin(), word.end(), space);
 }
 
 bool CheckWordValidity(const std::string &word) {
@@ -111,8 +112,8 @@ bool CheckPinValidity(const std::string &pin) {
     std::string pattern("[0-9]{" +
                         boost::lexical_cast<std::string>(kPinSize) +
                         "}");
-    boost::regex rx(pattern);
-    return boost::regex_match(pin.begin(), pin.end(), rx);
+    std::regex rx(pattern);
+    return std::regex_match(pin.begin(), pin.end(), rx);
   }
   catch(const std::exception &e) {
     DLOG(ERROR) << e.what();
@@ -589,7 +590,7 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
 ClientContainerPtr SetUpClientContainer(
     const fs::path &base_dir) {
   ClientContainerPtr client_container(new pd::ClientContainer);
-  if (!client_container->Init(base_dir / "buffered_chunk_store", 10, 4)) {
+  if (!client_container->InitClientContainer(base_dir / "buffered_chunk_store", 10, 4)) {
     DLOG(ERROR) << "Failed to Init client_container.";
     return ClientContainerPtr();
   }

@@ -35,7 +35,7 @@
 #include "maidsafe/lifestuff/message_handler.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/utils.h"
-#include "maidsafe/lifestuff/version.h"
+
 
 namespace args = std::placeholders;
 namespace fs = boost::filesystem;

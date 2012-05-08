@@ -25,12 +25,6 @@
 #ifndef MAIDSAFE_LIFESTUFF_RETURN_CODES_H_
 #define MAIDSAFE_LIFESTUFF_RETURN_CODES_H_
 
-#include "maidsafe/lifestuff/version.h"
-
-#if MAIDSAFE_LIFESTUFF_VERSION != 400
-#  error This API is not compatible with the installed library.\
-    Please update the maidsafe-lifestuff library.
-#endif
 
 
 namespace maidsafe {

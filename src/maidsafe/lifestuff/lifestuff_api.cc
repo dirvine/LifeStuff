@@ -149,46 +149,41 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
                       lifestuff_elements->message_handler));
 
   lifestuff_elements->message_handler->ConnectToParseAndSaveDataMapSignal(
-      std::bind(&UserStorage::ParseAndSaveDataMap,
-                lifestuff_elements->user_storage,
-                args::_1, args::_2, args::_3));
+      boost::bind(&UserStorage::ParseAndSaveDataMap,
+                  lifestuff_elements->user_storage.get(), _1, _2, _3));
 
   lifestuff_elements->message_handler->ConnectToSaveShareDataSignal(
-      std::bind(&UserStorage::SaveShareData,
-                lifestuff_elements->user_storage, args::_1, args::_2));
+      boost::bind(&UserStorage::SaveShareData,
+                  lifestuff_elements->user_storage.get(), _1, _2));
 
   lifestuff_elements->message_handler->ConnectToShareUserLeavingSignal(
-      std::bind(&UserStorage::UserLeavingShare,
-                lifestuff_elements->user_storage, args::_1, args::_2));
+      boost::bind(&UserStorage::UserLeavingShare,
+                  lifestuff_elements->user_storage.get(), _1, _2));
 
   lifestuff_elements->message_handler->ConnectToSaveOpenShareDataSignal(
-      std::bind(&UserStorage::SaveOpenShareData,
-                lifestuff_elements->user_storage,
-                args::_1,
-                args::_2));
+      boost::bind(&UserStorage::SaveOpenShareData,
+                  lifestuff_elements->user_storage.get(), _1, _2));
 
   lifestuff_elements->message_handler->ConnectToShareDeletionSignal(
-      std::bind(&UserStorage::LeaveShare,
-                lifestuff_elements->user_storage, args::_1, args::_2));
+      boost::bind(&UserStorage::LeaveShare,
+                  lifestuff_elements->user_storage.get(), _1, _2));
 
   lifestuff_elements->message_handler->ConnectToShareUpdateSignal(
-      std::bind(&UserStorage::UpdateShare,
-                lifestuff_elements->user_storage, args::_1, args::_2,
-                                                  args::_3, args::_4));
+      boost::bind(&UserStorage::UpdateShare,
+                  lifestuff_elements->user_storage.get(), _1, _2, _3, _4));
 
   lifestuff_elements->message_handler->ConnectToMemberAccessLevelSignal(
-      std::bind(&UserStorage::MemberAccessChange,
-                lifestuff_elements->user_storage, args::_1, args::_2,
-                                                  args::_3, args::_4));
+      boost::bind(&UserStorage::MemberAccessChange,
+                  lifestuff_elements->user_storage.get(), _1, _2, _3, _4));
 
   lifestuff_elements->public_id->ConnectToContactConfirmedSignal(
-      std::bind(&MessageHandler::InformConfirmedContactOnline,
-                lifestuff_elements->message_handler, args::_1, args::_2));
+      boost::bind(&MessageHandler::InformConfirmedContactOnline,
+                  lifestuff_elements->message_handler.get(), _1, _2));
 
 
   lifestuff_elements->message_handler->ConnectToContactDeletionSignal(
-      std::bind(&PublicId::RemoveContactHandle,
-                lifestuff_elements->public_id, args::_1, args::_2));
+      boost::bind(&PublicId::RemoveContactHandle,
+                  lifestuff_elements->public_id.get(), _1, _2));
 
   lifestuff_elements->state = kInitialised;
 
