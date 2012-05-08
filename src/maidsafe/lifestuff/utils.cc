@@ -497,7 +497,8 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
     // Get a list of endpoints corresponding to the server name.
     bai::tcp::resolver resolver(io_service);
 //    bai::tcp::resolver::query query("96.126.103.209", "http");
-    bai::tcp::resolver::query query("96.126.103.209", "http");
+//    bai::tcp::resolver::query query("96.126.103.209", "http");
+    bai::tcp::resolver::query query("127.0.0.1", "http");
 //    bai::tcp::resolver::query query("192.168.1.119", "http");
 //    bai::tcp::resolver::query query("127.0.0.1", "http");
     bai::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);

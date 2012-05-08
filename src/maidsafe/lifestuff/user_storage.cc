@@ -133,12 +133,14 @@ UserStorage::UserStorage(
       drive_in_user_space_(),
       session_(),
       message_handler_(message_handler),
-      mount_dir_() {}
+      mount_dir_(),
+      mount_thread_() {}
 
 void UserStorage::MountDrive(const fs::path &mount_dir_path,
                              std::shared_ptr<Session> session,
                              bool creation,
                              const std::string &drive_logo) {
+  std::cout << "UserStorage::MountDrive\n";
   if (mount_status_)
     return;
   if (!fs::exists(mount_dir_path))
@@ -188,11 +190,17 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
   }
 #else
   mount_dir_ = mount_dir_path;
-  boost::thread(std::bind(&MaidDriveInUserSpace::Mount,
-                          drive_in_user_space_,
-                          mount_dir_,
-                          drive_logo,
-                          false));
+//   boost::thread(std::bind(&MaidDriveInUserSpace::Mount,
+//                           drive_in_user_space_,
+//                           mount_dir_,
+//                           drive_logo,
+//                           false));
+  mount_thread_.reset(new boost::thread(
+                              std::bind(&MaidDriveInUserSpace::Mount,
+                              drive_in_user_space_,
+                              mount_dir_,
+                              drive_logo,
+                              false)));
   drive_in_user_space_->WaitUntilMounted();
 #endif
   mount_status_ = true;
@@ -211,6 +219,7 @@ void UserStorage::UnMountDrive() {
   fs::remove_all(mount_dir_, error_code);
 #endif
   mount_status_ = false;
+  mount_thread_->join();
 }
 
 fs::path UserStorage::mount_dir() {

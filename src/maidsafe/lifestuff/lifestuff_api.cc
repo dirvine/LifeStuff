@@ -351,8 +351,8 @@ int LifeStuff::SetValidPmid() {
 #ifndef LOCAL_TARGETS_ONLY
   std::vector<dht::Contact> bootstrap_contacts;
   lifestuff_elements->client_container->Stop(&bootstrap_contacts);
-   lifestuff_elements->client_container->set_key_pair(
-       lifestuff_elements->session->GetPmidKeys());
+  lifestuff_elements->client_container->set_key_pair(
+      lifestuff_elements->session->GetPmidKeys());
   lifestuff_elements->client_container->Init(
       lifestuff_elements->buffered_path / "buffered_chunk_store", 10, 4);
   result = lifestuff_elements->client_container->Start(bootstrap_contacts);
@@ -421,17 +421,17 @@ int LifeStuff::SetValidPmid() {
 
   lifestuff_elements->state = kInitialised;
 
-   result = ConnectToSignals(lifestuff_elements->slots.chat_slot,
-       lifestuff_elements->slots.file_slot,
-       lifestuff_elements->slots.new_contact_slot,
-       lifestuff_elements->slots.confirmed_contact_slot,
-       lifestuff_elements->slots.profile_picture_slot,
-       lifestuff_elements->slots.contact_presence_slot,
-       lifestuff_elements->slots.contact_deletion_function,
-       lifestuff_elements->slots.share_invitation_function,
-       lifestuff_elements->slots.share_deletion_function,
-       lifestuff_elements->slots.access_level_function,
-       lifestuff_elements->slots.open_share_invitation_function);
+  result = ConnectToSignals(lifestuff_elements->slots.chat_slot,
+      lifestuff_elements->slots.file_slot,
+      lifestuff_elements->slots.new_contact_slot,
+      lifestuff_elements->slots.confirmed_contact_slot,
+      lifestuff_elements->slots.profile_picture_slot,
+      lifestuff_elements->slots.contact_presence_slot,
+      lifestuff_elements->slots.contact_deletion_function,
+      lifestuff_elements->slots.share_invitation_function,
+      lifestuff_elements->slots.share_deletion_function,
+      lifestuff_elements->slots.access_level_function,
+      lifestuff_elements->slots.open_share_invitation_function);
 #endif
   return result;
 }
@@ -576,7 +576,7 @@ int LifeStuff::LogIn(const std::string &username,
   if (!lifestuff_elements->user_storage->mount_status()) {
     DLOG(ERROR) << "Failed to mount";
     return kGeneralError;
-  }
+  } 
 
   if (!lifestuff_elements->session->contact_handler_map().empty()) {
     lifestuff_elements->public_id->StartUp(lifestuff_elements->interval);
