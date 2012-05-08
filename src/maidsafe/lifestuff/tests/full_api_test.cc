@@ -2152,13 +2152,20 @@ TEST(IndependentFullTest, FUNC_MembershipDowngradePrivateShare) {
                                                                contacts,
                                                                &share_name1,
                                                                &results));
+    EXPECT_EQ(kSuccess, results[public_id2]);
+
+    EXPECT_EQ(kSuccess, test_elements1.GetPrivateShareMembers(public_id1,
+                                                              share_name1,
+                                                              &results));
+    EXPECT_EQ(1U, results.size());
+    EXPECT_TRUE(results.end() == results.find(public_id1));
+    EXPECT_FALSE(results.end() == results.find(public_id2));
 
     fs::path share_path(test_elements1.mount_path() /
                         kSharedStuff /
                         share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
     EXPECT_EQ(0, error_code.value());
-    EXPECT_EQ(kSuccess, results[public_id2]);
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
