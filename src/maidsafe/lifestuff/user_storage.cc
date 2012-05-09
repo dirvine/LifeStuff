@@ -207,6 +207,7 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
 }
 
 void UserStorage::UnMountDrive() {
+  std::cout << "Bfore join0\n";
   if (!mount_status_)
     return;
 #ifdef WIN32
@@ -214,12 +215,16 @@ void UserStorage::UnMountDrive() {
       drive_in_user_space_)->CleanUp();
 #else
   drive_in_user_space_->Unmount();
+  std::cout << "Bfore join0.1\n";
   drive_in_user_space_->WaitUntilUnMounted();
+  std::cout << "Bfore join0.2\n";  
   boost::system::error_code error_code;
   fs::remove_all(mount_dir_, error_code);
 #endif
   mount_status_ = false;
+  std::cout << "Bfore join\n";
   mount_thread_->join();
+  std::cout << "after join\n";  
 }
 
 fs::path UserStorage::mount_dir() {
