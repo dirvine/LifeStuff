@@ -177,13 +177,14 @@ test_summary_output()
 ###################################################################################################
 # Install details                                                                                 #
 ###################################################################################################
-if(${LOCAL_TARGETS_ONLY} MATCHES ON)
-  message(STATUS "The local targets flag IS currently set.")
-  message(STATUS "To switch to the all-inclusive version, please use -DLOCAL_TARGETS_ONLY=OFF")
+if(LOCAL_TARGETS_ONLY)
+  message(STATUS "Currently building the local only version of LifeStuff")
+  message(STATUS "To build the full version, use:          cmake . -DLOCAL_TARGETS_ONLY=OFF")
 else()
-  message(STATUS "The local targets flag IS NOT currently set")
-  message(STATUS "To switch to the local targets only version, please use -DLOCAL_TARGETS_ONLY=ON")
+  message(STATUS "Currently building the full version of LifeStuff")
+  message(STATUS "To build the local only version, use:    cmake . -DLOCAL_TARGETS_ONLY=ON")
 endif()
+
 
 # set(LIFESTUFF_INSTALL_FILES
 #       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff.h
