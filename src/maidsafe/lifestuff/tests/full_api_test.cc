@@ -968,13 +968,13 @@ TEST(IndependentFullTest, FUNC_RemoveContact) {
 
 TEST(IndependentFullTest, FUNC_CreateEmptyOpenShare) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomString(6)),
+  std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
-              password1(RandomString(6)),
+              password1(RandomAlphaNumericString(6)),
               public_id1(RandomAlphaNumericString(5));
-  std::string username2(RandomString(6)),
+  std::string username2(RandomAlphaNumericString(6)),
               pin2(CreatePin()),
-              password2(RandomString(6)),
+              password2(RandomAlphaNumericString(6)),
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
@@ -991,7 +991,7 @@ TEST(IndependentFullTest, FUNC_CreateEmptyOpenShare) {
   std::string share_name(RandomAlphaNumericString(5)),
               file_name(RandomAlphaNumericString(5)),
               file_content1(RandomString(20)),
-              file_content2(RandomString(20));
+              file_content2(RandomString(50));
   boost::system::error_code error_code;
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
@@ -1054,16 +1054,30 @@ TEST(IndependentFullTest, FUNC_CreateEmptyOpenShare) {
   }
   DLOG(ERROR) << "\n\n\n\n";
   {
+    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+    fs::path share(test_elements1.mount_path() / kSharedStuff / share_name);
+    fs::path file_path(share / file_name);
+    std::string file_content;
+    EXPECT_TRUE(ReadFile(file_path, &file_content));
+    EXPECT_EQ(file_content2, file_content);
+
+    EXPECT_EQ(kSuccess, test_elements1.LogOut());
+  }
+  DLOG(ERROR) << "\n\n\n\n";
+  {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
 
     fs::path share(test_elements2.mount_path() / kSharedStuff / share_name);
     fs::path file_path(share / file_name);
     EXPECT_TRUE(fs::exists(file_path, error_code)) << file_path;
     EXPECT_EQ(0, error_code.value());
+    uintmax_t size(fs::file_size(file_path, error_code));
+    EXPECT_EQ(file_content2.size(), size) << file_path;
 
     std::string file_content;
     EXPECT_TRUE(ReadFile(file_path, &file_content));
     EXPECT_EQ(file_content2, file_content);
+    EXPECT_NE(file_content1, file_content);
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
@@ -1074,13 +1088,13 @@ TEST(IndependentFullTest, FUNC_CreateEmptyOpenShare) {
 
 TEST(IndependentFullTest, FUNC_CreateOpenShare) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomString(6)),
+  std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
-              password1(RandomString(6)),
+              password1(RandomAlphaNumericString(6)),
               public_id1(RandomAlphaNumericString(5));
-  std::string username2(RandomString(6)),
+  std::string username2(RandomAlphaNumericString(6)),
               pin2(CreatePin()),
-              password2(RandomString(6)),
+              password2(RandomAlphaNumericString(6)),
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
@@ -1176,13 +1190,13 @@ TEST(IndependentFullTest, FUNC_CreateOpenShare) {
 
 TEST(IndependentFullTest, FUNC_InviteOpenShareMembers) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomString(6)),
+  std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
-              password1(RandomString(6)),
+              password1(RandomAlphaNumericString(6)),
               public_id1(RandomAlphaNumericString(5));
-  std::string username2(RandomString(6)),
+  std::string username2(RandomAlphaNumericString(6)),
               pin2(CreatePin()),
-              password2(RandomString(6)),
+              password2(RandomAlphaNumericString(6)),
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
@@ -1361,13 +1375,13 @@ TEST(IndependentFullTest, FUNC_InviteOpenShareMembers) {
 
 TEST(IndependentFullTest, FUNC_LeaveOpenShare) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomString(6)),
+  std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
-              password1(RandomString(6)),
+              password1(RandomAlphaNumericString(6)),
               public_id1(RandomAlphaNumericString(5));
-  std::string username2(RandomString(6)),
+  std::string username2(RandomAlphaNumericString(6)),
               pin2(CreatePin()),
-              password2(RandomString(6)),
+              password2(RandomAlphaNumericString(6)),
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
@@ -1498,13 +1512,13 @@ TEST(IndependentFullTest, FUNC_LeaveOpenShare) {
 
 TEST(IndependentFullTest, FUNC_SameOpenShareName) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomString(6)),
+  std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
-              password1(RandomString(6)),
+              password1(RandomAlphaNumericString(6)),
               public_id1(RandomAlphaNumericString(5));
-  std::string username2(RandomString(6)),
+  std::string username2(RandomAlphaNumericString(6)),
               pin2(CreatePin()),
-              password2(RandomString(6)),
+              password2(RandomAlphaNumericString(6)),
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
@@ -2531,7 +2545,7 @@ TEST(IndependentFullTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
     test_elements1.GetPrivateShareMembers(public_id1,
                                           share_name1,
                                           &shares_members);
-    EXPECT_EQ(2, shares_members.size());
+    EXPECT_EQ(1U, shares_members.size());
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
@@ -2573,7 +2587,7 @@ TEST(IndependentFullTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
     test_elements1.GetPrivateShareMembers(public_id1,
                                           share_name1,
                                           &shares_members);
-    EXPECT_EQ(1, shares_members.size());
+    EXPECT_EQ(0, shares_members.size());
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
@@ -2654,7 +2668,7 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
     test_elements1.GetPrivateShareMembers(public_id1,
                                           share_name1,
                                           &shares_members);
-    EXPECT_EQ(2, shares_members.size());
+    EXPECT_EQ(1U, shares_members.size());
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
@@ -2703,7 +2717,7 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
     test_elements1.GetPrivateShareMembers(public_id1,
                                           share_name1,
                                           &shares_members);
-    EXPECT_EQ(1, shares_members.size());
+    EXPECT_EQ(0, shares_members.size());
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
@@ -2835,7 +2849,7 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
     test_elements1.GetPrivateShareMembers(public_id1,
                                           share_name1,
                                           &shares_members);
-    EXPECT_EQ(3, shares_members.size());
+    EXPECT_EQ(2U, shares_members.size());
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
@@ -2910,7 +2924,7 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
     test_elements1.GetPrivateShareMembers(public_id1,
                                           share_name1,
                                           &shares_members);
-    EXPECT_EQ(3U, shares_members.size());
+    EXPECT_EQ(2U, shares_members.size());
     EXPECT_EQ(2U, test_elements1.GetContacts(public_id1).size());
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
