@@ -512,9 +512,9 @@ void UserStorage::ShareDeleted(const std::string &share_id) {
 }
 
 int UserStorage::UpdateShare(const std::string &share_id,
-                             const std::string &new_share_id,
-                             const std::string &new_directory_id,
-                             const asymm::Keys &new_key_ring) {
+                             const std::string *new_share_id,
+                             const std::string *new_directory_id,
+                             const asymm::Keys *new_key_ring) {
   if (!message_handler_) {
     DLOG(WARNING) << "Uninitialised message handler.";
     return kMessageHandlerNotInitialised;
@@ -526,15 +526,11 @@ int UserStorage::UpdateShare(const std::string &share_id,
   if (result != kSuccess)
     return result;
 
-  std::string drive_new_share_id(new_share_id),
-              drive_new_directory_id(new_directory_id);
-  asymm::Keys drive_new_key_ring(new_key_ring);
-
   return drive_in_user_space_->UpdateShare(relative_path,
                                            share_id,
-                                           &drive_new_share_id,
-                                           &drive_new_directory_id,
-                                           &drive_new_key_ring);
+                                           new_share_id,
+                                           new_directory_id,
+                                           new_key_ring);
 
 //   drive_in_user_space_->RemoveShare(relative_path);
 //   return drive_in_user_space_->InsertShare(relative_path, "",
@@ -1164,7 +1160,7 @@ int UserStorage::InformContactsOperation(
 
   int result, aggregate(0);
   if (contacts_results)
-  contacts_results->clear();
+    contacts_results->clear();
   for (auto it = contacts.begin(); it != contacts.end(); ++it) {
   // do nothing if trying to send a msg to itself
     if ((*it).first != sender_public_id) {
@@ -1226,7 +1222,7 @@ int UserStorage::InformContacts(
 
   int result, aggregate(0);
   if (contacts_results)
-  contacts_results->clear();
+    contacts_results->clear();
   for (auto it = contacts.begin(); it != contacts.end(); ++it) {
     if (it->first != sender_public_id) {
       message.receiver_public_id = it->first;

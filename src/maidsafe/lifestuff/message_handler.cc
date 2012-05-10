@@ -494,6 +494,30 @@ void MessageHandler::ProcessContactProfilePicture(
                                   profile_picture_message.timestamp);
 }
 
+bool CheckCorrectKeys(const std::vector<std::string> &message_keys,
+                      asymm::Keys *keys) {
+  if (message_keys.size() != 7U) {
+    DLOG(ERROR) << "Should have 7 elements: share ID, new share ID, "
+                    "directory ID, and 4 Keys elements.";
+    return false;
+  }
+
+  asymm::DecodePrivateKey(message_keys.at(5), &(keys->private_key));
+  asymm::DecodePublicKey(message_keys.at(6), &(keys->public_key));
+  if (!asymm::ValidateKey(keys->private_key) ||
+      !asymm::ValidateKey(keys->public_key)) {
+    DLOG(ERROR) << "Keys in message are invalid.";
+    keys->private_key = asymm::PrivateKey();
+    keys->public_key = asymm::PublicKey();
+    return false;
+  }
+
+  keys->identity = message_keys.at(3);
+  keys->validation_token = message_keys.at(4);
+
+  return true;
+}
+
 void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
   if (inbox_item.content.empty() || inbox_item.content[0].empty()) {
     DLOG(ERROR) << "No share ID.";
@@ -518,19 +542,17 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
                                    inbox_item.timestamp);
   } else if (inbox_item.item_type == kPrivateShareKeysUpdate) {
     asymm::Keys key_ring;
-    if (inbox_item.content.size() != 7) {
-      DLOG(ERROR) << "Wrong number of elements for update.";
+    if (!CheckCorrectKeys(inbox_item.content, &key_ring)) {
+      DLOG(ERROR) << "Incorrect elements in message.";
       return;
-      key_ring.identity = inbox_item.content[3];
-      key_ring.validation_token = inbox_item.content[4];
-      asymm::DecodePrivateKey(inbox_item.content[5], &(key_ring.private_key));
-      asymm::DecodePublicKey(inbox_item.content[6], &(key_ring.public_key));
     }
 
+    std::string content_1(inbox_item.content[1]),
+                content_2(inbox_item.content[2]);
     private_share_update_signal_(inbox_item.content[0],
-                                 inbox_item.content[2],
-                                 inbox_item.content[1],
-                                 key_ring);
+                                 &content_2,
+                                 &content_1,
+                                 &key_ring);
   } else if (inbox_item.item_type == kPrivateShareMemberLeft) {
     private_share_user_leaving_signal_(share_name,
                                        inbox_item.content[0],
@@ -545,6 +567,12 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
                                         inbox_item.timestamp);
     return;
   } else if (inbox_item.item_type == kPrivateShareMembershipUpgrade) {
+    asymm::Keys key_ring;
+    if (!CheckCorrectKeys(inbox_item.content, &key_ring)) {
+      DLOG(ERROR) << "Incorrect elements in message.";
+      return;
+    }
+
     private_member_access_level_signal_(inbox_item.receiver_public_id,
                                         inbox_item.sender_public_id,
                                         inbox_item.content[0],

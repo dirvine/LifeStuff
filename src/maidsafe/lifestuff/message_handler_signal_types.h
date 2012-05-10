@@ -96,9 +96,9 @@ typedef bs2::signal<int(const std::string&, fs::path*)>
         PrivateShareDetailsSignal;
 
 typedef bs2::signal<void(const std::string&,  // share id
-                         const std::string&,  // directory id
-                         const std::string&,  // new share id
-                         const asymm::Keys&)> PrivateShareUpdateSignal;  // new key
+                         std::string*,  // directory id
+                         std::string*,  // new share id
+                         asymm::Keys*)> PrivateShareUpdateSignal;  // new key
 
 typedef bs2::signal<bool(const std::string&,  // NOLINT (Dan)
                          const std::string&)> SavePrivateShareDataSignal;

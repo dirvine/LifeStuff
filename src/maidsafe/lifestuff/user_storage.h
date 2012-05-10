@@ -122,9 +122,9 @@ class UserStorage {
                   const std::string &sender_public_username = "");
   void ShareDeleted(const std::string &share_id);
   int UpdateShare(const std::string &share_id,
-                  const std::string &new_share_id,
-                  const std::string &new_directory_id,
-                  const asymm::Keys &new_key_ring);
+                  const std::string *new_share_id,
+                  const std::string *new_directory_id,
+                  const asymm::Keys *new_key_ring);
   int AddShareUsers(const std::string &sender_public_username,
                     const fs::path &absolute_path,
                     const StringIntMap &contacts,
