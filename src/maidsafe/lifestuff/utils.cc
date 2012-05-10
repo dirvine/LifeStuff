@@ -507,8 +507,9 @@ std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
 std::shared_ptr<priv::chunk_store::RemoteChunkStore> BuildChunkStore(
     const fs::path &base_dir,
     std::shared_ptr<pd::ClientContainer> *client_container) {
+  BOOST_ASSERT(client_container);
   *client_container = SetUpClientContainer(base_dir);
-  if (client_container) {
+  if (*client_container) {
     std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store(
         new pcs::RemoteChunkStore((*client_container)->chunk_store(),
             (*client_container)->chunk_manager(),
@@ -529,10 +530,8 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
     // Get a list of endpoints corresponding to the server name.
     bai::tcp::resolver resolver(io_service);
 //    bai::tcp::resolver::query query("96.126.103.209", "http");
-//    bai::tcp::resolver::query query("96.126.103.209", "http");
     bai::tcp::resolver::query query("127.0.0.1", "http");
 //    bai::tcp::resolver::query query("192.168.1.119", "http");
-//    bai::tcp::resolver::query query("127.0.0.1", "http");
     bai::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
 
     // Try each endpoint until we successfully establish a connection.
@@ -623,21 +622,21 @@ ClientContainerPtr SetUpClientContainer(
     const fs::path &base_dir) {
   ClientContainerPtr client_container(new pd::ClientContainer);
   if (!client_container->Init(base_dir / "buffered_chunk_store", 10, 4)) {
-    DLOG(ERROR) << "Failed to Init client_container.";
-    return ClientContainerPtr();
+    DLOG(ERROR) << "Failed to initialise client container.";
+    return nullptr;
   }
 
   std::vector<dht::Contact> bootstrap_contacts;
   int result = RetrieveBootstrapContacts(base_dir, &bootstrap_contacts);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to retrieve bootstrap contacts.  Result: " << result;
-    return ClientContainerPtr();
+    return nullptr;
   }
 
   result = client_container->Start(bootstrap_contacts);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to start client_container.  Result: " << result;
-    return ClientContainerPtr();
+    DLOG(ERROR) << "Failed to start client container.  Result: " << result;
+    return nullptr;
   }
 
   DLOG(INFO) << "Started client_container.";

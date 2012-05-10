@@ -160,6 +160,11 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
       BuildChunkStore(buffered_chunk_store_path,
                       &lifestuff_elements->client_container);
 #endif
+  if (!lifestuff_elements->remote_chunk_store) {
+    DLOG(ERROR) << "Could not initialise chunk store.";
+    return kGeneralError;
+  }
+
   lifestuff_elements->buffered_path = buffered_chunk_store_path;
 
   lifestuff_elements->user_credentials.reset(
@@ -582,7 +587,7 @@ int LifeStuff::LogIn(const std::string &username,
   if (!lifestuff_elements->user_storage->mount_status()) {
     DLOG(ERROR) << "Failed to mount";
     return kGeneralError;
-  } 
+  }
 
   if (!lifestuff_elements->session->contact_handler_map().empty()) {
     lifestuff_elements->public_id->StartUp(lifestuff_elements->interval);
