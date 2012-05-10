@@ -1201,11 +1201,11 @@ int LifeStuff::CreatePrivateShareFromExistingDirectory(
     fs::path share_dir(mount_path() /
                        drive::kMsShareRoot /
                        (*share_name));
-    int index(0);
+    int index(1);
     while (fs::exists(share_dir, error_code)) {
       share_dir = mount_path() /
-                        drive::kMsShareRoot /
-                        ((*share_name) + "_" + IntToString(index));
+                  drive::kMsShareRoot /
+                  ((*share_name) + " (" + IntToString(index) + ")");
       ++index;
     }
 
@@ -1244,8 +1244,8 @@ int LifeStuff::CreateEmptyPrivateShare(const std::string &my_public_id,
   // TODO(Team): shall use function via drive to test the existence of directory
   while (fs::exists(share_dir, error_code)) {
     share_dir = mount_path() /
-                      drive::kMsShareRoot /
-                      ((*share_name) + "_" + IntToString(index));
+                drive::kMsShareRoot /
+                ((*share_name) + " (" + IntToString(index) + ")");
     ++index;
   }
   fs::create_directory(share_dir, error_code);

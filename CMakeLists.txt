@@ -161,6 +161,16 @@ IF(${LOCAL_TARGETS_ONLY} MATCHES OFF)
   TARGET_LINK_LIBRARIES(TESTapi lifestuff_static gtest_static)
 ENDIF()
 
+# This target allows the library to be installed without building all project targets
+IF(MSVC)
+  ADD_CUSTOM_TARGET(install_fast ${CMAKE_COMMAND} -DBUILD_TYPE=$<CONFIGURATION> -P ${CMAKE_BINARY_DIR}/cmake_install.cmake)
+ELSE()
+  ADD_CUSTOM_TARGET(install_fast ${CMAKE_COMMAND} -DBUILD_TYPE=${CMAKE_BUILD_TYPE} -P ${CMAKE_BINARY_DIR}/cmake_install.cmake)
+ENDIF()
+ADD_DEPENDENCIES(install_fast lifestuff_local_static)
+IF(${LOCAL_TARGETS_ONLY} MATCHES OFF)
+  ADD_DEPENDENCIES(install_fast lifestuff_static)
+ENDIF()
 
 
 ###################################################################################################

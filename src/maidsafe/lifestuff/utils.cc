@@ -128,6 +128,38 @@ fs::path CreateTestDirectory(fs::path const& parent, std::string *tail) {
   return directory;
 }
 
+int CreateTestFile(fs::path const& parent,
+                   int size_in_mb,
+                   std::string *file_name) {
+  if (size_in_mb > 1024) {
+    DLOG(ERROR) << "This function doesn't create files larger than 1024MB.";
+    return -1;
+  }
+
+  std::string random_string(RandomString(256 * 1024));
+  *file_name = RandomAlphaNumericString(8);
+  fs::path file_path(parent / *file_name);
+  int total(size_in_mb * 4);
+
+  try {
+    std::ofstream file_out(file_path.c_str(),
+                           std::ios::trunc | std::ios::binary);
+    if (!file_out.good()) {
+      DLOG(ERROR) << "Can't get ofstream created for " << file_path;
+      return -1;
+    }
+    for (int rounds(0); rounds < total; ++rounds)
+      file_out.write(random_string.data(), random_string.size());
+    file_out.close();
+  }
+  catch(const std::exception &e) {
+    DLOG(ERROR) << "Failed to write file " << file_path << ": " << e.what();
+    return -1;
+  }
+
+  return kSuccess;
+}
+
 int GetValidatedMpidPublicKey(
     const std::string &public_username,
     const pcs::RemoteChunkStore::ValidationData &validation_data,
