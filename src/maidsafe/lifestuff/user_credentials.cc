@@ -75,13 +75,16 @@ UserCredentials::~UserCredentials() {}
 bool UserCredentials::CreateUser(const std::string &username,
                                  const std::string &pin,
                                  const std::string &password) {
+  DLOG(INFO) << "UserCredentials::CreateUser 01\n";
   if (!CheckKeywordValidity(username) ||
       !CheckPinValidity(pin) ||
       !CheckPasswordValidity(password)) {
     DLOG(ERROR) << "Incorrect inputs.";
     return false;
   }
+  DLOG(INFO) << "UserCredentials::CreateUser 02\n";
   session_->Reset();
+  DLOG(INFO) << "UserCredentials::CreateUser 03\n";
   int result = authentication_->CreateUserSysPackets(username, pin);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to create user system packets.";
@@ -90,16 +93,16 @@ bool UserCredentials::CreateUser(const std::string &username,
   } else {
     DLOG(INFO) << "authentication_->CreateUserSysPackets DONE.";
   }
-
+  DLOG(INFO) << "UserCredentials::CreateUser 04\n";
   std::string serialised_data_atlas, surrogate_serialised_data_atlas;
   int n = session_->SerialiseDataAtlas(&serialised_data_atlas);
   if (n != 0) {
     DLOG(ERROR) << "Failed to serialise DA.";
     return false;
   }
-  
+  DLOG(INFO) << "UserCredentials::CreateUser 05\n";
   session_->set_uc_serialised_data_atlas(serialised_data_atlas);
-
+  DLOG(INFO) << "UserCredentials::CreateUser 06\n";
   // Need different timestamps
   Sleep(boost::posix_time::milliseconds(1));
   n = session_->SerialiseDataAtlas(&surrogate_serialised_data_atlas);
@@ -107,9 +110,10 @@ bool UserCredentials::CreateUser(const std::string &username,
     DLOG(ERROR) << "Failed to serialise DA.";
     return false;
   }
+  DLOG(INFO) << "UserCredentials::CreateUser 07\n";
   session_->set_surrogate_serialised_data_atlas(
-      surrogate_serialised_data_atlas);  
-
+      surrogate_serialised_data_atlas);
+  DLOG(INFO) << "UserCredentials::CreateUser 08\n";
   result = authentication_->CreateTmidPacket(password,
                                              serialised_data_atlas,
                                              surrogate_serialised_data_atlas);
@@ -118,10 +122,12 @@ bool UserCredentials::CreateUser(const std::string &username,
     session_->Reset();
     return false;
   }
-
+  DLOG(INFO) << "UserCredentials::CreateUser 09\n";
   session_->set_session_name();
+  DLOG(INFO) << "UserCredentials::CreateUser 10\n";
 //   logged_in_ = true;
   session_->set_logged_in(true);  
+  DLOG(INFO) << "UserCredentials::CreateUser 11\n";
   return true;  
 }
 

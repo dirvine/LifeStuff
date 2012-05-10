@@ -376,7 +376,7 @@ TEST(IndependentFullTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
                                             ShareDeletionFunction(),
                                             MemberAccessLevelFunction(),
                                             OpenShareInvitationFunction()));
-  std::cout << "\n One\n";
+  DLOG(INFO) << "\n One\n";
   EXPECT_EQ(kSuccess, test_elements1.CreateUser(username, pin, password));
   // Create directory
 //   std::string tail;
@@ -385,19 +385,19 @@ TEST(IndependentFullTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
 //   EXPECT_EQ(0, error_code.value());
 
   // Log out - Log in
-  std::cout << "\n One Two\n";
+  DLOG(INFO) << "\n One Two\n";
   EXPECT_EQ(kSuccess, test_elements1.LogOut());
-  std::cout << "\n One Two Three\n";
+  DLOG(INFO) << "\n One Two Three\n";
 //   EXPECT_EQ(kSuccess, test_elements1.LogIn(username, pin, password));
 // 
 //   // Check directory exists
 //   EXPECT_TRUE(fs::exists(test, error_code));
 //   EXPECT_EQ(0, error_code.value());
 //   EXPECT_EQ(kSuccess, test_elements1.LogOut());
-  std::cout << "\n One Two Three Four\n";
+  DLOG(INFO) << "\n One Two Three Four\n";
   EXPECT_EQ(kSuccess, test_elements1.Finalise());
   Sleep(bptime::seconds(1));
-  std::cout << "\n One Two Three Four Five\n";  
+  DLOG(INFO) << "\n One Two Three Four Five\n";
 }
 
 TEST(IndependentFullTest, FUNC_ChangeCredentials) {

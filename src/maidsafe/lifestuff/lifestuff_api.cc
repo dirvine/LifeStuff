@@ -440,6 +440,7 @@ int LifeStuff::SetValidPmid() {
 int LifeStuff::CreateUser(const std::string &username,
                           const std::string &pin,
                           const std::string &password) {
+  DLOG(INFO) << "LifeStuff::CreateUser  01";
   if (lifestuff_elements->state != kConnected) {
     DLOG(ERROR) << "Make sure that object is initialised and connected";
     return kGeneralError;
@@ -452,11 +453,14 @@ int LifeStuff::CreateUser(const std::string &username,
     return kGeneralError;
   }
 
+  DLOG(INFO) << "LifeStuff::CreateUser  02";
+
   if (SetValidPmid() != kSuccess)  {
     DLOG(ERROR) << "Failed to set valid PMID";
     return kGeneralError;
   }
 
+  DLOG(INFO) << "LifeStuff::CreateUser  03\n";
 
   boost::system::error_code error_code;
   fs::path mount_dir(GetHomeDir() /
@@ -470,6 +474,7 @@ int LifeStuff::CreateUser(const std::string &username,
       return kGeneralError;
     }
   }
+  DLOG(INFO) << "LifeStuff::CreateUser  04\n";
 
   lifestuff_elements->user_storage->MountDrive(mount_dir,
                                                lifestuff_elements->session,
@@ -478,7 +483,7 @@ int LifeStuff::CreateUser(const std::string &username,
     DLOG(ERROR) << "Failed to mount";
     return kGeneralError;
   }
-
+  DLOG(INFO) << "LifeStuff::CreateUser  05\n";
   fs::path mount_path(lifestuff_elements->user_storage->mount_dir());
   fs::create_directories(mount_path / kMyStuff / kDownloadStuff,
                          error_code);
@@ -492,11 +497,12 @@ int LifeStuff::CreateUser(const std::string &username,
     DLOG(ERROR) << "Failed creating Shared Stuff: " << error_code.message();
     return kGeneralError;
   }
-
+  DLOG(INFO) << "LifeStuff::CreateUser  06\n";
   int result(lifestuff_elements->user_credentials->SaveSession());
   if (result != kSuccess) {
     DLOG(WARNING) << "Failed to save session.";
   }
+  DLOG(INFO) << "LifeStuff::CreateUser  07\n";
 
   lifestuff_elements->state = kLoggedIn;
 
