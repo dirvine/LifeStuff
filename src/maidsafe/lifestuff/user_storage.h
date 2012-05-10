@@ -159,9 +159,7 @@ class UserStorage {
                       asymm::Keys *share_keyring,
                       std::string *directory_id,
                       StringIntMap *share_users);
-  void  MemberAccessChange(const std::string &my_public_id,
-                           const std::string &sender_public_username,
-                           const std::string &share_id,
+  void  MemberAccessChange(const std::string &share_id,
                            int access_right);
   int MovingShare(const std::string &sender_public_username,
                   const std::string &share_id,

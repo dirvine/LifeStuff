@@ -973,52 +973,26 @@ int UserStorage::GetShareDetails(const std::string &share_id,
 }
 
 void UserStorage::MemberAccessChange(
-    const std::string &/*my_public_id*/,
-    const std::string &/*sender_public_id*/,
     const std::string &share_id,
     int access_right) {
   fs::path relative_path;
   int result(GetShareDetails(share_id, &relative_path,
                              nullptr, nullptr, nullptr));
-  if (result != kSuccess)
-    return /*result*/;
-
-  asymm::Keys share_keyring;
-  if (access_right >= drive::kShareReadWrite) {
-    std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
-    fs::path hidden_file(mount_dir() /
-                         drive::kMsShareRoot /
-                         std::string(temp_name + drive::kMsHidden.string()));
-    std::string serialised_share_data;
-    result = ReadHiddenFile(hidden_file, &serialised_share_data);
-    if (result != kSuccess || serialised_share_data.empty()) {
-      DLOG(ERROR) << "No such identifier found: " << result;
-      return/* result == kSuccess ? kGeneralError : result*/;
-    }
-    // remove the temp share invitation file no matter insertion succeed or not
-    DeleteHiddenFile(hidden_file);
-
-    Message message;
-    message.ParseFromString(serialised_share_data);
-
-    if (message.content_size() > 4) {
-        share_keyring.identity = message.content(2);
-        share_keyring.validation_token = message.content(3);
-        asymm::DecodePrivateKey(message.content(4),
-                                &(share_keyring.private_key));
-        asymm::DecodePublicKey(message.content(5), &(share_keyring.public_key));
-    } else {
-      DLOG(ERROR) << "Key not received when being upgraded";
-      return /*kNoKeyForUpgrade*/;
-    }
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to find share details: " << result;
+    return;
   }
 
-  /*return */drive_in_user_space_->UpdateShare(relative_path,
-                                            share_id,
-                                            nullptr,
-                                            nullptr,
-                                            &share_keyring,
-                                            &access_right);
+  result = drive_in_user_space_->UpdateShare(relative_path,
+                                             share_id,
+                                             nullptr,
+                                             nullptr,
+                                             nullptr,
+                                             &access_right);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to update share details: " << result;
+    return;
+  }
 }
 
 int UserStorage::GetPrivateSharesContactBeingOwner(
