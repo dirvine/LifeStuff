@@ -421,6 +421,49 @@ TEST(IndependentFullTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
   EXPECT_EQ(kSuccess, test_elements1.Finalise());
 }
 
+TEST(IndependentFullTest, FUNC_LargeFileForMemoryCheck) {
+  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
+  std::string username(RandomAlphaNumericString(6)),
+              pin(CreatePin()),
+              password(RandomAlphaNumericString(6));
+  boost::system::error_code error_code;
+  volatile bool done;
+
+  LifeStuff test_elements1;
+  EXPECT_EQ(kSuccess, test_elements1.Initialise(*test_dir));
+  EXPECT_EQ(kSuccess,
+            test_elements1.ConnectToSignals(ChatFunction(),
+                                            FileTransferFunction(),
+                                            NewContactFunction(),
+                                            ContactConfirmationFunction(),
+                                            ContactProfilePictureFunction(),
+                                            std::bind(&ContactPresenceSlot,
+                                                      args::_1, args::_2,
+                                                      args::_3, args::_4,
+                                                      &done),
+                                            ContactDeletionFunction(),
+                                            ShareInvitationFunction(),
+                                            ShareDeletionFunction(),
+                                            MemberAccessLevelFunction(),
+                                            OpenShareInvitationFunction()));
+  EXPECT_EQ(kSuccess, test_elements1.CreateUser(username, pin, password));
+  // Create directory
+  std::string tail;
+  EXPECT_EQ(kSuccess, CreateTestFile(test_elements1.mount_path(), 500, &tail));
+  EXPECT_TRUE(fs::exists(test_elements1.mount_path() / tail, error_code));
+  EXPECT_EQ(0, error_code.value());
+
+  // Log out - Log in
+  EXPECT_EQ(kSuccess, test_elements1.LogOut());
+  EXPECT_EQ(kSuccess, test_elements1.LogIn(username, pin, password));
+
+  // Check directory exists
+  EXPECT_TRUE(fs::exists(test_elements1.mount_path() / tail, error_code));
+  EXPECT_EQ(0, error_code.value());
+  EXPECT_EQ(kSuccess, test_elements1.LogOut());
+  EXPECT_EQ(kSuccess, test_elements1.Finalise());
+}
+
 TEST(IndependentFullTest, FUNC_ChangeCredentials) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   std::string username(RandomAlphaNumericString(6)),
@@ -1064,6 +1107,49 @@ TEST(IndependentFullTest, FUNC_CreateEmptyOpenShare) {
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
   DLOG(ERROR) << "\n\n\n\n";
+  EXPECT_EQ(kSuccess, test_elements2.Finalise());
+  EXPECT_EQ(kSuccess, test_elements2.Initialise(*test_dir));
+  EXPECT_EQ(kSuccess, test_elements2.ConnectToSignals(
+                std::bind(&ChatSlot, args::_1, args::_2, args::_3, args::_4,
+                          &testing_variables2.chat_message,
+                          &testing_variables2.chat_message_received),
+                std::bind(&FileTransferSlot,
+                          args::_1, args::_2, args::_3, args::_4, args::_5,
+                          &testing_variables2.file_name,
+                          &testing_variables2.file_id,
+                          &testing_variables2.file_transfer_received),
+                std::bind(&NewContactSlot, args::_1, args::_2, args::_3,
+                          &testing_variables2.newly_contacted),
+                std::bind(&ContactConfirmationSlot,
+                          args::_1, args::_2, args::_3,
+                          &testing_variables2.confirmed),
+                std::bind(&ContactProfilePictureSlot,
+                          args::_1, args::_2, args::_3,
+                          &testing_variables2.picture_updated),
+                std::bind(&ContactPresenceSlot,
+                          args::_1, args::_2, args::_3, args::_4,
+                          &testing_variables2.presence_announced),
+                std::bind(&ContactDeletionSlot,
+                          args::_1, args::_2, args::_3, args::_4,
+                          &testing_variables2.removal_message,
+                          &testing_variables2.removed),
+                std::bind(&PrivateShareInvitationSlot,
+                          args::_1, args::_2, args::_3, args::_4, args::_5,
+                          &testing_variables2.new_private_share_id,
+                          &testing_variables2.privately_invited),
+                std::bind(&PrivateShareDeletionSlot,
+                          args::_1, args::_2, args::_3,
+                          &testing_variables2.deleted_private_share_name,
+                          &testing_variables2.private_share_deleted),
+                std::bind(&PrivateMemberAccessLevelSlot,
+                          args::_1, args::_2, args::_3, args::_4, args::_5,
+                          &testing_variables2.access_private_share_name,
+                          &testing_variables2.private_member_access,
+                          &testing_variables2.private_member_access_changed),
+                std::bind(&OpenShareInvitationSlot,
+                          args::_1, args::_2, args::_3, args::_4,
+                          &testing_variables2.new_open_share_id,
+                          &testing_variables2.openly_invited)));
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
 

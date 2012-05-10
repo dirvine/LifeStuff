@@ -76,6 +76,9 @@ bool CheckPinValidity(const std::string &pin);
 bool CheckPasswordValidity(const std::string &password);
 
 fs::path CreateTestDirectory(fs::path const& parent, std::string *tail);
+int CreateTestFile(fs::path const& parent,
+                   int size_in_mb,
+                   std::string *file_name);
 
 int GetValidatedMpidPublicKey(
     const std::string &public_username,
