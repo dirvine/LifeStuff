@@ -1125,8 +1125,17 @@ int LifeStuff::GetPrivateShareMembers(const std::string &my_public_id,
   fs::path share_dir(mount_path() /
                      drive::kMsShareRoot /
                      share_name);
-  return lifestuff_elements->user_storage->GetAllShareUsers(share_dir,
-                                                            shares_members);
+  result = lifestuff_elements->user_storage->GetAllShareUsers(share_dir,
+                                                              shares_members);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed pre checks in GetPrivateShareMemebers.";
+    return result;
+  }
+
+  auto it(shares_members->find(my_public_id));
+  shares_members->erase(it);
+
+  return kSuccess;
 }
 
 int LifeStuff::GetPrivateSharesIncludingMember(
