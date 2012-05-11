@@ -1207,14 +1207,14 @@ int LifeStuff::AcceptPrivateShareInvitation(
   Message message;
   message.ParseFromString(serialised_share_data);
 
-  fs::path relative_path(message.content(2));
-  std::string directory_id(message.content(3));
+  fs::path relative_path(message.content(1));
+  std::string directory_id(message.content(2));
   asymm::Keys share_keyring;
-  if (message.content_size() > 4) {
-      share_keyring.identity = message.content(4);
-      share_keyring.validation_token = message.content(5);
-      asymm::DecodePrivateKey(message.content(6), &(share_keyring.private_key));
-      asymm::DecodePublicKey(message.content(7), &(share_keyring.public_key));
+  if (message.content_size() > 3) {
+      share_keyring.identity = message.content(3);
+      share_keyring.validation_token = message.content(4);
+      asymm::DecodePrivateKey(message.content(5), &(share_keyring.private_key));
+      asymm::DecodePublicKey(message.content(6), &(share_keyring.public_key));
   }
 
   // remove the temp share invitation file no matter insertion succeed or not
@@ -1271,9 +1271,9 @@ int LifeStuff::EditPrivateShareMembers(const std::string &my_public_id,
         members_to_remove.push_back(*itr);
       if (share_members[(*it).first] != (*it).second) {
         if ((*it).second == kShareReadOnly)
-            members_to_downgrade.insert(*it);
+          members_to_downgrade.insert(*it);
         if ((*it).second >= kShareReadWrite)
-            members_to_upgrade.insert(*it);
+          members_to_upgrade.insert(*it);
       }
     } else {
       // a non-existing user indicates an adding

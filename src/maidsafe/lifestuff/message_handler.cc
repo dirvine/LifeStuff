@@ -499,12 +499,18 @@ bool CheckCorrectKeys(const std::vector<std::string> &message_keys,
                       asymm::Keys *keys) {
   int offset(-1);
   if (item_type == kPrivateShareKeysUpdate) {
-    if (message_keys.size() != 7U) {
-      DLOG(ERROR) << "Should have 7 elements: share ID, new share ID, "
-                      "directory ID, and 4 Keys elements for KeysUpdate.";
+    if (message_keys.size() == 6U) {
+      offset = 1;
+    } else if (message_keys.size() == 7U) {
+      offset = 2;
+    } else if (message_keys.size() <= 3U) {
+      return true;
+    } else {
+      DLOG(ERROR) << "Should have 6/7 elements: share ID, new share ID, "
+                      "directory ID, and 4 Keys elements for KeysUpdate: "
+                  <<  message_keys.size();
       return false;
     }
-    offset = 2;
   } else if (item_type == kPrivateShareMembershipUpgrade) {
     if (message_keys.size() != 5U) {
       DLOG(ERROR) << "Should have 5 elements: share ID and 4 Keys elements "
@@ -540,7 +546,8 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
   // The outer * is to refer to the result of the signal
   int result(*private_share_details_signal_(inbox_item.content[0],
                                             &share_path));
-  if (result != kSuccess || share_path.empty()) {
+  if ((result != kSuccess || share_path.empty()) &&
+      inbox_item.item_type != kPrivateShareInvitation) {
     DLOG(ERROR) << "result: " << result << ", path: " << share_path;
     return;
   }
@@ -561,11 +568,11 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
       return;
     }
 
-    std::string content_1(inbox_item.content[1]),
-                content_2(inbox_item.content[2]);
+    std::string new_directory_id(inbox_item.content[1]),
+                new_share_id(inbox_item.content[2]);
     private_share_update_signal_(inbox_item.content[0],
-                                 &content_2,
-                                 &content_1,
+                                 &new_share_id,
+                                 &new_directory_id,
                                  &key_ring);
   } else if (inbox_item.item_type == kPrivateShareMemberLeft) {
     private_share_user_leaving_signal_(share_name,
@@ -579,7 +586,6 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
                                         share_name,
                                         kShareReadOnly,
                                         inbox_item.timestamp);
-    return;
   } else if (inbox_item.item_type == kPrivateShareMembershipUpgrade) {
     asymm::Keys key_ring;
     if (!CheckCorrectKeys(inbox_item.content,

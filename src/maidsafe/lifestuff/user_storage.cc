@@ -772,7 +772,7 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
   if (result != kSuccess)
     return result;
   if (results[0] != kSuccess) {
-    DLOG(ERROR) << "Failed to remove packet.  Packet 1 : " << results[0];
+    DLOG(WARNING) << "Failed to remove packet.  Packet 1 : " << results[0];
 //     return kDeletePacketFailure;
   }
 
@@ -919,11 +919,11 @@ int UserStorage::SetShareUsersRights(const std::string &sender_public_id,
 }
 
 int UserStorage::DowngradeShareUsersRights(
-        const std::string &sender_public_id,
-        const fs::path &absolute_path,
-        const StringIntMap &contacts,
-        StringIntMap *results,
-        bool private_share) {
+    const std::string &sender_public_id,
+    const fs::path &absolute_path,
+    const StringIntMap &contacts,
+    StringIntMap *results,
+    bool private_share) {
   if (!message_handler_) {
     DLOG(WARNING) << "Uninitialised message handler.";
     return kMessageHandlerNotInitialised;
@@ -939,7 +939,7 @@ int UserStorage::DowngradeShareUsersRights(
                         ((*it).second != 0))));
 
   asymm::Keys old_key_ring;
-  std::string share_id;
+  std::string share_id, new_share_id;
   drive_in_user_space_->GetShareDetails(relative_path,
                                         nullptr,
                                         &old_key_ring,
@@ -947,14 +947,15 @@ int UserStorage::DowngradeShareUsersRights(
                                         nullptr,
                                         nullptr);
   int result(MovingShare(sender_public_id, share_id, relative_path,
-                         old_key_ring, private_share, &share_id));
-  if (result != kSuccess)
+                         old_key_ring, private_share, &new_share_id));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed moving share: " << result;
     return result;
-
+  }
   return InformContactsOperation(kPrivateShareMembershipDowngrade,
                                  sender_public_id,
                                  contacts,
-                                 share_id,
+                                 new_share_id,
                                  "",
                                  "",
                                  old_key_ring);
