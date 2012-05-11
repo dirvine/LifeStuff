@@ -540,14 +540,14 @@ TEST(IndependentFullTest, FUNC_ChangeCredentials) {
 
 TEST(IndependentFullTest, FUNC_SendFileSaveToGivenPath) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomAlphaNumericString(6)),
+  std::string username1(RandomAlphaNumericString(10)),
               pin1(CreatePin()),
-              password1(RandomAlphaNumericString(6)),
-              public_id1(RandomAlphaNumericString(5));
-  std::string username2(RandomAlphaNumericString(6)),
+              password1(RandomAlphaNumericString(10)),
+              public_id1(RandomAlphaNumericString(10));
+  std::string username2(RandomAlphaNumericString(10)),
               pin2(CreatePin()),
-              password2(RandomAlphaNumericString(6)),
-              public_id2(RandomAlphaNumericString(5));
+              password2(RandomAlphaNumericString(10)),
+              public_id2(RandomAlphaNumericString(10));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
   EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
@@ -578,6 +578,7 @@ TEST(IndependentFullTest, FUNC_SendFileSaveToGivenPath) {
     EXPECT_EQ(kSuccess,
               test_elements1.SendFile(public_id1, public_id2, file_path1));
 
+    Sleep(bptime::seconds(2));
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
   {
@@ -602,6 +603,7 @@ TEST(IndependentFullTest, FUNC_SendFileSaveToGivenPath) {
                            error_code));
     EXPECT_EQ(0, error_code.value());
 
+    Sleep(bptime::seconds(2));
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
   EXPECT_EQ(kSuccess, test_elements1.Finalise());
