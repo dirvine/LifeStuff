@@ -156,17 +156,21 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
       session->passport_->PacketSignature(passport::kPmid, true);
   drive_in_user_space_.reset(new MaidDriveInUserSpace(chunk_store_, key_ring));
 
-  int n(0);
+  int result(kGeneralError);
   if (creation) {
     session->set_unique_user_id(
         crypto::Hash<crypto::SHA512>(session->session_name()));
-    n = drive_in_user_space_->Init(session->unique_user_id(), "");
+    result = drive_in_user_space_->Init(session->unique_user_id(), "");
     session->set_root_parent_id(drive_in_user_space_->root_parent_id());
   } else {
-    n = drive_in_user_space_->Init(session->unique_user_id(),
-                                   session->root_parent_id());
+    result = drive_in_user_space_->Init(session->unique_user_id(),
+                                        session->root_parent_id());
   }
-  DLOG(INFO) << "drive_in_user_space_ Init: " << n;
+
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to Init Drive: " << result;
+    return;
+  }
 
 #ifdef WIN32
   std::uint32_t drive_letters, mask = 0x4, count = 2;
@@ -176,30 +180,22 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
     ++count;
   }
   if (count > 25) {
-    DLOG(ERROR) << "No available drive letters:";
+    DLOG(ERROR) << "No available drive letters.";
     return;
   }
 
   char drive_name[3] = {'A' + static_cast<char>(count), ':', '\0'};
   mount_dir_ = drive_name;
-  int result(drive_in_user_space_->Mount(mount_dir_, drive_logo));
+  result = drive_in_user_space_->Mount(mount_dir_, drive_logo);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to Mount Drive: " << result;
     return;
   }
 #else
   mount_dir_ = mount_dir_path;
-//   boost::thread(std::bind(&MaidDriveInUserSpace::Mount,
-//                           drive_in_user_space_,
-//                           mount_dir_,
-//                           drive_logo,
-//                           false));
-  mount_thread_.reset(new boost::thread(
-                              std::bind(&MaidDriveInUserSpace::Mount,
-                              drive_in_user_space_,
-                              mount_dir_,
-                              drive_logo,
-                              false)));
+  mount_thread_.reset(new boost::thread([this, drive_logo] {
+    drive_in_user_space_->Mount(mount_dir_, drive_logo, false);
+  }));
   drive_in_user_space_->WaitUntilMounted();
 #endif
   mount_status_ = true;
