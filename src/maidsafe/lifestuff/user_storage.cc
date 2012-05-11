@@ -140,7 +140,6 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
                              std::shared_ptr<Session> session,
                              bool creation,
                              const std::string &drive_logo) {
-  DLOG(INFO) << "UserStorage::MountDrive\n";
   if (mount_status_)
     return;
   if (!fs::exists(mount_dir_path))

@@ -205,7 +205,6 @@ class Authentication {
   boost::mutex mutex_, mid_mutex_, smid_mutex_;
   boost::condition_variable cond_var_;
   OpStatus tmid_op_status_, stmid_op_status_;
-//  std::string encrypted_tmid_, encrypted_stmid_, serialised_data_atlas_;
   const boost::posix_time::milliseconds kSingleOpTimeout_;
 };
 

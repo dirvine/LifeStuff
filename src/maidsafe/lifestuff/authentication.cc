@@ -158,9 +158,6 @@ Authentication::Authentication(
       cond_var_(),
       tmid_op_status_(kNoUser),
       stmid_op_status_(kNoUser),
-//       encrypted_tmid_(),
-//       encrypted_stmid_(),
-//       serialised_data_atlas_(),
       kSingleOpTimeout_(20000) {}
 
 Authentication::~Authentication() {
@@ -407,7 +404,6 @@ void Authentication::GetStmidCallback(const std::string &value,
     return;
   }
 
-//   encrypted_stmid_ = packet.data();
   session_->set_encrypted_stmid(packet.data());
   stmid_op_status_ = kSucceeded;
 }
@@ -610,7 +606,6 @@ int Authentication::CreateTmidPacket(
     return kAuthenticationError;
   }
   session_->set_password(password);
-//   serialised_data_atlas_ = serialised_data_atlas;
   session_->set_serialised_data_atlas(serialised_data_atlas);  
   return kSuccess;
 }
@@ -738,7 +733,6 @@ void Authentication::ProcessingSaveSession(
       DLOG(ERROR) << "Failed to confirm ID packets.";
       return save_session_data->functor(kAuthenticationError);
     }
-//     serialised_data_atlas_ = save_session_data->serialised_data_atlas;
     session_->set_serialised_data_atlas(
         save_session_data->serialised_data_atlas);  
   }
@@ -789,13 +783,11 @@ void Authentication::GetMasterDataMap(
                                   session_->encrypted_stmid());
 
   if (!serialised_data_atlas->empty()) {
-//     serialised_data_atlas_ = *serialised_data_atlas;
     session_->set_serialised_data_atlas(*serialised_data_atlas);
     return;
   }
 
   if (!surrogate_serialised_data_atlas->empty()) {
-//     serialised_data_atlas_ = *surrogate_serialised_data_atlas;
     session_->set_serialised_data_atlas(*surrogate_serialised_data_atlas);
     return;
   }
