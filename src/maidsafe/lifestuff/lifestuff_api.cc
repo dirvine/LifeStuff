@@ -571,13 +571,13 @@ int LifeStuff::LogIn(const std::string &username,
   fs::path mount_dir(GetHomeDir() /
                      kAppHomeDirectory /
                      lifestuff_elements->session->session_name());
-  if (!fs::exists(mount_dir, error_code)) {
-    fs::create_directories(mount_dir, error_code);
-    if (error_code) {
-      DLOG(ERROR) << "Failed to create app directories - " << error_code.value()
-                  << ": " << error_code.message();
-      return kGeneralError;
-    }
+  if (!fs::exists(mount_dir, error_code) || error_code ||
+      fs::create_directories(mount_dir, error_code) || error_code) {
+    DLOG(ERROR) << "Failed to create mount directory at " << mount_dir.string()
+                << " - " << error_code.value() << ": " << error_code.message();
+    if (error_code.value() == boost::system::errc::not_connected)
+      DLOG(ERROR) << "\tHint: Try unmounting the drive manually.";
+    return kGeneralError;
   }
 
   lifestuff_elements->user_storage->MountDrive(mount_dir,

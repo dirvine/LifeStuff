@@ -188,9 +188,13 @@ bool Session::set_session_name() {
 }
 void Session::clear_session_name() { user_details_->session_name.clear(); }
 void Session::set_unique_user_id(const std::string &unique_user_id) {
+  if (unique_user_id.empty())
+    DLOG(WARNING) << "Passed empty unique user ID.";
   user_details_->unique_user_id = unique_user_id;
 }
 void Session::set_root_parent_id(const std::string &root_parent_id) {
+  if (root_parent_id.empty())
+    DLOG(WARNING) << "Passed empty root parent ID.";
   user_details_->root_parent_id = root_parent_id;
 }
 bool Session::set_profile_picture_data_map(
