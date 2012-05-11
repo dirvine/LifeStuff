@@ -128,8 +128,14 @@ typedef std::map<std::string, std::pair<ContactStatus, ContactPresence>>
         ContactMap;
 
 /// Private Shares
-// Own public ID, Contact public ID, Share Tag/Name, Share ID, Timestamp
-typedef FiveStringsFunction PrivateShareInvitationFunction;
+// Own ID, Contact ID, Share Name, Share ID, Access Level, Timestamp
+typedef std::function<void(const std::string&,    // Own public ID
+                           const std::string&,    // Contact public ID
+                           const std::string&,    // Share name
+                           const std::string&,    // Share ID
+                           int,                   // Access level
+                           const std::string&)>   // Timestamp
+        PrivateShareInvitationFunction;
 
 // Own public ID, Contact public ID, Share Name, Share ID, Timestamp
 typedef FiveStringsFunction PrivateShareDeletionFunction;

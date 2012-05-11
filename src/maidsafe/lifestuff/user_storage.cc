@@ -915,7 +915,6 @@ int UserStorage::SetShareUsersRights(const std::string &sender_public_id,
                                  "",
                                  "",
                                  key_ring);
-
 }
 
 int UserStorage::DowngradeShareUsersRights(

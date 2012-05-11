@@ -263,8 +263,8 @@ int LifeStuff::ConnectToSignals(
     ++connects;
   }
   if (access_level_function) {
-    lifestuff_elements->message_handler->ConnectToPrivateMemberAccessLevelSignal(
-        access_level_function);
+    lifestuff_elements->message_handler->
+        ConnectToPrivateMemberAccessLevelSignal(access_level_function);
     ++connects;
   }
 

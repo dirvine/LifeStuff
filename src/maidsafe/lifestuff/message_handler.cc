@@ -158,9 +158,10 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
 
   // Retrieves ANMPID, MPID, and MMID's <name, value, signature>
   passport::SelectableIdentityData data;
-  result = session_->passport_->GetSelectableIdentityData(inbox_item.sender_public_id,
-                                                          true,
-                                                          &data);
+  result = session_->passport_->GetSelectableIdentityData(
+               inbox_item.sender_public_id,
+               true,
+               &data);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to get own public ID data: " << result;
     return kGetPublicIdError;
@@ -179,7 +180,8 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
                                      remote_chunk_store_,
                                      &recipient_public_key);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to get public key for " << inbox_item.receiver_public_id;
+    DLOG(ERROR) << "Failed to get public key for "
+                << inbox_item.receiver_public_id;
     return result;
   }
 
@@ -618,6 +620,8 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
                                      inbox_item.sender_public_id,
                                      relative_path.filename().string(),
                                      inbox_item.content[0],
+                                     inbox_item.content.size() == 7U ?
+                                         kShareReadWrite : kShareReadOnly,
                                      inbox_item.timestamp);
   }
 }

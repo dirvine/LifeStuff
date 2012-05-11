@@ -56,6 +56,7 @@ typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
                          const std::string&,
                          const std::string&,
                          const std::string&,
+                         int,
                          const std::string&)> PrivateShareInvitationSignal;
 
 typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
@@ -92,7 +93,7 @@ typedef bs2::signal<bool(const std::string&,  // NOLINT (Dan)
                          const std::string&,
                          std::string*)> ParseAndSaveDataMapSignal;
 
-typedef bs2::signal<int(const std::string&, fs::path*)>
+typedef bs2::signal<int(const std::string&, fs::path*)>  // NOLINT (Dan)
         PrivateShareDetailsSignal;
 
 typedef bs2::signal<void(const std::string&,  // share id
