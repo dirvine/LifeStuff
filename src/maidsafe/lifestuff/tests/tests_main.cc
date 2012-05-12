@@ -35,16 +35,16 @@ int main(int argc, char **argv) {
   FLAGS_logtostderr = true;
   // If Google logging is linked in, log messages at or above this level.
   // Severity levels are INFO, WARNING, ERROR, and FATAL (0 to 3 respectively).
-  FLAGS_ms_logging_common = google::ERROR;
-  FLAGS_ms_logging_private = google::ERROR;
-  FLAGS_ms_logging_pki = google::ERROR;
-  FLAGS_ms_logging_passport = google::ERROR;
-  FLAGS_ms_logging_encrypt = google::ERROR;
-  FLAGS_ms_logging_drive = google::ERROR;
+  FLAGS_ms_logging_common = google::FATAL;
+  FLAGS_ms_logging_private = google::FATAL;
+  FLAGS_ms_logging_pki = google::FATAL;
+  FLAGS_ms_logging_passport = google::FATAL;
+  FLAGS_ms_logging_encrypt = google::FATAL;
+  FLAGS_ms_logging_drive = google::FATAL;
 #ifndef LOCAL_TARGETS_ONLY
-  FLAGS_ms_logging_transport = google::ERROR;
-  FLAGS_ms_logging_dht = google::ERROR;
-  FLAGS_ms_logging_pd = google::ERROR;
+  FLAGS_ms_logging_transport = google::FATAL;
+  FLAGS_ms_logging_dht = google::FATAL;
+  FLAGS_ms_logging_pd = google::FATAL;
 #endif
   FLAGS_ms_logging_lifestuff = google::ERROR;
 

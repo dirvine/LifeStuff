@@ -1131,53 +1131,6 @@ TEST(IndependentFullTest, FUNC_CreateEmptyOpenShare) {
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
   DLOG(ERROR) << "\n\n\n\n";
-  EXPECT_EQ(kSuccess, test_elements2.Finalise());
-  EXPECT_EQ(kSuccess, test_elements2.Initialise(*test_dir));
-  EXPECT_EQ(kSuccess, test_elements2.ConnectToSignals(
-                std::bind(&ChatSlot, args::_1, args::_2, args::_3, args::_4,
-                          &testing_variables2.chat_message,
-                          &testing_variables2.chat_message_received),
-                std::bind(&FileTransferSlot,
-                          args::_1, args::_2, args::_3, args::_4, args::_5,
-                          &testing_variables2.file_name,
-                          &testing_variables2.file_id,
-                          &testing_variables2.file_transfer_received),
-                std::bind(&NewContactSlot, args::_1, args::_2, args::_3,
-                          &testing_variables2.newly_contacted),
-                std::bind(&ContactConfirmationSlot,
-                          args::_1, args::_2, args::_3,
-                          &testing_variables2.confirmed),
-                std::bind(&ContactProfilePictureSlot,
-                          args::_1, args::_2, args::_3,
-                          &testing_variables2.picture_updated),
-                std::bind(&ContactPresenceSlot,
-                          args::_1, args::_2, args::_3, args::_4,
-                          &testing_variables2.presence_announced),
-                std::bind(&ContactDeletionSlot,
-                          args::_1, args::_2, args::_3, args::_4,
-                          &testing_variables2.removal_message,
-                          &testing_variables2.removed),
-                std::bind(&PrivateShareInvitationSlot,
-                          args::_1, args::_2, args::_3,
-                          args::_4, args::_5, args::_6,
-                          &testing_variables2.new_private_share_name,
-                          &testing_variables2.new_private_share_id,
-                          &testing_variables2.new_private_access_level,
-                          &testing_variables2.privately_invited),
-                std::bind(&PrivateShareDeletionSlot,
-                          args::_1, args::_2, args::_3, args::_4, args::_5,
-                          &testing_variables2.deleted_private_share_name,
-                          &testing_variables2.private_share_deleted),
-                std::bind(&PrivateMemberAccessLevelSlot,
-                          args::_1, args::_2, args::_3,
-                          args::_4, args::_5, args::_6,
-                          &testing_variables2.access_private_share_name,
-                          &testing_variables2.private_member_access,
-                          &testing_variables2.private_member_access_changed),
-                std::bind(&OpenShareInvitationSlot,
-                          args::_1, args::_2, args::_3, args::_4, args::_5,
-                          &testing_variables2.new_open_share_id,
-                          &testing_variables2.openly_invited)));
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
 
