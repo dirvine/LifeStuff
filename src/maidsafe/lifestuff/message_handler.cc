@@ -584,8 +584,8 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
     // downgrading
     private_member_access_level_signal_(inbox_item.receiver_public_id,
                                         inbox_item.sender_public_id,
-                                        inbox_item.content[0],
                                         share_name,
+                                        inbox_item.content[0],
                                         kShareReadOnly,
                                         inbox_item.timestamp);
   } else if (inbox_item.item_type == kPrivateShareMembershipUpgrade) {
@@ -603,8 +603,8 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
                                  &key_ring);
     private_member_access_level_signal_(inbox_item.receiver_public_id,
                                         inbox_item.sender_public_id,
-                                        inbox_item.content[0],
                                         share_name,
+                                        inbox_item.content[0],
                                         kShareReadWrite,
                                         inbox_item.timestamp);
   } else if (inbox_item.item_type == kPrivateShareInvitation) {

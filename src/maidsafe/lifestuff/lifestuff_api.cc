@@ -214,7 +214,7 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
 
   lifestuff_elements->message_handler->ConnectToPrivateMemberAccessLevelSignal(
       std::bind(&UserStorage::MemberAccessChange,
-                lifestuff_elements->user_storage, args::_3, args::_5));
+                lifestuff_elements->user_storage, args::_4, args::_5));
 
   lifestuff_elements->public_id->ConnectToContactConfirmedSignal(
       std::bind(&MessageHandler::InformConfirmedContactOnline,
@@ -417,7 +417,7 @@ int LifeStuff::SetValidPmid() {
 
   lifestuff_elements->message_handler->ConnectToPrivateMemberAccessLevelSignal(
       std::bind(&UserStorage::MemberAccessChange,
-                lifestuff_elements->user_storage, args::_3, args::_5));
+                lifestuff_elements->user_storage, args::_4, args::_5));
 
   lifestuff_elements->public_id->ConnectToContactConfirmedSignal(
       std::bind(&MessageHandler::InformConfirmedContactOnline,
