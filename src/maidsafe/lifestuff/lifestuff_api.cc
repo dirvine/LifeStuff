@@ -423,6 +423,9 @@ int LifeStuff::SetValidPmid() {
       std::bind(&MessageHandler::InformConfirmedContactOnline,
                 lifestuff_elements->message_handler, args::_1, args::_2));
 
+  lifestuff_elements->message_handler->ConnectToPrivateShareDetailsSignal(
+      std::bind(&UserStorage::GetShareDetails, lifestuff_elements->user_storage,
+                args::_1, args::_2, nullptr, nullptr, nullptr));
 
   lifestuff_elements->message_handler->ConnectToContactDeletionSignal(
       std::bind(&PublicId::RemoveContactHandle,
