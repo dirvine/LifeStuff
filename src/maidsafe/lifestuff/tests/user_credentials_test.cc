@@ -71,7 +71,7 @@ class UserCredentialsTest : public testing::Test {
     asio_service2_.Start(10);
 #ifdef LOCAL_TARGETS_ONLY
   remote_chunk_store_ = BuildChunkStore(*test_dir_ /
-                                            RandomAlphaNumericString(8),
+                                        RandomAlphaNumericString(8),
                                         *test_dir_ / "simulation",
                                         asio_service_.service());
 #else
@@ -89,7 +89,7 @@ class UserCredentialsTest : public testing::Test {
   void CreateSecondUserCredentials() {
 #ifdef LOCAL_TARGETS_ONLY
     remote_chunk_store2_ = BuildChunkStore(*test_dir_ /
-                                               RandomAlphaNumericString(8),
+                                           RandomAlphaNumericString(8),
                                            *test_dir_ / "simulation",
                                            asio_service2_.service());
 #else

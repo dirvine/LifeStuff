@@ -97,8 +97,9 @@ class UserCredentials {
   std::shared_ptr<Session> session_;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<Authentication> authentication_;
-  std::string serialised_data_atlas_, surrogate_serialised_data_atlas_;
-  bool logging_out_, logged_in_;
+//   std::string serialised_data_atlas_, surrogate_serialised_data_atlas_;
+//  std::string serialised_data_atlas_;
+//  bool logging_out_, logged_in_;
 };
 
 }  // namespace lifestuff

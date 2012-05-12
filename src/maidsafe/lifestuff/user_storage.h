@@ -229,6 +229,7 @@ class UserStorage {
   std::shared_ptr<Session> session_;
   std::shared_ptr<MessageHandler> message_handler_;
   fs::path mount_dir_;
+  std::shared_ptr<boost::thread> mount_thread_;
 };
 
 }  // namespace lifestuff

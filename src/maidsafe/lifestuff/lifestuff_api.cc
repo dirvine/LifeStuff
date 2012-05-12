@@ -32,6 +32,10 @@
 
 #include "maidsafe/encrypt/data_map.h"
 
+#ifndef LOCAL_TARGETS_ONLY
+#include "maidsafe/pd/client/client_container.h"
+#endif
+
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
 
@@ -48,6 +52,32 @@ namespace args = std::placeholders;
 namespace maidsafe {
 
 namespace lifestuff {
+
+struct Slots {
+  Slots()
+      : chat_slot(),
+        file_slot(),
+        new_contact_slot(),
+        confirmed_contact_slot(),
+        profile_picture_slot(),
+        contact_presence_slot(),
+        contact_deletion_function(),
+        private_share_invitation_function(),
+        private_share_deletion_function(),
+        private_access_level_function(),
+        open_share_invitation_function() {}
+  ChatFunction chat_slot;
+  FileTransferFunction file_slot;
+  NewContactFunction new_contact_slot;
+  ContactConfirmationFunction confirmed_contact_slot;
+  ContactProfilePictureFunction profile_picture_slot;
+  ContactPresenceFunction contact_presence_slot;
+  ContactDeletionFunction contact_deletion_function;
+  PrivateShareInvitationFunction private_share_invitation_function;
+  PrivateShareDeletionFunction private_share_deletion_function;
+  PrivateMemberAccessLevelFunction private_access_level_function;
+  OpenShareInvitationFunction open_share_invitation_function;
+};
 
 struct LifeStuff::Elements {
   Elements() : thread_count(kThreads),
@@ -66,7 +96,8 @@ struct LifeStuff::Elements {
                user_credentials(),
                user_storage(),
                public_id(),
-               message_handler() {}
+               message_handler(),
+               slots() {}
 
   int thread_count;
   LifeStuffState state;
@@ -85,6 +116,7 @@ struct LifeStuff::Elements {
   std::shared_ptr<UserStorage> user_storage;
   std::shared_ptr<PublicId> public_id;
   std::shared_ptr<MessageHandler> message_handler;
+  Slots slots;
 };
 
 LifeStuff::LifeStuff() : lifestuff_elements(new Elements) {}
@@ -128,6 +160,11 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
       BuildChunkStore(buffered_chunk_store_path,
                       &lifestuff_elements->client_container);
 #endif
+  if (!lifestuff_elements->remote_chunk_store) {
+    DLOG(ERROR) << "Could not initialise chunk store.";
+    return kGeneralError;
+  }
+
   lifestuff_elements->buffered_path = buffered_chunk_store_path;
 
   lifestuff_elements->user_credentials.reset(
@@ -205,9 +242,9 @@ int LifeStuff::ConnectToSignals(
     const ContactProfilePictureFunction &profile_picture_slot,
     const ContactPresenceFunction &contact_presence_slot,
     const ContactDeletionFunction &contact_deletion_function,
-    const PrivateShareInvitationFunction &share_invitation_function,
-    const PrivateShareDeletionFunction &share_deletion_function,
-    const PrivateMemberAccessLevelFunction &access_level_function,
+    const PrivateShareInvitationFunction &private_share_invitation_function,
+    const PrivateShareDeletionFunction &private_share_deletion_function,
+    const PrivateMemberAccessLevelFunction &private_access_level_function,
     const OpenShareInvitationFunction &open_share_invitation_function) {
   if (lifestuff_elements->state != kInitialised) {
     DLOG(ERROR) << "Make sure that object is initialised";
@@ -216,55 +253,71 @@ int LifeStuff::ConnectToSignals(
 
   int connects(0);
   if (chat_slot) {
+    lifestuff_elements->slots.chat_slot = chat_slot;
     lifestuff_elements->message_handler->ConnectToChatSignal(chat_slot);
     ++connects;
   }
   if (file_slot) {
+    lifestuff_elements->slots.file_slot = file_slot;
     lifestuff_elements->message_handler->ConnectToFileTransferSignal(file_slot);
     ++connects;
   }
   if (new_contact_slot) {
+    lifestuff_elements->slots.new_contact_slot = new_contact_slot;
     lifestuff_elements->public_id->ConnectToNewContactSignal(new_contact_slot);
     ++connects;
   }
   if (confirmed_contact_slot) {
+    lifestuff_elements->slots.confirmed_contact_slot = confirmed_contact_slot;
     lifestuff_elements->public_id->ConnectToContactConfirmedSignal(
         confirmed_contact_slot);
     ++connects;
   }
   if (profile_picture_slot) {
+    lifestuff_elements->slots.profile_picture_slot = profile_picture_slot;
     lifestuff_elements->message_handler->ConnectToContactProfilePictureSignal(
         profile_picture_slot);
     ++connects;
   }
   if (contact_presence_slot) {
+    lifestuff_elements->slots.contact_presence_slot = contact_presence_slot;
     lifestuff_elements->message_handler->ConnectToContactPresenceSignal(
         contact_presence_slot);
     ++connects;
   }
   if (contact_deletion_function) {
+    lifestuff_elements->slots.contact_deletion_function =
+        contact_deletion_function;
     lifestuff_elements->message_handler->ConnectToContactDeletionSignal(
         contact_deletion_function);
     ++connects;
   }
-  if (share_invitation_function) {
+  if (private_share_invitation_function) {
+    lifestuff_elements->slots.private_share_invitation_function =
+        private_share_invitation_function;
     lifestuff_elements->message_handler->ConnectToPrivateShareInvitationSignal(
-        share_invitation_function);
+        private_share_invitation_function);
     ++connects;
   }
   if (open_share_invitation_function) {
+    lifestuff_elements->slots.open_share_invitation_function =
+        lifestuff_elements->slots.open_share_invitation_function;
     lifestuff_elements->message_handler->ConnectToOpenShareInvitationSignal(
         open_share_invitation_function);
     ++connects;
   }
-  if (share_deletion_function) {
+  if (private_share_deletion_function) {
+    lifestuff_elements->slots.private_share_invitation_function =
+        private_share_invitation_function;
     lifestuff_elements->message_handler->ConnectToPrivateShareDeletionSignal(
-        share_deletion_function);
+        private_share_deletion_function);
     ++connects;
   }
-  if (access_level_function) {
+  if (private_access_level_function) {
+    lifestuff_elements->slots.private_access_level_function =
+        private_access_level_function;
     lifestuff_elements->message_handler->
-        ConnectToPrivateMemberAccessLevelSignal(access_level_function);
+        ConnectToPrivateMemberAccessLevelSignal(private_access_level_function);
     ++connects;
   }
 
@@ -301,6 +354,97 @@ int LifeStuff::Finalise() {
   return kSuccess;
 }
 
+int LifeStuff::SetValidPmid() {
+  int result = kSuccess;
+#ifndef LOCAL_TARGETS_ONLY
+  std::vector<dht::Contact> bootstrap_contacts;
+  lifestuff_elements->client_container->Stop(&bootstrap_contacts);
+  lifestuff_elements->client_container->set_key_pair(
+      lifestuff_elements->session->GetPmidKeys());
+  lifestuff_elements->client_container->Init(
+      lifestuff_elements->buffered_path / "buffered_chunk_store", 10, 4);
+  result = lifestuff_elements->client_container->Start(bootstrap_contacts);
+  if (result != kSuccess) {
+    return kGeneralError;
+  }
+
+  lifestuff_elements->remote_chunk_store.reset(
+      new pcs::RemoteChunkStore(
+          lifestuff_elements->client_container->chunk_store(),
+          lifestuff_elements->client_container->chunk_manager(),
+          lifestuff_elements->client_container->chunk_action_authority()));
+  lifestuff_elements->user_credentials.reset(
+      new UserCredentials(lifestuff_elements->remote_chunk_store,
+                          lifestuff_elements->session));
+
+  lifestuff_elements->public_id.reset(
+      new PublicId(lifestuff_elements->remote_chunk_store,
+                   lifestuff_elements->session,
+                   lifestuff_elements->asio_service.service()));
+
+  lifestuff_elements->message_handler.reset(
+      new MessageHandler(lifestuff_elements->remote_chunk_store,
+                         lifestuff_elements->session,
+                         lifestuff_elements->asio_service.service()));
+
+  lifestuff_elements->user_storage.reset(
+      new UserStorage(lifestuff_elements->remote_chunk_store,
+                      lifestuff_elements->message_handler));
+
+  lifestuff_elements->message_handler->ConnectToParseAndSaveDataMapSignal(
+      std::bind(&UserStorage::ParseAndSaveDataMap,
+                lifestuff_elements->user_storage,
+                args::_1, args::_2, args::_3));
+
+  lifestuff_elements->message_handler->ConnectToSavePrivateShareDataSignal(
+      std::bind(&UserStorage::SavePrivateShareData,
+                lifestuff_elements->user_storage, args::_1, args::_2));
+
+  lifestuff_elements->message_handler->ConnectToPrivateShareUserLeavingSignal(
+      std::bind(&UserStorage::UserLeavingShare,
+                lifestuff_elements->user_storage, args::_2, args::_3));
+
+  lifestuff_elements->message_handler->ConnectToPrivateShareDeletionSignal(
+      std::bind(&UserStorage::ShareDeleted,
+                lifestuff_elements->user_storage,
+                args::_3));
+
+  lifestuff_elements->message_handler->ConnectToPrivateShareUpdateSignal(
+      std::bind(&UserStorage::UpdateShare,
+                lifestuff_elements->user_storage,
+                args::_1, args::_2, args::_3, args::_4));
+
+  lifestuff_elements->message_handler->ConnectToPrivateMemberAccessLevelSignal(
+      std::bind(&UserStorage::MemberAccessChange,
+                lifestuff_elements->user_storage, args::_3, args::_5));
+
+  lifestuff_elements->public_id->ConnectToContactConfirmedSignal(
+      std::bind(&MessageHandler::InformConfirmedContactOnline,
+                lifestuff_elements->message_handler, args::_1, args::_2));
+
+
+  lifestuff_elements->message_handler->ConnectToContactDeletionSignal(
+      std::bind(&PublicId::RemoveContactHandle,
+                lifestuff_elements->public_id, args::_1, args::_2));
+
+  lifestuff_elements->state = kInitialised;
+
+  result = ConnectToSignals(
+               lifestuff_elements->slots.chat_slot,
+               lifestuff_elements->slots.file_slot,
+               lifestuff_elements->slots.new_contact_slot,
+               lifestuff_elements->slots.confirmed_contact_slot,
+               lifestuff_elements->slots.profile_picture_slot,
+               lifestuff_elements->slots.contact_presence_slot,
+               lifestuff_elements->slots.contact_deletion_function,
+               lifestuff_elements->slots.private_share_invitation_function,
+               lifestuff_elements->slots.private_share_deletion_function,
+               lifestuff_elements->slots.private_access_level_function,
+               lifestuff_elements->slots.open_share_invitation_function);
+#endif
+  return result;
+}
+
 /// Credential operations
 int LifeStuff::CreateUser(const std::string &username,
                           const std::string &pin,
@@ -314,6 +458,11 @@ int LifeStuff::CreateUser(const std::string &username,
                                                         pin,
                                                         password)) {
     DLOG(ERROR) << "Failed to Create User.";
+    return kGeneralError;
+  }
+
+  if (SetValidPmid() != kSuccess)  {
+    DLOG(ERROR) << "Failed to set valid PMID";
     return kGeneralError;
   }
 
@@ -351,7 +500,6 @@ int LifeStuff::CreateUser(const std::string &username,
     DLOG(ERROR) << "Failed creating Shared Stuff: " << error_code.message();
     return kGeneralError;
   }
-
   int result(lifestuff_elements->user_credentials->SaveSession());
   if (result != kSuccess) {
     DLOG(WARNING) << "Failed to save session.";
@@ -410,15 +558,24 @@ int LifeStuff::LogIn(const std::string &username,
     return kGeneralError;
   }
 
+  if (SetValidPmid() != kSuccess)  {
+    DLOG(ERROR) << "Failed to set valid PMID";
+    return kGeneralError;
+  }
+
   boost::system::error_code error_code;
   fs::path mount_dir(GetHomeDir() /
                      kAppHomeDirectory /
                      lifestuff_elements->session->session_name());
   if (!fs::exists(mount_dir, error_code)) {
-    fs::create_directories(mount_dir, error_code);
-    if (error_code) {
-      DLOG(ERROR) << "Failed to create app directories - " << error_code.value()
+    if ((error_code &&
+             error_code != boost::system::errc::no_such_file_or_directory) ||
+        !fs::create_directories(mount_dir, error_code) || error_code) {
+      DLOG(ERROR) << "Failed to create mount directory at "
+                  << mount_dir.string() << " - " << error_code.value()
                   << ": " << error_code.message();
+      if (error_code.value() == boost::system::errc::not_connected)
+        DLOG(ERROR) << "\tHint: Try unmounting the drive manually.";
       return kGeneralError;
     }
   }
@@ -956,6 +1113,7 @@ int LifeStuff::AcceptSentFile(const std::string &identifier,
     result = lifestuff_elements->user_storage->InsertDataMap(
                  store_path / adequate_name,
                  serialised_data_map);
+
     if (result != kSuccess) {
       DLOG(ERROR) << "Failed inserting DM: " << result;
       return result;
