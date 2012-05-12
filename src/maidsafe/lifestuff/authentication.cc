@@ -158,9 +158,6 @@ Authentication::Authentication(
       cond_var_(),
       tmid_op_status_(kNoUser),
       stmid_op_status_(kNoUser),
-      encrypted_tmid_(),
-      encrypted_stmid_(),
-      serialised_data_atlas_(),
       kSingleOpTimeout_(20000) {}
 
 Authentication::~Authentication() {
@@ -381,7 +378,8 @@ void Authentication::GetTmidCallback(const std::string &value,
     return;
   }
 
-  encrypted_tmid_ = packet.data();
+//  encrypted_tmid_ = packet.data();
+  session_->set_encrypted_tmid(packet.data());
   tmid_op_status_ = kSucceeded;
 }
 
@@ -406,7 +404,7 @@ void Authentication::GetStmidCallback(const std::string &value,
     return;
   }
 
-  encrypted_stmid_ = packet.data();
+  session_->set_encrypted_stmid(packet.data());
   stmid_op_status_ = kSucceeded;
 }
 
@@ -608,17 +606,18 @@ int Authentication::CreateTmidPacket(
     return kAuthenticationError;
   }
   session_->set_password(password);
-  serialised_data_atlas_ = serialised_data_atlas;
+  session_->set_serialised_data_atlas(serialised_data_atlas);
   return kSuccess;
 }
 
 void Authentication::SaveSession(const std::string &serialised_data_atlas,
                                  const VoidFunctionOneInt &functor) {
-  int result(session_->passport_->SetIdentityPackets(session_->username(),
-                                                     session_->pin(),
-                                                     session_->password(),
-                                                     serialised_data_atlas,
-                                                     serialised_data_atlas_));
+  int result(session_->passport_->SetIdentityPackets(
+                 session_->username(),
+                 session_->pin(),
+                 session_->password(),
+                 serialised_data_atlas,
+                 session_->serialised_data_atlas()));
   if (result != kSuccess) {
     DLOG(ERROR) << "Authentication::SaveSession: failed SetIdentityPackets.";
     return functor(kAuthenticationError);
@@ -734,7 +733,8 @@ void Authentication::ProcessingSaveSession(
       DLOG(ERROR) << "Failed to confirm ID packets.";
       return save_session_data->functor(kAuthenticationError);
     }
-    serialised_data_atlas_ = save_session_data->serialised_data_atlas;
+    session_->set_serialised_data_atlas(
+        save_session_data->serialised_data_atlas);
   }
   save_session_data->functor(kSuccess);
 }
@@ -770,23 +770,24 @@ void Authentication::GetMasterDataMap(
   serialised_data_atlas->clear();
   surrogate_serialised_data_atlas->clear();
 
-  *serialised_data_atlas = passport::DecryptMasterData(session_->username(),
-                                                       session_->pin(),
-                                                       password,
-                                                       encrypted_tmid_);
+  *serialised_data_atlas =
+      passport::DecryptMasterData(session_->username(),
+                                  session_->pin(),
+                                  password,
+                                  session_->encrypted_tmid());
   *surrogate_serialised_data_atlas =
       passport::DecryptMasterData(session_->username(),
                                   session_->pin(),
                                   password,
-                                  encrypted_stmid_);
+                                  session_->encrypted_stmid());
 
   if (!serialised_data_atlas->empty()) {
-    serialised_data_atlas_ = *serialised_data_atlas;
+    session_->set_serialised_data_atlas(*serialised_data_atlas);
     return;
   }
 
   if (!surrogate_serialised_data_atlas->empty()) {
-    serialised_data_atlas_ = *surrogate_serialised_data_atlas;
+    session_->set_serialised_data_atlas(*surrogate_serialised_data_atlas);
     return;
   }
 }
@@ -824,11 +825,12 @@ int Authentication::ChangePin(const std::string &serialised_data_atlas,
 int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
                                    const std::string &new_username,
                                    const std::string &new_pin) {
-  int result = session_->passport_->SetIdentityPackets(new_username,
-                                                       new_pin,
-                                                       session_->password(),
-                                                       serialised_data_atlas,
-                                                       serialised_data_atlas_);
+  int result(session_->passport_->SetIdentityPackets(
+                 new_username,
+                 new_pin,
+                 session_->password(),
+                 serialised_data_atlas,
+                 session_->serialised_data_atlas()));
   if (result != kSuccess) {
     DLOG(ERROR) << "Authentication::ChangeUserData: failed SetIdentityPackets.";
     return kAuthenticationError;
@@ -1002,11 +1004,12 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
 
 int Authentication::ChangePassword(const std::string &serialised_data_atlas,
                                    const std::string &new_password) {
-  int result = session_->passport_->SetIdentityPackets(session_->username(),
-                                                       session_->pin(),
-                                                       new_password,
-                                                       serialised_data_atlas,
-                                                       serialised_data_atlas_);
+  int result(session_->passport_->SetIdentityPackets(
+                 session_->username(),
+                 session_->pin(),
+                 new_password,
+                 serialised_data_atlas,
+                 session_->serialised_data_atlas()));
   if (result != kSuccess) {
     DLOG(ERROR) << "Authentication::ChangePassword: failed SetIdentityPackets.";
     return kAuthenticationError;
