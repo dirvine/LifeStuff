@@ -1240,7 +1240,7 @@ int LifeStuff::CreateEmptyPrivateShare(const std::string &my_public_id,
                      drive::kMsShareRoot /
                      (*share_name));
   boost::system::error_code error_code;
-  int index(0);
+  int index(1);
   // TODO(Team): shall use function via drive to test the existence of directory
   while (fs::exists(share_dir, error_code)) {
     share_dir = mount_path() /
@@ -1539,7 +1539,7 @@ int LifeStuff::CreateOpenShareFromExistingDirectory(
   }
   *share_name = directory_in_lifestuff_drive.filename().string();
   fs::path share(mount_path() / kSharedStuff / (*share_name));
-  int index(0);
+  int index(1);
   while (fs::exists(share, error_code)) {
     share = mount_path() /
             kSharedStuff /
@@ -1596,7 +1596,7 @@ int LifeStuff::CreateEmptyOpenShare(const std::string &my_public_id,
   }
   fs::path share_dir(mount_path() / kSharedStuff / (*share_name));
   boost::system::error_code error_code;
-  int index(0);
+  int index(1);
   while (fs::exists(share_dir, error_code)) {
     share_dir = mount_path() /
                 kSharedStuff /
