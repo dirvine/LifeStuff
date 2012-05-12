@@ -1543,7 +1543,7 @@ int LifeStuff::CreateOpenShareFromExistingDirectory(
   while (fs::exists(share, error_code)) {
     share = mount_path() /
             kSharedStuff /
-            ((*share_name) + "_" + IntToString(index));
+            ((*share_name) + " (" + IntToString(index) + ")");
     ++index;
   }
   fs::create_directory(share, error_code);
@@ -1600,7 +1600,7 @@ int LifeStuff::CreateEmptyOpenShare(const std::string &my_public_id,
   while (fs::exists(share_dir, error_code)) {
     share_dir = mount_path() /
                 kSharedStuff /
-                ((*share_name) + "_" + IntToString(index));
+                ((*share_name) + " (" + IntToString(index) + ")");
     ++index;
   }
   fs::create_directory(share_dir, error_code);
