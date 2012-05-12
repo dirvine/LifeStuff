@@ -1739,7 +1739,7 @@ TEST(IndependentFullTest, FUNC_SameOpenShareName) {
     EXPECT_TRUE(fs::exists(share2 / file2_name, error_code));
     EXPECT_EQ(0, error_code.value());
     EXPECT_NE(stored_share_name, share_name);
-    EXPECT_EQ(stored_share_name + "_0", share_name);
+    EXPECT_EQ(stored_share_name + " (1)", share_name);
 
     EXPECT_FALSE(fs::exists(directory2 / share_name, error_code));
     EXPECT_NE(0, error_code.value());
