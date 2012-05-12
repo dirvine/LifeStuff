@@ -514,6 +514,7 @@ std::shared_ptr<priv::chunk_store::RemoteChunkStore> BuildChunkStore(
         new pcs::RemoteChunkStore((*client_container)->chunk_store(),
             (*client_container)->chunk_manager(),
             (*client_container)->chunk_action_authority()));
+    remote_chunk_store->SetMaxActiveOps(32);
     return remote_chunk_store;
   } else {
     DLOG(ERROR) << "Failed to initialise client container.";
