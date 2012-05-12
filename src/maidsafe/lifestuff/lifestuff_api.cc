@@ -396,27 +396,28 @@ int LifeStuff::SetValidPmid() {
                 lifestuff_elements->user_storage,
                 args::_1, args::_2, args::_3));
 
-  lifestuff_elements->message_handler->ConnectToSaveShareDataSignal(
-      std::bind(&UserStorage::SaveShareData,
+
+  lifestuff_elements->message_handler->ConnectToSavePrivateShareDataSignal(
+      std::bind(&UserStorage::SavePrivateShareData,
                 lifestuff_elements->user_storage, args::_1, args::_2));
 
-  lifestuff_elements->message_handler->ConnectToShareUserLeavingSignal(
+  lifestuff_elements->message_handler->ConnectToPrivateShareUserLeavingSignal(
       std::bind(&UserStorage::UserLeavingShare,
-                lifestuff_elements->user_storage, args::_1, args::_2));
+                lifestuff_elements->user_storage, args::_2, args::_3));
 
-  lifestuff_elements->message_handler->ConnectToShareDeletionSignal(
-      std::bind(&UserStorage::LeaveShare,
-                lifestuff_elements->user_storage, args::_1, args::_2));
+  lifestuff_elements->message_handler->ConnectToPrivateShareDeletionSignal(
+      std::bind(&UserStorage::ShareDeleted,
+                lifestuff_elements->user_storage,
+                args::_3));
 
-  lifestuff_elements->message_handler->ConnectToShareUpdateSignal(
+  lifestuff_elements->message_handler->ConnectToPrivateShareUpdateSignal(
       std::bind(&UserStorage::UpdateShare,
-                lifestuff_elements->user_storage, args::_1, args::_2,
-                                                  args::_3, args::_4));
+                lifestuff_elements->user_storage,
+                args::_1, args::_2, args::_3, args::_4));
 
-  lifestuff_elements->message_handler->ConnectToMemberAccessLevelSignal(
+  lifestuff_elements->message_handler->ConnectToPrivateMemberAccessLevelSignal(
       std::bind(&UserStorage::MemberAccessChange,
-                lifestuff_elements->user_storage, args::_1, args::_2,
-                                                  args::_3, args::_4));
+                lifestuff_elements->user_storage, args::_3, args::_5));
 
   lifestuff_elements->public_id->ConnectToContactConfirmedSignal(
       std::bind(&MessageHandler::InformConfirmedContactOnline,
