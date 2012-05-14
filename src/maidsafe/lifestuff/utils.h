@@ -52,11 +52,16 @@ enum InboxItemType {
   kContactPresence,
   kContactProfilePicture,
   kContactDeletion,
+  kPrivateShareInvitation,
+  kPrivateShareDeletion,
+  kPrivateShareMembershipUpgrade,
+  kPrivateShareMembershipDowngrade,
+  kPrivateShareKeysUpdate,
+  kPrivateShareMemberLeft,
   kOpenShareInvitation,
-  kShare,
 
   // Max
-  kMaxInboxItemType = kShare
+  kMaxInboxItemType = kOpenShareInvitation
 };
 
 struct InboxItem {

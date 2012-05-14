@@ -39,6 +39,7 @@
 
 #include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/lifestuff.h"
+#include "maidsafe/lifestuff/message_handler_signal_types.h"
 #include "maidsafe/lifestuff/utils.h"
 
 namespace ba = boost::asio;
@@ -55,87 +56,6 @@ class Session;
 
 class MessageHandler {
  public:
-  typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
-                           const std::string&,
-                           const std::string&,
-                           const std::string&,
-                           const std::string&)> ShareInvitationSignal;
-  typedef std::shared_ptr<ShareInvitationSignal> ShareInvitationSignalPtr;
-
-  typedef bs2::signal<void(const std::string&,  // NOLINT
-                           const std::string&,
-                           const std::string&,
-                           const std::string&)> OpenShareInvitationSignal;
-  typedef std::shared_ptr<OpenShareInvitationSignal>
-          OpenShareInvitationSignalPtr;
-
-  typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
-                           const std::string&,
-                           const std::string&)> ShareDeletionSignal;
-  typedef std::shared_ptr<ShareDeletionSignal> ShareDeletionSignalPtr;
-
-  typedef bs2::signal<void(const std::string&,  // share id
-                           const std::string*,  // directory id
-                           const std::string*,  // new share id
-                           const asymm::Keys*)> ShareUpdateSignal;  // new key
-  typedef std::shared_ptr<ShareUpdateSignal> ShareUpdateSignalPtr;
-
-  typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
-                           const std::string&,
-                           const std::string&,
-                           int,
-                           const std::string&)> MemberAccessLevelSignal;
-  typedef std::shared_ptr<MemberAccessLevelSignal> MemberAccessLevelSignalPtr;
-
-  typedef bs2::signal<bool(const std::string&,  // NOLINT (Dan)
-                           const std::string&)> SaveShareDataSignal;
-  typedef std::shared_ptr<SaveShareDataSignal> SaveShareDataSignalPtr;
-
-  typedef bs2::signal<bool(const std::string&,  // NOLINT
-                           const std::string&)> SaveOpenShareDataSignal;
-  typedef std::shared_ptr<SaveOpenShareDataSignal> SaveOpenShareDataSignalPtr;
-
-  typedef bs2::signal<void(const std::string&,  // share id
-                           const std::string&)> ShareUserLeavingSignal;  // user_id  // NOLINT
-  typedef std::shared_ptr<ShareUserLeavingSignal> ShareUserLeavingSignalPtr;
-
-  typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
-                           const std::string&,
-                           const std::string&,
-                           ContactPresence presence)> ContactPresenceSignal;
-  typedef std::shared_ptr<ContactPresenceSignal> ContactPresenceSignalPtr;
-
-  typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
-                           const std::string&,
-                           const std::string&,
-                           const std::string&)> ChatMessageSignal;
-  typedef std::shared_ptr<ChatMessageSignal> ChatMessageSignalPtr;
-
-  typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
-                           const std::string&,
-                           const std::string&,
-                           const std::string&)> ContactDeletionSignal;
-  typedef std::shared_ptr<ContactDeletionSignal> ContactDeletionSignalPtr;
-
-  typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
-                           const std::string&,
-                           const std::string&,
-                           const std::string&,
-                           const std::string&)> FileTransferSignal;
-  typedef std::shared_ptr<FileTransferSignal> FileTransferSignalPtr;
-
-  typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
-                           const std::string&,
-                           const std::string&)> ContactProfilePictureSignal;
-  typedef std::shared_ptr<ContactProfilePictureSignal>
-          ContactProfilePictureSignalPtr;
-
-  typedef bs2::signal<bool(const std::string&,  // NOLINT (Dan)
-                           const std::string&,
-                           std::string*)> ParseAndSaveDataMapSignal;
-  typedef std::shared_ptr<ParseAndSaveDataMapSignal>
-          ParseAndSaveDataMapSignalPtr;
-
   typedef std::map<std::string, uint64_t> ReceivedMessagesMap;
 
   MessageHandler(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
@@ -152,9 +72,7 @@ class MessageHandler {
   int StartCheckingForNewMessages(boost::posix_time::seconds interval);
   void StopCheckingForNewMessages();
 
-  int Send(const std::string &own_public_id,
-           const std::string &recipient_public_id,
-           const InboxItem &message);
+  int Send(const InboxItem &message);
   int SendPresenceMessage(const std::string &own_public_id,
                           const std::string &recipient_public_id,
                           const ContactPresence &presence);
@@ -162,33 +80,40 @@ class MessageHandler {
                                     const std::string &recipient_public_id);
   void SendEveryone(const InboxItem &message);
 
+  // Extra library connections
   bs2::connection ConnectToChatSignal(const ChatFunction &function);
   bs2::connection ConnectToFileTransferSignal(
       const FileTransferFunction &function);
-  bs2::connection ConnectToShareInvitationSignal(
-      const ShareInvitationFunction &function);
   bs2::connection ConnectToOpenShareInvitationSignal(
       const OpenShareInvitationFunction &function);
-  bs2::connection ConnectToShareDeletionSignal(
-      const ShareDeletionFunction &function);
-  bs2::connection ConnectToShareUpdateSignal(
-      const ShareUpdateSignal::slot_type &function);
-  bs2::connection ConnectToMemberAccessLevelSignal(
-      const MemberAccessLevelFunction &function);
-  bs2::connection ConnectToSaveShareDataSignal(
-      const SaveShareDataSignal::slot_type &function);
-  bs2::connection ConnectToSaveOpenShareDataSignal(
-      const SaveOpenShareDataSignal::slot_type &function);
-  bs2::connection ConnectToShareUserLeavingSignal(
-      const ShareUserLeavingSignal::slot_type &function);
+  bs2::connection ConnectToPrivateShareInvitationSignal(
+      const PrivateShareInvitationFunction &function);
+  bs2::connection ConnectToPrivateShareDeletionSignal(
+      const PrivateShareDeletionFunction &function);
+  bs2::connection ConnectToPrivateMemberAccessLevelSignal(
+      const PrivateMemberAccessLevelFunction &function);
   bs2::connection ConnectToContactPresenceSignal(
       const ContactPresenceFunction &function);
   bs2::connection ConnectToContactProfilePictureSignal(
       const ContactProfilePictureFunction &function);
-  bs2::connection ConnectToParseAndSaveDataMapSignal(
-      const ParseAndSaveDataMapSignal::slot_type &function);
+
+  // Intra and extra library connections
   bs2::connection ConnectToContactDeletionSignal(
       const ContactDeletionFunction &function);
+  bs2::connection ConnectToPrivateShareUserLeavingSignal(
+      const PrivateShareUserLeavingSignal::slot_type &function);
+
+  // Intra library connections
+  bs2::connection ConnectToPrivateShareDetailsSignal(
+      const PrivateShareDetailsSignal::slot_type &function);
+  bs2::connection ConnectToParseAndSaveDataMapSignal(
+      const ParseAndSaveDataMapSignal::slot_type &function);
+  bs2::connection ConnectToPrivateShareUpdateSignal(
+      const PrivateShareUpdateSignal::slot_type &function);
+  bs2::connection ConnectToSavePrivateShareDataSignal(
+      const SavePrivateShareDataSignal::slot_type &function);
+  bs2::connection ConnectToSaveOpenShareDataSignal(
+      const SaveOpenShareDataSignal::slot_type &function);
 
  private:
   MessageHandler(const MessageHandler&);
@@ -200,44 +125,53 @@ class MessageHandler {
                       const boost::system::error_code &error_code);
   void ProcessRetrieved(const passport::SelectableIdData &data,
                         const std::string &mmid_value);
+  void RetrieveMessagesForAllIds();
   bool MessagePreviouslyReceived(const std::string &message);
   void ClearExpiredReceivedMessages();
   void KeysAndProof(const std::string &public_id,
                     passport::PacketType pt,
                     bool confirmed,
                     pcs::RemoteChunkStore::ValidationData *validation_data);
-  void ContactPresenceSlot(const InboxItem& information_message);
-  void ContactProfilePictureSlot(const InboxItem& information_message);
-  void OpenShareInvitationSlot(const InboxItem& inbox_item);
-  void RetrieveMessagesForAllIds();
   void EnqueuePresenceMessages(ContactPresence presence);
-  void SignalFileTransfer(const InboxItem &inbox_item);
-  void SignalShare(const InboxItem &inbox_item);
+
+  void ProcessContactPresence(const InboxItem &presence_message);
+  void ProcessContactProfilePicture(const InboxItem &profile_message);
+  void ProcessOpenShareInvitation(const InboxItem &open_share_invitation);
+  void ProcessFileTransfer(const InboxItem &file_transfer_message);
+  void ProcessPrivateShare(const InboxItem &private_share_message);
+  void ProcessContactDeletion(const InboxItem &deletion_message);
+
   void ContentsDontParseAsDataMap(const std::string& serialised_dm,
                                   std::string* data_map);
   void ProcessPresenceMessages();
-  void ContactDeletionSlot(const InboxItem &deletion_item);
 
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<Session> session_;
   ba::deadline_timer get_new_messages_timer_;
-  ChatMessageSignalPtr chat_signal_;
-  FileTransferSignalPtr file_transfer_signal_;
-  ShareInvitationSignalPtr share_invitation_signal_;
-  OpenShareInvitationSignalPtr open_share_invitation_signal_;
-  ShareDeletionSignalPtr share_deletion_signal_;
-  ShareUpdateSignalPtr share_update_signal_;
-  MemberAccessLevelSignalPtr member_access_level_signal_;
-  SaveShareDataSignalPtr save_share_data_signal_;
-  SaveOpenShareDataSignalPtr save_open_share_data_signal_;
-  ShareUserLeavingSignalPtr share_user_leaving_signal_;
-  ContactPresenceSignalPtr contact_presence_signal_;
-  ContactProfilePictureSignalPtr contact_profile_picture_signal_;
-  ContactDeletionSignalPtr contact_deletion_signal_;
-  ParseAndSaveDataMapSignalPtr parse_and_save_data_map_signal_;
-  ReceivedMessagesMap received_messages_;
   ba::io_service &asio_service_;  // NOLINT (Dan)
   bool start_up_done_;
+  ReceivedMessagesMap received_messages_;
+
+  /// Extra library signals
+  ChatMessageSignal chat_signal_;
+  FileTransferSignal file_transfer_signal_;
+  ContactPresenceSignal contact_presence_signal_;
+  ContactProfilePictureSignal contact_profile_picture_signal_;
+  PrivateShareInvitationSignal private_share_invitation_signal_;
+  PrivateShareDeletionSignal private_share_deletion_signal_;
+  PrivateMemberAccessLevelSignal private_member_access_level_signal_;
+  OpenShareInvitationSignal open_share_invitation_signal_;
+
+  /// Intra and extra library signals
+  ContactDeletionSignal contact_deletion_signal_;
+  PrivateShareUserLeavingSignal private_share_user_leaving_signal_;
+
+  /// Intra library signals
+  ParseAndSaveDataMapSignal parse_and_save_data_map_signal_;
+  PrivateShareDetailsSignal private_share_details_signal_;
+  PrivateShareUpdateSignal private_share_update_signal_;
+  SavePrivateShareDataSignal save_private_share_data_signal_;
+  SaveOpenShareDataSignal save_open_share_data_signal_;
 };
 
 }  // namespace lifestuff

@@ -291,10 +291,7 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
             message_handler2_->StartCheckingForNewMessages(interval_));
 
   InboxItem sent(CreateMessage(public_username1_, public_username2_));
-  ASSERT_EQ(kSuccess,
-            message_handler1_->Send(public_username1_,
-                                    public_username2_,
-                                    sent));
+  ASSERT_EQ(kSuccess, message_handler1_->Send(sent));
 
   while (!invoked)
     Sleep(bptime::milliseconds(100));
@@ -340,9 +337,7 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
   for (size_t n(0); n < multiple_messages_; ++n) {
     sent.timestamp = crypto::Hash<crypto::SHA512>(
                          boost::lexical_cast<std::string>(n));
-    ASSERT_EQ(kSuccess, message_handler1_->Send(public_username1_,
-                                                public_username2_,
-                                                sent));
+    ASSERT_EQ(kSuccess, message_handler1_->Send(sent));
   }
 
   std::vector<InboxItem> received_messages;
@@ -377,9 +372,7 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
   for (size_t a(0); a < multiple_messages_ * 5; ++a) {
     sent.timestamp = crypto::Hash<crypto::SHA512>(
                           boost::lexical_cast<std::string>("n"));
-    ASSERT_EQ(kSuccess, message_handler1_->Send(public_username1_,
-                                                public_username2_,
-                                                sent));
+    ASSERT_EQ(kSuccess, message_handler1_->Send(sent));
     DLOG(ERROR) << "Sent " << a;
   }
 
@@ -447,10 +440,7 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
             message_handler1_->StartCheckingForNewMessages(interval_));
 
   InboxItem sent(CreateMessage(public_username2_, public_username1_));
-  ASSERT_EQ(kSuccess,
-            message_handler2_->Send(public_username2_,
-                                    public_username1_,
-                                    sent));
+  ASSERT_EQ(kSuccess, message_handler2_->Send(sent));
   while (!invoked)
     Sleep(bptime::milliseconds(100));
   ASSERT_TRUE(MessagesEqual(sent, received));
@@ -459,17 +449,12 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
   Sleep(interval_ * 2);
 
   received = InboxItem();
-  ASSERT_NE(kSuccess, message_handler2_->Send(public_username2_,
-                                              public_username1_,
-                                              sent));
+  ASSERT_NE(kSuccess, message_handler2_->Send(sent));
   ASSERT_FALSE(MessagesEqual(sent, received));
 
   invoked = false;
   sent.sender_public_id = public_username3_;
-  ASSERT_EQ(kSuccess,
-            message_handler3_->Send(public_username3_,
-                                    public_username1_,
-                                    sent));
+  ASSERT_EQ(kSuccess, message_handler3_->Send(sent));
   while (!invoked)
     Sleep(bptime::milliseconds(100));
   ASSERT_TRUE(MessagesEqual(sent, received));

@@ -47,6 +47,7 @@
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
+#include "maidsafe/lifestuff/utils.h"
 
 #ifdef WIN32
   typedef maidsafe::drive::CbfsDriveInUserSpace MaidDriveInUserSpace;
@@ -95,8 +96,8 @@ class UserStorage {
                              const std::string &directory_id);
 
   // ****************************** Shares *************************************
-  bool SaveShareData(const std::string &serialised_share_data,
-                     const std::string &share_id);
+  bool SavePrivateShareData(const std::string &serialised_share_data,
+                            const std::string &share_id);
   bool SaveOpenShareData(const std::string &serialised_share_data,
                          const std::string &share_id);
   int CreateShare(const std::string &sender_public_username,
@@ -119,8 +120,7 @@ class UserStorage {
                 const fs::path &absolute_path);
   int RemoveShare(const fs::path &absolute_path,
                   const std::string &sender_public_username = "");
-  void LeaveShare(const std::string &sender_public_username,
-                  const std::string &share_id);
+  void ShareDeleted(const std::string &share_id);
   int UpdateShare(const std::string &share_id,
                   const std::string *new_share_id,
                   const std::string *new_directory_id,
@@ -159,9 +159,7 @@ class UserStorage {
                       asymm::Keys *share_keyring,
                       std::string *directory_id,
                       StringIntMap *share_users);
-  void  MemberAccessChange(const std::string &my_public_id,
-                           const std::string &sender_public_username,
-                           const std::string &share_id,
+  void  MemberAccessChange(const std::string &share_id,
                            int access_right);
   int MovingShare(const std::string &sender_public_username,
                   const std::string &share_id,
@@ -201,27 +199,27 @@ class UserStorage {
   std::string ConstructFile(const std::string &serialised_data_map);
 
  private:
-  template<typename Operation>
   int InformContactsOperation(
-        const std::string &sender_public_username,
-        const StringIntMap &contacts,
-        const std::string &share_id,
-        const std::string &absolute_path = "",
-        const std::string &directory_id = "",
-        const asymm::Keys &key_ring = asymm::Keys(),
-        const std::string &new_share_id = "",
-        StringIntMap *contacts_results = nullptr);
-  template<uint32_t ItemType>
+      InboxItemType item_type,
+      const std::string &sender_public_username,
+      const StringIntMap &contacts,
+      const std::string &share_id,
+      const std::string &absolute_path = "",
+      const std::string &directory_id = "",
+      const asymm::Keys &key_ring = asymm::Keys(),
+      const std::string &new_share_id = "",
+      StringIntMap *contacts_results = nullptr);
   int InformContacts(
-        const std::string &sender_public_username,
-        const StringIntMap &contacts,
-        const std::string &share_id,
-        // const std::string &absolute_path = "",
-        const fs::path &relative_path = "",
-        const std::string &directory_id = "",
-        const asymm::Keys &key_ring = asymm::Keys(),
-        const std::string &new_share_id = "",
-        StringIntMap *contacts_results = nullptr);
+      InboxItemType item_type,
+      const std::string &sender_public_username,
+      const StringIntMap &contacts,
+      const std::string &share_id,
+      // const std::string &absolute_path = "",
+      const fs::path &relative_path = "",
+      const std::string &directory_id = "",
+      const asymm::Keys &key_ring = asymm::Keys(),
+      const std::string &new_share_id = "",
+      StringIntMap *contacts_results = nullptr);
   pcs::RemoteChunkStore::ValidationData PopulateValidationData(
       const asymm::Keys &key_ring);
 
@@ -231,6 +229,7 @@ class UserStorage {
   std::shared_ptr<Session> session_;
   std::shared_ptr<MessageHandler> message_handler_;
   fs::path mount_dir_;
+  std::shared_ptr<boost::thread> mount_thread_;
 };
 
 }  // namespace lifestuff

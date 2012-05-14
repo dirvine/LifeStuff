@@ -64,9 +64,11 @@ struct TestingVariables {
         presence_announced(false),
         removal_message(),
         removed(false),
+        new_private_share_name(),
         new_private_share_id(),
-        new_open_share_id(),
+        new_private_access_level(-1),
         privately_invited(false),
+        new_open_share_id(),
         openly_invited(false),
         deleted_private_share_name(),
         private_share_deleted(false),
@@ -83,9 +85,10 @@ struct TestingVariables {
        presence_announced;
   std::string removal_message;
   bool removed;
-  std::string new_private_share_id;
-  std::string new_open_share_id;
+  std::string new_private_share_name, new_private_share_id;
+  int new_private_access_level;
   bool privately_invited;
+  std::string new_open_share_id;
   bool openly_invited;
   std::string deleted_private_share_name;
   bool private_share_deleted;
@@ -178,18 +181,27 @@ void ContactDeletionSlot(const std::string&,
 
 void PrivateShareInvitationSlot(const std::string&,
                                 const std::string&,
-                                const std::string&,
+                                const std::string &signal_share_name,
                                 const std::string &signal_share_id,
+                                int access_level,
                                 const std::string&,
+                                std::string *slot_share_name,
                                 std::string *slot_share_id,
+                                int *slot_access_level,
                                 volatile bool *done) {
+  if (slot_share_name)
+    *slot_share_name = signal_share_name;
   if (slot_share_id)
     *slot_share_id = signal_share_id;
+  if (slot_access_level)
+    *slot_access_level = access_level;
   *done = true;
 }
 
 void PrivateShareDeletionSlot(const std::string&,
                               const std::string &signal_share_name,
+                              const std::string&,
+                              const std::string&,
                               const std::string&,
                               std::string *slot_share_name,
                               volatile bool *done) {
@@ -199,6 +211,7 @@ void PrivateShareDeletionSlot(const std::string&,
 }
 
 void PrivateMemberAccessLevelSlot(const std::string&,
+                                  const std::string&,
                                   const std::string&,
                                   const std::string &signal_share_name,
                                   int signal_member_access,
@@ -216,6 +229,7 @@ void PrivateMemberAccessLevelSlot(const std::string&,
 void OpenShareInvitationSlot(const std::string&,
                              const std::string&,
                              const std::string& signal_share_id,
+                             const std::string&,
                              const std::string&,
                              std::string *slot_share_id,
                              volatile bool *done) {
@@ -282,20 +296,24 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
                           &testing_variables1.removal_message,
                           &testing_variables1.removed),
                 std::bind(&PrivateShareInvitationSlot,
-                          args::_1, args::_2, args::_3, args::_4, args::_5,
+                          args::_1, args::_2, args::_3,
+                          args::_4, args::_5, args::_6,
+                          &testing_variables1.new_private_share_name,
                           &testing_variables1.new_private_share_id,
+                          &testing_variables1.new_private_access_level,
                           &testing_variables1.privately_invited),
                 std::bind(&PrivateShareDeletionSlot,
-                          args::_1, args::_2, args::_3,
+                          args::_1, args::_2, args::_3, args::_4, args::_5,
                           &testing_variables1.deleted_private_share_name,
                           &testing_variables1.private_share_deleted),
                 std::bind(&PrivateMemberAccessLevelSlot,
-                          args::_1, args::_2, args::_3, args::_4, args::_5,
+                          args::_1, args::_2, args::_3,
+                          args::_4, args::_5, args::_6,
                           &testing_variables1.access_private_share_name,
                           &testing_variables1.private_member_access,
                           &testing_variables1.private_member_access_changed),
                 std::bind(&OpenShareInvitationSlot,
-                          args::_1, args::_2, args::_3, args::_4,
+                          args::_1, args::_2, args::_3, args::_4, args::_5,
                           &testing_variables2.new_open_share_id,
                           &testing_variables2.openly_invited));
   result += test_elements2.ConnectToSignals(
@@ -319,20 +337,24 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
                           &testing_variables2.removal_message,
                           &testing_variables2.removed),
                 std::bind(&PrivateShareInvitationSlot,
-                          args::_1, args::_2, args::_3, args::_4, args::_5,
+                          args::_1, args::_2, args::_3,
+                          args::_4, args::_5, args::_6,
+                          &testing_variables2.new_private_share_name,
                           &testing_variables2.new_private_share_id,
+                          &testing_variables2.new_private_access_level,
                           &testing_variables2.privately_invited),
                 std::bind(&PrivateShareDeletionSlot,
-                          args::_1, args::_2, args::_3,
+                          args::_1, args::_2, args::_3, args::_4, args::_5,
                           &testing_variables2.deleted_private_share_name,
                           &testing_variables2.private_share_deleted),
                 std::bind(&PrivateMemberAccessLevelSlot,
-                          args::_1, args::_2, args::_3, args::_4, args::_5,
+                          args::_1, args::_2, args::_3,
+                          args::_4, args::_5, args::_6,
                           &testing_variables2.access_private_share_name,
                           &testing_variables2.private_member_access,
                           &testing_variables2.private_member_access_changed),
                 std::bind(&OpenShareInvitationSlot,
-                          args::_1, args::_2, args::_3, args::_4,
+                          args::_1, args::_2, args::_3, args::_4, args::_5,
                           &testing_variables2.new_open_share_id,
                           &testing_variables2.openly_invited));
   if (result != kSuccess)
@@ -399,9 +421,9 @@ TEST(IndependentFullTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
                                                       args::_3, args::_4,
                                                       &done),
                                             ContactDeletionFunction(),
-                                            ShareInvitationFunction(),
-                                            ShareDeletionFunction(),
-                                            MemberAccessLevelFunction(),
+                                            PrivateShareInvitationFunction(),
+                                            PrivateShareDeletionFunction(),
+                                            PrivateMemberAccessLevelFunction(),
                                             OpenShareInvitationFunction()));
   EXPECT_EQ(kSuccess, test_elements1.CreateUser(username, pin, password));
   // Create directory
@@ -442,9 +464,9 @@ TEST(IndependentFullTest, FUNC_LargeFileForMemoryCheck) {
                                                       args::_3, args::_4,
                                                       &done),
                                             ContactDeletionFunction(),
-                                            ShareInvitationFunction(),
-                                            ShareDeletionFunction(),
-                                            MemberAccessLevelFunction(),
+                                            PrivateShareInvitationFunction(),
+                                            PrivateShareDeletionFunction(),
+                                            PrivateMemberAccessLevelFunction(),
                                             OpenShareInvitationFunction()));
   EXPECT_EQ(kSuccess, test_elements1.CreateUser(username, pin, password));
   // Create directory
@@ -484,9 +506,9 @@ TEST(IndependentFullTest, FUNC_ChangeCredentials) {
                                                       args::_3, args::_4,
                                                       &done),
                                             ContactDeletionFunction(),
-                                            ShareInvitationFunction(),
-                                            ShareDeletionFunction(),
-                                            MemberAccessLevelFunction(),
+                                            PrivateShareInvitationFunction(),
+                                            PrivateShareDeletionFunction(),
+                                            PrivateMemberAccessLevelFunction(),
                                             OpenShareInvitationFunction()));
   EXPECT_EQ(kSuccess, test_elements1.CreateUser(username, pin, password));
   EXPECT_EQ(kSuccess, test_elements1.CheckPassword(password));
@@ -540,14 +562,14 @@ TEST(IndependentFullTest, FUNC_ChangeCredentials) {
 
 TEST(IndependentFullTest, FUNC_SendFileSaveToGivenPath) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomAlphaNumericString(6)),
+  std::string username1(RandomAlphaNumericString(10)),
               pin1(CreatePin()),
-              password1(RandomAlphaNumericString(6)),
-              public_id1(RandomAlphaNumericString(5));
-  std::string username2(RandomAlphaNumericString(6)),
+              password1(RandomAlphaNumericString(10)),
+              public_id1(RandomAlphaNumericString(10));
+  std::string username2(RandomAlphaNumericString(10)),
               pin2(CreatePin()),
-              password2(RandomAlphaNumericString(6)),
-              public_id2(RandomAlphaNumericString(5));
+              password2(RandomAlphaNumericString(10)),
+              public_id2(RandomAlphaNumericString(10));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
   EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
@@ -578,6 +600,7 @@ TEST(IndependentFullTest, FUNC_SendFileSaveToGivenPath) {
     EXPECT_EQ(kSuccess,
               test_elements1.SendFile(public_id1, public_id2, file_path1));
 
+    Sleep(bptime::seconds(2));
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
   {
@@ -602,6 +625,7 @@ TEST(IndependentFullTest, FUNC_SendFileSaveToGivenPath) {
                            error_code));
     EXPECT_EQ(0, error_code.value());
 
+    Sleep(bptime::seconds(2));
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
   EXPECT_EQ(kSuccess, test_elements1.Finalise());
@@ -1107,49 +1131,6 @@ TEST(IndependentFullTest, FUNC_CreateEmptyOpenShare) {
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
   DLOG(ERROR) << "\n\n\n\n";
-  EXPECT_EQ(kSuccess, test_elements2.Finalise());
-  EXPECT_EQ(kSuccess, test_elements2.Initialise(*test_dir));
-  EXPECT_EQ(kSuccess, test_elements2.ConnectToSignals(
-                std::bind(&ChatSlot, args::_1, args::_2, args::_3, args::_4,
-                          &testing_variables2.chat_message,
-                          &testing_variables2.chat_message_received),
-                std::bind(&FileTransferSlot,
-                          args::_1, args::_2, args::_3, args::_4, args::_5,
-                          &testing_variables2.file_name,
-                          &testing_variables2.file_id,
-                          &testing_variables2.file_transfer_received),
-                std::bind(&NewContactSlot, args::_1, args::_2, args::_3,
-                          &testing_variables2.newly_contacted),
-                std::bind(&ContactConfirmationSlot,
-                          args::_1, args::_2, args::_3,
-                          &testing_variables2.confirmed),
-                std::bind(&ContactProfilePictureSlot,
-                          args::_1, args::_2, args::_3,
-                          &testing_variables2.picture_updated),
-                std::bind(&ContactPresenceSlot,
-                          args::_1, args::_2, args::_3, args::_4,
-                          &testing_variables2.presence_announced),
-                std::bind(&ContactDeletionSlot,
-                          args::_1, args::_2, args::_3, args::_4,
-                          &testing_variables2.removal_message,
-                          &testing_variables2.removed),
-                std::bind(&PrivateShareInvitationSlot,
-                          args::_1, args::_2, args::_3, args::_4, args::_5,
-                          &testing_variables2.new_private_share_id,
-                          &testing_variables2.privately_invited),
-                std::bind(&PrivateShareDeletionSlot,
-                          args::_1, args::_2, args::_3,
-                          &testing_variables2.deleted_private_share_name,
-                          &testing_variables2.private_share_deleted),
-                std::bind(&PrivateMemberAccessLevelSlot,
-                          args::_1, args::_2, args::_3, args::_4, args::_5,
-                          &testing_variables2.access_private_share_name,
-                          &testing_variables2.private_member_access,
-                          &testing_variables2.private_member_access_changed),
-                std::bind(&OpenShareInvitationSlot,
-                          args::_1, args::_2, args::_3, args::_4,
-                          &testing_variables2.new_open_share_id,
-                          &testing_variables2.openly_invited)));
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
 
@@ -1711,7 +1692,7 @@ TEST(IndependentFullTest, FUNC_SameOpenShareName) {
     EXPECT_TRUE(fs::exists(share2 / file2_name, error_code));
     EXPECT_EQ(0, error_code.value());
     EXPECT_NE(stored_share_name, share_name);
-    EXPECT_EQ(stored_share_name + "_0", share_name);
+    EXPECT_EQ(stored_share_name + " (1)", share_name);
 
     EXPECT_FALSE(fs::exists(directory2 / share_name, error_code));
     EXPECT_NE(0, error_code.value());
@@ -1805,6 +1786,8 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
       Sleep(bptime::milliseconds(100));
 
     EXPECT_FALSE(testing_variables2.new_private_share_id.empty());
+    EXPECT_EQ(share_name1, testing_variables2.new_private_share_name);
+    EXPECT_EQ(rights_, testing_variables2.new_private_access_level);
     EXPECT_EQ(kSuccess,
               test_elements2.AcceptPrivateShareInvitation(
                   &share_name1,
@@ -1945,6 +1928,8 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
       Sleep(bptime::milliseconds(100));
 
     EXPECT_FALSE(testing_variables2.new_private_share_id.empty());
+    EXPECT_EQ(share_name1, testing_variables2.new_private_share_name);
+    EXPECT_EQ(rights_, testing_variables2.new_private_access_level);
     EXPECT_EQ(kSuccess,
               test_elements2.AcceptPrivateShareInvitation(
                   &share_name1,
@@ -2864,20 +2849,24 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
                           &testing_variables3.removal_message,
                           &testing_variables3.removed),
                 std::bind(&PrivateShareInvitationSlot,
-                          args::_1, args::_2, args::_3, args::_4, args::_5,
+                          args::_1, args::_2, args::_3,
+                          args::_4, args::_5, args::_6,
+                          &testing_variables3.new_private_share_name,
                           &testing_variables3.new_private_share_id,
+                          &testing_variables3.new_private_access_level,
                           &testing_variables3.privately_invited),
                 std::bind(&PrivateShareDeletionSlot,
-                          args::_1, args::_2, args::_3,
+                          args::_1, args::_2, args::_3, args::_4, args::_5,
                           &testing_variables3.deleted_private_share_name,
                           &testing_variables3.private_share_deleted),
                 std::bind(&PrivateMemberAccessLevelSlot,
-                          args::_1, args::_2, args::_3, args::_4, args::_5,
+                          args::_1, args::_2, args::_3,
+                          args::_4, args::_5, args::_6,
                           &testing_variables3.access_private_share_name,
                           &testing_variables3.private_member_access,
                           &testing_variables3.private_member_access_changed),
                 std::bind(&OpenShareInvitationSlot,
-                          args::_1, args::_2, args::_3, args::_4,
+                          args::_1, args::_2, args::_3, args::_4, args::_5,
                           &testing_variables3.new_open_share_id,
                           &testing_variables3.openly_invited));
   test_elements3.CreateUser(username3, pin3, password3);
