@@ -128,6 +128,7 @@ void UserStorage::UnMountDrive() {
 #else
   drive_in_user_space_->Unmount();
   drive_in_user_space_->WaitUntilUnMounted();
+  drive_in_user_space_.reset();
   boost::system::error_code error_code;
   fs::remove_all(mount_dir_, error_code);
   mount_thread_->join();
