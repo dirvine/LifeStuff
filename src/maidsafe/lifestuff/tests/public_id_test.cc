@@ -33,6 +33,7 @@
 #include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/log.h"
+#include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/utils.h"

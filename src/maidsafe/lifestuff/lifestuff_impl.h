@@ -21,8 +21,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_LIFESTUFF_API_H_
-#define MAIDSAFE_LIFESTUFF_LIFESTUFF_API_H_
+#ifndef MAIDSAFE_LIFESTUFF_LIFESTUFF_IMPL_H_
+#define MAIDSAFE_LIFESTUFF_LIFESTUFF_IMPL_H_
 
 #include <map>
 #include <string>
@@ -30,13 +30,21 @@
 
 #include "boost/filesystem/path.hpp"
 
-#include "maidsafe/lifestuff/lifestuff.h"
-#include "maidsafe/lifestuff/version.h"
+#include "maidsafe/common/asio_service.h"
+#include "maidsafe/common/utils.h"
 
-#if MAIDSAFE_LIFESTUFF_VERSION != 400
-#  error This API is not compatible with the installed library.\
-    Please update the maidsafe-lifestuff library.
+#ifndef LOCAL_TARGETS_ONLY
+#include "maidsafe/pd/client/client_container.h"
 #endif
+
+#include "maidsafe/lifestuff/contacts.h"
+#include "maidsafe/lifestuff/lifestuff.h"
+#include "maidsafe/lifestuff/message_handler.h"
+#include "maidsafe/lifestuff/public_id.h"
+#include "maidsafe/lifestuff/session.h"
+#include "maidsafe/lifestuff/user_credentials.h"
+#include "maidsafe/lifestuff/user_storage.h"
+#include "maidsafe/lifestuff/utils.h"
 
 namespace fs = boost::filesystem;
 
@@ -44,12 +52,36 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-class LifeStuffImpl;
+struct Slots {
+  Slots()
+      : chat_slot(),
+        file_slot(),
+        new_contact_slot(),
+        confirmed_contact_slot(),
+        profile_picture_slot(),
+        contact_presence_slot(),
+        contact_deletion_function(),
+        private_share_invitation_function(),
+        private_share_deletion_function(),
+        private_access_level_function(),
+        open_share_invitation_function() {}
+  ChatFunction chat_slot;
+  FileTransferFunction file_slot;
+  NewContactFunction new_contact_slot;
+  ContactConfirmationFunction confirmed_contact_slot;
+  ContactProfilePictureFunction profile_picture_slot;
+  ContactPresenceFunction contact_presence_slot;
+  ContactDeletionFunction contact_deletion_function;
+  PrivateShareInvitationFunction private_share_invitation_function;
+  PrivateShareDeletionFunction private_share_deletion_function;
+  PrivateMemberAccessLevelFunction private_access_level_function;
+  OpenShareInvitationFunction open_share_invitation_function;
+};
 
-class LifeStuff {
+class LifeStuffImpl {
  public:
-  LifeStuff();
-  ~LifeStuff();
+  LifeStuffImpl();
+  ~LifeStuffImpl();
 
   /// State operations
   int Initialise(const fs::path &base_directory = fs::path());
@@ -143,14 +175,14 @@ class LifeStuff {
                               std::string *share_name,
                               StringIntMap *results);
   int GetPrivateShareList(const std::string &my_public_id,
-                          StringIntMap *shares_names);
+                          StringIntMap *share_names);
   // For owners only
   int GetPrivateShareMembers(const std::string &my_public_id,
                              const std::string &share_name,
-                             StringIntMap *shares_members);
+                             StringIntMap *share_members);
   int GetPrivateSharesIncludingMember(const std::string &my_public_id,
                                       const std::string &contact_public_id,
-                                      std::vector<std::string> *shares_names);
+                                      std::vector<std::string> *share_names);
   // Should create a directory adapting to other possible shares
   int AcceptPrivateShareInvitation(std::string *share_name,
                                    const std::string &my_public_id,
@@ -186,10 +218,10 @@ class LifeStuff {
                                const fs::path &directory_in_lifestuff_drive,
                                StringIntMap *results);
   int GetOpenShareList(const std::string &my_public_id,
-                       std::vector<std::string> *shares_names);
+                       std::vector<std::string> *share_names);
   int GetOpenShareMembers(const std::string &my_public_id,
                           const std::string &share_name,
-                          std::vector<std::string> *shares_members);
+                          std::vector<std::string> *share_members);
   int AcceptOpenShareInvitation(const std::string &my_public_id,
                                 const std::string &contact_public_id,
                                 const std::string &share_id,
@@ -204,11 +236,32 @@ class LifeStuff {
   fs::path mount_path() const;
 
  private:
-  std::shared_ptr<LifeStuffImpl> lifestuff_impl;
+  int thread_count_;
+  LifeStuffState state_;
+  fs::path buffered_path_;
+#ifdef LOCAL_TARGETS_ONLY
+  fs::path simulation_path_;
+#endif
+  bptime::seconds interval_;
+  AsioService asio_service_;
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
+#ifndef LOCAL_TARGETS_ONLY
+  std::shared_ptr<pd::ClientContainer> client_container_;
+#endif
+  std::shared_ptr<Session> session_;
+  std::shared_ptr<UserCredentials> user_credentials_;
+  std::shared_ptr<UserStorage> user_storage_;
+  std::shared_ptr<PublicId> public_id_;
+  std::shared_ptr<MessageHandler> message_handler_;
+  Slots slots_;
+
+  void ConnectInternalElements();
+  int SetValidPmidAndInitialisePublicComponents();
+  int PreContactChecks(const std::string &my_public_id);
 };
 
 }  // namespace lifestuff
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_LIFESTUFF_API_H_
+#endif  // MAIDSAFE_LIFESTUFF_LIFESTUFF_IMPL_H_

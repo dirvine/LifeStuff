@@ -42,10 +42,6 @@
 #include "maidsafe/private/chunk_actions/chunk_action_authority.h"
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
-#ifndef LOCAL_TARGETS_ONLY
-#include "maidsafe/pd/client/client_container.h"
-#endif
-
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/log.h"

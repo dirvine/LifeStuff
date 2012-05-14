@@ -30,12 +30,13 @@
 #include "maidsafe/pd/client/client_container.h"
 #endif
 
+#include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/public_id.h"
+#include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/session.h"
-#include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/user_credentials.h"
 #include "maidsafe/lifestuff/user_storage.h"
 

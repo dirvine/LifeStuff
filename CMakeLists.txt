@@ -129,7 +129,8 @@ LIST(REMOVE_ITEM ALL_FILES_LIFESTUFF_TESTS_DIR ${AUTHENTICATION_TEST_CC}
 # Define MaidSafe libraries and executables                                                       #
 ###################################################################################################
 MS_ADD_STATIC_LIBRARY(lifestuff_local ${ALL_FILES_LIFESTUFF_DIR})
-MS_ADD_EXECUTABLE(TESTlifestuff_local Tests ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${TESTS_MAIN_CC})
+MS_ADD_EXECUTABLE(TESTlifestuff_general Tests ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${TESTS_MAIN_CC})
+
 MS_ADD_EXECUTABLE(TESTauthentication_local Tests ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
 MS_ADD_EXECUTABLE(TESTpublic_id_local Tests ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
 MS_ADD_EXECUTABLE(TESTuser_credentials_local Tests ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
@@ -137,7 +138,7 @@ MS_ADD_EXECUTABLE(TESTuser_storage_local Tests ${USER_STORAGE_TEST_CC} ${TESTS_M
 MS_ADD_EXECUTABLE(TESTapi_local Tests ${API_TEST_CC} ${TESTS_MAIN_CC})
 
 TARGET_LINK_LIBRARIES(lifestuff_local_static maidsafe_drive_static maidsafe_passport_static boost_regex)
-TARGET_LINK_LIBRARIES(TESTlifestuff_local lifestuff_local_static gtest_static)
+TARGET_LINK_LIBRARIES(TESTlifestuff_general lifestuff_local_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTauthentication_local lifestuff_local_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTpublic_id_local lifestuff_local_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTuser_credentials_local lifestuff_local_static gtest_static)
@@ -146,14 +147,12 @@ TARGET_LINK_LIBRARIES(TESTapi_local lifestuff_local_static gtest_static)
 
 IF(${LOCAL_TARGETS_ONLY} MATCHES OFF)
   MS_ADD_STATIC_LIBRARY(${MS_PROJECT_NAME} ${ALL_FILES_LIFESTUFF_DIR})
-  MS_ADD_EXECUTABLE(TESTlifestuff Tests ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${TESTS_MAIN_CC})
   MS_ADD_EXECUTABLE(TESTauthentication Tests ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
   MS_ADD_EXECUTABLE(TESTpublic_id Tests ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
   MS_ADD_EXECUTABLE(TESTuser_credentials Tests ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
   MS_ADD_EXECUTABLE(TESTuser_storage Tests ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC})
   MS_ADD_EXECUTABLE(TESTapi Tests ${API_TEST_CC} ${TESTS_MAIN_CC})
   TARGET_LINK_LIBRARIES(lifestuff_static maidsafe_drive_static maidsafe_passport_static maidsafe_pd_static boost_regex)
-  TARGET_LINK_LIBRARIES(TESTlifestuff lifestuff_static gtest_static)
   TARGET_LINK_LIBRARIES(TESTauthentication lifestuff_static gtest_static)
   TARGET_LINK_LIBRARIES(TESTpublic_id lifestuff_static gtest_static)
   TARGET_LINK_LIBRARIES(TESTuser_credentials lifestuff_static gtest_static)
@@ -179,7 +178,7 @@ ENDIF()
 INCLUDE(maidsafe_standard_flags)
 
 SET_TARGET_PROPERTIES(lifestuff_local_static
-                      TESTlifestuff_local
+                      TESTlifestuff_general
                       TESTauthentication_local
                       TESTpublic_id_local
                       TESTuser_credentials_local
@@ -212,7 +211,7 @@ ADD_STYLE_TEST(${STYLE_ALL}
                ${USER_STORAGE_TEST_CC}
                ${API_TEST_CC})
 
-ADD_GTESTS(TESTlifestuff_local)
+ADD_GTESTS(TESTlifestuff_general)
 ADD_GTESTS(TESTauthentication_local)
 ADD_GTESTS(TESTpublic_id_local)
 ADD_GTESTS(TESTuser_credentials_local)

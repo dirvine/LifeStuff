@@ -26,6 +26,7 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/lifestuff/lifestuff.h"
+#include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/utils.h"
 
 namespace maidsafe {
@@ -104,6 +105,47 @@ TEST(UtilsTest, BEH_PinValidity) {
   EXPECT_TRUE(CheckPinValidity(one_starting_zero));
   EXPECT_TRUE(CheckPinValidity(two_starting_zeros));
   EXPECT_TRUE(CheckPinValidity(three_starting_zeros));
+}
+
+TEST(UtilsTest, BEH_GetNameInPath) {
+  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
+  std::string file_name, dir_name, extension_name, extension_dir;
+
+  ASSERT_EQ(kSuccess, CreateSmallTestFile(*test_dir, 1, &file_name));
+  extension_name = file_name + ".txt";
+  boost::system::error_code ec;
+  fs::copy_file(*test_dir / file_name, *test_dir / extension_name, ec);
+  ASSERT_EQ(0, ec.value());
+
+  fs::path dir1(CreateTestDirectory(*test_dir, &dir_name));
+  ASSERT_FALSE(dir1.empty());
+  extension_dir = dir_name + ".txt";
+  fs::create_directory(*test_dir / extension_dir, ec);
+  ASSERT_EQ(0, ec.value());
+
+  std::string generated_name;
+  int file_count(1022);
+  for (int n(1); n < file_count; ++n) {
+    generated_name = GetNameInPath(*test_dir, file_name);
+    ASSERT_EQ(file_name + " (" + IntToString(n) + ")", generated_name);
+    fs::copy_file(*test_dir / file_name, *test_dir / generated_name, ec);
+    ASSERT_EQ(0, ec.value());
+
+    generated_name = GetNameInPath(*test_dir, extension_name);
+    ASSERT_EQ(file_name + " (" + IntToString(n) + ").txt", generated_name);
+    fs::copy_file(*test_dir / file_name, *test_dir / generated_name, ec);
+    ASSERT_EQ(0, ec.value());
+
+    generated_name = GetNameInPath(*test_dir, dir_name);
+    ASSERT_EQ(dir_name + " (" + IntToString(n) + ")", generated_name);
+    fs::create_directory(*test_dir / generated_name, ec);
+    ASSERT_EQ(0, ec.value());
+
+    generated_name = GetNameInPath(*test_dir, extension_dir);
+    ASSERT_EQ(dir_name + " (" + IntToString(n) + ").txt", generated_name);
+    fs::create_directory(*test_dir / generated_name, ec);
+    ASSERT_EQ(0, ec.value());
+  }
 }
 
 }  // namespace test

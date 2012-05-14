@@ -36,6 +36,7 @@
 
 #include "maidsafe/lifestuff/authentication.h"
 #include "maidsafe/lifestuff/log.h"
+#include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/utils.h"
 

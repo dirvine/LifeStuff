@@ -50,10 +50,6 @@ class RemoteChunkStore;
 }  // namespace chunk_store
 }  // namespace priv
 
-#ifndef LOCAL_TARGETS_ONLY
-namespace pd { class ClientContainer; }
-#endif
-
 namespace pcs = maidsafe::priv::chunk_store;
 
 namespace lifestuff {
