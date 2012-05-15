@@ -195,14 +195,14 @@ class UserStorageTest : public testing::TestWithParam<bool> {
     user_storage2_.reset(new UserStorage(remote_chunk_store2_,
                                          message_handler2_));
 
-    public_id1_->CreatePublicId(pub_name1_, true);
-    public_id2_->CreatePublicId(pub_name2_, true);
+    EXPECT_EQ(kSuccess, public_id1_->CreatePublicId(pub_name1_, true));
+    EXPECT_EQ(kSuccess, public_id2_->CreatePublicId(pub_name2_, true));
     public_id1_->StartCheckingForNewContacts(interval_);
     public_id2_->StartCheckingForNewContacts(interval_);
 
-    public_id1_->SendContactInfo(pub_name1_, pub_name2_);
+    EXPECT_EQ(kSuccess, public_id1_->SendContactInfo(pub_name1_, pub_name2_));
     Sleep(interval_ * 2);
-    public_id2_->ConfirmContact(pub_name2_, pub_name1_);
+    EXPECT_EQ(kSuccess, public_id2_->ConfirmContact(pub_name2_, pub_name1_));
     Sleep(interval_ * 2);
 
     public_id1_->StopCheckingForNewContacts();
