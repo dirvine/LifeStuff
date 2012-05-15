@@ -14,8 +14,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_MESSAGE_HANDLER_SIGNAL_TYPES_H_
-#define MAIDSAFE_LIFESTUFF_MESSAGE_HANDLER_SIGNAL_TYPES_H_
+#ifndef MAIDSAFE_LIFESTUFF_DETAIL_MESSAGE_HANDLER_SIGNAL_TYPES_H_
+#define MAIDSAFE_LIFESTUFF_DETAIL_MESSAGE_HANDLER_SIGNAL_TYPES_H_
 
 
 #include <functional>
@@ -111,4 +111,4 @@ typedef bs2::signal<bool(const std::string&,  // NOLINT
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_MESSAGE_HANDLER_SIGNAL_TYPES_H_
+#endif  // MAIDSAFE_LIFESTUFF_DETAIL_MESSAGE_HANDLER_SIGNAL_TYPES_H_

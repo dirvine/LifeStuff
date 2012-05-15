@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_SESSION_H_
-#define MAIDSAFE_LIFESTUFF_SESSION_H_
+#ifndef MAIDSAFE_LIFESTUFF_DETAIL_SESSION_H_
+#define MAIDSAFE_LIFESTUFF_DETAIL_SESSION_H_
 
 #include <map>
 #include <string>
@@ -165,4 +165,4 @@ class Session {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_SESSION_H_
+#endif  // MAIDSAFE_LIFESTUFF_DETAIL_SESSION_H_

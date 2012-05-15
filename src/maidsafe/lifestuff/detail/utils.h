@@ -14,8 +14,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_UTILS_H_
-#define MAIDSAFE_LIFESTUFF_UTILS_H_
+#ifndef MAIDSAFE_LIFESTUFF_DETAIL_UTILS_H_
+#define MAIDSAFE_LIFESTUFF_DETAIL_UTILS_H_
 
 #include <memory>
 #include <string>
@@ -116,4 +116,4 @@ std::string IsoTimeWithMicroSeconds();
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_UTILS_H_
+#endif  // MAIDSAFE_LIFESTUFF_DETAIL_UTILS_H_

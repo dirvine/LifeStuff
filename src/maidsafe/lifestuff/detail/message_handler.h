@@ -14,8 +14,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_MESSAGE_HANDLER_H_
-#define MAIDSAFE_LIFESTUFF_MESSAGE_HANDLER_H_
+#ifndef MAIDSAFE_LIFESTUFF_DETAIL_MESSAGE_HANDLER_H_
+#define MAIDSAFE_LIFESTUFF_DETAIL_MESSAGE_HANDLER_H_
 
 
 #include <functional>
@@ -178,4 +178,4 @@ class MessageHandler {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_MESSAGE_HANDLER_H_
+#endif  // MAIDSAFE_LIFESTUFF_DETAIL_MESSAGE_HANDLER_H_

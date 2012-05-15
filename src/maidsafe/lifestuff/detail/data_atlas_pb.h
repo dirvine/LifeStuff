@@ -15,8 +15,8 @@
 */
 
 
-#ifndef MAIDSAFE_LIFESTUFF_DATA_ATLAS_PB_H_
-#define MAIDSAFE_LIFESTUFF_DATA_ATLAS_PB_H_
+#ifndef MAIDSAFE_LIFESTUFF_DETAIL_DATA_ATLAS_PB_H_
+#define MAIDSAFE_LIFESTUFF_DETAIL_DATA_ATLAS_PB_H_
 
 #ifdef __MSVC__
 #  pragma warning(push)
@@ -27,4 +27,4 @@
 #  pragma warning(pop)
 #endif
 
-#endif  // MAIDSAFE_LIFESTUFF_DATA_ATLAS_PB_H_
+#endif  // MAIDSAFE_LIFESTUFF_DETAIL_DATA_ATLAS_PB_H_

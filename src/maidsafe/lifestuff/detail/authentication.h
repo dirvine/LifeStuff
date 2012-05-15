@@ -21,8 +21,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_AUTHENTICATION_H_
-#define MAIDSAFE_LIFESTUFF_AUTHENTICATION_H_
+#ifndef MAIDSAFE_LIFESTUFF_DETAIL_AUTHENTICATION_H_
+#define MAIDSAFE_LIFESTUFF_DETAIL_AUTHENTICATION_H_
 
 #include <list>
 #include <memory>
@@ -212,4 +212,4 @@ class Authentication {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_AUTHENTICATION_H_
+#endif  // MAIDSAFE_LIFESTUFF_DETAIL_AUTHENTICATION_H_
