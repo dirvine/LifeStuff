@@ -135,19 +135,20 @@ int LifeStuff::Initialise(const boost::filesystem::path &base_directory) {
   lifestuff_elements->session.reset(new Session);
 
   fs::path base_path, buffered_chunk_store_path, network_simulation_path;
+  std::string simulation_name("lifestuff_simulated_network"),
+              chunkstore_name("lifestuff_" + RandomAlphaNumericString(16));
   if (base_directory.empty()) {
     // Not a test: everything in $HOME/.lifestuff
     base_path = GetHomeDir() / kAppHomeDirectory;
-    buffered_chunk_store_path = base_path / RandomAlphaNumericString(16);
     boost::system::error_code error_code;
     network_simulation_path = fs::temp_directory_path(error_code) /
-                              "lifestuff_simulation";
+                              simulation_name;
   } else {
     // Presumably a test
     base_path = base_directory;
-    buffered_chunk_store_path = base_path / RandomAlphaNumericString(16);
-    network_simulation_path = base_path / "simulated_network";
+    network_simulation_path = base_path / simulation_name;
   }
+  buffered_chunk_store_path = base_path / chunkstore_name;
 
 #ifdef LOCAL_TARGETS_ONLY
   lifestuff_elements->remote_chunk_store =
@@ -534,11 +535,14 @@ int LifeStuff::CreatePublicId(const std::string &public_id) {
   if (first_public_id) {
     lifestuff_elements->public_id->StartCheckingForNewContacts(
         lifestuff_elements->interval);
-    lifestuff_elements->message_handler->StartUp(
-        lifestuff_elements->interval);
+    lifestuff_elements->message_handler->StartUp(lifestuff_elements->interval);
   }
 
-  return kSuccess;
+  result = lifestuff_elements->user_credentials->SaveSession();
+  if (result != kSuccess)
+    DLOG(ERROR) << "Save session failed after creating public ID: " << result;
+
+  return result;
 }
 
 int LifeStuff::LogIn(const std::string &username,
