@@ -22,7 +22,7 @@
 * ============================================================================
 */
 
-#include "maidsafe/lifestuff/session.h"
+#include "maidsafe/lifestuff/detail/session.h"
 
 #include <memory>
 #include <vector>
@@ -31,10 +31,10 @@
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/lifestuff/contacts.h"
-#include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
+#include "maidsafe/lifestuff/detail/contacts.h"
+#include "maidsafe/lifestuff/detail/data_atlas_pb.h"
 
 namespace maidsafe {
 

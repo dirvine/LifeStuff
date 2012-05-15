@@ -152,10 +152,10 @@ class LifeStuff {
                                       const std::string &contact_public_id,
                                       std::vector<std::string> *shares_names);
   // Should create a directory adapting to other possible shares
-  int AcceptPrivateShareInvitation(std::string *share_name,
-                                   const std::string &my_public_id,
+  int AcceptPrivateShareInvitation(const std::string &my_public_id,
                                    const std::string &contact_public_id,
-                                   const std::string &share_id);
+                                   const std::string &share_id,
+                                   std::string *share_name);
   int RejectPrivateShareInvitation(const std::string &my_public_id,
                                    const std::string &share_id);
   // Only for owners

@@ -16,7 +16,7 @@
 
 #include <sstream>
 
-#include "maidsafe/lifestuff/message_handler.h"
+#include "maidsafe/lifestuff/detail/message_handler.h"
 
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/test.h"
@@ -30,15 +30,15 @@
 #include "maidsafe/pd/client/client_container.h"
 #endif
 
-#include "maidsafe/lifestuff/authentication.h"
-#include "maidsafe/lifestuff/contacts.h"
-#include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/log.h"
-#include "maidsafe/lifestuff/public_id.h"
 #include "maidsafe/lifestuff/rcs_helper.h"
-#include "maidsafe/lifestuff/session.h"
-#include "maidsafe/lifestuff/user_credentials.h"
-#include "maidsafe/lifestuff/user_storage.h"
+#include "maidsafe/lifestuff/detail/authentication.h"
+#include "maidsafe/lifestuff/detail/contacts.h"
+#include "maidsafe/lifestuff/detail/data_atlas_pb.h"
+#include "maidsafe/lifestuff/detail/public_id.h"
+#include "maidsafe/lifestuff/detail/session.h"
+#include "maidsafe/lifestuff/detail/user_credentials.h"
+#include "maidsafe/lifestuff/detail/user_storage.h"
 
 namespace args = std::placeholders;
 namespace ba = boost::asio;

@@ -19,7 +19,7 @@
 * ============================================================================
 */
 
-#include "maidsafe/lifestuff/user_storage.h"
+#include "maidsafe/lifestuff/detail/user_storage.h"
 
 #include <limits>
 #include <list>
@@ -29,12 +29,12 @@
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/encrypt/self_encryptor.h"
 
-#include "maidsafe/lifestuff/contacts.h"
-#include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/log.h"
-#include "maidsafe/lifestuff/message_handler.h"
-#include "maidsafe/lifestuff/session.h"
 #include "maidsafe/lifestuff/version.h"
+#include "maidsafe/lifestuff/detail/contacts.h"
+#include "maidsafe/lifestuff/detail/data_atlas_pb.h"
+#include "maidsafe/lifestuff/detail/message_handler.h"
+#include "maidsafe/lifestuff/detail/session.h"
 
 namespace args = std::placeholders;
 namespace fs = boost::filesystem;

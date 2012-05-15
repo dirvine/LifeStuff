@@ -14,7 +14,7 @@
 * ============================================================================
 */
 
-#include "maidsafe/lifestuff/utils.h"
+#include "maidsafe/lifestuff/detail/utils.h"
 
 #include <fstream>  // NOLINT (Fraser)
 #include <iostream>  // NOLINT (Fraser)
@@ -22,7 +22,6 @@
 #include <ostream>  // NOLINT (Fraser)
 #include <vector>
 
-#include "boost/asio.hpp"
 #include "boost/archive/text_iarchive.hpp"
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include "boost/regex.hpp"
@@ -42,7 +41,6 @@
 #include "maidsafe/lifestuff/return_codes.h"
 
 namespace pca = maidsafe::priv::chunk_actions;
-namespace bai = boost::asio::ip;
 namespace bptime = boost::posix_time;
 
 namespace maidsafe {

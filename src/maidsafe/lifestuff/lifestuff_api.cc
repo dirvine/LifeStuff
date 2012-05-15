@@ -256,14 +256,14 @@ int LifeStuff::GetPrivateSharesIncludingMember(
 }
 
 int LifeStuff::AcceptPrivateShareInvitation(
-    std::string *share_name,
     const std::string &my_public_id,
     const std::string &contact_public_id,
-    const std::string &share_id) {
-  return lifestuff_impl->AcceptPrivateShareInvitation(share_name,
-                                                      my_public_id,
+    const std::string &share_id,
+    std::string *share_name) {
+  return lifestuff_impl->AcceptPrivateShareInvitation(my_public_id,
                                                       contact_public_id,
-                                                      share_id);
+                                                      share_id,
+                                                      share_name);
 }
 
 int LifeStuff::RejectPrivateShareInvitation(const std::string &my_public_id,

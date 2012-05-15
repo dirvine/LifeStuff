@@ -27,7 +27,7 @@
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
-#include "maidsafe/lifestuff/utils.h"
+#include "maidsafe/lifestuff/detail/utils.h"
 
 namespace maidsafe {
 

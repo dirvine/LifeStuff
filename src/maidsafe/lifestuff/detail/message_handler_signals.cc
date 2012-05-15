@@ -14,7 +14,7 @@
 * ============================================================================
 */
 
-#include "maidsafe/lifestuff/message_handler.h"
+#include "maidsafe/lifestuff/detail/message_handler.h"
 
 #include "maidsafe/lifestuff/lifestuff.h"
 

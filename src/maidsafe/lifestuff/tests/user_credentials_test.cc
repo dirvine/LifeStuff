@@ -32,9 +32,9 @@
 
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/rcs_helper.h"
-#include "maidsafe/lifestuff/session.h"
-#include "maidsafe/lifestuff/user_credentials.h"
-#include "maidsafe/lifestuff/utils.h"
+#include "maidsafe/lifestuff/detail/session.h"
+#include "maidsafe/lifestuff/detail/user_credentials.h"
+#include "maidsafe/lifestuff/detail/utils.h"
 
 namespace args = std::placeholders;
 namespace fs = boost::filesystem;

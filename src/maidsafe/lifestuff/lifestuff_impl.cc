@@ -321,6 +321,8 @@ int LifeStuffImpl::CreatePublicId(const std::string &public_id) {
     public_id_->StartCheckingForNewContacts(interval_);
     message_handler_->StartUp(interval_);
   }
+  asio_service_.service().post(std::bind(&UserCredentials::SaveSession,
+                                         user_credentials_));
 
   return kSuccess;
 }
@@ -356,7 +358,7 @@ int LifeStuffImpl::LogIn(const std::string &username,
                      session_->session_name());
   if (!fs::exists(mount_dir, error_code)) {
     if (error_code) {
-      if(error_code.value() == boost::system::errc::not_connected) {
+      if (error_code.value() == boost::system::errc::not_connected) {
         DLOG(ERROR) << "\tHint: Try unmounting the drive manually.";
         return kGeneralError;
       } else if (error_code != boost::system::errc::no_such_file_or_directory) {
@@ -1101,10 +1103,10 @@ int LifeStuffImpl::GetPrivateSharesIncludingMember(
 }
 
 int LifeStuffImpl::AcceptPrivateShareInvitation(
-    std::string *share_name,
     const std::string &my_public_id,
     const std::string &contact_public_id,
-    const std::string &share_id) {
+    const std::string &share_id,
+    std::string *share_name) {
   if (!share_name) {
     DLOG(ERROR) << "Share name parameter must be valid.";
     return kGeneralError;

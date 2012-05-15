@@ -20,6 +20,8 @@
 #include <iostream>  // NOLINT (Fraser)
 #include <istream>  // NOLINT (Fraser)
 #include <ostream>  // NOLINT (Fraser)
+#include <string>
+#include <vector>
 
 #include "boost/archive/text_iarchive.hpp"
 

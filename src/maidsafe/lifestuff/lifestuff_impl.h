@@ -37,14 +37,14 @@
 #include "maidsafe/pd/client/client_container.h"
 #endif
 
-#include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/lifestuff.h"
-#include "maidsafe/lifestuff/message_handler.h"
-#include "maidsafe/lifestuff/public_id.h"
-#include "maidsafe/lifestuff/session.h"
-#include "maidsafe/lifestuff/user_credentials.h"
-#include "maidsafe/lifestuff/user_storage.h"
-#include "maidsafe/lifestuff/utils.h"
+#include "maidsafe/lifestuff/detail/contacts.h"
+#include "maidsafe/lifestuff/detail/message_handler.h"
+#include "maidsafe/lifestuff/detail/public_id.h"
+#include "maidsafe/lifestuff/detail/session.h"
+#include "maidsafe/lifestuff/detail/user_credentials.h"
+#include "maidsafe/lifestuff/detail/user_storage.h"
+#include "maidsafe/lifestuff/detail/utils.h"
 
 namespace fs = boost::filesystem;
 
@@ -184,10 +184,10 @@ class LifeStuffImpl {
                                       const std::string &contact_public_id,
                                       std::vector<std::string> *share_names);
   // Should create a directory adapting to other possible shares
-  int AcceptPrivateShareInvitation(std::string *share_name,
-                                   const std::string &my_public_id,
+  int AcceptPrivateShareInvitation(const std::string &my_public_id,
                                    const std::string &contact_public_id,
-                                   const std::string &share_id);
+                                   const std::string &share_id,
+                                   std::string *share_name);
   int RejectPrivateShareInvitation(const std::string &my_public_id,
                                    const std::string &share_id);
   // Only for owners

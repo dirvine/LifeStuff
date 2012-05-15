@@ -25,16 +25,16 @@
 #include "maidsafe/pd/client/client_container.h"
 #endif
 
-#include "maidsafe/lifestuff/contacts.h"
-#include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/lifestuff_api.h"
 #include "maidsafe/lifestuff/log.h"
-#include "maidsafe/lifestuff/message_handler.h"
-#include "maidsafe/lifestuff/public_id.h"
-#include "maidsafe/lifestuff/session.h"
-#include "maidsafe/lifestuff/user_credentials.h"
-#include "maidsafe/lifestuff/user_storage.h"
+#include "maidsafe/lifestuff/detail/contacts.h"
+#include "maidsafe/lifestuff/detail/data_atlas_pb.h"
+#include "maidsafe/lifestuff/detail/message_handler.h"
+#include "maidsafe/lifestuff/detail/public_id.h"
+#include "maidsafe/lifestuff/detail/session.h"
+#include "maidsafe/lifestuff/detail/user_credentials.h"
+#include "maidsafe/lifestuff/detail/user_storage.h"
 
 namespace args = std::placeholders;
 namespace ba = boost::asio;
@@ -1790,10 +1790,10 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
     EXPECT_EQ(rights_, testing_variables2.new_private_access_level);
     EXPECT_EQ(kSuccess,
               test_elements2.AcceptPrivateShareInvitation(
-                  &share_name1,
                   public_id2,
                   public_id1,
-                  testing_variables2.new_private_share_id));
+                  testing_variables2.new_private_share_id,
+                  &share_name1));
 
     fs::path share_path(test_elements2.mount_path() /
                         kSharedStuff /
@@ -1932,10 +1932,10 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
     EXPECT_EQ(rights_, testing_variables2.new_private_access_level);
     EXPECT_EQ(kSuccess,
               test_elements2.AcceptPrivateShareInvitation(
-                  &share_name1,
                   public_id2,
                   public_id1,
-                  testing_variables2.new_private_share_id));
+                  testing_variables2.new_private_share_id,
+                  &share_name1));
 
     fs::path share_path(test_elements2.mount_path() /
                         kSharedStuff /
@@ -2148,10 +2148,10 @@ TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
     EXPECT_FALSE(testing_variables2.new_private_share_id.empty());
     EXPECT_EQ(kSuccess,
               test_elements2.AcceptPrivateShareInvitation(
-                  &share_name1,
                   public_id2,
                   public_id1,
-                  testing_variables2.new_private_share_id));
+                  testing_variables2.new_private_share_id,
+                  &share_name1));
 
     fs::path share_path(test_elements2.mount_path() /
                         kSharedStuff /
@@ -2260,10 +2260,10 @@ TEST_P(PrivateSharesApiTest, FUNC_LeavePrivateShare) {
     EXPECT_FALSE(testing_variables2.new_private_share_id.empty());
     EXPECT_EQ(kSuccess,
               test_elements2.AcceptPrivateShareInvitation(
-                  &share_name1,
                   public_id2,
                   public_id1,
-                  testing_variables2.new_private_share_id));
+                  testing_variables2.new_private_share_id,
+                  &share_name1));
 
     fs::path share_path(test_elements2.mount_path() /
                         kSharedStuff /
@@ -2369,10 +2369,10 @@ TEST(IndependentFullTest, FUNC_MembershipDowngradePrivateShare) {
     EXPECT_FALSE(testing_variables2.new_private_share_id.empty());
     EXPECT_EQ(kSuccess,
               test_elements2.AcceptPrivateShareInvitation(
-                  &share_name1,
                   public_id2,
                   public_id1,
-                  testing_variables2.new_private_share_id));
+                  testing_variables2.new_private_share_id,
+                  &share_name1));
 
     fs::path share_path(test_elements2.mount_path() /
                         kSharedStuff /
@@ -2495,10 +2495,10 @@ TEST(IndependentFullTest, FUNC_MembershipUpgradePrivateShare) {
     EXPECT_FALSE(testing_variables2.new_private_share_id.empty());
     EXPECT_EQ(kSuccess,
               test_elements2.AcceptPrivateShareInvitation(
-                  &share_name1,
                   public_id2,
                   public_id1,
-                  testing_variables2.new_private_share_id));
+                  testing_variables2.new_private_share_id,
+                  &share_name1));
 
     fs::path share_path(test_elements2.mount_path() /
                         kSharedStuff /
@@ -2629,10 +2629,10 @@ TEST(IndependentFullTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
     EXPECT_FALSE(testing_variables2.new_private_share_id.empty());
     EXPECT_EQ(kSuccess,
               test_elements2.AcceptPrivateShareInvitation(
-                  &share_name1,
                   public_id2,
                   public_id1,
-                  testing_variables2.new_private_share_id));
+                  testing_variables2.new_private_share_id,
+                  &share_name1));
 
     fs::path share_path(test_elements2.mount_path() /
                         kSharedStuff /
@@ -2752,10 +2752,10 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
     EXPECT_FALSE(testing_variables2.new_private_share_id.empty());
     EXPECT_EQ(kSuccess,
               test_elements2.AcceptPrivateShareInvitation(
-                  &share_name1,
                   public_id2,
                   public_id1,
-                  testing_variables2.new_private_share_id));
+                  testing_variables2.new_private_share_id,
+                  &share_name1));
     directory2 = test_elements2.mount_path()/ kSharedStuff / share_name1;
     EXPECT_TRUE(fs::is_directory(directory2, error_code)) << directory2;
 
@@ -2937,10 +2937,10 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
     EXPECT_FALSE(testing_variables2.new_private_share_id.empty());
     EXPECT_EQ(kSuccess,
               test_elements2.AcceptPrivateShareInvitation(
-                  &share_name1,
                   public_id2,
                   public_id1,
-                  testing_variables2.new_private_share_id));
+                  testing_variables2.new_private_share_id,
+                  &share_name1));
     directory2 = test_elements2.mount_path() / kSharedStuff / share_name1;
     EXPECT_TRUE(fs::is_directory(directory2, error_code)) << directory2;
 
@@ -2955,10 +2955,10 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
     EXPECT_FALSE(testing_variables3.new_private_share_id.empty());
     EXPECT_EQ(kSuccess,
               test_elements3.AcceptPrivateShareInvitation(
-                  &share_name1,
                   public_id3,
                   public_id1,
-                  testing_variables3.new_private_share_id));
+                  testing_variables3.new_private_share_id,
+                  &share_name1));
     directory3 = test_elements3.mount_path() / kSharedStuff / share_name1;
     EXPECT_TRUE(fs::is_directory(directory3, error_code)) << directory3;
 

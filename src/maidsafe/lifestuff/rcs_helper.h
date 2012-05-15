@@ -18,6 +18,8 @@
 #define MAIDSAFE_LIFESTUFF_RCS_HELPER_H_
 
 #include <memory>
+#include <string>
+#include <vector>
 
 #include "boost/asio.hpp"
 #include "boost/filesystem/path.hpp"
