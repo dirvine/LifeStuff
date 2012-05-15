@@ -156,8 +156,11 @@ class Session {
   std::shared_ptr<passport::Passport> passport_;
   ContactHandlerMap contact_handler_map_;
   std::map<std::string, std::string> profile_picture_map_;
-  std::string encrypted_tmid_, encrypted_stmid_, serialised_data_atlas_,
-      uc_serialised_data_atlas_, surrogate_serialised_data_atlas_;
+  std::string encrypted_tmid_,
+              encrypted_stmid_,
+              serialised_data_atlas_,
+              uc_serialised_data_atlas_,
+              surrogate_serialised_data_atlas_;
   bool logging_out_, logged_in_;
 };
 

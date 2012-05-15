@@ -35,7 +35,11 @@
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/return_codes.h"
-
+#include "maidsafe/lifestuff/detail/message_handler.h"
+#include "maidsafe/lifestuff/detail/public_id.h"
+#include "maidsafe/lifestuff/detail/session.h"
+#include "maidsafe/lifestuff/detail/user_credentials.h"
+#include "maidsafe/lifestuff/detail/user_storage.h"
 namespace args = std::placeholders;
 
 namespace maidsafe {
@@ -60,7 +64,9 @@ LifeStuffImpl::LifeStuffImpl()
       user_storage_(),
       public_id_(),
       message_handler_(),
-      slots_() {}
+      slots_(),
+      save_session_mutex_(),
+      saving_session_(false) {}
 
 LifeStuffImpl::~LifeStuffImpl() {}
 
@@ -321,9 +327,13 @@ int LifeStuffImpl::CreatePublicId(const std::string &public_id) {
     public_id_->StartCheckingForNewContacts(interval_);
     message_handler_->StartUp(interval_);
   }
-  asio_service_.service().post(std::bind(&UserCredentials::SaveSession,
-                                         user_credentials_));
 
+  {
+    boost::mutex::scoped_lock loch_(save_session_mutex_);
+    saving_session_ = true;
+    asio_service_.service().post(std::bind(&LifeStuffImpl::DoSaveSession,
+                                           this));
+  }
   return kSuccess;
 }
 
@@ -393,6 +403,15 @@ int LifeStuffImpl::LogOut() {
   if (state_ != kLoggedIn) {
     DLOG(ERROR) << "Should be logged in to log out.";
     return kGeneralError;
+  }
+
+  bool saving_session(true);
+  while (saving_session) {
+    {
+      boost::mutex::scoped_lock loch_tangy(save_session_mutex_);
+      saving_session = saving_session_;
+    }
+    Sleep(bptime::milliseconds(100));
   }
 
   user_storage_->UnMountDrive();
@@ -947,15 +966,16 @@ int LifeStuffImpl::CreatePrivateShareFromExistingDirectory(
     return kNoShareTarget;
   }
 
-  fs::path share_dir(mount_path() / drive::kMsShareRoot / (*share_name));
-  int index(1);
-  while (fs::exists(share_dir, error_code)) {
-    share_dir = mount_path() /
-                drive::kMsShareRoot /
-                ((*share_name) + " (" + IntToString(index) + ")");
-    ++index;
+  std::string generated_name(GetNameInPath(mount_path() / drive::kMsShareRoot,
+                                           *share_name));
+  if (generated_name.empty()) {
+    DLOG(ERROR) << "Failed to generate name for share.";
+    return kGeneralError;
   }
 
+  *share_name = generated_name;
+
+  fs::path share_dir(mount_path() / drive::kMsShareRoot / generated_name);
   result = CopyDir(directory_in_lifestuff_drive, share_dir);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failure copying directory: " << result;
@@ -992,16 +1012,17 @@ int LifeStuffImpl::CreateEmptyPrivateShare(const std::string &my_public_id,
     return result;
   }
 
-  fs::path share_dir(mount_path() / drive::kMsShareRoot / (*share_name));
-  boost::system::error_code error_code;
-  int index(1);
-  // TODO(Team): shall use function via drive to test the existence of directory
-  while (fs::exists(share_dir, error_code)) {
-    share_dir = mount_path() /
-                drive::kMsShareRoot /
-                ((*share_name) + " (" + IntToString(index) + ")");
-    ++index;
+  std::string generated_name(GetNameInPath(mount_path() / drive::kMsShareRoot,
+                                           *share_name));
+  if (generated_name.empty()) {
+    DLOG(ERROR) << "Failed to generate name for share.";
+    return kGeneralError;
   }
+
+  *share_name = generated_name;
+  fs::path share_dir(mount_path() / drive::kMsShareRoot / generated_name);
+
+  boost::system::error_code error_code;
   fs::create_directory(share_dir, error_code);
   if (error_code) {
     DLOG(ERROR) << "Failed creating directory: " << error_code.message();
@@ -1304,15 +1325,17 @@ int LifeStuffImpl::CreateOpenShareFromExistingDirectory(
     DLOG(ERROR) << "Share directory nonexistant.";
     return kGeneralError;
   }
-  *share_name = directory_in_lifestuff_drive.filename().string();
-  fs::path share(mount_path() / kSharedStuff / (*share_name));
-  int index(1);
-  while (fs::exists(share, error_code)) {
-    share = mount_path() /
-            kSharedStuff /
-            ((*share_name) + " (" + IntToString(index) + ")");
-    ++index;
+
+  std::string generated_name(GetNameInPath(mount_path() / drive::kMsShareRoot,
+                                           *share_name));
+  if (generated_name.empty()) {
+    DLOG(ERROR) << "Failed to generate name for share.";
+    return kGeneralError;
   }
+
+  *share_name = generated_name;
+  fs::path share(mount_path() / drive::kMsShareRoot / generated_name);
+
   fs::create_directory(share, error_code);
   if (error_code) {
     DLOG(ERROR) << "Failed to create directory: " << share
@@ -1320,7 +1343,6 @@ int LifeStuffImpl::CreateOpenShareFromExistingDirectory(
     return kGeneralError;
   }
 
-  *share_name = share.filename().string();
   result = CopyDirectoryContent(directory_in_lifestuff_drive, share);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to copy directory content: " << result;
@@ -1368,21 +1390,24 @@ int LifeStuffImpl::CreateEmptyOpenShare(
     DLOG(ERROR) << "Failed pre checks.";
     return result;
   }
-  fs::path share_dir(mount_path() / kSharedStuff / (*share_name));
-  boost::system::error_code error_code;
-  int index(1);
-  while (fs::exists(share_dir, error_code)) {
-    share_dir = mount_path() /
-                kSharedStuff /
-                ((*share_name) + " (" + IntToString(index) + ")");
-    ++index;
+
+  std::string generated_name(GetNameInPath(mount_path() / drive::kMsShareRoot,
+                                           *share_name));
+  if (generated_name.empty()) {
+    DLOG(ERROR) << "Failed to generate name for share.";
+    return kGeneralError;
   }
+
+  *share_name = generated_name;
+  fs::path share_dir(mount_path() / drive::kMsShareRoot / generated_name);
+
+  boost::system::error_code error_code;
   fs::create_directory(share_dir, error_code);
   if (error_code) {
     DLOG(ERROR) << "Failed creating directory: " << error_code.message();
     return kGeneralError;
   }
-  *share_name = share_dir.filename().string();
+
   StringIntMap liaisons;
   for (uint32_t i = 0; i != contacts.size(); ++i)
     liaisons.insert(std::make_pair(contacts[i], 1));
@@ -1604,42 +1629,42 @@ fs::path LifeStuffImpl::mount_path() const {
 
 void LifeStuffImpl::ConnectInternalElements() {
   message_handler_->ConnectToParseAndSaveDataMapSignal(
-      std::bind(&UserStorage::ParseAndSaveDataMap, user_storage_,
+      std::bind(&UserStorage::ParseAndSaveDataMap, user_storage_.get(),
                 args::_1, args::_2, args::_3));
 
   message_handler_->ConnectToSavePrivateShareDataSignal(
       std::bind(&UserStorage::SavePrivateShareData,
-                user_storage_, args::_1, args::_2));
+                user_storage_.get(), args::_1, args::_2));
 
   message_handler_->ConnectToPrivateShareUserLeavingSignal(
       std::bind(&UserStorage::UserLeavingShare,
-                user_storage_, args::_2, args::_3));
+                user_storage_.get(), args::_2, args::_3));
 
   message_handler_->ConnectToSaveOpenShareDataSignal(
       std::bind(&UserStorage::SaveOpenShareData,
-                user_storage_, args::_1, args::_2));
+                user_storage_.get(), args::_1, args::_2));
 
   message_handler_->ConnectToPrivateShareDeletionSignal(
-      std::bind(&UserStorage::ShareDeleted, user_storage_, args::_3));
+      std::bind(&UserStorage::ShareDeleted, user_storage_.get(), args::_3));
 
   message_handler_->ConnectToPrivateShareUpdateSignal(
-      std::bind(&UserStorage::UpdateShare, user_storage_,
+      std::bind(&UserStorage::UpdateShare, user_storage_.get(),
                 args::_1, args::_2, args::_3, args::_4));
 
   message_handler_->ConnectToPrivateMemberAccessLevelSignal(
       std::bind(&UserStorage::MemberAccessChange,
-                user_storage_, args::_4, args::_5));
+                user_storage_.get(), args::_4, args::_5));
 
   public_id_->ConnectToContactConfirmedSignal(
       std::bind(&MessageHandler::InformConfirmedContactOnline,
-                message_handler_, args::_1, args::_2));
+                message_handler_.get(), args::_1, args::_2));
 
   message_handler_->ConnectToContactDeletionSignal(
       std::bind(&PublicId::RemoveContactHandle,
-                public_id_, args::_1, args::_2));
+                public_id_.get(), args::_1, args::_2));
 
   message_handler_->ConnectToPrivateShareDetailsSignal(
-      std::bind(&UserStorage::GetShareDetails, user_storage_,
+      std::bind(&UserStorage::GetShareDetails, user_storage_.get(),
                 args::_1, args::_2, nullptr, nullptr, nullptr));
 }
 
@@ -1711,6 +1736,15 @@ int LifeStuffImpl::PreContactChecks(const std::string &my_public_id) {
   }
 
   return kSuccess;
+}
+
+void LifeStuffImpl::DoSaveSession() {
+  int result(user_credentials_->SaveSession());
+  DLOG(INFO) << "Save session result: " << result;
+  {
+    boost::mutex::scoped_lock loch_lussa(save_session_mutex_);
+    saving_session_ = false;
+  }
 }
 
 }  // namespace lifestuff

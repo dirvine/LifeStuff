@@ -33,24 +33,30 @@
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/private/chunk_store/remote_chunk_store.h"
+
 #ifndef LOCAL_TARGETS_ONLY
 #include "maidsafe/pd/client/client_container.h"
 #endif
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
-#include "maidsafe/lifestuff/detail/message_handler.h"
-#include "maidsafe/lifestuff/detail/public_id.h"
-#include "maidsafe/lifestuff/detail/session.h"
-#include "maidsafe/lifestuff/detail/user_credentials.h"
-#include "maidsafe/lifestuff/detail/user_storage.h"
+
 #include "maidsafe/lifestuff/detail/utils.h"
 
 namespace fs = boost::filesystem;
+namespace bptime = boost::posix_time;
+namespace pcs = maidsafe::priv::chunk_store;
 
 namespace maidsafe {
 
 namespace lifestuff {
+
+class Session;
+class UserCredentials;
+class UserStorage;
+class PublicId;
+class MessageHandler;
 
 struct Slots {
   Slots()
@@ -255,9 +261,14 @@ class LifeStuffImpl {
   std::shared_ptr<MessageHandler> message_handler_;
   Slots slots_;
 
+  // Session saving control
+  boost::mutex save_session_mutex_;
+  bool saving_session_;
+
   void ConnectInternalElements();
   int SetValidPmidAndInitialisePublicComponents();
   int PreContactChecks(const std::string &my_public_id);
+  void DoSaveSession();
 };
 
 }  // namespace lifestuff

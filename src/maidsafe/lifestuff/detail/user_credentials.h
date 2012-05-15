@@ -79,6 +79,7 @@ class UserCredentials {
                   const std::string &password);
   bool Logout();
   int SaveSession();
+//   void DoSaveSession();
   bool ChangeUsername(const std::string &new_username);
   bool ChangePin(const std::string &new_pin);
   bool ChangePassword(const std::string &new_password);

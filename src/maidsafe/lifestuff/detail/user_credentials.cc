@@ -196,7 +196,7 @@ int UserCredentials::SaveSession() {
     if (result == kFailedToDeleteOldPacket) {
       DLOG(WARNING) << "Failed to delete old TMID otherwise saved session OK.";
     } else {
-      DLOG(ERROR) << "Failed to Save Session.";
+      DLOG(ERROR) << "Failed to Save Session: " << result;
       return result;
     }
   }

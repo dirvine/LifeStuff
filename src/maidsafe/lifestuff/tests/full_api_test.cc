@@ -364,16 +364,20 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
     result += test_elements1.CreateUser(username1, pin1, password1);
     result += test_elements1.CreatePublicId(public_id1);
     result += test_elements1.LogOut();
-    if (result != kSuccess)
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failure log out 1";
       return result;
+    }
   }
   {
     result += test_elements2.CreateUser(username2, pin2, password2);
     result += test_elements2.CreatePublicId(public_id2);
     result += test_elements2.AddContact(public_id2, public_id1);
     result += test_elements2.LogOut();
-    if (result != kSuccess)
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failure creating 2";
       return result;
+    }
   }
   {
     result += test_elements1.LogIn(username1, pin1, password1);
@@ -388,6 +392,7 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
   }
   {
     result += test_elements2.LogIn(username2, pin2, password2);
+    DLOG(ERROR) << "result: " <<result;
     while (!testing_variables2.confirmed)
       Sleep(bptime::milliseconds(100));
     result += test_elements2.LogOut();
@@ -572,7 +577,7 @@ TEST(IndependentFullTest, FUNC_SendFileSaveToGivenPath) {
               public_id2(RandomAlphaNumericString(10));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
-  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
                                                    test_elements2,
                                                    testing_variables1,
                                                    testing_variables2,
@@ -644,7 +649,7 @@ TEST(IndependentFullTest, FUNC_SendFileSaveToDefaultLocation) {
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
-  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
                                                    test_elements2,
                                                    testing_variables1,
                                                    testing_variables2,
@@ -760,7 +765,7 @@ TEST(IndependentFullTest, FUNC_SendFileAcceptToDeletedDefaultLocation) {
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
-  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
                                                    test_elements2,
                                                    testing_variables1,
                                                    testing_variables2,
@@ -844,7 +849,7 @@ TEST(IndependentFullTest, FUNC_SendFileWithRejection) {
   std::vector<fs::path> file_paths;
   std::vector<std::string> file_names, file_contents, received_ids,
                            received_names;
-  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
                                                    test_elements2,
                                                    testing_variables1,
                                                    testing_variables2,
@@ -918,7 +923,7 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
-  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
                                                    test_elements2,
                                                    testing_variables1,
                                                    testing_variables2,
@@ -992,7 +997,7 @@ TEST(IndependentFullTest, FUNC_RemoveContact) {
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
-  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
                                                    test_elements2,
                                                    testing_variables1,
                                                    testing_variables2,
@@ -1045,7 +1050,7 @@ TEST(IndependentFullTest, FUNC_CreateEmptyOpenShare) {
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
-  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
                                                    test_elements2,
                                                    testing_variables1,
                                                    testing_variables2,
@@ -1165,7 +1170,7 @@ TEST(IndependentFullTest, FUNC_CreateOpenShare) {
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
-  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
                                                    test_elements2,
                                                    testing_variables1,
                                                    testing_variables2,
@@ -1267,7 +1272,7 @@ TEST(IndependentFullTest, FUNC_InviteOpenShareMembers) {
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
-  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
                                                    test_elements2,
                                                    testing_variables1,
                                                    testing_variables2,
@@ -1452,7 +1457,7 @@ TEST(IndependentFullTest, FUNC_LeaveOpenShare) {
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
-  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
                                                    test_elements2,
                                                    testing_variables1,
                                                    testing_variables2,
@@ -1589,7 +1594,7 @@ TEST(IndependentFullTest, FUNC_SameOpenShareName) {
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
-  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
                                                    test_elements2,
                                                    testing_variables1,
                                                    testing_variables2,
@@ -1741,7 +1746,7 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
-  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
                                                    test_elements2,
                                                    testing_variables1,
                                                    testing_variables2,
@@ -1868,7 +1873,7 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
-  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
                                                    test_elements2,
                                                    testing_variables1,
                                                    testing_variables2,
@@ -2013,7 +2018,7 @@ TEST_P(PrivateSharesApiTest, FUNC_RejectInvitationPrivateShare) {
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
-  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
                                                    test_elements2,
                                                    testing_variables1,
                                                    testing_variables2,
@@ -2101,7 +2106,7 @@ TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
-  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
                                                    test_elements2,
                                                    testing_variables1,
                                                    testing_variables2,
@@ -2207,7 +2212,7 @@ TEST_P(PrivateSharesApiTest, FUNC_LeavePrivateShare) {
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
-  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
                                                    test_elements2,
                                                    testing_variables1,
                                                    testing_variables2,
@@ -2315,7 +2320,7 @@ TEST(IndependentFullTest, FUNC_MembershipDowngradePrivateShare) {
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
-  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
                                                    test_elements2,
                                                    testing_variables1,
                                                    testing_variables2,
@@ -2448,7 +2453,7 @@ TEST(IndependentFullTest, FUNC_MembershipUpgradePrivateShare) {
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
-  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
                                                    test_elements2,
                                                    testing_variables1,
                                                    testing_variables2,
@@ -2576,7 +2581,7 @@ TEST(IndependentFullTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
-  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
                                                    test_elements2,
                                                    testing_variables1,
                                                    testing_variables2,
@@ -2701,7 +2706,7 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
-  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
                                                    test_elements2,
                                                    testing_variables1,
                                                    testing_variables2,
@@ -2809,7 +2814,7 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2, test_elements3;
   TestingVariables testing_variables1, testing_variables2, testing_variables3;
-  EXPECT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
                                                    test_elements2,
                                                    testing_variables1,
                                                    testing_variables2,

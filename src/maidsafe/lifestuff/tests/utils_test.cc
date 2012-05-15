@@ -146,6 +146,9 @@ TEST(UtilsTest, BEH_GetNameInPath) {
     fs::create_directory(*test_dir / generated_name, ec);
     ASSERT_EQ(0, ec.value());
   }
+
+  generated_name = GetNameInPath(*test_dir, file_name + file_name);
+  ASSERT_EQ(file_name + file_name, generated_name);
 }
 
 }  // namespace test
