@@ -14,8 +14,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_PUBLIC_ID_H_
-#define MAIDSAFE_LIFESTUFF_PUBLIC_ID_H_
+#ifndef MAIDSAFE_LIFESTUFF_DETAIL_PUBLIC_ID_H_
+#define MAIDSAFE_LIFESTUFF_DETAIL_PUBLIC_ID_H_
 
 
 #include <functional>
@@ -146,4 +146,4 @@ class PublicId {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_PUBLIC_ID_H_
+#endif  // MAIDSAFE_LIFESTUFF_DETAIL_PUBLIC_ID_H_

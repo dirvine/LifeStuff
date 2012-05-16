@@ -14,8 +14,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_MESSAGE_HANDLER_H_
-#define MAIDSAFE_LIFESTUFF_MESSAGE_HANDLER_H_
+#ifndef MAIDSAFE_LIFESTUFF_DETAIL_MESSAGE_HANDLER_H_
+#define MAIDSAFE_LIFESTUFF_DETAIL_MESSAGE_HANDLER_H_
 
 
 #include <functional>
@@ -37,10 +37,10 @@
 
 #include "maidsafe/passport/passport_config.h"
 
-#include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/lifestuff.h"
-#include "maidsafe/lifestuff/message_handler_signal_types.h"
-#include "maidsafe/lifestuff/utils.h"
+#include "maidsafe/lifestuff/detail/data_atlas_pb.h"
+#include "maidsafe/lifestuff/detail/message_handler_signal_types.h"
+#include "maidsafe/lifestuff/detail/utils.h"
 
 namespace ba = boost::asio;
 namespace bptime = boost::posix_time;
@@ -178,4 +178,4 @@ class MessageHandler {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_MESSAGE_HANDLER_H_
+#endif  // MAIDSAFE_LIFESTUFF_DETAIL_MESSAGE_HANDLER_H_

@@ -21,7 +21,7 @@
 * ============================================================================
 */
 
-#include "maidsafe/lifestuff/authentication.h"
+#include "maidsafe/lifestuff/detail/authentication.h"
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include "boost/regex.hpp"
@@ -37,7 +37,7 @@
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 #include "maidsafe/lifestuff/log.h"
-#include "maidsafe/lifestuff/session.h"
+#include "maidsafe/lifestuff/detail/session.h"
 
 namespace args = std::placeholders;
 namespace pca = maidsafe::priv::chunk_actions;

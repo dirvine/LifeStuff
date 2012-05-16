@@ -19,8 +19,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_USER_STORAGE_H_
-#define MAIDSAFE_LIFESTUFF_USER_STORAGE_H_
+#ifndef MAIDSAFE_LIFESTUFF_DETAIL_USER_STORAGE_H_
+#define MAIDSAFE_LIFESTUFF_DETAIL_USER_STORAGE_H_
 
 #include <list>
 #include <map>
@@ -47,7 +47,7 @@
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
-#include "maidsafe/lifestuff/utils.h"
+#include "maidsafe/lifestuff/detail/utils.h"
 
 #ifdef WIN32
   typedef maidsafe::drive::CbfsDriveInUserSpace MaidDriveInUserSpace;
@@ -236,4 +236,4 @@ class UserStorage {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_USER_STORAGE_H_
+#endif  // MAIDSAFE_LIFESTUFF_DETAIL_USER_STORAGE_H_

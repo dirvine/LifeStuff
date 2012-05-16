@@ -14,8 +14,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_UTILS_H_
-#define MAIDSAFE_LIFESTUFF_UTILS_H_
+#ifndef MAIDSAFE_LIFESTUFF_DETAIL_UTILS_H_
+#define MAIDSAFE_LIFESTUFF_DETAIL_UTILS_H_
 
 #include <memory>
 #include <string>
@@ -29,20 +29,13 @@
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/private/chunk_store/remote_chunk_store.h"
-
 #include "maidsafe/pki/packet.h"
 
 namespace fs = boost::filesystem;
-namespace pcs = maidsafe::priv::chunk_store;
 
 namespace maidsafe {
 
 namespace encrypt { struct DataMap; }
-#ifndef LOCAL_TARGETS_ONLY
-namespace dht { class Contact; }
-namespace pd { class ClientContainer; }
-#endif
 
 namespace lifestuff {
 
@@ -84,18 +77,9 @@ fs::path CreateTestDirectory(fs::path const& parent, std::string *tail);
 int CreateTestFile(fs::path const& parent,
                    int size_in_mb,
                    std::string *file_name);
-
-int GetValidatedMpidPublicKey(
-    const std::string &public_username,
-    const pcs::RemoteChunkStore::ValidationData &validation_data,
-    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
-    asymm::PublicKey *public_key);
-
-int GetValidatedMmidPublicKey(
-    const std::string &mmid_name,
-    const pcs::RemoteChunkStore::ValidationData &validation_data,
-    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
-    asymm::PublicKey *public_key);
+int CreateSmallTestFile(fs::path const& parent,
+                        int size_in_kb,
+                        std::string *file_name);
 
 void SendContactInfoCallback(const bool &response,
                              boost::mutex *mutex,
@@ -128,26 +112,8 @@ bool VerifyAndCreatePath(const fs::path& path);
 
 std::string IsoTimeWithMicroSeconds();
 
-#ifdef LOCAL_TARGETS_ONLY
-std::shared_ptr<priv::chunk_store::RemoteChunkStore> BuildChunkStore(
-    const fs::path &buffered_chunk_store_path,
-    const fs::path &local_chunk_manager_path,
-    boost::asio::io_service &asio_service);
-#else
-std::shared_ptr<priv::chunk_store::RemoteChunkStore> BuildChunkStore(
-    const fs::path &base_dir,
-    std::shared_ptr<pd::ClientContainer> *client_container);
-
-int RetrieveBootstrapContacts(const fs::path &download_dir,
-                              std::vector<dht::Contact> *bootstrap_contacts);
-
-typedef std::shared_ptr<pd::ClientContainer> ClientContainerPtr;
-ClientContainerPtr SetUpClientContainer(
-    const fs::path &base_dir);
-#endif
-
 }  // namespace lifestuff
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_UTILS_H_
+#endif  // MAIDSAFE_LIFESTUFF_DETAIL_UTILS_H_

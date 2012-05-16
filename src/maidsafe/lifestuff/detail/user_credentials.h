@@ -21,8 +21,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_USER_CREDENTIALS_H_
-#define MAIDSAFE_LIFESTUFF_USER_CREDENTIALS_H_
+#ifndef MAIDSAFE_LIFESTUFF_DETAIL_USER_CREDENTIALS_H_
+#define MAIDSAFE_LIFESTUFF_DETAIL_USER_CREDENTIALS_H_
 
 #include <list>
 #include <map>
@@ -49,10 +49,6 @@ namespace chunk_store {
 class RemoteChunkStore;
 }  // namespace chunk_store
 }  // namespace priv
-
-#ifndef LOCAL_TARGETS_ONLY
-namespace pd { class ClientContainer; }
-#endif
 
 namespace pcs = maidsafe::priv::chunk_store;
 
@@ -83,6 +79,7 @@ class UserCredentials {
                   const std::string &password);
   bool Logout();
   int SaveSession();
+//   void DoSaveSession();
   bool ChangeUsername(const std::string &new_username);
   bool ChangePin(const std::string &new_pin);
   bool ChangePassword(const std::string &new_password);
@@ -97,13 +94,10 @@ class UserCredentials {
   std::shared_ptr<Session> session_;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<Authentication> authentication_;
-//   std::string serialised_data_atlas_, surrogate_serialised_data_atlas_;
-//  std::string serialised_data_atlas_;
-//  bool logging_out_, logged_in_;
 };
 
 }  // namespace lifestuff
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_USER_CREDENTIALS_H_
+#endif  // MAIDSAFE_LIFESTUFF_DETAIL_USER_CREDENTIALS_H_

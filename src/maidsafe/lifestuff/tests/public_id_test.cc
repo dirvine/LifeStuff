@@ -14,7 +14,7 @@
 * ============================================================================
 */
 
-#include "maidsafe/lifestuff/public_id.h"
+#include "maidsafe/lifestuff/detail/public_id.h"
 
 #include "boost/thread/thread.hpp"
 
@@ -30,12 +30,13 @@
 #include "maidsafe/pd/client/client_container.h"
 #endif
 
-#include "maidsafe/lifestuff/contacts.h"
-#include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/log.h"
+#include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/return_codes.h"
-#include "maidsafe/lifestuff/session.h"
-#include "maidsafe/lifestuff/utils.h"
+#include "maidsafe/lifestuff/detail/contacts.h"
+#include "maidsafe/lifestuff/detail/data_atlas_pb.h"
+#include "maidsafe/lifestuff/detail/session.h"
+#include "maidsafe/lifestuff/detail/utils.h"
 
 namespace ba = boost::asio;
 namespace bptime = boost::posix_time;

@@ -20,7 +20,7 @@
 * ============================================================================
 */
 
-#include "maidsafe/lifestuff/user_credentials.h"
+#include "maidsafe/lifestuff/detail/user_credentials.h"
 
 #ifdef MAIDSAFE_WIN32
 #  include <shlwapi.h>
@@ -42,15 +42,11 @@
 #include "maidsafe/private/chunk_actions/chunk_action_authority.h"
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
-#ifndef LOCAL_TARGETS_ONLY
-#include "maidsafe/pd/client/client_container.h"
-#endif
-
-#include "maidsafe/lifestuff/authentication.h"
-#include "maidsafe/lifestuff/contacts.h"
 #include "maidsafe/lifestuff/log.h"
-#include "maidsafe/lifestuff/session.h"
-#include "maidsafe/lifestuff/utils.h"
+#include "maidsafe/lifestuff/detail/authentication.h"
+#include "maidsafe/lifestuff/detail/contacts.h"
+#include "maidsafe/lifestuff/detail/session.h"
+#include "maidsafe/lifestuff/detail/utils.h"
 
 namespace args = std::placeholders;
 namespace pca = maidsafe::priv::chunk_actions;
@@ -200,7 +196,7 @@ int UserCredentials::SaveSession() {
     if (result == kFailedToDeleteOldPacket) {
       DLOG(WARNING) << "Failed to delete old TMID otherwise saved session OK.";
     } else {
-      DLOG(ERROR) << "Failed to Save Session.";
+      DLOG(ERROR) << "Failed to Save Session: " << result;
       return result;
     }
   }
