@@ -315,8 +315,9 @@ void MessageHandler::GetNewMessages(
   ClearExpiredReceivedMessages();
   RetrieveMessagesForAllIds();
 
-  get_new_messages_timer_.expires_at(get_new_messages_timer_.expires_at() +
-                                     interval);
+//   get_new_messages_timer_.expires_at(get_new_messages_timer_.expires_at() +
+//                                      interval);
+  get_new_messages_timer_.expires_from_now(interval);
   get_new_messages_timer_.async_wait(std::bind(&MessageHandler::GetNewMessages,
                                                this,
                                                interval,
