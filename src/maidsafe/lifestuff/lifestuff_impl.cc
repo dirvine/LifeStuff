@@ -1420,13 +1420,14 @@ int LifeStuffImpl::CreateEmptyOpenShare(
 int LifeStuffImpl::InviteMembersToOpenShare(
     const std::string &my_public_id,
     const std::vector<std::string> &contacts,
-    const fs::path &absolute_path,
+    const std::string &share_name,
     StringIntMap *results) {
   StringIntMap liaisons;
+  fs::path share(mount_path() / drive::kMsShareRoot / share_name);
   for (uint32_t i = 0; i != contacts.size(); ++i)
     liaisons.insert(std::make_pair(contacts[i], 1));
   return user_storage_->OpenShareInvitation(my_public_id,
-                                            absolute_path,
+                                            share,
                                             liaisons,
                                             results);
 }

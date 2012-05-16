@@ -318,11 +318,11 @@ int LifeStuff::CreateEmptyOpenShare(const std::string &my_public_id,
 int LifeStuff::InviteMembersToOpenShare(
     const std::string &my_public_id,
     const std::vector<std::string> &contacts,
-    const fs::path &absolute_path,
+    const std::string &share_name,
     StringIntMap *results) {
   return lifestuff_impl->InviteMembersToOpenShare(my_public_id,
                                                   contacts,
-                                                  absolute_path,
+                                                  share_name,
                                                   results);
 }
 
