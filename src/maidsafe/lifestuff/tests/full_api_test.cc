@@ -899,7 +899,7 @@ TEST(IndependentFullTest, FUNC_SendFileWithRejection) {
       EXPECT_EQ(kSuccess, test_elements2.RejectSentFile(received_ids[st]));
       EXPECT_FALSE(fs::exists(path2 / received_names[st], error_code));
       EXPECT_NE(0, error_code.value());
-      std::string hidden(received_ids[st] + drive::kMsHidden.string()), content;
+      std::string hidden(received_ids[st] + kHiddenFileExtension), content;
       EXPECT_NE(kSuccess, test_elements2.ReadHiddenFile(
                               test_elements2.mount_path() / hidden,
                               &content));

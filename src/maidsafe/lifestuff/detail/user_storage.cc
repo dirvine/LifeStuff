@@ -169,7 +169,7 @@ bool UserStorage::ParseAndSaveDataMap(const std::string &file_name,
 
   int result(WriteHiddenFile(mount_dir() /
                                  std::string(*data_map_hash +
-                                             drive::kMsHidden.string()),
+                                            kHiddenFileExtension),
                              filename_data + serialised_data_map,
                              true));
   if (result != kSuccess) {
@@ -203,7 +203,7 @@ bool UserStorage::SavePrivateShareData(const std::string &serialised_share_data,
   }
 
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)) +
-                        drive::kMsHidden.string());
+                       kHiddenFileExtension);
   int result(WriteHiddenFile(store_path / temp_name,
                              serialised_share_data,
                              true));
@@ -223,7 +223,7 @@ bool UserStorage::SaveOpenShareData(const std::string &serialised_share_data,
   }
 
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)) +
-                        drive::kMsHidden.string());
+                       kHiddenFileExtension);
   int result(WriteHiddenFile(store_path / temp_name,
                              serialised_share_data,
                              true));

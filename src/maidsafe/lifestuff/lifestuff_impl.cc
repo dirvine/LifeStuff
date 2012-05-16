@@ -641,7 +641,7 @@ int LifeStuffImpl::ChangeProfilePicture(
     fs::path profile_picture_path(mount_path() /
                                   std::string(my_public_id +
                                               "_profile_picture" +
-                                              drive::kMsHidden.string()));
+                                              kHiddenFileExtension));
     if (WriteHiddenFile(profile_picture_path,
                         profile_picture_contents,
                         true) !=
@@ -696,7 +696,7 @@ std::string LifeStuffImpl::GetOwnProfilePicture(
   fs::path profile_picture_path(mount_path() /
                                 std::string(my_public_id +
                                             "_profile_picture" +
-                                            drive::kMsHidden.string()));
+                                            kHiddenFileExtension));
   std::string profile_picture_contents;
   if (ReadHiddenFile(profile_picture_path,
                      &profile_picture_contents) != kSuccess ||
@@ -837,7 +837,7 @@ int LifeStuffImpl::AcceptSentFile(const std::string &identifier,
   std::string serialised_identifier, saved_file_name, serialised_data_map;
   int result(user_storage_->ReadHiddenFile(mount_path() /
                                                std::string(identifier +
-                                                    drive::kMsHidden.string()),
+                                                    kHiddenFileExtension),
                                            &serialised_identifier));
   if (result != kSuccess || serialised_identifier.empty()) {
     DLOG(ERROR) << "No such identifier found: " << result;
@@ -895,7 +895,7 @@ int LifeStuffImpl::RejectSentFile(const std::string &identifier) {
   }
 
   fs::path hidden_file(mount_path() /
-                       std::string(identifier + drive::kMsHidden.string()));
+                       std::string(identifier + kHiddenFileExtension));
   return user_storage_->DeleteHiddenFile(hidden_file);
 }
 
@@ -1146,7 +1146,7 @@ int LifeStuffImpl::AcceptPrivateShareInvitation(
     return result;
   }
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)) +
-                        drive::kMsHidden.string());
+                        kHiddenFileExtension);
   fs::path hidden_file(mount_path() / kSharedStuff / temp_name);
   std::string serialised_share_data;
   result = user_storage_->ReadHiddenFile(hidden_file, &serialised_share_data);
@@ -1190,7 +1190,7 @@ int LifeStuffImpl::RejectPrivateShareInvitation(const std::string &my_public_id,
     return result;
   }
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)) +
-                        drive::kMsHidden.string());
+                        kHiddenFileExtension);
   fs::path hidden_file(mount_path() / kSharedStuff / temp_name);
   return user_storage_->DeleteHiddenFile(hidden_file);
 }
@@ -1505,7 +1505,7 @@ int LifeStuffImpl::AcceptOpenShareInvitation(
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
   fs::path hidden_file(mount_path() /
                        kSharedStuff /
-                       std::string(temp_name + drive::kMsHidden.string()));
+                       std::string(temp_name + kHiddenFileExtension));
   std::string serialised_share_data;
   result = user_storage_->ReadHiddenFile(hidden_file,
                 &serialised_share_data);
@@ -1553,7 +1553,7 @@ int LifeStuffImpl::RejectOpenShareInvitation(const std::string &my_public_id,
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
   fs::path hidden_file(mount_path() /
                        kSharedStuff /
-                       std::string(temp_name + drive::kMsHidden.string()));
+                       std::string(temp_name + kHiddenFileExtension));
   return user_storage_->DeleteHiddenFile(hidden_file);
 }
 

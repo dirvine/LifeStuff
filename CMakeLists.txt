@@ -97,10 +97,19 @@ FILE(GLOB HEADER_FILES_LIFESTUFF_DIR "${PATH_TO_SRC}/*.h")
 SET(ALL_FILES_LIFESTUFF_DIR ${SOURCE_FILES_LIFESTUFF_DIR} ${HEADER_FILES_LIFESTUFF_DIR})
 SOURCE_GROUP("LifeStuff Source Files" FILES ${SOURCE_FILES_LIFESTUFF_DIR})
 SOURCE_GROUP("LifeStuff Header Files" FILES ${HEADER_FILES_LIFESTUFF_DIR})
-
+LIST(REMOVE_ITEM ALL_FILES_LIFESTUFF_DIR "${PATH_TO_SRC}/lifestuff.h"
+                                         "${PATH_TO_SRC}/lifestuff.cc"
+                                         "${PATH_TO_SRC}/log.h"
+                                         "${PATH_TO_SRC}/return_codes.h"
+                                         "${PATH_TO_SRC}/version.h")
 # Detail
-FILE(GLOB SOURCE_FILES_DETAIL_DIR "${PATH_TO_SRC}/detail/*.cc")
-FILE(GLOB HEADER_FILES_DETAIL_DIR "${PATH_TO_SRC}/detail/*.h")
+FILE(GLOB SOURCE_FILES_DETAIL_DIR "${PATH_TO_SRC}/detail/*.cc"
+                                  "${PATH_TO_SRC}/lifestuff.cc")
+FILE(GLOB HEADER_FILES_DETAIL_DIR "${PATH_TO_SRC}/detail/*.h"
+                                  "${PATH_TO_SRC}/lifestuff.h"
+                                  "${PATH_TO_SRC}/log.h"
+                                  "${PATH_TO_SRC}/return_codes.h"
+                                  "${PATH_TO_SRC}/version.h")
 SET(ALL_FILES_DETAIL_DIR ${SOURCE_FILES_DETAIL_DIR} ${HEADER_FILES_DETAIL_DIR})
 SOURCE_GROUP("LifeStuff Detail Source Files" FILES ${SOURCE_FILES_DETAIL_DIR})
 SOURCE_GROUP("LifeStuff Detail Header Files" FILES ${HEADER_FILES_DETAIL_DIR})

@@ -95,7 +95,7 @@ class UserStorageTest : public testing::TestWithParam<bool> {
     std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
     fs::path hidden_file(user_storage->mount_dir() /
                          kSharedStuff /
-                         std::string(temp_name + drive::kMsHidden.string()));
+                         std::string(temp_name + kHiddenFileExtension));
     std::string serialised_share_data;
     EXPECT_EQ(kSuccess, user_storage->ReadHiddenFile(hidden_file,
                                                      &serialised_share_data));
@@ -659,7 +659,7 @@ TEST_P(UserStorageTest, FUNC_UpgradeUserToReadWrite) {
             user_storage1_->SetShareUsersRights(pub_name1_,
                                                 directory0,
                                                 pub_name2_,
-                                                drive::kShareReadWrite,
+                                                kShareReadWrite,
                                                 private_share_));
   user_storage1_->UnMountDrive();
   Sleep(interval_ * 2);
