@@ -196,13 +196,17 @@ int UserStorage::InsertDataMap(const fs::path &absolute_path,
 
 bool UserStorage::SavePrivateShareData(const std::string &serialised_share_data,
                                        const std::string &share_id) {
-  std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
-  int result(WriteHiddenFile(
-                 mount_dir() /
-                     drive::kMsShareRoot /
-                     std::string(temp_name + drive::kMsHidden.string()),
-                 serialised_share_data,
-                 true));
+  fs::path store_path(mount_dir() / kSharedStuff);
+  if (!VerifyAndCreatePath(store_path)) {
+    DLOG(ERROR) << "Failed to verify or create path to shared stuff.";
+    return false;
+  }
+
+  std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)) +
+                        drive::kMsHidden.string());
+  int result(WriteHiddenFile(store_path / temp_name,
+                             serialised_share_data,
+                             true));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to create file: " << result;
     return false;
@@ -212,12 +216,17 @@ bool UserStorage::SavePrivateShareData(const std::string &serialised_share_data,
 
 bool UserStorage::SaveOpenShareData(const std::string &serialised_share_data,
                                     const std::string &share_id) {
-  std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
-  int result(WriteHiddenFile(
-                 mount_dir() / kSharedStuff /
-                     std::string(temp_name + drive::kMsHidden.string()),
-                 serialised_share_data,
-                 true));
+  fs::path store_path(mount_dir() / kSharedStuff);
+  if (!VerifyAndCreatePath(store_path)) {
+    DLOG(ERROR) << "Failed to verify or create path to shared stuff.";
+    return false;
+  }
+
+  std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)) +
+                        drive::kMsHidden.string());
+  int result(WriteHiddenFile(store_path / temp_name,
+                             serialised_share_data,
+                             true));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to create file: " << result;
     return false;
@@ -489,7 +498,7 @@ int UserStorage::RemoveShare(const fs::path& absolute_path,
     return kOwnerTryingToLeave;
 
   result = drive_in_user_space_->RemoveShare(
-             drive_in_user_space_->RelativePath(absolute_path));
+               drive_in_user_space_->RelativePath(absolute_path));
   if (result != kSuccess)
     return result;
 
@@ -511,7 +520,7 @@ void UserStorage::ShareDeleted(const std::string &share_id) {
   }
 
   fs::path share_dir(mount_dir() /
-                     drive::kMsShareRoot /
+                     kSharedStuff /
                      relative_path.filename());
   RemoveShare(share_dir);
 }
@@ -1008,7 +1017,7 @@ int UserStorage::GetPrivateSharesContactBeingOwner(
   GetAllShares(&all_shares);
   for (auto it = all_shares.begin(); it != all_shares.end(); ++it) {
     std::string owner_id;
-    fs::path share_dir("" / drive::kMsShareRoot / (*it).first);
+    fs::path share_dir(fs::path("/") / kSharedStuff / (*it).first);
     drive_in_user_space_->GetShareDetails(share_dir, nullptr, nullptr,
                                           nullptr, nullptr, nullptr,
                                           &owner_id);

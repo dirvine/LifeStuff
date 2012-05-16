@@ -394,13 +394,12 @@ bool VerifyAndCreatePath(const fs::path& path) {
     return true;
   }
 
-  if (fs::create_directories(path, error_code) && !error_code) {
-    DLOG(INFO) << path << " created successfully.";
-    return true;
+  if (!fs::create_directories(path, error_code) || error_code) {
+    DLOG(ERROR) << path << " doesn't exist and couldn't be created.";
+    return false;
   }
 
-  DLOG(ERROR) << path << " doesn't exist and couldn't be created.";
-  return false;
+  return true;
 }
 
 std::string IsoTimeWithMicroSeconds() {

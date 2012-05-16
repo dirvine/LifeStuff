@@ -268,6 +268,7 @@ class LifeStuffImpl {
   void ConnectInternalElements();
   int SetValidPmidAndInitialisePublicComponents();
   int PreContactChecks(const std::string &my_public_id);
+  void InvokeDoSession();
   void DoSaveSession();
 };
 
