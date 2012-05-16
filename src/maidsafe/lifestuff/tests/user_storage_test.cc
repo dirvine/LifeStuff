@@ -488,7 +488,10 @@ TEST_P(UserStorageTest, FUNC_AddUser) {
                << directory1 << error_code.message();
   EXPECT_EQ(kSuccess,
             message_handler2_->StartCheckingForNewMessages(interval_));
-  Sleep(interval_ * 2);
+  {
+    boost::mutex::scoped_lock lock(mutex_);
+    EXPECT_FALSE(cond_var_.timed_wait(lock, interval_ * 2));
+  }
   EXPECT_FALSE(fs::exists(directory1, error_code))
                << directory1 << error_code.message();
   message_handler2_->StopCheckingForNewMessages();
@@ -761,7 +764,7 @@ TEST_P(UserStorageTest, FUNC_StopShareByOwner) {
   message_handler2_->StopCheckingForNewMessages();
   user_storage2_->UnMountDrive();
 
-  // Sleep(interval_ * 2);
+  Sleep(interval_ * 2);
   // user_storage1_->MountDrive(mount_dir_,
   //                            user_credentials1_->SessionName(),
   //                            session1_,
@@ -823,7 +826,6 @@ TEST_P(UserStorageTest, FUNC_RemoveUserByOwner) {
   EXPECT_FALSE(fs::exists(directory1, error_code)) << directory1;
   EXPECT_EQ(kSuccess,
             message_handler2_->StartCheckingForNewMessages(interval_));
-//  Sleep(interval_ * 2);
   {
     boost::mutex::scoped_lock lock(mutex_);
     EXPECT_TRUE(cond_var_.timed_wait(lock, interval_ * 2));
@@ -860,7 +862,6 @@ TEST_P(UserStorageTest, FUNC_RemoveUserByOwner) {
   EXPECT_FALSE(fs::exists(sub_directory1, error_code)) << sub_directory1;
   EXPECT_EQ(kSuccess,
             message_handler2_->StartCheckingForNewMessages(interval_));
-//  Sleep(interval_ * 2);
   {
     boost::mutex::scoped_lock lock(mutex_);
     EXPECT_TRUE(cond_var_.timed_wait(lock, interval_ * 2));
