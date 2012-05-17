@@ -53,17 +53,6 @@ endif()
 
 
 ###################################################################################################
-# Standard setup                                                                                  #
-###################################################################################################
-SET(PROTO_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
-FILE(GLOB_RECURSE PROTO_FILES RELATIVE ${PROTO_SOURCE_DIR} "${PROTO_SOURCE_DIR}/maidsafe/lifestuff/detail/*.proto")
-INCLUDE(maidsafe_standard_setup)
-
-SET(PATH_TO_SRC ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff)
-HANDLE_VERSIONS(${PATH_TO_SRC}/version.h)
-
-
-###################################################################################################
 # Set up all files as GLOBs                                                                       #
 ###################################################################################################
 set(PATH_TO_SRC ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff)
