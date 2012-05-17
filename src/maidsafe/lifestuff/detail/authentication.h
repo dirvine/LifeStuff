@@ -102,7 +102,7 @@ class Authentication {
   struct PacketData {
     PacketData();
     PacketData(const passport::PacketType &packet_type,
-               std::shared_ptr<passport::Passport> passport,
+               passport::Passport &passport,  // NOLINT (Dan)
                bool confirmed);
     passport::PacketType type;
     std::string name, value, signature;

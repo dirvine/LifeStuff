@@ -128,18 +128,18 @@ Authentication::PacketData::PacketData()
 
 Authentication::PacketData::PacketData(
     const passport::PacketType &packet_type,
-    std::shared_ptr<passport::Passport> passport,
+    passport::Passport& passport,  // NOLINT (Dan)
     bool confirmed)
         : type(packet_type),
-          name(passport->PacketName(type, confirmed)),
+          name(passport.PacketName(type, confirmed)),
           value(),
-          signature(passport->PacketSignature(packet_type, confirmed)),
+          signature(passport.PacketSignature(packet_type, confirmed)),
           public_key() {
   if (IsSignature(packet_type)) {
-    public_key = passport->SignaturePacketValue(packet_type, confirmed);
+    public_key = passport.SignaturePacketValue(packet_type, confirmed);
     BOOST_ASSERT(asymm::ValidateKey(public_key));
   } else {
-    value = passport->IdentityPacketValue(packet_type, confirmed);
+    value = passport.IdentityPacketValue(packet_type, confirmed);
     BOOST_ASSERT(!value.empty());
   }
   BOOST_ASSERT(!name.empty());
@@ -429,7 +429,7 @@ int Authentication::CreateUserSysPackets(const std::string &username,
   session_->set_username(username);
   session_->set_pin(pin);
 
-  if (session_->passport_->CreateSigningPackets() != kSuccess) {
+  if (session_->passport().CreateSigningPackets() != kSuccess) {
     DLOG(ERROR) << "Authentication::CreateUserSysPackets - Not initialised";
     session_->set_username("");
     session_->set_pin("");
@@ -470,7 +470,7 @@ int Authentication::CreateUserSysPackets(const std::string &username,
   if ((anmaid_status == kSucceeded) && (anmid_status == kSucceeded) &&
       (ansmid_status == kSucceeded) && (antmid_status == kSucceeded) &&
       (maid_status == kSucceeded) && (pmid_status == kSucceeded)) {
-    if (session_->passport_->ConfirmSigningPackets() == kSuccess) {
+    if (session_->passport().ConfirmSigningPackets() == kSuccess) {
       return kSuccess;
     } else {
       DLOG(ERROR) << "ConfirmSigningPackets failed";
@@ -514,7 +514,7 @@ void Authentication::StoreSignaturePacket(
 
   // Get packet
   std::string packet_name(
-      pca::ApplyTypeToName(session_->passport_->PacketName(packet_type, false),
+      pca::ApplyTypeToName(session_->passport().PacketName(packet_type, false),
                            pca::kModifiableByOwner));
   if (packet_name.empty()) {
     DLOG(ERROR) << DebugStr(packet_type) << ": failed init";
@@ -553,7 +553,7 @@ void Authentication::SignaturePacketStoreCallback(
   } else {
     DLOG(ERROR) << DebugStr(packet_type) << ": Failed to store.";
     *op_status = kFailed;
-//    session_->passport_->RevertSignaturePacket(packet_type);
+//    session_->passport().RevertSignaturePacket(packet_type);
   }
   cond_var_.notify_all();
 }
@@ -563,7 +563,7 @@ int Authentication::CreateTmidPacket(
     const std::string &serialised_data_atlas,
     const std::string &surrogate_serialised_data_atlas) {
   int result(kPendingResult);
-  result = session_->passport_->SetIdentityPackets(
+  result = session_->passport().SetIdentityPackets(
                session_->username(),
                session_->pin(),
                password,
@@ -574,10 +574,10 @@ int Authentication::CreateTmidPacket(
     return kAuthenticationError;
   }
 
-  PacketData mid(passport::kMid, session_->passport_, false),
-             smid(passport::kSmid, session_->passport_, false),
-             tmid(passport::kTmid, session_->passport_, false),
-             stmid(passport::kStmid, session_->passport_, false);
+  PacketData mid(passport::kMid, session_->passport(), false),
+             smid(passport::kSmid, session_->passport(), false),
+             tmid(passport::kTmid, session_->passport(), false),
+             stmid(passport::kStmid, session_->passport(), false);
 
   pcs::RemoteChunkStore::ValidationData validation_data_mid;
   KeysAndProof(passport::kAnmid, &validation_data_mid, true);
@@ -601,7 +601,7 @@ int Authentication::CreateTmidPacket(
     DLOG(ERROR) << "Authentication::CreateTmidPacket: Failed.";
     return kAuthenticationError;
   }
-  if (session_->passport_->ConfirmIdentityPackets() != kSuccess) {
+  if (session_->passport().ConfirmIdentityPackets() != kSuccess) {
     DLOG(ERROR) << "Authentication::CreateTmidPacket: Failed to confirm.";
     return kAuthenticationError;
   }
@@ -612,7 +612,7 @@ int Authentication::CreateTmidPacket(
 
 void Authentication::SaveSession(const std::string &serialised_data_atlas,
                                  const VoidFunctionOneInt &functor) {
-  int result(session_->passport_->SetIdentityPackets(
+  int result(session_->passport().SetIdentityPackets(
                  session_->username(),
                  session_->pin(),
                  session_->password(),
@@ -623,10 +623,10 @@ void Authentication::SaveSession(const std::string &serialised_data_atlas,
     return functor(kAuthenticationError);
   }
 
-  PacketData mid(passport::kMid, session_->passport_, false),
-             smid(passport::kSmid, session_->passport_, false),
-             tmid(passport::kTmid, session_->passport_, false),
-             old_stmid(passport::kStmid, session_->passport_, true);
+  PacketData mid(passport::kMid, session_->passport(), false),
+             smid(passport::kSmid, session_->passport(), false),
+             tmid(passport::kTmid, session_->passport(), false),
+             old_stmid(passport::kStmid, session_->passport(), true);
   std::string mid_name, serialised_mid, mid_signing_id;
   std::string smid_name, serialised_smid, smid_signing_id;
   std::string tmid_name, serialised_tmid, tmid_signing_id;
@@ -721,7 +721,7 @@ void Authentication::ProcessingSaveSession(
 //    if (save_session_data->op_type == kRegular ||
 //        save_session_data->op_type == kSaveNew ||
 //        save_session_data->op_type == kUpdate) {
-//      session_->passport_->RevertMasterDataUpdate();
+//      session_->passport().RevertMasterDataUpdate();
 //    }
     return save_session_data->functor(kAuthenticationError);
   }
@@ -729,7 +729,7 @@ void Authentication::ProcessingSaveSession(
   if (save_session_data->op_type == kRegular ||
       save_session_data->op_type == kSaveNew ||
       save_session_data->op_type == kUpdate) {
-    if (session_->passport_->ConfirmIdentityPackets() != kSuccess) {
+    if (session_->passport().ConfirmIdentityPackets() != kSuccess) {
       DLOG(ERROR) << "Failed to confirm ID packets.";
       return save_session_data->functor(kAuthenticationError);
     }
@@ -794,7 +794,7 @@ void Authentication::GetMasterDataMap(
 
 int Authentication::SetLoggedInData(const std::string &ser_da,
                                     const std::string &surrogate_ser_da) {
-  int n(session_->passport_->SetIdentityPackets(session_->username(),
+  int n(session_->passport().SetIdentityPackets(session_->username(),
                                                 session_->pin(),
                                                 session_->password(),
                                                 ser_da,
@@ -803,7 +803,7 @@ int Authentication::SetLoggedInData(const std::string &ser_da,
     DLOG(ERROR) << "Failed SetIdentityPackets: " << n;
     return -9003;
   }
-  n = session_->passport_->ConfirmIdentityPackets();
+  n = session_->passport().ConfirmIdentityPackets();
   if (n != kSuccess) {
     DLOG(ERROR) << "Failed ConfirmIdentityPackets: " << n;
     return -9003;
@@ -825,7 +825,7 @@ int Authentication::ChangePin(const std::string &serialised_data_atlas,
 int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
                                    const std::string &new_username,
                                    const std::string &new_pin) {
-  int result(session_->passport_->SetIdentityPackets(
+  int result(session_->passport().SetIdentityPackets(
                  new_username,
                  new_pin,
                  session_->password(),
@@ -836,14 +836,14 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
     return kAuthenticationError;
   }
 
-  PacketData old_mid(passport::kMid, session_->passport_, true),
-             old_smid(passport::kSmid, session_->passport_, true),
-             old_tmid(passport::kTmid, session_->passport_, true),
-             old_stmid(passport::kStmid, session_->passport_, true),
-             mid(passport::kMid, session_->passport_, false),
-             smid(passport::kSmid, session_->passport_, false),
-             tmid(passport::kTmid, session_->passport_, false),
-             stmid(passport::kStmid, session_->passport_, false);
+  PacketData old_mid(passport::kMid, session_->passport(), true),
+             old_smid(passport::kSmid, session_->passport(), true),
+             old_tmid(passport::kTmid, session_->passport(), true),
+             old_stmid(passport::kStmid, session_->passport(), true),
+             mid(passport::kMid, session_->passport(), false),
+             smid(passport::kSmid, session_->passport(), false),
+             tmid(passport::kTmid, session_->passport(), false),
+             stmid(passport::kStmid, session_->passport(), false);
 
   pcs::RemoteChunkStore::ValidationData validation_data_mid;
   KeysAndProof(passport::kAnmid, &validation_data_mid, true);
@@ -1004,7 +1004,7 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
 
 int Authentication::ChangePassword(const std::string &serialised_data_atlas,
                                    const std::string &new_password) {
-  int result(session_->passport_->SetIdentityPackets(
+  int result(session_->passport().SetIdentityPackets(
                  session_->username(),
                  session_->pin(),
                  new_password,
@@ -1015,12 +1015,12 @@ int Authentication::ChangePassword(const std::string &serialised_data_atlas,
     return kAuthenticationError;
   }
 
-  PacketData mid(passport::kMid, session_->passport_, false),
-             smid(passport::kSmid, session_->passport_, false),
-             tmid(passport::kTmid, session_->passport_, false),
-             stmid(passport::kStmid, session_->passport_, false),
-             old_tmid(passport::kTmid, session_->passport_, true),
-             old_stmid(passport::kStmid, session_->passport_, true);
+  PacketData mid(passport::kMid, session_->passport(), false),
+             smid(passport::kSmid, session_->passport(), false),
+             tmid(passport::kTmid, session_->passport(), false),
+             stmid(passport::kStmid, session_->passport(), false),
+             old_tmid(passport::kTmid, session_->passport(), true),
+             old_stmid(passport::kStmid, session_->passport(), true);
   std::string mid_name, serialised_mid, mid_signing_id;
   std::string smid_name, serialised_smid, smid_signing_id;
   std::string tmid_name, serialised_tmid, tmid_signing_id;
@@ -1096,7 +1096,7 @@ int Authentication::ChangePassword(const std::string &serialised_data_atlas,
   }
   if (result != kSuccess || !success) {
     DLOG(ERROR) << "Authentication::ChangePassword: storing packets failed.";
-//    session_->passport_->RevertUserDataChange();
+//    session_->passport().RevertUserDataChange();
     return kAuthenticationError;
   }
 
@@ -1141,7 +1141,7 @@ int Authentication::ChangePassword(const std::string &serialised_data_atlas,
   // Result of deletions not considered here.
   if (result != kSuccess) {
     DLOG(ERROR) << "Authentication::ChangePassword: failed to confirm change.";
-//    session_->passport_->RevertUserDataChange();
+//    session_->passport().RevertUserDataChange();
     return kAuthenticationError;
   }
   session_->set_password(new_password);
@@ -1280,38 +1280,38 @@ void Authentication::GetPacketNameAndKeyId(const std::string &packet_name_raw,
     case passport::kMid:
       *packet_name = pca::ApplyTypeToName(packet_name_raw,
                                           pca::kModifiableByOwner);
-      *signing_id = session_->passport_->PacketName(passport::kAnmid,
+      *signing_id = session_->passport().PacketName(passport::kAnmid,
                                                     signing_packet_confirmed);
       break;
     case passport::kSmid:
       *packet_name = pca::ApplyTypeToName(packet_name_raw,
                                           pca::kModifiableByOwner);
-      *signing_id = session_->passport_->PacketName(passport::kAnsmid,
+      *signing_id = session_->passport().PacketName(passport::kAnsmid,
                             signing_packet_confirmed);
       break;
     case passport::kTmid:
     case passport::kStmid:
       *packet_name = pca::ApplyTypeToName(packet_name_raw,
                                           pca::kModifiableByOwner);
-      *signing_id = session_->passport_->PacketName(passport::kAntmid,
+      *signing_id = session_->passport().PacketName(passport::kAntmid,
                             signing_packet_confirmed);
       break;
     case passport::kMpid:
       *packet_name = pca::ApplyTypeToName(packet_name_raw,
                                           pca::kSignaturePacket);
-      *signing_id = session_->passport_->PacketName(passport::kAnmpid,
+      *signing_id = session_->passport().PacketName(passport::kAnmpid,
                             signing_packet_confirmed);
       break;
     case passport::kMaid:
       *packet_name = pca::ApplyTypeToName(packet_name_raw,
                                           pca::kSignaturePacket);
-      *signing_id = session_->passport_->PacketName(passport::kAnmaid,
+      *signing_id = session_->passport().PacketName(passport::kAnmaid,
                             signing_packet_confirmed);
       break;
     case passport::kPmid:
       *packet_name = pca::ApplyTypeToName(packet_name_raw,
                                           pca::kSignaturePacket);
-      *signing_id = session_->passport_->PacketName(passport::kMaid,
+      *signing_id = session_->passport().PacketName(passport::kMaid,
                             signing_packet_confirmed);
       break;
     default:
@@ -1336,13 +1336,13 @@ void Authentication::KeysAndProof(
   }
 
   validation_data->key_pair.identity =
-      session_->passport_->PacketName(pt, confirmed);
+      session_->passport().PacketName(pt, confirmed);
   validation_data->key_pair.public_key =
-      session_->passport_->SignaturePacketValue(pt, confirmed);
+      session_->passport().SignaturePacketValue(pt, confirmed);
   validation_data->key_pair.private_key =
-      session_->passport_->PacketPrivateKey(pt, confirmed);
+      session_->passport().PacketPrivateKey(pt, confirmed);
   validation_data->key_pair.validation_token =
-      session_->passport_->PacketSignature(pt, confirmed);
+      session_->passport().PacketSignature(pt, confirmed);
   pca::SignedData signed_data;
   signed_data.set_data(RandomString(64));
   asymm::Sign(signed_data.data(),

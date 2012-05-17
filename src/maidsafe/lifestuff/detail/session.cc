@@ -56,7 +56,7 @@ struct UserDetails {
 
 Session::Session()
     : user_details_(new UserDetails),
-      passport_(new passport::Passport),
+      passport_(),
       contact_handler_map_(),
       profile_picture_map_(),
       encrypted_tmid_(),
@@ -78,7 +78,7 @@ bool Session::Reset() {
   user_details_->unique_user_id.clear();
   user_details_->root_parent_id.clear();
   // TODO(Fraser#5#): 2011-11-17 - Implement in passport
-  passport_->ClearKeyChain(true, true, true);
+  passport_.ClearKeyChain(true, true, true);
   contact_handler_map_.clear();
   profile_picture_map_.clear();
   encrypted_tmid_.clear();
@@ -89,6 +89,10 @@ bool Session::Reset() {
   logging_out_ = false;
   logged_in_ = false;
   return true;
+}
+
+passport::Passport& Session::passport() {
+  return passport_;
 }
 
 ContactHandlerMap& Session::contact_handler_map() {
@@ -341,35 +345,35 @@ int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
 
 std::shared_ptr<asymm::Keys> Session::GetPmidKeys() {
   std::shared_ptr<asymm::Keys> key_pair(new asymm::Keys);
-  key_pair->identity = passport_->PacketName(passport::kPmid, true);
-  key_pair->public_key = passport_->SignaturePacketValue(passport::kPmid, true);
-  key_pair->private_key = passport_->PacketPrivateKey(passport::kPmid, true);
-  key_pair->validation_token = passport_->PacketSignature(passport::kPmid,
+  key_pair->identity = passport_.PacketName(passport::kPmid, true);
+  key_pair->public_key = passport_.SignaturePacketValue(passport::kPmid, true);
+  key_pair->private_key = passport_.PacketPrivateKey(passport::kPmid, true);
+  key_pair->validation_token = passport_.PacketSignature(passport::kPmid,
                                                           true);
   return key_pair;
 }
 
 int Session::ParseKeyChain(const std::string &serialised_keyring,
                            const std::string &serialised_selectables) {
-  return passport_->ParseKeyChain(serialised_keyring, serialised_selectables);
+  return passport_.ParseKeyChain(serialised_keyring, serialised_selectables);
 }
 void Session::SerialiseKeyChain(std::string *serialised_keyring,
                                 std::string *serialised_selectables) {
-  passport_->SerialiseKeyChain(serialised_keyring, serialised_selectables);
+  passport_.SerialiseKeyChain(serialised_keyring, serialised_selectables);
 }
 
 bool Session::CreateTestPackets(bool with_public_ids) {
-  if (passport_->CreateSigningPackets() != kSuccess)
+  if (passport_.CreateSigningPackets() != kSuccess)
     return false;
-  if (passport_->ConfirmSigningPackets() != kSuccess)
+  if (passport_.ConfirmSigningPackets() != kSuccess)
     return false;
 
   if (with_public_ids) {
     for (size_t n(0); n < 5; ++n) {
       std::string public_id(RandomAlphaNumericString(5));
-      if (passport_->CreateSelectableIdentity(public_id) != kSuccess)
+      if (passport_.CreateSelectableIdentity(public_id) != kSuccess)
         return false;
-      if (passport_->ConfirmSelectableIdentity(public_id) != kSuccess)
+      if (passport_.ConfirmSelectableIdentity(public_id) != kSuccess)
         return false;
     }
   }

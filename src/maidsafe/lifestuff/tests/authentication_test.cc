@@ -88,19 +88,19 @@ class AuthenticationTest : public testing::Test {
 
   std::string PacketValueFromSession(passport::PacketType packet_type,
                                      bool confirmed) {
-    return session_->passport_->PacketName(packet_type, confirmed);
+    return session_->passport().PacketName(packet_type, confirmed);
   }
 
   std::string PacketSignerFromSession(passport::PacketType packet_type,
                                       bool confirmed) {
     switch (packet_type) {
       case passport::kMid:
-          return session_->passport_->PacketName(passport::kAnmid, confirmed);
+          return session_->passport().PacketName(passport::kAnmid, confirmed);
       case passport::kSmid:
-          return session_->passport_->PacketName(passport::kAnsmid, confirmed);
+          return session_->passport().PacketName(passport::kAnsmid, confirmed);
       case passport::kTmid:
       case passport::kStmid:
-          return session_->passport_->PacketName(passport::kAntmid, confirmed);
+          return session_->passport().PacketName(passport::kAntmid, confirmed);
       default: return "";
     }
   }
