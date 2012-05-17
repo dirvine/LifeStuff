@@ -134,12 +134,12 @@ rename_outdated_built_exes()
 # Set compiler and linker flags                                                                   #
 ###################################################################################################
 include(maidsafe_standard_flags)
-ms_disable_warnings(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.cc
-                    ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_types.pb.cc
-                    ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_messages.pb.cc)
+ms_disable_warnings(${PATH_TO_SRC}/detail/data_atlas.pb.cc
+                    ${PATH_TO_SRC}/detail/data_types.pb.cc
+                    ${PATH_TO_SRC}/detail/lifestuff_messages.pb.cc)
 
 set_target_properties(maidsafe_lifestuff_local
-                      TESTlifestuff_local
+                      TESTlifestuff_general
                       TESTauthentication_local
                       TESTpublic_id_local
                       TESTuser_credentials_local
@@ -156,14 +156,14 @@ endif()
 # Tests                                                                                           #
 ###################################################################################################
 add_style_test(${STYLE_ALL}
-               ${ALL_FILES_LIFESTUFF_TESTS_DIR}
+               ${LIFESTUFF_TESTS_CC}
                ${AUTHENTICATION_TEST_CC}
                ${CLIENT_CONTROLLER_TEST_CC}
                ${PUBLIC_ID_TEST_CC}
                ${USER_STORAGE_TEST_CC}
                ${API_TEST_CC})
 
-add_gtests(TESTlifestuff_local)
+add_gtests(TESTlifestuff_general)
 add_gtests(TESTauthentication_local)
 add_gtests(TESTpublic_id_local)
 add_gtests(TESTuser_credentials_local)
@@ -186,12 +186,12 @@ endif()
 
 
 # set(LIFESTUFF_INSTALL_FILES
-#       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff.h
-#       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/return_codes.h
-#       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/version.h
-#       ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_api.h)
+#       ${PATH_TO_SRC}/lifestuff.h
+#       ${PATH_TO_SRC}/return_codes.h
+#       ${PATH_TO_SRC}/version.h
+#       ${PATH_TO_SRC}/lifestuff_api.h)
 # 
-# ms_install_libs(lifestuff_local_static)
+# ms_install_libs(lifestuff_detail_static lifestuff_local_static)
 # if(${LOCAL_TARGETS_ONLY} MATCHES OFF)
 #   ms_install_libs(lifestuff_static)
 # endif()

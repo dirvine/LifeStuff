@@ -21,8 +21,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_AUTHENTICATION_H_
-#define MAIDSAFE_LIFESTUFF_AUTHENTICATION_H_
+#ifndef MAIDSAFE_LIFESTUFF_DETAIL_AUTHENTICATION_H_
+#define MAIDSAFE_LIFESTUFF_DETAIL_AUTHENTICATION_H_
 
 #include <list>
 #include <memory>
@@ -205,7 +205,6 @@ class Authentication {
   boost::mutex mutex_, mid_mutex_, smid_mutex_;
   boost::condition_variable cond_var_;
   OpStatus tmid_op_status_, stmid_op_status_;
-  std::string encrypted_tmid_, encrypted_stmid_, serialised_data_atlas_;
   const boost::posix_time::milliseconds kSingleOpTimeout_;
 };
 
@@ -213,4 +212,4 @@ class Authentication {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_AUTHENTICATION_H_
+#endif  // MAIDSAFE_LIFESTUFF_DETAIL_AUTHENTICATION_H_

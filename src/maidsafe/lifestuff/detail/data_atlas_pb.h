@@ -15,16 +15,16 @@
 */
 
 
-#ifndef MAIDSAFE_LIFESTUFF_DATA_ATLAS_PB_H_
-#define MAIDSAFE_LIFESTUFF_DATA_ATLAS_PB_H_
+#ifndef MAIDSAFE_LIFESTUFF_DETAIL_DATA_ATLAS_PB_H_
+#define MAIDSAFE_LIFESTUFF_DETAIL_DATA_ATLAS_PB_H_
 
 #ifdef __MSVC__
 #  pragma warning(push)
 #  pragma warning(disable: 4127 4244 4267)
 #endif
-#include "maidsafe/lifestuff/data_atlas.pb.h"
+#include "maidsafe/lifestuff/detail/data_atlas.pb.h"
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
 
-#endif  // MAIDSAFE_LIFESTUFF_DATA_ATLAS_PB_H_
+#endif  // MAIDSAFE_LIFESTUFF_DETAIL_DATA_ATLAS_PB_H_

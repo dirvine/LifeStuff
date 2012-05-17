@@ -16,16 +16,16 @@
 #  pragma warning(disable: 4503)
 #endif
 
-#include "maidsafe/lifestuff/contacts.h"
+#include "maidsafe/lifestuff/detail/contacts.h"
 
 #include "boost/filesystem.hpp"
 #include "boost/lexical_cast.hpp"
 
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/lifestuff/data_atlas_pb.h"
 #include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
+#include "maidsafe/lifestuff/detail/data_atlas_pb.h"
 
 namespace fs = boost::filesystem;
 
