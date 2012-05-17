@@ -286,7 +286,8 @@ int LifeStuffImpl::CreateUser(const std::string &username,
   }
 
   fs::path mount_path(user_storage_->mount_dir());
-  fs::create_directories(mount_path / kMyStuff / kDownloadStuff, error_code);
+  fs::create_directories(mount_path / kMyStuff / kDownloadStuff,
+                         error_code);
   if (error_code) {
     DLOG(ERROR) << "Failed creating My Stuff: " << error_code.message();
     return kGeneralError;

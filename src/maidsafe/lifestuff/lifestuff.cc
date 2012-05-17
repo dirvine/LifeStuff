@@ -24,8 +24,6 @@
 
 #include "maidsafe/lifestuff/lifestuff.h"
 
-#include "maidsafe/drive/config.h"
-
 namespace maidsafe {
 
 namespace lifestuff {
@@ -40,14 +38,16 @@ const size_t kMaxWordSize(30);
 const size_t kPinSize(4);
 const std::string kLiteralOnline("kOnline");
 const std::string kLiteralOffline("kOffline");
+const std::string kBlankProfilePicture("BlankPicture");
 const std::string kAppHomeDirectory(".lifestuff");
 const std::string kMyStuff("My Stuff");
 const std::string kDownloadStuff("Accepted Files");
-const std::string kSharedStuff(drive::kMsShareRoot.filename().string());
-const std::string kBlankProfilePicture("BlankPicture");
-const std::string kHiddenFileExtension(drive::kMsHidden.string());
+
+const std::string kSharedStuff("Shared Stuff");
+const std::string kHiddenFileExtension(".ms_hidden");
+// const std::string kSharedStuff(drive::kMsShareRoot.filename().string());
+// const std::string kHiddenFileExtension(drive::kMsHidden.string());
 
 }  // namespace lifestuff
 
 }  // namespace maidsafe
-

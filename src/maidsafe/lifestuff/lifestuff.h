@@ -45,8 +45,6 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-class Message;
-
 enum DefConLevels {
   kDefCon1 = 1,
   kDefCon2,
@@ -104,6 +102,7 @@ extern const std::string kDownloadStuff;
 extern const std::string kSharedStuff;
 extern const std::string kBlankProfilePicture;
 extern const std::string kHiddenFileExtension;
+
 
 /// General
 typedef std::function<void(const std::string&,
