@@ -314,8 +314,8 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
                           &testing_variables1.private_member_access_changed),
                 std::bind(&OpenShareInvitationSlot,
                           args::_1, args::_2, args::_3, args::_4, args::_5,
-                          &testing_variables2.new_open_share_id,
-                          &testing_variables2.openly_invited));
+                          &testing_variables1.new_open_share_id,
+                          &testing_variables1.openly_invited));
   result += test_elements2.ConnectToSignals(
                 std::bind(&ChatSlot, args::_1, args::_2, args::_3, args::_4,
                           &testing_variables2.chat_message,
