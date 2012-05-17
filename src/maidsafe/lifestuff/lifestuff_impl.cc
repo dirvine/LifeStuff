@@ -1291,7 +1291,8 @@ int LifeStuffImpl::EditPrivateShareMembers(const std::string &my_public_id,
 }
 
 int LifeStuffImpl::DeletePrivateShare(const std::string &my_public_id,
-                                      const std::string &share_name) {
+                                      const std::string &share_name,
+                                      bool delete_data) {
   int result(PreContactChecks(my_public_id));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed pre checks in DeletePrivateShare.";
@@ -1299,7 +1300,7 @@ int LifeStuffImpl::DeletePrivateShare(const std::string &my_public_id,
   }
 
   fs::path share_dir(mount_path() / kSharedStuff / share_name);
-  return user_storage_->StopShare(my_public_id, share_dir);
+  return user_storage_->StopShare(my_public_id, share_dir, delete_data);
 }
 
 int LifeStuffImpl::LeavePrivateShare(const std::string &my_public_id,

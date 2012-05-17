@@ -117,7 +117,8 @@ class UserStorage {
                   const std::string &directory_id,
                   const asymm::Keys &share_keyring);
   int StopShare(const std::string &sender_public_username,
-                const fs::path &absolute_path);
+                const fs::path &absolute_path,
+                bool delete_data);
   int RemoveShare(const fs::path &absolute_path,
                   const std::string &sender_public_username = "");
   void ShareDeleted(const std::string &share_id);

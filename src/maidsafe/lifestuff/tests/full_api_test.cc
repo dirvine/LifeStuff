@@ -2164,7 +2164,8 @@ TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
 
     // Check only owner can delete
     EXPECT_NE(kSuccess, test_elements2.DeletePrivateShare(public_id2,
-                                                          share_name1));
+                                                          share_name1,
+                                                          true));
     EXPECT_TRUE(fs::is_directory(share_path, error_code));
     EXPECT_EQ(0, error_code.value());
 
@@ -2174,7 +2175,8 @@ TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     EXPECT_EQ(kSuccess, test_elements1.DeletePrivateShare(public_id1,
-                                                          share_name1));
+                                                          share_name1,
+                                                          true));
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
   DLOG(ERROR) << "\n\n\n\n";

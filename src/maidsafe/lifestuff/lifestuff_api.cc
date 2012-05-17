@@ -282,8 +282,11 @@ int LifeStuff::EditPrivateShareMembers(const std::string &my_public_id,
 }
 
 int LifeStuff::DeletePrivateShare(const std::string &my_public_id,
-                                  const std::string &share_name) {
-  return lifestuff_impl->DeletePrivateShare(my_public_id, share_name);
+                                  const std::string &share_name,
+                                  bool delete_data) {
+  return lifestuff_impl->DeletePrivateShare(my_public_id,
+                                            share_name,
+                                            delete_data);
 }
 
 int LifeStuff::LeavePrivateShare(const std::string &my_public_id,

@@ -743,7 +743,7 @@ TEST_P(UserStorageTest, FUNC_StopShareByOwner) {
   user_storage1_->MountDrive(mount_dir_, session1_, false);
   Sleep(interval_ * 2);
   EXPECT_TRUE(fs::exists(directory0, error_code)) << directory0;
-  EXPECT_EQ(kSuccess, user_storage1_->StopShare(pub_name1_, directory0));
+  EXPECT_EQ(kSuccess, user_storage1_->StopShare(pub_name1_, directory0, false));
   EXPECT_TRUE(fs::exists(directory0, error_code)) << directory0;
   // EXPECT_FALSE(fs::exists(directory0, error_code)) << directory0;
   user_storage1_->UnMountDrive();
