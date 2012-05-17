@@ -183,7 +183,7 @@ class LifeStuff {
                            StringIntMap *results);
   int InviteMembersToOpenShare(const std::string &my_public_id,
                                const std::vector<std::string> &contacts,
-                               const fs::path &directory_in_lifestuff_drive,
+                               const std::string &share_name,
                                StringIntMap *results);
   int GetOpenShareList(const std::string &my_public_id,
                        std::vector<std::string> *shares_names);
