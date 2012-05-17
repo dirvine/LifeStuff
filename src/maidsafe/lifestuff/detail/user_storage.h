@@ -214,9 +214,8 @@ class UserStorage {
       const std::string &sender_public_username,
       const StringIntMap &contacts,
       const std::string &share_id,
-      // const std::string &absolute_path = "",
-      const fs::path &relative_path = "",
-      const std::string &directory_id = "",
+      const std::string &share_name,
+      const std::string &directory_id,
       const asymm::Keys &key_ring = asymm::Keys(),
       const std::string &new_share_id = "",
       StringIntMap *contacts_results = nullptr);

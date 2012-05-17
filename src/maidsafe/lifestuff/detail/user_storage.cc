@@ -647,7 +647,7 @@ int UserStorage::OpenShareInvitation(const std::string &sender_public_id,
                           sender_public_id,
                           contacts,
                           share_id,
-                          relative_path,
+                          share_name.string(),
                           directory_id,
                           key_ring,
                           "",
@@ -1178,7 +1178,7 @@ int UserStorage::InformContacts(
     const std::string &sender_public_id,
     const std::map<std::string, int> &contacts,
     const std::string &share_id,
-    const fs::path &relative_path,  // const std::string &absolute_path
+    const std::string &share_name,
     const std::string &directory_id,
     const asymm::Keys &key_ring,
     const std::string& /*new_share_id*/,
@@ -1189,8 +1189,7 @@ int UserStorage::InformContacts(
   message.content.push_back(share_id);
   switch (item_type) {
     case kOpenShareInvitation:
-      // fs::path(absolute_path).filename().string());
-      message.content.push_back(relative_path.string());
+      message.content.push_back(share_name);
       message.content.push_back(directory_id);
       break;
     default:

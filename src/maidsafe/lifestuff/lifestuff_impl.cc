@@ -1484,7 +1484,8 @@ int LifeStuffImpl::GetOpenShareMembers(
   share_members->clear();
   auto end(share_users.end());
   for (auto it = share_users.begin(); it != end; ++it)
-    share_members->push_back(it->first);
+    if (it->first != my_public_id)
+      share_members->push_back(it->first);
   return kSuccess;
 }
 
@@ -1572,11 +1573,7 @@ int LifeStuffImpl::LeaveOpenShare(const std::string &my_public_id,
     DLOG(ERROR) << "Failed to get members of share " << share;
     return result;
   }
-  if (members.size() == 1) {
-    if (members[0] != my_public_id) {
-      DLOG(ERROR) << "Should be the last member of share.";
-      return kGeneralError;
-    }
+  if (members.size() == 0) {
     result = user_storage_->DeleteHiddenFile(share / drive::kMsShareUsers);
     if (result != kSuccess) {
       DLOG(ERROR) << "Failed to delete " << share / drive::kMsShareUsers;

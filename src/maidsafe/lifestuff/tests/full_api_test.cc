@@ -228,8 +228,8 @@ void PrivateMemberAccessLevelSlot(const std::string&,
 
 void OpenShareInvitationSlot(const std::string&,
                              const std::string&,
-                             const std::string& signal_share_id,
                              const std::string&,
+                             const std::string& signal_share_id,
                              const std::string&,
                              std::string *slot_share_id,
                              volatile bool *done) {
@@ -1398,7 +1398,7 @@ TEST(IndependentFullTest, FUNC_InviteOpenShareMembers) {
     EXPECT_EQ(kSuccess, test_elements1.GetOpenShareMembers(public_id1,
                                                            share2_name,
                                                            &members));
-    EXPECT_EQ(1, members.size());
+    EXPECT_EQ(0, members.size());
 
     contacts.push_back(public_id2);
     results.insert(std::make_pair(public_id2, kGeneralError));
@@ -1436,7 +1436,7 @@ TEST(IndependentFullTest, FUNC_InviteOpenShareMembers) {
     EXPECT_EQ(kSuccess, test_elements2.GetOpenShareMembers(public_id2,
                                                            share2_name,
                                                            &members));
-    EXPECT_EQ(2, members.size());
+    EXPECT_EQ(1, members.size());
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
@@ -1570,8 +1570,7 @@ TEST(IndependentFullTest, FUNC_LeaveOpenShare) {
     EXPECT_EQ(kSuccess, test_elements2.GetOpenShareMembers(public_id2,
                                                            share_name,
                                                            &members));
-    EXPECT_EQ(1, members.size());
-    EXPECT_EQ(public_id2, members[0]);
+    EXPECT_EQ(0, members.size());
 
     EXPECT_EQ(kSuccess, test_elements2.LeaveOpenShare(public_id2,
                                                       share_name));
@@ -1711,9 +1710,8 @@ TEST(IndependentFullTest, FUNC_SameOpenShareName) {
     EXPECT_EQ(kSuccess, test_elements1.GetOpenShareMembers(public_id1,
                                                            share_name,
                                                            &members));
-    EXPECT_EQ(1, members.size());
-    EXPECT_EQ(public_id1, members[0]);
-
+    EXPECT_EQ(0, members.size());
+    
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
 
