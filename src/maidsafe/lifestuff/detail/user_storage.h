@@ -195,6 +195,8 @@ class UserStorage {
   // ************************* Signals Handling ********************************
   bs2::connection ConnectToDriveChanged(drive::DriveChangedSlotPtr slot) const;
   bs2::connection ConnectToShareChanged(drive::ShareChangedSlotPtr slot) const;
+  bs2::connection ConnectToShareRenamedSignal(
+      const ShareRenamedFunction &function);
 
   std::string ConstructFile(const std::string &serialised_data_map);
 
@@ -226,6 +228,7 @@ class UserStorage {
   bool mount_status_;
   std::shared_ptr<pcs::RemoteChunkStore> chunk_store_;
   std::shared_ptr<MaidDriveInUserSpace> drive_in_user_space_;
+  ShareRenamedFunction share_renamed_function_;
   std::shared_ptr<Session> session_;
   std::shared_ptr<MessageHandler> message_handler_;
   fs::path mount_dir_;

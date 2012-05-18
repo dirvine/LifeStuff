@@ -130,7 +130,8 @@ int LifeStuffImpl::ConnectToSignals(
     const PrivateShareInvitationFunction &private_share_invitation_function,
     const PrivateShareDeletionFunction &private_share_deletion_function,
     const PrivateMemberAccessLevelFunction &private_access_level_function,
-    const OpenShareInvitationFunction &open_share_invitation_function) {
+    const OpenShareInvitationFunction &open_share_invitation_function,
+    const ShareRenamedFunction &share_renamed_function) {
   if (state_ != kInitialised) {
     DLOG(ERROR) << "Make sure that object is initialised";
     return kGeneralError;
@@ -210,6 +211,12 @@ int LifeStuffImpl::ConnectToSignals(
     if (message_handler_)
       message_handler_->ConnectToOpenShareInvitationSignal(
           open_share_invitation_function);
+  }
+  if (share_renamed_function) {
+    slots_.share_renamed_function = share_renamed_function;
+    ++connects;
+    if (user_storage_)
+      user_storage_->ConnectToShareRenamedSignal(share_renamed_function);
   }
 
   if (connects > 0) {
@@ -1734,7 +1741,8 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
                             slots_.private_share_invitation_function,
                             slots_.private_share_deletion_function,
                             slots_.private_access_level_function,
-                            slots_.open_share_invitation_function);
+                            slots_.open_share_invitation_function,
+                            slots_.share_renamed_function);
   return result;
 }
 
