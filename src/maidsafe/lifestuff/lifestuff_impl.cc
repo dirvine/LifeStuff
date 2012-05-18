@@ -30,6 +30,8 @@
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/dht/contact.h"
+
 #include "maidsafe/encrypt/data_map.h"
 
 #include "maidsafe/lifestuff/log.h"
