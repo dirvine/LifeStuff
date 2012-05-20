@@ -387,7 +387,7 @@ int CopyDirectoryContent(const fs::path& from, const fs::path& to) {
   return kSuccess;
 }
 
-bool VerifyAndCreatePath(const fs::path& path) {
+bool VerifyOrCreatePath(const fs::path& path) {
   boost::system::error_code error_code;
   if (fs::exists(path, error_code) && !error_code) {
     DLOG(INFO) << path << " does exist.";

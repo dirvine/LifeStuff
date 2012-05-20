@@ -101,12 +101,14 @@ class UserStorage {
   bool SaveOpenShareData(const std::string &serialised_share_data,
                          const std::string &share_id);
   int CreateShare(const std::string &sender_public_username,
-                  const fs::path &absolute_path,
+                  const fs::path &drive_path,
+                  const fs::path &share_path,
                   const StringIntMap &contacts,
                   bool private_share,
                   StringIntMap *contacts_results = nullptr);
   int CreateOpenShare(const std::string &sender_public_username,
-                      const fs::path &absolute_path,
+                      const fs::path &drive_path,
+                      const fs::path &share_path,
                       const StringIntMap &contacts,
                       StringIntMap *contacts_results = nullptr);
   int GetAllShares(StringIntMap *shares_names);
@@ -160,8 +162,8 @@ class UserStorage {
                       asymm::Keys *share_keyring,
                       std::string *directory_id,
                       StringIntMap *share_users);
-  void  MemberAccessChange(const std::string &share_id,
-                           int access_right);
+  void MemberAccessChange(const std::string &share_id,
+                          int access_right);
   int MovingShare(const std::string &sender_public_username,
                   const std::string &share_id,
                   const fs::path &relative_path,

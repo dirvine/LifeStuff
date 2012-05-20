@@ -2176,7 +2176,7 @@ TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     EXPECT_EQ(kSuccess, test_elements1.DeletePrivateShare(public_id1,
                                                           share_name1,
-                                                          true));
+                                                          false));
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
   DLOG(ERROR) << "\n\n\n\n";
