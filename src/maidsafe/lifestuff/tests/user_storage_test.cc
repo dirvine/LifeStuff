@@ -321,6 +321,7 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
   std::string tail;
   fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir(), &tail));
   EXPECT_EQ(kSuccess, user_storage1_->CreateShare(pub_name1_,
+                                                  fs::path(),
                                                   directory0,
                                                   users,
                                                   private_share_));
@@ -379,6 +380,7 @@ TEST_P(UserStorageTest, FUNC_LeaveShare) {
   std::string tail;
   fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir(), &tail));
   EXPECT_EQ(kSuccess, user_storage1_->CreateShare(pub_name1_,
+                                                  fs::path(),
                                                   directory0,
                                                   users,
                                                   private_share_));
@@ -459,6 +461,7 @@ TEST_P(UserStorageTest, FUNC_AddUser) {
   std::string tail;
   fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir(), &tail));
   EXPECT_EQ(kSuccess, user_storage1_->CreateShare(pub_name1_,
+                                                  fs::path(),
                                                   directory0,
                                                   users,
                                                   private_share_));
@@ -541,6 +544,7 @@ TEST_P(UserStorageTest, FUNC_AddReadWriteUser) {
   fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir(), &tail));
   EXPECT_TRUE(fs::exists(directory0, error_code)) << directory0;
   EXPECT_EQ(kSuccess, user_storage1_->CreateShare(pub_name1_,
+                                                  fs::path(),
                                                   directory0,
                                                   users,
                                                   private_share_));
@@ -608,6 +612,7 @@ TEST_P(UserStorageTest, FUNC_UpgradeUserToReadWrite) {
   std::string tail;
   fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir(), &tail));
   EXPECT_EQ(kSuccess, user_storage1_->CreateShare(pub_name1_,
+                                                  fs::path(),
                                                   directory0,
                                                   users,
                                                   private_share_));
@@ -696,11 +701,11 @@ TEST_P(UserStorageTest, FUNC_StopShareByOwner) {
   fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir(), &tail));
   EXPECT_TRUE(fs::exists(directory0, error_code)) << directory0
                                                   << error_code.message();
-  EXPECT_EQ(kSuccess,
-            user_storage1_->CreateShare(pub_name1_,
-                                        directory0,
-                                        users,
-                                        private_share_));
+  EXPECT_EQ(kSuccess, user_storage1_->CreateShare(pub_name1_,
+                                                  fs::path(),
+                                                  directory0,
+                                                  users,
+                                                  private_share_));
   user_storage1_->UnMountDrive();
   Sleep(interval_ * 2);
 
@@ -743,9 +748,8 @@ TEST_P(UserStorageTest, FUNC_StopShareByOwner) {
   user_storage1_->MountDrive(mount_dir_, session1_, false);
   Sleep(interval_ * 2);
   EXPECT_TRUE(fs::exists(directory0, error_code)) << directory0;
-  EXPECT_EQ(kSuccess, user_storage1_->StopShare(pub_name1_, directory0, false));
-  EXPECT_TRUE(fs::exists(directory0, error_code)) << directory0;
-  // EXPECT_FALSE(fs::exists(directory0, error_code)) << directory0;
+  EXPECT_EQ(kSuccess, user_storage1_->StopShare(pub_name1_, directory0, true));
+  EXPECT_FALSE(fs::exists(directory0, error_code)) << directory0;
   user_storage1_->UnMountDrive();
   Sleep(interval_ * 2);
 
@@ -793,6 +797,7 @@ TEST_P(UserStorageTest, FUNC_RemoveUserByOwner) {
   EXPECT_EQ(0, error_code.value());
 
   EXPECT_EQ(kSuccess, user_storage1_->CreateShare(pub_name1_,
+                                                  fs::path(),
                                                   directory0,
                                                   users,
                                                   private_share_));
@@ -952,6 +957,7 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
   EXPECT_EQ(0, error_code.value());
 
   EXPECT_EQ(kSuccess, user_storage1_->CreateShare(pub_name1_,
+                                                  fs::path(),
                                                   directory0,
                                                   users,
                                                   private_share_));
