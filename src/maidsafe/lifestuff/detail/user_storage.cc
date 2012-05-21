@@ -491,22 +491,15 @@ int UserStorage::StopShare(const std::string &sender_public_id,
                                                    &directory_id);
     if (result != kSuccess)
       return result;
-#ifdef WIN32
-    std::string generated_name(GetNameInPath(mount_dir_ / "\\" / kMyStuff,
+
+    std::string generated_name(GetNameInPath(mount_dir() / kMyStuff,
                                              share_name.string()));
-#else
-    std::string generated_name(GetNameInPath(mount_dir_ / kMyStuff,
-                                             share_name.string()));
-#endif
+
     if (generated_name.empty()) {
       DLOG(ERROR) << "Failed to generate name for My Stuff.";
       return kGeneralError;
     }
-#ifdef WIN32
-    fs::path my_path(mount_dir_ / "\\" / kMyStuff / generated_name);
-#else
-    fs::path my_path(mount_dir_ / kMyStuff / generated_name);
-#endif
+    fs::path my_path(mount_dir() / kMyStuff / generated_name);
     result = drive_in_user_space_->MoveDirectory(absolute_path, my_path);
     if (result != kSuccess) {
       DLOG(ERROR) << "Failed to move directory " << absolute_path;
