@@ -166,7 +166,8 @@ class LifeStuff {
                               StringIntMap *results);
   // Only for owners
   int DeletePrivateShare(const std::string &my_public_id,
-                         const std::string &share_name);
+                         const std::string &share_name,
+                         bool delete_data);
   // Should work for RO and full access. Only for non-owners
   int LeavePrivateShare(const std::string &my_public_id,
                         const std::string &share_name);

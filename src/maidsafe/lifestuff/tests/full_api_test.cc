@@ -234,8 +234,8 @@ void PrivateMemberAccessLevelSlot(const std::string&,
 
 void OpenShareInvitationSlot(const std::string&,
                              const std::string&,
-                             const std::string& signal_share_id,
                              const std::string&,
+                             const std::string& signal_share_id,
                              const std::string&,
                              std::string *slot_share_id,
                              volatile bool *done) {
@@ -1429,7 +1429,7 @@ TEST(IndependentFullTest, FUNC_InviteOpenShareMembers) {
     EXPECT_EQ(kSuccess, test_elements1.GetOpenShareMembers(public_id1,
                                                            share2_name,
                                                            &members));
-    EXPECT_EQ(1, members.size());
+    EXPECT_EQ(0, members.size());
 
     contacts.push_back(public_id2);
     results.insert(std::make_pair(public_id2, kGeneralError));
@@ -1467,7 +1467,7 @@ TEST(IndependentFullTest, FUNC_InviteOpenShareMembers) {
     EXPECT_EQ(kSuccess, test_elements2.GetOpenShareMembers(public_id2,
                                                            share2_name,
                                                            &members));
-    EXPECT_EQ(2, members.size());
+    EXPECT_EQ(1, members.size());
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
@@ -1601,8 +1601,7 @@ TEST(IndependentFullTest, FUNC_LeaveOpenShare) {
     EXPECT_EQ(kSuccess, test_elements2.GetOpenShareMembers(public_id2,
                                                            share_name,
                                                            &members));
-    EXPECT_EQ(1, members.size());
-    EXPECT_EQ(public_id2, members[0]);
+    EXPECT_EQ(0, members.size());
 
     EXPECT_EQ(kSuccess, test_elements2.LeaveOpenShare(public_id2,
                                                       share_name));
@@ -1742,8 +1741,7 @@ TEST(IndependentFullTest, FUNC_SameOpenShareName) {
     EXPECT_EQ(kSuccess, test_elements1.GetOpenShareMembers(public_id1,
                                                            share_name,
                                                            &members));
-    EXPECT_EQ(1, members.size());
-    EXPECT_EQ(public_id1, members[0]);
+    EXPECT_EQ(0, members.size());
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
@@ -2197,7 +2195,8 @@ TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
 
     // Check only owner can delete
     EXPECT_NE(kSuccess, test_elements2.DeletePrivateShare(public_id2,
-                                                          share_name1));
+                                                          share_name1,
+                                                          true));
     EXPECT_TRUE(fs::is_directory(share_path, error_code));
     EXPECT_EQ(0, error_code.value());
 
@@ -2207,7 +2206,8 @@ TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     EXPECT_EQ(kSuccess, test_elements1.DeletePrivateShare(public_id1,
-                                                          share_name1));
+                                                          share_name1,
+                                                          false));
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
   DLOG(ERROR) << "\n\n\n\n";

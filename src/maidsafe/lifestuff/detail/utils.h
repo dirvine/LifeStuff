@@ -108,7 +108,7 @@ int CopyDir(const fs::path& source, const fs::path& dest);
 
 int CopyDirectoryContent(const fs::path& from, const fs::path& to);
 
-bool VerifyAndCreatePath(const fs::path& path);
+bool VerifyOrCreatePath(const fs::path& path);
 
 std::string IsoTimeWithMicroSeconds();
 
