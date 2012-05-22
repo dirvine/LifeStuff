@@ -52,7 +52,8 @@ int LifeStuff::ConnectToSignals(
     const PrivateShareInvitationFunction &private_share_invitation_function,
     const PrivateShareDeletionFunction &private_share_deletion_function,
     const PrivateMemberAccessLevelFunction &private_access_level_function,
-    const OpenShareInvitationFunction &open_share_invitation_function) {
+    const OpenShareInvitationFunction &open_share_invitation_function,
+    const ShareRenamedFunction &share_renamed_function) {
   return lifestuff_impl->ConnectToSignals(chat_slot,
                                           file_slot,
                                           new_contact_slot,
@@ -63,7 +64,8 @@ int LifeStuff::ConnectToSignals(
                                           private_share_invitation_function,
                                           private_share_deletion_function,
                                           private_access_level_function,
-                                          open_share_invitation_function);
+                                          open_share_invitation_function,
+                                          share_renamed_function);
 }
 
 int LifeStuff::Finalise() {
@@ -282,8 +284,11 @@ int LifeStuff::EditPrivateShareMembers(const std::string &my_public_id,
 }
 
 int LifeStuff::DeletePrivateShare(const std::string &my_public_id,
-                                  const std::string &share_name) {
-  return lifestuff_impl->DeletePrivateShare(my_public_id, share_name);
+                                  const std::string &share_name,
+                                  bool delete_data) {
+  return lifestuff_impl->DeletePrivateShare(my_public_id,
+                                            share_name,
+                                            delete_data);
 }
 
 int LifeStuff::LeavePrivateShare(const std::string &my_public_id,

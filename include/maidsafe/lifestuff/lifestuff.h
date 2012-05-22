@@ -39,8 +39,6 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-class Message;
-
 enum DefConLevels {
   kDefCon1 = 1,
   kDefCon2,
@@ -82,21 +80,23 @@ enum PrivateShareRoles {
   kShareOwner = drive::kShareOwner
 };
 
-const size_t kMaxChatMessageSize(1 * 1024 * 1024);
-const uint32_t kFileRecontructionLimit(20 * 1024 * 1024);
-const uint16_t kIntervalSeconds(5000);
-const uint8_t kThreads(10);
-const uint8_t kSecondsInterval(5);
-const size_t kMinWordSize(5);
-const size_t kMaxWordSize(30);
-const size_t kPinSize(4);
-const std::string kLiteralOnline("kOnline");
-const std::string kLiteralOffline("kOffline");
-const std::string kAppHomeDirectory(".lifestuff");
-const std::string kMyStuff("My Stuff");
-const std::string kDownloadStuff("Accepted Files");
-const std::string kSharedStuff("Shared Stuff");
-const std::string kBlankProfilePicture("BlankPicture");
+extern const size_t kMaxChatMessageSize;
+extern const uint32_t kFileRecontructionLimit;
+extern const uint16_t kIntervalSeconds;
+extern const uint8_t kThreads;
+extern const uint8_t kSecondsInterval;
+extern const size_t kMinWordSize;
+extern const size_t kMaxWordSize;
+extern const size_t kPinSize;
+extern const std::string kLiteralOnline;
+extern const std::string kLiteralOffline;
+extern const std::string kAppHomeDirectory;
+extern const std::string kMyStuff;
+extern const std::string kDownloadStuff;
+extern const std::string kSharedStuff;
+extern const std::string kBlankProfilePicture;
+extern const std::string kHiddenFileExtension;
+
 
 /// General
 typedef std::function<void(const std::string&,
@@ -143,8 +143,13 @@ typedef std::function<void(const std::string&,    // Own public ID
         PrivateMemberAccessLevelFunction;
 
 /// Open Shares
-// Own public ID, Contact public ID, Share Tag, Unique ID
+// Own public ID, Contact public ID, Share name, Share ID, Timestamp
 typedef FiveStringsFunction OpenShareInvitationFunction;
+
+/// Common for Private and Open Shares
+// Old ShareName, New ShareName
+typedef std::function<void(const std::string&, const std::string&)>
+        ShareRenamedFunction;
 
 /// Chat
 // Own public ID, Contact public ID, Message, Timestamp

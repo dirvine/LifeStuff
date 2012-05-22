@@ -58,8 +58,8 @@ endif()
 set(PATH_TO_SRC ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff)
 ####    CODE    ####
 # Installables
-file(GLOB SOURCE_FILES_LIFESTUFF_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/*.cc")
-file(GLOB HEADER_FILES_LIFESTUFF_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/*.h")
+file(GLOB SOURCE_FILES_LIFESTUFF_DIR "${PATH_TO_SRC}/*.cc")
+file(GLOB HEADER_FILES_LIFESTUFF_DIR "${PATH_TO_SRC}/*.h")
 set(ALL_FILES_LIFESTUFF_DIR ${SOURCE_FILES_LIFESTUFF_DIR} ${HEADER_FILES_LIFESTUFF_DIR})
 source_group("LifeStuff Source Files" FILES ${SOURCE_FILES_LIFESTUFF_DIR})
 source_group("LifeStuff Header Files" FILES ${HEADER_FILES_LIFESTUFF_DIR})

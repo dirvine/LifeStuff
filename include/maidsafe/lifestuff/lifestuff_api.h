@@ -59,7 +59,8 @@ class LifeStuff {
       const PrivateShareInvitationFunction &share_invitation_function,
       const PrivateShareDeletionFunction &share_deletion_function,
       const PrivateMemberAccessLevelFunction &access_level_function,
-      const OpenShareInvitationFunction &open_share_invitation_function);
+      const OpenShareInvitationFunction &open_share_invitation_function,
+      const ShareRenamedFunction &share_renamed_function);
   int Finalise();
 
   /// Credential operations
@@ -160,7 +161,8 @@ class LifeStuff {
                               StringIntMap *results);
   // Only for owners
   int DeletePrivateShare(const std::string &my_public_id,
-                         const std::string &share_name);
+                         const std::string &share_name,
+                         bool delete_data);
   // Should work for RO and full access. Only for non-owners
   int LeavePrivateShare(const std::string &my_public_id,
                         const std::string &share_name);
