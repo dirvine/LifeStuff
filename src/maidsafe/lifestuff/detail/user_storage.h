@@ -101,12 +101,14 @@ class UserStorage {
   bool SaveOpenShareData(const std::string &serialised_share_data,
                          const std::string &share_id);
   int CreateShare(const std::string &sender_public_username,
-                  const fs::path &absolute_path,
+                  const fs::path &drive_path,
+                  const fs::path &share_path,
                   const StringIntMap &contacts,
                   bool private_share,
                   StringIntMap *contacts_results = nullptr);
   int CreateOpenShare(const std::string &sender_public_username,
-                      const fs::path &absolute_path,
+                      const fs::path &drive_path,
+                      const fs::path &share_path,
                       const StringIntMap &contacts,
                       StringIntMap *contacts_results = nullptr);
   int GetAllShares(StringIntMap *shares_names);
@@ -117,7 +119,8 @@ class UserStorage {
                   const std::string &directory_id,
                   const asymm::Keys &share_keyring);
   int StopShare(const std::string &sender_public_username,
-                const fs::path &absolute_path);
+                const fs::path &absolute_path,
+                bool delete_data);
   int RemoveShare(const fs::path &absolute_path,
                   const std::string &sender_public_username = "");
   void ShareDeleted(const std::string &share_id);
@@ -159,8 +162,8 @@ class UserStorage {
                       asymm::Keys *share_keyring,
                       std::string *directory_id,
                       StringIntMap *share_users);
-  void  MemberAccessChange(const std::string &share_id,
-                           int access_right);
+  void MemberAccessChange(const std::string &share_id,
+                          int access_right);
   int MovingShare(const std::string &sender_public_username,
                   const std::string &share_id,
                   const fs::path &relative_path,
@@ -195,6 +198,8 @@ class UserStorage {
   // ************************* Signals Handling ********************************
   bs2::connection ConnectToDriveChanged(drive::DriveChangedSlotPtr slot) const;
   bs2::connection ConnectToShareChanged(drive::ShareChangedSlotPtr slot) const;
+  bs2::connection ConnectToShareRenamedSignal(
+      const ShareRenamedFunction &function);
 
   std::string ConstructFile(const std::string &serialised_data_map);
 
@@ -214,9 +219,8 @@ class UserStorage {
       const std::string &sender_public_username,
       const StringIntMap &contacts,
       const std::string &share_id,
-      // const std::string &absolute_path = "",
-      const fs::path &relative_path = "",
-      const std::string &directory_id = "",
+      const std::string &share_name,
+      const std::string &directory_id,
       const asymm::Keys &key_ring = asymm::Keys(),
       const std::string &new_share_id = "",
       StringIntMap *contacts_results = nullptr);
@@ -226,6 +230,7 @@ class UserStorage {
   bool mount_status_;
   std::shared_ptr<pcs::RemoteChunkStore> chunk_store_;
   std::shared_ptr<MaidDriveInUserSpace> drive_in_user_space_;
+  ShareRenamedFunction share_renamed_function_;
   std::shared_ptr<Session> session_;
   std::shared_ptr<MessageHandler> message_handler_;
   fs::path mount_dir_;

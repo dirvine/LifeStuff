@@ -149,8 +149,13 @@ typedef std::function<void(const std::string&,    // Own public ID
         PrivateMemberAccessLevelFunction;
 
 /// Open Shares
-// Own public ID, Contact public ID, Share Tag, Unique ID
+// Own public ID, Contact public ID, Share name, Share ID, Timestamp
 typedef FiveStringsFunction OpenShareInvitationFunction;
+
+/// Common for Private and Open Shares
+// Old ShareName, New ShareName
+typedef std::function<void(const std::string&, const std::string&)>
+        ShareRenamedFunction;
 
 /// Chat
 // Own public ID, Contact public ID, Message, Timestamp

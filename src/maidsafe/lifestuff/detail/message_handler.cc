@@ -639,8 +639,8 @@ void MessageHandler::ProcessOpenShareInvitation(const InboxItem &inbox_item) {
   }
   open_share_invitation_signal_(inbox_item.receiver_public_id,
                                 inbox_item.sender_public_id,
-                                inbox_item.content[0],
                                 inbox_item.content[1],
+                                inbox_item.content[0],
                                 inbox_item.timestamp);
 }
 

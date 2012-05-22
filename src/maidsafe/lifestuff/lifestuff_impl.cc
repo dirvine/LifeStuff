@@ -30,6 +30,8 @@
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/dht/contact.h"
+
 #include "maidsafe/encrypt/data_map.h"
 
 #include "maidsafe/lifestuff/log.h"
@@ -130,7 +132,8 @@ int LifeStuffImpl::ConnectToSignals(
     const PrivateShareInvitationFunction &private_share_invitation_function,
     const PrivateShareDeletionFunction &private_share_deletion_function,
     const PrivateMemberAccessLevelFunction &private_access_level_function,
-    const OpenShareInvitationFunction &open_share_invitation_function) {
+    const OpenShareInvitationFunction &open_share_invitation_function,
+    const ShareRenamedFunction &share_renamed_function) {
   if (state_ != kInitialised) {
     DLOG(ERROR) << "Make sure that object is initialised";
     return kGeneralError;
@@ -210,6 +213,12 @@ int LifeStuffImpl::ConnectToSignals(
     if (message_handler_)
       message_handler_->ConnectToOpenShareInvitationSignal(
           open_share_invitation_function);
+  }
+  if (share_renamed_function) {
+    slots_.share_renamed_function = share_renamed_function;
+    ++connects;
+    if (user_storage_)
+      user_storage_->ConnectToShareRenamedSignal(share_renamed_function);
   }
 
   if (connects > 0) {
@@ -861,7 +870,7 @@ int LifeStuffImpl::AcceptSentFile(const std::string &identifier,
 
   if (absolute_path.empty()) {
     fs::path store_path(mount_path() / kMyStuff / kDownloadStuff);
-    if (!VerifyAndCreatePath(store_path)) {
+    if (!VerifyOrCreatePath(store_path)) {
       DLOG(ERROR) << "Failed finding and creating: " << store_path;
       return kGeneralError;
     }
@@ -955,45 +964,28 @@ int LifeStuffImpl::CreatePrivateShareFromExistingDirectory(
                 << "CreatePrivateShareFromExistingDirectory.";
     return result;
   }
-
-  fs::path store_path(mount_path() / kSharedStuff);
-  if (!VerifyAndCreatePath(store_path)) {
-    DLOG(ERROR) << "Failed to verify or create path to shared stuff.";
-    return false;
-  }
-
-  *share_name =  directory_in_lifestuff_drive.filename().string();
   boost::system::error_code error_code;
   if (!fs::exists(directory_in_lifestuff_drive, error_code) || error_code) {
     DLOG(ERROR) << "Target Directory doesn't exist";
     return kNoShareTarget;
   }
+  fs::path store_path(mount_path() / kSharedStuff);
+  if (!VerifyOrCreatePath(store_path)) {
+    DLOG(ERROR) << "Failed to verify or create path to shared stuff.";
+    return false;
+  }
 
-  std::string generated_name(GetNameInPath(mount_path() / kSharedStuff,
-                                           *share_name));
+  *share_name = directory_in_lifestuff_drive.filename().string();
+  std::string generated_name(GetNameInPath(store_path, *share_name));
   if (generated_name.empty()) {
     DLOG(ERROR) << "Failed to generate name for share.";
     return kGeneralError;
   }
 
   *share_name = generated_name;
-
-  fs::path share_dir(mount_path() / kSharedStuff / generated_name);
-  result = CopyDir(directory_in_lifestuff_drive, share_dir);
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failure copying directory: " << result;
-    return result;
-  }
-
-  if (fs::exists(directory_in_lifestuff_drive, error_code) || error_code) {
-    fs::remove_all(directory_in_lifestuff_drive, error_code);
-    if (error_code) {
-      DLOG(ERROR) << "Failed to delete directory: " << error_code.value();
-      return kGeneralError;
-    }
-  }
-
+  fs::path share_dir(store_path / generated_name);
   return user_storage_->CreateShare(my_public_id,
+                                    directory_in_lifestuff_drive,
                                     share_dir,
                                     contacts,
                                     drive::kMsPrivateShare,
@@ -1016,30 +1008,21 @@ int LifeStuffImpl::CreateEmptyPrivateShare(const std::string &my_public_id,
   }
 
   fs::path store_path(mount_path() / kSharedStuff);
-  if (!VerifyAndCreatePath(store_path)) {
+  if (!VerifyOrCreatePath(store_path)) {
     DLOG(ERROR) << "Failed to verify or create path to shared stuff.";
     return false;
   }
 
-  std::string generated_name(GetNameInPath(mount_path() / kSharedStuff,
-                                           *share_name));
+  std::string generated_name(GetNameInPath(store_path, *share_name));
   if (generated_name.empty()) {
     DLOG(ERROR) << "Failed to generate name for share.";
     return kGeneralError;
   }
 
   *share_name = generated_name;
-  fs::path share_dir(mount_path() / kSharedStuff / generated_name);
-
-  boost::system::error_code error_code;
-  fs::create_directory(share_dir, error_code);
-  if (error_code) {
-    DLOG(ERROR) << "Failed creating directory: " << error_code.message();
-    return kGeneralError;
-  }
-  *share_name = share_dir.filename().string();
-
+  fs::path share_dir(store_path / generated_name);
   return user_storage_->CreateShare(my_public_id,
+                                    fs::path(),
                                     share_dir,
                                     contacts,
                                     drive::kMsPrivateShare,
@@ -1292,7 +1275,8 @@ int LifeStuffImpl::EditPrivateShareMembers(const std::string &my_public_id,
 }
 
 int LifeStuffImpl::DeletePrivateShare(const std::string &my_public_id,
-                                      const std::string &share_name) {
+                                      const std::string &share_name,
+                                      bool delete_data) {
   int result(PreContactChecks(my_public_id));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed pre checks in DeletePrivateShare.";
@@ -1300,7 +1284,7 @@ int LifeStuffImpl::DeletePrivateShare(const std::string &my_public_id,
   }
 
   fs::path share_dir(mount_path() / kSharedStuff / share_name);
-  return user_storage_->StopShare(my_public_id, share_dir);
+  return user_storage_->StopShare(my_public_id, share_dir, delete_data);
 }
 
 int LifeStuffImpl::LeavePrivateShare(const std::string &my_public_id,
@@ -1336,53 +1320,31 @@ int LifeStuffImpl::CreateOpenShareFromExistingDirectory(
     DLOG(ERROR) << "Share directory nonexistant.";
     return kGeneralError;
   }
+  fs::path share_path(mount_path() / kSharedStuff);
+  if (!VerifyOrCreatePath(share_path)) {
+    DLOG(ERROR) << "Failed to verify or create path to shared stuff.";
+    return false;
+  }
 
-  std::string generated_name(GetNameInPath(mount_path() / kSharedStuff,
-                                           *share_name));
+  std::string generated_name(GetNameInPath(share_path, *share_name));
   if (generated_name.empty()) {
     DLOG(ERROR) << "Failed to generate name for share.";
     return kGeneralError;
   }
 
   *share_name = generated_name;
-  fs::path share(mount_path() / kSharedStuff / generated_name);
-
-  fs::create_directory(share, error_code);
-  if (error_code) {
-    DLOG(ERROR) << "Failed to create directory: " << share
-                << " " << error_code.message();
-    return kGeneralError;
-  }
-
-  result = CopyDirectoryContent(directory_in_lifestuff_drive, share);
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to copy directory content: " << result;
-    return result;
-  }
-
+  fs::path share(share_path / generated_name);
   StringIntMap liaisons;
   for (uint32_t i = 0; i != contacts.size(); ++i)
     liaisons.insert(std::make_pair(contacts[i], 1));
   result = user_storage_->CreateOpenShare(my_public_id,
+                                          directory_in_lifestuff_drive,
                                           share,
                                           liaisons,
                                           results);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to create open share: " << result;
     return result;
-  }
-  try {
-    fs::remove_all(directory_in_lifestuff_drive, error_code);
-    if (error_code) {
-      DLOG(ERROR) << "Failed to remove source directory "
-                  << directory_in_lifestuff_drive << " " << error_code.value();
-      return error_code.value();
-    }
-  }
-  catch(const std::exception &e) {
-    DLOG(ERROR) << "Exception thrown removing source directory "
-                << directory_in_lifestuff_drive << ": " << e.what();
-    return kGeneralError;
   }
   return kSuccess;
 }
@@ -1402,28 +1364,25 @@ int LifeStuffImpl::CreateEmptyOpenShare(
     return result;
   }
 
-  std::string generated_name(GetNameInPath(mount_path() / kSharedStuff,
-                                           *share_name));
+  fs::path share_path(mount_path() / kSharedStuff);
+  if (!VerifyOrCreatePath(share_path)) {
+    DLOG(ERROR) << "Failed to verify or create path to shared stuff.";
+    return false;
+  }
+  std::string generated_name(GetNameInPath(share_path, *share_name));
   if (generated_name.empty()) {
     DLOG(ERROR) << "Failed to generate name for share.";
     return kGeneralError;
   }
 
   *share_name = generated_name;
-  fs::path share_dir(mount_path() / kSharedStuff / generated_name);
-
-  boost::system::error_code error_code;
-  fs::create_directory(share_dir, error_code);
-  if (error_code) {
-    DLOG(ERROR) << "Failed creating directory: " << error_code.message();
-    return kGeneralError;
-  }
-
+  fs::path share(share_path / generated_name);
   StringIntMap liaisons;
   for (uint32_t i = 0; i != contacts.size(); ++i)
     liaisons.insert(std::make_pair(contacts[i], 1));
   return user_storage_->CreateOpenShare(my_public_id,
-                                        share_dir,
+                                        fs::path(),
+                                        share,
                                         liaisons,
                                         results);
 }
@@ -1485,7 +1444,8 @@ int LifeStuffImpl::GetOpenShareMembers(
   share_members->clear();
   auto end(share_users.end());
   for (auto it = share_users.begin(); it != end; ++it)
-    share_members->push_back(it->first);
+    if (it->first != my_public_id)
+      share_members->push_back(it->first);
   return kSuccess;
 }
 
@@ -1573,25 +1533,36 @@ int LifeStuffImpl::LeaveOpenShare(const std::string &my_public_id,
     DLOG(ERROR) << "Failed to get members of share " << share;
     return result;
   }
-  if (members.size() == 1) {
-    if (members[0] != my_public_id) {
-      DLOG(ERROR) << "Should be the last member of share.";
-      return kGeneralError;
-    }
+  if (members.size() == 0) {
     result = user_storage_->DeleteHiddenFile(share / drive::kMsShareUsers);
     if (result != kSuccess) {
       DLOG(ERROR) << "Failed to delete " << share / drive::kMsShareUsers;
       return result;
     }
-    result = user_storage_->RemoveShare(share);
+    boost::system::error_code error_code;
+    try {
+      fs::remove_all(share, error_code);
+      if (error_code) {
+        DLOG(ERROR) << "Failed to remove share directory "
+                    << share << " " << error_code.value();
+        return error_code.value();
+      }
+    }
+    catch(const std::exception &e) {
+      DLOG(ERROR) << "Exception thrown removing share directory " << share
+                  << ": " << e.what();
+      return kGeneralError;
+    }
+    BOOST_ASSERT(!fs::exists(share, error_code));
+    /*result = user_storage_->RemoveShare(share);
     if (result != kSuccess) {
       DLOG(ERROR) << "Failed to remove share " << share;
       return result;
-    }
+    }*/
 
     // TODO(Team): Should this block exist? Doesn't RemoveShare eliminate the
     //             entry from the listing?
-    try {
+    /*try {
       boost::system::error_code error_code;
       int count(0), limit(30);
       while (count++ < limit && fs::exists(share, error_code) && !error_code)
@@ -1611,7 +1582,7 @@ int LifeStuffImpl::LeaveOpenShare(const std::string &my_public_id,
       DLOG(ERROR) << "Exception thrown removing share directory " << share
                   << ": " << e.what();
       return kGeneralError;
-    }
+    }*/
   } else {
     members.clear();
     members.push_back(my_public_id);
@@ -1734,7 +1705,8 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
                             slots_.private_share_invitation_function,
                             slots_.private_share_deletion_function,
                             slots_.private_access_level_function,
-                            slots_.open_share_invitation_function);
+                            slots_.open_share_invitation_function,
+                            slots_.share_renamed_function);
   return result;
 }
 
