@@ -466,11 +466,13 @@ int UserStorage::StopShare(const std::string &sender_public_id,
                                                    nullptr,
                                                    &contacts,
                                                    nullptr));
-  if (result != kSuccess)
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to get share details for " << absolute_path;
     return result;
+  }
   if (delete_data) {
     try {
-      fs::remove_all(mount_dir_ / relative_path, error_code);
+      fs::remove_all(mount_dir() / relative_path, error_code);
       if (error_code) {
         DLOG(ERROR) << "Failed to remove share directory "
                     << mount_dir_ / relative_path << " " << error_code.value();
@@ -479,7 +481,7 @@ int UserStorage::StopShare(const std::string &sender_public_id,
     }
     catch(const std::exception &e) {
       DLOG(ERROR) << "Exception thrown removing share directory "
-                  << mount_dir_ / relative_path << ": " << e.what();
+                  << mount_dir() / relative_path << ": " << e.what();
       return kGeneralError;
     }
   } else {
@@ -489,24 +491,17 @@ int UserStorage::StopShare(const std::string &sender_public_id,
                                                    sender_public_id,
                                                    drive::kMsPrivateShare,
                                                    &directory_id);
-    if (result != kSuccess)
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed to set share details for " << absolute_path;
       return result;
-#ifdef WIN32
-    std::string generated_name(GetNameInPath(mount_dir_ / "\\" / kMyStuff,
+    }
+    std::string generated_name(GetNameInPath(mount_dir() / kMyStuff,
                                              share_name.string()));
-#else
-    std::string generated_name(GetNameInPath(mount_dir_ / kMyStuff,
-                                             share_name.string()));
-#endif
     if (generated_name.empty()) {
       DLOG(ERROR) << "Failed to generate name for My Stuff.";
       return kGeneralError;
     }
-#ifdef WIN32
-    fs::path my_path(mount_dir_ / "\\" / kMyStuff / generated_name);
-#else
-    fs::path my_path(mount_dir_ / kMyStuff / generated_name);
-#endif
+    fs::path my_path(mount_dir() / kMyStuff / generated_name);
     result = drive_in_user_space_->MoveDirectory(absolute_path, my_path);
     if (result != kSuccess) {
       DLOG(ERROR) << "Failed to move directory " << absolute_path;
@@ -530,8 +525,10 @@ int UserStorage::StopShare(const std::string &sender_public_id,
   chunk_store_->Delete(packet_id, callback, validation_data);
 
   result = AwaitingResponse(&mutex, &cond_var, &results);
-  if (result != kSuccess)
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to get a response.";
     return result;
+  }
   if (results[0] != kSuccess) {
     DLOG(ERROR) << "Failed to remove packet. Packet 1 : " << results[0];
     return results[0];
@@ -565,17 +562,20 @@ int UserStorage::RemoveShare(const fs::path& absolute_path,
                                                    nullptr,
                                                    nullptr,
                                                    &owner_id));
-  if (result != kSuccess)
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to get share details for " << absolute_path;
     return result;
+  }
   // Owner doesn't allow to leave (shall use StopShare method)
   if (owner_id == sender_public_id)
     return kOwnerTryingToLeave;
 
   result = drive_in_user_space_->RemoveShare(
                drive_in_user_space_->RelativePath(absolute_path));
-  if (result != kSuccess)
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to remove share " << absolute_path;
     return result;
-
+  }
   std::map<std::string, int> owner;
   owner.insert(std::make_pair(owner_id , 0));
   return InformContactsOperation(kPrivateShareMemberLeft,
@@ -599,11 +599,16 @@ int UserStorage::UpdateShare(const std::string &share_id,
   }
 
   fs::path relative_path;
-  int result(GetShareDetails(share_id, &relative_path,
-                             nullptr, nullptr, nullptr));
-  if (result != kSuccess)
+  int result(GetShareDetails(share_id,
+                             &relative_path,
+                             nullptr,
+                             nullptr,
+                             nullptr));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to get share details for "
+                << mount_dir() / relative_path;
     return result;
-
+  }
   return drive_in_user_space_->UpdateShare(relative_path,
                                            share_id,
                                            new_share_id,
@@ -775,9 +780,10 @@ int UserStorage::RemoveShareUsers(const std::string &sender_public_id,
                                         nullptr,
                                         nullptr);
   int result(drive_in_user_space_->RemoveShareUsers(share_id, user_ids));
-  if (result != kSuccess)
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to remove share users for " << absolute_path;
     return result;
-
+  }
   StringIntMap removed_contacts;
   for (auto it = user_ids.begin(); it != user_ids.end(); ++it) {
     removed_contacts.insert(std::make_pair(*it, kShareReadOnly));
@@ -823,8 +829,10 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
                       validation_data);
 
   int result(AwaitingResponse(&mutex, &cond_var, &results));
-  if (result != kSuccess)
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to get response.";
     return result;
+  }
   if (results[0] != kSuccess) {
     DLOG(ERROR) << "Failed to store packets.  Packet 1 : " << results[0];
     return results[0];
@@ -851,8 +859,10 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
   chunk_store_->Delete(packet_id, callback, validation_data);
 
   result = AwaitingResponse(&mutex, &cond_var, &results);
-  if (result != kSuccess)
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to get response.";
     return result;
+  }
   if (results[0] != kSuccess) {
     DLOG(WARNING) << "Failed to remove packet.  Packet 1 : " << results[0];
 //     return kDeletePacketFailure;
@@ -909,8 +919,10 @@ int UserStorage::RemoveOpenShareUsers(
                                         nullptr,
                                         nullptr);
   int result(drive_in_user_space_->RemoveShareUsers(share_id, user_ids));
-  if (result != kSuccess)
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to remove share users for " << absolute_path;
     return result;
+  }
   return kSuccess;
 }
 
@@ -1031,19 +1043,24 @@ int UserStorage::DowngradeShareUsersRights(
                                         nullptr,
                                         nullptr,
                                         nullptr);
-  int result(MovingShare(sender_public_id, share_id, relative_path,
-                         old_key_ring, private_share, &new_share_id));
+  int result(MovingShare(sender_public_id,
+                         share_id,
+                         relative_path,
+                         old_key_ring,
+                         private_share,
+                         &new_share_id));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed moving share: " << result;
     return result;
   }
-  return InformContactsOperation(kPrivateShareMembershipDowngrade,
+  return kSuccess;
+  /*return InformContactsOperation(kPrivateShareMembershipDowngrade,
                                  sender_public_id,
                                  contacts,
                                  new_share_id,
                                  "",
                                  "",
-                                 old_key_ring);
+                                 old_key_ring);*/
 }
 
 int UserStorage::GetShareDetails(const std::string &share_id,
@@ -1287,7 +1304,7 @@ int UserStorage::InformContacts(
       message.receiver_public_id = it->first;
       result = message_handler_->Send(message);
       if (result != kSuccess) {
-        DLOG(ERROR) << "Failed in inform contact " << it->first
+        DLOG(ERROR) << "Failed to inform contact " << it->first
                     << " of operation " << item_type << ", with result "
                     << result;
         ++aggregate;

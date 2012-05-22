@@ -511,14 +511,14 @@ bool CheckCorrectKeys(const std::vector<std::string> &message_keys,
       return true;
     } else {
       DLOG(ERROR) << "Should have 6/7 elements: share ID, new share ID, "
-                      "directory ID, and 4 Keys elements for KeysUpdate: "
-                  <<  message_keys.size();
+                     "directory ID, and 4 Keys elements for KeysUpdate: "
+                  << message_keys.size();
       return false;
     }
   } else if (item_type == kPrivateShareMembershipUpgrade) {
     if (message_keys.size() != 5U) {
       DLOG(ERROR) << "Should have 5 elements: share ID and 4 Keys elements "
-                    "for MembershipUpgrade";
+                     "for MembershipUpgrade";
       return false;
     }
     offset = 0;

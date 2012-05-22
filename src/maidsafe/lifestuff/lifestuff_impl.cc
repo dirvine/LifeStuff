@@ -1195,8 +1195,8 @@ int LifeStuffImpl::EditPrivateShareMembers(const std::string &my_public_id,
     auto itr(std::find(member_ids.begin(), member_ids.end(), (*it).first));
     if (itr != member_ids.end()) {
       // -1 indicates removing the existing member
-      // 0 indicates downgrading the existing member
-      // 1 indicates upgrading the existing member
+      //  0 indicates downgrading the existing member
+      //  1 indicates upgrading the existing member
       if ((*it).second == kShareRemover)
         members_to_remove.push_back(*itr);
       if (share_members[(*it).first] != (*it).second) {
@@ -1544,35 +1544,6 @@ int LifeStuffImpl::LeaveOpenShare(const std::string &my_public_id,
       return kGeneralError;
     }
     BOOST_ASSERT(!fs::exists(share, error_code));
-    /*result = user_storage_->RemoveShare(share);
-    if (result != kSuccess) {
-      DLOG(ERROR) << "Failed to remove share " << share;
-      return result;
-    }*/
-
-    // TODO(Team): Should this block exist? Doesn't RemoveShare eliminate the
-    //             entry from the listing?
-    /*try {
-      boost::system::error_code error_code;
-      int count(0), limit(30);
-      while (count++ < limit && fs::exists(share, error_code) && !error_code)
-        Sleep(bptime::milliseconds(100));
-      if (count == limit) {
-        DLOG(ERROR) << "Failed to disappear directory.";
-        return kGeneralError;
-      }
-      fs::remove_all(share, error_code);
-      if (error_code) {
-        DLOG(ERROR) << "Failed to remove share directory "
-                    << share << " " << error_code.value();
-        return error_code.value();
-      }
-    }
-    catch(const std::exception &e) {
-      DLOG(ERROR) << "Exception thrown removing share directory " << share
-                  << ": " << e.what();
-      return kGeneralError;
-    }*/
   } else {
     members.clear();
     members.push_back(my_public_id);
