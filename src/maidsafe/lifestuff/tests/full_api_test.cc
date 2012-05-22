@@ -1404,7 +1404,7 @@ TEST(IndependentFullTest, FUNC_InviteOpenShareMembers) {
     results.insert(std::make_pair(public_id2, kGeneralError));
     EXPECT_EQ(kSuccess, test_elements1.InviteMembersToOpenShare(public_id1,
                                                                 contacts,
-                                                                share2,
+                                                                share2.string(),
                                                                 &results));
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }

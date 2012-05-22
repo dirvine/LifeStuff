@@ -253,17 +253,17 @@ class UserStorageTest : public testing::TestWithParam<bool> {
     public_id1_->StopCheckingForNewContacts();
     public_id2_->StopCheckingForNewContacts();
     message_handler1_->ConnectToPrivateShareDetailsSignal(
-        std::bind(&UserStorage::GetShareDetails, user_storage1_.get(),
-                  args::_1, args::_2, nullptr, nullptr, nullptr));
+        boost::bind(&UserStorage::GetShareDetails, user_storage1_.get(),
+                    _1, _2, nullptr, nullptr, nullptr));
     message_handler2_->ConnectToPrivateShareDetailsSignal(
-        std::bind(&UserStorage::GetShareDetails, user_storage2_.get(),
-                  args::_1, args::_2, nullptr, nullptr, nullptr));
+        boost::bind(&UserStorage::GetShareDetails, user_storage2_.get(),
+                    _1, _2, nullptr, nullptr, nullptr));
     message_handler1_->ConnectToPrivateShareUpdateSignal(
-        std::bind(&UserStorage::UpdateShare, user_storage1_.get(),
-                  args::_1, args::_2, args::_3, args::_4));
+        boost::bind(&UserStorage::UpdateShare, user_storage1_.get(),
+                    _1, _2, _3, _4));
     message_handler2_->ConnectToPrivateShareUpdateSignal(
-        std::bind(&UserStorage::UpdateShare, user_storage2_.get(),
-                  args::_1, args::_2, args::_3, args::_4));
+        boost::bind(&UserStorage::UpdateShare, user_storage2_.get(),
+                    _1, _2, _3, _4));
   }
 
   void TearDown() {
@@ -902,11 +902,11 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
       new UserStorage(remote_chunk_store3, message_handler3));
   std::string pub_name3("User 3");
   message_handler3->ConnectToPrivateShareDetailsSignal(
-      std::bind(&UserStorage::GetShareDetails, user_storage3.get(),
-                args::_1, args::_2, nullptr, nullptr, nullptr));
+      boost::bind(&UserStorage::GetShareDetails, user_storage3.get(),
+                  _1, _2, nullptr, nullptr, nullptr));
   public_id3->ConnectToNewContactSignal(
-    std::bind(&UserStorageTest::NewContactSlot,
-              this, args::_1, args::_2, &mutex_, &cond_var_));
+    boost::bind(&UserStorageTest::NewContactSlot,
+                this, _1, _2, &mutex_, &cond_var_));
 
   public_id3->CreatePublicId(pub_name3, true);
 

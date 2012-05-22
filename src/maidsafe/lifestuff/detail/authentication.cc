@@ -24,7 +24,6 @@
 #include "maidsafe/lifestuff/detail/authentication.h"
 
 #include "boost/date_time/posix_time/posix_time.hpp"
-#include "boost/regex.hpp"
 
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"

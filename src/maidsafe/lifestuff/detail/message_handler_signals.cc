@@ -81,7 +81,8 @@ bs2::connection MessageHandler::ConnectToParseAndSaveDataMapSignal(
 }
 
 bs2::connection MessageHandler::ConnectToPrivateShareDetailsSignal(
-    const PrivateShareDetailsSignal::slot_type &function) {
+    boost::function<int(const std::string &share_id,
+                        fs::path *relative_path)> function) {
   return private_share_details_signal_.connect(function);
 }
 
