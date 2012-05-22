@@ -46,6 +46,7 @@ enum ReturnCode {
   kGetPublicKeyFailure = -200004,
   kGetMpidFailure = -200005,
   kInvalidPublicKey = -200006,
+  kOperationTimeOut = -200007,
 
   // Authentication
   kAuthenticationError = -201001,
@@ -53,6 +54,15 @@ enum ReturnCode {
   kUserDoesntExist = -201003,
   kUserExists = -201004,
   kFailedToDeleteOldPacket = -201005,
+  kCorruptedPacket = -201006,
+  kIdPacketNotFound = -201007,
+  kTemporaryIdPacketNotFound = -201008,
+  kAccountCorrupted = -201009,
+  kUsingNextToLastSession = -201010,
+  kSessionFailure = -201011,
+  kCreateSignaturePacketInfoFailure = -201012,
+  kCreateSignaturePacketsFailure = -201013,
+  kSessionSerialisationFailure = -201014,
 
   // Client Controller
   kUserCredentialsNotInitialised = -202001,

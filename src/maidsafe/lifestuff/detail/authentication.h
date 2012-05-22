@@ -54,7 +54,6 @@ namespace passport { class Passport; }
 namespace lifestuff {
 
 class Session;
-namespace test { class UserCredentialsTest; }
 
 class Authentication {
  public:
@@ -84,7 +83,6 @@ class Authentication {
                 const std::string &new_pin);
   int ChangePassword(const std::string &serialised_data_atlas,
                      const std::string &new_password);
-  friend class test::UserCredentialsTest;
 
  private:
   enum OpStatus {

@@ -50,20 +50,9 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-namespace test {
-class AuthenticationTest;
-class MessageHandlerTest;
-class PublicIdTest;
-class SessionTest;
-class UserCredentialsTest;
-}  // namespace test
+namespace test { class SessionTest; }
 
-class Authentication;
 class ContactsHandler;
-class MessageHandler;
-class PublicId;
-class UserCredentials;
-class UserStorage;
 struct UserDetails;
 
 typedef std::shared_ptr<ContactsHandler> ContactsHandlerPtr;
