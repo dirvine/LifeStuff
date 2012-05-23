@@ -577,19 +577,22 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
     private_share_update_signal_(inbox_item.content[0],
                                  &new_share_id,
                                  &new_directory_id,
-                                 &key_ring);
+                                 &key_ring,
+                                 nullptr);
   } else if (inbox_item.item_type == kPrivateShareMemberLeft) {
     private_share_user_leaving_signal_(share_name,
                                        inbox_item.content[0],
                                        inbox_item.sender_public_id);
   } else if (inbox_item.item_type == kPrivateShareMembershipDowngrade) {
     // downgrading
+    asymm::Keys key_ring;
     private_member_access_level_signal_(inbox_item.receiver_public_id,
                                         inbox_item.sender_public_id,
                                         share_name,
                                         inbox_item.content[0],
                                         inbox_item.content[1],
                                         inbox_item.content[2],
+                                        key_ring,
                                         kShareReadOnly,
                                         inbox_item.timestamp);
   } else if (inbox_item.item_type == kPrivateShareMembershipUpgrade) {
@@ -600,17 +603,19 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
       DLOG(ERROR) << "Incorrect elements in message.";
       return;
     }
-
+   /* int access_rights(kShareReadWrite);
     private_share_update_signal_(inbox_item.content[0],
                                  nullptr,
                                  nullptr,
-                                 &key_ring);
+                                 &key_ring,
+                                 &access_rights);*/
     private_member_access_level_signal_(inbox_item.receiver_public_id,
                                         inbox_item.sender_public_id,
                                         share_name,
                                         inbox_item.content[0],
                                         inbox_item.content[1],
                                         inbox_item.content[2],
+                                        key_ring,
                                         kShareReadWrite,
                                         inbox_item.timestamp);
   } else if (inbox_item.item_type == kPrivateShareInvitation) {

@@ -34,6 +34,7 @@
 
 #include "maidsafe/drive/config.h"
 #include "maidsafe/lifestuff/version.h"
+#include "maidsafe/lifestuff/detail/utils.h"
 
 #if MAIDSAFE_LIFESTUFF_VERSION != 400
 #  error This API is not compatible with the installed library.\
@@ -146,6 +147,7 @@ typedef std::function<void(const std::string&,    // Own public ID
                            const std::string&,    // Share ID
                            const std::string&,    // Directory ID
                            const std::string&,    // New Share ID
+                           const asymm::Keys&,    // Key ring
                            int,                   // Access level
                            const std::string&)>   // Timestamp
         PrivateMemberAccessLevelFunction;

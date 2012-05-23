@@ -592,7 +592,8 @@ void UserStorage::ShareDeleted(const std::string &share_name) {
 int UserStorage::UpdateShare(const std::string &share_id,
                              const std::string *new_share_id,
                              const std::string *new_directory_id,
-                             const asymm::Keys *new_key_ring) {
+                             const asymm::Keys *new_key_ring,
+                             int* access_right) {
   if (!message_handler_) {
     DLOG(WARNING) << "Uninitialised message handler.";
     return kMessageHandlerNotInitialised;
@@ -613,7 +614,8 @@ int UserStorage::UpdateShare(const std::string &share_id,
                                            share_id,
                                            new_share_id,
                                            new_directory_id,
-                                           new_key_ring);
+                                           new_key_ring,
+                                           access_right);
 
 //   drive_in_user_space_->RemoveShare(relative_path);
 //   return drive_in_user_space_->InsertShare(relative_path, "",
@@ -789,14 +791,20 @@ int UserStorage::RemoveShareUsers(const std::string &sender_public_id,
   for (auto it = user_ids.begin(); it != user_ids.end(); ++it) {
     removed_contacts.insert(std::make_pair(*it, kShareReadOnly));
   }
-  contacts.erase(removed_contacts.begin(), removed_contacts.end());
+  for (auto it = removed_contacts.begin(); it != removed_contacts.end(); ++it) 
+    contacts.erase(contacts.find(it->first)); 
+
   InformContactsOperation(kPrivateShareDeletion,
                           sender_public_id,
                           removed_contacts,
                           share_id);
 
-  return MovingShare(sender_public_id, share_id,
-                     relative_path, old_key_ring, private_share, contacts);
+  result = MovingShare(sender_public_id, share_id,
+                       relative_path, old_key_ring, private_share, contacts);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to move share.";
+  }
+  return result;
 }
 
 int UserStorage::MovingShare(const std::string &sender_public_id,
@@ -1067,7 +1075,6 @@ int UserStorage::DowngradeShareUsersRights(
     DLOG(ERROR) << "Failed to inform contacts";
     return result;
   }
-  share_contacts.insert(results->begin(), results->end());
   return kSuccess;
 }
 
@@ -1087,6 +1094,7 @@ void UserStorage::MemberAccessChange(
     const std::string &share_id,
     const std::string &directory_id,
     const std::string &new_share_id,
+    const asymm::Keys &key_ring,
     int access_right) {
   fs::path relative_path;
   int result(GetShareDetails(share_id, &relative_path,
@@ -1096,20 +1104,20 @@ void UserStorage::MemberAccessChange(
     return;
   }
   if (access_right <= kShareReadOnly) {
-    asymm::Keys key_ring;
+    asymm::Keys empty_key_ring;
     result = drive_in_user_space_->UpdateShare(relative_path,
-                                               share_id,
-                                               &new_share_id,
-                                               &directory_id,
-                                               &key_ring,
-                                               &access_right);
+                                                share_id,
+                                                &new_share_id,
+                                                &directory_id,
+                                                &empty_key_ring,
+                                                &access_right);
   } else {
     result = drive_in_user_space_->UpdateShare(relative_path,
-                                               share_id,
-                                               &new_share_id,
-                                               &directory_id,
-                                               nullptr,
-                                               &access_right);
+                                                share_id,
+                                                nullptr,
+                                                nullptr,
+                                                &key_ring,
+                                                &access_right);
   }
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to update share details: " << result;

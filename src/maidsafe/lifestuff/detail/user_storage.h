@@ -127,7 +127,8 @@ class UserStorage {
   int UpdateShare(const std::string &share_id,
                   const std::string *new_share_id,
                   const std::string *new_directory_id,
-                  const asymm::Keys *new_key_ring);
+                  const asymm::Keys *new_key_ring,
+                  int* access_right);
   int AddShareUsers(const std::string &sender_public_username,
                     const fs::path &absolute_path,
                     const StringIntMap &contacts,
@@ -165,6 +166,7 @@ class UserStorage {
   void MemberAccessChange(const std::string &share_id,
                           const std::string &directory_id,
                           const std::string &new_share_id,
+                          const asymm::Keys &key_ring,
                           int access_right);
   int MovingShare(const std::string &sender_public_username,
                   const std::string &share_id,

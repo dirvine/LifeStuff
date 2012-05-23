@@ -213,15 +213,11 @@ void PrivateShareDeletionSlot(const std::string&,
 void PrivateMemberAccessLevelSlot(const std::string&,
                                   const std::string&,
                                   const std::string&,
-                                  const std::string &signal_share_name,
-                                  const std::string&,
-                                  const std::string&,
+                                  const asymm::Keys&,
                                   int signal_member_access,
-                                  std::string *slot_share_name,
+                                  std::string * /*slot_share_name*/,
                                   int *slot_member_access,
                                   volatile bool *done) {
-  if (slot_share_name)
-    *slot_share_name = signal_share_name;
   if (slot_member_access)
     *slot_member_access = signal_member_access;
   *done = true;
@@ -308,8 +304,7 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
                           &testing_variables1.deleted_private_share_name,
                           &testing_variables1.private_share_deleted),
                 std::bind(&PrivateMemberAccessLevelSlot,
-                          args::_1, args::_2, args::_3,
-                          args::_4, args::_5, args::_6, args::_7,
+                          args::_4, args::_5, args::_6, args::_7, args::_8,
                           &testing_variables1.access_private_share_name,
                           &testing_variables1.private_member_access,
                           &testing_variables1.private_member_access_changed),
@@ -349,8 +344,7 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
                           &testing_variables2.deleted_private_share_name,
                           &testing_variables2.private_share_deleted),
                 std::bind(&PrivateMemberAccessLevelSlot,
-                          args::_1, args::_2, args::_3,
-                          args::_4, args::_5, args::_6, args::_7,
+                          args::_4, args::_5, args::_6, args::_7, args::_8,
                           &testing_variables2.access_private_share_name,
                           &testing_variables2.private_member_access,
                           &testing_variables2.private_member_access_changed),
@@ -2866,8 +2860,7 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
                           &testing_variables3.deleted_private_share_name,
                           &testing_variables3.private_share_deleted),
                 std::bind(&PrivateMemberAccessLevelSlot,
-                          args::_1, args::_2, args::_3,
-                          args::_4, args::_5, args::_6, args::_7,
+                          args::_4, args::_5, args::_6, args::_7, args::_8,
                           &testing_variables3.access_private_share_name,
                           &testing_variables3.private_member_access,
                           &testing_variables3.private_member_access_changed),
