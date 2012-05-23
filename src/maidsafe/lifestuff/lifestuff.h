@@ -144,6 +144,8 @@ typedef std::function<void(const std::string&,    // Own public ID
                            const std::string&,    // Contact public ID
                            const std::string&,    // Share name
                            const std::string&,    // Share ID
+                           const std::string&,    // Directory ID
+                           const std::string&,    // New Share ID
                            int,                   // Access level
                            const std::string&)>   // Timestamp
         PrivateMemberAccessLevelFunction;

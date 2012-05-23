@@ -588,6 +588,8 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
                                         inbox_item.sender_public_id,
                                         share_name,
                                         inbox_item.content[0],
+                                        inbox_item.content[1],
+                                        inbox_item.content[2],
                                         kShareReadOnly,
                                         inbox_item.timestamp);
   } else if (inbox_item.item_type == kPrivateShareMembershipUpgrade) {
@@ -607,6 +609,8 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
                                         inbox_item.sender_public_id,
                                         share_name,
                                         inbox_item.content[0],
+                                        inbox_item.content[1],
+                                        inbox_item.content[2],
                                         kShareReadWrite,
                                         inbox_item.timestamp);
   } else if (inbox_item.item_type == kPrivateShareInvitation) {

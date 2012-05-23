@@ -163,12 +163,15 @@ class UserStorage {
                       std::string *directory_id,
                       StringIntMap *share_users);
   void MemberAccessChange(const std::string &share_id,
+                          const std::string &directory_id,
+                          const std::string &new_share_id,
                           int access_right);
   int MovingShare(const std::string &sender_public_username,
                   const std::string &share_id,
                   const fs::path &relative_path,
                   const asymm::Keys &old_key_ring,
                   bool private_share,
+                  const StringIntMap &contacts,
                   std::string *new_share_id_return = nullptr);
   int DowngradeShareUsersRights(const std::string &sender_public_username,
                                 const fs::path &absolute_path,

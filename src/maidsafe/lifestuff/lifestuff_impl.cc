@@ -1600,7 +1600,7 @@ void LifeStuffImpl::ConnectInternalElements() {
 
   message_handler_->ConnectToPrivateMemberAccessLevelSignal(
       std::bind(&UserStorage::MemberAccessChange,
-                user_storage_.get(), args::_4, args::_5));
+                user_storage_.get(), args::_4, args::_5, args::_6, args::_7));
 
   public_id_->ConnectToContactConfirmedSignal(
       std::bind(&MessageHandler::InformConfirmedContactOnline,
