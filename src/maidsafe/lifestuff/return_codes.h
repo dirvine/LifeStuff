@@ -63,6 +63,10 @@ enum ReturnCode {
   kCreateSignaturePacketInfoFailure = -201012,
   kCreateSignaturePacketsFailure = -201013,
   kSessionSerialisationFailure = -201014,
+  kSetIdentityPacketsFailure = -201015,
+  kStoreIdentityPacketsFailure = -201016,
+  kSaveSessionFailure = -201017,
+  kDeleteIdentityPacketsFailure = -201018,
 
   // Client Controller
   kUserCredentialsNotInitialised = -202001,

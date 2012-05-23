@@ -67,29 +67,18 @@ class NewAuthentication {
   NewAuthentication(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
                     std::shared_ptr<Session> session);
   ~NewAuthentication();
-  // Used to intialise passport_ in all cases.
   int GetUserInfo(const std::string &username,
                   const std::string &pin,
                   const std::string &password);
-  // Used when creating a new user.
   int CreateUser(const std::string &username,
                  const std::string &pin,
                  const std::string &password);
-  // Used when creating a new user.
-  int CreateTmidPacket(const std::string &password,
-                       const std::string &serialised_data_atlas,
-                       const std::string &surrogate_serialised_data_atlas);
 
-  int SaveSession(const std::string &serialised_data_atlas);
+  int SaveSession();
 
-  int SetLoggedInData(const std::string &ser_da,
-                      const std::string &surrogate_ser_da);
-  int ChangeUsername(const std::string &serialised_data_atlas,
-                     const std::string &new_username);
-  int ChangePin(const std::string &serialised_data_atlas,
-                const std::string &new_pin);
-  int ChangePassword(const std::string &serialised_data_atlas,
-                     const std::string &new_password);
+  int ChangeUsername(const std::string &new_username);
+  int ChangePin(const std::string &new_pin);
+  int ChangePassword(const std::string &new_password);
 
  private:
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
@@ -126,6 +115,25 @@ class NewAuthentication {
   void StoreSmid(OperationResults &results);
   void StoreTmid(OperationResults &results);
   void StoreStmid(OperationResults &results);
+  void StoreIdentity(OperationResults &results,
+                     int identity_type,
+                     int signer_type,
+                     int index);
+
+  void ModifyMid(OperationResults &results);
+  void ModifySmid(OperationResults &results);
+  void StoreNewTmid(OperationResults &results);
+  void DeleteOldStmid(OperationResults &results);
+
+  int DeleteOldIdentityPackets();
+  void DeleteMid(OperationResults &results);
+  void DeleteSmid(OperationResults &results);
+  void DeleteTmid(OperationResults &results);
+  void DeleteStmid(OperationResults &results);
+  void DeleteIdentity(OperationResults &results,
+                      int packet_type,
+                      int signer_type,
+                      int index);
 };
 
 }  // namespace lifestuff
