@@ -50,6 +50,7 @@ UserStorage::UserStorage(
       chunk_store_(chunk_store),
       drive_in_user_space_(),
       share_renamed_function_(),
+      share_changed_function_(),
       session_(),
       message_handler_(message_handler),
       mount_dir_(),
@@ -119,6 +120,7 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
 #endif
   mount_status_ = true;
   ConnectToShareRenamedSignal(share_renamed_function_);
+  ConnectToShareChangedSignal(share_changed_function_);
 }
 
 void UserStorage::UnMountDrive() {
@@ -1151,17 +1153,22 @@ bs2::connection UserStorage::ConnectToDriveChanged(
   return drive_in_user_space_->ConnectToDriveChanged(slot);
 }
 
-bs2::connection UserStorage::ConnectToShareChanged(
-    drive::ShareChangedSlotPtr slot) const {
-  return drive_in_user_space_->ConnectToShareChanged(slot);
-}
-
 bs2::connection UserStorage::ConnectToShareRenamedSignal(
     const ShareRenamedFunction &function) {
   if (function) {
     share_renamed_function_ = function;
     if (mount_status_)
       return drive_in_user_space_->ConnectToShareRenamed(function);
+  }
+  return bs2::connection();
+}
+
+bs2::connection UserStorage::ConnectToShareChangedSignal(
+    const ShareChangedFunction &function) {
+  if (function) {
+    share_changed_function_ = function;
+    if (mount_status_)
+      return drive_in_user_space_->ConnectToShareChanged(function);
   }
   return bs2::connection();
 }

@@ -71,7 +71,8 @@ struct Slots {
         private_share_deletion_function(),
         private_access_level_function(),
         open_share_invitation_function(),
-        share_renamed_function() {}
+        share_renamed_function(),
+        share_changed_function() {}
   ChatFunction chat_slot;
   FileTransferFunction file_slot;
   NewContactFunction new_contact_slot;
@@ -84,6 +85,7 @@ struct Slots {
   PrivateMemberAccessLevelFunction private_access_level_function;
   OpenShareInvitationFunction open_share_invitation_function;
   ShareRenamedFunction share_renamed_function;
+  ShareChangedFunction share_changed_function;
 };
 
 class LifeStuffImpl {
@@ -105,7 +107,8 @@ class LifeStuffImpl {
       const PrivateShareDeletionFunction &share_deletion_function,
       const PrivateMemberAccessLevelFunction &access_level_function,
       const OpenShareInvitationFunction &open_share_invitation_function,
-      const ShareRenamedFunction &share_renamed_function);
+      const ShareRenamedFunction &share_renamed_function,
+      const ShareChangedFunction &share_changed_function);
   int Finalise();
 
   /// Credential operations

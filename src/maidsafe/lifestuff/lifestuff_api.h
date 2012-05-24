@@ -65,7 +65,8 @@ class LifeStuff {
       const PrivateShareDeletionFunction &share_deletion_function,
       const PrivateMemberAccessLevelFunction &access_level_function,
       const OpenShareInvitationFunction &open_share_invitation_function,
-      const ShareRenamedFunction &share_renamed_function);
+      const ShareRenamedFunction &share_renamed_function,
+      const ShareChangedFunction &share_changed_function);
   int Finalise();
 
   /// Credential operations

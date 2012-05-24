@@ -77,7 +77,14 @@ struct TestingVariables {
         private_member_access_changed(false),
         old_share_name(),
         new_share_name(),
-        share_renamed(false) {}
+        share_renamed(false),
+        share_name(),
+        target_path(),
+        num_of_entries(0),
+        old_path(),
+        new_path(),
+        op_type(),
+        share_changed(false) {}
   std::string chat_message;
   bool chat_message_received;
   std::string file_name, file_id;
@@ -101,6 +108,13 @@ struct TestingVariables {
   std::string old_share_name;
   std::string new_share_name;
   bool share_renamed;
+  std::string share_name;
+  fs::path target_path;
+  uint32_t num_of_entries;
+  fs::path old_path;
+  fs::path new_path;
+  drive::OpType op_type;
+  bool share_changed;
 };
 
 void ChatSlot(const std::string&,
@@ -256,6 +270,34 @@ void ShareRenameSlot(const std::string& old_share_name,
   *done = true;
 }
 
+void ShareChangedSlot(const std::string& share_name,
+                      const fs::path& target_path,
+                      const uint32_t& num_of_entries,
+                      const fs::path& old_path,
+                      const fs::path& new_path,
+                      const drive::OpType& op_type,
+                      std::string *slot_share_name,
+                      fs::path *slot_target_path,
+                      uint32_t *slot_num_of_entries,
+                      fs::path *slot_old_path,
+                      fs::path *slot_new_path,
+                      drive::OpType *slot_op_type,
+                      volatile bool *done) {
+  if (slot_share_name)
+    *slot_share_name = share_name;
+  if (slot_target_path)
+    *slot_target_path = target_path;
+  if (slot_num_of_entries)
+    *slot_num_of_entries = num_of_entries;
+  if (slot_old_path)
+    *slot_old_path = old_path;
+  if (slot_new_path)
+    *slot_new_path = new_path;
+  if (slot_op_type)
+    *slot_op_type = op_type;
+  *done = true;
+}
+
 int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
                                  LifeStuff &test_elements2,  // NOLINT (Dan)
                                  TestingVariables &testing_variables1,  // NOLINT (Dan)
@@ -338,7 +380,17 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
                           args::_1, args::_2,
                           &testing_variables1.old_share_name,
                           &testing_variables1.new_share_name,
-                          &testing_variables1.share_renamed));
+                          &testing_variables1.share_renamed),
+                std::bind(&ShareChangedSlot,
+                          args::_1, args::_2, args::_3,
+                          args::_4, args::_5, args::_6,
+                          &testing_variables1.share_name,
+                          &testing_variables1.target_path,
+                          &testing_variables1.num_of_entries,
+                          &testing_variables1.old_path,
+                          &testing_variables1.new_path,
+                          &testing_variables1.op_type,
+                          &testing_variables1.share_changed));
   result += test_elements2.ConnectToSignals(
                 std::bind(&ChatSlot, args::_1, args::_2, args::_3, args::_4,
                           &testing_variables2.chat_message,
@@ -384,7 +436,17 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
                           args::_1, args::_2,
                           &testing_variables2.old_share_name,
                           &testing_variables2.new_share_name,
-                          &testing_variables2.share_renamed));
+                          &testing_variables2.share_renamed),
+                std::bind(&ShareChangedSlot,
+                          args::_1, args::_2, args::_3,
+                          args::_4, args::_5, args::_6,
+                          &testing_variables2.share_name,
+                          &testing_variables2.target_path,
+                          &testing_variables2.num_of_entries,
+                          &testing_variables2.old_path,
+                          &testing_variables2.new_path,
+                          &testing_variables2.op_type,
+                          &testing_variables2.share_changed));
   if (result != kSuccess)
     return result;
 
@@ -458,7 +520,8 @@ TEST(IndependentFullTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
                                             PrivateShareDeletionFunction(),
                                             PrivateMemberAccessLevelFunction(),
                                             OpenShareInvitationFunction(),
-                                            ShareRenamedFunction()));
+                                            ShareRenamedFunction(),
+                                            ShareChangedFunction()));
   EXPECT_EQ(kSuccess, test_elements1.CreateUser(username, pin, password));
   // Create directory
   std::string tail;
@@ -502,7 +565,8 @@ TEST(IndependentFullTest, FUNC_LargeFileForMemoryCheck) {
                                             PrivateShareDeletionFunction(),
                                             PrivateMemberAccessLevelFunction(),
                                             OpenShareInvitationFunction(),
-                                            ShareRenamedFunction()));
+                                            ShareRenamedFunction(),
+                                            ShareChangedFunction()));
   EXPECT_EQ(kSuccess, test_elements1.CreateUser(username, pin, password));
   // Create directory
   std::string tail;
@@ -545,7 +609,8 @@ TEST(IndependentFullTest, FUNC_ChangeCredentials) {
                                             PrivateShareDeletionFunction(),
                                             PrivateMemberAccessLevelFunction(),
                                             OpenShareInvitationFunction(),
-                                            ShareRenamedFunction()));
+                                            ShareRenamedFunction(),
+                                            ShareChangedFunction()));
   EXPECT_EQ(kSuccess, test_elements1.CreateUser(username, pin, password));
   EXPECT_EQ(kSuccess, test_elements1.CheckPassword(password));
   EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -3095,7 +3160,17 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
                           args::_1, args::_2,
                           &testing_variables3.old_share_name,
                           &testing_variables3.new_share_name,
-                          &testing_variables3.share_renamed));
+                          &testing_variables3.share_renamed),
+                std::bind(&ShareChangedSlot,
+                          args::_1, args::_2, args::_3,
+                          args::_4, args::_5, args::_6,
+                          &testing_variables3.share_name,
+                          &testing_variables3.target_path,
+                          &testing_variables3.num_of_entries,
+                          &testing_variables3.old_path,
+                          &testing_variables3.new_path,
+                          &testing_variables3.op_type,
+                          &testing_variables3.share_changed));
   test_elements3.CreateUser(username3, pin3, password3);
   test_elements3.CreatePublicId(public_id3);
   test_elements3.AddContact(public_id3, public_id1);

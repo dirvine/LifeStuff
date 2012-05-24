@@ -156,6 +156,19 @@ typedef FiveStringsFunction OpenShareInvitationFunction;
 // Old ShareName, New ShareName
 typedef std::function<void(const std::string&, const std::string&)>
         ShareRenamedFunction;
+// share_name,
+// target path relative to the Share's root,
+// num_of_entries (normally 1, only greater in case of Add and Delete children)
+// old path relative to the Share's root (only for Rename and Move),
+// new path relative to the Share's root (only for Rename and Move),
+// and operation type.
+typedef std::function<void(const std::string&,
+                           const boost::filesystem::path&,
+                           const uint32_t&,
+                           const boost::filesystem::path&,
+                           const boost::filesystem::path&,
+                           const drive::OpType&)>
+        ShareChangedFunction;
 
 /// Chat
 // Own public ID, Contact public ID, Message, Timestamp
