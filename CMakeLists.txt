@@ -182,6 +182,7 @@ add_gtests(TESTuser_credentials_local)
 add_gtests(TESTuser_storage_local)
 add_gtests(TESTapi_local)
 
+add_project_experimental()
 test_summary_output()
 
 
