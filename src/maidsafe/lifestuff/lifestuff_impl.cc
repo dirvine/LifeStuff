@@ -1134,14 +1134,14 @@ int LifeStuffImpl::AcceptPrivateShareInvitation(
     return kGeneralError;
   }
 
-  fs::path relative_path(message.content(1));
-  std::string directory_id(message.content(2));
+  // fs::path relative_path(message.content(1));
+  std::string directory_id(message.content(kDirectoryId));
   asymm::Keys share_keyring;
-  if (message.content_size() > 3) {
-    share_keyring.identity = message.content(3);
-    share_keyring.validation_token = message.content(4);
-    asymm::DecodePrivateKey(message.content(5), &(share_keyring.private_key));
-    asymm::DecodePublicKey(message.content(6), &(share_keyring.public_key));
+  if (!message.content(kKeysIdentity).empty()) {
+    share_keyring.identity = message.content(kKeysIdentity);
+    share_keyring.validation_token = message.content(kKeysValidationToken);
+    asymm::DecodePrivateKey(message.content(kKeysPrivateKey), &(share_keyring.private_key));
+    asymm::DecodePublicKey(message.content(kKeysPublicKey), &(share_keyring.public_key));
   }
 
   // remove the temp share invitation file no matter insertion succeed or not
@@ -1467,13 +1467,13 @@ int LifeStuffImpl::AcceptOpenShareInvitation(
   }
   Message message;
   message.ParseFromString(serialised_share_data);
-  fs::path relative_path(message.content(1));
-  std::string directory_id(message.content(2));
+  // fs::path relative_path(message.content(kShareName));
+  std::string directory_id(message.content(kDirectoryId));
   asymm::Keys share_keyring;
-  share_keyring.identity = message.content(3);
-  share_keyring.validation_token = message.content(4);
-  asymm::DecodePrivateKey(message.content(5), &(share_keyring.private_key));
-  asymm::DecodePublicKey(message.content(6), &(share_keyring.public_key));
+  share_keyring.identity = message.content(kKeysIdentity);
+  share_keyring.validation_token = message.content(kKeysValidationToken);
+  asymm::DecodePrivateKey(message.content(kKeysPrivateKey), &(share_keyring.private_key));
+  asymm::DecodePublicKey(message.content(kKeysPublicKey), &(share_keyring.public_key));
   // Delete hidden file...
   user_storage_->DeleteHiddenFile(hidden_file);
   fs::path share_dir(mount_path() / kSharedStuff / *share_name);

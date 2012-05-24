@@ -1230,7 +1230,7 @@ int UserStorage::InformContactsOperation(
     const std::string &new_share_id,
     StringIntMap *contacts_results) {
   InboxItem admin_message(item_type), non_admin_message(item_type);
-  std::string public_key, private_key;
+  std::string public_key, private_key, empty_string;
 
   admin_message.sender_public_id = sender_public_id;
   admin_message.content.push_back(share_id);
@@ -1241,14 +1241,23 @@ int UserStorage::InformContactsOperation(
         fs::path(absolute_path).filename().string());
     non_admin_message.content.push_back(
         fs::path(absolute_path).filename().string());
+  } else {
+    admin_message.content.push_back(empty_string);
+    non_admin_message.content.push_back(empty_string);
   }
   if (!directory_id.empty()) {
     admin_message.content.push_back(directory_id);
     non_admin_message.content.push_back(directory_id);
+  } else {
+    admin_message.content.push_back(empty_string);
+    non_admin_message.content.push_back(empty_string);
   }
   if (!new_share_id.empty()) {
     admin_message.content.push_back(new_share_id);
     non_admin_message.content.push_back(new_share_id);
+  } else {
+    admin_message.content.push_back(empty_string);
+    non_admin_message.content.push_back(empty_string);
   }
   if (!key_ring.identity.empty() &&
       !key_ring.validation_token.empty() &&
@@ -1260,7 +1269,16 @@ int UserStorage::InformContactsOperation(
     admin_message.content.push_back(private_key);
     asymm::EncodePublicKey(key_ring.public_key, &public_key);
     admin_message.content.push_back(public_key);
+  } else {
+    admin_message.content.push_back(empty_string);
+    admin_message.content.push_back(empty_string);
+    admin_message.content.push_back(empty_string);
+    admin_message.content.push_back(empty_string);
   }
+  non_admin_message.content.push_back(empty_string);
+  non_admin_message.content.push_back(empty_string);
+  non_admin_message.content.push_back(empty_string);
+  non_admin_message.content.push_back(empty_string);
 
   int result, aggregate(0);
   if (contacts_results)
@@ -1311,6 +1329,7 @@ int UserStorage::InformContacts(
     default:
       DLOG(ERROR) << "Unknown constant";
   }
+  message.content.push_back(std::string());
   if (!key_ring.identity.empty() &&
       !key_ring.validation_token.empty() &&
       asymm::ValidateKey(key_ring.public_key) &&
@@ -1321,6 +1340,9 @@ int UserStorage::InformContacts(
     message.content.push_back(private_key);
     asymm::EncodePublicKey(key_ring.public_key, &public_key);
     message.content.push_back(public_key);
+  } else {
+    DLOG(ERROR) << "Invalid keyring for open share";
+    return kInvalidKeyringForOpenShare;
   }
 
   int result, aggregate(0);
