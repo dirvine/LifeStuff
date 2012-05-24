@@ -60,7 +60,7 @@ class AuthenticationTest : public testing::Test {
 #endif
         remote_chunk_store_(),
         authentication_(),
-        username_(RandomAlphaNumericString(8)),
+        keyword_(RandomAlphaNumericString(8)),
         pin_("1234"),
         password_(RandomAlphaNumericString(8)),
         ser_dm_(RandomString(1000)),
@@ -116,7 +116,7 @@ class AuthenticationTest : public testing::Test {
 #endif
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<Authentication> authentication_;
-  std::string username_, pin_, password_, ser_dm_, surrogate_ser_dm_;
+  std::string keyword_, pin_, password_, ser_dm_, surrogate_ser_dm_;
   AsioService asio_service_;
 
  private:
@@ -125,38 +125,38 @@ class AuthenticationTest : public testing::Test {
 };
 
 TEST_F(AuthenticationTest, FUNC_GoodLogin) {
-  ASSERT_EQ(kUserDoesntExist, authentication_->GetUserInfo(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_->CreateUserSysPackets(username_, pin_));
+  ASSERT_EQ(kUserDoesntExist, authentication_->GetUserInfo(keyword_, pin_));
+  ASSERT_EQ(kSuccess, authentication_->CreateUserSysPackets(keyword_, pin_));
   ASSERT_EQ(kSuccess, authentication_->CreateTmidPacket(password_,
                                                         ser_dm_,
                                                         surrogate_ser_dm_));
-  ASSERT_EQ(kUserExists, authentication_->GetUserInfo(username_, pin_));
+  ASSERT_EQ(kUserExists, authentication_->GetUserInfo(keyword_, pin_));
   std::string ser_dm_login, ser_dm_login1;
   authentication_->GetMasterDataMap(password_, &ser_dm_login, &ser_dm_login1);
   ASSERT_EQ(ser_dm_, ser_dm_login);
-  ASSERT_EQ(username_, session_->username());
+  ASSERT_EQ(keyword_, session_->keyword());
   ASSERT_EQ(pin_, session_->pin());
   SetPassword(password_);
 
   ASSERT_EQ(kSuccess, authentication_->SaveSession(ser_dm_ + "1"));
 
-  ASSERT_EQ(kUserExists, authentication_->GetUserInfo(username_, pin_));
+  ASSERT_EQ(kUserExists, authentication_->GetUserInfo(keyword_, pin_));
 
   ser_dm_login.clear();
   ser_dm_login1.clear();
   authentication_->GetMasterDataMap(password_, &ser_dm_login, &ser_dm_login1);
   ASSERT_EQ(ser_dm_ + "1", ser_dm_login);
-  ASSERT_EQ(username_, session_->username());
+  ASSERT_EQ(keyword_, session_->keyword());
   ASSERT_EQ(pin_, session_->pin());
 }
 
 TEST_F(AuthenticationTest, FUNC_LoginNoUser) {
-  ASSERT_EQ(kUserDoesntExist, authentication_->GetUserInfo(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_->CreateUserSysPackets(username_, pin_));
+  ASSERT_EQ(kUserDoesntExist, authentication_->GetUserInfo(keyword_, pin_));
+  ASSERT_EQ(kSuccess, authentication_->CreateUserSysPackets(keyword_, pin_));
   ASSERT_EQ(kSuccess, authentication_->CreateTmidPacket(password_,
                                                         ser_dm_,
                                                         surrogate_ser_dm_));
-  ASSERT_EQ(kUserExists, authentication_->GetUserInfo(username_, pin_));
+  ASSERT_EQ(kUserExists, authentication_->GetUserInfo(keyword_, pin_));
   std::string ser_dm_login, ser_dm_login1;
   password_ += "password_tonto";
   authentication_->GetMasterDataMap(password_, &ser_dm_login, &ser_dm_login1);
@@ -164,39 +164,39 @@ TEST_F(AuthenticationTest, FUNC_LoginNoUser) {
 }
 
 TEST_F(AuthenticationTest, FUNC_RegisterUserOnce) {
-  ASSERT_EQ(kUserDoesntExist, authentication_->GetUserInfo(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_->CreateUserSysPackets(username_, pin_));
+  ASSERT_EQ(kUserDoesntExist, authentication_->GetUserInfo(keyword_, pin_));
+  ASSERT_EQ(kSuccess, authentication_->CreateUserSysPackets(keyword_, pin_));
   ASSERT_EQ(kSuccess, authentication_->CreateTmidPacket(password_,
                                                         ser_dm_,
                                                         surrogate_ser_dm_));
-  ASSERT_EQ(username_, session_->username());
+  ASSERT_EQ(keyword_, session_->keyword());
   ASSERT_EQ(pin_, session_->pin());
   ASSERT_EQ(password_, session_->password());
 }
 
 TEST_F(AuthenticationTest, FUNC_RegisterUserWithoutNetworkCheck) {
-  ASSERT_EQ(kSuccess, authentication_->CreateUserSysPackets(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_->CreateUserSysPackets(keyword_, pin_));
   ASSERT_EQ(kSuccess, authentication_->CreateTmidPacket(password_,
                                                         ser_dm_,
                                                         surrogate_ser_dm_));
-  ASSERT_EQ(username_, session_->username());
+  ASSERT_EQ(keyword_, session_->keyword());
   ASSERT_EQ(pin_, session_->pin());
   ASSERT_EQ(password_, session_->password());
 }
 
 TEST_F(AuthenticationTest, FUNC_RegisterUserTwice) {
-  ASSERT_EQ(kUserDoesntExist, authentication_->GetUserInfo(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_->CreateUserSysPackets(username_, pin_));
+  ASSERT_EQ(kUserDoesntExist, authentication_->GetUserInfo(keyword_, pin_));
+  ASSERT_EQ(kSuccess, authentication_->CreateUserSysPackets(keyword_, pin_));
   ASSERT_EQ(kSuccess, authentication_->CreateTmidPacket(password_,
                                                         ser_dm_,
                                                         surrogate_ser_dm_));
   session_->Reset();
-  ASSERT_EQ(kUserExists, authentication_->GetUserInfo(username_, pin_));
+  ASSERT_EQ(kUserExists, authentication_->GetUserInfo(keyword_, pin_));
 }
 
 TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionBlocking) {
-  ASSERT_EQ(kUserDoesntExist, authentication_->GetUserInfo(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_->CreateUserSysPackets(username_, pin_));
+  ASSERT_EQ(kUserDoesntExist, authentication_->GetUserInfo(keyword_, pin_));
+  ASSERT_EQ(kSuccess, authentication_->CreateUserSysPackets(keyword_, pin_));
   ASSERT_EQ(kSuccess, authentication_->CreateTmidPacket(password_,
                                                         ser_dm_,
                                                         surrogate_ser_dm_));
@@ -215,8 +215,8 @@ TEST_F(AuthenticationTest, FUNC_RepeatedSaveSessionBlocking) {
 }
 
 TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
-  ASSERT_EQ(kUserDoesntExist, authentication_->GetUserInfo(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_->CreateUserSysPackets(username_, pin_));
+  ASSERT_EQ(kUserDoesntExist, authentication_->GetUserInfo(keyword_, pin_));
+  ASSERT_EQ(kSuccess, authentication_->CreateUserSysPackets(keyword_, pin_));
   ASSERT_EQ(kSuccess, authentication_->CreateTmidPacket(password_,
                                                         ser_dm_,
                                                         surrogate_ser_dm_));
@@ -229,18 +229,18 @@ TEST_F(AuthenticationTest, FUNC_ChangeUsername) {
 
   const std::string kNewName(RandomAlphaNumericString(9));
   ASSERT_EQ(kSuccess, authentication_->ChangeUsername(ser_dm_ + "2", kNewName));
-  ASSERT_EQ(kNewName, session_->username());
+  ASSERT_EQ(kNewName, session_->keyword());
 
   ASSERT_EQ(kUserExists, authentication_->GetUserInfo(kNewName, pin_));
   std::string ser_dm_login, ser_dm_login1;
   authentication_->GetMasterDataMap(password_, &ser_dm_login, &ser_dm_login1);
   ASSERT_EQ(ser_dm_ + "2", ser_dm_login);
-  ASSERT_EQ(kUserDoesntExist, authentication_->GetUserInfo(username_, pin_));
+  ASSERT_EQ(kUserDoesntExist, authentication_->GetUserInfo(keyword_, pin_));
 }
 
 TEST_F(AuthenticationTest, FUNC_ChangePin) {
-  ASSERT_EQ(kUserDoesntExist, authentication_->GetUserInfo(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_->CreateUserSysPackets(username_, pin_));
+  ASSERT_EQ(kUserDoesntExist, authentication_->GetUserInfo(keyword_, pin_));
+  ASSERT_EQ(kSuccess, authentication_->CreateUserSysPackets(keyword_, pin_));
   ASSERT_EQ(kSuccess, authentication_->CreateTmidPacket(password_,
                                                         ser_dm_,
                                                         surrogate_ser_dm_));
@@ -255,16 +255,16 @@ TEST_F(AuthenticationTest, FUNC_ChangePin) {
   ASSERT_EQ(kSuccess, authentication_->ChangePin(ser_dm_ + "2", kNewPin));
   ASSERT_EQ(kNewPin, session_->pin());
 
-  ASSERT_EQ(kUserExists, authentication_->GetUserInfo(username_, kNewPin));
+  ASSERT_EQ(kUserExists, authentication_->GetUserInfo(keyword_, kNewPin));
   std::string ser_dm_login, ser_dm_login1;
   authentication_->GetMasterDataMap(password_, &ser_dm_login, &ser_dm_login1);
   ASSERT_EQ(ser_dm_ + "2", ser_dm_login);
-  ASSERT_EQ(kUserDoesntExist, authentication_->GetUserInfo(username_, pin_));
+  ASSERT_EQ(kUserDoesntExist, authentication_->GetUserInfo(keyword_, pin_));
 }
 
 TEST_F(AuthenticationTest, FUNC_ChangePassword) {
-  ASSERT_EQ(kUserDoesntExist, authentication_->GetUserInfo(username_, pin_));
-  ASSERT_EQ(kSuccess, authentication_->CreateUserSysPackets(username_, pin_));
+  ASSERT_EQ(kUserDoesntExist, authentication_->GetUserInfo(keyword_, pin_));
+  ASSERT_EQ(kSuccess, authentication_->CreateUserSysPackets(keyword_, pin_));
   ASSERT_EQ(kSuccess, authentication_->CreateTmidPacket(password_,
                                                         ser_dm_,
                                                         surrogate_ser_dm_));
@@ -275,13 +275,13 @@ TEST_F(AuthenticationTest, FUNC_ChangePassword) {
   ASSERT_EQ(kNewPassword, session_->password());
 
   std::string ser_dm_login, ser_dm_login1;
-  ASSERT_EQ(kUserExists, authentication_->GetUserInfo(username_, pin_));
+  ASSERT_EQ(kUserExists, authentication_->GetUserInfo(keyword_, pin_));
   authentication_->GetMasterDataMap(password_, &ser_dm_login, &ser_dm_login1);
   ASSERT_NE(ser_dm_, ser_dm_login);
 
   ser_dm_login.clear();
   ser_dm_login1.clear();
-  ASSERT_EQ(kUserExists, authentication_->GetUserInfo(username_, pin_));
+  ASSERT_EQ(kUserExists, authentication_->GetUserInfo(keyword_, pin_));
   authentication_->GetMasterDataMap(kNewPassword,
                                     &ser_dm_login,
                                     &ser_dm_login1);

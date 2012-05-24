@@ -71,8 +71,8 @@ enum ReturnCode {
   kChangePasswordFailure = -201020,
   kAtLeastOneFailure = -201021,
 
-  // Client Controller
-  kUserCredentialsNotInitialised = -202001,
+  // User Credentials
+  kCredentialValidityFailure = -202001,
 
   // Session
   kLiveContactNotFound = -204001,

@@ -857,7 +857,7 @@ int NewAuthentication::SerialiseAndSetIdentity(const std::string &username,
   }
 
   result = passport_.SetIdentityPackets(
-               username.empty()? session_->username() : username,
+               username.empty()? session_->keyword() : username,
                pin. empty() ? session_->pin() : pin,
                password.empty() ? session_->password() : password,
                serialised_data_atlas,

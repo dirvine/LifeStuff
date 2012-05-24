@@ -256,7 +256,7 @@ int LifeStuffImpl::Finalise() {
 }
 
 /// Credential operations
-int LifeStuffImpl::CreateUser(const std::string &username,
+int LifeStuffImpl::CreateUser(const std::string &keyword,
                               const std::string &pin,
                               const std::string &password) {
   if (state_ != kConnected) {
@@ -264,12 +264,13 @@ int LifeStuffImpl::CreateUser(const std::string &username,
     return kGeneralError;
   }
 
-  if (!user_credentials_->CreateUser(username, pin, password)) {
+  int result(user_credentials_->CreateUser(keyword, pin, password));
+  if (result != kSuccess) {
     DLOG(ERROR) << "Failed to Create User.";
-    return kGeneralError;
+    return result;
   }
 
-  int result(SetValidPmidAndInitialisePublicComponents());
+  result = SetValidPmidAndInitialisePublicComponents();
   if (result != kSuccess)  {
     DLOG(ERROR) << "Failed to set valid PMID";
     return result;
@@ -343,7 +344,7 @@ int LifeStuffImpl::CreatePublicId(const std::string &public_id) {
   return kSuccess;
 }
 
-int LifeStuffImpl::LogIn(const std::string &username,
+int LifeStuffImpl::LogIn(const std::string &keyword,
                          const std::string &pin,
                          const std::string &password) {
   if (!(state_ == kConnected || state_ == kLoggedOut)) {
@@ -351,15 +352,10 @@ int LifeStuffImpl::LogIn(const std::string &username,
     return kGeneralError;
   }
 
-  int result(user_credentials_->CheckUserExists(username, pin));
+  int result(user_credentials_->LogIn(keyword, pin, password));
   if (result != kUserExists) {
     DLOG(ERROR) << "User doesn't exist.";
     return result;
-  }
-
-  if (!user_credentials_->ValidateUser(password)) {
-    DLOG(ERROR) << "Wrong password.";
-    return kGeneralError;
   }
 
   result =SetValidPmidAndInitialisePublicComponents();
@@ -461,7 +457,7 @@ int LifeStuffImpl::CheckPassword(const std::string &password) {
   return session_->password() == password ? kSuccess : kGeneralError;
 }
 
-int LifeStuffImpl::ChangeKeyword(const std::string &new_username,
+int LifeStuffImpl::ChangeKeyword(const std::string &new_keyword,
                                  const std::string &password) {
   if (state_ != kLoggedIn) {
     DLOG(ERROR) << "Should be logged in to log out.";
@@ -474,13 +470,12 @@ int LifeStuffImpl::ChangeKeyword(const std::string &new_username,
     return result;
   }
 
-  if (new_username.compare(session_->username()) == 0) {
+  if (new_keyword.compare(session_->keyword()) == 0) {
     DLOG(INFO) << "Same value for old and new.";
     return kSuccess;
   }
 
-  return user_credentials_->ChangeUsername(new_username) ?
-         kSuccess : kGeneralError;
+  return user_credentials_->ChangeKeyword(new_keyword);
 }
 
 int LifeStuffImpl::ChangePin(const std::string &new_pin,
@@ -501,7 +496,7 @@ int LifeStuffImpl::ChangePin(const std::string &new_pin,
     return kSuccess;
   }
 
-  return user_credentials_->ChangePin(new_pin) ? kSuccess : kGeneralError;
+  return user_credentials_->ChangePin(new_pin);
 }
 
 int LifeStuffImpl::ChangePassword(const std::string &new_password,
@@ -522,8 +517,7 @@ int LifeStuffImpl::ChangePassword(const std::string &new_password,
     return kSuccess;
   }
 
-  return user_credentials_->ChangePassword(new_password) ?
-         kSuccess : kGeneralError;
+  return user_credentials_->ChangePassword(new_password);
 }
 
 /// Contact operations

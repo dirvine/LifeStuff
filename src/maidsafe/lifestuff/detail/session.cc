@@ -43,14 +43,14 @@ namespace lifestuff {
 struct UserDetails {
   UserDetails()
       : defconlevel(kDefCon3),
-        username(),
+        keyword(),
         pin(),
         password(),
         session_name(),
         unique_user_id(),
         root_parent_id() {}
   DefConLevels defconlevel;
-  std::string username, pin, password, session_name, unique_user_id,
+  std::string keyword, pin, password, session_name, unique_user_id,
               root_parent_id;
 };
 
@@ -71,7 +71,7 @@ Session::~Session() {}
 
 bool Session::Reset() {
   user_details_->defconlevel = kDefCon3;
-  user_details_->username.clear();
+  user_details_->keyword.clear();
   user_details_->pin.clear();
   user_details_->password.clear();
   user_details_->session_name.clear();
@@ -119,7 +119,7 @@ PublicIdContactMap Session::GetAllContacts(ContactStatus status) {
 DefConLevels Session::def_con_level() const {
   return user_details_->defconlevel;
 }
-std::string Session::username() const { return user_details_->username; }
+std::string Session::keyword() const { return user_details_->keyword; }
 std::string Session::pin() const { return user_details_->pin; }
 std::string Session::password() const { return user_details_->password; }
 std::string Session::session_name() const {
@@ -173,21 +173,21 @@ bool Session::logged_in() const {
 void Session::set_def_con_level(DefConLevels defconlevel) {
   user_details_->defconlevel = defconlevel;
 }
-void Session::set_username(const std::string &username) {
-  user_details_->username = username;
+void Session::set_keyword(const std::string &keyword) {
+  user_details_->keyword = keyword;
 }
 void Session::set_pin(const std::string &pin) { user_details_->pin = pin; }
 void Session::set_password(const std::string &password) {
   user_details_->password = password;
 }
 bool Session::set_session_name() {
-  if (username().empty() || pin().empty()) {
-    DLOG(ERROR) << "username: " << std::boolalpha << username().empty()
+  if (keyword().empty() || pin().empty()) {
+    DLOG(ERROR) << "keyword: " << std::boolalpha << keyword().empty()
                 << ", pin: " << std::boolalpha << pin().empty();
     return false;
   }
   user_details_->session_name =
-      EncodeToHex(crypto::Hash<crypto::SHA1>(pin() + username()));
+      EncodeToHex(crypto::Hash<crypto::SHA1>(pin() + keyword()));
   return true;
 }
 void Session::clear_session_name() { user_details_->session_name.clear(); }

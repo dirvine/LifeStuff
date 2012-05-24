@@ -30,18 +30,6 @@
 #include <set>
 #include <vector>
 
-#ifdef __MSVC__
-#  pragma warning(push)
-#  pragma warning(disable: 4127 4244 4267)
-#endif
-
-#include "boost/scoped_ptr.hpp"
-#include "boost/utility.hpp"
-
-#ifdef __MSVC__
-#  pragma warning(pop)
-#endif
-
 #include "maidsafe/passport/passport.h"
 
 #include "maidsafe/lifestuff/lifestuff.h"
@@ -71,7 +59,7 @@ class Session {
   PublicIdContactMap GetAllContacts(ContactStatus status);
 
   DefConLevels def_con_level() const;
-  std::string username() const;
+  std::string keyword() const;
   std::string pin() const;
   std::string password() const;
   std::string session_name() const;
@@ -80,7 +68,7 @@ class Session {
   std::string profile_picture_data_map(const std::string &public_id) const;
 
   void set_def_con_level(DefConLevels defconlevel);
-  void set_username(const std::string &username);
+  void set_keyword(const std::string &keyword);
   void set_pin(const std::string &pin);
   void set_password(const std::string &password);
   bool set_session_name();
