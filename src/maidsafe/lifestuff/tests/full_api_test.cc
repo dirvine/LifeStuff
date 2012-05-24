@@ -554,10 +554,9 @@ TEST(IndependentFullTest, FUNC_ChangeCredentials) {
   EXPECT_EQ(kSuccess, test_elements1.CheckPassword(password));
 
   // Change credentials
-  EXPECT_EQ(kSuccess, test_elements1.ChangeKeyword(username,
-                                                   username + username,
+  EXPECT_EQ(kSuccess, test_elements1.ChangeKeyword(username + username,
                                                    password));
-  EXPECT_EQ(kSuccess, test_elements1.ChangePin(pin, new_pin, password));
+  EXPECT_EQ(kSuccess, test_elements1.ChangePin(new_pin, password));
   EXPECT_EQ(kSuccess, test_elements1.ChangePassword(password,
                                                     password + password));
 
@@ -566,17 +565,14 @@ TEST(IndependentFullTest, FUNC_ChangeCredentials) {
   EXPECT_EQ(kSuccess, test_elements1.LogIn(username + username,
                                            new_pin,
                                            password + password));
-  EXPECT_EQ(kSuccess, test_elements1.ChangeKeyword(username + username,
-                                                   username,
+  EXPECT_EQ(kSuccess, test_elements1.ChangeKeyword(username,
                                                    password + password));
   EXPECT_EQ(kSuccess, test_elements1.LogOut());
 
   EXPECT_EQ(kSuccess, test_elements1.LogIn(username,
                                            new_pin,
                                            password + password));
-  EXPECT_EQ(kSuccess, test_elements1.ChangePin(new_pin,
-                                               pin,
-                                               password + password));
+  EXPECT_EQ(kSuccess, test_elements1.ChangePin(pin, password + password));
   EXPECT_EQ(kSuccess, test_elements1.LogOut());
 
   EXPECT_EQ(kSuccess, test_elements1.LogIn(username, pin, password + password));
@@ -586,10 +582,8 @@ TEST(IndependentFullTest, FUNC_ChangeCredentials) {
 
   EXPECT_EQ(kSuccess, test_elements1.LogIn(username, pin, password));
   EXPECT_EQ(kSuccess, test_elements1.CheckPassword(password));
-  EXPECT_EQ(kSuccess, test_elements1.ChangeKeyword(username,
-                                                   username,
-                                                   password));
-  EXPECT_EQ(kSuccess, test_elements1.ChangePin(pin, pin, password));
+  EXPECT_EQ(kSuccess, test_elements1.ChangeKeyword(username, password));
+  EXPECT_EQ(kSuccess, test_elements1.ChangePin(pin, password));
   EXPECT_EQ(kSuccess, test_elements1.ChangePassword(password, password));
   EXPECT_EQ(kSuccess, test_elements1.LogOut());
 

@@ -119,14 +119,12 @@ class LifeStuffImpl {
   int LogOut();
 
   int CheckPassword(const std::string &password);
-  int ChangeKeyword(const std::string &old_username,
-                    const std::string &new_username,
+  int ChangeKeyword(const std::string &new_username,
                     const std::string &password);
-  int ChangePin(const std::string &old_pin,
-                const std::string &new_pin,
+  int ChangePin(const std::string &new_pin,
                 const std::string &password);
-  int ChangePassword(const std::string &old_password,
-                     const std::string &new_password);
+  int ChangePassword(const std::string &new_password,
+                     const std::string &current_password);
   int ChangePublicId(const std::string &public_id,
                      const std::string &password);
 

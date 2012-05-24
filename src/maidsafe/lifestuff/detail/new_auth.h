@@ -76,8 +76,8 @@ class NewAuthentication {
 
   int SaveSession();
 
-  int ChangeUsername(const std::string &new_username);
-  int ChangePin(const std::string &new_pin);
+  int ChangeUsernamePin(const std::string &new_username,
+                        const std::string &new_pin);
   int ChangePassword(const std::string &new_password);
 
  private:
@@ -122,8 +122,10 @@ class NewAuthentication {
 
   void ModifyMid(OperationResults &results);
   void ModifySmid(OperationResults &results);
-  void StoreNewTmid(OperationResults &results);
-  void DeleteOldStmid(OperationResults &results);
+  void ModifyIdentity(OperationResults &results,
+                      int identity_type,
+                      int signer_type,
+                      int index);
 
   int DeleteOldIdentityPackets();
   void DeleteMid(OperationResults &results);
@@ -134,6 +136,13 @@ class NewAuthentication {
                       int packet_type,
                       int signer_type,
                       int index);
+
+  int DoChangePasswordAdditions();
+  int DoChangePasswordRemovals();
+
+  int SerialiseAndSetIdentity(const std::string &username,
+                              const std::string &pin,
+                              const std::string &password);
 };
 
 }  // namespace lifestuff

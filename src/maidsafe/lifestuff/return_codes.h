@@ -67,6 +67,9 @@ enum ReturnCode {
   kStoreIdentityPacketsFailure = -201016,
   kSaveSessionFailure = -201017,
   kDeleteIdentityPacketsFailure = -201018,
+  kChangeUsernamePinFailure = -201019,
+  kChangePasswordFailure = -201020,
+  kAtLeastOneFailure = -201021,
 
   // Client Controller
   kUserCredentialsNotInitialised = -202001,

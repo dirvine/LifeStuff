@@ -461,8 +461,7 @@ int LifeStuffImpl::CheckPassword(const std::string &password) {
   return session_->password() == password ? kSuccess : kGeneralError;
 }
 
-int LifeStuffImpl::ChangeKeyword(const std::string &old_username,
-                                 const std::string &new_username,
+int LifeStuffImpl::ChangeKeyword(const std::string &new_username,
                                  const std::string &password) {
   if (state_ != kLoggedIn) {
     DLOG(ERROR) << "Should be logged in to log out.";
@@ -475,12 +474,7 @@ int LifeStuffImpl::ChangeKeyword(const std::string &old_username,
     return result;
   }
 
-  if (session_->username() != old_username) {
-    DLOG(ERROR) << "Keyword verification failed.";
-    return kGeneralError;
-  }
-
-  if (old_username.compare(new_username) == 0) {
+  if (new_username.compare(session_->username()) == 0) {
     DLOG(INFO) << "Same value for old and new.";
     return kSuccess;
   }
@@ -489,8 +483,7 @@ int LifeStuffImpl::ChangeKeyword(const std::string &old_username,
          kSuccess : kGeneralError;
 }
 
-int LifeStuffImpl::ChangePin(const std::string &old_pin,
-                             const std::string &new_pin,
+int LifeStuffImpl::ChangePin(const std::string &new_pin,
                              const std::string &password) {
   if (state_ != kLoggedIn) {
     DLOG(ERROR) << "Should be logged in to log out.";
@@ -503,12 +496,7 @@ int LifeStuffImpl::ChangePin(const std::string &old_pin,
     return result;
   }
 
-  if (session_->pin() != old_pin) {
-    DLOG(ERROR) << "Keyword verification failed.";
-    return kGeneralError;
-  }
-
-  if (old_pin.compare(new_pin) == 0) {
+  if (new_pin.compare(session_->pin()) == 0) {
     DLOG(INFO) << "Same value for old and new.";
     return kSuccess;
   }
@@ -516,20 +504,20 @@ int LifeStuffImpl::ChangePin(const std::string &old_pin,
   return user_credentials_->ChangePin(new_pin) ? kSuccess : kGeneralError;
 }
 
-int LifeStuffImpl::ChangePassword(const std::string &old_password,
-                                  const std::string &new_password) {
+int LifeStuffImpl::ChangePassword(const std::string &new_password,
+                                  const std::string &current_password) {
   if (state_ != kLoggedIn) {
     DLOG(ERROR) << "Should be logged in to log out.";
     return kGeneralError;
   }
 
-  int result(CheckPassword(old_password));
+  int result(CheckPassword(current_password));
   if (result != kSuccess) {
     DLOG(ERROR) << "Password verification failed.";
     return result;
   }
 
-  if (old_password.compare(new_password) == 0) {
+  if (current_password.compare(new_password) == 0) {
     DLOG(INFO) << "Same value for old and new.";
     return kSuccess;
   }
