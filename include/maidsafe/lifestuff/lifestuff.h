@@ -80,8 +80,29 @@ enum PrivateShareRoles {
   kShareOwner = drive::kShareOwner
 };
 
+// extern const size_t kMaxChatMessageSize(1 * 1024 * 1024);
+// extern const uint32_t kFileRecontructionLimit(20 * 1024 * 1024);
+// extern const uint16_t kIntervalSeconds(5000);
+// extern const uint8_t kThreads(10);
+// extern const uint8_t kSecondsInterval(5);
+// extern const size_t kMinWordSize(5);
+// extern const size_t kMaxWordSize(30);
+// extern const size_t kPinSize(4);
+// extern const std::string kLiteralOnline("kOnline");
+// extern const std::string kLiteralOffline("kOffline");
+// extern const std::string kBlankProfilePicture("BlankPicture");
+// extern const std::string kAppHomeDirectory(".lifestuff");
+// extern const std::string kMyStuff("My Stuff");
+// extern const std::string kDownloadStuff("Accepted Files");
+
+// extern const std::string kSharedStuff("Shared Stuff");
+// extern const std::string kHiddenFileExtension(".ms_hidden");
+// const std::string kSharedStuff(drive::kMsShareRoot.filename().string());
+// const std::string kHiddenFileExtension(drive::kMsHidden.string());
+
 extern const size_t kMaxChatMessageSize;
 extern const uint32_t kFileRecontructionLimit;
+extern const uint16_t kIntervalSeconds;
 extern const uint8_t kThreads;
 extern const uint8_t kSecondsInterval;
 extern const size_t kMinWordSize;
@@ -95,7 +116,6 @@ extern const std::string kDownloadStuff;
 extern const std::string kSharedStuff;
 extern const std::string kBlankProfilePicture;
 extern const std::string kHiddenFileExtension;
-
 
 /// General
 typedef std::function<void(const std::string&,

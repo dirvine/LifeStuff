@@ -58,17 +58,19 @@ endif()
 set(PATH_TO_SRC ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff)
 ####    CODE    ####
 # Installables
-file(GLOB SOURCE_FILES_LIFESTUFF_DIR "${PATH_TO_SRC}/*.cc")
-file(GLOB HEADER_FILES_LIFESTUFF_DIR "${PATH_TO_SRC}/*.h")
-file(GLOB API_FILES_LIFESTUFF_DIR "${PROJECT_SOURCE_DIR}/include/maidsafe/lifestuff/*.h")
+file(GLOB SOURCE_FILES_LIFESTUFF_DIR "${PATH_TO_SRC}/lifestuff_api*.cc" "${PATH_TO_SRC}/rcs_helper.cc")
+file(GLOB HEADER_FILES_LIFESTUFF_DIR "${PATH_TO_SRC}/lifestuff_api_impl.h" "${PATH_TO_SRC}/rcs_helper.h")
+file(GLOB API_FILES_LIFESTUFF_DIR "${PROJECT_SOURCE_DIR}/include/maidsafe/lifestuff/lifestuff_api.h")
 set(ALL_FILES_LIFESTUFF_DIR ${SOURCE_FILES_LIFESTUFF_DIR} ${HEADER_FILES_LIFESTUFF_DIR} ${API_FILES_LIFESTUFF_DIR})
 source_group("LifeStuff Source Files" FILES ${SOURCE_FILES_LIFESTUFF_DIR})
 source_group("LifeStuff Header Files" FILES ${HEADER_FILES_LIFESTUFF_DIR})
 source_group("LifeStuff API Files" FILES ${API_FILES_LIFESTUFF_DIR})
 
 # Detail
-file(GLOB SOURCE_FILES_DETAIL_DIR "${PATH_TO_SRC}/detail/*.cc")
-file(GLOB HEADER_FILES_DETAIL_DIR "${PATH_TO_SRC}/detail/*.h")
+file(GLOB SOURCE_FILES_DETAIL_DIR "${PATH_TO_SRC}/detail/*.cc" "${PATH_TO_SRC}/lifestuff.cc")
+file(GLOB HEADER_FILES_DETAIL_DIR "${PATH_TO_SRC}/detail/*.h"
+                                  "${PROJECT_SOURCE_DIR}/include/maidsafe/lifestuff/lifestuff.h"
+                                  "${PROJECT_SOURCE_DIR}/include/maidsafe/lifestuff/return_codes.h")
 set(ALL_FILES_DETAIL_DIR ${SOURCE_FILES_DETAIL_DIR} ${HEADER_FILES_DETAIL_DIR})
 source_group("LifeStuff Detail Source Files" FILES ${SOURCE_FILES_DETAIL_DIR})
 source_group("LifeStuff Detail Header Files" FILES ${HEADER_FILES_DETAIL_DIR})
