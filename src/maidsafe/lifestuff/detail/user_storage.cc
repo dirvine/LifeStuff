@@ -30,11 +30,11 @@
 #include "maidsafe/encrypt/self_encryptor.h"
 
 #include "maidsafe/lifestuff/log.h"
-#include "maidsafe/lifestuff/version.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
 #include "maidsafe/lifestuff/detail/data_atlas_pb.h"
 #include "maidsafe/lifestuff/detail/message_handler.h"
 #include "maidsafe/lifestuff/detail/session.h"
+
 
 namespace args = std::placeholders;
 namespace fs = boost::filesystem;

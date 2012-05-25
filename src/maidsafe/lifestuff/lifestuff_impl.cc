@@ -1597,43 +1597,43 @@ fs::path LifeStuffImpl::mount_path() const {
 
 void LifeStuffImpl::ConnectInternalElements() {
   message_handler_->ConnectToParseAndSaveDataMapSignal(
-      std::bind(&UserStorage::ParseAndSaveDataMap, user_storage_.get(),
-                args::_1, args::_2, args::_3));
+      boost::bind(&UserStorage::ParseAndSaveDataMap, user_storage_.get(),
+                  _1, _2, _3));
 
   message_handler_->ConnectToSavePrivateShareDataSignal(
-      std::bind(&UserStorage::SavePrivateShareData,
-                user_storage_.get(), args::_1, args::_2));
+      boost::bind(&UserStorage::SavePrivateShareData,
+                  user_storage_.get(), _1, _2));
 
   message_handler_->ConnectToPrivateShareUserLeavingSignal(
-      std::bind(&UserStorage::UserLeavingShare,
-                user_storage_.get(), args::_2, args::_3));
+      boost::bind(&UserStorage::UserLeavingShare,
+                  user_storage_.get(), _2, _3));
 
   message_handler_->ConnectToSaveOpenShareDataSignal(
-      std::bind(&UserStorage::SaveOpenShareData,
-                user_storage_.get(), args::_1, args::_2));
+      boost::bind(&UserStorage::SaveOpenShareData,
+                  user_storage_.get(), _1, _2));
 
   message_handler_->ConnectToPrivateShareDeletionSignal(
-      std::bind(&UserStorage::ShareDeleted, user_storage_.get(), args::_3));
+      boost::bind(&UserStorage::ShareDeleted, user_storage_.get(), _3));
 
   message_handler_->ConnectToPrivateShareUpdateSignal(
-      std::bind(&UserStorage::UpdateShare, user_storage_.get(),
-                args::_1, args::_2, args::_3, args::_4));
+      boost::bind(&UserStorage::UpdateShare, user_storage_.get(),
+                  _1, _2, _3, _4));
 
   message_handler_->ConnectToPrivateMemberAccessLevelSignal(
-      std::bind(&UserStorage::MemberAccessChange,
-                user_storage_.get(), args::_4, args::_5));
+      boost::bind(&UserStorage::MemberAccessChange,
+                  user_storage_.get(), _4, _5));
 
   public_id_->ConnectToContactConfirmedSignal(
-      std::bind(&MessageHandler::InformConfirmedContactOnline,
-                message_handler_.get(), args::_1, args::_2));
+      boost::bind(&MessageHandler::InformConfirmedContactOnline,
+                  message_handler_.get(), _1, _2));
 
   message_handler_->ConnectToContactDeletionSignal(
-      std::bind(&PublicId::RemoveContactHandle,
-                public_id_.get(), args::_1, args::_2));
+      boost::bind(&PublicId::RemoveContactHandle,
+                  public_id_.get(), _1, _2));
 
   message_handler_->ConnectToPrivateShareDetailsSignal(
-      std::bind(&UserStorage::GetShareDetails, user_storage_.get(),
-                args::_1, args::_2, nullptr, nullptr, nullptr));
+      boost::bind(&UserStorage::GetShareDetails, user_storage_.get(),
+                  _1, _2, nullptr, nullptr, nullptr));
 }
 
 int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
@@ -1646,8 +1646,8 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
     return result;
   }
   client_container_->set_key_pair(session_->GetPmidKeys());
-  if (!client_container_->Init(buffered_path_ / "buffered_chunk_store",
-                               10, 4)) {
+  if (!client_container_->InitClientContainer(
+          buffered_path_ / "buffered_chunk_store", 10, 4)) {
     DLOG(ERROR) << "Failed to initialise cliento container.";
     return kGeneralError;
   }

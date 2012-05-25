@@ -20,6 +20,7 @@
 #include <iostream>  // NOLINT (Fraser)
 #include <istream>  // NOLINT (Fraser)
 #include <ostream>  // NOLINT (Fraser)
+#include <regex>
 #include <string>
 #include <vector>
 
@@ -290,7 +291,7 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
 ClientContainerPtr SetUpClientContainer(
     const fs::path &base_dir) {
   ClientContainerPtr client_container(new pd::ClientContainer);
-  if (!client_container->Init(base_dir / "buffered_chunk_store", 10, 4)) {
+  if (!client_container->InitClientContainer(base_dir / "buffered_chunk_store", 10, 4)) {
     DLOG(ERROR) << "Failed to initialise client container.";
     return nullptr;
   }

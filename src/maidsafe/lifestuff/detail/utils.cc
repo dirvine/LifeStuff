@@ -20,6 +20,7 @@
 #include <iostream>  // NOLINT (Fraser)
 #include <istream>  // NOLINT (Fraser)
 #include <ostream>  // NOLINT (Fraser)
+#include <regex>
 #include <vector>
 
 #include "boost/archive/text_iarchive.hpp"
@@ -68,8 +69,8 @@ bool AcceptableWordSize(const std::string &word) {
 }
 
 bool AcceptableWordPattern(const std::string &word) {
-  boost::regex space(" ");
-  return !boost::regex_search(word.begin(), word.end(), space);
+  std::regex space(" ");
+  return !std::regex_search(word.begin(), word.end(), space);
 }
 
 bool CheckWordValidity(const std::string &word) {
@@ -104,8 +105,8 @@ bool CheckPinValidity(const std::string &pin) {
     std::string pattern("[0-9]{" +
                         boost::lexical_cast<std::string>(kPinSize) +
                         "}");
-    boost::regex rx(pattern);
-    return boost::regex_match(pin.begin(), pin.end(), rx);
+    std::regex rx(pattern);
+    return std::regex_match(pin.begin(), pin.end(), rx);
   }
   catch(const std::exception &e) {
     DLOG(ERROR) << e.what();
