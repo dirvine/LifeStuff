@@ -872,9 +872,10 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
   std::shared_ptr<Session> session3(new Session);
   std::shared_ptr<UserCredentials> user_credentials3(
       new UserCredentials(remote_chunk_store3, session3));
-  EXPECT_TRUE(user_credentials3->CreateUser(RandomAlphaNumericString(6),
-                                            CreatePin(),
-                                            RandomAlphaNumericString(6)));
+  EXPECT_EQ(kSuccess,
+            user_credentials3->CreateUser(RandomAlphaNumericString(6),
+                                          CreatePin(),
+                                          RandomAlphaNumericString(6)));
   std::shared_ptr<PublicId> public_id3(
       new PublicId(remote_chunk_store3, session3, asio_service3.service()));
   std::shared_ptr<MessageHandler> message_handler3(

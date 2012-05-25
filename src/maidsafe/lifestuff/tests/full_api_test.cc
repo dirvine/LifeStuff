@@ -557,8 +557,8 @@ TEST(IndependentFullTest, FUNC_ChangeCredentials) {
   EXPECT_EQ(kSuccess, test_elements1.ChangeKeyword(username + username,
                                                    password));
   EXPECT_EQ(kSuccess, test_elements1.ChangePin(new_pin, password));
-  EXPECT_EQ(kSuccess, test_elements1.ChangePassword(password,
-                                                    password + password));
+  EXPECT_EQ(kSuccess, test_elements1.ChangePassword(password + password,
+                                                    password));
 
   EXPECT_EQ(kSuccess, test_elements1.LogOut());
 
@@ -576,8 +576,8 @@ TEST(IndependentFullTest, FUNC_ChangeCredentials) {
   EXPECT_EQ(kSuccess, test_elements1.LogOut());
 
   EXPECT_EQ(kSuccess, test_elements1.LogIn(username, pin, password + password));
-  EXPECT_EQ(kSuccess, test_elements1.ChangePassword(password + password,
-                                                    password));
+  EXPECT_EQ(kSuccess, test_elements1.ChangePassword(password,
+                                                    password + password));
   EXPECT_EQ(kSuccess, test_elements1.LogOut());
 
   EXPECT_EQ(kSuccess, test_elements1.LogIn(username, pin, password));
@@ -1247,6 +1247,11 @@ TEST(IndependentFullTest, FUNC_CreateOpenShare) {
     EXPECT_TRUE(fs::exists(share / file2_name, error_code));
     EXPECT_EQ(0, error_code.value());
 
+    int count(0), limit(30);
+    while ((fs::exists(directory / share_name, error_code) && !error_code) &&
+           count++ < limit) {
+      Sleep(bptime::milliseconds(100));
+    }
     EXPECT_FALSE(fs::exists(directory / share_name, error_code));
     EXPECT_NE(0, error_code.value());
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -1361,6 +1366,11 @@ TEST(IndependentFullTest, FUNC_InviteOpenShareMembers) {
     EXPECT_TRUE(fs::exists(share / file2_name, error_code));
     EXPECT_EQ(0, error_code.value());
 
+    int count(0), limit(30);
+    while ((fs::exists(directory / share1_name, error_code) && !error_code) &&
+           count++ < limit) {
+      Sleep(bptime::milliseconds(100));
+    }
     EXPECT_FALSE(fs::exists(directory / share1_name, error_code));
     EXPECT_NE(0, error_code.value());
 
@@ -1411,6 +1421,11 @@ TEST(IndependentFullTest, FUNC_InviteOpenShareMembers) {
     EXPECT_TRUE(fs::exists(share2 / file3_name, error_code));
     EXPECT_EQ(0, error_code.value());
 
+    int count(0), limit(30);
+    while ((fs::exists(directory / share2_name, error_code) && !error_code) &&
+           count++ < limit) {
+      Sleep(bptime::milliseconds(100));
+    }
     EXPECT_FALSE(fs::exists(directory / share2_name, error_code));
     EXPECT_NE(0, error_code.value());
 
@@ -1534,6 +1549,11 @@ TEST(IndependentFullTest, FUNC_LeaveOpenShare) {
     EXPECT_TRUE(fs::exists(share / file2_name, error_code));
     EXPECT_EQ(0, error_code.value());
 
+    int count(0), limit(30);
+    while ((fs::exists(directory / share_name, error_code) && !error_code) &&
+           count++ < limit) {
+      Sleep(bptime::milliseconds(100));
+    }
     EXPECT_FALSE(fs::exists(directory / share_name, error_code));
     EXPECT_NE(0, error_code.value());
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -1706,6 +1726,11 @@ TEST(IndependentFullTest, FUNC_SameOpenShareName) {
     EXPECT_EQ(0, error_code.value());
     EXPECT_EQ(stored_share_name, share_name);
 
+    int count(0), limit(30);
+    while ((fs::exists(directory1 / share_name, error_code) && !error_code) &&
+           count++ < limit) {
+      Sleep(bptime::milliseconds(100));
+    }
     EXPECT_FALSE(fs::exists(directory1 / share_name, error_code));
     EXPECT_NE(0, error_code.value());
 
@@ -1939,6 +1964,11 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
                   &share_name1,
                   &results));
 
+    int count(0), limit(30);
+    while ((fs::exists(share_path, error_code) && !error_code) &&
+           count++ < limit) {
+      Sleep(bptime::milliseconds(100));
+    }
     EXPECT_FALSE(fs::exists(share_path, error_code)) << share_path;
     share_path = test_elements1.mount_path() /
                  kSharedStuff /
@@ -2084,6 +2114,11 @@ TEST_P(PrivateSharesApiTest, FUNC_RejectInvitationPrivateShare) {
                   &share_name1,
                   &results));
 
+    int count(0), limit(30);
+    while ((fs::exists(share_path, error_code) && !error_code) &&
+           count++ < limit) {
+      Sleep(bptime::milliseconds(100));
+    }
     EXPECT_FALSE(fs::exists(share_path, error_code)) << share_path;
     share_path = test_elements1.mount_path() /
                  kSharedStuff /

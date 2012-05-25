@@ -353,7 +353,7 @@ int LifeStuffImpl::LogIn(const std::string &keyword,
   }
 
   int result(user_credentials_->LogIn(keyword, pin, password));
-  if (result != kUserExists) {
+  if (result != kSuccess) {
     DLOG(ERROR) << "User doesn't exist.";
     return result;
   }
@@ -425,7 +425,7 @@ int LifeStuffImpl::LogOut() {
   public_id_->ShutDown();
   message_handler_->ShutDown();
 
-  if (!user_credentials_->Logout()) {
+  if (user_credentials_->Logout() != kSuccess) {
     DLOG(ERROR) << "Failed to log out.";
     return kGeneralError;
   }
