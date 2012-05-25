@@ -291,7 +291,7 @@ int UserStorage::CreateShare(const std::string &sender_public_id,
                       ComposeSignaturePacketValue(*signature_packets[0]),
                       callback,
                       validation_data);
-  result = WaitForResults(&mutex, &cond_var, &results);
+  result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess) {
     DLOG(ERROR) << "Timed out waiting for the response";
     return result;
@@ -377,7 +377,7 @@ int UserStorage::CreateOpenShare(const std::string &sender_public_id,
                       ComposeSignaturePacketValue(*signature_packets[0]),
                       callback,
                       validation_data);
-  result = WaitForResults(&mutex, &cond_var, &results);
+  result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess) {
     DLOG(ERROR) << "Timed out waiting for the response";
     return result;
@@ -524,7 +524,7 @@ int UserStorage::StopShare(const std::string &sender_public_id,
                                          &mutex, &cond_var, &results[0]));
   chunk_store_->Delete(packet_id, callback, validation_data);
 
-  result = WaitForResults(&mutex, &cond_var, &results);
+  result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
   if (results[0] != kSuccess) {
@@ -817,7 +817,7 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
                       callback,
                       validation_data);
 
-  int result(WaitForResults(&mutex, &cond_var, &results));
+  int result(WaitForResultsPtr(&mutex, &cond_var, &results));
   if (result != kSuccess)
     return result;
   if (results[0] != kSuccess) {
@@ -845,7 +845,7 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
   packet_id = ComposeSignaturePacketName(old_key_ring.identity);
   chunk_store_->Delete(packet_id, callback, validation_data);
 
-  result = WaitForResults(&mutex, &cond_var, &results);
+  result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
   if (results[0] != kSuccess) {

@@ -124,7 +124,6 @@ LIST(REMOVE_ITEM STYLE_ALL "${PATH_TO_SRC}/detail/data_atlas.pb.h"
 
 ####    TESTS    ####
 SET(TESTS_MAIN_CC "${PATH_TO_SRC}/tests/tests_main.cc")
-SET(AUTHENTICATION_TEST_CC "${PATH_TO_SRC}/tests/authentication_test.cc")
 SET(CLIENT_CONTROLLER_TEST_CC "${PATH_TO_SRC}/tests/user_credentials_test.cc")
 SET(PUBLIC_ID_TEST_CC "${PATH_TO_SRC}/tests/public_id_test.cc"
                       "${PATH_TO_SRC}/tests/message_handler_test.cc")
@@ -135,7 +134,6 @@ SET(LIFESTUFF_TESTS_CC "${PATH_TO_SRC}/tests/contacts_test.cc"
                        "${PATH_TO_SRC}/tests/utils_test.cc")
 
 SOURCE_GROUP("Tests Source Files" FILES ${TESTS_MAIN_CC}
-                                        ${AUTHENTICATION_TEST_CC}
                                         ${CLIENT_CONTROLLER_TEST_CC}
                                         ${PUBLIC_ID_TEST_CC}
                                         ${USER_STORAGE_TEST_CC}
@@ -149,7 +147,6 @@ MS_ADD_STATIC_LIBRARY(lifestuff_detail ${ALL_FILES_DETAIL_DIR})
 MS_ADD_EXECUTABLE(TESTlifestuff_general Tests ${LIFESTUFF_TESTS_CC} ${TESTS_MAIN_CC})
 
 MS_ADD_STATIC_LIBRARY(lifestuff_local ${ALL_FILES_LIFESTUFF_DIR})
-MS_ADD_EXECUTABLE(TESTauthentication_local Tests ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
 MS_ADD_EXECUTABLE(TESTpublic_id_local Tests ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
 MS_ADD_EXECUTABLE(TESTuser_credentials_local Tests ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
 MS_ADD_EXECUTABLE(TESTuser_storage_local Tests ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC})
@@ -158,7 +155,6 @@ MS_ADD_EXECUTABLE(TESTapi_local Tests ${API_TEST_CC} ${TESTS_MAIN_CC})
 TARGET_LINK_LIBRARIES(lifestuff_detail_static maidsafe_drive_static maidsafe_passport_static boost_regex)
 TARGET_LINK_LIBRARIES(lifestuff_local_static lifestuff_detail_static)
 TARGET_LINK_LIBRARIES(TESTlifestuff_general lifestuff_local_static gtest_static)
-TARGET_LINK_LIBRARIES(TESTauthentication_local lifestuff_local_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTpublic_id_local lifestuff_local_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTuser_credentials_local lifestuff_local_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTuser_storage_local lifestuff_local_static gtest_static)
@@ -166,13 +162,11 @@ TARGET_LINK_LIBRARIES(TESTapi_local lifestuff_local_static gtest_static)
 
 IF(${LOCAL_TARGETS_ONLY} MATCHES OFF)
   MS_ADD_STATIC_LIBRARY(${MS_PROJECT_NAME} ${ALL_FILES_LIFESTUFF_DIR})
-  MS_ADD_EXECUTABLE(TESTauthentication Tests ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
   MS_ADD_EXECUTABLE(TESTpublic_id Tests ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
   MS_ADD_EXECUTABLE(TESTuser_credentials Tests ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
   MS_ADD_EXECUTABLE(TESTuser_storage Tests ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC})
   MS_ADD_EXECUTABLE(TESTapi Tests ${API_TEST_CC} ${TESTS_MAIN_CC})
   TARGET_LINK_LIBRARIES(lifestuff_static lifestuff_detail_static maidsafe_pd_static)
-  TARGET_LINK_LIBRARIES(TESTauthentication lifestuff_static gtest_static)
   TARGET_LINK_LIBRARIES(TESTpublic_id lifestuff_static gtest_static)
   TARGET_LINK_LIBRARIES(TESTuser_credentials lifestuff_static gtest_static)
   TARGET_LINK_LIBRARIES(TESTuser_storage lifestuff_static gtest_static)
@@ -198,7 +192,6 @@ INCLUDE(maidsafe_standard_flags)
 
 SET_TARGET_PROPERTIES(lifestuff_local_static
                       TESTlifestuff_general
-                      TESTauthentication_local
                       TESTpublic_id_local
                       TESTuser_credentials_local
                       TESTuser_storage_local
@@ -224,14 +217,12 @@ ENDIF()
 ###################################################################################################
 ADD_STYLE_TEST(${STYLE_ALL}
                ${LIFESTUFF_TESTS_CC}
-               ${AUTHENTICATION_TEST_CC}
                ${CLIENT_CONTROLLER_TEST_CC}
                ${PUBLIC_ID_TEST_CC}
                ${USER_STORAGE_TEST_CC}
                ${API_TEST_CC})
 
 ADD_GTESTS(TESTlifestuff_general)
-ADD_GTESTS(TESTauthentication_local)
 ADD_GTESTS(TESTpublic_id_local)
 ADD_GTESTS(TESTuser_credentials_local)
 ADD_GTESTS(TESTuser_storage_local)

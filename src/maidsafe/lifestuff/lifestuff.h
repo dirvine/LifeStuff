@@ -88,7 +88,6 @@ enum PrivateShareRoles {
 
 extern const size_t kMaxChatMessageSize;
 extern const uint32_t kFileRecontructionLimit;
-extern const uint16_t kIntervalSeconds;
 extern const uint8_t kThreads;
 extern const uint8_t kSecondsInterval;
 extern const size_t kMinWordSize;

@@ -306,7 +306,7 @@ int PublicId::CreatePublicId(const std::string &public_id,
                              callback,
                              validation_data_mpid);
 
-  result = WaitForResults(&mutex, &cond_var, &results);
+  result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
 
@@ -431,7 +431,7 @@ int PublicId::ModifyAppendability(const std::string &public_id,
                               callback,
                               validation_data_mmid);
 
-  result = WaitForResults(&mutex, &cond_var, &results);
+  result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
 
@@ -654,7 +654,7 @@ int PublicId::RemoveContact(const std::string &public_id,
                              callback,
                              validation_data_mmid);
 
-  result = WaitForResults(&mutex, &cond_var, &results);
+  result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
   if (results[0] != kSuccess) {
@@ -683,7 +683,7 @@ int PublicId::RemoveContact(const std::string &public_id,
                               callback,
                               validation_data_mmid);
 
-  result = WaitForResults(&mutex, &cond_var, &results);
+  result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
   if (results[0] != kSuccess) {
@@ -779,7 +779,7 @@ int PublicId::InformContactInfo(const std::string &public_id,
                                 callback,
                                 validation_data_mpid);
   }
-  result = WaitForResults(&mutex, &cond_var, &results);
+  result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
 

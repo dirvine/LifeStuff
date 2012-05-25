@@ -54,13 +54,7 @@ namespace pcs = maidsafe::priv::chunk_store;
 
 namespace lifestuff {
 
-namespace test {
-class UserCredentialsTest;
-class UserStorageTest;
-}  // namespace test
-
-class Authentication;
-class NewAuthentication;
+class UserCredentialsImpl;
 class Session;
 
 class UserCredentials {
@@ -85,17 +79,13 @@ class UserCredentials {
   int ChangePin(const std::string &new_pin);
   int ChangePassword(const std::string &new_password);
 
-  friend class test::UserCredentialsTest;
-  friend class test::UserStorageTest;
-
  private:
   UserCredentials &operator=(const UserCredentials&);
   UserCredentials(const UserCredentials&);
 
   std::shared_ptr<Session> session_;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
-  std::shared_ptr<Authentication> authentication_;
-  std::shared_ptr<NewAuthentication> impl_;
+  std::shared_ptr<UserCredentialsImpl> impl_;
 };
 
 }  // namespace lifestuff

@@ -21,7 +21,7 @@
 * ============================================================================
 */
 
-#include "maidsafe/lifestuff/detail/new_auth.h"
+#include "maidsafe/lifestuff/detail/user_credentials_impl.h"
 
 #include <memory>
 
@@ -67,13 +67,17 @@ struct OperationResults {
 
 int KeysToValidationData(std::shared_ptr<asymm::Keys> packet,
                          ValidationData *validation_data) {
-  asymm::Signature ownership_proof;
-  asymm::Sign(RandomString(64), packet->private_key, &ownership_proof);
-  if (ownership_proof.empty()) {
+  pca::SignedData signed_data;
+  signed_data.set_data(RandomString(16));
+  asymm::Signature random_data_signature;
+  asymm::Sign(signed_data.data(), packet->private_key, &random_data_signature);
+  if (random_data_signature.empty()) {
     DLOG(ERROR) << "Ownership proof not properly created.";
     return kCreateSignaturePacketInfoFailure;
   }
-  validation_data->ownership_proof = ownership_proof;
+  signed_data.set_signature(random_data_signature);
+
+  validation_data->ownership_proof = signed_data.SerializeAsString();
   validation_data->key_pair.identity = packet->identity;
   validation_data->key_pair.public_key = packet->public_key;
   validation_data->key_pair.private_key = packet->private_key;
@@ -110,7 +114,8 @@ int CreateSignaturePacketInfo(std::shared_ptr<asymm::Keys> packet,
 
 void OperationCallback(bool result, OperationResults &results, int index) {
   boost::mutex::scoped_lock barra_loch_an_duin(results.mutex);
-  results.individual_results.at(index) = result ? kSuccess : kGeneralError;
+  results.individual_results.at(index) =
+      result ? kSuccess : kRemoteChunkStoreFailure;
   results.conditional_variable.notify_one();
 }
 
@@ -120,18 +125,15 @@ int AssessJointResult(const std::vector<int> &results) {
                        [&](const int &element)->bool {
                          return element != kSuccess;
                        }));
-  if (it != results.end()) {
-    DLOG(ERROR) << "One of the operations for Identity Packets failed. "
-                << "Turn on INFO for feedback on which one. ";
+  if (it != results.end())
     return kAtLeastOneFailure;
-  }
 
   return kSuccess;
 }
 
 }  // namespace
 
-NewAuthentication::NewAuthentication(
+UserCredentialsImpl::UserCredentialsImpl(
     std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
     std::shared_ptr<Session> session)
     : remote_chunk_store_(remote_chunk_store),
@@ -139,9 +141,9 @@ NewAuthentication::NewAuthentication(
       passport_(session_->passport()),
       single_threaded_class_mutex_() {}
 
-NewAuthentication::~NewAuthentication() {}
+UserCredentialsImpl::~UserCredentialsImpl() {}
 
-int NewAuthentication::GetUserInfo(const std::string &username,
+int UserCredentialsImpl::GetUserInfo(const std::string &keyword,
                                    const std::string &pin,
                                    const std::string &password) {
   boost::mutex::scoped_lock loch_a_phuill(single_threaded_class_mutex_);
@@ -150,15 +152,15 @@ int NewAuthentication::GetUserInfo(const std::string &username,
   int mid_tmid_result(kSuccess);
   std::string tmid_packet;
   boost::thread mid_tmid_thread(
-      std::bind(&NewAuthentication::GetIdAndTemporaryId, this,
-                username, pin, password, false,
+      std::bind(&UserCredentialsImpl::GetIdAndTemporaryId, this,
+                keyword, pin, password, false,
                 &mid_tmid_result, &tmid_packet));
   // Obtain SMID, STMID
   int smid_stmid_result(kSuccess);
   std::string stmid_packet;
   boost::thread smid_stmid_thread(
-      std::bind(&NewAuthentication::GetIdAndTemporaryId, this,
-                username, pin, password, true,
+      std::bind(&UserCredentialsImpl::GetIdAndTemporaryId, this,
+                keyword, pin, password, true,
                 &smid_stmid_result, &stmid_packet));
 
   // Wait for them to finish
@@ -168,34 +170,41 @@ int NewAuthentication::GetUserInfo(const std::string &username,
   // Evaluate results
   if (mid_tmid_result == kIdPacketNotFound &&
       smid_stmid_result == kIdPacketNotFound) {
-    DLOG(INFO) << "User doesn't exist: " << username << ", " << pin;
+    DLOG(INFO) << "User doesn't exist: " << keyword << ", " << pin;
     return kUserDoesntExist;
   }
 
   if (mid_tmid_result == kCorruptedPacket &&
       smid_stmid_result == kCorruptedPacket) {
     DLOG(ERROR) << "Account corrupted. Should never happen: "
-                << username << ", " << pin;
+                << keyword << ", " << pin;
     return kAccountCorrupted;
   }
 
-  int result(HandleSerialisedDataMaps(tmid_packet, stmid_packet));
+  int result(HandleSerialisedDataMaps(keyword, pin, password,
+                                      tmid_packet, stmid_packet));
   if (result != kSuccess) {
-    if (result != kUsingNextToLastSession)
+    if (result != kUsingNextToLastSession) {
       DLOG(ERROR) << "Failed to initialise session: " << result;
+      result = kAccountCorrupted;
+    }
     return result;
   }
+
+  session_->set_keyword(keyword);
+  session_->set_pin(pin);
+  session_->set_password(password);
 
   return kSuccess;
 }
 
-void NewAuthentication::GetIdAndTemporaryId(const std::string &username,
+void UserCredentialsImpl::GetIdAndTemporaryId(const std::string &keyword,
                                             const std::string &pin,
                                             const std::string &password,
                                             bool surrogate,
                                             int *result,
                                             std::string *temporary_packet) {
-  std::string id_name(pca::ApplyTypeToName(passport::MidName(username,
+  std::string id_name(pca::ApplyTypeToName(passport::MidName(keyword,
                                                              pin,
                                                              surrogate),
                                            pca::kModifiableByOwner));
@@ -214,7 +223,7 @@ void NewAuthentication::GetIdAndTemporaryId(const std::string &username,
     return;
   }
 
-  std::string decrypted_rid(passport::DecryptRid(username, pin, packet.data()));
+  std::string decrypted_rid(passport::DecryptRid(keyword, pin, packet.data()));
   if (decrypted_rid.empty()) {
     DLOG(ERROR) << (surrogate ? "SMID" : "MID") << " packet corrupted: "
                 << "Failed decryption.";
@@ -238,7 +247,7 @@ void NewAuthentication::GetIdAndTemporaryId(const std::string &username,
     return;
   }
 
-  *temporary_packet = passport::DecryptMasterData(username,
+  *temporary_packet = passport::DecryptMasterData(keyword,
                                                   pin,
                                                   password,
                                                   packet.data());
@@ -250,25 +259,47 @@ void NewAuthentication::GetIdAndTemporaryId(const std::string &username,
   }
 }
 
-int NewAuthentication::HandleSerialisedDataMaps(
+int UserCredentialsImpl::HandleSerialisedDataMaps(
+    const std::string &keyword,
+    const std::string &pin,
+    const std::string &password,
     const std::string &tmid_serialised_data_atlas,
     const std::string &stmid_serialised_data_atlas) {
   int result(kSuccess);
+  std::string tmid_da, stmid_da;
   if (!tmid_serialised_data_atlas.empty()) {
+    tmid_da = tmid_serialised_data_atlas;
     result = session_->ParseDataAtlas(tmid_serialised_data_atlas);
     if (result == kSuccess)
       session_->set_serialised_data_atlas(tmid_serialised_data_atlas);
   } else if (!stmid_serialised_data_atlas.empty()) {
+    tmid_da = stmid_serialised_data_atlas;
+    stmid_da = stmid_serialised_data_atlas;
     result = session_->ParseDataAtlas(stmid_serialised_data_atlas);
     if (result == kSuccess) {
       session_->set_serialised_data_atlas(stmid_serialised_data_atlas);
       result = kUsingNextToLastSession;
     }
   }
+
+  if (stmid_da.empty() && !stmid_serialised_data_atlas.empty())
+    stmid_da = stmid_serialised_data_atlas;
+
+  result = passport_.SetIdentityPackets(keyword,
+                                        pin,
+                                        password,
+                                        tmid_da,
+                                        stmid_da);
+  result += passport_.ConfirmIdentityPackets();
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failure to set and confirm identity packets.";
+    return kSetIdentityPacketsFailure;
+  }
+
   return result;
 }
 
-int NewAuthentication::CreateUser(const std::string &username,
+int UserCredentialsImpl::CreateUser(const std::string &keyword,
                                   const std::string &pin,
                                   const std::string &password) {
   boost::mutex::scoped_lock loch_a_phuill(single_threaded_class_mutex_);
@@ -279,16 +310,20 @@ int NewAuthentication::CreateUser(const std::string &username,
     return kSessionFailure;
   }
 
-  result = ProcessIdentityPackets(username, pin, password);
+  result = ProcessIdentityPackets(keyword, pin, password);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed processing identity packets: " << result;
     return kSessionFailure;
   }
 
+  session_->set_keyword(keyword);
+  session_->set_pin(pin);
+  session_->set_password(password);
+
   return kSuccess;
 }
 
-int NewAuthentication::ProcessSigningPackets() {
+int UserCredentialsImpl::ProcessSigningPackets() {
   int result(passport_.CreateSigningPackets());
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed creating signature packets: " << result;
@@ -310,7 +345,7 @@ int NewAuthentication::ProcessSigningPackets() {
   return kSuccess;
 }
 
-int NewAuthentication::StoreAnonymousPackets() {
+int UserCredentialsImpl::StoreAnonymousPackets() {
   std::vector<int> individual_results(4, kPendingResult);
   boost::condition_variable condition_variable;
   boost::mutex mutex;
@@ -325,9 +360,13 @@ int NewAuthentication::StoreAnonymousPackets() {
   // PMID path: ANMAID, MAID, PMID
   StoreAnmaid(results);
 
-  int result(WaitForResults(&mutex, &condition_variable, &individual_results));
+  int result(WaitForResults(mutex, condition_variable, individual_results));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Wait for results timed out.";
+    DLOG(ERROR) << "Wait for results timed out: " << result;
+    DLOG(ERROR) << "ANMID: " << individual_results.at(0)
+              << ", ANSMID: " << individual_results.at(1)
+              << ", ANTMID: " << individual_results.at(2)
+              << ", PMID path: " << individual_results.at(3);
     return result;
   }
   DLOG(INFO) << "ANMID: " << individual_results.at(0)
@@ -345,25 +384,25 @@ int NewAuthentication::StoreAnonymousPackets() {
   return kSuccess;
 }
 
-void NewAuthentication::StoreAnmid(OperationResults &results) {
+void UserCredentialsImpl::StoreAnmid(OperationResults &results) {
   std::shared_ptr<asymm::Keys> anmid(
         passport_.SignaturePacketDetails(passport::kAnmid, false));
   StoreSignaturePacket(anmid, results, 0);
 }
 
-void NewAuthentication::StoreAnsmid(OperationResults &results) {
+void UserCredentialsImpl::StoreAnsmid(OperationResults &results) {
   std::shared_ptr<asymm::Keys> ansmid(
         passport_.SignaturePacketDetails(passport::kAnsmid, false));
   StoreSignaturePacket(ansmid, results, 1);
 }
 
-void NewAuthentication::StoreAntmid(OperationResults &results) {
+void UserCredentialsImpl::StoreAntmid(OperationResults &results) {
   std::shared_ptr<asymm::Keys> antmid(
         passport_.SignaturePacketDetails(passport::kAntmid, false));
   StoreSignaturePacket(antmid, results, 2);
 }
 
-void NewAuthentication::StoreSignaturePacket(
+void UserCredentialsImpl::StoreSignaturePacket(
     std::shared_ptr<asymm::Keys> packet,
     OperationResults &results,
     int index) {
@@ -373,14 +412,17 @@ void NewAuthentication::StoreSignaturePacket(
                             &packet_name,
                             &packet_content,
                             &validation_data);
-  remote_chunk_store_->Store(packet_name,
-                             packet_content,
-                             std::bind(&OperationCallback, args::_1,
-                                       results, index),
-                             validation_data);
+  if (!remote_chunk_store_->Store(packet_name,
+                                  packet_content,
+                                  std::bind(&OperationCallback, args::_1,
+                                            results, index),
+                                  validation_data)) {
+    DLOG(ERROR) << "Failed to store: " << index;
+    OperationCallback(false, results, index);
+  }
 }
 
-void NewAuthentication::StoreAnmaid(OperationResults &results) {
+void UserCredentialsImpl::StoreAnmaid(OperationResults &results) {
   std::shared_ptr<asymm::Keys> anmaid(
         passport_.SignaturePacketDetails(passport::kAnmaid, false));
   std::string packet_name, packet_content;
@@ -389,56 +431,103 @@ void NewAuthentication::StoreAnmaid(OperationResults &results) {
                             &packet_name,
                             &packet_content,
                             &validation_data);
-  remote_chunk_store_->Store(packet_name,
-                             packet_content,
-                             std::bind(&NewAuthentication::StoreMaid,
-                                       this, args::_1, results),
-                             validation_data);
+  if (!remote_chunk_store_->Store(packet_name,
+                                  packet_content,
+                                  std::bind(&UserCredentialsImpl::StoreMaid,
+                                            this, args::_1, results),
+                                  validation_data)) {
+    DLOG(ERROR) << "Failed to store ANMAID.";
+    StoreMaid(false, results);
+  }
 }
 
-void NewAuthentication::StoreMaid(bool result, OperationResults &results) {
+void UserCredentialsImpl::StoreMaid(bool result, OperationResults &results) {
   if (!result) {
+    DLOG(ERROR) << "Anmaid failed to store.";
     OperationCallback(false, results, 3);
     return;
   }
 
   std::shared_ptr<asymm::Keys> maid(
         passport_.SignaturePacketDetails(passport::kMaid, false));
-  std::string packet_name, packet_content;
+  std::shared_ptr<asymm::Keys> anmaid(
+        passport_.SignaturePacketDetails(passport::kAnmaid, false));
+
   ValidationData validation_data;
-  CreateSignaturePacketInfo(maid,
-                            &packet_name,
-                            &packet_content,
-                            &validation_data);
-  remote_chunk_store_->Store(packet_name,
-                             packet_content,
-                             std::bind(&NewAuthentication::StorePmid,
-                                        this, args::_1, results),
-                             validation_data);
+  int var(KeysToValidationData(anmaid, &validation_data));
+  if (var != kSuccess) {
+    DLOG(ERROR) << "Failed to procure MAID's validation data: " << var;
+    StorePmid(false, results);
+    return;
+  }
+
+  std::string maid_name(pca::ApplyTypeToName(maid->identity,
+                                             pca::kSignaturePacket));
+  pca::SignedData signed_maid;
+  signed_maid.set_signature(maid->validation_token);
+  std::string maid_string_public_key;
+  asymm::EncodePublicKey(maid->public_key, &maid_string_public_key);
+  if (maid_string_public_key.empty()) {
+    DLOG(ERROR) << "Failed to procure sign MAID's public key.";
+    StorePmid(false, results);
+    return;
+  }
+  signed_maid.set_data(maid_string_public_key);
+
+  if (!remote_chunk_store_->Store(maid_name,
+                                  signed_maid.SerializeAsString(),
+                                  std::bind(&UserCredentialsImpl::StorePmid,
+                                              this, args::_1, results),
+                                  validation_data)) {
+    DLOG(ERROR) << "Failed to store MAID.";
+    StorePmid(false, results);
+  }
 }
 
-void NewAuthentication::StorePmid(bool result, OperationResults &results) {
+void UserCredentialsImpl::StorePmid(bool result, OperationResults &results) {
   if (!result) {
+    DLOG(ERROR) << "Maid failed to store.";
     OperationCallback(false, results, 3);
     return;
   }
 
   std::shared_ptr<asymm::Keys> pmid(
         passport_.SignaturePacketDetails(passport::kPmid, false));
-  std::string packet_name, packet_content;
+  std::shared_ptr<asymm::Keys> maid(
+        passport_.SignaturePacketDetails(passport::kMaid, false));
+
   ValidationData validation_data;
-  CreateSignaturePacketInfo(pmid,
-                            &packet_name,
-                            &packet_content,
-                            &validation_data);
-  remote_chunk_store_->Store(packet_name,
-                             packet_content,
-                             std::bind(&OperationCallback, args::_1,
-                                       results, 3),
-                             validation_data);
+  int var(KeysToValidationData(maid, &validation_data));
+  if (var != kSuccess) {
+    DLOG(ERROR) << "Failed to procure PMID's validation data: " << var;
+    StorePmid(false, results);
+    return;
+  }
+
+  std::string pmid_name(pca::ApplyTypeToName(pmid->identity,
+                                             pca::kSignaturePacket));
+  pca::SignedData signed_pmid;
+  signed_pmid.set_signature(pmid->validation_token);
+  std::string pmid_string_public_key;
+  asymm::EncodePublicKey(pmid->public_key, &pmid_string_public_key);
+  if (pmid_string_public_key.empty()) {
+    DLOG(ERROR) << "Failed to procure sign PMID's public key.";
+    StorePmid(false, results);
+    return;
+  }
+  signed_pmid.set_data(pmid_string_public_key);
+
+  if (!remote_chunk_store_->Store(pmid_name,
+                                  signed_pmid.SerializeAsString(),
+                                  std::bind(&OperationCallback, args::_1,
+                                            results, 3),
+                                  validation_data)) {
+    DLOG(ERROR) << "Failed to store PMID.";
+    OperationCallback(false, results, 3);
+  }
 }
 
-int NewAuthentication::ProcessIdentityPackets(const std::string &username,
+int UserCredentialsImpl::ProcessIdentityPackets(const std::string &keyword,
                                               const std::string &pin,
                                               const std::string &password) {
   std::string serialised_data_atlas, surrogate_serialised_data_atlas;
@@ -452,7 +541,7 @@ int NewAuthentication::ProcessIdentityPackets(const std::string &username,
     return kSessionSerialisationFailure;
   }
 
-  result = passport_.SetIdentityPackets(username,
+  result = passport_.SetIdentityPackets(keyword,
                                         pin,
                                         password,
                                         serialised_data_atlas,
@@ -474,10 +563,12 @@ int NewAuthentication::ProcessIdentityPackets(const std::string &username,
     return kSessionFailure;
   }
 
+  session_->set_serialised_data_atlas(serialised_data_atlas);
+
   return kSuccess;
 }
 
-int NewAuthentication::StoreIdentityPackets() {
+int UserCredentialsImpl::StoreIdentityPackets() {
   std::vector<int> individual_results(4, kPendingResult);
   boost::condition_variable condition_variable;
   boost::mutex mutex;
@@ -492,7 +583,7 @@ int NewAuthentication::StoreIdentityPackets() {
   // STMID
   StoreStmid(results);
 
-  int result(WaitForResults(&mutex, &condition_variable, &individual_results));
+  int result(WaitForResults(mutex, condition_variable, individual_results));
   if (result != kSuccess) {
     DLOG(ERROR) << "Wait for results timed out.";
     return result;
@@ -512,23 +603,23 @@ int NewAuthentication::StoreIdentityPackets() {
   return kSuccess;
 }
 
-void NewAuthentication::StoreMid(OperationResults &results) {
+void UserCredentialsImpl::StoreMid(OperationResults &results) {
   StoreIdentity(results, passport::kMid, passport::kAnmid, 0);
 }
 
-void NewAuthentication::StoreSmid(OperationResults &results) {
+void UserCredentialsImpl::StoreSmid(OperationResults &results) {
   StoreIdentity(results, passport::kSmid, passport::kAnsmid, 1);
 }
 
-void NewAuthentication::StoreTmid(OperationResults &results) {
+void UserCredentialsImpl::StoreTmid(OperationResults &results) {
   StoreIdentity(results, passport::kTmid, passport::kAntmid, 2);
 }
 
-void NewAuthentication::StoreStmid(OperationResults &results) {
+void UserCredentialsImpl::StoreStmid(OperationResults &results) {
   StoreIdentity(results, passport::kStmid, passport::kAntmid, 3);
 }
 
-void NewAuthentication::StoreIdentity(OperationResults &results,
+void UserCredentialsImpl::StoreIdentity(OperationResults &results,
                                       int identity_type,
                                       int signer_type,
                                       int index) {
@@ -559,17 +650,21 @@ void NewAuthentication::StoreIdentity(OperationResults &results,
   signed_data.set_data(packet_content);
   signed_data.set_signature(signature);
 
-  remote_chunk_store_->Store(packet_name,
-                             packet_content,
-                             std::bind(&OperationCallback, args::_1,
-                                       results, index),
-                             validation_data);
+  if (!remote_chunk_store_->Store(packet_name,
+                                  signed_data.SerializeAsString(),
+                                  std::bind(&OperationCallback, args::_1,
+                                            results, index),
+                                  validation_data)) {
+    DLOG(ERROR) << "Failed to store: " << index;
+    OperationCallback(false, results, index);
+  }
 }
 
-int NewAuthentication::SaveSession() {
+int UserCredentialsImpl::SaveSession() {
   boost::mutex::scoped_lock loch_a_phuill(single_threaded_class_mutex_);
 
-  int result(SerialiseAndSetIdentity("", "", ""));
+  std::string serialised_data_atlas;
+  int result(SerialiseAndSetIdentity("", "", "", &serialised_data_atlas));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failure setting details of new session: " << result;
     return result;
@@ -603,18 +698,20 @@ int NewAuthentication::SaveSession() {
     return kSaveSessionFailure;
   }
 
+  session_->set_serialised_data_atlas(serialised_data_atlas);
+
   return kSuccess;
 }
 
-void NewAuthentication::ModifyMid(OperationResults &results) {
+void UserCredentialsImpl::ModifyMid(OperationResults &results) {
   ModifyIdentity(results, passport::kMid, passport::kAnmid, 0);
 }
 
-void NewAuthentication::ModifySmid(OperationResults &results) {
+void UserCredentialsImpl::ModifySmid(OperationResults &results) {
   ModifyIdentity(results, passport::kSmid, passport::kAnsmid, 1);
 }
 
-void NewAuthentication::ModifyIdentity(OperationResults &results,
+void UserCredentialsImpl::ModifyIdentity(OperationResults &results,
                                        int identity_type,
                                        int signer_type,
                                        int index) {
@@ -645,18 +742,26 @@ void NewAuthentication::ModifyIdentity(OperationResults &results,
   signed_data.set_data(content);
   signed_data.set_signature(signature);
 
-  remote_chunk_store_->Modify(name,
-                              signed_data.SerializeAsString(),
-                              std::bind(&OperationCallback,
-                                        args::_1, results, index),
-                              validation_data);
+  if (!remote_chunk_store_->Modify(name,
+                                   signed_data.SerializeAsString(),
+                                   std::bind(&OperationCallback,
+                                             args::_1, results, index),
+                                   validation_data)) {
+    DLOG(ERROR) << "Failed to modify: " << index;
+    OperationCallback(false, results, index);
+  }
 }
 
-int NewAuthentication::ChangeUsernamePin(const std::string &new_username,
+int UserCredentialsImpl::ChangeUsernamePin(const std::string &new_keyword,
                                          const std::string &new_pin) {
   boost::mutex::scoped_lock loch_a_phuill(single_threaded_class_mutex_);
 
-  int result(SerialiseAndSetIdentity(new_username, new_pin, ""));
+  BOOST_ASSERT(!new_keyword.empty());
+  BOOST_ASSERT(!new_pin.empty());
+
+  std::string serialised_data_atlas;
+  int result(SerialiseAndSetIdentity(new_keyword, new_pin, "",
+                                     &serialised_data_atlas));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failure setting details of new session: " << result;
     return result;
@@ -680,10 +785,14 @@ int NewAuthentication::ChangeUsernamePin(const std::string &new_username,
     return kSetIdentityPacketsFailure;
   }
 
+  session_->set_keyword(new_keyword);
+  session_->set_pin(new_pin);
+  session_->set_serialised_data_atlas(serialised_data_atlas);
+
   return kSuccess;
 }
 
-int NewAuthentication::DeleteOldIdentityPackets() {
+int UserCredentialsImpl::DeleteOldIdentityPackets() {
   std::vector<int> individual_results(4, kPendingResult);
   boost::condition_variable condition_variable;
   boost::mutex mutex;
@@ -694,7 +803,7 @@ int NewAuthentication::DeleteOldIdentityPackets() {
   DeleteTmid(results);
   DeleteStmid(results);
 
-  int result(WaitForResults(&mutex, &condition_variable, &individual_results));
+  int result(WaitForResults(mutex, condition_variable, individual_results));
   if (result != kSuccess) {
     DLOG(ERROR) << "Wait for results timed out.";
     return result;
@@ -714,29 +823,34 @@ int NewAuthentication::DeleteOldIdentityPackets() {
   return kSuccess;
 }
 
-void NewAuthentication::DeleteMid(OperationResults &results) {
+void UserCredentialsImpl::DeleteMid(OperationResults &results) {
   DeleteIdentity(results, passport::kMid, passport::kAnmid, 0);
 }
 
-void NewAuthentication::DeleteSmid(OperationResults &results) {
+void UserCredentialsImpl::DeleteSmid(OperationResults &results) {
   DeleteIdentity(results, passport::kSmid, passport::kAnsmid, 1);
 }
 
-void NewAuthentication::DeleteTmid(OperationResults &results) {
+void UserCredentialsImpl::DeleteTmid(OperationResults &results) {
   DeleteIdentity(results, passport::kTmid, passport::kAntmid, 2);
 }
 
-void NewAuthentication::DeleteStmid(OperationResults &results) {
+void UserCredentialsImpl::DeleteStmid(OperationResults &results) {
   DeleteIdentity(results, passport::kStmid, passport::kAntmid, 3);
 }
 
-void NewAuthentication::DeleteIdentity(OperationResults &results,
+void UserCredentialsImpl::DeleteIdentity(OperationResults &results,
                                        int packet_type,
                                        int signer_type,
                                        int index) {
   passport::PacketType id_type(static_cast<passport::PacketType>(packet_type));
   passport::PacketType sig_type(static_cast<passport::PacketType>(signer_type));
-  std::string name(passport_.PacketName(id_type, false));
+  std::string name(passport_.PacketName(id_type, true));
+  if (name.empty()) {
+    DLOG(ERROR) << "Failed to get packet name: " << index;
+    OperationCallback(false, results, index);
+    return;
+  }
   name = pca::ApplyTypeToName(name, pca::kModifiableByOwner);
   std::shared_ptr<asymm::Keys> signer(passport_.SignaturePacketDetails(sig_type,
                                                                        true));
@@ -748,16 +862,21 @@ void NewAuthentication::DeleteIdentity(OperationResults &results,
     return;
   }
 
-  remote_chunk_store_->Delete(name,
-                              std::bind(&OperationCallback, args::_1,
-                                        results, index),
-                              validation_data);
+  if (!remote_chunk_store_->Delete(name,
+                                   std::bind(&OperationCallback, args::_1,
+                                             results, index),
+                                   validation_data)) {
+    DLOG(ERROR) << "Failed to delete: " << index;
+    OperationCallback(false, results, index);
+  }
 }
 
-int NewAuthentication::ChangePassword(const std::string &new_password) {
+int UserCredentialsImpl::ChangePassword(const std::string &new_password) {
   boost::mutex::scoped_lock loch_a_phuill(single_threaded_class_mutex_);
 
-  int result(SerialiseAndSetIdentity("", "", new_password));
+  std::string serialised_data_atlas;
+  int result(SerialiseAndSetIdentity("", "", new_password,
+                                     &serialised_data_atlas));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failure setting details of new session: " << result;
     return result;
@@ -781,10 +900,13 @@ int NewAuthentication::ChangePassword(const std::string &new_password) {
     return kSetIdentityPacketsFailure;
   }
 
+  session_->set_password(new_password);
+  session_->set_serialised_data_atlas(serialised_data_atlas);
+
   return kSuccess;
 }
 
-int NewAuthentication::DoChangePasswordAdditions() {
+int UserCredentialsImpl::DoChangePasswordAdditions() {
   std::vector<int> individual_results(4, kPendingResult);
   boost::condition_variable condition_variable;
   boost::mutex mutex;
@@ -816,7 +938,7 @@ int NewAuthentication::DoChangePasswordAdditions() {
   return kSuccess;
 }
 
-int NewAuthentication::DoChangePasswordRemovals() {
+int UserCredentialsImpl::DoChangePasswordRemovals() {
   // Delete old TMID, STMID
   std::vector<int> individual_results(4, kSuccess);
   boost::condition_variable condition_variable;
@@ -846,21 +968,23 @@ int NewAuthentication::DoChangePasswordRemovals() {
   return kSuccess;
 }
 
-int NewAuthentication::SerialiseAndSetIdentity(const std::string &username,
-                                               const std::string &pin,
-                                               const std::string &password) {
-  std::string serialised_data_atlas;
-  int result(session_->SerialiseDataAtlas(&serialised_data_atlas));
-  if (result != kSuccess) {
+int UserCredentialsImpl::SerialiseAndSetIdentity(
+    const std::string &keyword,
+    const std::string &pin,
+    const std::string &password,
+    std::string *serialised_data_atlas) {
+  BOOST_ASSERT(serialised_data_atlas);
+  int result(session_->SerialiseDataAtlas(serialised_data_atlas));
+  if (result != kSuccess || serialised_data_atlas->empty()) {
     DLOG(ERROR) << "Failed to serialise session: " << result;
     return kSessionSerialisationFailure;
   }
 
   result = passport_.SetIdentityPackets(
-               username.empty()? session_->keyword() : username,
+               keyword.empty()? session_->keyword() : keyword,
                pin. empty() ? session_->pin() : pin,
                password.empty() ? session_->password() : password,
-               serialised_data_atlas,
+               *serialised_data_atlas,
                session_->serialised_data_atlas());
 
   if (result != kSuccess) {

@@ -30,7 +30,6 @@ namespace lifestuff {
 
 const size_t kMaxChatMessageSize(1 * 1024 * 1024);
 const uint32_t kFileRecontructionLimit(20 * 1024 * 1024);
-const uint16_t kIntervalSeconds(5000);
 const uint8_t kThreads(10);
 const uint8_t kSecondsInterval(5);
 const size_t kMinWordSize(5);

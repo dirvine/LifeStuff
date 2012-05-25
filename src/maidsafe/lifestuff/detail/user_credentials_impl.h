@@ -62,11 +62,11 @@ namespace { struct OperationResults; }
  * operations inside this class have been mutexed to ensure one at a time.
  */
 
-class NewAuthentication {
+class UserCredentialsImpl {
  public:
-  NewAuthentication(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
+  UserCredentialsImpl(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
                     std::shared_ptr<Session> session);
-  ~NewAuthentication();
+  ~UserCredentialsImpl();
   int GetUserInfo(const std::string &username,
                   const std::string &pin,
                   const std::string &password);
@@ -92,7 +92,10 @@ class NewAuthentication {
                            bool surrogate,
                            int *result,
                            std::string *temporary_packet);
-  int HandleSerialisedDataMaps(const std::string &tmid_serialised_data_atlas,
+  int HandleSerialisedDataMaps(const std::string &username,
+                               const std::string &pin,
+                               const std::string &password,
+                               const std::string &tmid_serialised_data_atlas,
                                const std::string &stmid_serialised_data_atlas);
 
   int ProcessSigningPackets();
@@ -142,7 +145,8 @@ class NewAuthentication {
 
   int SerialiseAndSetIdentity(const std::string &username,
                               const std::string &pin,
-                              const std::string &password);
+                              const std::string &password,
+                              std::string *new_data_atlas);
 };
 
 }  // namespace lifestuff

@@ -25,13 +25,11 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/lifestuff/log.h"
-#include "maidsafe/lifestuff/detail/authentication.h"
-#include "maidsafe/lifestuff/detail/new_auth.h"
+#include "maidsafe/lifestuff/detail/user_credentials_impl.h"
 #include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/utils.h"
 
 namespace args = std::placeholders;
-namespace pca = maidsafe::priv::chunk_actions;
 
 namespace maidsafe {
 
@@ -42,8 +40,7 @@ UserCredentials::UserCredentials(
     std::shared_ptr<Session> session)
     : session_(session),
       remote_chunk_store_(chunk_store),
-      authentication_(new Authentication(chunk_store, session)),
-      impl_(new NewAuthentication(chunk_store, session)) {}
+      impl_(new UserCredentialsImpl(chunk_store, session)) {}
 
 UserCredentials::~UserCredentials() {}
 
@@ -73,7 +70,13 @@ int UserCredentials::LogIn(const std::string &keyword,
   return impl_->GetUserInfo(keyword, pin, password);
 }
 
-int UserCredentials::Logout() { return impl_->SaveSession(); }
+int UserCredentials::Logout() {
+  int result(impl_->SaveSession());
+  if (result == kSuccess)
+    session_->Reset();
+
+  return result;
+}
 
 int UserCredentials::SaveSession() { return impl_->SaveSession(); }
 
