@@ -3311,6 +3311,112 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
   EXPECT_EQ(kSuccess, test_elements2.Finalise());
 }
 
+TEST(IndependentFullTest, FUNC_ShareChange) {
+  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
+  std::string username1(RandomAlphaNumericString(6)),
+              pin1(CreatePin()),
+              password1(RandomAlphaNumericString(6)),
+              public_id1(RandomAlphaNumericString(5));
+  std::string username2(RandomAlphaNumericString(6)),
+              pin2(CreatePin()),
+              password2(RandomAlphaNumericString(6)),
+              public_id2(RandomAlphaNumericString(5));
+  LifeStuff test_elements1, test_elements2;
+  TestingVariables testing_variables1, testing_variables2;
+  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+                                                   test_elements2,
+                                                   testing_variables1,
+                                                   testing_variables2,
+                                                   *test_dir,
+                                                   username1, pin1, password1,
+                                                   public_id1,
+                                                   username2, pin2, password2,
+                                                   public_id2));
+
+  DLOG(ERROR) << "\n\n\n\n";
+  std::string removal_message("It's not me, it's you.");
+  std::string share_name1(RandomAlphaNumericString(5)),
+              file_name(RandomAlphaNumericString(5)),
+              file_content(RandomAlphaNumericString(20));
+  fs::path directory1, directory2, file_path;
+
+  boost::system::error_code error_code;
+  {
+    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+
+    // Create empty private share
+    StringIntMap contacts, results;
+    contacts.insert(std::make_pair(public_id2, kShareReadWrite));
+    results.insert(std::make_pair(public_id2, kGeneralError));
+
+    EXPECT_EQ(kSuccess, test_elements1.CreateEmptyPrivateShare(public_id1,
+                                                               contacts,
+                                                               &share_name1,
+                                                               &results));
+    directory1 = test_elements1.mount_path() / kSharedStuff / share_name1;
+    EXPECT_TRUE(fs::is_directory(directory1, error_code)) << directory1;
+    EXPECT_EQ(0, error_code.value());
+    EXPECT_EQ(kSuccess, results[public_id2]);
+    StringIntMap shares_members;
+    test_elements1.GetPrivateShareMembers(public_id1,
+                                          share_name1,
+                                          &shares_members);
+    EXPECT_EQ(1U, shares_members.size());
+
+    EXPECT_EQ(kSuccess, test_elements1.LogOut());
+  }
+  DLOG(ERROR) << "\n\n\n\n";
+  {
+    EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
+    while (!testing_variables2.privately_invited)
+      Sleep(bptime::milliseconds(100));
+
+    EXPECT_FALSE(testing_variables2.new_private_share_id.empty());
+    EXPECT_EQ(kSuccess,
+              test_elements2.AcceptPrivateShareInvitation(
+                  public_id2,
+                  public_id1,
+                  testing_variables2.new_private_share_id,
+                  &share_name1));
+    directory2 = test_elements2.mount_path()/ kSharedStuff / share_name1;
+    EXPECT_TRUE(fs::is_directory(directory2, error_code)) << directory2;
+
+    file_path =  directory2 / file_name;
+    std::ofstream ofstream(file_path.c_str(), std::ios::binary);
+    ofstream << file_content;
+    ofstream.close();
+    EXPECT_TRUE(fs::exists(file_path, error_code));
+    // allowing enought time for the change to be logged
+    Sleep(bptime::milliseconds(5000));
+    EXPECT_FALSE(testing_variables2.share_changed);
+
+    EXPECT_EQ(kSuccess, test_elements2.LogOut());
+  }
+  DLOG(ERROR) << "\n\n\n\n";
+  {
+    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+    uint8_t attempts(0);
+    while ((!testing_variables1.share_changed) && (attempts < 10)) {
+      Sleep(bptime::milliseconds(1000));
+      ++attempts;
+    }
+    EXPECT_LT(attempts, 10);
+    EXPECT_TRUE(testing_variables1.share_changed);
+    EXPECT_EQ(1, testing_variables1.num_of_entries);
+    EXPECT_EQ(share_name1, testing_variables1.share_name);
+    EXPECT_EQ(fs::path("/").make_preferred() / file_name,
+              testing_variables1.target_path.string());
+    EXPECT_TRUE(testing_variables1.old_path.empty());
+    EXPECT_TRUE(testing_variables1.new_path.empty());
+    EXPECT_EQ(drive::kAdded, testing_variables1.op_type);
+
+    EXPECT_EQ(kSuccess, test_elements1.LogOut());
+  }
+
+  EXPECT_EQ(kSuccess, test_elements1.Finalise());
+  EXPECT_EQ(kSuccess, test_elements2.Finalise());
+}
+
 }  // namespace test
 
 }  // namespace lifestuff
