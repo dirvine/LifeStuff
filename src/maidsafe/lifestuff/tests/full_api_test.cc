@@ -51,6 +51,37 @@ namespace test {
 
 namespace {
 
+struct ShareChangeLog {
+  ShareChangeLog()
+      : share_name(),
+        target_path(),
+        num_of_entries(1),
+        old_path(),
+        new_path(),
+        op_type() {}
+  ShareChangeLog(const std::string &share_name_in,
+                 const fs::path &target_path_in,
+                 const uint32_t &num_of_entries_in,
+                 const fs::path &old_path_in,
+                 const fs::path &new_path_in,
+                 const drive::OpType &op_type_in)
+      : share_name(share_name_in),
+        target_path(target_path_in),
+        num_of_entries(num_of_entries_in),
+        old_path(old_path_in),
+        new_path(new_path_in),
+        op_type(op_type_in) {}
+
+  std::string share_name;
+  fs::path target_path;
+  uint32_t num_of_entries;
+  fs::path old_path;
+  fs::path new_path;
+  drive::OpType op_type;
+};
+
+typedef std::vector<ShareChangeLog> ShareChangeLogBook;
+
 struct TestingVariables {
   TestingVariables()
       : chat_message(),
@@ -78,13 +109,7 @@ struct TestingVariables {
         old_share_name(),
         new_share_name(),
         share_renamed(false),
-        share_name(),
-        target_path(),
-        num_of_entries(0),
-        old_path(),
-        new_path(),
-        op_type(),
-        share_changed(false) {}
+        share_changes() {}
   std::string chat_message;
   bool chat_message_received;
   std::string file_name, file_id;
@@ -108,13 +133,7 @@ struct TestingVariables {
   std::string old_share_name;
   std::string new_share_name;
   bool share_renamed;
-  std::string share_name;
-  fs::path target_path;
-  uint32_t num_of_entries;
-  fs::path old_path;
-  fs::path new_path;
-  drive::OpType op_type;
-  bool share_changed;
+  ShareChangeLogBook share_changes;
 };
 
 void ChatSlot(const std::string&,
@@ -276,26 +295,13 @@ void ShareChangedSlot(const std::string& share_name,
                       const fs::path& old_path,
                       const fs::path& new_path,
                       const drive::OpType& op_type,
-                      std::string *slot_share_name,
-                      fs::path *slot_target_path,
-                      uint32_t *slot_num_of_entries,
-                      fs::path *slot_old_path,
-                      fs::path *slot_new_path,
-                      drive::OpType *slot_op_type,
-                      volatile bool *done) {
-  if (slot_share_name)
-    *slot_share_name = share_name;
-  if (slot_target_path)
-    *slot_target_path = target_path;
-  if (slot_num_of_entries)
-    *slot_num_of_entries = num_of_entries;
-  if (slot_old_path)
-    *slot_old_path = old_path;
-  if (slot_new_path)
-    *slot_new_path = new_path;
-  if (slot_op_type)
-    *slot_op_type = op_type;
-  *done = true;
+                      boost::mutex *mutex,
+                      ShareChangeLogBook *share_changes) {
+  boost::mutex::scoped_lock lock(*mutex);
+  if (share_changes)
+    share_changes->push_back(ShareChangeLog(share_name, target_path,
+                                            num_of_entries, old_path,
+                                            new_path, op_type));
 }
 
 int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
@@ -314,7 +320,8 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
                                  bool several_files = false,
                                  std::vector<std::string> *ids = nullptr,
                                  std::vector<std::string> *names = nullptr,
-                                 size_t *total_files = nullptr) {
+                                 size_t *total_files = nullptr,
+                                 boost::mutex *mutex = nullptr) {
   FileTransferFunction ftf(
       std::bind(&FileTransferSlot,
                 args::_1, args::_2, args::_3, args::_4, args::_5,
@@ -384,13 +391,8 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
                 std::bind(&ShareChangedSlot,
                           args::_1, args::_2, args::_3,
                           args::_4, args::_5, args::_6,
-                          &testing_variables1.share_name,
-                          &testing_variables1.target_path,
-                          &testing_variables1.num_of_entries,
-                          &testing_variables1.old_path,
-                          &testing_variables1.new_path,
-                          &testing_variables1.op_type,
-                          &testing_variables1.share_changed));
+                          mutex,
+                          &testing_variables1.share_changes));
   result += test_elements2.ConnectToSignals(
                 std::bind(&ChatSlot, args::_1, args::_2, args::_3, args::_4,
                           &testing_variables2.chat_message,
@@ -440,13 +442,8 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
                 std::bind(&ShareChangedSlot,
                           args::_1, args::_2, args::_3,
                           args::_4, args::_5, args::_6,
-                          &testing_variables2.share_name,
-                          &testing_variables2.target_path,
-                          &testing_variables2.num_of_entries,
-                          &testing_variables2.old_path,
-                          &testing_variables2.new_path,
-                          &testing_variables2.op_type,
-                          &testing_variables2.share_changed));
+                          mutex,
+                          &testing_variables2.share_changes));
   if (result != kSuccess)
     return result;
 
@@ -3161,16 +3158,7 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
                           &testing_variables3.old_share_name,
                           &testing_variables3.new_share_name,
                           &testing_variables3.share_renamed),
-                std::bind(&ShareChangedSlot,
-                          args::_1, args::_2, args::_3,
-                          args::_4, args::_5, args::_6,
-                          &testing_variables3.share_name,
-                          &testing_variables3.target_path,
-                          &testing_variables3.num_of_entries,
-                          &testing_variables3.old_path,
-                          &testing_variables3.new_path,
-                          &testing_variables3.op_type,
-                          &testing_variables3.share_changed));
+                ShareChangedFunction());
   test_elements3.CreateUser(username3, pin3, password3);
   test_elements3.CreatePublicId(public_id3);
   test_elements3.AddContact(public_id3, public_id1);
@@ -3312,6 +3300,7 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
 }
 
 TEST(IndependentFullTest, FUNC_ShareChange) {
+  boost::mutex mutex;
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
@@ -3331,7 +3320,9 @@ TEST(IndependentFullTest, FUNC_ShareChange) {
                                                    username1, pin1, password1,
                                                    public_id1,
                                                    username2, pin2, password2,
-                                                   public_id2));
+                                                   public_id2, false,
+                                                   nullptr, nullptr, nullptr,
+                                                   &mutex));
 
   DLOG(ERROR) << "\n\n\n\n";
   std::string removal_message("It's not me, it's you.");
@@ -3388,7 +3379,7 @@ TEST(IndependentFullTest, FUNC_ShareChange) {
     EXPECT_TRUE(fs::exists(file_path, error_code));
     // allowing enought time for the change to be logged
     Sleep(bptime::milliseconds(5000));
-    EXPECT_FALSE(testing_variables2.share_changed);
+    EXPECT_TRUE(testing_variables2.share_changes.empty());
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
@@ -3396,19 +3387,26 @@ TEST(IndependentFullTest, FUNC_ShareChange) {
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     uint8_t attempts(0);
-    while ((!testing_variables1.share_changed) && (attempts < 10)) {
+    uint8_t expected_num_of_logs(1);
+    while ((testing_variables1.share_changes.size() < expected_num_of_logs) &&
+           (attempts < 10)) {
       Sleep(bptime::milliseconds(1000));
       ++attempts;
     }
     EXPECT_LT(attempts, 10);
-    EXPECT_TRUE(testing_variables1.share_changed);
-    EXPECT_EQ(1, testing_variables1.num_of_entries);
-    EXPECT_EQ(share_name1, testing_variables1.share_name);
+    // Sleep an additional time allow any unexpected notifications to be logged
+    Sleep(bptime::milliseconds(2000));
+
+    EXPECT_EQ(expected_num_of_logs, testing_variables1.share_changes.size());
+    ShareChangeLog share_change_entry(
+                      *testing_variables1.share_changes.begin());
+    EXPECT_EQ(1, share_change_entry.num_of_entries);
+    EXPECT_EQ(share_name1, share_change_entry.share_name);
     EXPECT_EQ(fs::path("/").make_preferred() / file_name,
-              testing_variables1.target_path.string());
-    EXPECT_TRUE(testing_variables1.old_path.empty());
-    EXPECT_TRUE(testing_variables1.new_path.empty());
-    EXPECT_EQ(drive::kAdded, testing_variables1.op_type);
+              share_change_entry.target_path.string());
+    EXPECT_TRUE(share_change_entry.old_path.empty());
+    EXPECT_TRUE(share_change_entry.new_path.empty());
+    EXPECT_EQ(drive::kAdded, share_change_entry.op_type);
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
