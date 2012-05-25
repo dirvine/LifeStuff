@@ -192,14 +192,16 @@ class UserStorageTest : public testing::TestWithParam<bool> {
 #endif
     user_credentials1_.reset(new UserCredentials(remote_chunk_store1_,
                                                  session1_));
-    EXPECT_TRUE(user_credentials1_->CreateUser(RandomAlphaNumericString(6),
-                                               CreatePin(),
-                                               RandomAlphaNumericString(6)));
+    EXPECT_EQ(kSuccess,
+              user_credentials1_->CreateUser(RandomAlphaNumericString(6),
+                                             CreatePin(),
+                                             RandomAlphaNumericString(6)));
     user_credentials2_.reset(new UserCredentials(remote_chunk_store2_,
                                                  session2_));
-    EXPECT_TRUE(user_credentials2_->CreateUser(RandomAlphaNumericString(6),
-                                               CreatePin(),
-                                               RandomAlphaNumericString(6)));
+    EXPECT_EQ(kSuccess,
+              user_credentials2_->CreateUser(RandomAlphaNumericString(6),
+                                             CreatePin(),
+                                             RandomAlphaNumericString(6)));
   }
 
   void SetUp() {
