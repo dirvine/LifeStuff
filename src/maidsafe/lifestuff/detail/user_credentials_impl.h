@@ -21,8 +21,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_DETAIL_NEW_AUTH_H_
-#define MAIDSAFE_LIFESTUFF_DETAIL_NEW_AUTH_H_
+#ifndef MAIDSAFE_LIFESTUFF_DETAIL_USER_CREDENTIALS_IMPL_H_
+#define MAIDSAFE_LIFESTUFF_DETAIL_USER_CREDENTIALS_IMPL_H_
 
 #include <memory>
 #include <string>
@@ -54,7 +54,7 @@ namespace passport { class Passport; }
 namespace lifestuff {
 
 class Session;
-namespace { struct OperationResults; }
+struct OperationResults;
 
 /**
  * ATTENTION! This class handles session saves to the network. Running several
@@ -100,42 +100,42 @@ class UserCredentialsImpl {
 
   int ProcessSigningPackets();
   int StoreAnonymousPackets();
-  void StoreAnmid(OperationResults &results);
-  void StoreAnsmid(OperationResults &results);
-  void StoreAntmid(OperationResults &results);
+  void StoreAnmid(OperationResults &results);  // NOLINT (Dan)
+  void StoreAnsmid(OperationResults &results);  // NOLINT (Dan)
+  void StoreAntmid(OperationResults &results);  // NOLINT (Dan)
   void StoreSignaturePacket(std::shared_ptr<asymm::Keys> packet,
-                            OperationResults &results,
+                            OperationResults &results,  // NOLINT (Dan)
                             int index);
-  void StoreAnmaid(OperationResults &results);
-  void StoreMaid(bool result, OperationResults &results);
-  void StorePmid(bool result, OperationResults &results);
+  void StoreAnmaid(OperationResults &results);  // NOLINT (Dan)
+  void StoreMaid(bool result, OperationResults &results);  // NOLINT (Dan)
+  void StorePmid(bool result, OperationResults &results);  // NOLINT (Dan)
 
   int ProcessIdentityPackets(const std::string &username,
                              const std::string &pin,
                              const std::string &password);
   int StoreIdentityPackets();
-  void StoreMid(OperationResults &results);
-  void StoreSmid(OperationResults &results);
-  void StoreTmid(OperationResults &results);
-  void StoreStmid(OperationResults &results);
-  void StoreIdentity(OperationResults &results,
+  void StoreMid(OperationResults &results);  // NOLINT (Dan)
+  void StoreSmid(OperationResults &results);  // NOLINT (Dan)
+  void StoreTmid(OperationResults &results);  // NOLINT (Dan)
+  void StoreStmid(OperationResults &results);  // NOLINT (Dan)
+  void StoreIdentity(OperationResults &results,  // NOLINT (Dan)
                      int identity_type,
                      int signer_type,
                      int index);
 
-  void ModifyMid(OperationResults &results);
-  void ModifySmid(OperationResults &results);
-  void ModifyIdentity(OperationResults &results,
+  void ModifyMid(OperationResults &results);  // NOLINT (Dan)
+  void ModifySmid(OperationResults &results);  // NOLINT (Dan)
+  void ModifyIdentity(OperationResults &results,  // NOLINT (Dan)
                       int identity_type,
                       int signer_type,
                       int index);
 
   int DeleteOldIdentityPackets();
-  void DeleteMid(OperationResults &results);
-  void DeleteSmid(OperationResults &results);
-  void DeleteTmid(OperationResults &results);
-  void DeleteStmid(OperationResults &results);
-  void DeleteIdentity(OperationResults &results,
+  void DeleteMid(OperationResults &results);  // NOLINT (Dan)
+  void DeleteSmid(OperationResults &results);  // NOLINT (Dan)
+  void DeleteTmid(OperationResults &results);  // NOLINT (Dan)
+  void DeleteStmid(OperationResults &results);  // NOLINT (Dan)
+  void DeleteIdentity(OperationResults &results,  // NOLINT (Dan)
                       int packet_type,
                       int signer_type,
                       int index);
@@ -153,4 +153,4 @@ class UserCredentialsImpl {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_DETAIL_NEW_AUTH_H_
+#endif  // MAIDSAFE_LIFESTUFF_DETAIL_USER_CREDENTIALS_IMPL_H_

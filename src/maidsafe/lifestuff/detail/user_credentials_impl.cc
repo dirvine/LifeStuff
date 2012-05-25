@@ -24,6 +24,7 @@
 #include "maidsafe/lifestuff/detail/user_credentials_impl.h"
 
 #include <memory>
+#include <vector>
 
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
@@ -51,12 +52,10 @@ namespace lifestuff {
 
 typedef pcs::RemoteChunkStore::ValidationData ValidationData;
 
-namespace {
-
 struct OperationResults {
-  OperationResults(boost::mutex &mutex_in,
-                   boost::condition_variable &conditional_variable_in,
-                   std::vector<int> &individual_results_in)
+  OperationResults(boost::mutex &mutex_in,  // NOLINT (Dan)
+                   boost::condition_variable &conditional_variable_in,  // NOLINT (Dan)
+                   std::vector<int> &individual_results_in)  // NOLINT (Dan)
       : mutex(mutex_in),
         conditional_variable(conditional_variable_in),
         individual_results(individual_results_in) {}
@@ -64,6 +63,8 @@ struct OperationResults {
   boost::condition_variable &conditional_variable;
   std::vector<int> &individual_results;
 };
+
+namespace {
 
 int KeysToValidationData(std::shared_ptr<asymm::Keys> packet,
                          ValidationData *validation_data) {
@@ -112,7 +113,7 @@ int CreateSignaturePacketInfo(std::shared_ptr<asymm::Keys> packet,
   return KeysToValidationData(packet, validation_data);
 }
 
-void OperationCallback(bool result, OperationResults &results, int index) {
+void OperationCallback(bool result, OperationResults &results, int index) {  // NOLINT (Dan)
   boost::mutex::scoped_lock barra_loch_an_duin(results.mutex);
   results.individual_results.at(index) =
       result ? kSuccess : kRemoteChunkStoreFailure;
@@ -144,8 +145,8 @@ UserCredentialsImpl::UserCredentialsImpl(
 UserCredentialsImpl::~UserCredentialsImpl() {}
 
 int UserCredentialsImpl::GetUserInfo(const std::string &keyword,
-                                   const std::string &pin,
-                                   const std::string &password) {
+                                     const std::string &pin,
+                                     const std::string &password) {
   boost::mutex::scoped_lock loch_a_phuill(single_threaded_class_mutex_);
 
   // Obtain MID, TMID
@@ -199,11 +200,11 @@ int UserCredentialsImpl::GetUserInfo(const std::string &keyword,
 }
 
 void UserCredentialsImpl::GetIdAndTemporaryId(const std::string &keyword,
-                                            const std::string &pin,
-                                            const std::string &password,
-                                            bool surrogate,
-                                            int *result,
-                                            std::string *temporary_packet) {
+                                              const std::string &pin,
+                                              const std::string &password,
+                                              bool surrogate,
+                                              int *result,
+                                              std::string *temporary_packet) {
   std::string id_name(pca::ApplyTypeToName(passport::MidName(keyword,
                                                              pin,
                                                              surrogate),
@@ -300,8 +301,8 @@ int UserCredentialsImpl::HandleSerialisedDataMaps(
 }
 
 int UserCredentialsImpl::CreateUser(const std::string &keyword,
-                                  const std::string &pin,
-                                  const std::string &password) {
+                                    const std::string &pin,
+                                    const std::string &password) {
   boost::mutex::scoped_lock loch_a_phuill(single_threaded_class_mutex_);
 
   int result(ProcessSigningPackets());
@@ -384,19 +385,19 @@ int UserCredentialsImpl::StoreAnonymousPackets() {
   return kSuccess;
 }
 
-void UserCredentialsImpl::StoreAnmid(OperationResults &results) {
+void UserCredentialsImpl::StoreAnmid(OperationResults &results) {  // NOLINT (Dan)
   std::shared_ptr<asymm::Keys> anmid(
         passport_.SignaturePacketDetails(passport::kAnmid, false));
   StoreSignaturePacket(anmid, results, 0);
 }
 
-void UserCredentialsImpl::StoreAnsmid(OperationResults &results) {
+void UserCredentialsImpl::StoreAnsmid(OperationResults &results) {  // NOLINT (Dan)
   std::shared_ptr<asymm::Keys> ansmid(
         passport_.SignaturePacketDetails(passport::kAnsmid, false));
   StoreSignaturePacket(ansmid, results, 1);
 }
 
-void UserCredentialsImpl::StoreAntmid(OperationResults &results) {
+void UserCredentialsImpl::StoreAntmid(OperationResults &results) {  // NOLINT (Dan)
   std::shared_ptr<asymm::Keys> antmid(
         passport_.SignaturePacketDetails(passport::kAntmid, false));
   StoreSignaturePacket(antmid, results, 2);
@@ -404,7 +405,7 @@ void UserCredentialsImpl::StoreAntmid(OperationResults &results) {
 
 void UserCredentialsImpl::StoreSignaturePacket(
     std::shared_ptr<asymm::Keys> packet,
-    OperationResults &results,
+    OperationResults &results,  // NOLINT (Dan)
     int index) {
   std::string packet_name, packet_content;
   ValidationData validation_data;
@@ -422,7 +423,7 @@ void UserCredentialsImpl::StoreSignaturePacket(
   }
 }
 
-void UserCredentialsImpl::StoreAnmaid(OperationResults &results) {
+void UserCredentialsImpl::StoreAnmaid(OperationResults &results) {  // NOLINT (Dan)
   std::shared_ptr<asymm::Keys> anmaid(
         passport_.SignaturePacketDetails(passport::kAnmaid, false));
   std::string packet_name, packet_content;
@@ -441,7 +442,7 @@ void UserCredentialsImpl::StoreAnmaid(OperationResults &results) {
   }
 }
 
-void UserCredentialsImpl::StoreMaid(bool result, OperationResults &results) {
+void UserCredentialsImpl::StoreMaid(bool result, OperationResults &results) {  // NOLINT (Dan)
   if (!result) {
     DLOG(ERROR) << "Anmaid failed to store.";
     OperationCallback(false, results, 3);
@@ -484,7 +485,7 @@ void UserCredentialsImpl::StoreMaid(bool result, OperationResults &results) {
   }
 }
 
-void UserCredentialsImpl::StorePmid(bool result, OperationResults &results) {
+void UserCredentialsImpl::StorePmid(bool result, OperationResults &results) {  // NOLINT (Dan)
   if (!result) {
     DLOG(ERROR) << "Maid failed to store.";
     OperationCallback(false, results, 3);
@@ -528,8 +529,8 @@ void UserCredentialsImpl::StorePmid(bool result, OperationResults &results) {
 }
 
 int UserCredentialsImpl::ProcessIdentityPackets(const std::string &keyword,
-                                              const std::string &pin,
-                                              const std::string &password) {
+                                                const std::string &pin,
+                                                const std::string &password) {
   std::string serialised_data_atlas, surrogate_serialised_data_atlas;
   int result(session_->SerialiseDataAtlas(&serialised_data_atlas));
   Sleep(boost::posix_time::milliseconds(1));  // Need different timestamps
@@ -603,26 +604,26 @@ int UserCredentialsImpl::StoreIdentityPackets() {
   return kSuccess;
 }
 
-void UserCredentialsImpl::StoreMid(OperationResults &results) {
+void UserCredentialsImpl::StoreMid(OperationResults &results) {  // NOLINT (Dan)
   StoreIdentity(results, passport::kMid, passport::kAnmid, 0);
 }
 
-void UserCredentialsImpl::StoreSmid(OperationResults &results) {
+void UserCredentialsImpl::StoreSmid(OperationResults &results) {  // NOLINT (Dan)
   StoreIdentity(results, passport::kSmid, passport::kAnsmid, 1);
 }
 
-void UserCredentialsImpl::StoreTmid(OperationResults &results) {
+void UserCredentialsImpl::StoreTmid(OperationResults &results) {  // NOLINT (Dan)
   StoreIdentity(results, passport::kTmid, passport::kAntmid, 2);
 }
 
-void UserCredentialsImpl::StoreStmid(OperationResults &results) {
+void UserCredentialsImpl::StoreStmid(OperationResults &results) {  // NOLINT (Dan)
   StoreIdentity(results, passport::kStmid, passport::kAntmid, 3);
 }
 
-void UserCredentialsImpl::StoreIdentity(OperationResults &results,
-                                      int identity_type,
-                                      int signer_type,
-                                      int index) {
+void UserCredentialsImpl::StoreIdentity(OperationResults &results,  // NOLINT (Dan)
+                                        int identity_type,
+                                        int signer_type,
+                                        int index) {
   passport::PacketType id_pt(static_cast<passport::PacketType>(identity_type));
   passport::PacketType sign_pt(static_cast<passport::PacketType>(signer_type));
   std::string packet_name(passport_.PacketName(id_pt, false)),
@@ -703,18 +704,18 @@ int UserCredentialsImpl::SaveSession() {
   return kSuccess;
 }
 
-void UserCredentialsImpl::ModifyMid(OperationResults &results) {
+void UserCredentialsImpl::ModifyMid(OperationResults &results) {  // NOLINT (Dan)
   ModifyIdentity(results, passport::kMid, passport::kAnmid, 0);
 }
 
-void UserCredentialsImpl::ModifySmid(OperationResults &results) {
+void UserCredentialsImpl::ModifySmid(OperationResults &results) {  // NOLINT (Dan)
   ModifyIdentity(results, passport::kSmid, passport::kAnsmid, 1);
 }
 
-void UserCredentialsImpl::ModifyIdentity(OperationResults &results,
-                                       int identity_type,
-                                       int signer_type,
-                                       int index) {
+void UserCredentialsImpl::ModifyIdentity(OperationResults &results,  // NOLINT (Dan)
+                                         int identity_type,
+                                         int signer_type,
+                                         int index) {
   passport::PacketType id_pt(static_cast<passport::PacketType>(identity_type));
   passport::PacketType sign_pt(static_cast<passport::PacketType>(signer_type));
   std::string name(passport_.PacketName(id_pt, false)),
@@ -753,7 +754,7 @@ void UserCredentialsImpl::ModifyIdentity(OperationResults &results,
 }
 
 int UserCredentialsImpl::ChangeUsernamePin(const std::string &new_keyword,
-                                         const std::string &new_pin) {
+                                           const std::string &new_pin) {
   boost::mutex::scoped_lock loch_a_phuill(single_threaded_class_mutex_);
 
   BOOST_ASSERT(!new_keyword.empty());
@@ -823,26 +824,26 @@ int UserCredentialsImpl::DeleteOldIdentityPackets() {
   return kSuccess;
 }
 
-void UserCredentialsImpl::DeleteMid(OperationResults &results) {
+void UserCredentialsImpl::DeleteMid(OperationResults &results) {  // NOLINT (Dan)
   DeleteIdentity(results, passport::kMid, passport::kAnmid, 0);
 }
 
-void UserCredentialsImpl::DeleteSmid(OperationResults &results) {
+void UserCredentialsImpl::DeleteSmid(OperationResults &results) {  // NOLINT (Dan)
   DeleteIdentity(results, passport::kSmid, passport::kAnsmid, 1);
 }
 
-void UserCredentialsImpl::DeleteTmid(OperationResults &results) {
+void UserCredentialsImpl::DeleteTmid(OperationResults &results) {  // NOLINT (Dan)
   DeleteIdentity(results, passport::kTmid, passport::kAntmid, 2);
 }
 
-void UserCredentialsImpl::DeleteStmid(OperationResults &results) {
+void UserCredentialsImpl::DeleteStmid(OperationResults &results) {  // NOLINT (Dan)
   DeleteIdentity(results, passport::kStmid, passport::kAntmid, 3);
 }
 
-void UserCredentialsImpl::DeleteIdentity(OperationResults &results,
-                                       int packet_type,
-                                       int signer_type,
-                                       int index) {
+void UserCredentialsImpl::DeleteIdentity(OperationResults &results,  // NOLINT (Dan)
+                                         int packet_type,
+                                         int signer_type,
+                                         int index) {
   passport::PacketType id_type(static_cast<passport::PacketType>(packet_type));
   passport::PacketType sig_type(static_cast<passport::PacketType>(signer_type));
   std::string name(passport_.PacketName(id_type, true));

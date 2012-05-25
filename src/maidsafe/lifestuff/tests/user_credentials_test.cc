@@ -280,7 +280,8 @@ TEST_F(UserCredentialsTest, FUNC_ParallelLogin) {
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Preconditions fulfilled.\n===================\n";
 
-  ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
+  ASSERT_EQ(kUserDoesntExist,
+            user_credentials_->LogIn(keyword_, pin_, password_));
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
   ASSERT_EQ(keyword_, session_->keyword());
   ASSERT_EQ(pin_, session_->pin());

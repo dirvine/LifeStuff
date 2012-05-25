@@ -227,9 +227,9 @@ int WaitForResultsPtr(boost::mutex *mutex,
   return kSuccess;
 }
 
-int WaitForResults(boost::mutex &mutex,
-                   boost::condition_variable &cond_var,
-                   std::vector<int> &results) {
+int WaitForResults(boost::mutex &mutex,  // NOLINT (Dan)
+                   boost::condition_variable &cond_var,  // NOLINT (Dan)
+                   std::vector<int> &results) {  // NOLINT (Dan)
   size_t size(results.size());
   try {
     boost::mutex::scoped_lock lock(mutex);
