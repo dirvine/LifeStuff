@@ -602,8 +602,8 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
                                      inbox_item.sender_public_id,
                                      relative_path.filename().string(),
                                      inbox_item.content[kShareId],
-                                     inbox_item.content.size() == 7U ?
-                                         kShareReadWrite : kShareReadOnly,
+                                     inbox_item.content[kKeysIdentity].empty() ?
+                                         kShareReadOnly : kShareReadWrite,
                                      inbox_item.timestamp);
   }
 }

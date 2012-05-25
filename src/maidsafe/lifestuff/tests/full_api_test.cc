@@ -2302,6 +2302,90 @@ TEST_P(PrivateSharesApiTest, FUNC_LeavePrivateShare) {
   EXPECT_EQ(kSuccess, test_elements2.Finalise());
 }
 
+TEST_P(PrivateSharesApiTest, FUNC_CreateDeletePrivateShare) {
+  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
+  std::string username1(RandomAlphaNumericString(6)),
+              pin1(CreatePin()),
+              password1(RandomAlphaNumericString(6)),
+              public_id1(RandomAlphaNumericString(5));
+  std::string username2(RandomAlphaNumericString(6)),
+              pin2(CreatePin()),
+              password2(RandomAlphaNumericString(6)),
+              public_id2(RandomAlphaNumericString(5));
+  LifeStuff test_elements1, test_elements2;
+  TestingVariables testing_variables1, testing_variables2;
+  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
+                                                   test_elements2,
+                                                   testing_variables1,
+                                                   testing_variables2,
+                                                   *test_dir,
+                                                   username1, pin1, password1,
+                                                   public_id1,
+                                                   username2, pin2, password2,
+                                                   public_id2));
+
+  DLOG(ERROR) << "\n\n\n\n";
+  std::string share_name(RandomAlphaNumericString(5));
+  boost::system::error_code error_code;
+  {
+    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+    // Create empty private share
+    StringIntMap contacts, results;
+    contacts.insert(std::make_pair(public_id2, rights_));  // Read only rights
+    results.insert(std::make_pair(public_id2, kGeneralError));
+
+    EXPECT_EQ(kSuccess, test_elements1.CreateEmptyPrivateShare(public_id1,
+                                                               contacts,
+                                                               &share_name,
+                                                               &results));
+
+    fs::path share_path(test_elements1.mount_path() /
+                        kSharedStuff /
+                        share_name),
+             my_path(test_elements1.mount_path() /
+                     kMyStuff /
+                     share_name);
+    EXPECT_TRUE(fs::exists(share_path, error_code)) << share_path;
+    EXPECT_EQ(0, error_code.value());
+    EXPECT_EQ(kSuccess, results[public_id2]);
+    EXPECT_EQ(kSuccess, test_elements1.DeletePrivateShare(public_id1,
+                                                          share_name,
+                                                          false));
+    EXPECT_FALSE(fs::exists(share_path, error_code)) << share_path;
+    EXPECT_NE(0, error_code.value());
+    EXPECT_TRUE(fs::exists(my_path, error_code)) << my_path;
+    EXPECT_EQ(0, error_code.value());
+
+    EXPECT_EQ(kSuccess, test_elements1.LogOut());
+  }
+  DLOG(ERROR) << "\n\n\n\n";
+  {
+    EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
+    while (!testing_variables2.privately_invited)
+      Sleep(bptime::milliseconds(100));
+
+    EXPECT_FALSE(testing_variables2.new_private_share_id.empty());
+    EXPECT_EQ(kSuccess,
+              test_elements2.AcceptPrivateShareInvitation(
+                  public_id2,
+                  public_id1,
+                  testing_variables2.new_private_share_id,
+                  &share_name));
+    while (!testing_variables2.private_share_deleted)
+      Sleep(bptime::milliseconds(100));
+    fs::path share_path(test_elements2.mount_path() /
+                        kSharedStuff /
+                        share_name);
+    EXPECT_FALSE(fs::exists(share_path, error_code));
+    EXPECT_EQ(0, error_code.value());
+
+    EXPECT_EQ(kSuccess, test_elements2.LogOut());
+  }
+
+  EXPECT_EQ(kSuccess, test_elements1.Finalise());
+  EXPECT_EQ(kSuccess, test_elements2.Finalise());
+}
+
 
 TEST(IndependentFullTest, FUNC_MembershipDowngradePrivateShare) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
