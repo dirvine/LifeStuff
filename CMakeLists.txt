@@ -56,11 +56,15 @@ endif()
 # Set up all files as GLOBs                                                                       #
 ###################################################################################################
 set(PATH_TO_SRC ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff)
+set(PATH_TO_INCLUDE ${PATH_TO_INCLUDE})
 ####    CODE    ####
 # Installables
-file(GLOB SOURCE_FILES_LIFESTUFF_DIR "${PATH_TO_SRC}/lifestuff_api*.cc" "${PATH_TO_SRC}/rcs_helper.cc")
-file(GLOB HEADER_FILES_LIFESTUFF_DIR "${PATH_TO_SRC}/lifestuff_api_impl.h" "${PATH_TO_SRC}/rcs_helper.h")
-file(GLOB API_FILES_LIFESTUFF_DIR "${PROJECT_SOURCE_DIR}/include/maidsafe/lifestuff/lifestuff_api.h")
+file(GLOB SOURCE_FILES_LIFESTUFF_DIR "${PATH_TO_SRC}/lifestuff_api.cc"
+                                     "${PATH_TO_SRC}/lifestuff_impl.cc"
+                                     "${PATH_TO_SRC}/rcs_helper.cc")
+file(GLOB HEADER_FILES_LIFESTUFF_DIR "${PATH_TO_SRC}/lifestuff_impl.h"
+                                     "${PATH_TO_SRC}/rcs_helper.h")
+file(GLOB API_FILES_LIFESTUFF_DIR "${PATH_TO_INCLUDE}/lifestuff_api.h")
 set(ALL_FILES_LIFESTUFF_DIR ${SOURCE_FILES_LIFESTUFF_DIR} ${HEADER_FILES_LIFESTUFF_DIR} ${API_FILES_LIFESTUFF_DIR})
 source_group("LifeStuff Source Files" FILES ${SOURCE_FILES_LIFESTUFF_DIR})
 source_group("LifeStuff Header Files" FILES ${HEADER_FILES_LIFESTUFF_DIR})
@@ -69,8 +73,8 @@ source_group("LifeStuff API Files" FILES ${API_FILES_LIFESTUFF_DIR})
 # Detail
 file(GLOB SOURCE_FILES_DETAIL_DIR "${PATH_TO_SRC}/detail/*.cc" "${PATH_TO_SRC}/lifestuff.cc")
 file(GLOB HEADER_FILES_DETAIL_DIR "${PATH_TO_SRC}/detail/*.h"
-                                  "${PROJECT_SOURCE_DIR}/include/maidsafe/lifestuff/lifestuff.h"
-                                  "${PROJECT_SOURCE_DIR}/include/maidsafe/lifestuff/return_codes.h")
+                                  "${PATH_TO_INCLUDE}/lifestuff.h"
+                                  "${PATH_TO_INCLUDE}/return_codes.h")
 set(ALL_FILES_DETAIL_DIR ${SOURCE_FILES_DETAIL_DIR} ${HEADER_FILES_DETAIL_DIR})
 source_group("LifeStuff Detail Source Files" FILES ${SOURCE_FILES_DETAIL_DIR})
 source_group("LifeStuff Detail Header Files" FILES ${HEADER_FILES_DETAIL_DIR})
@@ -109,30 +113,30 @@ ms_add_static_library(lifestuff_detail ${ALL_FILES_DETAIL_DIR})
 ms_add_executable(TESTlifestuff_general "Tests/LifeStuff" ${LIFESTUFF_TESTS_CC} ${TESTS_MAIN_CC})
 
 ms_add_static_library(lifestuff_local ${ALL_FILES_LIFESTUFF_DIR})
-ms_add_executable(TESTpublic_id_local "Tests/LifeStuff" ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
-ms_add_executable(TESTuser_credentials_local "Tests/LifeStuff" ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
-ms_add_executable(TESTuser_storage_local "Tests/LifeStuff" ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC})
-ms_add_executable(TESTapi_local "Tests/LifeStuff" ${API_TEST_CC} ${TESTS_MAIN_CC})
+ms_add_executable(TESTlifestuff_public_id_local "Tests/LifeStuff" ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
+ms_add_executable(TESTlifestuff_user_credentials_local "Tests/LifeStuff" ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
+ms_add_executable(TESTlifestuff_user_storage_local "Tests/LifeStuff" ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC})
+ms_add_executable(TESTlifestuff_api_local "Tests/LifeStuff" ${API_TEST_CC} ${TESTS_MAIN_CC})
 
 target_link_libraries(maidsafe_lifestuff_detail maidsafe_drive maidsafe_passport)
 target_link_libraries(maidsafe_lifestuff_local maidsafe_lifestuff_detail)
 target_link_libraries(TESTlifestuff_general maidsafe_lifestuff_local)
-target_link_libraries(TESTpublic_id_local maidsafe_lifestuff_local)
-target_link_libraries(TESTuser_credentials_local maidsafe_lifestuff_local)
-target_link_libraries(TESTuser_storage_local maidsafe_lifestuff_local)
-target_link_libraries(TESTapi_local maidsafe_lifestuff_local)
+target_link_libraries(TESTlifestuff_public_id_local maidsafe_lifestuff_local)
+target_link_libraries(TESTlifestuff_user_credentials_local maidsafe_lifestuff_local)
+target_link_libraries(TESTlifestuff_user_storage_local maidsafe_lifestuff_local)
+target_link_libraries(TESTlifestuff_api_local maidsafe_lifestuff_local)
 
 if(NOT ${LOCAL_TARGETS_ONLY})
   ms_add_static_library(lifestuff ${ALL_FILES_LIFESTUFF_DIR})
-  ms_add_executable(TESTpublic_id "Tests/LifeStuff" ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
-  ms_add_executable(TESTuser_credentials "Tests/LifeStuff" ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
-  ms_add_executable(TESTuser_storage "Tests/LifeStuff" ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC})
-  ms_add_executable(TESTapi "Tests/LifeStuff" ${API_TEST_CC} ${TESTS_MAIN_CC})
+  ms_add_executable(TESTlifestuff_public_id "Tests/LifeStuff" ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
+  ms_add_executable(TESTlifestuff_user_credentials "Tests/LifeStuff" ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
+  ms_add_executable(TESTlifestuff_user_storage "Tests/LifeStuff" ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC})
+  ms_add_executable(TESTlifestuff_api "Tests/LifeStuff" ${API_TEST_CC} ${TESTS_MAIN_CC})
   target_link_libraries(maidsafe_lifestuff maidsafe_lifestuff_detail maidsafe_pd)
-  target_link_libraries(TESTpublic_id maidsafe_lifestuff)
-  target_link_libraries(TESTuser_credentials maidsafe_lifestuff)
-  target_link_libraries(TESTuser_storage maidsafe_lifestuff)
-  target_link_libraries(TESTapi maidsafe_lifestuff)
+  target_link_libraries(TESTlifestuff_public_id maidsafe_lifestuff)
+  target_link_libraries(TESTlifestuff_user_credentials maidsafe_lifestuff)
+  target_link_libraries(TESTlifestuff_user_storage maidsafe_lifestuff)
+  target_link_libraries(TESTlifestuff_api maidsafe_lifestuff)
 endif()
 
 rename_outdated_built_exes()
@@ -148,10 +152,10 @@ ms_disable_warnings(${PATH_TO_SRC}/detail/data_atlas.pb.cc
 
 set_target_properties(maidsafe_lifestuff_local
                       TESTlifestuff_general
-                      TESTpublic_id_local
-                      TESTuser_credentials_local
-                      TESTuser_storage_local
-                      TESTapi_local
+                      TESTlifestuff_public_id_local
+                      TESTlifestuff_user_credentials_local
+                      TESTlifestuff_user_storage_local
+                      TESTlifestuff_api_local
                       PROPERTIES COMPILE_FLAGS -DLOCAL_TARGETS_ONLY)
 
 if(UNIX)
@@ -170,10 +174,10 @@ add_style_test(${STYLE_ALL}
                ${API_TEST_CC})
 
 add_gtests(TESTlifestuff_general)
-add_gtests(TESTpublic_id_local)
-add_gtests(TESTuser_credentials_local)
-add_gtests(TESTuser_storage_local)
-add_gtests(TESTapi_local)
+add_gtests(TESTlifestuff_public_id_local)
+add_gtests(TESTlifestuff_user_credentials_local)
+add_gtests(TESTlifestuff_user_storage_local)
+add_gtests(TESTlifestuff_api_local)
 
 add_project_experimental()
 test_summary_output()
@@ -189,17 +193,3 @@ else()
   message(STATUS "Currently building the full version of LifeStuff")
   message(STATUS "To build the local only version, use:    cmake . -DLOCAL_TARGETS_ONLY=ON")
 endif()
-
-
-# set(LIFESTUFF_INSTALL_FILES
-#       ${PATH_TO_SRC}/lifestuff.h
-#       ${PATH_TO_SRC}/return_codes.h
-#       ${PATH_TO_SRC}/version.h
-#       ${PATH_TO_SRC}/lifestuff_api.h)
-# 
-# ms_install_libs(lifestuff_detail_static lifestuff_local_static)
-# if(${LOCAL_TARGETS_ONLY} MATCHES OFF)
-#   ms_install_libs(lifestuff_static)
-# endif()
-# ms_install_headers(lifestuff ${LIFESTUFF_INSTALL_FILES})
-# ms_install_export()
