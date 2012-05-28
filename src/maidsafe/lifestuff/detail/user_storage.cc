@@ -214,6 +214,18 @@ bool UserStorage::SavePrivateShareData(const std::string &serialised_share_data,
   return true;
 }
 
+bool UserStorage::DeletePrivateShareData(const std::string &share_id) {
+  fs::path store_path(mount_dir() / kSharedStuff);
+  std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)) +
+                        drive::kMsHidden.string());
+  int result(DeleteHiddenFile(store_path / temp_name));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to delete private share data.";
+    return false;
+  }
+  return true;
+}
+
 bool UserStorage::SaveOpenShareData(const std::string &serialised_share_data,
                                     const std::string &share_id) {
   fs::path store_path(mount_dir() / kSharedStuff);

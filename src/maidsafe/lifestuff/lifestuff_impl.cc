@@ -1126,6 +1126,8 @@ int LifeStuffImpl::AcceptPrivateShareInvitation(
   result = user_storage_->ReadHiddenFile(hidden_file, &serialised_share_data);
   if (result != kSuccess || serialised_share_data.empty()) {
     DLOG(ERROR) << "No such identifier found: " << result;
+    if (result == drive::kNoMsHidden)
+      return kNoShareTarget;
     return result == kSuccess ? kGeneralError : result;
   }
   Message message;
@@ -1582,6 +1584,10 @@ void LifeStuffImpl::ConnectInternalElements() {
   message_handler_->ConnectToSavePrivateShareDataSignal(
       std::bind(&UserStorage::SavePrivateShareData,
                 user_storage_.get(), args::_1, args::_2));
+
+  message_handler_->ConnectToDeletePrivateShareDataSignal(
+      std::bind(&UserStorage::DeletePrivateShareData,
+                user_storage_.get(), args::_1));
 
   message_handler_->ConnectToPrivateShareUserLeavingSignal(
       std::bind(&UserStorage::UserLeavingShare,

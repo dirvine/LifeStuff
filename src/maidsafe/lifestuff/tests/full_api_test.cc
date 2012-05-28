@@ -2329,7 +2329,6 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateDeletePrivateShare) {
   boost::system::error_code error_code;
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
-    // Create empty private share
     StringIntMap contacts, results;
     contacts.insert(std::make_pair(public_id2, rights_));  // Read only rights
     results.insert(std::make_pair(public_id2, kGeneralError));
@@ -2338,7 +2337,6 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateDeletePrivateShare) {
                                                                contacts,
                                                                &share_name,
                                                                &results));
-
     fs::path share_path(test_elements1.mount_path() /
                         kSharedStuff /
                         share_name),
@@ -2365,19 +2363,17 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateDeletePrivateShare) {
       Sleep(bptime::milliseconds(100));
 
     EXPECT_FALSE(testing_variables2.new_private_share_id.empty());
-    EXPECT_EQ(kSuccess,
+    EXPECT_EQ(kNoShareTarget,
               test_elements2.AcceptPrivateShareInvitation(
                   public_id2,
                   public_id1,
                   testing_variables2.new_private_share_id,
                   &share_name));
-    while (!testing_variables2.private_share_deleted)
-      Sleep(bptime::milliseconds(100));
     fs::path share_path(test_elements2.mount_path() /
                         kSharedStuff /
                         share_name);
     EXPECT_FALSE(fs::exists(share_path, error_code));
-    EXPECT_EQ(0, error_code.value());
+    EXPECT_NE(0, error_code.value());
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }

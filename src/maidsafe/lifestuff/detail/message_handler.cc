@@ -529,6 +529,9 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
   if ((result != kSuccess || share_path.empty()) &&
       inbox_item.item_type != kPrivateShareInvitation) {
     DLOG(ERROR) << "result: " << result << ", path: " << share_path;
+    if (inbox_item.item_type == kPrivateShareDeletion)
+      if (!delete_private_share_data_signal_(inbox_item.content[kShareId]))
+        DLOG(ERROR) << "Failed to delete received share data";
     return;
   }
 

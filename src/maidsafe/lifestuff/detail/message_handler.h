@@ -112,6 +112,8 @@ class MessageHandler {
       const PrivateShareUpdateSignal::slot_type &function);
   bs2::connection ConnectToSavePrivateShareDataSignal(
       const SavePrivateShareDataSignal::slot_type &function);
+  bs2::connection ConnectToDeletePrivateShareDataSignal(
+      const DeletePrivateShareDataSignal::slot_type &function);
   bs2::connection ConnectToSaveOpenShareDataSignal(
       const SaveOpenShareDataSignal::slot_type &function);
 
@@ -171,6 +173,7 @@ class MessageHandler {
   PrivateShareDetailsSignal private_share_details_signal_;
   PrivateShareUpdateSignal private_share_update_signal_;
   SavePrivateShareDataSignal save_private_share_data_signal_;
+  DeletePrivateShareDataSignal delete_private_share_data_signal_;
   SaveOpenShareDataSignal save_open_share_data_signal_;
 };
 

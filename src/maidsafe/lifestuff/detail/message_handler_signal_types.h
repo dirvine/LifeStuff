@@ -108,6 +108,8 @@ typedef bs2::signal<void(const std::string&,  // share id
 typedef bs2::signal<bool(const std::string&,  // NOLINT (Dan)
                          const std::string&)> SavePrivateShareDataSignal;
 
+typedef bs2::signal<bool(const std::string&)> DeletePrivateShareDataSignal;
+
 typedef bs2::signal<bool(const std::string&,  // NOLINT
                          const std::string&)> SaveOpenShareDataSignal;
 

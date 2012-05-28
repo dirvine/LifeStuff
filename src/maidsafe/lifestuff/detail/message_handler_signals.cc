@@ -95,6 +95,11 @@ bs2::connection MessageHandler::ConnectToSavePrivateShareDataSignal(
   return save_private_share_data_signal_.connect(function);
 }
 
+bs2::connection MessageHandler::ConnectToDeletePrivateShareDataSignal(
+    const DeletePrivateShareDataSignal::slot_type &function) {
+  return delete_private_share_data_signal_.connect(function);
+}
+
 bs2::connection MessageHandler::ConnectToSaveOpenShareDataSignal(
     const SaveOpenShareDataSignal::slot_type &function) {
   return save_open_share_data_signal_.connect(function);

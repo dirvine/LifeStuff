@@ -37,6 +37,7 @@
 #else
 #  include "maidsafe/drive/unix_drive.h"
 #endif
+#include "maidsafe/drive/return_codes.h"
 
 #include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
@@ -98,6 +99,7 @@ class UserStorage {
   // ****************************** Shares *************************************
   bool SavePrivateShareData(const std::string &serialised_share_data,
                             const std::string &share_id);
+  bool DeletePrivateShareData(const std::string &share_id);
   bool SaveOpenShareData(const std::string &serialised_share_data,
                          const std::string &share_id);
   int CreateShare(const std::string &sender_public_username,
