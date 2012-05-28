@@ -20,7 +20,6 @@
 #include <iostream>  // NOLINT (Fraser)
 #include <istream>  // NOLINT (Fraser)
 #include <ostream>  // NOLINT (Fraser)
-#include <regex>
 #include <string>
 #include <vector>
 

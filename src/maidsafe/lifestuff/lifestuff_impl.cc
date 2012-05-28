@@ -30,7 +30,7 @@
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/utils.h"
 
-#ifndef LOCAL_TARGETS_ONLY 
+#ifndef LOCAL_TARGETS_ONLY
 #include "maidsafe/dht/contact.h"
 #endif
 

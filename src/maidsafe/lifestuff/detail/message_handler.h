@@ -105,8 +105,8 @@ class MessageHandler {
 
   // Intra library connections
   bs2::connection ConnectToPrivateShareDetailsSignal(
-      boost::function<int(const std::string &share_id,
-                          fs::path *relative_path)> function);
+      std::function<int(const std::string &share_id,  // NOLINT (Dan)
+                        fs::path *relative_path)> function);
 //      const PrivateShareDetailsSignal::slot_type &function);
   bs2::connection ConnectToParseAndSaveDataMapSignal(
       const ParseAndSaveDataMapSignal::slot_type &function);
