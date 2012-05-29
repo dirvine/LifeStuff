@@ -31,12 +31,7 @@
 #include "boost/filesystem/path.hpp"
 
 #include "maidsafe/lifestuff/lifestuff.h"
-#include "maidsafe/lifestuff/version.h"
 
-#if MAIDSAFE_LIFESTUFF_VERSION != 400
-#  error This API is not compatible with the installed library.\
-    Please update the maidsafe-lifestuff library.
-#endif
 
 namespace fs = boost::filesystem;
 
@@ -64,7 +59,8 @@ class LifeStuff {
       const PrivateShareInvitationFunction &share_invitation_function,
       const PrivateShareDeletionFunction &share_deletion_function,
       const PrivateMemberAccessLevelFunction &access_level_function,
-      const OpenShareInvitationFunction &open_share_invitation_function);
+      const OpenShareInvitationFunction &open_share_invitation_function,
+      const ShareRenamedFunction &share_renamed_function);
   int Finalise();
 
   /// Credential operations
@@ -78,14 +74,12 @@ class LifeStuff {
   int LogOut();
 
   int CheckPassword(const std::string &password);
-  int ChangeKeyword(const std::string &old_username,
-                    const std::string &new_username,
+  int ChangeKeyword(const std::string &new_keyword,
                     const std::string &password);
-  int ChangePin(const std::string &old_pin,
-                const std::string &new_pin,
+  int ChangePin(const std::string &new_pin,
                 const std::string &password);
-  int ChangePassword(const std::string &old_password,
-                     const std::string &new_password);
+  int ChangePassword(const std::string &new_password,
+                     const std::string &current_password);
   int ChangePublicId(const std::string &public_id,
                      const std::string &password);
 

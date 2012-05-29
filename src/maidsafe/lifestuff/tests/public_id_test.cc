@@ -183,68 +183,8 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
   }
 
   void CreateTestSignaturePackets(std::shared_ptr<Session> session) {
-    ASSERT_EQ(kSuccess, session->passport_->CreateSigningPackets());
-    ASSERT_EQ(kSuccess, session->passport_->ConfirmSigningPackets());
-  }
-
-  void DumpSession(std::shared_ptr<Session> session,
-                   std::string *ser_keys,
-                   std::string *ser_sels,
-                   std::string *ser_conts) {
-    ser_keys->clear();
-    ser_sels->clear();
-    ser_conts->clear();
-    session->SerialiseKeyChain(ser_keys, ser_sels);
-    std::vector<Contact> contacts;
-    DataAtlas data_atlas;
-    for (auto it(session->contact_handler_map().begin());
-         it != session->contact_handler_map().end();
-         ++it) {
-      contacts.clear();
-      PublicIdentity *pub_id = data_atlas.add_public_ids();
-      pub_id->set_public_id((*it).first);
-      pub_id->set_profile_picture_data_map(
-          session->profile_picture_data_map((*it).first));
-      (*it).second->OrderedContacts(&contacts, kAlphabetical, kRequestSent |
-                                                              kPendingResponse |
-                                                              kConfirmed |
-                                                              kBlocked);
-      for (size_t n = 0; n < contacts.size(); ++n) {
-        PublicContact *pc = pub_id->add_contacts();
-        pc->set_public_id(contacts[n].public_id);
-        pc->set_mpid_name(contacts[n].mpid_name);
-        pc->set_inbox_name(contacts[n].inbox_name);
-        pc->set_status(contacts[n].status);
-        pc->set_rank(contacts[n].rank);
-        pc->set_last_contact(contacts[n].last_contact);
-        DLOG(ERROR) << "Added contact " << contacts[n].public_id
-                    << " of own pubname " << (*it).first;
-      }
-    }
-    data_atlas.SerializeToString(ser_conts);
-  }
-
-  void LoadSession(std::shared_ptr<Session> session,
-                   const std::string &ser_keys,
-                   const std::string &ser_sels,
-                   const std::string &ser_conts) {
-    ASSERT_EQ(kSuccess, session->ParseKeyChain(ser_keys, ser_sels));
-    DataAtlas data_atlas;
-    data_atlas.ParseFromString(ser_conts);
-    std::string pub_name;
-    for (int n = 0; n < data_atlas.public_ids_size(); ++n) {
-      pub_name = data_atlas.public_ids(n).public_id();
-      session->contact_handler_map().insert(
-          std::make_pair(pub_name,
-                         std::make_shared<ContactsHandler>()));
-      session->set_profile_picture_data_map(
-          pub_name,
-          data_atlas.public_ids(n).profile_picture_data_map());
-      for (int a(0); a < data_atlas.public_ids(n).contacts_size(); ++a) {
-        Contact c(data_atlas.public_ids(n).contacts(a));
-        session->contact_handler_map()[pub_name]->AddContact(c);
-      }
-    }
+    ASSERT_EQ(kSuccess, session->passport().CreateSigningPackets());
+    ASSERT_EQ(kSuccess, session->passport().ConfirmSigningPackets());
   }
 
   std::shared_ptr<fs::path> test_dir_;

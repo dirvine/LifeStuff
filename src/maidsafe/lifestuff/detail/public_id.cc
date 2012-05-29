@@ -201,7 +201,7 @@ void PublicId::ShutDown() { StopCheckingForNewContacts(); }
 
 int PublicId::StartCheckingForNewContacts(bptime::seconds interval) {
   std::vector<passport::SelectableIdData> selectables;
-  session_->passport_->SelectableIdentitiesList(&selectables);
+  session_->passport().SelectableIdentitiesList(&selectables);
   if (selectables.empty()) {
     DLOG(ERROR) << "No public username set";
     return kNoPublicIds;
@@ -226,7 +226,7 @@ int PublicId::CreatePublicId(const std::string &public_id,
   }
 
   // Create packets (pending) in passport
-  int result(session_->passport_->CreateSelectableIdentity(public_id));
+  int result(session_->passport().CreateSelectableIdentity(public_id));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to create Public ID with name " << public_id;
     return result;
@@ -234,7 +234,7 @@ int PublicId::CreatePublicId(const std::string &public_id,
 
   passport::SelectableIdentityData data;
   // Retrieves ANMPID, MPID, and MMID's <name, value, signature>
-  result = session_->passport_->GetSelectableIdentityData(public_id,
+  result = session_->passport().GetSelectableIdentityData(public_id,
                                                           false,
                                                           &data);
   if (result != kSuccess) {
@@ -251,12 +251,12 @@ int PublicId::CreatePublicId(const std::string &public_id,
   results.push_back(kPendingResult);
   results.push_back(kPendingResult);
   results.push_back(kPendingResult);
-  asymm::PrivateKey inbox_private_key(session_->passport_->PacketPrivateKey(
+  asymm::PrivateKey inbox_private_key(session_->passport().PacketPrivateKey(
                                           passport::kMmid,
                                           false,
                                           public_id));
   asymm::PrivateKey contact_id_private_key(
-      session_->passport_->PacketPrivateKey(passport::kMpid,
+      session_->passport().PacketPrivateKey(passport::kMpid,
                                             false,
                                             public_id));
   pcs::RemoteChunkStore::ValidationData validation_data_mmid;
@@ -306,7 +306,7 @@ int PublicId::CreatePublicId(const std::string &public_id,
                              callback,
                              validation_data_mpid);
 
-  result = AwaitingResponse(&mutex, &cond_var, &results);
+  result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
 
@@ -321,7 +321,7 @@ int PublicId::CreatePublicId(const std::string &public_id,
   }
 
   // Confirm packets as stored
-  result = session_->passport_->ConfirmSelectableIdentity(public_id);
+  result = session_->passport().ConfirmSelectableIdentity(public_id);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to confirm Public ID with name " << public_id;
     return result;
@@ -384,7 +384,7 @@ int PublicId::ModifyAppendability(const std::string &public_id,
 
   // Retrieves ANMPID, MPID, and MMID's <name, value, signature>
   passport::SelectableIdentityData data;
-  int result(session_->passport_->GetSelectableIdentityData(public_id,
+  int result(session_->passport().GetSelectableIdentityData(public_id,
                                                             true,
                                                             &data));
   if (result != kSuccess) {
@@ -395,11 +395,11 @@ int PublicId::ModifyAppendability(const std::string &public_id,
 
   // Retriveves own MPID, MMID private keys
   asymm::PrivateKey MPID_private_key(
-      session_->passport_->PacketPrivateKey(passport::kMpid,
+      session_->passport().PacketPrivateKey(passport::kMpid,
                                             true,
                                             public_id));
   asymm::PrivateKey MMID_private_key(
-      session_->passport_->PacketPrivateKey(passport::kMmid,
+      session_->passport().PacketPrivateKey(passport::kMmid,
                                             true,
                                             public_id));
   // Change appendability of MCID,MMID by modify them via ModifyAppendableByAll
@@ -431,7 +431,7 @@ int PublicId::ModifyAppendability(const std::string &public_id,
                               callback,
                               validation_data_mmid);
 
-  result = AwaitingResponse(&mutex, &cond_var, &results);
+  result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
 
@@ -466,11 +466,11 @@ void PublicId::GetNewContacts(const bptime::seconds &interval,
 
 void PublicId::GetContactsHandle() {
   std::vector<passport::SelectableIdData> selectables;
-  session_->passport_->SelectableIdentitiesList(&selectables);
+  session_->passport().SelectableIdentitiesList(&selectables);
   for (auto it(selectables.begin()); it != selectables.end(); ++it) {
     if (std::get<3>(*it)) {
       passport::SelectableIdentityData data;
-      session_->passport_->GetSelectableIdentityData(std::get<0>(*it),
+      session_->passport().GetSelectableIdentityData(std::get<0>(*it),
                                                      true,
                                                      &data);
       pcs::RemoteChunkStore::ValidationData validation_data_mpid;
@@ -622,12 +622,12 @@ int PublicId::RemoveContact(const std::string &public_id,
     return kLiveContactNotFound;
 
   asymm::PrivateKey old_inbox_private_key(
-      session_->passport_->PacketPrivateKey(passport::kMmid,
+      session_->passport().PacketPrivateKey(passport::kMmid,
                                             true,
                                             public_id));
   // Generate a new MMID and store it
   passport::PacketData new_MMID, old_MMID;
-  int result(session_->passport_->MoveMaidsafeInbox(public_id,
+  int result(session_->passport().MoveMaidsafeInbox(public_id,
                                                     &old_MMID,
                                                     &new_MMID));
   if (result != kSuccess) {
@@ -640,7 +640,7 @@ int PublicId::RemoveContact(const std::string &public_id,
   std::vector<int> results;
   results.push_back(kPendingResult);
   asymm::PrivateKey new_inbox_private_key(
-      session_->passport_->PacketPrivateKey(passport::kMmid,
+      session_->passport().PacketPrivateKey(passport::kMmid,
                                             false,
                                             public_id));
   pcs::RemoteChunkStore::ValidationData validation_data_mmid;
@@ -654,7 +654,7 @@ int PublicId::RemoveContact(const std::string &public_id,
                              callback,
                              validation_data_mmid);
 
-  result = AwaitingResponse(&mutex, &cond_var, &results);
+  result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
   if (results[0] != kSuccess) {
@@ -683,7 +683,7 @@ int PublicId::RemoveContact(const std::string &public_id,
                               callback,
                               validation_data_mmid);
 
-  result = AwaitingResponse(&mutex, &cond_var, &results);
+  result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
   if (results[0] != kSuccess) {
@@ -691,7 +691,7 @@ int PublicId::RemoveContact(const std::string &public_id,
     return kRemoveContactFailure;
   }
 
-  session_->passport_->ConfirmMovedMaidsafeInbox(public_id);
+  session_->passport().ConfirmMovedMaidsafeInbox(public_id);
   // Informs each contact in the list about the new MMID
   result = InformContactInfo(public_id,
                              MapToVector(ContactList(public_id)));
@@ -704,7 +704,7 @@ int PublicId::InformContactInfo(const std::string &public_id,
   // Get our MMID name, and MPID private key
   passport::SelectableIdentityData data;
   // Retrieves ANMPID, MPID, and MMID's <name, value, signature>
-  int result(session_->passport_->GetSelectableIdentityData(public_id,
+  int result(session_->passport().GetSelectableIdentityData(public_id,
                                                             true,
                                                             &data));
   if (result != kSuccess) {
@@ -716,7 +716,7 @@ int PublicId::InformContactInfo(const std::string &public_id,
 
   // Retrieves MPID private_key
   asymm::PrivateKey MPID_private_key(
-      session_->passport_->PacketPrivateKey(passport::kMpid,
+      session_->passport().PacketPrivateKey(passport::kMpid,
                                             true,
                                             public_id));
   // Inform each contact in the contact list of the MMID contact info
@@ -779,7 +779,7 @@ int PublicId::InformContactInfo(const std::string &public_id,
                                 callback,
                                 validation_data_mpid);
   }
-  result = AwaitingResponse(&mutex, &cond_var, &results);
+  result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
 
@@ -846,13 +846,13 @@ void PublicId::KeysAndProof(
   }
 
   validation_data->key_pair.identity =
-      session_->passport_->PacketName(pt, confirmed, public_id);
+      session_->passport().PacketName(pt, confirmed, public_id);
   validation_data->key_pair.public_key =
-      session_->passport_->SignaturePacketValue(pt, confirmed, public_id);
+      session_->passport().SignaturePacketValue(pt, confirmed, public_id);
   validation_data->key_pair.private_key =
-      session_->passport_->PacketPrivateKey(pt, confirmed, public_id);
+      session_->passport().PacketPrivateKey(pt, confirmed, public_id);
   validation_data->key_pair.validation_token =
-      session_->passport_->PacketSignature(pt, confirmed, public_id);
+      session_->passport().PacketSignature(pt, confirmed, public_id);
   pca::SignedData signed_data;
   signed_data.set_data(RandomString(64));
   asymm::Sign(signed_data.data(),

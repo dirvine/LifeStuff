@@ -70,7 +70,8 @@ struct Slots {
         private_share_invitation_function(),
         private_share_deletion_function(),
         private_access_level_function(),
-        open_share_invitation_function() {}
+        open_share_invitation_function(),
+        share_renamed_function() {}
   ChatFunction chat_slot;
   FileTransferFunction file_slot;
   NewContactFunction new_contact_slot;
@@ -82,6 +83,7 @@ struct Slots {
   PrivateShareDeletionFunction private_share_deletion_function;
   PrivateMemberAccessLevelFunction private_access_level_function;
   OpenShareInvitationFunction open_share_invitation_function;
+  ShareRenamedFunction share_renamed_function;
 };
 
 class LifeStuffImpl {
@@ -102,7 +104,8 @@ class LifeStuffImpl {
       const PrivateShareInvitationFunction &share_invitation_function,
       const PrivateShareDeletionFunction &share_deletion_function,
       const PrivateMemberAccessLevelFunction &access_level_function,
-      const OpenShareInvitationFunction &open_share_invitation_function);
+      const OpenShareInvitationFunction &open_share_invitation_function,
+      const ShareRenamedFunction &share_renamed_function);
   int Finalise();
 
   /// Credential operations
@@ -116,14 +119,12 @@ class LifeStuffImpl {
   int LogOut();
 
   int CheckPassword(const std::string &password);
-  int ChangeKeyword(const std::string &old_username,
-                    const std::string &new_username,
+  int ChangeKeyword(const std::string &new_username,
                     const std::string &password);
-  int ChangePin(const std::string &old_pin,
-                const std::string &new_pin,
+  int ChangePin(const std::string &new_pin,
                 const std::string &password);
-  int ChangePassword(const std::string &old_password,
-                     const std::string &new_password);
+  int ChangePassword(const std::string &new_password,
+                     const std::string &current_password);
   int ChangePublicId(const std::string &public_id,
                      const std::string &password);
 

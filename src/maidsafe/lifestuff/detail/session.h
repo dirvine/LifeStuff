@@ -30,18 +30,6 @@
 #include <set>
 #include <vector>
 
-#ifdef __MSVC__
-#  pragma warning(push)
-#  pragma warning(disable: 4127 4244 4267)
-#endif
-
-#include "boost/scoped_ptr.hpp"
-#include "boost/utility.hpp"
-
-#ifdef __MSVC__
-#  pragma warning(pop)
-#endif
-
 #include "maidsafe/passport/passport.h"
 
 #include "maidsafe/lifestuff/lifestuff.h"
@@ -50,20 +38,9 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-namespace test {
-class AuthenticationTest;
-class MessageHandlerTest;
-class PublicIdTest;
-class SessionTest;
-class UserCredentialsTest;
-}  // namespace test
+namespace test { class SessionTest; }
 
-class Authentication;
 class ContactsHandler;
-class MessageHandler;
-class PublicId;
-class UserCredentials;
-class UserStorage;
 struct UserDetails;
 
 typedef std::shared_ptr<ContactsHandler> ContactsHandlerPtr;
@@ -76,11 +53,13 @@ class Session {
   ~Session();
   bool Reset();
 
+  passport::Passport& passport();
+
   ContactHandlerMap& contact_handler_map();
   PublicIdContactMap GetAllContacts(ContactStatus status);
 
   DefConLevels def_con_level() const;
-  std::string username() const;
+  std::string keyword() const;
   std::string pin() const;
   std::string password() const;
   std::string session_name() const;
@@ -89,6 +68,9 @@ class Session {
   std::string profile_picture_data_map(const std::string &public_id) const;
 
   void set_def_con_level(DefConLevels defconlevel);
+  void set_keyword(const std::string &keyword);
+  void set_pin(const std::string &pin);
+  void set_password(const std::string &password);
   bool set_session_name();
   void clear_session_name();
   void set_unique_user_id(const std::string &unique_user_id);
@@ -117,32 +99,11 @@ class Session {
   int SerialiseDataAtlas(std::string *serialised_data_atlas);
   std::shared_ptr<asymm::Keys> GetPmidKeys();
 
-//   friend void GetKeyring(const std::string&,
-//                          std::shared_ptr<Session>,
-//                          asymm::Keys*);
-//   friend void GetPublicKey(const std::string&,
-//                            std::shared_ptr<Session>,
-//                            asymm::PublicKey*);
-//   friend void GetPrivateKey(const std::string&,
-//                             std::shared_ptr<Session>,
-//                             asymm::PrivateKey*);
-  friend class Authentication;
-  friend class MessageHandler;
-  friend class PublicId;
-  friend class UserCredentials;
-  friend class UserStorage;
-  friend class test::AuthenticationTest;
-  friend class test::MessageHandlerTest;
-  friend class test::PublicIdTest;
   friend class test::SessionTest;
-  friend class test::UserCredentialsTest;
 
  private:
   Session &operator=(const Session&);
   Session(const Session&);
-  void set_username(const std::string &username);
-  void set_pin(const std::string &pin);
-  void set_password(const std::string &password);
 
   int ParseKeyChain(const std::string &serialised_keyring,
                     const std::string &serialised_selectables);
@@ -153,7 +114,7 @@ class Session {
   std::vector<std::string> GetPublicIdentities();
 
   std::shared_ptr<UserDetails> user_details_;
-  std::shared_ptr<passport::Passport> passport_;
+  passport::Passport passport_;
   ContactHandlerMap contact_handler_map_;
   std::map<std::string, std::string> profile_picture_map_;
   std::string encrypted_tmid_,

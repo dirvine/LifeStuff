@@ -30,11 +30,11 @@
 #include "maidsafe/encrypt/self_encryptor.h"
 
 #include "maidsafe/lifestuff/log.h"
-#include "maidsafe/lifestuff/version.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
 #include "maidsafe/lifestuff/detail/data_atlas_pb.h"
 #include "maidsafe/lifestuff/detail/message_handler.h"
 #include "maidsafe/lifestuff/detail/session.h"
+
 
 namespace args = std::placeholders;
 namespace fs = boost::filesystem;
@@ -49,6 +49,7 @@ UserStorage::UserStorage(
     : mount_status_(false),
       chunk_store_(chunk_store),
       drive_in_user_space_(),
+      share_renamed_function_(),
       session_(),
       message_handler_(message_handler),
       mount_dir_(),
@@ -65,13 +66,13 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
 
   session_ = session;
   asymm::Keys key_ring;
-  key_ring.identity = session->passport_->PacketName(passport::kPmid, true);
+  key_ring.identity = session->passport().PacketName(passport::kPmid, true);
   key_ring.public_key =
-      session->passport_->SignaturePacketValue(passport::kPmid, true);
-  key_ring.private_key = session->passport_->PacketPrivateKey(passport::kPmid,
+      session->passport().SignaturePacketValue(passport::kPmid, true);
+  key_ring.private_key = session->passport().PacketPrivateKey(passport::kPmid,
                                                               true);
   key_ring.validation_token =
-      session->passport_->PacketSignature(passport::kPmid, true);
+      session->passport().PacketSignature(passport::kPmid, true);
   drive_in_user_space_.reset(new MaidDriveInUserSpace(chunk_store_, key_ring));
 
   int result(kGeneralError);
@@ -117,6 +118,7 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
   drive_in_user_space_->WaitUntilMounted();
 #endif
   mount_status_ = true;
+  ConnectToShareRenamedSignal(share_renamed_function_);
 }
 
 void UserStorage::UnMountDrive() {
@@ -169,7 +171,7 @@ bool UserStorage::ParseAndSaveDataMap(const std::string &file_name,
 
   int result(WriteHiddenFile(mount_dir() /
                                  std::string(*data_map_hash +
-                                             drive::kMsHidden.string()),
+                                            kHiddenFileExtension),
                              filename_data + serialised_data_map,
                              true));
   if (result != kSuccess) {
@@ -203,7 +205,7 @@ bool UserStorage::SavePrivateShareData(const std::string &serialised_share_data,
   }
 
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)) +
-                        drive::kMsHidden.string());
+                       kHiddenFileExtension);
   int result(WriteHiddenFile(store_path / temp_name,
                              serialised_share_data,
                              true));
@@ -235,7 +237,7 @@ bool UserStorage::SaveOpenShareData(const std::string &serialised_share_data,
   }
 
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)) +
-                        drive::kMsHidden.string());
+                       kHiddenFileExtension);
   int result(WriteHiddenFile(store_path / temp_name,
                              serialised_share_data,
                              true));
@@ -301,7 +303,7 @@ int UserStorage::CreateShare(const std::string &sender_public_id,
                       ComposeSignaturePacketValue(*signature_packets[0]),
                       callback,
                       validation_data);
-  result = AwaitingResponse(&mutex, &cond_var, &results);
+  result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess) {
     DLOG(ERROR) << "Timed out waiting for the response";
     return result;
@@ -387,7 +389,7 @@ int UserStorage::CreateOpenShare(const std::string &sender_public_id,
                       ComposeSignaturePacketValue(*signature_packets[0]),
                       callback,
                       validation_data);
-  result = AwaitingResponse(&mutex, &cond_var, &results);
+  result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess) {
     DLOG(ERROR) << "Timed out waiting for the response";
     return result;
@@ -536,7 +538,7 @@ int UserStorage::StopShare(const std::string &sender_public_id,
                                          &mutex, &cond_var, &results[0]));
   chunk_store_->Delete(packet_id, callback, validation_data);
 
-  result = AwaitingResponse(&mutex, &cond_var, &results);
+  result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to get a response.";
     return result;
@@ -851,7 +853,7 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
                       callback,
                       validation_data);
 
-  int result(AwaitingResponse(&mutex, &cond_var, &results));
+  int result(WaitForResultsPtr(&mutex, &cond_var, &results));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to get response.";
     return result;
@@ -881,7 +883,7 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
   packet_id = ComposeSignaturePacketName(old_key_ring.identity);
   chunk_store_->Delete(packet_id, callback, validation_data);
 
-  result = AwaitingResponse(&mutex, &cond_var, &results);
+  result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to get response.";
     return result;
@@ -1215,6 +1217,16 @@ bs2::connection UserStorage::ConnectToDriveChanged(
 bs2::connection UserStorage::ConnectToShareChanged(
     drive::ShareChangedSlotPtr slot) const {
   return drive_in_user_space_->ConnectToShareChanged(slot);
+}
+
+bs2::connection UserStorage::ConnectToShareRenamedSignal(
+    const ShareRenamedFunction &function) {
+  if (function) {
+    share_renamed_function_ = function;
+    if (mount_status_)
+      return drive_in_user_space_->ConnectToShareRenamed(function);
+  }
+  return bs2::connection();
 }
 
 pcs::RemoteChunkStore::ValidationData UserStorage::PopulateValidationData(

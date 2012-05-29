@@ -54,12 +54,7 @@ namespace pcs = maidsafe::priv::chunk_store;
 
 namespace lifestuff {
 
-namespace test {
-class UserCredentialsTest;
-class UserStorageTest;
-}  // namespace test
-
-class Authentication;
+class UserCredentialsImpl;
 class Session;
 
 class UserCredentials {
@@ -71,21 +66,18 @@ class UserCredentials {
   void Init(const fs::path &chunk_store_dir);
 
   // User credential operations
-  int CheckUserExists(const std::string &username,
-                      const std::string &pin);
-  bool ValidateUser(const std::string &password);
-  bool CreateUser(const std::string &username,
-                  const std::string &pin,
-                  const std::string &password);
-  bool Logout();
+  int LogIn(const std::string &keyword,
+            const std::string &pin,
+            const std::string &password);
+  int CreateUser(const std::string &keyword,
+                 const std::string &pin,
+                 const std::string &password);
+  int Logout();
   int SaveSession();
-//   void DoSaveSession();
-  bool ChangeUsername(const std::string &new_username);
-  bool ChangePin(const std::string &new_pin);
-  bool ChangePassword(const std::string &new_password);
 
-  friend class test::UserCredentialsTest;
-  friend class test::UserStorageTest;
+  int ChangeKeyword(const std::string &new_keyword);
+  int ChangePin(const std::string &new_pin);
+  int ChangePassword(const std::string &new_password);
 
  private:
   UserCredentials &operator=(const UserCredentials&);
@@ -93,7 +85,7 @@ class UserCredentials {
 
   std::shared_ptr<Session> session_;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
-  std::shared_ptr<Authentication> authentication_;
+  std::shared_ptr<UserCredentialsImpl> impl_;
 };
 
 }  // namespace lifestuff

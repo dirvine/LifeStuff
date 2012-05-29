@@ -122,7 +122,7 @@ void MessageHandler::EnqueuePresenceMessages(ContactPresence presence) {
 
 int MessageHandler::StartCheckingForNewMessages(bptime::seconds interval) {
   std::vector<passport::SelectableIdData> selectables;
-  session_->passport_->SelectableIdentitiesList(&selectables);
+  session_->passport().SelectableIdentitiesList(&selectables);
   if (selectables.empty()) {
     DLOG(ERROR) << "No public username set";
     return kNoPublicIds;
@@ -159,7 +159,7 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
 
   // Retrieves ANMPID, MPID, and MMID's <name, value, signature>
   passport::SelectableIdentityData data;
-  result = session_->passport_->GetSelectableIdentityData(
+  result = session_->passport().GetSelectableIdentityData(
                inbox_item.sender_public_id,
                true,
                &data);
@@ -200,7 +200,7 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
   signed_data.set_data(encrypted_message);
 
   // Get PrivateKey for this user
-  asymm::PrivateKey mmid_private_key(session_->passport_->PacketPrivateKey(
+  asymm::PrivateKey mmid_private_key(session_->passport().PacketPrivateKey(
                                          passport::kMmid,
                                          true,
                                          inbox_item.sender_public_id));
@@ -334,13 +334,13 @@ void MessageHandler::ProcessRetrieved(const passport::SelectableIdData &data,
 
   for (int it(0); it < mmid.appendices_size(); ++it) {
     pca::SignedData signed_data(mmid.appendices(it));
-    asymm::PublicKey mmid_pub_key(session_->passport_->SignaturePacketValue(
+    asymm::PublicKey mmid_pub_key(session_->passport().SignaturePacketValue(
                                       passport::kMmid,
                                       true,
                                       std::get<0>(data)));
     std::string serialised_pub_key;
     asymm::EncodePublicKey(mmid_pub_key, &serialised_pub_key);
-    asymm::PrivateKey mmid_private_key(session_->passport_->PacketPrivateKey(
+    asymm::PrivateKey mmid_private_key(session_->passport().PacketPrivateKey(
                                            passport::kMmid,
                                            true,
                                            std::get<0>(data)));
@@ -643,10 +643,10 @@ void MessageHandler::ProcessContactDeletion(const InboxItem &deletion_item) {
 void MessageHandler::RetrieveMessagesForAllIds() {
   int result(-1);
   std::vector<passport::SelectableIdData> selectables;
-  session_->passport_->SelectableIdentitiesList(&selectables);
+  session_->passport().SelectableIdentitiesList(&selectables);
   for (auto it(selectables.begin()); it != selectables.end(); ++it) {
     passport::SelectableIdentityData data;
-    result = session_->passport_->GetSelectableIdentityData(std::get<0>(*it),
+    result = session_->passport().GetSelectableIdentityData(std::get<0>(*it),
                                                             true,
                                                             &data);
     if (result != kSuccess || data.size() != 3U) {
@@ -750,13 +750,13 @@ void MessageHandler::KeysAndProof(
   }
 
   validation_data->key_pair.identity =
-      session_->passport_->PacketName(pt, confirmed, public_id);
+      session_->passport().PacketName(pt, confirmed, public_id);
   validation_data->key_pair.public_key =
-      session_->passport_->SignaturePacketValue(pt, confirmed, public_id);
+      session_->passport().SignaturePacketValue(pt, confirmed, public_id);
   validation_data->key_pair.private_key =
-      session_->passport_->PacketPrivateKey(pt, confirmed, public_id);
+      session_->passport().PacketPrivateKey(pt, confirmed, public_id);
   validation_data->key_pair.validation_token =
-      session_->passport_->PacketSignature(pt, confirmed, public_id);
+      session_->passport().PacketSignature(pt, confirmed, public_id);
   pca::SignedData signed_data;
   signed_data.set_data(RandomString(64));
   asymm::Sign(signed_data.data(),

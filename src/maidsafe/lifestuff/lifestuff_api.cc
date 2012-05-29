@@ -52,7 +52,8 @@ int LifeStuff::ConnectToSignals(
     const PrivateShareInvitationFunction &private_share_invitation_function,
     const PrivateShareDeletionFunction &private_share_deletion_function,
     const PrivateMemberAccessLevelFunction &private_access_level_function,
-    const OpenShareInvitationFunction &open_share_invitation_function) {
+    const OpenShareInvitationFunction &open_share_invitation_function,
+    const ShareRenamedFunction &share_renamed_function) {
   return lifestuff_impl->ConnectToSignals(chat_slot,
                                           file_slot,
                                           new_contact_slot,
@@ -63,7 +64,8 @@ int LifeStuff::ConnectToSignals(
                                           private_share_invitation_function,
                                           private_share_deletion_function,
                                           private_access_level_function,
-                                          open_share_invitation_function);
+                                          open_share_invitation_function,
+                                          share_renamed_function);
 }
 
 int LifeStuff::Finalise() {
@@ -95,21 +97,19 @@ int LifeStuff::CheckPassword(const std::string &password) {
   return lifestuff_impl->CheckPassword(password);
 }
 
-int LifeStuff::ChangeKeyword(const std::string &old_username,
-                             const std::string &new_username,
+int LifeStuff::ChangeKeyword(const std::string &new_keyword,
                              const std::string &password) {
-  return lifestuff_impl->ChangeKeyword(old_username, new_username, password);
+  return lifestuff_impl->ChangeKeyword(new_keyword, password);
 }
 
-int LifeStuff::ChangePin(const std::string &old_pin,
-                         const std::string &new_pin,
+int LifeStuff::ChangePin(const std::string &new_pin,
                          const std::string &password) {
-  return lifestuff_impl->ChangePin(old_pin, new_pin, password);
+  return lifestuff_impl->ChangePin(new_pin, password);
 }
 
-int LifeStuff::ChangePassword(const std::string &old_password,
-                              const std::string &new_password) {
-  return lifestuff_impl->ChangePassword(old_password, new_password);
+int LifeStuff::ChangePassword(const std::string &new_password,
+                              const std::string &current_password) {
+  return lifestuff_impl->ChangePassword(new_password, current_password);
 }
 
 /// Contact operations
