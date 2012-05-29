@@ -371,9 +371,9 @@ TEST(WTFTest, MountAndUnmount) {
     FAIL();
   }
 
+  remote_chunk_store->WaitForCompletion();
   session->Reset();
   asio_service.Stop();
-  remote_chunk_store->WaitForCompletion();
 }
 
 INSTANTIATE_TEST_CASE_P(PivateAndOpenShareTests, UserStorageTest,
