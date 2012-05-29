@@ -322,6 +322,8 @@ TEST(WTFTest, MountAndUnmount) {
   std::shared_ptr<UserCredentials> user_credentials;
   std::shared_ptr<UserStorage> user_storage;
 
+  asio_service.Start(5);
+
   remote_chunk_store = BuildChunkStore(*test_dir / RandomAlphaNumericString(8),
                                        *test_dir / "simulation",
                                        asio_service.service());
@@ -370,6 +372,8 @@ TEST(WTFTest, MountAndUnmount) {
   }
 
   session->Reset();
+  asio_service.Stop();
+  remote_chunk_store->WaitForCompletion();
 }
 
 INSTANTIATE_TEST_CASE_P(PivateAndOpenShareTests, UserStorageTest,
