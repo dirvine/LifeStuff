@@ -43,20 +43,20 @@ namespace lifestuff {
 struct UserDetails {
   UserDetails()
       : defconlevel(kDefCon3),
-        username(),
+        keyword(),
         pin(),
         password(),
         session_name(),
         unique_user_id(),
         root_parent_id() {}
   DefConLevels defconlevel;
-  std::string username, pin, password, session_name, unique_user_id,
+  std::string keyword, pin, password, session_name, unique_user_id,
               root_parent_id;
 };
 
 Session::Session()
     : user_details_(new UserDetails),
-      passport_(new passport::Passport),
+      passport_(),
       contact_handler_map_(),
       profile_picture_map_(),
       encrypted_tmid_(),
@@ -71,14 +71,14 @@ Session::~Session() {}
 
 bool Session::Reset() {
   user_details_->defconlevel = kDefCon3;
-  user_details_->username.clear();
+  user_details_->keyword.clear();
   user_details_->pin.clear();
   user_details_->password.clear();
   user_details_->session_name.clear();
   user_details_->unique_user_id.clear();
   user_details_->root_parent_id.clear();
   // TODO(Fraser#5#): 2011-11-17 - Implement in passport
-  passport_->ClearKeyChain(true, true, true);
+  passport_.ClearKeyChain(true, true, true);
   contact_handler_map_.clear();
   profile_picture_map_.clear();
   encrypted_tmid_.clear();
@@ -89,6 +89,10 @@ bool Session::Reset() {
   logging_out_ = false;
   logged_in_ = false;
   return true;
+}
+
+passport::Passport& Session::passport() {
+  return passport_;
 }
 
 ContactHandlerMap& Session::contact_handler_map() {
@@ -115,7 +119,7 @@ PublicIdContactMap Session::GetAllContacts(ContactStatus status) {
 DefConLevels Session::def_con_level() const {
   return user_details_->defconlevel;
 }
-std::string Session::username() const { return user_details_->username; }
+std::string Session::keyword() const { return user_details_->keyword; }
 std::string Session::pin() const { return user_details_->pin; }
 std::string Session::password() const { return user_details_->password; }
 std::string Session::session_name() const {
@@ -169,21 +173,21 @@ bool Session::logged_in() const {
 void Session::set_def_con_level(DefConLevels defconlevel) {
   user_details_->defconlevel = defconlevel;
 }
-void Session::set_username(const std::string &username) {
-  user_details_->username = username;
+void Session::set_keyword(const std::string &keyword) {
+  user_details_->keyword = keyword;
 }
 void Session::set_pin(const std::string &pin) { user_details_->pin = pin; }
 void Session::set_password(const std::string &password) {
   user_details_->password = password;
 }
 bool Session::set_session_name() {
-  if (username().empty() || pin().empty()) {
-    DLOG(ERROR) << "username: " << std::boolalpha << username().empty()
+  if (keyword().empty() || pin().empty()) {
+    DLOG(ERROR) << "keyword: " << std::boolalpha << keyword().empty()
                 << ", pin: " << std::boolalpha << pin().empty();
     return false;
   }
   user_details_->session_name =
-      EncodeToHex(crypto::Hash<crypto::SHA1>(pin() + username()));
+      EncodeToHex(crypto::Hash<crypto::SHA1>(pin() + keyword()));
   return true;
 }
 void Session::clear_session_name() { user_details_->session_name.clear(); }
@@ -341,35 +345,35 @@ int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
 
 std::shared_ptr<asymm::Keys> Session::GetPmidKeys() {
   std::shared_ptr<asymm::Keys> key_pair(new asymm::Keys);
-  key_pair->identity = passport_->PacketName(passport::kPmid, true);
-  key_pair->public_key = passport_->SignaturePacketValue(passport::kPmid, true);
-  key_pair->private_key = passport_->PacketPrivateKey(passport::kPmid, true);
-  key_pair->validation_token = passport_->PacketSignature(passport::kPmid,
+  key_pair->identity = passport_.PacketName(passport::kPmid, true);
+  key_pair->public_key = passport_.SignaturePacketValue(passport::kPmid, true);
+  key_pair->private_key = passport_.PacketPrivateKey(passport::kPmid, true);
+  key_pair->validation_token = passport_.PacketSignature(passport::kPmid,
                                                           true);
   return key_pair;
 }
 
 int Session::ParseKeyChain(const std::string &serialised_keyring,
                            const std::string &serialised_selectables) {
-  return passport_->ParseKeyChain(serialised_keyring, serialised_selectables);
+  return passport_.ParseKeyChain(serialised_keyring, serialised_selectables);
 }
 void Session::SerialiseKeyChain(std::string *serialised_keyring,
                                 std::string *serialised_selectables) {
-  passport_->SerialiseKeyChain(serialised_keyring, serialised_selectables);
+  passport_.SerialiseKeyChain(serialised_keyring, serialised_selectables);
 }
 
 bool Session::CreateTestPackets(bool with_public_ids) {
-  if (passport_->CreateSigningPackets() != kSuccess)
+  if (passport_.CreateSigningPackets() != kSuccess)
     return false;
-  if (passport_->ConfirmSigningPackets() != kSuccess)
+  if (passport_.ConfirmSigningPackets() != kSuccess)
     return false;
 
   if (with_public_ids) {
     for (size_t n(0); n < 5; ++n) {
       std::string public_id(RandomAlphaNumericString(5));
-      if (passport_->CreateSelectableIdentity(public_id) != kSuccess)
+      if (passport_.CreateSelectableIdentity(public_id) != kSuccess)
         return false;
-      if (passport_->ConfirmSelectableIdentity(public_id) != kSuccess)
+      if (passport_.ConfirmSelectableIdentity(public_id) != kSuccess)
         return false;
     }
   }

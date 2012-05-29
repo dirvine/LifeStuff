@@ -46,10 +46,10 @@ class SessionTest : public testing::Test {
 
   void SetUp() { session_.Reset(); }
 
-  void SetUsernamePinPassword(const std::string &username,
+  void SetUsernamePinPassword(const std::string &keyword,
                               const std::string &pin,
                               const std::string &password) {
-    session_.set_username(username);
+    session_.set_keyword(keyword);
     session_.set_pin(pin);
     session_.set_password(password);
   }
@@ -183,7 +183,7 @@ class SessionTest : public testing::Test {
   bool EqualSessions(Session &lhs, Session &rhs) {  // NOLINT (Dan)
     if (lhs.def_con_level() != rhs.def_con_level())
       return false;
-    if (lhs.username() != rhs.username())
+    if (lhs.keyword() != rhs.keyword())
       return false;
     if (lhs.pin() != rhs.pin())
       return false;
@@ -224,7 +224,7 @@ class SessionTest : public testing::Test {
 TEST_F(SessionTest, BEH_SetsGetsAndReset) {
   // Check session is clean originally
   ASSERT_EQ(kDefCon3, session_.def_con_level());
-  ASSERT_EQ("", session_.username());
+  ASSERT_EQ("", session_.keyword());
   ASSERT_EQ("", session_.pin());
   ASSERT_EQ("", session_.password());
   ASSERT_EQ("", session_.session_name());
@@ -240,7 +240,7 @@ TEST_F(SessionTest, BEH_SetsGetsAndReset) {
 
   // Verify modifications
   ASSERT_EQ(kDefCon1, session_.def_con_level());
-  ASSERT_EQ("aaa", session_.username());
+  ASSERT_EQ("aaa", session_.keyword());
   ASSERT_EQ("bbb", session_.pin());
   ASSERT_EQ("ccc", session_.password());
   ASSERT_NE("", session_.session_name());
@@ -252,7 +252,7 @@ TEST_F(SessionTest, BEH_SetsGetsAndReset) {
 
   // Check session is clean again
   ASSERT_EQ(kDefCon3, session_.def_con_level());
-  ASSERT_EQ("", session_.username());
+  ASSERT_EQ("", session_.keyword());
   ASSERT_EQ("", session_.pin());
   ASSERT_EQ("", session_.password());
   ASSERT_EQ("", session_.session_name());
@@ -263,20 +263,20 @@ TEST_F(SessionTest, BEH_SetsGetsAndReset) {
 TEST_F(SessionTest, BEH_SessionName) {
   // Check session is empty
   ASSERT_EQ("", session_.session_name());
-  ASSERT_EQ("", session_.username());
+  ASSERT_EQ("", session_.keyword());
   ASSERT_EQ("", session_.pin());
 
-  // Check username and pin are needed
+  // Check keyword and pin are needed
   ASSERT_FALSE(session_.set_session_name());
   ASSERT_EQ("", session_.session_name());
 
-  std::string username(RandomAlphaNumericString(6));
+  std::string keyword(RandomAlphaNumericString(6));
   std::string pin(CreatePin());
   std::string session_name(EncodeToHex(crypto::Hash<crypto::SHA1>(pin +
-                                                                  username)));
+                                                                  keyword)));
 
   // Set the session values
-  SetUsernamePinPassword(username, pin, "ccc");
+  SetUsernamePinPassword(keyword, pin, "ccc");
   ASSERT_TRUE(session_.set_session_name());
 
   // Check session name

@@ -201,14 +201,14 @@ void SendContactInfoCallback(const bool &response,
   cond_var->notify_one();
 }
 
-int AwaitingResponse(boost::mutex *mutex,
-                     boost::condition_variable *cond_var,
-                     std::vector<int> *results) {
+int WaitForResultsPtr(boost::mutex *mutex,
+                      boost::condition_variable *cond_var,
+                      std::vector<int> *results) {
   size_t size(results->size());
   try {
     boost::mutex::scoped_lock lock(*mutex);
     if (!cond_var->timed_wait(lock,
-                              boost::posix_time::seconds(30),
+                              bptime::seconds(kSecondsInterval * size),
                               [&]()->bool {
                                 for (size_t i(0); i < size; ++i) {
                                   if (results->at(i) == kPendingResult)
@@ -217,12 +217,38 @@ int AwaitingResponse(boost::mutex *mutex,
                                 return true;
                               })) {
       DLOG(ERROR) << "Timed out during waiting response.";
-      return kPublicIdTimeout;
+      return kOperationTimeOut;
     }
   }
   catch(const std::exception &e) {
     DLOG(ERROR) << "Exception Failure during waiting response : " << e.what();
-    return kPublicIdException;
+    return kOperationTimeOut;
+  }
+  return kSuccess;
+}
+
+int WaitForResults(boost::mutex &mutex,  // NOLINT (Dan)
+                   boost::condition_variable &cond_var,  // NOLINT (Dan)
+                   std::vector<int> &results) {  // NOLINT (Dan)
+  size_t size(results.size());
+  try {
+    boost::mutex::scoped_lock lock(mutex);
+    if (!cond_var.timed_wait(lock,
+                             bptime::seconds(kSecondsInterval * size),
+                             [&]()->bool {
+                               for (size_t i(0); i < size; ++i) {
+                                 if (results.at(i) == kPendingResult)
+                                   return false;
+                               }
+                               return true;
+                             })) {
+      DLOG(ERROR) << "Timed out during waiting response.";
+      return kOperationTimeOut;
+    }
+  }
+  catch(const std::exception &e) {
+    DLOG(ERROR) << "Exception Failure during waiting response : " << e.what();
+    return kOperationTimeOut;
   }
   return kSuccess;
 }

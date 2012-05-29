@@ -30,7 +30,9 @@
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/utils.h"
 
+#ifndef LOCAL_TARGETS_ONLY
 #include "maidsafe/dht/contact.h"
+#endif
 
 #include "maidsafe/encrypt/data_map.h"
 
@@ -263,7 +265,7 @@ int LifeStuffImpl::Finalise() {
 }
 
 /// Credential operations
-int LifeStuffImpl::CreateUser(const std::string &username,
+int LifeStuffImpl::CreateUser(const std::string &keyword,
                               const std::string &pin,
                               const std::string &password) {
   if (state_ != kConnected) {
@@ -271,12 +273,13 @@ int LifeStuffImpl::CreateUser(const std::string &username,
     return kGeneralError;
   }
 
-  if (!user_credentials_->CreateUser(username, pin, password)) {
+  int result(user_credentials_->CreateUser(keyword, pin, password));
+  if (result != kSuccess) {
     DLOG(ERROR) << "Failed to Create User.";
-    return kGeneralError;
+    return result;
   }
 
-  int result(SetValidPmidAndInitialisePublicComponents());
+  result = SetValidPmidAndInitialisePublicComponents();
   if (result != kSuccess)  {
     DLOG(ERROR) << "Failed to set valid PMID";
     return result;
@@ -350,7 +353,7 @@ int LifeStuffImpl::CreatePublicId(const std::string &public_id) {
   return kSuccess;
 }
 
-int LifeStuffImpl::LogIn(const std::string &username,
+int LifeStuffImpl::LogIn(const std::string &keyword,
                          const std::string &pin,
                          const std::string &password) {
   if (!(state_ == kConnected || state_ == kLoggedOut)) {
@@ -358,15 +361,10 @@ int LifeStuffImpl::LogIn(const std::string &username,
     return kGeneralError;
   }
 
-  int result(user_credentials_->CheckUserExists(username, pin));
-  if (result != kUserExists) {
+  int result(user_credentials_->LogIn(keyword, pin, password));
+  if (result != kSuccess) {
     DLOG(ERROR) << "User doesn't exist.";
     return result;
-  }
-
-  if (!user_credentials_->ValidateUser(password)) {
-    DLOG(ERROR) << "Wrong password.";
-    return kGeneralError;
   }
 
   result =SetValidPmidAndInitialisePublicComponents();
@@ -436,7 +434,7 @@ int LifeStuffImpl::LogOut() {
   public_id_->ShutDown();
   message_handler_->ShutDown();
 
-  if (!user_credentials_->Logout()) {
+  if (user_credentials_->Logout() != kSuccess) {
     DLOG(ERROR) << "Failed to log out.";
     return kGeneralError;
   }
@@ -468,8 +466,7 @@ int LifeStuffImpl::CheckPassword(const std::string &password) {
   return session_->password() == password ? kSuccess : kGeneralError;
 }
 
-int LifeStuffImpl::ChangeKeyword(const std::string &old_username,
-                                 const std::string &new_username,
+int LifeStuffImpl::ChangeKeyword(const std::string &new_keyword,
                                  const std::string &password) {
   if (state_ != kLoggedIn) {
     DLOG(ERROR) << "Should be logged in to log out.";
@@ -482,22 +479,15 @@ int LifeStuffImpl::ChangeKeyword(const std::string &old_username,
     return result;
   }
 
-  if (session_->username() != old_username) {
-    DLOG(ERROR) << "Keyword verification failed.";
-    return kGeneralError;
-  }
-
-  if (old_username.compare(new_username) == 0) {
+  if (new_keyword.compare(session_->keyword()) == 0) {
     DLOG(INFO) << "Same value for old and new.";
     return kSuccess;
   }
 
-  return user_credentials_->ChangeUsername(new_username) ?
-         kSuccess : kGeneralError;
+  return user_credentials_->ChangeKeyword(new_keyword);
 }
 
-int LifeStuffImpl::ChangePin(const std::string &old_pin,
-                             const std::string &new_pin,
+int LifeStuffImpl::ChangePin(const std::string &new_pin,
                              const std::string &password) {
   if (state_ != kLoggedIn) {
     DLOG(ERROR) << "Should be logged in to log out.";
@@ -510,39 +500,33 @@ int LifeStuffImpl::ChangePin(const std::string &old_pin,
     return result;
   }
 
-  if (session_->pin() != old_pin) {
-    DLOG(ERROR) << "Keyword verification failed.";
-    return kGeneralError;
-  }
-
-  if (old_pin.compare(new_pin) == 0) {
+  if (new_pin.compare(session_->pin()) == 0) {
     DLOG(INFO) << "Same value for old and new.";
     return kSuccess;
   }
 
-  return user_credentials_->ChangePin(new_pin) ? kSuccess : kGeneralError;
+  return user_credentials_->ChangePin(new_pin);
 }
 
-int LifeStuffImpl::ChangePassword(const std::string &old_password,
-                                  const std::string &new_password) {
+int LifeStuffImpl::ChangePassword(const std::string &new_password,
+                                  const std::string &current_password) {
   if (state_ != kLoggedIn) {
     DLOG(ERROR) << "Should be logged in to log out.";
     return kGeneralError;
   }
 
-  int result(CheckPassword(old_password));
+  int result(CheckPassword(current_password));
   if (result != kSuccess) {
     DLOG(ERROR) << "Password verification failed.";
     return result;
   }
 
-  if (old_password.compare(new_password) == 0) {
+  if (current_password.compare(new_password) == 0) {
     DLOG(INFO) << "Same value for old and new.";
     return kSuccess;
   }
 
-  return user_credentials_->ChangePassword(new_password) ?
-         kSuccess : kGeneralError;
+  return user_credentials_->ChangePassword(new_password);
 }
 
 /// Contact operations
@@ -1622,43 +1606,43 @@ fs::path LifeStuffImpl::mount_path() const {
 
 void LifeStuffImpl::ConnectInternalElements() {
   message_handler_->ConnectToParseAndSaveDataMapSignal(
-      std::bind(&UserStorage::ParseAndSaveDataMap, user_storage_.get(),
-                args::_1, args::_2, args::_3));
+      boost::bind(&UserStorage::ParseAndSaveDataMap, user_storage_.get(),
+                  _1, _2, _3));
 
   message_handler_->ConnectToSavePrivateShareDataSignal(
-      std::bind(&UserStorage::SavePrivateShareData,
-                user_storage_.get(), args::_1, args::_2));
+      boost::bind(&UserStorage::SavePrivateShareData,
+                  user_storage_.get(), _1, _2));
 
   message_handler_->ConnectToPrivateShareUserLeavingSignal(
-      std::bind(&UserStorage::UserLeavingShare,
-                user_storage_.get(), args::_2, args::_3));
+      boost::bind(&UserStorage::UserLeavingShare,
+                  user_storage_.get(), _2, _3));
 
   message_handler_->ConnectToSaveOpenShareDataSignal(
-      std::bind(&UserStorage::SaveOpenShareData,
-                user_storage_.get(), args::_1, args::_2));
+      boost::bind(&UserStorage::SaveOpenShareData,
+                  user_storage_.get(), _1, _2));
 
   message_handler_->ConnectToPrivateShareDeletionSignal(
-      std::bind(&UserStorage::ShareDeleted, user_storage_.get(), args::_3));
+      boost::bind(&UserStorage::ShareDeleted, user_storage_.get(), _3));
 
   message_handler_->ConnectToPrivateShareUpdateSignal(
-      std::bind(&UserStorage::UpdateShare, user_storage_.get(),
-                args::_1, args::_2, args::_3, args::_4));
+      boost::bind(&UserStorage::UpdateShare, user_storage_.get(),
+                  _1, _2, _3, _4));
 
   message_handler_->ConnectToPrivateMemberAccessLevelSignal(
-      std::bind(&UserStorage::MemberAccessChange,
-                user_storage_.get(), args::_4, args::_5));
+      boost::bind(&UserStorage::MemberAccessChange,
+                  user_storage_.get(), _4, _5));
 
   public_id_->ConnectToContactConfirmedSignal(
-      std::bind(&MessageHandler::InformConfirmedContactOnline,
-                message_handler_.get(), args::_1, args::_2));
+      boost::bind(&MessageHandler::InformConfirmedContactOnline,
+                  message_handler_.get(), _1, _2));
 
   message_handler_->ConnectToContactDeletionSignal(
-      std::bind(&PublicId::RemoveContactHandle,
-                public_id_.get(), args::_1, args::_2));
+      boost::bind(&PublicId::RemoveContactHandle,
+                  public_id_.get(), _1, _2));
 
   message_handler_->ConnectToPrivateShareDetailsSignal(
-      std::bind(&UserStorage::GetShareDetails, user_storage_.get(),
-                args::_1, args::_2, nullptr, nullptr, nullptr));
+      boost::bind(&UserStorage::GetShareDetails, user_storage_.get(),
+                  _1, _2, nullptr, nullptr, nullptr));
 }
 
 int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
@@ -1671,8 +1655,8 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
     return result;
   }
   client_container_->set_key_pair(session_->GetPmidKeys());
-  if (!client_container_->Init(buffered_path_ / "buffered_chunk_store",
-                               10, 4)) {
+  if (!client_container_->InitClientContainer(
+          buffered_path_ / "buffered_chunk_store", 10, 4)) {
     DLOG(ERROR) << "Failed to initialise cliento container.";
     return kGeneralError;
   }

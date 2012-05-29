@@ -30,11 +30,11 @@
 #include "maidsafe/encrypt/self_encryptor.h"
 
 #include "maidsafe/lifestuff/log.h"
-#include "maidsafe/lifestuff/version.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
 #include "maidsafe/lifestuff/detail/data_atlas_pb.h"
 #include "maidsafe/lifestuff/detail/message_handler.h"
 #include "maidsafe/lifestuff/detail/session.h"
+
 
 namespace args = std::placeholders;
 namespace fs = boost::filesystem;
@@ -67,13 +67,13 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
 
   session_ = session;
   asymm::Keys key_ring;
-  key_ring.identity = session->passport_->PacketName(passport::kPmid, true);
+  key_ring.identity = session->passport().PacketName(passport::kPmid, true);
   key_ring.public_key =
-      session->passport_->SignaturePacketValue(passport::kPmid, true);
-  key_ring.private_key = session->passport_->PacketPrivateKey(passport::kPmid,
+      session->passport().SignaturePacketValue(passport::kPmid, true);
+  key_ring.private_key = session->passport().PacketPrivateKey(passport::kPmid,
                                                               true);
   key_ring.validation_token =
-      session->passport_->PacketSignature(passport::kPmid, true);
+      session->passport().PacketSignature(passport::kPmid, true);
   drive_in_user_space_.reset(new MaidDriveInUserSpace(chunk_store_, key_ring));
 
   int result(kGeneralError);
@@ -293,7 +293,7 @@ int UserStorage::CreateShare(const std::string &sender_public_id,
                       ComposeSignaturePacketValue(*signature_packets[0]),
                       callback,
                       validation_data);
-  result = AwaitingResponse(&mutex, &cond_var, &results);
+  result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess) {
     DLOG(ERROR) << "Timed out waiting for the response";
     return result;
@@ -379,7 +379,7 @@ int UserStorage::CreateOpenShare(const std::string &sender_public_id,
                       ComposeSignaturePacketValue(*signature_packets[0]),
                       callback,
                       validation_data);
-  result = AwaitingResponse(&mutex, &cond_var, &results);
+  result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess) {
     DLOG(ERROR) << "Timed out waiting for the response";
     return result;
@@ -526,7 +526,7 @@ int UserStorage::StopShare(const std::string &sender_public_id,
                                          &mutex, &cond_var, &results[0]));
   chunk_store_->Delete(packet_id, callback, validation_data);
 
-  result = AwaitingResponse(&mutex, &cond_var, &results);
+  result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
   if (results[0] != kSuccess) {
@@ -819,7 +819,7 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
                       callback,
                       validation_data);
 
-  int result(AwaitingResponse(&mutex, &cond_var, &results));
+  int result(WaitForResultsPtr(&mutex, &cond_var, &results));
   if (result != kSuccess)
     return result;
   if (results[0] != kSuccess) {
@@ -847,7 +847,7 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
   packet_id = ComposeSignaturePacketName(old_key_ring.identity);
   chunk_store_->Delete(packet_id, callback, validation_data);
 
-  result = AwaitingResponse(&mutex, &cond_var, &results);
+  result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
     return result;
   if (results[0] != kSuccess) {

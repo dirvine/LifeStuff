@@ -25,12 +25,6 @@
 #ifndef MAIDSAFE_LIFESTUFF_RETURN_CODES_H_
 #define MAIDSAFE_LIFESTUFF_RETURN_CODES_H_
 
-#include "maidsafe/lifestuff/version.h"
-
-#if MAIDSAFE_LIFESTUFF_VERSION != 400
-#  error This API is not compatible with the installed library.\
-    Please update the maidsafe-lifestuff library.
-#endif
 
 
 namespace maidsafe {
@@ -46,6 +40,8 @@ enum ReturnCode {
   kGetPublicKeyFailure = -200004,
   kGetMpidFailure = -200005,
   kInvalidPublicKey = -200006,
+  kOperationTimeOut = -200007,
+  kRemoteChunkStoreFailure = -200008,
 
   // Authentication
   kAuthenticationError = -201001,
@@ -53,9 +49,25 @@ enum ReturnCode {
   kUserDoesntExist = -201003,
   kUserExists = -201004,
   kFailedToDeleteOldPacket = -201005,
+  kCorruptedPacket = -201006,
+  kIdPacketNotFound = -201007,
+  kTemporaryIdPacketNotFound = -201008,
+  kAccountCorrupted = -201009,
+  kUsingNextToLastSession = -201010,
+  kSessionFailure = -201011,
+  kCreateSignaturePacketInfoFailure = -201012,
+  kCreateSignaturePacketsFailure = -201013,
+  kSessionSerialisationFailure = -201014,
+  kSetIdentityPacketsFailure = -201015,
+  kStoreIdentityPacketsFailure = -201016,
+  kSaveSessionFailure = -201017,
+  kDeleteIdentityPacketsFailure = -201018,
+  kChangeUsernamePinFailure = -201019,
+  kChangePasswordFailure = -201020,
+  kAtLeastOneFailure = -201021,
 
-  // Client Controller
-  kUserCredentialsNotInitialised = -202001,
+  // User Credentials
+  kCredentialValidityFailure = -202001,
 
   // Session
   kLiveContactNotFound = -204001,
