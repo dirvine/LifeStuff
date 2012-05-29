@@ -142,24 +142,8 @@ std::string Session::profile_picture_data_map(
   return (*it).second;
 }
 
-std::string Session::encrypted_tmid() const {
-  return encrypted_tmid_;
-}
-
-std::string Session::encrypted_stmid() const {
-  return encrypted_stmid_;
-}
-
 std::string Session::serialised_data_atlas() const {
   return serialised_data_atlas_;
-}
-
-std::string Session::uc_serialised_data_atlas() const {
-  return uc_serialised_data_atlas_;
-}
-
-std::string Session::surrogate_serialised_data_atlas() const {
-  return surrogate_serialised_data_atlas_;
 }
 
 bool Session::logging_out() const {
@@ -213,27 +197,9 @@ bool Session::set_profile_picture_data_map(
   return true;
 }
 
-void Session::set_encrypted_tmid(const std::string &encrypted_tmid) {
-  encrypted_tmid_ = encrypted_tmid;
-}
-
-void Session::set_encrypted_stmid(const std::string &encrypted_stmid) {
-  encrypted_stmid_ = encrypted_stmid;
-}
-
 void Session::set_serialised_data_atlas(
     const std::string &serialised_data_atlas) {
   serialised_data_atlas_ = serialised_data_atlas;
-}
-
-void Session::set_uc_serialised_data_atlas(
-    const std::string &uc_serialised_data_atlas) {
-  uc_serialised_data_atlas_ = uc_serialised_data_atlas;
-}
-
-void Session::set_surrogate_serialised_data_atlas(
-    const std::string &surrogate_serialised_data_atlas) {
-  surrogate_serialised_data_atlas_ = surrogate_serialised_data_atlas;
 }
 
 void Session::set_logging_out(const bool &logging_out) {
@@ -344,13 +310,7 @@ int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
 }
 
 std::shared_ptr<asymm::Keys> Session::GetPmidKeys() {
-  std::shared_ptr<asymm::Keys> key_pair(new asymm::Keys);
-  key_pair->identity = passport_.PacketName(passport::kPmid, true);
-  key_pair->public_key = passport_.SignaturePacketValue(passport::kPmid, true);
-  key_pair->private_key = passport_.PacketPrivateKey(passport::kPmid, true);
-  key_pair->validation_token = passport_.PacketSignature(passport::kPmid,
-                                                          true);
-  return key_pair;
+  return passport_.SignaturePacketDetails(passport::kPmid, true);
 }
 
 int Session::ParseKeyChain(const std::string &serialised_keyring,

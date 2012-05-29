@@ -360,7 +360,7 @@ int LifeStuffImpl::LogIn(const std::string &keyword,
     return result;
   }
 
-  result =SetValidPmidAndInitialisePublicComponents();
+  result = SetValidPmidAndInitialisePublicComponents();
   if (result != kSuccess)  {
     DLOG(ERROR) << "Failed to set valid PMID";
     return result;

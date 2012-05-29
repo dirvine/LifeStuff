@@ -66,6 +66,9 @@ class Session {
   std::string unique_user_id() const;
   std::string root_parent_id() const;
   std::string profile_picture_data_map(const std::string &public_id) const;
+  std::string serialised_data_atlas() const;
+  bool logging_out() const;
+  bool logged_in() const;
 
   void set_def_con_level(DefConLevels defconlevel);
   void set_keyword(const std::string &keyword);
@@ -75,23 +78,10 @@ class Session {
   void clear_session_name();
   void set_unique_user_id(const std::string &unique_user_id);
   void set_root_parent_id(const std::string &root_parent_id);
-  std::string encrypted_tmid() const;
-  std::string encrypted_stmid() const;
-  std::string serialised_data_atlas() const;
-  std::string uc_serialised_data_atlas() const;
-  std::string surrogate_serialised_data_atlas() const;
-  bool logging_out() const;
-  bool logged_in() const;
   bool set_profile_picture_data_map(
       const std::string &public_id,
       const std::string &profile_picture_data_map);
-  void set_encrypted_tmid(const std::string &encrypted_tmid);
-  void set_encrypted_stmid(const std::string &encrypted_stmid);
   void set_serialised_data_atlas(const std::string &serialised_data_atlas);
-  void set_uc_serialised_data_atlas(
-      const std::string &uc_serialised_data_atlas);
-  void set_surrogate_serialised_data_atlas(
-      const std::string &surrogate_serialised_data_atlas);
   void set_logging_out(const bool &logging_out);
   void set_logged_in(const bool &logged_in);
 

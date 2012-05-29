@@ -313,6 +313,65 @@ class UserStorageTest : public testing::TestWithParam<bool> {
   boost::condition_variable cond_var_;
 };
 
+TEST(WTFTest, MountAndUnmount) {
+  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
+  fs::path mount_dir(*test_dir / RandomAlphaNumericString(8));
+  AsioService asio_service;
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store;
+  std::shared_ptr<Session> session(new Session);
+  std::shared_ptr<UserCredentials> user_credentials;
+  std::shared_ptr<UserStorage> user_storage;
+
+  remote_chunk_store = BuildChunkStore(*test_dir / RandomAlphaNumericString(8),
+                                       *test_dir / "simulation",
+                                       asio_service.service());
+  user_credentials.reset(new UserCredentials(remote_chunk_store,
+                                             session));
+  EXPECT_EQ(kSuccess,
+            user_credentials->CreateUser(RandomAlphaNumericString(6),
+                                         CreatePin(),
+                                         RandomAlphaNumericString(6)));
+  user_storage.reset(new UserStorage(remote_chunk_store,
+                                     std::shared_ptr<MessageHandler>()));
+
+  boost::system::error_code error_code;
+  if (!fs::exists(mount_dir, error_code)) {
+    fs::create_directories(mount_dir, error_code);
+    if (error_code) {
+      DLOG(ERROR) << "Failed to create app directories - " << error_code.value()
+                  << ": " << error_code.message();
+      FAIL();
+    }
+  }
+  user_storage->MountDrive(mount_dir, session, true);
+  if (!user_storage->mount_status()) {
+    DLOG(ERROR) << "Failed to mount";
+    FAIL();
+  }
+
+  Sleep(bptime::seconds(3));
+
+  DLOG(ERROR) << "WTF 1!";
+  user_storage->UnMountDrive();
+  if (user_storage->mount_status()) {
+    DLOG(ERROR) << "Failed to un-mount.";
+    FAIL();
+  }
+  DLOG(ERROR) << "WTF 2!";
+
+  if (user_credentials->Logout() != kSuccess) {
+    DLOG(ERROR) << "Failed to log out.";
+    FAIL();
+  }
+
+  if (!remote_chunk_store->WaitForCompletion()) {
+    DLOG(ERROR) << "Failed complete chunk operations.";
+    FAIL();
+  }
+
+  session->Reset();
+}
+
 INSTANTIATE_TEST_CASE_P(PivateAndOpenShareTests, UserStorageTest,
                         testing::Values(drive::kMsOpenShare,
                                         drive::kMsPrivateShare));

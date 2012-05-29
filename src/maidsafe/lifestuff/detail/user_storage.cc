@@ -59,8 +59,10 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
                              std::shared_ptr<Session> session,
                              bool creation,
                              const std::string &drive_logo) {
-  if (mount_status_)
+  if (mount_status_) {
+    DLOG(INFO) << "Already mounted.";
     return;
+  }
   if (!fs::exists(mount_dir_path))
     fs::create_directory(mount_dir_path);
 
@@ -130,10 +132,11 @@ void UserStorage::UnMountDrive() {
 #else
   drive_in_user_space_->Unmount();
   drive_in_user_space_->WaitUntilUnMounted();
-  drive_in_user_space_.reset();
+//  drive_in_user_space_.reset();
+  DLOG(ERROR) << "Before thread join.";
+  mount_thread_->join();
   boost::system::error_code error_code;
   fs::remove_all(mount_dir_, error_code);
-  mount_thread_->join();
 #endif
   mount_status_ = false;
 }
