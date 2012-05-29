@@ -195,6 +195,10 @@ int UserCredentialsImpl::GetUserInfo(const std::string &keyword,
   session_->set_keyword(keyword);
   session_->set_pin(pin);
   session_->set_password(password);
+  if (!session_->set_session_name()) {
+    DLOG(ERROR) << "Failed to set session.";
+    return kSessionFailure;
+  }
 
   return kSuccess;
 }
@@ -320,6 +324,10 @@ int UserCredentialsImpl::CreateUser(const std::string &keyword,
   session_->set_keyword(keyword);
   session_->set_pin(pin);
   session_->set_password(password);
+  if (!session_->set_session_name()) {
+    DLOG(ERROR) << "Failed to set session.";
+    return kSessionFailure;
+  }
 
   return kSuccess;
 }
