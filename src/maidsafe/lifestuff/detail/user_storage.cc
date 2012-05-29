@@ -135,6 +135,7 @@ void UserStorage::UnMountDrive() {
 //  drive_in_user_space_.reset();
   DLOG(ERROR) << "Before thread join.";
   mount_thread_->join();
+  DLOG(ERROR) << "After thread join.";
   boost::system::error_code error_code;
   fs::remove_all(mount_dir_, error_code);
 #endif

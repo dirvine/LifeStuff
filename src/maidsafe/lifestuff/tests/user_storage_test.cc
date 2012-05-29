@@ -313,14 +313,15 @@ class UserStorageTest : public testing::TestWithParam<bool> {
   boost::condition_variable cond_var_;
 };
 
-TEST(WTFTest, MountAndUnmount) {
+TEST(WTFTest, BEH_MountAndUnmount) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  fs::path mount_dir(*test_dir / RandomAlphaNumericString(8));
   AsioService asio_service;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store;
   std::shared_ptr<Session> session(new Session);
   std::shared_ptr<UserCredentials> user_credentials;
   std::shared_ptr<UserStorage> user_storage;
+  fs::path mount_dir(*test_dir / RandomAlphaNumericString(8) /
+                     session->session_name());
 
   asio_service.Start(5);
 
