@@ -2101,13 +2101,11 @@ TEST_P(PrivateSharesApiTest, FUNC_RejectInvitationPrivateShare) {
     contacts.insert(std::make_pair(public_id2, rights_));
     results.insert(std::make_pair(public_id2, kGeneralError));
 
-    EXPECT_EQ(kSuccess,
-              test_elements1.CreatePrivateShareFromExistingDirectory(
-                  public_id1,
-                  share_path,
-                  contacts,
-                  &share_name1,
-                  &results));
+    EXPECT_EQ(kSuccess, test_elements1.CreatePrivateShareFromExistingDirectory(public_id1,
+                                                                               share_path,
+                                                                               contacts,
+                                                                               &share_name1,
+                                                                               &results));
 
     int count(0), limit(30);
     while ((fs::exists(share_path, error_code) && !error_code) &&
@@ -2596,6 +2594,12 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateDeletePrivateShare) {
     EXPECT_EQ(kSuccess, test_elements1.DeletePrivateShare(public_id1,
                                                           share_name,
                                                           false));
+
+    int count(0), limit(30);
+    while ((fs::exists(share_path, error_code) && !error_code) &&
+           count++ < limit) {
+      Sleep(bptime::milliseconds(100));
+    }
     EXPECT_FALSE(fs::exists(share_path, error_code)) << share_path;
     EXPECT_NE(0, error_code.value());
     EXPECT_TRUE(fs::exists(my_path, error_code)) << my_path;
