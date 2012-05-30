@@ -69,6 +69,9 @@ typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
                          const std::string&,
                          const std::string&,
                          const std::string&,
+                         const std::string&,
+                         const std::string&,
+                         const asymm::Keys&,
                          int,
                          const std::string&)> PrivateMemberAccessLevelSignal;
 
@@ -86,7 +89,7 @@ typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
 
 typedef bs2::signal<void(const std::string&,  // share name
                          const std::string&,  // share id
-                         const std::string&)> PrivateShareUserLeavingSignal;  // user_id  // NOLINT
+                         const std::string&)> PrivateShareUserLeavingSignal;  // user_id  // NOLINT (Dan)
 
 /// Intra library signals
 typedef bs2::signal<bool(const std::string&,  // NOLINT (Dan)
@@ -99,10 +102,13 @@ typedef bs2::signal<int(const std::string&, fs::path*)>  // NOLINT (Dan)
 typedef bs2::signal<void(const std::string&,  // share id
                          std::string*,  // directory id
                          std::string*,  // new share id
-                         asymm::Keys*)> PrivateShareUpdateSignal;  // new key
+                         asymm::Keys*,  // new key
+                         int*)> PrivateShareUpdateSignal;  // access right
 
 typedef bs2::signal<bool(const std::string&,  // NOLINT (Dan)
                          const std::string&)> SavePrivateShareDataSignal;
+
+typedef bs2::signal<bool(const std::string&)> DeletePrivateShareDataSignal;  // NOLINT (Dan)
 
 typedef bs2::signal<bool(const std::string&,  // NOLINT
                          const std::string&)> SaveOpenShareDataSignal;

@@ -498,34 +498,12 @@ void MessageHandler::ProcessContactProfilePicture(
                                   profile_picture_message.timestamp);
 }
 
-bool CheckCorrectKeys(const std::vector<std::string> &message_keys,
-                      const InboxItemType &item_type,
+bool CheckCorrectKeys(const std::vector<std::string> &content,
                       asymm::Keys *keys) {
-  int offset(-1);
-  if (item_type == kPrivateShareKeysUpdate) {
-    if (message_keys.size() == 6U) {
-      offset = 1;
-    } else if (message_keys.size() == 7U) {
-      offset = 2;
-    } else if (message_keys.size() <= 3U) {
-      return true;
-    } else {
-      DLOG(ERROR) << "Should have 6/7 elements: share ID, new share ID, "
-                      "directory ID, and 4 Keys elements for KeysUpdate: "
-                  <<  message_keys.size();
-      return false;
-    }
-  } else if (item_type == kPrivateShareMembershipUpgrade) {
-    if (message_keys.size() != 5U) {
-      DLOG(ERROR) << "Should have 5 elements: share ID and 4 Keys elements "
-                    "for MembershipUpgrade";
-      return false;
-    }
-    offset = 0;
-  }
-
-  asymm::DecodePrivateKey(message_keys.at(offset + 3), &(keys->private_key));
-  asymm::DecodePublicKey(message_keys.at(offset + 4), &(keys->public_key));
+  if (content.at(kKeysIdentity).empty())
+    return true;
+  asymm::DecodePrivateKey(content.at(kKeysPrivateKey), &(keys->private_key));
+  asymm::DecodePublicKey(content.at(kKeysPublicKey), &(keys->public_key));
   if (!asymm::ValidateKey(keys->private_key) ||
       !asymm::ValidateKey(keys->public_key)) {
     DLOG(ERROR) << "Keys in message are invalid.";
@@ -533,26 +511,27 @@ bool CheckCorrectKeys(const std::vector<std::string> &message_keys,
     keys->public_key = asymm::PublicKey();
     return false;
   }
-
-  keys->identity = message_keys.at(offset + 1);
-  keys->validation_token = message_keys.at(offset + 2);
-
+  keys->identity = content.at(kKeysIdentity);
+  keys->validation_token = content.at(kKeysValidationToken);
   return true;
 }
 
 void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
-  if (inbox_item.content.empty() || inbox_item.content[0].empty()) {
+  if (inbox_item.content.empty() || inbox_item.content[kShareId].empty()) {
     DLOG(ERROR) << "No share ID.";
     return;
   }
 
   fs::path share_path;
   // The outer * is to refer to the result of the signal
-  int result(*private_share_details_signal_(inbox_item.content[0],
+  int result(*private_share_details_signal_(inbox_item.content[kShareId],
                                             &share_path));
   if ((result != kSuccess || share_path.empty()) &&
       inbox_item.item_type != kPrivateShareInvitation) {
     DLOG(ERROR) << "result: " << result << ", path: " << share_path;
+    if (inbox_item.item_type == kPrivateShareDeletion)
+      if (!delete_private_share_data_signal_(inbox_item.content[kShareId]))
+        DLOG(ERROR) << "Failed to delete received share data";
     return;
   }
 
@@ -560,70 +539,74 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
   if (inbox_item.item_type == kPrivateShareDeletion) {
     private_share_deletion_signal_(inbox_item.sender_public_id,
                                    inbox_item.receiver_public_id,
-                                   share_name,
-                                   inbox_item.content[0],
+                                   inbox_item.content[kShareName],
+                                   inbox_item.content[kShareId],
                                    inbox_item.timestamp);
   } else if (inbox_item.item_type == kPrivateShareKeysUpdate) {
     asymm::Keys key_ring;
     if (!CheckCorrectKeys(inbox_item.content,
-                          inbox_item.item_type,
                           &key_ring)) {
       DLOG(ERROR) << "Incorrect elements in message.";
       return;
     }
-
-    std::string new_directory_id(inbox_item.content[1]),
-                new_share_id(inbox_item.content[2]);
-    private_share_update_signal_(inbox_item.content[0],
-                                 &new_share_id,
-                                 &new_directory_id,
-                                 &key_ring);
+    private_share_update_signal_(inbox_item.content[kShareId],
+                                 const_cast<std::string*>(&inbox_item.content[kNewShareId]),
+                                 const_cast<std::string*>(&inbox_item.content[kDirectoryId]),
+                                 &key_ring,
+                                 nullptr);
   } else if (inbox_item.item_type == kPrivateShareMemberLeft) {
-    private_share_user_leaving_signal_(share_name,
-                                       inbox_item.content[0],
+    private_share_user_leaving_signal_(inbox_item.content[kShareName],
+                                       inbox_item.content[kShareId],
                                        inbox_item.sender_public_id);
   } else if (inbox_item.item_type == kPrivateShareMembershipDowngrade) {
     // downgrading
+    asymm::Keys key_ring;
     private_member_access_level_signal_(inbox_item.receiver_public_id,
                                         inbox_item.sender_public_id,
-                                        share_name,
-                                        inbox_item.content[0],
+                                        inbox_item.content[kShareName],
+                                        inbox_item.content[kShareId],
+                                        inbox_item.content[kDirectoryId],
+                                        inbox_item.content[kNewShareId],
+                                        key_ring,
                                         kShareReadOnly,
                                         inbox_item.timestamp);
   } else if (inbox_item.item_type == kPrivateShareMembershipUpgrade) {
     asymm::Keys key_ring;
     if (!CheckCorrectKeys(inbox_item.content,
-                          inbox_item.item_type,
                           &key_ring)) {
       DLOG(ERROR) << "Incorrect elements in message.";
       return;
     }
-
+   /* int access_rights(kShareReadWrite);
     private_share_update_signal_(inbox_item.content[0],
                                  nullptr,
                                  nullptr,
-                                 &key_ring);
+                                 &key_ring,
+                                 &access_rights);*/
     private_member_access_level_signal_(inbox_item.receiver_public_id,
                                         inbox_item.sender_public_id,
-                                        share_name,
-                                        inbox_item.content[0],
+                                        inbox_item.content[kShareName],
+                                        inbox_item.content[kShareId],
+                                        inbox_item.content[kDirectoryId],
+                                        inbox_item.content[kNewShareId],
+                                        key_ring,
                                         kShareReadWrite,
                                         inbox_item.timestamp);
   } else if (inbox_item.item_type == kPrivateShareInvitation) {
     Message message;
     InboxToProtobuf(inbox_item, &message);
     if (!save_private_share_data_signal_(message.SerializeAsString(),
-                                         inbox_item.content[0])) {
+                                         inbox_item.content[kShareId])) {
       DLOG(ERROR) << "Failed to save received share data";
       return;
     }
-    fs::path relative_path(inbox_item.content[1]);
+    fs::path relative_path(inbox_item.content[kShareName]);
     private_share_invitation_signal_(inbox_item.receiver_public_id,
                                      inbox_item.sender_public_id,
                                      relative_path.filename().string(),
-                                     inbox_item.content[0],
-                                     inbox_item.content.size() == 7U ?
-                                         kShareReadWrite : kShareReadOnly,
+                                     inbox_item.content[kShareId],
+                                     inbox_item.content[kKeysIdentity].empty() ?
+                                         kShareReadOnly : kShareReadWrite,
                                      inbox_item.timestamp);
   }
 }
@@ -633,14 +616,14 @@ void MessageHandler::ProcessOpenShareInvitation(const InboxItem &inbox_item) {
   Message message;
   InboxToProtobuf(inbox_item, &message);
   if (!save_open_share_data_signal_(message.SerializeAsString(),
-                                    inbox_item.content[0])) {
+                                    inbox_item.content[kShareId])) {
     DLOG(ERROR) << "Failed to save received share data";
     return;
   }
   open_share_invitation_signal_(inbox_item.receiver_public_id,
                                 inbox_item.sender_public_id,
-                                inbox_item.content[1],
-                                inbox_item.content[0],
+                                inbox_item.content[kShareName],
+                                inbox_item.content[kShareId],
                                 inbox_item.timestamp);
 }
 

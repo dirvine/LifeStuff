@@ -172,7 +172,7 @@ std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
   return remote_chunk_store;
 }
 #else
-std::shared_ptr<priv::chunk_store::RemoteChunkStore> BuildChunkStore(
+std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
     const fs::path &base_dir,
     std::shared_ptr<pd::ClientContainer> *client_container) {
   BOOST_ASSERT(client_container);
@@ -287,10 +287,9 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
   return kSuccess;
 }
 
-ClientContainerPtr SetUpClientContainer(
-    const fs::path &base_dir) {
+ClientContainerPtr SetUpClientContainer(const fs::path &base_dir) {
   ClientContainerPtr client_container(new pd::ClientContainer);
-  if (!client_container->InitClientContainer(base_dir / "buffered_chunk_store", 10, 4)) {
+  if (!client_container->Init(base_dir / "buffered_chunk_store", 10, 4)) {
     DLOG(ERROR) << "Failed to initialise client container.";
     return nullptr;
   }
