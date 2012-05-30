@@ -1125,7 +1125,7 @@ TEST(IndependentFullTest, FUNC_RemoveContact) {
   EXPECT_EQ(kSuccess, test_elements2.Finalise());
 }
 
-TEST(IndependentFullTest, FUNC_CreateEmptyOpenShare) {
+TEST(IndependentOpenShareTest, FUNC_CreateEmptyOpenShare) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
@@ -1245,7 +1245,7 @@ TEST(IndependentFullTest, FUNC_CreateEmptyOpenShare) {
   EXPECT_EQ(kSuccess, test_elements2.Finalise());
 }
 
-TEST(IndependentFullTest, FUNC_CreateOpenShare) {
+TEST(IndependentOpenShareTest, FUNC_CreateOpenShare) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
@@ -1352,7 +1352,7 @@ TEST(IndependentFullTest, FUNC_CreateOpenShare) {
   EXPECT_EQ(kSuccess, test_elements2.Finalise());
 }
 
-TEST(IndependentFullTest, FUNC_InviteOpenShareMembers) {
+TEST(IndependentOpenShareTest, FUNC_InviteOpenShareMembers) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
@@ -1547,7 +1547,7 @@ TEST(IndependentFullTest, FUNC_InviteOpenShareMembers) {
   EXPECT_EQ(kSuccess, test_elements2.Finalise());
 }
 
-TEST(IndependentFullTest, FUNC_LeaveOpenShare) {
+TEST(IndependentOpenShareTest, FUNC_LeaveOpenShare) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
@@ -1688,7 +1688,7 @@ TEST(IndependentFullTest, FUNC_LeaveOpenShare) {
   EXPECT_EQ(kSuccess, test_elements2.Finalise());
 }
 
-TEST(IndependentFullTest, FUNC_SameOpenShareName) {
+TEST(IndependentOpenShareTest, FUNC_SameOpenShareName) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
@@ -2429,7 +2429,7 @@ TEST_P(PrivateSharesApiTest, FUNC_LeavePrivateShare) {
   EXPECT_EQ(kSuccess, test_elements2.Finalise());
 }
 
-TEST(IndependentFullTest, FUNC_RenamePrivateShare) {
+TEST(IndependentPrivateShareTest, FUNC_RenamePrivateShare) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
@@ -2616,7 +2616,7 @@ TEST(IndependentFullTest, FUNC_RenamePrivateShare) {
   }
 }
 
-TEST(IndependentFullTest, FUNC_MembershipDowngradePrivateShare) {
+TEST(IndependentPrivateShareTest, FUNC_MembershipDowngradePrivateShare) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
@@ -2749,7 +2749,7 @@ TEST(IndependentFullTest, FUNC_MembershipDowngradePrivateShare) {
   EXPECT_EQ(kSuccess, test_elements2.Finalise());
 }
 
-TEST(IndependentFullTest, FUNC_MembershipUpgradePrivateShare) {
+TEST(IndependentPrivateShareTest, FUNC_MembershipUpgradePrivateShare) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
@@ -2877,7 +2877,8 @@ TEST(IndependentFullTest, FUNC_MembershipUpgradePrivateShare) {
   EXPECT_EQ(kSuccess, test_elements2.Finalise());
 }
 
-TEST(IndependentFullTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
+TEST(IndependentPrivateShareTest,
+     FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
@@ -3002,7 +3003,8 @@ TEST(IndependentFullTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
   EXPECT_EQ(kSuccess, test_elements2.Finalise());
 }
 
-TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
+TEST(IndependentPrivateShareTest,
+     FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
@@ -3110,7 +3112,8 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
   EXPECT_EQ(kSuccess, test_elements2.Finalise());
 }
 
-TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
+TEST(IndependentPrivateShareTest,
+     FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   std::string username1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
@@ -3328,7 +3331,7 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
   EXPECT_EQ(kSuccess, test_elements2.Finalise());
 }
 
-TEST(IndependentFullTest, FUNC_ShareChange) {
+TEST(IndependentShareChangeTest, FUNC_ShareChange) {
   boost::mutex mutex;
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   std::string username1(RandomAlphaNumericString(6)),
