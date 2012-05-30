@@ -88,6 +88,7 @@ MessageHandler::MessageHandler(
       private_share_details_signal_(),
       private_share_update_signal_(),
       save_private_share_data_signal_(),
+      delete_private_share_data_signal_(),
       save_open_share_data_signal_() {}
 
 MessageHandler::~MessageHandler() {

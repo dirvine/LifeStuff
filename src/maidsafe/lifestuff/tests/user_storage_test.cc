@@ -319,6 +319,7 @@ class UserStorageTest : public testing::TestWithParam<bool> {
   boost::condition_variable cond_var_;
 };
 
+#ifdef LOCAL_TARGETS_ONLY
 TEST(WTFTest, BEH_MountAndUnmount) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   AsioService asio_service;
@@ -382,6 +383,7 @@ TEST(WTFTest, BEH_MountAndUnmount) {
   session->Reset();
   asio_service.Stop();
 }
+#endif
 
 INSTANTIATE_TEST_CASE_P(PivateAndOpenShareTests, UserStorageTest,
                         testing::Values(drive::kMsOpenShare,
