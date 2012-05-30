@@ -1530,26 +1530,12 @@ int LifeStuffImpl::LeaveOpenShare(const std::string &my_public_id,
       DLOG(ERROR) << "Failed to delete " << share / drive::kMsShareUsers;
       return result;
     }
-    boost::system::error_code error_code;
-    try {
-      fs::remove_all(share, error_code);
-      if (error_code) {
-        DLOG(ERROR) << "Failed to remove share directory "
-                    << share << " " << error_code.value();
-        return error_code.value();
-      }
-    }
-    catch(const std::exception &e) {
-      DLOG(ERROR) << "Exception thrown removing share directory " << share
-                  << ": " << e.what();
-      return kGeneralError;
-    }
-    BOOST_ASSERT(!fs::exists(share, error_code));
-    /*result = user_storage_->RemoveShare(share);
+
+    result = user_storage_->RemoveShare(share);
     if (result != kSuccess) {
       DLOG(ERROR) << "Failed to remove share " << share;
       return result;
-    }*/
+    }
 
     // TODO(Team): Should this block exist? Doesn't RemoveShare eliminate the
     //             entry from the listing?

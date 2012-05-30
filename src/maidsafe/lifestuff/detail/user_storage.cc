@@ -473,19 +473,9 @@ int UserStorage::StopShare(const std::string &sender_public_id,
   if (result != kSuccess)
     return result;
   if (delete_data) {
-    try {
-      fs::remove_all(mount_dir_ / relative_path, error_code);
-      if (error_code) {
-        DLOG(ERROR) << "Failed to remove share directory "
-                    << mount_dir_ / relative_path << " " << error_code.value();
-        return error_code.value();
-      }
-    }
-    catch(const std::exception &e) {
-      DLOG(ERROR) << "Exception thrown removing share directory "
-                  << mount_dir_ / relative_path << ": " << e.what();
-      return kGeneralError;
-    }
+    result = drive_in_user_space_->RemoveShare(relative_path);
+    if (result != kSuccess)
+      return result;
   } else {
     result = drive_in_user_space_->SetShareDetails(relative_path,
                                                    "",
