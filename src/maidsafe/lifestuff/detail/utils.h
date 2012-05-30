@@ -67,6 +67,19 @@ struct InboxItem {
   std::string timestamp;
 };
 
+enum MessageContentIndexes {
+  kShareId = 0,
+  kShareName,
+  kDirectoryId,
+  kNewShareId,
+  kKeysIdentity,
+  kKeysValidationToken,
+  kKeysPrivateKey,
+  kKeysPublicKey,
+  // Max
+  kMaxMessageContentIndexes = kKeysPublicKey
+};
+
 std::string CreatePin();
 
 bool CheckKeywordValidity(const std::string &keyword);

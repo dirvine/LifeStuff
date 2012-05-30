@@ -260,11 +260,17 @@ class UserStorageTest : public testing::TestWithParam<bool> {
         boost::bind(&UserStorage::GetShareDetails, user_storage2_.get(),
                     _1, _2, nullptr, nullptr, nullptr));
     message_handler1_->ConnectToPrivateShareUpdateSignal(
-        boost::bind(&UserStorage::UpdateShare, user_storage1_.get(),
-                    _1, _2, _3, _4));
+        std::bind(&UserStorage::UpdateShare, user_storage1_.get(),
+                  args::_1, args::_2, args::_3, args::_4, args::_5));
     message_handler2_->ConnectToPrivateShareUpdateSignal(
-        boost::bind(&UserStorage::UpdateShare, user_storage2_.get(),
-                    _1, _2, _3, _4));
+        std::bind(&UserStorage::UpdateShare, user_storage2_.get(),
+                  args::_1, args::_2, args::_3, args::_4, args::_5));
+    message_handler1_->ConnectToPrivateMemberAccessLevelSignal(
+      std::bind(&UserStorage::MemberAccessChange, user_storage1_.get(),
+                args::_4, args::_5, args::_6, args::_7, args::_8));
+    message_handler2_->ConnectToPrivateMemberAccessLevelSignal(
+      std::bind(&UserStorage::MemberAccessChange, user_storage2_.get(),
+                args::_4, args::_5, args::_6, args::_7, args::_8));
   }
 
   void TearDown() {
@@ -614,9 +620,10 @@ TEST_P(UserStorageTest, FUNC_UpgradeUserToReadWrite) {
                     _1, _2, _3, _4, &mutex_, &cond_var_)));
   bs2::connection member_access_level_connection(
     message_handler2_->ConnectToPrivateMemberAccessLevelSignal(
-        boost::bind(&UserStorageTest::DoUpgradeTest,
-                    this, user_storage2_,
-                    _1, _2, _4, _5, &mutex_, &cond_var_)));
+        std::bind(&UserStorageTest::DoUpgradeTest,
+                  this, user_storage2_,
+                  args::_1, args::_2, args::_3, args::_8,
+                  &mutex_, &cond_var_)));
   bs2::connection save_share_data_connection(
     message_handler2_->ConnectToSavePrivateShareDataSignal(
         boost::bind(&UserStorage::SavePrivateShareData,
@@ -968,8 +975,8 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
                     user_storage3.get(), _1, _2)));
   bs2::connection update_share_data_connection_2(
     message_handler3->ConnectToPrivateShareUpdateSignal(
-        boost::bind(&UserStorage::UpdateShare, user_storage3.get(),
-                    _1, _2, _3, _4)));
+        std::bind(&UserStorage::UpdateShare, user_storage3.get(),
+                  args::_1, args::_2, args::_3, args::_4, args::_5)));
 
   MountDrive(user_storage3, session3, true);
   fs::path share_root_directory_3(user_storage3->mount_dir() /

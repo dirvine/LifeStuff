@@ -1120,6 +1120,8 @@ int LifeStuffImpl::AcceptPrivateShareInvitation(
   result = user_storage_->ReadHiddenFile(hidden_file, &serialised_share_data);
   if (result != kSuccess || serialised_share_data.empty()) {
     DLOG(ERROR) << "No such identifier found: " << result;
+    if (result == drive::kNoMsHidden)
+      return kNoShareTarget;
     return result == kSuccess ? kGeneralError : result;
   }
   Message message;
@@ -1128,14 +1130,14 @@ int LifeStuffImpl::AcceptPrivateShareInvitation(
     return kGeneralError;
   }
 
-  fs::path relative_path(message.content(1));
-  std::string directory_id(message.content(2));
+  // fs::path relative_path(message.content(1));
+  std::string directory_id(message.content(kDirectoryId));
   asymm::Keys share_keyring;
-  if (message.content_size() > 3) {
-    share_keyring.identity = message.content(3);
-    share_keyring.validation_token = message.content(4);
-    asymm::DecodePrivateKey(message.content(5), &(share_keyring.private_key));
-    asymm::DecodePublicKey(message.content(6), &(share_keyring.public_key));
+  if (!message.content(kKeysIdentity).empty()) {
+    share_keyring.identity = message.content(kKeysIdentity);
+    share_keyring.validation_token = message.content(kKeysValidationToken);
+    asymm::DecodePrivateKey(message.content(kKeysPrivateKey), &(share_keyring.private_key));
+    asymm::DecodePublicKey(message.content(kKeysPublicKey), &(share_keyring.public_key));
   }
 
   // remove the temp share invitation file no matter insertion succeed or not
@@ -1189,8 +1191,8 @@ int LifeStuffImpl::EditPrivateShareMembers(const std::string &my_public_id,
     auto itr(std::find(member_ids.begin(), member_ids.end(), (*it).first));
     if (itr != member_ids.end()) {
       // -1 indicates removing the existing member
-      // 0 indicates downgrading the existing member
-      // 1 indicates upgrading the existing member
+      //  0 indicates downgrading the existing member
+      //  1 indicates upgrading the existing member
       if ((*it).second == kShareRemover)
         members_to_remove.push_back(*itr);
       if (share_members[(*it).first] != (*it).second) {
@@ -1461,13 +1463,13 @@ int LifeStuffImpl::AcceptOpenShareInvitation(
   }
   Message message;
   message.ParseFromString(serialised_share_data);
-  fs::path relative_path(message.content(1));
-  std::string directory_id(message.content(2));
+  // fs::path relative_path(message.content(kShareName));
+  std::string directory_id(message.content(kDirectoryId));
   asymm::Keys share_keyring;
-  share_keyring.identity = message.content(3);
-  share_keyring.validation_token = message.content(4);
-  asymm::DecodePrivateKey(message.content(5), &(share_keyring.private_key));
-  asymm::DecodePublicKey(message.content(6), &(share_keyring.public_key));
+  share_keyring.identity = message.content(kKeysIdentity);
+  share_keyring.validation_token = message.content(kKeysValidationToken);
+  asymm::DecodePrivateKey(message.content(kKeysPrivateKey), &(share_keyring.private_key));
+  asymm::DecodePublicKey(message.content(kKeysPublicKey), &(share_keyring.public_key));
   // Delete hidden file...
   user_storage_->DeleteHiddenFile(hidden_file);
   fs::path share_dir(mount_path() / kSharedStuff / *share_name);
@@ -1538,35 +1540,6 @@ int LifeStuffImpl::LeaveOpenShare(const std::string &my_public_id,
       return kGeneralError;
     }
     BOOST_ASSERT(!fs::exists(share, error_code));
-    /*result = user_storage_->RemoveShare(share);
-    if (result != kSuccess) {
-      DLOG(ERROR) << "Failed to remove share " << share;
-      return result;
-    }*/
-
-    // TODO(Team): Should this block exist? Doesn't RemoveShare eliminate the
-    //             entry from the listing?
-    /*try {
-      boost::system::error_code error_code;
-      int count(0), limit(30);
-      while (count++ < limit && fs::exists(share, error_code) && !error_code)
-        Sleep(bptime::milliseconds(100));
-      if (count == limit) {
-        DLOG(ERROR) << "Failed to disappear directory.";
-        return kGeneralError;
-      }
-      fs::remove_all(share, error_code);
-      if (error_code) {
-        DLOG(ERROR) << "Failed to remove share directory "
-                    << share << " " << error_code.value();
-        return error_code.value();
-      }
-    }
-    catch(const std::exception &e) {
-      DLOG(ERROR) << "Exception thrown removing share directory " << share
-                  << ": " << e.what();
-      return kGeneralError;
-    }*/
   } else {
     members.clear();
     members.push_back(my_public_id);
@@ -1606,6 +1579,10 @@ void LifeStuffImpl::ConnectInternalElements() {
       boost::bind(&UserStorage::SavePrivateShareData,
                   user_storage_.get(), _1, _2));
 
+  message_handler_->ConnectToDeletePrivateShareDataSignal(
+      std::bind(&UserStorage::DeletePrivateShareData,
+                user_storage_.get(), args::_1));
+
   message_handler_->ConnectToPrivateShareUserLeavingSignal(
       boost::bind(&UserStorage::UserLeavingShare,
                   user_storage_.get(), _2, _3));
@@ -1618,12 +1595,12 @@ void LifeStuffImpl::ConnectInternalElements() {
       boost::bind(&UserStorage::ShareDeleted, user_storage_.get(), _3));
 
   message_handler_->ConnectToPrivateShareUpdateSignal(
-      boost::bind(&UserStorage::UpdateShare, user_storage_.get(),
-                  _1, _2, _3, _4));
+      std::bind(&UserStorage::UpdateShare, user_storage_.get(),
+                args::_1, args::_2, args::_3, args::_4, args::_5));
 
   message_handler_->ConnectToPrivateMemberAccessLevelSignal(
-      boost::bind(&UserStorage::MemberAccessChange,
-                  user_storage_.get(), _4, _5));
+      std::bind(&UserStorage::MemberAccessChange,
+                user_storage_.get(), args::_4, args::_5, args::_6, args::_7, args::_8));
 
   public_id_->ConnectToContactConfirmedSignal(
       boost::bind(&MessageHandler::InformConfirmedContactOnline,

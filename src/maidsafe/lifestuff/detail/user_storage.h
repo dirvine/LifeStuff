@@ -37,6 +37,7 @@
 #else
 #  include "maidsafe/drive/unix_drive.h"
 #endif
+#include "maidsafe/drive/return_codes.h"
 
 #include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
@@ -98,6 +99,7 @@ class UserStorage {
   // ****************************** Shares *************************************
   bool SavePrivateShareData(const std::string &serialised_share_data,
                             const std::string &share_id);
+  bool DeletePrivateShareData(const std::string &share_id);
   bool SaveOpenShareData(const std::string &serialised_share_data,
                          const std::string &share_id);
   int CreateShare(const std::string &sender_public_username,
@@ -127,7 +129,8 @@ class UserStorage {
   int UpdateShare(const std::string &share_id,
                   const std::string *new_share_id,
                   const std::string *new_directory_id,
-                  const asymm::Keys *new_key_ring);
+                  const asymm::Keys *new_key_ring,
+                  int* access_right);
   int AddShareUsers(const std::string &sender_public_username,
                     const fs::path &absolute_path,
                     const StringIntMap &contacts,
@@ -163,12 +166,16 @@ class UserStorage {
                       std::string *directory_id,
                       StringIntMap *share_users);
   void MemberAccessChange(const std::string &share_id,
+                          const std::string &directory_id,
+                          const std::string &new_share_id,
+                          const asymm::Keys &key_ring,
                           int access_right);
   int MovingShare(const std::string &sender_public_username,
                   const std::string &share_id,
                   const fs::path &relative_path,
                   const asymm::Keys &old_key_ring,
                   bool private_share,
+                  const StringIntMap &contacts,
                   std::string *new_share_id_return = nullptr);
   int DowngradeShareUsersRights(const std::string &sender_public_username,
                                 const fs::path &absolute_path,
