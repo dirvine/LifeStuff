@@ -1625,9 +1625,9 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
     return result;
   }
   client_container_->set_key_pair(session_->GetPmidKeys());
-  if (!client_container_->InitClientContainer(
-          buffered_path_ / "buffered_chunk_store", 10, 4)) {
-    DLOG(ERROR) << "Failed to initialise cliento container.";
+  if (!client_container_->Init(buffered_path_ / "buffered_chunk_store",
+                               10, 4)) {
+    DLOG(ERROR) << "Failed to initialise client container.";
     return kGeneralError;
   }
   result = client_container_->Start(bootstrap_contacts);
