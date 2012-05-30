@@ -805,8 +805,8 @@ int UserStorage::RemoveShareUsers(const std::string &sender_public_id,
   for (auto it = user_ids.begin(); it != user_ids.end(); ++it) {
     removed_contacts.insert(std::make_pair(*it, kShareReadOnly));
   }
-  for (auto it = removed_contacts.begin(); it != removed_contacts.end(); ++it) 
-    contacts.erase(contacts.find(it->first)); 
+  for (auto it = removed_contacts.begin(); it != removed_contacts.end(); ++it)
+    contacts.erase(contacts.find(it->first));
 
   InformContactsOperation(kPrivateShareDeletion,
                           sender_public_id,
