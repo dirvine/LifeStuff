@@ -26,7 +26,6 @@
 #define MAIDSAFE_LIFESTUFF_RETURN_CODES_H_
 
 
-
 namespace maidsafe {
 
 namespace lifestuff {
