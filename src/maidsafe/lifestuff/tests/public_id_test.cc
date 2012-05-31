@@ -323,7 +323,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
 
   {
     boost::mutex::scoped_lock lock(mutex);
-    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2));
+    EXPECT_TRUE(cond_var2.timed_wait(lock, interval_ * 2));
   }
 
   // Confirmation received, status should be updated
