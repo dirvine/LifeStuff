@@ -68,8 +68,7 @@ class SessionTest : public testing::Test {
                                   asymm::PublicKey(),
                                   asymm::PublicKey(),
                                   kConfirmed);
-                        this->session_.contact_handler_map()
-                            [pub_id]->AddContact(c);
+                        this->session_.contact_handler_map()[pub_id]->AddContact(c);
                       }
                   });
   }
@@ -123,8 +122,7 @@ class SessionTest : public testing::Test {
     return true;
   }
 
-  bool EqualPublicIdentities(const PublicIdentity &lhs,
-                             const PublicIdentity &rhs) {
+  bool EqualPublicIdentities(const PublicIdentity &lhs, const PublicIdentity &rhs) {
     if (lhs.public_id() != rhs.public_id())
       return false;
     if (lhs.profile_picture_data_map() != rhs.profile_picture_data_map())
@@ -140,18 +138,15 @@ class SessionTest : public testing::Test {
 
   bool EquivalentDataAtlases(const DataAtlas &lhs, const DataAtlas &rhs) {
     // Drive data
-    if (lhs.drive_data().root_parent_id() !=
-            rhs.drive_data().root_parent_id() ||
-        lhs.drive_data().unique_user_id() !=
-            rhs.drive_data().unique_user_id()) {
+    if (lhs.drive_data().root_parent_id() != rhs.drive_data().root_parent_id() ||
+        lhs.drive_data().unique_user_id() != rhs.drive_data().unique_user_id()) {
       return false;
     }
 
     // Passport data
-    if (lhs.passport_data().serialised_keyring() !=
-          rhs.passport_data().serialised_keyring() ||
-       lhs.passport_data().serialised_selectables() !=
-          rhs.passport_data().serialised_selectables()) {
+    if (lhs.passport_data().serialised_keyring() != rhs.passport_data().serialised_keyring() ||
+        lhs.passport_data().serialised_selectables() !=
+            rhs.passport_data().serialised_selectables()) {
       return false;
     }
 
@@ -272,8 +267,7 @@ TEST_F(SessionTest, BEH_SessionName) {
 
   std::string keyword(RandomAlphaNumericString(6));
   std::string pin(CreatePin());
-  std::string session_name(EncodeToHex(crypto::Hash<crypto::SHA1>(pin +
-                                                                  keyword)));
+  std::string session_name(EncodeToHex(crypto::Hash<crypto::SHA1>(pin + keyword)));
 
   // Set the session values
   SetUsernamePinPassword(keyword, pin, "ccc");

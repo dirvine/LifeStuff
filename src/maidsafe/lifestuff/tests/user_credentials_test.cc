@@ -71,8 +71,7 @@ class UserCredentialsTest : public testing::Test {
     asio_service_.Start(10);
     asio_service2_.Start(10);
 #ifdef LOCAL_TARGETS_ONLY
-  remote_chunk_store_ = BuildChunkStore(*test_dir_ /
-                                        RandomAlphaNumericString(8),
+  remote_chunk_store_ = BuildChunkStore(*test_dir_ / RandomAlphaNumericString(8),
                                         *test_dir_ / "simulation",
                                         asio_service_.service());
 #else
@@ -89,16 +88,14 @@ class UserCredentialsTest : public testing::Test {
 
   void CreateSecondUserCredentials() {
 #ifdef LOCAL_TARGETS_ONLY
-    remote_chunk_store2_ = BuildChunkStore(*test_dir_ /
-                                           RandomAlphaNumericString(8),
+    remote_chunk_store2_ = BuildChunkStore(*test_dir_ / RandomAlphaNumericString(8),
                                            *test_dir_ / "simulation",
                                            asio_service2_.service());
 #else
     remote_chunk_store2_ = BuildChunkStore(*test_dir_, &client_container2_);
 #endif
     session2_.reset(new Session);
-    user_credentials2_.reset(new UserCredentials(remote_chunk_store2_,
-                                                 session2_));
+    user_credentials2_.reset(new UserCredentials(remote_chunk_store2_, session2_));
     session2_->Reset();
   }
 
@@ -108,8 +105,7 @@ class UserCredentialsTest : public testing::Test {
 #ifndef LOCAL_TARGETS_ONLY
   std::shared_ptr<pd::ClientContainer> client_container_, client_container2_;
 #endif
-  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_,
-                                         remote_chunk_store2_;
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_, remote_chunk_store2_;
   std::shared_ptr<UserCredentials> user_credentials_, user_credentials2_;
   std::string keyword_, pin_, password_;
 
@@ -137,8 +133,7 @@ TEST_F(UserCredentialsTest, FUNC_LoginSequence) {
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Preconditions fulfilled.\n===================\n";
 
-  ASSERT_EQ(kUserDoesntExist,
-            user_credentials_->LogIn(keyword_, pin_, password_));
+  ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
   ASSERT_EQ(keyword_, session_->keyword());
   ASSERT_EQ(pin_, session_->pin());
@@ -163,9 +158,7 @@ TEST_F(UserCredentialsTest, FUNC_LoginSequence) {
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Logged out.\n===================\n";
 
-  ASSERT_NE(kSuccess, user_credentials_->LogIn(RandomAlphaNumericString(9),
-                                               pin_,
-                                               password_));
+  ASSERT_NE(kSuccess, user_credentials_->LogIn(RandomAlphaNumericString(9), pin_, password_));
   DLOG(INFO) << "Can't log in with fake details.";
 }
 
@@ -173,8 +166,7 @@ TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
   ASSERT_TRUE(session_->keyword().empty());
   ASSERT_TRUE(session_->pin().empty());
   ASSERT_TRUE(session_->password().empty());
-  ASSERT_EQ(kUserDoesntExist,
-            user_credentials_->LogIn(keyword_, pin_, password_));
+  ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
   DLOG(INFO) << "Preconditions fulfilled.\n===================\n";
 
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
@@ -208,8 +200,7 @@ TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Logged out.\n===================\n";
 
-  ASSERT_EQ(kSuccess,
-            user_credentials_->LogIn(kNewKeyword, pin_, password_));
+  ASSERT_EQ(kSuccess, user_credentials_->LogIn(kNewKeyword, pin_, password_));
   ASSERT_EQ(kNewKeyword, session_->keyword());
   ASSERT_EQ(pin_, session_->pin());
   ASSERT_EQ(password_, session_->password());
@@ -228,8 +219,7 @@ TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Logged out.\n===================\n";
 
-  ASSERT_EQ(kSuccess,
-            user_credentials_->LogIn(kNewKeyword, kNewPin, password_));
+  ASSERT_EQ(kSuccess, user_credentials_->LogIn(kNewKeyword, kNewPin, password_));
   ASSERT_EQ(kNewKeyword, session_->keyword());
   ASSERT_EQ(kNewPin, session_->pin());
   ASSERT_EQ(password_, session_->password());
@@ -248,8 +238,7 @@ TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Logged out.\n===================\n";
 
-  ASSERT_EQ(kSuccess,
-            user_credentials_->LogIn(kNewKeyword, kNewPin, kNewPassword));
+  ASSERT_EQ(kSuccess, user_credentials_->LogIn(kNewKeyword, kNewPin, kNewPassword));
   ASSERT_EQ(kNewKeyword, session_->keyword());
   ASSERT_EQ(kNewPin, session_->pin());
   ASSERT_EQ(kNewPassword, session_->password());
@@ -261,16 +250,11 @@ TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Logged out.\n===================\n";
 
-  ASSERT_EQ(kUserDoesntExist,
-            user_credentials_->LogIn(keyword_, pin_, password_));
-  ASSERT_EQ(kUserDoesntExist,
-            user_credentials_->LogIn(kNewKeyword, pin_, password_));
-  ASSERT_EQ(kAccountCorrupted,
-            user_credentials_->LogIn(kNewKeyword, kNewPin, password_));
-  ASSERT_EQ(kUserDoesntExist,
-            user_credentials_->LogIn(kNewKeyword, pin_, kNewPassword));
-  ASSERT_EQ(kUserDoesntExist,
-            user_credentials_->LogIn(keyword_, kNewPin, kNewPassword));
+  ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
+  ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(kNewKeyword, pin_, password_));
+  ASSERT_EQ(kAccountCorrupted, user_credentials_->LogIn(kNewKeyword, kNewPin, password_));
+  ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(kNewKeyword, pin_, kNewPassword));
+  ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, kNewPin, kNewPassword));
   DLOG(INFO) << "Can't log in with old u/p/w.";
 }
 
@@ -280,8 +264,7 @@ TEST_F(UserCredentialsTest, FUNC_ParallelLogin) {
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Preconditions fulfilled.\n===================\n";
 
-  ASSERT_EQ(kUserDoesntExist,
-            user_credentials_->LogIn(keyword_, pin_, password_));
+  ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
   ASSERT_EQ(keyword_, session_->keyword());
   ASSERT_EQ(pin_, session_->pin());
@@ -299,8 +282,7 @@ TEST_F(UserCredentialsTest, FUNC_MultiUserCredentialsLoginAndLogout) {
   ASSERT_TRUE(session_->password().empty());
   DLOG(INFO) << "Preconditions fulfilled.\n===================\n";
 
-  ASSERT_EQ(kUserDoesntExist,
-            user_credentials_->LogIn(keyword_, pin_, password_));
+  ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
   ASSERT_EQ(keyword_, session_->keyword());
   ASSERT_EQ(pin_, session_->pin());
