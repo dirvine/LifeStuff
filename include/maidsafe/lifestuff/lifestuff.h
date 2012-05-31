@@ -33,7 +33,6 @@
 #include <vector>
 
 #include "maidsafe/common/rsa.h"
-#include "maidsafe/drive/config.h"
 
 namespace maidsafe {
 
@@ -73,11 +72,12 @@ enum LifeStuffState {
   kLoggedOut
 };
 
+/// THIS ENUM MUST BE KEPT IN SYNC WITH THE ONE IN DRIVE'S CONFIG.H !!!
 enum PrivateShareRoles {
-  kShareRemover = drive::kShareRemover,
-  kShareReadOnly = drive::kShareReadOnly,
-  kShareReadWrite = drive::kShareReadWrite,
-  kShareOwner = drive::kShareOwner
+  kShareRemover  = -1,
+  kShareReadOnly = 0,
+  kShareReadWrite = 1,
+  kShareOwner = 2
 };
 
 extern const size_t kMaxChatMessageSize;
@@ -117,8 +117,7 @@ typedef std::function<void(const std::string&,
 typedef std::function<void(int)> VoidFunctionOneInt;  // NOLINT (Dan)
 typedef std::function<void(bool)> VoidFunctionOneBool;  // NOLINT (Dan)
 typedef std::map<std::string, int> StringIntMap;
-typedef std::map<std::string, std::pair<ContactStatus, ContactPresence>>
-        ContactMap;
+typedef std::map<std::string, std::pair<ContactStatus, ContactPresence>> ContactMap;
 
 /// Private Shares
 // Own ID, Contact ID, Share Name, Share ID, Access Level, Timestamp
@@ -150,8 +149,7 @@ typedef FiveStringsFunction OpenShareInvitationFunction;
 
 /// Common for Private and Open Shares
 // Old ShareName, New ShareName
-typedef std::function<void(const std::string&, const std::string&)>
-        ShareRenamedFunction;
+typedef std::function<void(const std::string&, const std::string&)> ShareRenamedFunction;
 
 /// Chat
 // Own public ID, Contact public ID, Message, Timestamp

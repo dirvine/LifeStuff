@@ -29,12 +29,8 @@
 
 #include "boost/thread/mutex.hpp"
 
-#include "maidsafe/common/rsa.h"
-
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
-
-namespace pcs = maidsafe::priv::chunk_store;
 
 namespace maidsafe {
 
