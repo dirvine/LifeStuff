@@ -92,33 +92,26 @@ class UserStorageTest : public testing::TestWithParam<bool> {
       boost::condition_variable *cond_var) {
     boost::mutex::scoped_lock lock(*mutex);
     std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
-    fs::path hidden_file(user_storage->mount_dir() /
-                         kSharedStuff /
-                         std::string(temp_name + kHiddenFileExtension));
+    temp_name +=  kHiddenFileExtension;
+    fs::path hidden_file(user_storage->mount_dir() / kSharedStuff / temp_name);
     std::string serialised_share_data;
-    EXPECT_EQ(kSuccess, user_storage->ReadHiddenFile(hidden_file,
-                                                     &serialised_share_data));
+    EXPECT_EQ(kSuccess, user_storage->ReadHiddenFile(hidden_file, &serialised_share_data));
     Message message;
     message.ParseFromString(serialised_share_data);
 
-    fs::path relative_path(message.content(1));
-    std::string directory_id(message.content(2));
+    fs::path relative_path(message.content(kShareName));
+    std::string directory_id(message.content(kDirectoryId));
     asymm::Keys share_keyring;
-    if (message.content_size() > 4) {
-        share_keyring.identity = message.content(3);
-        share_keyring.validation_token = message.content(4);
-        asymm::DecodePrivateKey(message.content(5),
-                                &(share_keyring.private_key));
-        asymm::DecodePublicKey(message.content(6),
-                               &(share_keyring.public_key));
+    if (!message.content(kKeysIdentity).empty()) {
+      share_keyring.identity = message.content(kKeysIdentity);
+      share_keyring.validation_token = message.content(kKeysValidationToken);
+      asymm::DecodePrivateKey(message.content(kKeysPrivateKey), &(share_keyring.private_key));
+      asymm::DecodePublicKey(message.content(kKeysPublicKey), &(share_keyring.public_key));
     }
-
     EXPECT_EQ(kSuccess, user_storage->DeleteHiddenFile(hidden_file));
 
     std::string share_name(relative_path.filename().string());
-    fs::path share_dir(user_storage->mount_dir() /
-                       kSharedStuff /
-                       share_name);
+    fs::path share_dir(user_storage->mount_dir() / kSharedStuff / share_name);
     EXPECT_EQ(kSuccess, user_storage->InsertShare(share_dir,
                                                   share_id,
                                                   sender,
@@ -536,19 +529,19 @@ TEST_P(UserStorageTest, FUNC_AddUser) {
 TEST_P(UserStorageTest, FUNC_AddReadWriteUser) {
   MountDrive(user_storage1_, session1_, true);
   boost::system::error_code error_code;
-  fs::path share_root_directory_1(user_storage1_->mount_dir() /
-                                  kSharedStuff);
+  fs::path share_root_directory_1(user_storage1_->mount_dir() / kSharedStuff);
   EXPECT_TRUE(fs::create_directories(share_root_directory_1, error_code))
-              << share_root_directory_1 << ": " << error_code.message();
+                << share_root_directory_1 << ": " << error_code.message();
 
   StringIntMap users;
   users.insert(std::make_pair(pub_name2_, kShareReadWrite));
-  std::string tail;
+  std::string tail, old_tail;
   fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir(), &tail));
+  old_tail = tail;
   EXPECT_TRUE(fs::exists(directory0, error_code)) << directory0;
   EXPECT_EQ(kSuccess, user_storage1_->CreateShare(pub_name1_,
-                                                  fs::path(),
                                                   directory0,
+                                                  share_root_directory_1 / tail,
                                                   users,
                                                   private_share_));
   UnMountDrive(user_storage1_);
@@ -556,23 +549,19 @@ TEST_P(UserStorageTest, FUNC_AddReadWriteUser) {
   bs2::connection accept_share_invitation_connection(
     message_handler2_->ConnectToPrivateShareInvitationSignal(
         boost::bind(&UserStorageTest::DoAcceptShareInvitationTest,
-                    this, user_storage2_,
-                    _1, _2, _3, _4, &mutex_, &cond_var_)));
+                    this, user_storage2_, _1, _2, _3, _4, &mutex_, &cond_var_)));
   bs2::connection save_share_data_connection(
     message_handler2_->ConnectToSavePrivateShareDataSignal(
-        boost::bind(&UserStorage::SavePrivateShareData,
-                    user_storage2_.get(), _1, _2)));
+        boost::bind(&UserStorage::SavePrivateShareData, user_storage2_.get(), _1, _2)));
 
   MountDrive(user_storage2_, session2_, true);
   fs::path directory1(user_storage2_->mount_dir() / kSharedStuff / tail);
 
-  fs::path share_root_directory_2(user_storage2_->mount_dir() /
-                                  kSharedStuff);
+  fs::path share_root_directory_2(user_storage2_->mount_dir() / kSharedStuff);
   EXPECT_TRUE(fs::create_directories(share_root_directory_2, error_code))
-              << share_root_directory_2 << ": " << error_code.message();
+                << share_root_directory_2 << ": " << error_code.message();
 
-  EXPECT_EQ(kSuccess,
-            message_handler2_->StartCheckingForNewMessages(interval_));
+  EXPECT_EQ(kSuccess, message_handler2_->StartCheckingForNewMessages(interval_));
   {
     boost::mutex::scoped_lock lock(mutex_);
     EXPECT_TRUE(cond_var_.timed_wait(lock, interval_ * 2));
@@ -585,7 +574,8 @@ TEST_P(UserStorageTest, FUNC_AddReadWriteUser) {
   UnMountDrive(user_storage2_);
 
   MountDrive(user_storage1_, session1_, false);
-  EXPECT_TRUE(fs::exists(directory0 / tail, error_code));
+  EXPECT_FALSE(fs::exists(directory0, error_code));
+  EXPECT_TRUE(fs::exists(share_root_directory_1 / old_tail, error_code));
   UnMountDrive(user_storage1_);
 
   MountDrive(user_storage2_, session2_, false);
