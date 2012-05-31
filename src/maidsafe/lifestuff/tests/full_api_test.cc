@@ -3332,7 +3332,7 @@ TEST(IndependentPrivateShareTest,
   EXPECT_EQ(kSuccess, test_elements2.Finalise());
 }
 
-TEST(IndependentShareChangeTest, FUNC_AddOneFile) {
+TEST(IndependentShareChangeTest, FUNC_AddModifyRemoveOneFile) {
   boost::mutex mutex;
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   std::string username1(RandomAlphaNumericString(6)),
@@ -3440,14 +3440,66 @@ TEST(IndependentShareChangeTest, FUNC_AddOneFile) {
     EXPECT_TRUE(share_change_entry.new_path.empty());
     EXPECT_EQ(drive::kAdded, share_change_entry.op_type);
 
+    file_path = directory1 / file_name;
+    testing_variables1.share_changes.clear();
+
+    std::ofstream ofstream(file_path.c_str(),
+                           std::ios_base::out | std::ios_base::binary);
+    std::string new_file_content(RandomAlphaNumericString(100));
+    ofstream << new_file_content;
+    ofstream.close();
+    Sleep(bptime::milliseconds(500));
+
+    EXPECT_TRUE(fs::remove(file_path, error_code));
+    // allowing enough time for the change to be logged
+    Sleep(bptime::milliseconds(5000));
+    EXPECT_TRUE(testing_variables1.share_changes.empty());
+
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
+  }
+
+  DLOG(ERROR) << "\n\n\n\n";
+  {
+    EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
+    uint8_t attempts(0);
+    // Modify and Remove will be logged seperate as in real usage,
+    // Remove shall not happen immediately afer Modify
+    uint8_t expected_num_of_logs(2);
+    while ((testing_variables2.share_changes.size() < expected_num_of_logs) &&
+           (attempts < 10)) {
+      Sleep(bptime::milliseconds(1000));
+      ++attempts;
+    }
+    EXPECT_LT(attempts, 10);
+    // Additional time allowing any unexpected notifications to be logged
+    Sleep(bptime::milliseconds(2000));
+
+    EXPECT_EQ(expected_num_of_logs, testing_variables2.share_changes.size());
+    uint8_t num_of_removal_entries(0), num_of_modify_entries(0);
+    for (auto it = testing_variables2.share_changes.begin();
+         it != testing_variables2.share_changes.end(); ++it) {
+      EXPECT_EQ(1, (*it).num_of_entries);
+      EXPECT_EQ(share_name1, (*it).share_name);
+      EXPECT_EQ(fs::path("/").make_preferred() / file_name,
+                (*it).target_path.string());
+      EXPECT_TRUE((*it).old_path.empty());
+      EXPECT_TRUE((*it).new_path.empty());
+      if ((*it).op_type == drive::kRemoved)
+        ++num_of_removal_entries;
+      if ((*it).op_type == drive::kModified)
+        ++num_of_modify_entries;
+    }
+    EXPECT_EQ(1, num_of_removal_entries);
+    EXPECT_EQ(1, num_of_modify_entries);
+
+    EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
 
   EXPECT_EQ(kSuccess, test_elements1.Finalise());
   EXPECT_EQ(kSuccess, test_elements2.Finalise());
 }
 
-TEST(IndependentShareChangeTest, FUNC_AddMultipleNodes) {
+TEST(IndependentShareChangeTest, FUNC_AddRemoveMultipleNodes) {
   boost::mutex mutex;
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   std::string username1(RandomAlphaNumericString(6)),
@@ -3476,7 +3528,10 @@ TEST(IndependentShareChangeTest, FUNC_AddMultipleNodes) {
   std::string share_name(RandomAlphaNumericString(5));
   fs::path directory1, directory2;
   std::string sub_directory_name(RandomAlphaNumericString(5));
+  std::string further_sub_directory_name(RandomAlphaNumericString(5));
   int num_of_nodes(5 + RandomInt32() % 6);
+  int num_of_further_nodes(5 + RandomInt32() % 6);
+  std::vector<std::string> names_of_nodes;
 
   boost::system::error_code error_code;
   {
@@ -3501,8 +3556,30 @@ TEST(IndependentShareChangeTest, FUNC_AddMultipleNodes) {
                                           &shares_members);
     EXPECT_EQ(1U, shares_members.size());
 
-    fs::path directory(directory1 / sub_directory_name);
-    EXPECT_TRUE(fs::create_directory(directory, error_code));
+    fs::path sub_directory(directory1 / sub_directory_name);
+    fs::path further_sub_director(sub_directory / further_sub_directory_name);
+    EXPECT_TRUE(fs::create_directory(sub_directory, error_code));
+    EXPECT_TRUE(fs::create_directory(further_sub_director, error_code));
+
+    for (int i = 0; i < num_of_further_nodes; ++i) {
+      int file_or_dir(RandomInt32() % 2);
+      if (file_or_dir == 0) {
+        std::string file_name(RandomAlphaNumericString(4));
+        fs::path file_path(further_sub_director / file_name);
+        std::string file_content(RandomAlphaNumericString(100));
+        std::ofstream ofstream(file_path.c_str(), std::ios::binary);
+        ofstream << file_content;
+        ofstream.close();
+        EXPECT_TRUE(fs::exists(file_path, error_code)) << file_path;
+        names_of_nodes.push_back(file_name);
+      } else {
+        std::string dir_name(RandomAlphaNumericString(6));
+        fs::path directory(further_sub_director / dir_name);
+        EXPECT_TRUE(fs::create_directory(directory, error_code)) << directory;
+        names_of_nodes.push_back(dir_name);
+      }
+    }
+
     EXPECT_EQ(0, error_code.value());
     // allowing enough time for the change to be logged
     Sleep(bptime::milliseconds(5000));
@@ -3510,7 +3587,7 @@ TEST(IndependentShareChangeTest, FUNC_AddMultipleNodes) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n" << num_of_nodes << "\n\n";
+  DLOG(ERROR) << "\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.privately_invited)
@@ -3526,21 +3603,28 @@ TEST(IndependentShareChangeTest, FUNC_AddMultipleNodes) {
     directory2 = test_elements2.mount_path()/ kSharedStuff / share_name;
     EXPECT_TRUE(fs::is_directory(directory2, error_code)) << directory2;
 
+    fs::path sub_director(directory2 / sub_directory_name);
     for (int i = 0; i < num_of_nodes; ++i) {
       int file_or_dir(RandomInt32() % 2);
       if (file_or_dir == 0) {
-        std::string file_name(RandomAlphaNumericString(5));
-        fs::path file_path(directory2 / sub_directory_name / file_name);
+        std::string file_name(RandomAlphaNumericString(4));
+        fs::path file_path(sub_director / file_name);
         std::string file_content(RandomAlphaNumericString(100));
         std::ofstream ofstream(file_path.c_str(), std::ios::binary);
         ofstream << file_content;
         ofstream.close();
         EXPECT_TRUE(fs::exists(file_path, error_code)) << file_path;
       } else {
-        std::string dir_name(RandomAlphaNumericString(5));
-        fs::path directory(directory2 / sub_directory_name / dir_name);
+        std::string dir_name(RandomAlphaNumericString(6));
+        fs::path directory(sub_director / dir_name);
         EXPECT_TRUE(fs::create_directory(directory, error_code)) << directory;
       }
+    }
+
+    fs::path further_sub_director(sub_director / further_sub_directory_name);
+    for (auto it = names_of_nodes.begin(); it != names_of_nodes.end(); ++it) {
+      fs::path node_path(further_sub_director / (*it));
+      fs::remove(node_path, error_code);
     }
 
     // allowing enough time for the change to be logged
@@ -3562,7 +3646,7 @@ TEST(IndependentShareChangeTest, FUNC_AddMultipleNodes) {
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     uint8_t attempts(0);
-    uint8_t expected_num_of_logs(1);
+    uint8_t expected_num_of_logs(2);
     while ((testing_variables1.share_changes.size() < expected_num_of_logs) &&
            (attempts < 10)) {
       Sleep(bptime::milliseconds(1000));
@@ -3573,18 +3657,76 @@ TEST(IndependentShareChangeTest, FUNC_AddMultipleNodes) {
     Sleep(bptime::milliseconds(2000));
 
     EXPECT_EQ(expected_num_of_logs, testing_variables1.share_changes.size());
-    ShareChangeLog share_change_entry(
-                      *testing_variables1.share_changes.begin());
-    EXPECT_EQ(num_of_nodes, share_change_entry.num_of_entries);
-    EXPECT_EQ(share_name, share_change_entry.share_name);
-    EXPECT_EQ(fs::path("/").make_preferred() / sub_directory_name,
-              share_change_entry.target_path.string());
-    EXPECT_TRUE(share_change_entry.old_path.empty());
-    EXPECT_TRUE(share_change_entry.new_path.empty());
-    EXPECT_EQ(drive::kAdded, share_change_entry.op_type);
+    uint8_t num_of_added_entries(0), num_of_removal_entries(0);
+    for (auto it = testing_variables1.share_changes.begin();
+         it != testing_variables1.share_changes.end(); ++it) {
+      EXPECT_EQ(share_name, (*it).share_name);
+      EXPECT_TRUE((*it).old_path.empty());
+      EXPECT_TRUE((*it).new_path.empty());
+      if ((*it).op_type == drive::kRemoved) {
+        EXPECT_EQ(fs::path("/").make_preferred() /
+                      sub_directory_name / further_sub_directory_name,
+                  (*it).target_path);
+        EXPECT_EQ(num_of_further_nodes, (*it).num_of_entries);
+        ++num_of_removal_entries;
+      }
+      if ((*it).op_type == drive::kAdded) {
+        EXPECT_EQ(fs::path("/").make_preferred() / sub_directory_name,
+                  (*it).target_path);
+        EXPECT_EQ(num_of_nodes, (*it).num_of_entries);
+        ++num_of_added_entries;
+      }
+    }
+    EXPECT_EQ(1, num_of_removal_entries);
+    EXPECT_EQ(1, num_of_added_entries);
+
+    testing_variables1.share_changes.clear();
+    fs::path directory(directory1 / sub_directory_name);
+    EXPECT_TRUE(fs::remove_all(directory, error_code));
+    // allowing enough time for the change to be logged
+    Sleep(bptime::milliseconds(5000));
+    EXPECT_TRUE(testing_variables1.share_changes.empty());
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
+  DLOG(ERROR) << "\n\n\n";
+  {
+    EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
+    testing_variables2.share_changes.clear();
+    uint8_t attempts(0);
+    uint8_t expected_num_of_logs(2);
+    while ((testing_variables2.share_changes.size() < expected_num_of_logs) &&
+           (attempts < 10)) {
+      Sleep(bptime::milliseconds(1000));
+      ++attempts;
+    }
+    EXPECT_LT(attempts, 10);
+    // Additional time allowing any unexpected notifications to be logged
+    Sleep(bptime::milliseconds(2000));
+
+    EXPECT_EQ(expected_num_of_logs, testing_variables2.share_changes.size());
+    // The original add log will still be picked up, as the trace_back_time
+    // has been reset
+    uint8_t num_of_added_entries(0), num_of_removal_entries(0);
+    for (auto it = testing_variables2.share_changes.begin();
+         it != testing_variables2.share_changes.end(); ++it) {
+      EXPECT_EQ(1, (*it).num_of_entries);
+      EXPECT_EQ(share_name, (*it).share_name);
+      EXPECT_EQ(fs::path("/").make_preferred() / sub_directory_name,
+                (*it).target_path.string());
+      EXPECT_TRUE((*it).old_path.empty());
+      EXPECT_TRUE((*it).new_path.empty());
+      if ((*it).op_type == drive::kRemoved)
+        ++num_of_removal_entries;
+      if ((*it).op_type == drive::kAdded)
+        ++num_of_added_entries;
+    }
+    EXPECT_EQ(1, num_of_removal_entries);
+    EXPECT_EQ(1, num_of_added_entries);
+
+    EXPECT_EQ(kSuccess, test_elements2.LogOut());
+  }
+
 
   EXPECT_EQ(kSuccess, test_elements1.Finalise());
   EXPECT_EQ(kSuccess, test_elements2.Finalise());
