@@ -47,16 +47,14 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-int GetValidatedMpidPublicKey(
-    const std::string &public_username,
-    const pcs::RemoteChunkStore::ValidationData &validation_data,
-    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
-    asymm::PublicKey *public_key) {
+int GetValidatedMpidPublicKey(const std::string &public_username,
+                              const pcs::RemoteChunkStore::ValidationData &validation_data,
+                              std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
+                              asymm::PublicKey *public_key) {
   // Get public key packet from network
   std::string packet_name(crypto::Hash<crypto::SHA512>(public_username) +
                           std::string(1, pca::kAppendableByAll));
-  std::string packet_value(remote_chunk_store->Get(packet_name,
-                                                   validation_data));
+  std::string packet_value(remote_chunk_store->Get(packet_name, validation_data));
   if (packet_value.empty()) {
     DLOG(ERROR) << "Failed to get public key for " << public_username;
     *public_key = asymm::PublicKey();
@@ -104,8 +102,7 @@ int GetValidatedMpidPublicKey(
 
   // Check that public key packet matches MPID packet, and validate the
   // signature
-  if (serialised_public_key != packet.data() ||
-      public_key_signature != packet.signature()) {
+  if (serialised_public_key != packet.data() || public_key_signature != packet.signature()) {
     DLOG(ERROR) << "Public key doesn't match MPID for " << public_username;
     *public_key = asymm::PublicKey();
     return kInvalidPublicKey;
@@ -114,14 +111,13 @@ int GetValidatedMpidPublicKey(
   return kSuccess;
 }
 
-int GetValidatedMmidPublicKey(
-    const std::string &mmid_name,
-    const pcs::RemoteChunkStore::ValidationData &validation_data,
-    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
-    asymm::PublicKey *public_key) {
-  std::string packet_value(
-      remote_chunk_store->Get(mmid_name + std::string(1, pca::kAppendableByAll),
-                              validation_data));
+int GetValidatedMmidPublicKey(const std::string &mmid_name,
+                              const pcs::RemoteChunkStore::ValidationData &validation_data,
+                              std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
+                              asymm::PublicKey *public_key) {
+  std::string packet_value(remote_chunk_store->Get(
+                               mmid_name + std::string(1, pca::kAppendableByAll),
+                               validation_data));
   if (packet_value.empty()) {
     DLOG(ERROR) << "Failed to get public key for " << Base32Substr(mmid_name);
     *public_key = asymm::PublicKey();
@@ -130,8 +126,7 @@ int GetValidatedMmidPublicKey(
 
   pca::SignedData packet;
   if (!packet.ParseFromString(packet_value)) {
-    DLOG(ERROR) << "Failed to parse public key packet for "
-                << Base32Substr(mmid_name);
+    DLOG(ERROR) << "Failed to parse public key packet for " << Base32Substr(mmid_name);
     *public_key = asymm::PublicKey();
     return kGetPublicKeyFailure;
   }
@@ -139,8 +134,7 @@ int GetValidatedMmidPublicKey(
   BOOST_ASSERT(!packet.signature().empty());
 
   // Validate self-signing
-  if (crypto::Hash<crypto::SHA512>(packet.data() + packet.signature()) !=
-      mmid_name) {
+  if (crypto::Hash<crypto::SHA512>(packet.data() + packet.signature()) != mmid_name) {
     DLOG(ERROR) << "Failed to validate MMID " << Base32Substr(mmid_name);
     *public_key = asymm::PublicKey();
     return kGetPublicKeyFailure;
@@ -151,8 +145,7 @@ int GetValidatedMmidPublicKey(
   std::string public_key_signature(packet.signature());
   asymm::DecodePublicKey(serialised_public_key, public_key);
   if (!asymm::ValidateKey(*public_key)) {
-    DLOG(ERROR) << "Failed to validate public key for "
-                << Base32Substr(mmid_name);
+    DLOG(ERROR) << "Failed to validate public key for " << Base32Substr(mmid_name);
     *public_key = asymm::PublicKey();
     return kGetPublicKeyFailure;
   }
@@ -161,10 +154,9 @@ int GetValidatedMmidPublicKey(
 }
 
 #ifdef LOCAL_TARGETS_ONLY
-std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
-    const fs::path &buffered_chunk_store_path,
-    const fs::path &local_chunk_manager_path,
-    boost::asio::io_service &asio_service) {  // NOLINT (Dan)
+std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path &buffered_chunk_store_path,
+                                                       const fs::path &local_chunk_manager_path,
+                                                       boost::asio::io_service &asio_service) {  // NOLINT (Dan)
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store(
       pcs::CreateLocalChunkStore(buffered_chunk_store_path,
                                  local_chunk_manager_path,
@@ -180,8 +172,8 @@ std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
   if (*client_container) {
     std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store(
         new pcs::RemoteChunkStore((*client_container)->chunk_store(),
-            (*client_container)->chunk_manager(),
-            (*client_container)->chunk_action_authority()));
+                                  (*client_container)->chunk_manager(),
+                                  (*client_container)->chunk_action_authority()));
     remote_chunk_store->SetMaxActiveOps(32);
     return remote_chunk_store;
   } else {
@@ -260,10 +252,7 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
 
     // Read until EOF, writing data to output as we go.
     boost::system::error_code error;
-    while (boost::asio::read(socket,
-                             response,
-                             boost::asio::transfer_at_least(1),
-                             error))
+    while (boost::asio::read(socket, response, boost::asio::transfer_at_least(1), error))
       bootstrap_stream << &response;
 
     if (error != boost::asio::error::eof) {
@@ -278,8 +267,7 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
 
   fs::path bootstrap_file(download_dir / "bootstrap");
   WriteFile(bootstrap_file, bootstrap_stream.str());
-  if (!maidsafe::dht::ReadContactsFromFile(bootstrap_file,
-                                           bootstrap_contacts)) {
+  if (!maidsafe::dht::ReadContactsFromFile(bootstrap_file, bootstrap_contacts)) {
     DLOG(ERROR) << "Failed to read " << bootstrap_file;
     return kGeneralError;
   }

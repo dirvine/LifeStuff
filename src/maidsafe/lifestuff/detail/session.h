@@ -78,9 +78,8 @@ class Session {
   void clear_session_name();
   void set_unique_user_id(const std::string &unique_user_id);
   void set_root_parent_id(const std::string &root_parent_id);
-  bool set_profile_picture_data_map(
-      const std::string &public_id,
-      const std::string &profile_picture_data_map);
+  bool set_profile_picture_data_map(const std::string &public_id,
+                                    const std::string &profile_picture_data_map);
   void set_serialised_data_atlas(const std::string &serialised_data_atlas);
   void set_logging_out(const bool &logging_out);
   void set_logged_in(const bool &logged_in);
@@ -97,8 +96,7 @@ class Session {
 
   int ParseKeyChain(const std::string &serialised_keyring,
                     const std::string &serialised_selectables);
-  void SerialiseKeyChain(std::string *serialised_keyring,
-                         std::string *serialised_selectables);
+  void SerialiseKeyChain(std::string *serialised_keyring, std::string *serialised_selectables);
 
   bool CreateTestPackets(bool with_public_ids);
   std::vector<std::string> GetPublicIdentities();
@@ -107,11 +105,7 @@ class Session {
   passport::Passport passport_;
   ContactHandlerMap contact_handler_map_;
   std::map<std::string, std::string> profile_picture_map_;
-  std::string encrypted_tmid_,
-              encrypted_stmid_,
-              serialised_data_atlas_,
-              uc_serialised_data_atlas_,
-              surrogate_serialised_data_atlas_;
+  std::string serialised_data_atlas_;
   bool logging_out_, logged_in_;
 };
 

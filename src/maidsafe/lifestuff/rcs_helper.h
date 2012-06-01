@@ -38,25 +38,22 @@ namespace pd { class ClientContainer; }
 
 namespace lifestuff {
 
-int GetValidatedMpidPublicKey(
-    const std::string &public_username,
-    const pcs::RemoteChunkStore::ValidationData &validation_data,
-    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
-    asymm::PublicKey *public_key);
+int GetValidatedMpidPublicKey(const std::string &public_username,
+                              const pcs::RemoteChunkStore::ValidationData &validation_data,
+                              std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
+                              asymm::PublicKey *public_key);
 
-int GetValidatedMmidPublicKey(
-    const std::string &mmid_name,
-    const pcs::RemoteChunkStore::ValidationData &validation_data,
-    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
-    asymm::PublicKey *public_key);
+int GetValidatedMmidPublicKey(const std::string &mmid_name,
+                              const pcs::RemoteChunkStore::ValidationData &validation_data,
+                              std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
+                              asymm::PublicKey *public_key);
 
 #ifdef LOCAL_TARGETS_ONLY
-std::shared_ptr<priv::chunk_store::RemoteChunkStore> BuildChunkStore(
-    const fs::path &buffered_chunk_store_path,
-    const fs::path &local_chunk_manager_path,
-    boost::asio::io_service &asio_service);
+std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path &buffered_chunk_store_path,
+                                                       const fs::path &local_chunk_manager_path,
+                                                       boost::asio::io_service &asio_service);
 #else
-std::shared_ptr<priv::chunk_store::RemoteChunkStore> BuildChunkStore(
+std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
     const fs::path &base_dir,
     std::shared_ptr<pd::ClientContainer> *client_container);
 
@@ -64,8 +61,7 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
                               std::vector<dht::Contact> *bootstrap_contacts);
 
 typedef std::shared_ptr<pd::ClientContainer> ClientContainerPtr;
-ClientContainerPtr SetUpClientContainer(
-    const fs::path &base_dir);
+ClientContainerPtr SetUpClientContainer(const fs::path &base_dir);
 #endif
 
 }  // namespace lifestuff

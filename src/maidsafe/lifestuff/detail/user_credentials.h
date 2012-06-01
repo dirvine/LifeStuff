@@ -66,12 +66,8 @@ class UserCredentials {
   void Init(const fs::path &chunk_store_dir);
 
   // User credential operations
-  int LogIn(const std::string &keyword,
-            const std::string &pin,
-            const std::string &password);
-  int CreateUser(const std::string &keyword,
-                 const std::string &pin,
-                 const std::string &password);
+  int LogIn(const std::string &keyword, const std::string &pin, const std::string &password);
+  int CreateUser(const std::string &keyword, const std::string &pin, const std::string &password);
   int Logout();
   int SaveSession();
 
