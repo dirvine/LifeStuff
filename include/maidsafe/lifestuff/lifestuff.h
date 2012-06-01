@@ -32,9 +32,7 @@
 #include <utility>
 #include <vector>
 
-#include "maidsafe/drive/config.h"
-#include "maidsafe/lifestuff/detail/utils.h"
-
+#include "maidsafe/common/rsa.h"
 
 namespace maidsafe {
 
@@ -74,32 +72,13 @@ enum LifeStuffState {
   kLoggedOut
 };
 
+/// THIS ENUM MUST BE KEPT IN SYNC WITH THE ONE IN DRIVE'S CONFIG.H !!!
 enum PrivateShareRoles {
-  kShareRemover = drive::kShareRemover,
-  kShareReadOnly = drive::kShareReadOnly,
-  kShareReadWrite = drive::kShareReadWrite,
-  kShareOwner = drive::kShareOwner
+  kShareRemover  = -1,
+  kShareReadOnly = 0,
+  kShareReadWrite = 1,
+  kShareOwner = 2
 };
-
-// extern const size_t kMaxChatMessageSize(1 * 1024 * 1024);
-// extern const uint32_t kFileRecontructionLimit(20 * 1024 * 1024);
-// extern const uint16_t kIntervalSeconds(5000);
-// extern const uint8_t kThreads(10);
-// extern const uint8_t kSecondsInterval(5);
-// extern const size_t kMinWordSize(5);
-// extern const size_t kMaxWordSize(30);
-// extern const size_t kPinSize(4);
-// extern const std::string kLiteralOnline("kOnline");
-// extern const std::string kLiteralOffline("kOffline");
-// extern const std::string kBlankProfilePicture("BlankPicture");
-// extern const std::string kAppHomeDirectory(".lifestuff");
-// extern const std::string kMyStuff("My Stuff");
-// extern const std::string kDownloadStuff("Accepted Files");
-
-// extern const std::string kSharedStuff("Shared Stuff");
-// extern const std::string kHiddenFileExtension(".ms_hidden");
-// const std::string kSharedStuff(drive::kMsShareRoot.filename().string());
-// const std::string kHiddenFileExtension(drive::kMsHidden.string());
 
 extern const size_t kMaxChatMessageSize;
 extern const uint32_t kFileRecontructionLimit;
@@ -138,8 +117,7 @@ typedef std::function<void(const std::string&,
 typedef std::function<void(int)> VoidFunctionOneInt;  // NOLINT (Dan)
 typedef std::function<void(bool)> VoidFunctionOneBool;  // NOLINT (Dan)
 typedef std::map<std::string, int> StringIntMap;
-typedef std::map<std::string, std::pair<ContactStatus, ContactPresence>>
-        ContactMap;
+typedef std::map<std::string, std::pair<ContactStatus, ContactPresence>> ContactMap;
 
 /// Private Shares
 // Own ID, Contact ID, Share Name, Share ID, Access Level, Timestamp
@@ -171,8 +149,7 @@ typedef FiveStringsFunction OpenShareInvitationFunction;
 
 /// Common for Private and Open Shares
 // Old ShareName, New ShareName
-typedef std::function<void(const std::string&, const std::string&)>
-        ShareRenamedFunction;
+typedef std::function<void(const std::string&, const std::string&)> ShareRenamedFunction;
 
 /// Chat
 // Own public ID, Contact public ID, Message, Timestamp
