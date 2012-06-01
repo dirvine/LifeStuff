@@ -270,12 +270,11 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
                                  std::vector<std::string> *ids = nullptr,
                                  std::vector<std::string> *names = nullptr,
                                  size_t *total_files = nullptr) {
-  FileTransferFunction ftf(
-      std::bind(&FileTransferSlot,
-                args::_1, args::_2, args::_3, args::_4, args::_5,
-                &testing_variables2.file_name,
-                &testing_variables2.file_id,
-                &testing_variables2.file_transfer_received));
+  FileTransferFunction ftf(std::bind(&FileTransferSlot,
+                                     args::_1, args::_2, args::_3, args::_4, args::_5,
+                                     &testing_variables2.file_name,
+                                     &testing_variables2.file_id,
+                                     &testing_variables2.file_transfer_received));
   if (several_files) {
     ftf = std::bind(&MultipleFileTransferSlot,
                     args::_1, args::_2, args::_3, args::_4, args::_5,
@@ -549,30 +548,22 @@ TEST(IndependentFullTest, FUNC_ChangeCredentials) {
   EXPECT_EQ(kSuccess, test_elements1.CheckPassword(password));
 
   // Change credentials
-  EXPECT_EQ(kSuccess, test_elements1.ChangeKeyword(username + username,
-                                                   password));
+  EXPECT_EQ(kSuccess, test_elements1.ChangeKeyword(username + username, password));
   EXPECT_EQ(kSuccess, test_elements1.ChangePin(new_pin, password));
-  EXPECT_EQ(kSuccess, test_elements1.ChangePassword(password + password,
-                                                    password));
+  EXPECT_EQ(kSuccess, test_elements1.ChangePassword(password + password, password));
 
   EXPECT_EQ(kSuccess, test_elements1.LogOut());
 
-  EXPECT_EQ(kSuccess, test_elements1.LogIn(username + username,
-                                           new_pin,
-                                           password + password));
-  EXPECT_EQ(kSuccess, test_elements1.ChangeKeyword(username,
-                                                   password + password));
+  EXPECT_EQ(kSuccess, test_elements1.LogIn(username + username, new_pin, password + password));
+  EXPECT_EQ(kSuccess, test_elements1.ChangeKeyword(username, password + password));
   EXPECT_EQ(kSuccess, test_elements1.LogOut());
 
-  EXPECT_EQ(kSuccess, test_elements1.LogIn(username,
-                                           new_pin,
-                                           password + password));
+  EXPECT_EQ(kSuccess, test_elements1.LogIn(username, new_pin, password + password));
   EXPECT_EQ(kSuccess, test_elements1.ChangePin(pin, password + password));
   EXPECT_EQ(kSuccess, test_elements1.LogOut());
 
   EXPECT_EQ(kSuccess, test_elements1.LogIn(username, pin, password + password));
-  EXPECT_EQ(kSuccess, test_elements1.ChangePassword(password,
-                                                    password + password));
+  EXPECT_EQ(kSuccess, test_elements1.ChangePassword(password, password + password));
   EXPECT_EQ(kSuccess, test_elements1.LogOut());
 
   EXPECT_EQ(kSuccess, test_elements1.LogIn(username, pin, password));
@@ -622,8 +613,7 @@ TEST(IndependentFullTest, FUNC_SendFileSaveToGivenPath) {
     ofstream.close();
     EXPECT_TRUE(fs::exists(file_path1, error_code));
     EXPECT_EQ(0, error_code.value());
-    EXPECT_EQ(kSuccess,
-              test_elements1.SendFile(public_id1, public_id2, file_path1));
+    EXPECT_EQ(kSuccess, test_elements1.SendFile(public_id1, public_id2, file_path1));
 
     Sleep(bptime::seconds(2));
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -634,20 +624,14 @@ TEST(IndependentFullTest, FUNC_SendFileSaveToGivenPath) {
       Sleep(bptime::milliseconds(100));
     EXPECT_FALSE(testing_variables2.file_id.empty());
     EXPECT_EQ(file_name1, testing_variables2.file_name);
-    EXPECT_NE(kSuccess,
-              test_elements2.AcceptSentFile(testing_variables2.file_id));
-    EXPECT_NE(kSuccess,
-              test_elements2.AcceptSentFile(testing_variables2.file_id,
-                                            test_elements2.mount_path() /
-                                                file_name2,
-                                            &file_name2));
-    EXPECT_EQ(kSuccess,
-              test_elements2.AcceptSentFile(testing_variables2.file_id,
-                                            test_elements2.mount_path() /
-                                                file_name2));
+    EXPECT_NE(kSuccess, test_elements2.AcceptSentFile(testing_variables2.file_id));
+    EXPECT_NE(kSuccess, test_elements2.AcceptSentFile(testing_variables2.file_id,
+                                                      test_elements2.mount_path() / file_name2,
+                                                      &file_name2));
+    EXPECT_EQ(kSuccess, test_elements2.AcceptSentFile(testing_variables2.file_id,
+                                                      test_elements2.mount_path() / file_name2));
 
-    EXPECT_TRUE(fs::exists(test_elements2.mount_path() / file_name2,
-                           error_code));
+    EXPECT_TRUE(fs::exists(test_elements2.mount_path() / file_name2, error_code));
     EXPECT_EQ(0, error_code.value());
 
     Sleep(bptime::seconds(2));
@@ -692,8 +676,7 @@ TEST(IndependentFullTest, FUNC_SendFileSaveToDefaultLocation) {
     ofstream.close();
     EXPECT_TRUE(fs::exists(file_path1, error_code));
     EXPECT_EQ(0, error_code.value());
-    EXPECT_EQ(kSuccess,
-              test_elements1.SendFile(public_id1, public_id2, file_path1));
+    EXPECT_EQ(kSuccess, test_elements1.SendFile(public_id1, public_id2, file_path1));
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
@@ -705,15 +688,11 @@ TEST(IndependentFullTest, FUNC_SendFileSaveToDefaultLocation) {
     EXPECT_FALSE(testing_variables2.file_id.empty());
     EXPECT_EQ(file_name1, testing_variables2.file_name);
     std::string saved_file_name;
-    EXPECT_EQ(kSuccess,
-              test_elements2.AcceptSentFile(testing_variables2.file_id,
-                                            fs::path(),
-                                            &saved_file_name));
+    EXPECT_EQ(kSuccess, test_elements2.AcceptSentFile(testing_variables2.file_id,
+                                                      fs::path(),
+                                                      &saved_file_name));
     EXPECT_EQ(file_name1, saved_file_name);
-    fs::path path2(test_elements2.mount_path() /
-                   kMyStuff /
-                   kDownloadStuff /
-                   saved_file_name);
+    fs::path path2(test_elements2.mount_path() / kMyStuff / kDownloadStuff / saved_file_name);
     EXPECT_TRUE(fs::exists(path2, error_code));
     EXPECT_EQ(0, error_code.value());
     std::string file_content2;
@@ -731,8 +710,7 @@ TEST(IndependentFullTest, FUNC_SendFileSaveToDefaultLocation) {
     ofstream.close();
     EXPECT_TRUE(fs::exists(file_path1, error_code));
     EXPECT_EQ(0, error_code.value());
-    EXPECT_EQ(kSuccess,
-              test_elements1.SendFile(public_id1, public_id2, file_path1));
+    EXPECT_EQ(kSuccess, test_elements1.SendFile(public_id1, public_id2, file_path1));
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
@@ -745,19 +723,12 @@ TEST(IndependentFullTest, FUNC_SendFileSaveToDefaultLocation) {
     EXPECT_FALSE(testing_variables2.file_id.empty());
     EXPECT_EQ(file_name1, testing_variables2.file_name);
     std::string saved_file_name;
-    EXPECT_EQ(kSuccess,
-              test_elements2.AcceptSentFile(testing_variables2.file_id,
-                                            fs::path(),
-                                            &saved_file_name));
+    EXPECT_EQ(kSuccess, test_elements2.AcceptSentFile(testing_variables2.file_id,
+                                                      fs::path(),
+                                                      &saved_file_name));
     EXPECT_EQ(file_name1 + " (1)", saved_file_name);
-    fs::path path2a(test_elements2.mount_path() /
-                    kMyStuff /
-                    kDownloadStuff /
-                    file_name1),
-             path2b(test_elements2.mount_path() /
-                    kMyStuff /
-                    kDownloadStuff /
-                    saved_file_name);
+    fs::path path2a(test_elements2.mount_path() / kMyStuff / kDownloadStuff / file_name1),
+             path2b(test_elements2.mount_path() / kMyStuff / kDownloadStuff / saved_file_name);
 
     EXPECT_TRUE(fs::exists(path2a, error_code));
     EXPECT_EQ(0, error_code.value());
@@ -809,8 +780,7 @@ TEST(IndependentFullTest, FUNC_SendFileAcceptToDeletedDefaultLocation) {
     ofstream.close();
     EXPECT_TRUE(fs::exists(file_path1, error_code));
     EXPECT_EQ(0, error_code.value());
-    EXPECT_EQ(kSuccess,
-              test_elements1.SendFile(public_id1, public_id2, file_path1));
+    EXPECT_EQ(kSuccess, test_elements1.SendFile(public_id1, public_id2, file_path1));
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
@@ -826,20 +796,15 @@ TEST(IndependentFullTest, FUNC_SendFileAcceptToDeletedDefaultLocation) {
     // Delete accepted files dir
     fs::remove_all(test_elements2.mount_path() / kMyStuff, error_code);
     EXPECT_EQ(0, error_code.value());
-    EXPECT_FALSE(fs::exists(test_elements2.mount_path() / kMyStuff,
-                            error_code));
+    EXPECT_FALSE(fs::exists(test_elements2.mount_path() / kMyStuff, error_code));
     EXPECT_NE(0, error_code.value());
 
     std::string saved_file_name;
-    EXPECT_EQ(kSuccess,
-              test_elements2.AcceptSentFile(testing_variables2.file_id,
-                                            fs::path(),
-                                            &saved_file_name));
+    EXPECT_EQ(kSuccess, test_elements2.AcceptSentFile(testing_variables2.file_id,
+                                                      fs::path(),
+                                                      &saved_file_name));
     EXPECT_EQ(file_name1, saved_file_name);
-    fs::path path2(test_elements2.mount_path() /
-                   kMyStuff /
-                   kDownloadStuff /
-                   saved_file_name);
+    fs::path path2(test_elements2.mount_path() / kMyStuff / kDownloadStuff / saved_file_name);
     EXPECT_TRUE(fs::exists(path2, error_code));
     EXPECT_EQ(0, error_code.value());
     std::string file_content2;
@@ -867,8 +832,7 @@ TEST(IndependentFullTest, FUNC_SendFileWithRejection) {
   int file_count(0), file_max(10);
   size_t files_expected(file_max);
   std::vector<fs::path> file_paths;
-  std::vector<std::string> file_names, file_contents, received_ids,
-                           received_names;
+  std::vector<std::string> file_names, file_contents, received_ids, received_names;
   ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
                                                    test_elements2,
                                                    testing_variables1,
@@ -897,9 +861,7 @@ TEST(IndependentFullTest, FUNC_SendFileWithRejection) {
       ofstream.close();
       EXPECT_TRUE(fs::exists(file_paths[file_count], error_code));
       EXPECT_EQ(0, error_code.value());
-      EXPECT_EQ(kSuccess, test_elements1.SendFile(public_id1,
-                                                  public_id2,
-                                                  file_paths[file_count]));
+      EXPECT_EQ(kSuccess, test_elements1.SendFile(public_id1, public_id2, file_paths[file_count]));
     }
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -911,18 +873,15 @@ TEST(IndependentFullTest, FUNC_SendFileWithRejection) {
 
     EXPECT_EQ(files_expected, received_ids.size());
     EXPECT_EQ(files_expected, received_names.size());
-    fs::path path2(test_elements2.mount_path() /
-                   kMyStuff /
-                   kDownloadStuff);
+    fs::path path2(test_elements2.mount_path() / kMyStuff / kDownloadStuff);
     for (size_t st(0); st < received_ids.size(); ++st) {
       EXPECT_EQ(file_paths[st].filename().string(), received_names[st]);
       EXPECT_EQ(kSuccess, test_elements2.RejectSentFile(received_ids[st]));
       EXPECT_FALSE(fs::exists(path2 / received_names[st], error_code));
       EXPECT_NE(0, error_code.value());
       std::string hidden(received_ids[st] + kHiddenFileExtension), content;
-      EXPECT_NE(kSuccess, test_elements2.ReadHiddenFile(
-                              test_elements2.mount_path() / hidden,
-                              &content));
+      EXPECT_NE(kSuccess, test_elements2.ReadHiddenFile(test_elements2.mount_path() / hidden,
+                                                        &content));
     }
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
@@ -958,8 +917,7 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     // Setting of profile image
-    EXPECT_EQ(kSuccess, test_elements2.ChangeProfilePicture(public_id2,
-                                                            file_content2));
+    EXPECT_EQ(kSuccess, test_elements2.ChangeProfilePicture(public_id2, file_content2));
     Sleep(bptime::seconds(1));
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
@@ -970,8 +928,7 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
     while (!testing_variables1.picture_updated)
       Sleep(bptime::milliseconds(100));
 
-    file_content1 = test_elements1.GetContactProfilePicture(public_id1,
-                                                            public_id2);
+    file_content1 = test_elements1.GetContactProfilePicture(public_id1, public_id2);
     EXPECT_TRUE(file_content2 == file_content1);
     EXPECT_NE(kSuccess, test_elements1.ChangeProfilePicture(public_id1, ""));
 
@@ -981,9 +938,7 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     // Setting of profile image
-    EXPECT_EQ(kSuccess,
-              test_elements2.ChangeProfilePicture(public_id2,
-                                                  kBlankProfilePicture));
+    EXPECT_EQ(kSuccess, test_elements2.ChangeProfilePicture(public_id2, kBlankProfilePicture));
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
@@ -994,8 +949,7 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
     while (!testing_variables1.picture_updated)
       Sleep(bptime::milliseconds(100));
 
-    file_content1 = test_elements1.GetContactProfilePicture(public_id1,
-                                                            public_id2);
+    file_content1 = test_elements1.GetContactProfilePicture(public_id1, public_id2);
     EXPECT_TRUE(kBlankProfilePicture == file_content1);
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -1032,9 +986,7 @@ TEST(IndependentFullTest, FUNC_RemoveContact) {
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
 
-    EXPECT_EQ(kSuccess, test_elements1.RemoveContact(public_id1,
-                                                     public_id2,
-                                                     removal_message));
+    EXPECT_EQ(kSuccess, test_elements1.RemoveContact(public_id1, public_id2, removal_message));
     EXPECT_TRUE(test_elements1.GetContacts(public_id1).empty());
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -1092,13 +1044,9 @@ TEST(IndependentFullTest, FUNC_CreateEmptyOpenShare) {
     std::vector<std::string> contacts;
     contacts.push_back(public_id2);
     results.insert(std::make_pair(public_id2, kGeneralError));
-    EXPECT_EQ(kSuccess, test_elements1.CreateEmptyOpenShare(public_id1,
-                                                            contacts,
-                                                            &share_name,
-                                                            &results));
-    fs::path share_path(test_elements1.mount_path() /
-                        kSharedStuff /
-                        share_name);
+    EXPECT_EQ(kSuccess,
+              test_elements1.CreateEmptyOpenShare(public_id1, contacts, &share_name, &results));
+    fs::path share_path(test_elements1.mount_path() / kSharedStuff / share_name);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
     EXPECT_EQ(0, error_code.value());
     EXPECT_EQ(kSuccess, results[public_id2]);
@@ -1111,11 +1059,10 @@ TEST(IndependentFullTest, FUNC_CreateEmptyOpenShare) {
       Sleep(bptime::milliseconds(100));
     EXPECT_FALSE(testing_variables2.new_open_share_id.empty());
     EXPECT_EQ(kSuccess,
-              test_elements2.AcceptOpenShareInvitation(
-                  public_id2,
-                  public_id1,
-                  testing_variables2.new_open_share_id,
-                  &share_name));
+              test_elements2.AcceptOpenShareInvitation(public_id2,
+                                                       public_id1,
+                                                       testing_variables2.new_open_share_id,
+                                                       &share_name));
 
     fs::path share(test_elements2.mount_path() / kSharedStuff / share_name);
     EXPECT_TRUE(fs::is_directory(share, error_code));
@@ -1229,12 +1176,11 @@ TEST(IndependentFullTest, FUNC_CreateOpenShare) {
     std::vector<std::string> contacts;
     contacts.push_back(public_id2);
     results.insert(std::make_pair(public_id2, kGeneralError));
-    EXPECT_EQ(kSuccess, test_elements1.CreateOpenShareFromExistingDirectory(
-                                          public_id1,
-                                          share_directory,
-                                          contacts,
-                                          &share_name,
-                                          &results));
+    EXPECT_EQ(kSuccess, test_elements1.CreateOpenShareFromExistingDirectory(public_id1,
+                                                                            share_directory,
+                                                                            contacts,
+                                                                            &share_name,
+                                                                            &results));
     fs::path share(test_elements1.mount_path() / kSharedStuff / share_name);
     EXPECT_EQ(kSuccess, results[public_id2]);
     EXPECT_TRUE(fs::exists(share, error_code));
@@ -1257,9 +1203,9 @@ TEST(IndependentFullTest, FUNC_CreateOpenShare) {
     while (!testing_variables2.openly_invited)
       Sleep(bptime::milliseconds(100));
     EXPECT_FALSE(testing_variables2.new_open_share_id.empty());
-    EXPECT_EQ(kSuccess, test_elements2.RejectOpenShareInvitation(
-                            public_id2,
-                            testing_variables2.new_open_share_id));
+    EXPECT_EQ(kSuccess,
+              test_elements2.RejectOpenShareInvitation(public_id2,
+                                                       testing_variables2.new_open_share_id));
     fs::path share(test_elements2.mount_path() / kSharedStuff / share_name),
              file_path(share / file2_name);
     EXPECT_FALSE(fs::exists(share, error_code));
@@ -1348,12 +1294,11 @@ TEST(IndependentFullTest, FUNC_InviteOpenShareMembers) {
     std::vector<std::string> contacts;
     contacts.push_back(public_id2);
     results.insert(std::make_pair(public_id2, kGeneralError));
-    EXPECT_EQ(kSuccess, test_elements1.CreateOpenShareFromExistingDirectory(
-                                          public_id1,
-                                          share_directory1,
-                                          contacts,
-                                          &share1_name,
-                                          &results));
+    EXPECT_EQ(kSuccess, test_elements1.CreateOpenShareFromExistingDirectory(public_id1,
+                                                                            share_directory1,
+                                                                            contacts,
+                                                                            &share1_name,
+                                                                            &results));
     fs::path share(test_elements1.mount_path() / kSharedStuff / share1_name);
     EXPECT_EQ(kSuccess, results[public_id2]);
     EXPECT_TRUE(fs::exists(share, error_code));
@@ -1362,10 +1307,9 @@ TEST(IndependentFullTest, FUNC_InviteOpenShareMembers) {
     EXPECT_EQ(0, error_code.value());
 
     int count(0), limit(30);
-    while ((fs::exists(directory / share1_name, error_code) && !error_code) &&
-           count++ < limit) {
+    while ((fs::exists(directory / share1_name, error_code) && !error_code) && count++ < limit)
       Sleep(bptime::milliseconds(100));
-    }
+
     EXPECT_FALSE(fs::exists(directory / share1_name, error_code));
     EXPECT_NE(0, error_code.value());
 
@@ -1377,9 +1321,9 @@ TEST(IndependentFullTest, FUNC_InviteOpenShareMembers) {
     while (!testing_variables2.openly_invited)
       Sleep(bptime::milliseconds(100));
     EXPECT_FALSE(testing_variables2.new_open_share_id.empty());
-    EXPECT_EQ(kSuccess, test_elements2.RejectOpenShareInvitation(
-                            public_id2,
-                            testing_variables2.new_open_share_id));
+    EXPECT_EQ(kSuccess,
+              test_elements2.RejectOpenShareInvitation(public_id2,
+                                                       testing_variables2.new_open_share_id));
     fs::path share(test_elements2.mount_path() / kSharedStuff / share1_name),
              file_path(share / file2_name);
     EXPECT_FALSE(fs::exists(share, error_code));
@@ -1403,12 +1347,11 @@ TEST(IndependentFullTest, FUNC_InviteOpenShareMembers) {
     StringIntMap  results;
     std::vector<std::string> contacts;
     fs::path share_directory2(directory / share2_name);
-    EXPECT_EQ(kSuccess, test_elements1.CreateOpenShareFromExistingDirectory(
-                                          public_id1,
-                                          share_directory2,
-                                          contacts,
-                                          &share2_name,
-                                          &results));
+    EXPECT_EQ(kSuccess, test_elements1.CreateOpenShareFromExistingDirectory(public_id1,
+                                                                            share_directory2,
+                                                                            contacts,
+                                                                            &share2_name,
+                                                                            &results));
     fs::path share2(test_elements1.mount_path() / kSharedStuff / share2_name);
     EXPECT_EQ(kSuccess, results[public_id2]);
     EXPECT_TRUE(fs::exists(share2, error_code));
@@ -1425,22 +1368,17 @@ TEST(IndependentFullTest, FUNC_InviteOpenShareMembers) {
     EXPECT_NE(0, error_code.value());
 
     std::vector<std::string> shares;
-    EXPECT_EQ(kSuccess, test_elements1.GetOpenShareList(public_id1,
-                                                        &shares));
+    EXPECT_EQ(kSuccess, test_elements1.GetOpenShareList(public_id1, &shares));
     EXPECT_EQ(2, shares.size());
 
     std::vector<std::string> members;
-    EXPECT_EQ(kSuccess, test_elements1.GetOpenShareMembers(public_id1,
-                                                           share2_name,
-                                                           &members));
+    EXPECT_EQ(kSuccess, test_elements1.GetOpenShareMembers(public_id1, share2_name, &members));
     EXPECT_EQ(0, members.size());
 
     contacts.push_back(public_id2);
     results.insert(std::make_pair(public_id2, kGeneralError));
-    EXPECT_EQ(kSuccess, test_elements1.InviteMembersToOpenShare(public_id1,
-                                                                contacts,
-                                                                share2_name,
-                                                                &results));
+    EXPECT_EQ(kSuccess,
+              test_elements1.InviteMembersToOpenShare(public_id1, contacts, share2_name, &results));
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
   DLOG(ERROR) << "\n\n\n\n";
@@ -1449,11 +1387,11 @@ TEST(IndependentFullTest, FUNC_InviteOpenShareMembers) {
     while (!testing_variables2.openly_invited)
       Sleep(bptime::milliseconds(100));
     EXPECT_FALSE(testing_variables2.new_open_share_id.empty());
-    EXPECT_EQ(kSuccess, test_elements2.AcceptOpenShareInvitation(
-                                          public_id2,
-                                          public_id1,
-                                          testing_variables2.new_open_share_id,
-                                          &share2_name));
+    EXPECT_EQ(kSuccess,
+              test_elements2.AcceptOpenShareInvitation(public_id2,
+                                                       public_id1,
+                                                       testing_variables2.new_open_share_id,
+                                                       &share2_name));
     fs::path share(test_elements2.mount_path() / kSharedStuff / share2_name),
              file_path(share / file3_name);
     EXPECT_TRUE(fs::exists(share, error_code));
@@ -1463,14 +1401,11 @@ TEST(IndependentFullTest, FUNC_InviteOpenShareMembers) {
     EXPECT_TRUE(WriteFile(file_path, file_content2));
 
     std::vector<std::string> shares;
-    EXPECT_EQ(kSuccess, test_elements2.GetOpenShareList(public_id2,
-                                                        &shares));
+    EXPECT_EQ(kSuccess, test_elements2.GetOpenShareList(public_id2, &shares));
     EXPECT_EQ(1, shares.size());
 
     std::vector<std::string> members;
-    EXPECT_EQ(kSuccess, test_elements2.GetOpenShareMembers(public_id2,
-                                                           share2_name,
-                                                           &members));
+    EXPECT_EQ(kSuccess, test_elements2.GetOpenShareMembers(public_id2, share2_name, &members));
     EXPECT_EQ(1, members.size());
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
@@ -1531,12 +1466,11 @@ TEST(IndependentFullTest, FUNC_LeaveOpenShare) {
     std::vector<std::string> contacts;
     contacts.push_back(public_id2);
     results.insert(std::make_pair(public_id2, kGeneralError));
-    EXPECT_EQ(kSuccess, test_elements1.CreateOpenShareFromExistingDirectory(
-                                          public_id1,
-                                          share_directory,
-                                          contacts,
-                                          &share_name,
-                                          &results));
+    EXPECT_EQ(kSuccess, test_elements1.CreateOpenShareFromExistingDirectory(public_id1,
+                                                                            share_directory,
+                                                                            contacts,
+                                                                            &share_name,
+                                                                            &results));
     fs::path share(test_elements1.mount_path() / kSharedStuff / share_name);
     EXPECT_EQ(kSuccess, results[public_id2]);
     EXPECT_TRUE(fs::exists(share, error_code));
@@ -1545,10 +1479,9 @@ TEST(IndependentFullTest, FUNC_LeaveOpenShare) {
     EXPECT_EQ(0, error_code.value());
 
     int count(0), limit(30);
-    while ((fs::exists(directory / share_name, error_code) && !error_code) &&
-           count++ < limit) {
+    while ((fs::exists(directory / share_name, error_code) && !error_code) && count++ < limit)
       Sleep(bptime::milliseconds(100));
-    }
+
     EXPECT_FALSE(fs::exists(directory / share_name, error_code));
     EXPECT_NE(0, error_code.value());
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -1559,11 +1492,11 @@ TEST(IndependentFullTest, FUNC_LeaveOpenShare) {
     while (!testing_variables2.openly_invited)
       Sleep(bptime::milliseconds(100));
     EXPECT_FALSE(testing_variables2.new_open_share_id.empty());
-    EXPECT_EQ(kSuccess, test_elements2.AcceptOpenShareInvitation(
-                                          public_id2,
-                                          public_id1,
-                                          testing_variables2.new_open_share_id,
-                                          &share_name));
+    EXPECT_EQ(kSuccess,
+              test_elements2.AcceptOpenShareInvitation(public_id2,
+                                                       public_id1,
+                                                       testing_variables2.new_open_share_id,
+                                                       &share_name));
     fs::path share(test_elements2.mount_path() / kSharedStuff / share_name),
              file_path(share / file2_name);
     EXPECT_TRUE(fs::exists(share, error_code));
@@ -1584,8 +1517,7 @@ TEST(IndependentFullTest, FUNC_LeaveOpenShare) {
     EXPECT_EQ(file_content2, file_stuff);
     EXPECT_TRUE(WriteFile(file_path, file_content1));
 
-    EXPECT_EQ(kSuccess, test_elements1.LeaveOpenShare(public_id1,
-                                                      share_name));
+    EXPECT_EQ(kSuccess, test_elements1.LeaveOpenShare(public_id1, share_name));
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
   DLOG(ERROR) << "\n\n\n\n";
@@ -1602,18 +1534,14 @@ TEST(IndependentFullTest, FUNC_LeaveOpenShare) {
     EXPECT_EQ(file_content1, file_stuff);
 
     std::vector<std::string> shares;
-    EXPECT_EQ(kSuccess, test_elements2.GetOpenShareList(public_id2,
-                                                        &shares));
+    EXPECT_EQ(kSuccess, test_elements2.GetOpenShareList(public_id2, &shares));
     EXPECT_EQ(1, shares.size());
 
     std::vector<std::string> members;
-    EXPECT_EQ(kSuccess, test_elements2.GetOpenShareMembers(public_id2,
-                                                           share_name,
-                                                           &members));
+    EXPECT_EQ(kSuccess, test_elements2.GetOpenShareMembers(public_id2, share_name, &members));
     EXPECT_EQ(0, members.size());
 
-    EXPECT_EQ(kSuccess, test_elements2.LeaveOpenShare(public_id2,
-                                                      share_name));
+    EXPECT_EQ(kSuccess, test_elements2.LeaveOpenShare(public_id2, share_name));
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
 
@@ -1662,9 +1590,7 @@ TEST(IndependentFullTest, FUNC_SameOpenShareName) {
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
 
-    fs::path directory0(test_elements1.mount_path() /
-                        kMyStuff /
-                        directory0_name);
+    fs::path directory0(test_elements1.mount_path() / kMyStuff / directory0_name);
     EXPECT_TRUE(fs::create_directory(directory0, error_code));
     EXPECT_EQ(0, error_code.value());
     fs::path directory1(directory0 / directory1_name);
@@ -1708,12 +1634,11 @@ TEST(IndependentFullTest, FUNC_SameOpenShareName) {
 
     StringIntMap  results;
     std::vector<std::string> contacts;
-    EXPECT_EQ(kSuccess, test_elements1.CreateOpenShareFromExistingDirectory(
-                                          public_id1,
-                                          share_directory1,
-                                          contacts,
-                                          &share_name,
-                                          &results));
+    EXPECT_EQ(kSuccess, test_elements1.CreateOpenShareFromExistingDirectory(public_id1,
+                                                                            share_directory1,
+                                                                            contacts,
+                                                                            &share_name,
+                                                                            &results));
     fs::path share1(test_elements1.mount_path() / kSharedStuff / share_name);
     EXPECT_TRUE(fs::exists(share1, error_code));
     EXPECT_EQ(0, error_code.value());
@@ -1722,19 +1647,17 @@ TEST(IndependentFullTest, FUNC_SameOpenShareName) {
     EXPECT_EQ(stored_share_name, share_name);
 
     int count(0), limit(30);
-    while ((fs::exists(directory1 / share_name, error_code) && !error_code) &&
-           count++ < limit) {
+    while ((fs::exists(directory1 / share_name, error_code) && !error_code) && count++ < limit)
       Sleep(bptime::milliseconds(100));
-    }
+
     EXPECT_FALSE(fs::exists(directory1 / share_name, error_code));
     EXPECT_NE(0, error_code.value());
 
-    EXPECT_EQ(kSuccess, test_elements1.CreateOpenShareFromExistingDirectory(
-                                          public_id1,
-                                          share_directory2,
-                                          contacts,
-                                          &share_name,
-                                          &results));
+    EXPECT_EQ(kSuccess, test_elements1.CreateOpenShareFromExistingDirectory(public_id1,
+                                                                            share_directory2,
+                                                                            contacts,
+                                                                            &share_name,
+                                                                            &results));
     fs::path share2(test_elements1.mount_path() / kSharedStuff / share_name);
     EXPECT_TRUE(fs::exists(share2, error_code));
     EXPECT_EQ(0, error_code.value());
@@ -1747,14 +1670,11 @@ TEST(IndependentFullTest, FUNC_SameOpenShareName) {
     EXPECT_NE(0, error_code.value());
 
     std::vector<std::string> shares;
-    EXPECT_EQ(kSuccess, test_elements1.GetOpenShareList(public_id1,
-                                                        &shares));
+    EXPECT_EQ(kSuccess, test_elements1.GetOpenShareList(public_id1, &shares));
     EXPECT_EQ(2, shares.size());
 
     std::vector<std::string> members;
-    EXPECT_EQ(kSuccess, test_elements1.GetOpenShareMembers(public_id1,
-                                                           share_name,
-                                                           &members));
+    EXPECT_EQ(kSuccess, test_elements1.GetOpenShareMembers(public_id1, share_name, &members));
     EXPECT_EQ(0, members.size());
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -1774,8 +1694,7 @@ class PrivateSharesApiTest : public ::testing::TestWithParam<int> {
 
 INSTANTIATE_TEST_CASE_P(ReadOnlyReadWrite,
                         PrivateSharesApiTest,
-                        testing::Values(kShareReadOnly,
-                                        kShareReadWrite));
+                        testing::Values(kShareReadOnly, kShareReadWrite));
 
 TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
@@ -1813,14 +1732,10 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
     contacts.insert(std::make_pair(public_id2, rights_));
     results.insert(std::make_pair(public_id2, kGeneralError));
 
-    EXPECT_EQ(kSuccess, test_elements1.CreateEmptyPrivateShare(public_id1,
-                                                               contacts,
-                                                               &share_name1,
-                                                               &results));
+    EXPECT_EQ(kSuccess,
+              test_elements1.CreateEmptyPrivateShare(public_id1, contacts, &share_name1, &results));
 
-    fs::path share_path(test_elements1.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements1.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
     EXPECT_EQ(0, error_code.value());
     EXPECT_EQ(kSuccess, results[public_id2]);
@@ -1837,15 +1752,12 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
     EXPECT_EQ(share_name1, testing_variables2.new_private_share_name);
     EXPECT_EQ(rights_, testing_variables2.new_private_access_level);
     EXPECT_EQ(kSuccess,
-              test_elements2.AcceptPrivateShareInvitation(
-                  public_id2,
-                  public_id1,
-                  testing_variables2.new_private_share_id,
-                  &share_name1));
+              test_elements2.AcceptPrivateShareInvitation(public_id2,
+                                                          public_id1,
+                                                          testing_variables2.new_private_share_id,
+                                                          &share_name1));
 
-    fs::path share_path(test_elements2.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements2.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code));
 
     fs::path a_file_path(share_path / file_name1);
@@ -1864,9 +1776,7 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
   DLOG(ERROR) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
-    fs::path share_path(test_elements1.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements1.mount_path() / kSharedStuff / share_name1);
     fs::path a_file_path(share_path / file_name1);
     if (rights_ == kShareReadOnly) {
       EXPECT_TRUE(WriteFile(a_file_path, file_content1));
@@ -1886,9 +1796,7 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
 
-    fs::path share_path(test_elements2.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements2.mount_path() / kSharedStuff / share_name1);
     fs::path a_file_path(share_path / file_name1);
     EXPECT_TRUE(fs::exists(a_file_path, error_code)) << a_file_path;
     EXPECT_EQ(0, error_code.value());
@@ -1937,37 +1845,29 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
 
     // Create directory with contents to share
-    fs::path share_path(test_elements1.mount_path() /
-                        kMyStuff /
-                        share_name1);
+    fs::path share_path(test_elements1.mount_path() / kMyStuff / share_name1);
     fs::create_directories(share_path, error_code);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
     EXPECT_EQ(0, error_code.value()) << share_path;
-    EXPECT_TRUE(WriteFile(share_path / file_name1, file_content1))
-                << (share_path / file_name1);
+    EXPECT_TRUE(WriteFile(share_path / file_name1, file_content1)) << (share_path / file_name1);
 
 
     StringIntMap contacts, results;
     contacts.insert(std::make_pair(public_id2, rights_));
     results.insert(std::make_pair(public_id2, kGeneralError));
 
-    EXPECT_EQ(kSuccess,
-              test_elements1.CreatePrivateShareFromExistingDirectory(
-                  public_id1,
-                  share_path,
-                  contacts,
-                  &share_name1,
-                  &results));
+    EXPECT_EQ(kSuccess, test_elements1.CreatePrivateShareFromExistingDirectory(public_id1,
+                                                                               share_path,
+                                                                               contacts,
+                                                                               &share_name1,
+                                                                               &results));
 
     int count(0), limit(30);
-    while ((fs::exists(share_path, error_code) && !error_code) &&
-           count++ < limit) {
+    while ((fs::exists(share_path, error_code) && !error_code) && count++ < limit)
       Sleep(bptime::milliseconds(100));
-    }
+
     EXPECT_FALSE(fs::exists(share_path, error_code)) << share_path;
-    share_path = test_elements1.mount_path() /
-                 kSharedStuff /
-                 share_name1;
+    share_path = test_elements1.mount_path() / kSharedStuff / share_name1;
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
     EXPECT_EQ(0, error_code.value());
     EXPECT_EQ(kSuccess, results[public_id2]);
@@ -1984,15 +1884,12 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
     EXPECT_EQ(share_name1, testing_variables2.new_private_share_name);
     EXPECT_EQ(rights_, testing_variables2.new_private_access_level);
     EXPECT_EQ(kSuccess,
-              test_elements2.AcceptPrivateShareInvitation(
-                  public_id2,
-                  public_id1,
-                  testing_variables2.new_private_share_id,
-                  &share_name1));
+              test_elements2.AcceptPrivateShareInvitation(public_id2,
+                                                          public_id1,
+                                                          testing_variables2.new_private_share_id,
+                                                          &share_name1));
 
-    fs::path share_path(test_elements2.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements2.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code));
     EXPECT_EQ(0, error_code.value());
 
@@ -2017,9 +1914,7 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
   DLOG(ERROR) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
-    fs::path share_path(test_elements1.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements1.mount_path() / kSharedStuff / share_name1);
     fs::path a_file_path(share_path / file_name2);
     std::string file_stuff;
     if (rights_ == kShareReadOnly) {
@@ -2038,9 +1933,7 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
 
-    fs::path share_path(test_elements2.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements2.mount_path() / kSharedStuff / share_name1);
     fs::path a_file_path(share_path / file_name2);
     std::string a_file_content;
 
@@ -2087,14 +1980,11 @@ TEST_P(PrivateSharesApiTest, FUNC_RejectInvitationPrivateShare) {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
 
     // Create directory with contents to share
-    fs::path share_path(test_elements1.mount_path() /
-                        kMyStuff /
-                        share_name1);
+    fs::path share_path(test_elements1.mount_path() / kMyStuff / share_name1);
     fs::create_directories(share_path, error_code);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
     EXPECT_EQ(0, error_code.value()) << share_path;
-    EXPECT_TRUE(WriteFile(share_path / file_name1, file_content1))
-                << (share_path / file_name1);
+    EXPECT_TRUE(WriteFile(share_path / file_name1, file_content1)) << (share_path / file_name1);
 
 
     StringIntMap contacts, results;
@@ -2108,14 +1998,11 @@ TEST_P(PrivateSharesApiTest, FUNC_RejectInvitationPrivateShare) {
                                                                                &results));
 
     int count(0), limit(30);
-    while ((fs::exists(share_path, error_code) && !error_code) &&
-           count++ < limit) {
+    while ((fs::exists(share_path, error_code) && !error_code) && count++ < limit)
       Sleep(bptime::milliseconds(100));
-    }
+
     EXPECT_FALSE(fs::exists(share_path, error_code)) << share_path;
-    share_path = test_elements1.mount_path() /
-                 kSharedStuff /
-                 share_name1;
+    share_path = test_elements1.mount_path() / kSharedStuff / share_name1;
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
     EXPECT_EQ(0, error_code.value());
     EXPECT_EQ(kSuccess, results[public_id2]);
@@ -2130,13 +2017,10 @@ TEST_P(PrivateSharesApiTest, FUNC_RejectInvitationPrivateShare) {
 
     EXPECT_FALSE(testing_variables2.new_private_share_id.empty());
     EXPECT_EQ(kSuccess,
-              test_elements2.RejectPrivateShareInvitation(
-                  public_id2,
-                  testing_variables2.new_private_share_id));
+              test_elements2.RejectPrivateShareInvitation(public_id2,
+                                                          testing_variables2.new_private_share_id));
 
-    fs::path share_path(test_elements2.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements2.mount_path() / kSharedStuff / share_name1);
     EXPECT_FALSE(fs::exists(share_path, error_code));
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
@@ -2181,14 +2065,10 @@ TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
     contacts.insert(std::make_pair(public_id2, rights_));  // Read only rights
     results.insert(std::make_pair(public_id2, kGeneralError));
 
-    EXPECT_EQ(kSuccess, test_elements1.CreateEmptyPrivateShare(public_id1,
-                                                               contacts,
-                                                               &share_name1,
-                                                               &results));
+    EXPECT_EQ(kSuccess,
+              test_elements1.CreateEmptyPrivateShare(public_id1, contacts, &share_name1, &results));
 
-    fs::path share_path(test_elements1.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements1.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
     EXPECT_EQ(0, error_code.value());
     EXPECT_EQ(kSuccess, results[public_id2]);
@@ -2203,22 +2083,17 @@ TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
 
     EXPECT_FALSE(testing_variables2.new_private_share_id.empty());
     EXPECT_EQ(kSuccess,
-              test_elements2.AcceptPrivateShareInvitation(
-                  public_id2,
-                  public_id1,
-                  testing_variables2.new_private_share_id,
-                  &share_name1));
+              test_elements2.AcceptPrivateShareInvitation(public_id2,
+                                                          public_id1,
+                                                          testing_variables2.new_private_share_id,
+                                                          &share_name1));
 
-    fs::path share_path(test_elements2.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements2.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code));
     EXPECT_EQ(0, error_code.value());
 
     // Check only owner can delete
-    EXPECT_NE(kSuccess, test_elements2.DeletePrivateShare(public_id2,
-                                                          share_name1,
-                                                          true));
+    EXPECT_NE(kSuccess, test_elements2.DeletePrivateShare(public_id2, share_name1, true));
     EXPECT_TRUE(fs::is_directory(share_path, error_code));
     EXPECT_EQ(0, error_code.value());
 
@@ -2227,9 +2102,7 @@ TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
   DLOG(ERROR) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
-    EXPECT_EQ(kSuccess, test_elements1.DeletePrivateShare(public_id1,
-                                                          share_name1,
-                                                          false));
+    EXPECT_EQ(kSuccess, test_elements1.DeletePrivateShare(public_id1, share_name1, false));
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
   DLOG(ERROR) << "\n\n\n\n";
@@ -2238,11 +2111,7 @@ TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
     while (!testing_variables2.private_share_deleted)
       Sleep(bptime::milliseconds(100));
 
-    // Still using share_id to identify the share, instead of share_name
-//     EXPECT_EQ(share_name1, testing_variables2.deleted_private_share_name);
-    fs::path share_path(test_elements2.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements2.mount_path() / kSharedStuff / share_name1);
     EXPECT_FALSE(fs::is_directory(share_path, error_code)) << share_path;
     EXPECT_NE(0, error_code.value());
 
@@ -2289,21 +2158,16 @@ TEST_P(PrivateSharesApiTest, FUNC_LeavePrivateShare) {
     contacts.insert(std::make_pair(public_id2, rights_));  // Read only rights
     results.insert(std::make_pair(public_id2, kGeneralError));
 
-    EXPECT_EQ(kSuccess, test_elements1.CreateEmptyPrivateShare(public_id1,
-                                                               contacts,
-                                                               &share_name1,
-                                                               &results));
+    EXPECT_EQ(kSuccess,
+              test_elements1.CreateEmptyPrivateShare(public_id1, contacts, &share_name1, &results));
 
-    fs::path share_path(test_elements1.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements1.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
     EXPECT_EQ(0, error_code.value());
     EXPECT_EQ(kSuccess, results[public_id2]);
 
     // Check owner can't leave
-    EXPECT_EQ(kOwnerTryingToLeave,
-              test_elements1.LeavePrivateShare(public_id1, share_name1));
+    EXPECT_EQ(kOwnerTryingToLeave, test_elements1.LeavePrivateShare(public_id1, share_name1));
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
     EXPECT_EQ(0, error_code.value());
 
@@ -2317,20 +2181,16 @@ TEST_P(PrivateSharesApiTest, FUNC_LeavePrivateShare) {
 
     EXPECT_FALSE(testing_variables2.new_private_share_id.empty());
     EXPECT_EQ(kSuccess,
-              test_elements2.AcceptPrivateShareInvitation(
-                  public_id2,
-                  public_id1,
-                  testing_variables2.new_private_share_id,
-                  &share_name1));
+              test_elements2.AcceptPrivateShareInvitation(public_id2,
+                                                          public_id1,
+                                                          testing_variables2.new_private_share_id,
+                                                          &share_name1));
 
-    fs::path share_path(test_elements2.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements2.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code));
     EXPECT_EQ(0, error_code.value());
 
-    EXPECT_EQ(kSuccess, test_elements2.LeavePrivateShare(public_id2,
-                                                         share_name1));
+    EXPECT_EQ(kSuccess, test_elements2.LeavePrivateShare(public_id2, share_name1));
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
@@ -2347,9 +2207,7 @@ TEST_P(PrivateSharesApiTest, FUNC_LeavePrivateShare) {
     // Still using share_id to identify the share, instead of share_name
     // And when leaving, Deletion Signal won't get fired
 //     EXPECT_EQ(share_name1, testing_variables2.deleted_private_share_name);
-    fs::path share_path(test_elements1.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements1.mount_path() / kSharedStuff / share_name1);
     EXPECT_FALSE(fs::is_directory(share_path, error_code)) << share_path;
     EXPECT_NE(0, error_code.value());
 
@@ -2397,22 +2255,16 @@ TEST(IndependentFullTest, FUNC_RenamePrivateShare) {
     contacts.insert(std::make_pair(public_id2, kShareReadWrite));
     results.insert(std::make_pair(public_id2, kGeneralError));
 
-    EXPECT_EQ(kSuccess, test_elements1.CreateEmptyPrivateShare(public_id1,
-                                                               contacts,
-                                                               &share_name1,
-                                                               &results));
+    EXPECT_EQ(kSuccess,
+              test_elements1.CreateEmptyPrivateShare(public_id1, contacts, &share_name1, &results));
     EXPECT_EQ(kSuccess, results[public_id2]);
 
-    EXPECT_EQ(kSuccess, test_elements1.GetPrivateShareMembers(public_id1,
-                                                              share_name1,
-                                                              &results));
+    EXPECT_EQ(kSuccess, test_elements1.GetPrivateShareMembers(public_id1, share_name1, &results));
     EXPECT_EQ(1U, results.size());
     EXPECT_TRUE(results.end() == results.find(public_id1));
     EXPECT_FALSE(results.end() == results.find(public_id2));
 
-    fs::path share_path(test_elements1.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements1.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
     EXPECT_EQ(0, error_code.value());
 
@@ -2426,15 +2278,12 @@ TEST(IndependentFullTest, FUNC_RenamePrivateShare) {
 
     EXPECT_FALSE(testing_variables2.new_private_share_id.empty());
     EXPECT_EQ(kSuccess,
-              test_elements2.AcceptPrivateShareInvitation(
-                  public_id2,
-                  public_id1,
-                  testing_variables2.new_private_share_id,
-                  &share_name1));
+              test_elements2.AcceptPrivateShareInvitation(public_id2,
+                                                          public_id1,
+                                                          testing_variables2.new_private_share_id,
+                                                          &share_name1));
 
-    fs::path share_path(test_elements2.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements2.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code));
 
     fs::path a_file_path(share_path / file_name1);
@@ -2447,12 +2296,8 @@ TEST(IndependentFullTest, FUNC_RenamePrivateShare) {
   DLOG(ERROR) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
-    fs::path old_share_path(test_elements1.mount_path() /
-                            kSharedStuff /
-                            share_name1);
-    fs::path new_share_path(test_elements1.mount_path() /
-                            kSharedStuff /
-                            share_name2);
+    fs::path old_share_path(test_elements1.mount_path() / kSharedStuff / share_name1);
+    fs::path new_share_path(test_elements1.mount_path() / kSharedStuff / share_name2);
     fs::rename(old_share_path, new_share_path, error_code);
     EXPECT_EQ(0, error_code.value());
     while (!testing_variables1.share_renamed)
@@ -2472,12 +2317,8 @@ TEST(IndependentFullTest, FUNC_RenamePrivateShare) {
   DLOG(ERROR) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
-    fs::path share_path(test_elements2.mount_path() /
-                        kSharedStuff /
-                        share_name1);
-    fs::path new_share_path(test_elements2.mount_path() /
-                            kSharedStuff /
-                            share_name2);
+    fs::path share_path(test_elements2.mount_path() / kSharedStuff / share_name1);
+    fs::path new_share_path(test_elements2.mount_path() / kSharedStuff / share_name2);
     EXPECT_TRUE(fs::is_directory(share_path, error_code));
     EXPECT_FALSE(fs::is_directory(new_share_path, error_code));
 
@@ -2493,9 +2334,7 @@ TEST(IndependentFullTest, FUNC_RenamePrivateShare) {
     testing_variables1.new_share_name.clear();
 
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
-    fs::path share_path(test_elements1.mount_path() /
-                        kSharedStuff /
-                        share_name2);
+    fs::path share_path(test_elements1.mount_path() / kSharedStuff / share_name2);
 
     fs::path sub_directory(share_path / sub_directory_name);
     EXPECT_TRUE(fs::create_directory(sub_directory, error_code));
@@ -2526,9 +2365,7 @@ TEST(IndependentFullTest, FUNC_RenamePrivateShare) {
   DLOG(ERROR) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
-    fs::path share_path(test_elements2.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements2.mount_path() / kSharedStuff / share_name1);
     fs::path sub_directory(share_path / sub_directory_name);
     fs::path sub_directory_new(share_path / new_sub_directory_name);
     fs::path a_file_path(share_path / file_name1);
@@ -2582,12 +2419,8 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateDeletePrivateShare) {
                                                                contacts,
                                                                &share_name,
                                                                &results));
-    fs::path share_path(test_elements1.mount_path() /
-                        kSharedStuff /
-                        share_name),
-             my_path(test_elements1.mount_path() /
-                     kMyStuff /
-                     share_name);
+    fs::path share_path(test_elements1.mount_path() / kSharedStuff / share_name),
+             my_path(test_elements1.mount_path() / kMyStuff / share_name);
     EXPECT_TRUE(fs::exists(share_path, error_code)) << share_path;
     EXPECT_EQ(0, error_code.value());
     EXPECT_EQ(kSuccess, results[public_id2]);
@@ -2596,10 +2429,9 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateDeletePrivateShare) {
                                                           false));
 
     int count(0), limit(30);
-    while ((fs::exists(share_path, error_code) && !error_code) &&
-           count++ < limit) {
+    while ((fs::exists(share_path, error_code) && !error_code) && count++ < limit)
       Sleep(bptime::milliseconds(100));
-    }
+
     EXPECT_FALSE(fs::exists(share_path, error_code)) << share_path;
     EXPECT_NE(0, error_code.value());
     EXPECT_TRUE(fs::exists(my_path, error_code)) << my_path;
@@ -2615,14 +2447,11 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateDeletePrivateShare) {
 
     EXPECT_FALSE(testing_variables2.new_private_share_id.empty());
     EXPECT_EQ(kNoShareTarget,
-              test_elements2.AcceptPrivateShareInvitation(
-                  public_id2,
-                  public_id1,
-                  testing_variables2.new_private_share_id,
-                  &share_name));
-    fs::path share_path(test_elements2.mount_path() /
-                        kSharedStuff /
-                        share_name);
+              test_elements2.AcceptPrivateShareInvitation(public_id2,
+                                                          public_id1,
+                                                          testing_variables2.new_private_share_id,
+                                                          &share_name));
+    fs::path share_path(test_elements2.mount_path() / kSharedStuff / share_name);
     EXPECT_FALSE(fs::exists(share_path, error_code));
     EXPECT_NE(0, error_code.value());
 
@@ -2670,22 +2499,16 @@ TEST(IndependentFullTest, FUNC_MembershipDowngradePrivateShare) {
     contacts.insert(std::make_pair(public_id2, kShareReadWrite));
     results.insert(std::make_pair(public_id2, kGeneralError));
 
-    EXPECT_EQ(kSuccess, test_elements1.CreateEmptyPrivateShare(public_id1,
-                                                               contacts,
-                                                               &share_name1,
-                                                               &results));
+    EXPECT_EQ(kSuccess,
+              test_elements1.CreateEmptyPrivateShare(public_id1, contacts, &share_name1, &results));
     EXPECT_EQ(kSuccess, results[public_id2]);
 
-    EXPECT_EQ(kSuccess, test_elements1.GetPrivateShareMembers(public_id1,
-                                                              share_name1,
-                                                              &results));
+    EXPECT_EQ(kSuccess, test_elements1.GetPrivateShareMembers(public_id1, share_name1, &results));
     EXPECT_EQ(1U, results.size());
     EXPECT_TRUE(results.end() == results.find(public_id1));
     EXPECT_FALSE(results.end() == results.find(public_id2));
 
-    fs::path share_path(test_elements1.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements1.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
     EXPECT_EQ(0, error_code.value());
 
@@ -2699,15 +2522,12 @@ TEST(IndependentFullTest, FUNC_MembershipDowngradePrivateShare) {
 
     EXPECT_FALSE(testing_variables2.new_private_share_id.empty());
     EXPECT_EQ(kSuccess,
-              test_elements2.AcceptPrivateShareInvitation(
-                  public_id2,
-                  public_id1,
-                  testing_variables2.new_private_share_id,
-                  &share_name1));
+              test_elements2.AcceptPrivateShareInvitation(public_id2,
+                                                          public_id1,
+                                                          testing_variables2.new_private_share_id,
+                                                          &share_name1));
 
-    fs::path share_path(test_elements2.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements2.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code));
 
     fs::path a_file_path(share_path / file_name1);
@@ -2729,9 +2549,7 @@ TEST(IndependentFullTest, FUNC_MembershipDowngradePrivateShare) {
                                                                &results));
     EXPECT_EQ(kSuccess, results[public_id2]);
     results[public_id2] = -1;
-    EXPECT_EQ(kSuccess, test_elements1.GetPrivateShareMembers(public_id1,
-                                                              share_name1,
-                                                              &results));
+    EXPECT_EQ(kSuccess, test_elements1.GetPrivateShareMembers(public_id1, share_name1, &results));
     EXPECT_EQ(0, results[public_id2]);  // ro now
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -2743,16 +2561,13 @@ TEST(IndependentFullTest, FUNC_MembershipDowngradePrivateShare) {
     while (!testing_variables2.private_member_access_changed)
       Sleep(bptime::milliseconds(100));
     StringIntMap shares;
-    EXPECT_EQ(kSuccess,
-              test_elements2.GetPrivateShareList(public_id2, &shares));
+    EXPECT_EQ(kSuccess, test_elements2.GetPrivateShareList(public_id2, &shares));
 
     EXPECT_EQ(1U, shares.size());
     EXPECT_FALSE(shares.find(share_name1) == shares.end());
     EXPECT_EQ(kShareReadOnly, shares[share_name1]);
 
-    fs::path share_path(test_elements2.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements2.mount_path() / kSharedStuff / share_name1);
     fs::path a_file_path(share_path / file_name1);
     EXPECT_FALSE(WriteFile(a_file_path, file_content1));
 
@@ -2803,14 +2618,10 @@ TEST(IndependentFullTest, FUNC_MembershipUpgradePrivateShare) {
     contacts.insert(std::make_pair(public_id2, kShareReadOnly));
     results.insert(std::make_pair(public_id2, kGeneralError));
 
-    EXPECT_EQ(kSuccess, test_elements1.CreateEmptyPrivateShare(public_id1,
-                                                               contacts,
-                                                               &share_name1,
-                                                               &results));
+    EXPECT_EQ(kSuccess,
+              test_elements1.CreateEmptyPrivateShare(public_id1, contacts, &share_name1, &results));
 
-    fs::path share_path(test_elements1.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements1.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
     EXPECT_EQ(0, error_code.value());
     EXPECT_EQ(kSuccess, results[public_id2]);
@@ -2825,15 +2636,12 @@ TEST(IndependentFullTest, FUNC_MembershipUpgradePrivateShare) {
 
     EXPECT_FALSE(testing_variables2.new_private_share_id.empty());
     EXPECT_EQ(kSuccess,
-              test_elements2.AcceptPrivateShareInvitation(
-                  public_id2,
-                  public_id1,
-                  testing_variables2.new_private_share_id,
-                  &share_name1));
+              test_elements2.AcceptPrivateShareInvitation(public_id2,
+                                                          public_id1,
+                                                          testing_variables2.new_private_share_id,
+                                                          &share_name1));
 
-    fs::path share_path(test_elements2.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements2.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code));
 
     fs::path a_file_path(share_path / file_name1);
@@ -2855,9 +2663,7 @@ TEST(IndependentFullTest, FUNC_MembershipUpgradePrivateShare) {
                                                                &results));
     EXPECT_EQ(kSuccess, results[public_id2]);
     results[public_id2] = -1;
-    EXPECT_EQ(kSuccess, test_elements1.GetPrivateShareMembers(public_id1,
-                                                              share_name1,
-                                                              &results));
+    EXPECT_EQ(kSuccess, test_elements1.GetPrivateShareMembers(public_id1, share_name1, &results));
     EXPECT_EQ(kShareReadWrite, results[public_id2]);
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -2876,9 +2682,7 @@ TEST(IndependentFullTest, FUNC_MembershipUpgradePrivateShare) {
     EXPECT_FALSE(shares.find(share_name1) == shares.end());
     EXPECT_EQ(kShareReadWrite, shares[share_name1]);
 
-    fs::path share_path(test_elements2.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements2.mount_path() / kSharedStuff / share_name1);
     fs::path a_file_path(share_path / file_name1);
     EXPECT_TRUE(WriteFile(a_file_path, file_content2));
     EXPECT_TRUE(fs::exists(a_file_path, error_code));
@@ -2937,16 +2741,12 @@ TEST(IndependentFullTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
                                                                &share_name1,
                                                                &results));
 
-    fs::path share_path(test_elements1.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements1.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
     EXPECT_EQ(0, error_code.value());
     EXPECT_EQ(kSuccess, results[public_id2]);
     StringIntMap shares_members;
-    test_elements1.GetPrivateShareMembers(public_id1,
-                                          share_name1,
-                                          &shares_members);
+    test_elements1.GetPrivateShareMembers(public_id1, share_name1, &shares_members);
     EXPECT_EQ(1U, shares_members.size());
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -2965,9 +2765,7 @@ TEST(IndependentFullTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
                   testing_variables2.new_private_share_id,
                   &share_name1));
 
-    fs::path share_path(test_elements2.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements2.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code));
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
@@ -2976,19 +2774,13 @@ TEST(IndependentFullTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
 
-    EXPECT_EQ(kSuccess, test_elements1.RemoveContact(public_id1,
-                                                     public_id2,
-                                                     removal_message));
+    EXPECT_EQ(kSuccess, test_elements1.RemoveContact(public_id1, public_id2, removal_message));
     EXPECT_TRUE(test_elements1.GetContacts(public_id1).empty());
-    fs::path share_path(test_elements1.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements1.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
     EXPECT_EQ(0, error_code.value());
     StringIntMap shares_members;
-    test_elements1.GetPrivateShareMembers(public_id1,
-                                          share_name1,
-                                          &shares_members);
+    test_elements1.GetPrivateShareMembers(public_id1, share_name1, &shares_members);
     EXPECT_EQ(0, shares_members.size());
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -3007,9 +2799,7 @@ TEST(IndependentFullTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
 
     while (!testing_variables2.private_share_deleted)
       Sleep(bptime::milliseconds(100));
-    fs::path share_path(test_elements2.mount_path() /
-                        kSharedStuff /
-                        share_name1);
+    fs::path share_path(test_elements2.mount_path() / kSharedStuff / share_name1);
     Sleep(bptime::milliseconds(100));
     EXPECT_FALSE(fs::is_directory(share_path, error_code));
 
@@ -3058,18 +2848,14 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
     contacts.insert(std::make_pair(public_id2, kShareReadOnly));
     results.insert(std::make_pair(public_id2, kGeneralError));
 
-    EXPECT_EQ(kSuccess, test_elements1.CreateEmptyPrivateShare(public_id1,
-                                                               contacts,
-                                                               &share_name1,
-                                                               &results));
+    EXPECT_EQ(kSuccess,
+              test_elements1.CreateEmptyPrivateShare(public_id1, contacts, &share_name1, &results));
     directory1 = test_elements1.mount_path() / kSharedStuff / share_name1;
     EXPECT_TRUE(fs::is_directory(directory1, error_code)) << directory1;
     EXPECT_EQ(0, error_code.value());
     EXPECT_EQ(kSuccess, results[public_id2]);
     StringIntMap shares_members;
-    test_elements1.GetPrivateShareMembers(public_id1,
-                                          share_name1,
-                                          &shares_members);
+    test_elements1.GetPrivateShareMembers(public_id1, share_name1, &shares_members);
     EXPECT_EQ(1U, shares_members.size());
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -3082,17 +2868,14 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
 
     EXPECT_FALSE(testing_variables2.new_private_share_id.empty());
     EXPECT_EQ(kSuccess,
-              test_elements2.AcceptPrivateShareInvitation(
-                  public_id2,
-                  public_id1,
-                  testing_variables2.new_private_share_id,
-                  &share_name1));
+              test_elements2.AcceptPrivateShareInvitation(public_id2,
+                                                          public_id1,
+                                                          testing_variables2.new_private_share_id,
+                                                          &share_name1));
     directory2 = test_elements2.mount_path()/ kSharedStuff / share_name1;
     EXPECT_TRUE(fs::is_directory(directory2, error_code)) << directory2;
 
-    EXPECT_EQ(kSuccess, test_elements2.RemoveContact(public_id2,
-                                                     public_id1,
-                                                     removal_message));
+    EXPECT_EQ(kSuccess, test_elements2.RemoveContact(public_id2, public_id1, removal_message));
     EXPECT_TRUE(test_elements2.GetContacts(public_id2).empty());
     // OS will cache the directory info for about 1 seconds
     while (fs::exists(directory2, error_code))
@@ -3116,9 +2899,7 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
     EXPECT_TRUE(fs::is_directory(directory1, error_code)) << directory1;
     EXPECT_EQ(0, error_code.value());
     StringIntMap shares_members;
-    test_elements1.GetPrivateShareMembers(public_id1,
-                                          share_name1,
-                                          &shares_members);
+    test_elements1.GetPrivateShareMembers(public_id1, share_name1, &shares_members);
     EXPECT_EQ(0, shares_members.size());
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -3247,18 +3028,14 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
     results.insert(std::make_pair(public_id2, kGeneralError));
     results.insert(std::make_pair(public_id3, kGeneralError));
 
-    EXPECT_EQ(kSuccess, test_elements1.CreateEmptyPrivateShare(public_id1,
-                                                               contacts,
-                                                               &share_name1,
-                                                               &results));
+    EXPECT_EQ(kSuccess,
+              test_elements1.CreateEmptyPrivateShare(public_id1, contacts, &share_name1, &results));
     directory1 = test_elements1.mount_path() / kSharedStuff / share_name1;
     EXPECT_TRUE(fs::is_directory(directory1, error_code)) << directory1;
     EXPECT_EQ(0, error_code.value());
     EXPECT_EQ(kSuccess, results[public_id2]);
     StringIntMap shares_members;
-    test_elements1.GetPrivateShareMembers(public_id1,
-                                          share_name1,
-                                          &shares_members);
+    test_elements1.GetPrivateShareMembers(public_id1, share_name1, &shares_members);
     EXPECT_EQ(2U, shares_members.size());
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
@@ -3271,11 +3048,10 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
 
     EXPECT_FALSE(testing_variables2.new_private_share_id.empty());
     EXPECT_EQ(kSuccess,
-              test_elements2.AcceptPrivateShareInvitation(
-                  public_id2,
-                  public_id1,
-                  testing_variables2.new_private_share_id,
-                  &share_name1));
+              test_elements2.AcceptPrivateShareInvitation(public_id2,
+                                                          public_id1,
+                                                          testing_variables2.new_private_share_id,
+                                                          &share_name1));
     directory2 = test_elements2.mount_path() / kSharedStuff / share_name1;
     EXPECT_TRUE(fs::is_directory(directory2, error_code)) << directory2;
 
@@ -3289,17 +3065,14 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
 
     EXPECT_FALSE(testing_variables3.new_private_share_id.empty());
     EXPECT_EQ(kSuccess,
-              test_elements3.AcceptPrivateShareInvitation(
-                  public_id3,
-                  public_id1,
-                  testing_variables3.new_private_share_id,
-                  &share_name1));
+              test_elements3.AcceptPrivateShareInvitation(public_id3,
+                                                          public_id1,
+                                                          testing_variables3.new_private_share_id,
+                                                          &share_name1));
     directory3 = test_elements3.mount_path() / kSharedStuff / share_name1;
     EXPECT_TRUE(fs::is_directory(directory3, error_code)) << directory3;
 
-    EXPECT_EQ(kSuccess, test_elements3.RemoveContact(public_id3,
-                                                     public_id2,
-                                                     removal_message));
+    EXPECT_EQ(kSuccess, test_elements3.RemoveContact(public_id3, public_id2, removal_message));
     EXPECT_EQ(1U, test_elements3.GetContacts(public_id3).size());
 
     EXPECT_TRUE(fs::is_directory(directory3, error_code)) << directory3;
@@ -3314,9 +3087,10 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
 
     EXPECT_EQ(removal_message, testing_variables2.removal_message);
     bool contact_deleted(false);
-    while (!contact_deleted)
-       if (test_elements2.GetContacts(public_id2).size() > 1)
-         contact_deleted = true;
+    while (!contact_deleted) {
+     if (test_elements2.GetContacts(public_id2).size() > 1)
+       contact_deleted = true;
+    }
     EXPECT_TRUE(contact_deleted);
 
     EXPECT_TRUE(fs::is_directory(directory2, error_code)) << directory2;
@@ -3331,9 +3105,7 @@ TEST(IndependentFullTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
     EXPECT_TRUE(fs::is_directory(directory1, error_code)) << directory2;
     EXPECT_EQ(0, error_code.value());
     StringIntMap shares_members;
-    test_elements1.GetPrivateShareMembers(public_id1,
-                                          share_name1,
-                                          &shares_members);
+    test_elements1.GetPrivateShareMembers(public_id1, share_name1, &shares_members);
     EXPECT_EQ(2U, shares_members.size());
     EXPECT_EQ(2U, test_elements1.GetContacts(public_id1).size());
 

@@ -64,32 +64,21 @@ class LifeStuff {
   int Finalise();
 
   /// Credential operations
-  int CreateUser(const std::string &username,
-                 const std::string &pin,
-                 const std::string &password);
+  int CreateUser(const std::string &username, const std::string &pin, const std::string &password);
   int CreatePublicId(const std::string &public_id);
-  int LogIn(const std::string &username,
-            const std::string &pin,
-            const std::string &password);
+  int LogIn(const std::string &username, const std::string &pin, const std::string &password);
   int LogOut();
 
   int CheckPassword(const std::string &password);
-  int ChangeKeyword(const std::string &new_keyword,
-                    const std::string &password);
-  int ChangePin(const std::string &new_pin,
-                const std::string &password);
-  int ChangePassword(const std::string &new_password,
-                     const std::string &current_password);
-  int ChangePublicId(const std::string &public_id,
-                     const std::string &password);
+  int ChangeKeyword(const std::string &new_keyword, const std::string &password);
+  int ChangePin(const std::string &new_pin, const std::string &password);
+  int ChangePassword(const std::string &new_password, const std::string &current_password);
+  int ChangePublicId(const std::string &public_id, const std::string &password);
 
   /// Contact operations
-  int AddContact(const std::string &my_public_id,
-                 const std::string &contact_public_id);
-  int ConfirmContact(const std::string &my_public_id,
-                     const std::string &contact_public_id);
-  int DeclineContact(const std::string &my_public_id,
-                     const std::string &contact_public_id);
+  int AddContact(const std::string &my_public_id, const std::string &contact_public_id);
+  int ConfirmContact(const std::string &my_public_id, const std::string &contact_public_id);
+  int DeclineContact(const std::string &my_public_id, const std::string &contact_public_id);
   int RemoveContact(const std::string &my_public_id,
                     const std::string &contact_public_id,
                     const std::string &removal_message);
@@ -126,21 +115,18 @@ class LifeStuff {
   // revert everything. Directory has to be moved, not copied. If directory
   // already exists in shared stuff, append ending as dropbox does. If a
   // contact is passed in as owner, it should fail for that contact.
-  int CreatePrivateShareFromExistingDirectory(
-      const std::string &my_public_id,
-      const fs::path &directory_in_lifestuff_drive,
-      const StringIntMap &contacts,
-      std::string *share_name,
-      StringIntMap *results);
+  int CreatePrivateShareFromExistingDirectory(const std::string &my_public_id,
+                                              const fs::path &directory_in_lifestuff_drive,
+                                              const StringIntMap &contacts,
+                                              std::string *share_name,
+                                              StringIntMap *results);
   int CreateEmptyPrivateShare(const std::string &my_public_id,
                               const StringIntMap &contacts,
                               std::string *share_name,
                               StringIntMap *results);
-  int GetPrivateShareList(const std::string &my_public_id,
-                          StringIntMap *shares_names);
+  int GetPrivateShareList(const std::string &my_public_id, StringIntMap *shares_names);
   // For owners only
-  int GetPrivateShareMembers(const std::string &my_public_id,
-                             const std::string &share_name,
+  int GetPrivateShareMembers(const std::string &my_public_id, const std::string &share_name,
                              StringIntMap *shares_members);
   int GetPrivateSharesIncludingMember(const std::string &my_public_id,
                                       const std::string &contact_public_id,
@@ -150,8 +136,7 @@ class LifeStuff {
                                    const std::string &contact_public_id,
                                    const std::string &share_id,
                                    std::string *share_name);
-  int RejectPrivateShareInvitation(const std::string &my_public_id,
-                                   const std::string &share_id);
+  int RejectPrivateShareInvitation(const std::string &my_public_id, const std::string &share_id);
   // Only for owners
   int EditPrivateShareMembers(const std::string &my_public_id,
                               const StringIntMap &public_ids,
@@ -162,16 +147,14 @@ class LifeStuff {
                          const std::string &share_name,
                          bool delete_data);
   // Should work for RO and full access. Only for non-owners
-  int LeavePrivateShare(const std::string &my_public_id,
-                        const std::string &share_name);
+  int LeavePrivateShare(const std::string &my_public_id, const std::string &share_name);
 
   /// Open Shares
-  int CreateOpenShareFromExistingDirectory(
-        const std::string &my_public_id,
-        const fs::path &directory_in_lifestuff_drive,
-        const std::vector<std::string> &contacts,
-        std::string *share_name,
-        StringIntMap *results);
+  int CreateOpenShareFromExistingDirectory(const std::string &my_public_id,
+                                           const fs::path &directory_in_lifestuff_drive,
+                                           const std::vector<std::string> &contacts,
+                                           std::string *share_name,
+                                           StringIntMap *results);
   int CreateEmptyOpenShare(const std::string &my_public_id,
                            const std::vector<std::string> &contacts,
                            std::string *share_name,
@@ -180,8 +163,7 @@ class LifeStuff {
                                const std::vector<std::string> &contacts,
                                const std::string &share_name,
                                StringIntMap *results);
-  int GetOpenShareList(const std::string &my_public_id,
-                       std::vector<std::string> *shares_names);
+  int GetOpenShareList(const std::string &my_public_id, std::vector<std::string> *shares_names);
   int GetOpenShareMembers(const std::string &my_public_id,
                           const std::string &share_name,
                           std::vector<std::string> *shares_members);
@@ -189,10 +171,8 @@ class LifeStuff {
                                 const std::string &contact_public_id,
                                 const std::string &share_id,
                                 std::string *share_name);
-  int RejectOpenShareInvitation(const std::string &my_public_id,
-                                const std::string &share_id);
-  int LeaveOpenShare(const std::string &my_public_id,
-                     const std::string &share_name);
+  int RejectOpenShareInvitation(const std::string &my_public_id, const std::string &share_id);
+  int LeaveOpenShare(const std::string &my_public_id, const std::string &share_name);
 
   ///
   int state() const;
