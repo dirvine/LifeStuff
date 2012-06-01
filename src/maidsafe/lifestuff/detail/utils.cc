@@ -205,12 +205,12 @@ void SendContactInfoCallback(const bool &response,
 int WaitForResultsPtr(boost::mutex *mutex,
                       boost::condition_variable *cond_var,
                       std::vector<int> *results) {
-  BOOST_ASSERT(results->size() * kSecondsInterval < std::numeric_limits<long>::max());
-  long size(static_cast<long>(results->size()));
+  assert(results->size() < 50U);
+  size_t size(results->size());
   try {
     boost::mutex::scoped_lock lock(*mutex);
     if (!cond_var->timed_wait(lock,
-                              bptime::seconds(kSecondsInterval * size),
+                              bptime::seconds(static_cast<long>(kSecondsInterval * size)),
                               [&]()->bool {
                                 for (size_t i(0); i < size; ++i) {
                                   if (results->at(i) == kPendingResult)
@@ -232,12 +232,12 @@ int WaitForResultsPtr(boost::mutex *mutex,
 int WaitForResults(boost::mutex &mutex,  // NOLINT (Dan)
                    boost::condition_variable &cond_var,  // NOLINT (Dan)
                    std::vector<int> &results) {  // NOLINT (Dan)
-  BOOST_ASSERT(results.size() * kSecondsInterval < std::numeric_limits<long>::max());
-  long size(static_cast<long>(results.size()));
+  assert(results.size() < 50U);
+  size_t size(results.size());
   try {
     boost::mutex::scoped_lock lock(mutex);
     if (!cond_var.timed_wait(lock,
-                             bptime::seconds(kSecondsInterval * size),
+                             bptime::seconds(static_cast<long>(kSecondsInterval * size)),
                              [&]()->bool {
                                for (size_t i(0); i < size; ++i) {
                                  if (results.at(i) == kPendingResult)
