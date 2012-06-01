@@ -231,8 +231,7 @@ class UserStorage {
       const asymm::Keys &key_ring = asymm::Keys(),
       const std::string &new_share_id = "",
       StringIntMap *contacts_results = nullptr);
-  pcs::RemoteChunkStore::ValidationData PopulateValidationData(
-      const asymm::Keys &key_ring);
+  pcs::RemoteChunkStore::ValidationData PopulateValidationData(const asymm::Keys &key_ring);
 
   bool mount_status_;
   std::shared_ptr<pcs::RemoteChunkStore> chunk_store_;

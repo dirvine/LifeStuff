@@ -69,7 +69,7 @@ struct Slots {
         contact_deletion_function(),
         private_share_invitation_function(),
         private_share_deletion_function(),
-        private_access_level_function(),
+        private_access_change_function(),
         open_share_invitation_function(),
         share_renamed_function() {}
   ChatFunction chat_slot;
@@ -81,7 +81,7 @@ struct Slots {
   ContactDeletionFunction contact_deletion_function;
   PrivateShareInvitationFunction private_share_invitation_function;
   PrivateShareDeletionFunction private_share_deletion_function;
-  PrivateMemberAccessLevelFunction private_access_level_function;
+  PrivateMemberAccessChangeFunction private_access_change_function;
   OpenShareInvitationFunction open_share_invitation_function;
   ShareRenamedFunction share_renamed_function;
 };
@@ -103,7 +103,7 @@ class LifeStuffImpl {
       const ContactDeletionFunction &contact_deletion_function,
       const PrivateShareInvitationFunction &share_invitation_function,
       const PrivateShareDeletionFunction &share_deletion_function,
-      const PrivateMemberAccessLevelFunction &access_level_function,
+      const PrivateMemberAccessChangeFunction &access_change_function,
       const OpenShareInvitationFunction &open_share_invitation_function,
       const ShareRenamedFunction &share_renamed_function);
   int Finalise();
@@ -213,7 +213,7 @@ class LifeStuffImpl {
   /// Open Shares
   int CreateOpenShareFromExistingDirectory(
         const std::string &my_public_id,
-        const fs::path &directory_in_lifestuff_drive,
+        const fs::path &lifestuff_directory,
         const std::vector<std::string> &contacts,
         std::string *share_name,
         StringIntMap *results);

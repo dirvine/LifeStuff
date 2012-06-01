@@ -133,7 +133,7 @@ int LifeStuffImpl::ConnectToSignals(
     const ContactDeletionFunction &contact_deletion_function,
     const PrivateShareInvitationFunction &private_share_invitation_function,
     const PrivateShareDeletionFunction &private_share_deletion_function,
-    const PrivateMemberAccessLevelFunction &private_access_level_function,
+    const PrivateMemberAccessChangeFunction &private_access_change_function,
     const OpenShareInvitationFunction &open_share_invitation_function,
     const ShareRenamedFunction &share_renamed_function) {
   if (state_ != kInitialised) {
@@ -202,12 +202,12 @@ int LifeStuffImpl::ConnectToSignals(
       message_handler_->ConnectToPrivateShareDeletionSignal(
           private_share_deletion_function);
   }
-  if (private_access_level_function) {
-    slots_.private_access_level_function = private_access_level_function;
+  if (private_access_change_function) {
+    slots_.private_access_change_function = private_access_change_function;
     ++connects;
     if (message_handler_)
-      message_handler_->ConnectToPrivateMemberAccessLevelSignal(
-          private_access_level_function);
+      message_handler_->ConnectToPrivateMemberAccessChangeSignal(
+          private_access_change_function);
   }
   if (open_share_invitation_function) {
     slots_.open_share_invitation_function = open_share_invitation_function;
@@ -1285,12 +1285,11 @@ int LifeStuffImpl::LeavePrivateShare(const std::string &my_public_id,
   return user_storage_->RemoveShare(share_dir, my_public_id);
 }
 
-int LifeStuffImpl::CreateOpenShareFromExistingDirectory(
-    const std::string &my_public_id,
-    const fs::path &directory_in_lifestuff_drive,
-    const std::vector<std::string> &contacts,
-    std::string *share_name,
-    StringIntMap *results) {
+int LifeStuffImpl::CreateOpenShareFromExistingDirectory(const std::string &my_public_id,
+                                                        const fs::path &lifestuff_directory,
+                                                        const std::vector<std::string> &contacts,
+                                                        std::string *share_name,
+                                                        StringIntMap *results) {
   if (!share_name) {
     DLOG(ERROR) << "Parameter share name must be valid.";
     return kGeneralError;
@@ -1302,7 +1301,7 @@ int LifeStuffImpl::CreateOpenShareFromExistingDirectory(
     DLOG(ERROR) << "Failed pre checks.";
     return result;
   }
-  if (!fs::exists(directory_in_lifestuff_drive)) {
+  if (!fs::exists(lifestuff_directory)) {
     DLOG(ERROR) << "Share directory nonexistant.";
     return kGeneralError;
   }
@@ -1324,7 +1323,7 @@ int LifeStuffImpl::CreateOpenShareFromExistingDirectory(
   for (uint32_t i = 0; i != contacts.size(); ++i)
     liaisons.insert(std::make_pair(contacts[i], 1));
   result = user_storage_->CreateOpenShare(my_public_id,
-                                          directory_in_lifestuff_drive,
+                                          lifestuff_directory,
                                           share,
                                           liaisons,
                                           results);
@@ -1335,11 +1334,10 @@ int LifeStuffImpl::CreateOpenShareFromExistingDirectory(
   return kSuccess;
 }
 
-int LifeStuffImpl::CreateEmptyOpenShare(
-    const std::string &my_public_id,
-    const std::vector<std::string> &contacts,
-    std::string *share_name,
-    StringIntMap *results) {
+int LifeStuffImpl::CreateEmptyOpenShare(const std::string &my_public_id,
+                                        const std::vector<std::string> &contacts,
+                                        std::string *share_name,
+                                        StringIntMap *results) {
   if (!share_name) {
     DLOG(ERROR) << "Parameter share name must be valid.";
     return kGeneralError;
@@ -1366,26 +1364,18 @@ int LifeStuffImpl::CreateEmptyOpenShare(
   StringIntMap liaisons;
   for (uint32_t i = 0; i != contacts.size(); ++i)
     liaisons.insert(std::make_pair(contacts[i], 1));
-  return user_storage_->CreateOpenShare(my_public_id,
-                                        fs::path(),
-                                        share,
-                                        liaisons,
-                                        results);
+  return user_storage_->CreateOpenShare(my_public_id, fs::path(), share, liaisons, results);
 }
 
-int LifeStuffImpl::InviteMembersToOpenShare(
-    const std::string &my_public_id,
-    const std::vector<std::string> &contacts,
-    const std::string &share_name,
-    StringIntMap *results) {
+int LifeStuffImpl::InviteMembersToOpenShare(const std::string &my_public_id,
+                                            const std::vector<std::string> &contacts,
+                                            const std::string &share_name,
+                                            StringIntMap *results) {
   StringIntMap liaisons;
   fs::path share(mount_path() / drive::kMsShareRoot / share_name);
   for (uint32_t i = 0; i != contacts.size(); ++i)
     liaisons.insert(std::make_pair(contacts[i], 1));
-  return user_storage_->OpenShareInvitation(my_public_id,
-                                            share,
-                                            liaisons,
-                                            results);
+  return user_storage_->OpenShareInvitation(my_public_id, share, liaisons, results);
 }
 
 int LifeStuffImpl::GetOpenShareList(const std::string &my_public_id,
@@ -1451,12 +1441,10 @@ int LifeStuffImpl::AcceptOpenShareInvitation(
   }
   // Read hidden file...
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
-  fs::path hidden_file(mount_path() /
-                       kSharedStuff /
-                       std::string(temp_name + kHiddenFileExtension));
+  temp_name += kHiddenFileExtension;
+  fs::path hidden_file(mount_path() / kSharedStuff / temp_name);
   std::string serialised_share_data;
-  result = user_storage_->ReadHiddenFile(hidden_file,
-                &serialised_share_data);
+  result = user_storage_->ReadHiddenFile(hidden_file, &serialised_share_data);
   if (result != kSuccess || serialised_share_data.empty()) {
     DLOG(ERROR) << "No such identifier found: " << result;
     return result == kSuccess ? kGeneralError : result;
@@ -1499,9 +1487,8 @@ int LifeStuffImpl::RejectOpenShareInvitation(const std::string &my_public_id,
     return result;
   }
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
-  fs::path hidden_file(mount_path() /
-                       kSharedStuff /
-                       std::string(temp_name + kHiddenFileExtension));
+  temp_name += kHiddenFileExtension;
+  fs::path hidden_file(mount_path() / kSharedStuff / temp_name);
   return user_storage_->DeleteHiddenFile(hidden_file);
 }
 
@@ -1529,14 +1516,12 @@ int LifeStuffImpl::LeaveOpenShare(const std::string &my_public_id,
     try {
       fs::remove_all(share, error_code);
       if (error_code) {
-        DLOG(ERROR) << "Failed to remove share directory "
-                    << share << " " << error_code.value();
+        DLOG(ERROR) << "Failed to remove share directory " << share << " " << error_code.value();
         return error_code.value();
       }
     }
     catch(const std::exception &e) {
-      DLOG(ERROR) << "Exception thrown removing share directory " << share
-                  << ": " << e.what();
+      DLOG(ERROR) << "Exception thrown removing share directory " << share << ": " << e.what();
       return kGeneralError;
     }
     BOOST_ASSERT(!fs::exists(share, error_code));
@@ -1545,8 +1530,7 @@ int LifeStuffImpl::LeaveOpenShare(const std::string &my_public_id,
     members.push_back(my_public_id);
     result = user_storage_->RemoveOpenShareUsers(share, members);
     if (result != kSuccess) {
-      DLOG(ERROR) << "Failed to remove share user " << my_public_id
-                  << " from share " << share;
+      DLOG(ERROR) << "Failed to remove share user " << my_public_id << " from share " << share;
       return result;
     }
     result = user_storage_->RemoveShare(share);
@@ -1572,24 +1556,19 @@ fs::path LifeStuffImpl::mount_path() const {
 
 void LifeStuffImpl::ConnectInternalElements() {
   message_handler_->ConnectToParseAndSaveDataMapSignal(
-      boost::bind(&UserStorage::ParseAndSaveDataMap, user_storage_.get(),
-                  _1, _2, _3));
+      boost::bind(&UserStorage::ParseAndSaveDataMap, user_storage_.get(), _1, _2, _3));
 
   message_handler_->ConnectToSavePrivateShareDataSignal(
-      boost::bind(&UserStorage::SavePrivateShareData,
-                  user_storage_.get(), _1, _2));
+      boost::bind(&UserStorage::SavePrivateShareData, user_storage_.get(), _1, _2));
 
   message_handler_->ConnectToDeletePrivateShareDataSignal(
-      std::bind(&UserStorage::DeletePrivateShareData,
-                user_storage_.get(), args::_1));
+      std::bind(&UserStorage::DeletePrivateShareData, user_storage_.get(), args::_1));
 
   message_handler_->ConnectToPrivateShareUserLeavingSignal(
-      boost::bind(&UserStorage::UserLeavingShare,
-                  user_storage_.get(), _2, _3));
+      boost::bind(&UserStorage::UserLeavingShare, user_storage_.get(), _2, _3));
 
   message_handler_->ConnectToSaveOpenShareDataSignal(
-      boost::bind(&UserStorage::SaveOpenShareData,
-                  user_storage_.get(), _1, _2));
+      boost::bind(&UserStorage::SaveOpenShareData, user_storage_.get(), _1, _2));
 
   message_handler_->ConnectToPrivateShareDeletionSignal(
       boost::bind(&UserStorage::ShareDeleted, user_storage_.get(), _3));
@@ -1599,20 +1578,18 @@ void LifeStuffImpl::ConnectInternalElements() {
                 args::_1, args::_2, args::_3, args::_4, args::_5));
 
   message_handler_->ConnectToPrivateMemberAccessLevelSignal(
-      std::bind(&UserStorage::MemberAccessChange,
-                user_storage_.get(), args::_4, args::_5, args::_6, args::_7, args::_8));
+      std::bind(&UserStorage::MemberAccessChange, user_storage_.get(),
+                args::_4, args::_5, args::_6, args::_7, args::_8));
 
   public_id_->ConnectToContactConfirmedSignal(
-      boost::bind(&MessageHandler::InformConfirmedContactOnline,
-                  message_handler_.get(), _1, _2));
+      boost::bind(&MessageHandler::InformConfirmedContactOnline, message_handler_.get(), _1, _2));
 
   message_handler_->ConnectToContactDeletionSignal(
-      boost::bind(&PublicId::RemoveContactHandle,
-                  public_id_.get(), _1, _2));
+      boost::bind(&PublicId::RemoveContactHandle, public_id_.get(), _1, _2));
 
   message_handler_->ConnectToPrivateShareDetailsSignal(
-      boost::bind(&UserStorage::GetShareDetails, user_storage_.get(),
-                  _1, _2, nullptr, nullptr, nullptr));
+      boost::bind(&UserStorage::GetShareDetails, user_storage_.get(), _1, _2, nullptr, nullptr,
+                  nullptr));
 }
 
 int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
@@ -1643,9 +1620,7 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
   user_credentials_.reset(new UserCredentials(remote_chunk_store_, session_));
 #endif
 
-  public_id_.reset(new PublicId(remote_chunk_store_,
-                                session_,
-                                asio_service_.service()));
+  public_id_.reset(new PublicId(remote_chunk_store_, session_, asio_service_.service()));
 
   message_handler_.reset(new MessageHandler(remote_chunk_store_,
                                             session_,
@@ -1665,7 +1640,7 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
                             slots_.contact_deletion_function,
                             slots_.private_share_invitation_function,
                             slots_.private_share_deletion_function,
-                            slots_.private_access_level_function,
+                            slots_.private_access_change_function,
                             slots_.open_share_invitation_function,
                             slots_.share_renamed_function);
   return result;

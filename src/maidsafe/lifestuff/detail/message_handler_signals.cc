@@ -53,9 +53,9 @@ bs2::connection MessageHandler::ConnectToPrivateShareDeletionSignal(
   return private_share_deletion_signal_.connect(function);
 }
 
-bs2::connection MessageHandler::ConnectToPrivateMemberAccessLevelSignal(
-    const PrivateMemberAccessLevelFunction &function) {
-  return private_member_access_level_signal_.connect(function);
+bs2::connection MessageHandler::ConnectToPrivateMemberAccessChangeSignal(
+    const PrivateMemberAccessChangeFunction &function) {
+  return private_member_access_change_signal_.connect(function);
 }
 
 bs2::connection MessageHandler::ConnectToOpenShareInvitationSignal(
@@ -89,6 +89,11 @@ bs2::connection MessageHandler::ConnectToPrivateShareDetailsSignal(
 bs2::connection MessageHandler::ConnectToPrivateShareUpdateSignal(
     const PrivateShareUpdateSignal::slot_type &function) {
   return private_share_update_signal_.connect(function);
+}
+
+bs2::connection MessageHandler::ConnectToPrivateMemberAccessLevelSignal(
+    const PrivateMemberAccessLevelSignal::slot_type &function) {
+  return private_member_access_level_signal_.connect(function);
 }
 
 bs2::connection MessageHandler::ConnectToSavePrivateShareDataSignal(

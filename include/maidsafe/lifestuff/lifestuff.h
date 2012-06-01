@@ -32,7 +32,6 @@
 #include <utility>
 #include <vector>
 
-#include "maidsafe/common/rsa.h"
 #include "maidsafe/drive/config.h"
 
 namespace maidsafe {
@@ -133,16 +132,7 @@ typedef std::function<void(const std::string&,    // Own public ID
 // Own public ID, Contact public ID, Share Name, Share ID, Timestamp
 typedef FiveStringsFunction PrivateShareDeletionFunction;
 
-typedef std::function<void(const std::string&,    // Own public ID
-                           const std::string&,    // Contact public ID
-                           const std::string&,    // Share name
-                           const std::string&,    // Share ID
-                           const std::string&,    // Directory ID
-                           const std::string&,    // New Share ID
-                           const asymm::Keys&,    // Key ring
-                           int,                   // Access level
-                           const std::string&)>   // Timestamp
-        PrivateMemberAccessLevelFunction;
+typedef PrivateShareInvitationFunction PrivateMemberAccessChangeFunction;
 
 /// Open Shares
 // Own public ID, Contact public ID, Share name, Share ID, Timestamp

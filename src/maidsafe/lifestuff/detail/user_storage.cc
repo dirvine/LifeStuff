@@ -291,8 +291,7 @@ int UserStorage::CreateShare(const std::string &sender_public_id,
   std::vector<int> results;
   results.push_back(kPendingResult);
 
-  pcs::RemoteChunkStore::ValidationData validation_data(
-      PopulateValidationData(key_ring));
+  pcs::RemoteChunkStore::ValidationData validation_data(PopulateValidationData(key_ring));
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
   VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback,
                                          args::_1,
@@ -377,8 +376,7 @@ int UserStorage::CreateOpenShare(const std::string &sender_public_id,
   boost::condition_variable cond_var;
   std::vector<int> results;
   results.push_back(kPendingResult);
-  pcs::RemoteChunkStore::ValidationData validation_data(
-      PopulateValidationData(key_ring));
+  pcs::RemoteChunkStore::ValidationData validation_data(PopulateValidationData(key_ring));
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
   VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback,
                                          args::_1,
@@ -530,12 +528,14 @@ int UserStorage::StopShare(const std::string &sender_public_id,
   boost::condition_variable cond_var;
   std::vector<int> results;
   results.push_back(kPendingResult);
-  pcs::RemoteChunkStore::ValidationData validation_data(
-      PopulateValidationData(key_ring));
+  pcs::RemoteChunkStore::ValidationData validation_data(PopulateValidationData(key_ring));
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
 
-  VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback, args::_1,
-                                         &mutex, &cond_var, &results[0]));
+  VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback,
+                                         args::_1,
+                                         &mutex,
+                                         &cond_var,
+                                         &results[0]));
   chunk_store_->Delete(packet_id, callback, validation_data);
 
   result = WaitForResultsPtr(&mutex, &cond_var, &results);
@@ -561,8 +561,7 @@ int UserStorage::RemoveShare(const fs::path& absolute_path,
   // when own name not provided, this indicates being asked to leave
   // i.e. no notification of leaving to the owner required to be sent
   if (sender_public_id.empty()) {
-    return drive_in_user_space_->RemoveShare(
-             drive_in_user_space_->RelativePath(absolute_path));
+    return drive_in_user_space_->RemoveShare(drive_in_user_space_->RelativePath(absolute_path));
   }
 
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
@@ -584,8 +583,7 @@ int UserStorage::RemoveShare(const fs::path& absolute_path,
   if (owner_id == sender_public_id)
     return kOwnerTryingToLeave;
 
-  result = drive_in_user_space_->RemoveShare(
-               drive_in_user_space_->RelativePath(absolute_path));
+  result = drive_in_user_space_->RemoveShare(drive_in_user_space_->RelativePath(absolute_path));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to remove share " << absolute_path;
     return result;
@@ -614,14 +612,9 @@ int UserStorage::UpdateShare(const std::string &share_id,
   }
 
   fs::path relative_path;
-  int result(GetShareDetails(share_id,
-                             &relative_path,
-                             nullptr,
-                             nullptr,
-                             nullptr));
+  int result(GetShareDetails(share_id, &relative_path, nullptr, nullptr, nullptr));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to get share details for "
-                << mount_dir() / relative_path;
+    DLOG(ERROR) << "Failed to get share details for " << mount_dir() / relative_path;
     return result;
   }
   return drive_in_user_space_->UpdateShare(relative_path,
@@ -813,8 +806,12 @@ int UserStorage::RemoveShareUsers(const std::string &sender_public_id,
                           removed_contacts,
                           share_id);
 
-  result = MovingShare(sender_public_id, share_id,
-                       relative_path, old_key_ring, private_share, contacts);
+  result = MovingShare(sender_public_id,
+                       share_id,
+                       relative_path,
+                       old_key_ring,
+                       private_share,
+                       contacts);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to move share.";
   }
@@ -843,8 +840,7 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
   std::vector<int> results;
   results.push_back(kPendingResult);
 
-  pcs::RemoteChunkStore::ValidationData validation_data(
-      PopulateValidationData(key_ring));
+  pcs::RemoteChunkStore::ValidationData validation_data(PopulateValidationData(key_ring));
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
   VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback, args::_1,
                                          &mutex, &cond_var, &results[0]));
@@ -902,8 +898,8 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
                                    key_ring,
                                    new_share_id);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed in informing contacts in share: "
-                << Base32Substr(share_id) << ", with result of : " << result;
+    DLOG(ERROR) << "Failed in informing contacts in share: " << Base32Substr(share_id)
+                << ", with result of : " << result;
     return result;
   }
 
@@ -945,10 +941,10 @@ int UserStorage::GetShareUsersRights(const fs::path &absolute_path,
     return kMessageHandlerNotInitialised;
   }
 
-  return drive_in_user_space_->GetShareUsersRights(
-             drive_in_user_space_->RelativePath(absolute_path),
-             user_id,
-             admin_rights);
+  return
+    drive_in_user_space_->GetShareUsersRights(drive_in_user_space_->RelativePath(absolute_path),
+                                              user_id,
+                                              admin_rights);
 }
 
 int UserStorage::SetShareUsersRights(const std::string &sender_public_id,
@@ -967,14 +963,13 @@ int UserStorage::SetShareUsersRights(const std::string &sender_public_id,
                                                        user_id,
                                                        &old_admin_right));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed getting access right for contact " << user_id
-                << ", with result : " << result;
+    DLOG(ERROR) << "Failed getting access right for contact " << user_id << ", with result : "
+                << result;
     return result;
   }
 
   if (admin_rights == old_admin_right) {
-    DLOG(INFO) << "Access right for contact " << user_id
-               << ", keeps the same ";
+    DLOG(INFO) << "Access right for contact " << user_id << ", keeps the same ";
     return kSuccess;
   }
 
@@ -982,8 +977,8 @@ int UserStorage::SetShareUsersRights(const std::string &sender_public_id,
                                                      user_id,
                                                      admin_rights);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed setting access right for contact " << user_id
-                << ", with result : " << result;
+    DLOG(ERROR) << "Failed setting access right for contact " << user_id << ", with result : "
+                << result;
     return result;
   }
 
@@ -999,8 +994,8 @@ int UserStorage::SetShareUsersRights(const std::string &sender_public_id,
                                                  &share_contacts,
                                                  nullptr);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed getting admin right for contact " << user_id
-                << ", with result : " << result;
+    DLOG(ERROR) << "Failed getting admin right for contact " << user_id << ", with result : "
+                << result;
     return result;
   }
 
@@ -1009,8 +1004,13 @@ int UserStorage::SetShareUsersRights(const std::string &sender_public_id,
   InboxItemType rights(kPrivateShareMembershipUpgrade);
   if (old_admin_right > admin_rights) {
     rights = kPrivateShareMembershipDowngrade;
-    result = MovingShare(sender_public_id, share_id, relative_path,
-                         key_ring, private_share, share_contacts, &share_id);
+    result = MovingShare(sender_public_id,
+                         share_id,
+                         relative_path,
+                         key_ring,
+                         private_share,
+                         share_contacts,
+                         &share_id);
     if (result != kSuccess) {
       DLOG(ERROR) << "Failed to move share.";
       return result;
@@ -1078,13 +1078,13 @@ int UserStorage::DowngradeShareUsersRights(
                                         nullptr,
                                         nullptr);
   result = InformContactsOperation(kPrivateShareMembershipDowngrade,
-                                 sender_public_id,
-                                 *results,
-                                 share_id,
-                                 "",
-                                 directory_id,
-                                 key_ring,
-                                 new_share_id);
+                                   sender_public_id,
+                                   *results,
+                                   share_id,
+                                   "",
+                                   directory_id,
+                                   key_ring,
+                                   new_share_id);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to inform contacts";
     return result;
@@ -1104,15 +1104,13 @@ int UserStorage::GetShareDetails(const std::string &share_id,
                                                share_users);
 }
 
-void UserStorage::MemberAccessChange(
-    const std::string &share_id,
-    const std::string &directory_id,
-    const std::string &new_share_id,
-    const asymm::Keys &key_ring,
-    int access_right) {
+void UserStorage::MemberAccessChange(const std::string &share_id,
+                                     const std::string &directory_id,
+                                     const std::string &new_share_id,
+                                     const asymm::Keys &key_ring,
+                                     int access_right) {
   fs::path relative_path;
-  int result(GetShareDetails(share_id, &relative_path,
-                             nullptr, nullptr, nullptr));
+  int result(GetShareDetails(share_id, &relative_path, nullptr, nullptr, nullptr));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to find share details: " << result;
     return;
@@ -1120,18 +1118,18 @@ void UserStorage::MemberAccessChange(
   if (access_right <= kShareReadOnly) {
     asymm::Keys empty_key_ring;
     result = drive_in_user_space_->UpdateShare(relative_path,
-                                                share_id,
-                                                &new_share_id,
-                                                &directory_id,
-                                                &empty_key_ring,
-                                                &access_right);
+                                               share_id,
+                                               &new_share_id,
+                                               &directory_id,
+                                               &empty_key_ring,
+                                               &access_right);
   } else {
     result = drive_in_user_space_->UpdateShare(relative_path,
-                                                share_id,
-                                                nullptr,
-                                                nullptr,
-                                                &key_ring,
-                                                &access_right);
+                                               share_id,
+                                               nullptr,
+                                               nullptr,
+                                               &key_ring,
+                                               &access_right);
   }
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to update share details: " << result;
@@ -1139,17 +1137,20 @@ void UserStorage::MemberAccessChange(
   }
 }
 
-int UserStorage::GetPrivateSharesContactBeingOwner(
-    const std::string &/*my_public_id*/,
-    const std::string &contact_public_id,
-    std::vector<std::string> *shares_names) {
+int UserStorage::GetPrivateSharesContactBeingOwner(const std::string &/*my_public_id*/,
+                                                   const std::string &contact_public_id,
+                                                   std::vector<std::string> *shares_names) {
   StringIntMap all_shares;
   GetAllShares(&all_shares);
   for (auto it = all_shares.begin(); it != all_shares.end(); ++it) {
     std::string owner_id;
     fs::path share_dir(fs::path("/") / kSharedStuff / (*it).first);
-    drive_in_user_space_->GetShareDetails(share_dir, nullptr, nullptr,
-                                          nullptr, nullptr, nullptr,
+    drive_in_user_space_->GetShareDetails(share_dir,
+                                          nullptr,
+                                          nullptr,
+                                          nullptr,
+                                          nullptr,
+                                          nullptr,
                                           &owner_id);
     if (owner_id == contact_public_id)
       shares_names->push_back((*it).first);
@@ -1159,54 +1160,45 @@ int UserStorage::GetPrivateSharesContactBeingOwner(
 
 int UserStorage::GetNotes(const fs::path &absolute_path,
                           std::vector<std::string> *notes) const {
-  return drive_in_user_space_->GetNotes(
-             drive_in_user_space_->RelativePath(absolute_path),
-             notes);
+  return drive_in_user_space_->GetNotes(drive_in_user_space_->RelativePath(absolute_path), notes);
 }
 
 int UserStorage::AddNote(const fs::path &absolute_path,
                          const std::string &note) {
-  return drive_in_user_space_->AddNote(
-             drive_in_user_space_->RelativePath(absolute_path),
-             note);
+  return drive_in_user_space_->AddNote(drive_in_user_space_->RelativePath(absolute_path), note);
 }
 
 int UserStorage::ReadHiddenFile(const fs::path &absolute_path,
                                 std::string *content) const {
-  return drive_in_user_space_->ReadHiddenFile(
-             drive_in_user_space_->RelativePath(absolute_path),
-             content);
+  return drive_in_user_space_->ReadHiddenFile(drive_in_user_space_->RelativePath(absolute_path),
+                                              content);
 }
 
 int UserStorage::WriteHiddenFile(const fs::path &absolute_path,
                                  const std::string &content,
                                  bool overwrite_existing) {
-  return drive_in_user_space_->WriteHiddenFile(
-             drive_in_user_space_->RelativePath(absolute_path),
-             content,
-             overwrite_existing);
+  return drive_in_user_space_->WriteHiddenFile(drive_in_user_space_->RelativePath(absolute_path),
+                                               content,
+                                               overwrite_existing);
 }
 
 int UserStorage::DeleteHiddenFile(const fs::path &absolute_path) {
-  return drive_in_user_space_->DeleteHiddenFile(
-             drive_in_user_space_->RelativePath(absolute_path));
+  return drive_in_user_space_->DeleteHiddenFile(drive_in_user_space_->RelativePath(absolute_path));
 }
 
 int UserStorage::SearchHiddenFiles(const fs::path &absolute_path,
                                    const std::string &regex,
                                    std::list<std::string> *results) {
-  return drive_in_user_space_->SearchHiddenFiles(
-             drive_in_user_space_->RelativePath(absolute_path),
-             regex,
-             results);
+  return drive_in_user_space_->SearchHiddenFiles(drive_in_user_space_->RelativePath(absolute_path),
+                                                 regex,
+                                                 results);
 }
 
 int UserStorage::GetHiddenFileDataMap(
     const boost::filesystem3::path &absolute_path,
     std::string *data_map) {
-  return drive_in_user_space_->GetDataMapHidden(
-             drive_in_user_space_->RelativePath(absolute_path),
-             data_map);
+  return drive_in_user_space_->GetDataMapHidden(drive_in_user_space_->RelativePath(absolute_path),
+                                                data_map);
 }
 
 bs2::connection UserStorage::ConnectToDriveChanged(
@@ -1243,16 +1235,15 @@ pcs::RemoteChunkStore::ValidationData UserStorage::PopulateValidationData(
   return validation_data;
 }
 
-int UserStorage::InformContactsOperation(
-    InboxItemType item_type,
-    const std::string &sender_public_id,
-    const StringIntMap &contacts,
-    const std::string &share_id,
-    const std::string &absolute_path,
-    const std::string &directory_id,
-    const asymm::Keys &key_ring,
-    const std::string &new_share_id,
-    StringIntMap *contacts_results) {
+int UserStorage::InformContactsOperation(InboxItemType item_type,
+                                         const std::string &sender_public_id,
+                                         const StringIntMap &contacts,
+                                         const std::string &share_id,
+                                         const std::string &absolute_path,
+                                         const std::string &directory_id,
+                                         const asymm::Keys &key_ring,
+                                         const std::string &new_share_id,
+                                         StringIntMap *contacts_results) {
   InboxItem admin_message(item_type), non_admin_message(item_type);
   std::string public_key, private_key, empty_string;
 
@@ -1318,9 +1309,8 @@ int UserStorage::InformContactsOperation(
         result = message_handler_->Send(non_admin_message);
       }
       if (result != kSuccess) {
-        DLOG(ERROR) << "Failed in inform contact " << (*it).first
-                    << "  of operation " << ", with result of : "
-                    << result;
+        DLOG(ERROR) << "Failed in inform contact " << (*it).first << "  of operation "
+                    << ", with result of : " << result;
         ++aggregate;
       }
       if (contacts_results)
@@ -1331,16 +1321,15 @@ int UserStorage::InformContactsOperation(
   return aggregate;
 }
 
-int UserStorage::InformContacts(
-    InboxItemType item_type,
-    const std::string &sender_public_id,
-    const std::map<std::string, int> &contacts,
-    const std::string &share_id,
-    const std::string &share_name,
-    const std::string &directory_id,
-    const asymm::Keys &key_ring,
-    const std::string& /*new_share_id*/,
-    StringIntMap *contacts_results) {
+int UserStorage::InformContacts(InboxItemType item_type,
+                                const std::string &sender_public_id,
+                                const std::map<std::string, int> &contacts,
+                                const std::string &share_id,
+                                const std::string &share_name,
+                                const std::string &directory_id,
+                                const asymm::Keys &key_ring,
+                                const std::string& /*new_share_id*/,
+                                StringIntMap *contacts_results) {
   InboxItem message(item_type);
   std::string public_key, private_key;
   message.sender_public_id = sender_public_id;
@@ -1377,9 +1366,8 @@ int UserStorage::InformContacts(
       message.receiver_public_id = it->first;
       result = message_handler_->Send(message);
       if (result != kSuccess) {
-        DLOG(ERROR) << "Failed to inform contact " << it->first
-                    << " of operation " << item_type << ", with result "
-                    << result;
+        DLOG(ERROR) << "Failed to inform contact " << it->first << " of operation " << item_type
+                    << ", with result " << result;
         ++aggregate;
       }
       if (contacts_results)

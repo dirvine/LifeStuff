@@ -80,13 +80,14 @@ MessageHandler::MessageHandler(
       contact_profile_picture_signal_(),
       private_share_invitation_signal_(),
       private_share_deletion_signal_(),
-      private_member_access_level_signal_(),
+      private_member_access_change_signal_(),
       open_share_invitation_signal_(),
       contact_deletion_signal_(),
       private_share_user_leaving_signal_(),
       parse_and_save_data_map_signal_(),
       private_share_details_signal_(),
       private_share_update_signal_(),
+      private_member_access_level_signal_(),
       save_private_share_data_signal_(),
       delete_private_share_data_signal_(),
       save_open_share_data_signal_() {}
@@ -562,6 +563,12 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
   } else if (inbox_item.item_type == kPrivateShareMembershipDowngrade) {
     // downgrading
     asymm::Keys key_ring;
+    private_member_access_change_signal_(inbox_item.receiver_public_id,
+                                         inbox_item.sender_public_id,
+                                         inbox_item.content[kShareName],
+                                         inbox_item.content[kShareId],
+                                         kShareReadOnly,
+                                         inbox_item.timestamp);
     private_member_access_level_signal_(inbox_item.receiver_public_id,
                                         inbox_item.sender_public_id,
                                         inbox_item.content[kShareName],
@@ -578,12 +585,12 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
       DLOG(ERROR) << "Incorrect elements in message.";
       return;
     }
-   /* int access_rights(kShareReadWrite);
-    private_share_update_signal_(inbox_item.content[0],
-                                 nullptr,
-                                 nullptr,
-                                 &key_ring,
-                                 &access_rights);*/
+    private_member_access_change_signal_(inbox_item.receiver_public_id,
+                                         inbox_item.sender_public_id,
+                                         inbox_item.content[kShareName],
+                                         inbox_item.content[kShareId],
+                                         kShareReadWrite,
+                                         inbox_item.timestamp);
     private_member_access_level_signal_(inbox_item.receiver_public_id,
                                         inbox_item.sender_public_id,
                                         inbox_item.content[kShareName],

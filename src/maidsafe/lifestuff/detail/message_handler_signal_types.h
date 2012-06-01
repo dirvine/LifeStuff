@@ -69,6 +69,13 @@ typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
                          const std::string&,
                          const std::string&,
                          const std::string&,
+                         int,
+                         const std::string&)> PrivateMemberAccessChangeSignal;
+
+typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
+                         const std::string&,
+                         const std::string&,
+                         const std::string&,
                          const std::string&,
                          const std::string&,
                          const asymm::Keys&,
