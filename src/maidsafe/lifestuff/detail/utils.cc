@@ -19,6 +19,7 @@
 #include <fstream>  // NOLINT (Fraser)
 #include <iostream>  // NOLINT (Fraser)
 #include <istream>  // NOLINT (Fraser)
+#include <limits>
 #include <ostream>  // NOLINT (Fraser)
 #include <vector>
 
@@ -204,7 +205,8 @@ void SendContactInfoCallback(const bool &response,
 int WaitForResultsPtr(boost::mutex *mutex,
                       boost::condition_variable *cond_var,
                       std::vector<int> *results) {
-  size_t size(results->size());
+  BOOST_ASSERT(results->size() * kSecondsInterval < std::numeric_limits<long>::max());
+  long size(static_cast<long>(results->size()));
   try {
     boost::mutex::scoped_lock lock(*mutex);
     if (!cond_var->timed_wait(lock,
@@ -230,7 +232,8 @@ int WaitForResultsPtr(boost::mutex *mutex,
 int WaitForResults(boost::mutex &mutex,  // NOLINT (Dan)
                    boost::condition_variable &cond_var,  // NOLINT (Dan)
                    std::vector<int> &results) {  // NOLINT (Dan)
-  size_t size(results.size());
+  BOOST_ASSERT(results.size() * kSecondsInterval < std::numeric_limits<long>::max());
+  long size(static_cast<long>(results.size()));
   try {
     boost::mutex::scoped_lock lock(mutex);
     if (!cond_var.timed_wait(lock,
