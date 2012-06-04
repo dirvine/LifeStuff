@@ -192,7 +192,7 @@ int Session::ParseDataAtlas(const std::string &serialised_data_atlas) {
   std::string pub_id;
   for (int id_count(0); id_count < data_atlas.public_ids_size(); ++id_count) {
     pub_id = data_atlas.public_ids(id_count).public_id();
-    contact_handler_map().insert( std::make_pair(pub_id, std::make_shared<ContactsHandler>()));
+    contact_handler_map().insert(std::make_pair(pub_id, std::make_shared<ContactsHandler>()));
     set_profile_picture_data_map(pub_id,
                                  data_atlas.public_ids(id_count).profile_picture_data_map());
     for (int contact_count(0);
