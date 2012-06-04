@@ -34,6 +34,8 @@
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
 
+#include "maidsafe\common\rsa.h"
+
 namespace maidsafe {
 
 namespace priv {
