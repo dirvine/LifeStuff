@@ -132,7 +132,7 @@ class PublicId {
   void KeysAndProof(const std::string &public_id,
                     passport::PacketType pt,
                     bool confirmed,
-                    pcs::RemoteChunkStore::ValidationData *validation_data);
+                    asymm::Keys *validation_key);
 
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<Session> session_;

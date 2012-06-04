@@ -49,14 +49,14 @@ namespace lifestuff {
 
 int GetValidatedMpidPublicKey(
     const std::string &public_username,
-    const pcs::RemoteChunkStore::ValidationData &validation_data,
+    std::shared_ptr<asymm::Keys> validation_key,
     std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
     asymm::PublicKey *public_key) {
   // Get public key packet from network
   std::string packet_name(crypto::Hash<crypto::SHA512>(public_username) +
                           std::string(1, pca::kAppendableByAll));
   std::string packet_value(remote_chunk_store->Get(packet_name,
-                                                   validation_data));
+                                                   validation_key));
   if (packet_value.empty()) {
     DLOG(ERROR) << "Failed to get public key for " << public_username;
     *public_key = asymm::PublicKey();
@@ -86,7 +86,7 @@ int GetValidatedMpidPublicKey(
   std::string mpid_value(serialised_public_key + public_key_signature);
   std::string mpid_name(crypto::Hash<crypto::SHA512>(mpid_value) +
                         std::string(1, pca::kSignaturePacket));
-  packet_value = remote_chunk_store->Get(packet_name, validation_data);
+  packet_value = remote_chunk_store->Get(packet_name, validation_key);
   if (packet_value.empty()) {
     DLOG(ERROR) << "Failed to get MPID for " << public_username;
     *public_key = asymm::PublicKey();
@@ -116,12 +116,12 @@ int GetValidatedMpidPublicKey(
 
 int GetValidatedMmidPublicKey(
     const std::string &mmid_name,
-    const pcs::RemoteChunkStore::ValidationData &validation_data,
+    std::shared_ptr<asymm::Keys> validation_key,
     std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
     asymm::PublicKey *public_key) {
   std::string packet_value(
       remote_chunk_store->Get(mmid_name + std::string(1, pca::kAppendableByAll),
-                              validation_data));
+                              validation_key));
   if (packet_value.empty()) {
     DLOG(ERROR) << "Failed to get public key for " << Base32Substr(mmid_name);
     *public_key = asymm::PublicKey();
@@ -165,9 +165,11 @@ std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
     const fs::path &buffered_chunk_store_path,
     const fs::path &local_chunk_manager_path,
     boost::asio::io_service &asio_service) {  // NOLINT (Dan)
+  fs::path chunk_lock_path(local_chunk_manager_path / "ChunkLock");
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store(
       pcs::CreateLocalChunkStore(buffered_chunk_store_path,
                                  local_chunk_manager_path,
+                                 chunk_lock_path,
                                  asio_service));
   return remote_chunk_store;
 }

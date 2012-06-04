@@ -133,7 +133,7 @@ class MessageHandler {
   void KeysAndProof(const std::string &public_id,
                     passport::PacketType pt,
                     bool confirmed,
-                    pcs::RemoteChunkStore::ValidationData *validation_data);
+                    asymm::Keys *validation_key);
   void EnqueuePresenceMessages(ContactPresence presence);
 
   void ProcessContactPresence(const InboxItem &presence_message);

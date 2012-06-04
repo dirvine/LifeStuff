@@ -281,18 +281,17 @@ int UserStorage::CreateShare(const std::string &sender_public_id,
   std::vector<int> results;
   results.push_back(kPendingResult);
 
-  pcs::RemoteChunkStore::ValidationData validation_data(
-      PopulateValidationData(key_ring));
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
   VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback,
                                          args::_1,
                                          &mutex,
                                          &cond_var,
                                          &results[0]));
+  std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
   chunk_store_->Store(packet_id,
                       ComposeSignaturePacketValue(*signature_packets[0]),
                       callback,
-                      validation_data);
+                      key_shared);
   result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess) {
     DLOG(ERROR) << "Timed out waiting for the response";
@@ -367,18 +366,18 @@ int UserStorage::CreateOpenShare(const std::string &sender_public_id,
   boost::condition_variable cond_var;
   std::vector<int> results;
   results.push_back(kPendingResult);
-  pcs::RemoteChunkStore::ValidationData validation_data(
-      PopulateValidationData(key_ring));
+
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
   VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback,
                                          args::_1,
                                          &mutex,
                                          &cond_var,
                                          &results[0]));
+  std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
   chunk_store_->Store(packet_id,
                       ComposeSignaturePacketValue(*signature_packets[0]),
                       callback,
-                      validation_data);
+                      key_shared);
   result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess) {
     DLOG(ERROR) << "Timed out waiting for the response";
@@ -508,13 +507,12 @@ int UserStorage::StopShare(const std::string &sender_public_id,
   boost::condition_variable cond_var;
   std::vector<int> results;
   results.push_back(kPendingResult);
-  pcs::RemoteChunkStore::ValidationData validation_data(
-      PopulateValidationData(key_ring));
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
 
   VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback, args::_1,
                                          &mutex, &cond_var, &results[0]));
-  chunk_store_->Delete(packet_id, callback, validation_data);
+  std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
+  chunk_store_->Delete(packet_id, callback, key_shared);
 
   result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
@@ -799,15 +797,14 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
   std::vector<int> results;
   results.push_back(kPendingResult);
 
-  pcs::RemoteChunkStore::ValidationData validation_data(
-      PopulateValidationData(key_ring));
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
   VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback, args::_1,
                                          &mutex, &cond_var, &results[0]));
+  std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
   chunk_store_->Store(packet_id,
                       ComposeSignaturePacketValue(*signature_packets[0]),
                       callback,
-                      validation_data);
+                      key_shared);
 
   int result(WaitForResultsPtr(&mutex, &cond_var, &results));
   if (result != kSuccess)
@@ -833,9 +830,9 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
   results.clear();
   results.push_back(kPendingResult);
 
-  validation_data = PopulateValidationData(old_key_ring);
+  std::shared_ptr<asymm::Keys> old_key_shared(new asymm::Keys(old_key_ring));
   packet_id = ComposeSignaturePacketName(old_key_ring.identity);
-  chunk_store_->Delete(packet_id, callback, validation_data);
+  chunk_store_->Delete(packet_id, callback, old_key_shared);
 
   result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
@@ -1161,20 +1158,6 @@ bs2::connection UserStorage::ConnectToShareChangedSignal(
       return drive_in_user_space_->ConnectToShareChanged(function);
   }
   return bs2::connection();
-}
-
-pcs::RemoteChunkStore::ValidationData UserStorage::PopulateValidationData(
-    const asymm::Keys &key_ring) {
-  pcs::RemoteChunkStore::ValidationData validation_data;
-  validation_data.key_pair = key_ring;
-  pca::SignedData signed_data;
-  signed_data.set_data(RandomString(64));
-  asymm::Sign(signed_data.data(),
-              validation_data.key_pair.private_key,
-              &validation_data.ownership_proof);
-  signed_data.set_signature(validation_data.ownership_proof);
-  validation_data.ownership_proof = signed_data.SerializeAsString();
-  return validation_data;
 }
 
 int UserStorage::InformContactsOperation(

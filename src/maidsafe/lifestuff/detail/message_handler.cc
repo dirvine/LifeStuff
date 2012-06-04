@@ -170,14 +170,14 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
   BOOST_ASSERT(data.size() == 3U);
 
   // Get recipient's public key
-  pcs::RemoteChunkStore::ValidationData validation_data_mmid;
-  KeysAndProof(inbox_item.sender_public_id,
-                  passport::kMmid,
-                  true,
-                  &validation_data_mmid);
+  asymm::Keys validation_key_mmid;
+  KeysAndProof(inbox_item.sender_public_id, passport::kMmid, true,
+               &validation_key_mmid);
+  std::shared_ptr<asymm::Keys> validation_key(
+    new asymm::Keys(validation_key_mmid));
   asymm::PublicKey recipient_public_key;
   result = GetValidatedMmidPublicKey(recipient_contact.inbox_name,
-                                     validation_data_mmid,
+                                     validation_key,
                                      remote_chunk_store_,
                                      &recipient_public_key);
   if (result != kSuccess) {
@@ -227,7 +227,7 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
   remote_chunk_store_->Modify(inbox_id,
                               signed_data.SerializeAsString(),
                               callback,
-                              validation_data_mmid);
+                              validation_key);
 
   try {
     boost::mutex::scoped_lock lock(mutex);
@@ -671,14 +671,13 @@ void MessageHandler::RetrieveMessagesForAllIds() {
       continue;
     }
 
-    pcs::RemoteChunkStore::ValidationData validation_data_mmid;
-    KeysAndProof(std::get<0>(*it),
-                    passport::kMmid,
-                    true,
-                    &validation_data_mmid);
+    asymm::Keys validation_key_mmid;
+    KeysAndProof(std::get<0>(*it), passport::kMmid, true, &validation_key_mmid);
+    std::shared_ptr<asymm::Keys> validation_key(
+        new asymm::Keys(validation_key_mmid));
     std::string mmid_value(
         remote_chunk_store_->Get(AppendableByAllType(std::get<1>(*it)),
-                                 validation_data_mmid));
+                                 validation_key));
 
     if (mmid_value.empty()) {
       DLOG(WARNING) << "Failed to get MPID contents for " << std::get<0>(*it)
@@ -758,29 +757,21 @@ void MessageHandler::KeysAndProof(
     const std::string &public_id,
     passport::PacketType pt,
     bool confirmed,
-    pcs::RemoteChunkStore::ValidationData *validation_data) {
-  if (pt != passport::kAnmpid &&
-      pt != passport::kMpid &&
-      pt != passport::kMmid) {
+    asymm::Keys *validation_key) {
+  if (pt != passport::kAnmpid && pt != passport::kMpid && pt != passport::kMmid) {
     DLOG(ERROR) << "Not valid public ID packet, what'r'u playing at?";
     return;
   }
 
-  validation_data->key_pair.identity =
+  validation_key->identity =
       session_->passport().PacketName(pt, confirmed, public_id);
-  validation_data->key_pair.public_key =
+  validation_key->public_key =
       session_->passport().SignaturePacketValue(pt, confirmed, public_id);
-  validation_data->key_pair.private_key =
+  validation_key->private_key =
       session_->passport().PacketPrivateKey(pt, confirmed, public_id);
-  validation_data->key_pair.validation_token =
+  validation_key->validation_token =
       session_->passport().PacketSignature(pt, confirmed, public_id);
-  pca::SignedData signed_data;
-  signed_data.set_data(RandomString(64));
-  asymm::Sign(signed_data.data(),
-              validation_data->key_pair.private_key,
-              &validation_data->ownership_proof);
-  signed_data.set_signature(validation_data->ownership_proof);
-  validation_data->ownership_proof = signed_data.SerializeAsString();
+
 }
 
 

@@ -259,33 +259,33 @@ int PublicId::CreatePublicId(const std::string &public_id,
       session_->passport().PacketPrivateKey(passport::kMpid,
                                             false,
                                             public_id));
-  pcs::RemoteChunkStore::ValidationData validation_data_mmid;
-  pcs::RemoteChunkStore::ValidationData validation_data_mpid;
-  pcs::RemoteChunkStore::ValidationData validation_data_anmpid;
-  KeysAndProof(public_id, passport::kMmid, false, &validation_data_mmid);
-  KeysAndProof(public_id, passport::kMpid, false, &validation_data_mpid);
+  asymm::Keys validation_key_mmid, validation_key_mpid, validation_key_anmpid;
+  KeysAndProof(public_id, passport::kMmid, false, &validation_key_mmid);
+  KeysAndProof(public_id, passport::kMpid, false, &validation_key_mpid);
   KeysAndProof(public_id,
                passport::kAnmpid,
                false,
-               &validation_data_anmpid);
+               &validation_key_anmpid);
 
   std::string inbox_name(MaidsafeInboxName(data));
   VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback, args::_1,
                                          &mutex, &cond_var, &results[0]));
+  std::shared_ptr<asymm::Keys> key_mmid_shared(new asymm::Keys(validation_key_mmid));
   remote_chunk_store_->Store(inbox_name,
                              MaidsafeInboxValue(
                                  data,
-                                 validation_data_mmid.key_pair.private_key),
+                                 validation_key_mmid.private_key),
                              callback,
-                             validation_data_mmid);
+                             key_mmid_shared);
 
   std::string anmpid_name(AnmpidName(data));
   callback = std::bind(&SendContactInfoCallback, args::_1,
                        &mutex, &cond_var, &results[1]);
+  std::shared_ptr<asymm::Keys> key_anmpid_shared(new asymm::Keys(validation_key_anmpid));
   remote_chunk_store_->Store(anmpid_name,
                              AnmpidValue(data),
                              callback,
-                             validation_data_anmpid);
+                             key_anmpid_shared);
 
   std::string mpid_name(MpidName(data));
   callback = std::bind(&SendContactInfoCallback, args::_1,
@@ -293,18 +293,19 @@ int PublicId::CreatePublicId(const std::string &public_id,
   remote_chunk_store_->Store(mpid_name,
                              MpidValue(data),
                              callback,
-                             validation_data_anmpid);
+                             key_anmpid_shared);
 
   std::string mcid_name(MaidsafeContactIdName(public_id));
   callback = std::bind(&SendContactInfoCallback, args::_1,
                        &mutex, &cond_var, &results[3]);
+  std::shared_ptr<asymm::Keys> key_mpid_shared(new asymm::Keys(validation_key_mpid));
   remote_chunk_store_->Store(mcid_name,
                              MaidsafeContactIdValue(
                                  data,
                                  accepts_new_contacts,
-                                 validation_data_mpid.key_pair.private_key),
+                                 validation_key_mpid.private_key),
                              callback,
-                             validation_data_mpid);
+                             key_mpid_shared);
 
   result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
@@ -409,27 +410,29 @@ int PublicId::ModifyAppendability(const std::string &public_id,
   results.push_back(kPendingResult);
   results.push_back(kPendingResult);
 
-  pcs::RemoteChunkStore::ValidationData validation_data_mpid;
-  KeysAndProof(public_id, passport::kMpid, true, &validation_data_mpid);
+  asymm::Keys validation_key_mpid;
+  KeysAndProof(public_id, passport::kMpid, true, &validation_key_mpid);
   std::string packet_name(MaidsafeContactIdName(public_id));
   VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback, args::_1,
                                          &mutex, &cond_var, &results[0]));
+  std::shared_ptr<asymm::Keys> key_mpid_shared(new asymm::Keys(validation_key_mpid));
   remote_chunk_store_->Modify(packet_name,
                               ComposeModifyAppendableByAll(MPID_private_key,
                                                            appendability),
                               callback,
-                              validation_data_mpid);
+                              key_mpid_shared);
 
-  pcs::RemoteChunkStore::ValidationData validation_data_mmid;
-  KeysAndProof(public_id, passport::kMmid, true, &validation_data_mmid);
+  asymm::Keys validation_key_mmid;
+  KeysAndProof(public_id, passport::kMmid, true, &validation_key_mmid);
   packet_name = MaidsafeInboxName(data);
   callback = std::bind(&SendContactInfoCallback, args::_1,
                        &mutex, &cond_var, &results[1]);
+  std::shared_ptr<asymm::Keys> key_mmid_shared(new asymm::Keys(validation_key_mmid));
   remote_chunk_store_->Modify(packet_name,
                               ComposeModifyAppendableByAll(MMID_private_key,
                                                            appendability),
                               callback,
-                              validation_data_mmid);
+                              key_mmid_shared);
 
   result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
@@ -473,14 +476,15 @@ void PublicId::GetContactsHandle() {
       session_->passport().GetSelectableIdentityData(std::get<0>(*it),
                                                      true,
                                                      &data);
-      pcs::RemoteChunkStore::ValidationData validation_data_mpid;
+      asymm::Keys validation_key_mpid;
       KeysAndProof(std::get<0>(*it),
                    passport::kMpid,
                    true,
-                   &validation_data_mpid);
+                   &validation_key_mpid);
+      std::shared_ptr<asymm::Keys> key_mpid_shared(new asymm::Keys(validation_key_mpid));
       std::string mpid_value(
           remote_chunk_store_->Get(MaidsafeContactIdName(std::get<0>(*it)),
-                                   validation_data_mpid));
+                                   key_mpid_shared));
       if (mpid_value.empty()) {
         DLOG(ERROR) << "Failed to get MPID contents for " << std::get<0>(*it);
       } else {
@@ -643,16 +647,17 @@ int PublicId::RemoveContact(const std::string &public_id,
       session_->passport().PacketPrivateKey(passport::kMmid,
                                             false,
                                             public_id));
-  pcs::RemoteChunkStore::ValidationData validation_data_mmid;
-  KeysAndProof(public_id, passport::kMmid, false, &validation_data_mmid);
+  asymm::Keys validation_key_mmid;
+  KeysAndProof(public_id, passport::kMmid, false, &validation_key_mmid);
   std::string inbox_name(MaidsafeInboxName(std::get<0>(new_MMID)));
   VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback, args::_1,
                                          &mutex, &cond_var, &results[0]));
+  std::shared_ptr<asymm::Keys> key_mmid_shared(new asymm::Keys(validation_key_mmid));
   remote_chunk_store_->Store(inbox_name,
                              MaidsafeInboxValue(new_MMID,
                                                 new_inbox_private_key),
                              callback,
-                             validation_data_mmid);
+                             key_mmid_shared);
 
   result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
@@ -671,17 +676,18 @@ int PublicId::RemoveContact(const std::string &public_id,
   // Invalidate previous MMID, i.e. put it into kModifiableByOwner
   results[0] = kPendingResult;
 
-  validation_data_mmid = pcs::RemoteChunkStore::ValidationData();
-  KeysAndProof(public_id, passport::kMmid, true, &validation_data_mmid);
+  validation_key_mmid = asymm::Keys();
+  KeysAndProof(public_id, passport::kMmid, true, &validation_key_mmid);
   callback = std::bind(&SendContactInfoCallback, args::_1,
                        &mutex, &cond_var, &results[0]);
   inbox_name = MaidsafeInboxName(std::get<0>(old_MMID));
+  key_mmid_shared.reset(new asymm::Keys(validation_key_mmid));
   remote_chunk_store_->Modify(inbox_name,
                               ComposeModifyAppendableByAll(
                                   old_inbox_private_key,
                                   pca::kModifiableByOwner),
                               callback,
-                              validation_data_mmid);
+                              key_mmid_shared);
 
   result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
@@ -725,15 +731,17 @@ int PublicId::InformContactInfo(const std::string &public_id,
   std::vector<int> results(contacts.size(), kPendingResult);
   size_t size(contacts.size());
 
-  pcs::RemoteChunkStore::ValidationData validation_data_mpid;
-  KeysAndProof(public_id, passport::kMpid, true, &validation_data_mpid);
+  asymm::Keys validation_key_mpid;
+  KeysAndProof(public_id, passport::kMpid, true, &validation_key_mpid);
+  std::shared_ptr<asymm::Keys> key_mpid_shared(
+      new asymm::Keys(validation_key_mpid));
 
   for (size_t i = 0; i < size; ++i) {
     std::string recipient_public_id(contacts[i]);
     // Get recipient's public key
     asymm::PublicKey recipient_public_key;
     int result(GetValidatedMpidPublicKey(recipient_public_id,
-                                         validation_data_mpid,
+                                         key_mpid_shared,
                                          remote_chunk_store_,
                                          &recipient_public_key));
     if (result != kSuccess) {
@@ -777,7 +785,7 @@ int PublicId::InformContactInfo(const std::string &public_id,
     remote_chunk_store_->Modify(contact_id,
                                 signed_data.SerializeAsString(),
                                 callback,
-                                validation_data_mpid);
+                                key_mpid_shared);
   }
   result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
@@ -837,7 +845,7 @@ void PublicId::KeysAndProof(
     const std::string &public_id,
     passport::PacketType pt,
     bool confirmed,
-    pcs::RemoteChunkStore::ValidationData *validation_data) {
+    asymm::Keys *validation_key) {
   if (pt != passport::kAnmpid &&
       pt != passport::kMpid &&
       pt != passport::kMmid) {
@@ -845,21 +853,14 @@ void PublicId::KeysAndProof(
     return;
   }
 
-  validation_data->key_pair.identity =
+  validation_key->identity =
       session_->passport().PacketName(pt, confirmed, public_id);
-  validation_data->key_pair.public_key =
+  validation_key->public_key =
       session_->passport().SignaturePacketValue(pt, confirmed, public_id);
-  validation_data->key_pair.private_key =
+  validation_key->private_key =
       session_->passport().PacketPrivateKey(pt, confirmed, public_id);
-  validation_data->key_pair.validation_token =
+  validation_key->validation_token =
       session_->passport().PacketSignature(pt, confirmed, public_id);
-  pca::SignedData signed_data;
-  signed_data.set_data(RandomString(64));
-  asymm::Sign(signed_data.data(),
-              validation_data->key_pair.private_key,
-              &validation_data->ownership_proof);
-  signed_data.set_signature(validation_data->ownership_proof);
-  validation_data->ownership_proof = signed_data.SerializeAsString();
 }
 
 bs2::connection PublicId::ConnectToNewContactSignal(

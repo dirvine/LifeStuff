@@ -40,13 +40,13 @@ namespace lifestuff {
 
 int GetValidatedMpidPublicKey(
     const std::string &public_username,
-    const pcs::RemoteChunkStore::ValidationData &validation_data,
+    std::shared_ptr<asymm::Keys> validation_key,
     std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
     asymm::PublicKey *public_key);
 
 int GetValidatedMmidPublicKey(
     const std::string &mmid_name,
-    const pcs::RemoteChunkStore::ValidationData &validation_data,
+    std::shared_ptr<asymm::Keys> validation_key,
     std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
     asymm::PublicKey *public_key);
 
