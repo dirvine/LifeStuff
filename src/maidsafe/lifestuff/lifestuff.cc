@@ -44,8 +44,6 @@ const std::string kDownloadStuff("Accepted Files");
 
 const std::string kSharedStuff("Shared Stuff");
 const std::string kHiddenFileExtension(".ms_hidden");
-// const std::string kSharedStuff(drive::kMsShareRoot.filename().string());
-// const std::string kHiddenFileExtension(drive::kMsHidden.string());
 
 }  // namespace lifestuff
 

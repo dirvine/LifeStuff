@@ -32,7 +32,6 @@
 #include <utility>
 #include <vector>
 
-
 namespace maidsafe {
 
 namespace lifestuff {
@@ -97,9 +96,7 @@ extern const std::string kBlankProfilePicture;
 extern const std::string kHiddenFileExtension;
 
 /// General
-typedef std::function<void(const std::string&,
-                           const std::string&,
-                           const std::string&)>
+typedef std::function<void(const std::string&, const std::string&, const std::string&)>
         ThreeStringsFunction;
 typedef std::function<void(const std::string&,
                            const std::string&,

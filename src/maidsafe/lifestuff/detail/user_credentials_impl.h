@@ -29,6 +29,8 @@
 
 #include "boost/thread/mutex.hpp"
 
+#include "maidsafe/common/rsa.h"
+
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
 
@@ -63,17 +65,12 @@ class UserCredentialsImpl {
   UserCredentialsImpl(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
                     std::shared_ptr<Session> session);
   ~UserCredentialsImpl();
-  int GetUserInfo(const std::string &username,
-                  const std::string &pin,
-                  const std::string &password);
-  int CreateUser(const std::string &username,
-                 const std::string &pin,
-                 const std::string &password);
+  int GetUserInfo(const std::string &username, const std::string &pin, const std::string &password);
+  int CreateUser(const std::string &username, const std::string &pin, const std::string &password);
 
   int SaveSession();
 
-  int ChangeUsernamePin(const std::string &new_username,
-                        const std::string &new_pin);
+  int ChangeUsernamePin(const std::string &new_username, const std::string &new_pin);
   int ChangePassword(const std::string &new_password);
 
  private:

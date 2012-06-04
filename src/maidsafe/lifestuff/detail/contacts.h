@@ -127,20 +127,16 @@ class ContactsHandler {
   int AddContact(const Contact &contact);
   int DeleteContact(const std::string &public_id);
   int UpdateContact(const Contact &contact);
-  int UpdateMpidName(const std::string &public_id,
-                     const std::string &new_mpid_name);
-  int UpdateMmidName(const std::string &public_id,
-                     const std::string &new_inbox_name);
+  int UpdateMpidName(const std::string &public_id, const std::string &new_mpid_name);
+  int UpdateMmidName(const std::string &public_id, const std::string &new_inbox_name);
   int UpdateProfilePictureDataMap(const std::string &public_id,
                                   const std::string &profile_picture_data_map);
   int UpdateMpidPublicKey(const std::string &public_id,
                           const asymm::PublicKey &new_mpid_public_key);
   int UpdateMmidPublicKey(const std::string &public_id,
                           const asymm::PublicKey &new_mmid_public_key);
-  int UpdateStatus(const std::string &public_id,
-                   const ContactStatus &status);
-  int UpdatePresence(const std::string &public_id,
-                     const ContactPresence &presence);
+  int UpdateStatus(const std::string &public_id, const ContactStatus &status);
+  int UpdatePresence(const std::string &public_id, const ContactPresence &presence);
   int TouchContact(const std::string &public_id);
   int ContactInfo(const std::string &public_id, Contact *contact);
   void OrderedContacts(std::vector<Contact> *contacts,

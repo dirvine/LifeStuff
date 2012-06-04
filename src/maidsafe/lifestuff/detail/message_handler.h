@@ -82,24 +82,20 @@ class MessageHandler {
 
   // Extra library connections
   bs2::connection ConnectToChatSignal(const ChatFunction &function);
-  bs2::connection ConnectToFileTransferSignal(
-      const FileTransferFunction &function);
-  bs2::connection ConnectToOpenShareInvitationSignal(
-      const OpenShareInvitationFunction &function);
+  bs2::connection ConnectToFileTransferSignal(const FileTransferFunction &function);
+  bs2::connection ConnectToOpenShareInvitationSignal(const OpenShareInvitationFunction &function);
   bs2::connection ConnectToPrivateShareInvitationSignal(
       const PrivateShareInvitationFunction &function);
-  bs2::connection ConnectToPrivateShareDeletionSignal(
-      const PrivateShareDeletionFunction &function);
+  bs2::connection ConnectToPrivateShareDeletionSignal(const PrivateShareDeletionFunction &function);
   bs2::connection ConnectToPrivateMemberAccessChangeSignal(
       const PrivateMemberAccessChangeFunction &function);
-  bs2::connection ConnectToContactPresenceSignal(
-      const ContactPresenceFunction &function);
+  bs2::connection ConnectToContactPresenceSignal(const ContactPresenceFunction &function);
+
   bs2::connection ConnectToContactProfilePictureSignal(
       const ContactProfilePictureFunction &function);
 
   // Intra and extra library connections
-  bs2::connection ConnectToContactDeletionSignal(
-      const ContactDeletionFunction &function);
+  bs2::connection ConnectToContactDeletionSignal(const ContactDeletionFunction &function);
   bs2::connection ConnectToPrivateShareUserLeavingSignal(
       const PrivateShareUserLeavingSignal::slot_type &function);
 
@@ -126,10 +122,8 @@ class MessageHandler {
 
   bool ProtobufToInbox(const Message &message, InboxItem *inbox_item) const;
   bool InboxToProtobuf(const InboxItem &inbox_item, Message *message) const;
-  void GetNewMessages(const bptime::seconds &interval,
-                      const boost::system::error_code &error_code);
-  void ProcessRetrieved(const passport::SelectableIdData &data,
-                        const std::string &mmid_value);
+  void GetNewMessages(const bptime::seconds &interval, const boost::system::error_code &error_code);
+  void ProcessRetrieved(const passport::SelectableIdData &data, const std::string &mmid_value);
   void RetrieveMessagesForAllIds();
   bool MessagePreviouslyReceived(const std::string &message);
   void ClearExpiredReceivedMessages();
@@ -146,8 +140,7 @@ class MessageHandler {
   void ProcessPrivateShare(const InboxItem &private_share_message);
   void ProcessContactDeletion(const InboxItem &deletion_message);
 
-  void ContentsDontParseAsDataMap(const std::string& serialised_dm,
-                                  std::string* data_map);
+  void ContentsDontParseAsDataMap(const std::string& serialised_dm, std::string* data_map);
   void ProcessPresenceMessages();
 
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
