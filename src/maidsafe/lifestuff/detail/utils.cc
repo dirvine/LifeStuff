@@ -188,17 +188,17 @@ int CreateSmallTestFile(fs::path const& parent,
   return kSuccess;
 }
 
-void SendContactInfoCallback(const bool &response,
-                             boost::mutex *mutex,
-                             boost::condition_variable *cond_var,
-                             int *result) {
+void ChunkStoreOperationCallback(const bool &response,
+                                 boost::mutex *mutex,
+                                 boost::condition_variable *cond_var,
+                                 int *result) {
   if (!mutex || !cond_var || !result)
     return;
   boost::mutex::scoped_lock lock(*mutex);
   if (response)
     *result = kSuccess;
   else
-    *result = kSendContactInfoFailure;
+    *result = kRemoteChunkStoreFailure;
   cond_var->notify_one();
 }
 

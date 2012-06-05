@@ -44,20 +44,6 @@ namespace lifestuff {
 
 namespace {
 
-void SendMessageCallback(const bool &response,
-                         boost::mutex *mutex,
-                         boost::condition_variable *cond_var,
-                         int *result) {
-  if (!mutex || !cond_var || !result)
-    return;
-  boost::mutex::scoped_lock lock(*mutex);
-  if (response)
-    *result = kSuccess;
-  else
-    *result = kMessageHandlerError;
-  cond_var->notify_one();
-}
-
 std::string AppendableByAllType(const std::string &mmid) {
   return mmid + std::string(1, pca::kAppendableByAll);
 }
@@ -211,7 +197,7 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
   result = kPendingResult;
 
   std::string inbox_id(AppendableByAllType(recipient_contact.inbox_name));
-  VoidFunctionOneBool callback(std::bind(&SendMessageCallback, args::_1,
+  VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
                                          &mutex, &cond_var, &result));
   remote_chunk_store_->Modify(inbox_id,
                               signed_data.SerializeAsString(),

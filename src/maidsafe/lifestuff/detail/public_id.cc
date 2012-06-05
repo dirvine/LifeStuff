@@ -256,7 +256,7 @@ int PublicId::CreatePublicId(const std::string &public_id, bool accepts_new_cont
   KeysAndProof(public_id, passport::kAnmpid, false, &validation_data_anmpid);
 
   std::string inbox_name(MaidsafeInboxName(data));
-  VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback, args::_1,
+  VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
                                          &mutex, &cond_var, &results[0]));
   remote_chunk_store_->Store(inbox_name,
                              MaidsafeInboxValue(data, validation_data_mmid.key_pair.private_key),
@@ -264,15 +264,15 @@ int PublicId::CreatePublicId(const std::string &public_id, bool accepts_new_cont
                              validation_data_mmid);
 
   std::string anmpid_name(AnmpidName(data));
-  callback = std::bind(&SendContactInfoCallback, args::_1, &mutex, &cond_var, &results[1]);
+  callback = std::bind(&ChunkStoreOperationCallback, args::_1, &mutex, &cond_var, &results[1]);
   remote_chunk_store_->Store(anmpid_name, AnmpidValue(data), callback, validation_data_anmpid);
 
   std::string mpid_name(MpidName(data));
-  callback = std::bind(&SendContactInfoCallback, args::_1, &mutex, &cond_var, &results[2]);
+  callback = std::bind(&ChunkStoreOperationCallback, args::_1, &mutex, &cond_var, &results[2]);
   remote_chunk_store_->Store(mpid_name, MpidValue(data), callback, validation_data_anmpid);
 
   std::string mcid_name(MaidsafeContactIdName(public_id));
-  callback = std::bind(&SendContactInfoCallback, args::_1, &mutex, &cond_var, &results[3]);
+  callback = std::bind(&ChunkStoreOperationCallback, args::_1, &mutex, &cond_var, &results[3]);
   remote_chunk_store_->Store(mcid_name,
                              MaidsafeContactIdValue(data,
                                                     accepts_new_contacts,
@@ -378,7 +378,7 @@ int PublicId::ModifyAppendability(const std::string &public_id, const char appen
   pcs::RemoteChunkStore::ValidationData validation_data_mpid;
   KeysAndProof(public_id, passport::kMpid, true, &validation_data_mpid);
   std::string packet_name(MaidsafeContactIdName(public_id));
-  VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback, args::_1,
+  VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
                                          &mutex, &cond_var, &results[0]));
   remote_chunk_store_->Modify(packet_name,
                               ComposeModifyAppendableByAll(MPID_private_key, appendability),
@@ -388,7 +388,7 @@ int PublicId::ModifyAppendability(const std::string &public_id, const char appen
   pcs::RemoteChunkStore::ValidationData validation_data_mmid;
   KeysAndProof(public_id, passport::kMmid, true, &validation_data_mmid);
   packet_name = MaidsafeInboxName(data);
-  callback = std::bind(&SendContactInfoCallback, args::_1, &mutex, &cond_var, &results[1]);
+  callback = std::bind(&ChunkStoreOperationCallback, args::_1, &mutex, &cond_var, &results[1]);
   remote_chunk_store_->Modify(packet_name,
                               ComposeModifyAppendableByAll(MMID_private_key, appendability),
                               callback,
@@ -576,7 +576,7 @@ int PublicId::RemoveContact(const std::string &public_id, const std::string &con
   pcs::RemoteChunkStore::ValidationData validation_data_mmid;
   KeysAndProof(public_id, passport::kMmid, false, &validation_data_mmid);
   std::string inbox_name(MaidsafeInboxName(std::get<0>(new_MMID)));
-  VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback, args::_1,
+  VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
                                          &mutex, &cond_var, &results[0]));
   remote_chunk_store_->Store(inbox_name,
                              MaidsafeInboxValue(new_MMID, new_inbox_private_key),
@@ -601,7 +601,7 @@ int PublicId::RemoveContact(const std::string &public_id, const std::string &con
 
   validation_data_mmid = pcs::RemoteChunkStore::ValidationData();
   KeysAndProof(public_id, passport::kMmid, true, &validation_data_mmid);
-  callback = std::bind(&SendContactInfoCallback, args::_1, &mutex, &cond_var, &results[0]);
+  callback = std::bind(&ChunkStoreOperationCallback, args::_1, &mutex, &cond_var, &results[0]);
   inbox_name = MaidsafeInboxName(std::get<0>(old_MMID));
   remote_chunk_store_->Modify(inbox_name,
                               ComposeModifyAppendableByAll(old_inbox_private_key,
@@ -693,7 +693,7 @@ int PublicId::InformContactInfo(const std::string &public_id,
 
     // Store encrypted MCID at recipient's MPID's name
     std::string contact_id(MaidsafeContactIdName(recipient_public_id));
-    VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback, args::_1,
+    VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
                                            &mutex, &cond_var, &results[i]));
     remote_chunk_store_->Modify(contact_id,
                                 signed_data.SerializeAsString(),

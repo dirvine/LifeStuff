@@ -278,7 +278,7 @@ int UserStorage::CreateShare(const std::string &sender_public_id,
 
   pcs::RemoteChunkStore::ValidationData validation_data(PopulateValidationData(key_ring));
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
-  VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback,
+  VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback,
                                          args::_1,
                                          &mutex,
                                          &cond_var,
@@ -357,7 +357,7 @@ int UserStorage::CreateOpenShare(const std::string &sender_public_id,
   results.push_back(kPendingResult);
   pcs::RemoteChunkStore::ValidationData validation_data(PopulateValidationData(key_ring));
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
-  VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback,
+  VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback,
                                          args::_1,
                                          &mutex,
                                          &cond_var,
@@ -501,7 +501,7 @@ int UserStorage::StopShare(const std::string &sender_public_id,
   pcs::RemoteChunkStore::ValidationData validation_data(PopulateValidationData(key_ring));
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
 
-  VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback,
+  VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback,
                                          args::_1,
                                          &mutex,
                                          &cond_var,
@@ -797,7 +797,7 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
 
   pcs::RemoteChunkStore::ValidationData validation_data(PopulateValidationData(key_ring));
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
-  VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback, args::_1,
+  VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
                                          &mutex, &cond_var, &results[0]));
   chunk_store_->Store(packet_id,
                       ComposeSignaturePacketValue(*signature_packets[0]),
