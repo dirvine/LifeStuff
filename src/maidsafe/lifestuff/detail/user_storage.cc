@@ -67,23 +67,22 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
   session_ = session;
   asymm::Keys key_ring;
   key_ring.identity = session->passport().PacketName(passport::kPmid, true);
-  key_ring.public_key =
-      session->passport().SignaturePacketValue(passport::kPmid, true);
-  key_ring.private_key = session->passport().PacketPrivateKey(passport::kPmid,
-                                                              true);
-  key_ring.validation_token =
-      session->passport().PacketSignature(passport::kPmid, true);
-  drive_in_user_space_.reset(new MaidDriveInUserSpace(chunk_store_, key_ring));
+  key_ring.public_key = session->passport().SignaturePacketValue(passport::kPmid, true);
+  key_ring.private_key = session->passport().PacketPrivateKey(passport::kPmid, true);
+  key_ring.validation_token = session->passport().PacketSignature(passport::kPmid, true);
+  int64_t max_space(session->max_space()), used_space(session->used_space());
+  drive_in_user_space_.reset(new MaidDriveInUserSpace(chunk_store_,
+                                                      key_ring,
+                                                      max_space,
+                                                      used_space));
 
   int result(kGeneralError);
   if (creation) {
-    session->set_unique_user_id(
-        crypto::Hash<crypto::SHA512>(session->session_name()));
+    session->set_unique_user_id(crypto::Hash<crypto::SHA512>(session->session_name()));
     result = drive_in_user_space_->Init(session->unique_user_id(), "");
     session->set_root_parent_id(drive_in_user_space_->root_parent_id());
   } else {
-    result = drive_in_user_space_->Init(session->unique_user_id(),
-                                        session->root_parent_id());
+    result = drive_in_user_space_->Init(session->unique_user_id(), session->root_parent_id());
   }
 
   if (result != kSuccess) {
@@ -124,9 +123,10 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
 void UserStorage::UnMountDrive() {
   if (!mount_status_)
     return;
+  int64_t max_space(0), used_space(0);
 #ifdef WIN32
-  std::static_pointer_cast<MaidDriveInUserSpace>(
-      drive_in_user_space_)->CleanUp();
+  std::static_pointer_cast<MaidDriveInUserSpace>(drive_in_user_space_)->CleanUp(max_space,
+                                                                                used_space);
 #else
   drive_in_user_space_->Unmount();
   drive_in_user_space_->WaitUntilUnMounted();
@@ -135,6 +135,8 @@ void UserStorage::UnMountDrive() {
   fs::remove_all(mount_dir_, error_code);
   mount_thread_->join();
 #endif
+  session_->set_max_space(max_space); // unnecessary
+  session_->set_used_space(used_space);
   mount_status_ = false;
 }
 

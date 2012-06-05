@@ -65,6 +65,8 @@ class Session {
   std::string session_name() const;
   std::string unique_user_id() const;
   std::string root_parent_id() const;
+  int64_t max_space() const;
+  int64_t used_space() const;
   std::string profile_picture_data_map(const std::string &public_id) const;
 
   void set_def_con_level(DefConLevels defconlevel);
@@ -75,6 +77,8 @@ class Session {
   void clear_session_name();
   void set_unique_user_id(const std::string &unique_user_id);
   void set_root_parent_id(const std::string &root_parent_id);
+  void set_max_space(const int64_t &max_space);
+  void set_used_space(const int64_t &used_space);
   std::string encrypted_tmid() const;
   std::string encrypted_stmid() const;
   std::string serialised_data_atlas() const;
@@ -82,16 +86,13 @@ class Session {
   std::string surrogate_serialised_data_atlas() const;
   bool logging_out() const;
   bool logged_in() const;
-  bool set_profile_picture_data_map(
-      const std::string &public_id,
-      const std::string &profile_picture_data_map);
+  bool set_profile_picture_data_map(const std::string &public_id,
+                                    const std::string &profile_picture_data_map);
   void set_encrypted_tmid(const std::string &encrypted_tmid);
   void set_encrypted_stmid(const std::string &encrypted_stmid);
   void set_serialised_data_atlas(const std::string &serialised_data_atlas);
-  void set_uc_serialised_data_atlas(
-      const std::string &uc_serialised_data_atlas);
-  void set_surrogate_serialised_data_atlas(
-      const std::string &surrogate_serialised_data_atlas);
+  void set_uc_serialised_data_atlas(const std::string &uc_serialised_data_atlas);
+  void set_surrogate_serialised_data_atlas(const std::string &surrogate_serialised_data_atlas);
   void set_logging_out(const bool &logging_out);
   void set_logged_in(const bool &logged_in);
 
@@ -107,8 +108,7 @@ class Session {
 
   int ParseKeyChain(const std::string &serialised_keyring,
                     const std::string &serialised_selectables);
-  void SerialiseKeyChain(std::string *serialised_keyring,
-                         std::string *serialised_selectables);
+  void SerialiseKeyChain(std::string *serialised_keyring, std::string *serialised_selectables);
 
   bool CreateTestPackets(bool with_public_ids);
   std::vector<std::string> GetPublicIdentities();

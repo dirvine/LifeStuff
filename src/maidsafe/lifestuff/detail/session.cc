@@ -48,10 +48,12 @@ struct UserDetails {
         password(),
         session_name(),
         unique_user_id(),
-        root_parent_id() {}
+        root_parent_id(),
+        max_space(1073741824),
+        used_space(0) {}
   DefConLevels defconlevel;
-  std::string keyword, pin, password, session_name, unique_user_id,
-              root_parent_id;
+  std::string keyword, pin, password, session_name, unique_user_id, root_parent_id;
+  int64_t max_space, used_space;
 };
 
 Session::Session()
@@ -77,6 +79,8 @@ bool Session::Reset() {
   user_details_->session_name.clear();
   user_details_->unique_user_id.clear();
   user_details_->root_parent_id.clear();
+  user_details_->max_space = 1073741824;
+  user_details_->used_space = 0;
   // TODO(Fraser#5#): 2011-11-17 - Implement in passport
   passport_.ClearKeyChain(true, true, true);
   contact_handler_map_.clear();
@@ -131,6 +135,14 @@ std::string Session::unique_user_id() const {
 std::string Session::root_parent_id() const {
   return user_details_->root_parent_id;
 }
+
+int64_t Session::max_space() const {
+  return user_details_->max_space;
+}
+int64_t Session::used_space() const {
+  return user_details_->used_space;
+}
+
 std::string Session::profile_picture_data_map(
     const std::string &public_id) const {
   auto it(profile_picture_map_.find(public_id));
@@ -201,6 +213,16 @@ void Session::set_root_parent_id(const std::string &root_parent_id) {
     DLOG(WARNING) << "Passed empty root parent ID.";
   user_details_->root_parent_id = root_parent_id;
 }
+void Session::set_max_space(const int64_t &max_space) {
+  if (max_space == 0)
+    DLOG(WARNING) << "Passed zero maximum space.";
+  user_details_->max_space = max_space;
+}
+void Session::set_used_space(const int64_t &used_space) {
+  if (used_space > user_details_->max_space)
+    DLOG(WARNING) << "Passed used space greater than maximum.";
+  user_details_->used_space = used_space;
+}
 bool Session::set_profile_picture_data_map(
     const std::string &public_id,
     const std::string &profile_picture_data_map) {
@@ -257,6 +279,8 @@ int Session::ParseDataAtlas(const std::string &serialised_data_atlas) {
 
   set_unique_user_id(data_atlas.drive_data().unique_user_id());
   set_root_parent_id(data_atlas.drive_data().root_parent_id());
+  set_max_space(data_atlas.drive_data().max_space());
+  set_used_space(data_atlas.drive_data().used_space());
 
   int result(0);
   result = ParseKeyChain(data_atlas.passport_data().serialised_keyring(),
@@ -294,6 +318,8 @@ int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
   DriveData *drive_data(data_atlas.mutable_drive_data());
   drive_data->set_unique_user_id(unique_user_id());
   drive_data->set_root_parent_id(root_parent_id());
+  drive_data->set_max_space(max_space());
+  drive_data->set_used_space(used_space());
 
   data_atlas.set_timestamp(boost::lexical_cast<std::string>(
       GetDurationSinceEpoch().total_microseconds()));
@@ -310,9 +336,7 @@ int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
   passport_data->set_serialised_selectables(serialised_selectables);
 
   std::vector<Contact> contacts;
-  for (auto it(contact_handler_map().begin());
-       it != contact_handler_map().end();
-       ++it) {
+  for (auto it(contact_handler_map().begin()); it != contact_handler_map().end(); ++it) {
     contacts.clear();
     PublicIdentity *pub_id(data_atlas.add_public_ids());
     pub_id->set_public_id((*it).first);
@@ -330,8 +354,7 @@ int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
       pc->set_rank(contacts[n].rank);
       pc->set_last_contact(contacts[n].last_contact);
       pc->set_profile_picture_data_map(contacts[n].profile_picture_data_map);
-      DLOG(INFO) << "Added contact " << contacts[n].public_id
-                  << " to " << (*it).first << " map.";
+      DLOG(INFO) << "Added contact " << contacts[n].public_id << " to " << (*it).first << " map.";
     }
   }
 

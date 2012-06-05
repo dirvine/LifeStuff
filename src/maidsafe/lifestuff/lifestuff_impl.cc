@@ -279,9 +279,7 @@ int LifeStuffImpl::CreateUser(const std::string &keyword,
   }
 
   boost::system::error_code error_code;
-  fs::path mount_dir(GetHomeDir() /
-                     kAppHomeDirectory /
-                     session_->session_name());
+  fs::path mount_dir(GetHomeDir() / kAppHomeDirectory / session_->session_name());
   if (!fs::exists(mount_dir, error_code)) {
     fs::create_directories(mount_dir, error_code);
     if (error_code) {
@@ -298,8 +296,7 @@ int LifeStuffImpl::CreateUser(const std::string &keyword,
   }
 
   fs::path mount_path(user_storage_->mount_dir());
-  fs::create_directories(mount_path / kMyStuff / kDownloadStuff,
-                         error_code);
+  fs::create_directories(mount_path / kMyStuff / kDownloadStuff, error_code);
   if (error_code) {
     DLOG(ERROR) << "Failed creating My Stuff: " << error_code.message();
     return kGeneralError;

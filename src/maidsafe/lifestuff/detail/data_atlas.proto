@@ -46,6 +46,8 @@ message PassportData {
 message DriveData {
   required bytes unique_user_id = 1;
   required bytes root_parent_id = 2;
+  required int64 max_space = 3;
+  required int64 used_space = 4;
 }
 
 message DataAtlas {
