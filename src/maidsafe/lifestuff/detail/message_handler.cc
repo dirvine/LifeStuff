@@ -500,24 +500,6 @@ void MessageHandler::ProcessContactProfilePicture(
                                   profile_picture_message.timestamp);
 }
 
-bool CheckCorrectKeys(const std::vector<std::string> &content,
-                      asymm::Keys *keys) {
-  if (content.at(kKeysIdentity).empty())
-    return true;
-  asymm::DecodePrivateKey(content.at(kKeysPrivateKey), &(keys->private_key));
-  asymm::DecodePublicKey(content.at(kKeysPublicKey), &(keys->public_key));
-  if (!asymm::ValidateKey(keys->private_key) ||
-      !asymm::ValidateKey(keys->public_key)) {
-    DLOG(ERROR) << "Keys in message are invalid.";
-    keys->private_key = asymm::PrivateKey();
-    keys->public_key = asymm::PublicKey();
-    return false;
-  }
-  keys->identity = content.at(kKeysIdentity);
-  keys->validation_token = content.at(kKeysValidationToken);
-  return true;
-}
-
 void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
   if (inbox_item.content.empty() || inbox_item.content[kShareId].empty()) {
     DLOG(ERROR) << "No share ID.";
@@ -526,8 +508,7 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
 
   fs::path share_path;
   // The outer * is to refer to the result of the signal
-  int result(*private_share_details_signal_(inbox_item.content[kShareId],
-                                            &share_path));
+  int result(*private_share_details_signal_(inbox_item.content[kShareId], &share_path));
   if ((result != kSuccess || share_path.empty()) &&
       inbox_item.item_type != kPrivateShareInvitation) {
     DLOG(ERROR) << "result: " << result << ", path: " << share_path;
@@ -546,8 +527,7 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
                                    inbox_item.timestamp);
   } else if (inbox_item.item_type == kPrivateShareKeysUpdate) {
     asymm::Keys key_ring;
-    if (!CheckCorrectKeys(inbox_item.content,
-                          &key_ring)) {
+    if (!CheckCorrectKeys(inbox_item.content, &key_ring)) {
       DLOG(ERROR) << "Incorrect elements in message.";
       return;
     }
@@ -580,8 +560,7 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
                                         inbox_item.timestamp);
   } else if (inbox_item.item_type == kPrivateShareMembershipUpgrade) {
     asymm::Keys key_ring;
-    if (!CheckCorrectKeys(inbox_item.content,
-                          &key_ring)) {
+    if (!CheckCorrectKeys(inbox_item.content, &key_ring)) {
       DLOG(ERROR) << "Incorrect elements in message.";
       return;
     }
@@ -623,8 +602,7 @@ void MessageHandler::ProcessOpenShareInvitation(const InboxItem &inbox_item) {
   BOOST_ASSERT(inbox_item.item_type == kOpenShareInvitation);
   Message message;
   InboxToProtobuf(inbox_item, &message);
-  if (!save_open_share_data_signal_(message.SerializeAsString(),
-                                    inbox_item.content[kShareId])) {
+  if (!save_open_share_data_signal_(message.SerializeAsString(), inbox_item.content[kShareId])) {
     DLOG(ERROR) << "Failed to save received share data";
     return;
   }
@@ -654,26 +632,19 @@ void MessageHandler::RetrieveMessagesForAllIds() {
   session_->passport().SelectableIdentitiesList(&selectables);
   for (auto it(selectables.begin()); it != selectables.end(); ++it) {
     passport::SelectableIdentityData data;
-    result = session_->passport().GetSelectableIdentityData(std::get<0>(*it),
-                                                            true,
-                                                            &data);
+    result = session_->passport().GetSelectableIdentityData(std::get<0>(*it), true, &data);
     if (result != kSuccess || data.size() != 3U) {
       DLOG(ERROR) << "Failed to get own public ID data: " << result;
       continue;
     }
 
     pcs::RemoteChunkStore::ValidationData validation_data_mmid;
-    KeysAndProof(std::get<0>(*it),
-                    passport::kMmid,
-                    true,
-                    &validation_data_mmid);
+    KeysAndProof(std::get<0>(*it), passport::kMmid, true, &validation_data_mmid);
     std::string mmid_value(
-        remote_chunk_store_->Get(AppendableByAllType(std::get<1>(*it)),
-                                 validation_data_mmid));
+        remote_chunk_store_->Get(AppendableByAllType(std::get<1>(*it)), validation_data_mmid));
 
     if (mmid_value.empty()) {
-      DLOG(WARNING) << "Failed to get MPID contents for " << std::get<0>(*it)
-                    << ": " << result;
+      DLOG(WARNING) << "Failed to get MPID contents for " << std::get<0>(*it) << ": " << result;
     } else {
       ProcessRetrieved(*it, mmid_value);
       ClearExpiredReceivedMessages();
@@ -726,8 +697,7 @@ bool MessageHandler::InboxToProtobuf(const InboxItem &inbox_item,
 bool MessageHandler::MessagePreviouslyReceived(const std::string &message) {
   if (received_messages_.find(message) == received_messages_.end()) {
     received_messages_.insert(
-        std::make_pair(message,
-                       GetDurationSinceEpoch().total_milliseconds()));
+        std::make_pair(message, GetDurationSinceEpoch().total_milliseconds()));
     return false;
   }
 
@@ -750,9 +720,7 @@ void MessageHandler::KeysAndProof(
     passport::PacketType pt,
     bool confirmed,
     pcs::RemoteChunkStore::ValidationData *validation_data) {
-  if (pt != passport::kAnmpid &&
-      pt != passport::kMpid &&
-      pt != passport::kMmid) {
+  if (pt != passport::kAnmpid && pt != passport::kMpid && pt != passport::kMmid) {
     DLOG(ERROR) << "Not valid public ID packet, what'r'u playing at?";
     return;
   }

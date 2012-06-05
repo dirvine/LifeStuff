@@ -87,12 +87,8 @@ bool CheckPinValidity(const std::string &pin);
 bool CheckPasswordValidity(const std::string &password);
 
 fs::path CreateTestDirectory(fs::path const& parent, std::string *tail);
-int CreateTestFile(fs::path const& parent,
-                   int size_in_mb,
-                   std::string *file_name);
-int CreateSmallTestFile(fs::path const& parent,
-                        int size_in_kb,
-                        std::string *file_name);
+int CreateTestFile(fs::path const& parent, int size_in_mb, std::string *file_name);
+int CreateSmallTestFile(fs::path const& parent, int size_in_kb, std::string *file_name);
 
 void SendContactInfoCallback(const bool &response,
                              boost::mutex *mutex,
@@ -108,22 +104,18 @@ int WaitForResults(boost::mutex &mutex,  // NOLINT (Dan)
 
 std::string ComposeSignaturePacketName(const std::string &name);
 
-std::string ComposeSignaturePacketValue(
-    const maidsafe::pki::SignaturePacket &packet);
+std::string ComposeSignaturePacketValue(const maidsafe::pki::SignaturePacket &packet);
 
-std::shared_ptr<encrypt::DataMap> ParseSerialisedDataMap(
-    const std::string &serialised_data_map);
+std::shared_ptr<encrypt::DataMap> ParseSerialisedDataMap(const std::string &serialised_data_map);
 
 std::string PutFilenameData(const std::string &file_name);
 void GetFilenameData(const std::string &content,
                      std::string *file_name,
                      std::string *serialised_data_map);
-std::string GetNameInPath(const fs::path &save_path,
-                          const std::string &file_name);
+std::string GetNameInPath(const fs::path &save_path, const std::string &file_name);
+bool CheckCorrectKeys(const std::vector<std::string> &content, asymm::Keys *keys);
 int CopyDir(const fs::path& source, const fs::path& dest);
-
 int CopyDirectoryContent(const fs::path& from, const fs::path& to);
-
 bool VerifyOrCreatePath(const fs::path& path);
 
 std::string IsoTimeWithMicroSeconds();

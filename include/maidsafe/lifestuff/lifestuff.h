@@ -32,7 +32,6 @@
 #include <utility>
 #include <vector>
 
-
 namespace maidsafe {
 
 namespace lifestuff {
