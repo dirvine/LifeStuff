@@ -60,7 +60,7 @@ class PublicId {
   typedef std::shared_ptr<ContactConfirmedSignal> ContactConfirmedSignalPtr;
 
   PublicId(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
-           std::shared_ptr<Session> session,
+           Session& session,
            ba::io_service &asio_service);  // NOLINT (Fraser)
   ~PublicId();
 
@@ -122,7 +122,7 @@ class PublicId {
                     pcs::RemoteChunkStore::ValidationData *validation_data);
 
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
-  std::shared_ptr<Session> session_;
+  Session& session_;
   ba::deadline_timer get_new_contacts_timer_, check_online_contacts_timer_;
   NewContactSignalPtr new_contact_signal_;
   ContactConfirmedSignalPtr contact_confirmed_signal_;

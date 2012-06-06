@@ -57,9 +57,9 @@ class MessageHandlerTest : public testing::Test {
  public:
   MessageHandlerTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
-        session1_(new Session),
-        session2_(new Session),
-        session3_(new Session),
+        session1_(),
+        session2_(),
+        session3_(),
         remote_chunk_store1_(),
         remote_chunk_store2_(),
         remote_chunk_store3_(),
@@ -143,9 +143,6 @@ class MessageHandlerTest : public testing::Test {
 
  protected:
   void SetUp() {
-    session1_->Reset();
-    session2_->Reset();
-    session3_->Reset();
     asio_service1_.Start(10);
     asio_service2_.Start(10);
     asio_service3_.Start(10);
@@ -232,7 +229,7 @@ class MessageHandlerTest : public testing::Test {
   }
 
   std::shared_ptr<fs::path> test_dir_;
-  std::shared_ptr<Session> session1_, session2_, session3_;
+  Session session1_, session2_, session3_;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store1_,
                                          remote_chunk_store2_,
                                          remote_chunk_store3_;
@@ -274,7 +271,7 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
   EXPECT_EQ(public_username2_, received_public_username_);
   Contact received_contact;
   EXPECT_EQ(kSuccess,
-            session1_->contact_handler_map()[public_username1_]->ContactInfo(
+            session1_.contact_handler_map()[public_username1_]->ContactInfo(
                 received_public_username_,
                 &received_contact));
 
@@ -327,7 +324,7 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
   ASSERT_EQ(public_username2_, received_public_username_);
   Contact received_contact;
   ASSERT_EQ(kSuccess,
-            session1_->contact_handler_map()[public_username1_]->ContactInfo(
+            session1_.contact_handler_map()[public_username1_]->ContactInfo(
                 received_public_username_,
                 &received_contact));
 

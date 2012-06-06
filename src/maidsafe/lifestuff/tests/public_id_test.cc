@@ -56,8 +56,8 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
  public:
   PublicIdTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
-        session1_(new Session),
-        session2_(new Session),
+        session1_(),
+        session2_(),
         remote_chunk_store1_(),
         remote_chunk_store2_(),
         public_id1_(),
@@ -130,8 +130,8 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
 
  protected:
   void SetUp() {
-    session1_->Reset();
-    session2_->Reset();
+    session1_.Reset();
+    session2_.Reset();
     asio_service1_.Start(10);
     asio_service2_.Start(10);
 
@@ -165,13 +165,13 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
     remote_chunk_store2_->WaitForCompletion();
   }
 
-  void CreateTestSignaturePackets(std::shared_ptr<Session> session) {
-    ASSERT_EQ(kSuccess, session->passport().CreateSigningPackets());
-    ASSERT_EQ(kSuccess, session->passport().ConfirmSigningPackets());
+  void CreateTestSignaturePackets(Session& session) {
+    ASSERT_EQ(kSuccess, session.passport().CreateSigningPackets());
+    ASSERT_EQ(kSuccess, session.passport().ConfirmSigningPackets());
   }
 
   std::shared_ptr<fs::path> test_dir_;
-  std::shared_ptr<Session> session1_, session2_;
+  Session session1_, session2_;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store1_,
                                          remote_chunk_store2_;
   std::shared_ptr<PublicId> public_id1_, public_id2_;
@@ -250,7 +250,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
 
   ASSERT_EQ(public_identity2_, received_public_identity_);
   Contact received_contact;
-  ASSERT_EQ(kSuccess, session1_->contact_handler_map()[public_identity1_]->ContactInfo(
+  ASSERT_EQ(kSuccess, session1_.contact_handler_map()[public_identity1_]->ContactInfo(
                           received_public_identity_,
                           &received_contact));
   ASSERT_EQ(kPendingResponse, received_contact.status);
@@ -265,7 +265,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
   }
   ASSERT_EQ(public_id3, received_public_identity_);
   ASSERT_EQ(kSuccess,
-            session1_->contact_handler_map()[public_identity1_]->ContactInfo(
+            session1_.contact_handler_map()[public_identity1_]->ContactInfo(
                 received_public_identity_,
                 &received_contact));
   ASSERT_EQ(kPendingResponse, received_contact.status);
@@ -292,7 +292,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   Contact received_contact;
   ASSERT_EQ(kSuccess,
-            session2_->contact_handler_map()[public_identity2_]->ContactInfo(
+            session2_.contact_handler_map()[public_identity2_]->ContactInfo(
                 public_identity1_,
                 &received_contact));
   ASSERT_EQ(kRequestSent, received_contact.status);
@@ -306,7 +306,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
   ASSERT_EQ(public_identity2_, received_public_identity_);
   received_contact = Contact();
   ASSERT_EQ(kSuccess,
-            session1_->contact_handler_map()[public_identity1_]->ContactInfo(
+            session1_.contact_handler_map()[public_identity1_]->ContactInfo(
                 public_identity2_,
                 &received_contact));
   ASSERT_EQ(kPendingResponse, received_contact.status);
@@ -316,7 +316,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
   // Contact should now be confirmed after reply
   received_contact = Contact();
   ASSERT_EQ(kSuccess,
-            session1_->contact_handler_map()[public_identity1_]->ContactInfo(
+            session1_.contact_handler_map()[public_identity1_]->ContactInfo(
                 public_identity2_,
                 &received_contact));
   ASSERT_EQ(kConfirmed, received_contact.status);
@@ -330,7 +330,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
   ASSERT_EQ(public_identity1_, confirmed_contact);
   received_contact = Contact();
   ASSERT_EQ(kSuccess,
-            session2_->contact_handler_map()[public_identity2_]->ContactInfo(
+            session2_.contact_handler_map()[public_identity2_]->ContactInfo(
                 public_identity1_,
                 &received_contact));
   ASSERT_EQ(kConfirmed, received_contact.status);
@@ -359,7 +359,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithRefusal) {
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   Contact received_contact;
   ASSERT_EQ(kSuccess,
-            session2_->contact_handler_map()[public_identity2_]->ContactInfo(
+            session2_.contact_handler_map()[public_identity2_]->ContactInfo(
                 public_identity1_,
                 &received_contact));
   ASSERT_EQ(kRequestSent, received_contact.status);
@@ -373,14 +373,14 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithRefusal) {
   ASSERT_EQ(public_identity2_, received_public_identity_);
   received_contact = Contact();
   ASSERT_EQ(kSuccess,
-            session1_->contact_handler_map()[public_identity1_]->ContactInfo(
+            session1_.contact_handler_map()[public_identity1_]->ContactInfo(
                 public_identity2_,
                 &received_contact));
   ASSERT_EQ(kPendingResponse, received_contact.status);
   ASSERT_EQ(kSuccess, public_id1_->ConfirmContact(public_identity1_, public_identity2_, false));
   received_contact = Contact();
   ASSERT_NE(kSuccess,
-            session1_->contact_handler_map()[public_identity1_]->ContactInfo(
+            session1_.contact_handler_map()[public_identity1_]->ContactInfo(
                 public_identity2_,
                 &received_contact));
 }

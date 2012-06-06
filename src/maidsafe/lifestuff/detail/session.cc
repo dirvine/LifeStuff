@@ -291,7 +291,7 @@ bool Session::CreateTestPackets(bool with_public_ids) {
   return true;
 }
 
-std::vector<std::string> Session::GetPublicIdentities() {
+std::vector<std::string> Session::PublicIdentities() const {
   std::vector<std::string> public_identities;
   std::for_each(contact_handler_map_.begin(),
                 contact_handler_map_.end(),

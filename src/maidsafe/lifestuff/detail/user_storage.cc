@@ -44,7 +44,7 @@ namespace maidsafe {
 namespace lifestuff {
 
 UserStorage::UserStorage(std::shared_ptr<pcs::RemoteChunkStore> chunk_store,
-                         std::shared_ptr<MessageHandler> message_handler)
+                         MessageHandler& message_handler)
     : mount_status_(false),
       chunk_store_(chunk_store),
       drive_in_user_space_(),
@@ -55,7 +55,7 @@ UserStorage::UserStorage(std::shared_ptr<pcs::RemoteChunkStore> chunk_store,
       mount_thread_() {}
 
 void UserStorage::MountDrive(const fs::path &mount_dir_path,
-                             std::shared_ptr<Session> session,
+                             Session* session,
                              bool creation,
                              const std::string &drive_logo) {
   if (mount_status_) {
@@ -240,11 +240,6 @@ int UserStorage::CreateShare(const std::string &sender_public_id,
                              const StringIntMap &contacts,
                              bool private_share,
                              StringIntMap *contacts_results) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
-
   int result(kSuccess);
   if (!drive_path.empty()) {
     result = drive_in_user_space_->MoveDirectory(drive_path, share_path);
@@ -323,10 +318,6 @@ int UserStorage::CreateOpenShare(const std::string &sender_public_id,
                                  const fs::path &share_path,
                                  const StringIntMap &contacts,
                                  StringIntMap *contacts_results) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
   int result(kSuccess);
   if (!drive_path.empty()) {
     result = drive_in_user_space_->MoveDirectory(drive_path, share_path);
@@ -404,11 +395,6 @@ int UserStorage::InsertShare(const fs::path &absolute_path,
                              std::string *share_name,
                              const std::string &directory_id,
                              const asymm::Keys &share_keyring) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
-
   std::string generated_name(GetNameInPath(mount_dir() / kSharedStuff, *share_name));
   if (generated_name.empty()) {
     DLOG(ERROR) << "Failed to generate name for Share: " << *share_name;
@@ -433,11 +419,6 @@ int UserStorage::InsertShare(const fs::path &absolute_path,
 int UserStorage::StopShare(const std::string &sender_public_id,
                            const fs::path &absolute_path,
                            bool delete_data) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
-
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
   fs::path share_name;
   std::map<std::string, int> contacts;
@@ -522,11 +503,6 @@ int UserStorage::StopShare(const std::string &sender_public_id,
 }
 
 int UserStorage::RemoveShare(const fs::path& absolute_path, const std::string &sender_public_id) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
-
   // when own name not provided, this indicates being asked to leave
   // i.e. no notification of leaving to the owner required to be sent
   if (sender_public_id.empty()) {
@@ -572,11 +548,6 @@ int UserStorage::UpdateShare(const std::string &share_id,
                              const std::string *new_directory_id,
                              const asymm::Keys *new_key_ring,
                              int* access_right) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
-
   fs::path relative_path;
   int result(GetShareDetails(share_id, &relative_path, nullptr, nullptr, nullptr));
   if (result != kSuccess) {
@@ -596,11 +567,6 @@ int UserStorage::AddShareUsers(const std::string &sender_public_id,
                                const StringIntMap &contacts,
                                bool private_share,
                                StringIntMap *contacts_results) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
-
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
 
   int result(drive_in_user_space_->AddShareUsers(relative_path,
@@ -645,10 +611,6 @@ int UserStorage::AddShareUsers(const std::string &sender_public_id,
 }
 
 int UserStorage::AddOpenShareUser(const fs::path &absolute_path, const StringIntMap &contacts) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
   int result(drive_in_user_space_->AddShareUsers(relative_path, contacts, false));
   if (result != kSuccess) {
@@ -662,10 +624,6 @@ int UserStorage::OpenShareInvitation(const std::string &sender_public_id,
                                      const fs::path &absolute_path,
                                      const StringIntMap &contacts,
                                      StringIntMap *contacts_results) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
   int result(0);
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path)),
            share_name;
@@ -698,14 +656,8 @@ int UserStorage::OpenShareInvitation(const std::string &sender_public_id,
   return kSuccess;
 }
 
-int UserStorage::GetAllShareUsers(
-    const fs::path &absolute_path,
-    std::map<std::string, int> *all_share_users) const {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
-
+int UserStorage::GetAllShareUsers(const fs::path &absolute_path,
+                                  std::map<std::string, int> *all_share_users) const {
   int result(drive_in_user_space_->GetShareDetails(
                  drive_in_user_space_->RelativePath(absolute_path),
                  nullptr,
@@ -731,11 +683,6 @@ int UserStorage::RemoveShareUsers(const std::string &sender_public_id,
                                   const fs::path &absolute_path,
                                   const std::vector<std::string> &user_ids,
                                   bool private_share) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
-
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
   std::string share_id;
   asymm::Keys old_key_ring;
@@ -865,10 +812,6 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
 
 int UserStorage::RemoveOpenShareUsers(const fs::path &absolute_path,
                                       const std::vector<std::string> &user_ids) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
   std::string share_id;
   drive_in_user_space_->GetShareDetails(relative_path,
@@ -889,15 +832,10 @@ int UserStorage::RemoveOpenShareUsers(const fs::path &absolute_path,
 int UserStorage::GetShareUsersRights(const fs::path &absolute_path,
                                      const std::string &user_id,
                                      int *admin_rights) const {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
-
-  return
-    drive_in_user_space_->GetShareUsersRights(drive_in_user_space_->RelativePath(absolute_path),
-                                              user_id,
-                                              admin_rights);
+  return drive_in_user_space_->GetShareUsersRights(
+             drive_in_user_space_->RelativePath(absolute_path),
+             user_id,
+             admin_rights);
 }
 
 int UserStorage::SetShareUsersRights(const std::string &sender_public_id,
@@ -905,11 +843,6 @@ int UserStorage::SetShareUsersRights(const std::string &sender_public_id,
                                      const std::string &user_id,
                                      int admin_rights,
                                      bool private_share) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
-
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
   int old_admin_right;
   int result(drive_in_user_space_->GetShareUsersRights(relative_path, user_id, &old_admin_right));
@@ -973,11 +906,6 @@ int UserStorage::DowngradeShareUsersRights(const std::string &sender_public_id,
                                            const StringIntMap &contacts,
                                            StringIntMap *results,
                                            bool private_share) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
-
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
 
   asymm::Keys old_key_ring;
@@ -1236,10 +1164,10 @@ int UserStorage::InformContactsOperation(InboxItemType item_type,
     if ((*it).first != sender_public_id) {
       if ((*it).second >= kShareReadWrite) {
         admin_message.receiver_public_id = (*it).first;
-        result = message_handler_->Send(admin_message);
+        result = message_handler_.Send(admin_message);
       } else {
         non_admin_message.receiver_public_id = (*it).first;
-        result = message_handler_->Send(non_admin_message);
+        result = message_handler_.Send(non_admin_message);
       }
       if (result != kSuccess) {
         DLOG(ERROR) << "Failed in inform contact " << (*it).first << "  of operation "
@@ -1297,7 +1225,7 @@ int UserStorage::InformContacts(InboxItemType item_type,
   for (auto it = contacts.begin(); it != contacts.end(); ++it) {
     if (it->first != sender_public_id) {
       message.receiver_public_id = it->first;
-      result = message_handler_->Send(message);
+      result = message_handler_.Send(message);
       if (result != kSuccess) {
         DLOG(ERROR) << "Failed to inform contact " << it->first << " of operation " << item_type
                     << ", with result " << result;

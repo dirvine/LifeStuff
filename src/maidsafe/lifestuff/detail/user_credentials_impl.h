@@ -63,7 +63,7 @@ struct OperationResults;
 class UserCredentialsImpl {
  public:
   UserCredentialsImpl(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
-                    std::shared_ptr<Session> session);
+                      Session& session);
   ~UserCredentialsImpl();
   int GetUserInfo(const std::string &username, const std::string &pin, const std::string &password);
   int CreateUser(const std::string &username, const std::string &pin, const std::string &password);
@@ -75,7 +75,7 @@ class UserCredentialsImpl {
 
  private:
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
-  std::shared_ptr<Session> session_;
+  Session& session_;
   passport::Passport &passport_;
   boost::mutex single_threaded_class_mutex_;
 

@@ -52,7 +52,7 @@ std::string AppendableByAllType(const std::string &mmid) {
 
 MessageHandler::MessageHandler(
     std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
-    std::shared_ptr<Session> session,
+    Session& session,
     boost::asio::io_service &asio_service)  // NOLINT (Fraser)
     : remote_chunk_store_(remote_chunk_store),
       session_(session),
@@ -98,8 +98,8 @@ void MessageHandler::ShutDown() {
 void MessageHandler::EnqueuePresenceMessages(ContactPresence presence) {
   // Get online contacts and message them to notify online status
   std::vector<Contact> contacts;
-  for (auto it(session_->contact_handler_map().begin());
-       it != session_->contact_handler_map().end();
+  for (auto it(session_.contact_handler_map().begin());
+       it != session_.contact_handler_map().end();
        ++it) {
     (*it).second->OrderedContacts(&contacts, kAlphabetical, kConfirmed);
     for (auto item(contacts.begin()); item != contacts.end(); ++item) {
@@ -110,7 +110,7 @@ void MessageHandler::EnqueuePresenceMessages(ContactPresence presence) {
 
 int MessageHandler::StartCheckingForNewMessages(bptime::seconds interval) {
   std::vector<passport::SelectableIdData> selectables;
-  session_->passport().SelectableIdentitiesList(&selectables);
+  session_.passport().SelectableIdentitiesList(&selectables);
   if (selectables.empty()) {
     DLOG(ERROR) << "No public username set";
     return kNoPublicIds;
@@ -134,7 +134,7 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
     return -7;
   }
   Contact recipient_contact;
-  int result(session_->contact_handler_map()[inbox_item.sender_public_id]->ContactInfo(
+  int result(session_.contact_handler_map()[inbox_item.sender_public_id]->ContactInfo(
                  inbox_item.receiver_public_id,
                  &recipient_contact));
   if (result != kSuccess || recipient_contact.inbox_name.empty()) {
@@ -145,7 +145,7 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
 
   // Retrieves ANMPID, MPID, and MMID's <name, value, signature>
   passport::SelectableIdentityData data;
-  result = session_->passport().GetSelectableIdentityData(inbox_item.sender_public_id,
+  result = session_.passport().GetSelectableIdentityData(inbox_item.sender_public_id,
                                                           true,
                                                           &data);
   if (result != kSuccess) {
@@ -180,7 +180,7 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
 
   // Get PrivateKey for this user
   asymm::PrivateKey mmid_private_key(
-      session_->passport().PacketPrivateKey(passport::kMmid, true, inbox_item.sender_public_id));
+      session_.passport().PacketPrivateKey(passport::kMmid, true, inbox_item.sender_public_id));
 
   std::string message_signature;
   result = asymm::Sign(signed_data.data(), mmid_private_key, &message_signature);
@@ -244,7 +244,7 @@ int MessageHandler::SendPresenceMessage(const std::string &own_public_id,
     DLOG(ERROR) << own_public_id << " failed to inform "
                 << recipient_public_id << " of presence state "
                 << presence << ", result: " << result;
-    session_->contact_handler_map()[own_public_id]->UpdatePresence(recipient_public_id, kOffline);
+    session_.contact_handler_map()[own_public_id]->UpdatePresence(recipient_public_id, kOffline);
   }
 
   return result;
@@ -258,7 +258,7 @@ void MessageHandler::InformConfirmedContactOnline(const std::string &own_public_
 
 void MessageHandler::SendEveryone(const InboxItem &message) {
   std::vector<Contact> contacts;
-  session_->contact_handler_map()[message.sender_public_id]->OrderedContacts(&contacts,
+  session_.contact_handler_map()[message.sender_public_id]->OrderedContacts(&contacts,
                                                                              kAlphabetical,
                                                                              kConfirmed);
   auto it_map(contacts.begin());
@@ -301,12 +301,12 @@ void MessageHandler::ProcessRetrieved(const passport::SelectableIdData &data,
 
   for (int it(0); it < mmid.appendices_size(); ++it) {
     pca::SignedData signed_data(mmid.appendices(it));
-    asymm::PublicKey mmid_pub_key(session_->passport().SignaturePacketValue(passport::kMmid,
+    asymm::PublicKey mmid_pub_key(session_.passport().SignaturePacketValue(passport::kMmid,
                                                                             true,
                                                                             std::get<0>(data)));
     std::string serialised_pub_key;
     asymm::EncodePublicKey(mmid_pub_key, &serialised_pub_key);
-    asymm::PrivateKey mmid_private_key(session_->passport().PacketPrivateKey(passport::kMmid,
+    asymm::PrivateKey mmid_private_key(session_.passport().PacketPrivateKey(passport::kMmid,
                                                                              true,
                                                                              std::get<0>(data)));
 
@@ -400,11 +400,11 @@ void MessageHandler::ProcessContactPresence(const InboxItem &presence_message) {
               receiver(presence_message.receiver_public_id);
   int result(0);
   if (presence_message.content[0] == "kOnline") {
-    result = session_->contact_handler_map()[receiver]->UpdatePresence(sender, kOnline);
+    result = session_.contact_handler_map()[receiver]->UpdatePresence(sender, kOnline);
     if (result == kSuccess && start_up_done_)
       contact_presence_signal_(receiver, sender, presence_message.timestamp, kOnline);
   } else if (presence_message.content[0] == "kOffline") {
-    result = session_->contact_handler_map()[receiver]->UpdatePresence(sender, kOffline);
+    result = session_.contact_handler_map()[receiver]->UpdatePresence(sender, kOffline);
     if (result == kSuccess && start_up_done_)
       contact_presence_signal_(receiver, sender, presence_message.timestamp, kOffline);
 
@@ -436,7 +436,7 @@ void MessageHandler::ProcessContactProfilePicture(
     }
   }
 
-  int result(session_->contact_handler_map()[receiver]->UpdateProfilePictureDataMap(
+  int result(session_.contact_handler_map()[receiver]->UpdateProfilePictureDataMap(
                  sender,
                  profile_picture_message.content[0]));
   if (result != kSuccess) {
@@ -594,10 +594,10 @@ void MessageHandler::ProcessContactDeletion(const InboxItem &deletion_item) {
 void MessageHandler::RetrieveMessagesForAllIds() {
   int result(-1);
   std::vector<passport::SelectableIdData> selectables;
-  session_->passport().SelectableIdentitiesList(&selectables);
+  session_.passport().SelectableIdentitiesList(&selectables);
   for (auto it(selectables.begin()); it != selectables.end(); ++it) {
     passport::SelectableIdentityData data;
-    result = session_->passport().GetSelectableIdentityData(std::get<0>(*it), true, &data);
+    result = session_.passport().GetSelectableIdentityData(std::get<0>(*it), true, &data);
     if (result != kSuccess || data.size() != 3U) {
       DLOG(ERROR) << "Failed to get own public ID data: " << result;
       continue;
@@ -689,14 +689,14 @@ void MessageHandler::KeysAndProof(const std::string &public_id,
     return;
   }
 
-  validation_data->key_pair.identity = session_->passport().PacketName(pt, confirmed, public_id);
-  validation_data->key_pair.public_key = session_->passport().SignaturePacketValue(pt,
+  validation_data->key_pair.identity = session_.passport().PacketName(pt, confirmed, public_id);
+  validation_data->key_pair.public_key = session_.passport().SignaturePacketValue(pt,
                                                                                    confirmed,
                                                                                    public_id);
-  validation_data->key_pair.private_key = session_->passport().PacketPrivateKey(pt,
+  validation_data->key_pair.private_key = session_.passport().PacketPrivateKey(pt,
                                                                                 confirmed,
                                                                                 public_id);
-  validation_data->key_pair.validation_token = session_->passport().PacketSignature(pt,
+  validation_data->key_pair.validation_token = session_.passport().PacketSignature(pt,
                                                                                     confirmed,
                                                                                     public_id);
   pca::SignedData signed_data;

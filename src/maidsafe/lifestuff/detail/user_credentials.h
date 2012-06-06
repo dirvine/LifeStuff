@@ -60,7 +60,7 @@ class Session;
 class UserCredentials {
  public:
   UserCredentials(std::shared_ptr<pcs::RemoteChunkStore> chunk_store,
-                  std::shared_ptr<Session> session);
+                  Session& session_);
 
   ~UserCredentials();
   void Init(const fs::path &chunk_store_dir);
@@ -79,7 +79,7 @@ class UserCredentials {
   UserCredentials &operator=(const UserCredentials&);
   UserCredentials(const UserCredentials&);
 
-  std::shared_ptr<Session> session_;
+  Session& session_;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<UserCredentialsImpl> impl_;
 };

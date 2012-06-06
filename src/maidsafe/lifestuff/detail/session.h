@@ -88,6 +88,8 @@ class Session {
   int SerialiseDataAtlas(std::string *serialised_data_atlas);
   std::shared_ptr<asymm::Keys> GetPmidKeys();
 
+  std::vector<std::string> PublicIdentities() const;
+
   friend class test::SessionTest;
 
  private:
@@ -99,7 +101,6 @@ class Session {
   void SerialiseKeyChain(std::string *serialised_keyring, std::string *serialised_selectables);
 
   bool CreateTestPackets(bool with_public_ids);
-  std::vector<std::string> GetPublicIdentities();
 
   std::shared_ptr<UserDetails> user_details_;
   passport::Passport passport_;

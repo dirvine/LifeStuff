@@ -70,11 +70,11 @@ class Session;
 class UserStorage {
  public:
   UserStorage(std::shared_ptr<pcs::RemoteChunkStore> chunk_store,
-              std::shared_ptr<MessageHandler> message_handler);
+              MessageHandler& message_handler);
   virtual ~UserStorage() {}
 
   virtual void MountDrive(const fs::path &mount_dir_path,
-                          std::shared_ptr<Session> session,
+                          Session* session,
                           bool creation,
                           const std::string &drive_logo = "LifeStuff Drive");
   virtual void UnMountDrive();
@@ -200,6 +200,8 @@ class UserStorage {
   std::string ConstructFile(const std::string &serialised_data_map);
 
  private:
+  UserStorage &operator=(const UserStorage&);
+  UserStorage(const UserStorage&);
   int InformContactsOperation(InboxItemType item_type,
                               const std::string &sender_public_username,
                               const StringIntMap &contacts,
@@ -224,8 +226,8 @@ class UserStorage {
   std::shared_ptr<pcs::RemoteChunkStore> chunk_store_;
   std::shared_ptr<MaidDriveInUserSpace> drive_in_user_space_;
   ShareRenamedFunction share_renamed_function_;
-  std::shared_ptr<Session> session_;
-  std::shared_ptr<MessageHandler> message_handler_;
+  Session* session_;
+  MessageHandler& message_handler_;
   fs::path mount_dir_;
   std::shared_ptr<boost::thread> mount_thread_;
 };

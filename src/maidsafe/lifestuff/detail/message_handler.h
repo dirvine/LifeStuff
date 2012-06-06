@@ -59,7 +59,7 @@ class MessageHandler {
   typedef std::map<std::string, uint64_t> ReceivedMessagesMap;
 
   MessageHandler(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
-                 std::shared_ptr<Session> session,
+                 Session& session,
                  ba::io_service &asio_service);  // NOLINT (Fraser)
   ~MessageHandler();
 
@@ -144,7 +144,7 @@ class MessageHandler {
   void ProcessPresenceMessages();
 
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
-  std::shared_ptr<Session> session_;
+  Session& session_;
   ba::deadline_timer get_new_messages_timer_;
   ba::io_service &asio_service_;  // NOLINT (Dan)
   bool start_up_done_;

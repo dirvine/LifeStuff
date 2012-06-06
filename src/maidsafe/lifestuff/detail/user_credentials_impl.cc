@@ -132,10 +132,10 @@ int AssessJointResult(const std::vector<int> &results) {
 }  // namespace
 
 UserCredentialsImpl::UserCredentialsImpl(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
-                                         std::shared_ptr<Session> session)
+                                         Session& session)
     : remote_chunk_store_(remote_chunk_store),
       session_(session),
-      passport_(session_->passport()),
+      passport_(session_.passport()),
       single_threaded_class_mutex_() {}
 
 UserCredentialsImpl::~UserCredentialsImpl() {}
@@ -183,10 +183,10 @@ int UserCredentialsImpl::GetUserInfo(const std::string &keyword,
     return result;
   }
 
-  session_->set_keyword(keyword);
-  session_->set_pin(pin);
-  session_->set_password(password);
-  if (!session_->set_session_name()) {
+  session_.set_keyword(keyword);
+  session_.set_pin(pin);
+  session_.set_password(password);
+  if (!session_.set_session_name()) {
     DLOG(ERROR) << "Failed to set session.";
     return kSessionFailure;
   }
@@ -257,15 +257,15 @@ int UserCredentialsImpl::HandleSerialisedDataMaps(const std::string &keyword,
   std::string tmid_da, stmid_da;
   if (!tmid_serialised_data_atlas.empty()) {
     tmid_da = tmid_serialised_data_atlas;
-    result = session_->ParseDataAtlas(tmid_serialised_data_atlas);
+    result = session_.ParseDataAtlas(tmid_serialised_data_atlas);
     if (result == kSuccess)
-      session_->set_serialised_data_atlas(tmid_serialised_data_atlas);
+      session_.set_serialised_data_atlas(tmid_serialised_data_atlas);
   } else if (!stmid_serialised_data_atlas.empty()) {
     tmid_da = stmid_serialised_data_atlas;
     stmid_da = stmid_serialised_data_atlas;
-    result = session_->ParseDataAtlas(stmid_serialised_data_atlas);
+    result = session_.ParseDataAtlas(stmid_serialised_data_atlas);
     if (result == kSuccess) {
-      session_->set_serialised_data_atlas(stmid_serialised_data_atlas);
+      session_.set_serialised_data_atlas(stmid_serialised_data_atlas);
       result = kUsingNextToLastSession;
     }
   }
@@ -300,10 +300,10 @@ int UserCredentialsImpl::CreateUser(const std::string &keyword,
     return kSessionFailure;
   }
 
-  session_->set_keyword(keyword);
-  session_->set_pin(pin);
-  session_->set_password(password);
-  if (!session_->set_session_name()) {
+  session_.set_keyword(keyword);
+  session_.set_pin(pin);
+  session_.set_password(password);
+  if (!session_.set_session_name()) {
     DLOG(ERROR) << "Failed to set session.";
     return kSessionFailure;
   }
@@ -502,9 +502,9 @@ int UserCredentialsImpl::ProcessIdentityPackets(const std::string &keyword,
                                                 const std::string &pin,
                                                 const std::string &password) {
   std::string serialised_data_atlas, surrogate_serialised_data_atlas;
-  int result(session_->SerialiseDataAtlas(&serialised_data_atlas));
+  int result(session_.SerialiseDataAtlas(&serialised_data_atlas));
   Sleep(boost::posix_time::milliseconds(1));  // Need different timestamps
-  result += session_->SerialiseDataAtlas(&surrogate_serialised_data_atlas);
+  result += session_.SerialiseDataAtlas(&surrogate_serialised_data_atlas);
   if (result != kSuccess ||
       serialised_data_atlas.empty() ||
       surrogate_serialised_data_atlas.empty()) {
@@ -534,7 +534,7 @@ int UserCredentialsImpl::ProcessIdentityPackets(const std::string &keyword,
     return kSessionFailure;
   }
 
-  session_->set_serialised_data_atlas(serialised_data_atlas);
+  session_.set_serialised_data_atlas(serialised_data_atlas);
 
   return kSuccess;
 }
@@ -667,7 +667,7 @@ int UserCredentialsImpl::SaveSession() {
     return kSaveSessionFailure;
   }
 
-  session_->set_serialised_data_atlas(serialised_data_atlas);
+  session_.set_serialised_data_atlas(serialised_data_atlas);
 
   return kSuccess;
 }
@@ -751,9 +751,9 @@ int UserCredentialsImpl::ChangeUsernamePin(const std::string &new_keyword,
     return kSetIdentityPacketsFailure;
   }
 
-  session_->set_keyword(new_keyword);
-  session_->set_pin(new_pin);
-  session_->set_serialised_data_atlas(serialised_data_atlas);
+  session_.set_keyword(new_keyword);
+  session_.set_pin(new_pin);
+  session_.set_serialised_data_atlas(serialised_data_atlas);
 
   return kSuccess;
 }
@@ -863,8 +863,8 @@ int UserCredentialsImpl::ChangePassword(const std::string &new_password) {
     return kSetIdentityPacketsFailure;
   }
 
-  session_->set_password(new_password);
-  session_->set_serialised_data_atlas(serialised_data_atlas);
+  session_.set_password(new_password);
+  session_.set_serialised_data_atlas(serialised_data_atlas);
 
   return kSuccess;
 }
@@ -936,18 +936,18 @@ int UserCredentialsImpl::SerialiseAndSetIdentity(const std::string &keyword,
                                                  const std::string &password,
                                                  std::string *serialised_data_atlas) {
   BOOST_ASSERT(serialised_data_atlas);
-  int result(session_->SerialiseDataAtlas(serialised_data_atlas));
+  int result(session_.SerialiseDataAtlas(serialised_data_atlas));
   if (result != kSuccess || serialised_data_atlas->empty()) {
     DLOG(ERROR) << "Failed to serialise session: " << result;
     return kSessionSerialisationFailure;
   }
 
   result = passport_.SetIdentityPackets(
-               keyword.empty()? session_->keyword() : keyword,
-               pin. empty() ? session_->pin() : pin,
-               password.empty() ? session_->password() : password,
+               keyword.empty()? session_.keyword() : keyword,
+               pin. empty() ? session_.pin() : pin,
+               password.empty() ? session_.password() : password,
                *serialised_data_atlas,
-               session_->serialised_data_atlas());
+               session_.serialised_data_atlas());
 
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to set new identity packets: " << result;

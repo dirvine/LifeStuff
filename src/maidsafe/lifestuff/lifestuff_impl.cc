@@ -41,7 +41,6 @@
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/detail/message_handler.h"
 #include "maidsafe/lifestuff/detail/public_id.h"
-#include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/user_credentials.h"
 #include "maidsafe/lifestuff/detail/user_storage.h"
 namespace args = std::placeholders;
@@ -82,7 +81,6 @@ int LifeStuffImpl::Initialise(const boost::filesystem::path &base_directory) {
 
   // Initialisation
   asio_service_.Start(thread_count_);
-  session_.reset(new Session);
 
   fs::path base_path, buffered_chunk_store_path, network_simulation_path;
   if (base_directory.empty()) {
@@ -239,7 +237,6 @@ int LifeStuffImpl::Finalise() {
 #endif
   message_handler_.reset();
   public_id_.reset();
-  session_.reset();
   user_credentials_.reset();
   user_storage_.reset();
   state_ = kZeroth;
@@ -269,7 +266,7 @@ int LifeStuffImpl::CreateUser(const std::string &keyword,
   }
 
   boost::system::error_code error_code;
-  fs::path mount_dir(GetHomeDir() / kAppHomeDirectory / session_->session_name());
+  fs::path mount_dir(GetHomeDir() / kAppHomeDirectory / session_.session_name());
   if (!fs::exists(mount_dir, error_code)) {
     fs::create_directories(mount_dir, error_code);
     if (error_code) {
@@ -279,7 +276,7 @@ int LifeStuffImpl::CreateUser(const std::string &keyword,
     }
   }
 
-  user_storage_->MountDrive(mount_dir, session_, true);
+  user_storage_->MountDrive(mount_dir, &session_, true);
   if (!user_storage_->mount_status()) {
     DLOG(ERROR) << "Failed to mount";
     return kGeneralError;
@@ -314,7 +311,7 @@ int LifeStuffImpl::CreatePublicId(const std::string &public_id) {
 
   // Check if it's the 1st one
   bool first_public_id(false);
-  if (session_->contact_handler_map().empty())
+  if (session_.contact_handler_map().empty())
     first_public_id = true;
 
   int result(public_id_->CreatePublicId(public_id, true));
@@ -354,7 +351,7 @@ int LifeStuffImpl::LogIn(const std::string &keyword,
   }
 
   boost::system::error_code error_code;
-  fs::path mount_dir(GetHomeDir() / kAppHomeDirectory / session_->session_name());
+  fs::path mount_dir(GetHomeDir() / kAppHomeDirectory / session_.session_name());
   if (!fs::exists(mount_dir, error_code)) {
     if (error_code) {
       if (error_code.value() == boost::system::errc::not_connected) {
@@ -371,14 +368,14 @@ int LifeStuffImpl::LogIn(const std::string &keyword,
     }
   }
 
-  user_storage_->MountDrive(mount_dir, session_, false);
+  user_storage_->MountDrive(mount_dir, &session_, false);
 
   if (!user_storage_->mount_status()) {
     DLOG(ERROR) << "Failed to mount";
     return kGeneralError;
   }
 
-  if (!session_->contact_handler_map().empty()) {
+  if (!session_.contact_handler_map().empty()) {
     public_id_->StartUp(interval_);
     message_handler_->StartUp(interval_);
   }
@@ -428,7 +425,7 @@ int LifeStuffImpl::LogOut() {
   if (error_code)
     DLOG(WARNING) << "Failed to delete mount directory: "
                   << mount_path();
-  session_->Reset();
+  session_.Reset();
 
   state_ = kLoggedOut;
 
@@ -441,7 +438,7 @@ int LifeStuffImpl::CheckPassword(const std::string &password) {
     return kGeneralError;
   }
 
-  return session_->password() == password ? kSuccess : kGeneralError;
+  return session_.password() == password ? kSuccess : kGeneralError;
 }
 
 int LifeStuffImpl::ChangeKeyword(const std::string &new_keyword, const std::string &password) {
@@ -456,7 +453,7 @@ int LifeStuffImpl::ChangeKeyword(const std::string &new_keyword, const std::stri
     return result;
   }
 
-  if (new_keyword.compare(session_->keyword()) == 0) {
+  if (new_keyword.compare(session_.keyword()) == 0) {
     DLOG(INFO) << "Same value for old and new.";
     return kSuccess;
   }
@@ -476,7 +473,7 @@ int LifeStuffImpl::ChangePin(const std::string &new_pin, const std::string &pass
     return result;
   }
 
-  if (new_pin.compare(session_->pin()) == 0) {
+  if (new_pin.compare(session_.pin()) == 0) {
     DLOG(INFO) << "Same value for old and new.";
     return kSuccess;
   }
@@ -640,7 +637,7 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string &my_public_id,
   }
 
   // Set in session
-  session_->set_profile_picture_data_map(my_public_id, message.content[0]);
+  session_.set_profile_picture_data_map(my_public_id, message.content[0]);
 
   // Send to everybody
   message_handler_->SendEveryone(message);
@@ -681,7 +678,7 @@ std::string LifeStuffImpl::GetContactProfilePicture(const std::string &my_public
 
   // Look up data map in session.
   Contact contact;
-  result = session_->contact_handler_map()[my_public_id]->ContactInfo(contact_public_id, &contact);
+  result = session_.contact_handler_map()[my_public_id]->ContactInfo(contact_public_id, &contact);
   if (result != kSuccess || contact.profile_picture_data_map.empty()) {
     DLOG(ERROR) << "No such contact(" << result << "): " << contact_public_id;
     return "";
@@ -705,25 +702,16 @@ ContactMap LifeStuffImpl::GetContacts(const std::string &my_public_id, uint16_t 
     return ContactMap();
   }
 
-  return session_->contact_handler_map()[my_public_id]->GetContacts(bitwise_status);
+  return session_.contact_handler_map()[my_public_id]->GetContacts(bitwise_status);
 }
 
 std::vector<std::string> LifeStuffImpl::PublicIdsList() const {
-  std::vector<std::string> public_ids;
   if (state_ != kLoggedIn) {
     DLOG(ERROR) << "Wrong state: " << state_;
-    return public_ids;
+    return std::vector<std::string>();
   }
 
-
-  // Retrieve all keys
-  std::transform(session_->contact_handler_map().begin(),
-                 session_->contact_handler_map().end(),
-                 std::back_inserter(public_ids),
-                 std::bind(&ContactHandlerMap::value_type::first, args::_1));
-
-
-  return public_ids;
+  return session_.PublicIdentities();
 }
 
 /// Messaging
@@ -1549,7 +1537,7 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
     DLOG(ERROR) << "Failed to stop client container: " << result;
     return result;
   }
-  client_container_->set_key_pair(session_->GetPmidKeys());
+  client_container_->set_key_pair(session_.GetPmidKeys());
   if (!client_container_->Init(buffered_path_ / "buffered_chunk_store", 10, 4)) {
     DLOG(ERROR) << "Failed to initialise client container.";
     return kGeneralError;
@@ -1572,7 +1560,7 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
                                             session_,
                                             asio_service_.service()));
 
-  user_storage_.reset(new UserStorage(remote_chunk_store_, message_handler_));
+  user_storage_.reset(new UserStorage(remote_chunk_store_, *message_handler_));
 
   ConnectInternalElements();
   state_ = kInitialised;
@@ -1598,8 +1586,8 @@ int LifeStuffImpl::PreContactChecks(const std::string &my_public_id) {
     return kGeneralError;
   }
 
-  auto it(session_->contact_handler_map().find(my_public_id));
-  if (it == session_->contact_handler_map().end()) {
+  auto it(session_.contact_handler_map().find(my_public_id));
+  if (it == session_.contact_handler_map().end()) {
     DLOG(ERROR) << "No such public ID.";
     return kGeneralError;
   }

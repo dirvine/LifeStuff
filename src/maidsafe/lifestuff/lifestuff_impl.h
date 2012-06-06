@@ -41,7 +41,7 @@
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
-
+#include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/utils.h"
 
 namespace fs = boost::filesystem;
@@ -236,7 +236,7 @@ class LifeStuffImpl {
 #ifndef LOCAL_TARGETS_ONLY
   std::shared_ptr<pd::ClientContainer> client_container_;
 #endif
-  std::shared_ptr<Session> session_;
+  Session session_;
   std::shared_ptr<UserCredentials> user_credentials_;
   std::shared_ptr<UserStorage> user_storage_;
   std::shared_ptr<PublicId> public_id_;
