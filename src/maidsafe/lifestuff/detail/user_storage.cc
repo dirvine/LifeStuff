@@ -70,11 +70,8 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
   key_ring.public_key = session->passport().SignaturePacketValue(passport::kPmid, true);
   key_ring.private_key = session->passport().PacketPrivateKey(passport::kPmid, true);
   key_ring.validation_token = session->passport().PacketSignature(passport::kPmid, true);
-  int64_t max_space(session->max_space()), used_space(session->used_space());
-  drive_in_user_space_.reset(new MaidDriveInUserSpace(chunk_store_,
-                                                      key_ring,
-                                                      max_space,
-                                                      used_space));
+
+  drive_in_user_space_.reset(new MaidDriveInUserSpace(chunk_store_, key_ring));
 
   int result(kGeneralError);
   if (creation) {
@@ -101,10 +98,12 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
     DLOG(ERROR) << "No available drive letters.";
     return;
   }
-
   char drive_name[3] = {'A' + static_cast<char>(count), ':', '\0'};
   mount_dir_ = drive_name;
-  result = drive_in_user_space_->Mount(mount_dir_, drive_logo);
+  result = drive_in_user_space_->Mount(mount_dir_,
+                                       drive_logo,
+                                       session->max_space(),
+                                       session->used_space());
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to Mount Drive: " << result;
     return;
@@ -125,7 +124,7 @@ void UserStorage::UnMountDrive() {
     return;
   int64_t max_space(0), used_space(0);
 #ifdef WIN32
-  std::static_pointer_cast<MaidDriveInUserSpace>(drive_in_user_space_)->CleanUp(max_space,
+  std::static_pointer_cast<MaidDriveInUserSpace>(drive_in_user_space_)->Unmount(max_space,
                                                                                 used_space);
 #else
   drive_in_user_space_->Unmount();
