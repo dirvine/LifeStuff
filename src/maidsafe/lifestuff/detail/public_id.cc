@@ -64,21 +64,17 @@ std::string AppendableIdValue(const passport::SelectableIdentityData &data,
                               int index) {
   pca::AppendableByAll contact_id;
   pca::SignedData *identity_key = contact_id.mutable_identity_key();
-  pca::SignedData *allow_others_to_append =
-      contact_id.mutable_allow_others_to_append();
+  pca::SignedData *allow_others_to_append = contact_id.mutable_allow_others_to_append();
 
   std::string public_key;
   asymm::EncodePublicKey(std::get<1>(data.at(index)), &public_key);
   identity_key->set_data(public_key);
   identity_key->set_signature(std::get<2>(data.at(index)));
-  allow_others_to_append->set_data(accepts_new_contacts ?
-                                      std::string(1, pca::kAppendableByAll) :
-                                      std::string(1, pca::kModifiableByOwner));
+  allow_others_to_append->set_data(accepts_new_contacts ? std::string(1, pca::kAppendableByAll) :
+                                                          std::string(1, pca::kModifiableByOwner));
 
   asymm::Signature packet_signature;
-  int result(asymm::Sign(allow_others_to_append->data(),
-                         private_key,
-                         &packet_signature));
+  int result(asymm::Sign(allow_others_to_append->data(), private_key, &packet_signature));
   if (result != kSuccess) {
     DLOG(ERROR) << "AppendableIdValue - Failed to sign";
     return "";
@@ -116,8 +112,7 @@ std::string MpidValue(const passport::SelectableIdentityData &data) {
 }
 
 std::string MaidsafeContactIdName(const std::string &public_id) {
-  return crypto::Hash<crypto::SHA512>(public_id) +
-         std::string(1, pca::kAppendableByAll);
+  return crypto::Hash<crypto::SHA512>(public_id) + std::string(1, pca::kAppendableByAll);
 }
 
 std::string MaidsafeContactIdValue(const passport::SelectableIdentityData &data,
@@ -175,7 +170,7 @@ std::vector<std::string> MapToVector(
 
 PublicId::PublicId(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
                    Session& session,
-                   ba::io_service &asio_service)  // NOLINT (Fraser)
+                   ba::io_service &asio_service)
     : remote_chunk_store_(remote_chunk_store),
       session_(session),
       get_new_contacts_timer_(asio_service),
@@ -186,14 +181,14 @@ PublicId::PublicId(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
 
 PublicId::~PublicId() { StopCheckingForNewContacts(); }
 
-void PublicId::StartUp(bptime::seconds interval) {
+void PublicId::StartUp(const bptime::seconds &interval) {
   GetContactsHandle();
   StartCheckingForNewContacts(interval);
 }
 
 void PublicId::ShutDown() { StopCheckingForNewContacts(); }
 
-int PublicId::StartCheckingForNewContacts(bptime::seconds interval) {
+int PublicId::StartCheckingForNewContacts(const bptime::seconds &interval) {
   std::vector<passport::SelectableIdData> selectables;
   session_.passport().SelectableIdentitiesList(&selectables);
   if (selectables.empty()) {
@@ -363,11 +358,11 @@ int PublicId::ModifyAppendability(const std::string &public_id, const char appen
 
   // Retriveves own MPID, MMID private keys
   asymm::PrivateKey MPID_private_key(session_.passport().PacketPrivateKey(passport::kMpid,
-                                                                           true,
-                                                                           public_id));
+                                                                          true,
+                                                                          public_id));
   asymm::PrivateKey MMID_private_key(session_.passport().PacketPrivateKey(passport::kMmid,
-                                                                           true,
-                                                                           public_id));
+                                                                          true,
+                                                                          public_id));
   // Change appendability of MCID,MMID by modify them via ModifyAppendableByAll
   boost::mutex mutex;
   boost::condition_variable cond_var;
@@ -399,9 +394,8 @@ int PublicId::ModifyAppendability(const std::string &public_id, const char appen
     return result;
 
   if (!(results[0] == kSuccess && results[1] == kSuccess)) {
-    DLOG(ERROR) << "Failed to modifying MCID/MMID when modify public_id.  "
-                << " with MCID Result : " << results[0]
-                << " , MMID result :" << results[1];
+    DLOG(ERROR) << "Failed to modifying MCID/MMID when modify public_id with MCID Result : "
+                << results[0] << " , MMID result :" << results[1];
     return kModifyAppendabilityFailure;
   }
 
@@ -427,29 +421,26 @@ void PublicId::GetNewContacts(const bptime::seconds &interval,
 }
 
 void PublicId::GetContactsHandle() {
-  std::vector<passport::SelectableIdData> selectables;
-  session_.passport().SelectableIdentitiesList(&selectables);
+  std::vector<std::string> selectables(session_.PublicIdentities());
   for (auto it(selectables.begin()); it != selectables.end(); ++it) {
-    if (std::get<3>(*it)) {
-      passport::SelectableIdentityData data;
-      session_.passport().GetSelectableIdentityData(std::get<0>(*it), true, &data);
+//     if (std::get<3>(*it)) {
       pcs::RemoteChunkStore::ValidationData validation_data_mpid;
-      KeysAndProof(std::get<0>(*it), passport::kMpid, true, &validation_data_mpid);
-      std::string mpid_value(remote_chunk_store_->Get(MaidsafeContactIdName(std::get<0>(*it)),
+      KeysAndProof(*it, passport::kMpid, true, &validation_data_mpid);
+      std::string mpid_value(remote_chunk_store_->Get(MaidsafeContactIdName(*it),
                                                       validation_data_mpid));
       if (mpid_value.empty()) {
-        DLOG(ERROR) << "Failed to get MPID contents for " << std::get<0>(*it);
+        DLOG(ERROR) << "Failed to get MPID contents for " << (*it);
       } else {
         ProcessRequests(*it, mpid_value);
       }
-    }
+//     }
   }
 }
 
-void PublicId::ProcessRequests(const passport::SelectableIdData &data,
-                               const std::string &mpid_value) {
+void PublicId::ProcessRequests(const std::string &mpid_name,
+                               const std::string &retrieved_mpid_packet) {
   pca::AppendableByAll mcid;
-  if (!mcid.ParseFromString(mpid_value)) {
+  if (!mcid.ParseFromString(retrieved_mpid_packet)) {
     DLOG(ERROR) << "Failed to parse as AppendableByAll";
     return;
   }
@@ -457,7 +448,7 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
   for (int it(0); it < mcid.appendices_size(); ++it) {
     std::string encrypted_introduction;
     int n(asymm::Decrypt(mcid.appendices(it).data(),
-                         std::get<2>(data),
+                         session_.passport().PacketPrivateKey(passport::kMpid, true, mpid_name),
                          &encrypted_introduction));
     if (n != kSuccess || encrypted_introduction.empty()) {
       DLOG(ERROR) << "Failed to decrypt Introduction: " << n;
@@ -479,34 +470,33 @@ void PublicId::ProcessRequests(const passport::SelectableIdData &data,
                 profile_picture_data_map(introduction.profile_picture_data_map());
 
     Contact mic;
-    n = session_.contact_handler_map()[std::get<0>(data)]->ContactInfo(public_id, &mic);
+    n = session_.contact_handler_map()[mpid_name]->ContactInfo(public_id, &mic);
     if (n == kSuccess) {
       if (mic.status == kRequestSent) {
         mic.status = kConfirmed;
         mic.inbox_name = inbox_name;
         mic.profile_picture_data_map = profile_picture_data_map;
-        int update(session_.contact_handler_map()[std::get<0>(data)]->UpdateContact(mic));
+        int update(session_.contact_handler_map()[mpid_name]->UpdateContact(mic));
         if (update == kSuccess) {
-          (*contact_confirmed_signal_)(std::get<0>(data), public_id, introduction.timestamp());
+          (*contact_confirmed_signal_)(mpid_name, public_id, introduction.timestamp());
         }
       } else if (mic.status == kConfirmed) {
-        int mmid(session_.contact_handler_map()[std::get<0>(data)]->UpdateMmidName(public_id,
-                                                                                    inbox_name));
+        int mmid(session_.contact_handler_map()[mpid_name]->UpdateMmidName(public_id, inbox_name));
         if (mmid != kSuccess) {
           DLOG(ERROR) << "Failed to update MMID.";
         }
       }
     } else {
-      n = session_.contact_handler_map()[std::get<0>(data)]->AddContact(public_id,
-                                                                         "",
-                                                                         inbox_name,
-                                                                         profile_picture_data_map,
-                                                                         asymm::PublicKey(),
-                                                                         asymm::PublicKey(),
-                                                                         kPendingResponse,
-                                                                         0, 0);
+      n = session_.contact_handler_map()[mpid_name]->AddContact(public_id,
+                                                                "",
+                                                                inbox_name,
+                                                                profile_picture_data_map,
+                                                                asymm::PublicKey(),
+                                                                asymm::PublicKey(),
+                                                                kPendingResponse,
+                                                                0, 0);
       if (n == kSuccess)
-        (*new_contact_signal_)(std::get<0>(data), public_id, introduction.timestamp());
+        (*new_contact_signal_)(mpid_name, public_id, introduction.timestamp());
     }
   }
 }
@@ -517,22 +507,21 @@ int PublicId::ConfirmContact(const std::string &own_public_id,
   if (confirm) {
     Contact mic;
     int result(session_.contact_handler_map()[own_public_id]->ContactInfo(recipient_public_id,
-                                                                           &mic));
+                                                                          &mic));
     if (result != 0 || mic.status != kPendingResponse) {
-      DLOG(ERROR) << "No such pending username found: "
-                  << recipient_public_id;
+      DLOG(ERROR) << "No such pending username found: " << recipient_public_id;
       return -1;
     }
 
     result = SendContactInfo(own_public_id, recipient_public_id, false);
     if (result != kSuccess) {
-      DLOG(ERROR) << "Failed to send confirmation to "
-                  << recipient_public_id;
+      DLOG(ERROR) << "Failed to send confirmation to " << recipient_public_id;
       return -1;
     }
 
-    if (session_.contact_handler_map()[own_public_id]->UpdateStatus(recipient_public_id,
-                                                                     kConfirmed) != kSuccess) {
+    result = session_.contact_handler_map()[own_public_id]->UpdateStatus(recipient_public_id,
+                                                                         kConfirmed);
+    if (result != kSuccess) {
       DLOG(ERROR) << "Failed to confirm " << recipient_public_id;
       return -1;
     }
@@ -735,16 +724,13 @@ void PublicId::KeysAndProof(const std::string &public_id,
     return;
   }
 
-  validation_data->key_pair.identity = session_.passport().PacketName(pt, confirmed, public_id);
-  validation_data->key_pair.public_key = session_.passport().SignaturePacketValue(pt,
-                                                                                   confirmed,
-                                                                                   public_id);
-  validation_data->key_pair.private_key = session_.passport().PacketPrivateKey(pt,
-                                                                                confirmed,
-                                                                                public_id);
-  validation_data->key_pair.validation_token = session_.passport().PacketSignature(pt,
-                                                                                    confirmed,
-                                                                                    public_id);
+  std::shared_ptr<asymm::Keys> keys(session_.passport().SignaturePacketDetails(pt,
+                                                                               confirmed,
+                                                                               public_id));
+  validation_data->key_pair.identity = keys->identity;
+  validation_data->key_pair.public_key = keys->public_key;
+  validation_data->key_pair.private_key = keys->private_key;
+  validation_data->key_pair.validation_token = keys->validation_token;
   pca::SignedData signed_data;
   signed_data.set_data(RandomString(64));
   asymm::Sign(signed_data.data(),
