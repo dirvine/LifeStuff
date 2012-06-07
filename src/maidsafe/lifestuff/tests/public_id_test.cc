@@ -249,7 +249,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
 
   ASSERT_EQ(public_identity2_, received_public_identity_);
   Contact received_contact;
-  ASSERT_EQ(kSuccess,session1_.contact_handler_map()[public_identity1_]->ContactInfo(
+  ASSERT_EQ(kSuccess, session1_.contact_handler_map()[public_identity1_]->ContactInfo(
                           received_public_identity_,
                           &received_contact));
   ASSERT_EQ(kPendingResponse, received_contact.status);
