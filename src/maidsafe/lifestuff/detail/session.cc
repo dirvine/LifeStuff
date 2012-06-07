@@ -199,6 +199,12 @@ int Session::ParseDataAtlas(const std::string &serialised_data_atlas) {
          contact_count < data_atlas.public_ids(id_count).contacts_size();
          ++contact_count) {
       Contact contact(data_atlas.public_ids(id_count).contacts(contact_count));
+      asymm::DecodePublicKey(
+          data_atlas.public_ids(id_count).contacts(contact_count).mpid_public_key(),
+          &contact.mpid_public_key);
+      asymm::DecodePublicKey(
+          data_atlas.public_ids(id_count).contacts(contact_count).inbox_public_key(),
+          &contact.inbox_public_key);
       int result(contact_handler_map()[pub_id]->AddContact(contact));
       DLOG(INFO) << "Result of adding " << contact.public_id << " to " << pub_id << ":  " << result;
     }
@@ -243,6 +249,11 @@ int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
       pc->set_public_id(contacts[n].public_id);
       pc->set_mpid_name(contacts[n].mpid_name);
       pc->set_inbox_name(contacts[n].inbox_name);
+      std::string serialised_mpid_public_key, serialised_inbox_public_key;
+      asymm::EncodePublicKey(contacts[n].mpid_public_key, &serialised_mpid_public_key);
+      pc->set_mpid_public_key(serialised_mpid_public_key);
+      asymm::EncodePublicKey(contacts[n].inbox_public_key, &serialised_inbox_public_key);
+      pc->set_inbox_public_key(serialised_inbox_public_key);
       pc->set_status(contacts[n].status);
       pc->set_rank(contacts[n].rank);
       pc->set_last_contact(contacts[n].last_contact);

@@ -414,7 +414,7 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
   }
   {
     result += test_elements2.LogIn(username2, pin2, password2);
-    DLOG(ERROR) << "result: " <<result;
+//     DLOG(ERROR) << "result: " << result;
     while (!testing_variables2.confirmed)
       Sleep(bptime::milliseconds(100));
     result += test_elements2.LogOut();

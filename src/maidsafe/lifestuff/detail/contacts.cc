@@ -40,7 +40,7 @@ Contact::Contact()
       inbox_name(),
       profile_picture_data_map(),
       mpid_public_key(),
-      mmid_public_key(),
+      inbox_public_key(),
       status(kUnitialised),
       rank(0),
       last_contact(0),
@@ -51,14 +51,14 @@ Contact::Contact(const std::string &public_name_in,
                  const std::string &inbox_name_in,
                  const std::string &profile_picture_data_map_in,
                  const asymm::PublicKey &mpid_public_key_in,
-                 const asymm::PublicKey &mmid_public_key_in,
+                 const asymm::PublicKey &inbox_public_key_in,
                  ContactStatus status)
     : public_id(public_name_in),
       mpid_name(mpid_name_in),
       inbox_name(inbox_name_in),
       profile_picture_data_map(profile_picture_data_map_in),
       mpid_public_key(mpid_public_key_in),
-      mmid_public_key(mmid_public_key_in),
+      inbox_public_key(inbox_public_key_in),
       status(status),
       rank(0),
       last_contact(0),
@@ -69,7 +69,7 @@ Contact::Contact(const PublicContact &contact)
       inbox_name(contact.inbox_name()),
       profile_picture_data_map(contact.profile_picture_data_map()),
       mpid_public_key(),
-      mmid_public_key(),
+      inbox_public_key(),
       status(static_cast<ContactStatus>(contact.status())),
       rank(contact.rank()),
       last_contact(contact.last_contact()),
@@ -97,13 +97,13 @@ bool Contact::Equals(const Contact &other) {
       return false;
   }
 
-  valid_public = asymm::ValidateKey(mmid_public_key);
-  other_valid_public = asymm::ValidateKey(other.mmid_public_key);
+  valid_public = asymm::ValidateKey(inbox_public_key);
+  other_valid_public = asymm::ValidateKey(other.inbox_public_key);
   if ((valid_public && !other_valid_public) || (!valid_public && other_valid_public)) {
     return false;
   }
   if (valid_public && other_valid_public) {
-    if (!asymm::MatchingPublicKeys(mmid_public_key, other.mmid_public_key))
+    if (!asymm::MatchingPublicKeys(inbox_public_key, other.inbox_public_key))
       return false;
   }
 
@@ -116,7 +116,7 @@ int ContactsHandler::AddContact(const std::string &public_id,
                                 const std::string &inbox_name,
                                 const std::string &profile_picture_data_map,
                                 const asymm::PublicKey &mpid_public_key,
-                                const asymm::PublicKey &mmid_public_key,
+                                const asymm::PublicKey &inbox_public_key,
                                 ContactStatus status,
                                 const uint32_t &rank,
                                 const uint32_t &last_contact) {
@@ -125,7 +125,7 @@ int ContactsHandler::AddContact(const std::string &public_id,
                   inbox_name,
                   profile_picture_data_map,
                   mpid_public_key,
-                  mmid_public_key,
+                  inbox_public_key,
                   status);
   if (last_contact == 0)
     contact.last_contact = static_cast<uint32_t>(GetDurationSinceEpoch().total_milliseconds());
@@ -169,7 +169,7 @@ int ContactsHandler::UpdateContact(const Contact &contact) {
   local_contact.mpid_name = contact.mpid_name;
   local_contact.inbox_name = contact.inbox_name;
   local_contact.mpid_public_key = contact.mpid_public_key;
-  local_contact.mmid_public_key = contact.mmid_public_key;
+  local_contact.inbox_public_key = contact.inbox_public_key;
   local_contact.status = contact.status;
   local_contact.rank = contact.rank;
   local_contact.last_contact = contact.last_contact;
@@ -260,7 +260,7 @@ int ContactsHandler::UpdateMpidPublicKey(const std::string &public_id,
 }
 
 int ContactsHandler::UpdateMmidPublicKey(const std::string &public_id,
-                                         const asymm::PublicKey &new_mmid_public_key) {
+                                         const asymm::PublicKey &new_inbox_public_key) {
   ContactSet::iterator it = contact_set_.find(public_id);
   if (it == contact_set_.end()) {
     DLOG(ERROR) << "Contact(" << public_id << ") not present in list.";
@@ -268,7 +268,7 @@ int ContactsHandler::UpdateMmidPublicKey(const std::string &public_id,
   }
 
   Contact contact = *it;
-  contact.mmid_public_key = new_mmid_public_key;
+  contact.inbox_public_key = new_inbox_public_key;
 
   if (!contact_set_.replace(it, contact)) {
     DLOG(ERROR) << "Failed to replace contact in set " << contact.public_id;

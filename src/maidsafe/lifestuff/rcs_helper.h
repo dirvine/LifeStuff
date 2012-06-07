@@ -24,12 +24,17 @@
 #include "boost/asio.hpp"
 #include "boost/filesystem/path.hpp"
 
-#include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 namespace fs = boost::filesystem;
-namespace pcs = maidsafe::priv::chunk_store;
 
 namespace maidsafe {
+
+namespace priv {
+namespace chunk_store {
+class RemoteChunkStore;
+}
+}
+namespace pcs = maidsafe::priv::chunk_store;
 
 #ifndef LOCAL_TARGETS_ONLY
 namespace dht { class Contact; }
@@ -37,16 +42,6 @@ namespace pd { class ClientContainer; }
 #endif
 
 namespace lifestuff {
-
-int GetValidatedMpidPublicKey(const std::string &public_username,
-                              const pcs::RemoteChunkStore::ValidationData &validation_data,
-                              std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
-                              asymm::PublicKey *public_key);
-
-int GetValidatedMmidPublicKey(const std::string &mmid_name,
-                              const pcs::RemoteChunkStore::ValidationData &validation_data,
-                              std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
-                              asymm::PublicKey *public_key);
 
 #ifdef LOCAL_TARGETS_ONLY
 std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path &buffered_chunk_store_path,

@@ -511,7 +511,7 @@ int LifeStuffImpl::AddContact(const std::string &my_public_id,
     return result;
   }
 
-  return public_id_->SendContactInfo(my_public_id, contact_public_id, true);
+  return public_id_->AddContact(my_public_id, contact_public_id);
 }
 
 int LifeStuffImpl::ConfirmContact(const std::string &my_public_id,
@@ -522,7 +522,7 @@ int LifeStuffImpl::ConfirmContact(const std::string &my_public_id,
     return result;
   }
 
-  result = public_id_->ConfirmContact(my_public_id, contact_public_id, true);
+  result = public_id_->ConfirmContact(my_public_id, contact_public_id);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to Confirm Contact.";
     return result;
@@ -539,7 +539,7 @@ int LifeStuffImpl::DeclineContact(const std::string &my_public_id,
     return result;
   }
 
-  return public_id_->ConfirmContact(my_public_id, contact_public_id, false);
+  return public_id_->RejectContact(my_public_id, contact_public_id);
 }
 
 int LifeStuffImpl::RemoveContact(const std::string &my_public_id,

@@ -216,7 +216,7 @@ class UserStorageTest : public testing::TestWithParam<bool> {
     public_id1_->StartCheckingForNewContacts(interval_);
     public_id2_->StartCheckingForNewContacts(interval_);
 
-    EXPECT_EQ(kSuccess, public_id1_->SendContactInfo(pub_name1_, pub_name2_));
+    EXPECT_EQ(kSuccess, public_id1_->AddContact(pub_name1_, pub_name2_));
     {
       boost::mutex::scoped_lock lock(mutex_);
       EXPECT_TRUE(cond_var_.timed_wait(lock, interval_ * 2));
@@ -792,7 +792,7 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
   public_id1_->StartCheckingForNewContacts(interval_);
   public_id3->StartCheckingForNewContacts(interval_);
 
-  public_id1_->SendContactInfo(pub_name1_, pub_name3);
+  public_id1_->AddContact(pub_name1_, pub_name3);
   {
     boost::mutex::scoped_lock lock(mutex_);
     EXPECT_TRUE(cond_var_.timed_wait(lock, interval_ * 2));

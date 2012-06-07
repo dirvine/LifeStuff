@@ -137,41 +137,25 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
   int result(session_.contact_handler_map()[inbox_item.sender_public_id]->ContactInfo(
                  inbox_item.receiver_public_id,
                  &recipient_contact));
-  if (result != kSuccess || recipient_contact.inbox_name.empty()) {
-    DLOG(ERROR) << "Failed to get MMID for " << inbox_item.receiver_public_id
-                << ", type: " <<inbox_item.item_type;
+  if (result != kSuccess ||
+      recipient_contact.inbox_name.empty() ||
+      !asymm::ValidateKey(recipient_contact.inbox_public_key)) {
+    DLOG(ERROR) << "Failed to get MMID for " << inbox_item.receiver_public_id << ", type: "
+                << inbox_item.item_type << ", result: " << result
+                << ", " << std::boolalpha << asymm::ValidateKey(recipient_contact.inbox_public_key);
     return result == kSuccess ? kGeneralError : result;
   }
+  asymm::PublicKey recipient_public_key(recipient_contact.inbox_public_key);
 
-  // Retrieves ANMPID, MPID, and MMID's <name, value, signature>
-  passport::SelectableIdentityData data;
-  result = session_.passport().GetSelectableIdentityData(inbox_item.sender_public_id,
-                                                          true,
-                                                          &data);
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to get own public ID data: " << result;
-    return kGetPublicIdError;
-  }
-  BOOST_ASSERT(data.size() == 3U);
-
-  // Get recipient's public key
   pcs::RemoteChunkStore::ValidationData validation_data_mmid;
   KeysAndProof(inbox_item.sender_public_id, passport::kMmid, true, &validation_data_mmid);
-  asymm::PublicKey recipient_public_key;
-  result = GetValidatedMmidPublicKey(recipient_contact.inbox_name,
-                                     validation_data_mmid,
-                                     remote_chunk_store_,
-                                     &recipient_public_key);
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to get public key for " << inbox_item.receiver_public_id;
-    return result;
-  }
 
   // Encrypt the message for the recipient
   std::string encrypted_message;
   result = asymm::Encrypt(message.SerializeAsString(), recipient_public_key, &encrypted_message);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to get own public ID data: " << result;
+    DLOG(ERROR) << "Failed to encrypt message to recipient( " << inbox_item.receiver_public_id
+                << "): " << result;
     return kGetPublicIdError;
   }
 

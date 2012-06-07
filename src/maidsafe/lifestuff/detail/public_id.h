@@ -36,6 +36,7 @@
 #include "maidsafe/passport/passport_config.h"
 
 #include "maidsafe/lifestuff/lifestuff.h"
+#include "maidsafe/lifestuff/detail/contacts.h"
 
 namespace ba = boost::asio;
 namespace bptime = boost::posix_time;
@@ -75,20 +76,19 @@ class PublicId {
 
   // Creates and stores to the network a new MSID, MPID, ANMPID and MMID.
   int CreatePublicId(const std::string &public_id, bool accepts_new_contacts);
+
   // Appends our info as an MCID to the recipient's MPID packet.
-  int SendContactInfo(const std::string &own_public_id,
-                      const std::string &recipient_public_id,
-                      bool add_contact = true);
-  // Disallow others add contact or send msg.
+  int AddContact(const std::string &own_public_id, const std::string &recipient_public_id);
+
+  // Disallow/allow others add contact or send messages
   int DisablePublicId(const std::string &public_id);
-  // Allow others add contact or send msg.
   int EnablePublicId(const std::string &public_id);
-  // To confirm a contact once user has decided on the introduction
-  int ConfirmContact(const std::string &own_public_id,
-                     const std::string &recipient_public_id,
-                     bool confirm = true);
-  // Remove a contact from current contact list, and inform other contacts the
-  // new MMID
+
+  // To confirm/reject a contact once user has decided on the introduction
+  int ConfirmContact(const std::string &own_public_id, const std::string &recipient_public_id);
+  int RejectContact(const std::string &own_public_id, const std::string &recipient_public_id);
+
+  // Remove a contact from current contact list, and inform other contacts the new MMID
   void RemoveContactHandle(const std::string &public_id, const std::string &contact_name);
   int RemoveContact(const std::string &public_id, const std::string &contact_name);
 
@@ -114,12 +114,14 @@ class PublicId {
   // i.e. enable/disable others add new contact and send msg
   int ModifyAppendability(const std::string &public_id, const char appendability);
   // Notify each contact in the list about the contact_info
-  int InformContactInfo(const std::string &public_id, const std::vector<std::string> &contacts);
+  int InformContactInfo(const std::string &public_id, const std::vector<Contact> &contacts);
 
   void KeysAndProof(const std::string &public_id,
                     passport::PacketType pt,
                     bool confirmed,
                     pcs::RemoteChunkStore::ValidationData *validation_data);
+
+  int GetPublicKey(const std::string& packet_name, Contact& contact, int type);
 
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   Session& session_;

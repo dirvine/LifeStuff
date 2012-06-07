@@ -261,7 +261,7 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
   public_id1_->ConnectToNewContactSignal(std::bind(&MessageHandlerTest::NewContactSlot,
                                                    this, args::_1, args::_2, &mutex, &cond_var));
   EXPECT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
-  EXPECT_EQ(kSuccess, public_id2_->SendContactInfo(public_username2_, public_username1_));
+  EXPECT_EQ(kSuccess, public_id2_->AddContact(public_username2_, public_username1_));
 
   {
     boost::mutex::scoped_lock lock(mutex);
@@ -315,7 +315,7 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
   public_id1_->ConnectToNewContactSignal(std::bind(&MessageHandlerTest::NewContactSlot,
                                                    this, args::_1, args::_2, &mutex, &cond_var));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
-  ASSERT_EQ(kSuccess, public_id2_->SendContactInfo(public_username2_, public_username1_));
+  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_username2_, public_username1_));
   {
     boost::mutex::scoped_lock lock(mutex);
     EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2));
@@ -395,12 +395,12 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
                                                    args::_1, args::_2, &mutex, &cond_var));
   ASSERT_EQ(kSuccess, public_id3_->StartCheckingForNewContacts(interval_));
 
-  ASSERT_EQ(kSuccess, public_id1_->SendContactInfo(public_username1_, public_username2_));
+  ASSERT_EQ(kSuccess, public_id1_->AddContact(public_username1_, public_username2_));
   {
     boost::mutex::scoped_lock lock(mutex);
     EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2));
   }
-  ASSERT_EQ(kSuccess, public_id1_->SendContactInfo(public_username1_, public_username3_));
+  ASSERT_EQ(kSuccess, public_id1_->AddContact(public_username1_, public_username3_));
   {
     boost::mutex::scoped_lock lock(mutex);
     EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2));
