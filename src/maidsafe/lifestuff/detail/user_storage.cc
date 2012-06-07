@@ -74,7 +74,7 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
                                                               true);
   key_ring.validation_token =
       session->passport().PacketSignature(passport::kPmid, true);
-  drive_in_user_space_.reset(new MaidDriveInUserSpace(chunk_store_, key_ring));
+  drive_in_user_space_.reset(new MaidDriveInUserSpace(*chunk_store_, key_ring));
 
   int result(kGeneralError);
   if (creation) {
@@ -1308,7 +1308,7 @@ std::string UserStorage::ConstructFile(const std::string &serialised_data_map) {
   // if (file_size > 'some limit')
   //   return "";
 
-  encrypt::SelfEncryptor self_encryptor(data_map, chunk_store_);
+  encrypt::SelfEncryptor self_encryptor(data_map, *chunk_store_);
   std::unique_ptr<char[]> contents(new char[file_size]);
   self_encryptor.Read(contents.get(), file_size, 0);
   std::string file_content(contents.get(), file_size);
