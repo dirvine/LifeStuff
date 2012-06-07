@@ -34,8 +34,6 @@
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
 
-namespace pcs = maidsafe::priv::chunk_store;
-
 namespace maidsafe {
 
 namespace priv {
@@ -65,24 +63,19 @@ struct OperationResults;
 class UserCredentialsImpl {
  public:
   UserCredentialsImpl(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
-                    std::shared_ptr<Session> session);
+                      Session& session);
   ~UserCredentialsImpl();
-  int GetUserInfo(const std::string &username,
-                  const std::string &pin,
-                  const std::string &password);
-  int CreateUser(const std::string &username,
-                 const std::string &pin,
-                 const std::string &password);
+  int GetUserInfo(const std::string &username, const std::string &pin, const std::string &password);
+  int CreateUser(const std::string &username, const std::string &pin, const std::string &password);
 
   int SaveSession();
 
-  int ChangeUsernamePin(const std::string &new_username,
-                        const std::string &new_pin);
+  int ChangeUsernamePin(const std::string &new_username, const std::string &new_pin);
   int ChangePassword(const std::string &new_password);
 
  private:
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
-  std::shared_ptr<Session> session_;
+  Session& session_;
   passport::Passport &passport_;
   boost::mutex single_threaded_class_mutex_;
 

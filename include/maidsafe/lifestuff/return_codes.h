@@ -26,7 +26,6 @@
 #define MAIDSAFE_LIFESTUFF_RETURN_CODES_H_
 
 
-
 namespace maidsafe {
 
 namespace lifestuff {
@@ -95,7 +94,8 @@ enum ReturnCode {
   // Share
   kNoShareTarget = -208001,
   kOwnerTryingToLeave = -208002,
-  kNoKeyForUpgrade = -208003
+  kNoKeyForUpgrade = -208003,
+  kInvalidKeyringForOpenShare = -208004
 };
 
 }  // namespace lifestuff

@@ -23,13 +23,11 @@ namespace maidsafe {
 namespace lifestuff {
 
 /// Extra library connections
-bs2::connection MessageHandler::ConnectToChatSignal(
-    const ChatFunction &function) {
+bs2::connection MessageHandler::ConnectToChatSignal(const ChatFunction &function) {
   return chat_signal_.connect(function);
 }
 
-bs2::connection MessageHandler::ConnectToFileTransferSignal(
-    const FileTransferFunction &function) {
+bs2::connection MessageHandler::ConnectToFileTransferSignal(const FileTransferFunction &function) {
   return file_transfer_signal_.connect(function);
 }
 
@@ -53,9 +51,9 @@ bs2::connection MessageHandler::ConnectToPrivateShareDeletionSignal(
   return private_share_deletion_signal_.connect(function);
 }
 
-bs2::connection MessageHandler::ConnectToPrivateMemberAccessLevelSignal(
-    const PrivateMemberAccessLevelFunction &function) {
-  return private_member_access_level_signal_.connect(function);
+bs2::connection MessageHandler::ConnectToPrivateMemberAccessChangeSignal(
+    const PrivateMemberAccessChangeFunction &function) {
+  return private_member_access_change_signal_.connect(function);
 }
 
 bs2::connection MessageHandler::ConnectToOpenShareInvitationSignal(
@@ -91,9 +89,19 @@ bs2::connection MessageHandler::ConnectToPrivateShareUpdateSignal(
   return private_share_update_signal_.connect(function);
 }
 
+bs2::connection MessageHandler::ConnectToPrivateMemberAccessLevelSignal(
+    const PrivateMemberAccessLevelSignal::slot_type &function) {
+  return private_member_access_level_signal_.connect(function);
+}
+
 bs2::connection MessageHandler::ConnectToSavePrivateShareDataSignal(
     const SavePrivateShareDataSignal::slot_type &function) {
   return save_private_share_data_signal_.connect(function);
+}
+
+bs2::connection MessageHandler::ConnectToDeletePrivateShareDataSignal(
+    const DeletePrivateShareDataSignal::slot_type &function) {
+  return delete_private_share_data_signal_.connect(function);
 }
 
 bs2::connection MessageHandler::ConnectToSaveOpenShareDataSignal(

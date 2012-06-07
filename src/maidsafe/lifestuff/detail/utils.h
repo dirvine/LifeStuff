@@ -67,6 +67,19 @@ struct InboxItem {
   std::string timestamp;
 };
 
+enum MessageContentIndexes {
+  kShareId = 0,
+  kShareName,
+  kDirectoryId,
+  kNewShareId,
+  kKeysIdentity,
+  kKeysValidationToken,
+  kKeysPrivateKey,
+  kKeysPublicKey,
+  // Max
+  kMaxMessageContentIndexes = kKeysPublicKey
+};
+
 std::string CreatePin();
 
 bool CheckKeywordValidity(const std::string &keyword);
@@ -81,10 +94,10 @@ int CreateSmallTestFile(fs::path const& parent,
                         int size_in_kb,
                         std::string *file_name);
 
-void SendContactInfoCallback(const bool &response,
-                             boost::mutex *mutex,
-                             boost::condition_variable *cond_var,
-                             int *result);
+void ChunkStoreOperationCallback(const bool &response,
+                                 boost::mutex *mutex,
+                                 boost::condition_variable *cond_var,
+                                 int *result);
 
 int WaitForResultsPtr(boost::mutex *mutex,
                       boost::condition_variable *cond_var,

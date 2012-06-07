@@ -64,13 +64,13 @@ struct Contact {
           const std::string &inbox_name_in,
           const std::string &profile_picture_data_map,
           const asymm::PublicKey &mpid_public_key_in,
-          const asymm::PublicKey &mmid_public_key_in,
+          const asymm::PublicKey &inbox_public_key_in,
           ContactStatus status);
   explicit Contact(const PublicContact &contact);
   bool Equals(const Contact &other);
 
   std::string public_id, mpid_name, inbox_name, profile_picture_data_map;
-  asymm::PublicKey mpid_public_key, mmid_public_key;
+  asymm::PublicKey mpid_public_key, inbox_public_key;
   ContactStatus status;
   uint32_t rank;
   uint32_t last_contact;
@@ -120,27 +120,23 @@ class ContactsHandler {
                  const std::string &inbox_name,
                  const std::string &profile_picture_data_map,
                  const asymm::PublicKey &mpid_public_key,
-                 const asymm::PublicKey &mmid_public_key,
+                 const asymm::PublicKey &inbox_public_key,
                  ContactStatus status,
                  const uint32_t &rank,
                  const uint32_t &last_contact);
   int AddContact(const Contact &contact);
   int DeleteContact(const std::string &public_id);
   int UpdateContact(const Contact &contact);
-  int UpdateMpidName(const std::string &public_id,
-                     const std::string &new_mpid_name);
-  int UpdateMmidName(const std::string &public_id,
-                     const std::string &new_inbox_name);
+  int UpdateMpidName(const std::string &public_id, const std::string &new_mpid_name);
+  int UpdateMmidName(const std::string &public_id, const std::string &new_inbox_name);
   int UpdateProfilePictureDataMap(const std::string &public_id,
                                   const std::string &profile_picture_data_map);
   int UpdateMpidPublicKey(const std::string &public_id,
                           const asymm::PublicKey &new_mpid_public_key);
   int UpdateMmidPublicKey(const std::string &public_id,
-                          const asymm::PublicKey &new_mmid_public_key);
-  int UpdateStatus(const std::string &public_id,
-                   const ContactStatus &status);
-  int UpdatePresence(const std::string &public_id,
-                     const ContactPresence &presence);
+                          const asymm::PublicKey &new_inbox_public_key);
+  int UpdateStatus(const std::string &public_id, const ContactStatus &status);
+  int UpdatePresence(const std::string &public_id, const ContactPresence &presence);
   int TouchContact(const std::string &public_id);
   int ContactInfo(const std::string &public_id, Contact *contact);
   void OrderedContacts(std::vector<Contact> *contacts,

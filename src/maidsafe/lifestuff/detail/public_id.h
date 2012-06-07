@@ -36,6 +36,7 @@
 #include "maidsafe/passport/passport_config.h"
 
 #include "maidsafe/lifestuff/lifestuff.h"
+#include "maidsafe/lifestuff/detail/contacts.h"
 
 namespace ba = boost::asio;
 namespace bptime = boost::posix_time;
@@ -60,7 +61,7 @@ class PublicId {
   typedef std::shared_ptr<ContactConfirmedSignal> ContactConfirmedSignalPtr;
 
   PublicId(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
-           std::shared_ptr<Session> session,
+           Session& session,
            ba::io_service &asio_service);  // NOLINT (Fraser)
   ~PublicId();
 
@@ -68,74 +69,62 @@ class PublicId {
   // for each valid MCID retrieved.  After the signal is fired, the MCID(s) are
   // deleted from the network.  Checking will only succeed if at least one
   // public username has been successfully created.
-  void StartUp(bptime::seconds interval);
+  void StartUp(const bptime::seconds &interval);
   void ShutDown();
-  int StartCheckingForNewContacts(bptime::seconds interval);
+  int StartCheckingForNewContacts(const bptime::seconds &interval);
   void StopCheckingForNewContacts();
 
   // Creates and stores to the network a new MSID, MPID, ANMPID and MMID.
-  int CreatePublicId(const std::string &public_id,
-                     bool accepts_new_contacts);
+  int CreatePublicId(const std::string &public_id, bool accepts_new_contacts);
+
   // Appends our info as an MCID to the recipient's MPID packet.
-  int SendContactInfo(const std::string &own_public_id,
-                      const std::string &recipient_public_id,
-                      bool add_contact = true);
-  // Disallow others add contact or send msg.
+  int AddContact(const std::string &own_public_id, const std::string &recipient_public_id);
+
+  // Disallow/allow others add contact or send messages
   int DisablePublicId(const std::string &public_id);
-  // Allow others add contact or send msg.
   int EnablePublicId(const std::string &public_id);
-  // To confirm a contact once user has decided on the introduction
-  int ConfirmContact(const std::string &own_public_id,
-                     const std::string &recipient_public_id,
-                     bool confirm = true);
-  // Remove a contact from current contact list, and inform other contacts the
-  // new MMID
-  void RemoveContactHandle(const std::string &public_id,
-                           const std::string &contact_name);
-  int RemoveContact(const std::string &public_id,
-                    const std::string &contact_name);
+
+  // To confirm/reject a contact once user has decided on the introduction
+  int ConfirmContact(const std::string &own_public_id, const std::string &recipient_public_id);
+  int RejectContact(const std::string &own_public_id, const std::string &recipient_public_id);
+
+  // Remove a contact from current contact list, and inform other contacts the new MMID
+  void RemoveContactHandle(const std::string &public_id, const std::string &contact_name);
+  int RemoveContact(const std::string &public_id, const std::string &contact_name);
 
 
   // Signals
-  bs2::connection ConnectToNewContactSignal(
-      const NewContactFunction &new_contact_slot);
+  bs2::connection ConnectToNewContactSignal(const NewContactFunction &new_contact_slot);
   bs2::connection ConnectToContactConfirmedSignal(
       const ContactConfirmationFunction &contact_confirmation_slot);
 
   // Lists
-  std::map<std::string, ContactStatus> ContactList(
-      const std::string &public_id,
-      ContactOrder type = kLastContacted,
-      uint16_t bitwise_status = kConfirmed) const;
+  std::map<std::string, ContactStatus> ContactList(const std::string &public_id,
+                                                   ContactOrder type = kLastContacted,
+                                                   uint16_t bitwise_status = kConfirmed) const;
 
  private:
   PublicId(const PublicId&);
   PublicId& operator=(const PublicId&);
 
-  void GetNewContacts(const bptime::seconds &interval,
-                      const boost::system::error_code &error_code);
+  void GetNewContacts(const bptime::seconds &interval, const boost::system::error_code &error_code);
   void GetContactsHandle();
-  void ProcessRequests(const passport::SelectableIdData &data,
-                       const std::string &mpid_value);
+  void ProcessRequests(const std::string &mpid_name, const std::string &retrieved_mpid_packet);
   // Modify the Appendability of MCID and MMID associated with the public_id
   // i.e. enable/disable others add new contact and send msg
-  int ModifyAppendability(const std::string &public_id,
-                          const char appendability);
+  int ModifyAppendability(const std::string &public_id, const char appendability);
   // Notify each contact in the list about the contact_info
-  int InformContactInfo(const std::string &public_id,
-                        const std::vector<std::string> &contacts);
+  int InformContactInfo(const std::string &public_id, const std::vector<Contact> &contacts);
 
-  // Universal blocking function for waiting response
-  int AwaitingResponse(boost::mutex *mutex,
-                       boost::condition_variable *cond_var,
-                       std::vector<int> *results);
   void KeysAndProof(const std::string &public_id,
                     passport::PacketType pt,
                     bool confirmed,
                     asymm::Keys *validation_key);
 
+  int GetPublicKey(const std::string& packet_name, Contact& contact, int type);
+
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
-  std::shared_ptr<Session> session_;
+  Session& session_;
   ba::deadline_timer get_new_contacts_timer_, check_online_contacts_timer_;
   NewContactSignalPtr new_contact_signal_;
   ContactConfirmedSignalPtr contact_confirmed_signal_;

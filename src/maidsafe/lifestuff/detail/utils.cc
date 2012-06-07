@@ -19,6 +19,7 @@
 #include <fstream>  // NOLINT (Fraser)
 #include <iostream>  // NOLINT (Fraser)
 #include <istream>  // NOLINT (Fraser)
+#include <limits>
 #include <ostream>  // NOLINT (Fraser)
 #include <vector>
 
@@ -187,28 +188,29 @@ int CreateSmallTestFile(fs::path const& parent,
   return kSuccess;
 }
 
-void SendContactInfoCallback(const bool &response,
-                             boost::mutex *mutex,
-                             boost::condition_variable *cond_var,
-                             int *result) {
+void ChunkStoreOperationCallback(const bool &response,
+                                 boost::mutex *mutex,
+                                 boost::condition_variable *cond_var,
+                                 int *result) {
   if (!mutex || !cond_var || !result)
     return;
   boost::mutex::scoped_lock lock(*mutex);
   if (response)
     *result = kSuccess;
   else
-    *result = kSendContactInfoFailure;
+    *result = kRemoteChunkStoreFailure;
   cond_var->notify_one();
 }
 
 int WaitForResultsPtr(boost::mutex *mutex,
                       boost::condition_variable *cond_var,
                       std::vector<int> *results) {
+  assert(results->size() < 50U);
   size_t size(results->size());
   try {
     boost::mutex::scoped_lock lock(*mutex);
     if (!cond_var->timed_wait(lock,
-                              bptime::seconds(kSecondsInterval * size),
+                              bptime::seconds(static_cast<int>(kSecondsInterval * size)),
                               [&]()->bool {
                                 for (size_t i(0); i < size; ++i) {
                                   if (results->at(i) == kPendingResult)
@@ -230,11 +232,12 @@ int WaitForResultsPtr(boost::mutex *mutex,
 int WaitForResults(boost::mutex &mutex,  // NOLINT (Dan)
                    boost::condition_variable &cond_var,  // NOLINT (Dan)
                    std::vector<int> &results) {  // NOLINT (Dan)
+  assert(results.size() < 50U);
   size_t size(results.size());
   try {
     boost::mutex::scoped_lock lock(mutex);
     if (!cond_var.timed_wait(lock,
-                             bptime::seconds(kSecondsInterval * size),
+                             bptime::seconds(static_cast<int>(kSecondsInterval * size)),
                              [&]()->bool {
                                for (size_t i(0); i < size; ++i) {
                                  if (results.at(i) == kPendingResult)

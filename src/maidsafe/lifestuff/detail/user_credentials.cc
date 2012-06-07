@@ -37,7 +37,7 @@ namespace lifestuff {
 
 UserCredentials::UserCredentials(
     std::shared_ptr<pcs::RemoteChunkStore> chunk_store,
-    std::shared_ptr<Session> session)
+    Session& session)
     : session_(session),
       remote_chunk_store_(chunk_store),
       impl_(new UserCredentialsImpl(chunk_store, session)) {}
@@ -73,7 +73,7 @@ int UserCredentials::LogIn(const std::string &keyword,
 int UserCredentials::Logout() {
   int result(impl_->SaveSession());
   if (result == kSuccess)
-    session_->Reset();
+    session_.Reset();
 
   return result;
 }
@@ -86,7 +86,7 @@ int UserCredentials::ChangeKeyword(const std::string &new_keyword) {
     return kChangeUsernamePinFailure;
   }
 
-  return impl_->ChangeUsernamePin(new_keyword, session_->pin());
+  return impl_->ChangeUsernamePin(new_keyword, session_.pin());
 }
 
 int UserCredentials::ChangePin(const std::string &new_pin) {
@@ -95,7 +95,7 @@ int UserCredentials::ChangePin(const std::string &new_pin) {
     return kChangeUsernamePinFailure;
   }
 
-  return impl_->ChangeUsernamePin(session_->keyword(), new_pin);
+  return impl_->ChangeUsernamePin(session_.keyword(), new_pin);
 }
 
 int UserCredentials::ChangePassword(const std::string &new_password) {

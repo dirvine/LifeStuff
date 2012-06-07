@@ -56,8 +56,8 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
  public:
   PublicIdTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
-        session1_(new Session),
-        session2_(new Session),
+        session1_(),
+        session2_(),
         remote_chunk_store1_(),
         remote_chunk_store2_(),
         public_id1_(),
@@ -73,10 +73,7 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
 #endif
         interval_(3) {}
 
-  void ManyContactsSlot(const std::string&,
-                        const std::string&,
-                        volatile bool *done,
-                        int *count) {
+  void ManyContactsSlot(const std::string&, const std::string&, volatile bool *done, int *count) {
     ++(*count);
     if (*count == 5)
       *done = true;
@@ -124,14 +121,6 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
   void ContactConfirmedSlot(const std::string&,
                             const std::string &signal_public_id,
                             std::string *slot_public_id,
-                            volatile bool *invoked) {
-    *slot_public_id  = signal_public_id;
-    *invoked = true;
-  }
-
-  void ContactConfirmedSlot(const std::string&,
-                            const std::string &signal_public_id,
-                            std::string *slot_public_id,
                             boost::mutex* mutex,
                             boost::condition_variable* cond_var) {
     boost::mutex::scoped_lock lock(*mutex);
@@ -141,18 +130,16 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
 
  protected:
   void SetUp() {
-    session1_->Reset();
-    session2_->Reset();
+    session1_.Reset();
+    session2_.Reset();
     asio_service1_.Start(10);
     asio_service2_.Start(10);
 
 #ifdef LOCAL_TARGETS_ONLY
-    remote_chunk_store1_ = BuildChunkStore(*test_dir_ /
-                                               RandomAlphaNumericString(8),
+    remote_chunk_store1_ = BuildChunkStore(*test_dir_ / RandomAlphaNumericString(8),
                                            *test_dir_ / "simulation",
                                            asio_service1_.service());
-    remote_chunk_store2_ = BuildChunkStore(*test_dir_ /
-                                               RandomAlphaNumericString(8),
+    remote_chunk_store2_ = BuildChunkStore(*test_dir_ / RandomAlphaNumericString(8),
                                            *test_dir_ / "simulation",
                                            asio_service2_.service());
 #else
@@ -160,13 +147,9 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
     remote_chunk_store2_ = BuildChunkStore(*test_dir_, &client_container2_);
 #endif
 
-    public_id1_.reset(new PublicId(remote_chunk_store1_,
-                                   session1_,
-                                   asio_service1_.service()));
+    public_id1_.reset(new PublicId(remote_chunk_store1_, session1_, asio_service1_.service()));
 
-    public_id2_.reset(new PublicId(remote_chunk_store2_,
-                                   session2_,
-                                   asio_service2_.service()));
+    public_id2_.reset(new PublicId(remote_chunk_store2_, session2_, asio_service2_.service()));
   }
 
   void TearDown() {
@@ -182,13 +165,13 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
     remote_chunk_store2_->WaitForCompletion();
   }
 
-  void CreateTestSignaturePackets(std::shared_ptr<Session> session) {
-    ASSERT_EQ(kSuccess, session->passport().CreateSigningPackets());
-    ASSERT_EQ(kSuccess, session->passport().ConfirmSigningPackets());
+  void CreateTestSignaturePackets(Session& session) {
+    ASSERT_EQ(kSuccess, session.passport().CreateSigningPackets());
+    ASSERT_EQ(kSuccess, session.passport().ConfirmSigningPackets());
   }
 
   std::shared_ptr<fs::path> test_dir_;
-  std::shared_ptr<Session> session1_, session2_;
+  Session session1_, session2_;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store1_,
                                          remote_chunk_store2_;
   std::shared_ptr<PublicId> public_id1_, public_id2_;
@@ -214,15 +197,11 @@ TEST_F(PublicIdTest, FUNC_CreateInvalidId) {
 
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, false));
 
-  ASSERT_EQ(kStorePublicIdFailure,
-            public_id1_->CreatePublicId(public_identity1_, false));
+  ASSERT_EQ(kStorePublicIdFailure, public_id1_->CreatePublicId(public_identity1_, false));
 
-  ASSERT_EQ(kStorePublicIdFailure,
-            public_id1_->CreatePublicId(public_identity1_, true));
-  ASSERT_EQ(kStorePublicIdFailure,
-            public_id2_->CreatePublicId(public_identity1_, false));
-  ASSERT_EQ(kStorePublicIdFailure,
-            public_id2_->CreatePublicId(public_identity1_, true));
+  ASSERT_EQ(kStorePublicIdFailure, public_id1_->CreatePublicId(public_identity1_, true));
+  ASSERT_EQ(kStorePublicIdFailure, public_id2_->CreatePublicId(public_identity1_, false));
+  ASSERT_EQ(kStorePublicIdFailure, public_id2_->CreatePublicId(public_identity1_, true));
 }
 
 TEST_F(PublicIdTest, FUNC_CreatePublicIdAntiSocial) {
@@ -232,22 +211,19 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdAntiSocial) {
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, false));
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_identity2_, true));
 
-  public_id1_->ConnectToNewContactSignal(
-      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, args::_2,
-          &mutex, &cond_var));
+  public_id1_->ConnectToNewContactSignal(std::bind(&PublicIdTest::NewContactSlot, this,
+                                                   args::_1, args::_2, &mutex, &cond_var));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
 
-  ASSERT_EQ(kSendContactInfoFailure,
-            public_id2_->SendContactInfo(public_identity2_, public_identity1_));
+  ASSERT_NE(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_));
 
   {
     bool ignore(true);
     boost::mutex::scoped_lock lock(mutex);
-    EXPECT_TRUE(cond_var.timed_wait(
-                    lock,
-                    interval_ * 2,
-                    std::bind(&PublicIdTest::ReceivedPublicUsernameEmpty,
-                              this, &ignore)));
+    EXPECT_TRUE(cond_var.timed_wait(lock,
+                                    interval_ * 2,
+                                    std::bind(&PublicIdTest::ReceivedPublicUsernameEmpty,
+                                              this, &ignore)));
   }
   ASSERT_TRUE(received_public_identity_.empty());
 }
@@ -260,11 +236,10 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_identity2_, true));
 
   // Connect a slot which will reject the new contact
-  bs2::connection connection(public_id1_->ConnectToNewContactSignal(
-      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, args::_2,
-          &mutex, &cond_var)));
-  ASSERT_EQ(kSuccess,
-            public_id2_->SendContactInfo(public_identity2_, public_identity1_));
+  bs2::connection connection(
+      public_id1_->ConnectToNewContactSignal(std::bind(&PublicIdTest::NewContactSlot, this,
+                                             args::_1, args::_2, &mutex, &cond_var)));
+  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
 
   {
@@ -274,59 +249,50 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
 
   ASSERT_EQ(public_identity2_, received_public_identity_);
   Contact received_contact;
-  ASSERT_EQ(kSuccess,
-            session1_->contact_handler_map()[public_identity1_]->ContactInfo(
-                received_public_identity_,
-                &received_contact));
+  ASSERT_EQ(kSuccess, session1_.contact_handler_map()[public_identity1_]->ContactInfo(
+                          received_public_identity_,
+                          &received_contact));
   ASSERT_EQ(kPendingResponse, received_contact.status);
 
   received_contact = Contact();
   std::string public_id3(public_identity2_ + "1");
-  ASSERT_EQ(kSuccess,
-            public_id2_->CreatePublicId(public_id3, true));
-  ASSERT_EQ(kSuccess,
-            public_id2_->SendContactInfo(public_id3, public_identity1_));
+  ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_id3, true));
+  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_id3, public_identity1_));
   {
     boost::mutex::scoped_lock lock(mutex);
     EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2));
   }
   ASSERT_EQ(public_id3, received_public_identity_);
   ASSERT_EQ(kSuccess,
-            session1_->contact_handler_map()[public_identity1_]->ContactInfo(
+            session1_.contact_handler_map()[public_identity1_]->ContactInfo(
                 received_public_identity_,
                 &received_contact));
   ASSERT_EQ(kPendingResponse, received_contact.status);
 }
 
 TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
-  boost::mutex mutex;
-  boost::condition_variable cond_var;
+  boost::mutex mutex, mutex2;
+  boost::condition_variable cond_var, cond_var2;
   // Create users who both accept new contacts
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, true));
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_identity2_, true));
 
   // Connect a slot which will reject the new contact
   bs2::connection connection(public_id1_->ConnectToNewContactSignal(
-      std::bind(&PublicIdTest::ContactRequestSlot,
-                this, args::_1, args::_2, &mutex, &cond_var)));
+      std::bind(&PublicIdTest::ContactRequestSlot, this, args::_1, args::_2, &mutex, &cond_var)));
 
   std::string confirmed_contact;
   bs2::connection connection2(public_id2_->ConnectToContactConfirmedSignal(
-      std::bind(static_cast<void (PublicIdTest::*)(const std::string&,
-          const std::string&, std::string*, boost::mutex*,
-          boost::condition_variable*)>(&PublicIdTest::ContactConfirmedSlot),
-          this, args::_1, args::_2, &confirmed_contact, &mutex, &cond_var)));
+      std::bind(&PublicIdTest::ContactConfirmedSlot, this, args::_1, args::_2,
+                &confirmed_contact, &mutex2, &cond_var2)));
 
   // Send the message and start checking for messages
-  ASSERT_EQ(kSuccess,
-            public_id2_->SendContactInfo(public_identity2_,
-                                         public_identity1_));
+  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   Contact received_contact;
   ASSERT_EQ(kSuccess,
-            session2_->contact_handler_map()[public_identity2_]->ContactInfo(
-                public_identity1_,
-                &received_contact));
+            session2_.contact_handler_map()[public_identity2_]->ContactInfo(public_identity1_,
+                                                                            &received_contact));
   ASSERT_EQ(kRequestSent, received_contact.status);
 
   {
@@ -338,32 +304,31 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
   ASSERT_EQ(public_identity2_, received_public_identity_);
   received_contact = Contact();
   ASSERT_EQ(kSuccess,
-            session1_->contact_handler_map()[public_identity1_]->ContactInfo(
+            session1_.contact_handler_map()[public_identity1_]->ContactInfo(
                 public_identity2_,
                 &received_contact));
   ASSERT_EQ(kPendingResponse, received_contact.status);
-  ASSERT_EQ(kSuccess,
-            public_id1_->ConfirmContact(public_identity1_, public_identity2_));
+  ASSERT_EQ(kSuccess, public_id1_->ConfirmContact(public_identity1_, public_identity2_));
   ASSERT_EQ(kSuccess, public_id2_->StartCheckingForNewContacts(interval_));
 
   // Contact should now be confirmed after reply
   received_contact = Contact();
   ASSERT_EQ(kSuccess,
-            session1_->contact_handler_map()[public_identity1_]->ContactInfo(
+            session1_.contact_handler_map()[public_identity1_]->ContactInfo(
                 public_identity2_,
                 &received_contact));
   ASSERT_EQ(kConfirmed, received_contact.status);
 
   {
     boost::mutex::scoped_lock lock(mutex);
-    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2));
+    EXPECT_TRUE(cond_var2.timed_wait(lock, interval_ * 2));
   }
 
   // Confirmation received, status should be updated
   ASSERT_EQ(public_identity1_, confirmed_contact);
   received_contact = Contact();
   ASSERT_EQ(kSuccess,
-            session2_->contact_handler_map()[public_identity2_]->ContactInfo(
+            session2_.contact_handler_map()[public_identity2_]->ContactInfo(
                 public_identity1_,
                 &received_contact));
   ASSERT_EQ(kConfirmed, received_contact.status);
@@ -371,32 +336,28 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
 }
 
 TEST_F(PublicIdTest, FUNC_CreatePublicIdWithRefusal) {
-  boost::mutex mutex;
-  boost::condition_variable cond_var;
+  boost::mutex mutex, mutex2;
+  boost::condition_variable cond_var, cond_var2;
   // Create users who both accept new contacts
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, true));
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_identity2_, true));
 
   // Connect a slot which will reject the new contact
-  volatile bool invoked2(false);
   bs2::connection connection(public_id1_->ConnectToNewContactSignal(
       std::bind(&PublicIdTest::ContactRequestSlot,
                 this, args::_1, args::_2, &mutex, &cond_var)));
 
   std::string confirmed_contact;
   bs2::connection connection2(public_id2_->ConnectToContactConfirmedSignal(
-      std::bind(static_cast<void (PublicIdTest::*)(const std::string&,
-          const std::string&, std::string*,
-          volatile bool*)>(&PublicIdTest::ContactConfirmedSlot),
-          this, args::_1, args::_2, &confirmed_contact, &invoked2)));
+      std::bind(&PublicIdTest::ContactConfirmedSlot, this, args::_1, args::_2,
+                &confirmed_contact, &mutex2, &cond_var2)));
 
   // Send the message and start checking for messages
-  ASSERT_EQ(kSuccess,
-            public_id2_->SendContactInfo(public_identity2_, public_identity1_));
+  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   Contact received_contact;
   ASSERT_EQ(kSuccess,
-            session2_->contact_handler_map()[public_identity2_]->ContactInfo(
+            session2_.contact_handler_map()[public_identity2_]->ContactInfo(
                 public_identity1_,
                 &received_contact));
   ASSERT_EQ(kRequestSent, received_contact.status);
@@ -410,17 +371,14 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithRefusal) {
   ASSERT_EQ(public_identity2_, received_public_identity_);
   received_contact = Contact();
   ASSERT_EQ(kSuccess,
-            session1_->contact_handler_map()[public_identity1_]->ContactInfo(
+            session1_.contact_handler_map()[public_identity1_]->ContactInfo(
                 public_identity2_,
                 &received_contact));
   ASSERT_EQ(kPendingResponse, received_contact.status);
-  ASSERT_EQ(kSuccess,
-            public_id1_->ConfirmContact(public_identity1_,
-                                       public_identity2_,
-                                       false));
+  ASSERT_EQ(kSuccess, public_id1_->RejectContact(public_identity1_, public_identity2_));
   received_contact = Contact();
   ASSERT_NE(kSuccess,
-            session1_->contact_handler_map()[public_identity1_]->ContactInfo(
+            session1_.contact_handler_map()[public_identity1_]->ContactInfo(
                 public_identity2_,
                 &received_contact));
 }
@@ -436,10 +394,8 @@ TEST_F(PublicIdTest, FUNC_DisablePublicId) {
   ASSERT_EQ(kSuccess, public_id1_->DisablePublicId(public_identity1_));
 
   // Check a new user can't take this public username
-  ASSERT_EQ(kStorePublicIdFailure,
-            public_id2_->CreatePublicId(public_identity1_, false));
-  ASSERT_EQ(kStorePublicIdFailure,
-            public_id2_->CreatePublicId(public_identity1_, true));
+  ASSERT_EQ(kStorePublicIdFailure, public_id2_->CreatePublicId(public_identity1_, false));
+  ASSERT_EQ(kStorePublicIdFailure, public_id2_->CreatePublicId(public_identity1_, true));
 
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_identity2_, true));
 
@@ -448,8 +404,7 @@ TEST_F(PublicIdTest, FUNC_DisablePublicId) {
       std::bind(&PublicIdTest::NewContactSlot, this, args::_1, args::_2,
         &mutex, &cond_var));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
-  ASSERT_EQ(kSendContactInfoFailure,
-            public_id2_->SendContactInfo(public_identity2_, public_identity1_));
+  ASSERT_EQ(kSendContactInfoFailure, public_id2_->AddContact(public_identity2_, public_identity1_));
   {
     bool ignore(true);
     boost::mutex::scoped_lock lock(mutex);
@@ -474,12 +429,10 @@ TEST_F(PublicIdTest, FUNC_EnablePublicId) {
   ASSERT_EQ(kSuccess, public_id1_->DisablePublicId(public_identity1_));
 
   // Check user2 can't add itself to user1's MCID
-  public_id1_->ConnectToNewContactSignal(
-       std::bind(&PublicIdTest::NewContactSlot, this, args::_1, args::_2,
-           &mutex, &cond_var));
+  public_id1_->ConnectToNewContactSignal(std::bind(&PublicIdTest::NewContactSlot,
+                                                   this, args::_1, args::_2, &mutex, &cond_var));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
-  ASSERT_EQ(kSendContactInfoFailure,
-            public_id2_->SendContactInfo(public_identity2_, public_identity1_));
+  ASSERT_EQ(kSendContactInfoFailure, public_id2_->AddContact(public_identity2_, public_identity1_));
   {
     bool ignore(true);
     boost::mutex::scoped_lock lock(mutex);
@@ -491,12 +444,10 @@ TEST_F(PublicIdTest, FUNC_EnablePublicId) {
   ASSERT_EQ(kSuccess, public_id1_->EnablePublicId(public_identity1_));
 
   // Check user2 can now add itself to user1's MCID
-  public_id1_->ConnectToNewContactSignal(
-      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, args::_2,
-         &mutex, &cond_var));
+  public_id1_->ConnectToNewContactSignal(std::bind(&PublicIdTest::NewContactSlot, this,
+                                                   args::_1, args::_2, &mutex, &cond_var));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
-  ASSERT_EQ(kSuccess,
-            public_id2_->SendContactInfo(public_identity2_, public_identity1_));
+  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_));
   {
     boost::mutex::scoped_lock lock(mutex);
     EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2));
@@ -515,32 +466,25 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
   ASSERT_EQ(kPublicIdEmpty, public_id1_->RemoveContact(public_identity1_, ""));
   ASSERT_EQ(kPublicIdEmpty, public_id1_->RemoveContact("", public_identity2_));
 
-  ASSERT_EQ(kLiveContactNotFound,
-            public_id1_->RemoveContact(public_identity1_, public_identity2_));
+  ASSERT_EQ(kLiveContactNotFound, public_id1_->RemoveContact(public_identity1_, public_identity2_));
 
-  public_id1_->ConnectToNewContactSignal(
-      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, args::_2,
-                &mutex, &cond_var));
+  public_id1_->ConnectToNewContactSignal(std::bind(&PublicIdTest::NewContactSlot, this,
+                                                   args::_1, args::_2, &mutex, &cond_var));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
-  ASSERT_EQ(kSuccess,
-            public_id2_->SendContactInfo(public_identity2_, public_identity1_));
+  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_));
   {
     boost::mutex::scoped_lock lock(mutex);
     EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2));
   }
   ASSERT_FALSE(received_public_identity_.empty());
 
-  ASSERT_EQ(kSuccess,
-            public_id1_->RemoveContact(public_identity1_, public_identity2_));
+  ASSERT_EQ(kSuccess, public_id1_->RemoveContact(public_identity1_, public_identity2_));
 
   // Although sending msg is disallowed, sending contact_info shall be allowed
   received_public_identity_.clear();
-  ASSERT_EQ(-77,
-            public_id2_->SendContactInfo(public_identity2_, public_identity1_));
-  ASSERT_EQ(kSuccess,
-            public_id2_->RemoveContact(public_identity2_, public_identity1_));
-  ASSERT_EQ(kSuccess,
-            public_id2_->SendContactInfo(public_identity2_, public_identity1_));
+  ASSERT_EQ(-77, public_id2_->AddContact(public_identity2_, public_identity1_));
+  ASSERT_EQ(kSuccess, public_id2_->RemoveContact(public_identity2_, public_identity1_));
+  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_));
   {
     boost::mutex::scoped_lock lock(mutex);
     EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2));
@@ -555,21 +499,19 @@ TEST_F(PublicIdTest, FUNC_ContactList) {
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, true));
   std::vector<std::string> usernames;
   for (int a(0); a < n; ++a) {
-    usernames.push_back(public_identity2_ +
-                        boost::lexical_cast<std::string>(a));
+    usernames.push_back(public_identity2_ + boost::lexical_cast<std::string>(a));
     ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(usernames.at(a), true));
   }
 
   for (int y(0); y < n; ++y) {
     ASSERT_EQ(kSuccess,
-              public_id2_->SendContactInfo(
-                  public_identity2_ + boost::lexical_cast<std::string>(y),
-                  public_identity1_)) << y;
+              public_id2_->AddContact(public_identity2_ + boost::lexical_cast<std::string>(y),
+                                      public_identity1_));
   }
 
-  public_id1_->ConnectToNewContactSignal(
-      std::bind(&PublicIdTest::NewContactCounterSlot,
-                this, args::_1, args::_2, n, &counter, &mutex, &cond_var));
+  public_id1_->ConnectToNewContactSignal(std::bind(&PublicIdTest::NewContactCounterSlot, this,
+                                                   args::_1, args::_2, n, &counter, &mutex,
+                                                   &cond_var));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
 
   {
@@ -577,9 +519,7 @@ TEST_F(PublicIdTest, FUNC_ContactList) {
     EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2));
   }
 
-  ContactMap contacts(public_id1_->ContactList(public_identity1_,
-                                               kAlphabetical,
-                                               kAll));
+  ContactMap contacts(public_id1_->ContactList(public_identity1_, kAlphabetical, kAll));
   ASSERT_EQ(size_t(n), contacts.size());
   for (auto it(usernames.begin()); it != usernames.end(); ++it)
     ASSERT_FALSE(contacts.find(*it) == contacts.end());

@@ -43,9 +43,8 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-UserStorage::UserStorage(
-    std::shared_ptr<pcs::RemoteChunkStore> chunk_store,
-    std::shared_ptr<MessageHandler> message_handler)
+UserStorage::UserStorage(std::shared_ptr<pcs::RemoteChunkStore> chunk_store,
+                         MessageHandler& message_handler)
     : mount_status_(false),
       chunk_store_(chunk_store),
       drive_in_user_space_(),
@@ -57,34 +56,32 @@ UserStorage::UserStorage(
       mount_thread_() {}
 
 void UserStorage::MountDrive(const fs::path &mount_dir_path,
-                             std::shared_ptr<Session> session,
+                             Session* session,
                              bool creation,
                              const std::string &drive_logo) {
-  if (mount_status_)
+  if (mount_status_) {
+    DLOG(INFO) << "Already mounted.";
     return;
+  }
   if (!fs::exists(mount_dir_path))
     fs::create_directory(mount_dir_path);
 
   session_ = session;
   asymm::Keys key_ring;
   key_ring.identity = session->passport().PacketName(passport::kPmid, true);
-  key_ring.public_key =
-      session->passport().SignaturePacketValue(passport::kPmid, true);
-  key_ring.private_key = session->passport().PacketPrivateKey(passport::kPmid,
-                                                              true);
-  key_ring.validation_token =
-      session->passport().PacketSignature(passport::kPmid, true);
+
+  key_ring.public_key = session->passport().SignaturePacketValue(passport::kPmid, true);
+  key_ring.private_key = session->passport().PacketPrivateKey(passport::kPmid, true);
+  key_ring.validation_token = session->passport().PacketSignature(passport::kPmid, true);
   drive_in_user_space_.reset(new MaidDriveInUserSpace(*chunk_store_, key_ring));
 
   int result(kGeneralError);
   if (creation) {
-    session->set_unique_user_id(
-        crypto::Hash<crypto::SHA512>(session->session_name()));
+    session->set_unique_user_id(crypto::Hash<crypto::SHA512>(session->session_name()));
     result = drive_in_user_space_->Init(session->unique_user_id(), "");
     session->set_root_parent_id(drive_in_user_space_->root_parent_id());
   } else {
-    result = drive_in_user_space_->Init(session->unique_user_id(),
-                                        session->root_parent_id());
+    result = drive_in_user_space_->Init(session->unique_user_id(), session->root_parent_id());
   }
 
   if (result != kSuccess) {
@@ -127,15 +124,13 @@ void UserStorage::UnMountDrive() {
   if (!mount_status_)
     return;
 #ifdef WIN32
-  std::static_pointer_cast<MaidDriveInUserSpace>(
-      drive_in_user_space_)->CleanUp();
+  std::static_pointer_cast<MaidDriveInUserSpace>(drive_in_user_space_)->CleanUp();
 #else
   drive_in_user_space_->Unmount();
   drive_in_user_space_->WaitUntilUnMounted();
-  drive_in_user_space_.reset();
+  mount_thread_->join();
   boost::system::error_code error_code;
   fs::remove_all(mount_dir_, error_code);
-  mount_thread_->join();
 #endif
   mount_status_ = false;
 }
@@ -161,19 +156,16 @@ bool UserStorage::ParseAndSaveDataMap(const std::string &file_name,
     return false;
   }
 
-  *data_map_hash =
-      EncodeToBase32(crypto::Hash<crypto::SHA1>(serialised_data_map)) +
-      boost::lexical_cast<std::string>(
-          GetDurationSinceEpoch().total_microseconds());
+  *data_map_hash = EncodeToBase32(crypto::Hash<crypto::SHA1>(serialised_data_map)) +
+                                  boost::lexical_cast<std::string>(
+                                      GetDurationSinceEpoch().total_microseconds());
   std::string filename_data(PutFilenameData(file_name));
   if (filename_data.empty()) {
     DLOG(ERROR) << "No suitable filename given: " << file_name;
     return false;
   }
 
-  int result(WriteHiddenFile(mount_dir() /
-                                 std::string(*data_map_hash +
-                                            kHiddenFileExtension),
+  int result(WriteHiddenFile(mount_dir() / std::string(*data_map_hash + kHiddenFileExtension),
                              filename_data + serialised_data_map,
                              true));
   if (result != kSuccess) {
@@ -184,18 +176,15 @@ bool UserStorage::ParseAndSaveDataMap(const std::string &file_name,
   return true;
 }
 
-int UserStorage::GetDataMap(const fs::path &absolute_path,
-                            std::string *serialised_data_map) const {
-  return drive_in_user_space_->GetDataMap(
-             drive_in_user_space_->RelativePath(absolute_path),
-             serialised_data_map);
+int UserStorage::GetDataMap(const fs::path &absolute_path, std::string *serialised_data_map) const {
+  return drive_in_user_space_->GetDataMap(drive_in_user_space_->RelativePath(absolute_path),
+                                          serialised_data_map);
 }
 
 int UserStorage::InsertDataMap(const fs::path &absolute_path,
                                const std::string &serialised_data_map) {
-  return drive_in_user_space_->InsertDataMap(
-             drive_in_user_space_->RelativePath(absolute_path),
-             serialised_data_map);
+  return drive_in_user_space_->InsertDataMap(drive_in_user_space_->RelativePath(absolute_path),
+                                             serialised_data_map);
 }
 
 bool UserStorage::SavePrivateShareData(const std::string &serialised_share_data,
@@ -207,12 +196,22 @@ bool UserStorage::SavePrivateShareData(const std::string &serialised_share_data,
   }
 
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)) +
-                       kHiddenFileExtension);
-  int result(WriteHiddenFile(store_path / temp_name,
-                             serialised_share_data,
-                             true));
+                        kHiddenFileExtension);
+  int result(WriteHiddenFile(store_path / temp_name, serialised_share_data, true));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to create file: " << result;
+    return false;
+  }
+  return true;
+}
+
+bool UserStorage::DeletePrivateShareData(const std::string &share_id) {
+  fs::path store_path(mount_dir() / kSharedStuff);
+  std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)) +
+                        drive::kMsHidden.string());
+  int result(DeleteHiddenFile(store_path / temp_name));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to delete private share data.";
     return false;
   }
   return true;
@@ -227,10 +226,8 @@ bool UserStorage::SaveOpenShareData(const std::string &serialised_share_data,
   }
 
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)) +
-                       kHiddenFileExtension);
-  int result(WriteHiddenFile(store_path / temp_name,
-                             serialised_share_data,
-                             true));
+                        kHiddenFileExtension);
+  int result(WriteHiddenFile(store_path / temp_name, serialised_share_data, true));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to create file: " << result;
     return false;
@@ -244,11 +241,6 @@ int UserStorage::CreateShare(const std::string &sender_public_id,
                              const StringIntMap &contacts,
                              bool private_share,
                              StringIntMap *contacts_results) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
-
   int result(kSuccess);
   if (!drive_path.empty()) {
     result = drive_in_user_space_->MoveDirectory(drive_path, share_path);
@@ -260,8 +252,7 @@ int UserStorage::CreateShare(const std::string &sender_public_id,
     boost::system::error_code error_code;
     fs::create_directory(share_path, error_code);
     if (error_code) {
-      DLOG(ERROR) << "Failed creating directory " << share_path << ": "
-                  << error_code.message();
+      DLOG(ERROR) << "Failed creating directory " << share_path << ": " << error_code.message();
       return kGeneralError;
     }
   }
@@ -282,7 +273,7 @@ int UserStorage::CreateShare(const std::string &sender_public_id,
   results.push_back(kPendingResult);
 
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
-  VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback,
+  VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback,
                                          args::_1,
                                          &mutex,
                                          &cond_var,
@@ -303,24 +294,19 @@ int UserStorage::CreateShare(const std::string &sender_public_id,
     return results[0];
   }
   std::string directory_id;
-  result = drive_in_user_space_->SetShareDetails(
-               drive_in_user_space_->RelativePath(share_path),
-               share_id,
-               key_ring,
-               sender_public_id,
-               private_share,
-               &directory_id);
+  result = drive_in_user_space_->SetShareDetails(drive_in_user_space_->RelativePath(share_path),
+                                                 share_id,
+                                                 key_ring,
+                                                 sender_public_id,
+                                                 private_share,
+                                                 &directory_id);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed in creating share of " << share_path.string()
                 << ", with result of : " << result;
     return result;
   }
   // AddShareUser will send out the informing msg to contacts
-  result = AddShareUsers(sender_public_id,
-                         share_path,
-                         contacts,
-                         private_share,
-                         contacts_results);
+  result = AddShareUsers(sender_public_id, share_path, contacts, private_share, contacts_results);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to add users to share at " << share_path;
     return result;
@@ -333,10 +319,6 @@ int UserStorage::CreateOpenShare(const std::string &sender_public_id,
                                  const fs::path &share_path,
                                  const StringIntMap &contacts,
                                  StringIntMap *contacts_results) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
   int result(kSuccess);
   if (!drive_path.empty()) {
     result = drive_in_user_space_->MoveDirectory(drive_path, share_path);
@@ -348,8 +330,7 @@ int UserStorage::CreateOpenShare(const std::string &sender_public_id,
     boost::system::error_code error_code;
     fs::create_directory(share_path, error_code);
     if (error_code) {
-      DLOG(ERROR) << "Failed creating directory " << share_path << ": "
-                  << error_code.message();
+      DLOG(ERROR) << "Failed creating directory " << share_path << ": " << error_code.message();
       return kGeneralError;
     }
   }
@@ -368,7 +349,7 @@ int UserStorage::CreateOpenShare(const std::string &sender_public_id,
   results.push_back(kPendingResult);
 
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
-  VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback,
+  VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback,
                                          args::_1,
                                          &mutex,
                                          &cond_var,
@@ -388,22 +369,17 @@ int UserStorage::CreateOpenShare(const std::string &sender_public_id,
     return results[0];
   }
   std::string directory_id;
-  result = drive_in_user_space_->SetShareDetails(
-               drive_in_user_space_->RelativePath(share_path),
-               share_id,
-               key_ring,
-               sender_public_id,
-               false,
-               &directory_id);
+  result = drive_in_user_space_->SetShareDetails(drive_in_user_space_->RelativePath(share_path),
+                                                 share_id,
+                                                 key_ring,
+                                                 sender_public_id,
+                                                 false,
+                                                 &directory_id);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed creating share " << share_path.string()
-                << ", with result: " << result;
+    DLOG(ERROR) << "Failed creating share " << share_path.string() << ", with result: " << result;
     return result;
   }
-  result = OpenShareInvitation(sender_public_id,
-                               share_path,
-                               contacts,
-                               contacts_results);
+  result = OpenShareInvitation(sender_public_id, share_path, contacts, contacts_results);
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to invite users to share " << share_path;
     return result;
@@ -421,40 +397,30 @@ int UserStorage::InsertShare(const fs::path &absolute_path,
                              std::string *share_name,
                              const std::string &directory_id,
                              const asymm::Keys &share_keyring) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
+  std::string generated_name(GetNameInPath(mount_dir() / kSharedStuff, *share_name));
+  if (generated_name.empty()) {
+    DLOG(ERROR) << "Failed to generate name for Share: " << *share_name;
+    return kGeneralError;
   }
-  fs::path share_dir(absolute_path);
-  int index(1);
-  int result(drive_in_user_space_->InsertShare(
-                drive_in_user_space_->RelativePath(share_dir),
-                inviter_id,
-                directory_id,
-                share_id,
-                share_keyring));
-  while (result == -500317) {  // drive::kInvalidPath
-    share_dir = mount_dir() / ((*share_name) + "_" + IntToString(index));
-    result = drive_in_user_space_->InsertShare(
-                drive_in_user_space_->RelativePath(share_dir),
-                inviter_id,
-                directory_id,
-                share_id,
-                share_keyring);
-    ++index;
+
+  fs::path share_dir(absolute_path.parent_path() / generated_name);
+  int result(drive_in_user_space_->InsertShare(drive_in_user_space_->RelativePath(share_dir),
+                                               inviter_id,
+                                               directory_id,
+                                               share_id,
+                                               share_keyring));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to insert share: " << result;
+    return result;
   }
-  *share_name = share_dir.filename().string();
+
+  *share_name = generated_name;
   return result;
 }
 
 int UserStorage::StopShare(const std::string &sender_public_id,
                            const fs::path &absolute_path,
                            bool delete_data) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
-
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
   fs::path share_name;
   std::map<std::string, int> contacts;
@@ -469,8 +435,10 @@ int UserStorage::StopShare(const std::string &sender_public_id,
                                                    nullptr,
                                                    &contacts,
                                                    nullptr));
-  if (result != kSuccess)
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to get share details for " << absolute_path;
     return result;
+  }
   if (delete_data) {
     result = drive_in_user_space_->RemoveShare(relative_path);
     if (result != kSuccess)
@@ -482,12 +450,11 @@ int UserStorage::StopShare(const std::string &sender_public_id,
                                                    sender_public_id,
                                                    drive::kMsPrivateShare,
                                                    &directory_id);
-    if (result != kSuccess)
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed to set share details for " << absolute_path;
       return result;
-
-    std::string generated_name(GetNameInPath(mount_dir() / kMyStuff,
-                                             share_name.string()));
-
+    }
+    std::string generated_name(GetNameInPath(mount_dir() / kMyStuff, share_name.string()));
     if (generated_name.empty()) {
       DLOG(ERROR) << "Failed to generate name for My Stuff.";
       return kGeneralError;
@@ -499,24 +466,24 @@ int UserStorage::StopShare(const std::string &sender_public_id,
       return result;
     }
   }
-  InformContactsOperation(kPrivateShareDeletion,
-                          sender_public_id,
-                          contacts,
-                          share_id);
+  InformContactsOperation(kPrivateShareDeletion, sender_public_id, contacts, share_id);
   boost::mutex mutex;
   boost::condition_variable cond_var;
   std::vector<int> results;
   results.push_back(kPendingResult);
+
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
 
-  VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback, args::_1,
+  VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
                                          &mutex, &cond_var, &results[0]));
   std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
   chunk_store_->Delete(packet_id, callback, key_shared);
 
   result = WaitForResultsPtr(&mutex, &cond_var, &results);
-  if (result != kSuccess)
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to get a response.";
     return result;
+  }
   if (results[0] != kSuccess) {
     DLOG(ERROR) << "Failed to remove packet. Packet 1 : " << results[0];
     return results[0];
@@ -525,18 +492,11 @@ int UserStorage::StopShare(const std::string &sender_public_id,
   return kSuccess;
 }
 
-int UserStorage::RemoveShare(const fs::path& absolute_path,
-                             const std::string &sender_public_id) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
-
+int UserStorage::RemoveShare(const fs::path& absolute_path, const std::string &sender_public_id) {
   // when own name not provided, this indicates being asked to leave
   // i.e. no notification of leaving to the owner required to be sent
   if (sender_public_id.empty()) {
-    return drive_in_user_space_->RemoveShare(
-             drive_in_user_space_->RelativePath(absolute_path));
+    return drive_in_user_space_->RemoveShare(drive_in_user_space_->RelativePath(absolute_path));
   }
 
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
@@ -550,23 +510,22 @@ int UserStorage::RemoveShare(const fs::path& absolute_path,
                                                    nullptr,
                                                    nullptr,
                                                    &owner_id));
-  if (result != kSuccess)
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to get share details for " << absolute_path;
     return result;
+  }
   // Owner doesn't allow to leave (shall use StopShare method)
   if (owner_id == sender_public_id)
     return kOwnerTryingToLeave;
 
-  result = drive_in_user_space_->RemoveShare(
-               drive_in_user_space_->RelativePath(absolute_path));
-  if (result != kSuccess)
+  result = drive_in_user_space_->RemoveShare(drive_in_user_space_->RelativePath(absolute_path));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to remove share " << absolute_path;
     return result;
-
+  }
   std::map<std::string, int> owner;
   owner.insert(std::make_pair(owner_id , 0));
-  return InformContactsOperation(kPrivateShareMemberLeft,
-                                 sender_public_id,
-                                 owner,
-                                 share_id);
+  return InformContactsOperation(kPrivateShareMemberLeft, sender_public_id, owner, share_id);
 }
 
 void UserStorage::ShareDeleted(const std::string &share_name) {
@@ -577,27 +536,20 @@ void UserStorage::ShareDeleted(const std::string &share_name) {
 int UserStorage::UpdateShare(const std::string &share_id,
                              const std::string *new_share_id,
                              const std::string *new_directory_id,
-                             const asymm::Keys *new_key_ring) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
-
+                             const asymm::Keys *new_key_ring,
+                             int* access_right) {
   fs::path relative_path;
-  int result(GetShareDetails(share_id, &relative_path,
-                             nullptr, nullptr, nullptr));
-  if (result != kSuccess)
+  int result(GetShareDetails(share_id, &relative_path, nullptr, nullptr, nullptr));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to get share details for " << mount_dir() / relative_path;
     return result;
-
+  }
   return drive_in_user_space_->UpdateShare(relative_path,
                                            share_id,
                                            new_share_id,
                                            new_directory_id,
-                                           new_key_ring);
-
-//   drive_in_user_space_->RemoveShare(relative_path);
-//   return drive_in_user_space_->InsertShare(relative_path, "",
-//                 *new_directory_id, *new_share_id, *new_key_ring);
+                                           new_key_ring,
+                                           access_right);
 }
 
 int UserStorage::AddShareUsers(const std::string &sender_public_id,
@@ -605,11 +557,6 @@ int UserStorage::AddShareUsers(const std::string &sender_public_id,
                                const StringIntMap &contacts,
                                bool private_share,
                                StringIntMap *contacts_results) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
-
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
 
   int result(drive_in_user_space_->AddShareUsers(relative_path,
@@ -653,16 +600,9 @@ int UserStorage::AddShareUsers(const std::string &sender_public_id,
   return kSuccess;
 }
 
-int UserStorage::AddOpenShareUser(const fs::path &absolute_path,
-                                  const StringIntMap &contacts) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
+int UserStorage::AddOpenShareUser(const fs::path &absolute_path, const StringIntMap &contacts) {
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
-  int result(drive_in_user_space_->AddShareUsers(relative_path,
-                                                 contacts,
-                                                 false));
+  int result(drive_in_user_space_->AddShareUsers(relative_path, contacts, false));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to add users to share: " << absolute_path.string();
     return result;
@@ -674,10 +614,6 @@ int UserStorage::OpenShareInvitation(const std::string &sender_public_id,
                                      const fs::path &absolute_path,
                                      const StringIntMap &contacts,
                                      StringIntMap *contacts_results) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
   int result(0);
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path)),
            share_name;
@@ -710,14 +646,8 @@ int UserStorage::OpenShareInvitation(const std::string &sender_public_id,
   return kSuccess;
 }
 
-int UserStorage::GetAllShareUsers(
-    const fs::path &absolute_path,
-    std::map<std::string, int> *all_share_users) const {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
-
+int UserStorage::GetAllShareUsers(const fs::path &absolute_path,
+                                  std::map<std::string, int> *all_share_users) const {
   int result(drive_in_user_space_->GetShareDetails(
                  drive_in_user_space_->RelativePath(absolute_path),
                  nullptr,
@@ -733,8 +663,7 @@ int UserStorage::GetAllShareUsers(
   return kSuccess;
 }
 
-int UserStorage::UserLeavingShare(const std::string &share_id,
-                                  const std::string &user_id) {
+int UserStorage::UserLeavingShare(const std::string &share_id, const std::string &user_id) {
   std::vector<std::string> user_ids;
   user_ids.push_back(user_id);
   return drive_in_user_space_->RemoveShareUsers(share_id, user_ids);
@@ -744,36 +673,41 @@ int UserStorage::RemoveShareUsers(const std::string &sender_public_id,
                                   const fs::path &absolute_path,
                                   const std::vector<std::string> &user_ids,
                                   bool private_share) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
-
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
   std::string share_id;
   asymm::Keys old_key_ring;
+  StringIntMap contacts;
   drive_in_user_space_->GetShareDetails(relative_path,
                                         nullptr,
                                         &old_key_ring,
                                         &share_id,
                                         nullptr,
-                                        nullptr,
+                                        &contacts,
                                         nullptr);
   int result(drive_in_user_space_->RemoveShareUsers(share_id, user_ids));
-  if (result != kSuccess)
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to remove share users for " << absolute_path;
     return result;
-
+  }
   StringIntMap removed_contacts;
   for (auto it = user_ids.begin(); it != user_ids.end(); ++it) {
     removed_contacts.insert(std::make_pair(*it, kShareReadOnly));
   }
-  InformContactsOperation(kPrivateShareDeletion,
-                          sender_public_id,
-                          removed_contacts,
-                          share_id);
+  for (auto it = removed_contacts.begin(); it != removed_contacts.end(); ++it)
+    contacts.erase(contacts.find(it->first));
 
-  return MovingShare(sender_public_id, share_id,
-                     relative_path, old_key_ring, private_share);
+  InformContactsOperation(kPrivateShareDeletion, sender_public_id, removed_contacts, share_id);
+
+  result = MovingShare(sender_public_id,
+                       share_id,
+                       relative_path,
+                       old_key_ring,
+                       private_share,
+                       contacts);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to move share.";
+  }
+  return result;
 }
 
 int UserStorage::MovingShare(const std::string &sender_public_id,
@@ -781,6 +715,7 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
                              const fs::path &relative_path,
                              const asymm::Keys &old_key_ring,
                              bool private_share,
+                             const StringIntMap &contacts,
                              std::string *new_share_id_return) {
   std::string new_share_id(RandomString(share_id.size()));
   std::vector<pki::SignaturePacketPtr> signature_packets;
@@ -798,7 +733,7 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
   results.push_back(kPendingResult);
 
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
-  VoidFunctionOneBool callback(std::bind(&SendContactInfoCallback, args::_1,
+  VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
                                          &mutex, &cond_var, &results[0]));
   std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
   chunk_store_->Store(packet_id,
@@ -807,8 +742,10 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
                       key_shared);
 
   int result(WaitForResultsPtr(&mutex, &cond_var, &results));
-  if (result != kSuccess)
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to get response.";
     return result;
+  }
   if (results[0] != kSuccess) {
     DLOG(ERROR) << "Failed to store packets.  Packet 1 : " << results[0];
     return results[0];
@@ -835,25 +772,12 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
   chunk_store_->Delete(packet_id, callback, old_key_shared);
 
   result = WaitForResultsPtr(&mutex, &cond_var, &results);
-  if (result != kSuccess)
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to get response.";
     return result;
+  }
   if (results[0] != kSuccess) {
     DLOG(WARNING) << "Failed to remove packet.  Packet 1 : " << results[0];
-//     return kDeletePacketFailure;
-  }
-
-  StringIntMap contacts;
-  result = drive_in_user_space_->GetShareDetails(relative_path,
-                                                 nullptr,
-                                                 nullptr,
-                                                 &new_share_id,
-                                                 nullptr,
-                                                 &contacts,
-                                                 nullptr);
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed in getting share deatils of "
-                << Base32Substr(share_id) << ", with result of : " << result;
-    return result;
   }
 
   result = InformContactsOperation(kPrivateShareKeysUpdate,
@@ -865,8 +789,8 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
                                    key_ring,
                                    new_share_id);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed in informing contacts in share: "
-                << Base32Substr(share_id) << ", with result of : " << result;
+    DLOG(ERROR) << "Failed in informing contacts in share: " << Base32Substr(share_id)
+                << ", with result of : " << result;
     return result;
   }
 
@@ -876,13 +800,8 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
   return kSuccess;
 }
 
-int UserStorage::RemoveOpenShareUsers(
-    const fs::path &absolute_path,
-    const std::vector<std::string> &user_ids) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
+int UserStorage::RemoveOpenShareUsers(const fs::path &absolute_path,
+                                      const std::vector<std::string> &user_ids) {
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
   std::string share_id;
   drive_in_user_space_->GetShareDetails(relative_path,
@@ -893,19 +812,16 @@ int UserStorage::RemoveOpenShareUsers(
                                         nullptr,
                                         nullptr);
   int result(drive_in_user_space_->RemoveShareUsers(share_id, user_ids));
-  if (result != kSuccess)
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to remove share users for " << absolute_path;
     return result;
+  }
   return kSuccess;
 }
 
 int UserStorage::GetShareUsersRights(const fs::path &absolute_path,
                                      const std::string &user_id,
                                      int *admin_rights) const {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
-
   return drive_in_user_space_->GetShareUsersRights(
              drive_in_user_space_->RelativePath(absolute_path),
              user_id,
@@ -917,38 +833,28 @@ int UserStorage::SetShareUsersRights(const std::string &sender_public_id,
                                      const std::string &user_id,
                                      int admin_rights,
                                      bool private_share) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
-
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
   int old_admin_right;
-  int result(drive_in_user_space_->GetShareUsersRights(relative_path,
-                                                       user_id,
-                                                       &old_admin_right));
+  int result(drive_in_user_space_->GetShareUsersRights(relative_path, user_id, &old_admin_right));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed getting access right for contact " << user_id
-                << ", with result : " << result;
+    DLOG(ERROR) << "Failed getting access right for contact " << user_id << ", with result : "
+                << result;
     return result;
   }
 
   if (admin_rights == old_admin_right) {
-    DLOG(INFO) << "Access right for contact " << user_id
-               << ", keeps the same ";
+    DLOG(INFO) << "Access right for contact " << user_id << ", keeps the same ";
     return kSuccess;
   }
 
-  result = drive_in_user_space_->SetShareUsersRights(relative_path,
-                                                     user_id,
-                                                     admin_rights);
+  result = drive_in_user_space_->SetShareUsersRights(relative_path, user_id, admin_rights);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed setting access right for contact " << user_id
-                << ", with result : " << result;
+    DLOG(ERROR) << "Failed setting access right for contact " << user_id << ", with result : "
+                << result;
     return result;
   }
 
-  StringIntMap contacts;
+  StringIntMap contacts, share_contacts;
   contacts.insert(std::make_pair(user_id, admin_rights));
   asymm::Keys key_ring;
   std::string share_id;
@@ -957,11 +863,11 @@ int UserStorage::SetShareUsersRights(const std::string &sender_public_id,
                                                  &key_ring,
                                                  &share_id,
                                                  nullptr,
-                                                 nullptr,
+                                                 &share_contacts,
                                                  nullptr);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed getting admin right for contact " << user_id
-                << ", with result : " << result;
+    DLOG(ERROR) << "Failed getting admin right for contact " << user_id << ", with result : "
+                << result;
     return result;
   }
 
@@ -970,34 +876,40 @@ int UserStorage::SetShareUsersRights(const std::string &sender_public_id,
   InboxItemType rights(kPrivateShareMembershipUpgrade);
   if (old_admin_right > admin_rights) {
     rights = kPrivateShareMembershipDowngrade;
-    result = MovingShare(sender_public_id, share_id, relative_path,
-                         key_ring, private_share, &share_id);
+    result = MovingShare(sender_public_id,
+                         share_id,
+                         relative_path,
+                         key_ring,
+                         private_share,
+                         share_contacts,
+                         &share_id);
     if (result != kSuccess) {
       DLOG(ERROR) << "Failed to move share.";
       return result;
     }
   }
-  return InformContactsOperation(rights,
-                                 sender_public_id,
-                                 contacts,
-                                 share_id,
-                                 "",
-                                 "",
-                                 key_ring);
+  return InformContactsOperation(rights, sender_public_id, contacts, share_id, "", "", key_ring);
 }
 
-int UserStorage::DowngradeShareUsersRights(
-    const std::string &sender_public_id,
-    const fs::path &absolute_path,
-    const StringIntMap &contacts,
-    StringIntMap *results,
-    bool private_share) {
-  if (!message_handler_) {
-    DLOG(WARNING) << "Uninitialised message handler.";
-    return kMessageHandlerNotInitialised;
-  }
-
+int UserStorage::DowngradeShareUsersRights(const std::string &sender_public_id,
+                                           const fs::path &absolute_path,
+                                           const StringIntMap &contacts,
+                                           StringIntMap *results,
+                                           bool private_share) {
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
+
+  asymm::Keys old_key_ring;
+  std::string share_id, new_share_id;
+  StringIntMap share_contacts;
+  drive_in_user_space_->GetShareDetails(relative_path,
+                                        nullptr,
+                                        &old_key_ring,
+                                        &share_id,
+                                        nullptr,
+                                        &share_contacts,
+                                        nullptr);
+  for (auto it = contacts.begin(); it != contacts.end(); ++it)
+    share_contacts.erase(share_contacts.find(it->first));
 
   for (auto it = contacts.begin(); it != contacts.end(); ++it)
     results->insert(std::make_pair((*it).first,
@@ -1005,29 +917,39 @@ int UserStorage::DowngradeShareUsersRights(
                         relative_path,
                         (*it).first,
                         ((*it).second != 0))));
-
-  asymm::Keys old_key_ring;
-  std::string share_id, new_share_id;
-  drive_in_user_space_->GetShareDetails(relative_path,
-                                        nullptr,
-                                        &old_key_ring,
-                                        &share_id,
-                                        nullptr,
-                                        nullptr,
-                                        nullptr);
-  int result(MovingShare(sender_public_id, share_id, relative_path,
-                         old_key_ring, private_share, &new_share_id));
+  int result(MovingShare(sender_public_id,
+                         share_id,
+                         relative_path,
+                         old_key_ring,
+                         private_share,
+                         share_contacts,
+                         &new_share_id));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed moving share: " << result;
     return result;
   }
-  return InformContactsOperation(kPrivateShareMembershipDowngrade,
-                                 sender_public_id,
-                                 contacts,
-                                 new_share_id,
-                                 "",
-                                 "",
-                                 old_key_ring);
+  std::string directory_id;
+  asymm::Keys key_ring;
+  drive_in_user_space_->GetShareDetails(relative_path,
+                                        nullptr,
+                                        nullptr,
+                                        nullptr,
+                                        &directory_id,
+                                        nullptr,
+                                        nullptr);
+  result = InformContactsOperation(kPrivateShareMembershipDowngrade,
+                                   sender_public_id,
+                                   *results,
+                                   share_id,
+                                   "",
+                                   directory_id,
+                                   key_ring,
+                                   new_share_id);
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to inform contacts";
+    return result;
+  }
+  return kSuccess;
 }
 
 int UserStorage::GetShareDetails(const std::string &share_id,
@@ -1042,40 +964,53 @@ int UserStorage::GetShareDetails(const std::string &share_id,
                                                share_users);
 }
 
-void UserStorage::MemberAccessChange(
-    const std::string &share_id,
-    int access_right) {
+void UserStorage::MemberAccessChange(const std::string &share_id,
+                                     const std::string &directory_id,
+                                     const std::string &new_share_id,
+                                     const asymm::Keys &key_ring,
+                                     int access_right) {
   fs::path relative_path;
-  int result(GetShareDetails(share_id, &relative_path,
-                             nullptr, nullptr, nullptr));
+  int result(GetShareDetails(share_id, &relative_path, nullptr, nullptr, nullptr));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to find share details: " << result;
     return;
   }
-
-  result = drive_in_user_space_->UpdateShare(relative_path,
-                                             share_id,
-                                             nullptr,
-                                             nullptr,
-                                             nullptr,
-                                             &access_right);
+  if (access_right <= kShareReadOnly) {
+    asymm::Keys empty_key_ring;
+    result = drive_in_user_space_->UpdateShare(relative_path,
+                                               share_id,
+                                               &new_share_id,
+                                               &directory_id,
+                                               &empty_key_ring,
+                                               &access_right);
+  } else {
+    result = drive_in_user_space_->UpdateShare(relative_path,
+                                               share_id,
+                                               nullptr,
+                                               nullptr,
+                                               &key_ring,
+                                               &access_right);
+  }
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to update share details: " << result;
     return;
   }
 }
 
-int UserStorage::GetPrivateSharesContactBeingOwner(
-    const std::string &/*my_public_id*/,
-    const std::string &contact_public_id,
-    std::vector<std::string> *shares_names) {
+int UserStorage::GetPrivateSharesContactBeingOwner(const std::string &/*my_public_id*/,
+                                                   const std::string &contact_public_id,
+                                                   std::vector<std::string> *shares_names) {
   StringIntMap all_shares;
   GetAllShares(&all_shares);
   for (auto it = all_shares.begin(); it != all_shares.end(); ++it) {
     std::string owner_id;
     fs::path share_dir(fs::path("/") / kSharedStuff / (*it).first);
-    drive_in_user_space_->GetShareDetails(share_dir, nullptr, nullptr,
-                                          nullptr, nullptr, nullptr,
+    drive_in_user_space_->GetShareDetails(share_dir,
+                                          nullptr,
+                                          nullptr,
+                                          nullptr,
+                                          nullptr,
+                                          nullptr,
                                           &owner_id);
     if (owner_id == contact_public_id)
       shares_names->push_back((*it).first);
@@ -1083,65 +1018,50 @@ int UserStorage::GetPrivateSharesContactBeingOwner(
   return kSuccess;
 }
 
-int UserStorage::GetNotes(const fs::path &absolute_path,
-                          std::vector<std::string> *notes) const {
-  return drive_in_user_space_->GetNotes(
-             drive_in_user_space_->RelativePath(absolute_path),
-             notes);
+int UserStorage::GetNotes(const fs::path &absolute_path, std::vector<std::string> *notes) const {
+  return drive_in_user_space_->GetNotes(drive_in_user_space_->RelativePath(absolute_path), notes);
 }
 
-int UserStorage::AddNote(const fs::path &absolute_path,
-                         const std::string &note) {
-  return drive_in_user_space_->AddNote(
-             drive_in_user_space_->RelativePath(absolute_path),
-             note);
+int UserStorage::AddNote(const fs::path &absolute_path, const std::string &note) {
+  return drive_in_user_space_->AddNote(drive_in_user_space_->RelativePath(absolute_path), note);
 }
 
-int UserStorage::ReadHiddenFile(const fs::path &absolute_path,
-                                std::string *content) const {
-  return drive_in_user_space_->ReadHiddenFile(
-             drive_in_user_space_->RelativePath(absolute_path),
-             content);
+int UserStorage::ReadHiddenFile(const fs::path &absolute_path, std::string *content) const {
+  return drive_in_user_space_->ReadHiddenFile(drive_in_user_space_->RelativePath(absolute_path),
+                                              content);
 }
 
 int UserStorage::WriteHiddenFile(const fs::path &absolute_path,
                                  const std::string &content,
                                  bool overwrite_existing) {
-  return drive_in_user_space_->WriteHiddenFile(
-             drive_in_user_space_->RelativePath(absolute_path),
-             content,
-             overwrite_existing);
+  return drive_in_user_space_->WriteHiddenFile(drive_in_user_space_->RelativePath(absolute_path),
+                                               content,
+                                               overwrite_existing);
 }
 
 int UserStorage::DeleteHiddenFile(const fs::path &absolute_path) {
-  return drive_in_user_space_->DeleteHiddenFile(
-             drive_in_user_space_->RelativePath(absolute_path));
+  return drive_in_user_space_->DeleteHiddenFile(drive_in_user_space_->RelativePath(absolute_path));
 }
 
 int UserStorage::SearchHiddenFiles(const fs::path &absolute_path,
                                    const std::string &regex,
                                    std::list<std::string> *results) {
-  return drive_in_user_space_->SearchHiddenFiles(
-             drive_in_user_space_->RelativePath(absolute_path),
-             regex,
-             results);
+  return drive_in_user_space_->SearchHiddenFiles(drive_in_user_space_->RelativePath(absolute_path),
+                                                 regex,
+                                                 results);
 }
 
-int UserStorage::GetHiddenFileDataMap(
-    const boost::filesystem3::path &absolute_path,
-    std::string *data_map) {
-  return drive_in_user_space_->GetDataMapHidden(
-             drive_in_user_space_->RelativePath(absolute_path),
-             data_map);
+int UserStorage::GetHiddenFileDataMap(const boost::filesystem3::path &absolute_path,
+                                      std::string *data_map) {
+  return drive_in_user_space_->GetDataMapHidden(drive_in_user_space_->RelativePath(absolute_path),
+                                                data_map);
 }
 
-bs2::connection UserStorage::ConnectToDriveChanged(
-    drive::DriveChangedSlotPtr slot) const {
+bs2::connection UserStorage::ConnectToDriveChanged(drive::DriveChangedSlotPtr slot) const {
   return drive_in_user_space_->ConnectToDriveChanged(slot);
 }
 
-bs2::connection UserStorage::ConnectToShareRenamedSignal(
-    const ShareRenamedFunction &function) {
+bs2::connection UserStorage::ConnectToShareRenamedSignal(const ShareRenamedFunction &function) {
   if (function) {
     share_renamed_function_ = function;
     if (mount_status_)
@@ -1160,36 +1080,42 @@ bs2::connection UserStorage::ConnectToShareChangedSignal(
   return bs2::connection();
 }
 
-int UserStorage::InformContactsOperation(
-    InboxItemType item_type,
-    const std::string &sender_public_id,
-    const StringIntMap &contacts,
-    const std::string &share_id,
-    const std::string &absolute_path,
-    const std::string &directory_id,
-    const asymm::Keys &key_ring,
-    const std::string &new_share_id,
-    StringIntMap *contacts_results) {
+int UserStorage::InformContactsOperation(InboxItemType item_type,
+                                         const std::string &sender_public_id,
+                                         const StringIntMap &contacts,
+                                         const std::string &share_id,
+                                         const std::string &absolute_path,
+                                         const std::string &directory_id,
+                                         const asymm::Keys &key_ring,
+                                         const std::string &new_share_id,
+                                         StringIntMap *contacts_results) {
   InboxItem admin_message(item_type), non_admin_message(item_type);
-  std::string public_key, private_key;
+  std::string public_key, private_key, empty_string;
 
   admin_message.sender_public_id = sender_public_id;
   admin_message.content.push_back(share_id);
   non_admin_message.sender_public_id = sender_public_id;
   non_admin_message.content.push_back(share_id);
   if (!absolute_path.empty()) {
-    admin_message.content.push_back(
-        fs::path(absolute_path).filename().string());
-    non_admin_message.content.push_back(
-        fs::path(absolute_path).filename().string());
+    admin_message.content.push_back(fs::path(absolute_path).filename().string());
+    non_admin_message.content.push_back(fs::path(absolute_path).filename().string());
+  } else {
+    admin_message.content.push_back(empty_string);
+    non_admin_message.content.push_back(empty_string);
   }
   if (!directory_id.empty()) {
     admin_message.content.push_back(directory_id);
     non_admin_message.content.push_back(directory_id);
+  } else {
+    admin_message.content.push_back(empty_string);
+    non_admin_message.content.push_back(empty_string);
   }
   if (!new_share_id.empty()) {
     admin_message.content.push_back(new_share_id);
     non_admin_message.content.push_back(new_share_id);
+  } else {
+    admin_message.content.push_back(empty_string);
+    non_admin_message.content.push_back(empty_string);
   }
   if (!key_ring.identity.empty() &&
       !key_ring.validation_token.empty() &&
@@ -1201,7 +1127,16 @@ int UserStorage::InformContactsOperation(
     admin_message.content.push_back(private_key);
     asymm::EncodePublicKey(key_ring.public_key, &public_key);
     admin_message.content.push_back(public_key);
+  } else {
+    admin_message.content.push_back(empty_string);
+    admin_message.content.push_back(empty_string);
+    admin_message.content.push_back(empty_string);
+    admin_message.content.push_back(empty_string);
   }
+  non_admin_message.content.push_back(empty_string);
+  non_admin_message.content.push_back(empty_string);
+  non_admin_message.content.push_back(empty_string);
+  non_admin_message.content.push_back(empty_string);
 
   int result, aggregate(0);
   if (contacts_results)
@@ -1211,15 +1146,14 @@ int UserStorage::InformContactsOperation(
     if ((*it).first != sender_public_id) {
       if ((*it).second >= kShareReadWrite) {
         admin_message.receiver_public_id = (*it).first;
-        result = message_handler_->Send(admin_message);
+        result = message_handler_.Send(admin_message);
       } else {
         non_admin_message.receiver_public_id = (*it).first;
-        result = message_handler_->Send(non_admin_message);
+        result = message_handler_.Send(non_admin_message);
       }
       if (result != kSuccess) {
-        DLOG(ERROR) << "Failed in inform contact " << (*it).first
-                    << "  of operation " << ", with result of : "
-                    << result;
+        DLOG(ERROR) << "Failed in inform contact " << (*it).first << "  of operation "
+                    << ", with result of : " << result;
         ++aggregate;
       }
       if (contacts_results)
@@ -1230,16 +1164,15 @@ int UserStorage::InformContactsOperation(
   return aggregate;
 }
 
-int UserStorage::InformContacts(
-    InboxItemType item_type,
-    const std::string &sender_public_id,
-    const std::map<std::string, int> &contacts,
-    const std::string &share_id,
-    const std::string &share_name,
-    const std::string &directory_id,
-    const asymm::Keys &key_ring,
-    const std::string& /*new_share_id*/,
-    StringIntMap *contacts_results) {
+int UserStorage::InformContacts(InboxItemType item_type,
+                                const std::string &sender_public_id,
+                                const std::map<std::string, int> &contacts,
+                                const std::string &share_id,
+                                const std::string &share_name,
+                                const std::string &directory_id,
+                                const asymm::Keys &key_ring,
+                                const std::string& /*new_share_id*/,
+                                StringIntMap *contacts_results) {
   InboxItem message(item_type);
   std::string public_key, private_key;
   message.sender_public_id = sender_public_id;
@@ -1252,6 +1185,7 @@ int UserStorage::InformContacts(
     default:
       DLOG(ERROR) << "Unknown constant";
   }
+  message.content.push_back(std::string());
   if (!key_ring.identity.empty() &&
       !key_ring.validation_token.empty() &&
       asymm::ValidateKey(key_ring.public_key) &&
@@ -1262,6 +1196,9 @@ int UserStorage::InformContacts(
     message.content.push_back(private_key);
     asymm::EncodePublicKey(key_ring.public_key, &public_key);
     message.content.push_back(public_key);
+  } else {
+    DLOG(ERROR) << "Invalid keyring for open share";
+    return kInvalidKeyringForOpenShare;
   }
 
   int result, aggregate(0);
@@ -1270,11 +1207,10 @@ int UserStorage::InformContacts(
   for (auto it = contacts.begin(); it != contacts.end(); ++it) {
     if (it->first != sender_public_id) {
       message.receiver_public_id = it->first;
-      result = message_handler_->Send(message);
+      result = message_handler_.Send(message);
       if (result != kSuccess) {
-        DLOG(ERROR) << "Failed in inform contact " << it->first
-                    << " of operation " << item_type << ", with result "
-                    << result;
+        DLOG(ERROR) << "Failed to inform contact " << it->first << " of operation " << item_type
+                    << ", with result " << result;
         ++aggregate;
       }
       if (contacts_results)
@@ -1292,7 +1228,7 @@ std::string UserStorage::ConstructFile(const std::string &serialised_data_map) {
   }
 
   uint32_t file_size(data_map->chunks.empty() ?
-      static_cast<uint32_t>(data_map->content.size()) : 0);
+                     static_cast<uint32_t>(data_map->content.size()) : 0);
   auto it(data_map->chunks.begin());
   while (it != data_map->chunks.end()) {
     if (kFileRecontructionLimit < (file_size + (*it).size)) {

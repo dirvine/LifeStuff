@@ -55,10 +55,12 @@ endif()
 ###################################################################################################
 # Set up all files as GLOBs                                                                       #
 ###################################################################################################
+set(PATH_TO_INCLUDE ${PROJECT_SOURCE_DIR}/include/maidsafe/lifestuff)
 set(PATH_TO_SRC ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff)
-set(PATH_TO_INCLUDE ${PATH_TO_INCLUDE})
+set(PATH_TO_DETAIL ${PATH_TO_SRC}/detail)
+set(PATH_TO_TESTS ${PATH_TO_SRC}/tests)
+
 ####    CODE    ####
-# Installables
 file(GLOB SOURCE_FILES_LIFESTUFF_DIR "${PATH_TO_SRC}/lifestuff_api.cc"
                                      "${PATH_TO_SRC}/lifestuff_impl.cc"
                                      "${PATH_TO_SRC}/rcs_helper.cc")
@@ -66,37 +68,42 @@ file(GLOB HEADER_FILES_LIFESTUFF_DIR "${PATH_TO_SRC}/lifestuff_impl.h"
                                      "${PATH_TO_SRC}/rcs_helper.h")
 file(GLOB API_FILES_LIFESTUFF_DIR "${PATH_TO_INCLUDE}/lifestuff_api.h")
 set(ALL_FILES_LIFESTUFF_DIR ${SOURCE_FILES_LIFESTUFF_DIR} ${HEADER_FILES_LIFESTUFF_DIR} ${API_FILES_LIFESTUFF_DIR})
-source_group("LifeStuff Source Files" FILES ${SOURCE_FILES_LIFESTUFF_DIR})
-source_group("LifeStuff Header Files" FILES ${HEADER_FILES_LIFESTUFF_DIR})
-source_group("LifeStuff API Files" FILES ${API_FILES_LIFESTUFF_DIR})
 
-# Detail
-file(GLOB SOURCE_FILES_DETAIL_DIR "${PATH_TO_SRC}/detail/*.cc" "${PATH_TO_SRC}/lifestuff.cc")
-file(GLOB HEADER_FILES_DETAIL_DIR "${PATH_TO_SRC}/detail/*.h"
-                                  "${PATH_TO_INCLUDE}/lifestuff.h"
-                                  "${PATH_TO_INCLUDE}/return_codes.h")
-set(ALL_FILES_DETAIL_DIR ${SOURCE_FILES_DETAIL_DIR} ${HEADER_FILES_DETAIL_DIR})
+file(GLOB SOURCE_FILES_DETAIL_DIR "${PATH_TO_DETAIL}/*.cc")
+file(GLOB HEADER_FILES_DETAIL_DIR "${PATH_TO_DETAIL}/*.h")
+set(ALL_FILES_DETAIL_DIR ${SOURCE_FILES_DETAIL_DIR}
+                         ${HEADER_FILES_DETAIL_DIR}
+                         "${PATH_TO_SRC}/lifestuff.cc"
+                         "${PATH_TO_INCLUDE}/lifestuff.h"
+                         "${PATH_TO_INCLUDE}/return_codes.h")
+
+set(STYLE_ALL ${ALL_FILES_DETAIL_DIR} ${ALL_FILES_LIFESTUFF_DIR})
+list(REMOVE_ITEM STYLE_ALL "${PATH_TO_DETAIL}/data_atlas.pb.h"
+                           "${PATH_TO_DETAIL}/data_atlas.pb.cc"
+                           "${PATH_TO_DETAIL}/data_types.pb.h"
+                           "${PATH_TO_DETAIL}/data_types.pb.cc"
+                           "${PATH_TO_DETAIL}/lifestuff_messages.pb.h"
+                           "${PATH_TO_DETAIL}/lifestuff_messages.pb.cc")
+
+source_group("LifeStuff Source Files" FILES ${SOURCE_FILES_LIFESTUFF_DIR}
+                                            "${PATH_TO_SRC}/lifestuff.cc")
+source_group("LifeStuff Header Files" FILES ${HEADER_FILES_LIFESTUFF_DIR})
+source_group("LifeStuff API Files" FILES ${API_FILES_LIFESTUFF_DIR}
+                                         "${PATH_TO_INCLUDE}/lifestuff.h"
+                                         "${PATH_TO_INCLUDE}/return_codes.h")
 source_group("LifeStuff Detail Source Files" FILES ${SOURCE_FILES_DETAIL_DIR})
 source_group("LifeStuff Detail Header Files" FILES ${HEADER_FILES_DETAIL_DIR})
 
-set(STYLE_ALL ${ALL_FILES_DETAIL_DIR} ${ALL_FILES_LIFESTUFF_DIR})
-list(REMOVE_ITEM STYLE_ALL "${PATH_TO_SRC}/detail/data_atlas.pb.h"
-                           "${PATH_TO_SRC}/detail/data_atlas.pb.cc"
-                           "${PATH_TO_SRC}/detail/data_types.pb.h"
-                           "${PATH_TO_SRC}/detail/data_types.pb.cc"
-                           "${PATH_TO_SRC}/detail/lifestuff_messages.pb.h"
-                           "${PATH_TO_SRC}/detail/lifestuff_messages.pb.cc")
-
 ####    TESTS    ####
-set(TESTS_MAIN_CC "${PATH_TO_SRC}/tests/tests_main.cc")
-set(CLIENT_CONTROLLER_TEST_CC "${PATH_TO_SRC}/tests/user_credentials_test.cc")
-set(PUBLIC_ID_TEST_CC "${PATH_TO_SRC}/tests/public_id_test.cc"
-                      "${PATH_TO_SRC}/tests/message_handler_test.cc")
-set(USER_STORAGE_TEST_CC "${PATH_TO_SRC}/tests/user_storage_test.cc")
-set(API_TEST_CC "${PATH_TO_SRC}/tests/full_api_test.cc")
-set(LIFESTUFF_TESTS_CC "${PATH_TO_SRC}/tests/contacts_test.cc"
-                       "${PATH_TO_SRC}/tests/session_test.cc"
-                       "${PATH_TO_SRC}/tests/utils_test.cc")
+set(TESTS_MAIN_CC "${PATH_TO_TESTS}/tests_main.cc")
+set(CLIENT_CONTROLLER_TEST_CC "${PATH_TO_TESTS}/user_credentials_test.cc")
+set(PUBLIC_ID_TEST_CC "${PATH_TO_TESTS}/public_id_test.cc"
+                      "${PATH_TO_TESTS}/message_handler_test.cc")
+set(USER_STORAGE_TEST_CC "${PATH_TO_TESTS}/user_storage_test.cc")
+set(API_TEST_CC "${PATH_TO_TESTS}/full_api_test.cc")
+set(LIFESTUFF_TESTS_CC "${PATH_TO_TESTS}/contacts_test.cc"
+                       "${PATH_TO_TESTS}/session_test.cc"
+                       "${PATH_TO_TESTS}/utils_test.cc")
 
 source_group("Tests Source Files" FILES ${TESTS_MAIN_CC}
                                         ${CLIENT_CONTROLLER_TEST_CC}
@@ -146,9 +153,9 @@ rename_outdated_built_exes()
 # Set compiler and linker flags                                                                   #
 ###################################################################################################
 include(maidsafe_standard_flags)
-ms_disable_warnings(${PATH_TO_SRC}/detail/data_atlas.pb.cc
-                    ${PATH_TO_SRC}/detail/data_types.pb.cc
-                    ${PATH_TO_SRC}/detail/lifestuff_messages.pb.cc)
+ms_disable_warnings(${PATH_TO_DETAIL}/data_atlas.pb.cc
+                    ${PATH_TO_DETAIL}/data_types.pb.cc
+                    ${PATH_TO_DETAIL}/lifestuff_messages.pb.cc)
 
 set_target_properties(maidsafe_lifestuff_local
                       TESTlifestuff_general
