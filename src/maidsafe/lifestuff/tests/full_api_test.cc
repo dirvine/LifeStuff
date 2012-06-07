@@ -4253,7 +4253,7 @@ TEST(IndependentShareChangeTest, FUNC_MoveNodeToTrashThenMoveBack) {
     new_file_path = directory2 / new_file_name;
     fs::rename(file_path, new_file_path, error_code);
     EXPECT_EQ(0, error_code.value());
- 
+
     // allowing enough time for the change to be logged
     Sleep(bptime::milliseconds(5000));
     EXPECT_TRUE(testing_variables2.share_changes.empty());
@@ -4295,7 +4295,7 @@ TEST(IndependentShareChangeTest, FUNC_MoveNodeToTrashThenMoveBack) {
     new_file_path = directory1 / new_file_name;
     testing_variables1.share_changes.clear();
 
-    fs::rename(new_file_path, file_path,error_code);
+    fs::rename(new_file_path, file_path, error_code);
     EXPECT_EQ(0, error_code.value());
     // allowing enough time for the change to be logged
     Sleep(bptime::milliseconds(5000));

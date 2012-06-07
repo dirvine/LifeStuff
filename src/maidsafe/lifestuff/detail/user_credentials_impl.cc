@@ -64,30 +64,10 @@ struct OperationResults {
 
 namespace {
 
-int KeysToValidationData(std::shared_ptr<asymm::Keys> packet, asymm::Keys *validation_key) {
-  pca::SignedData signed_data;
-  signed_data.set_data(RandomString(16));
-  asymm::Signature random_data_signature;
-  asymm::Sign(signed_data.data(), packet->private_key, &random_data_signature);
-  if (random_data_signature.empty()) {
-    DLOG(ERROR) << "Ownership proof not properly created.";
-    return kCreateSignaturePacketInfoFailure;
-  }
-  signed_data.set_signature(random_data_signature);
-
-  validation_key->identity = packet->identity;
-  validation_key->public_key = packet->public_key;
-  validation_key->private_key = packet->private_key;
-  validation_key->validation_token = packet->validation_token;
-
-  return kSuccess;
-}
-
 int CreateSignaturePacketInfo(std::shared_ptr<asymm::Keys> packet,
                               std::string *packet_name,
-                              std::string *packet_content,
-                              asymm::Keys *validation_key) {
-  BOOST_ASSERT(packet && packet_name && packet_content && validation_key);
+                              std::string *packet_content) {
+  BOOST_ASSERT(packet && packet_name && packet_content);
   *packet_name = pca::ApplyTypeToName(packet->identity, pca::kSignaturePacket);
 
   pca::SignedData signed_data;
@@ -100,13 +80,12 @@ int CreateSignaturePacketInfo(std::shared_ptr<asymm::Keys> packet,
 
   signed_data.set_data(public_key);
   signed_data.set_signature(packet->validation_token);
-  if (!signed_data.SerializeToString(packet_content) ||
-      packet_content->empty()) {
+  if (!signed_data.SerializeToString(packet_content) || packet_content->empty()) {
     DLOG(ERROR) << "SignedData not properly serialised.";
     return kCreateSignaturePacketInfoFailure;
   }
 
-  return KeysToValidationData(packet, validation_key);
+  return kSuccess;
 }
 
 void OperationCallback(bool result, OperationResults &results, int index) {  // NOLINT (Dan)
@@ -391,31 +370,26 @@ void UserCredentialsImpl::StoreSignaturePacket(
     int index) {
   std::string packet_name, packet_content;
 
-  asymm::Keys validation_key;
-  CreateSignaturePacketInfo(packet, &packet_name, &packet_content, &validation_key);
-  std::shared_ptr<asymm::Keys> validation_key_shared(new asymm::Keys(validation_key));
+  CreateSignaturePacketInfo(packet, &packet_name, &packet_content);
   if (!remote_chunk_store_->Store(packet_name,
                                   packet_content,
                                   std::bind(&OperationCallback, args::_1, results, index),
-                                  validation_key_shared)) {
+                                  packet)) {
     DLOG(ERROR) << "Failed to store: " << index;
     OperationCallback(false, results, index);
   }
 }
 
 void UserCredentialsImpl::StoreAnmaid(OperationResults &results) {  // NOLINT (Dan)
-  std::shared_ptr<asymm::Keys> anmaid(
-        passport_.SignaturePacketDetails(passport::kAnmaid, false));
+  std::shared_ptr<asymm::Keys> anmaid(passport_.SignaturePacketDetails(passport::kAnmaid, false));
   std::string packet_name, packet_content;
 
-  asymm::Keys validation_key;
-  CreateSignaturePacketInfo(anmaid, &packet_name, &packet_content, &validation_key);
-  std::shared_ptr<asymm::Keys> validation_key_shared(new asymm::Keys(validation_key));
+  CreateSignaturePacketInfo(anmaid, &packet_name, &packet_content);
   if (!remote_chunk_store_->Store(packet_name,
                                   packet_content,
                                   std::bind(&UserCredentialsImpl::StoreMaid,
                                             this, args::_1, results),
-                                  validation_key_shared)) {
+                                  anmaid)) {
     DLOG(ERROR) << "Failed to store ANMAID.";
     StoreMaid(false, results);
   }
@@ -431,14 +405,6 @@ void UserCredentialsImpl::StoreMaid(bool result, OperationResults &results) {  /
   std::shared_ptr<asymm::Keys> maid(passport_.SignaturePacketDetails(passport::kMaid, false));
   std::shared_ptr<asymm::Keys> anmaid(passport_.SignaturePacketDetails(passport::kAnmaid, false));
 
-  asymm::Keys validation_key;
-  int var(KeysToValidationData(anmaid, &validation_key));
-  if (var != kSuccess) {
-    DLOG(ERROR) << "Failed to procure MAID's validation data: " << var;
-    StorePmid(false, results);
-    return;
-  }
-
   std::string maid_name(pca::ApplyTypeToName(maid->identity, pca::kSignaturePacket));
   pca::SignedData signed_maid;
   signed_maid.set_signature(maid->validation_token);
@@ -450,13 +416,11 @@ void UserCredentialsImpl::StoreMaid(bool result, OperationResults &results) {  /
     return;
   }
   signed_maid.set_data(maid_string_public_key);
-  std::shared_ptr<asymm::Keys> validation_key_shared(
-      new asymm::Keys(validation_key));
   if (!remote_chunk_store_->Store(maid_name,
                                   signed_maid.SerializeAsString(),
                                   std::bind(&UserCredentialsImpl::StorePmid,
                                             this, args::_1, results),
-                                  validation_key_shared)) {
+                                  anmaid)) {
     DLOG(ERROR) << "Failed to store MAID.";
     StorePmid(false, results);
   }
@@ -472,14 +436,6 @@ void UserCredentialsImpl::StorePmid(bool result, OperationResults &results) {  /
   std::shared_ptr<asymm::Keys> pmid(passport_.SignaturePacketDetails(passport::kPmid, false));
   std::shared_ptr<asymm::Keys> maid(passport_.SignaturePacketDetails(passport::kMaid, false));
 
-  asymm::Keys validation_key;
-  int var(KeysToValidationData(maid, &validation_key));
-  if (var != kSuccess) {
-    DLOG(ERROR) << "Failed to procure PMID's validation data: " << var;
-    StorePmid(false, results);
-    return;
-  }
-
   std::string pmid_name(pca::ApplyTypeToName(pmid->identity, pca::kSignaturePacket));
   pca::SignedData signed_pmid;
   signed_pmid.set_signature(pmid->validation_token);
@@ -491,12 +447,11 @@ void UserCredentialsImpl::StorePmid(bool result, OperationResults &results) {  /
     return;
   }
   signed_pmid.set_data(pmid_string_public_key);
-  std::shared_ptr<asymm::Keys> validation_key_shared(
-      new asymm::Keys(validation_key));
+
   if (!remote_chunk_store_->Store(pmid_name,
                                   signed_pmid.SerializeAsString(),
                                   std::bind(&OperationCallback, args::_1, results, 3),
-                                  validation_key_shared)) {
+                                  maid)) {
     DLOG(ERROR) << "Failed to store PMID.";
     OperationCallback(false, results, 3);
   }
@@ -604,16 +559,9 @@ void UserCredentialsImpl::StoreIdentity(OperationResults &results,  // NOLINT (D
               packet_content(passport_.IdentityPacketValue(id_pt, false));
   packet_name = pca::ApplyTypeToName(packet_name, pca::kModifiableByOwner);
   std::shared_ptr<asymm::Keys> signer(passport_.SignaturePacketDetails(sign_pt, true));
-  asymm::Keys validation_key;
-  int result(KeysToValidationData(signer, &validation_key));
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to put keys into validation data: " << result;
-    OperationCallback(false, results, index);
-    return;
-  }
 
   asymm::Signature signature;
-  result = asymm::Sign(packet_content, signer->private_key, &signature);
+  int result(asymm::Sign(packet_content, signer->private_key, &signature));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to sign content: " << result;
     OperationCallback(false, results, index);
@@ -623,12 +571,10 @@ void UserCredentialsImpl::StoreIdentity(OperationResults &results,  // NOLINT (D
   pca::SignedData signed_data;
   signed_data.set_data(packet_content);
   signed_data.set_signature(signature);
-  std::shared_ptr<asymm::Keys> validation_key_shared(
-      new asymm::Keys(validation_key));
   if (!remote_chunk_store_->Store(packet_name,
                                   signed_data.SerializeAsString(),
                                   std::bind(&OperationCallback, args::_1, results, index),
-                                  validation_key_shared)) {
+                                  signer)) {
     DLOG(ERROR) << "Failed to store: " << index;
     OperationCallback(false, results, index);
   }
@@ -695,17 +641,9 @@ void UserCredentialsImpl::ModifyIdentity(OperationResults &results,  // NOLINT (
               content(passport_.IdentityPacketValue(id_pt, false));
   name = pca::ApplyTypeToName(name, pca::kModifiableByOwner);
   std::shared_ptr<asymm::Keys> signer(passport_.SignaturePacketDetails(sign_pt, true));
-  asymm::Keys validation_key;
-  int result(KeysToValidationData(signer, &validation_key));
-
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to put keys into validation data: " << result;
-    OperationCallback(false, results, index);
-    return;
-  }
 
   asymm::Signature signature;
-  result = asymm::Sign(content, signer->private_key, &signature);
+  int result(asymm::Sign(content, signer->private_key, &signature));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to sign content: " << result;
     OperationCallback(false, results, index);
@@ -715,12 +653,10 @@ void UserCredentialsImpl::ModifyIdentity(OperationResults &results,  // NOLINT (
   pca::SignedData signed_data;
   signed_data.set_data(content);
   signed_data.set_signature(signature);
-  std::shared_ptr<asymm::Keys> validation_key_shared(
-      new asymm::Keys(validation_key));
   if (!remote_chunk_store_->Modify(name,
                                    signed_data.SerializeAsString(),
                                    std::bind(&OperationCallback, args::_1, results, index),
-                                   validation_key_shared)) {
+                                   signer)) {
     DLOG(ERROR) << "Failed to modify: " << index;
     OperationCallback(false, results, index);
   }
@@ -827,18 +763,9 @@ void UserCredentialsImpl::DeleteIdentity(OperationResults &results,  // NOLINT (
   name = pca::ApplyTypeToName(name, pca::kModifiableByOwner);
 
   std::shared_ptr<asymm::Keys> signer(passport_.SignaturePacketDetails(sig_type, true));
-  asymm::Keys validation_key;
-  int result(KeysToValidationData(signer, &validation_key));
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to put keys into validation data: " << result;
-    OperationCallback(false, results, index);
-    return;
-  }
-  std::shared_ptr<asymm::Keys> validation_key_shared(
-      new asymm::Keys(validation_key));
   if (!remote_chunk_store_->Delete(name,
                                    std::bind(&OperationCallback, args::_1, results, index),
-                                   validation_key_shared)) {
+                                   signer)) {
     DLOG(ERROR) << "Failed to delete: " << index;
     OperationCallback(false, results, index);
   }

@@ -52,6 +52,8 @@ namespace lifestuff {
 std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path &buffered_chunk_store_path,
                                                        const fs::path &local_chunk_manager_path,
                                                        boost::asio::io_service &asio_service) {  // NOLINT (Dan)
+  boost::system::error_code error_code;
+  fs::create_directories(local_chunk_manager_path / "lock", error_code);
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store(
       pcs::CreateLocalChunkStore(buffered_chunk_store_path,
                                  local_chunk_manager_path,

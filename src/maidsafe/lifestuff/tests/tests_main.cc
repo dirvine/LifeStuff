@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
   // Severity levels are INFO, WARNING, ERROR, and FATAL (0 to 3 respectively).
   FLAGS_ms_logging_common = google::FATAL;
   FLAGS_ms_logging_private = google::FATAL;
-//   FLAGS_ms_logging_private = google::ERROR;
+//  FLAGS_ms_logging_private = google::ERROR;
   FLAGS_ms_logging_pki = google::FATAL;
   FLAGS_ms_logging_passport = google::FATAL;
   FLAGS_ms_logging_encrypt = google::FATAL;
@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
   FLAGS_ms_logging_dht = google::FATAL;
   FLAGS_ms_logging_pd = google::FATAL;
 #endif
-//   FLAGS_ms_logging_lifestuff = google::INFO;
+//  FLAGS_ms_logging_lifestuff = google::INFO;
   FLAGS_ms_logging_lifestuff = google::ERROR;
 
   testing::InitGoogleTest(&argc, argv);

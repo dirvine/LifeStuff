@@ -115,12 +115,6 @@ class PublicId {
   int ModifyAppendability(const std::string &public_id, const char appendability);
   // Notify each contact in the list about the contact_info
   int InformContactInfo(const std::string &public_id, const std::vector<Contact> &contacts);
-
-  void KeysAndProof(const std::string &public_id,
-                    passport::PacketType pt,
-                    bool confirmed,
-                    asymm::Keys *validation_key);
-
   int GetPublicKey(const std::string& packet_name, Contact& contact, int type);
 
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;

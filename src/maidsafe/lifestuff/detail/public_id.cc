@@ -228,34 +228,20 @@ int PublicId::CreatePublicId(const std::string &public_id, bool accepts_new_cont
   results.push_back(kPendingResult);
   results.push_back(kPendingResult);
 
-  asymm::PrivateKey inbox_private_key(session_.passport().PacketPrivateKey(passport::kMmid,
-                                                                            false,
-                                                                            public_id));
-  asymm::PrivateKey contact_id_private_key(session_.passport().PacketPrivateKey(passport::kMpid,
-                                                                                 false,
-                                                                                 public_id));
-
-  asymm::Keys validation_key_mmid, validation_key_mpid, validation_key_anmpid;
-  KeysAndProof(public_id, passport::kMmid, false, &validation_key_mmid);
-  KeysAndProof(public_id, passport::kMpid, false, &validation_key_mpid);
-  KeysAndProof(public_id,
-               passport::kAnmpid,
-               false,
-               &validation_key_anmpid);
-
   std::string inbox_name(MaidsafeInboxName(data));
   VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
                                          &mutex, &cond_var, &results[0]));
-  std::shared_ptr<asymm::Keys> key_mmid_shared(new asymm::Keys(validation_key_mmid));
+  std::shared_ptr<asymm::Keys> key_mmid_shared(
+      session_.passport().SignaturePacketDetails(passport::kMmid, false, public_id));
   remote_chunk_store_->Store(inbox_name,
-                             MaidsafeInboxValue(data, validation_key_mmid.private_key),
+                             MaidsafeInboxValue(data, key_mmid_shared->private_key),
                              callback,
                              key_mmid_shared);
 
   std::string anmpid_name(AnmpidName(data));
-
   callback = std::bind(&ChunkStoreOperationCallback, args::_1, &mutex, &cond_var, &results[1]);
-  std::shared_ptr<asymm::Keys> key_anmpid_shared(new asymm::Keys(validation_key_anmpid));
+  std::shared_ptr<asymm::Keys> key_anmpid_shared(
+      session_.passport().SignaturePacketDetails(passport::kAnmpid, false, public_id));
   remote_chunk_store_->Store(anmpid_name, AnmpidValue(data), callback, key_anmpid_shared);
 
   std::string mpid_name(MpidName(data));
@@ -264,10 +250,12 @@ int PublicId::CreatePublicId(const std::string &public_id, bool accepts_new_cont
 
   std::string mcid_name(MaidsafeContactIdName(public_id));
   callback = std::bind(&ChunkStoreOperationCallback, args::_1, &mutex, &cond_var, &results[3]);
-  std::shared_ptr<asymm::Keys> key_mpid_shared(new asymm::Keys(validation_key_mpid));
+  std::shared_ptr<asymm::Keys> key_mpid_shared(
+      session_.passport().SignaturePacketDetails(passport::kMpid, false, public_id));
   remote_chunk_store_->Store(mcid_name,
-                             MaidsafeContactIdValue(data, accepts_new_contacts,
-                                                    validation_key_mpid.private_key),
+                             MaidsafeContactIdValue(data,
+                                                    accepts_new_contacts,
+                                                    key_mpid_shared->private_key),
                              callback,
                              key_mpid_shared);
 
@@ -275,8 +263,10 @@ int PublicId::CreatePublicId(const std::string &public_id, bool accepts_new_cont
   if (result != kSuccess)
     return result;
 
-  if (!(results[0] == kSuccess && results[1] == kSuccess &&
-        results[2] == kSuccess && results[3] == kSuccess)) {
+  if (!(results[0] == kSuccess &&
+        results[1] == kSuccess &&
+        results[2] == kSuccess &&
+        results[3] == kSuccess)) {
     DLOG(ERROR) << "Failed to store packets.  "
                 << "ANMPID: " << results[1]
                 << "\tMPID: " << results[2]
@@ -354,13 +344,6 @@ int PublicId::ModifyAppendability(const std::string &public_id, const char appen
   }
   BOOST_ASSERT(data.size() == 3U);
 
-  // Retriveves own MPID, MMID private keys
-  asymm::PrivateKey mpid_private_key(session_.passport().PacketPrivateKey(passport::kMpid,
-                                                                          true,
-                                                                          public_id));
-  asymm::PrivateKey MMID_private_key(session_.passport().PacketPrivateKey(passport::kMmid,
-                                                                          true,
-                                                                          public_id));
   // Change appendability of MCID,MMID by modify them via ModifyAppendableByAll
   boost::mutex mutex;
   boost::condition_variable cond_var;
@@ -368,24 +351,25 @@ int PublicId::ModifyAppendability(const std::string &public_id, const char appen
   results.push_back(kPendingResult);
   results.push_back(kPendingResult);
 
-  asymm::Keys validation_key_mpid;
-  KeysAndProof(public_id, passport::kMpid, true, &validation_key_mpid);
+
   std::string packet_name(MaidsafeContactIdName(public_id));
   VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
                                          &mutex, &cond_var, &results[0]));
-  std::shared_ptr<asymm::Keys> key_mpid_shared(new asymm::Keys(validation_key_mpid));
+  std::shared_ptr<asymm::Keys> key_mpid_shared(
+      session_.passport().SignaturePacketDetails(passport::kMpid, true, public_id));
   remote_chunk_store_->Modify(packet_name,
-                              ComposeModifyAppendableByAll(mpid_private_key, appendability),
+                              ComposeModifyAppendableByAll(key_mpid_shared->private_key,
+                                                           appendability),
                               callback,
                               key_mpid_shared);
 
-  asymm::Keys validation_key_mmid;
-  KeysAndProof(public_id, passport::kMmid, true, &validation_key_mmid);
   packet_name = MaidsafeInboxName(data);
   callback = std::bind(&ChunkStoreOperationCallback, args::_1, &mutex, &cond_var, &results[1]);
-  std::shared_ptr<asymm::Keys> key_mmid_shared(new asymm::Keys(validation_key_mmid));
+  std::shared_ptr<asymm::Keys> key_mmid_shared(
+              session_.passport().SignaturePacketDetails(passport::kMmid, true, public_id));
   remote_chunk_store_->Modify(packet_name,
-                              ComposeModifyAppendableByAll(MMID_private_key, appendability),
+                              ComposeModifyAppendableByAll(key_mpid_shared->private_key,
+                                                           appendability),
                               callback,
                               key_mmid_shared);
 
@@ -423,15 +407,10 @@ void PublicId::GetNewContacts(const bptime::seconds &interval,
 void PublicId::GetContactsHandle() {
   std::vector<std::string> selectables(session_.PublicIdentities());
   for (auto it(selectables.begin()); it != selectables.end(); ++it) {
-    asymm::Keys validation_key_mpid;
-    KeysAndProof(*it,
-               passport::kMpid,
-               true,
-             &validation_key_mpid);
-    std::shared_ptr<asymm::Keys> key_mpid_shared(new asymm::Keys(validation_key_mpid));
-    std::string mpid_value(
-      remote_chunk_store_->Get(MaidsafeContactIdName(*it),
-                             key_mpid_shared));
+
+    std::shared_ptr<asymm::Keys> key_mpid_shared(
+        session_.passport().SignaturePacketDetails(passport::kMpid, true, *it));
+    std::string mpid_value(remote_chunk_store_->Get(MaidsafeContactIdName(*it), key_mpid_shared));
     if (mpid_value.empty()) {
       DLOG(ERROR) << "Failed to get MPID contents for " << (*it);
     } else {
@@ -577,18 +556,16 @@ int PublicId::RemoveContact(const std::string &public_id, const std::string &con
   boost::condition_variable cond_var;
   std::vector<int> results;
   results.push_back(kPendingResult);
-  asymm::PrivateKey new_inbox_private_key(
-      session_.passport().PacketPrivateKey(passport::kMmid, false, public_id));
-  asymm::Keys validation_key_mmid;
-  KeysAndProof(public_id, passport::kMmid, false, &validation_key_mmid);
+
   std::string inbox_name(MaidsafeInboxName(std::get<0>(new_MMID)));
   VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
                                          &mutex, &cond_var, &results[0]));
-  std::shared_ptr<asymm::Keys> key_mmid_shared(new asymm::Keys(validation_key_mmid));
+  std::shared_ptr<asymm::Keys> new_key_mmid_shared(
+      session_.passport().SignaturePacketDetails(passport::kMmid, false, public_id));
   remote_chunk_store_->Store(inbox_name,
-                             MaidsafeInboxValue(new_MMID, new_inbox_private_key),
+                             MaidsafeInboxValue(new_MMID, new_key_mmid_shared->private_key),
                              callback,
-                             key_mmid_shared);
+                             new_key_mmid_shared);
 
   result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
@@ -606,17 +583,16 @@ int PublicId::RemoveContact(const std::string &public_id, const std::string &con
   // Invalidate previous MMID, i.e. put it into kModifiableByOwner
   results[0] = kPendingResult;
 
-  validation_key_mmid = asymm::Keys();
-  KeysAndProof(public_id, passport::kMmid, true, &validation_key_mmid);
+  std::shared_ptr<asymm::Keys> old_key_mmid_shared(
+      session_.passport().SignaturePacketDetails(passport::kMmid, true, public_id));
   callback = std::bind(&ChunkStoreOperationCallback, args::_1, &mutex, &cond_var, &results[0]);
 
   inbox_name = MaidsafeInboxName(std::get<0>(old_MMID));
-  key_mmid_shared.reset(new asymm::Keys(validation_key_mmid));
   remote_chunk_store_->Modify(inbox_name,
-                              ComposeModifyAppendableByAll(old_inbox_private_key,
+                              ComposeModifyAppendableByAll(old_key_mmid_shared->private_key,
                                                            pca::kModifiableByOwner),
                               callback,
-                              key_mmid_shared);
+                              old_key_mmid_shared);
 
   result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
@@ -650,20 +626,14 @@ int PublicId::InformContactInfo(const std::string &public_id,
   BOOST_ASSERT(data.size() == 3U);
   std::string inbox_name(std::get<0>(data.at(2)));
 
-  // Retrieves MPID private_key
-  asymm::PrivateKey mpid_private_key(session_.passport().PacketPrivateKey(passport::kMpid,
-                                                                          true,
-                                                                          public_id));
   // Inform each contact in the contact list of the MMID contact info
   boost::mutex mutex;
   boost::condition_variable cond_var;
   std::vector<int> results(contacts.size(), kPendingResult);
   size_t size(contacts.size());
 
-  asymm::Keys validation_key_mpid;
-  KeysAndProof(public_id, passport::kMpid, true, &validation_key_mpid);
   std::shared_ptr<asymm::Keys> key_mpid_shared(
-      new asymm::Keys(validation_key_mpid));
+      session_.passport().SignaturePacketDetails(passport::kMpid, true, public_id));
 
   for (size_t i = 0; i < size; ++i) {
     std::string recipient_public_id(contacts[i].public_id);
@@ -686,7 +656,7 @@ int PublicId::InformContactInfo(const std::string &public_id,
     }
 
     asymm::Signature signature;
-    result = asymm::Sign(encrypted_introduction, mpid_private_key, &signature);
+    result = asymm::Sign(encrypted_introduction, key_mpid_shared->private_key, &signature);
     if (result != kSuccess) {
       DLOG(ERROR) << "Failed to sign MCID data: " << result;
       return kSigningError;
@@ -728,24 +698,6 @@ std::map<std::string, ContactStatus> PublicId::ContactList(const std::string &pu
     contacts.insert(std::make_pair((*it).public_id, (*it).status));
 
   return contacts;
-}
-
-void PublicId::KeysAndProof(const std::string &public_id,
-                            passport::PacketType pt,
-                            bool confirmed,
-                            asymm::Keys *validation_key) {
-  if (pt != passport::kAnmpid && pt != passport::kMpid && pt != passport::kMmid) {
-    DLOG(ERROR) << "Not valid public ID packet, what'r'u playing at?";
-    return;
-  }
-  validation_key->identity =
-      session_.passport().PacketName(pt, confirmed, public_id);
-  validation_key->public_key =
-      session_.passport().SignaturePacketValue(pt, confirmed, public_id);
-  validation_key->private_key =
-      session_.passport().PacketPrivateKey(pt, confirmed, public_id);
-  validation_key->validation_token =
-      session_.passport().PacketSignature(pt, confirmed, public_id);
 }
 
 int PublicId::GetPublicKey(const std::string& packet_name, Contact& contact, int type) {

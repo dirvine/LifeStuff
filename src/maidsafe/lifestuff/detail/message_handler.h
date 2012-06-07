@@ -123,14 +123,10 @@ class MessageHandler {
   bool ProtobufToInbox(const Message &message, InboxItem *inbox_item) const;
   bool InboxToProtobuf(const InboxItem &inbox_item, Message *message) const;
   void GetNewMessages(const bptime::seconds &interval, const boost::system::error_code &error_code);
-  void ProcessRetrieved(const passport::SelectableIdData &data, const std::string &mmid_value);
+  void ProcessRetrieved(const std::string& public_id, const std::string& retrieved_mmid_packet);
   void RetrieveMessagesForAllIds();
   bool MessagePreviouslyReceived(const std::string &message);
   void ClearExpiredReceivedMessages();
-  void KeysAndProof(const std::string &public_id,
-                    passport::PacketType pt,
-                    bool confirmed,
-                    asymm::Keys *validation_key);
   void EnqueuePresenceMessages(ContactPresence presence);
 
   void ProcessContactPresence(const InboxItem &presence_message);
