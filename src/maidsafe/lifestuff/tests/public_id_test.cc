@@ -62,8 +62,8 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
         remote_chunk_store2_(),
         public_id1_(),
         public_id2_(),
-        asio_service1_(),
-        asio_service2_(),
+        asio_service1_(5),
+        asio_service2_(5),
         public_identity1_("User 1 " + RandomAlphaNumericString(8)),
         public_identity2_("User 2 " + RandomAlphaNumericString(8)),
         received_public_identity_(),
@@ -132,8 +132,8 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
   void SetUp() {
     session1_.Reset();
     session2_.Reset();
-    asio_service1_.Start(10);
-    asio_service2_.Start(10);
+    asio_service1_.Start();
+    asio_service2_.Start();
 
 #ifdef LOCAL_TARGETS_ONLY
     remote_chunk_store1_ = BuildChunkStore(*test_dir_ / RandomAlphaNumericString(8),

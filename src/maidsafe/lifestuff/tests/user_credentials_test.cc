@@ -52,8 +52,8 @@ class UserCredentialsTest : public testing::Test {
       : test_dir_(maidsafe::test::CreateTestPath()),
         session_(),
         session2_(),
-        asio_service_(),
-        asio_service2_(),
+        asio_service_(10),
+        asio_service2_(10),
 #ifndef LOCAL_TARGETS_ONLY
         client_container_(),
         client_container2_(),
@@ -68,8 +68,8 @@ class UserCredentialsTest : public testing::Test {
 
  protected:
   void SetUp() {
-    asio_service_.Start(10);
-    asio_service2_.Start(10);
+    asio_service_.Start();
+    asio_service2_.Start();
 #ifdef LOCAL_TARGETS_ONLY
   remote_chunk_store_ = BuildChunkStore(*test_dir_ / RandomAlphaNumericString(8),
                                         *test_dir_ / "simulation",

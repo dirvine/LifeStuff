@@ -57,7 +57,7 @@ LifeStuffImpl::LifeStuffImpl()
       simulation_path_(),
 #endif
       interval_(kSecondsInterval),
-      asio_service_(),
+      asio_service_(thread_count_),
       remote_chunk_store_(),
 #ifndef LOCAL_TARGETS_ONLY
       client_container_(),
@@ -80,7 +80,7 @@ int LifeStuffImpl::Initialise(const boost::filesystem::path &base_directory) {
   }
 
   // Initialisation
-  asio_service_.Start(thread_count_);
+  asio_service_.Start();
 
   fs::path base_path, buffered_chunk_store_path, network_simulation_path;
   if (base_directory.empty()) {

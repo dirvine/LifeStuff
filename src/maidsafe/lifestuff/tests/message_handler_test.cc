@@ -69,9 +69,9 @@ class MessageHandlerTest : public testing::Test {
         message_handler1_(),
         message_handler2_(),
         message_handler3_(),
-        asio_service1_(),
-        asio_service2_(),
-        asio_service3_(),
+        asio_service1_(10),
+        asio_service2_(10),
+        asio_service3_(10),
         public_username1_("User 1 " + RandomAlphaNumericString(8)),
         public_username2_("User 2 " + RandomAlphaNumericString(8)),
         public_username3_("User 3 " + RandomAlphaNumericString(8)),
@@ -143,9 +143,9 @@ class MessageHandlerTest : public testing::Test {
 
  protected:
   void SetUp() {
-    asio_service1_.Start(10);
-    asio_service2_.Start(10);
-    asio_service3_.Start(10);
+    asio_service1_.Start();
+    asio_service2_.Start();
+    asio_service3_.Start();
 
 #ifdef LOCAL_TARGETS_ONLY
     remote_chunk_store1_ = BuildChunkStore(*test_dir_ / RandomAlphaNumericString(8),

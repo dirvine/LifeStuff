@@ -59,8 +59,8 @@ class UserStorageTest : public testing::TestWithParam<bool> {
       mount_dir_(*test_dir_ / RandomAlphaNumericString(8)),
       private_share_(GetParam()),
       interval_(1),
-      asio_service1_(),
-      asio_service2_(),
+      asio_service1_(5),
+      asio_service2_(5),
 #ifndef LOCAL_TARGETS_ONLY
       client_container1_(),
       client_container2_(),
@@ -188,8 +188,8 @@ class UserStorageTest : public testing::TestWithParam<bool> {
   }
 
   void SetUp() {
-    asio_service1_.Start(5);
-    asio_service2_.Start(5);
+    asio_service1_.Start();
+    asio_service2_.Start();
     CreateUserCredentials();
 
     public_id1_.reset(new PublicId(remote_chunk_store1_, session1_, asio_service1_.service()));
@@ -758,8 +758,8 @@ TEST_P(UserStorageTest, FUNC_RemoveUserByOwner) {
 }
 
 TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
-  AsioService asio_service3;
-  asio_service3.Start(5);
+  AsioService asio_service3(5);
+  asio_service3.Start();
 #ifndef LOCAL_TARGETS_ONLY
   ClientContainerPtr client_container3;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store3(
