@@ -19,6 +19,7 @@
 #include "maidsafe/lifestuff/detail/message_handler.h"
 
 #include "maidsafe/common/asio_service.h"
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
@@ -27,10 +28,9 @@
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 
 #ifndef LOCAL_TARGETS_ONLY
-#include "maidsafe/pd/client/client_container.h"
+#  include "maidsafe/pd/client/client_container.h"
 #endif
 
-#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
 #include "maidsafe/lifestuff/detail/data_atlas_pb.h"
@@ -138,7 +138,7 @@ class UserStorageTest : public testing::TestWithParam<bool> {
                      boost::mutex *mutex,
                      boost::condition_variable *cond_var) {
     boost::mutex::scoped_lock lock(*mutex);
-    DLOG(ERROR) << "From: " << sender << ", to: " << receiver << ", name: "
+    LOG(kError) << "From: " << sender << ", to: " << receiver << ", name: "
                 << share_name << ", access_level: " << access_level;
     cond_var->notify_one();
   }

@@ -22,36 +22,24 @@
 * ============================================================================
 */
 
-#include "boost/filesystem.hpp"
-
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/test.h"
 
-#include "maidsafe/lifestuff/log.h"
-
 int main(int argc, char **argv) {
-  // Initialise logging
-  maidsafe::InitLogging(argv[0]);
-  // Choose to direct output to stderr or not.
-  FLAGS_logtostderr = true;
-  // If Google logging is linked in, log messages at or above this level.
-  // Severity levels are INFO, WARNING, ERROR, and FATAL (0 to 3 respectively).
-  FLAGS_ms_logging_common = google::FATAL;
-  FLAGS_ms_logging_private = google::FATAL;
-//  FLAGS_ms_logging_private = google::ERROR;
-  FLAGS_ms_logging_pki = google::FATAL;
-  FLAGS_ms_logging_passport = google::FATAL;
-  FLAGS_ms_logging_encrypt = google::FATAL;
-  FLAGS_ms_logging_drive = google::FATAL;
-#ifndef LOCAL_TARGETS_ONLY
-  FLAGS_ms_logging_transport = google::FATAL;
-  FLAGS_ms_logging_dht = google::FATAL;
-  FLAGS_ms_logging_pd = google::FATAL;
-#endif
-//  FLAGS_ms_logging_lifestuff = google::INFO;
-  FLAGS_ms_logging_lifestuff = google::ERROR;
+  maidsafe::log::Logging::instance().AddFilter("common", maidsafe::log::kFatal);
+  maidsafe::log::Logging::instance().AddFilter("private", maidsafe::log::kFatal);
+  maidsafe::log::Logging::instance().AddFilter("rudp", maidsafe::log::kFatal);
+  maidsafe::log::Logging::instance().AddFilter("routing", maidsafe::log::kFatal);
+  maidsafe::log::Logging::instance().AddFilter("encrypt", maidsafe::log::kFatal);
+  maidsafe::log::Logging::instance().AddFilter("drive", maidsafe::log::kFatal);
+  maidsafe::log::Logging::instance().AddFilter("pki", maidsafe::log::kFatal);
+  maidsafe::log::Logging::instance().AddFilter("passport", maidsafe::log::kFatal);
+  maidsafe::log::Logging::instance().AddFilter("pd", maidsafe::log::kFatal);
+  maidsafe::log::Logging::instance().AddFilter("lifestuff", maidsafe::log::kError);
+  maidsafe::log::Logging::instance().AddFilter("lifestuff-gui", maidsafe::log::kInfo);
+  maidsafe::log::Logging::instance().SetColour(true);
 
   testing::InitGoogleTest(&argc, argv);
-
   int result(RUN_ALL_TESTS());
   int test_count = testing::UnitTest::GetInstance()->test_to_run_count();
   return (test_count == 0) ? -1 : result;

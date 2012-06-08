@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "maidsafe/common/crypto.h"
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
@@ -28,7 +29,6 @@
 
 #include "maidsafe/passport/passport.h"
 
-#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
@@ -112,7 +112,7 @@ int MessageHandler::StartCheckingForNewMessages(bptime::seconds interval) {
   std::vector<passport::SelectableIdData> selectables;
   session_.passport().SelectableIdentitiesList(&selectables);
   if (selectables.empty()) {
-    DLOG(ERROR) << "No public username set";
+    LOG(kError) << "No public username set";
     return kNoPublicIds;
   }
   get_new_messages_timer_.expires_from_now(interval);
@@ -130,7 +130,7 @@ void MessageHandler::StopCheckingForNewMessages() {
 int MessageHandler::Send(const InboxItem &inbox_item) {
   Message message;
   if (!InboxToProtobuf(inbox_item, &message)) {
-    DLOG(ERROR) << "Invalid message. Won't send. Good day. I said: 'Good day!'";
+    LOG(kError) << "Invalid message. Won't send. Good day. I said: 'Good day!'";
     return -7;
   }
   Contact recipient_contact;
@@ -140,7 +140,7 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
   if (result != kSuccess ||
       recipient_contact.inbox_name.empty() ||
       !asymm::ValidateKey(recipient_contact.inbox_public_key)) {
-    DLOG(ERROR) << "Failed to get MMID for " << inbox_item.receiver_public_id << ", type: "
+    LOG(kError) << "Failed to get MMID for " << inbox_item.receiver_public_id << ", type: "
                 << inbox_item.item_type << ", result: " << result
                 << ", " << std::boolalpha << asymm::ValidateKey(recipient_contact.inbox_public_key);
     return result == kSuccess ? kGeneralError : result;
@@ -154,7 +154,7 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
                true,
                &data);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to get own public ID data: " << result;
+    LOG(kError) << "Failed to get own public ID data: " << result;
     return kGetPublicIdError;
   }
   BOOST_ASSERT(data.size() == 3U);
@@ -170,7 +170,7 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
   std::string encrypted_message;
   result = asymm::Encrypt(message.SerializeAsString(), recipient_public_key, &encrypted_message);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to encrypt message to recipient( " << inbox_item.receiver_public_id
+    LOG(kError) << "Failed to encrypt message to recipient( " << inbox_item.receiver_public_id
                 << "): " << result;
     return kGetPublicIdError;
   }
@@ -181,7 +181,7 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
   std::string message_signature;
   result = asymm::Sign(signed_data.data(), validation_key->private_key, &message_signature);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to sign message: " << result;
+    LOG(kError) << "Failed to sign message: " << result;
     return result;
   }
 
@@ -207,16 +207,16 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
                              [&result]()->bool {
                                return result != kPendingResult;
                              })) {
-      DLOG(ERROR) << "Timed out storing packet.";
+      LOG(kError) << "Timed out storing packet.";
       return kPublicIdTimeout;
     }
   }
   catch(const std::exception &e) {
-    DLOG(ERROR) << "Failed to store packet: " << e.what();
+    LOG(kError) << "Failed to store packet: " << e.what();
     return kMessageHandlerException;
   }
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to store packet.  Result: " << result;
+    LOG(kError) << "Failed to store packet.  Result: " << result;
     return result;
   }
 
@@ -237,7 +237,7 @@ int MessageHandler::SendPresenceMessage(const std::string &own_public_id,
 
   int result(Send(inbox_item));
   if (result != kSuccess) {
-    DLOG(ERROR) << own_public_id << " failed to inform "
+    LOG(kError) << own_public_id << " failed to inform "
                 << recipient_public_id << " of presence state "
                 << presence << ", result: " << result;
     session_.contact_handler_map()[own_public_id]->UpdatePresence(recipient_public_id, kOffline);
@@ -269,7 +269,7 @@ void MessageHandler::GetNewMessages(const bptime::seconds &interval,
                                     const boost::system::error_code &error_code) {
   if (error_code) {
     if (error_code != ba::error::operation_aborted) {
-      DLOG(WARNING) << "Refresh timer error: " << error_code.message();
+      LOG(kWarning) << "Refresh timer error: " << error_code.message();
     } else {
       return;
     }
@@ -291,7 +291,7 @@ void MessageHandler::ProcessRetrieved(const std::string& public_id,
                                       const std::string& retrieved_mmid_packet) {
   pca::AppendableByAll mmid;
   if (!mmid.ParseFromString(retrieved_mmid_packet)) {
-    DLOG(ERROR) << "Failed to parse as AppendableByAll";
+    LOG(kError) << "Failed to parse as AppendableByAll";
     return;
   }
 
@@ -304,13 +304,13 @@ void MessageHandler::ProcessRetrieved(const std::string& public_id,
     std::string decrypted_message;
     int n(asymm::Decrypt(signed_data.data(), mmid_private_key, &decrypted_message));
     if (n != kSuccess) {
-      DLOG(ERROR) << "Failed to decrypt message: " << n;
+      LOG(kError) << "Failed to decrypt message: " << n;
       continue;
     }
 
     Message mmid_message;
     if (!mmid_message.ParseFromString(decrypted_message)) {
-      DLOG(ERROR) << "Failed to parse decrypted message";
+      LOG(kError) << "Failed to parse decrypted message";
       continue;
     }
 
@@ -349,7 +349,7 @@ void MessageHandler::ProcessFileTransfer(const InboxItem &inbox_item) {
   if (inbox_item.content.size() != 2U ||
       inbox_item.content[0].empty() ||
       inbox_item.content[1].empty()) {
-    DLOG(ERROR) << "Wrong number of arguments for message.";
+    LOG(kError) << "Wrong number of arguments for message.";
     file_transfer_signal_(inbox_item.receiver_public_id,
                           inbox_item.sender_public_id,
                           "",
@@ -362,7 +362,7 @@ void MessageHandler::ProcessFileTransfer(const InboxItem &inbox_item) {
   if (!parse_and_save_data_map_signal_(inbox_item.content[0],
                                        inbox_item.content[1],
                                        &data_map_hash)) {
-    DLOG(ERROR) << "Failed to parse file DM";
+    LOG(kError) << "Failed to parse file DM";
     file_transfer_signal_(inbox_item.receiver_public_id,
                           inbox_item.sender_public_id,
                           inbox_item.content[0],
@@ -381,7 +381,7 @@ void MessageHandler::ProcessFileTransfer(const InboxItem &inbox_item) {
 void MessageHandler::ProcessContactPresence(const InboxItem &presence_message) {
   if (presence_message.content.size() != 1U) {
     // Drop silently
-    DLOG(WARNING) << presence_message.sender_public_id
+    LOG(kWarning) << presence_message.sender_public_id
                   << " has sent a presence message with bad content: "
                   << presence_message.content.size();
     return;
@@ -403,7 +403,7 @@ void MessageHandler::ProcessContactPresence(const InboxItem &presence_message) {
     asio_service_.post(std::bind(&MessageHandler::SendPresenceMessage, this,
                                  receiver, sender, kOnline));
   } else {
-    DLOG(WARNING) << presence_message.sender_public_id
+    LOG(kWarning) << presence_message.sender_public_id
                   << " has sent a presence message with wrong content.";
   }
 }
@@ -412,7 +412,7 @@ void MessageHandler::ProcessContactProfilePicture(
     const InboxItem &profile_picture_message) {
   if (profile_picture_message.content.size() != 1U || profile_picture_message.content[0].empty()) {
     // Drop silently
-    DLOG(WARNING) << profile_picture_message.sender_public_id
+    LOG(kWarning) << profile_picture_message.sender_public_id
                   << " has sent a profile picture message with bad content.";
     return;
   }
@@ -422,7 +422,7 @@ void MessageHandler::ProcessContactProfilePicture(
   if (profile_picture_message.content[0] != kBlankProfilePicture) {
     encrypt::DataMapPtr data_map(ParseSerialisedDataMap(profile_picture_message.content[0]));
     if (!data_map) {
-      DLOG(WARNING) << "Data map didn't parse.";
+      LOG(kWarning) << "Data map didn't parse.";
       return;
     }
   }
@@ -431,7 +431,7 @@ void MessageHandler::ProcessContactProfilePicture(
                  sender,
                  profile_picture_message.content[0]));
   if (result != kSuccess) {
-    DLOG(WARNING) << "Failed to update picture DM in session: " << result;
+    LOG(kWarning) << "Failed to update picture DM in session: " << result;
     return;
   }
 
@@ -444,7 +444,7 @@ bool CheckCorrectKeys(const std::vector<std::string> &content, asymm::Keys *keys
   asymm::DecodePrivateKey(content.at(kKeysPrivateKey), &(keys->private_key));
   asymm::DecodePublicKey(content.at(kKeysPublicKey), &(keys->public_key));
   if (!asymm::ValidateKey(keys->private_key) || !asymm::ValidateKey(keys->public_key)) {
-    DLOG(ERROR) << "Keys in message are invalid.";
+    LOG(kError) << "Keys in message are invalid.";
     keys->private_key = asymm::PrivateKey();
     keys->public_key = asymm::PublicKey();
     return false;
@@ -456,7 +456,7 @@ bool CheckCorrectKeys(const std::vector<std::string> &content, asymm::Keys *keys
 
 void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
   if (inbox_item.content.empty() || inbox_item.content[kShareId].empty()) {
-    DLOG(ERROR) << "No share ID.";
+    LOG(kError) << "No share ID.";
     return;
   }
 
@@ -465,10 +465,10 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
   int result(*private_share_details_signal_(inbox_item.content[kShareId], &share_path));
   if ((result != kSuccess || share_path.empty()) &&
       inbox_item.item_type != kPrivateShareInvitation) {
-    DLOG(ERROR) << "result: " << result << ", path: " << share_path;
+    LOG(kError) << "result: " << result << ", path: " << share_path;
     if (inbox_item.item_type == kPrivateShareDeletion) {
       if (!delete_private_share_data_signal_(inbox_item.content[kShareId]))
-        DLOG(ERROR) << "Failed to delete received share data";
+        LOG(kError) << "Failed to delete received share data";
     }
     return;
   }
@@ -484,7 +484,7 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
     asymm::Keys key_ring;
     if (!CheckCorrectKeys(inbox_item.content,
                           &key_ring)) {
-      DLOG(ERROR) << "Incorrect elements in message.";
+      LOG(kError) << "Incorrect elements in message.";
       return;
     }
     private_share_update_signal_(inbox_item.content[kShareId],
@@ -518,7 +518,7 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
     asymm::Keys key_ring;
     if (!CheckCorrectKeys(inbox_item.content,
                           &key_ring)) {
-      DLOG(ERROR) << "Incorrect elements in message.";
+      LOG(kError) << "Incorrect elements in message.";
       return;
     }
     private_member_access_change_signal_(inbox_item.receiver_public_id,
@@ -541,7 +541,7 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
     InboxToProtobuf(inbox_item, &message);
     if (!save_private_share_data_signal_(message.SerializeAsString(),
                                          inbox_item.content[kShareId])) {
-      DLOG(ERROR) << "Failed to save received share data";
+      LOG(kError) << "Failed to save received share data";
       return;
     }
     fs::path relative_path(inbox_item.content[kShareName]);
@@ -560,7 +560,7 @@ void MessageHandler::ProcessOpenShareInvitation(const InboxItem &inbox_item) {
   Message message;
   InboxToProtobuf(inbox_item, &message);
   if (!save_open_share_data_signal_(message.SerializeAsString(), inbox_item.content[kShareId])) {
-    DLOG(ERROR) << "Failed to save received share data";
+    LOG(kError) << "Failed to save received share data";
     return;
   }
   open_share_invitation_signal_(inbox_item.receiver_public_id,
@@ -592,7 +592,7 @@ void MessageHandler::RetrieveMessagesForAllIds() {
                                                     validation_key));
 
     if (mmid_value.empty()) {
-      DLOG(WARNING) << "Failed to get MPID contents for " << (*it) << ": " << result;
+      LOG(kWarning) << "Failed to get MPID contents for " << (*it) << ": " << result;
     } else {
       ProcessRetrieved(*it, mmid_value);
       ClearExpiredReceivedMessages();
@@ -602,17 +602,17 @@ void MessageHandler::RetrieveMessagesForAllIds() {
 
 bool MessageHandler::ProtobufToInbox(const Message &message, InboxItem *inbox_item) const {
   if (!message.IsInitialized()) {
-    DLOG(WARNING) << "Message not initialised.";
+    LOG(kWarning) << "Message not initialised.";
     return false;
   }
 
   if (message.content_size() == 0) {
-    DLOG(WARNING) << "Message with no content. Type: " << message.type();
+    LOG(kWarning) << "Message with no content. Type: " << message.type();
     return false;
   }
 
   if (message.type() > kMaxInboxItemType) {
-    DLOG(WARNING) << "Message type out of range.";
+    LOG(kWarning) << "Message type out of range.";
     return false;
   }
 

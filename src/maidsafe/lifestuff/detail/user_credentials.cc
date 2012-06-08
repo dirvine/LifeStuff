@@ -22,9 +22,9 @@
 
 #include "maidsafe/lifestuff/detail/user_credentials.h"
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/detail/user_credentials_impl.h"
 #include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/utils.h"
@@ -50,7 +50,7 @@ int UserCredentials::CreateUser(const std::string &keyword,
   if (!CheckKeywordValidity(keyword) ||
       !CheckPinValidity(pin) ||
       !CheckPasswordValidity(password)) {
-    DLOG(ERROR) << "Incorrect inputs.";
+    LOG(kError) << "Incorrect inputs.";
     return kCredentialValidityFailure;
   }
 
@@ -63,7 +63,7 @@ int UserCredentials::LogIn(const std::string &keyword,
   if (!CheckKeywordValidity(keyword) ||
       !CheckPinValidity(pin) ||
       !CheckPasswordValidity(password)) {
-    DLOG(ERROR) << "Incorrect inputs.";
+    LOG(kError) << "Incorrect inputs.";
     return kCredentialValidityFailure;
   }
 
@@ -82,7 +82,7 @@ int UserCredentials::SaveSession() { return impl_->SaveSession(); }
 
 int UserCredentials::ChangeKeyword(const std::string &new_keyword) {
   if (!CheckKeywordValidity(new_keyword)) {
-    DLOG(ERROR) << "Incorrect input.";
+    LOG(kError) << "Incorrect input.";
     return kChangeUsernamePinFailure;
   }
 
@@ -91,7 +91,7 @@ int UserCredentials::ChangeKeyword(const std::string &new_keyword) {
 
 int UserCredentials::ChangePin(const std::string &new_pin) {
   if (!CheckPinValidity(new_pin)) {
-    DLOG(ERROR) << "Incorrect input.";
+    LOG(kError) << "Incorrect input.";
     return kChangeUsernamePinFailure;
   }
 
@@ -100,7 +100,7 @@ int UserCredentials::ChangePin(const std::string &new_pin) {
 
 int UserCredentials::ChangePassword(const std::string &new_password) {
   if (!CheckPasswordValidity(new_password)) {
-    DLOG(ERROR) << "Incorrect input.";
+    LOG(kError) << "Incorrect input.";
     return kChangeUsernamePinFailure;
   }
 

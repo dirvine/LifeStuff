@@ -18,6 +18,7 @@
 #include <sstream>
 
 #include "maidsafe/common/asio_service.h"
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
@@ -27,7 +28,6 @@
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/lifestuff_api.h"
-#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
 #include "maidsafe/lifestuff/detail/data_atlas_pb.h"
 #include "maidsafe/lifestuff/detail/message_handler.h"
@@ -446,7 +446,7 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
     result += test_elements1.CreatePublicId(public_id1);
     result += test_elements1.LogOut();
     if (result != kSuccess) {
-      DLOG(ERROR) << "Failure log out 1";
+      LOG(kError) << "Failure log out 1";
       return result;
     }
   }
@@ -456,7 +456,7 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
     result += test_elements2.AddContact(public_id2, public_id1);
     result += test_elements2.LogOut();
     if (result != kSuccess) {
-      DLOG(ERROR) << "Failure creating 2";
+      LOG(kError) << "Failure creating 2";
       return result;
     }
   }
@@ -473,7 +473,7 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
   }
   {
     result += test_elements2.LogIn(username2, pin2, password2);
-//     DLOG(ERROR) << "result: " << result;
+//     LOG(kError) << "result: " << result;
     while (!testing_variables2.confirmed)
       Sleep(bptime::milliseconds(100));
     result += test_elements2.LogOut();
@@ -975,7 +975,7 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
                                                    public_id2));
 
   std::string file_content1, file_content2(RandomString(5 * 1024));
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     // Setting of profile image
@@ -984,7 +984,7 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     while (!testing_variables1.picture_updated)
@@ -996,7 +996,7 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     // Setting of profile image
@@ -1004,7 +1004,7 @@ TEST(IndependentFullTest, FUNC_ProfilePicture) {
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     testing_variables1.picture_updated = false;
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
@@ -1043,7 +1043,7 @@ TEST(IndependentFullTest, FUNC_RemoveContact) {
                                                    username2, pin2, password2,
                                                    public_id2));
 
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string removal_message("It's not me, it's you.");
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
@@ -1053,7 +1053,7 @@ TEST(IndependentFullTest, FUNC_RemoveContact) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.removed)
@@ -1093,7 +1093,7 @@ TEST(IndependentOpenShareTest, FUNC_CreateEmptyOpenShare) {
                                                    public_id1,
                                                    username2, pin2, password2,
                                                    public_id2));
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string share_name(RandomAlphaNumericString(5)),
               file_name(RandomAlphaNumericString(5)),
               file_content1(RandomString(20)),
@@ -1114,7 +1114,7 @@ TEST(IndependentOpenShareTest, FUNC_CreateEmptyOpenShare) {
     EXPECT_EQ(kSuccess, results[public_id2]);
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.openly_invited)
@@ -1139,7 +1139,7 @@ TEST(IndependentOpenShareTest, FUNC_CreateEmptyOpenShare) {
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     fs::path share(test_elements1.mount_path() / kSharedStuff / share_name);
@@ -1153,7 +1153,7 @@ TEST(IndependentOpenShareTest, FUNC_CreateEmptyOpenShare) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     fs::path share(test_elements1.mount_path() / kSharedStuff / share_name);
@@ -1164,7 +1164,7 @@ TEST(IndependentOpenShareTest, FUNC_CreateEmptyOpenShare) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
 
@@ -1208,7 +1208,7 @@ TEST(IndependentOpenShareTest, FUNC_CreateOpenShare) {
                                                    public_id1,
                                                    username2, pin2, password2,
                                                    public_id2));
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string directory_name(RandomAlphaNumericString(5)),
               share_name(RandomAlphaNumericString(5)),
               file1_name(RandomAlphaNumericString(5)),
@@ -1260,7 +1260,7 @@ TEST(IndependentOpenShareTest, FUNC_CreateOpenShare) {
     EXPECT_NE(0, error_code.value());
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.openly_invited)
@@ -1277,7 +1277,7 @@ TEST(IndependentOpenShareTest, FUNC_CreateOpenShare) {
     EXPECT_NE(0, error_code.value());
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     fs::path share(test_elements1.mount_path() / kSharedStuff / share_name);
@@ -1315,7 +1315,7 @@ TEST(IndependentOpenShareTest, FUNC_InviteOpenShareMembers) {
                                                    public_id1,
                                                    username2, pin2, password2,
                                                    public_id2));
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string directory_name(RandomAlphaNumericString(5)),
               share1_name(RandomAlphaNumericString(5)),
               share2_name(RandomAlphaNumericString(5)),
@@ -1378,7 +1378,7 @@ TEST(IndependentOpenShareTest, FUNC_InviteOpenShareMembers) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.openly_invited)
@@ -1396,7 +1396,7 @@ TEST(IndependentOpenShareTest, FUNC_InviteOpenShareMembers) {
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     fs::path share1(test_elements1.mount_path() / kSharedStuff / share1_name);
@@ -1444,7 +1444,7 @@ TEST(IndependentOpenShareTest, FUNC_InviteOpenShareMembers) {
               test_elements1.InviteMembersToOpenShare(public_id1, contacts, share2_name, &results));
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.openly_invited)
@@ -1499,7 +1499,7 @@ TEST(IndependentOpenShareTest, FUNC_LeaveOpenShare) {
                                                    public_id1,
                                                    username2, pin2, password2,
                                                    public_id2));
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string directory_name(RandomAlphaNumericString(5)),
               share_name(RandomAlphaNumericString(5)),
               file1_name(RandomAlphaNumericString(5)),
@@ -1549,7 +1549,7 @@ TEST(IndependentOpenShareTest, FUNC_LeaveOpenShare) {
     EXPECT_NE(0, error_code.value());
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.openly_invited)
@@ -1569,7 +1569,7 @@ TEST(IndependentOpenShareTest, FUNC_LeaveOpenShare) {
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
 
@@ -1583,7 +1583,7 @@ TEST(IndependentOpenShareTest, FUNC_LeaveOpenShare) {
     EXPECT_EQ(kSuccess, test_elements1.LeaveOpenShare(public_id1, share_name));
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     fs::path share(test_elements2.mount_path() / kSharedStuff / share_name),
@@ -1633,7 +1633,7 @@ TEST(IndependentOpenShareTest, FUNC_SameOpenShareName) {
                                                    public_id1,
                                                    username2, pin2, password2,
                                                    public_id2));
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string directory0_name(RandomAlphaNumericString(5)),
               directory1_name(RandomAlphaNumericString(5)),
               directory2_name(RandomAlphaNumericString(5)),
@@ -1781,7 +1781,7 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
                                                    username2, pin2, password2,
                                                    public_id2));
 
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string share_name1(RandomAlphaNumericString(5)),
               file_name1(RandomAlphaNumericString(5)),
               file_content1(RandomAlphaNumericString(20)),
@@ -1805,7 +1805,7 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.privately_invited)
@@ -1836,7 +1836,7 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     fs::path share_path(test_elements1.mount_path() / kSharedStuff / share_name1);
@@ -1855,7 +1855,7 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
 
@@ -1897,7 +1897,7 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
                                                    username2, pin2, password2,
                                                    public_id2));
 
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string share_name1(RandomAlphaNumericString(5)),
               file_name1(RandomAlphaNumericString(5)),
               file_name2(RandomAlphaNumericString(5)),
@@ -1937,7 +1937,7 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.privately_invited)
@@ -1974,7 +1974,7 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     fs::path share_path(test_elements1.mount_path() / kSharedStuff / share_name1);
@@ -1992,7 +1992,7 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
 
@@ -2032,7 +2032,7 @@ TEST_P(PrivateSharesApiTest, FUNC_RejectInvitationPrivateShare) {
                                                    username2, pin2, password2,
                                                    public_id2));
 
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string share_name1(RandomAlphaNumericString(5)),
               file_name1(RandomAlphaNumericString(5)),
               file_name2(RandomAlphaNumericString(5)),
@@ -2072,7 +2072,7 @@ TEST_P(PrivateSharesApiTest, FUNC_RejectInvitationPrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.privately_invited)
@@ -2114,7 +2114,7 @@ TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
                                                    username2, pin2, password2,
                                                    public_id2));
 
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string share_name1(RandomAlphaNumericString(5)),
               file_name1(RandomAlphaNumericString(5)),
               file_content1(RandomAlphaNumericString(20)),
@@ -2138,7 +2138,7 @@ TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.privately_invited)
@@ -2162,13 +2162,13 @@ TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     EXPECT_EQ(kSuccess, test_elements1.DeletePrivateShare(public_id1, share_name1, false));
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.private_share_deleted)
@@ -2207,7 +2207,7 @@ TEST_P(PrivateSharesApiTest, FUNC_LeavePrivateShare) {
                                                    username2, pin2, password2,
                                                    public_id2));
 
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string share_name1(RandomAlphaNumericString(5)),
               file_name1(RandomAlphaNumericString(5)),
               file_content1(RandomAlphaNumericString(20)),
@@ -2236,7 +2236,7 @@ TEST_P(PrivateSharesApiTest, FUNC_LeavePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.privately_invited)
@@ -2257,13 +2257,13 @@ TEST_P(PrivateSharesApiTest, FUNC_LeavePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     // TODO(Team): Wait till message from member arrives
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
 
@@ -2303,7 +2303,7 @@ TEST(IndependentPrivateShareTest, FUNC_RenamePrivateShare) {
                                                    username2, pin2, password2,
                                                    public_id2));
 
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string share_name1(RandomAlphaNumericString(5)),
               share_name2(RandomAlphaNumericString(5)),
               file_name1(RandomAlphaNumericString(5)),
@@ -2333,7 +2333,7 @@ TEST(IndependentPrivateShareTest, FUNC_RenamePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.privately_invited)
@@ -2356,7 +2356,7 @@ TEST(IndependentPrivateShareTest, FUNC_RenamePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     fs::path old_share_path(test_elements1.mount_path() / kSharedStuff / share_name1);
@@ -2377,7 +2377,7 @@ TEST(IndependentPrivateShareTest, FUNC_RenamePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     fs::path share_path(test_elements2.mount_path() / kSharedStuff / share_name1);
@@ -2387,7 +2387,7 @@ TEST(IndependentPrivateShareTest, FUNC_RenamePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string sub_directory_name(RandomAlphaNumericString(8));
   std::string new_sub_directory_name(RandomAlphaNumericString(8));
   std::string new_file_name(RandomAlphaNumericString(8));
@@ -2425,7 +2425,7 @@ TEST(IndependentPrivateShareTest, FUNC_RenamePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     fs::path share_path(test_elements2.mount_path() / kSharedStuff / share_name1);
@@ -2469,7 +2469,7 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateDeletePrivateShare) {
                                                    username2, pin2, password2,
                                                    public_id2));
 
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string share_name(RandomAlphaNumericString(5));
   boost::system::error_code error_code;
   {
@@ -2502,7 +2502,7 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateDeletePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.privately_invited)
@@ -2548,7 +2548,7 @@ TEST(IndependentPrivateShareTest, FUNC_MembershipDowngradePrivateShare) {
                                                    username2, pin2, password2,
                                                    public_id2));
 
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string share_name1(RandomAlphaNumericString(5)),
               file_name1(RandomAlphaNumericString(5)),
               file_content1(RandomAlphaNumericString(20)),
@@ -2577,7 +2577,7 @@ TEST(IndependentPrivateShareTest, FUNC_MembershipDowngradePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.privately_invited)
@@ -2600,7 +2600,7 @@ TEST(IndependentPrivateShareTest, FUNC_MembershipDowngradePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
 
@@ -2617,7 +2617,7 @@ TEST(IndependentPrivateShareTest, FUNC_MembershipDowngradePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
 
@@ -2667,7 +2667,7 @@ TEST(IndependentPrivateShareTest, FUNC_MembershipUpgradePrivateShare) {
                                                    username2, pin2, password2,
                                                    public_id2));
 
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string share_name1(RandomAlphaNumericString(5)),
               file_name1(RandomAlphaNumericString(5)),
               file_content1(RandomAlphaNumericString(20)),
@@ -2691,7 +2691,7 @@ TEST(IndependentPrivateShareTest, FUNC_MembershipUpgradePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.privately_invited)
@@ -2714,7 +2714,7 @@ TEST(IndependentPrivateShareTest, FUNC_MembershipUpgradePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
 
@@ -2731,7 +2731,7 @@ TEST(IndependentPrivateShareTest, FUNC_MembershipUpgradePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
 
@@ -2784,7 +2784,7 @@ TEST(IndependentPrivateShareTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
                                                    username2, pin2, password2,
                                                    public_id2));
 
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string removal_message("It's not me, it's you.");
   std::string share_name1(RandomAlphaNumericString(5)),
               file_name1(RandomAlphaNumericString(5)),
@@ -2814,7 +2814,7 @@ TEST(IndependentPrivateShareTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.privately_invited)
@@ -2833,7 +2833,7 @@ TEST(IndependentPrivateShareTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
 
@@ -2848,7 +2848,7 @@ TEST(IndependentPrivateShareTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.removed)
@@ -2895,7 +2895,7 @@ TEST(IndependentPrivateShareTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
                                                    username2, pin2, password2,
                                                    public_id2));
 
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string removal_message("It's not me, it's you.");
   std::string share_name1(RandomAlphaNumericString(5)),
               file_name1(RandomAlphaNumericString(5)),
@@ -2923,7 +2923,7 @@ TEST(IndependentPrivateShareTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.privately_invited)
@@ -2947,7 +2947,7 @@ TEST(IndependentPrivateShareTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     while (!testing_variables1.removed)
@@ -3074,7 +3074,7 @@ TEST(IndependentPrivateShareTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact
       Sleep(bptime::milliseconds(100));
   test_elements3.LogOut();
 
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string removal_message("It's not me, it's you.");
   std::string share_name1(RandomAlphaNumericString(5)),
               file_name1(RandomAlphaNumericString(5)),
@@ -3104,7 +3104,7 @@ TEST(IndependentPrivateShareTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.privately_invited)
@@ -3121,7 +3121,7 @@ TEST(IndependentPrivateShareTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements3.LogIn(username3, pin3, password3));
     while (!testing_variables3.privately_invited)
@@ -3143,7 +3143,7 @@ TEST(IndependentPrivateShareTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact
 
     EXPECT_EQ(kSuccess, test_elements3.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.removed)
@@ -3163,7 +3163,7 @@ TEST(IndependentPrivateShareTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     EXPECT_TRUE(fs::is_directory(directory1, error_code)) << directory2;
@@ -3205,7 +3205,7 @@ TEST(IndependentShareChangeTest, FUNC_AddModifyRemoveOneFile) {
                                                    nullptr, nullptr, nullptr,
                                                    &mutex));
 
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string share_name1(RandomAlphaNumericString(5)),
               file_name(RandomAlphaNumericString(5)),
               file_content(RandomAlphaNumericString(20));
@@ -3236,7 +3236,7 @@ TEST(IndependentShareChangeTest, FUNC_AddModifyRemoveOneFile) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.privately_invited)
@@ -3263,7 +3263,7 @@ TEST(IndependentShareChangeTest, FUNC_AddModifyRemoveOneFile) {
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     uint8_t attempts(0);
@@ -3306,7 +3306,7 @@ TEST(IndependentShareChangeTest, FUNC_AddModifyRemoveOneFile) {
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
 
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     uint8_t attempts(0);
@@ -3372,7 +3372,7 @@ TEST(IndependentShareChangeTest, FUNC_AddRemoveMultipleNodes) {
                                                    nullptr, nullptr, nullptr,
                                                    &mutex));
 
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string share_name(RandomAlphaNumericString(5));
   fs::path directory1, directory2;
   std::string sub_directory_name(RandomAlphaNumericString(5));
@@ -3435,7 +3435,7 @@ TEST(IndependentShareChangeTest, FUNC_AddRemoveMultipleNodes) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n";
+  LOG(kError) << "\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.privately_invited)
@@ -3490,7 +3490,7 @@ TEST(IndependentShareChangeTest, FUNC_AddRemoveMultipleNodes) {
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     uint8_t attempts(0);
@@ -3530,14 +3530,14 @@ TEST(IndependentShareChangeTest, FUNC_AddRemoveMultipleNodes) {
 
     testing_variables1.share_changes.clear();
     fs::path directory(directory1 / sub_directory_name);
-    EXPECT_TRUE(fs::remove_all(directory, error_code));
+    EXPECT_GT(fs::remove_all(directory, error_code), 0);
     // allowing enough time for the change to be logged
     Sleep(bptime::milliseconds(5000));
     EXPECT_TRUE(testing_variables1.share_changes.empty());
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n";
+  LOG(kError) << "\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     testing_variables2.share_changes.clear();
@@ -3605,7 +3605,7 @@ TEST(IndependentShareChangeTest, FUNC_RenameOneNode) {
                                                    nullptr, nullptr, nullptr,
                                                    &mutex));
 
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string share_name(RandomAlphaNumericString(5)),
               file_name(RandomAlphaNumericString(5)),
               new_file_name(RandomAlphaNumericString(5)),
@@ -3637,7 +3637,7 @@ TEST(IndependentShareChangeTest, FUNC_RenameOneNode) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.privately_invited)
@@ -3664,7 +3664,7 @@ TEST(IndependentShareChangeTest, FUNC_RenameOneNode) {
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     uint8_t attempts(0);
@@ -3701,7 +3701,7 @@ TEST(IndependentShareChangeTest, FUNC_RenameOneNode) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     uint8_t attempts(0);
@@ -3760,7 +3760,7 @@ TEST(IndependentShareChangeTest, FUNC_MoveNodeToShareAndMoveOut) {
                                                    nullptr, nullptr, nullptr,
                                                    &mutex));
 
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string share_name(RandomAlphaNumericString(5));
   fs::path directory1, directory2;
   std::string sub_directory_name(RandomAlphaNumericString(5));
@@ -3801,7 +3801,7 @@ TEST(IndependentShareChangeTest, FUNC_MoveNodeToShareAndMoveOut) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n";
+  LOG(kError) << "\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.privately_invited)
@@ -3837,7 +3837,7 @@ TEST(IndependentShareChangeTest, FUNC_MoveNodeToShareAndMoveOut) {
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     uint8_t attempts(0);
@@ -3894,7 +3894,7 @@ TEST(IndependentShareChangeTest, FUNC_MoveNodeInnerShare) {
                                                    nullptr, nullptr, nullptr,
                                                    &mutex));
 
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string share_name(RandomAlphaNumericString(5));
   fs::path directory1, directory2, file_path, new_file_path;
   std::string file_name(RandomAlphaNumericString(6)),
@@ -3938,7 +3938,7 @@ TEST(IndependentShareChangeTest, FUNC_MoveNodeInnerShare) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n";
+  LOG(kError) << "\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.privately_invited)
@@ -3976,7 +3976,7 @@ TEST(IndependentShareChangeTest, FUNC_MoveNodeInnerShare) {
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     uint8_t attempts(0);
@@ -4034,7 +4034,7 @@ TEST(IndependentShareChangeTest, FUNC_MoveNodeInterShares) {
                                                    nullptr, nullptr, nullptr,
                                                    &mutex));
 
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string share_name1(RandomAlphaNumericString(5));
   std::string share_name2(RandomAlphaNumericString(5));
   fs::path directory1, directory2, file_path, new_file_path;
@@ -4059,7 +4059,7 @@ TEST(IndependentShareChangeTest, FUNC_MoveNodeInterShares) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n";
+  LOG(kError) << "\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.privately_invited)
@@ -4098,7 +4098,7 @@ TEST(IndependentShareChangeTest, FUNC_MoveNodeInterShares) {
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     while (!testing_variables1.privately_invited)
@@ -4126,7 +4126,7 @@ TEST(IndependentShareChangeTest, FUNC_MoveNodeInterShares) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     uint8_t attempts(0);
@@ -4196,7 +4196,7 @@ TEST(IndependentShareChangeTest, FUNC_MoveNodeToTrashThenMoveBack) {
                                                    nullptr, nullptr, nullptr,
                                                    &mutex));
 
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   std::string share_name(RandomAlphaNumericString(5)),
               file_name(RandomAlphaNumericString(5)),
               new_file_name(".Trash" + RandomAlphaNumericString(5)),
@@ -4228,7 +4228,7 @@ TEST(IndependentShareChangeTest, FUNC_MoveNodeToTrashThenMoveBack) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     while (!testing_variables2.privately_invited)
@@ -4260,7 +4260,7 @@ TEST(IndependentShareChangeTest, FUNC_MoveNodeToTrashThenMoveBack) {
 
     EXPECT_EQ(kSuccess, test_elements2.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     uint8_t attempts(0);
@@ -4303,7 +4303,7 @@ TEST(IndependentShareChangeTest, FUNC_MoveNodeToTrashThenMoveBack) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
-  DLOG(ERROR) << "\n\n\n\n";
+  LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
     uint8_t attempts(0);

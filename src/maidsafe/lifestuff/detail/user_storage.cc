@@ -24,12 +24,12 @@
 #include <limits>
 #include <list>
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/encrypt/self_encryptor.h"
 
-#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
 #include "maidsafe/lifestuff/detail/data_atlas_pb.h"
 #include "maidsafe/lifestuff/detail/message_handler.h"
@@ -60,7 +60,7 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
                              bool creation,
                              const std::string &drive_logo) {
   if (mount_status_) {
-    DLOG(INFO) << "Already mounted.";
+    LOG(kInfo) << "Already mounted.";
     return;
   }
   if (!fs::exists(mount_dir_path))
@@ -85,7 +85,7 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
   }
 
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to Init Drive: " << result;
+    LOG(kError) << "Failed to Init Drive: " << result;
     return;
   }
 
@@ -97,7 +97,7 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
     ++count;
   }
   if (count > 25) {
-    DLOG(ERROR) << "No available drive letters.";
+    LOG(kError) << "No available drive letters.";
     return;
   }
 
@@ -105,7 +105,7 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
   mount_dir_ = drive_name;
   result = drive_in_user_space_->Mount(mount_dir_, drive_logo);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to Mount Drive: " << result;
+    LOG(kError) << "Failed to Mount Drive: " << result;
     return;
   }
 #else
@@ -152,7 +152,7 @@ bool UserStorage::ParseAndSaveDataMap(const std::string &file_name,
                                       std::string *data_map_hash) {
   encrypt::DataMapPtr data_map(ParseSerialisedDataMap(serialised_data_map));
   if (!data_map) {
-    DLOG(ERROR) << "Serialised DM doesn't parse.";
+    LOG(kError) << "Serialised DM doesn't parse.";
     return false;
   }
 
@@ -161,7 +161,7 @@ bool UserStorage::ParseAndSaveDataMap(const std::string &file_name,
                                       GetDurationSinceEpoch().total_microseconds());
   std::string filename_data(PutFilenameData(file_name));
   if (filename_data.empty()) {
-    DLOG(ERROR) << "No suitable filename given: " << file_name;
+    LOG(kError) << "No suitable filename given: " << file_name;
     return false;
   }
 
@@ -169,7 +169,7 @@ bool UserStorage::ParseAndSaveDataMap(const std::string &file_name,
                              filename_data + serialised_data_map,
                              true));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to create file: " << result;
+    LOG(kError) << "Failed to create file: " << result;
     return false;
   }
 
@@ -191,7 +191,7 @@ bool UserStorage::SavePrivateShareData(const std::string &serialised_share_data,
                                        const std::string &share_id) {
   fs::path store_path(mount_dir() / kSharedStuff);
   if (!VerifyOrCreatePath(store_path)) {
-    DLOG(ERROR) << "Failed to verify or create path to shared stuff.";
+    LOG(kError) << "Failed to verify or create path to shared stuff.";
     return false;
   }
 
@@ -199,7 +199,7 @@ bool UserStorage::SavePrivateShareData(const std::string &serialised_share_data,
                         kHiddenFileExtension);
   int result(WriteHiddenFile(store_path / temp_name, serialised_share_data, true));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to create file: " << result;
+    LOG(kError) << "Failed to create file: " << result;
     return false;
   }
   return true;
@@ -211,7 +211,7 @@ bool UserStorage::DeletePrivateShareData(const std::string &share_id) {
                         drive::kMsHidden.string());
   int result(DeleteHiddenFile(store_path / temp_name));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to delete private share data.";
+    LOG(kError) << "Failed to delete private share data.";
     return false;
   }
   return true;
@@ -221,7 +221,7 @@ bool UserStorage::SaveOpenShareData(const std::string &serialised_share_data,
                                     const std::string &share_id) {
   fs::path store_path(mount_dir() / kSharedStuff);
   if (!VerifyOrCreatePath(store_path)) {
-    DLOG(ERROR) << "Failed to verify or create path to shared stuff.";
+    LOG(kError) << "Failed to verify or create path to shared stuff.";
     return false;
   }
 
@@ -229,7 +229,7 @@ bool UserStorage::SaveOpenShareData(const std::string &serialised_share_data,
                         kHiddenFileExtension);
   int result(WriteHiddenFile(store_path / temp_name, serialised_share_data, true));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to create file: " << result;
+    LOG(kError) << "Failed to create file: " << result;
     return false;
   }
   return true;
@@ -245,14 +245,14 @@ int UserStorage::CreateShare(const std::string &sender_public_id,
   if (!drive_path.empty()) {
     result = drive_in_user_space_->MoveDirectory(drive_path, share_path);
     if (result != kSuccess) {
-      DLOG(ERROR) << "Failed to create share directory " << share_path;
+      LOG(kError) << "Failed to create share directory " << share_path;
       return result;
     }
   } else {
     boost::system::error_code error_code;
     fs::create_directory(share_path, error_code);
     if (error_code) {
-      DLOG(ERROR) << "Failed creating directory " << share_path << ": " << error_code.message();
+      LOG(kError) << "Failed creating directory " << share_path << ": " << error_code.message();
       return kGeneralError;
     }
   }
@@ -285,12 +285,12 @@ int UserStorage::CreateShare(const std::string &sender_public_id,
                       key_shared);
   result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Timed out waiting for the response";
+    LOG(kError) << "Timed out waiting for the response";
     return result;
   }
 
   if (results[0] != kSuccess) {
-    DLOG(ERROR) << "Failed to store packet.  Packet 1 : " << results[0];
+    LOG(kError) << "Failed to store packet.  Packet 1 : " << results[0];
     return results[0];
   }
   std::string directory_id;
@@ -301,14 +301,14 @@ int UserStorage::CreateShare(const std::string &sender_public_id,
                                                  private_share,
                                                  &directory_id);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed in creating share of " << share_path.string()
+    LOG(kError) << "Failed in creating share of " << share_path.string()
                 << ", with result of : " << result;
     return result;
   }
   // AddShareUser will send out the informing msg to contacts
   result = AddShareUsers(sender_public_id, share_path, contacts, private_share, contacts_results);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to add users to share at " << share_path;
+    LOG(kError) << "Failed to add users to share at " << share_path;
     return result;
   }
   return kSuccess;
@@ -323,14 +323,14 @@ int UserStorage::CreateOpenShare(const std::string &sender_public_id,
   if (!drive_path.empty()) {
     result = drive_in_user_space_->MoveDirectory(drive_path, share_path);
     if (result != kSuccess) {
-      DLOG(ERROR) << "Failed to create share directory " << share_path;
+      LOG(kError) << "Failed to create share directory " << share_path;
       return result;
     }
   } else {
     boost::system::error_code error_code;
     fs::create_directory(share_path, error_code);
     if (error_code) {
-      DLOG(ERROR) << "Failed creating directory " << share_path << ": " << error_code.message();
+      LOG(kError) << "Failed creating directory " << share_path << ": " << error_code.message();
       return kGeneralError;
     }
   }
@@ -361,11 +361,11 @@ int UserStorage::CreateOpenShare(const std::string &sender_public_id,
                       key_shared);
   result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Timed out waiting for the response";
+    LOG(kError) << "Timed out waiting for the response";
     return result;
   }
   if (results[0] != kSuccess) {
-    DLOG(ERROR) << "Failed to store packet.  Packet 1 : " << results[0];
+    LOG(kError) << "Failed to store packet.  Packet 1 : " << results[0];
     return results[0];
   }
   std::string directory_id;
@@ -376,12 +376,12 @@ int UserStorage::CreateOpenShare(const std::string &sender_public_id,
                                                  false,
                                                  &directory_id);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed creating share " << share_path.string() << ", with result: " << result;
+    LOG(kError) << "Failed creating share " << share_path.string() << ", with result: " << result;
     return result;
   }
   result = OpenShareInvitation(sender_public_id, share_path, contacts, contacts_results);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to invite users to share " << share_path;
+    LOG(kError) << "Failed to invite users to share " << share_path;
     return result;
   }
   return kSuccess;
@@ -399,7 +399,7 @@ int UserStorage::InsertShare(const fs::path &absolute_path,
                              const asymm::Keys &share_keyring) {
   std::string generated_name(GetNameInPath(mount_dir() / kSharedStuff, *share_name));
   if (generated_name.empty()) {
-    DLOG(ERROR) << "Failed to generate name for Share: " << *share_name;
+    LOG(kError) << "Failed to generate name for Share: " << *share_name;
     return kGeneralError;
   }
 
@@ -410,7 +410,7 @@ int UserStorage::InsertShare(const fs::path &absolute_path,
                                                share_id,
                                                share_keyring));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to insert share: " << result;
+    LOG(kError) << "Failed to insert share: " << result;
     return result;
   }
 
@@ -436,7 +436,7 @@ int UserStorage::StopShare(const std::string &sender_public_id,
                                                    &contacts,
                                                    nullptr));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to get share details for " << absolute_path;
+    LOG(kError) << "Failed to get share details for " << absolute_path;
     return result;
   }
   if (delete_data) {
@@ -451,18 +451,18 @@ int UserStorage::StopShare(const std::string &sender_public_id,
                                                    drive::kMsPrivateShare,
                                                    &directory_id);
     if (result != kSuccess) {
-      DLOG(ERROR) << "Failed to set share details for " << absolute_path;
+      LOG(kError) << "Failed to set share details for " << absolute_path;
       return result;
     }
     std::string generated_name(GetNameInPath(mount_dir() / kMyStuff, share_name.string()));
     if (generated_name.empty()) {
-      DLOG(ERROR) << "Failed to generate name for My Stuff.";
+      LOG(kError) << "Failed to generate name for My Stuff.";
       return kGeneralError;
     }
     fs::path my_path(mount_dir() / kMyStuff / generated_name);
     result = drive_in_user_space_->MoveDirectory(absolute_path, my_path);
     if (result != kSuccess) {
-      DLOG(ERROR) << "Failed to move directory " << absolute_path;
+      LOG(kError) << "Failed to move directory " << absolute_path;
       return result;
     }
   }
@@ -481,11 +481,11 @@ int UserStorage::StopShare(const std::string &sender_public_id,
 
   result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to get a response.";
+    LOG(kError) << "Failed to get a response.";
     return result;
   }
   if (results[0] != kSuccess) {
-    DLOG(ERROR) << "Failed to remove packet. Packet 1 : " << results[0];
+    LOG(kError) << "Failed to remove packet. Packet 1 : " << results[0];
     return results[0];
   }
 
@@ -511,7 +511,7 @@ int UserStorage::RemoveShare(const fs::path& absolute_path, const std::string &s
                                                    nullptr,
                                                    &owner_id));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to get share details for " << absolute_path;
+    LOG(kError) << "Failed to get share details for " << absolute_path;
     return result;
   }
   // Owner doesn't allow to leave (shall use StopShare method)
@@ -520,7 +520,7 @@ int UserStorage::RemoveShare(const fs::path& absolute_path, const std::string &s
 
   result = drive_in_user_space_->RemoveShare(drive_in_user_space_->RelativePath(absolute_path));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to remove share " << absolute_path;
+    LOG(kError) << "Failed to remove share " << absolute_path;
     return result;
   }
   std::map<std::string, int> owner;
@@ -541,7 +541,7 @@ int UserStorage::UpdateShare(const std::string &share_id,
   fs::path relative_path;
   int result(GetShareDetails(share_id, &relative_path, nullptr, nullptr, nullptr));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to get share details for " << mount_dir() / relative_path;
+    LOG(kError) << "Failed to get share details for " << mount_dir() / relative_path;
     return result;
   }
   return drive_in_user_space_->UpdateShare(relative_path,
@@ -563,7 +563,7 @@ int UserStorage::AddShareUsers(const std::string &sender_public_id,
                                                  contacts,
                                                  private_share));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to add users to share: " << absolute_path.string();
+    LOG(kError) << "Failed to add users to share: " << absolute_path.string();
     return result;
   }
 
@@ -579,7 +579,7 @@ int UserStorage::AddShareUsers(const std::string &sender_public_id,
                                                  nullptr,
                                                  nullptr);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to get share details: " << absolute_path.string();
+    LOG(kError) << "Failed to get share details: " << absolute_path.string();
     return result;
   }
 
@@ -593,7 +593,7 @@ int UserStorage::AddShareUsers(const std::string &sender_public_id,
                                    "",
                                    contacts_results);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to inform contacts: " << absolute_path.string();
+    LOG(kError) << "Failed to inform contacts: " << absolute_path.string();
     return result;
   }
 
@@ -604,7 +604,7 @@ int UserStorage::AddOpenShareUser(const fs::path &absolute_path, const StringInt
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
   int result(drive_in_user_space_->AddShareUsers(relative_path, contacts, false));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to add users to share: " << absolute_path.string();
+    LOG(kError) << "Failed to add users to share: " << absolute_path.string();
     return result;
   }
   return kSuccess;
@@ -627,7 +627,7 @@ int UserStorage::OpenShareInvitation(const std::string &sender_public_id,
                                                  nullptr,
                                                  nullptr);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to get share details: " << absolute_path.string();
+    LOG(kError) << "Failed to get share details: " << absolute_path.string();
     return result;
   }
   result = InformContacts(kOpenShareInvitation,
@@ -640,7 +640,7 @@ int UserStorage::OpenShareInvitation(const std::string &sender_public_id,
                           "",
                           contacts_results);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to inform contacts: " << absolute_path.string();
+    LOG(kError) << "Failed to inform contacts: " << absolute_path.string();
     return result;
   }
   return kSuccess;
@@ -657,7 +657,7 @@ int UserStorage::GetAllShareUsers(const fs::path &absolute_path,
                  all_share_users,
                  nullptr));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to get share details for " << absolute_path;
+    LOG(kError) << "Failed to get share details for " << absolute_path;
     return result;
   }
   return kSuccess;
@@ -686,7 +686,7 @@ int UserStorage::RemoveShareUsers(const std::string &sender_public_id,
                                         nullptr);
   int result(drive_in_user_space_->RemoveShareUsers(share_id, user_ids));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to remove share users for " << absolute_path;
+    LOG(kError) << "Failed to remove share users for " << absolute_path;
     return result;
   }
   StringIntMap removed_contacts;
@@ -705,7 +705,7 @@ int UserStorage::RemoveShareUsers(const std::string &sender_public_id,
                        private_share,
                        contacts);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to move share.";
+    LOG(kError) << "Failed to move share.";
   }
   return result;
 }
@@ -743,11 +743,11 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
 
   int result(WaitForResultsPtr(&mutex, &cond_var, &results));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to get response.";
+    LOG(kError) << "Failed to get response.";
     return result;
   }
   if (results[0] != kSuccess) {
-    DLOG(ERROR) << "Failed to store packets.  Packet 1 : " << results[0];
+    LOG(kError) << "Failed to store packets.  Packet 1 : " << results[0];
     return results[0];
   }
 
@@ -759,7 +759,7 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
                                                  private_share,
                                                  &directory_id);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed in updating share of " << Base32Substr(share_id)
+    LOG(kError) << "Failed in updating share of " << Base32Substr(share_id)
                 << ", with result of : " << result;
     return result;
   }
@@ -773,11 +773,11 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
 
   result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to get response.";
+    LOG(kError) << "Failed to get response.";
     return result;
   }
   if (results[0] != kSuccess) {
-    DLOG(WARNING) << "Failed to remove packet.  Packet 1 : " << results[0];
+    LOG(kWarning) << "Failed to remove packet.  Packet 1 : " << results[0];
   }
 
   result = InformContactsOperation(kPrivateShareKeysUpdate,
@@ -789,7 +789,7 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
                                    key_ring,
                                    new_share_id);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed in informing contacts in share: " << Base32Substr(share_id)
+    LOG(kError) << "Failed in informing contacts in share: " << Base32Substr(share_id)
                 << ", with result of : " << result;
     return result;
   }
@@ -813,7 +813,7 @@ int UserStorage::RemoveOpenShareUsers(const fs::path &absolute_path,
                                         nullptr);
   int result(drive_in_user_space_->RemoveShareUsers(share_id, user_ids));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to remove share users for " << absolute_path;
+    LOG(kError) << "Failed to remove share users for " << absolute_path;
     return result;
   }
   return kSuccess;
@@ -837,19 +837,19 @@ int UserStorage::SetShareUsersRights(const std::string &sender_public_id,
   int old_admin_right;
   int result(drive_in_user_space_->GetShareUsersRights(relative_path, user_id, &old_admin_right));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed getting access right for contact " << user_id << ", with result : "
+    LOG(kError) << "Failed getting access right for contact " << user_id << ", with result : "
                 << result;
     return result;
   }
 
   if (admin_rights == old_admin_right) {
-    DLOG(INFO) << "Access right for contact " << user_id << ", keeps the same ";
+    LOG(kInfo) << "Access right for contact " << user_id << ", keeps the same ";
     return kSuccess;
   }
 
   result = drive_in_user_space_->SetShareUsersRights(relative_path, user_id, admin_rights);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed setting access right for contact " << user_id << ", with result : "
+    LOG(kError) << "Failed setting access right for contact " << user_id << ", with result : "
                 << result;
     return result;
   }
@@ -866,7 +866,7 @@ int UserStorage::SetShareUsersRights(const std::string &sender_public_id,
                                                  &share_contacts,
                                                  nullptr);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed getting admin right for contact " << user_id << ", with result : "
+    LOG(kError) << "Failed getting admin right for contact " << user_id << ", with result : "
                 << result;
     return result;
   }
@@ -884,7 +884,7 @@ int UserStorage::SetShareUsersRights(const std::string &sender_public_id,
                          share_contacts,
                          &share_id);
     if (result != kSuccess) {
-      DLOG(ERROR) << "Failed to move share.";
+      LOG(kError) << "Failed to move share.";
       return result;
     }
   }
@@ -925,7 +925,7 @@ int UserStorage::DowngradeShareUsersRights(const std::string &sender_public_id,
                          share_contacts,
                          &new_share_id));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed moving share: " << result;
+    LOG(kError) << "Failed moving share: " << result;
     return result;
   }
   std::string directory_id;
@@ -946,7 +946,7 @@ int UserStorage::DowngradeShareUsersRights(const std::string &sender_public_id,
                                    key_ring,
                                    new_share_id);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to inform contacts";
+    LOG(kError) << "Failed to inform contacts";
     return result;
   }
   return kSuccess;
@@ -972,7 +972,7 @@ void UserStorage::MemberAccessChange(const std::string &share_id,
   fs::path relative_path;
   int result(GetShareDetails(share_id, &relative_path, nullptr, nullptr, nullptr));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to find share details: " << result;
+    LOG(kError) << "Failed to find share details: " << result;
     return;
   }
   if (access_right <= kShareReadOnly) {
@@ -992,7 +992,7 @@ void UserStorage::MemberAccessChange(const std::string &share_id,
                                                &access_right);
   }
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to update share details: " << result;
+    LOG(kError) << "Failed to update share details: " << result;
     return;
   }
 }
@@ -1152,7 +1152,7 @@ int UserStorage::InformContactsOperation(InboxItemType item_type,
         result = message_handler_.Send(non_admin_message);
       }
       if (result != kSuccess) {
-        DLOG(ERROR) << "Failed in inform contact " << (*it).first << "  of operation "
+        LOG(kError) << "Failed in inform contact " << (*it).first << "  of operation "
                     << ", with result of : " << result;
         ++aggregate;
       }
@@ -1183,7 +1183,7 @@ int UserStorage::InformContacts(InboxItemType item_type,
       message.content.push_back(directory_id);
       break;
     default:
-      DLOG(ERROR) << "Unknown constant";
+      LOG(kError) << "Unknown constant";
   }
   message.content.push_back(std::string());
   if (!key_ring.identity.empty() &&
@@ -1197,7 +1197,7 @@ int UserStorage::InformContacts(InboxItemType item_type,
     asymm::EncodePublicKey(key_ring.public_key, &public_key);
     message.content.push_back(public_key);
   } else {
-    DLOG(ERROR) << "Invalid keyring for open share";
+    LOG(kError) << "Invalid keyring for open share";
     return kInvalidKeyringForOpenShare;
   }
 
@@ -1209,7 +1209,7 @@ int UserStorage::InformContacts(InboxItemType item_type,
       message.receiver_public_id = it->first;
       result = message_handler_.Send(message);
       if (result != kSuccess) {
-        DLOG(ERROR) << "Failed to inform contact " << it->first << " of operation " << item_type
+        LOG(kError) << "Failed to inform contact " << it->first << " of operation " << item_type
                     << ", with result " << result;
         ++aggregate;
       }
@@ -1223,7 +1223,7 @@ int UserStorage::InformContacts(InboxItemType item_type,
 std::string UserStorage::ConstructFile(const std::string &serialised_data_map) {
   encrypt::DataMapPtr data_map(ParseSerialisedDataMap(serialised_data_map));
   if (!data_map) {
-    DLOG(ERROR) << "Data map didn't parse.";
+    LOG(kError) << "Data map didn't parse.";
     return "";
   }
 
@@ -1232,7 +1232,7 @@ std::string UserStorage::ConstructFile(const std::string &serialised_data_map) {
   auto it(data_map->chunks.begin());
   while (it != data_map->chunks.end()) {
     if (kFileRecontructionLimit < (file_size + (*it).size)) {
-      DLOG(ERROR) << "File too large to read.";
+      LOG(kError) << "File too large to read.";
       return "";
     }
     file_size += (*it).size;

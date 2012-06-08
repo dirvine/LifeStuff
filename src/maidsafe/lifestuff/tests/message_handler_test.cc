@@ -17,6 +17,7 @@
 #include "maidsafe/lifestuff/detail/message_handler.h"
 
 #include "maidsafe/common/asio_service.h"
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
@@ -31,7 +32,6 @@
 #include "maidsafe/pd/client/client_container.h"
 #endif
 
-#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
@@ -195,23 +195,23 @@ class MessageHandlerTest : public testing::Test {
 
   bool MessagesEqual(const InboxItem &left, const InboxItem &right) const {
     if (left.item_type != right.item_type) {
-      DLOG(ERROR) << "Different type.";
+      LOG(kError) << "Different type.";
       return false;
     }
     if (left.content.size() != right.content.size()) {
-      DLOG(ERROR) << "Different content size.";
+      LOG(kError) << "Different content size.";
       return false;
     }
     if (left.receiver_public_id != right.receiver_public_id) {
-      DLOG(ERROR) << "Different receiver.";
+      LOG(kError) << "Different receiver.";
       return false;
     }
     if (left.sender_public_id != right.sender_public_id) {
-      DLOG(ERROR) << "Different sender.";
+      LOG(kError) << "Different sender.";
       return false;
     }
     if (left.timestamp != right.timestamp) {
-      DLOG(ERROR) << "Different timestamp -left: " << left.timestamp
+      LOG(kError) << "Different timestamp -left: " << left.timestamp
                   << ", right: " << right.timestamp;
       return false;
     }
@@ -358,7 +358,7 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
   for (size_t a(0); a < multiple_messages_ * 5; ++a) {
     sent.timestamp = crypto::Hash<crypto::SHA512>(boost::lexical_cast<std::string>("n"));
     ASSERT_EQ(kSuccess, message_handler1_->Send(sent));
-    DLOG(ERROR) << "Sent " << a;
+    LOG(kError) << "Sent " << a;
   }
 
   // If same message is sent, it should be reported only once

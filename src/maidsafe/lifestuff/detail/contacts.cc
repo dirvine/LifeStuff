@@ -21,9 +21,9 @@
 #include "boost/filesystem.hpp"
 #include "boost/lexical_cast.hpp"
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/detail/data_atlas_pb.h"
 
@@ -135,7 +135,7 @@ int ContactsHandler::AddContact(const std::string &public_id,
 
   auto result(contact_set_.insert(contact));
   if (!result.second) {
-    DLOG(ERROR) << "Failed to insert contact " << contact.public_id;
+    LOG(kError) << "Failed to insert contact " << contact.public_id;
     return -77;
   }
 
@@ -145,7 +145,7 @@ int ContactsHandler::AddContact(const std::string &public_id,
 int ContactsHandler::AddContact(const Contact &contact) {
   auto result(contact_set_.insert(contact));
   if (!result.second) {
-    DLOG(ERROR) << "Failed to insert contact " << contact.public_id;
+    LOG(kError) << "Failed to insert contact " << contact.public_id;
     return -77;
   }
 
@@ -160,7 +160,7 @@ int ContactsHandler::DeleteContact(const std::string &public_id) {
 int ContactsHandler::UpdateContact(const Contact &contact) {
   ContactSet::iterator it = contact_set_.find(contact.public_id);
   if (it == contact_set_.end()) {
-    DLOG(ERROR) << "Contact(" << contact.public_id << ") not present in list.";
+    LOG(kError) << "Contact(" << contact.public_id << ") not present in list.";
     return -79;
   }
 
@@ -176,7 +176,7 @@ int ContactsHandler::UpdateContact(const Contact &contact) {
   local_contact.profile_picture_data_map = contact.profile_picture_data_map;
 
   if (!contact_set_.replace(it, local_contact)) {
-    DLOG(ERROR) << "Failed to replace contact in set " << contact.public_id;
+    LOG(kError) << "Failed to replace contact in set " << contact.public_id;
     return -79;
   }
 
@@ -188,7 +188,7 @@ int ContactsHandler::UpdateMpidName(const std::string &public_id,
                                     const std::string &new_mpid_name) {
   ContactSet::iterator it = contact_set_.find(public_id);
   if (it == contact_set_.end()) {
-    DLOG(ERROR) << "Contact(" << public_id << ") not present in list.";
+    LOG(kError) << "Contact(" << public_id << ") not present in list.";
     return -79;
   }
 
@@ -196,7 +196,7 @@ int ContactsHandler::UpdateMpidName(const std::string &public_id,
   contact.mpid_name = new_mpid_name;
 
   if (!contact_set_.replace(it, contact)) {
-    DLOG(ERROR) << "Failed to replace contact in set " << contact.public_id;
+    LOG(kError) << "Failed to replace contact in set " << contact.public_id;
     return -79;
   }
 
@@ -207,7 +207,7 @@ int ContactsHandler::UpdateMmidName(const std::string &public_id,
                                     const std::string &new_inbox_name) {
   ContactSet::iterator it = contact_set_.find(public_id);
   if (it == contact_set_.end()) {
-    DLOG(ERROR) << "Contact(" << public_id << ") not present in list.";
+    LOG(kError) << "Contact(" << public_id << ") not present in list.";
     return -79;
   }
 
@@ -215,7 +215,7 @@ int ContactsHandler::UpdateMmidName(const std::string &public_id,
   contact.inbox_name = new_inbox_name;
 
   if (!contact_set_.replace(it, contact)) {
-    DLOG(ERROR) << "Failed to replace contact in set " << contact.public_id;
+    LOG(kError) << "Failed to replace contact in set " << contact.public_id;
     return -79;
   }
 
@@ -226,14 +226,14 @@ int ContactsHandler::UpdateProfilePictureDataMap(const std::string &public_id,
                                                  const std::string &profile_picture_data_map) {
   ContactSet::iterator it = contact_set_.find(public_id);
   if (it == contact_set_.end()) {
-    DLOG(ERROR) << "Contact(" << public_id << ") not present in list.";
+    LOG(kError) << "Contact(" << public_id << ") not present in list.";
     return -79;
   }
 
   Contact contact = *it;
   contact.profile_picture_data_map = profile_picture_data_map;
   if (!contact_set_.replace(it, contact)) {
-    DLOG(ERROR) << "Failed to replace contact in set " << contact.public_id;
+    LOG(kError) << "Failed to replace contact in set " << contact.public_id;
     return -79;
   }
 
@@ -244,7 +244,7 @@ int ContactsHandler::UpdateMpidPublicKey(const std::string &public_id,
                                          const asymm::PublicKey &new_mpid_public_key) {
   ContactSet::iterator it = contact_set_.find(public_id);
   if (it == contact_set_.end()) {
-    DLOG(ERROR) << "Contact(" << public_id << ") not present in list.";
+    LOG(kError) << "Contact(" << public_id << ") not present in list.";
     return -79;
   }
 
@@ -252,7 +252,7 @@ int ContactsHandler::UpdateMpidPublicKey(const std::string &public_id,
   contact.mpid_public_key = new_mpid_public_key;
 
   if (!contact_set_.replace(it, contact)) {
-    DLOG(ERROR) << "Failed to replace contact in set " << contact.public_id;
+    LOG(kError) << "Failed to replace contact in set " << contact.public_id;
     return -79;
   }
 
@@ -263,7 +263,7 @@ int ContactsHandler::UpdateMmidPublicKey(const std::string &public_id,
                                          const asymm::PublicKey &new_inbox_public_key) {
   ContactSet::iterator it = contact_set_.find(public_id);
   if (it == contact_set_.end()) {
-    DLOG(ERROR) << "Contact(" << public_id << ") not present in list.";
+    LOG(kError) << "Contact(" << public_id << ") not present in list.";
     return -79;
   }
 
@@ -271,7 +271,7 @@ int ContactsHandler::UpdateMmidPublicKey(const std::string &public_id,
   contact.inbox_public_key = new_inbox_public_key;
 
   if (!contact_set_.replace(it, contact)) {
-    DLOG(ERROR) << "Failed to replace contact in set " << contact.public_id;
+    LOG(kError) << "Failed to replace contact in set " << contact.public_id;
     return -79;
   }
 
@@ -281,7 +281,7 @@ int ContactsHandler::UpdateMmidPublicKey(const std::string &public_id,
 int ContactsHandler::UpdateStatus(const std::string &public_id, const ContactStatus &status) {
   ContactSet::iterator it = contact_set_.find(public_id);
   if (it == contact_set_.end()) {
-    DLOG(ERROR) << "Contact(" << public_id << ") not present in list.";
+    LOG(kError) << "Contact(" << public_id << ") not present in list.";
     return -79;
   }
 
@@ -289,7 +289,7 @@ int ContactsHandler::UpdateStatus(const std::string &public_id, const ContactSta
   contact.status = status;
 
   if (!contact_set_.replace(it, contact)) {
-    DLOG(ERROR) << "Failed to replace contact in set " << contact.public_id;
+    LOG(kError) << "Failed to replace contact in set " << contact.public_id;
     return -79;
   }
 
@@ -299,7 +299,7 @@ int ContactsHandler::UpdateStatus(const std::string &public_id, const ContactSta
 int ContactsHandler::UpdatePresence(const std::string &public_id, const ContactPresence &presence) {
   ContactSet::iterator it = contact_set_.find(public_id);
   if (it == contact_set_.end()) {
-    DLOG(ERROR) << "Contact(" << public_id << ") not present in list.";
+    LOG(kError) << "Contact(" << public_id << ") not present in list.";
     return -79;
   }
 
@@ -307,7 +307,7 @@ int ContactsHandler::UpdatePresence(const std::string &public_id, const ContactP
   contact.presence = presence;
 
   if (!contact_set_.replace(it, contact)) {
-    DLOG(ERROR) << "Failed to replace contact in set "
+    LOG(kError) << "Failed to replace contact in set "
                 << contact.public_id;
     return -79;
   }
@@ -318,7 +318,7 @@ int ContactsHandler::UpdatePresence(const std::string &public_id, const ContactP
 int ContactsHandler::TouchContact(const std::string &public_id) {
   ContactSet::iterator it = contact_set_.find(public_id);
   if (it == contact_set_.end()) {
-    DLOG(ERROR) << "Contact(" << public_id << ") not present in contact list.";
+    LOG(kError) << "Contact(" << public_id << ") not present in contact list.";
     return -79;
   }
 
@@ -327,7 +327,7 @@ int ContactsHandler::TouchContact(const std::string &public_id) {
   contact.last_contact = static_cast<uint32_t>(GetDurationSinceEpoch().total_milliseconds());
 
   if (!contact_set_.replace(it, contact)) {
-    DLOG(ERROR) << "Failed to replace contact in set " << contact.public_id;
+    LOG(kError) << "Failed to replace contact in set " << contact.public_id;
     return -79;
   }
 
@@ -337,7 +337,7 @@ int ContactsHandler::TouchContact(const std::string &public_id) {
 int ContactsHandler::ContactInfo(const std::string &public_id, Contact *contact) {
   ContactSet::iterator it = contact_set_.find(public_id);
   if (it == contact_set_.end()) {
-    DLOG(ERROR) << "Contact(" << public_id
+    LOG(kError) << "Contact(" << public_id
                 << ") not present in contact list.";
     return -80;
   }

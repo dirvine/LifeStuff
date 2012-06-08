@@ -30,6 +30,7 @@
 #include "boost/thread/mutex.hpp"
 #include "boost/thread/thread.hpp"
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/private/chunk_actions/chunk_action_authority.h"
@@ -39,7 +40,6 @@
 
 #include "maidsafe/passport/passport.h"
 
-#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/utils.h"
 
@@ -74,14 +74,14 @@ int CreateSignaturePacketInfo(std::shared_ptr<asymm::Keys> packet,
   std::string public_key;
   asymm::EncodePublicKey(packet->public_key, &public_key);
   if (public_key.empty()) {
-    DLOG(ERROR) << "Public key not properly enconded.";
+    LOG(kError) << "Public key not properly enconded.";
     return kCreateSignaturePacketInfoFailure;
   }
 
   signed_data.set_data(public_key);
   signed_data.set_signature(packet->validation_token);
   if (!signed_data.SerializeToString(packet_content) || packet_content->empty()) {
-    DLOG(ERROR) << "SignedData not properly serialised.";
+    LOG(kError) << "SignedData not properly serialised.";
     return kCreateSignaturePacketInfoFailure;
   }
 
@@ -141,12 +141,12 @@ int UserCredentialsImpl::GetUserInfo(const std::string &keyword,
 
   // Evaluate results
   if (mid_tmid_result == kIdPacketNotFound && smid_stmid_result == kIdPacketNotFound) {
-    DLOG(INFO) << "User doesn't exist: " << keyword << ", " << pin;
+    LOG(kInfo) << "User doesn't exist: " << keyword << ", " << pin;
     return kUserDoesntExist;
   }
 
   if (mid_tmid_result == kCorruptedPacket && smid_stmid_result == kCorruptedPacket) {
-    DLOG(ERROR) << "Account corrupted. Should never happen: "
+    LOG(kError) << "Account corrupted. Should never happen: "
                 << keyword << ", " << pin;
     return kAccountCorrupted;
   }
@@ -154,7 +154,7 @@ int UserCredentialsImpl::GetUserInfo(const std::string &keyword,
   int result(HandleSerialisedDataMaps(keyword, pin, password, tmid_packet, stmid_packet));
   if (result != kSuccess) {
     if (result != kUsingNextToLastSession) {
-      DLOG(ERROR) << "Failed to initialise session: " << result;
+      LOG(kError) << "Failed to initialise session: " << result;
       result = kAccountCorrupted;
     }
     return result;
@@ -164,7 +164,7 @@ int UserCredentialsImpl::GetUserInfo(const std::string &keyword,
   session_.set_pin(pin);
   session_.set_password(password);
   if (!session_.set_session_name()) {
-    DLOG(ERROR) << "Failed to set session.";
+    LOG(kError) << "Failed to set session.";
     return kSessionFailure;
   }
 
@@ -181,21 +181,21 @@ void UserCredentialsImpl::GetIdAndTemporaryId(const std::string &keyword,
                                            pca::kModifiableByOwner));
   std::string id_packet(remote_chunk_store_->Get(id_name));
   if (id_packet.empty()) {
-    DLOG(ERROR) << "No " << (surrogate ? "SMID" : "MID") << " found.";
+    LOG(kError) << "No " << (surrogate ? "SMID" : "MID") << " found.";
     *result = kIdPacketNotFound;
     return;
   }
 
   pca::SignedData packet;
   if (!packet.ParseFromString(id_packet) || packet.data().empty()) {
-    DLOG(ERROR) << (surrogate ? "SMID" : "MID") << " packet corrupted: Failed parse.";
+    LOG(kError) << (surrogate ? "SMID" : "MID") << " packet corrupted: Failed parse.";
     *result = kCorruptedPacket;
     return;
   }
 
   std::string decrypted_rid(passport::DecryptRid(keyword, pin, packet.data()));
   if (decrypted_rid.empty()) {
-    DLOG(ERROR) << (surrogate ? "SMID" : "MID") << " packet corrupted: Failed decryption.";
+    LOG(kError) << (surrogate ? "SMID" : "MID") << " packet corrupted: Failed decryption.";
     *result = kCorruptedPacket;
     return;
   }
@@ -203,14 +203,14 @@ void UserCredentialsImpl::GetIdAndTemporaryId(const std::string &keyword,
 
   std::string temporary_id_packet(remote_chunk_store_->Get(decrypted_rid));
   if (temporary_id_packet.empty()) {
-    DLOG(ERROR) << "No " << (surrogate ? "STMID" : "TMID") << " found.";
+    LOG(kError) << "No " << (surrogate ? "STMID" : "TMID") << " found.";
     *result = kTemporaryIdPacketNotFound;
     return;
   }
 
   packet.Clear();
   if (!packet.ParseFromString(temporary_id_packet) || packet.data().empty()) {
-    DLOG(ERROR) << (surrogate ? "STMID" : "TMID") << " packet corrupted: "
+    LOG(kError) << (surrogate ? "STMID" : "TMID") << " packet corrupted: "
                 << "Failed parse.";
     *result = kCorruptedPacket;
     return;
@@ -218,7 +218,7 @@ void UserCredentialsImpl::GetIdAndTemporaryId(const std::string &keyword,
 
   *temporary_packet = passport::DecryptMasterData(keyword, pin, password, packet.data());
   if (temporary_packet->empty()) {
-    DLOG(ERROR) << (surrogate ? "STMID" : "TMID") << " packet corrupted: "
+    LOG(kError) << (surrogate ? "STMID" : "TMID") << " packet corrupted: "
                 << "Failed decryption.";
     *result = kCorruptedPacket;
     return;
@@ -253,7 +253,7 @@ int UserCredentialsImpl::HandleSerialisedDataMaps(const std::string &keyword,
   result = passport_.SetIdentityPackets(keyword, pin, password, tmid_da, stmid_da);
   result += passport_.ConfirmIdentityPackets();
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failure to set and confirm identity packets.";
+    LOG(kError) << "Failure to set and confirm identity packets.";
     return kSetIdentityPacketsFailure;
   }
 
@@ -267,13 +267,13 @@ int UserCredentialsImpl::CreateUser(const std::string &keyword,
 
   int result(ProcessSigningPackets());
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed processing signature packets: " << result;
+    LOG(kError) << "Failed processing signature packets: " << result;
     return kSessionFailure;
   }
 
   result = ProcessIdentityPackets(keyword, pin, password);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed processing identity packets: " << result;
+    LOG(kError) << "Failed processing identity packets: " << result;
     return kSessionFailure;
   }
 
@@ -281,7 +281,7 @@ int UserCredentialsImpl::CreateUser(const std::string &keyword,
   session_.set_pin(pin);
   session_.set_password(password);
   if (!session_.set_session_name()) {
-    DLOG(ERROR) << "Failed to set session.";
+    LOG(kError) << "Failed to set session.";
     return kSessionFailure;
   }
 
@@ -291,19 +291,19 @@ int UserCredentialsImpl::CreateUser(const std::string &keyword,
 int UserCredentialsImpl::ProcessSigningPackets() {
   int result(passport_.CreateSigningPackets());
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed creating signature packets: " << result;
+    LOG(kError) << "Failed creating signature packets: " << result;
     return kSessionFailure;
   }
 
   result = StoreAnonymousPackets();
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failure to Store Anonymous packets: " << result;
+    LOG(kError) << "Failure to Store Anonymous packets: " << result;
     return result;
   }
 
   result = passport_.ConfirmSigningPackets();
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed confirming signature packets: " << result;
+    LOG(kError) << "Failed confirming signature packets: " << result;
     return kSessionFailure;
   }
 
@@ -327,21 +327,21 @@ int UserCredentialsImpl::StoreAnonymousPackets() {
 
   int result(WaitForResults(mutex, condition_variable, individual_results));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Wait for results timed out: " << result;
-    DLOG(ERROR) << "ANMID: " << individual_results.at(0)
+    LOG(kError) << "Wait for results timed out: " << result;
+    LOG(kError) << "ANMID: " << individual_results.at(0)
               << ", ANSMID: " << individual_results.at(1)
               << ", ANTMID: " << individual_results.at(2)
               << ", PMID path: " << individual_results.at(3);
     return result;
   }
-  DLOG(INFO) << "ANMID: " << individual_results.at(0)
+  LOG(kInfo) << "ANMID: " << individual_results.at(0)
              << ", ANSMID: " << individual_results.at(1)
              << ", ANTMID: " << individual_results.at(2)
              << ", PMID path: " << individual_results.at(3);
 
   result = AssessJointResult(individual_results);
   if (result != kSuccess) {
-    DLOG(ERROR) << "One of the operations for Anonymous Packets failed. "
+    LOG(kError) << "One of the operations for Anonymous Packets failed. "
                 << "Turn on INFO for feedback on which one. ";
     return kCreateSignaturePacketsFailure;
   }
@@ -375,7 +375,7 @@ void UserCredentialsImpl::StoreSignaturePacket(
                                   packet_content,
                                   std::bind(&OperationCallback, args::_1, results, index),
                                   packet)) {
-    DLOG(ERROR) << "Failed to store: " << index;
+    LOG(kError) << "Failed to store: " << index;
     OperationCallback(false, results, index);
   }
 }
@@ -390,14 +390,14 @@ void UserCredentialsImpl::StoreAnmaid(OperationResults &results) {  // NOLINT (D
                                   std::bind(&UserCredentialsImpl::StoreMaid,
                                             this, args::_1, results),
                                   anmaid)) {
-    DLOG(ERROR) << "Failed to store ANMAID.";
+    LOG(kError) << "Failed to store ANMAID.";
     StoreMaid(false, results);
   }
 }
 
 void UserCredentialsImpl::StoreMaid(bool result, OperationResults &results) {  // NOLINT (Dan)
   if (!result) {
-    DLOG(ERROR) << "Anmaid failed to store.";
+    LOG(kError) << "Anmaid failed to store.";
     OperationCallback(false, results, 3);
     return;
   }
@@ -411,7 +411,7 @@ void UserCredentialsImpl::StoreMaid(bool result, OperationResults &results) {  /
   std::string maid_string_public_key;
   asymm::EncodePublicKey(maid->public_key, &maid_string_public_key);
   if (maid_string_public_key.empty()) {
-    DLOG(ERROR) << "Failed to procure sign MAID's public key.";
+    LOG(kError) << "Failed to procure sign MAID's public key.";
     StorePmid(false, results);
     return;
   }
@@ -421,14 +421,14 @@ void UserCredentialsImpl::StoreMaid(bool result, OperationResults &results) {  /
                                   std::bind(&UserCredentialsImpl::StorePmid,
                                             this, args::_1, results),
                                   anmaid)) {
-    DLOG(ERROR) << "Failed to store MAID.";
+    LOG(kError) << "Failed to store MAID.";
     StorePmid(false, results);
   }
 }
 
 void UserCredentialsImpl::StorePmid(bool result, OperationResults &results) {  // NOLINT (Dan)
   if (!result) {
-    DLOG(ERROR) << "Maid failed to store.";
+    LOG(kError) << "Maid failed to store.";
     OperationCallback(false, results, 3);
     return;
   }
@@ -442,7 +442,7 @@ void UserCredentialsImpl::StorePmid(bool result, OperationResults &results) {  /
   std::string pmid_string_public_key;
   asymm::EncodePublicKey(pmid->public_key, &pmid_string_public_key);
   if (pmid_string_public_key.empty()) {
-    DLOG(ERROR) << "Failed to procure sign PMID's public key.";
+    LOG(kError) << "Failed to procure sign PMID's public key.";
     StorePmid(false, results);
     return;
   }
@@ -452,7 +452,7 @@ void UserCredentialsImpl::StorePmid(bool result, OperationResults &results) {  /
                                   signed_pmid.SerializeAsString(),
                                   std::bind(&OperationCallback, args::_1, results, 3),
                                   maid)) {
-    DLOG(ERROR) << "Failed to store PMID.";
+    LOG(kError) << "Failed to store PMID.";
     OperationCallback(false, results, 3);
   }
 }
@@ -467,7 +467,7 @@ int UserCredentialsImpl::ProcessIdentityPackets(const std::string &keyword,
   if (result != kSuccess ||
       serialised_data_atlas.empty() ||
       surrogate_serialised_data_atlas.empty()) {
-    DLOG(ERROR) << "Don't have the appropriate elements to save on ID packets.";
+    LOG(kError) << "Don't have the appropriate elements to save on ID packets.";
     return kSessionSerialisationFailure;
   }
 
@@ -477,19 +477,19 @@ int UserCredentialsImpl::ProcessIdentityPackets(const std::string &keyword,
                                         serialised_data_atlas,
                                         surrogate_serialised_data_atlas);
   if (result!= kSuccess) {
-    DLOG(ERROR) << "Creation of ID packets failed.";
+    LOG(kError) << "Creation of ID packets failed.";
     return kSessionSerialisationFailure;
   }
 
   result = StoreIdentityPackets();
   if (result!= kSuccess) {
-    DLOG(ERROR) << "Storing of ID packets failed.";
+    LOG(kError) << "Storing of ID packets failed.";
     return result;
   }
 
   result = passport_.ConfirmIdentityPackets();
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed confirming identity packets: " << result;
+    LOG(kError) << "Failed confirming identity packets: " << result;
     return kSessionFailure;
   }
 
@@ -515,17 +515,17 @@ int UserCredentialsImpl::StoreIdentityPackets() {
 
   int result(WaitForResults(mutex, condition_variable, individual_results));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Wait for results timed out.";
+    LOG(kError) << "Wait for results timed out.";
     return result;
   }
-  DLOG(INFO) << "MID: " << individual_results.at(0)
+  LOG(kInfo) << "MID: " << individual_results.at(0)
              << ", SMID: " << individual_results.at(1)
              << ", TMID: " << individual_results.at(2)
              << ", STMID: " << individual_results.at(3);
 
   result = AssessJointResult(individual_results);
   if (result != kSuccess) {
-    DLOG(ERROR) << "One of the operations for Identity Packets failed. "
+    LOG(kError) << "One of the operations for Identity Packets failed. "
                 << "Turn on INFO for feedback on which one. ";
     return kStoreIdentityPacketsFailure;
   }
@@ -563,7 +563,7 @@ void UserCredentialsImpl::StoreIdentity(OperationResults &results,  // NOLINT (D
   asymm::Signature signature;
   int result(asymm::Sign(packet_content, signer->private_key, &signature));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to sign content: " << result;
+    LOG(kError) << "Failed to sign content: " << result;
     OperationCallback(false, results, index);
     return;
   }
@@ -575,7 +575,7 @@ void UserCredentialsImpl::StoreIdentity(OperationResults &results,  // NOLINT (D
                                   signed_data.SerializeAsString(),
                                   std::bind(&OperationCallback, args::_1, results, index),
                                   signer)) {
-    DLOG(ERROR) << "Failed to store: " << index;
+    LOG(kError) << "Failed to store: " << index;
     OperationCallback(false, results, index);
   }
 }
@@ -586,7 +586,7 @@ int UserCredentialsImpl::SaveSession() {
   std::string serialised_data_atlas;
   int result(SerialiseAndSetIdentity("", "", "", &serialised_data_atlas));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failure setting details of new session: " << result;
+    LOG(kError) << "Failure setting details of new session: " << result;
     return result;
   }
 
@@ -602,18 +602,18 @@ int UserCredentialsImpl::SaveSession() {
 
   result = WaitForResults(mutex, condition_variable, individual_results);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to store new identity packets: Time out.";
+    LOG(kError) << "Failed to store new identity packets: Time out.";
     return kSaveSessionFailure;
   }
 
-  DLOG(INFO) << "MID: " << individual_results.at(0)
+  LOG(kInfo) << "MID: " << individual_results.at(0)
              << ", SMID: " << individual_results.at(1)
              << ", TMID: " << individual_results.at(2)
              << ", STMID: " << individual_results.at(3);
 
   result = AssessJointResult(individual_results);
   if (result != kSuccess) {
-    DLOG(ERROR) << "One of the operations for Identity Packets failed. "
+    LOG(kError) << "One of the operations for Identity Packets failed. "
                 << "Turn on INFO for feedback on which one. ";
     return kSaveSessionFailure;
   }
@@ -645,7 +645,7 @@ void UserCredentialsImpl::ModifyIdentity(OperationResults &results,  // NOLINT (
   asymm::Signature signature;
   int result(asymm::Sign(content, signer->private_key, &signature));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to sign content: " << result;
+    LOG(kError) << "Failed to sign content: " << result;
     OperationCallback(false, results, index);
     return;
   }
@@ -657,7 +657,7 @@ void UserCredentialsImpl::ModifyIdentity(OperationResults &results,  // NOLINT (
                                    signed_data.SerializeAsString(),
                                    std::bind(&OperationCallback, args::_1, results, index),
                                    signer)) {
-    DLOG(ERROR) << "Failed to modify: " << index;
+    LOG(kError) << "Failed to modify: " << index;
     OperationCallback(false, results, index);
   }
 }
@@ -672,25 +672,25 @@ int UserCredentialsImpl::ChangeUsernamePin(const std::string &new_keyword,
   std::string serialised_data_atlas;
   int result(SerialiseAndSetIdentity(new_keyword, new_pin, "", &serialised_data_atlas));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failure setting details of new session: " << result;
+    LOG(kError) << "Failure setting details of new session: " << result;
     return result;
   }
 
   result = StoreIdentityPackets();
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to store new identity packets: " << result;
+    LOG(kError) << "Failed to store new identity packets: " << result;
     return result;
   }
 
   result = DeleteOldIdentityPackets();
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to delete old identity packets: " << result;
+    LOG(kError) << "Failed to delete old identity packets: " << result;
     return result;
   }
 
   result = passport_.ConfirmIdentityPackets();
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to set new identity packets: " << result;
+    LOG(kError) << "Failed to set new identity packets: " << result;
     return kSetIdentityPacketsFailure;
   }
 
@@ -714,17 +714,17 @@ int UserCredentialsImpl::DeleteOldIdentityPackets() {
 
   int result(WaitForResults(mutex, condition_variable, individual_results));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Wait for results timed out.";
+    LOG(kError) << "Wait for results timed out.";
     return result;
   }
-  DLOG(INFO) << "MID: " << individual_results.at(0)
+  LOG(kInfo) << "MID: " << individual_results.at(0)
              << ", SMID: " << individual_results.at(1)
              << ", TMID: " << individual_results.at(2)
              << ", STMID: " << individual_results.at(3);
 
   result = AssessJointResult(individual_results);
   if (result != kSuccess) {
-    DLOG(ERROR) << "One of the operations for Identity Packets failed. "
+    LOG(kError) << "One of the operations for Identity Packets failed. "
                 << "Turn on INFO for feedback on which one. ";
     return kDeleteIdentityPacketsFailure;
   }
@@ -756,7 +756,7 @@ void UserCredentialsImpl::DeleteIdentity(OperationResults &results,  // NOLINT (
   passport::PacketType sig_type(static_cast<passport::PacketType>(signer_type));
   std::string name(passport_.PacketName(id_type, true));
   if (name.empty()) {
-    DLOG(ERROR) << "Failed to get packet name: " << index;
+    LOG(kError) << "Failed to get packet name: " << index;
     OperationCallback(false, results, index);
     return;
   }
@@ -766,7 +766,7 @@ void UserCredentialsImpl::DeleteIdentity(OperationResults &results,  // NOLINT (
   if (!remote_chunk_store_->Delete(name,
                                    std::bind(&OperationCallback, args::_1, results, index),
                                    signer)) {
-    DLOG(ERROR) << "Failed to delete: " << index;
+    LOG(kError) << "Failed to delete: " << index;
     OperationCallback(false, results, index);
   }
 }
@@ -777,25 +777,25 @@ int UserCredentialsImpl::ChangePassword(const std::string &new_password) {
   std::string serialised_data_atlas;
   int result(SerialiseAndSetIdentity("", "", new_password, &serialised_data_atlas));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failure setting details of new session: " << result;
+    LOG(kError) << "Failure setting details of new session: " << result;
     return result;
   }
 
   result = DoChangePasswordAdditions();
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to perform additions.";
+    LOG(kError) << "Failed to perform additions.";
     return result;
   }
 
   result = DoChangePasswordRemovals();
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to perform removals.";
+    LOG(kError) << "Failed to perform removals.";
     return result;
   }
 
   result = passport_.ConfirmIdentityPackets();
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to set new identity packets: " << result;
+    LOG(kError) << "Failed to set new identity packets: " << result;
     return kSetIdentityPacketsFailure;
   }
 
@@ -818,18 +818,18 @@ int UserCredentialsImpl::DoChangePasswordAdditions() {
 
   int result(WaitForResults(mutex, condition_variable, individual_results));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to store new identity packets: Time out.";
+    LOG(kError) << "Failed to store new identity packets: Time out.";
     return kChangePasswordFailure;
   }
 
-  DLOG(INFO) << "MID: " << individual_results.at(0)
+  LOG(kInfo) << "MID: " << individual_results.at(0)
              << ", SMID: " << individual_results.at(1)
              << ", TMID: " << individual_results.at(2)
              << ", STMID: " << individual_results.at(3);
 
   result = AssessJointResult(individual_results);
   if (result != kSuccess) {
-    DLOG(ERROR) << "One of the operations for Identity Packets failed. "
+    LOG(kError) << "One of the operations for Identity Packets failed. "
                 << "Turn on INFO for feedback on which one. ";
     return kChangePasswordFailure;
   }
@@ -850,16 +850,16 @@ int UserCredentialsImpl::DoChangePasswordRemovals() {
 
   int result(WaitForResults(mutex, condition_variable, individual_results));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to store new identity packets: Time out.";
+    LOG(kError) << "Failed to store new identity packets: Time out.";
     return kChangePasswordFailure;
   }
 
-  DLOG(INFO) << "TMID: " << individual_results.at(2)
+  LOG(kInfo) << "TMID: " << individual_results.at(2)
              << ", STMID: " << individual_results.at(3);
 
   result = AssessJointResult(individual_results);
   if (result != kSuccess) {
-    DLOG(ERROR) << "One of the operations for Identity Packets failed. "
+    LOG(kError) << "One of the operations for Identity Packets failed. "
                 << "Turn on INFO for feedback on which one. ";
     return kChangePasswordFailure;
   }
@@ -874,7 +874,7 @@ int UserCredentialsImpl::SerialiseAndSetIdentity(const std::string &keyword,
   BOOST_ASSERT(serialised_data_atlas);
   int result(session_.SerialiseDataAtlas(serialised_data_atlas));
   if (result != kSuccess || serialised_data_atlas->empty()) {
-    DLOG(ERROR) << "Failed to serialise session: " << result;
+    LOG(kError) << "Failed to serialise session: " << result;
     return kSessionSerialisationFailure;
   }
 
@@ -886,7 +886,7 @@ int UserCredentialsImpl::SerialiseAndSetIdentity(const std::string &keyword,
                session_.serialised_data_atlas());
 
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to set new identity packets: " << result;
+    LOG(kError) << "Failed to set new identity packets: " << result;
     return kSetIdentityPacketsFailure;
   }
 

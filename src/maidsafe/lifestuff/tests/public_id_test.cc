@@ -19,6 +19,7 @@
 #include "boost/thread/thread.hpp"
 
 #include "maidsafe/common/asio_service.h"
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
@@ -30,7 +31,6 @@
 #include "maidsafe/pd/client/client_container.h"
 #endif
 
-#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/detail/contacts.h"

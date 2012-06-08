@@ -30,6 +30,7 @@
 #include "boost/thread/mutex.hpp"
 
 #include "maidsafe/common/crypto.h"
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
@@ -38,7 +39,6 @@
 #include "maidsafe/encrypt/data_map.h"
 
 #include "maidsafe/lifestuff/lifestuff.h"
-#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
 
 namespace pca = maidsafe::priv::chunk_actions;
@@ -75,12 +75,12 @@ bool AcceptableWordPattern(const std::string &word) {
 
 bool CheckWordValidity(const std::string &word) {
   if (!AcceptableWordSize(word)) {
-    DLOG(ERROR) << "Unacceptable size: " << word.size();
+    LOG(kError) << "Unacceptable size: " << word.size();
     return false;
   }
 
   if (!AcceptableWordPattern(word)) {
-    DLOG(ERROR) << "Unacceptable pattern: '" << word << "'";
+    LOG(kError) << "Unacceptable pattern: '" << word << "'";
     return false;
   }
 
@@ -99,7 +99,7 @@ bool CheckPinValidity(const std::string &pin) {
   try {
     int peen(boost::lexical_cast<int>(pin));
     if (peen < 1) {
-      DLOG(ERROR) << "PIN out of range: " << peen;
+      LOG(kError) << "PIN out of range: " << peen;
       return false;
     }
     std::string pattern("[0-9]{" +
@@ -109,7 +109,7 @@ bool CheckPinValidity(const std::string &pin) {
     return boost::regex_match(pin.begin(), pin.end(), rx);
   }
   catch(const std::exception &e) {
-    DLOG(ERROR) << e.what();
+    LOG(kError) << e.what();
     return false;
   }
 }
@@ -128,7 +128,7 @@ int CreateTestFile(fs::path const& parent,
                    int size_in_mb,
                    std::string *file_name) {
   if (size_in_mb > 1024) {
-    DLOG(ERROR) << "This function doesn't create files larger than 1024MB.";
+    LOG(kError) << "This function doesn't create files larger than 1024MB.";
     return -1;
   }
 
@@ -141,7 +141,7 @@ int CreateTestFile(fs::path const& parent,
     std::ofstream file_out(file_path.c_str(),
                            std::ios::trunc | std::ios::binary);
     if (!file_out.good()) {
-      DLOG(ERROR) << "Can't get ofstream created for " << file_path;
+      LOG(kError) << "Can't get ofstream created for " << file_path;
       return -1;
     }
     for (int rounds(0); rounds < total; ++rounds)
@@ -149,7 +149,7 @@ int CreateTestFile(fs::path const& parent,
     file_out.close();
   }
   catch(const std::exception &e) {
-    DLOG(ERROR) << "Failed to write file " << file_path << ": " << e.what();
+    LOG(kError) << "Failed to write file " << file_path << ": " << e.what();
     return -1;
   }
 
@@ -160,7 +160,7 @@ int CreateSmallTestFile(fs::path const& parent,
                         int size_in_kb,
                         std::string *file_name) {
   if (size_in_kb > 1024) {
-    DLOG(ERROR) << "This function doesn't create files larger than 1024MB.";
+    LOG(kError) << "This function doesn't create files larger than 1024MB.";
     return -1;
   }
 
@@ -173,7 +173,7 @@ int CreateSmallTestFile(fs::path const& parent,
     std::ofstream file_out(file_path.c_str(),
                            std::ios::trunc | std::ios::binary);
     if (!file_out.good()) {
-      DLOG(ERROR) << "Can't get ofstream created for " << file_path;
+      LOG(kError) << "Can't get ofstream created for " << file_path;
       return -1;
     }
     for (int rounds(0); rounds < total; ++rounds)
@@ -181,7 +181,7 @@ int CreateSmallTestFile(fs::path const& parent,
     file_out.close();
   }
   catch(const std::exception &e) {
-    DLOG(ERROR) << "Failed to write file " << file_path << ": " << e.what();
+    LOG(kError) << "Failed to write file " << file_path << ": " << e.what();
     return -1;
   }
 
@@ -218,12 +218,12 @@ int WaitForResultsPtr(boost::mutex *mutex,
                                 }
                                 return true;
                               })) {
-      DLOG(ERROR) << "Timed out during waiting response.";
+      LOG(kError) << "Timed out during waiting response.";
       return kOperationTimeOut;
     }
   }
   catch(const std::exception &e) {
-    DLOG(ERROR) << "Exception Failure during waiting response : " << e.what();
+    LOG(kError) << "Exception Failure during waiting response : " << e.what();
     return kOperationTimeOut;
   }
   return kSuccess;
@@ -245,12 +245,12 @@ int WaitForResults(boost::mutex &mutex,  // NOLINT (Dan)
                                }
                                return true;
                              })) {
-      DLOG(ERROR) << "Timed out during waiting response.";
+      LOG(kError) << "Timed out during waiting response.";
       return kOperationTimeOut;
     }
   }
   catch(const std::exception &e) {
-    DLOG(ERROR) << "Exception Failure during waiting response : " << e.what();
+    LOG(kError) << "Exception Failure during waiting response : " << e.what();
     return kOperationTimeOut;
   }
   return kSuccess;
@@ -282,7 +282,7 @@ std::string PutFilenameData(const std::string &file_name) {
     return data;
   }
   catch(const std::exception &e) {
-    DLOG(ERROR) << e.what();
+    LOG(kError) << e.what();
     return "";
   }
 }
@@ -300,7 +300,7 @@ void GetFilenameData(const std::string &content,
     *serialised_data_map = content.substr(chars_to_read);
   }
   catch(const std::exception &e) {
-    DLOG(ERROR) << e.what();
+    LOG(kError) << e.what();
   }
 }
 
@@ -330,7 +330,7 @@ encrypt::DataMapPtr ParseSerialisedDataMap(
     boost::archive::text_iarchive input_archive(input_stream);
     input_archive >> *data_map;
   } catch(const boost::archive::archive_exception &e) {
-    DLOG(ERROR) << e.what();
+    LOG(kError) << e.what();
     return encrypt::DataMapPtr();
   }
   return data_map;
@@ -340,7 +340,7 @@ int CopyDir(const fs::path& source, const fs::path& dest) {
   try {
     // Check whether the function call is valid
     if (!fs::exists(source) || !fs::is_directory(source)) {
-      DLOG(ERROR) << "Source directory " << source.string()
+      LOG(kError) << "Source directory " << source.string()
                   << " does not exist or is not a directory.";
       return kGeneralError;
     }
@@ -348,7 +348,7 @@ int CopyDir(const fs::path& source, const fs::path& dest) {
       fs::create_directory(dest);
   }
   catch(const fs::filesystem_error &e) {
-    DLOG(ERROR) << e.what();
+    LOG(kError) << e.what();
     return kGeneralError;
   }
   // Iterate through the source directory
@@ -366,7 +366,7 @@ int CopyDir(const fs::path& source, const fs::path& dest) {
       }
     }
     catch(const fs::filesystem_error &e) {
-      DLOG(ERROR) << e.what();
+      LOG(kError) << e.what();
     }
   }
   return kSuccess;
@@ -382,35 +382,35 @@ int CopyDirectoryContent(const fs::path& from, const fs::path& to) {
       if (fs::is_directory(*it)) {
         fs::create_directory(to / current.filename(), error_code);
         if (error_code) {
-          DLOG(ERROR) << "Failed to create directory: "
+          LOG(kError) << "Failed to create directory: "
                       << to / current.filename()
                       << " " << error_code.message();
           return kGeneralError;
         }
         result = CopyDirectoryContent(current, to / current.filename());
         if (result != kSuccess) {
-          DLOG(ERROR) << "Failed to create directory "
+          LOG(kError) << "Failed to create directory "
                       << to / current.filename() << error_code.value();
           return kGeneralError;
         }
       } else if (fs::is_regular_file(*it)) {
         fs::copy_file(current, to / current.filename(), error_code);
         if (error_code) {
-          DLOG(ERROR) << "Failed to create file " << to / current.filename()
+          LOG(kError) << "Failed to create file " << to / current.filename()
                       << error_code.value();
           return kGeneralError;
         }
       } else {
         if (fs::exists(*it))
-          DLOG(ERROR) << "Unknown file type found.";
+          LOG(kError) << "Unknown file type found.";
         else
-          DLOG(ERROR) << "Nonexistant file type found.";
+          LOG(kError) << "Nonexistant file type found.";
         return kGeneralError;
       }
     }
   }
   catch(...) {
-    DLOG(ERROR) << "Failed copying directory " << from << " to " << to;
+    LOG(kError) << "Failed copying directory " << from << " to " << to;
     return kGeneralError;
   }
   return kSuccess;
@@ -419,12 +419,12 @@ int CopyDirectoryContent(const fs::path& from, const fs::path& to) {
 bool VerifyOrCreatePath(const fs::path& path) {
   boost::system::error_code error_code;
   if (fs::exists(path, error_code) && !error_code) {
-    DLOG(INFO) << path << " does exist.";
+    LOG(kInfo) << path << " does exist.";
     return true;
   }
 
   if (!fs::create_directories(path, error_code) || error_code) {
-    DLOG(ERROR) << path << " doesn't exist and couldn't be created.";
+    LOG(kError) << path << " doesn't exist and couldn't be created.";
     return false;
   }
 

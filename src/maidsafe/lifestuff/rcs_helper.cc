@@ -25,6 +25,7 @@
 
 #include "boost/archive/text_iarchive.hpp"
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
@@ -38,7 +39,6 @@
 #endif
 
 #include "maidsafe/lifestuff/lifestuff.h"
-#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
 
 namespace pca = maidsafe::priv::chunk_actions;
@@ -75,7 +75,7 @@ std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
     remote_chunk_store->SetMaxActiveOps(32);
     return remote_chunk_store;
   } else {
-    DLOG(ERROR) << "Failed to initialise client container.";
+    LOG(kError) << "Failed to initialise client container.";
     return nullptr;
   }
 }
@@ -125,11 +125,11 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
     std::string status_message;
     std::getline(response_stream, status_message);
     if (!response_stream || http_version.substr(0, 5) != "HTTP/") {
-      DLOG(ERROR) << "Error downloading bootstrap file: Invalid response";
+      LOG(kError) << "Error downloading bootstrap file: Invalid response";
       return kGeneralError;
     }
     if (status_code != 200) {
-      DLOG(ERROR) << "Error downloading bootstrap file: Response returned "
+      LOG(kError) << "Error downloading bootstrap file: Response returned "
                   << "with status code " << status_code;
       return kGeneralError;
     }
@@ -154,19 +154,19 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
       bootstrap_stream << &response;
 
     if (error != boost::asio::error::eof) {
-      DLOG(ERROR) << "Error downloading bootstrap file: " << error.message();
+      LOG(kError) << "Error downloading bootstrap file: " << error.message();
       return error.value();
     }
   }
   catch(const std::exception &e) {
-    DLOG(ERROR) << "Exception: " << e.what();
+    LOG(kError) << "Exception: " << e.what();
     return kGeneralException;
   }
 
   fs::path bootstrap_file(download_dir / "bootstrap");
   WriteFile(bootstrap_file, bootstrap_stream.str());
   if (!maidsafe::dht::ReadContactsFromFile(bootstrap_file, bootstrap_contacts)) {
-    DLOG(ERROR) << "Failed to read " << bootstrap_file;
+    LOG(kError) << "Failed to read " << bootstrap_file;
     return kGeneralError;
   }
 
@@ -176,24 +176,24 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
 ClientContainerPtr SetUpClientContainer(const fs::path &base_dir) {
   ClientContainerPtr client_container(new pd::ClientContainer);
   if (!client_container->Init(base_dir / "buffered_chunk_store", 10, 4)) {
-    DLOG(ERROR) << "Failed to initialise client container.";
+    LOG(kError) << "Failed to initialise client container.";
     return nullptr;
   }
 
   std::vector<dht::Contact> bootstrap_contacts;
   int result = RetrieveBootstrapContacts(base_dir, &bootstrap_contacts);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to retrieve bootstrap contacts.  Result: " << result;
+    LOG(kError) << "Failed to retrieve bootstrap contacts.  Result: " << result;
     return nullptr;
   }
 
   result = client_container->Start(bootstrap_contacts);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to start client container.  Result: " << result;
+    LOG(kError) << "Failed to start client container.  Result: " << result;
     return nullptr;
   }
 
-  DLOG(INFO) << "Started client_container.";
+  LOG(kInfo) << "Started client_container.";
   return client_container;
 }
 #endif
