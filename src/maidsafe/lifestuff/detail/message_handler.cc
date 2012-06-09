@@ -57,6 +57,7 @@ MessageHandler::MessageHandler(
     : remote_chunk_store_(remote_chunk_store),
       session_(session),
       get_new_messages_timer_(asio_service),
+      get_new_messages_timer_active_(false),
       asio_service_(asio_service),
       start_up_done_(false),
       received_messages_(),
@@ -115,6 +116,7 @@ int MessageHandler::StartCheckingForNewMessages(bptime::seconds interval) {
     LOG(kError) << "No public username set";
     return kNoPublicIds;
   }
+  get_new_messages_timer_active_ = true;
   get_new_messages_timer_.expires_from_now(interval);
   get_new_messages_timer_.async_wait(std::bind(&MessageHandler::GetNewMessages,
                                                this,
@@ -124,6 +126,7 @@ int MessageHandler::StartCheckingForNewMessages(bptime::seconds interval) {
 }
 
 void MessageHandler::StopCheckingForNewMessages() {
+  get_new_messages_timer_active_ = false;
   get_new_messages_timer_.expires_at(boost::posix_time::pos_infin);
 }
 
@@ -275,11 +278,14 @@ void MessageHandler::GetNewMessages(const bptime::seconds &interval,
     }
   }
 
+  if (!get_new_messages_timer_active_) {
+    LOG(kInfo) << "Timer process cancelled.";
+    return;
+  }
+
   ClearExpiredReceivedMessages();
   RetrieveMessagesForAllIds();
 
-//   get_new_messages_timer_.expires_at(get_new_messages_timer_.expires_at() +
-//                                      interval);
   get_new_messages_timer_.expires_from_now(interval);
   get_new_messages_timer_.async_wait(std::bind(&MessageHandler::GetNewMessages,
                                                this,
@@ -586,6 +592,7 @@ void MessageHandler::RetrieveMessagesForAllIds() {
   int result(-1);
   std::vector<std::string> selectables(session_.PublicIdentities());
   for (auto it(selectables.begin()); it != selectables.end(); ++it) {
+    LOG(kError) << "RetrieveMessagesForAllIds for " << (*it);
     std::shared_ptr<asymm::Keys> validation_key(
         session_.passport().SignaturePacketDetails(passport::kMmid, true, *it));
     std::string mmid_value(remote_chunk_store_->Get(AppendableByAllType(validation_key->identity),

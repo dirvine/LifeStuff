@@ -119,7 +119,8 @@ class PublicId {
 
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   Session& session_;
-  ba::deadline_timer get_new_contacts_timer_, check_online_contacts_timer_;
+  ba::deadline_timer get_new_contacts_timer_;
+  bool get_new_contacts_timer_active_;
   NewContactSignalPtr new_contact_signal_;
   ContactConfirmedSignalPtr contact_confirmed_signal_;
   boost::asio::io_service &asio_service_;

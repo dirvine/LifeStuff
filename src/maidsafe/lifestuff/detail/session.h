@@ -89,6 +89,7 @@ class Session {
   std::shared_ptr<asymm::Keys> GetPmidKeys();
 
   std::vector<std::string> PublicIdentities() const;
+//  bool
 
   friend class test::SessionTest;
 

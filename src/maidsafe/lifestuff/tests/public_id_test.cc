@@ -128,6 +128,13 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
     cond_var->notify_one();
   }
 
+  void NewerContactSlot(const std::string&,
+                        const std::string &other_public_id,
+                        bool *done) {
+    received_public_identity_ = other_public_id;
+    *done = true;
+  }
+
  protected:
   void SetUp() {
     session1_.Reset();
@@ -154,15 +161,21 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
 
   void TearDown() {
     public_id1_->StopCheckingForNewContacts();
+    LOG(kError) << "ccccc";
     public_id2_->StopCheckingForNewContacts();
+    LOG(kError) << "ddddd";
 #ifndef LOCAL_TARGETS_ONLY
     client_container1_->Stop(nullptr);
     client_container2_->Stop(nullptr);
 #endif
     asio_service1_.Stop();
+    LOG(kError) << "eeeee";
     asio_service2_.Stop();
+    LOG(kError) << "fffff";
     remote_chunk_store1_->WaitForCompletion();
+    LOG(kError) << "ggggg";
     remote_chunk_store2_->WaitForCompletion();
+    LOG(kError) << "hhhhh";
   }
 
   void CreateTestSignaturePackets(Session& session) {
@@ -400,9 +413,8 @@ TEST_F(PublicIdTest, FUNC_DisablePublicId) {
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_identity2_, true));
 
   // Check user2 can't add itself to user1's MCID
-  public_id1_->ConnectToNewContactSignal(
-      std::bind(&PublicIdTest::NewContactSlot, this, args::_1, args::_2,
-        &mutex, &cond_var));
+  public_id1_->ConnectToNewContactSignal(std::bind(&PublicIdTest::NewContactSlot, this,
+                                                   args::_1, args::_2, &mutex, &cond_var));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   ASSERT_EQ(kSendContactInfoFailure, public_id2_->AddContact(public_identity2_, public_identity1_));
   {
@@ -462,34 +474,51 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
   boost::condition_variable cond_var;
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, true));
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_identity2_, true));
+  LOG(kError) << "00000";
 
   ASSERT_EQ(kPublicIdEmpty, public_id1_->RemoveContact(public_identity1_, ""));
   ASSERT_EQ(kPublicIdEmpty, public_id1_->RemoveContact("", public_identity2_));
+  LOG(kError) << "11111";
 
   ASSERT_EQ(kLiveContactNotFound, public_id1_->RemoveContact(public_identity1_, public_identity2_));
+  LOG(kError) << "22222";
 
-  public_id1_->ConnectToNewContactSignal(std::bind(&PublicIdTest::NewContactSlot, this,
-                                                   args::_1, args::_2, &mutex, &cond_var));
+  bool done(false);
+  public_id1_->ConnectToNewContactSignal(std::bind(&PublicIdTest::NewerContactSlot, this,
+                                                   args::_1, args::_2, &done));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_));
-  {
-    boost::mutex::scoped_lock lock(mutex);
-    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2));
+  LOG(kError) << "33333";
+  while (!done) {
+//    boost::mutx::scoped_lock lock(mutex);
+//    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2));
+    Sleep(bptime::milliseconds(100));
   }
   ASSERT_FALSE(received_public_identity_.empty());
+  LOG(kError) << "44444";
 
+  done = false;
   ASSERT_EQ(kSuccess, public_id1_->RemoveContact(public_identity1_, public_identity2_));
+  LOG(kError) << "55555";
 
   // Although sending msg is disallowed, sending contact_info shall be allowed
   received_public_identity_.clear();
+  LOG(kError) << "66666";
   ASSERT_EQ(-77, public_id2_->AddContact(public_identity2_, public_identity1_));
+  LOG(kError) << "77777";
   ASSERT_EQ(kSuccess, public_id2_->RemoveContact(public_identity2_, public_identity1_));
+  LOG(kError) << "88888";
   ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_));
-  {
-    boost::mutex::scoped_lock lock(mutex);
-    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2));
+  LOG(kError) << "99999";
+  while (!done) {
+//    boost::mutex::scoped_lock lock(mutex);
+//    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2));
+    Sleep(bptime::milliseconds(100));
   }
+  LOG(kError) << "aaaaa";
   ASSERT_FALSE(received_public_identity_.empty());
+  LOG(kError) << "bbbbb";
+  public_id1_->StopCheckingForNewContacts();
 }
 
 TEST_F(PublicIdTest, FUNC_ContactList) {

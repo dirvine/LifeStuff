@@ -88,9 +88,11 @@ class MessageHandlerTest : public testing::Test {
   void NewContactSlot(const std::string&,
                       const std::string &other_public_username,
                       boost::mutex *mutex,
-                      boost::condition_variable *cond_var) {
+                      boost::condition_variable *cond_var,
+                      bool *done) {
     boost::mutex::scoped_lock lock(*mutex);
     received_public_username_ = other_public_username;
+    *done = true;
     cond_var->notify_one();
   }
 
@@ -111,13 +113,15 @@ class MessageHandlerTest : public testing::Test {
                       const std::string &timestamp,
                       InboxItem *slot_message,
                       boost::mutex *mutex,
-                      boost::condition_variable *cond_var) {
+                      boost::condition_variable *cond_var,
+                      bool *done) {
     boost::mutex::scoped_lock lock(*mutex);
     slot_message->receiver_public_id = own_public_username;
     slot_message->sender_public_id = other_public_username;
     slot_message->content.push_back(message);
     slot_message->item_type = kChat;
     slot_message->timestamp = timestamp;
+    *done = true;
     cond_var->notify_one();
   }
 
@@ -128,7 +132,8 @@ class MessageHandlerTest : public testing::Test {
                            std::vector<InboxItem> *messages,
                            boost::mutex *mutex,
                            boost::condition_variable *cond_var,
-                           size_t *count) {
+                           size_t *count,
+                           bool *done) {
     boost::mutex::scoped_lock lock(*mutex);
     InboxItem slot_message;
     slot_message.receiver_public_id = own_public_username;
@@ -137,8 +142,10 @@ class MessageHandlerTest : public testing::Test {
     slot_message.item_type = kChat;
     slot_message.timestamp = timestamp;
     messages->push_back(slot_message);
-    if (messages->size() == *count)
+    if (messages->size() == *count) {
+      *done = true;
       cond_var->notify_all();
+    }
   }
 
  protected:
@@ -255,17 +262,20 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
   EXPECT_EQ(kSuccess, public_id1_->CreatePublicId(public_username1_, true));
   EXPECT_EQ(kSuccess, public_id2_->CreatePublicId(public_username2_, true));
 
-  // Connect a slot which will reject the new contact
   boost::mutex mutex;
   boost::condition_variable cond_var;
-  public_id1_->ConnectToNewContactSignal(std::bind(&MessageHandlerTest::NewContactSlot,
-                                                   this, args::_1, args::_2, &mutex, &cond_var));
+  bool done(false);
+  public_id1_->ConnectToNewContactSignal(std::bind(&MessageHandlerTest::NewContactSlot, this,
+                                                   args::_1, args::_2, &mutex, &cond_var, &done));
   EXPECT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   EXPECT_EQ(kSuccess, public_id2_->AddContact(public_username2_, public_username1_));
-
   {
     boost::mutex::scoped_lock lock(mutex);
-    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2));
+    EXPECT_TRUE(cond_var.timed_wait(lock,
+                                    interval_ * 2,
+                                    [&]()->bool {
+                                      return done;
+                                    }));
   }
 
   EXPECT_EQ(public_username2_, received_public_username_);
@@ -276,18 +286,21 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
                 &received_contact));
 
   InboxItem received;
+  done = false;
   message_handler2_->ConnectToChatSignal(std::bind(&MessageHandlerTest::NewMessageSlot, this,
                                                    args::_1, args::_2, args::_3, args::_4,
-                                                   &received, &mutex, &cond_var));
+                                                   &received, &mutex, &cond_var, &done));
   EXPECT_EQ(kSuccess, message_handler2_->StartCheckingForNewMessages(interval_));
 
   InboxItem sent(CreateMessage(public_username1_, public_username2_));
   EXPECT_EQ(kSuccess, message_handler1_->Send(sent));
-
-
   {
     boost::mutex::scoped_lock lock(mutex);
-    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2));
+    EXPECT_TRUE(cond_var.timed_wait(lock,
+                                    interval_ * 2,
+                                    [&]()->bool {
+                                      return done;
+                                    }));
   }
 
   EXPECT_TRUE(MessagesEqual(sent, received));
@@ -301,7 +314,11 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
   EXPECT_EQ(sent_time.zone_abbrev(), received_time.zone_abbrev());
   EXPECT_EQ(sent_time.zone_as_posix_string(), received_time.zone_as_posix_string());
   EXPECT_EQ(sent_time.zone_name(), received_time.zone_name());
+
+  public_id1_->StopCheckingForNewContacts();
+  message_handler2_->StopCheckingForNewMessages();
 }
+
 
 TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
   // Create users who both accept new contacts
@@ -309,16 +326,16 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_username2_, true));
 
   // Connect a slot which will reject the new contact
-//  volatile bool done(false);
   boost::mutex mutex;
   boost::condition_variable cond_var;
-  public_id1_->ConnectToNewContactSignal(std::bind(&MessageHandlerTest::NewContactSlot,
-                                                   this, args::_1, args::_2, &mutex, &cond_var));
+  bool done(false);
+  public_id1_->ConnectToNewContactSignal(std::bind(&MessageHandlerTest::NewContactSlot, this,
+                                                   args::_1, args::_2, &mutex, &cond_var, &done));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   ASSERT_EQ(kSuccess, public_id2_->AddContact(public_username2_, public_username1_));
   {
     boost::mutex::scoped_lock lock(mutex);
-    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2));
+    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&]()->bool { return done; }));  // NOLINT
   }
 
   ASSERT_EQ(public_username2_, received_public_username_);
@@ -335,16 +352,17 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
   }
 
   std::vector<InboxItem> received_messages;
-//  volatile bool finished(false);
+  done = false;
   bs2::connection connection(message_handler2_->ConnectToChatSignal(
                                  std::bind(&MessageHandlerTest::SeveralMessagesSlot, this, args::_1,
                                            args::_2, args::_3, args::_4, &received_messages, &mutex,
-                                           &cond_var, &multiple_messages_)));
+                                           &cond_var, &multiple_messages_, &done)));
   ASSERT_EQ(kSuccess, message_handler2_->StartCheckingForNewMessages(interval_));
   {
     boost::mutex::scoped_lock lock(mutex);
-    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2));
+    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&]()->bool { return done; }));  // NOLINT
   }
+
 
   connection.disconnect();
   message_handler2_->StopCheckingForNewMessages();
@@ -363,18 +381,21 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
 
   // If same message is sent, it should be reported only once
   received_messages.clear();
+  done = false;
   connection = message_handler2_->ConnectToChatSignal(
                    std::bind(&MessageHandlerTest::SeveralMessagesSlot, this, args::_1, args::_2,
                              args::_3, args::_4, &received_messages, &mutex, &cond_var,
-                             &multiple_messages_));
+                             &multiple_messages_, &done));
   ASSERT_EQ(kSuccess, message_handler2_->StartCheckingForNewMessages(interval_));
   {
     boost::mutex::scoped_lock lock(mutex);
-    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2));
+    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&]()->bool { return done; }));  // NOLINT
   }
 
+  connection.disconnect();
   message_handler2_->StopCheckingForNewMessages();
   ASSERT_EQ(multiple_messages_, received_messages.size());
+  public_id1_->StopCheckingForNewContacts();
 }
 
 TEST_F(MessageHandlerTest, BEH_RemoveContact) {
@@ -384,26 +405,23 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
 
   boost::mutex mutex;
   boost::condition_variable cond_var;
+  bool done(false), done2(false);
   public_id1_->ConnectToContactConfirmedSignal(std::bind(&MessageHandlerTest::NewContactCountSlot,
                                                          this, args::_1, args::_2, &mutex,
                                                          &cond_var));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   public_id2_->ConnectToNewContactSignal(std::bind(&MessageHandlerTest::NewContactSlot, this,
-                                                   args::_1, args::_2, &mutex, &cond_var));
+                                                   args::_1, args::_2, &mutex, &cond_var, &done));
   ASSERT_EQ(kSuccess, public_id2_->StartCheckingForNewContacts(interval_));
   public_id3_->ConnectToNewContactSignal(std::bind(&MessageHandlerTest::NewContactSlot, this,
-                                                   args::_1, args::_2, &mutex, &cond_var));
+                                                   args::_1, args::_2, &mutex, &cond_var, &done2));
   ASSERT_EQ(kSuccess, public_id3_->StartCheckingForNewContacts(interval_));
 
   ASSERT_EQ(kSuccess, public_id1_->AddContact(public_username1_, public_username2_));
-  {
-    boost::mutex::scoped_lock lock(mutex);
-    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2));
-  }
   ASSERT_EQ(kSuccess, public_id1_->AddContact(public_username1_, public_username3_));
   {
     boost::mutex::scoped_lock lock(mutex);
-    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2));
+    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&]()->bool { return done && done2; }));
   }
 
   ASSERT_EQ(kSuccess, public_id2_->ConfirmContact(public_username2_, public_username1_));
@@ -414,9 +432,10 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
   }
 
   InboxItem received;
+  done = false;
   message_handler1_->ConnectToChatSignal(std::bind(&MessageHandlerTest::NewMessageSlot, this,
                                                    args::_1, args::_2, args::_3, args::_4,
-                                                   &received, &mutex, &cond_var));
+                                                   &received, &mutex, &cond_var, &done));
   ASSERT_EQ(kSuccess, message_handler1_->StartCheckingForNewMessages(interval_));
 
   InboxItem sent(CreateMessage(public_username2_, public_username1_));
@@ -424,7 +443,7 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
 
   {
     boost::mutex::scoped_lock lock(mutex);
-    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2));
+    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&]()->bool { return done; }));
   }
   ASSERT_TRUE(MessagesEqual(sent, received));
 
@@ -435,13 +454,18 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
   ASSERT_NE(kSuccess, message_handler2_->Send(sent));
   ASSERT_FALSE(MessagesEqual(sent, received));
 
+  done = false;
   sent.sender_public_id = public_username3_;
   ASSERT_EQ(kSuccess, message_handler3_->Send(sent));
   {
     boost::mutex::scoped_lock lock(mutex);
-    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2));
+    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&]()->bool { return done; }));
   }
   ASSERT_TRUE(MessagesEqual(sent, received));
+  message_handler1_->StopCheckingForNewMessages();
+  public_id1_->StopCheckingForNewContacts();
+  public_id2_->StopCheckingForNewContacts();
+  public_id3_->StopCheckingForNewContacts();
 }
 
 }  // namespace test
