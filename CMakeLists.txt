@@ -126,8 +126,9 @@ ms_add_executable(TESTlifestuff_user_storage_local "Tests/LifeStuff" ${USER_STOR
 ms_add_executable(TESTlifestuff_api_local "Tests/LifeStuff" ${API_TEST_CC} ${TESTS_MAIN_CC})
 
 target_link_libraries(maidsafe_lifestuff_detail maidsafe_drive maidsafe_passport)
+target_link_libraries(TESTlifestuff_general maidsafe_lifestuff_detail)
+
 target_link_libraries(maidsafe_lifestuff_local maidsafe_lifestuff_detail)
-target_link_libraries(TESTlifestuff_general maidsafe_lifestuff_local)
 target_link_libraries(TESTlifestuff_public_id_local maidsafe_lifestuff_local)
 target_link_libraries(TESTlifestuff_user_credentials_local maidsafe_lifestuff_local)
 target_link_libraries(TESTlifestuff_user_storage_local maidsafe_lifestuff_local)

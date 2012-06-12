@@ -58,9 +58,7 @@ Session::Session()
       passport_(),
       contact_handler_map_(),
       profile_picture_map_(),
-      serialised_data_atlas_(),
-      logging_out_(false),
-      logged_in_(false) {}
+      serialised_data_atlas_() {}
 
 Session::~Session() {}
 
@@ -77,8 +75,7 @@ bool Session::Reset() {
   contact_handler_map_.clear();
   profile_picture_map_.clear();
   serialised_data_atlas_.clear();
-  logging_out_ = false;
-  logged_in_ = false;
+
   return true;
 }
 
@@ -122,8 +119,6 @@ std::string Session::profile_picture_data_map(const std::string &public_id) cons
   return (*it).second;
 }
 std::string Session::serialised_data_atlas() const { return serialised_data_atlas_; }
-bool Session::logging_out() const { return logging_out_; }
-bool Session::logged_in() const { return logged_in_; }
 
 void Session::set_def_con_level(DefConLevels defconlevel) {
   user_details_->defconlevel = defconlevel;
@@ -164,8 +159,6 @@ bool Session::set_profile_picture_data_map(const std::string &public_id,
 void Session::set_serialised_data_atlas(const std::string &serialised_data_atlas) {
   serialised_data_atlas_ = serialised_data_atlas;
 }
-void Session::set_logging_out(const bool &logging_out) { logging_out_ = logging_out; }
-void Session::set_logged_in(const bool &logged_in) { logged_in_ = logged_in; }
 
 int Session::ParseDataAtlas(const std::string &serialised_data_atlas) {
   DataAtlas data_atlas;

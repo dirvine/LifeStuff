@@ -67,8 +67,6 @@ class Session {
   std::string root_parent_id() const;
   std::string profile_picture_data_map(const std::string &public_id) const;
   std::string serialised_data_atlas() const;
-  bool logging_out() const;
-  bool logged_in() const;
 
   void set_def_con_level(DefConLevels defconlevel);
   void set_keyword(const std::string &keyword);
@@ -81,15 +79,12 @@ class Session {
   bool set_profile_picture_data_map(const std::string &public_id,
                                     const std::string &profile_picture_data_map);
   void set_serialised_data_atlas(const std::string &serialised_data_atlas);
-  void set_logging_out(const bool &logging_out);
-  void set_logged_in(const bool &logged_in);
 
   int ParseDataAtlas(const std::string &serialised_data_atlas);
   int SerialiseDataAtlas(std::string *serialised_data_atlas);
   std::shared_ptr<asymm::Keys> GetPmidKeys();
 
   std::vector<std::string> PublicIdentities() const;
-//  bool
 
   friend class test::SessionTest;
 
@@ -103,12 +98,11 @@ class Session {
 
   bool CreateTestPackets(bool with_public_ids);
 
-  std::shared_ptr<UserDetails> user_details_;
+  std::unique_ptr<UserDetails> user_details_;
   passport::Passport passport_;
   ContactHandlerMap contact_handler_map_;
   std::map<std::string, std::string> profile_picture_map_;
   std::string serialised_data_atlas_;
-  bool logging_out_, logged_in_;
 };
 
 }  // namespace lifestuff

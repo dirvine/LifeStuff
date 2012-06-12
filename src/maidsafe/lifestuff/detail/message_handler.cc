@@ -29,6 +29,7 @@
 
 #include "maidsafe/passport/passport.h"
 
+#include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
@@ -56,6 +57,7 @@ MessageHandler::MessageHandler(
     boost::asio::io_service &asio_service)  // NOLINT (Fraser)
     : remote_chunk_store_(remote_chunk_store),
       session_(session),
+      passport_(session_.passport()),
       get_new_messages_timer_(asio_service),
       get_new_messages_timer_active_(false),
       asio_service_(asio_service),
@@ -110,9 +112,7 @@ void MessageHandler::EnqueuePresenceMessages(ContactPresence presence) {
 }
 
 int MessageHandler::StartCheckingForNewMessages(bptime::seconds interval) {
-  std::vector<passport::SelectableIdData> selectables;
-  session_.passport().SelectableIdentitiesList(&selectables);
-  if (selectables.empty()) {
+  if (session_.PublicIdentities().empty()) {
     LOG(kError) << "No public username set";
     return kNoPublicIds;
   }
@@ -150,24 +150,13 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
   }
   asymm::PublicKey recipient_public_key(recipient_contact.inbox_public_key);
 
-  // Retrieves ANMPID, MPID, and MMID's <name, value, signature>
-  passport::SelectableIdentityData data;
-  result = session_.passport().GetSelectableIdentityData(
-               inbox_item.sender_public_id,
-               true,
-               &data);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to get own public ID data: " << result;
+  std::shared_ptr<asymm::Keys> mmid(passport_.SignaturePacketDetails(passport::kMmid,
+                                                                     true,
+                                                                     inbox_item.sender_public_id));
+  if (!mmid) {
+    LOG(kError) << "Failed to get own public ID data: " << inbox_item.sender_public_id;
     return kGetPublicIdError;
   }
-  BOOST_ASSERT(data.size() == 3U);
-
-  // Get recipient's public key
-
-  std::shared_ptr<asymm::Keys> validation_key(session_.passport().SignaturePacketDetails(
-                                                  passport::kMmid,
-                                                  true,
-                                                  inbox_item.sender_public_id));
 
   // Encrypt the message for the recipient
   std::string encrypted_message;
@@ -182,7 +171,7 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
   signed_data.set_data(encrypted_message);
 
   std::string message_signature;
-  result = asymm::Sign(signed_data.data(), validation_key->private_key, &message_signature);
+  result = asymm::Sign(signed_data.data(), mmid->private_key, &message_signature);
   if (result != kSuccess) {
     LOG(kError) << "Failed to sign message: " << result;
     return result;
@@ -198,18 +187,13 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
   std::string inbox_id(AppendableByAllType(recipient_contact.inbox_name));
   VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
                                          &mutex, &cond_var, &result));
-  remote_chunk_store_->Modify(inbox_id,
-                              signed_data.SerializeAsString(),
-                              callback,
-                              validation_key);
+  remote_chunk_store_->Modify(inbox_id, signed_data.SerializeAsString(), callback, mmid);
 
   try {
     boost::mutex::scoped_lock lock(mutex);
     if (!cond_var.timed_wait(lock,
-                             bptime::seconds(30),
-                             [&result]()->bool {
-                               return result != kPendingResult;
-                             })) {
+                             bptime::seconds(kSecondsInterval),
+                             [&result]()->bool { return result != kPendingResult; })) {  // NOLINT (Dan)
       LOG(kError) << "Timed out storing packet.";
       return kPublicIdTimeout;
     }
@@ -303,7 +287,7 @@ void MessageHandler::ProcessRetrieved(const std::string& public_id,
 
   for (int it(0); it < mmid.appendices_size(); ++it) {
     pca::SignedData signed_data(mmid.appendices(it));
-    asymm::PrivateKey mmid_private_key(session_.passport().PacketPrivateKey(passport::kMmid,
+    asymm::PrivateKey mmid_private_key(passport_.PacketPrivateKey(passport::kMmid,
                                                                             true,
                                                                             public_id));
 
@@ -592,11 +576,9 @@ void MessageHandler::RetrieveMessagesForAllIds() {
   int result(-1);
   std::vector<std::string> selectables(session_.PublicIdentities());
   for (auto it(selectables.begin()); it != selectables.end(); ++it) {
-    LOG(kError) << "RetrieveMessagesForAllIds for " << (*it);
-    std::shared_ptr<asymm::Keys> validation_key(
-        session_.passport().SignaturePacketDetails(passport::kMmid, true, *it));
-    std::string mmid_value(remote_chunk_store_->Get(AppendableByAllType(validation_key->identity),
-                                                    validation_key));
+//    LOG(kError) << "RetrieveMessagesForAllIds for " << (*it);
+    std::shared_ptr<asymm::Keys> mmid(passport_.SignaturePacketDetails(passport::kMmid, true, *it));
+    std::string mmid_value(remote_chunk_store_->Get(AppendableByAllType(mmid->identity), mmid));
 
     if (mmid_value.empty()) {
       LOG(kWarning) << "Failed to get MPID contents for " << (*it) << ": " << result;

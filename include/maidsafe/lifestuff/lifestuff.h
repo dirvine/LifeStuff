@@ -83,22 +83,22 @@ enum PrivateShareRoles {
 /// THIS ENUM MUST BE KEPT IN SYNC WITH THE ONE IN DRIVE'S CONFIG.H !!!
 enum OpType { kCreated, kRenamed, kAdded, kRemoved, kMoved, kModified };
 
-extern const size_t kMaxChatMessageSize;
-extern const uint32_t kFileRecontructionLimit;
-extern const uint16_t kIntervalSeconds;
-extern const uint8_t kThreads;
-extern const uint8_t kSecondsInterval;
-extern const size_t kMinWordSize;
-extern const size_t kMaxWordSize;
-extern const size_t kPinSize;
-extern const std::string kLiteralOnline;
-extern const std::string kLiteralOffline;
-extern const std::string kAppHomeDirectory;
-extern const std::string kMyStuff;
-extern const std::string kDownloadStuff;
-extern const std::string kSharedStuff;
-extern const std::string kBlankProfilePicture;
-extern const std::string kHiddenFileExtension;
+const size_t kMaxChatMessageSize(1 * 1024 * 1024);
+const uint32_t kFileRecontructionLimit(20 * 1024 * 1024);
+const uint8_t kThreads(10);
+const uint8_t kSecondsInterval(5);
+const size_t kMinWordSize(5);
+const size_t kMaxWordSize(30);
+const size_t kPinSize(4);
+const std::string kLiteralOnline("kOnline");
+const std::string kLiteralOffline("kOffline");
+const std::string kBlankProfilePicture("BlankPicture");
+const std::string kAppHomeDirectory(".lifestuff");
+const std::string kMyStuff("My Stuff");
+const std::string kDownloadStuff("Accepted Files");
+
+const std::string kSharedStuff("Shared Stuff");
+const std::string kHiddenFileExtension(".ms_hidden");
 
 /// General
 typedef std::function<void(const std::string&, const std::string&, const std::string&)>

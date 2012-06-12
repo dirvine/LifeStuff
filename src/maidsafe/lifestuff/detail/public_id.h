@@ -45,6 +45,10 @@ namespace pcs = maidsafe::priv::chunk_store;
 
 namespace maidsafe {
 
+namespace passport {
+class Passport;
+}  // namespace passport
+
 namespace lifestuff {
 
 class Session;
@@ -119,6 +123,7 @@ class PublicId {
 
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   Session& session_;
+  passport::Passport& passport_;
   ba::deadline_timer get_new_contacts_timer_;
   bool get_new_contacts_timer_active_;
   NewContactSignalPtr new_contact_signal_;
