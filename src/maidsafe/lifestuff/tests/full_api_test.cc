@@ -2398,10 +2398,14 @@ TEST(IndependentPrivateShareTest, FUNC_RenamePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
     fs::path share_path(test_elements1.mount_path() / kSharedStuff / share_name2);
-
     fs::path sub_directory(share_path / sub_directory_name);
     EXPECT_TRUE(fs::create_directory(sub_directory, error_code));
     EXPECT_TRUE(fs::exists(sub_directory, error_code));
+
+    // This additional sleep is required as the merging of directory_listing has a gap of 1.5s
+    // because of the UTC time being used (rounded to seconds)
+    Sleep(bptime::seconds(2));
+
     fs::path sub_directory_new(share_path / new_sub_directory_name);
     fs::rename(sub_directory, sub_directory_new, error_code);
 
