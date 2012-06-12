@@ -56,7 +56,7 @@ class SessionTest : public testing::Test {
 
   void CreateTestSession(bool with_public_ids) {
     ASSERT_TRUE(session_.CreateTestPackets(with_public_ids));
-    std::vector<std::string> public_ids(session_.GetPublicIdentities());
+    std::vector<std::string> public_ids(session_.PublicIdentities());
     std::for_each(public_ids.begin(),
                   public_ids.end(),
                   [this] (const std::string &pub_id) {
@@ -193,8 +193,8 @@ class SessionTest : public testing::Test {
     if (lhs.contact_handler_map().size() != rhs.contact_handler_map().size())
       return false;
 
-    std::vector<std::string> lhs_public_ids(lhs.GetPublicIdentities());
-    std::vector<std::string> rhs_public_ids(rhs.GetPublicIdentities());
+    std::vector<std::string> lhs_public_ids(lhs.PublicIdentities());
+    std::vector<std::string> rhs_public_ids(rhs.PublicIdentities());
     if (lhs_public_ids.size() != rhs_public_ids.size())
       return false;
     for (size_t n(0); n < rhs_public_ids.size(); ++n) {

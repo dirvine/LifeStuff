@@ -68,6 +68,7 @@ class Session {
   int64_t max_space() const;
   int64_t used_space() const;
   std::string profile_picture_data_map(const std::string &public_id) const;
+  std::string serialised_data_atlas() const;
 
   void set_def_con_level(DefConLevels defconlevel);
   void set_keyword(const std::string &keyword);
@@ -79,26 +80,15 @@ class Session {
   void set_root_parent_id(const std::string &root_parent_id);
   void set_max_space(const int64_t &max_space);
   void set_used_space(const int64_t &used_space);
-  std::string encrypted_tmid() const;
-  std::string encrypted_stmid() const;
-  std::string serialised_data_atlas() const;
-  std::string uc_serialised_data_atlas() const;
-  std::string surrogate_serialised_data_atlas() const;
-  bool logging_out() const;
-  bool logged_in() const;
   bool set_profile_picture_data_map(const std::string &public_id,
                                     const std::string &profile_picture_data_map);
-  void set_encrypted_tmid(const std::string &encrypted_tmid);
-  void set_encrypted_stmid(const std::string &encrypted_stmid);
   void set_serialised_data_atlas(const std::string &serialised_data_atlas);
-  void set_uc_serialised_data_atlas(const std::string &uc_serialised_data_atlas);
-  void set_surrogate_serialised_data_atlas(const std::string &surrogate_serialised_data_atlas);
-  void set_logging_out(const bool &logging_out);
-  void set_logged_in(const bool &logged_in);
 
   int ParseDataAtlas(const std::string &serialised_data_atlas);
   int SerialiseDataAtlas(std::string *serialised_data_atlas);
   std::shared_ptr<asymm::Keys> GetPmidKeys();
+
+  std::vector<std::string> PublicIdentities() const;
 
   friend class test::SessionTest;
 
@@ -111,18 +101,12 @@ class Session {
   void SerialiseKeyChain(std::string *serialised_keyring, std::string *serialised_selectables);
 
   bool CreateTestPackets(bool with_public_ids);
-  std::vector<std::string> GetPublicIdentities();
 
-  std::shared_ptr<UserDetails> user_details_;
+  std::unique_ptr<UserDetails> user_details_;
   passport::Passport passport_;
   ContactHandlerMap contact_handler_map_;
   std::map<std::string, std::string> profile_picture_map_;
-  std::string encrypted_tmid_,
-              encrypted_stmid_,
-              serialised_data_atlas_,
-              uc_serialised_data_atlas_,
-              surrogate_serialised_data_atlas_;
-  bool logging_out_, logged_in_;
+  std::string serialised_data_atlas_;
 };
 
 }  // namespace lifestuff

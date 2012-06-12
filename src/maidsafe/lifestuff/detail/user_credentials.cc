@@ -22,9 +22,9 @@
 
 #include "maidsafe/lifestuff/detail/user_credentials.h"
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/detail/user_credentials_impl.h"
 #include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/utils.h"
@@ -37,7 +37,7 @@ namespace lifestuff {
 
 UserCredentials::UserCredentials(
     std::shared_ptr<pcs::RemoteChunkStore> chunk_store,
-    std::shared_ptr<Session> session)
+    Session& session)
     : session_(session),
       remote_chunk_store_(chunk_store),
       impl_(new UserCredentialsImpl(chunk_store, session)) {}
@@ -50,7 +50,7 @@ int UserCredentials::CreateUser(const std::string &keyword,
   if (!CheckKeywordValidity(keyword) ||
       !CheckPinValidity(pin) ||
       !CheckPasswordValidity(password)) {
-    DLOG(ERROR) << "Incorrect inputs.";
+    LOG(kError) << "Incorrect inputs.";
     return kCredentialValidityFailure;
   }
 
@@ -63,7 +63,7 @@ int UserCredentials::LogIn(const std::string &keyword,
   if (!CheckKeywordValidity(keyword) ||
       !CheckPinValidity(pin) ||
       !CheckPasswordValidity(password)) {
-    DLOG(ERROR) << "Incorrect inputs.";
+    LOG(kError) << "Incorrect inputs.";
     return kCredentialValidityFailure;
   }
 
@@ -73,7 +73,7 @@ int UserCredentials::LogIn(const std::string &keyword,
 int UserCredentials::Logout() {
   int result(impl_->SaveSession());
   if (result == kSuccess)
-    session_->Reset();
+    session_.Reset();
 
   return result;
 }
@@ -82,25 +82,25 @@ int UserCredentials::SaveSession() { return impl_->SaveSession(); }
 
 int UserCredentials::ChangeKeyword(const std::string &new_keyword) {
   if (!CheckKeywordValidity(new_keyword)) {
-    DLOG(ERROR) << "Incorrect input.";
+    LOG(kError) << "Incorrect input.";
     return kChangeUsernamePinFailure;
   }
 
-  return impl_->ChangeUsernamePin(new_keyword, session_->pin());
+  return impl_->ChangeUsernamePin(new_keyword, session_.pin());
 }
 
 int UserCredentials::ChangePin(const std::string &new_pin) {
   if (!CheckPinValidity(new_pin)) {
-    DLOG(ERROR) << "Incorrect input.";
+    LOG(kError) << "Incorrect input.";
     return kChangeUsernamePinFailure;
   }
 
-  return impl_->ChangeUsernamePin(session_->keyword(), new_pin);
+  return impl_->ChangeUsernamePin(session_.keyword(), new_pin);
 }
 
 int UserCredentials::ChangePassword(const std::string &new_password) {
   if (!CheckPasswordValidity(new_password)) {
-    DLOG(ERROR) << "Incorrect input.";
+    LOG(kError) << "Incorrect input.";
     return kChangeUsernamePinFailure;
   }
 

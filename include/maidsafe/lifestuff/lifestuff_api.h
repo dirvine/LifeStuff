@@ -48,19 +48,20 @@ class LifeStuff {
 
   /// State operations
   int Initialise(const fs::path &base_directory = fs::path());
-  int ConnectToSignals(
-      const ChatFunction &chat_slot,
-      const FileTransferFunction &file_slot,
-      const NewContactFunction &new_contact_slot,
-      const ContactConfirmationFunction &confirmed_contact_slot,
-      const ContactProfilePictureFunction &profile_picture_slot,
-      const ContactPresenceFunction &contact_presence_slot,
-      const ContactDeletionFunction &contact_deletion_function,
-      const PrivateShareInvitationFunction &share_invitation_function,
-      const PrivateShareDeletionFunction &share_deletion_function,
-      const PrivateMemberAccessChangeFunction &access_change_function,
-      const OpenShareInvitationFunction &open_share_invitation_function,
-      const ShareRenamedFunction &share_renamed_function);
+  int ConnectToSignals(const ChatFunction &chat_slot,
+                       const FileTransferFunction &file_slot,
+                       const NewContactFunction &new_contact_slot,
+                       const ContactConfirmationFunction &confirmed_contact_slot,
+                       const ContactProfilePictureFunction &profile_picture_slot,
+                       const ContactPresenceFunction &contact_presence_slot,
+                       const ContactDeletionFunction &contact_deletion_function,
+                       const PrivateShareInvitationFunction &share_invitation_function,
+                       const PrivateShareDeletionFunction &share_deletion_function,
+                       const PrivateMemberAccessChangeFunction &access_change_function,
+                       const OpenShareInvitationFunction &open_share_invitation_function,
+                       const ShareRenamedFunction &share_renamed_function,
+                       const ShareChangedFunction &share_changed_function);
+
   int Finalise();
 
   /// Credential operations

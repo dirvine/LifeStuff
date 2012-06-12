@@ -25,10 +25,12 @@
 
 #include "boost/archive/text_iarchive.hpp"
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
+#include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 #ifndef LOCAL_TARGETS_ONLY
 #include "maidsafe/dht/contact.h"
@@ -37,7 +39,6 @@
 #endif
 
 #include "maidsafe/lifestuff/lifestuff.h"
-#include "maidsafe/lifestuff/log.h"
 #include "maidsafe/lifestuff/return_codes.h"
 
 namespace pca = maidsafe::priv::chunk_actions;
@@ -47,127 +48,16 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-int GetValidatedMpidPublicKey(
-    const std::string &public_username,
-    const pcs::RemoteChunkStore::ValidationData &validation_data,
-    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
-    asymm::PublicKey *public_key) {
-  // Get public key packet from network
-  std::string packet_name(crypto::Hash<crypto::SHA512>(public_username) +
-                          std::string(1, pca::kAppendableByAll));
-  std::string packet_value(remote_chunk_store->Get(packet_name,
-                                                   validation_data));
-  if (packet_value.empty()) {
-    DLOG(ERROR) << "Failed to get public key for " << public_username;
-    *public_key = asymm::PublicKey();
-    return kGetPublicKeyFailure;
-  }
-
-  pca::SignedData packet;
-  if (!packet.ParseFromString(packet_value)) {
-    DLOG(ERROR) << "Failed to parse public key packet for " << public_username;
-    *public_key = asymm::PublicKey();
-    return kGetPublicKeyFailure;
-  }
-  BOOST_ASSERT(!packet.data().empty());
-  BOOST_ASSERT(!packet.signature().empty());
-
-  // Decode and validate public key
-  std::string serialised_public_key(packet.data());
-  std::string public_key_signature(packet.signature());
-  asymm::DecodePublicKey(serialised_public_key, public_key);
-  if (!asymm::ValidateKey(*public_key)) {
-    DLOG(ERROR) << "Failed to validate public key for " << public_username;
-    *public_key = asymm::PublicKey();
-    return kGetPublicKeyFailure;
-  }
-
-  // Get corresponding MPID packet from network
-  std::string mpid_value(serialised_public_key + public_key_signature);
-  std::string mpid_name(crypto::Hash<crypto::SHA512>(mpid_value) +
-                        std::string(1, pca::kSignaturePacket));
-  packet_value = remote_chunk_store->Get(packet_name, validation_data);
-  if (packet_value.empty()) {
-    DLOG(ERROR) << "Failed to get MPID for " << public_username;
-    *public_key = asymm::PublicKey();
-    return kGetMpidFailure;
-  }
-
-  packet.Clear();
-  if (!packet.ParseFromString(packet_value)) {
-    DLOG(ERROR) << "Failed to parse MPID packet for " << public_username;
-    *public_key = asymm::PublicKey();
-    return kGetMpidFailure;
-  }
-  BOOST_ASSERT(!packet.data().empty());
-  BOOST_ASSERT(!packet.signature().empty());
-
-  // Check that public key packet matches MPID packet, and validate the
-  // signature
-  if (serialised_public_key != packet.data() ||
-      public_key_signature != packet.signature()) {
-    DLOG(ERROR) << "Public key doesn't match MPID for " << public_username;
-    *public_key = asymm::PublicKey();
-    return kInvalidPublicKey;
-  }
-
-  return kSuccess;
-}
-
-int GetValidatedMmidPublicKey(
-    const std::string &mmid_name,
-    const pcs::RemoteChunkStore::ValidationData &validation_data,
-    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
-    asymm::PublicKey *public_key) {
-  std::string packet_value(
-      remote_chunk_store->Get(mmid_name + std::string(1, pca::kAppendableByAll),
-                              validation_data));
-  if (packet_value.empty()) {
-    DLOG(ERROR) << "Failed to get public key for " << Base32Substr(mmid_name);
-    *public_key = asymm::PublicKey();
-    return kGetPublicKeyFailure;
-  }
-
-  pca::SignedData packet;
-  if (!packet.ParseFromString(packet_value)) {
-    DLOG(ERROR) << "Failed to parse public key packet for "
-                << Base32Substr(mmid_name);
-    *public_key = asymm::PublicKey();
-    return kGetPublicKeyFailure;
-  }
-  BOOST_ASSERT(!packet.data().empty());
-  BOOST_ASSERT(!packet.signature().empty());
-
-  // Validate self-signing
-  if (crypto::Hash<crypto::SHA512>(packet.data() + packet.signature()) !=
-      mmid_name) {
-    DLOG(ERROR) << "Failed to validate MMID " << Base32Substr(mmid_name);
-    *public_key = asymm::PublicKey();
-    return kGetPublicKeyFailure;
-  }
-
-  // Decode and validate public key
-  std::string serialised_public_key(packet.data());
-  std::string public_key_signature(packet.signature());
-  asymm::DecodePublicKey(serialised_public_key, public_key);
-  if (!asymm::ValidateKey(*public_key)) {
-    DLOG(ERROR) << "Failed to validate public key for "
-                << Base32Substr(mmid_name);
-    *public_key = asymm::PublicKey();
-    return kGetPublicKeyFailure;
-  }
-
-  return kSuccess;
-}
-
 #ifdef LOCAL_TARGETS_ONLY
-std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
-    const fs::path &buffered_chunk_store_path,
-    const fs::path &local_chunk_manager_path,
-    boost::asio::io_service &asio_service) {  // NOLINT (Dan)
+std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path &buffered_chunk_store_path,
+                                                       const fs::path &local_chunk_manager_path,
+                                                       boost::asio::io_service &asio_service) {  // NOLINT (Dan)
+  boost::system::error_code error_code;
+  fs::create_directories(local_chunk_manager_path / "lock", error_code);
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store(
       pcs::CreateLocalChunkStore(buffered_chunk_store_path,
                                  local_chunk_manager_path,
+                                 local_chunk_manager_path / "lock",
                                  asio_service));
   return remote_chunk_store;
 }
@@ -180,12 +70,12 @@ std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
   if (*client_container) {
     std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store(
         new pcs::RemoteChunkStore((*client_container)->chunk_store(),
-            (*client_container)->chunk_manager(),
-            (*client_container)->chunk_action_authority()));
+                                  (*client_container)->chunk_manager(),
+                                  (*client_container)->chunk_action_authority()));
     remote_chunk_store->SetMaxActiveOps(32);
     return remote_chunk_store;
   } else {
-    DLOG(ERROR) << "Failed to initialise client container.";
+    LOG(kError) << "Failed to initialise client container.";
     return nullptr;
   }
 }
@@ -235,11 +125,11 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
     std::string status_message;
     std::getline(response_stream, status_message);
     if (!response_stream || http_version.substr(0, 5) != "HTTP/") {
-      DLOG(ERROR) << "Error downloading bootstrap file: Invalid response";
+      LOG(kError) << "Error downloading bootstrap file: Invalid response";
       return kGeneralError;
     }
     if (status_code != 200) {
-      DLOG(ERROR) << "Error downloading bootstrap file: Response returned "
+      LOG(kError) << "Error downloading bootstrap file: Response returned "
                   << "with status code " << status_code;
       return kGeneralError;
     }
@@ -260,27 +150,23 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
 
     // Read until EOF, writing data to output as we go.
     boost::system::error_code error;
-    while (boost::asio::read(socket,
-                             response,
-                             boost::asio::transfer_at_least(1),
-                             error))
+    while (boost::asio::read(socket, response, boost::asio::transfer_at_least(1), error))
       bootstrap_stream << &response;
 
     if (error != boost::asio::error::eof) {
-      DLOG(ERROR) << "Error downloading bootstrap file: " << error.message();
+      LOG(kError) << "Error downloading bootstrap file: " << error.message();
       return error.value();
     }
   }
   catch(const std::exception &e) {
-    DLOG(ERROR) << "Exception: " << e.what();
+    LOG(kError) << "Exception: " << e.what();
     return kGeneralException;
   }
 
   fs::path bootstrap_file(download_dir / "bootstrap");
   WriteFile(bootstrap_file, bootstrap_stream.str());
-  if (!maidsafe::dht::ReadContactsFromFile(bootstrap_file,
-                                           bootstrap_contacts)) {
-    DLOG(ERROR) << "Failed to read " << bootstrap_file;
+  if (!maidsafe::dht::ReadContactsFromFile(bootstrap_file, bootstrap_contacts)) {
+    LOG(kError) << "Failed to read " << bootstrap_file;
     return kGeneralError;
   }
 
@@ -290,24 +176,24 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
 ClientContainerPtr SetUpClientContainer(const fs::path &base_dir) {
   ClientContainerPtr client_container(new pd::ClientContainer);
   if (!client_container->Init(base_dir / "buffered_chunk_store", 10, 4)) {
-    DLOG(ERROR) << "Failed to initialise client container.";
+    LOG(kError) << "Failed to initialise client container.";
     return nullptr;
   }
 
   std::vector<dht::Contact> bootstrap_contacts;
   int result = RetrieveBootstrapContacts(base_dir, &bootstrap_contacts);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to retrieve bootstrap contacts.  Result: " << result;
+    LOG(kError) << "Failed to retrieve bootstrap contacts.  Result: " << result;
     return nullptr;
   }
 
   result = client_container->Start(bootstrap_contacts);
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to start client container.  Result: " << result;
+    LOG(kError) << "Failed to start client container.  Result: " << result;
     return nullptr;
   }
 
-  DLOG(INFO) << "Started client_container.";
+  LOG(kInfo) << "Started client_container.";
   return client_container;
 }
 #endif

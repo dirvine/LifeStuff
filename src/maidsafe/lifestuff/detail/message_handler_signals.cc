@@ -23,13 +23,11 @@ namespace maidsafe {
 namespace lifestuff {
 
 /// Extra library connections
-bs2::connection MessageHandler::ConnectToChatSignal(
-    const ChatFunction &function) {
+bs2::connection MessageHandler::ConnectToChatSignal(const ChatFunction &function) {
   return chat_signal_.connect(function);
 }
 
-bs2::connection MessageHandler::ConnectToFileTransferSignal(
-    const FileTransferFunction &function) {
+bs2::connection MessageHandler::ConnectToFileTransferSignal(const FileTransferFunction &function) {
   return file_transfer_signal_.connect(function);
 }
 

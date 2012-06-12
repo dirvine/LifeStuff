@@ -90,10 +90,10 @@ fs::path CreateTestDirectory(fs::path const& parent, std::string *tail);
 int CreateTestFile(fs::path const& parent, int size_in_mb, std::string *file_name);
 int CreateSmallTestFile(fs::path const& parent, int size_in_kb, std::string *file_name);
 
-void SendContactInfoCallback(const bool &response,
-                             boost::mutex *mutex,
-                             boost::condition_variable *cond_var,
-                             int *result);
+void ChunkStoreOperationCallback(const bool &response,
+                                 boost::mutex *mutex,
+                                 boost::condition_variable *cond_var,
+                                 int *result);
 
 int WaitForResultsPtr(boost::mutex *mutex,
                       boost::condition_variable *cond_var,

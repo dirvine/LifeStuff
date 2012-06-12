@@ -87,7 +87,7 @@ TEST_F(ContactsTest, BEH_AddContacts) {
                                   msc.inbox_name,
                                   msc.profile_picture_data_map,
                                   msc.mpid_public_key,
-                                  msc.mmid_public_key,
+                                  msc.inbox_public_key,
                                   msc.status,
                                   msc.rank,
                                   msc.last_contact));
@@ -101,7 +101,7 @@ TEST_F(ContactsTest, BEH_AddContacts) {
                                 msc.inbox_name,
                                 msc.profile_picture_data_map,
                                 msc.mpid_public_key,
-                                msc.mmid_public_key,
+                                msc.inbox_public_key,
                                 msc.status,
                                 msc.rank,
                                 msc.last_contact));
@@ -148,18 +148,18 @@ TEST_F(ContactsTest, BEH_Update_Select_PubName_Contacts) {
   msc1.mpid_name = "new mpid name";
   msc1.inbox_name = "new mmid name";
   msc1.mpid_public_key = keys_.public_key;
-  msc1.mmid_public_key = keys_.public_key;
+  msc1.inbox_public_key = keys_.public_key;
   msc1.status = kConfirmed;
 
   // Public key
   ASSERT_EQ(0, sch_->UpdateMpidPublicKey(msc1.public_id, msc1.mpid_public_key));
   ASSERT_EQ(0, sch_->ContactInfo(msc1.public_id, &mic));
   ASSERT_TRUE(asymm::MatchingPublicKeys(msc1.mpid_public_key, mic.mpid_public_key));
-  ASSERT_FALSE(asymm::MatchingPublicKeys(msc1.mmid_public_key, mic.mmid_public_key));
-  ASSERT_EQ(0, sch_->UpdateMmidPublicKey(msc1.public_id, msc1.mmid_public_key));
+  ASSERT_FALSE(asymm::MatchingPublicKeys(msc1.inbox_public_key, mic.inbox_public_key));
+  ASSERT_EQ(0, sch_->UpdateMmidPublicKey(msc1.public_id, msc1.inbox_public_key));
   ASSERT_EQ(0, sch_->ContactInfo(msc1.public_id, &mic));
   ASSERT_TRUE(asymm::MatchingPublicKeys(msc1.mpid_public_key, mic.mpid_public_key));
-  ASSERT_TRUE(asymm::MatchingPublicKeys(msc1.mmid_public_key, mic.mmid_public_key));
+  ASSERT_TRUE(asymm::MatchingPublicKeys(msc1.inbox_public_key, mic.inbox_public_key));
 
   // Name
   ASSERT_EQ(0, sch_->UpdateMpidName(msc1.public_id, msc1.mpid_name));
@@ -180,12 +180,12 @@ TEST_F(ContactsTest, BEH_Update_Select_PubName_Contacts) {
   msc1.mpid_name = "latest mpid name";
   msc1.inbox_name = "latest mmid name";
   msc1.mpid_public_key = keys1_.public_key;
-  msc1.mmid_public_key = keys1_.public_key;
+  msc1.inbox_public_key = keys1_.public_key;
   msc1.status = kPendingResponse;
   ASSERT_EQ(0, sch_->UpdateContact(msc1));
   ASSERT_EQ(0, sch_->ContactInfo(msc1.public_id, &mic));
   ASSERT_TRUE(asymm::MatchingPublicKeys(msc1.mpid_public_key, mic.mpid_public_key));
-  ASSERT_TRUE(asymm::MatchingPublicKeys(msc1.mmid_public_key, mic.mmid_public_key));
+  ASSERT_TRUE(asymm::MatchingPublicKeys(msc1.inbox_public_key, mic.inbox_public_key));
   ASSERT_EQ(msc1.mpid_name, mic.mpid_name);
   ASSERT_EQ(msc1.inbox_name, mic.inbox_name);
   ASSERT_EQ(msc1.status, mic.status);

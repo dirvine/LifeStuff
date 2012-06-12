@@ -53,7 +53,8 @@ int LifeStuff::ConnectToSignals(
     const PrivateShareDeletionFunction &private_share_deletion_function,
     const PrivateMemberAccessChangeFunction &private_access_change_function,
     const OpenShareInvitationFunction &open_share_invitation_function,
-    const ShareRenamedFunction &share_renamed_function) {
+    const ShareRenamedFunction &share_renamed_function,
+    const ShareChangedFunction &share_changed_function) {
   return lifestuff_impl->ConnectToSignals(chat_slot,
                                           file_slot,
                                           new_contact_slot,
@@ -65,7 +66,8 @@ int LifeStuff::ConnectToSignals(
                                           private_share_deletion_function,
                                           private_access_change_function,
                                           open_share_invitation_function,
-                                          share_renamed_function);
+                                          share_renamed_function,
+                                          share_changed_function);
 }
 
 int LifeStuff::Finalise() {

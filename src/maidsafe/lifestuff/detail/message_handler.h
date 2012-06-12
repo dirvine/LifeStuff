@@ -49,6 +49,10 @@ namespace pcs = maidsafe::priv::chunk_store;
 
 namespace maidsafe {
 
+namespace passport {
+class Passport;
+}  // namespace passport
+
 namespace lifestuff {
 
 class Message;
@@ -59,7 +63,7 @@ class MessageHandler {
   typedef std::map<std::string, uint64_t> ReceivedMessagesMap;
 
   MessageHandler(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
-                 std::shared_ptr<Session> session,
+                 Session& session,
                  ba::io_service &asio_service);  // NOLINT (Fraser)
   ~MessageHandler();
 
@@ -82,24 +86,20 @@ class MessageHandler {
 
   // Extra library connections
   bs2::connection ConnectToChatSignal(const ChatFunction &function);
-  bs2::connection ConnectToFileTransferSignal(
-      const FileTransferFunction &function);
-  bs2::connection ConnectToOpenShareInvitationSignal(
-      const OpenShareInvitationFunction &function);
+  bs2::connection ConnectToFileTransferSignal(const FileTransferFunction &function);
+  bs2::connection ConnectToOpenShareInvitationSignal(const OpenShareInvitationFunction &function);
   bs2::connection ConnectToPrivateShareInvitationSignal(
       const PrivateShareInvitationFunction &function);
-  bs2::connection ConnectToPrivateShareDeletionSignal(
-      const PrivateShareDeletionFunction &function);
+  bs2::connection ConnectToPrivateShareDeletionSignal(const PrivateShareDeletionFunction &function);
   bs2::connection ConnectToPrivateMemberAccessChangeSignal(
       const PrivateMemberAccessChangeFunction &function);
-  bs2::connection ConnectToContactPresenceSignal(
-      const ContactPresenceFunction &function);
+  bs2::connection ConnectToContactPresenceSignal(const ContactPresenceFunction &function);
+
   bs2::connection ConnectToContactProfilePictureSignal(
       const ContactProfilePictureFunction &function);
 
   // Intra and extra library connections
-  bs2::connection ConnectToContactDeletionSignal(
-      const ContactDeletionFunction &function);
+  bs2::connection ConnectToContactDeletionSignal(const ContactDeletionFunction &function);
   bs2::connection ConnectToPrivateShareUserLeavingSignal(
       const PrivateShareUserLeavingSignal::slot_type &function);
 
@@ -126,17 +126,11 @@ class MessageHandler {
 
   bool ProtobufToInbox(const Message &message, InboxItem *inbox_item) const;
   bool InboxToProtobuf(const InboxItem &inbox_item, Message *message) const;
-  void GetNewMessages(const bptime::seconds &interval,
-                      const boost::system::error_code &error_code);
-  void ProcessRetrieved(const passport::SelectableIdData &data,
-                        const std::string &mmid_value);
+  void GetNewMessages(const bptime::seconds &interval, const boost::system::error_code &error_code);
+  void ProcessRetrieved(const std::string& public_id, const std::string& retrieved_mmid_packet);
   void RetrieveMessagesForAllIds();
   bool MessagePreviouslyReceived(const std::string &message);
   void ClearExpiredReceivedMessages();
-  void KeysAndProof(const std::string &public_id,
-                    passport::PacketType pt,
-                    bool confirmed,
-                    pcs::RemoteChunkStore::ValidationData *validation_data);
   void EnqueuePresenceMessages(ContactPresence presence);
 
   void ProcessContactPresence(const InboxItem &presence_message);
@@ -146,13 +140,14 @@ class MessageHandler {
   void ProcessPrivateShare(const InboxItem &private_share_message);
   void ProcessContactDeletion(const InboxItem &deletion_message);
 
-  void ContentsDontParseAsDataMap(const std::string& serialised_dm,
-                                  std::string* data_map);
+  void ContentsDontParseAsDataMap(const std::string& serialised_dm, std::string* data_map);
   void ProcessPresenceMessages();
 
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
-  std::shared_ptr<Session> session_;
+  Session& session_;
+  passport::Passport& passport_;
   ba::deadline_timer get_new_messages_timer_;
+  bool get_new_messages_timer_active_;
   ba::io_service &asio_service_;  // NOLINT (Dan)
   bool start_up_done_;
   ReceivedMessagesMap received_messages_;
