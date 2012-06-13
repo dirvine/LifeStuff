@@ -114,8 +114,8 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
   mount_thread_.reset(new boost::thread([this, drive_logo] {
     drive_in_user_space_->Mount(mount_dir_,
                                 drive_logo,
-                                session->max_space(),
-                                session->used_space());
+                                session_->max_space(),
+                                session_->used_space());
   }));
   drive_in_user_space_->WaitUntilMounted();
 #endif
@@ -138,7 +138,7 @@ void UserStorage::UnMountDrive() {
   boost::system::error_code error_code;
   fs::remove_all(mount_dir_, error_code);
 #endif
-  session_->set_max_space(max_space); // unnecessary
+  session_->set_max_space(max_space);  // unnecessary
   session_->set_used_space(used_space);
   mount_status_ = false;
 }
