@@ -28,7 +28,7 @@
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 
 #ifndef LOCAL_TARGETS_ONLY
-#  include "maidsafe/pd/client/client_container.h"
+#  include "maidsafe/pd/client/node.h"
 #endif
 
 #include "maidsafe/lifestuff/rcs_helper.h"
@@ -62,8 +62,8 @@ class UserStorageTest : public testing::TestWithParam<bool> {
       asio_service1_(5),
       asio_service2_(5),
 #ifndef LOCAL_TARGETS_ONLY
-      client_container1_(),
-      client_container2_(),
+      node1_(),
+      node2_(),
 #endif
       remote_chunk_store1_(),
       remote_chunk_store2_(),
@@ -174,8 +174,8 @@ class UserStorageTest : public testing::TestWithParam<bool> {
                                            *test_dir_ / "simulation",
                                            asio_service2_.service());
 #else
-    remote_chunk_store1_ = BuildChunkStore(*test_dir_, &client_container1_);
-    remote_chunk_store2_ = BuildChunkStore(*test_dir_, &client_container2_);
+    remote_chunk_store1_ = BuildChunkStore(*test_dir_, &node1_);
+    remote_chunk_store2_ = BuildChunkStore(*test_dir_, &node2_);
 #endif
     user_credentials1_.reset(new UserCredentials(remote_chunk_store1_, session1_));
     EXPECT_EQ(kSuccess, user_credentials1_->CreateUser(RandomAlphaNumericString(6),
@@ -281,7 +281,7 @@ class UserStorageTest : public testing::TestWithParam<bool> {
   bptime::seconds interval_;
   AsioService asio_service1_, asio_service2_;
 #ifndef LOCAL_TARGETS_ONLY
-  ClientContainerPtr client_container1_, client_container2_;
+  std::shared_ptr<pd::Node> node1_, node2_;
 #endif
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store1_, remote_chunk_store2_;
   Session session1_, session2_;
@@ -761,14 +761,12 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
   AsioService asio_service3(5);
   asio_service3.Start();
 #ifndef LOCAL_TARGETS_ONLY
-  ClientContainerPtr client_container3;
-  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store3(
-                          BuildChunkStore(*test_dir_, &client_container3));
+  std::shared_ptr<pd::Node> node3;
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store3(BuildChunkStore(*test_dir_, &node3));
 #else
-  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store3(
-      BuildChunkStore(*test_dir_ / RandomAlphaNumericString(8),
-                      *test_dir_ / "simulation",
-                      asio_service3.service()));
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store3(BuildChunkStore(
+      *test_dir_ / RandomAlphaNumericString(8), *test_dir_ / "simulation",
+      asio_service3.service()));
 #endif
   Session session3;
   std::shared_ptr<UserCredentials> user_credentials3(new UserCredentials(remote_chunk_store3,
