@@ -336,6 +336,22 @@ encrypt::DataMapPtr ParseSerialisedDataMap(
   return data_map;
 }
 
+bool CheckCorrectKeys(const std::vector<std::string> &content, asymm::Keys *keys) {
+  if (content.at(kKeysIdentity).empty())
+    return true;
+  asymm::DecodePrivateKey(content.at(kKeysPrivateKey), &(keys->private_key));
+  asymm::DecodePublicKey(content.at(kKeysPublicKey), &(keys->public_key));
+  if (!asymm::ValidateKey(keys->private_key) || !asymm::ValidateKey(keys->public_key)) {
+    LOG(kError) << "Keys in message are invalid.";
+    keys->private_key = asymm::PrivateKey();
+    keys->public_key = asymm::PublicKey();
+    return false;
+  }
+  keys->identity = content.at(kKeysIdentity);
+  keys->validation_token = content.at(kKeysValidationToken);
+  return true;
+}
+
 int CopyDir(const fs::path& source, const fs::path& dest) {
   try {
     // Check whether the function call is valid

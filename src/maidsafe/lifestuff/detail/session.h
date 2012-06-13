@@ -65,6 +65,8 @@ class Session {
   std::string session_name() const;
   std::string unique_user_id() const;
   std::string root_parent_id() const;
+  int64_t max_space() const;
+  int64_t used_space() const;
   std::string profile_picture_data_map(const std::string &public_id) const;
   std::string serialised_data_atlas() const;
 
@@ -76,6 +78,8 @@ class Session {
   void clear_session_name();
   void set_unique_user_id(const std::string &unique_user_id);
   void set_root_parent_id(const std::string &root_parent_id);
+  void set_max_space(const int64_t &max_space);
+  void set_used_space(const int64_t &used_space);
   bool set_profile_picture_data_map(const std::string &public_id,
                                     const std::string &profile_picture_data_map);
   void set_serialised_data_atlas(const std::string &serialised_data_atlas);

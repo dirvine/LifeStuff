@@ -69,7 +69,6 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
   session_ = session;
   asymm::Keys key_ring;
   key_ring.identity = session->passport().PacketName(passport::kPmid, true);
-
   key_ring.public_key = session->passport().SignaturePacketValue(passport::kPmid, true);
   key_ring.private_key = session->passport().PacketPrivateKey(passport::kPmid, true);
   key_ring.validation_token = session->passport().PacketSignature(passport::kPmid, true);
@@ -100,10 +99,12 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
     LOG(kError) << "No available drive letters.";
     return;
   }
-
   char drive_name[3] = {'A' + static_cast<char>(count), ':', '\0'};
   mount_dir_ = drive_name;
-  result = drive_in_user_space_->Mount(mount_dir_, drive_logo);
+  result = drive_in_user_space_->Mount(mount_dir_,
+                                       drive_logo,
+                                       session->max_space(),
+                                       session->used_space());
   if (result != kSuccess) {
     LOG(kError) << "Failed to Mount Drive: " << result;
     return;
@@ -111,7 +112,10 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
 #else
   mount_dir_ = mount_dir_path;
   mount_thread_.reset(new boost::thread([this, drive_logo] {
-    drive_in_user_space_->Mount(mount_dir_, drive_logo, false);
+    drive_in_user_space_->Mount(mount_dir_,
+                                drive_logo,
+                                session_->max_space(),
+                                session_->used_space());
   }));
   drive_in_user_space_->WaitUntilMounted();
 #endif
@@ -123,15 +127,19 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
 void UserStorage::UnMountDrive() {
   if (!mount_status_)
     return;
+  int64_t max_space(0), used_space(0);
 #ifdef WIN32
-  std::static_pointer_cast<MaidDriveInUserSpace>(drive_in_user_space_)->CleanUp();
+  std::static_pointer_cast<MaidDriveInUserSpace>(drive_in_user_space_)->Unmount(max_space,
+                                                                                used_space);
 #else
-  drive_in_user_space_->Unmount();
+  drive_in_user_space_->Unmount(max_space, used_space);
   drive_in_user_space_->WaitUntilUnMounted();
   mount_thread_->join();
   boost::system::error_code error_code;
   fs::remove_all(mount_dir_, error_code);
 #endif
+  session_->set_max_space(max_space);  // unnecessary
+  session_->set_used_space(used_space);
   mount_status_ = false;
 }
 

@@ -428,22 +428,6 @@ void MessageHandler::ProcessContactProfilePicture(
   contact_profile_picture_signal_(receiver, sender, profile_picture_message.timestamp);
 }
 
-bool CheckCorrectKeys(const std::vector<std::string> &content, asymm::Keys *keys) {
-  if (content.at(kKeysIdentity).empty())
-    return true;
-  asymm::DecodePrivateKey(content.at(kKeysPrivateKey), &(keys->private_key));
-  asymm::DecodePublicKey(content.at(kKeysPublicKey), &(keys->public_key));
-  if (!asymm::ValidateKey(keys->private_key) || !asymm::ValidateKey(keys->public_key)) {
-    LOG(kError) << "Keys in message are invalid.";
-    keys->private_key = asymm::PrivateKey();
-    keys->public_key = asymm::PublicKey();
-    return false;
-  }
-  keys->identity = content.at(kKeysIdentity);
-  keys->validation_token = content.at(kKeysValidationToken);
-  return true;
-}
-
 void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
   if (inbox_item.content.empty() || inbox_item.content[kShareId].empty()) {
     LOG(kError) << "No share ID.";
@@ -472,8 +456,7 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
                                    inbox_item.timestamp);
   } else if (inbox_item.item_type == kPrivateShareKeysUpdate) {
     asymm::Keys key_ring;
-    if (!CheckCorrectKeys(inbox_item.content,
-                          &key_ring)) {
+    if (!CheckCorrectKeys(inbox_item.content, &key_ring)) {
       LOG(kError) << "Incorrect elements in message.";
       return;
     }
@@ -506,8 +489,7 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
                                         inbox_item.timestamp);
   } else if (inbox_item.item_type == kPrivateShareMembershipUpgrade) {
     asymm::Keys key_ring;
-    if (!CheckCorrectKeys(inbox_item.content,
-                          &key_ring)) {
+    if (!CheckCorrectKeys(inbox_item.content, &key_ring)) {
       LOG(kError) << "Incorrect elements in message.";
       return;
     }

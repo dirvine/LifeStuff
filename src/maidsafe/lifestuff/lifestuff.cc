@@ -28,23 +28,6 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-//const size_t kMaxChatMessageSize(1 * 1024 * 1024);
-//const uint32_t kFileRecontructionLimit(20 * 1024 * 1024);
-//const uint8_t kThreads(10);
-//const uint8_t kSecondsInterval(5);
-//const size_t kMinWordSize(5);
-//const size_t kMaxWordSize(30);
-//const size_t kPinSize(4);
-//const std::string kLiteralOnline("kOnline");
-//const std::string kLiteralOffline("kOffline");
-//const std::string kBlankProfilePicture("BlankPicture");
-//const std::string kAppHomeDirectory(".lifestuff");
-//const std::string kMyStuff("My Stuff");
-//const std::string kDownloadStuff("Accepted Files");
-
-//const std::string kSharedStuff("Shared Stuff");
-//const std::string kHiddenFileExtension(".ms_hidden");
-
 }  // namespace lifestuff
 
 }  // namespace maidsafe
