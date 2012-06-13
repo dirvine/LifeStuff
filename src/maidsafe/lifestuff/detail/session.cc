@@ -174,9 +174,9 @@ int Session::ParseDataAtlas(const std::string &serialised_data_atlas) {
   set_unique_user_id(data_atlas.drive_data().unique_user_id());
   set_root_parent_id(data_atlas.drive_data().root_parent_id());
 
-  int result(0);
-  result = ParseKeyChain(data_atlas.passport_data().serialised_keyring(),
-                         data_atlas.passport_data().serialised_selectables());
+  int result(passport_.Parse(data_atlas.passport_data().serialised_keyring()));
+//  result = ParseKeyChain(data_atlas.passport_data().serialised_keyring(),
+//                         data_atlas.passport_data().serialised_selectables());
   if (result != kSuccess) {
     LOG(kError) << "Failed ParseKeyChain: " << result;
     return -9003;
@@ -216,8 +216,8 @@ int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
   data_atlas.set_timestamp(boost::lexical_cast<std::string>(
       GetDurationSinceEpoch().total_microseconds()));
 
-  std::string serialised_keyring, serialised_selectables;
-  SerialiseKeyChain(&serialised_keyring, &serialised_selectables);
+  std::string serialised_keyring(passport_.Serialise()), serialised_selectables;
+//  SerialiseKeyChain(&serialised_keyring, &serialised_selectables);
   if (serialised_keyring.empty()) {
     LOG(kError) << "Serialising keyring failed.";
     return -1;
@@ -225,7 +225,7 @@ int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
 
   PassportData *passport_data(data_atlas.mutable_passport_data());
   passport_data->set_serialised_keyring(serialised_keyring);
-  passport_data->set_serialised_selectables(serialised_selectables);
+  passport_data->set_serialised_selectables(serialised_keyring);
 
   std::vector<Contact> contacts;
   for (auto it(contact_handler_map().begin()); it != contact_handler_map().end(); ++it) {

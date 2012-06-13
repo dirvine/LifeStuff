@@ -154,9 +154,7 @@ rename_outdated_built_exes()
 # Set compiler and linker flags                                                                   #
 ###################################################################################################
 include(maidsafe_standard_flags)
-ms_disable_warnings(${PATH_TO_DETAIL}/data_atlas.pb.cc
-                    ${PATH_TO_DETAIL}/data_types.pb.cc
-                    ${PATH_TO_DETAIL}/lifestuff_messages.pb.cc)
+ms_disable_warnings(${PATH_TO_DETAIL}/data_atlas.pb.cc)
 
 set_target_properties(maidsafe_lifestuff_local
                       TESTlifestuff_general
