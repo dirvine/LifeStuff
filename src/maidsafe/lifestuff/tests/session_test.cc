@@ -147,12 +147,25 @@ class SessionTest : public testing::Test {
     if (lhs.passport_data().serialised_keyring() != rhs.passport_data().serialised_keyring() ||
         lhs.passport_data().serialised_selectables() !=
             rhs.passport_data().serialised_selectables()) {
+      LOG(kError) << "AAAAAAAAAAAAAAAAA 2a"
+                  << std::boolalpha << (lhs.passport_data().serialised_keyring() == rhs.passport_data().serialised_keyring())
+                  << " - "
+                  << std::boolalpha << (lhs.passport_data().serialised_selectables() == rhs.passport_data().serialised_selectables())
+                  << " - "
+                  << std::boolalpha << lhs.passport_data().serialised_keyring().empty()
+                  << " - "
+                  << std::boolalpha << rhs.passport_data().serialised_keyring().empty()
+                  << " - "
+                  << std::boolalpha << lhs.passport_data().serialised_selectables().empty()
+                  << " - "
+                  << std::boolalpha << rhs.passport_data().serialised_selectables().empty();
       return false;
     }
 
     // Public Id data
-    if (lhs.public_ids_size() != rhs.public_ids_size())
+    if (lhs.public_ids_size() != rhs.public_ids_size()) {
       return false;
+    }
     for (int n(0); n < lhs.public_ids_size(); ++n) {
       if (!EqualPublicIdentities(lhs.public_ids(n), rhs.public_ids(n)))
         return false;
@@ -291,8 +304,7 @@ TEST_F(SessionTest, BEH_SerialisationAndParsing) {
 
   // Compare surrogate. Different timestamp only.
   std::string surrogate_serialised_data_atlas;
-  ASSERT_EQ(kSuccess,
-            session_.SerialiseDataAtlas(&surrogate_serialised_data_atlas));
+  ASSERT_EQ(kSuccess, session_.SerialiseDataAtlas(&surrogate_serialised_data_atlas));
   ASSERT_FALSE(serialised_data_atlas.empty());
   DataAtlas surrogate_atlas;
   ASSERT_TRUE(surrogate_atlas.ParseFromString(surrogate_serialised_data_atlas));
@@ -314,8 +326,7 @@ TEST_F(SessionTest, BEH_SerialisationAndParsing) {
   Session local_session;
   local_session.ParseDataAtlas(surrogate_serialised_data_atlas);
   std::string other_session_serialised;
-  ASSERT_EQ(kSuccess,
-            local_session.SerialiseDataAtlas(&other_session_serialised));
+  ASSERT_EQ(kSuccess, local_session.SerialiseDataAtlas(&other_session_serialised));
   ASSERT_FALSE(other_session_serialised.empty());
   DataAtlas other_session_atlas;
   ASSERT_TRUE(other_session_atlas.ParseFromString(other_session_serialised));
