@@ -191,8 +191,6 @@ int Session::ParseDataAtlas(const std::string &serialised_data_atlas) {
   set_used_space(data_atlas.drive_data().used_space());
 
   int result(passport_.Parse(data_atlas.passport_data().serialised_keyring()));
-//  result = ParseKeyChain(data_atlas.passport_data().serialised_keyring(),
-//                         data_atlas.passport_data().serialised_selectables());
   if (result != kSuccess) {
     LOG(kError) << "Failed ParseKeyChain: " << result;
     return -9003;
@@ -243,7 +241,6 @@ int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
 
   PassportData *passport_data(data_atlas.mutable_passport_data());
   passport_data->set_serialised_keyring(serialised_keyring);
-  passport_data->set_serialised_selectables(serialised_keyring);
 
   std::vector<Contact> contacts;
   for (auto it(contact_handler_map().begin()); it != contact_handler_map().end(); ++it) {

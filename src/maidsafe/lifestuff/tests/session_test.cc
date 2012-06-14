@@ -144,21 +144,7 @@ class SessionTest : public testing::Test {
     }
 
     // Passport data
-    if (lhs.passport_data().serialised_keyring() != rhs.passport_data().serialised_keyring() ||
-        lhs.passport_data().serialised_selectables() !=
-            rhs.passport_data().serialised_selectables()) {
-      LOG(kError) << "AAAAAAAAAAAAAAAAA 2a"
-                  << std::boolalpha << (lhs.passport_data().serialised_keyring() == rhs.passport_data().serialised_keyring())
-                  << " - "
-                  << std::boolalpha << (lhs.passport_data().serialised_selectables() == rhs.passport_data().serialised_selectables())
-                  << " - "
-                  << std::boolalpha << lhs.passport_data().serialised_keyring().empty()
-                  << " - "
-                  << std::boolalpha << rhs.passport_data().serialised_keyring().empty()
-                  << " - "
-                  << std::boolalpha << lhs.passport_data().serialised_selectables().empty()
-                  << " - "
-                  << std::boolalpha << rhs.passport_data().serialised_selectables().empty();
+    if (lhs.passport_data().serialised_keyring() != rhs.passport_data().serialised_keyring()) {
       return false;
     }
 
