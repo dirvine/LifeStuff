@@ -159,7 +159,14 @@ class UserStorage {
                       fs::path *relative_path,
                       asymm::Keys *share_keyring,
                       std::string *directory_id,
-                      StringIntMap *share_users);
+                      StringIntMap *share_users) const;
+  int GetShareDetails(const fs::path &relative_path,
+                      fs::path *share_name,
+                      asymm::Keys *share_keyring,
+                      std::string *share_id,
+                      std::string *directory_id,
+                      std::map<std::string, int> *share_users,
+                      std::string *owner_id) const;
   void MemberAccessChange(const std::string &share_id,
                           const std::string &directory_id,
                           const std::string &new_share_id,

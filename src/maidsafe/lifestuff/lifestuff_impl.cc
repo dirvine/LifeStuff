@@ -1444,6 +1444,9 @@ int LifeStuffImpl::AcceptOpenShareInvitation(const std::string &my_public_id,
   StringIntMap contacts;
   contacts.insert(std::make_pair(my_public_id, 1));
   result = user_storage_->AddOpenShareUser(share_dir, contacts);
+
+  RespondInvitation(message.receiver_public_id(), message.sender_public_id(),
+                    share_id, *share_name);
   if (result != kSuccess)
     LOG(kError) << "Failed to add user to open share, result " << result;
   return result;
@@ -1459,6 +1462,19 @@ int LifeStuffImpl::RejectOpenShareInvitation(const std::string &my_public_id,
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
   temp_name += kHiddenFileExtension;
   fs::path hidden_file(mount_path() / kSharedStuff / temp_name);
+  std::string serialised_share_data;
+  result = user_storage_->ReadHiddenFile(hidden_file, &serialised_share_data);
+  if (result != kSuccess || serialised_share_data.empty()) {
+    LOG(kError) << "No such identifier found: " << result;
+    if (result == drive::kNoMsHidden)
+      return kNoShareTarget;
+    return result == kSuccess ? kGeneralError : result;
+  }
+  Message message;
+  if (!message.ParseFromString(serialised_share_data))
+    LOG(kError) << "Failed to parse data in hidden file for private share.";
+
+  RespondInvitation(message.receiver_public_id(), message.sender_public_id(), share_id);
   return user_storage_->DeleteHiddenFile(hidden_file);
 }
 

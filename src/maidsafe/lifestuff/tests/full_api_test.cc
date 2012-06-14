@@ -2323,9 +2323,9 @@ TEST(IndependentPrivateShareTest, FUNC_RenamePrivateShare) {
     EXPECT_EQ(kSuccess, results[public_id2]);
 
     EXPECT_EQ(kSuccess, test_elements1.GetPrivateShareMembers(public_id1, share_name1, &results));
-    EXPECT_EQ(1U, results.size());
+    EXPECT_EQ(0, results.size());
     EXPECT_TRUE(results.end() == results.find(public_id1));
-    EXPECT_FALSE(results.end() == results.find(public_id2));
+    EXPECT_TRUE(results.end() == results.find(public_id2));
 
     fs::path share_path(test_elements1.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
@@ -2359,6 +2359,13 @@ TEST(IndependentPrivateShareTest, FUNC_RenamePrivateShare) {
   LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+
+    StringIntMap results;
+    EXPECT_EQ(kSuccess, test_elements1.GetPrivateShareMembers(public_id1, share_name1, &results));
+    EXPECT_EQ(1U, results.size());
+    EXPECT_TRUE(results.end() == results.find(public_id1));
+    EXPECT_FALSE(results.end() == results.find(public_id2));
+
     fs::path old_share_path(test_elements1.mount_path() / kSharedStuff / share_name1);
     fs::path new_share_path(test_elements1.mount_path() / kSharedStuff / share_name2);
     fs::rename(old_share_path, new_share_path, error_code);
@@ -2571,9 +2578,9 @@ TEST(IndependentPrivateShareTest, FUNC_MembershipDowngradePrivateShare) {
     EXPECT_EQ(kSuccess, results[public_id2]);
 
     EXPECT_EQ(kSuccess, test_elements1.GetPrivateShareMembers(public_id1, share_name1, &results));
-    EXPECT_EQ(1U, results.size());
+    EXPECT_EQ(0, results.size());
     EXPECT_TRUE(results.end() == results.find(public_id1));
-    EXPECT_FALSE(results.end() == results.find(public_id2));
+    EXPECT_TRUE(results.end() == results.find(public_id2));
 
     fs::path share_path(test_elements1.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
@@ -2608,7 +2615,14 @@ TEST(IndependentPrivateShareTest, FUNC_MembershipDowngradePrivateShare) {
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
 
-    StringIntMap amendments, results;
+    StringIntMap results;
+    EXPECT_EQ(kSuccess, test_elements1.GetPrivateShareMembers(public_id1, share_name1, &results));
+    EXPECT_EQ(1U, results.size());
+    EXPECT_TRUE(results.end() == results.find(public_id1));
+    EXPECT_FALSE(results.end() == results.find(public_id2));
+
+    StringIntMap amendments;
+    results.clear();
     amendments.insert(std::make_pair(public_id2, kShareReadOnly));
     EXPECT_EQ(kSuccess, test_elements1.EditPrivateShareMembers(public_id1,
                                                                amendments,
@@ -2814,7 +2828,7 @@ TEST(IndependentPrivateShareTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
     EXPECT_EQ(kSuccess, results[public_id2]);
     StringIntMap shares_members;
     test_elements1.GetPrivateShareMembers(public_id1, share_name1, &shares_members);
-    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(0, shares_members.size());
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
@@ -2840,6 +2854,10 @@ TEST(IndependentPrivateShareTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
   LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+
+    StringIntMap results;
+    EXPECT_EQ(kSuccess, test_elements1.GetPrivateShareMembers(public_id1, share_name1, &results));
+    EXPECT_EQ(1U, results.size());
 
     EXPECT_EQ(kSuccess, test_elements1.RemoveContact(public_id1, public_id2, removal_message));
     EXPECT_TRUE(test_elements1.GetContacts(public_id1).empty());
@@ -2923,7 +2941,7 @@ TEST(IndependentPrivateShareTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
     EXPECT_EQ(kSuccess, results[public_id2]);
     StringIntMap shares_members;
     test_elements1.GetPrivateShareMembers(public_id1, share_name1, &shares_members);
-    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(0, shares_members.size());
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
@@ -3104,7 +3122,7 @@ TEST(IndependentPrivateShareTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact
     EXPECT_EQ(kSuccess, results[public_id2]);
     StringIntMap shares_members;
     test_elements1.GetPrivateShareMembers(public_id1, share_name1, &shares_members);
-    EXPECT_EQ(2U, shares_members.size());
+    EXPECT_EQ(0, shares_members.size());
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
@@ -3233,10 +3251,8 @@ TEST(IndependentShareChangeTest, FUNC_AddModifyRemoveOneFile) {
     EXPECT_EQ(0, error_code.value());
     EXPECT_EQ(kSuccess, results[public_id2]);
     StringIntMap shares_members;
-    test_elements1.GetPrivateShareMembers(public_id1,
-                                          share_name1,
-                                          &shares_members);
-    EXPECT_EQ(1U, shares_members.size());
+    test_elements1.GetPrivateShareMembers(public_id1, share_name1, &shares_members);
+    EXPECT_EQ(0, shares_members.size());
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
@@ -3270,6 +3286,11 @@ TEST(IndependentShareChangeTest, FUNC_AddModifyRemoveOneFile) {
   LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+
+    StringIntMap shares_members;
+    test_elements1.GetPrivateShareMembers(public_id1, share_name1, &shares_members);
+    EXPECT_EQ(1U, shares_members.size());
+
     uint8_t attempts(0);
     uint8_t expected_num_of_logs(1);
     while ((testing_variables1.share_changes.size() < expected_num_of_logs) &&
@@ -3406,7 +3427,7 @@ TEST(IndependentShareChangeTest, FUNC_AddRemoveMultipleNodes) {
     test_elements1.GetPrivateShareMembers(public_id1,
                                           share_name,
                                           &shares_members);
-    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(0, shares_members.size());
 
     fs::path sub_directory(directory1 / sub_directory_name);
     fs::path further_sub_director(sub_directory / further_sub_directory_name);
@@ -3497,6 +3518,11 @@ TEST(IndependentShareChangeTest, FUNC_AddRemoveMultipleNodes) {
   LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+
+    StringIntMap shares_members;
+    test_elements1.GetPrivateShareMembers(public_id1, share_name, &shares_members);
+    EXPECT_EQ(1U, shares_members.size());
+
     uint8_t attempts(0);
     uint8_t expected_num_of_logs(2);
     while ((testing_variables1.share_changes.size() < expected_num_of_logs) &&
@@ -3637,7 +3663,7 @@ TEST(IndependentShareChangeTest, FUNC_RenameOneNode) {
     test_elements1.GetPrivateShareMembers(public_id1,
                                           share_name,
                                           &shares_members);
-    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(0, shares_members.size());
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
@@ -3671,6 +3697,11 @@ TEST(IndependentShareChangeTest, FUNC_RenameOneNode) {
   LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+
+    StringIntMap shares_members;
+    test_elements1.GetPrivateShareMembers(public_id1, share_name, &shares_members);
+    EXPECT_EQ(1U, shares_members.size());
+
     uint8_t attempts(0);
     uint8_t expected_num_of_logs(1);
     while ((testing_variables1.share_changes.size() < expected_num_of_logs) &&
@@ -3790,7 +3821,7 @@ TEST(IndependentShareChangeTest, FUNC_MoveNodeToShareAndMoveOut) {
     test_elements1.GetPrivateShareMembers(public_id1,
                                           share_name,
                                           &shares_members);
-    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(0, shares_members.size());
 
     fs::path directory(test_elements1.mount_path() / sub_directory_name);
     EXPECT_TRUE(fs::create_directory(directory, error_code));
@@ -3844,6 +3875,11 @@ TEST(IndependentShareChangeTest, FUNC_MoveNodeToShareAndMoveOut) {
   LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+
+    StringIntMap shares_members;
+    test_elements1.GetPrivateShareMembers(public_id1, share_name, &shares_members);
+    EXPECT_EQ(1U, shares_members.size());
+
     uint8_t attempts(0);
     uint8_t expected_num_of_logs(1);
     while ((testing_variables1.share_changes.size() < expected_num_of_logs) &&
@@ -3926,7 +3962,7 @@ TEST(IndependentShareChangeTest, FUNC_MoveNodeInnerShare) {
     test_elements1.GetPrivateShareMembers(public_id1,
                                           share_name,
                                           &shares_members);
-    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(0, shares_members.size());
 
     fs::path sub_directory(directory1 / sub_directory_name);
     EXPECT_TRUE(fs::create_directory(sub_directory, error_code));
@@ -3983,6 +4019,11 @@ TEST(IndependentShareChangeTest, FUNC_MoveNodeInnerShare) {
   LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+
+    StringIntMap shares_members;
+    test_elements1.GetPrivateShareMembers(public_id1, share_name, &shares_members);
+    EXPECT_EQ(1U, shares_members.size());
+
     uint8_t attempts(0);
     uint8_t expected_num_of_logs(1);
     while ((testing_variables1.share_changes.size() < expected_num_of_logs) &&
@@ -4228,7 +4269,7 @@ TEST(IndependentShareChangeTest, FUNC_MoveNodeToTrashThenMoveBack) {
     test_elements1.GetPrivateShareMembers(public_id1,
                                           share_name,
                                           &shares_members);
-    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(0, shares_members.size());
 
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
@@ -4267,6 +4308,11 @@ TEST(IndependentShareChangeTest, FUNC_MoveNodeToTrashThenMoveBack) {
   LOG(kError) << "\n\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+
+    StringIntMap shares_members;
+    test_elements1.GetPrivateShareMembers(public_id1, share_name, &shares_members);
+    EXPECT_EQ(1U, shares_members.size());
+
     uint8_t attempts(0);
     uint8_t expected_num_of_logs(2);
     while ((testing_variables1.share_changes.size() < expected_num_of_logs) &&
