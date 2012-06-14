@@ -1043,6 +1043,18 @@ int LifeStuffImpl::GetPrivateSharesIncludingMember(const std::string &my_public_
   return kSuccess;
 }
 
+void LifeStuffImpl::RespondInvitation(const std::string &send_from,
+                                      const std::string &send_to,
+                                      const std::string &share_id,
+                                      const std::string &share_name) {
+  InboxItem message(kRespondToShareInvitation);
+  message.sender_public_id = send_from;
+  message.receiver_public_id = send_to;
+  message.content.push_back(share_id);
+  message.content.push_back(share_name);
+  message_handler_->Send(message);
+}
+
 int LifeStuffImpl::AcceptPrivateShareInvitation(const std::string &my_public_id,
                                                 const std::string &contact_public_id,
                                                 const std::string &share_id,
@@ -1083,17 +1095,20 @@ int LifeStuffImpl::AcceptPrivateShareInvitation(const std::string &my_public_id,
     asymm::DecodePrivateKey(message.content(kKeysPrivateKey), &(share_keyring.private_key));
     asymm::DecodePublicKey(message.content(kKeysPublicKey), &(share_keyring.public_key));
   }
-
   // remove the temp share invitation file no matter insertion succeed or not
   user_storage_->DeleteHiddenFile(hidden_file);
 
   fs::path share_dir(mount_path() / kSharedStuff / *share_name);
-  return user_storage_->InsertShare(share_dir,
-                                    share_id,
-                                    contact_public_id,
-                                    share_name,
-                                    directory_id,
-                                    share_keyring);
+
+  result = user_storage_->InsertShare(share_dir,
+                                      share_id,
+                                      contact_public_id,
+                                      share_name,
+                                      directory_id,
+                                      share_keyring);
+  RespondInvitation(message.receiver_public_id(), message.sender_public_id(),
+                    share_id, *share_name);
+  return result;
 }
 
 int LifeStuffImpl::RejectPrivateShareInvitation(const std::string &my_public_id,
@@ -1106,6 +1121,20 @@ int LifeStuffImpl::RejectPrivateShareInvitation(const std::string &my_public_id,
   std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)) +
                         kHiddenFileExtension);
   fs::path hidden_file(mount_path() / kSharedStuff / temp_name);
+  std::string serialised_share_data;
+  result = user_storage_->ReadHiddenFile(hidden_file, &serialised_share_data);
+  if (result != kSuccess || serialised_share_data.empty()) {
+    LOG(kError) << "No such identifier found: " << result;
+    if (result == drive::kNoMsHidden)
+      return kNoShareTarget;
+    return result == kSuccess ? kGeneralError : result;
+  }
+  Message message;
+  if (!message.ParseFromString(serialised_share_data))
+    LOG(kError) << "Failed to parse data in hidden file for private share.";
+
+  RespondInvitation(message.receiver_public_id(), message.sender_public_id(), share_id);
+
   return user_storage_->DeleteHiddenFile(hidden_file);
 }
 
@@ -1491,6 +1520,9 @@ fs::path LifeStuffImpl::mount_path() const {
 void LifeStuffImpl::ConnectInternalElements() {
   message_handler_->ConnectToParseAndSaveDataMapSignal(
       boost::bind(&UserStorage::ParseAndSaveDataMap, user_storage_.get(), _1, _2, _3));
+
+  message_handler_->ConnectToShareInvitationResponsSignal(
+      boost::bind(&UserStorage::InvitationResponse, user_storage_.get(), _1, _3, _4));
 
   message_handler_->ConnectToSavePrivateShareDataSignal(
       boost::bind(&UserStorage::SavePrivateShareData, user_storage_.get(), _1, _2));

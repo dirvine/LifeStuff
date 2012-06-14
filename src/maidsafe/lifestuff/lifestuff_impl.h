@@ -227,6 +227,11 @@ class LifeStuffImpl {
   fs::path mount_path() const;
 
  private:
+  // The response shall come with a local share_name; if empty provided, it is a rejection
+  void RespondInvitation(const std::string &send_from,
+                         const std::string &send_to,
+                         const std::string &share_id,
+                         const std::string &share_name = "");
   int thread_count_;
   LifeStuffState state_;
   fs::path buffered_path_;

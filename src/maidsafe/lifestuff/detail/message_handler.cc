@@ -71,6 +71,7 @@ MessageHandler::MessageHandler(
       private_share_deletion_signal_(),
       private_member_access_change_signal_(),
       open_share_invitation_signal_(),
+      share_invitation_response_signal_(),
       contact_deletion_signal_(),
       private_share_user_leaving_signal_(),
       parse_and_save_data_map_signal_(),
@@ -330,6 +331,8 @@ void MessageHandler::ProcessRetrieved(const std::string& public_id,
                                       break;
         case kOpenShareInvitation: ProcessOpenShareInvitation(inbox_item);
                                    break;
+        case kRespondToShareInvitation: ProcessShareInvitationResponse(inbox_item);
+                                        break;
       }
     }
   }
@@ -426,6 +429,18 @@ void MessageHandler::ProcessContactProfilePicture(
   }
 
   contact_profile_picture_signal_(receiver, sender, profile_picture_message.timestamp);
+}
+
+void MessageHandler::ProcessShareInvitationResponse(const InboxItem &inbox_item) {
+  if (inbox_item.content.empty() || inbox_item.content[kShareId].empty()) {
+    LOG(kError) << "No share ID.";
+    return;
+  }
+  share_invitation_response_signal_(inbox_item.sender_public_id,
+                                    inbox_item.receiver_public_id,
+                                    inbox_item.content[kShareName],
+                                    inbox_item.content[kShareId],
+                                    inbox_item.timestamp);
 }
 
 void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
