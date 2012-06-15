@@ -102,6 +102,8 @@ class MessageHandler {
   bs2::connection ConnectToContactDeletionSignal(const ContactDeletionFunction &function);
   bs2::connection ConnectToPrivateShareUserLeavingSignal(
       const PrivateShareUserLeavingSignal::slot_type &function);
+  bs2::connection ConnectToShareInvitationResponsSignal(
+      const ShareInvitationResponseFunction &function);
 
   // Intra library connections
   bs2::connection ConnectToPrivateShareDetailsSignal(
@@ -137,6 +139,7 @@ class MessageHandler {
   void ProcessContactProfilePicture(const InboxItem &profile_message);
   void ProcessOpenShareInvitation(const InboxItem &open_share_invitation);
   void ProcessFileTransfer(const InboxItem &file_transfer_message);
+  void ProcessShareInvitationResponse(const InboxItem &inbox_item);
   void ProcessPrivateShare(const InboxItem &private_share_message);
   void ProcessContactDeletion(const InboxItem &deletion_message);
 
@@ -161,6 +164,7 @@ class MessageHandler {
   PrivateShareDeletionSignal private_share_deletion_signal_;
   PrivateMemberAccessChangeSignal private_member_access_change_signal_;
   OpenShareInvitationSignal open_share_invitation_signal_;
+  ShareInvitationResponseSignal share_invitation_response_signal_;
 
   /// Intra and extra library signals
   ContactDeletionSignal contact_deletion_signal_;

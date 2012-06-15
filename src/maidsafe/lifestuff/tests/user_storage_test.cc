@@ -388,6 +388,12 @@ TEST_P(UserStorageTest, FUNC_LeaveShare) {
 
   EXPECT_TRUE(fs::exists(directory1, error_code))
               << directory1 << " : " << error_code.message();
+  std::string share_id;
+  fs::path share_name;
+  EXPECT_EQ(kSuccess,
+            user_storage2_->GetShareDetails(fs::path("/").make_preferred() / kSharedStuff / tail,
+                                            &share_name, nullptr, &share_id,
+                                            nullptr, nullptr, nullptr));
 
   EXPECT_EQ(kSuccess, user_storage2_->RemoveShare(directory1, pub_name2_));
 
@@ -400,6 +406,9 @@ TEST_P(UserStorageTest, FUNC_LeaveShare) {
                       user_storage1_, _2, _3, &mutex_, &cond_var_)));
 
   MountDrive(user_storage1_, &session1_, false);
+  EXPECT_EQ(kSuccess, user_storage1_->InvitationResponse(pub_name2_,
+                                                         share_name.filename().string(),
+                                                         share_id));
   users.clear();
   EXPECT_EQ(kSuccess, user_storage1_->GetAllShareUsers(directory0, &users));
   EXPECT_EQ(2, users.size());

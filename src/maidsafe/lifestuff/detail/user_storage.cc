@@ -436,13 +436,9 @@ int UserStorage::StopShare(const std::string &sender_public_id,
   std::string share_id;
   maidsafe::drive::DirectoryId directory_id;
   boost::system::error_code error_code;
-  int result(drive_in_user_space_->GetShareDetails(relative_path,
-                                                   &share_name,
-                                                   &key_ring,
-                                                   &share_id,
-                                                   nullptr,
-                                                   &contacts,
-                                                   nullptr));
+  // here all contacts need to be informed, even those un-confirmed users
+  int result(drive_in_user_space_->GetShareDetails(relative_path, &share_name, &key_ring,
+                                                   &share_id, nullptr, &contacts, nullptr));
   if (result != kSuccess) {
     LOG(kError) << "Failed to get share details for " << absolute_path;
     return result;
@@ -511,13 +507,8 @@ int UserStorage::RemoveShare(const fs::path& absolute_path, const std::string &s
   asymm::Keys key_ring;
   std::string share_id;
   std::string owner_id;
-  int result(drive_in_user_space_->GetShareDetails(relative_path,
-                                                   nullptr,
-                                                   nullptr,
-                                                   &share_id,
-                                                   nullptr,
-                                                   nullptr,
-                                                   &owner_id));
+  int result(GetShareDetails(relative_path, nullptr, nullptr, &share_id,
+                             nullptr, nullptr, &owner_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed to get share details for " << absolute_path;
     return result;
@@ -579,13 +570,8 @@ int UserStorage::AddShareUsers(const std::string &sender_public_id,
   std::string directory_id;
   asymm::Keys key_ring;
 
-  result = drive_in_user_space_->GetShareDetails(relative_path,
-                                                 nullptr,
-                                                 &key_ring,
-                                                 &share_id,
-                                                 &directory_id,
-                                                 nullptr,
-                                                 nullptr);
+  result = GetShareDetails(relative_path, nullptr, &key_ring, &share_id,
+                           &directory_id, nullptr, nullptr);
   if (result != kSuccess) {
     LOG(kError) << "Failed to get share details: " << absolute_path.string();
     return result;
@@ -627,13 +613,8 @@ int UserStorage::OpenShareInvitation(const std::string &sender_public_id,
            share_name;
   std::string share_id, directory_id;
   asymm::Keys key_ring;
-  result = drive_in_user_space_->GetShareDetails(relative_path,
-                                                 &share_name,
-                                                 &key_ring,
-                                                 &share_id,
-                                                 &directory_id,
-                                                 nullptr,
-                                                 nullptr);
+  result = GetShareDetails(relative_path, &share_name, &key_ring, &share_id,
+                           &directory_id, nullptr,nullptr);
   if (result != kSuccess) {
     LOG(kError) << "Failed to get share details: " << absolute_path.string();
     return result;
@@ -656,19 +637,26 @@ int UserStorage::OpenShareInvitation(const std::string &sender_public_id,
 
 int UserStorage::GetAllShareUsers(const fs::path &absolute_path,
                                   std::map<std::string, int> *all_share_users) const {
-  int result(drive_in_user_space_->GetShareDetails(
+  int result(GetShareDetails(
                  drive_in_user_space_->RelativePath(absolute_path),
-                 nullptr,
-                 nullptr,
-                 nullptr,
-                 nullptr,
-                 all_share_users,
-                 nullptr));
+                 nullptr, nullptr, nullptr, nullptr, all_share_users, nullptr));
   if (result != kSuccess) {
     LOG(kError) << "Failed to get share details for " << absolute_path;
     return result;
   }
   return kSuccess;
+}
+
+int UserStorage::InvitationResponse(const std::string &user_id,
+                                    const std::string &share_name,
+                                    const std::string &share_id) {
+  std::vector<std::string> user_ids;
+  user_ids.push_back(user_id);
+
+  if (share_name.empty())
+    return drive_in_user_space_->RemoveShareUsers(share_id, user_ids);
+  else
+    return drive_in_user_space_->ConfirmShareUsers(share_id, user_ids);
 }
 
 int UserStorage::UserLeavingShare(const std::string &share_id, const std::string &user_id) {
@@ -684,14 +672,8 @@ int UserStorage::RemoveShareUsers(const std::string &sender_public_id,
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
   std::string share_id;
   asymm::Keys old_key_ring;
-  StringIntMap contacts;
-  drive_in_user_space_->GetShareDetails(relative_path,
-                                        nullptr,
-                                        &old_key_ring,
-                                        &share_id,
-                                        nullptr,
-                                        &contacts,
-                                        nullptr);
+  drive_in_user_space_->GetShareDetails(relative_path, nullptr, &old_key_ring, &share_id,
+                                        nullptr, nullptr, nullptr);
   int result(drive_in_user_space_->RemoveShareUsers(share_id, user_ids));
   if (result != kSuccess) {
     LOG(kError) << "Failed to remove share users for " << absolute_path;
@@ -701,17 +683,13 @@ int UserStorage::RemoveShareUsers(const std::string &sender_public_id,
   for (auto it = user_ids.begin(); it != user_ids.end(); ++it) {
     removed_contacts.insert(std::make_pair(*it, kShareReadOnly));
   }
-  for (auto it = removed_contacts.begin(); it != removed_contacts.end(); ++it)
-    contacts.erase(contacts.find(it->first));
-
   InformContactsOperation(kPrivateShareDeletion, sender_public_id, removed_contacts, share_id);
 
-  result = MovingShare(sender_public_id,
-                       share_id,
-                       relative_path,
-                       old_key_ring,
-                       private_share,
-                       contacts);
+  StringIntMap contacts;
+  // here all contacts shall be informed, even those un-confirmed users
+  drive_in_user_space_->GetShareDetails(share_id, nullptr, nullptr, nullptr, &contacts);
+  result = MovingShare(sender_public_id, share_id, relative_path,
+                       old_key_ring, private_share, contacts);
   if (result != kSuccess) {
     LOG(kError) << "Failed to move share.";
   }
@@ -812,13 +790,7 @@ int UserStorage::RemoveOpenShareUsers(const fs::path &absolute_path,
                                       const std::vector<std::string> &user_ids) {
   fs::path relative_path(drive_in_user_space_->RelativePath(absolute_path));
   std::string share_id;
-  drive_in_user_space_->GetShareDetails(relative_path,
-                                        nullptr,
-                                        nullptr,
-                                        &share_id,
-                                        nullptr,
-                                        nullptr,
-                                        nullptr);
+  GetShareDetails(relative_path, nullptr, nullptr, &share_id, nullptr, nullptr, nullptr);
   int result(drive_in_user_space_->RemoveShareUsers(share_id, user_ids));
   if (result != kSuccess) {
     LOG(kError) << "Failed to remove share users for " << absolute_path;
@@ -866,13 +838,8 @@ int UserStorage::SetShareUsersRights(const std::string &sender_public_id,
   contacts.insert(std::make_pair(user_id, admin_rights));
   asymm::Keys key_ring;
   std::string share_id;
-  result = drive_in_user_space_->GetShareDetails(relative_path,
-                                                 nullptr,
-                                                 &key_ring,
-                                                 &share_id,
-                                                 nullptr,
-                                                 &share_contacts,
-                                                 nullptr);
+  result = GetShareDetails(relative_path, nullptr, &key_ring, &share_id, nullptr,
+                           &share_contacts, nullptr);
   if (result != kSuccess) {
     LOG(kError) << "Failed getting admin right for contact " << user_id << ", with result : "
                 << result;
@@ -909,13 +876,8 @@ int UserStorage::DowngradeShareUsersRights(const std::string &sender_public_id,
   asymm::Keys old_key_ring;
   std::string share_id, new_share_id;
   StringIntMap share_contacts;
-  drive_in_user_space_->GetShareDetails(relative_path,
-                                        nullptr,
-                                        &old_key_ring,
-                                        &share_id,
-                                        nullptr,
-                                        &share_contacts,
-                                        nullptr);
+  GetShareDetails(relative_path, nullptr, &old_key_ring, &share_id, nullptr,
+                  &share_contacts, nullptr);
   for (auto it = contacts.begin(); it != contacts.end(); ++it)
     share_contacts.erase(share_contacts.find(it->first));
 
@@ -938,13 +900,7 @@ int UserStorage::DowngradeShareUsersRights(const std::string &sender_public_id,
   }
   std::string directory_id;
   asymm::Keys key_ring;
-  drive_in_user_space_->GetShareDetails(relative_path,
-                                        nullptr,
-                                        nullptr,
-                                        nullptr,
-                                        &directory_id,
-                                        nullptr,
-                                        nullptr);
+  GetShareDetails(relative_path, nullptr, nullptr, nullptr, &directory_id, nullptr, nullptr);
   result = InformContactsOperation(kPrivateShareMembershipDowngrade,
                                    sender_public_id,
                                    *results,
@@ -964,14 +920,47 @@ int UserStorage::GetShareDetails(const std::string &share_id,
                                  fs::path *relative_path,
                                  asymm::Keys *share_keyring,
                                  std::string *directory_id,
-                                 StringIntMap *share_users) {
-  return drive_in_user_space_->GetShareDetails(share_id,
-                                               relative_path,
-                                               share_keyring,
-                                               directory_id,
-                                               share_users);
+                                 StringIntMap *share_users) const {
+  int result(drive_in_user_space_->GetShareDetails(share_id,
+                                                   relative_path,
+                                                   share_keyring,
+                                                   directory_id,
+                                                   share_users));
+  if (share_users) {
+    std::vector<std::string> unconfirmed_users;
+    for (auto it = share_users->begin(); it != share_users->end(); ++it)
+      if ((*it).second < kShareRemover)
+        unconfirmed_users.push_back((*it).first);
+    for (auto it = unconfirmed_users.begin(); it != unconfirmed_users.end(); ++it)
+      share_users->erase(*it);
+  }
+  return result;
 }
 
+int UserStorage::GetShareDetails(const fs::path &relative_path,
+                                 fs::path *share_name,
+                                 asymm::Keys *share_keyring,
+                                 std::string *share_id,
+                                 std::string *directory_id,
+                                 std::map<std::string, int> *share_users,
+                                 std::string *owner_id) const {
+  int result(drive_in_user_space_->GetShareDetails(relative_path,
+                                                   share_name,
+                                                   share_keyring,
+                                                   share_id,
+                                                   directory_id,
+                                                   share_users,
+                                                   owner_id));
+  if (share_users) {
+    std::vector<std::string> unconfirmed_users;
+    for (auto it = share_users->begin(); it != share_users->end(); ++it)
+      if ((*it).second < kShareRemover)
+        unconfirmed_users.push_back((*it).first);
+    for (auto it = unconfirmed_users.begin(); it != unconfirmed_users.end(); ++it)
+      share_users->erase(*it);
+  }
+  return result;
+}
 void UserStorage::MemberAccessChange(const std::string &share_id,
                                      const std::string &directory_id,
                                      const std::string &new_share_id,
@@ -1013,13 +1002,7 @@ int UserStorage::GetPrivateSharesContactBeingOwner(const std::string &/*my_publi
   for (auto it = all_shares.begin(); it != all_shares.end(); ++it) {
     std::string owner_id;
     fs::path share_dir(fs::path("/") / kSharedStuff / (*it).first);
-    drive_in_user_space_->GetShareDetails(share_dir,
-                                          nullptr,
-                                          nullptr,
-                                          nullptr,
-                                          nullptr,
-                                          nullptr,
-                                          &owner_id);
+    GetShareDetails(share_dir, nullptr, nullptr, nullptr, nullptr, nullptr, &owner_id);
     if (owner_id == contact_public_id)
       shares_names->push_back((*it).first);
   }

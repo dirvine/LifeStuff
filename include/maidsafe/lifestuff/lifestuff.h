@@ -132,6 +132,7 @@ typedef std::function<void(const std::string&,    // Own public ID
 
 // Own public ID, Contact public ID, Share Name, Share ID, Timestamp
 typedef FiveStringsFunction PrivateShareDeletionFunction;
+typedef FiveStringsFunction ShareInvitationResponseFunction;
 
 typedef PrivateShareInvitationFunction PrivateMemberAccessChangeFunction;
 
