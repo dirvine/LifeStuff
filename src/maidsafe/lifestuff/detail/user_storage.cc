@@ -614,7 +614,7 @@ int UserStorage::OpenShareInvitation(const std::string &sender_public_id,
   std::string share_id, directory_id;
   asymm::Keys key_ring;
   result = GetShareDetails(relative_path, &share_name, &key_ring, &share_id,
-                           &directory_id, nullptr,nullptr);
+                           &directory_id, nullptr, nullptr);
   if (result != kSuccess) {
     LOG(kError) << "Failed to get share details: " << absolute_path.string();
     return result;
