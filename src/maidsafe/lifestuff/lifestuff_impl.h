@@ -36,7 +36,7 @@
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 #ifndef LOCAL_TARGETS_ONLY
-#include "maidsafe/pd/client/client_container.h"
+#include "maidsafe/pd/client/node.h"
 #endif
 
 #include "maidsafe/lifestuff/lifestuff.h"
@@ -237,7 +237,7 @@ class LifeStuffImpl {
   AsioService asio_service_;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
 #ifndef LOCAL_TARGETS_ONLY
-  std::shared_ptr<pd::ClientContainer> client_container_;
+  std::shared_ptr<pd::Node> node_;
 #endif
   Session session_;
   std::shared_ptr<UserCredentials> user_credentials_;

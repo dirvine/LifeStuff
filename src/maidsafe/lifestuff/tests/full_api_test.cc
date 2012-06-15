@@ -22,10 +22,6 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
-#ifndef LOCAL_TARGETS_ONLY
-#include "maidsafe/pd/client/client_container.h"
-#endif
-
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/lifestuff_api.h"
 #include "maidsafe/lifestuff/detail/contacts.h"

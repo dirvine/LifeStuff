@@ -31,10 +31,6 @@
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
-#ifndef LOCAL_TARGETS_ONLY
-#  include "maidsafe/dht/contact.h"
-#endif
-
 #include "maidsafe/encrypt/data_map.h"
 
 #include "maidsafe/lifestuff/rcs_helper.h"
@@ -43,6 +39,7 @@
 #include "maidsafe/lifestuff/detail/public_id.h"
 #include "maidsafe/lifestuff/detail/user_credentials.h"
 #include "maidsafe/lifestuff/detail/user_storage.h"
+
 namespace args = std::placeholders;
 
 namespace maidsafe {
@@ -60,7 +57,7 @@ LifeStuffImpl::LifeStuffImpl()
       asio_service_(thread_count_),
       remote_chunk_store_(),
 #ifndef LOCAL_TARGETS_ONLY
-      client_container_(),
+      node_(),
 #endif
       session_(),
       user_credentials_(),
@@ -102,7 +99,7 @@ int LifeStuffImpl::Initialise(const boost::filesystem::path &base_directory) {
                                         asio_service_.service());
   simulation_path_ = network_simulation_path;
 #else
-  remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path, &client_container_);
+  remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path, &node_);
 #endif
   if (!remote_chunk_store_) {
     LOG(kError) << "Could not initialise chunk store.";
@@ -240,7 +237,7 @@ int LifeStuffImpl::Finalise() {
   asio_service_.Stop();
   remote_chunk_store_.reset();
 #ifndef LOCAL_TARGETS_ONLY
-  client_container_.reset();
+  node_.reset();
 #endif
   message_handler_.reset();
   public_id_.reset();
@@ -1496,7 +1493,7 @@ void LifeStuffImpl::ConnectInternalElements() {
       boost::bind(&UserStorage::SavePrivateShareData, user_storage_.get(), _1, _2));
 
   message_handler_->ConnectToDeletePrivateShareDataSignal(
-      std::bind(&UserStorage::DeletePrivateShareData, user_storage_.get(), args::_1));
+      boost::bind(&UserStorage::DeletePrivateShareData, user_storage_.get(), _1));
 
   message_handler_->ConnectToPrivateShareUserLeavingSignal(
       boost::bind(&UserStorage::UserLeavingShare, user_storage_.get(), _2, _3));
@@ -1507,50 +1504,41 @@ void LifeStuffImpl::ConnectInternalElements() {
   message_handler_->ConnectToPrivateShareDeletionSignal(
       boost::bind(&UserStorage::ShareDeleted, user_storage_.get(), _3));
 
-  message_handler_->ConnectToPrivateShareUpdateSignal(std::bind(&UserStorage::UpdateShare,
-                                                                user_storage_.get(), args::_1,
-                                                                args::_2, args::_3, args::_4,
-                                                                args::_5));
+  message_handler_->ConnectToPrivateShareUpdateSignal(
+      boost::bind(&UserStorage::UpdateShare, user_storage_.get(), _1, _2, _3, _4, _5));
 
   message_handler_->ConnectToPrivateMemberAccessLevelSignal(
-        std::bind(&UserStorage::MemberAccessChange, user_storage_.get(),
-                  args::_4, args::_5, args::_6, args::_7, args::_8));
+      boost::bind(&UserStorage::MemberAccessChange, user_storage_.get(), _4, _5, _6, _7, _8));
 
   public_id_->ConnectToContactConfirmedSignal(
       boost::bind(&MessageHandler::InformConfirmedContactOnline, message_handler_.get(), _1, _2));
 
-  message_handler_->ConnectToContactDeletionSignal(boost::bind(&PublicId::RemoveContactHandle,
-                                                               public_id_.get(), _1, _2));
+  message_handler_->ConnectToContactDeletionSignal(
+      boost::bind(&PublicId::RemoveContactHandle, public_id_.get(), _1, _2));
 
-  message_handler_->ConnectToPrivateShareDetailsSignal(boost::bind(&UserStorage::GetShareDetails,
-                                                                   user_storage_.get(),
-                                                                   _1, _2, nullptr, nullptr,
-                                                                   nullptr));
+  message_handler_->ConnectToPrivateShareDetailsSignal(
+      boost::bind(&UserStorage::GetShareDetails, user_storage_.get(), _1, _2, nullptr, nullptr,
+      nullptr));
 }
 
 int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
   int result(kSuccess);
 #ifndef LOCAL_TARGETS_ONLY
-  std::vector<dht::Contact> bootstrap_contacts;
-  result = client_container_->Stop(&bootstrap_contacts);
+  result = node_->Stop();
   if (result != kSuccess) {
     LOG(kError) << "Failed to stop client container: " << result;
     return result;
   }
-  client_container_->set_key_pair(session_.GetPmidKeys());
-  if (!client_container_->Init(buffered_path_ / "buffered_chunk_store", 10, 4)) {
-    LOG(kError) << "Failed to initialise client container.";
-    return kGeneralError;
-  }
-  result = client_container_->Start(bootstrap_contacts);
+  node_->set_keys(session_.GetPmidKeys());
+  result = node_->Start(buffered_path_ / "buffered_chunk_store");
   if (result != kSuccess) {
     LOG(kError) << "Failed to start client container: " << result;
     return result;
   }
 
-  remote_chunk_store_.reset(new pcs::RemoteChunkStore(client_container_->chunk_store(),
-                                                      client_container_->chunk_manager(),
-                                                      client_container_->chunk_action_authority()));
+  remote_chunk_store_.reset(new pcs::RemoteChunkStore(node_->chunk_store(),
+                                                      node_->chunk_manager(),
+                                                      node_->chunk_action_authority()));
   user_credentials_.reset(new UserCredentials(remote_chunk_store_, session_));
 #endif
 

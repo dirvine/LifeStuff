@@ -29,16 +29,13 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-namespace priv {
-namespace chunk_store {
-class RemoteChunkStore;
-}
-}
+namespace priv { namespace chunk_store { class RemoteChunkStore; } }
+
 namespace pcs = maidsafe::priv::chunk_store;
 
 #ifndef LOCAL_TARGETS_ONLY
 namespace dht { class Contact; }
-namespace pd { class ClientContainer; }
+namespace pd { class Node; }
 #endif
 
 namespace lifestuff {
@@ -48,15 +45,12 @@ std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path &buffered_
                                                        const fs::path &local_chunk_manager_path,
                                                        boost::asio::io_service &asio_service);
 #else
-std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
-    const fs::path &base_dir,
-    std::shared_ptr<pd::ClientContainer> *client_container);
+std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path &base_dir,
+                                                       std::shared_ptr<pd::Node> *node);
 
-int RetrieveBootstrapContacts(const fs::path &download_dir,
-                              std::vector<dht::Contact> *bootstrap_contacts);
+int RetrieveBootstrapContacts(const fs::path &download_dir);
 
-typedef std::shared_ptr<pd::ClientContainer> ClientContainerPtr;
-ClientContainerPtr SetUpClientContainer(const fs::path &base_dir);
+std::shared_ptr<pd::Node> SetupNode(const fs::path &base_dir);
 #endif
 
 }  // namespace lifestuff
