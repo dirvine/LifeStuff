@@ -1152,7 +1152,7 @@ int UserStorage::InformContactsOperation(InboxItemType item_type,
     }
   }
 
-  return aggregate;
+  return aggregate == contacts.size() ? aggregate : 0;
 }
 
 int UserStorage::InformContacts(InboxItemType item_type,
@@ -1208,7 +1208,7 @@ int UserStorage::InformContacts(InboxItemType item_type,
         contacts_results->insert(std::make_pair(it->first, result));
     }
   }
-  return aggregate;
+  return aggregate == contacts.size() ? aggregate : 0;
 }
 
 std::string UserStorage::ConstructFile(const std::string &serialised_data_map) {
