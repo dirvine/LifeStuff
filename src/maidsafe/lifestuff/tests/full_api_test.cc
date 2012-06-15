@@ -294,7 +294,8 @@ void ShareChangedSlot(const std::string& share_name,
                       const int& op_type,
                       boost::mutex *mutex,
                       ShareChangeLogBook *share_changes) {
-  boost::mutex::scoped_lock lock(*mutex);
+  if (mutex)
+    boost::mutex::scoped_lock lock(*mutex);
   if (share_changes)
     share_changes->push_back(ShareChangeLog(share_name, target_path,
                                             num_of_entries, old_path,
