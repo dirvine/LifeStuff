@@ -614,7 +614,7 @@ int UserStorage::OpenShareInvitation(const std::string &sender_public_id,
   std::string share_id, directory_id;
   asymm::Keys key_ring;
   result = GetShareDetails(relative_path, &share_name, &key_ring, &share_id,
-                           &directory_id, nullptr,nullptr);
+                           &directory_id, nullptr, nullptr);
   if (result != kSuccess) {
     LOG(kError) << "Failed to get share details: " << absolute_path.string();
     return result;
@@ -1152,7 +1152,7 @@ int UserStorage::InformContactsOperation(InboxItemType item_type,
     }
   }
 
-  return aggregate;
+  return aggregate == contacts.size() ? aggregate : 0;
 }
 
 int UserStorage::InformContacts(InboxItemType item_type,
@@ -1208,7 +1208,7 @@ int UserStorage::InformContacts(InboxItemType item_type,
         contacts_results->insert(std::make_pair(it->first, result));
     }
   }
-  return aggregate;
+  return aggregate == contacts.size() ? aggregate : 0;
 }
 
 std::string UserStorage::ConstructFile(const std::string &serialised_data_map) {
