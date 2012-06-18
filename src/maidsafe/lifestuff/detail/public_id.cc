@@ -561,8 +561,8 @@ int PublicId::InformContactInfo(const std::string &public_id,
   // Get our MMID name, and MPID private key
   std::string inbox_name(passport_.PacketName(passport::kMmid, true, public_id));
   std::shared_ptr<asymm::Keys> mpid(passport_.SignaturePacketDetails(passport::kMpid,
-                                                                               true,
-                                                                               public_id));
+                                                                     true,
+                                                                     public_id));
   if (!mpid || inbox_name.empty()) {
     LOG(kError) << "Failed to get own public ID data: " << public_id;
     return kGetPublicIdError;
