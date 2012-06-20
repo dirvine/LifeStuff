@@ -355,7 +355,7 @@ void PublicId::GetNewContacts(const bptime::seconds &interval,
 void PublicId::GetContactsHandle() {
   std::vector<std::string> selectables(session_.PublicIdentities());
   for (auto it(selectables.begin()); it != selectables.end(); ++it) {
-    LOG(kError) << "PublicId::GetNewContacts: " << (*it);
+//    LOG(kError) << "PublicId::GetNewContacts: " << (*it);
     std::shared_ptr<asymm::Keys> mpid(passport_.SignaturePacketDetails(passport::kMpid, true, *it));
     std::string mpid_packet(remote_chunk_store_->Get(MaidsafeContactIdName(*it), mpid));
     if (mpid_packet.empty()) {

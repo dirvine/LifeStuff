@@ -306,11 +306,11 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
                                  TestingVariables &testing_variables1,  // NOLINT (Dan)
                                  TestingVariables &testing_variables2,  // NOLINT (Dan)
                                  const fs::path &test_dir,
-                                 const std::string &username1,
+                                 const std::string &keyword1,
                                  const std::string &pin1,
                                  const std::string &password1,
                                  const std::string &public_id1,
-                                 const std::string &username2,
+                                 const std::string &keyword2,
                                  const std::string &pin2,
                                  const std::string &password2,
                                  const std::string &public_id2,
@@ -442,7 +442,7 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
     return result;
 
   {
-    result += test_elements1.CreateUser(username1, pin1, password1);
+    result += test_elements1.CreateUser(keyword1, pin1, password1);
     result += test_elements1.CreatePublicId(public_id1);
     result += test_elements1.LogOut();
     if (result != kSuccess) {
@@ -451,7 +451,7 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
     }
   }
   {
-    result += test_elements2.CreateUser(username2, pin2, password2);
+    result += test_elements2.CreateUser(keyword2, pin2, password2);
     result += test_elements2.CreatePublicId(public_id2);
     result += test_elements2.AddContact(public_id2, public_id1);
     result += test_elements2.LogOut();
@@ -461,7 +461,7 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
     }
   }
   {
-    result += test_elements1.LogIn(username1, pin1, password1);
+    result += test_elements1.LogIn(keyword1, pin1, password1);
 
     while (!testing_variables1.newly_contacted)
       Sleep(bptime::milliseconds(100));
@@ -472,7 +472,7 @@ int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
       return result;
   }
   {
-    result += test_elements2.LogIn(username2, pin2, password2);
+    result += test_elements2.LogIn(keyword2, pin2, password2);
 //     LOG(kError) << "result: " << result;
     while (!testing_variables2.confirmed)
       Sleep(bptime::milliseconds(100));
@@ -490,7 +490,7 @@ class OneUserApiTest : public testing::Test {
  public:
   OneUserApiTest()
     :  test_dir_(maidsafe::test::CreateTestPath()),
-      username_(RandomAlphaNumericString(6)),
+      keyword_(RandomAlphaNumericString(6)),
       pin_(CreatePin()),
       password_(RandomAlphaNumericString(6)),
       error_code_(),
@@ -499,7 +499,7 @@ class OneUserApiTest : public testing::Test {
 
  protected:
   maidsafe::test::TestPath test_dir_;
-  std::string username_;
+  std::string keyword_;
   std::string pin_;
   std::string password_;
   boost::system::error_code error_code_;
@@ -525,7 +525,7 @@ class OneUserApiTest : public testing::Test {
                                               OpenShareInvitationFunction(),
                                               ShareRenamedFunction(),
                                               ShareChangedFunction()));
-    EXPECT_EQ(kSuccess, test_elements_.CreateUser(username_, pin_, password_));
+    EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_));
   }
 
   virtual void TearDown() {
@@ -543,7 +543,7 @@ TEST_F(OneUserApiTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
 
   // Log out - Log in
   EXPECT_EQ(kSuccess, test_elements_.LogOut());
-  EXPECT_EQ(kSuccess, test_elements_.LogIn(username_, pin_, password_));
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
 
   // Check directory exists
   EXPECT_TRUE(fs::exists(test, error_code_));
@@ -559,7 +559,7 @@ TEST_F(OneUserApiTest, FUNC_LargeFileForMemoryCheck) {
 
   // Log out - Log in
   EXPECT_EQ(kSuccess, test_elements_.LogOut());
-  EXPECT_EQ(kSuccess, test_elements_.LogIn(username_, pin_, password_));
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
 
   // Check directory exists
   EXPECT_TRUE(fs::exists(test_elements_.mount_path() / tail, error_code_));
@@ -571,44 +571,273 @@ TEST_F(OneUserApiTest, FUNC_ChangeCredentials) {
   EXPECT_EQ(kSuccess, test_elements_.CheckPassword(password_));
   EXPECT_EQ(kSuccess, test_elements_.LogOut());
 
-  EXPECT_EQ(kSuccess, test_elements_.LogIn(username_, pin_, password_));
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
   EXPECT_EQ(kSuccess, test_elements_.CheckPassword(password_));
 
   // Change credentials
-  EXPECT_EQ(kSuccess, test_elements_.ChangeKeyword(username_ + username_, password_));
+  EXPECT_EQ(kSuccess, test_elements_.ChangeKeyword(keyword_ + keyword_, password_));
   EXPECT_EQ(kSuccess, test_elements_.ChangePin(new_pin, password_));
   EXPECT_EQ(kSuccess, test_elements_.ChangePassword(password_ + password_, password_));
 
   EXPECT_EQ(kSuccess, test_elements_.LogOut());
 
-  EXPECT_EQ(kSuccess, test_elements_.LogIn(username_ + username_, new_pin, password_ + password_));
-  EXPECT_EQ(kSuccess, test_elements_.ChangeKeyword(username_, password_ + password_));
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_ + keyword_, new_pin, password_ + password_));
+  EXPECT_EQ(kSuccess, test_elements_.ChangeKeyword(keyword_, password_ + password_));
   EXPECT_EQ(kSuccess, test_elements_.LogOut());
 
-  EXPECT_EQ(kSuccess, test_elements_.LogIn(username_, new_pin, password_ + password_));
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, new_pin, password_ + password_));
   EXPECT_EQ(kSuccess, test_elements_.ChangePin(pin_, password_ + password_));
   EXPECT_EQ(kSuccess, test_elements_.LogOut());
 
-  EXPECT_EQ(kSuccess, test_elements_.LogIn(username_, pin_, password_ + password_));
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_ + password_));
   EXPECT_EQ(kSuccess, test_elements_.ChangePassword(password_, password_ + password_));
   EXPECT_EQ(kSuccess, test_elements_.LogOut());
 
-  EXPECT_EQ(kSuccess, test_elements_.LogIn(username_, pin_, password_));
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
   EXPECT_EQ(kSuccess, test_elements_.CheckPassword(password_));
-  EXPECT_EQ(kSuccess, test_elements_.ChangeKeyword(username_, password_));
+  EXPECT_EQ(kSuccess, test_elements_.ChangeKeyword(keyword_, password_));
   EXPECT_EQ(kSuccess, test_elements_.ChangePin(pin_, password_));
   EXPECT_EQ(kSuccess, test_elements_.ChangePassword(password_, password_));
+}
+
+void RunChangePin(LifeStuff& test_elements,
+                  int& result,
+                  const std::string& new_pin,
+                  const std::string& password) {
+  result = test_elements.ChangePin(new_pin, password);
+}
+
+void RunChangeKeyword(LifeStuff& test_elements,
+                      int& result,
+                      const std::string& new_keyword,
+                      const std::string& password) {
+  result = test_elements.ChangeKeyword(new_keyword, password);
+}
+
+void RunChangePassword(LifeStuff& test_elements,
+                       int& result,
+                       const std::string& new_password,
+                       const std::string& password) {
+  result = test_elements.ChangePassword(new_password, password);
+}
+
+TEST_F(OneUserApiTest, FUNC_ChangePinAndPassword) {
+  std::string new_pin(CreatePin());
+  std::string new_password(RandomAlphaNumericString(5));
+  int result_pin(0), result_password(0);
+
+  boost::thread thread_pin(std::bind(&RunChangePin, test_elements_, result_pin, new_pin,
+                                     password_));
+  boost::thread thread_password(std::bind(&RunChangePassword, test_elements_, result_password,
+                                          new_password, password_));
+
+  thread_pin.join();
+  thread_password.join();
+
+  EXPECT_TRUE(result_pin == kSuccess && result_password == kSuccess);
+
+  EXPECT_EQ(kSuccess, test_elements_.LogOut());
+
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_,
+                                           result_pin == kSuccess ? new_pin : pin_,
+                                           result_password == kSuccess ? new_password : password_));
+}
+
+TEST_F(OneUserApiTest, FUNC_ChangeKeywordAndPassword) {
+  std::string new_keyword(RandomAlphaNumericString(5));
+  std::string new_password(RandomAlphaNumericString(5));
+  int result_keyword(0), result_password(0);
+  boost::thread thread_keyword(std::bind(&RunChangeKeyword, test_elements_, result_keyword,
+                                         new_keyword, password_));
+  boost::thread thread_password(std::bind(&RunChangePassword, test_elements_, result_password,
+                                          new_password, password_));
+
+  thread_keyword.join();
+  thread_password.join();
+
+  EXPECT_TRUE(result_keyword == kSuccess && result_password == kSuccess);
+
+  EXPECT_EQ(kSuccess, test_elements_.LogOut());
+
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(result_keyword == kSuccess ? new_keyword : keyword_,
+                                           pin_,
+                                           result_password == kSuccess ? new_password : password_));
+}
+
+TEST_F(OneUserApiTest, FUNC_ChangePinAndKeyword) {
+  std::string new_pin(CreatePin());
+  std::string new_keyword(RandomAlphaNumericString(5));
+  int result_pin(0), result_keyword(0);
+
+  boost::thread thread_pin(std::bind(&RunChangePin, test_elements_, result_pin, new_pin,
+                                     password_));
+  boost::thread thread_keyword(std::bind(&RunChangeKeyword, test_elements_, result_keyword,
+                                         new_keyword, password_));
+
+  thread_pin.join();
+  thread_keyword.join();
+
+  EXPECT_TRUE(result_pin == kSuccess && result_keyword == kSuccess);
+
+  EXPECT_EQ(kSuccess, test_elements_.LogOut());
+
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(result_keyword == kSuccess ? new_keyword : keyword_,
+                                           result_pin == kSuccess ? new_pin : pin_, password_));
+}
+
+TEST_F(OneUserApiTest, FUNC_TryInvalidCredentials) {
+  std::string incorrect_password(RandomAlphaNumericString(RandomUint32() % 26 + 5));
+  while (incorrect_password == password_)
+    incorrect_password = RandomAlphaNumericString(RandomUint32() % 26 + 5);
+
+  // Create Public ID
+  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(""));
+  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(RandomAlphaNumericString(31)));
+  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(" "));
+  EXPECT_NE(kSuccess,
+            test_elements_.CreatePublicId(" " + RandomAlphaNumericString(RandomUint32() % 26 + 4)));
+  EXPECT_NE(kSuccess,
+            test_elements_.CreatePublicId(RandomAlphaNumericString(RandomUint32() % 26 + 4) + " "));
+  EXPECT_NE(kSuccess,
+            test_elements_.CreatePublicId(RandomAlphaNumericString(RandomUint32() % 13 + 2) + "  " +
+                                          RandomAlphaNumericString(RandomUint32() % 14 + 1)));
+  EXPECT_NE(kSuccess,
+            test_elements_.CreatePublicId(" " + RandomAlphaNumericString(RandomUint32() % 13 + 1)
+                                          + "  " +
+                                          RandomAlphaNumericString(RandomUint32() % 13 + 1) + " "));
+  EXPECT_EQ(kSuccess,
+            test_elements_.CreatePublicId(RandomAlphaNumericString(RandomUint32() % 14 + 1) + " " +
+                                          RandomAlphaNumericString(RandomUint32() % 15 + 1)));
+
+  // Check Password
+  EXPECT_NE(kSuccess, test_elements_.CheckPassword(incorrect_password));
+  EXPECT_NE(kSuccess, test_elements_.CheckPassword(RandomAlphaNumericString(RandomUint32() % 5)));
+  EXPECT_NE(kSuccess, test_elements_.CheckPassword(RandomAlphaNumericString(31)));
+
+  // Change PIN
+  EXPECT_NE(kSuccess, test_elements_.ChangePin("", password_));
+  EXPECT_NE(kSuccess, test_elements_.ChangePin("0000", password_));
+  EXPECT_NE(kSuccess, test_elements_.ChangePin("a12b", password_));
+  EXPECT_NE(kSuccess, test_elements_.ChangePin(CreatePin().erase(3, 1), password_));
+  EXPECT_NE(kSuccess, test_elements_.ChangePin(CreatePin().append("1"), password_));
+  EXPECT_NE(kSuccess, test_elements_.ChangePin(CreatePin(), incorrect_password));
+
+  // Change Keyword
+  EXPECT_NE(kSuccess,
+            test_elements_.ChangeKeyword(RandomAlphaNumericString(RandomUint32() % 5), password_));
+  EXPECT_NE(kSuccess, test_elements_.ChangeKeyword(RandomAlphaNumericString(31), password_));
+  EXPECT_NE(kSuccess,
+            test_elements_.ChangeKeyword(RandomAlphaNumericString(RandomUint32() % 13 + 2) + " " +
+                                         RandomAlphaNumericString(RandomUint32() % 14 + 2),
+                                         password_));
+  // Change Password
+  EXPECT_NE(kSuccess,
+            test_elements_.ChangePassword(RandomAlphaNumericString(RandomUint32() % 5), password_));
+  EXPECT_NE(kSuccess, test_elements_.ChangePassword(RandomAlphaNumericString(31), password_));
+  EXPECT_NE(kSuccess,
+            test_elements_.ChangeKeyword(RandomAlphaNumericString(RandomUint32() % 13 + 2) + " " +
+                                         RandomAlphaNumericString(RandomUint32() % 14 + 2),
+                                         password_));
+}
+
+TEST_F(OneUserApiTest, FUNC_ChangeCredentialsWhenLoggedOut) {
+  std::string new_pin(CreatePin());
+
+  EXPECT_EQ(kSuccess, test_elements_.LogOut());
+
+  EXPECT_NE(kSuccess, test_elements_.CheckPassword(password_));
+
+  // Change credentials
+  EXPECT_NE(kSuccess, test_elements_.ChangeKeyword(keyword_ + keyword_, password_));
+  EXPECT_NE(kSuccess, test_elements_.ChangePin(new_pin, password_));
+  EXPECT_NE(kSuccess, test_elements_.ChangePassword(password_ + password_, password_));
+
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
+}
+
+TEST_F(OneUserApiTest, FUNC_ChangeCredentialsAndLogOut) {
+  std::string new_pin(CreatePin());
+  std::string new_keyword(RandomAlphaNumericString(5));
+  std::string new_password(RandomAlphaNumericString(5));
+  int result(0);
+
+  boost::thread thread_pin(std::bind(&RunChangePin, test_elements_, result, new_pin,
+                                     password_));
+
+  test_elements_.LogOut();
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, new_pin, password_));
+
+  boost::thread thread_keyword(std::bind(&RunChangeKeyword, test_elements_, result, new_keyword,
+                                         password_));
+
+  test_elements_.LogOut();
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(new_keyword, new_pin, password_));
+
+  boost::thread thread_password(std::bind(&RunChangePassword, test_elements_, result, new_password,
+                                          password_));
+
+  test_elements_.LogOut();
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(new_keyword, new_pin, new_password));
+}
+
+class TwoInstancesApiTest : public OneUserApiTest {
+ public:
+  TwoInstancesApiTest()
+    : test_elements_2_(),
+      testing_variables_1_(),
+      testing_variables_2_() {}
+
+ protected:
+  LifeStuff test_elements_2_;
+  TestingVariables testing_variables_1_;
+  TestingVariables testing_variables_2_;
+
+  virtual void SetUp() {
+    OneUserApiTest::SetUp();
+    EXPECT_EQ(kSuccess, test_elements_2_.Initialise(*test_dir_));
+    EXPECT_EQ(kSuccess,
+              test_elements_2_.ConnectToSignals(ChatFunction(),
+                                              FileTransferFunction(),
+                                              NewContactFunction(),
+                                              ContactConfirmationFunction(),
+                                              ContactProfilePictureFunction(),
+                                              std::bind(&ContactPresenceSlot,
+                                                        args::_1, args::_2,
+                                                        args::_3, args::_4,
+                                                        &done_),
+                                              ContactDeletionFunction(),
+                                              PrivateShareInvitationFunction(),
+                                              PrivateShareDeletionFunction(),
+                                              PrivateMemberAccessChangeFunction(),
+                                              OpenShareInvitationFunction(),
+                                              ShareRenamedFunction(),
+                                              ShareChangedFunction()));
+    EXPECT_EQ(kSuccess, test_elements_.LogOut());
+  }
+
+  virtual void TearDown() {
+    EXPECT_EQ(kSuccess, test_elements_.Finalise());
+    EXPECT_EQ(kSuccess, test_elements_2_.Finalise());
+  }
+};
+
+TEST_F(TwoInstancesApiTest, FUNC_LogInFromTwoPlaces) {
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
+  EXPECT_NE(kSuccess, test_elements_2_.LogIn(keyword_, pin_, password_));
+
+  EXPECT_EQ(kSuccess, test_elements_.LogOut());
+  EXPECT_NE(kSuccess, test_elements_2_.LogOut());
 }
 
 class TwoUsersApiTest : public testing::Test {
  public:
   TwoUsersApiTest()
     : test_dir_(maidsafe::test::CreateTestPath()),
-      username_1_(RandomAlphaNumericString(6)),
+      keyword_1_(RandomAlphaNumericString(6)),
       pin_1_(CreatePin()),
       password_1_(RandomAlphaNumericString(6)),
       public_id_1_(RandomAlphaNumericString(5)),
-      username_2_(RandomAlphaNumericString(6)),
+      keyword_2_(RandomAlphaNumericString(6)),
       pin_2_(CreatePin()),
       password_2_(RandomAlphaNumericString(6)),
       public_id_2_(RandomAlphaNumericString(5)),
@@ -619,11 +848,11 @@ class TwoUsersApiTest : public testing::Test {
 
  protected:
   maidsafe::test::TestPath test_dir_;
-  std::string username_1_;
+  std::string keyword_1_;
   std::string pin_1_;
   std::string password_1_;
   std::string public_id_1_;
-  std::string username_2_;
+  std::string keyword_2_;
   std::string pin_2_;
   std::string password_2_;
   std::string public_id_2_;
@@ -637,8 +866,8 @@ class TwoUsersApiTest : public testing::Test {
               CreateAndConnectTwoPublicIds(test_elements_1_, test_elements_2_,
                                            testing_variables_1_, testing_variables_2_,
                                            *test_dir_,
-                                           username_1_, pin_1_, password_1_, public_id_1_,
-                                           username_2_, pin_2_, password_2_, public_id_2_));
+                                           keyword_1_, pin_1_, password_1_, public_id_1_,
+                                           keyword_2_, pin_2_, password_2_, public_id_2_));
   }
 
   virtual void TearDown() {
@@ -646,6 +875,63 @@ class TwoUsersApiTest : public testing::Test {
     EXPECT_EQ(kSuccess, test_elements_2_.Finalise());
   }
 };
+
+TEST_F(TwoUsersApiTest, FUNC_ChangeCredentialsToSame) {
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+
+  std::string new_pin(CreatePin());
+  std::string new_keyword(RandomAlphaNumericString(5));
+
+  int result1(0), result2(0), result3(0), result4(0);
+  boost::thread thread1(std::bind(&RunChangePin, test_elements_1_, result1, new_pin, password_1_));
+  boost::thread thread2(std::bind(&RunChangePin, test_elements_2_, result2, new_pin, password_2_));
+  boost::thread thread3(std::bind(&RunChangeKeyword, test_elements_1_, result3, new_keyword,
+                                  password_1_));
+  boost::thread thread4(std::bind(&RunChangeKeyword, test_elements_2_, result4, new_keyword,
+                                  password_2_));
+
+  thread1.join();
+  thread2.join();
+  thread3.join();
+  thread4.join();
+
+  EXPECT_FALSE(result1 == kSuccess && result2 == kSuccess && result3 == kSuccess &&
+               result4 == kSuccess);
+
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(result3 == kSuccess ? new_keyword : keyword_1_,
+                                             result1 == kSuccess ? new_pin : pin_1_, password_1_));
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(result4 == kSuccess ? new_keyword : keyword_2_,
+                                             result2 == kSuccess ? new_pin : pin_2_, password_2_));
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+}
+
+void RunCreatePublicId(LifeStuff& test_elements, int& result, const std::string& new_id) {
+  result = test_elements.CreatePublicId(new_id);
+}
+
+TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicId) {
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+
+  std::string new_public_id(RandomAlphaNumericString(5));
+  int result_1(0), result_2(0);
+
+  boost::thread thread_1(std::bind(&RunCreatePublicId, test_elements_1_, result_1, new_public_id));
+  boost::thread thread_2(std::bind(&RunCreatePublicId, test_elements_2_, result_2, new_public_id));
+
+  thread_1.join();
+  thread_2.join();
+
+  EXPECT_FALSE(result_1 == kSuccess && result_2 == kSuccess);
+
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+}
 
 TEST_F(TwoUsersApiTest, FUNC_SendFileSaveToGivenPath) {
   boost::system::error_code error_code;
@@ -655,7 +941,7 @@ TEST_F(TwoUsersApiTest, FUNC_SendFileSaveToGivenPath) {
               file_name2(RandomAlphaNumericString(8));
 
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     file_path1 = test_elements_1_.mount_path() / file_name1;
     std::ofstream ofstream(file_path1.c_str(), std::ios::binary);
@@ -669,7 +955,7 @@ TEST_F(TwoUsersApiTest, FUNC_SendFileSaveToGivenPath) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.file_transfer_received)
       Sleep(bptime::milliseconds(100));
     EXPECT_FALSE(testing_variables_2_.file_id.empty());
@@ -695,7 +981,7 @@ TEST_F(TwoUsersApiTest, FUNC_SendFileSaveToDefaultLocation) {
   std::string file_name1(RandomAlphaNumericString(8)),
               file_content1(RandomString(5 * 1024));
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     file_path1 = test_elements_1_.mount_path() / file_name1;
     std::ofstream ofstream(file_path1.c_str(), std::ios::binary);
@@ -708,7 +994,7 @@ TEST_F(TwoUsersApiTest, FUNC_SendFileSaveToDefaultLocation) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.file_transfer_received)
       Sleep(bptime::milliseconds(100));
 
@@ -729,7 +1015,7 @@ TEST_F(TwoUsersApiTest, FUNC_SendFileSaveToDefaultLocation) {
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     file_path1 = test_elements_1_.mount_path() / file_name1;
     std::ofstream ofstream(file_path1.c_str(), std::ios::binary);
@@ -743,7 +1029,7 @@ TEST_F(TwoUsersApiTest, FUNC_SendFileSaveToDefaultLocation) {
   }
   {
     testing_variables_2_.file_transfer_received = false;
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.file_transfer_received)
       Sleep(bptime::milliseconds(100));
 
@@ -776,7 +1062,7 @@ TEST_F(TwoUsersApiTest, FUNC_SendFileAcceptToDeletedDefaultLocation) {
               file_content1(RandomString(5 * 1024));
 
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     file_path1 = test_elements_1_.mount_path() / file_name1;
     std::ofstream ofstream(file_path1.c_str(), std::ios::binary);
@@ -790,7 +1076,7 @@ TEST_F(TwoUsersApiTest, FUNC_SendFileAcceptToDeletedDefaultLocation) {
   }
   {
     testing_variables_2_.file_transfer_received = false;
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.file_transfer_received)
       Sleep(bptime::milliseconds(100));
 
@@ -821,11 +1107,11 @@ TEST_F(TwoUsersApiTest, FUNC_SendFileAcceptToDeletedDefaultLocation) {
 
 TEST(IndependentFullTest, FUNC_SendFileWithRejection) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomAlphaNumericString(6)),
+  std::string keyword1(RandomAlphaNumericString(6)),
               pin1(CreatePin()),
               password1(RandomAlphaNumericString(6)),
               public_id1(RandomAlphaNumericString(5));
-  std::string username2(RandomAlphaNumericString(6)),
+  std::string keyword2(RandomAlphaNumericString(6)),
               pin2(CreatePin()),
               password2(RandomAlphaNumericString(6)),
               public_id2(RandomAlphaNumericString(5));
@@ -840,9 +1126,9 @@ TEST(IndependentFullTest, FUNC_SendFileWithRejection) {
                                                    testing_variables1,
                                                    testing_variables2,
                                                    *test_dir,
-                                                   username1, pin1, password1,
+                                                   keyword1, pin1, password1,
                                                    public_id1,
-                                                   username2, pin2, password2,
+                                                   keyword2, pin2, password2,
                                                    public_id2,
                                                    true,
                                                    &received_ids,
@@ -852,7 +1138,7 @@ TEST(IndependentFullTest, FUNC_SendFileWithRejection) {
   boost::system::error_code error_code;
 
   {
-    EXPECT_EQ(kSuccess, test_elements1.LogIn(username1, pin1, password1));
+    EXPECT_EQ(kSuccess, test_elements1.LogIn(keyword1, pin1, password1));
 
     for (; file_count < file_max; ++file_count) {
       file_paths.push_back(fs::path(test_elements1.mount_path() /
@@ -869,7 +1155,7 @@ TEST(IndependentFullTest, FUNC_SendFileWithRejection) {
     EXPECT_EQ(kSuccess, test_elements1.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements2.LogIn(username2, pin2, password2));
+    EXPECT_EQ(kSuccess, test_elements2.LogIn(keyword2, pin2, password2));
     while (!testing_variables2.file_transfer_received)
       Sleep(bptime::milliseconds(100));
 
@@ -895,7 +1181,7 @@ TEST(IndependentFullTest, FUNC_SendFileWithRejection) {
 TEST_F(TwoUsersApiTest, FUNC_ProfilePicture) {
   std::string file_content1, file_content2(RandomString(5 * 1024));
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     // Setting of profile image
     EXPECT_EQ(kSuccess, test_elements_2_.ChangeProfilePicture(public_id_2_, file_content2));
     Sleep(bptime::seconds(1));
@@ -903,7 +1189,7 @@ TEST_F(TwoUsersApiTest, FUNC_ProfilePicture) {
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
     while (!testing_variables_1_.picture_updated)
       Sleep(bptime::milliseconds(100));
 
@@ -914,7 +1200,7 @@ TEST_F(TwoUsersApiTest, FUNC_ProfilePicture) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     // Setting of profile image
     EXPECT_EQ(kSuccess, test_elements_2_.ChangeProfilePicture(public_id_2_, kBlankProfilePicture));
 
@@ -922,7 +1208,7 @@ TEST_F(TwoUsersApiTest, FUNC_ProfilePicture) {
   }
   {
     testing_variables_1_.picture_updated = false;
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
     while (!testing_variables_1_.picture_updated)
       Sleep(bptime::milliseconds(100));
 
@@ -936,7 +1222,7 @@ TEST_F(TwoUsersApiTest, FUNC_ProfilePicture) {
 TEST_F(TwoUsersApiTest, FUNC_RemoveContact) {
   std::string removal_message("It's not me, it's you.");
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     EXPECT_EQ(kSuccess, test_elements_1_.RemoveContact(public_id_1_, public_id_2_,
                                                        removal_message));
@@ -945,7 +1231,7 @@ TEST_F(TwoUsersApiTest, FUNC_RemoveContact) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.removed)
       Sleep(bptime::milliseconds(100));
 
@@ -966,7 +1252,7 @@ TEST_F(TwoUsersApiTest, FUNC_CreateEmptyOpenShare) {
               file_content2(RandomString(50));
   boost::system::error_code error_code;
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     StringIntMap  results;
     std::vector<std::string> contacts;
@@ -981,7 +1267,7 @@ TEST_F(TwoUsersApiTest, FUNC_CreateEmptyOpenShare) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.openly_invited)
       Sleep(bptime::milliseconds(100));
     EXPECT_FALSE(testing_variables_2_.new_open_share_id.empty());
@@ -1005,7 +1291,7 @@ TEST_F(TwoUsersApiTest, FUNC_CreateEmptyOpenShare) {
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
     fs::path share(test_elements_1_.mount_path() / kSharedStuff / share_name);
     fs::path file_path(share / file_name);
     std::string file_content;
@@ -1018,7 +1304,7 @@ TEST_F(TwoUsersApiTest, FUNC_CreateEmptyOpenShare) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
     fs::path share(test_elements_1_.mount_path() / kSharedStuff / share_name);
     fs::path file_path(share / file_name);
     std::string file_content;
@@ -1028,7 +1314,7 @@ TEST_F(TwoUsersApiTest, FUNC_CreateEmptyOpenShare) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
 
     fs::path share(test_elements_2_.mount_path() / kSharedStuff / share_name);
     fs::path file_path(share / file_name);
@@ -1055,7 +1341,7 @@ TEST_F(TwoUsersApiTest, FUNC_CreateOpenShare) {
               file_content2(RandomString(20));
   boost::system::error_code error_code;
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     fs::path directory(test_elements_1_.mount_path() /
                        kMyStuff / directory_name);
@@ -1099,7 +1385,7 @@ TEST_F(TwoUsersApiTest, FUNC_CreateOpenShare) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.openly_invited)
       Sleep(bptime::milliseconds(100));
     EXPECT_FALSE(testing_variables_2_.new_open_share_id.empty());
@@ -1115,7 +1401,7 @@ TEST_F(TwoUsersApiTest, FUNC_CreateOpenShare) {
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
     fs::path share(test_elements_1_.mount_path() / kSharedStuff / share_name);
     fs::path file_path(share / file2_name);
     std::string file_stuff;
@@ -1139,7 +1425,7 @@ TEST_F(TwoUsersApiTest, FUNC_InviteOpenShareMembers) {
               file_content3(RandomString(20));
   boost::system::error_code error_code;
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     fs::path directory(test_elements_1_.mount_path() / kMyStuff / directory_name);
     EXPECT_TRUE(fs::create_directory(directory, error_code));
@@ -1191,7 +1477,7 @@ TEST_F(TwoUsersApiTest, FUNC_InviteOpenShareMembers) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.openly_invited)
       Sleep(bptime::milliseconds(100));
     EXPECT_FALSE(testing_variables_2_.new_open_share_id.empty());
@@ -1208,7 +1494,7 @@ TEST_F(TwoUsersApiTest, FUNC_InviteOpenShareMembers) {
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
     fs::path share1(test_elements_1_.mount_path() / kSharedStuff / share1_name);
     fs::path file_path(share1 / file2_name);
     std::string file_stuff;
@@ -1256,7 +1542,7 @@ TEST_F(TwoUsersApiTest, FUNC_InviteOpenShareMembers) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.openly_invited)
       Sleep(bptime::milliseconds(100));
     EXPECT_FALSE(testing_variables_2_.new_open_share_id.empty());
@@ -1294,7 +1580,7 @@ TEST_F(TwoUsersApiTest, FUNC_LeaveOpenShare) {
               file_content2(RandomString(20));
   boost::system::error_code error_code;
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     fs::path directory(test_elements_1_.mount_path() / kMyStuff / directory_name);
     EXPECT_TRUE(fs::create_directory(directory, error_code));
@@ -1336,7 +1622,7 @@ TEST_F(TwoUsersApiTest, FUNC_LeaveOpenShare) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.openly_invited)
       Sleep(bptime::milliseconds(100));
     EXPECT_FALSE(testing_variables_2_.new_open_share_id.empty());
@@ -1355,7 +1641,7 @@ TEST_F(TwoUsersApiTest, FUNC_LeaveOpenShare) {
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     fs::path share(test_elements_1_.mount_path() / kSharedStuff / share_name);
     fs::path file_path(share / file2_name);
@@ -1368,7 +1654,7 @@ TEST_F(TwoUsersApiTest, FUNC_LeaveOpenShare) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     fs::path share(test_elements_2_.mount_path() / kSharedStuff / share_name),
              file_path(share / file2_name);
     std::string file_stuff;
@@ -1393,26 +1679,6 @@ TEST_F(TwoUsersApiTest, FUNC_LeaveOpenShare) {
 }
 
 TEST_F(TwoUsersApiTest, FUNC_SameOpenShareName) {
-  /*maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  std::string username1(RandomAlphaNumericString(6)),
-              pin1(CreatePin()),
-              password1(RandomAlphaNumericString(6)),
-              public_id1(RandomAlphaNumericString(5));
-  std::string username2(RandomAlphaNumericString(6)),
-              pin2(CreatePin()),
-              password2(RandomAlphaNumericString(6)),
-              public_id2(RandomAlphaNumericString(5));
-  LifeStuff test_elements1, test_elements2;
-  TestingVariables testing_variables1, testing_variables2;
-  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
-                                                   test_elements2,
-                                                   testing_variables1,
-                                                   testing_variables2,
-                                                   *test_dir,
-                                                   username1, pin1, password1,
-                                                   public_id1,
-                                                   username2, pin2, password2,
-                                                   public_id2));*/
   std::string directory0_name(RandomAlphaNumericString(5)),
               directory1_name(RandomAlphaNumericString(5)),
               directory2_name(RandomAlphaNumericString(5)),
@@ -1430,7 +1696,7 @@ TEST_F(TwoUsersApiTest, FUNC_SameOpenShareName) {
               stored_share_name(share_name);
   boost::system::error_code error_code;
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     fs::path directory0(test_elements_1_.mount_path() / kMyStuff / directory0_name);
     EXPECT_TRUE(fs::create_directory(directory0, error_code));
@@ -1521,20 +1787,17 @@ TEST_F(TwoUsersApiTest, FUNC_SameOpenShareName) {
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
-
-  /*EXPECT_EQ(kSuccess, test_elements1.Finalise());
-  EXPECT_EQ(kSuccess, test_elements2.Finalise());*/
 }
 
 class PrivateSharesApiTest : public ::testing::TestWithParam<int> {
  public:
   PrivateSharesApiTest() : rights_(GetParam()),
     test_dir_(maidsafe::test::CreateTestPath()),
-    username_1_(RandomAlphaNumericString(6)),
+    keyword_1_(RandomAlphaNumericString(6)),
     pin_1_(CreatePin()),
     password_1_(RandomAlphaNumericString(6)),
     public_id_1_(RandomAlphaNumericString(5)),
-    username_2_(RandomAlphaNumericString(6)),
+    keyword_2_(RandomAlphaNumericString(6)),
     pin_2_(CreatePin()),
     password_2_(RandomAlphaNumericString(6)),
     public_id_2_(RandomAlphaNumericString(5)),
@@ -1547,11 +1810,11 @@ class PrivateSharesApiTest : public ::testing::TestWithParam<int> {
  protected:
   int rights_;
   maidsafe::test::TestPath test_dir_;
-  std::string username_1_;
+  std::string keyword_1_;
   std::string pin_1_;
   std::string password_1_;
   std::string public_id_1_;
-  std::string username_2_;
+  std::string keyword_2_;
   std::string pin_2_;
   std::string password_2_;
   std::string public_id_2_;
@@ -1567,9 +1830,9 @@ class PrivateSharesApiTest : public ::testing::TestWithParam<int> {
                                                      testing_variables_1_,
                                                      testing_variables_2_,
                                                      *test_dir_,
-                                                     username_1_, pin_1_, password_1_,
+                                                     keyword_1_, pin_1_, password_1_,
                                                      public_id_1_,
-                                                     username_2_, pin_2_, password_2_,
+                                                     keyword_2_, pin_2_, password_2_,
                                                      public_id_2_));
   }
 
@@ -1589,7 +1852,7 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
               file_content2(RandomAlphaNumericString(20));
   boost::system::error_code error_code;
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     // Create empty private share
     StringIntMap contacts, results;
@@ -1608,7 +1871,7 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.privately_invited)
       Sleep(bptime::milliseconds(100));
 
@@ -1639,7 +1902,7 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
     fs::path share_path(test_elements_1_.mount_path() / kSharedStuff / share_name_1_);
     fs::path a_file_path(share_path / file_name1);
     if (rights_ == kShareReadOnly) {
@@ -1657,7 +1920,7 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateEmptyPrivateShare) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
 
     fs::path share_path(test_elements_2_.mount_path() / kSharedStuff / share_name_1_);
     fs::path a_file_path(share_path / file_name1);
@@ -1679,7 +1942,7 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
               file_content2(RandomAlphaNumericString(20));
   boost::system::error_code error_code;
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     // Create directory with contents to share
     fs::path share_path(test_elements_1_.mount_path() / kMyStuff / share_name_1_);
@@ -1712,7 +1975,7 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.privately_invited)
       Sleep(bptime::milliseconds(100));
 
@@ -1749,7 +2012,7 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
     fs::path share_path(test_elements_1_.mount_path() / kSharedStuff / share_name_1_);
     fs::path a_file_path(share_path / file_name2);
     std::string file_stuff;
@@ -1766,7 +2029,7 @@ TEST_P(PrivateSharesApiTest, FUNC_FromExistingDirectoryPrivateShare) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
 
     fs::path share_path(test_elements_2_.mount_path() / kSharedStuff / share_name_1_);
     fs::path a_file_path(share_path / file_name2);
@@ -1784,7 +2047,7 @@ TEST_P(PrivateSharesApiTest, FUNC_RejectInvitationPrivateShare) {
               file_content1(RandomAlphaNumericString(20));
   boost::system::error_code error_code;
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     // Create directory with contents to share
     fs::path share_path(test_elements_1_.mount_path() / kMyStuff / share_name_1_);
@@ -1817,7 +2080,7 @@ TEST_P(PrivateSharesApiTest, FUNC_RejectInvitationPrivateShare) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.privately_invited)
       Sleep(bptime::milliseconds(100));
 
@@ -1835,7 +2098,7 @@ TEST_P(PrivateSharesApiTest, FUNC_RejectInvitationPrivateShare) {
 TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
   boost::system::error_code error_code;
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     // Create empty private share
     StringIntMap contacts, results;
@@ -1854,7 +2117,7 @@ TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.privately_invited)
       Sleep(bptime::milliseconds(100));
 
@@ -1878,12 +2141,12 @@ TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
     EXPECT_EQ(kSuccess, test_elements_1_.DeletePrivateShare(public_id_1_, share_name_1_, false));
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.private_share_deleted)
       Sleep(bptime::milliseconds(100));
 
@@ -1898,7 +2161,7 @@ TEST_P(PrivateSharesApiTest, FUNC_DeletePrivateShare) {
 TEST_P(PrivateSharesApiTest, FUNC_LeavePrivateShare) {
   boost::system::error_code error_code;
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     // Create empty private share
     StringIntMap contacts, results;
@@ -1922,7 +2185,7 @@ TEST_P(PrivateSharesApiTest, FUNC_LeavePrivateShare) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.privately_invited)
       Sleep(bptime::milliseconds(100));
 
@@ -1943,12 +2206,12 @@ TEST_P(PrivateSharesApiTest, FUNC_LeavePrivateShare) {
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
     // TODO(Team): Wait till message from member arrives
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
 
     // Still using share_id to identify the share, instead of share_name
     // And when leaving, Deletion Signal won't get fired
@@ -1965,11 +2228,10 @@ TEST_F(TwoUsersApiTest, FUNC_RenamePrivateShare) {
   std::string share_name1(RandomAlphaNumericString(5)),
               share_name2(RandomAlphaNumericString(5)),
               file_name1(RandomAlphaNumericString(5)),
-              /*file_content1(RandomAlphaNumericString(20)),*/
               file_content2(RandomAlphaNumericString(20));
   boost::system::error_code error_code;
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     // Create empty private share
     StringIntMap contacts, results;
@@ -1994,7 +2256,7 @@ TEST_F(TwoUsersApiTest, FUNC_RenamePrivateShare) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.privately_invited)
       Sleep(bptime::milliseconds(100));
 
@@ -2017,7 +2279,7 @@ TEST_F(TwoUsersApiTest, FUNC_RenamePrivateShare) {
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
     fs::path old_share_path(test_elements_1_.mount_path() / kSharedStuff / share_name1);
     fs::path new_share_path(test_elements_1_.mount_path() / kSharedStuff / share_name2);
     fs::rename(old_share_path, new_share_path, error_code);
@@ -2037,7 +2299,7 @@ TEST_F(TwoUsersApiTest, FUNC_RenamePrivateShare) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     fs::path share_path(test_elements_2_.mount_path() / kSharedStuff / share_name1);
     fs::path new_share_path(test_elements_2_.mount_path() / kSharedStuff / share_name2);
     EXPECT_TRUE(fs::is_directory(share_path, error_code));
@@ -2053,7 +2315,7 @@ TEST_F(TwoUsersApiTest, FUNC_RenamePrivateShare) {
     testing_variables_1_.old_share_name.clear();
     testing_variables_1_.new_share_name.clear();
 
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
     fs::path share_path(test_elements_1_.mount_path() / kSharedStuff / share_name2);
     fs::path sub_directory(share_path / sub_directory_name);
     EXPECT_TRUE(fs::create_directory(sub_directory, error_code));
@@ -2087,7 +2349,7 @@ TEST_F(TwoUsersApiTest, FUNC_RenamePrivateShare) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     fs::path share_path(test_elements_2_.mount_path() / kSharedStuff / share_name1);
     fs::path sub_directory(share_path / sub_directory_name);
     fs::path sub_directory_new(share_path / new_sub_directory_name);
@@ -2110,7 +2372,7 @@ TEST_F(TwoUsersApiTest, FUNC_RenamePrivateShare) {
 TEST_P(PrivateSharesApiTest, FUNC_CreateDeletePrivateShare) {
   boost::system::error_code error_code;
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
     StringIntMap contacts, results;
     contacts.insert(std::make_pair(public_id_2_, rights_));  // Read only rights
     results.insert(std::make_pair(public_id_2_, kGeneralError));
@@ -2140,7 +2402,7 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateDeletePrivateShare) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.privately_invited)
       Sleep(bptime::milliseconds(100));
 
@@ -2167,7 +2429,7 @@ TEST_F(TwoUsersApiTest, FUNC_MembershipDowngradePrivateShare) {
               file_content2(RandomAlphaNumericString(20));
   boost::system::error_code error_code;
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     // Create empty private share
     StringIntMap contacts, results;
@@ -2192,7 +2454,7 @@ TEST_F(TwoUsersApiTest, FUNC_MembershipDowngradePrivateShare) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.privately_invited)
       Sleep(bptime::milliseconds(100));
 
@@ -2215,7 +2477,7 @@ TEST_F(TwoUsersApiTest, FUNC_MembershipDowngradePrivateShare) {
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     StringIntMap amendments, results;
     amendments.insert(std::make_pair(public_id_2_, kShareReadOnly));
@@ -2232,7 +2494,7 @@ TEST_F(TwoUsersApiTest, FUNC_MembershipDowngradePrivateShare) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
 
     while (!testing_variables_2_.private_member_access_changed)
       Sleep(bptime::milliseconds(100));
@@ -2258,11 +2520,10 @@ TEST_F(TwoUsersApiTest, FUNC_MembershipDowngradePrivateShare) {
 TEST_F(TwoUsersApiTest, FUNC_MembershipUpgradePrivateShare) {
   std::string share_name1(RandomAlphaNumericString(5)),
               file_name1(RandomAlphaNumericString(5)),
-              /*file_content1(RandomAlphaNumericString(20)),*/
               file_content2(RandomAlphaNumericString(20));
   boost::system::error_code error_code;
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     // Create empty private share
     StringIntMap contacts, results;
@@ -2281,7 +2542,7 @@ TEST_F(TwoUsersApiTest, FUNC_MembershipUpgradePrivateShare) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.privately_invited)
       Sleep(bptime::milliseconds(100));
 
@@ -2304,7 +2565,7 @@ TEST_F(TwoUsersApiTest, FUNC_MembershipUpgradePrivateShare) {
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     StringIntMap amendments, results;
     amendments.insert(std::make_pair(public_id_2_, kShareReadWrite));
@@ -2321,7 +2582,7 @@ TEST_F(TwoUsersApiTest, FUNC_MembershipUpgradePrivateShare) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
 
     while (!testing_variables_2_.private_member_access_changed)
       Sleep(bptime::milliseconds(100));
@@ -2352,7 +2613,7 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
   std::string share_name1(RandomAlphaNumericString(5));
   boost::system::error_code error_code;
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     // Create empty private share
     StringIntMap contacts, results;
@@ -2375,7 +2636,7 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.privately_invited)
       Sleep(bptime::milliseconds(100));
 
@@ -2393,7 +2654,7 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     EXPECT_EQ(kSuccess, test_elements_1_.RemoveContact(public_id_1_, public_id_2_,
                                                        removal_message));
@@ -2408,7 +2669,7 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.removed)
       Sleep(bptime::milliseconds(100));
 
@@ -2434,7 +2695,7 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
   fs::path directory1, directory2;
   boost::system::error_code error_code;
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     // Create empty private share
     StringIntMap contacts, results;
@@ -2455,7 +2716,7 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.privately_invited)
       Sleep(bptime::milliseconds(100));
 
@@ -2480,7 +2741,7 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
     while (!testing_variables_1_.removed)
       Sleep(bptime::milliseconds(100));
 
@@ -2503,7 +2764,7 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
 TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
   LifeStuff test_elements3;
   TestingVariables testing_variables3;
-  std::string username3(RandomAlphaNumericString(6)),
+  std::string keyword3(RandomAlphaNumericString(6)),
               pin3(CreatePin()),
               password3(RandomAlphaNumericString(6)),
               public_id3(RandomAlphaNumericString(5));
@@ -2558,27 +2819,27 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
                           &testing_variables3.new_share_name,
                           &testing_variables3.share_renamed),
                 ShareChangedFunction());
-  test_elements3.CreateUser(username3, pin3, password3);
+  test_elements3.CreateUser(keyword3, pin3, password3);
   test_elements3.CreatePublicId(public_id3);
   test_elements3.AddContact(public_id3, public_id_1_);
   test_elements3.AddContact(public_id3, public_id_2_);
   test_elements3.LogOut();
 
   testing_variables_1_.newly_contacted = false;
-  test_elements_1_.LogIn(username_1_, pin_1_, password_1_);
+  test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_);
   while (!testing_variables_1_.newly_contacted)
     Sleep(bptime::milliseconds(100));
   test_elements_1_.ConfirmContact(public_id_1_, public_id3);
   test_elements_1_.LogOut();
 
   testing_variables_2_.newly_contacted = false;
-  test_elements_2_.LogIn(username_2_, pin_2_, password_2_);
+  test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_);
   while (!testing_variables_2_.newly_contacted)
     Sleep(bptime::milliseconds(100));
   test_elements_2_.ConfirmContact(public_id_2_, public_id3);
   test_elements_2_.LogOut();
 
-  test_elements3.LogIn(username3, pin3, password3);
+  test_elements3.LogIn(keyword3, pin3, password3);
     while (!testing_variables3.confirmed)
       Sleep(bptime::milliseconds(100));
   test_elements3.LogOut();
@@ -2588,7 +2849,7 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
   fs::path directory1, directory2, directory3;
   boost::system::error_code error_code;
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     // Create empty private share
     StringIntMap contacts, results;
@@ -2611,7 +2872,7 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.privately_invited)
       Sleep(bptime::milliseconds(100));
 
@@ -2628,7 +2889,7 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements3.LogIn(username3, pin3, password3));
+    EXPECT_EQ(kSuccess, test_elements3.LogIn(keyword3, pin3, password3));
     while (!testing_variables3.privately_invited)
       Sleep(bptime::milliseconds(100));
 
@@ -2649,7 +2910,7 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
     EXPECT_EQ(kSuccess, test_elements3.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.removed)
       Sleep(bptime::milliseconds(100));
 
@@ -2668,7 +2929,7 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
     EXPECT_TRUE(fs::is_directory(directory1, error_code)) << directory2;
     EXPECT_EQ(0, error_code.value());
     StringIntMap shares_members;
@@ -2694,9 +2955,9 @@ class TwoUsersMutexApiTest : public TwoUsersApiTest {
                                                      testing_variables_1_,
                                                      testing_variables_2_,
                                                      *test_dir_,
-                                                     username_1_, pin_1_, password_1_,
+                                                     keyword_1_, pin_1_, password_1_,
                                                      public_id_1_,
-                                                     username_2_, pin_2_, password_2_,
+                                                     keyword_2_, pin_2_, password_2_,
                                                      public_id_2_, false,
                                                      nullptr, nullptr, nullptr,
                                                      &mutex_));
@@ -2711,7 +2972,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_AddModifyRemoveOneFile) {
 
   boost::system::error_code error_code;
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     // Create empty private share
     StringIntMap contacts, results;
@@ -2735,7 +2996,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_AddModifyRemoveOneFile) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.privately_invited)
       Sleep(bptime::milliseconds(100));
 
@@ -2761,7 +3022,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_AddModifyRemoveOneFile) {
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
     uint8_t attempts(0);
     uint8_t expected_num_of_logs(1);
     while ((testing_variables_1_.share_changes.size() < expected_num_of_logs) &&
@@ -2802,7 +3063,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_AddModifyRemoveOneFile) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     uint8_t attempts(0);
     // Modify and Remove will be logged seperate as in real usage,
     // Remove shall not happen immediately afer Modify
@@ -2849,7 +3110,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_AddRemoveMultipleNodes) {
 
   boost::system::error_code error_code;
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     // Create empty private share
     StringIntMap contacts, results;
@@ -2902,7 +3163,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_AddRemoveMultipleNodes) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.privately_invited)
       Sleep(bptime::milliseconds(100));
 
@@ -2956,7 +3217,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_AddRemoveMultipleNodes) {
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
     uint8_t attempts(0);
     uint8_t expected_num_of_logs(2);
     while ((testing_variables_1_.share_changes.size() < expected_num_of_logs) &&
@@ -3002,7 +3263,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_AddRemoveMultipleNodes) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     testing_variables_2_.share_changes.clear();
     uint8_t attempts(0);
     uint8_t expected_num_of_logs(2);
@@ -3048,7 +3309,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_RenameOneNode) {
 
   boost::system::error_code error_code;
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     // Create empty private share
     StringIntMap contacts, results;
@@ -3072,7 +3333,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_RenameOneNode) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.privately_invited)
       Sleep(bptime::milliseconds(100));
 
@@ -3098,7 +3359,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_RenameOneNode) {
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
     uint8_t attempts(0);
     uint8_t expected_num_of_logs(1);
     while ((testing_variables_1_.share_changes.size() < expected_num_of_logs) &&
@@ -3134,7 +3395,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_RenameOneNode) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     uint8_t attempts(0);
     uint8_t expected_num_of_logs(1);
     while ((testing_variables_2_.share_changes.size() < expected_num_of_logs) &&
@@ -3170,7 +3431,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeToShareAndMoveOut) {
 
   boost::system::error_code error_code;
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     // Create empty private share
     StringIntMap contacts, results;
@@ -3205,7 +3466,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeToShareAndMoveOut) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.privately_invited)
       Sleep(bptime::milliseconds(100));
 
@@ -3240,7 +3501,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeToShareAndMoveOut) {
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
     uint8_t attempts(0);
     uint8_t expected_num_of_logs(1);
     while ((testing_variables_1_.share_changes.size() < expected_num_of_logs) &&
@@ -3276,7 +3537,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeInnerShare) {
 
   boost::system::error_code error_code;
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     // Create empty private share
     StringIntMap contacts, results;
@@ -3312,7 +3573,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeInnerShare) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.privately_invited)
       Sleep(bptime::milliseconds(100));
 
@@ -3349,7 +3610,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeInnerShare) {
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
     uint8_t attempts(0);
     uint8_t expected_num_of_logs(1);
     while ((testing_variables_1_.share_changes.size() < expected_num_of_logs) &&
@@ -3386,7 +3647,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeInterShares) {
 
   boost::system::error_code error_code;
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     // Create empty private shares
     StringIntMap contacts, results;
@@ -3403,7 +3664,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeInterShares) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.privately_invited)
       Sleep(bptime::milliseconds(100));
 
@@ -3441,7 +3702,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeInterShares) {
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
     while (!testing_variables_1_.privately_invited)
       Sleep(bptime::milliseconds(100));
 
@@ -3468,7 +3729,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeInterShares) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     uint8_t attempts(0);
     uint8_t expected_num_of_logs(2);
     while ((testing_variables_2_.share_changes.size() < expected_num_of_logs) &&
@@ -3517,7 +3778,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeToTrashThenMoveBack) {
 
   boost::system::error_code error_code;
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     // Create empty private share
     StringIntMap contacts, results;
@@ -3541,7 +3802,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeToTrashThenMoveBack) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.privately_invited)
       Sleep(bptime::milliseconds(100));
 
@@ -3572,7 +3833,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeToTrashThenMoveBack) {
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(username_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
     uint8_t attempts(0);
     uint8_t expected_num_of_logs(2);
     while ((testing_variables_1_.share_changes.size() < expected_num_of_logs) &&
@@ -3614,7 +3875,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeToTrashThenMoveBack) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
   {
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(username_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     uint8_t attempts(0);
     uint8_t expected_num_of_logs(1);
     while ((testing_variables_2_.share_changes.size() < expected_num_of_logs) &&
