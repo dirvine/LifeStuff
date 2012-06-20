@@ -36,7 +36,6 @@ int main(int argc, char **argv) {
   maidsafe::log::Logging::instance().AddFilter("passport", maidsafe::log::kFatal);
   maidsafe::log::Logging::instance().AddFilter("pd", maidsafe::log::kFatal);
   maidsafe::log::Logging::instance().AddFilter("lifestuff", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("lifestuff-gui", maidsafe::log::kInfo);
   maidsafe::log::Logging::instance().SetColour(false);
 
   testing::InitGoogleTest(&argc, argv);
