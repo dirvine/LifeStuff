@@ -43,6 +43,7 @@ enum InboxItemType {
   kContactPresence,
   kContactProfilePicture,
   kContactDeletion,
+  kRespondToShareInvitation,
   kPrivateShareInvitation,
   kPrivateShareDeletion,
   kPrivateShareMembershipUpgrade,

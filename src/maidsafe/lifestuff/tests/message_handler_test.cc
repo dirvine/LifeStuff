@@ -29,7 +29,7 @@
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 #ifndef LOCAL_TARGETS_ONLY
-#include "maidsafe/pd/client/client_container.h"
+#include "maidsafe/pd/client/node.h"
 #endif
 
 #include "maidsafe/lifestuff/rcs_helper.h"
@@ -77,9 +77,9 @@ class MessageHandlerTest : public testing::Test {
         public_username3_("User 3 " + RandomAlphaNumericString(8)),
         received_public_username_(),
 #ifndef LOCAL_TARGETS_ONLY
-        client_container1_(),
-        client_container2_(),
-        client_container3_(),
+        node1_(),
+        node2_(),
+        node3_(),
 #endif
         interval_(3),
         multiple_messages_(5),
@@ -168,9 +168,9 @@ class MessageHandlerTest : public testing::Test {
                                            *test_dir_ / "simulation",
                                            asio_service3_.service());
 #else
-    remote_chunk_store1_ = BuildChunkStore(*test_dir_, &client_container1_);
-    remote_chunk_store2_ = BuildChunkStore(*test_dir_, &client_container2_);
-    remote_chunk_store3_ = BuildChunkStore(*test_dir_, &client_container3_);
+    remote_chunk_store1_ = BuildChunkStore(*test_dir_, &node1_);
+    remote_chunk_store2_ = BuildChunkStore(*test_dir_, &node2_);
+    remote_chunk_store3_ = BuildChunkStore(*test_dir_, &node3_);
 #endif
 
     public_id1_.reset(new PublicId(remote_chunk_store1_, session1_, asio_service1_.service()));
@@ -194,9 +194,9 @@ class MessageHandlerTest : public testing::Test {
     asio_service2_.Stop();
     asio_service3_.Stop();
 #ifndef LOCAL_TARGETS_ONLY
-    client_container1_->Stop(nullptr);
-    client_container2_->Stop(nullptr);
-    client_container3_->Stop(nullptr);
+    node1_->Stop();
+    node2_->Stop();
+    node3_->Stop();
 #endif
     remote_chunk_store1_->WaitForCompletion();
     remote_chunk_store2_->WaitForCompletion();
@@ -250,7 +250,7 @@ class MessageHandlerTest : public testing::Test {
 
   std::string public_username1_, public_username2_, public_username3_, received_public_username_;
 #ifndef LOCAL_TARGETS_ONLY
-  ClientContainerPtr client_container1_, client_container2_, client_container3_;
+  std::shared_ptr<pd::Node> node1_, node2_, node3_;
 #endif
   bptime::seconds interval_;
   size_t multiple_messages_, invitations_;

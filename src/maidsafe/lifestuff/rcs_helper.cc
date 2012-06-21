@@ -33,8 +33,7 @@
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 #ifndef LOCAL_TARGETS_ONLY
-#include "maidsafe/dht/contact.h"
-#include "maidsafe/pd/client/client_container.h"
+#include "maidsafe/pd/client/node.h"
 #include "maidsafe/pd/client/utils.h"
 #endif
 
@@ -62,26 +61,24 @@ std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path &buffered_
   return remote_chunk_store;
 }
 #else
-std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
-    const fs::path &base_dir,
-    std::shared_ptr<pd::ClientContainer> *client_container) {
-  BOOST_ASSERT(client_container);
-  *client_container = SetUpClientContainer(base_dir);
-  if (*client_container) {
+std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path &base_dir,
+                                                       std::shared_ptr<pd::Node> *node) {
+  BOOST_ASSERT(node);
+  *node = SetupNode(base_dir);
+  if (*node) {
     std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store(
-        new pcs::RemoteChunkStore((*client_container)->chunk_store(),
-                                  (*client_container)->chunk_manager(),
-                                  (*client_container)->chunk_action_authority()));
+        new pcs::RemoteChunkStore((*node)->chunk_store(),
+                                  (*node)->chunk_manager(),
+                                  (*node)->chunk_action_authority()));
     remote_chunk_store->SetMaxActiveOps(32);
     return remote_chunk_store;
   } else {
-    LOG(kError) << "Failed to initialise client container.";
+    LOG(kError) << "Failed to initialise RemoteChunkStore.";
     return nullptr;
   }
 }
 
-int RetrieveBootstrapContacts(const fs::path &download_dir,
-                              std::vector<dht::Contact> *bootstrap_contacts) {
+int RetrieveBootstrapContacts(const fs::path &download_dir) {
   std::ostringstream bootstrap_stream(std::ios::binary);
   try {
     boost::asio::io_service io_service;
@@ -165,36 +162,28 @@ int RetrieveBootstrapContacts(const fs::path &download_dir,
 
   fs::path bootstrap_file(download_dir / "bootstrap");
   WriteFile(bootstrap_file, bootstrap_stream.str());
-  if (!maidsafe::dht::ReadContactsFromFile(bootstrap_file, bootstrap_contacts)) {
-    LOG(kError) << "Failed to read " << bootstrap_file;
-    return kGeneralError;
-  }
 
   return kSuccess;
 }
 
-ClientContainerPtr SetUpClientContainer(const fs::path &base_dir) {
-  ClientContainerPtr client_container(new pd::ClientContainer);
-  if (!client_container->Init(base_dir / "buffered_chunk_store", 10, 4)) {
-    LOG(kError) << "Failed to initialise client container.";
-    return nullptr;
-  }
+std::shared_ptr<pd::Node> SetupNode(const fs::path &base_dir) {
+  auto node = std::make_shared<pd::Node>();
 
-  std::vector<dht::Contact> bootstrap_contacts;
-  int result = RetrieveBootstrapContacts(base_dir, &bootstrap_contacts);
+  // TODO(Team) Move bootstrap file to where Routing can find it
+  int result = RetrieveBootstrapContacts(base_dir);
   if (result != kSuccess) {
     LOG(kError) << "Failed to retrieve bootstrap contacts.  Result: " << result;
     return nullptr;
   }
 
-  result = client_container->Start(bootstrap_contacts);
+  result = node->Start(base_dir / "buffered_chunk_store");
   if (result != kSuccess) {
-    LOG(kError) << "Failed to start client container.  Result: " << result;
+    LOG(kError) << "Failed to start PD node.  Result: " << result;
     return nullptr;
   }
 
-  LOG(kInfo) << "Started client_container.";
-  return client_container;
+  LOG(kInfo) << "Started PD node.";
+  return node;
 }
 #endif
 

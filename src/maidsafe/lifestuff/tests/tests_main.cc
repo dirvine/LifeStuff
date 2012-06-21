@@ -39,6 +39,7 @@ int main(int argc, char **argv) {
   maidsafe::log::Logging::instance().AddFilter("lifestuff", maidsafe::log::kError);
   maidsafe::log::Logging::instance().SetColour(true);
 
+
   testing::InitGoogleTest(&argc, argv);
   int result(RUN_ALL_TESTS());
   int test_count = testing::UnitTest::GetInstance()->test_to_run_count();

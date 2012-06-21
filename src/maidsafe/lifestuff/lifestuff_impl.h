@@ -36,7 +36,7 @@
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 #ifndef LOCAL_TARGETS_ONLY
-#include "maidsafe/pd/client/client_container.h"
+#include "maidsafe/pd/client/node.h"
 #endif
 
 #include "maidsafe/lifestuff/lifestuff.h"
@@ -227,6 +227,11 @@ class LifeStuffImpl {
   fs::path mount_path() const;
 
  private:
+  // The response shall come with a local share_name; if empty provided, it is a rejection
+  void RespondInvitation(const std::string &send_from,
+                         const std::string &send_to,
+                         const std::string &share_id,
+                         const std::string &share_name = "");
   int thread_count_;
   LifeStuffState state_;
   fs::path buffered_path_;
@@ -237,7 +242,7 @@ class LifeStuffImpl {
   AsioService asio_service_;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
 #ifndef LOCAL_TARGETS_ONLY
-  std::shared_ptr<pd::ClientContainer> client_container_;
+  std::shared_ptr<pd::Node> node_;
 #endif
   Session session_;
   std::shared_ptr<UserCredentials> user_credentials_;
