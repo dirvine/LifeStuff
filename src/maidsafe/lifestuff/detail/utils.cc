@@ -260,13 +260,12 @@ std::string ComposeSignaturePacketName(const std::string &name) {
   return name + std::string (1, pca::kSignaturePacket);
 }
 
-std::string ComposeSignaturePacketValue(
-    const pki::SignaturePacket &packet) {
+std::string ComposeSignaturePacketValue(const asymm::Keys &packet) {
   std::string public_key;
-  asymm::EncodePublicKey(packet.value(), &public_key);
+  asymm::EncodePublicKey(packet.public_key, &public_key);
   pca::SignedData signed_data;
   signed_data.set_data(public_key);
-  signed_data.set_signature(packet.signature());
+  signed_data.set_signature(packet.validation_token);
   return signed_data.SerializeAsString();
 }
 

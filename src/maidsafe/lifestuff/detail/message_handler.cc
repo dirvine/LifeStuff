@@ -150,9 +150,8 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
   }
   asymm::PublicKey recipient_public_key(recipient_contact.inbox_public_key);
 
-  std::shared_ptr<asymm::Keys> mmid(passport_.SignaturePacketDetails(passport::kMmid,
-                                                                     true,
-                                                                     inbox_item.sender_public_id));
+  std::shared_ptr<asymm::Keys> mmid(new asymm::Keys(
+      passport_.SignaturePacketDetails(passport::kMmid, true, inbox_item.sender_public_id)));
   if (!mmid) {
     LOG(kError) << "Failed to get own public ID data: " << inbox_item.sender_public_id;
     return kGetPublicIdError;
@@ -287,12 +286,10 @@ void MessageHandler::ProcessRetrieved(const std::string& public_id,
 
   for (int it(0); it < mmid.appendices_size(); ++it) {
     pca::SignedData signed_data(mmid.appendices(it));
-    asymm::PrivateKey mmid_private_key(passport_.PacketPrivateKey(passport::kMmid,
-                                                                            true,
-                                                                            public_id));
+    asymm::Keys mmid(passport_.SignaturePacketDetails(passport::kMmid, true, public_id));
 
     std::string decrypted_message;
-    int n(asymm::Decrypt(signed_data.data(), mmid_private_key, &decrypted_message));
+    int n(asymm::Decrypt(signed_data.data(), mmid.private_key, &decrypted_message));
     if (n != kSuccess) {
       LOG(kError) << "Failed to decrypt message: " << n;
       continue;
@@ -559,7 +556,8 @@ void MessageHandler::RetrieveMessagesForAllIds() {
   std::vector<std::string> selectables(session_.PublicIdentities());
   for (auto it(selectables.begin()); it != selectables.end(); ++it) {
 //    LOG(kError) << "RetrieveMessagesForAllIds for " << (*it);
-    std::shared_ptr<asymm::Keys> mmid(passport_.SignaturePacketDetails(passport::kMmid, true, *it));
+    std::shared_ptr<asymm::Keys> mmid(new asymm::Keys(
+        passport_.SignaturePacketDetails(passport::kMmid, true, *it)));
     std::string mmid_value(remote_chunk_store_->Get(AppendableByAllType(mmid->identity), mmid));
 
     if (mmid_value.empty()) {

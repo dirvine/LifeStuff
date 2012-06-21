@@ -113,7 +113,9 @@ class PublicId {
 
   void GetNewContacts(const bptime::seconds &interval, const boost::system::error_code &error_code);
   void GetContactsHandle();
-  void ProcessRequests(const std::string &mpid_name, const std::string &retrieved_mpid_packet);
+  void ProcessRequests(const std::string &mpid_name,
+                       const std::string &retrieved_mpid_packet,
+                       std::shared_ptr<asymm::Keys> mpid);
   // Modify the Appendability of MCID and MMID associated with the public_id
   // i.e. enable/disable others add new contact and send msg
   int ModifyAppendability(const std::string &public_id, const char appendability);

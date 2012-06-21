@@ -67,11 +67,7 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
     fs::create_directory(mount_dir_path);
 
   session_ = session;
-  asymm::Keys key_ring;
-  key_ring.identity = session->passport().PacketName(passport::kPmid, true);
-  key_ring.public_key = session->passport().SignaturePacketValue(passport::kPmid, true);
-  key_ring.private_key = session->passport().PacketPrivateKey(passport::kPmid, true);
-  key_ring.validation_token = session->passport().PacketSignature(passport::kPmid, true);
+  asymm::Keys key_ring(session->passport().SignaturePacketDetails(passport::kPmid, true));
   drive_in_user_space_.reset(new MaidDriveInUserSpace(*chunk_store_, key_ring));
 
   int result(kGeneralError);
@@ -266,13 +262,12 @@ int UserStorage::CreateShare(const std::string &sender_public_id,
   }
 
   std::string share_id(crypto::Hash<crypto::SHA512>(share_path.string()));
-  std::vector<pki::SignaturePacketPtr> signature_packets;
-  pki::CreateChainedId(&signature_packets, 1);
   asymm::Keys key_ring;
-  key_ring.identity = signature_packets[0]->name();
-  key_ring.public_key = signature_packets[0]->value();
-  key_ring.private_key = signature_packets[0]->private_key();
-  key_ring.validation_token = signature_packets[0]->signature();
+  result = passport::CreateSignaturePacket(key_ring);
+  if (result != kSuccess) {
+    LOG(kError) << "failed to create private share keys.";
+    return result;
+  }
 
   // Store packets
   boost::mutex mutex;
@@ -288,7 +283,7 @@ int UserStorage::CreateShare(const std::string &sender_public_id,
                                          &results[0]));
   std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
   chunk_store_->Store(packet_id,
-                      ComposeSignaturePacketValue(*signature_packets[0]),
+                      ComposeSignaturePacketValue(key_ring),
                       callback,
                       key_shared);
   result = WaitForResultsPtr(&mutex, &cond_var, &results);
@@ -343,13 +338,13 @@ int UserStorage::CreateOpenShare(const std::string &sender_public_id,
     }
   }
   std::string share_id(crypto::Hash<crypto::SHA512>(share_path.string()));
-  std::vector<pki::SignaturePacketPtr> signature_packets;
-  pki::CreateChainedId(&signature_packets, 1);
   asymm::Keys key_ring;
-  key_ring.identity = signature_packets[0]->name();
-  key_ring.public_key = signature_packets[0]->value();
-  key_ring.private_key = signature_packets[0]->private_key();
-  key_ring.validation_token = signature_packets[0]->signature();
+  result = passport::CreateSignaturePacket(key_ring);
+  if (result != kSuccess) {
+    LOG(kError) << "failed to create open share keys.";
+    return result;
+  }
+
   // Store packets
   boost::mutex mutex;
   boost::condition_variable cond_var;
@@ -364,7 +359,7 @@ int UserStorage::CreateOpenShare(const std::string &sender_public_id,
                                          &results[0]));
   std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
   chunk_store_->Store(packet_id,
-                      ComposeSignaturePacketValue(*signature_packets[0]),
+                      ComposeSignaturePacketValue(key_ring),
                       callback,
                       key_shared);
   result = WaitForResultsPtr(&mutex, &cond_var, &results);
@@ -726,13 +721,12 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
                              const StringIntMap &contacts,
                              std::string *new_share_id_return) {
   std::string new_share_id(RandomString(share_id.size()));
-  std::vector<pki::SignaturePacketPtr> signature_packets;
-  pki::CreateChainedId(&signature_packets, 1);
   asymm::Keys key_ring;
-  key_ring.identity = signature_packets[0]->name();
-  key_ring.public_key = signature_packets[0]->value();
-  key_ring.private_key = signature_packets[0]->private_key();
-  key_ring.validation_token = signature_packets[0]->signature();
+  int result(passport::CreateSignaturePacket(key_ring));
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to create new share keys.";
+    return result;
+  }
 
   // Store packets
   boost::mutex mutex;
@@ -745,11 +739,11 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
                                          &mutex, &cond_var, &results[0]));
   std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
   chunk_store_->Store(packet_id,
-                      ComposeSignaturePacketValue(*signature_packets[0]),
+                      ComposeSignaturePacketValue(key_ring),
                       callback,
                       key_shared);
 
-  int result(WaitForResultsPtr(&mutex, &cond_var, &results));
+  result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess) {
     LOG(kError) << "Failed to get response.";
     return result;

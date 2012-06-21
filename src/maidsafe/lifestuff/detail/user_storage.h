@@ -42,7 +42,6 @@
 #include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
-#include "maidsafe/pki/packet.h"
 
 #include "maidsafe/passport/passport_config.h"
 

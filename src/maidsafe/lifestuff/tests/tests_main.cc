@@ -32,7 +32,6 @@ int main(int argc, char **argv) {
   maidsafe::log::Logging::instance().AddFilter("routing", maidsafe::log::kFatal);
   maidsafe::log::Logging::instance().AddFilter("encrypt", maidsafe::log::kFatal);
   maidsafe::log::Logging::instance().AddFilter("drive", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("pki", maidsafe::log::kFatal);
   maidsafe::log::Logging::instance().AddFilter("passport", maidsafe::log::kFatal);
   maidsafe::log::Logging::instance().AddFilter("pd", maidsafe::log::kFatal);
   maidsafe::log::Logging::instance().AddFilter("lifestuff", maidsafe::log::kError);

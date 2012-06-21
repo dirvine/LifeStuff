@@ -162,15 +162,12 @@ int PublicId::CreatePublicId(const std::string &public_id, bool accepts_new_cont
   }
 
   // Retrieves ANMPID, MPID, and MMID's <name, value, signature>
-  std::shared_ptr<asymm::Keys> anmpid(passport_.SignaturePacketDetails(passport::kAnmpid,
-                                                                       false,
-                                                                       public_id));
-  std::shared_ptr<asymm::Keys> mpid(passport_.SignaturePacketDetails(passport::kMpid,
-                                                                     false,
-                                                                     public_id));
-  std::shared_ptr<asymm::Keys> mmid(passport_.SignaturePacketDetails(passport::kMmid,
-                                                                     false,
-                                                                     public_id));
+  std::shared_ptr<asymm::Keys> anmpid(new asymm::Keys(
+      passport_.SignaturePacketDetails(passport::kAnmpid, false, public_id)));
+  std::shared_ptr<asymm::Keys> mpid(new asymm::Keys(
+      passport_.SignaturePacketDetails(passport::kMpid, false, public_id)));
+  std::shared_ptr<asymm::Keys> mmid(new asymm::Keys(
+      passport_.SignaturePacketDetails(passport::kMmid, false, public_id)));
   if (!(anmpid && mpid && mmid)) {
     LOG(kError) << "Failed to get own public ID data.";
     return kGetPublicIdError;
@@ -190,7 +187,7 @@ int PublicId::CreatePublicId(const std::string &public_id, bool accepts_new_cont
   remote_chunk_store_->Store(AppendableByAllName(mmid->identity),
                              AppendableIdValue(*mmid, true),
                              callback,
-                             mmid);
+                             mpid);
 
   callback = std::bind(&ChunkStoreOperationCallback, args::_1, &mutex, &cond_var, &results[1]);
   std::string anmpid_name(SignaturePacketName(anmpid->identity));
@@ -289,12 +286,10 @@ int PublicId::ModifyAppendability(const std::string &public_id, const char appen
   results.push_back(kPendingResult);
   results.push_back(kPendingResult);
 
-  std::shared_ptr<asymm::Keys> mpid(passport_.SignaturePacketDetails(passport::kMpid,
-                                                                     true,
-                                                                     public_id));
-  std::shared_ptr<asymm::Keys> mmid(passport_.SignaturePacketDetails(passport::kMmid,
-                                                                     true,
-                                                                     public_id));
+  std::shared_ptr<asymm::Keys> mpid(new asymm::Keys(
+      passport_.SignaturePacketDetails(passport::kMpid, true, public_id)));
+  std::shared_ptr<asymm::Keys> mmid(new asymm::Keys(
+      passport_.SignaturePacketDetails(passport::kMmid, true, public_id)));
   if (!(mpid && mmid)) {
     LOG(kError) << "Failed to find keys for " << public_id;
     return kGetPublicIdError;
@@ -356,18 +351,20 @@ void PublicId::GetContactsHandle() {
   std::vector<std::string> selectables(session_.PublicIdentities());
   for (auto it(selectables.begin()); it != selectables.end(); ++it) {
     LOG(kError) << "PublicId::GetNewContacts: " << (*it);
-    std::shared_ptr<asymm::Keys> mpid(passport_.SignaturePacketDetails(passport::kMpid, true, *it));
+    std::shared_ptr<asymm::Keys> mpid(new asymm::Keys(
+        passport_.SignaturePacketDetails(passport::kMpid, true, *it)));
     std::string mpid_packet(remote_chunk_store_->Get(MaidsafeContactIdName(*it), mpid));
     if (mpid_packet.empty()) {
       LOG(kError) << "Failed to get MPID contents for " << (*it);
     } else {
-      ProcessRequests(*it, mpid_packet);
+      ProcessRequests(*it, mpid_packet, mpid);
     }
   }
 }
 
 void PublicId::ProcessRequests(const std::string &mpid_name,
-                               const std::string &retrieved_mpid_packet) {
+                               const std::string &retrieved_mpid_packet,
+                               std::shared_ptr<asymm::Keys> mpid) {
   pca::AppendableByAll mcid;
   if (!mcid.ParseFromString(retrieved_mpid_packet)) {
     LOG(kError) << "Failed to parse as AppendableByAll";
@@ -377,7 +374,7 @@ void PublicId::ProcessRequests(const std::string &mpid_name,
   for (int it(0); it < mcid.appendices_size(); ++it) {
     std::string encrypted_introduction;
     int n(asymm::Decrypt(mcid.appendices(it).data(),
-                         passport_.PacketPrivateKey(passport::kMpid, true, mpid_name),
+                         mpid->private_key,
                          &encrypted_introduction));
     if (n != kSuccess || encrypted_introduction.empty()) {
       LOG(kError) << "Failed to decrypt Introduction: " << n;
@@ -503,13 +500,14 @@ int PublicId::RemoveContact(const std::string &public_id, const std::string &con
 
   VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
                                          &mutex, &cond_var, &results[0]));
-  std::shared_ptr<asymm::Keys> new_mmid(passport_.SignaturePacketDetails(passport::kMmid,
-                                                                         false,
-                                                                         public_id));
+  std::shared_ptr<asymm::Keys> new_mmid(new asymm::Keys(
+      passport_.SignaturePacketDetails(passport::kMmid, false, public_id)));
+  std::shared_ptr<asymm::Keys> mpid(new asymm::Keys(
+      passport_.SignaturePacketDetails(passport::kMpid, true, public_id)));
   remote_chunk_store_->Store(AppendableByAllName(new_mmid->identity),
                              AppendableIdValue(*new_mmid, true),
                              callback,
-                             new_mmid);
+                             mpid);
 
   result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
@@ -527,15 +525,14 @@ int PublicId::RemoveContact(const std::string &public_id, const std::string &con
   // Invalidate previous MMID, i.e. put it into kModifiableByOwner
   results[0] = kPendingResult;
 
-  std::shared_ptr<asymm::Keys> old_mmid(passport_.SignaturePacketDetails(passport::kMmid,
-                                                                         true,
-                                                                         public_id));
+  std::shared_ptr<asymm::Keys> old_mmid(new asymm::Keys(
+      passport_.SignaturePacketDetails(passport::kMmid, true, public_id)));
   callback = std::bind(&ChunkStoreOperationCallback, args::_1, &mutex, &cond_var, &results[0]);
   remote_chunk_store_->Modify(AppendableByAllName(old_mmid->identity),
                               ComposeModifyAppendableByAll(old_mmid->private_key,
                                                            pca::kModifiableByOwner),
                               callback,
-                              old_mmid);
+                              mpid);
 
   result = WaitForResultsPtr(&mutex, &cond_var, &results);
   if (result != kSuccess)
@@ -559,11 +556,10 @@ int PublicId::RemoveContact(const std::string &public_id, const std::string &con
 int PublicId::InformContactInfo(const std::string &public_id,
                                 const std::vector<Contact> &contacts) {
   // Get our MMID name, and MPID private key
-  std::string inbox_name(passport_.PacketName(passport::kMmid, true, public_id));
-  std::shared_ptr<asymm::Keys> mpid(passport_.SignaturePacketDetails(passport::kMpid,
-                                                                               true,
-                                                                               public_id));
-  if (!mpid || inbox_name.empty()) {
+  asymm::Keys inbox(passport_.SignaturePacketDetails(passport::kMmid, true, public_id));
+  std::shared_ptr<asymm::Keys> mpid(new asymm::Keys(
+      passport_.SignaturePacketDetails(passport::kMpid, true, public_id)));
+  if (!mpid || mpid->identity.empty() || inbox.identity.empty()) {
     LOG(kError) << "Failed to get own public ID data: " << public_id;
     return kGetPublicIdError;
   }
@@ -580,7 +576,7 @@ int PublicId::InformContactInfo(const std::string &public_id,
     asymm::PublicKey recipient_public_key(contacts[i].mpid_public_key);
 
     Introduction introduction;
-    introduction.set_inbox_name(inbox_name);
+    introduction.set_inbox_name(inbox.identity);
     introduction.set_public_id(public_id);
     introduction.set_profile_picture_data_map(session_.profile_picture_data_map(public_id));
     introduction.set_timestamp(IsoTimeWithMicroSeconds());

@@ -84,9 +84,8 @@ class Session {
                                     const std::string &profile_picture_data_map);
   void set_serialised_data_atlas(const std::string &serialised_data_atlas);
 
-  int ParseDataAtlas(const std::string &serialised_data_atlas);
-  int SerialiseDataAtlas(std::string *serialised_data_atlas);
-  std::shared_ptr<asymm::Keys> GetPmidKeys();
+  int ParseDataAtlas(const std::string &serialised_session);
+  int SerialiseDataAtlas(std::string *serialised_session);
 
   std::vector<std::string> PublicIdentities() const;
 

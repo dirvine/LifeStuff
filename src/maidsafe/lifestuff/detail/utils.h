@@ -29,8 +29,6 @@
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/pki/packet.h"
-
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
@@ -104,7 +102,7 @@ int WaitForResults(boost::mutex &mutex,  // NOLINT (Dan)
 
 std::string ComposeSignaturePacketName(const std::string &name);
 
-std::string ComposeSignaturePacketValue(const maidsafe::pki::SignaturePacket &packet);
+std::string ComposeSignaturePacketValue(const asymm::Keys &packet);
 
 std::shared_ptr<encrypt::DataMap> ParseSerialisedDataMap(const std::string &serialised_data_map);
 

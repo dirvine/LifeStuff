@@ -76,7 +76,7 @@ bool Session::Reset() {
   user_details_->max_space = 1073741824;
   user_details_->used_space = 0;
   // TODO(Fraser#5#): 2011-11-17 - Implement in passport
-  passport_.ClearKeyChain(true, true, true);
+  passport_.Clear(true, true, true);
   contact_handler_map_.clear();
   profile_picture_map_.clear();
   serialised_data_atlas_.clear();
@@ -232,8 +232,7 @@ int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
   data_atlas.set_timestamp(boost::lexical_cast<std::string>(
       GetDurationSinceEpoch().total_microseconds()));
 
-  std::string serialised_keyring(passport_.Serialise()), serialised_selectables;
-//  SerialiseKeyChain(&serialised_keyring, &serialised_selectables);
+  std::string serialised_keyring(passport_.Serialise());
   if (serialised_keyring.empty()) {
     LOG(kError) << "Serialising keyring failed.";
     return -1;
@@ -276,19 +275,6 @@ int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
   }
 
   return kSuccess;
-}
-
-std::shared_ptr<asymm::Keys> Session::GetPmidKeys() {
-  return passport_.SignaturePacketDetails(passport::kPmid, true);
-}
-
-int Session::ParseKeyChain(const std::string &serialised_keyring,
-                           const std::string &serialised_selectables) {
-  return passport_.ParseKeyChain(serialised_keyring, serialised_selectables);
-}
-void Session::SerialiseKeyChain(std::string *serialised_keyring,
-                                std::string *serialised_selectables) {
-  passport_.SerialiseKeyChain(serialised_keyring, serialised_selectables);
 }
 
 bool Session::CreateTestPackets(bool with_public_ids) {
