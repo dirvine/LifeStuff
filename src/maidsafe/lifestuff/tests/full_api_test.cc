@@ -3156,8 +3156,9 @@ TEST(IndependentPrivateShareTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact
     EXPECT_EQ(removal_message, testing_variables2.removal_message);
     bool contact_deleted(false);
     while (!contact_deleted) {
-     if (test_elements2.GetContacts(public_id2).size() > 1)
-       contact_deleted = true;
+      Sleep(bptime::milliseconds(1000));
+      ContactMap map(test_elements2.GetContacts(public_id2));
+      contact_deleted = map.find(public_id3) == map.end();
     }
     EXPECT_TRUE(contact_deleted);
 
@@ -3182,6 +3183,7 @@ TEST(IndependentPrivateShareTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact
 
   EXPECT_EQ(kSuccess, test_elements1.Finalise());
   EXPECT_EQ(kSuccess, test_elements2.Finalise());
+  EXPECT_EQ(kSuccess, test_elements3.Finalise());
 }
 
 TEST(IndependentShareChangeTest, FUNC_AddModifyRemoveOneFile) {

@@ -199,34 +199,7 @@ void ChunkStoreOperationCallback(const bool &response,
     *result = kSuccess;
   else
     *result = kRemoteChunkStoreFailure;
-  cond_var->notify_one();
-}
-
-int WaitForResultsPtr(boost::mutex *mutex,
-                      boost::condition_variable *cond_var,
-                      std::vector<int> *results) {
-  assert(results->size() < 50U);
-  size_t size(results->size());
-  try {
-    boost::mutex::scoped_lock lock(*mutex);
-    if (!cond_var->timed_wait(lock,
-                              bptime::seconds(static_cast<int>(kSecondsInterval * size)),
-                              [&]()->bool {
-                                for (size_t i(0); i < size; ++i) {
-                                  if (results->at(i) == kPendingResult)
-                                    return false;
-                                }
-                                return true;
-                              })) {
-      LOG(kError) << "Timed out during waiting response.";
-      return kOperationTimeOut;
-    }
-  }
-  catch(const std::exception &e) {
-    LOG(kError) << "Exception Failure during waiting response : " << e.what();
-    return kOperationTimeOut;
-  }
-  return kSuccess;
+  cond_var->notify_all();
 }
 
 int WaitForResults(boost::mutex &mutex,  // NOLINT (Dan)
@@ -240,12 +213,16 @@ int WaitForResults(boost::mutex &mutex,  // NOLINT (Dan)
                              bptime::seconds(static_cast<int>(kSecondsInterval * size)),
                              [&]()->bool {
                                for (size_t i(0); i < size; ++i) {
-                                 if (results.at(i) == kPendingResult)
+                                 if (results.at(i) == kPendingResult) {
+                                   LOG(kError) << "Element " << i << " still pending.";
                                    return false;
+                                 }
                                }
                                return true;
                              })) {
-      LOG(kError) << "Timed out during waiting response.";
+      LOG(kError) << "Timed out during waiting response: ";
+      for (size_t n(0); n < size; ++n)
+        LOG(kError) << results[n] << " - ";
       return kOperationTimeOut;
     }
   }

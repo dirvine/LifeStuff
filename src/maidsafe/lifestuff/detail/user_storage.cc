@@ -286,7 +286,7 @@ int UserStorage::CreateShare(const std::string &sender_public_id,
                       ComposeSignaturePacketValue(key_ring),
                       callback,
                       key_shared);
-  result = WaitForResultsPtr(&mutex, &cond_var, &results);
+  result = WaitForResults(mutex, cond_var, results);
   if (result != kSuccess) {
     LOG(kError) << "Timed out waiting for the response";
     return result;
@@ -362,7 +362,7 @@ int UserStorage::CreateOpenShare(const std::string &sender_public_id,
                       ComposeSignaturePacketValue(key_ring),
                       callback,
                       key_shared);
-  result = WaitForResultsPtr(&mutex, &cond_var, &results);
+  result = WaitForResults(mutex, cond_var, results);
   if (result != kSuccess) {
     LOG(kError) << "Timed out waiting for the response";
     return result;
@@ -482,7 +482,7 @@ int UserStorage::StopShare(const std::string &sender_public_id,
   std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
   chunk_store_->Delete(packet_id, callback, key_shared);
 
-  result = WaitForResultsPtr(&mutex, &cond_var, &results);
+  result = WaitForResults(mutex, cond_var, results);
   if (result != kSuccess) {
     LOG(kError) << "Failed to get a response.";
     return result;
@@ -743,7 +743,7 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
                       callback,
                       key_shared);
 
-  result = WaitForResultsPtr(&mutex, &cond_var, &results);
+  result = WaitForResults(mutex, cond_var, results);
   if (result != kSuccess) {
     LOG(kError) << "Failed to get response.";
     return result;
@@ -773,7 +773,7 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
   packet_id = ComposeSignaturePacketName(old_key_ring.identity);
   chunk_store_->Delete(packet_id, callback, old_key_shared);
 
-  result = WaitForResultsPtr(&mutex, &cond_var, &results);
+  result = WaitForResults(mutex, cond_var, results);
   if (result != kSuccess) {
     LOG(kError) << "Failed to get response.";
     return result;

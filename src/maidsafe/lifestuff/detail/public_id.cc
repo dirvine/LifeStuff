@@ -184,10 +184,13 @@ int PublicId::CreatePublicId(const std::string &public_id, bool accepts_new_cont
 
   VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
                                          &mutex, &cond_var, &results[0]));
-  remote_chunk_store_->Store(AppendableByAllName(mmid->identity),
-                             AppendableIdValue(*mmid, true),
-                             callback,
-                             mpid);
+  if (!remote_chunk_store_->Store(AppendableByAllName(mmid->identity),
+                                  AppendableIdValue(*mmid, true),
+                                  callback,
+                                  mmid)) {
+    boost::mutex::scoped_lock lock(mutex);
+    results[0] = kRemoteChunkStoreFailure;
+  }
 
   callback = std::bind(&ChunkStoreOperationCallback, args::_1, &mutex, &cond_var, &results[1]);
   std::string anmpid_name(SignaturePacketName(anmpid->identity));
@@ -204,7 +207,7 @@ int PublicId::CreatePublicId(const std::string &public_id, bool accepts_new_cont
                              callback,
                              mpid);
 
-  result = WaitForResultsPtr(&mutex, &cond_var, &results);
+  result = WaitForResults(mutex, cond_var, results);
   if (result != kSuccess) {
       LOG(kError) << "Timed out.";
     return result;
@@ -214,8 +217,8 @@ int PublicId::CreatePublicId(const std::string &public_id, bool accepts_new_cont
         results[1] == kSuccess &&
         results[2] == kSuccess &&
         results[3] == kSuccess)) {
-    LOG(kError) << "Failed to store packets. " << "ANMPID: " << results[1]
-                << "\tMPID: " << results[2] << "\tMCID: " << results[3] << "\tMMID: "<< results[0];
+    LOG(kError) << "Failed to store packets. " << "ANMPID: " << results[1] << ", MPID: "
+                << results[2] << ", MCID: " << results[3] << ", MMID: "<< results[0];
     return kStorePublicIdFailure;
   }
 
@@ -290,25 +293,33 @@ int PublicId::ModifyAppendability(const std::string &public_id, const char appen
       passport_.SignaturePacketDetails(passport::kMpid, true, public_id)));
   std::shared_ptr<asymm::Keys> mmid(new asymm::Keys(
       passport_.SignaturePacketDetails(passport::kMmid, true, public_id)));
-  if (!(mpid && mmid)) {
+  if (mpid->identity.empty() || mmid->identity.empty()) {
     LOG(kError) << "Failed to find keys for " << public_id;
     return kGetPublicIdError;
   }
 
   VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
                                          &mutex, &cond_var, &results[0]));
-  remote_chunk_store_->Modify(MaidsafeContactIdName(public_id),
-                              ComposeModifyAppendableByAll(mpid->private_key, appendability),
-                              callback,
-                              mpid);
+  if (!remote_chunk_store_->Modify(MaidsafeContactIdName(public_id),
+                                   ComposeModifyAppendableByAll(mpid->private_key, appendability),
+                                   callback,
+                                   mpid)) {
+    LOG(kError) << "Immediate modify failure for MPID.";
+    boost::mutex::scoped_lock lock(mutex);
+    results[0] = kRemoteChunkStoreFailure;
+  }
 
   callback = std::bind(&ChunkStoreOperationCallback, args::_1, &mutex, &cond_var, &results[1]);
-  remote_chunk_store_->Modify(AppendableByAllName(mmid->identity),
-                              ComposeModifyAppendableByAll(mmid->private_key, appendability),
-                              callback,
-                              mmid);
+  if (!remote_chunk_store_->Modify(AppendableByAllName(mmid->identity),
+                                   ComposeModifyAppendableByAll(mmid->private_key, appendability),
+                                   callback,
+                                   mmid)) {
+    LOG(kError) << "Immediate modify failure for MMID.";
+    boost::mutex::scoped_lock lock(mutex);
+    results[1] = kRemoteChunkStoreFailure;
+  }
 
-  int result = WaitForResultsPtr(&mutex, &cond_var, &results);
+  int result = WaitForResults(mutex, cond_var, results);
   if (result != kSuccess) {
     LOG(kError) << "Timed out wating for updates: " << public_id;
     return result;
@@ -502,16 +513,18 @@ int PublicId::RemoveContact(const std::string &public_id, const std::string &con
                                          &mutex, &cond_var, &results[0]));
   std::shared_ptr<asymm::Keys> new_mmid(new asymm::Keys(
       passport_.SignaturePacketDetails(passport::kMmid, false, public_id)));
-  std::shared_ptr<asymm::Keys> mpid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kMpid, true, public_id)));
+//  std::shared_ptr<asymm::Keys> mpid(new asymm::Keys(
+//      passport_.SignaturePacketDetails(passport::kMpid, true, public_id)));
   remote_chunk_store_->Store(AppendableByAllName(new_mmid->identity),
                              AppendableIdValue(*new_mmid, true),
                              callback,
-                             mpid);
+                             new_mmid);
 
-  result = WaitForResultsPtr(&mutex, &cond_var, &results);
-  if (result != kSuccess)
+  result = WaitForResults(mutex, cond_var, results);
+  if (result != kSuccess) {
+    LOG(kError) << "Timed out.";
     return result;
+  }
   if (results[0] != kSuccess) {
     LOG(kError) << "Failed to store new MMID when remove a contact.";
     return kRemoveContactFailure;
@@ -532,11 +545,13 @@ int PublicId::RemoveContact(const std::string &public_id, const std::string &con
                               ComposeModifyAppendableByAll(old_mmid->private_key,
                                                            pca::kModifiableByOwner),
                               callback,
-                              mpid);
+                              old_mmid);
 
-  result = WaitForResultsPtr(&mutex, &cond_var, &results);
-  if (result != kSuccess)
+  result = WaitForResults(mutex, cond_var, results);
+  if (result != kSuccess) {
+    LOG(kError) << "Timed out.";
     return result;
+  }
   if (results[0] != kSuccess) {
     LOG(kError) << "Failed to invalidate previous MMID when remove a contact.";
     return kRemoveContactFailure;
@@ -609,7 +624,7 @@ int PublicId::InformContactInfo(const std::string &public_id,
                                 callback,
                                 mpid);
   }
-  int result(WaitForResultsPtr(&mutex, &cond_var, &results));
+  int result(WaitForResults(mutex, cond_var, results));
   if (result != kSuccess) {
     LOG(kError) << "Timed out.";
     return result;

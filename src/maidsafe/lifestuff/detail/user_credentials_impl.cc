@@ -233,10 +233,11 @@ int UserCredentialsImpl::HandleSerialisedDataMaps(const std::string &keyword,
   int result(kSuccess);
   std::string tmid_da, stmid_da;
   if (!tmid_serialised_data_atlas.empty()) {
-    tmid_da = tmid_serialised_data_atlas;
     result = session_.ParseDataAtlas(tmid_serialised_data_atlas);
-    if (result == kSuccess)
+    if (result == kSuccess) {
       session_.set_serialised_data_atlas(tmid_serialised_data_atlas);
+      tmid_da = tmid_serialised_data_atlas;
+    }
   } else if (!stmid_serialised_data_atlas.empty()) {
     tmid_da = stmid_serialised_data_atlas;
     stmid_da = stmid_serialised_data_atlas;
@@ -247,8 +248,14 @@ int UserCredentialsImpl::HandleSerialisedDataMaps(const std::string &keyword,
     }
   }
 
-  if (stmid_da.empty() && !stmid_serialised_data_atlas.empty())
-    stmid_da = stmid_serialised_data_atlas;
+  if (stmid_da.empty()) {
+    if (tmid_da.empty()) {
+      LOG(kError) << "No valid DA.";
+      return kSetIdentityPacketsFailure;
+    } else if (!stmid_serialised_data_atlas.empty()) {
+      stmid_da = stmid_serialised_data_atlas;
+    }
+  }
 
   result = passport_.SetIdentityPackets(keyword, pin, password, tmid_da, stmid_da);
   result += passport_.ConfirmIdentityPackets();
@@ -367,10 +374,9 @@ void UserCredentialsImpl::StoreAntmid(OperationResults &results) {  // NOLINT (D
   StoreSignaturePacket(antmid, results, 2);
 }
 
-void UserCredentialsImpl::StoreSignaturePacket(
-    std::shared_ptr<asymm::Keys> packet,
-    OperationResults &results,  // NOLINT (Dan)
-    int index) {
+void UserCredentialsImpl::StoreSignaturePacket(std::shared_ptr<asymm::Keys> packet,
+                                               OperationResults &results,  // NOLINT (Dan)
+                                               int index) {
   std::string packet_name, packet_content;
 
   CreateSignaturePacketInfo(packet, &packet_name, &packet_content);
