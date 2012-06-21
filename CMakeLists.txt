@@ -72,20 +72,14 @@ file(GLOB SOURCE_FILES_DETAIL_DIR "${PATH_TO_DETAIL}/*.cc")
 file(GLOB HEADER_FILES_DETAIL_DIR "${PATH_TO_DETAIL}/*.h")
 set(ALL_FILES_DETAIL_DIR ${SOURCE_FILES_DETAIL_DIR}
                          ${HEADER_FILES_DETAIL_DIR}
-                         "${PATH_TO_SRC}/lifestuff.cc"
                          "${PATH_TO_INCLUDE}/lifestuff.h"
                          "${PATH_TO_INCLUDE}/return_codes.h")
 
 set(STYLE_ALL ${ALL_FILES_DETAIL_DIR} ${ALL_FILES_LIFESTUFF_DIR})
 list(REMOVE_ITEM STYLE_ALL "${PATH_TO_DETAIL}/data_atlas.pb.h"
-                           "${PATH_TO_DETAIL}/data_atlas.pb.cc"
-                           "${PATH_TO_DETAIL}/data_types.pb.h"
-                           "${PATH_TO_DETAIL}/data_types.pb.cc"
-                           "${PATH_TO_DETAIL}/lifestuff_messages.pb.h"
-                           "${PATH_TO_DETAIL}/lifestuff_messages.pb.cc")
+                           "${PATH_TO_DETAIL}/data_atlas.pb.cc")
 
-source_group("LifeStuff Source Files" FILES ${SOURCE_FILES_LIFESTUFF_DIR}
-                                            "${PATH_TO_SRC}/lifestuff.cc")
+source_group("LifeStuff Source Files" FILES ${SOURCE_FILES_LIFESTUFF_DIR})
 source_group("LifeStuff Header Files" FILES ${HEADER_FILES_LIFESTUFF_DIR})
 source_group("LifeStuff API Files" FILES ${API_FILES_LIFESTUFF_DIR}
                                          "${PATH_TO_INCLUDE}/lifestuff.h"
