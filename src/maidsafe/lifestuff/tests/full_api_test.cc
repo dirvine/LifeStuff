@@ -637,7 +637,7 @@ void RunChangePassword(LifeStuff& test_elements,
   result = test_elements.ChangePassword(new_password, password);
 }
 
-TEST_F(OneUserApiTest, FUNC_ChangePinAndPassword) {
+TEST_F(OneUserApiTest, FUNC_ChangePinAndPasswordSimultaneously) {
   std::string new_pin(CreatePin());
   std::string new_password(RandomAlphaNumericString(5));
   int result_pin(0), result_password(0);
@@ -673,7 +673,7 @@ TEST_F(OneUserApiTest, FUNC_ChangePinAndPassword) {
   }
 }
 
-TEST_F(OneUserApiTest, FUNC_ChangeKeywordAndPassword) {
+TEST_F(OneUserApiTest, FUNC_ChangeKeywordAndPasswordSimultaneously) {
   std::string new_keyword(RandomAlphaNumericString(5));
   std::string new_password(RandomAlphaNumericString(5));
   int result_keyword(0), result_password(0);
@@ -709,7 +709,7 @@ TEST_F(OneUserApiTest, FUNC_ChangeKeywordAndPassword) {
   }
 }
 
-TEST_F(OneUserApiTest, FUNC_ChangePinAndKeyword) {
+TEST_F(OneUserApiTest, FUNC_ChangePinAndKeywordSimultaneously) {
   std::string new_pin(CreatePin());
   std::string new_keyword(RandomAlphaNumericString(5));
   int result_pin(0), result_keyword(0);
@@ -747,9 +747,83 @@ TEST_F(OneUserApiTest, FUNC_ChangePinAndKeyword) {
   }
 }
 
-TEST_F(OneUserApiTest, FUNC_CreateSameUserTwice) {
+TEST_F(OneUserApiTest, FUNC_CreateUserWhenLoggedIn) {
+  EXPECT_NE(kSuccess, test_elements_.CreateUser(RandomAlphaNumericString(5),
+                                                CreatePin(),
+                                                RandomAlphaNumericString(5)));
+}
+
+TEST_F(OneUserApiTest, FUNC_LogOutCreateNewUser) {
   EXPECT_EQ(kSuccess, test_elements_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_.CreateUser(RandomAlphaNumericString(5),
+                                                CreatePin(),
+                                                RandomAlphaNumericString(5)));
+}
+
+TEST_F(OneUserApiTest, FUNC_CreateInvalidUsers) {
+  std::string new_pin(CreatePin());
+  std::string new_keyword(RandomAlphaNumericString(5));
+  std::string new_password(RandomAlphaNumericString(5));
+
+  EXPECT_EQ(kSuccess, test_elements_.LogOut());
+
+  // Try to create existing account
   EXPECT_NE(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_));
+
+  // Try to create new account when logged in
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
+  EXPECT_NE(kSuccess, test_elements_.CreateUser(new_keyword, new_pin, new_password));
+  EXPECT_EQ(kSuccess, test_elements_.LogOut());
+
+  // Bad Pin
+  EXPECT_NE(kSuccess, test_elements_.CreateUser(new_keyword, "", new_password));
+  EXPECT_NE(kSuccess, test_elements_.CreateUser(new_keyword, "0000", new_password));
+  std::string not_digits_only(RandomAlphaNumericString(4));
+  bool is_all_digits(true);
+  while (is_all_digits) {
+    try {
+      boost::lexical_cast<int>(not_digits_only);
+      is_all_digits = true;
+      not_digits_only = RandomAlphaNumericString(4);
+    }
+    catch(const std::exception &e) {
+      is_all_digits = false;
+    }
+  }
+  EXPECT_NE(kSuccess, test_elements_.CreateUser(new_keyword, not_digits_only, new_password));
+  EXPECT_NE(kSuccess, test_elements_.CreateUser(new_keyword,
+                                                CreatePin().erase(3, 1),
+                                                new_password));
+  EXPECT_NE(kSuccess, test_elements_.CreateUser(new_keyword,
+                                                CreatePin().append("1"),
+                                                new_password));
+
+  // Bad Keyword
+  EXPECT_NE(kSuccess, test_elements_.CreateUser(RandomAlphaNumericString(RandomUint32() % 5),
+                                                new_pin,
+                                                new_password));
+  EXPECT_NE(kSuccess, test_elements_.CreateUser(RandomAlphaNumericString(31),
+                                                new_pin,
+                                                new_password));
+  EXPECT_NE(kSuccess, test_elements_.CreateUser(RandomAlphaNumericString(RandomUint32() % 13 + 2) +
+                                                " " +
+                                                RandomAlphaNumericString(RandomUint32() % 14 + 2),
+                                                new_pin,
+                                                new_password));
+
+  // Bad Password
+  EXPECT_NE(kSuccess, test_elements_.CreateUser(new_keyword,
+                                                new_pin,
+                                                RandomAlphaNumericString(RandomUint32() % 5)));
+  EXPECT_NE(kSuccess, test_elements_.CreateUser(new_keyword,
+                                                new_pin,
+                                                RandomAlphaNumericString(31)));
+  EXPECT_NE(kSuccess,
+            test_elements_.CreateUser(new_keyword,
+                                      new_pin,
+                                      RandomAlphaNumericString(RandomUint32() % 13 + 2) + " " +
+                                      RandomAlphaNumericString(RandomUint32() % 14 + 2)));
+
   EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
 }
 
@@ -820,7 +894,7 @@ TEST_F(OneUserApiTest, FUNC_TryInvalidCredentials) {
                                          password_));
 }
 
-TEST_F(OneUserApiTest, FUNC_CreateSamePublicIdTwiceConsecutively) {
+TEST_F(OneUserApiTest, FUNC_CreateSamePublicIdConsecutively) {
   std::string new_public_id(RandomAlphaNumericString(6));
   EXPECT_EQ(kSuccess, test_elements_.CreatePublicId(new_public_id));
   EXPECT_NE(kSuccess, test_elements_.CreatePublicId(new_public_id));
@@ -832,10 +906,9 @@ void RunCreatePublicId(LifeStuff& test_elements,
                        const std::pair<int, int> sleeps) {
   RandomSleep(sleeps);
   result = test_elements.CreatePublicId(new_id);
-  LOG(kInfo) << "RunCreatePublicId: result: " << result;
 }
 
-TEST_F(OneUserApiTest, FUNC_CreateSamePublicIdTwiceSimultaneously) {
+TEST_F(OneUserApiTest, FUNC_CreateSamePublicIdSimultaneously) {
   std::string new_public_id(RandomAlphaNumericString(6));
   int result_1(0);
   int result_2(0);
@@ -936,6 +1009,26 @@ TEST_F(OneUserApiTest, FUNC_ChangeCredentialsAndLogOut) {
   EXPECT_EQ(kSuccess, test_elements_.LogIn(new_keyword, new_pin, new_password));
 }
 
+TEST_F(OneUserApiTest, FUNC_AddInvalidContact) {
+  std::string own_public_id(RandomAlphaNumericString(5));
+  std::string public_id_1(RandomAlphaNumericString(6));
+  std::string public_id_2(RandomAlphaNumericString(7));
+  test_elements_.CreatePublicId(own_public_id);
+  EXPECT_NE(kSuccess, test_elements_.AddContact(own_public_id, ""));
+  EXPECT_NE(kSuccess, test_elements_.AddContact(own_public_id, public_id_1));
+  EXPECT_NE(kSuccess, test_elements_.AddContact(public_id_1, public_id_2));
+}
+
+TEST_F(OneUserApiTest, FUNC_AddOwnPublicIdAsContact) {
+  std::string public_id_1(RandomAlphaNumericString(6));
+  std::string public_id_2(RandomAlphaNumericString(7));
+  test_elements_.CreatePublicId(public_id_1);
+  test_elements_.CreatePublicId(public_id_2);
+
+  EXPECT_NE(kSuccess, test_elements_.AddContact(public_id_1, public_id_1));
+  EXPECT_NE(kSuccess, test_elements_.AddContact(public_id_1, public_id_2));
+}
+
 class TwoInstancesApiTest : public OneUserApiTest {
  public:
   TwoInstancesApiTest()
@@ -949,8 +1042,25 @@ class TwoInstancesApiTest : public OneUserApiTest {
   TestingVariables testing_variables_2_;
 
   virtual void SetUp() {
-    OneUserApiTest::SetUp();
+    EXPECT_EQ(kSuccess, test_elements_.Initialise(*test_dir_));
     EXPECT_EQ(kSuccess, test_elements_2_.Initialise(*test_dir_));
+    EXPECT_EQ(kSuccess,
+              test_elements_.ConnectToSignals(ChatFunction(),
+                                              FileTransferFunction(),
+                                              NewContactFunction(),
+                                              ContactConfirmationFunction(),
+                                              ContactProfilePictureFunction(),
+                                              std::bind(&ContactPresenceSlot,
+                                                        args::_1, args::_2,
+                                                        args::_3, args::_4,
+                                                        &done_),
+                                              ContactDeletionFunction(),
+                                              PrivateShareInvitationFunction(),
+                                              PrivateShareDeletionFunction(),
+                                              PrivateMemberAccessChangeFunction(),
+                                              OpenShareInvitationFunction(),
+                                              ShareRenamedFunction(),
+                                              ShareChangedFunction()));
     EXPECT_EQ(kSuccess,
               test_elements_2_.ConnectToSignals(ChatFunction(),
                                               FileTransferFunction(),
@@ -968,7 +1078,6 @@ class TwoInstancesApiTest : public OneUserApiTest {
                                               OpenShareInvitationFunction(),
                                               ShareRenamedFunction(),
                                               ShareChangedFunction()));
-    EXPECT_EQ(kSuccess, test_elements_.LogOut());
   }
 
   virtual void TearDown() {
@@ -978,11 +1087,58 @@ class TwoInstancesApiTest : public OneUserApiTest {
 };
 
 TEST_F(TwoInstancesApiTest, FUNC_LogInFromTwoPlaces) {
-  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
+  EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_));
   EXPECT_NE(kSuccess, test_elements_2_.LogIn(keyword_, pin_, password_));
 
   EXPECT_EQ(kSuccess, test_elements_.LogOut());
   EXPECT_NE(kSuccess, test_elements_2_.LogOut());
+}
+
+TEST_F(TwoInstancesApiTest, FUNC_NeverLogIn) {
+}
+
+void RunCreateUser(LifeStuff& test_elements,
+                   int& result,
+                   const std::string& keyword,
+                   const std::string& pin,
+                   const std::string& password,
+                   const std::pair<int, int> sleeps) {
+  RandomSleep(sleeps);
+  result = test_elements.CreateUser(keyword, pin, password);
+}
+
+TEST_F(TwoInstancesApiTest, FUNC_CreateSameUserSimultaneously) {
+  int result_1(0), result_2(0);
+  std::pair<int, int> sleeps(0, 0);
+  boost::thread thread_1(std::bind(&RunCreateUser,
+                                   test_elements_,
+                                   std::ref(result_1),
+                                   keyword_, pin_,
+                                   password_,
+                                   sleeps));
+  boost::thread thread_2(std::bind(&RunCreateUser,
+                                   test_elements_2_,
+                                   std::ref(result_2),
+                                   keyword_,
+                                   pin_,
+                                   password_,
+                                   sleeps));
+  thread_1.join();
+  thread_2.join();
+  LOG(kInfo) << "Create 1 result: " << result_1;
+  LOG(kInfo) << "Create 2 result: " << result_2;
+  EXPECT_TRUE((result_1 == kSuccess && result_2 != kSuccess) ||
+              (result_1 != kSuccess && result_2 == kSuccess));
+  result_1 = test_elements_.LogOut();
+  result_2 = test_elements_2_.LogOut();
+  LOG(kInfo) << "Logout 1 result: " << result_1;
+  LOG(kInfo) << "Logout 2 result: " << result_2;
+  EXPECT_TRUE((result_1 == kSuccess && result_2 != kSuccess) ||
+              (result_1 != kSuccess && result_2 == kSuccess));
+  result_1 = test_elements_.state();
+  result_2 = test_elements_2_.state();
+  LOG(kInfo) << "State 1: " << result_1;
+  LOG(kInfo) << "State 2: " << result_2;
 }
 
 class TwoUsersApiTest : public testing::Test {
