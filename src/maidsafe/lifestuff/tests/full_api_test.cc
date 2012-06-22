@@ -600,24 +600,40 @@ TEST_F(OneUserApiTest, FUNC_ChangeCredentials) {
   EXPECT_EQ(kSuccess, test_elements_.ChangePassword(password_, password_));
 }
 
+void RandomSleep(const std::pair<int, int> sleeps) {
+  // Sleeps for random number of milliseconds m with m satisfying sleeps.first <= m < sleeps.second
+  if (sleeps.second > 0 && sleeps.first >= 0) {
+    if (sleeps.first < sleeps.second)
+      Sleep(bptime::milliseconds(RandomUint32() % (sleeps.second - sleeps.first) + sleeps.first));
+    else
+      Sleep(bptime::milliseconds(sleeps.first));
+  }
+}
+
 void RunChangePin(LifeStuff& test_elements,
                   int& result,
                   const std::string& new_pin,
-                  const std::string& password) {
+                  const std::string& password,
+                  const std::pair<int, int> sleeps) {
+  RandomSleep(sleeps);
   result = test_elements.ChangePin(new_pin, password);
 }
 
 void RunChangeKeyword(LifeStuff& test_elements,
                       int& result,
                       const std::string& new_keyword,
-                      const std::string& password) {
+                      const std::string& password,
+                      const std::pair<int, int> sleeps) {
+  RandomSleep(sleeps);
   result = test_elements.ChangeKeyword(new_keyword, password);
 }
 
 void RunChangePassword(LifeStuff& test_elements,
                        int& result,
                        const std::string& new_password,
-                       const std::string& password) {
+                       const std::string& password,
+                       const std::pair<int, int> sleeps) {
+  RandomSleep(sleeps);
   result = test_elements.ChangePassword(new_password, password);
 }
 
@@ -626,42 +642,71 @@ TEST_F(OneUserApiTest, FUNC_ChangePinAndPassword) {
   std::string new_password(RandomAlphaNumericString(5));
   int result_pin(0), result_password(0);
 
-  boost::thread thread_pin(std::bind(&RunChangePin, test_elements_, result_pin, new_pin,
-                                     password_));
-  boost::thread thread_password(std::bind(&RunChangePassword, test_elements_, result_password,
-                                          new_password, password_));
+  std::vector<std::pair<int, int> > sleep_values;
+  sleep_values.push_back(std::make_pair(0, 200));
+  sleep_values.push_back(std::make_pair(100, 200));
+  sleep_values.push_back(std::make_pair(100, 150));
+  sleep_values.push_back(std::make_pair(0, 10));
 
-  thread_pin.join();
-  thread_password.join();
+  for (size_t i = 0; i < sleep_values.size(); ++i) {
+    boost::thread thread_pin(std::bind(&RunChangePin,
+                                       test_elements_,
+                                       std::ref(result_pin),
+                                       new_pin,
+                                       password_,
+                                       sleep_values.at(i)));
+    boost::thread thread_password(std::bind(&RunChangePassword,
+                                            test_elements_,
+                                            std::ref(result_password),
+                                            new_password,
+                                            password_,
+                                            sleep_values.at(i)));
+    thread_pin.join();
+    thread_password.join();
+    EXPECT_EQ(kSuccess, result_pin);
+    EXPECT_EQ(kSuccess, result_password);
 
-  EXPECT_TRUE(result_pin == kSuccess && result_password == kSuccess);
-
-  EXPECT_EQ(kSuccess, test_elements_.LogOut());
-
-  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_,
-                                           result_pin == kSuccess ? new_pin : pin_,
-                                           result_password == kSuccess ? new_password : password_));
+    EXPECT_EQ(kSuccess, test_elements_.LogOut());
+    ASSERT_EQ(kSuccess, test_elements_.LogIn(keyword_, new_pin, new_password));
+    new_pin.swap(pin_);
+    new_password.swap(password_);
+  }
 }
 
 TEST_F(OneUserApiTest, FUNC_ChangeKeywordAndPassword) {
   std::string new_keyword(RandomAlphaNumericString(5));
   std::string new_password(RandomAlphaNumericString(5));
   int result_keyword(0), result_password(0);
-  boost::thread thread_keyword(std::bind(&RunChangeKeyword, test_elements_, result_keyword,
-                                         new_keyword, password_));
-  boost::thread thread_password(std::bind(&RunChangePassword, test_elements_, result_password,
-                                          new_password, password_));
 
-  thread_keyword.join();
-  thread_password.join();
+  std::vector<std::pair<int, int> > sleep_values;
+  sleep_values.push_back(std::make_pair(0, 200));
+  sleep_values.push_back(std::make_pair(100, 200));
+  sleep_values.push_back(std::make_pair(100, 150));
+  sleep_values.push_back(std::make_pair(0, 10));
 
-  EXPECT_TRUE(result_keyword == kSuccess && result_password == kSuccess);
+  for (size_t i = 0; i < sleep_values.size(); ++i) {
+    boost::thread thread_keyword(std::bind(&RunChangeKeyword,
+                                           test_elements_,
+                                           std::ref(result_keyword),
+                                           new_keyword,
+                                           password_,
+                                           sleep_values.at(i)));
+    boost::thread thread_password(std::bind(&RunChangePassword,
+                                            test_elements_,
+                                            std::ref(result_password),
+                                            new_password,
+                                            password_,
+                                            sleep_values.at(i)));
+    thread_keyword.join();
+    thread_password.join();
+    EXPECT_EQ(kSuccess, result_keyword);
+    EXPECT_EQ(kSuccess, result_password);
 
-  EXPECT_EQ(kSuccess, test_elements_.LogOut());
-
-  EXPECT_EQ(kSuccess, test_elements_.LogIn(result_keyword == kSuccess ? new_keyword : keyword_,
-                                           pin_,
-                                           result_password == kSuccess ? new_password : password_));
+    EXPECT_EQ(kSuccess, test_elements_.LogOut());
+    ASSERT_EQ(kSuccess, test_elements_.LogIn(new_keyword, pin_, new_password));
+    new_keyword.swap(keyword_);
+    new_password.swap(password_);
+  }
 }
 
 TEST_F(OneUserApiTest, FUNC_ChangePinAndKeyword) {
@@ -669,20 +714,43 @@ TEST_F(OneUserApiTest, FUNC_ChangePinAndKeyword) {
   std::string new_keyword(RandomAlphaNumericString(5));
   int result_pin(0), result_keyword(0);
 
-  boost::thread thread_pin(std::bind(&RunChangePin, test_elements_, result_pin, new_pin,
-                                     password_));
-  boost::thread thread_keyword(std::bind(&RunChangeKeyword, test_elements_, result_keyword,
-                                         new_keyword, password_));
+  std::vector<std::pair<int, int> > sleep_values;
+  sleep_values.push_back(std::make_pair(0, 5000));
+  sleep_values.push_back(std::make_pair(0, 200));
+  sleep_values.push_back(std::make_pair(100, 200));
+  sleep_values.push_back(std::make_pair(100, 150));
+  sleep_values.push_back(std::make_pair(0, 10));
 
-  thread_pin.join();
-  thread_keyword.join();
+  for (size_t i = 0; i < sleep_values.size(); ++i) {
+    boost::thread thread_pin(std::bind(&RunChangePin,
+                                       test_elements_,
+                                       std::ref(result_pin),
+                                       new_pin,
+                                       password_,
+                                       sleep_values.at(i)));
+    boost::thread thread_keyword(std::bind(&RunChangeKeyword,
+                                           test_elements_,
+                                           std::ref(result_keyword),
+                                           new_keyword,
+                                           password_,
+                                           sleep_values.at(i)));
+    thread_pin.join();
+    thread_keyword.join();
 
-  EXPECT_TRUE(result_pin == kSuccess && result_keyword == kSuccess);
+    EXPECT_EQ(kSuccess, result_pin);
+    EXPECT_EQ(kSuccess, result_keyword);
 
+    EXPECT_EQ(kSuccess, test_elements_.LogOut());
+    ASSERT_EQ(kSuccess, test_elements_.LogIn(new_keyword, new_pin, password_));
+    new_pin.swap(pin_);
+    new_keyword.swap(keyword_);
+  }
+}
+
+TEST_F(OneUserApiTest, FUNC_CreateSameUserTwice) {
   EXPECT_EQ(kSuccess, test_elements_.LogOut());
-
-  EXPECT_EQ(kSuccess, test_elements_.LogIn(result_keyword == kSuccess ? new_keyword : keyword_,
-                                           result_pin == kSuccess ? new_pin : pin_, password_));
+  EXPECT_NE(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_));
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
 }
 
 TEST_F(OneUserApiTest, FUNC_TryInvalidCredentials) {
@@ -717,7 +785,19 @@ TEST_F(OneUserApiTest, FUNC_TryInvalidCredentials) {
   // Change PIN
   EXPECT_NE(kSuccess, test_elements_.ChangePin("", password_));
   EXPECT_NE(kSuccess, test_elements_.ChangePin("0000", password_));
-  EXPECT_NE(kSuccess, test_elements_.ChangePin("a12b", password_));
+  std::string not_digits_only(RandomAlphaNumericString(4));
+  bool is_all_digits(true);
+  while (is_all_digits) {
+    try {
+      boost::lexical_cast<int>(not_digits_only);
+      is_all_digits = true;
+      not_digits_only = RandomAlphaNumericString(4);
+    }
+    catch(const std::exception &e) {
+      is_all_digits = false;
+    }
+  }
+  EXPECT_NE(kSuccess, test_elements_.ChangePin(not_digits_only, password_));
   EXPECT_NE(kSuccess, test_elements_.ChangePin(CreatePin().erase(3, 1), password_));
   EXPECT_NE(kSuccess, test_elements_.ChangePin(CreatePin().append("1"), password_));
   EXPECT_NE(kSuccess, test_elements_.ChangePin(CreatePin(), incorrect_password));
@@ -738,6 +818,70 @@ TEST_F(OneUserApiTest, FUNC_TryInvalidCredentials) {
             test_elements_.ChangeKeyword(RandomAlphaNumericString(RandomUint32() % 13 + 2) + " " +
                                          RandomAlphaNumericString(RandomUint32() % 14 + 2),
                                          password_));
+}
+
+TEST_F(OneUserApiTest, FUNC_CreateSamePublicIdTwiceConsecutively) {
+  std::string new_public_id(RandomAlphaNumericString(6));
+  EXPECT_EQ(kSuccess, test_elements_.CreatePublicId(new_public_id));
+  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(new_public_id));
+}
+
+void RunCreatePublicId(LifeStuff& test_elements,
+                       int& result,
+                       const std::string& new_id,
+                       const std::pair<int, int> sleeps) {
+  RandomSleep(sleeps);
+  result = test_elements.CreatePublicId(new_id);
+  LOG(kInfo) << "RunCreatePublicId: result: " << result;
+}
+
+TEST_F(OneUserApiTest, FUNC_CreateSamePublicIdTwiceSimultaneously) {
+  std::string new_public_id(RandomAlphaNumericString(6));
+  int result_1(0);
+  int result_2(0);
+
+  std::vector<std::pair<int, int> > sleep_values;
+  sleep_values.push_back(std::make_pair(0, 0));
+  sleep_values.push_back(std::make_pair(100, 200));
+  sleep_values.push_back(std::make_pair(100, 150));
+  sleep_values.push_back(std::make_pair(0, 10));
+
+  for (size_t i = 0; i < sleep_values.size(); ++i) {
+    boost::thread thread_1(std::bind(&RunCreatePublicId,
+                                     test_elements_,
+                                     std::ref(result_1),
+                                     new_public_id,
+                                     sleep_values.at(i)));
+    boost::thread thread_2(std::bind(&RunCreatePublicId,
+                                     test_elements_,
+                                     std::ref(result_2),
+                                     new_public_id,
+                                     sleep_values.at(i)));
+    thread_1.join();
+    thread_2.join();
+
+    LOG(kInfo) << "result_1: " << result_1;
+    LOG(kInfo) << "result_2: " << result_2;
+
+    EXPECT_TRUE((result_1 == kSuccess && result_2 != kSuccess) ||
+                (result_1 != kSuccess && result_2 == kSuccess))
+        << "Value of result 1: " << result_1 << "\nValue of result 2: " << result_2 <<
+        "\nAttempt number " << i;
+
+    EXPECT_EQ(kSuccess, test_elements_.LogOut());
+
+    EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
+
+    int new_instances(0);
+    std::vector<std::string>::iterator it;
+    std::vector<std::string> names(test_elements_.PublicIdsList());
+    for (it = names.begin(); it < names.end(); it++) {
+      if (*it == new_public_id)
+        ++new_instances;
+    }
+    EXPECT_EQ(new_instances, 1);
+    new_public_id = RandomAlphaNumericString(new_public_id.length() + 1);
+  }
 }
 
 TEST_F(OneUserApiTest, FUNC_ChangeCredentialsWhenLoggedOut) {
@@ -761,20 +905,32 @@ TEST_F(OneUserApiTest, FUNC_ChangeCredentialsAndLogOut) {
   std::string new_password(RandomAlphaNumericString(5));
   int result(0);
 
-  boost::thread thread_pin(std::bind(&RunChangePin, test_elements_, result, new_pin,
-                                     password_));
+  boost::thread thread_pin(std::bind(&RunChangePin,
+                                     test_elements_,
+                                     std::ref(result),
+                                     new_pin,
+                                     password_,
+                                     std::make_pair(0, 0)));
 
   test_elements_.LogOut();
   EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, new_pin, password_));
 
-  boost::thread thread_keyword(std::bind(&RunChangeKeyword, test_elements_, result, new_keyword,
-                                         password_));
+  boost::thread thread_keyword(std::bind(&RunChangeKeyword,
+                                         test_elements_,
+                                         std::ref(result),
+                                         new_keyword,
+                                         password_,
+                                         std::make_pair(0, 0)));
 
   test_elements_.LogOut();
   EXPECT_EQ(kSuccess, test_elements_.LogIn(new_keyword, new_pin, password_));
 
-  boost::thread thread_password(std::bind(&RunChangePassword, test_elements_, result, new_password,
-                                          password_));
+  boost::thread thread_password(std::bind(&RunChangePassword,
+                                          test_elements_,
+                                          std::ref(result),
+                                          new_password,
+                                          password_,
+                                          std::make_pair(0, 0)));
 
   test_elements_.LogOut();
   EXPECT_EQ(kSuccess, test_elements_.LogIn(new_keyword, new_pin, new_password));
@@ -871,63 +1027,182 @@ class TwoUsersApiTest : public testing::Test {
   }
 
   virtual void TearDown() {
-    EXPECT_EQ(kSuccess, test_elements_1_.Finalise());
-    EXPECT_EQ(kSuccess, test_elements_2_.Finalise());
+    if (test_elements_1_.state() == kLoggedOut)
+      EXPECT_EQ(kSuccess, test_elements_1_.Finalise());
+    if (test_elements_2_.state() == kLoggedOut)
+      EXPECT_EQ(kSuccess, test_elements_2_.Finalise());
   }
 };
 
-TEST_F(TwoUsersApiTest, FUNC_ChangeCredentialsToSame) {
+TEST_F(TwoUsersApiTest, FUNC_ChangeCredentialsToSameConsecutively) {
   EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
   EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
 
   std::string new_pin(CreatePin());
   std::string new_keyword(RandomAlphaNumericString(5));
 
-  int result1(0), result2(0), result3(0), result4(0);
-  boost::thread thread1(std::bind(&RunChangePin, test_elements_1_, result1, new_pin, password_1_));
-  boost::thread thread2(std::bind(&RunChangePin, test_elements_2_, result2, new_pin, password_2_));
-  boost::thread thread3(std::bind(&RunChangeKeyword, test_elements_1_, result3, new_keyword,
-                                  password_1_));
-  boost::thread thread4(std::bind(&RunChangeKeyword, test_elements_2_, result4, new_keyword,
-                                  password_2_));
-
-  thread1.join();
-  thread2.join();
-  thread3.join();
-  thread4.join();
-
-  EXPECT_FALSE(result1 == kSuccess && result2 == kSuccess && result3 == kSuccess &&
-               result4 == kSuccess);
+  EXPECT_EQ(kSuccess, test_elements_1_.ChangePin(new_pin, password_1_));
+  EXPECT_EQ(kSuccess, test_elements_2_.ChangePin(new_pin, password_2_));
+  EXPECT_EQ(kSuccess, test_elements_1_.ChangeKeyword(new_keyword, password_1_));
+  EXPECT_NE(kSuccess, test_elements_2_.ChangeKeyword(new_keyword, password_2_));
 
   EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 
-  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(result3 == kSuccess ? new_keyword : keyword_1_,
-                                             result1 == kSuccess ? new_pin : pin_1_, password_1_));
-  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(result4 == kSuccess ? new_keyword : keyword_2_,
-                                             result2 == kSuccess ? new_pin : pin_2_, password_2_));
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(new_keyword, new_pin, password_1_));
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, new_pin, password_2_));
   EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 }
 
-void RunCreatePublicId(LifeStuff& test_elements, int& result, const std::string& new_id) {
-  result = test_elements.CreatePublicId(new_id);
-}
-
-TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicId) {
+TEST_F(TwoUsersApiTest, FUNC_ChangeCredentialsToSameSimultaneously) {
   EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
   EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
 
-  std::string new_public_id(RandomAlphaNumericString(5));
+  std::string new_pin(CreatePin());
+  std::string new_keyword(RandomAlphaNumericString(5));
+
+  int result_pin_1(0), result_pin_2(0), result_keyword_1(0), result_keyword_2(0);
+
+  boost::thread thread_pin_1(std::bind(&RunChangePin,
+                                       test_elements_1_,
+                                       std::ref(result_pin_1),
+                                       new_pin,
+                                       password_1_,
+                                       std::make_pair(0, 0)));
+  boost::thread thread_pin_2(std::bind(&RunChangePin,
+                                       test_elements_2_,
+                                       std::ref(result_pin_2),
+                                       new_pin,
+                                       password_2_,
+                                       std::make_pair(0, 0)));
+  boost::thread thread_keyword_1(std::bind(&RunChangeKeyword,
+                                           test_elements_1_,
+                                           std::ref(result_keyword_1),
+                                           new_keyword,
+                                           password_1_,
+                                           std::make_pair(0, 0)));
+  boost::thread thread_keyword_2(std::bind(&RunChangeKeyword,
+                                           test_elements_2_,
+                                           std::ref(result_keyword_2),
+                                           new_keyword,
+                                           password_2_,
+                                           std::make_pair(0, 0)));
+
+  thread_pin_1.join();
+  thread_pin_2.join();
+  thread_keyword_1.join();
+  thread_keyword_2.join();
+
+  EXPECT_FALSE(result_pin_1 == kSuccess &&
+               result_pin_2 == kSuccess &&
+               result_keyword_1 == kSuccess &&
+               result_keyword_2 == kSuccess);
+  if (result_pin_1)
+    pin_1_ = new_pin;
+  if (result_pin_2)
+    pin_2_ = new_pin;
+  if (result_keyword_1)
+    keyword_1_ = new_keyword;
+  if (result_keyword_2)
+    keyword_2_ = new_keyword;
+
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+}
+
+TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdConsecutively) {
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+  std::string new_public_id(RandomAlphaNumericString(6));
+
+  EXPECT_EQ(kSuccess, test_elements_1_.CreatePublicId(new_public_id));
+  EXPECT_NE(kSuccess, test_elements_1_.CreatePublicId(new_public_id));
+  EXPECT_NE(kSuccess, test_elements_2_.CreatePublicId(new_public_id));
+
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+
+  int new_instances(0);
+  std::vector<std::string>::iterator it;
+  std::vector<std::string> names(test_elements_1_.PublicIdsList());
+  for (it = names.begin(); it < names.end(); it++) {
+    if (*it == new_public_id)
+      ++new_instances;
+  }
+  names = test_elements_2_.PublicIdsList();
+  for (it = names.begin(); it < names.end(); it++) {
+    if (*it == new_public_id)
+      ++new_instances;
+  }
+  EXPECT_EQ(new_instances, 1);
+
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+}
+
+TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdSimultaneously) {
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+
+  std::string new_public_id(RandomAlphaNumericString(6));
   int result_1(0), result_2(0);
 
-  boost::thread thread_1(std::bind(&RunCreatePublicId, test_elements_1_, result_1, new_public_id));
-  boost::thread thread_2(std::bind(&RunCreatePublicId, test_elements_2_, result_2, new_public_id));
+  std::vector<std::pair<int, int> > sleep_values;
+  sleep_values.push_back(std::make_pair(0, 200));
+  sleep_values.push_back(std::make_pair(100, 200));
+  sleep_values.push_back(std::make_pair(100, 150));
+  sleep_values.push_back(std::make_pair(0, 10));
 
-  thread_1.join();
-  thread_2.join();
+  for (size_t i = 0; i < sleep_values.size(); ++i) {
+    boost::thread thread_1(std::bind(&RunCreatePublicId,
+                                     test_elements_1_,
+                                     std::ref(result_1),
+                                     new_public_id,
+                                     sleep_values.at(i)));
+    boost::thread thread_2(std::bind(&RunCreatePublicId,
+                                     test_elements_2_,
+                                     std::ref(result_2),
+                                     new_public_id,
+                                     sleep_values.at(i)));
 
-  EXPECT_FALSE(result_1 == kSuccess && result_2 == kSuccess);
+    thread_1.join();
+    thread_2.join();
+
+    EXPECT_TRUE((result_1 == kSuccess && result_2 != kSuccess) ||
+                (result_1 != kSuccess && result_2 == kSuccess))
+        << "Value of result 1: " << result_1 << "\nValue of result 2: " << result_2 <<
+        "\nAttempt number " << i;
+
+    EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+    EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+
+    int new_instances(0);
+    std::vector<std::string>::iterator it;
+    std::vector<std::string> names(test_elements_1_.PublicIdsList());
+    for (it = names.begin(); it < names.end(); it++) {
+      if (*it == new_public_id)
+        ++new_instances;
+    }
+    names = test_elements_2_.PublicIdsList();
+    for (it = names.begin(); it < names.end(); it++) {
+      if (*it == new_public_id)
+        ++new_instances;
+    }
+    EXPECT_EQ(new_instances, 1);
+    new_public_id = RandomAlphaNumericString(new_public_id.length() + 1);
+  }
 
   EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
@@ -1217,6 +1492,53 @@ TEST_F(TwoUsersApiTest, FUNC_ProfilePicture) {
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
+}
+
+void RunChangeProfilePicture(LifeStuff& test_elements_,
+                             int& result,
+                             const std::string public_id,
+                             const std::string file_content) {
+  result = test_elements_.ChangeProfilePicture(public_id, file_content);
+}
+
+TEST_F(TwoUsersApiTest, FUNC_ProfilePictureAndLogOut) {
+  std::string file_content1, file_content2(RandomString(5 * 1024));
+  int result(0);
+
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+  // Setting of profile image
+  boost::thread thread(std::bind(&RunChangeProfilePicture,
+                                 test_elements_2_,
+                                 std::ref(result),
+                                 public_id_2_,
+                                 file_content2));
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+
+  file_content1 = test_elements_1_.GetContactProfilePicture(public_id_1_, public_id_2_);
+  EXPECT_TRUE(file_content2 == file_content1);
+  EXPECT_NE(kSuccess, test_elements_1_.ChangeProfilePicture(public_id_1_, ""));
+
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+  // Setting of profile image
+  boost::thread thread2(std::bind(&RunChangeProfilePicture,
+                                  test_elements_2_,
+                                  std::ref(result),
+                                  public_id_2_,
+                                  kBlankProfilePicture));
+
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+
+  testing_variables_1_.picture_updated = false;
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+
+  file_content1 = test_elements_1_.GetContactProfilePicture(public_id_1_, public_id_2_);
+  EXPECT_TRUE(kBlankProfilePicture == file_content1);
+
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
 }
 
 TEST_F(TwoUsersApiTest, FUNC_RemoveContact) {
@@ -1837,8 +2159,10 @@ class PrivateSharesApiTest : public ::testing::TestWithParam<int> {
   }
 
   virtual void TearDown() {
-    EXPECT_EQ(kSuccess, test_elements_1_.Finalise());
-    EXPECT_EQ(kSuccess, test_elements_2_.Finalise());
+    if (test_elements_1_.state() == kLoggedOut)
+      EXPECT_EQ(kSuccess, test_elements_1_.Finalise());
+    if (test_elements_2_.state() == kLoggedOut)
+      EXPECT_EQ(kSuccess, test_elements_2_.Finalise());
   }
 };
 
