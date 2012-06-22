@@ -68,8 +68,7 @@ enum LifeStuffState {
   kZeroth,
   kInitialised,
   kConnected,
-  kLoggedIn,
-  kLoggedOut
+  kLoggedIn
 };
 
 /// THIS ENUM MUST BE KEPT IN SYNC WITH THE ONE IN DRIVE'S CONFIG.H !!!

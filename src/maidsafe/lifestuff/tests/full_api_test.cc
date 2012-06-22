@@ -1022,7 +1022,7 @@ TEST_F(OneUserApiTest, FUNC_AddOwnPublicIdAsContact) {
   test_elements_.CreatePublicId(public_id_1);
   test_elements_.CreatePublicId(public_id_2);
 
-  EXPECT_NE(kSuccess, test_elements_.AddContact(public_id_1, public_id_1));
+  EXPECT_EQ(kSuccess, test_elements_.AddContact(public_id_1, public_id_1));
   EXPECT_NE(kSuccess, test_elements_.AddContact(public_id_1, public_id_2));
 }
 
@@ -1180,9 +1180,9 @@ class TwoUsersApiTest : public testing::Test {
   }
 
   virtual void TearDown() {
-    if (test_elements_1_.state() == kLoggedOut)
+    if (test_elements_1_.state() == kConnected)
       EXPECT_EQ(kSuccess, test_elements_1_.Finalise());
-    if (test_elements_2_.state() == kLoggedOut)
+    if (test_elements_2_.state() == kConnected)
       EXPECT_EQ(kSuccess, test_elements_2_.Finalise());
   }
 };
@@ -2312,9 +2312,9 @@ class PrivateSharesApiTest : public ::testing::TestWithParam<int> {
   }
 
   virtual void TearDown() {
-    if (test_elements_1_.state() == kLoggedOut)
+    if (test_elements_1_.state() == kConnected)
       EXPECT_EQ(kSuccess, test_elements_1_.Finalise());
-    if (test_elements_2_.state() == kLoggedOut)
+    if (test_elements_2_.state() == kConnected)
       EXPECT_EQ(kSuccess, test_elements_2_.Finalise());
   }
 };
@@ -2724,7 +2724,7 @@ TEST_F(TwoUsersApiTest, FUNC_RenamePrivateShare) {
                                                                 &results));
     EXPECT_EQ(0, results.size());
     EXPECT_TRUE(results.end() == results.find(public_id_1_));
-    EXPECT_FALSE(results.end() == results.find(public_id_2_));
+    EXPECT_TRUE(results.end() == results.find(public_id_2_));
 
     fs::path share_path(test_elements_1_.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
