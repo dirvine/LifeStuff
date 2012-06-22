@@ -22,10 +22,6 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
-#ifndef LOCAL_TARGETS_ONLY
-#include "maidsafe/pd/client/client_container.h"
-#endif
-
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/lifestuff_api.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
@@ -294,7 +290,8 @@ void ShareChangedSlot(const std::string& share_name,
                       const int& op_type,
                       boost::mutex *mutex,
                       ShareChangeLogBook *share_changes) {
-  boost::mutex::scoped_lock lock(*mutex);
+  if (mutex)
+    boost::mutex::scoped_lock lock(*mutex);
   if (share_changes)
     share_changes->push_back(ShareChangeLog(share_name, target_path,
                                             num_of_entries, old_path,
@@ -2567,7 +2564,7 @@ TEST_P(PrivateSharesApiTest, FUNC_RejectInvitationPrivateShare) {
     EXPECT_FALSE(testing_variables_2_.new_private_share_id.empty());
     EXPECT_EQ(kSuccess,
               test_elements_2_.RejectPrivateShareInvitation(
-                public_id_2_, testing_variables_2_.new_private_share_id));
+              public_id_2_, testing_variables_2_.new_private_share_id));
 
     fs::path share_path(test_elements_2_.mount_path() / kSharedStuff / share_name_1_);
     EXPECT_FALSE(fs::exists(share_path, error_code));
@@ -2725,7 +2722,7 @@ TEST_F(TwoUsersApiTest, FUNC_RenamePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name1,
                                                                 &results));
-    EXPECT_EQ(1U, results.size());
+    EXPECT_EQ(0, results.size());
     EXPECT_TRUE(results.end() == results.find(public_id_1_));
     EXPECT_FALSE(results.end() == results.find(public_id_2_));
 
@@ -2760,6 +2757,14 @@ TEST_F(TwoUsersApiTest, FUNC_RenamePrivateShare) {
   }
   {
     EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+
+    StringIntMap results;
+    EXPECT_EQ(kSuccess, test_elements_1_.GetPrivateShareMembers(public_id_1_,
+                                                                share_name1,
+                                                                &results));
+    EXPECT_EQ(1U, results.size());
+    EXPECT_TRUE(results.end() == results.find(public_id_1_));
+    EXPECT_FALSE(results.end() == results.find(public_id_2_));
     fs::path old_share_path(test_elements_1_.mount_path() / kSharedStuff / share_name1);
     fs::path new_share_path(test_elements_1_.mount_path() / kSharedStuff / share_name2);
     fs::rename(old_share_path, new_share_path, error_code);
@@ -2923,9 +2928,9 @@ TEST_F(TwoUsersApiTest, FUNC_MembershipDowngradePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name1,
                                                                 &results));
-    EXPECT_EQ(1U, results.size());
+    EXPECT_EQ(0, results.size());
     EXPECT_TRUE(results.end() == results.find(public_id_1_));
-    EXPECT_FALSE(results.end() == results.find(public_id_2_));
+    EXPECT_TRUE(results.end() == results.find(public_id_2_));
 
     fs::path share_path(test_elements_1_.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
@@ -2959,7 +2964,16 @@ TEST_F(TwoUsersApiTest, FUNC_MembershipDowngradePrivateShare) {
   {
     EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
-    StringIntMap amendments, results;
+    StringIntMap results;
+    EXPECT_EQ(kSuccess, test_elements_1_.GetPrivateShareMembers(public_id_1_,
+                                                                share_name1,
+                                                                &results));
+    EXPECT_EQ(1U, results.size());
+    EXPECT_TRUE(results.end() == results.find(public_id_1_));
+    EXPECT_FALSE(results.end() == results.find(public_id_2_));
+
+    StringIntMap amendments;
+    results.clear();
     amendments.insert(std::make_pair(public_id_2_, kShareReadOnly));
     EXPECT_EQ(kSuccess, test_elements_1_.EditPrivateShareMembers(public_id_1_,
                                                                  amendments,
@@ -2967,7 +2981,8 @@ TEST_F(TwoUsersApiTest, FUNC_MembershipDowngradePrivateShare) {
                                                                  &results));
     EXPECT_EQ(kSuccess, results[public_id_2_]);
     results[public_id_2_] = -1;
-    EXPECT_EQ(kSuccess, test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name1,
+    EXPECT_EQ(kSuccess, test_elements_1_.GetPrivateShareMembers(public_id_1_,
+                                                                share_name1,
                                                                 &results));
     EXPECT_EQ(0, results[public_id_2_]);  // ro now
 
@@ -3110,8 +3125,9 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
     EXPECT_EQ(0, error_code.value());
     EXPECT_EQ(kSuccess, results[public_id_2_]);
     StringIntMap shares_members;
+
     test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name1, &shares_members);
-    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(0, shares_members.size());
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
@@ -3137,6 +3153,16 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
     EXPECT_EQ(kSuccess, test_elements_1_.RemoveContact(public_id_1_, public_id_2_,
+                                                       removal_message));
+    EXPECT_TRUE(test_elements_1_.GetContacts(public_id_1_).empty());
+    StringIntMap results;
+    EXPECT_EQ(kSuccess, test_elements_1_.GetPrivateShareMembers(public_id_1_,
+                                                                share_name1,
+                                                                &results));
+    EXPECT_EQ(1U, results.size());
+
+    EXPECT_EQ(kSuccess, test_elements_1_.RemoveContact(public_id_1_,
+                                                       public_id_2_,
                                                        removal_message));
     EXPECT_TRUE(test_elements_1_.GetContacts(public_id_1_).empty());
     fs::path share_path(test_elements_1_.mount_path() / kSharedStuff / share_name1);
@@ -3190,8 +3216,9 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
     EXPECT_EQ(0, error_code.value());
     EXPECT_EQ(kSuccess, results[public_id_2_]);
     StringIntMap shares_members;
+
     test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name1, &shares_members);
-    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(0, shares_members.size());
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
@@ -3347,7 +3374,7 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
     EXPECT_EQ(kSuccess, results[public_id_2_]);
     StringIntMap shares_members;
     test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name1, &shares_members);
-    EXPECT_EQ(2U, shares_members.size());
+    EXPECT_EQ(0, shares_members.size());
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
@@ -3397,8 +3424,9 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
     EXPECT_EQ(removal_message, testing_variables_2_.removal_message);
     bool contact_deleted(false);
     while (!contact_deleted) {
-     if (test_elements_2_.GetContacts(public_id_2_).size() > 1)
-       contact_deleted = true;
+      Sleep(bptime::milliseconds(1000));
+      ContactMap map(test_elements_2_.GetContacts(public_id_2_));
+      contact_deleted = map.find(public_id3) == map.end();
     }
     EXPECT_TRUE(contact_deleted);
 
@@ -3419,6 +3447,10 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
+
+  EXPECT_EQ(kSuccess, test_elements_1_.Finalise());
+  EXPECT_EQ(kSuccess, test_elements_2_.Finalise());
+  EXPECT_EQ(kSuccess, test_elements3.Finalise());
 }
 
 class TwoUsersMutexApiTest : public TwoUsersApiTest {
@@ -3468,10 +3500,8 @@ TEST_F(TwoUsersMutexApiTest, FUNC_AddModifyRemoveOneFile) {
     EXPECT_EQ(0, error_code.value());
     EXPECT_EQ(kSuccess, results[public_id_2_]);
     StringIntMap shares_members;
-    test_elements_1_.GetPrivateShareMembers(public_id_1_,
-                                            share_name1,
-                                            &shares_members);
-    EXPECT_EQ(1U, shares_members.size());
+    test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name1, &shares_members);
+    EXPECT_EQ(0, shares_members.size());
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
@@ -3503,6 +3533,11 @@ TEST_F(TwoUsersMutexApiTest, FUNC_AddModifyRemoveOneFile) {
   }
   {
     EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+
+    StringIntMap shares_members;
+    test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name1, &shares_members);
+    EXPECT_EQ(1U, shares_members.size());
+
     uint8_t attempts(0);
     uint8_t expected_num_of_logs(1);
     while ((testing_variables_1_.share_changes.size() < expected_num_of_logs) &&
@@ -3609,7 +3644,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_AddRemoveMultipleNodes) {
     test_elements_1_.GetPrivateShareMembers(public_id_1_,
                                             share_name,
                                             &shares_members);
-    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(0, shares_members.size());
 
     fs::path sub_directory(directory1 / sub_directory_name);
     fs::path further_sub_director(sub_directory / further_sub_directory_name);
@@ -3698,6 +3733,11 @@ TEST_F(TwoUsersMutexApiTest, FUNC_AddRemoveMultipleNodes) {
   }
   {
     EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+
+    StringIntMap shares_members;
+    test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name, &shares_members);
+    EXPECT_EQ(1U, shares_members.size());
+
     uint8_t attempts(0);
     uint8_t expected_num_of_logs(2);
     while ((testing_variables_1_.share_changes.size() < expected_num_of_logs) &&
@@ -3808,7 +3848,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_RenameOneNode) {
     test_elements_1_.GetPrivateShareMembers(public_id_1_,
                                             share_name,
                                             &shares_members);
-    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(0, shares_members.size());
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
@@ -3840,6 +3880,11 @@ TEST_F(TwoUsersMutexApiTest, FUNC_RenameOneNode) {
   }
   {
     EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+
+    StringIntMap shares_members;
+    test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name, &shares_members);
+    EXPECT_EQ(1U, shares_members.size());
+
     uint8_t attempts(0);
     uint8_t expected_num_of_logs(1);
     while ((testing_variables_1_.share_changes.size() < expected_num_of_logs) &&
@@ -3930,7 +3975,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeToShareAndMoveOut) {
     test_elements_1_.GetPrivateShareMembers(public_id_1_,
                                             share_name,
                                             &shares_members);
-    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(0, shares_members.size());
 
     fs::path directory(test_elements_1_.mount_path() / sub_directory_name);
     EXPECT_TRUE(fs::create_directory(directory, error_code));
@@ -3982,6 +4027,11 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeToShareAndMoveOut) {
   }
   {
     EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+
+    StringIntMap shares_members;
+    test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name, &shares_members);
+    EXPECT_EQ(1U, shares_members.size());
+
     uint8_t attempts(0);
     uint8_t expected_num_of_logs(1);
     while ((testing_variables_1_.share_changes.size() < expected_num_of_logs) &&
@@ -4036,7 +4086,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeInnerShare) {
     test_elements_1_.GetPrivateShareMembers(public_id_1_,
                                           share_name,
                                           &shares_members);
-    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(0, shares_members.size());
 
     fs::path sub_directory(directory1 / sub_directory_name);
     EXPECT_TRUE(fs::create_directory(sub_directory, error_code));
@@ -4091,6 +4141,11 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeInnerShare) {
   }
   {
     EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+
+    StringIntMap shares_members;
+    test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name, &shares_members);
+    EXPECT_EQ(1U, shares_members.size());
+
     uint8_t attempts(0);
     uint8_t expected_num_of_logs(1);
     while ((testing_variables_1_.share_changes.size() < expected_num_of_logs) &&
@@ -4277,7 +4332,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeToTrashThenMoveBack) {
     test_elements_1_.GetPrivateShareMembers(public_id_1_,
                                             share_name,
                                             &shares_members);
-    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(0, shares_members.size());
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
@@ -4314,6 +4369,11 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeToTrashThenMoveBack) {
   }
   {
     EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+
+    StringIntMap shares_members;
+    test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name, &shares_members);
+    EXPECT_EQ(1U, shares_members.size());
+
     uint8_t attempts(0);
     uint8_t expected_num_of_logs(2);
     while ((testing_variables_1_.share_changes.size() < expected_num_of_logs) &&

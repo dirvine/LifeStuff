@@ -55,8 +55,8 @@ class UserCredentialsTest : public testing::Test {
         asio_service_(10),
         asio_service2_(10),
 #ifndef LOCAL_TARGETS_ONLY
-        client_container_(),
-        client_container2_(),
+        node_(),
+        node2_(),
 #endif
         remote_chunk_store_(),
         remote_chunk_store2_(),
@@ -75,7 +75,7 @@ class UserCredentialsTest : public testing::Test {
                                         *test_dir_ / "simulation",
                                         asio_service_.service());
 #else
-  remote_chunk_store_ = BuildChunkStore(*test_dir_, &client_container_);
+  remote_chunk_store_ = BuildChunkStore(*test_dir_, &node_);
 #endif
     user_credentials_.reset(new UserCredentials(remote_chunk_store_, session_));
   }
@@ -91,7 +91,7 @@ class UserCredentialsTest : public testing::Test {
                                            *test_dir_ / "simulation",
                                            asio_service2_.service());
 #else
-    remote_chunk_store2_ = BuildChunkStore(*test_dir_, &client_container2_);
+    remote_chunk_store2_ = BuildChunkStore(*test_dir_, &node2_);
 #endif
     user_credentials2_.reset(new UserCredentials(remote_chunk_store2_, session2_));
   }
@@ -100,7 +100,7 @@ class UserCredentialsTest : public testing::Test {
   Session session_, session2_;
   AsioService asio_service_, asio_service2_;
 #ifndef LOCAL_TARGETS_ONLY
-  std::shared_ptr<pd::ClientContainer> client_container_, client_container2_;
+  std::shared_ptr<pd::Node> node_, node2_;
 #endif
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_, remote_chunk_store2_;
   std::shared_ptr<UserCredentials> user_credentials_, user_credentials2_;

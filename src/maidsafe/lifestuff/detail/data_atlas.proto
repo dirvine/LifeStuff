@@ -39,9 +39,8 @@ message PublicIdentity {
 }
 
 message PassportData {
-  required bytes serialised_keyring = 3;
-  required bytes serialised_selectables = 4;
-}
+  required bytes serialised_keyring = 1;
+ }
 
 message DriveData {
   required bytes unique_user_id = 1;
@@ -53,7 +52,7 @@ message DriveData {
 message DataAtlas {
   required DriveData drive_data = 1;
   required PassportData passport_data = 2;
-  required bytes timestamp = 3;
-  repeated PublicIdentity public_ids = 4;
+  repeated PublicIdentity public_ids = 3;
+  required bytes timestamp = 4;
 }
 

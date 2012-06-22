@@ -233,10 +233,11 @@ int UserCredentialsImpl::HandleSerialisedDataMaps(const std::string &keyword,
   int result(kSuccess);
   std::string tmid_da, stmid_da;
   if (!tmid_serialised_data_atlas.empty()) {
-    tmid_da = tmid_serialised_data_atlas;
     result = session_.ParseDataAtlas(tmid_serialised_data_atlas);
-    if (result == kSuccess)
+    if (result == kSuccess) {
       session_.set_serialised_data_atlas(tmid_serialised_data_atlas);
+      tmid_da = tmid_serialised_data_atlas;
+    }
   } else if (!stmid_serialised_data_atlas.empty()) {
     tmid_da = stmid_serialised_data_atlas;
     stmid_da = stmid_serialised_data_atlas;
@@ -247,8 +248,14 @@ int UserCredentialsImpl::HandleSerialisedDataMaps(const std::string &keyword,
     }
   }
 
-  if (stmid_da.empty() && !stmid_serialised_data_atlas.empty())
-    stmid_da = stmid_serialised_data_atlas;
+  if (stmid_da.empty()) {
+    if (tmid_da.empty()) {
+      LOG(kError) << "No valid DA.";
+      return kSetIdentityPacketsFailure;
+    } else if (!stmid_serialised_data_atlas.empty()) {
+      stmid_da = stmid_serialised_data_atlas;
+    }
+  }
 
   result = passport_.SetIdentityPackets(keyword, pin, password, tmid_da, stmid_da);
   result += passport_.ConfirmIdentityPackets();
@@ -350,24 +357,26 @@ int UserCredentialsImpl::StoreAnonymousPackets() {
 }
 
 void UserCredentialsImpl::StoreAnmid(OperationResults &results) {  // NOLINT (Dan)
-  std::shared_ptr<asymm::Keys> anmid(passport_.SignaturePacketDetails(passport::kAnmid, false));
+  std::shared_ptr<asymm::Keys> anmid(new asymm::Keys(
+      passport_.SignaturePacketDetails(passport::kAnmid, false)));
   StoreSignaturePacket(anmid, results, 0);
 }
 
 void UserCredentialsImpl::StoreAnsmid(OperationResults &results) {  // NOLINT (Dan)
-  std::shared_ptr<asymm::Keys> ansmid(passport_.SignaturePacketDetails(passport::kAnsmid, false));
+  std::shared_ptr<asymm::Keys> ansmid(new asymm::Keys(
+      passport_.SignaturePacketDetails(passport::kAnsmid, false)));
   StoreSignaturePacket(ansmid, results, 1);
 }
 
 void UserCredentialsImpl::StoreAntmid(OperationResults &results) {  // NOLINT (Dan)
-  std::shared_ptr<asymm::Keys> antmid(passport_.SignaturePacketDetails(passport::kAntmid, false));
+  std::shared_ptr<asymm::Keys> antmid(new asymm::Keys(
+      passport_.SignaturePacketDetails(passport::kAntmid, false)));
   StoreSignaturePacket(antmid, results, 2);
 }
 
-void UserCredentialsImpl::StoreSignaturePacket(
-    std::shared_ptr<asymm::Keys> packet,
-    OperationResults &results,  // NOLINT (Dan)
-    int index) {
+void UserCredentialsImpl::StoreSignaturePacket(std::shared_ptr<asymm::Keys> packet,
+                                               OperationResults &results,  // NOLINT (Dan)
+                                               int index) {
   std::string packet_name, packet_content;
 
   CreateSignaturePacketInfo(packet, &packet_name, &packet_content);
@@ -381,7 +390,8 @@ void UserCredentialsImpl::StoreSignaturePacket(
 }
 
 void UserCredentialsImpl::StoreAnmaid(OperationResults &results) {  // NOLINT (Dan)
-  std::shared_ptr<asymm::Keys> anmaid(passport_.SignaturePacketDetails(passport::kAnmaid, false));
+  std::shared_ptr<asymm::Keys> anmaid(new asymm::Keys(
+      passport_.SignaturePacketDetails(passport::kAnmaid, false)));
   std::string packet_name, packet_content;
 
   CreateSignaturePacketInfo(anmaid, &packet_name, &packet_content);
@@ -402,8 +412,10 @@ void UserCredentialsImpl::StoreMaid(bool result, OperationResults &results) {  /
     return;
   }
 
-  std::shared_ptr<asymm::Keys> maid(passport_.SignaturePacketDetails(passport::kMaid, false));
-  std::shared_ptr<asymm::Keys> anmaid(passport_.SignaturePacketDetails(passport::kAnmaid, false));
+  std::shared_ptr<asymm::Keys> maid(new asymm::Keys(
+      passport_.SignaturePacketDetails(passport::kMaid, false)));
+  std::shared_ptr<asymm::Keys> anmaid(new asymm::Keys(
+      passport_.SignaturePacketDetails(passport::kAnmaid, false)));
 
   std::string maid_name(pca::ApplyTypeToName(maid->identity, pca::kSignaturePacket));
   pca::SignedData signed_maid;
@@ -433,8 +445,10 @@ void UserCredentialsImpl::StorePmid(bool result, OperationResults &results) {  /
     return;
   }
 
-  std::shared_ptr<asymm::Keys> pmid(passport_.SignaturePacketDetails(passport::kPmid, false));
-  std::shared_ptr<asymm::Keys> maid(passport_.SignaturePacketDetails(passport::kMaid, false));
+  std::shared_ptr<asymm::Keys> pmid(new asymm::Keys(
+      passport_.SignaturePacketDetails(passport::kPmid, false)));
+  std::shared_ptr<asymm::Keys> maid(new asymm::Keys(
+      passport_.SignaturePacketDetails(passport::kMaid, false)));
 
   std::string pmid_name(pca::ApplyTypeToName(pmid->identity, pca::kSignaturePacket));
   pca::SignedData signed_pmid;
@@ -555,10 +569,11 @@ void UserCredentialsImpl::StoreIdentity(OperationResults &results,  // NOLINT (D
                                         int index) {
   passport::PacketType id_pt(static_cast<passport::PacketType>(identity_type));
   passport::PacketType sign_pt(static_cast<passport::PacketType>(signer_type));
-  std::string packet_name(passport_.PacketName(id_pt, false)),
+  std::string packet_name(passport_.IdentityPacketName(id_pt, false)),
               packet_content(passport_.IdentityPacketValue(id_pt, false));
   packet_name = pca::ApplyTypeToName(packet_name, pca::kModifiableByOwner);
-  std::shared_ptr<asymm::Keys> signer(passport_.SignaturePacketDetails(sign_pt, true));
+  std::shared_ptr<asymm::Keys> signer(new asymm::Keys(
+      passport_.SignaturePacketDetails(sign_pt, true)));
 
   asymm::Signature signature;
   int result(asymm::Sign(packet_content, signer->private_key, &signature));
@@ -637,10 +652,11 @@ void UserCredentialsImpl::ModifyIdentity(OperationResults &results,  // NOLINT (
                                          int index) {
   passport::PacketType id_pt(static_cast<passport::PacketType>(identity_type));
   passport::PacketType sign_pt(static_cast<passport::PacketType>(signer_type));
-  std::string name(passport_.PacketName(id_pt, false)),
+  std::string name(passport_.IdentityPacketName(id_pt, false)),
               content(passport_.IdentityPacketValue(id_pt, false));
   name = pca::ApplyTypeToName(name, pca::kModifiableByOwner);
-  std::shared_ptr<asymm::Keys> signer(passport_.SignaturePacketDetails(sign_pt, true));
+  std::shared_ptr<asymm::Keys> signer(new asymm::Keys(passport_.SignaturePacketDetails(sign_pt,
+                                                                                       true)));
 
   asymm::Signature signature;
   int result(asymm::Sign(content, signer->private_key, &signature));
@@ -754,7 +770,7 @@ void UserCredentialsImpl::DeleteIdentity(OperationResults &results,  // NOLINT (
                                          int index) {
   passport::PacketType id_type(static_cast<passport::PacketType>(packet_type));
   passport::PacketType sig_type(static_cast<passport::PacketType>(signer_type));
-  std::string name(passport_.PacketName(id_type, true));
+  std::string name(passport_.IdentityPacketName(id_type, true));
   if (name.empty()) {
     LOG(kError) << "Failed to get packet name: " << index;
     OperationCallback(false, results, index);
@@ -762,7 +778,8 @@ void UserCredentialsImpl::DeleteIdentity(OperationResults &results,  // NOLINT (
   }
   name = pca::ApplyTypeToName(name, pca::kModifiableByOwner);
 
-  std::shared_ptr<asymm::Keys> signer(passport_.SignaturePacketDetails(sig_type, true));
+  std::shared_ptr<asymm::Keys> signer(new asymm::Keys(passport_.SignaturePacketDetails(sig_type,
+                                                                                       true)));
   if (!remote_chunk_store_->Delete(name,
                                    std::bind(&OperationCallback, args::_1, results, index),
                                    signer)) {

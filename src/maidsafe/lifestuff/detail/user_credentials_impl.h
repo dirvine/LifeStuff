@@ -43,10 +43,6 @@ class RemoteChunkStore;
 }  // namespace priv
 namespace pcs = maidsafe::priv::chunk_store;
 
-namespace pki {
-class Packet;
-class SignaturePacket;
-}  // namespace pki
 namespace passport { class Passport; }
 
 namespace lifestuff {

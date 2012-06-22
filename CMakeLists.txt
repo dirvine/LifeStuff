@@ -31,12 +31,11 @@ include_directories(${common_SOURCE_DIR}/include)
 include_directories(${private_SOURCE_DIR}/include)
 include_directories(${encrypt_SOURCE_DIR}/include)
 include_directories(${drive_SOURCE_DIR}/include)
-include_directories(${pki_SOURCE_DIR}/include)
 include_directories(${passport_SOURCE_DIR}/include)
 if(NOT ${LOCAL_TARGETS_ONLY})
-#   include_directories(${transport_SOURCE_DIR}/include)
-#   include_directories(${dht_SOURCE_DIR}/include)
-#   include_directories(${pd_SOURCE_DIR}/include)
+  include_directories(${rudp_SOURCE_DIR}/include)
+  include_directories(${routing_SOURCE_DIR}/include)
+  include_directories(${pd_SOURCE_DIR}/include)
 endif()
 
 
@@ -73,20 +72,14 @@ file(GLOB SOURCE_FILES_DETAIL_DIR "${PATH_TO_DETAIL}/*.cc")
 file(GLOB HEADER_FILES_DETAIL_DIR "${PATH_TO_DETAIL}/*.h")
 set(ALL_FILES_DETAIL_DIR ${SOURCE_FILES_DETAIL_DIR}
                          ${HEADER_FILES_DETAIL_DIR}
-                         "${PATH_TO_SRC}/lifestuff.cc"
                          "${PATH_TO_INCLUDE}/lifestuff.h"
                          "${PATH_TO_INCLUDE}/return_codes.h")
 
 set(STYLE_ALL ${ALL_FILES_DETAIL_DIR} ${ALL_FILES_LIFESTUFF_DIR})
 list(REMOVE_ITEM STYLE_ALL "${PATH_TO_DETAIL}/data_atlas.pb.h"
-                           "${PATH_TO_DETAIL}/data_atlas.pb.cc"
-                           "${PATH_TO_DETAIL}/data_types.pb.h"
-                           "${PATH_TO_DETAIL}/data_types.pb.cc"
-                           "${PATH_TO_DETAIL}/lifestuff_messages.pb.h"
-                           "${PATH_TO_DETAIL}/lifestuff_messages.pb.cc")
+                           "${PATH_TO_DETAIL}/data_atlas.pb.cc")
 
-source_group("LifeStuff Source Files" FILES ${SOURCE_FILES_LIFESTUFF_DIR}
-                                            "${PATH_TO_SRC}/lifestuff.cc")
+source_group("LifeStuff Source Files" FILES ${SOURCE_FILES_LIFESTUFF_DIR})
 source_group("LifeStuff Header Files" FILES ${HEADER_FILES_LIFESTUFF_DIR})
 source_group("LifeStuff API Files" FILES ${API_FILES_LIFESTUFF_DIR}
                                          "${PATH_TO_INCLUDE}/lifestuff.h"
@@ -135,16 +128,16 @@ target_link_libraries(TESTlifestuff_user_storage_local maidsafe_lifestuff_local)
 target_link_libraries(TESTlifestuff_api_local maidsafe_lifestuff_local)
 
 if(NOT ${LOCAL_TARGETS_ONLY})
-#   ms_add_static_library(lifestuff ${ALL_FILES_LIFESTUFF_DIR})
-#   ms_add_executable(TESTlifestuff_public_id "Tests/LifeStuff" ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
-#   ms_add_executable(TESTlifestuff_user_credentials "Tests/LifeStuff" ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
-#   ms_add_executable(TESTlifestuff_user_storage "Tests/LifeStuff" ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC})
-#   ms_add_executable(TESTlifestuff_api "Tests/LifeStuff" ${API_TEST_CC} ${TESTS_MAIN_CC})
-#   target_link_libraries(maidsafe_lifestuff maidsafe_lifestuff_detail maidsafe_pd)
-#   target_link_libraries(TESTlifestuff_public_id maidsafe_lifestuff)
-#   target_link_libraries(TESTlifestuff_user_credentials maidsafe_lifestuff)
-#   target_link_libraries(TESTlifestuff_user_storage maidsafe_lifestuff)
-#   target_link_libraries(TESTlifestuff_api maidsafe_lifestuff)
+  ms_add_static_library(lifestuff ${ALL_FILES_LIFESTUFF_DIR})
+  ms_add_executable(TESTlifestuff_public_id "Tests/LifeStuff" ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
+  ms_add_executable(TESTlifestuff_user_credentials "Tests/LifeStuff" ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
+  ms_add_executable(TESTlifestuff_user_storage "Tests/LifeStuff" ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC})
+  ms_add_executable(TESTlifestuff_api "Tests/LifeStuff" ${API_TEST_CC} ${TESTS_MAIN_CC})
+  target_link_libraries(maidsafe_lifestuff maidsafe_lifestuff_detail maidsafe_pd)
+  target_link_libraries(TESTlifestuff_public_id maidsafe_lifestuff)
+  target_link_libraries(TESTlifestuff_user_credentials maidsafe_lifestuff)
+  target_link_libraries(TESTlifestuff_user_storage maidsafe_lifestuff)
+  target_link_libraries(TESTlifestuff_api maidsafe_lifestuff)
 endif()
 
 rename_outdated_built_exes()
@@ -154,9 +147,7 @@ rename_outdated_built_exes()
 # Set compiler and linker flags                                                                   #
 ###################################################################################################
 include(maidsafe_standard_flags)
-ms_disable_warnings(${PATH_TO_DETAIL}/data_atlas.pb.cc
-                    ${PATH_TO_DETAIL}/data_types.pb.cc
-                    ${PATH_TO_DETAIL}/lifestuff_messages.pb.cc)
+ms_disable_warnings(${PATH_TO_DETAIL}/data_atlas.pb.cc)
 
 set_target_properties(maidsafe_lifestuff_local
                       TESTlifestuff_general

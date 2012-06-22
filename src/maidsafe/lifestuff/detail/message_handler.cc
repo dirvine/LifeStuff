@@ -71,6 +71,7 @@ MessageHandler::MessageHandler(
       private_share_deletion_signal_(),
       private_member_access_change_signal_(),
       open_share_invitation_signal_(),
+      share_invitation_response_signal_(),
       contact_deletion_signal_(),
       private_share_user_leaving_signal_(),
       parse_and_save_data_map_signal_(),
@@ -150,9 +151,8 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
   }
   asymm::PublicKey recipient_public_key(recipient_contact.inbox_public_key);
 
-  std::shared_ptr<asymm::Keys> mmid(passport_.SignaturePacketDetails(passport::kMmid,
-                                                                     true,
-                                                                     inbox_item.sender_public_id));
+  std::shared_ptr<asymm::Keys> mmid(new asymm::Keys(
+      passport_.SignaturePacketDetails(passport::kMmid, true, inbox_item.sender_public_id)));
   if (!mmid) {
     LOG(kError) << "Failed to get own public ID data: " << inbox_item.sender_public_id;
     return kGetPublicIdError;
@@ -287,12 +287,10 @@ void MessageHandler::ProcessRetrieved(const std::string& public_id,
 
   for (int it(0); it < mmid.appendices_size(); ++it) {
     pca::SignedData signed_data(mmid.appendices(it));
-    asymm::PrivateKey mmid_private_key(passport_.PacketPrivateKey(passport::kMmid,
-                                                                            true,
-                                                                            public_id));
+    asymm::Keys mmid(passport_.SignaturePacketDetails(passport::kMmid, true, public_id));
 
     std::string decrypted_message;
-    int n(asymm::Decrypt(signed_data.data(), mmid_private_key, &decrypted_message));
+    int n(asymm::Decrypt(signed_data.data(), mmid.private_key, &decrypted_message));
     if (n != kSuccess) {
       LOG(kError) << "Failed to decrypt message: " << n;
       continue;
@@ -330,6 +328,8 @@ void MessageHandler::ProcessRetrieved(const std::string& public_id,
                                       break;
         case kOpenShareInvitation: ProcessOpenShareInvitation(inbox_item);
                                    break;
+        case kRespondToShareInvitation: ProcessShareInvitationResponse(inbox_item);
+                                        break;
       }
     }
   }
@@ -426,6 +426,18 @@ void MessageHandler::ProcessContactProfilePicture(
   }
 
   contact_profile_picture_signal_(receiver, sender, profile_picture_message.timestamp);
+}
+
+void MessageHandler::ProcessShareInvitationResponse(const InboxItem &inbox_item) {
+  if (inbox_item.content.empty() || inbox_item.content[kShareId].empty()) {
+    LOG(kError) << "No share ID.";
+    return;
+  }
+  share_invitation_response_signal_(inbox_item.sender_public_id,
+                                    inbox_item.receiver_public_id,
+                                    inbox_item.content[kShareName],
+                                    inbox_item.content[kShareId],
+                                    inbox_item.timestamp);
 }
 
 void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
@@ -559,7 +571,8 @@ void MessageHandler::RetrieveMessagesForAllIds() {
   std::vector<std::string> selectables(session_.PublicIdentities());
   for (auto it(selectables.begin()); it != selectables.end(); ++it) {
 //    LOG(kError) << "RetrieveMessagesForAllIds for " << (*it);
-    std::shared_ptr<asymm::Keys> mmid(passport_.SignaturePacketDetails(passport::kMmid, true, *it));
+    std::shared_ptr<asymm::Keys> mmid(new asymm::Keys(
+        passport_.SignaturePacketDetails(passport::kMmid, true, *it)));
     std::string mmid_value(remote_chunk_store_->Get(AppendableByAllType(mmid->identity), mmid));
 
     if (mmid_value.empty()) {

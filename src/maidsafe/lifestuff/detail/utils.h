@@ -29,8 +29,6 @@
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/pki/packet.h"
-
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
@@ -45,6 +43,7 @@ enum InboxItemType {
   kContactPresence,
   kContactProfilePicture,
   kContactDeletion,
+  kRespondToShareInvitation,
   kPrivateShareInvitation,
   kPrivateShareDeletion,
   kPrivateShareMembershipUpgrade,
@@ -95,16 +94,13 @@ void ChunkStoreOperationCallback(const bool &response,
                                  boost::condition_variable *cond_var,
                                  int *result);
 
-int WaitForResultsPtr(boost::mutex *mutex,
-                      boost::condition_variable *cond_var,
-                      std::vector<int> *results);
 int WaitForResults(boost::mutex &mutex,  // NOLINT (Dan)
                    boost::condition_variable &cond_var,  // NOLINT (Dan)
                    std::vector<int> &results);  // NOLINT (Dan)
 
 std::string ComposeSignaturePacketName(const std::string &name);
 
-std::string ComposeSignaturePacketValue(const maidsafe::pki::SignaturePacket &packet);
+std::string ComposeSignaturePacketValue(const asymm::Keys &packet);
 
 std::shared_ptr<encrypt::DataMap> ParseSerialisedDataMap(const std::string &serialised_data_map);
 

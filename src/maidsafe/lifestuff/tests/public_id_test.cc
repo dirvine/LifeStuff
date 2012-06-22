@@ -28,7 +28,7 @@
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 #ifndef LOCAL_TARGETS_ONLY
-#include "maidsafe/pd/client/client_container.h"
+#include "maidsafe/pd/client/node.h"
 #endif
 
 #include "maidsafe/lifestuff/rcs_helper.h"
@@ -68,8 +68,8 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
         public_identity2_("User 2 " + RandomAlphaNumericString(8)),
         received_public_identity_(),
 #ifndef LOCAL_TARGETS_ONLY
-        client_container1_(),
-        client_container2_(),
+        node1_(),
+        node2_(),
 #endif
         interval_(3) {}
 
@@ -138,8 +138,8 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
                                            *test_dir_ / "simulation",
                                            asio_service2_.service());
 #else
-    remote_chunk_store1_ = BuildChunkStore(*test_dir_, &client_container1_);
-    remote_chunk_store2_ = BuildChunkStore(*test_dir_, &client_container2_);
+    remote_chunk_store1_ = BuildChunkStore(*test_dir_, &node1_);
+    remote_chunk_store2_ = BuildChunkStore(*test_dir_, &node2_);
 #endif
 
     public_id1_.reset(new PublicId(remote_chunk_store1_, session1_, asio_service1_.service()));
@@ -151,8 +151,8 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
     public_id1_->StopCheckingForNewContacts();
     public_id2_->StopCheckingForNewContacts();
 #ifndef LOCAL_TARGETS_ONLY
-    client_container1_->Stop(nullptr);
-    client_container2_->Stop(nullptr);
+    node1_->Stop();
+    node2_->Stop();
 #endif
     asio_service1_.Stop();
     asio_service2_.Stop();
@@ -175,7 +175,7 @@ class PublicIdTest : public testing::TestWithParam<std::string> {
 
   std::string public_identity1_, public_identity2_, received_public_identity_;
 #ifndef LOCAL_TARGETS_ONLY
-  ClientContainerPtr client_container1_, client_container2_;
+  std::shared_ptr<pd::Node> node1_, node2_;
 #endif
   bptime::seconds interval_;
 
