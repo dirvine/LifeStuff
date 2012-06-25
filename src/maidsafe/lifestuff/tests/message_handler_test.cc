@@ -278,11 +278,11 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
   }
 
   EXPECT_EQ(public_username2_, received_public_username_);
+  int result(0);
+  ContactsHandler& contacts_handler(session1_.contacts_handler(public_username1_, result));
+  ASSERT_EQ(kSuccess, result);
   Contact received_contact;
-  EXPECT_EQ(kSuccess,
-            session1_.contact_handler_map()[public_username1_]->ContactInfo(
-                received_public_username_,
-                &received_contact));
+  EXPECT_EQ(kSuccess, contacts_handler.ContactInfo(received_public_username_, &received_contact));
 
   InboxItem received;
   done = false;
@@ -333,11 +333,11 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
   }
 
   ASSERT_EQ(public_username2_, received_public_username_);
+  int result(0);
+  ContactsHandler& contacts_handler(session1_.contacts_handler(public_username1_, result));
+  ASSERT_EQ(kSuccess, result);
   Contact received_contact;
-  ASSERT_EQ(kSuccess,
-            session1_.contact_handler_map()[public_username1_]->ContactInfo(
-                received_public_username_,
-                &received_contact));
+  ASSERT_EQ(kSuccess, contacts_handler.ContactInfo(received_public_username_, &received_contact));
 
   InboxItem sent(CreateMessage(public_username1_, public_username2_));
   for (size_t n(0); n < multiple_messages_; ++n) {

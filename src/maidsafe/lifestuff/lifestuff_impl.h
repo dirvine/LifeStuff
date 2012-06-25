@@ -122,6 +122,8 @@ class LifeStuffImpl {
   int ChangePassword(const std::string &new_password, const std::string &current_password);
   int ChangePublicId(const std::string &public_id, const std::string &password);
 
+  int LeaveLifeStuff();  // ='(
+
   /// Contact operations
   int AddContact(const std::string &my_public_id, const std::string &contact_public_id);
   int ConfirmContact(const std::string &my_public_id, const std::string &contact_public_id);
@@ -227,11 +229,6 @@ class LifeStuffImpl {
   fs::path mount_path() const;
 
  private:
-  // The response shall come with a local share_name; if empty provided, it is a rejection
-  void RespondInvitation(const std::string &send_from,
-                         const std::string &send_to,
-                         const std::string &share_id,
-                         const std::string &share_name = "");
   int thread_count_;
   LifeStuffState state_;
   fs::path buffered_path_;

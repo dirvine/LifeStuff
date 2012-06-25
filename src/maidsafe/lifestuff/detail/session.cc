@@ -40,138 +40,133 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-struct UserDetails {
-  UserDetails()
-      : defconlevel(kDefCon3),
-        keyword(),
-        pin(),
-        password(),
-        session_name(),
-        unique_user_id(),
-        root_parent_id(),
-        max_space(1073741824),
-        used_space(0) {}
-  DefConLevels defconlevel;
-  std::string keyword, pin, password, session_name, unique_user_id, root_parent_id;
-  int64_t max_space, used_space;
-};
-
 Session::Session()
-    : user_details_(new UserDetails),
-      passport_(),
-      contact_handler_map_(),
-      profile_picture_map_(),
-      serialised_data_atlas_() {}
+    : passport_(),
+      user_details_(),
+      public_id_details_() {}
 
 Session::~Session() {}
 
-bool Session::Reset() {
-  user_details_->defconlevel = kDefCon3;
-  user_details_->keyword.clear();
-  user_details_->pin.clear();
-  user_details_->password.clear();
-  user_details_->session_name.clear();
-  user_details_->unique_user_id.clear();
-  user_details_->root_parent_id.clear();
-  user_details_->max_space = 1073741824;
-  user_details_->used_space = 0;
-  // TODO(Fraser#5#): 2011-11-17 - Implement in passport
-  passport_.Clear(true, true, true);
-  contact_handler_map_.clear();
-  profile_picture_map_.clear();
-  serialised_data_atlas_.clear();
+void Session::Reset() {
+  user_details_.defconlevel = kDefCon3;
+  user_details_.keyword.clear();
+  user_details_.pin.clear();
+  user_details_.password.clear();
+  user_details_.session_name.clear();
+  user_details_.unique_user_id.clear();
+  user_details_.root_parent_id.clear();
+  user_details_.max_space = 1073741824;
+  user_details_.used_space = 0;
+  user_details_.serialised_data_atlas.clear();
 
-  return true;
+  passport_.Clear(true, true, true);
+  public_id_details_.clear();
 }
 
 passport::Passport& Session::passport() { return passport_; }
-ContactHandlerMap& Session::contact_handler_map() { return contact_handler_map_; }
 
-PublicIdContactMap Session::GetAllContacts(ContactStatus status) {
-  std::vector<Contact> contacts;
-  PublicIdContactMap result;
-  auto it(contact_handler_map_.begin());
-  for (; it != contact_handler_map_.end(); ++it) {
-    result[(*it).first] = std::set<std::string>();
-    BOOST_ASSERT(status <= std::numeric_limits<uint16_t>::max());
-    (*it).second->OrderedContacts(&contacts, kAlphabetical, static_cast<uint16_t>(status));
-    for (auto item(contacts.begin()); item != contacts.end(); ++item)
-      result[(*it).first].insert((*item).public_id);
+int Session::AddPublicId(const std::string &public_id) {
+  auto result(public_id_details_.insert(std::make_pair(public_id, PublicIdDetails())));
+  if (!result.second) {
+    LOG(kError) << "Failure to add public id to session: " << public_id;
+    return kPublicIdInsertionFailure;
   }
 
-  return result;
+  return kSuccess;
 }
 
-DefConLevels Session::def_con_level() const { return user_details_->defconlevel; }
-std::string Session::keyword() const { return user_details_->keyword; }
-std::string Session::pin() const { return user_details_->pin; }
-std::string Session::password() const { return user_details_->password; }
-std::string Session::session_name() const { return user_details_->session_name; }
-std::string Session::unique_user_id() const { return user_details_->unique_user_id; }
-std::string Session::root_parent_id() const { return user_details_->root_parent_id; }
-int64_t Session::max_space() const { return user_details_->max_space; }
-int64_t Session::used_space() const { return user_details_->used_space; }
+bool Session::OwnPublicId(const std::string &public_id) {
+  return public_id_details_.find(public_id) != public_id_details_.end();
+}
 
-std::string Session::profile_picture_data_map(const std::string &public_id) const {
-  auto it(profile_picture_map_.find(public_id));
-  if (it == profile_picture_map_.end()) {
-    LOG(kError) << "no such public ID: " << public_id;
-    return "";
+ContactsHandler& Session::contacts_handler(const std::string &public_id, int &result) {
+  auto it(public_id_details_.find(public_id));
+  if (it == public_id_details_.end()) {
+    LOG(kError) << "Failure to find public id: " << public_id;
+    result = kPublicIdNotFoundFailure;
+    ContactsHandler ch;
+    return ch;
   }
-  return (*it).second;
+
+  result = kSuccess;
+  return (*it).second.contacts_handler;
 }
 
-std::string Session::serialised_data_atlas() const { return serialised_data_atlas_; }
+ShareInformation& Session::share_information(const std::string &public_id, int &result) {
+  auto it(public_id_details_.find(public_id));
+  if (it == public_id_details_.end()) {
+    LOG(kError) << "Failure to find public id: " << public_id;
+    result = kPublicIdNotFoundFailure;
+    ShareInformation si;
+    return si;
+  }
+
+  result = kSuccess;
+  return (*it).second.share_information;
+}
+
+std::string& Session::profile_picture_data_map(const std::string &public_id, int &result) {
+  auto it(public_id_details_.find(public_id));
+  if (it == public_id_details_.end()) {
+    LOG(kError) << "Failure to find public id: " << public_id;
+    result = kPublicIdNotFoundFailure;
+    std::string s;
+    return s;
+  }
+
+  result = kSuccess;
+  return (*it).second.profile_picture_data_map;
+}
+
+DefConLevels Session::def_con_level() const { return user_details_.defconlevel; }
+std::string Session::keyword() const { return user_details_.keyword; }
+std::string Session::pin() const { return user_details_.pin; }
+std::string Session::password() const { return user_details_.password; }
+std::string Session::session_name() const { return user_details_.session_name; }
+std::string Session::unique_user_id() const { return user_details_.unique_user_id; }
+std::string Session::root_parent_id() const { return user_details_.root_parent_id; }
+int64_t Session::max_space() const { return user_details_.max_space; }
+int64_t Session::used_space() const { return user_details_.used_space; }
+std::string Session::serialised_data_atlas() const { return user_details_.serialised_data_atlas; }
 
 void Session::set_def_con_level(DefConLevels defconlevel) {
-  user_details_->defconlevel = defconlevel;
+  user_details_.defconlevel = defconlevel;
 }
-void Session::set_keyword(const std::string &keyword) { user_details_->keyword = keyword; }
-void Session::set_pin(const std::string &pin) { user_details_->pin = pin; }
-void Session::set_password(const std::string &password) { user_details_->password = password; }
+void Session::set_keyword(const std::string &keyword) { user_details_.keyword = keyword; }
+void Session::set_pin(const std::string &pin) { user_details_.pin = pin; }
+void Session::set_password(const std::string &password) { user_details_.password = password; }
 bool Session::set_session_name() {
   if (keyword().empty() || pin().empty()) {
     LOG(kError) << "keyword: " << std::boolalpha << keyword().empty()
                 << ", pin: " << std::boolalpha << pin().empty();
     return false;
   }
-  user_details_->session_name = EncodeToHex(crypto::Hash<crypto::SHA1>(pin() + keyword()));
+  user_details_.session_name = EncodeToHex(crypto::Hash<crypto::SHA1>(pin() + keyword()));
   return true;
 }
-void Session::clear_session_name() { user_details_->session_name.clear(); }
+void Session::clear_session_name() { user_details_.session_name.clear(); }
 void Session::set_unique_user_id(const std::string &unique_user_id) {
   if (unique_user_id.empty())
     LOG(kWarning) << "Passed empty unique user ID.";
-  user_details_->unique_user_id = unique_user_id;
+  user_details_.unique_user_id = unique_user_id;
 }
 void Session::set_root_parent_id(const std::string &root_parent_id) {
   if (root_parent_id.empty())
     LOG(kWarning) << "Passed empty root parent ID.";
-  user_details_->root_parent_id = root_parent_id;
+  user_details_.root_parent_id = root_parent_id;
 }
 void Session::set_max_space(const int64_t &max_space) {
   if (max_space == 0)
     LOG(kWarning) << "Passed zero maximum space.";
-  user_details_->max_space = max_space;
+  user_details_.max_space = max_space;
 }
 void Session::set_used_space(const int64_t &used_space) {
-  if (used_space > user_details_->max_space)
+  if (used_space > user_details_.max_space)
     LOG(kWarning) << "Passed used space greater than maximum.";
-  user_details_->used_space = used_space;
-}
-
-bool Session::set_profile_picture_data_map(const std::string &public_id,
-                                           const std::string &profile_picture_data_map) {
-  if (contact_handler_map_.find(public_id) == contact_handler_map_.end()) {
-    LOG(kError) << "no such public ID: " << public_id;
-    return false;
-  }
-  profile_picture_map_[public_id] = profile_picture_data_map;
-
-  return true;
+  user_details_.used_space = used_space;
 }
 void Session::set_serialised_data_atlas(const std::string &serialised_data_atlas) {
-  serialised_data_atlas_ = serialised_data_atlas;
+  user_details_.serialised_data_atlas = serialised_data_atlas;
 }
 
 int Session::ParseDataAtlas(const std::string &serialised_data_atlas) {
@@ -199,9 +194,10 @@ int Session::ParseDataAtlas(const std::string &serialised_data_atlas) {
   std::string pub_id;
   for (int id_count(0); id_count < data_atlas.public_ids_size(); ++id_count) {
     pub_id = data_atlas.public_ids(id_count).public_id();
-    contact_handler_map().insert(std::make_pair(pub_id, std::make_shared<ContactsHandler>()));
-    set_profile_picture_data_map(pub_id,
-                                 data_atlas.public_ids(id_count).profile_picture_data_map());
+    PublicIdDetails public_id_details;
+    public_id_details.profile_picture_data_map =
+        data_atlas.public_ids(id_count).profile_picture_data_map();
+
     for (int contact_count(0);
          contact_count < data_atlas.public_ids(id_count).contacts_size();
          ++contact_count) {
@@ -212,9 +208,11 @@ int Session::ParseDataAtlas(const std::string &serialised_data_atlas) {
       asymm::DecodePublicKey(
           data_atlas.public_ids(id_count).contacts(contact_count).inbox_public_key(),
           &contact.inbox_public_key);
-      int result(contact_handler_map()[pub_id]->AddContact(contact));
+      int result(public_id_details.contacts_handler.AddContact(contact));
       LOG(kInfo) << "Result of adding " << contact.public_id << " to " << pub_id << ":  " << result;
     }
+
+    public_id_details_[pub_id] = public_id_details;
   }
 
   return kSuccess;
@@ -242,15 +240,14 @@ int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
   passport_data->set_serialised_keyring(serialised_keyring);
 
   std::vector<Contact> contacts;
-  for (auto it(contact_handler_map().begin()); it != contact_handler_map().end(); ++it) {
-    contacts.clear();
+  for (auto it(public_id_details_.begin()); it != public_id_details_.end(); ++it) {
     PublicIdentity *pub_id(data_atlas.add_public_ids());
     pub_id->set_public_id((*it).first);
-    pub_id->set_profile_picture_data_map(profile_picture_data_map((*it).first));
-    (*it).second->OrderedContacts(&contacts, kAlphabetical, kRequestSent |
-                                                            kPendingResponse |
-                                                            kConfirmed |
-                                                            kBlocked);
+    pub_id->set_profile_picture_data_map((*it).second.profile_picture_data_map);
+    (*it).second.contacts_handler.OrderedContacts(&contacts, kAlphabetical, kRequestSent |
+                                                                            kPendingResponse |
+                                                                            kConfirmed |
+                                                                            kBlocked);
     for (size_t n(0); n < contacts.size(); ++n) {
       PublicContact *pc(pub_id->add_contacts());
       pc->set_public_id(contacts[n].public_id);
@@ -296,11 +293,13 @@ bool Session::CreateTestPackets(bool with_public_ids) {
   return true;
 }
 
+
 std::vector<std::string> Session::PublicIdentities() const {
   std::vector<std::string> public_identities;
-  std::for_each(contact_handler_map_.begin(),
-                contact_handler_map_.end(),
-                [&public_identities] (const ContactHandlerMap::value_type &el) {
+  typedef std::map<std::string, PublicIdDetails> PublicIdDetailsMap;
+  std::for_each(public_id_details_.begin(),
+                public_id_details_.end(),
+                [&public_identities] (const PublicIdDetailsMap::value_type &el) {
                   public_identities.push_back(el.first);
                 });
   return public_identities;

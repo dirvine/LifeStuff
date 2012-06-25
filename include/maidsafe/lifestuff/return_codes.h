@@ -69,7 +69,9 @@ enum ReturnCode {
   kCredentialValidityFailure = -202001,
 
   // Session
-  kLiveContactNotFound = -204001,
+  kPublicIdInsertionFailure = -204001,
+  kPublicIdNotFoundFailure = -204002,
+  kContactNotFoundFailure = -204003,
 
   // PublicId
   kGetPublicIdError = -206002,

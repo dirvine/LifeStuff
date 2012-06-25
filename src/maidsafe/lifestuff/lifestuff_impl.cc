@@ -315,7 +315,7 @@ int LifeStuffImpl::CreatePublicId(const std::string &public_id) {
 
   // Check if it's the 1st one
   bool first_public_id(false);
-  if (session_.contact_handler_map().empty())
+  if (session_.PublicIdentities().empty())
     first_public_id = true;
 
   int result(public_id_->CreatePublicId(public_id, true));
@@ -379,7 +379,7 @@ int LifeStuffImpl::LogIn(const std::string &keyword,
     return kGeneralError;
   }
 
-  if (!session_.contact_handler_map().empty()) {
+  if (!session_.PublicIdentities().empty()) {
     public_id_->StartUp(interval_);
     message_handler_->StartUp(interval_);
   }
@@ -504,6 +504,11 @@ int LifeStuffImpl::ChangePassword(const std::string &new_password,
   }
 
   return user_credentials_->ChangePassword(new_password);
+}
+
+int LifeStuffImpl::LeaveLifeStuff() {
+  // Leave all shares
+  return kSuccess;
 }
 
 /// Contact operations
@@ -641,7 +646,12 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string &my_public_id,
   }
 
   // Set in session
-  session_.set_profile_picture_data_map(my_public_id, message.content[0]);
+  std::string& profile_picture_data_map(session_.profile_picture_data_map(my_public_id, result));
+  if (result != kSuccess) {
+    LOG(kError) << "User does not hold such public ID: " << my_public_id;
+    return result;
+  }
+  profile_picture_data_map = message.content[0];
 
   // Send to everybody
   message_handler_->SendEveryone(message);
@@ -681,8 +691,14 @@ std::string LifeStuffImpl::GetContactProfilePicture(const std::string &my_public
   }
 
   // Look up data map in session.
+  ContactsHandler& contacts_handler(session_.contacts_handler(my_public_id, result));
+  if (result != kSuccess) {
+    LOG(kError) << "User does not hold such public ID: " << my_public_id;
+    return "";
+  }
+
   Contact contact;
-  result = session_.contact_handler_map()[my_public_id]->ContactInfo(contact_public_id, &contact);
+  result = contacts_handler.ContactInfo(contact_public_id, &contact);
   if (result != kSuccess || contact.profile_picture_data_map.empty()) {
     LOG(kError) << "No such contact(" << result << "): " << contact_public_id;
     return "";
@@ -706,7 +722,13 @@ ContactMap LifeStuffImpl::GetContacts(const std::string &my_public_id, uint16_t 
     return ContactMap();
   }
 
-  return session_.contact_handler_map()[my_public_id]->GetContacts(bitwise_status);
+  ContactsHandler& contacts_handler(session_.contacts_handler(my_public_id, result));
+  if (result != kSuccess) {
+    LOG(kError) << "User does not hold such public ID: " << my_public_id;
+    return ContactMap();
+  }
+
+  return contacts_handler.GetContacts(bitwise_status);
 }
 
 std::vector<std::string> LifeStuffImpl::PublicIdsList() const {
@@ -1040,16 +1062,18 @@ int LifeStuffImpl::GetPrivateSharesIncludingMember(const std::string &my_public_
   return kSuccess;
 }
 
-void LifeStuffImpl::RespondInvitation(const std::string &send_from,
-                                      const std::string &send_to,
-                                      const std::string &share_id,
-                                      const std::string &share_name) {
+// The response shall come with a local share_name; if empty provided, it is a rejection
+void RespondInvitation(const std::string &send_from,
+                       const std::string &send_to,
+                       const std::string &share_id,
+                       const std::string &share_name,
+                       std::shared_ptr<MessageHandler> message_handler) {
   InboxItem message(kRespondToShareInvitation);
   message.sender_public_id = send_from;
   message.receiver_public_id = send_to;
   message.content.push_back(share_id);
   message.content.push_back(share_name);
-  message_handler_->Send(message);
+  message_handler->Send(message);
 }
 
 int LifeStuffImpl::AcceptPrivateShareInvitation(const std::string &my_public_id,
@@ -1103,8 +1127,11 @@ int LifeStuffImpl::AcceptPrivateShareInvitation(const std::string &my_public_id,
                                       share_name,
                                       directory_id,
                                       share_keyring);
-  RespondInvitation(message.receiver_public_id(), message.sender_public_id(),
-                    share_id, *share_name);
+  RespondInvitation(message.receiver_public_id(),
+                    message.sender_public_id(),
+                    share_id,
+                    *share_name,
+                    message_handler_);
   return result;
 }
 
@@ -1130,7 +1157,11 @@ int LifeStuffImpl::RejectPrivateShareInvitation(const std::string &my_public_id,
   if (!message.ParseFromString(serialised_share_data))
     LOG(kError) << "Failed to parse data in hidden file for private share.";
 
-  RespondInvitation(message.receiver_public_id(), message.sender_public_id(), share_id);
+  RespondInvitation(message.receiver_public_id(),
+                    message.sender_public_id(),
+                    share_id,
+                    "",
+                    message_handler_);
 
   return user_storage_->DeleteHiddenFile(hidden_file);
 }
@@ -1442,8 +1473,11 @@ int LifeStuffImpl::AcceptOpenShareInvitation(const std::string &my_public_id,
   contacts.insert(std::make_pair(my_public_id, 1));
   result = user_storage_->AddOpenShareUser(share_dir, contacts);
 
-  RespondInvitation(message.receiver_public_id(), message.sender_public_id(),
-                    share_id, *share_name);
+  RespondInvitation(message.receiver_public_id(),
+                    message.sender_public_id(),
+                    share_id,
+                    *share_name,
+                    message_handler_);
   if (result != kSuccess)
     LOG(kError) << "Failed to add user to open share, result " << result;
   return result;
@@ -1471,7 +1505,11 @@ int LifeStuffImpl::RejectOpenShareInvitation(const std::string &my_public_id,
   if (!message.ParseFromString(serialised_share_data))
     LOG(kError) << "Failed to parse data in hidden file for private share.";
 
-  RespondInvitation(message.receiver_public_id(), message.sender_public_id(), share_id);
+  RespondInvitation(message.receiver_public_id(),
+                    message.sender_public_id(),
+                    share_id,
+                    "",
+                    message_handler_);
   return user_storage_->DeleteHiddenFile(hidden_file);
 }
 
@@ -1629,10 +1667,9 @@ int LifeStuffImpl::PreContactChecks(const std::string &my_public_id) {
     return kGeneralError;
   }
 
-  auto it(session_.contact_handler_map().find(my_public_id));
-  if (it == session_.contact_handler_map().end()) {
-    LOG(kError) << "No such public ID.";
-    return kGeneralError;
+  if (!session_.OwnPublicId(my_public_id)) {
+    LOG(kError) << "User does not hold such public ID: " << my_public_id;
+    return kPublicIdNotFoundFailure;
   }
 
   return kSuccess;

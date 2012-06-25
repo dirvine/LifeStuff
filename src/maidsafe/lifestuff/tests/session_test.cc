@@ -57,9 +57,10 @@ class SessionTest : public testing::Test {
   void CreateTestSession(bool with_public_ids) {
     ASSERT_TRUE(session_.CreateTestPackets(with_public_ids));
     std::vector<std::string> public_ids(session_.PublicIdentities());
+    int result(0);
     std::for_each(public_ids.begin(),
                   public_ids.end(),
-                  [this] (const std::string &pub_id) {
+                  [this, &result] (const std::string &pub_id) {
                       for (int n(0); n < 5; ++n) {
                         Contact c(RandomAlphaNumericString(5),
                                   "",
@@ -68,7 +69,8 @@ class SessionTest : public testing::Test {
                                   asymm::PublicKey(),
                                   asymm::PublicKey(),
                                   kConfirmed);
-                        this->session_.contact_handler_map()[pub_id]->AddContact(c);
+                        ContactsHandler& ch(this->session_.contacts_handler(pub_id, result));
+                        ch.AddContact(c);
                       }
                   });
   }
@@ -160,10 +162,10 @@ class SessionTest : public testing::Test {
     return true;
   }
 
-  bool EqualContactHandlers(ContactsHandlerPtr lhs, ContactsHandlerPtr rhs) {
+  bool EqualContactHandlers(ContactsHandler& lhs, ContactsHandler& rhs) {
     std::vector<Contact> lhs_contacts, rhs_contacts;
-    lhs->OrderedContacts(&lhs_contacts, kAlphabetical, kConfirmed);
-    rhs->OrderedContacts(&rhs_contacts, kAlphabetical, kConfirmed);
+    lhs.OrderedContacts(&lhs_contacts, kAlphabetical, kConfirmed);
+    rhs.OrderedContacts(&rhs_contacts, kAlphabetical, kConfirmed);
     if (lhs_contacts.size() != rhs_contacts.size())
       return false;
     for (size_t n(0); n < lhs_contacts.size(); ++n) {
@@ -189,21 +191,23 @@ class SessionTest : public testing::Test {
       return false;
     if (lhs.root_parent_id() != rhs.root_parent_id())
       return false;
-    if (lhs.contact_handler_map().size() != rhs.contact_handler_map().size())
+    if (lhs.serialised_data_atlas() != rhs.serialised_data_atlas())
       return false;
 
     std::vector<std::string> lhs_public_ids(lhs.PublicIdentities());
     std::vector<std::string> rhs_public_ids(rhs.PublicIdentities());
     if (lhs_public_ids.size() != rhs_public_ids.size())
       return false;
+
+    int result(0);
     for (size_t n(0); n < rhs_public_ids.size(); ++n) {
       if (lhs_public_ids[n] != rhs_public_ids[n])
         return false;
-      if (!EqualContactHandlers(lhs.contact_handler_map()[lhs_public_ids[n]],
-                                rhs.contact_handler_map()[rhs_public_ids[n]]))
+      if (!EqualContactHandlers(lhs.contacts_handler(lhs_public_ids[n], result),
+                                rhs.contacts_handler(rhs_public_ids[n], result)))
         return false;
-      if (lhs.profile_picture_data_map(lhs_public_ids[n]) !=
-          rhs.profile_picture_data_map(rhs_public_ids[n]))
+      if (lhs.profile_picture_data_map(lhs_public_ids[n], result) !=
+          rhs.profile_picture_data_map(rhs_public_ids[n], result))
         return false;
     }
 
@@ -242,7 +246,7 @@ TEST_F(SessionTest, BEH_SetsGetsAndReset) {
   ASSERT_EQ("ddd2", session_.root_parent_id());
 
   // Resetting the session
-  ASSERT_TRUE(session_.Reset());
+  session_.Reset();
 
   // Check session is clean again
   ASSERT_EQ(kDefCon3, session_.def_con_level());

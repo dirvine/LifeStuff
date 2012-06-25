@@ -112,6 +112,10 @@ int LifeStuff::ChangePassword(const std::string &new_password,
   return lifestuff_impl->ChangePassword(new_password, current_password);
 }
 
+int LifeStuff::LeaveLifeStuff() {
+  return lifestuff_impl->LeaveLifeStuff();
+}
+
 /// Contact operations
 int LifeStuff::AddContact(const std::string &my_public_id,
                           const std::string &contact_public_id) {

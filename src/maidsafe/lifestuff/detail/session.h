@@ -32,6 +32,7 @@
 
 #include "maidsafe/passport/passport.h"
 
+#include "maidsafe/lifestuff/detail/contacts.h"
 #include "maidsafe/lifestuff/lifestuff.h"
 
 namespace maidsafe {
@@ -40,23 +41,47 @@ namespace lifestuff {
 
 namespace test { class SessionTest; }
 
-class ContactsHandler;
-struct UserDetails;
+struct UserDetails {
+  UserDetails()
+      : defconlevel(kDefCon3),
+        keyword(),
+        pin(),
+        password(),
+        session_name(),
+        unique_user_id(),
+        root_parent_id(),
+        max_space(1073741824),
+        used_space(0),
+        serialised_data_atlas() {}
+  DefConLevels defconlevel;
+  std::string keyword, pin, password, session_name, unique_user_id, root_parent_id;
+  int64_t max_space, used_space;
+  std::string serialised_data_atlas;
+};
 
-typedef std::shared_ptr<ContactsHandler> ContactsHandlerPtr;
-typedef std::map<std::string, ContactsHandlerPtr> ContactHandlerMap;
-typedef std::map<std::string, std::set<std::string>> PublicIdContactMap;
+typedef std::map<std::string, int> ShareInformation;
+struct PublicIdDetails {
+  PublicIdDetails() : profile_picture_data_map(kBlankProfilePicture),
+                      contacts_handler(),
+                      share_information() {}
+  std::string profile_picture_data_map;
+  ContactsHandler contacts_handler;
+  ShareInformation share_information;
+};
 
 class Session {
  public:
   Session();
   ~Session();
-  bool Reset();
+  void Reset();
 
   passport::Passport& passport();
 
-  ContactHandlerMap& contact_handler_map();
-  PublicIdContactMap GetAllContacts(ContactStatus status);
+  int AddPublicId(const std::string &public_id);
+  bool OwnPublicId(const std::string &public_id);
+  ContactsHandler& contacts_handler(const std::string &public_id, int &result);
+  ShareInformation& share_information(const std::string &public_id, int &result);
+  std::string& profile_picture_data_map(const std::string &public_id, int &result);
 
   DefConLevels def_con_level() const;
   std::string keyword() const;
@@ -67,7 +92,6 @@ class Session {
   std::string root_parent_id() const;
   int64_t max_space() const;
   int64_t used_space() const;
-  std::string profile_picture_data_map(const std::string &public_id) const;
   std::string serialised_data_atlas() const;
 
   void set_def_con_level(DefConLevels defconlevel);
@@ -80,8 +104,6 @@ class Session {
   void set_root_parent_id(const std::string &root_parent_id);
   void set_max_space(const int64_t &max_space);
   void set_used_space(const int64_t &used_space);
-  bool set_profile_picture_data_map(const std::string &public_id,
-                                    const std::string &profile_picture_data_map);
   void set_serialised_data_atlas(const std::string &serialised_data_atlas);
 
   int ParseDataAtlas(const std::string &serialised_session);
@@ -95,17 +117,11 @@ class Session {
   Session &operator=(const Session&);
   Session(const Session&);
 
-  int ParseKeyChain(const std::string &serialised_keyring,
-                    const std::string &serialised_selectables);
-  void SerialiseKeyChain(std::string *serialised_keyring, std::string *serialised_selectables);
+  passport::Passport passport_;
+  UserDetails user_details_;
+  std::map<std::string, PublicIdDetails> public_id_details_;
 
   bool CreateTestPackets(bool with_public_ids);
-
-  std::unique_ptr<UserDetails> user_details_;
-  passport::Passport passport_;
-  ContactHandlerMap contact_handler_map_;
-  std::map<std::string, std::string> profile_picture_map_;
-  std::string serialised_data_atlas_;
 };
 
 }  // namespace lifestuff

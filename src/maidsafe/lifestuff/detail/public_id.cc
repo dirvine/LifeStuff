@@ -238,16 +238,10 @@ int PublicId::CreatePublicId(const std::string &public_id, bool accepts_new_cont
     return result;
   }
 
-  auto n(session_.contact_handler_map().insert(
-             std::make_pair(public_id, ContactsHandlerPtr(new ContactsHandler))));
-  if (!n.second) {
-    LOG(kError) << "Failed to add contact handler for " << public_id;
+  result = session_.AddPublicId(public_id);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to add entry for " << public_id;
     return result;
-  }
-
-  if (!session_.set_profile_picture_data_map(public_id, kBlankProfilePicture)) {
-    LOG(kError) << "Failed to add contact handler for " << public_id;
-    return kSetProfilePictureError;
   }
 
   return kSuccess;
@@ -266,8 +260,15 @@ int PublicId::AddContact(const std::string &own_public_id,
 
   std::vector<Contact> contacts(1, recipient_contact);
   result = InformContactInfo(own_public_id, contacts);
-  if (result == kSuccess)
-    result = session_.contact_handler_map()[own_public_id]->AddContact(recipient_contact);
+  if (result == kSuccess) {
+    ContactsHandler& contacts_handler(session_.contacts_handler(own_public_id, result));
+    if (result != kSuccess) {
+      LOG(kError) << "User does not hold public ID: " << own_public_id;
+      return result;
+    }
+    result = contacts_handler.AddContact(recipient_contact);
+  }
+
   return result;
 }
 
@@ -382,7 +383,7 @@ void PublicId::GetContactsHandle() {
   }
 }
 
-void PublicId::ProcessRequests(const std::string &mpid_name,
+void PublicId::ProcessRequests(const std::string &own_public_id,
                                const std::string &retrieved_mpid_packet,
                                std::shared_ptr<asymm::Keys> mpid) {
   pca::AppendableByAll mcid;
@@ -391,13 +392,14 @@ void PublicId::ProcessRequests(const std::string &mpid_name,
     return;
   }
 
+  int result(0);
   for (int it(0); it < mcid.appendices_size(); ++it) {
     std::string encrypted_introduction;
-    int n(asymm::Decrypt(mcid.appendices(it).data(),
-                         mpid->private_key,
-                         &encrypted_introduction));
-    if (n != kSuccess || encrypted_introduction.empty()) {
-      LOG(kError) << "Failed to decrypt Introduction: " << n;
+    result = asymm::Decrypt(mcid.appendices(it).data(),
+                            mpid->private_key,
+                            &encrypted_introduction);
+    if (result != kSuccess || encrypted_introduction.empty()) {
+      LOG(kError) << "Failed to decrypt Introduction: " << result;
       continue;
     }
 
@@ -415,17 +417,23 @@ void PublicId::ProcessRequests(const std::string &mpid_name,
                 inbox_name(introduction.inbox_name()),
                 profile_picture_data_map(introduction.profile_picture_data_map());
 
+    ContactsHandler& contacts_handler(session_.contacts_handler(own_public_id, result));
+    if (result != kSuccess) {
+      LOG(kError) << "User does not hold such public id: " << own_public_id;
+      continue;
+    }
+
     Contact mic;
-    n = session_.contact_handler_map()[mpid_name]->ContactInfo(public_id, &mic);
-    if (n == kSuccess) {
+    result = contacts_handler.ContactInfo(public_id, &mic);
+    if (result == kSuccess) {
       if (mic.status == kRequestSent) {  // Contact confirmation
         mic.status = kConfirmed;
         mic.profile_picture_data_map = profile_picture_data_map;
-        n = GetPublicKey(inbox_name, mic, 1);
-        if (n == kSuccess) {
-          n = session_.contact_handler_map()[mpid_name]->UpdateContact(mic);
-          if (n == kSuccess) {
-            (*contact_confirmed_signal_)(mpid_name, public_id, introduction.timestamp());
+        result = GetPublicKey(inbox_name, mic, 1);
+        if (result == kSuccess) {
+          result = contacts_handler.UpdateContact(mic);
+          if (result == kSuccess) {
+            (*contact_confirmed_signal_)(own_public_id, public_id, introduction.timestamp());
           } else {
             LOG(kError) << "Failed to update contact after confirmation.";
           }
@@ -433,10 +441,10 @@ void PublicId::ProcessRequests(const std::string &mpid_name,
           LOG(kError) << "Failed to update contact after confirmation.";
         }
       } else if (mic.status == kConfirmed) {  // Contact moving its inbox
-        n = GetPublicKey(inbox_name, mic, 1);
-        if (n == kSuccess) {
-          n = session_.contact_handler_map()[mpid_name]->UpdateContact(mic);
-          if (n != kSuccess) {
+        result = GetPublicKey(inbox_name, mic, 1);
+        if (result == kSuccess) {
+          result = contacts_handler.UpdateContact(mic);
+          if (result != kSuccess) {
             LOG(kError) << "Failed to update MMID.";
           }
         } else {
@@ -447,12 +455,12 @@ void PublicId::ProcessRequests(const std::string &mpid_name,
       mic.status = kPendingResponse;
       mic.public_id = public_id;
       mic.profile_picture_data_map = profile_picture_data_map;
-      n = GetPublicKey(crypto::Hash<crypto::SHA512>(public_id), mic, 0);
-      n += GetPublicKey(inbox_name, mic, 1);
-      if (n == kSuccess) {
-        n = session_.contact_handler_map()[mpid_name]->AddContact(mic);
-        if (n == kSuccess)
-          (*new_contact_signal_)(mpid_name, public_id, introduction.timestamp());
+      result = GetPublicKey(crypto::Hash<crypto::SHA512>(public_id), mic, 0);
+      result += GetPublicKey(inbox_name, mic, 1);
+      if (result == kSuccess) {
+        result = contacts_handler.AddContact(mic);
+        if (result == kSuccess)
+          (*new_contact_signal_)(own_public_id, public_id, introduction.timestamp());
       } else {
         LOG(kError) << "Failed get keys of new contact.";
       }
@@ -462,8 +470,15 @@ void PublicId::ProcessRequests(const std::string &mpid_name,
 
 int PublicId::ConfirmContact(const std::string &own_public_id,
                              const std::string &recipient_public_id) {
+  int result(0);
+  ContactsHandler& contacts_handler(session_.contacts_handler(own_public_id, result));
+  if (result != kSuccess) {
+    LOG(kError) << "User does not hold public id: " << own_public_id;
+    return result;
+  }
+
   Contact mic;
-  int result(session_.contact_handler_map()[own_public_id]->ContactInfo(recipient_public_id, &mic));
+  result = contacts_handler.ContactInfo(recipient_public_id, &mic);
   if (result != 0 || mic.status != kPendingResponse) {
     LOG(kError) << "No such pending username found: " << recipient_public_id;
     return -1;
@@ -476,8 +491,7 @@ int PublicId::ConfirmContact(const std::string &own_public_id,
     return -1;
   }
 
-  result = session_.contact_handler_map()[own_public_id]->UpdateStatus(recipient_public_id,
-                                                                       kConfirmed);
+  result = contacts_handler.UpdateStatus(recipient_public_id, kConfirmed);
   if (result != kSuccess) {
     LOG(kError) << "Failed to confirm " << recipient_public_id;
     return -1;
@@ -488,7 +502,14 @@ int PublicId::ConfirmContact(const std::string &own_public_id,
 
 int PublicId::RejectContact(const std::string &own_public_id,
                             const std::string &recipient_public_id) {
-  return session_.contact_handler_map()[own_public_id]->DeleteContact(recipient_public_id);
+  int result(0);
+  ContactsHandler& contacts_handler(session_.contacts_handler(own_public_id, result));
+  if (result != kSuccess) {
+    LOG(kError) << "User does not hold public id: " << own_public_id;
+    return result;
+  }
+
+  return contacts_handler.DeleteContact(recipient_public_id);
 }
 
 void PublicId::RemoveContactHandle(const std::string &public_id, const std::string &contact_name) {
@@ -501,13 +522,20 @@ int PublicId::RemoveContact(const std::string &public_id, const std::string &con
     return kPublicIdEmpty;
   }
 
-  if (session_.contact_handler_map()[public_id]->TouchContact(contact_name) != kSuccess) {
-    LOG(kError) << "Public ID doesn't exist in contact list.";
-    return kLiveContactNotFound;
+  int result(0);
+  ContactsHandler& contacts_handler(session_.contacts_handler(public_id, result));
+  if (result != kSuccess) {
+    LOG(kError) << "User does not have public id: " << public_id;
+    return result;
+  }
+
+  if (contacts_handler.TouchContact(contact_name) != kSuccess) {
+    LOG(kError) << "Contact doesn't exist in list: " << contact_name;
+    return kContactNotFoundFailure;
   }
 
   // Generate a new MMID and store it
-  int result(passport_.MoveMaidsafeInbox(public_id));
+  result = passport_.MoveMaidsafeInbox(public_id);
   if (result != kSuccess) {
     LOG(kError) << "Failed to generate a new MMID: " << result;
     return kGenerateNewMMIDFailure;
@@ -539,7 +567,7 @@ int PublicId::RemoveContact(const std::string &public_id, const std::string &con
     return kRemoveContactFailure;
   }
 
-  result = session_.contact_handler_map()[public_id]->DeleteContact(contact_name);
+  result = contacts_handler.DeleteContact(contact_name);
   if (result != kSuccess) {
     LOG(kError) << "Failed to remove contact : " << contact_name;
     return result;
@@ -571,10 +599,9 @@ int PublicId::RemoveContact(const std::string &public_id, const std::string &con
 
   passport_.ConfirmMovedMaidsafeInbox(public_id);
   // Informs each contact in the list about the new MMID
-  ContactsHandler chm(*session_.contact_handler_map()[public_id]);
   std::vector<Contact> contacts;
   uint16_t status(kConfirmed | kRequestSent);
-  chm.OrderedContacts(&contacts, kAlphabetical, status);
+  contacts_handler.OrderedContacts(&contacts, kAlphabetical, status);
   result = InformContactInfo(public_id, contacts);
 
   return result;
@@ -605,13 +632,17 @@ int PublicId::InformContactInfo(const std::string &public_id,
     Introduction introduction;
     introduction.set_inbox_name(inbox.identity);
     introduction.set_public_id(public_id);
-    introduction.set_profile_picture_data_map(session_.profile_picture_data_map(public_id));
     introduction.set_timestamp(IsoTimeWithMicroSeconds());
+    int result(0);
+    session_.profile_picture_data_map(public_id, result);
+    introduction.set_profile_picture_data_map(session_.profile_picture_data_map(public_id, result));
+    if (result != kSuccess)
+      LOG(kInfo) << "Failure to find profile picture data map for public id: " << public_id;
 
     std::string encrypted_introduction;
-    int result = asymm::Encrypt(introduction.SerializeAsString(),
-                                recipient_public_key,
-                                &encrypted_introduction);
+    result = asymm::Encrypt(introduction.SerializeAsString(),
+                            recipient_public_key,
+                            &encrypted_introduction);
     if (result != kSuccess) {
       LOG(kError) << "Failed to encrypt MCID's public username: " << result;
       return kEncryptingError;
@@ -658,9 +689,13 @@ std::map<std::string, ContactStatus> PublicId::ContactList(const std::string &pu
                                                            uint16_t bitwise_status) const {
   std::map<std::string, ContactStatus> contacts;
   std::vector<Contact> session_contacts;
-  session_.contact_handler_map()[public_id]->OrderedContacts(&session_contacts,
-                                                              type,
-                                                              bitwise_status);
+  int result(0);
+  ContactsHandler& ch(session_.contacts_handler(public_id, result));
+  if (result != kSuccess) {
+    LOG(kError) << "No such public id: " << public_id;
+    return contacts;
+  }
+  ch.OrderedContacts(&session_contacts, type, bitwise_status);
   for (auto it(session_contacts.begin()); it != session_contacts.end(); ++it)
     contacts.insert(std::make_pair((*it).public_id, (*it).status));
 

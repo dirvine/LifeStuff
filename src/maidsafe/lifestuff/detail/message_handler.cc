@@ -101,13 +101,15 @@ void MessageHandler::ShutDown() {
 
 void MessageHandler::EnqueuePresenceMessages(ContactPresence presence) {
   // Get online contacts and message them to notify online status
+  std::vector<std::string> public_ids(session_.PublicIdentities());
   std::vector<Contact> contacts;
-  for (auto it(session_.contact_handler_map().begin());
-       it != session_.contact_handler_map().end();
-       ++it) {
-    (*it).second->OrderedContacts(&contacts, kAlphabetical, kConfirmed);
-    for (auto item(contacts.begin()); item != contacts.end(); ++item) {
-      SendPresenceMessage((*it).first, (*item).public_id, presence);
+  for (auto it(public_ids.begin()); it != public_ids.end(); ++it) {
+    int result(0);
+    ContactsHandler &ch(session_.contacts_handler(*it, result));
+    if (result == kSuccess) {
+      ch.OrderedContacts(&contacts, kAlphabetical, kConfirmed);
+      for (auto item(contacts.begin()); item != contacts.end(); ++item)
+        SendPresenceMessage(*it, (*item).public_id, presence);
     }
   }
 }
@@ -137,10 +139,16 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
     LOG(kError) << "Invalid message. Won't send. Good day. I said: 'Good day!'";
     return -7;
   }
+
+  int result(0);
+  ContactsHandler& contacts_handler(session_.contacts_handler(inbox_item.sender_public_id, result));
+  if (result != kSuccess) {
+    LOG(kError) << "User does not hold such public ID: " << inbox_item.sender_public_id;
+    return result;
+  }
+
   Contact recipient_contact;
-  int result(session_.contact_handler_map()[inbox_item.sender_public_id]->ContactInfo(
-                 inbox_item.receiver_public_id,
-                 &recipient_contact));
+  result = contacts_handler.ContactInfo(inbox_item.receiver_public_id, &recipient_contact);
   if (result != kSuccess ||
       recipient_contact.inbox_name.empty() ||
       !asymm::ValidateKey(recipient_contact.inbox_public_key)) {
@@ -230,7 +238,13 @@ int MessageHandler::SendPresenceMessage(const std::string &own_public_id,
     LOG(kError) << own_public_id << " failed to inform "
                 << recipient_public_id << " of presence state "
                 << presence << ", result: " << result;
-    session_.contact_handler_map()[own_public_id]->UpdatePresence(recipient_public_id, kOffline);
+    ContactsHandler& contacts_handler(session_.contacts_handler(own_public_id, result));
+    if (result != kSuccess) {
+      LOG(kError) << "User does not hold such public ID: " << own_public_id;
+      return result;
+    }
+
+    contacts_handler.UpdatePresence(recipient_public_id, kOffline);
   }
 
   return result;
@@ -244,9 +258,13 @@ void MessageHandler::InformConfirmedContactOnline(const std::string &own_public_
 
 void MessageHandler::SendEveryone(const InboxItem &message) {
   std::vector<Contact> contacts;
-  session_.contact_handler_map()[message.sender_public_id]->OrderedContacts(&contacts,
-                                                                             kAlphabetical,
-                                                                             kConfirmed);
+  int result(0);
+  ContactsHandler& contacts_handler(session_.contacts_handler(message.sender_public_id, result));
+  if (result != kSuccess) {
+    LOG(kError) << "User does not hold such public ID: " << message.sender_public_id;
+    return;
+  }
+  contacts_handler.OrderedContacts(&contacts, kAlphabetical, kConfirmed);
   auto it_map(contacts.begin());
   while (it_map != contacts.end()) {
     InboxItem local_message(message);
@@ -383,12 +401,17 @@ void MessageHandler::ProcessContactPresence(const InboxItem &presence_message) {
   std::string sender(presence_message.sender_public_id),
               receiver(presence_message.receiver_public_id);
   int result(0);
+  ContactsHandler& contacts_handler(session_.contacts_handler(receiver, result));
+  if (result != kSuccess) {
+    LOG(kError) << "User does not hold such public ID: " << receiver;
+    return;
+  }
   if (presence_message.content[0] == "kOnline") {
-    result = session_.contact_handler_map()[receiver]->UpdatePresence(sender, kOnline);
+    result = contacts_handler.UpdatePresence(sender, kOnline);
     if (result == kSuccess && start_up_done_)
       contact_presence_signal_(receiver, sender, presence_message.timestamp, kOnline);
   } else if (presence_message.content[0] == "kOffline") {
-    result = session_.contact_handler_map()[receiver]->UpdatePresence(sender, kOffline);
+    result = contacts_handler.UpdatePresence(sender, kOffline);
     if (result == kSuccess && start_up_done_)
       contact_presence_signal_(receiver, sender, presence_message.timestamp, kOffline);
 
@@ -420,9 +443,14 @@ void MessageHandler::ProcessContactProfilePicture(
     }
   }
 
-  int result(session_.contact_handler_map()[receiver]->UpdateProfilePictureDataMap(
-                 sender,
-                 profile_picture_message.content[0]));
+  int result(0);
+  ContactsHandler& contacts_handler(session_.contacts_handler(receiver, result));
+  if (result != kSuccess) {
+    LOG(kError) << "User does not hold public ID: " << receiver;
+    return;
+  }
+
+  result = contacts_handler.UpdateProfilePictureDataMap(sender, profile_picture_message.content[0]);
   if (result != kSuccess) {
     LOG(kWarning) << "Failed to update picture DM in session: " << result;
     return;

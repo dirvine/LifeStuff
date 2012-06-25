@@ -76,6 +76,8 @@ class LifeStuff {
   int ChangePassword(const std::string &new_password, const std::string &current_password);
   int ChangePublicId(const std::string &public_id, const std::string &password);
 
+  int LeaveLifeStuff();  // ='(
+
   /// Contact operations
   int AddContact(const std::string &my_public_id, const std::string &contact_public_id);
   int ConfirmContact(const std::string &my_public_id, const std::string &contact_public_id);
