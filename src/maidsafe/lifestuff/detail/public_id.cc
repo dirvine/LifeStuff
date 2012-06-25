@@ -194,18 +194,27 @@ int PublicId::CreatePublicId(const std::string &public_id, bool accepts_new_cont
 
   callback = std::bind(&ChunkStoreOperationCallback, args::_1, &mutex, &cond_var, &results[1]);
   std::string anmpid_name(SignaturePacketName(anmpid->identity));
-  remote_chunk_store_->Store(anmpid_name, SignaturePacketValue(*anmpid), callback, anmpid);
+  if (!remote_chunk_store_->Store(anmpid_name, SignaturePacketValue(*anmpid), callback, anmpid)) {
+    boost::mutex::scoped_lock lock(mutex);
+    results[1] = kRemoteChunkStoreFailure;
+  }
 
   std::string mpid_name(SignaturePacketName(mpid->identity));
   callback = std::bind(&ChunkStoreOperationCallback, args::_1, &mutex, &cond_var, &results[2]);
-  remote_chunk_store_->Store(mpid_name, SignaturePacketValue(*mpid), callback, anmpid);
+  if (!remote_chunk_store_->Store(mpid_name, SignaturePacketValue(*mpid), callback, anmpid)) {
+    boost::mutex::scoped_lock lock(mutex);
+    results[2] = kRemoteChunkStoreFailure;
+  }
 
   std::string mcid_name(MaidsafeContactIdName(public_id));
   callback = std::bind(&ChunkStoreOperationCallback, args::_1, &mutex, &cond_var, &results[3]);
-  remote_chunk_store_->Store(mcid_name,
-                             AppendableIdValue(*mpid, accepts_new_contacts),
-                             callback,
-                             mpid);
+  if (!remote_chunk_store_->Store(mcid_name,
+                                  AppendableIdValue(*mpid, accepts_new_contacts),
+                                  callback,
+                                  mpid)) {
+    boost::mutex::scoped_lock lock(mutex);
+    results[3] = kRemoteChunkStoreFailure;
+  }
 
   result = WaitForResults(mutex, cond_var, results);
   if (result != kSuccess) {
@@ -513,13 +522,13 @@ int PublicId::RemoveContact(const std::string &public_id, const std::string &con
                                          &mutex, &cond_var, &results[0]));
   std::shared_ptr<asymm::Keys> new_mmid(new asymm::Keys(
       passport_.SignaturePacketDetails(passport::kMmid, false, public_id)));
-//  std::shared_ptr<asymm::Keys> mpid(new asymm::Keys(
-//      passport_.SignaturePacketDetails(passport::kMpid, true, public_id)));
-  remote_chunk_store_->Store(AppendableByAllName(new_mmid->identity),
-                             AppendableIdValue(*new_mmid, true),
-                             callback,
-                             new_mmid);
-
+  if (!remote_chunk_store_->Store(AppendableByAllName(new_mmid->identity),
+                                  AppendableIdValue(*new_mmid, true),
+                                  callback,
+                                  new_mmid)) {
+    boost::mutex::scoped_lock lock(mutex);
+    results[0] = kRemoteChunkStoreFailure;
+  }
   result = WaitForResults(mutex, cond_var, results);
   if (result != kSuccess) {
     LOG(kError) << "Timed out.";
@@ -535,17 +544,20 @@ int PublicId::RemoveContact(const std::string &public_id, const std::string &con
     LOG(kError) << "Failed to remove contact : " << contact_name;
     return result;
   }
+
   // Invalidate previous MMID, i.e. put it into kModifiableByOwner
   results[0] = kPendingResult;
-
   std::shared_ptr<asymm::Keys> old_mmid(new asymm::Keys(
       passport_.SignaturePacketDetails(passport::kMmid, true, public_id)));
   callback = std::bind(&ChunkStoreOperationCallback, args::_1, &mutex, &cond_var, &results[0]);
-  remote_chunk_store_->Modify(AppendableByAllName(old_mmid->identity),
-                              ComposeModifyAppendableByAll(old_mmid->private_key,
-                                                           pca::kModifiableByOwner),
-                              callback,
-                              old_mmid);
+  if (!remote_chunk_store_->Modify(AppendableByAllName(old_mmid->identity),
+                                   ComposeModifyAppendableByAll(old_mmid->private_key,
+                                                                pca::kModifiableByOwner),
+                                   callback,
+                                   old_mmid)) {
+    boost::mutex::scoped_lock lock(mutex);
+    results[0] = kRemoteChunkStoreFailure;
+  }
 
   result = WaitForResults(mutex, cond_var, results);
   if (result != kSuccess) {
@@ -619,10 +631,13 @@ int PublicId::InformContactInfo(const std::string &public_id,
     std::string contact_id(MaidsafeContactIdName(recipient_public_id));
     VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
                                            &mutex, &cond_var, &results[i]));
-    remote_chunk_store_->Modify(contact_id,
-                                signed_data.SerializeAsString(),
-                                callback,
-                                mpid);
+    if (!remote_chunk_store_->Modify(contact_id,
+                                     signed_data.SerializeAsString(),
+                                     callback,
+                                     mpid)) {
+      boost::mutex::scoped_lock lock(mutex);
+      results[i] = kRemoteChunkStoreFailure;
+    }
   }
   int result(WaitForResults(mutex, cond_var, results));
   if (result != kSuccess) {

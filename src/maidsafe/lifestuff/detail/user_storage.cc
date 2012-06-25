@@ -282,10 +282,13 @@ int UserStorage::CreateShare(const std::string &sender_public_id,
                                          &cond_var,
                                          &results[0]));
   std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
-  chunk_store_->Store(packet_id,
-                      ComposeSignaturePacketValue(key_ring),
-                      callback,
-                      key_shared);
+  if (!chunk_store_->Store(packet_id,
+                           ComposeSignaturePacketValue(key_ring),
+                           callback,
+                           key_shared)) {
+    boost::mutex::scoped_lock lock(mutex);
+    results[0] = kRemoteChunkStoreFailure;
+  }
   result = WaitForResults(mutex, cond_var, results);
   if (result != kSuccess) {
     LOG(kError) << "Timed out waiting for the response";
@@ -358,10 +361,13 @@ int UserStorage::CreateOpenShare(const std::string &sender_public_id,
                                          &cond_var,
                                          &results[0]));
   std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
-  chunk_store_->Store(packet_id,
-                      ComposeSignaturePacketValue(key_ring),
-                      callback,
-                      key_shared);
+  if (!chunk_store_->Store(packet_id,
+                           ComposeSignaturePacketValue(key_ring),
+                           callback,
+                           key_shared)) {
+    boost::mutex::scoped_lock lock(mutex);
+    results[0] = kRemoteChunkStoreFailure;
+  }
   result = WaitForResults(mutex, cond_var, results);
   if (result != kSuccess) {
     LOG(kError) << "Timed out waiting for the response";
@@ -476,7 +482,10 @@ int UserStorage::StopShare(const std::string &sender_public_id,
   VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
                                          &mutex, &cond_var, &results[0]));
   std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
-  chunk_store_->Delete(packet_id, callback, key_shared);
+  if (!chunk_store_->Delete(packet_id, callback, key_shared)) {
+    boost::mutex::scoped_lock lock(mutex);
+    results[0] = kRemoteChunkStoreFailure;
+  }
 
   result = WaitForResults(mutex, cond_var, results);
   if (result != kSuccess) {
@@ -716,10 +725,13 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
   VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
                                          &mutex, &cond_var, &results[0]));
   std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
-  chunk_store_->Store(packet_id,
-                      ComposeSignaturePacketValue(key_ring),
-                      callback,
-                      key_shared);
+ if (!chunk_store_->Store(packet_id,
+                          ComposeSignaturePacketValue(key_ring),
+                          callback,
+                          key_shared)) {
+    boost::mutex::scoped_lock lock(mutex);
+    results[0] = kRemoteChunkStoreFailure;
+  }
 
   result = WaitForResults(mutex, cond_var, results);
   if (result != kSuccess) {
@@ -749,7 +761,10 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
 
   std::shared_ptr<asymm::Keys> old_key_shared(new asymm::Keys(old_key_ring));
   packet_id = ComposeSignaturePacketName(old_key_ring.identity);
-  chunk_store_->Delete(packet_id, callback, old_key_shared);
+  if (!chunk_store_->Delete(packet_id, callback, old_key_shared)) {
+    boost::mutex::scoped_lock lock(mutex);
+    results[0] = kRemoteChunkStoreFailure;
+  }
 
   result = WaitForResults(mutex, cond_var, results);
   if (result != kSuccess) {

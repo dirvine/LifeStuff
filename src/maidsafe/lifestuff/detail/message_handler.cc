@@ -187,7 +187,10 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
   std::string inbox_id(AppendableByAllType(recipient_contact.inbox_name));
   VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
                                          &mutex, &cond_var, &result));
-  remote_chunk_store_->Modify(inbox_id, signed_data.SerializeAsString(), callback, mmid);
+  if (!remote_chunk_store_->Modify(inbox_id, signed_data.SerializeAsString(), callback, mmid)) {
+    LOG(kError) << "Immediate remote chunkstore failure.";
+    return kRemoteChunkStoreFailure;
+  }
 
   try {
     boost::mutex::scoped_lock lock(mutex);
