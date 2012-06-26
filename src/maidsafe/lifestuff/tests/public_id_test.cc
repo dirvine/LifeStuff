@@ -240,11 +240,10 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
   }
 
   ASSERT_EQ(public_identity2_, received_public_identity_);
-  int result(0);
-  ContactsHandler& contacts_handler1(session2_.contacts_handler(public_identity1_, result));
-  ASSERT_EQ(kSuccess, result);
+  const ContactsHandlerPtr contacts_handler1(session1_.contacts_handler(public_identity1_));
+  ASSERT_NE(nullptr, contacts_handler1.get());
   Contact received_contact;
-  ASSERT_EQ(kSuccess, contacts_handler1.ContactInfo(received_public_identity_, &received_contact));
+  ASSERT_EQ(kSuccess, contacts_handler1->ContactInfo(received_public_identity_, &received_contact));
   ASSERT_EQ(kPendingResponse, received_contact.status);
 
   received_contact = Contact();
@@ -257,7 +256,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
     ASSERT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&]()->bool { return done; }));  // NOLINT (Dan)
   }
   ASSERT_EQ(public_id3, received_public_identity_);
-  ASSERT_EQ(kSuccess, contacts_handler1.ContactInfo(received_public_identity_, &received_contact));
+  ASSERT_EQ(kSuccess, contacts_handler1->ContactInfo(received_public_identity_, &received_contact));
   ASSERT_EQ(kPendingResponse, received_contact.status);
 }
 
@@ -282,11 +281,10 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
   ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
 
-  int result(0);
-  ContactsHandler& contacts_handler2(session2_.contacts_handler(public_identity2_, result));
-  ASSERT_EQ(kSuccess, result);
+  const ContactsHandlerPtr contacts_handler2(session2_.contacts_handler(public_identity2_));
+  ASSERT_NE(nullptr, contacts_handler2.get());
   Contact received_contact;
-  ASSERT_EQ(kSuccess, contacts_handler2.ContactInfo(public_identity1_, &received_contact));
+  ASSERT_EQ(kSuccess, contacts_handler2->ContactInfo(public_identity1_, &received_contact));
   ASSERT_EQ(kRequestSent, received_contact.status);
 
   {
@@ -297,16 +295,16 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
   // Other side got message. Check status of contact and reply affirmatively.
   ASSERT_EQ(public_identity2_, received_public_identity_);
   received_contact = Contact();
-  ContactsHandler& contacts_handler1(session1_.contacts_handler(public_identity1_, result));
-  ASSERT_EQ(kSuccess, result);
-  ASSERT_EQ(kSuccess, contacts_handler1.ContactInfo(public_identity2_, &received_contact));
+  const ContactsHandlerPtr contacts_handler1(session1_.contacts_handler(public_identity1_));
+  ASSERT_NE(nullptr, contacts_handler1.get());
+  ASSERT_EQ(kSuccess, contacts_handler1->ContactInfo(public_identity2_, &received_contact));
   ASSERT_EQ(kPendingResponse, received_contact.status);
   ASSERT_EQ(kSuccess, public_id1_->ConfirmContact(public_identity1_, public_identity2_));
   ASSERT_EQ(kSuccess, public_id2_->StartCheckingForNewContacts(interval_));
 
   // Contact should now be confirmed after reply
   received_contact = Contact();
-  ASSERT_EQ(kSuccess, contacts_handler1.ContactInfo(public_identity2_, &received_contact));
+  ASSERT_EQ(kSuccess, contacts_handler1->ContactInfo(public_identity2_, &received_contact));
   ASSERT_EQ(kConfirmed, received_contact.status);
 
   {
@@ -317,7 +315,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
   // Confirmation received, status should be updated
   ASSERT_EQ(public_identity1_, confirmed_contact);
   received_contact = Contact();
-  ASSERT_EQ(kSuccess, contacts_handler2.ContactInfo(public_identity1_, &received_contact));
+  ASSERT_EQ(kSuccess, contacts_handler2->ContactInfo(public_identity1_, &received_contact));
   ASSERT_EQ(kConfirmed, received_contact.status);
   ASSERT_FALSE(received_contact.inbox_name.empty());
 }
@@ -337,11 +335,10 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithRefusal) {
   // Send the message and start checking for messages
   ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
-  int result(0);
-  ContactsHandler& contacts_handler2(session2_.contacts_handler(public_identity2_, result));
-  ASSERT_EQ(kSuccess, result);
+  const ContactsHandlerPtr contacts_handler2(session2_.contacts_handler(public_identity2_));
+  ASSERT_NE(nullptr, contacts_handler2.get());
   Contact received_contact;
-  ASSERT_EQ(kSuccess, contacts_handler2.ContactInfo(public_identity1_, &received_contact));
+  ASSERT_EQ(kSuccess, contacts_handler2->ContactInfo(public_identity1_, &received_contact));
   ASSERT_EQ(kRequestSent, received_contact.status);
 
   {
@@ -352,14 +349,14 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithRefusal) {
   // Other side got message. Check status of contact and reply affirmatively.
   ASSERT_EQ(public_identity2_, received_public_identity_);
   received_contact = Contact();
-  ContactsHandler& contacts_handler1(session1_.contacts_handler(public_identity1_, result));
-  ASSERT_EQ(kSuccess, result);
-  ASSERT_EQ(kSuccess, contacts_handler1.ContactInfo(public_identity2_, &received_contact));
+  const ContactsHandlerPtr contacts_handler1(session1_.contacts_handler(public_identity1_));
+  ASSERT_NE(nullptr, contacts_handler1.get());
+  ASSERT_EQ(kSuccess, contacts_handler1->ContactInfo(public_identity2_, &received_contact));
   ASSERT_EQ(kPendingResponse, received_contact.status);
 
   ASSERT_EQ(kSuccess, public_id1_->RejectContact(public_identity1_, public_identity2_));
   received_contact = Contact();
-  ASSERT_NE(kSuccess, contacts_handler1.ContactInfo(public_identity2_, &received_contact));
+  ASSERT_NE(kSuccess, contacts_handler1->ContactInfo(public_identity2_, &received_contact));
 }
 
 TEST_F(PublicIdTest, FUNC_DisablePublicId) {

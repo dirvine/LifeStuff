@@ -61,6 +61,8 @@ class SessionTest : public testing::Test {
     std::for_each(public_ids.begin(),
                   public_ids.end(),
                   [this, &result] (const std::string &pub_id) {
+                      const ContactsHandlerPtr ch(this->session_.contacts_handler(pub_id));
+                      const ShareInformationPtr si(this->session_.share_information(pub_id));
                       for (int n(0); n < 5; ++n) {
                         Contact c(RandomAlphaNumericString(5),
                                   "",
@@ -69,13 +71,20 @@ class SessionTest : public testing::Test {
                                   asymm::PublicKey(),
                                   asymm::PublicKey(),
                                   kConfirmed);
-                        ContactsHandler& ch(this->session_.contacts_handler(pub_id, result));
-                        ch.AddContact(c);
+                        ch->AddContact(c);
+
+                        // Shares
+                        si->insert(std::make_pair("share_" + IntToString(n), n));
                       }
                   });
   }
 
-  bool EqualPublicContacts(const PublicContact &lhs, const PublicContact &rhs) {
+  bool EqualShareInformationContainers(const ShareInformationContainer& lhs,
+                                       const ShareInformationContainer& rhs) {
+    return lhs.share_name() == rhs.share_name() && lhs.share_type() == rhs.share_type();
+  }
+
+  bool EqualPublicContacts(const PublicContact& lhs, const PublicContact& rhs) {
     // required
     if (lhs.public_id() != rhs.public_id())
       return false;
@@ -124,7 +133,7 @@ class SessionTest : public testing::Test {
     return true;
   }
 
-  bool EqualPublicIdentities(const PublicIdentity &lhs, const PublicIdentity &rhs) {
+  bool EqualPublicIdentities(const PublicIdentity& lhs, const PublicIdentity& rhs) {
     if (lhs.public_id() != rhs.public_id())
       return false;
     if (lhs.profile_picture_data_map() != rhs.profile_picture_data_map())
@@ -133,6 +142,10 @@ class SessionTest : public testing::Test {
       return false;
     for (int n(0); n < lhs.contacts_size(); ++n) {
       if (!EqualPublicContacts(lhs.contacts(n), rhs.contacts(n)))
+        return false;
+    }
+    for (int n(0); n < lhs.shares_size(); ++n) {
+      if (!EqualShareInformationContainers(lhs.shares(n), rhs.shares(n)))
         return false;
     }
     return true;
@@ -162,14 +175,28 @@ class SessionTest : public testing::Test {
     return true;
   }
 
-  bool EqualContactHandlers(ContactsHandler& lhs, ContactsHandler& rhs) {
+  bool EqualShareInformations(const ShareInformationPtr lhs, const ShareInformationPtr rhs) {
+    if (lhs->size() != rhs->size())
+      return false;
+    for (auto lhs_it(lhs->begin()); lhs_it != lhs->end(); ++lhs_it) {
+      auto rhs_it(rhs->find(lhs_it->first));
+      if (rhs_it == rhs->end())
+        return false;
+      if (lhs_it->second.share_type != rhs_it->second.share_type)
+        return false;
+    }
+
+    return true;
+  }
+
+  bool EqualContactHandlers(const ContactsHandlerPtr lhs, const ContactsHandlerPtr rhs) {
     std::vector<Contact> lhs_contacts, rhs_contacts;
-    lhs.OrderedContacts(&lhs_contacts, kAlphabetical, kConfirmed);
-    rhs.OrderedContacts(&rhs_contacts, kAlphabetical, kConfirmed);
+    lhs->OrderedContacts(&lhs_contacts, kAlphabetical, kConfirmed);
+    rhs->OrderedContacts(&rhs_contacts, kAlphabetical, kConfirmed);
     if (lhs_contacts.size() != rhs_contacts.size())
       return false;
     for (size_t n(0); n < lhs_contacts.size(); ++n) {
-      if (!lhs_contacts[n].Equals(rhs_contacts[n]))
+      if (!lhs_contacts.at(n).Equals(rhs_contacts.at(n)))
         return false;
     }
 
@@ -199,15 +226,17 @@ class SessionTest : public testing::Test {
     if (lhs_public_ids.size() != rhs_public_ids.size())
       return false;
 
-    int result(0);
     for (size_t n(0); n < rhs_public_ids.size(); ++n) {
       if (lhs_public_ids[n] != rhs_public_ids[n])
         return false;
-      if (!EqualContactHandlers(lhs.contacts_handler(lhs_public_ids[n], result),
-                                rhs.contacts_handler(rhs_public_ids[n], result)))
+      if (!EqualContactHandlers(lhs.contacts_handler(lhs_public_ids[n]),
+                                rhs.contacts_handler(rhs_public_ids[n])))
         return false;
-      if (lhs.profile_picture_data_map(lhs_public_ids[n], result) !=
-          rhs.profile_picture_data_map(rhs_public_ids[n], result))
+      if (*lhs.profile_picture_data_map(lhs_public_ids[n]) !=
+          *rhs.profile_picture_data_map(rhs_public_ids[n]))
+        return false;
+      if (!EqualShareInformations(lhs.share_information(lhs_public_ids[n]),
+                                  rhs.share_information(rhs_public_ids[n])))
         return false;
     }
 

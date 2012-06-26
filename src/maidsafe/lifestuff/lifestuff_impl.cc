@@ -507,7 +507,22 @@ int LifeStuffImpl::ChangePassword(const std::string &new_password,
 }
 
 int LifeStuffImpl::LeaveLifeStuff() {
+  // Stop Messaging
+  message_handler_->StopCheckingForNewMessages();
+  public_id_->StopCheckingForNewContacts();
+
   // Leave all shares
+
+  // Delete all files
+
+  // Unmount
+
+  // Delete all public IDs
+
+  // Shut down vaults
+
+  // Remove all packets
+
   return kSuccess;
 }
 
@@ -646,12 +661,12 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string &my_public_id,
   }
 
   // Set in session
-  std::string& profile_picture_data_map(session_.profile_picture_data_map(my_public_id, result));
-  if (result != kSuccess) {
+  const ProfilePicturePtr profile_picture_data_map(session_.profile_picture_data_map(my_public_id));
+  if (!profile_picture_data_map) {
     LOG(kError) << "User does not hold such public ID: " << my_public_id;
-    return result;
+    return kPublicIdNotFoundFailure;
   }
-  profile_picture_data_map = message.content[0];
+  *profile_picture_data_map = message.content[0];
 
   // Send to everybody
   message_handler_->SendEveryone(message);
@@ -691,14 +706,14 @@ std::string LifeStuffImpl::GetContactProfilePicture(const std::string &my_public
   }
 
   // Look up data map in session.
-  ContactsHandler& contacts_handler(session_.contacts_handler(my_public_id, result));
-  if (result != kSuccess) {
+  const ContactsHandlerPtr contacts_handler(session_.contacts_handler(my_public_id));
+  if (!contacts_handler) {
     LOG(kError) << "User does not hold such public ID: " << my_public_id;
     return "";
   }
 
   Contact contact;
-  result = contacts_handler.ContactInfo(contact_public_id, &contact);
+  result = contacts_handler->ContactInfo(contact_public_id, &contact);
   if (result != kSuccess || contact.profile_picture_data_map.empty()) {
     LOG(kError) << "No such contact(" << result << "): " << contact_public_id;
     return "";
@@ -722,13 +737,13 @@ ContactMap LifeStuffImpl::GetContacts(const std::string &my_public_id, uint16_t 
     return ContactMap();
   }
 
-  ContactsHandler& contacts_handler(session_.contacts_handler(my_public_id, result));
-  if (result != kSuccess) {
+  const ContactsHandlerPtr contacts_handler(session_.contacts_handler(my_public_id));
+  if (!contacts_handler) {
     LOG(kError) << "User does not hold such public ID: " << my_public_id;
     return ContactMap();
   }
 
-  return contacts_handler.GetContacts(bitwise_status);
+  return contacts_handler->GetContacts(bitwise_status);
 }
 
 std::vector<std::string> LifeStuffImpl::PublicIdsList() const {

@@ -32,10 +32,16 @@ message PublicContact {
   optional bytes pointer_to_info = 11;
 }
 
+message ShareInformationContainer {
+  required bytes share_name = 1;
+  required uint32 share_type = 2;
+}
+
 message PublicIdentity {
   required bytes public_id = 1;
   required bytes profile_picture_data_map = 2;
   repeated PublicContact contacts = 3;
+  repeated ShareInformationContainer shares = 4;
 }
 
 message PassportData {

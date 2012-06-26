@@ -79,42 +79,33 @@ bool Session::OwnPublicId(const std::string &public_id) {
   return public_id_details_.find(public_id) != public_id_details_.end();
 }
 
-ContactsHandler& Session::contacts_handler(const std::string &public_id, int &result) {
+const ContactsHandlerPtr Session::contacts_handler(const std::string &public_id) {
   auto it(public_id_details_.find(public_id));
   if (it == public_id_details_.end()) {
     LOG(kError) << "Failure to find public id: " << public_id;
-    result = kPublicIdNotFoundFailure;
-    ContactsHandler ch;
-    return ch;
+    return ContactsHandlerPtr();
   }
 
-  result = kSuccess;
   return (*it).second.contacts_handler;
 }
 
-ShareInformation& Session::share_information(const std::string &public_id, int &result) {
+const ShareInformationPtr Session::share_information(const std::string &public_id) {
   auto it(public_id_details_.find(public_id));
   if (it == public_id_details_.end()) {
     LOG(kError) << "Failure to find public id: " << public_id;
-    result = kPublicIdNotFoundFailure;
-    ShareInformation si;
-    return si;
+    return ShareInformationPtr();
   }
 
-  result = kSuccess;
   return (*it).second.share_information;
 }
 
-std::string& Session::profile_picture_data_map(const std::string &public_id, int &result) {
+const ProfilePicturePtr Session::profile_picture_data_map(const std::string &public_id) {
   auto it(public_id_details_.find(public_id));
   if (it == public_id_details_.end()) {
     LOG(kError) << "Failure to find public id: " << public_id;
-    result = kPublicIdNotFoundFailure;
-    std::string s;
-    return s;
+    return ProfilePicturePtr();
   }
 
-  result = kSuccess;
   return (*it).second.profile_picture_data_map;
 }
 
@@ -195,7 +186,7 @@ int Session::ParseDataAtlas(const std::string &serialised_data_atlas) {
   for (int id_count(0); id_count < data_atlas.public_ids_size(); ++id_count) {
     pub_id = data_atlas.public_ids(id_count).public_id();
     PublicIdDetails public_id_details;
-    public_id_details.profile_picture_data_map =
+    *public_id_details.profile_picture_data_map =
         data_atlas.public_ids(id_count).profile_picture_data_map();
 
     for (int contact_count(0);
@@ -208,8 +199,17 @@ int Session::ParseDataAtlas(const std::string &serialised_data_atlas) {
       asymm::DecodePublicKey(
           data_atlas.public_ids(id_count).contacts(contact_count).inbox_public_key(),
           &contact.inbox_public_key);
-      int result(public_id_details.contacts_handler.AddContact(contact));
+      int result(public_id_details.contacts_handler->AddContact(contact));
       LOG(kInfo) << "Result of adding " << contact.public_id << " to " << pub_id << ":  " << result;
+    }
+
+    for (int share_count(0);
+         share_count < data_atlas.public_ids(id_count).shares_size();
+         ++share_count) {
+      public_id_details.share_information->insert(
+          std::make_pair(
+              data_atlas.public_ids(id_count).shares(share_count).share_name(),
+              ShareDetails(data_atlas.public_ids(id_count).shares(share_count).share_type())));
     }
 
     public_id_details_[pub_id] = public_id_details;
@@ -243,11 +243,11 @@ int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
   for (auto it(public_id_details_.begin()); it != public_id_details_.end(); ++it) {
     PublicIdentity *pub_id(data_atlas.add_public_ids());
     pub_id->set_public_id((*it).first);
-    pub_id->set_profile_picture_data_map((*it).second.profile_picture_data_map);
-    (*it).second.contacts_handler.OrderedContacts(&contacts, kAlphabetical, kRequestSent |
-                                                                            kPendingResponse |
-                                                                            kConfirmed |
-                                                                            kBlocked);
+    pub_id->set_profile_picture_data_map(*(*it).second.profile_picture_data_map);
+    (*it).second.contacts_handler->OrderedContacts(&contacts, kAlphabetical, kRequestSent |
+                                                                             kPendingResponse |
+                                                                             kConfirmed |
+                                                                             kBlocked);
     for (size_t n(0); n < contacts.size(); ++n) {
       PublicContact *pc(pub_id->add_contacts());
       pc->set_public_id(contacts[n].public_id);
@@ -263,6 +263,13 @@ int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
       pc->set_last_contact(contacts[n].last_contact);
       pc->set_profile_picture_data_map(contacts[n].profile_picture_data_map);
       LOG(kInfo) << "Added contact " << contacts[n].public_id << " to " << (*it).first << " map.";
+    }
+
+    ShareInformationPtr share_information((*it).second.share_information);
+    for (auto it(share_information->begin()); it != share_information->end(); ++it) {
+      ShareInformationContainer *sic(pub_id->add_shares());
+      sic->set_share_name(it->first);
+      sic->set_share_type(it->second.share_type);
     }
   }
 

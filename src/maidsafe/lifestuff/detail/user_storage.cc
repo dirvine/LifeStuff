@@ -725,10 +725,10 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
   VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
                                          &mutex, &cond_var, &results[0]));
   std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
- if (!chunk_store_->Store(packet_id,
-                          ComposeSignaturePacketValue(key_ring),
-                          callback,
-                          key_shared)) {
+  if (!chunk_store_->Store(packet_id,
+                           ComposeSignaturePacketValue(key_ring),
+                           callback,
+                           key_shared)) {
     boost::mutex::scoped_lock lock(mutex);
     results[0] = kRemoteChunkStoreFailure;
   }

@@ -59,14 +59,25 @@ struct UserDetails {
   std::string serialised_data_atlas;
 };
 
-typedef std::map<std::string, int> ShareInformation;
+struct ShareDetails {
+  ShareDetails() : share_type(0) {}
+  ShareDetails(int type) : share_type(type) {}
+  int share_type;
+};
+
+typedef std::map<std::string, ShareDetails> ShareInformation;
+
+typedef std::shared_ptr<ContactsHandler> ContactsHandlerPtr;
+typedef std::shared_ptr<ShareInformation> ShareInformationPtr;
+typedef std::shared_ptr<std::string> ProfilePicturePtr;
+
 struct PublicIdDetails {
-  PublicIdDetails() : profile_picture_data_map(kBlankProfilePicture),
-                      contacts_handler(),
-                      share_information() {}
-  std::string profile_picture_data_map;
-  ContactsHandler contacts_handler;
-  ShareInformation share_information;
+  PublicIdDetails() : profile_picture_data_map(new std::string(kBlankProfilePicture)),
+                      contacts_handler(new ContactsHandler),
+                      share_information(new ShareInformation) {}
+  ProfilePicturePtr profile_picture_data_map;
+  ContactsHandlerPtr contacts_handler;
+  ShareInformationPtr share_information;
 };
 
 class Session {
@@ -79,9 +90,9 @@ class Session {
 
   int AddPublicId(const std::string &public_id);
   bool OwnPublicId(const std::string &public_id);
-  ContactsHandler& contacts_handler(const std::string &public_id, int &result);
-  ShareInformation& share_information(const std::string &public_id, int &result);
-  std::string& profile_picture_data_map(const std::string &public_id, int &result);
+  const ContactsHandlerPtr contacts_handler(const std::string &public_id);
+  const ShareInformationPtr share_information(const std::string &public_id);
+  const ProfilePicturePtr profile_picture_data_map(const std::string &public_id);
 
   DefConLevels def_con_level() const;
   std::string keyword() const;
