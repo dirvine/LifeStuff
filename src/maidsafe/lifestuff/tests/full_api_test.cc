@@ -1022,7 +1022,7 @@ TEST_F(OneUserApiTest, FUNC_AddOwnPublicIdAsContact) {
   test_elements_.CreatePublicId(public_id_1);
   test_elements_.CreatePublicId(public_id_2);
 
-  EXPECT_EQ(kSuccess, test_elements_.AddContact(public_id_1, public_id_1));
+  EXPECT_NE(kSuccess, test_elements_.AddContact(public_id_1, public_id_1));
   EXPECT_NE(kSuccess, test_elements_.AddContact(public_id_1, public_id_2));
 }
 
@@ -1085,10 +1085,10 @@ class TwoInstancesApiTest : public OneUserApiTest {
 
 TEST_F(TwoInstancesApiTest, FUNC_LogInFromTwoPlaces) {
   EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_));
-  EXPECT_NE(kSuccess, test_elements_2_.LogIn(keyword_, pin_, password_));
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_, pin_, password_));
 
-  EXPECT_EQ(kSuccess, test_elements_.LogOut());
-  EXPECT_NE(kSuccess, test_elements_2_.LogOut());
+  EXPECT_NE(kSuccess, test_elements_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 }
 
 TEST_F(TwoInstancesApiTest, FUNC_NeverLogIn) {
@@ -3152,9 +3152,6 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
   {
     EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
-    EXPECT_EQ(kSuccess, test_elements_1_.RemoveContact(public_id_1_, public_id_2_,
-                                                       removal_message));
-    EXPECT_TRUE(test_elements_1_.GetContacts(public_id_1_).empty());
     StringIntMap results;
     EXPECT_EQ(kSuccess, test_elements_1_.GetPrivateShareMembers(public_id_1_,
                                                                 share_name1,

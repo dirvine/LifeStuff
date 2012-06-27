@@ -81,9 +81,11 @@ enum MessageContentIndexes {
 
 std::string CreatePin();
 
-bool CheckKeywordValidity(const std::string &keyword);
-bool CheckPinValidity(const std::string &pin);
-bool CheckPasswordValidity(const std::string &password);
+int CheckKeywordValidity(const std::string &keyword);
+int CheckPinValidity(const std::string &pin);
+int CheckPasswordValidity(const std::string &password);
+
+int CheckPublicIdValidity(const std::string &public_id);
 
 fs::path CreateTestDirectory(fs::path const& parent, std::string *tail);
 int CreateTestFile(fs::path const& parent, int size_in_mb, std::string *file_name);

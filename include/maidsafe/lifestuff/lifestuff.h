@@ -88,6 +88,7 @@ const uint8_t kThreads(10);
 const uint8_t kSecondsInterval(5);
 const size_t kMinWordSize(5);
 const size_t kMaxWordSize(30);
+const size_t kMaxPublicIdSize(30);
 const size_t kPinSize(4);
 const std::string kLiteralOnline("kOnline");
 const std::string kLiteralOffline("kOffline");

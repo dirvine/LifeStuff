@@ -66,7 +66,11 @@ enum ReturnCode {
   kAtLeastOneFailure = -201021,
 
   // User Credentials
-  kCredentialValidityFailure = -202001,
+  // kCredentialValidityFailure = -202001,
+  kWordSizeInvalid = -202002,
+  kWordPatternInvalid = -202003,
+  kPinSizeInvalid = -202004,
+  kPinPatternInvalid = -202005,
 
   // Session
   kLiveContactNotFound = -204001,
@@ -85,6 +89,10 @@ enum ReturnCode {
   kGenerateNewMMIDFailure = -206012,
   kRemoveContactFailure = -206013,
   kSetProfilePictureError = -206014,
+  kPublicIdLengthInvalid = -206015,
+  kPublicIdEndSpaceInvalid = -206016,
+  kPublicIdDoubleSpaceInvalid = -206017,
+
 
   // MessageHandler
   kMessageHandlerException = -207001,

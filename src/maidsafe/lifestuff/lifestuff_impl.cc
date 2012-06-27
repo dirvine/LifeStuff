@@ -225,7 +225,7 @@ int LifeStuffImpl::ConnectToSignals(
 
 int LifeStuffImpl::Finalise() {
   if (state_ != kConnected) {
-    LOG(kError) << "Need to be connected and not logged in to finalise.";
+    LOG(kError) << "Need to be connected to finalise.";
     return kGeneralError;
   }
 
