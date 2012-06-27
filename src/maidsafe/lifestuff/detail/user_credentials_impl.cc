@@ -50,18 +50,6 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-struct OperationResults {
-  OperationResults(boost::mutex &mutex_in,  // NOLINT (Dan)
-                   boost::condition_variable &conditional_variable_in,  // NOLINT (Dan)
-                   std::vector<int> &individual_results_in)  // NOLINT (Dan)
-      : mutex(mutex_in),
-        conditional_variable(conditional_variable_in),
-        individual_results(individual_results_in) {}
-  boost::mutex &mutex;
-  boost::condition_variable &conditional_variable;
-  std::vector<int> &individual_results;
-};
-
 namespace {
 
 int CreateSignaturePacketInfo(std::shared_ptr<asymm::Keys> packet,
@@ -84,24 +72,6 @@ int CreateSignaturePacketInfo(std::shared_ptr<asymm::Keys> packet,
     LOG(kError) << "SignedData not properly serialised.";
     return kCreateSignaturePacketInfoFailure;
   }
-
-  return kSuccess;
-}
-
-void OperationCallback(bool result, OperationResults &results, int index) {  // NOLINT (Dan)
-  boost::mutex::scoped_lock barra_loch_an_duin(results.mutex);
-  results.individual_results.at(index) = result ? kSuccess : kRemoteChunkStoreFailure;
-  results.conditional_variable.notify_one();
-}
-
-int AssessJointResult(const std::vector<int> &results) {
-  auto it(std::find_if(results.begin(),
-                       results.end(),
-                       [&](const int &element)->bool {
-                         return element != kSuccess;
-                       }));
-  if (it != results.end())
-    return kAtLeastOneFailure;
 
   return kSuccess;
 }
@@ -908,6 +878,139 @@ int UserCredentialsImpl::SerialiseAndSetIdentity(const std::string &keyword,
   }
 
   return kSuccess;
+}
+
+int UserCredentialsImpl::DeleteUserCredentials() {
+  int result(DeleteOldIdentityPackets());
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to delete identity packets.";
+    return result;
+  }
+
+  result = DeleteSignaturePackets();
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to delete signature packets.";
+    return result;
+  }
+
+  return kSuccess;
+}
+
+int UserCredentialsImpl::DeleteSignaturePackets() {
+  std::vector<int> individual_results(4, kPendingResult);
+  boost::condition_variable condition_variable;
+  boost::mutex mutex;
+  OperationResults results(mutex, condition_variable, individual_results);
+
+  // ANMID path
+  DeleteAnmid(results);
+  // ANSMID path
+  DeleteAnsmid(results);
+  // ANTMID path
+  DeleteAntmid(results);
+  // PMID path: PMID, MAID, ANMAID
+  DeletePmid(results);
+
+  int result(WaitForResults(mutex, condition_variable, individual_results));
+  if (result != kSuccess) {
+    LOG(kError) << "Wait for results timed out: " << result;
+    LOG(kError) << "ANMID: " << individual_results.at(0)
+              << ", ANSMID: " << individual_results.at(1)
+              << ", ANTMID: " << individual_results.at(2)
+              << ", PMID path: " << individual_results.at(3);
+    return result;
+  }
+  LOG(kInfo) << "ANMID: " << individual_results.at(0)
+             << ", ANSMID: " << individual_results.at(1)
+             << ", ANTMID: " << individual_results.at(2)
+             << ", PMID path: " << individual_results.at(3);
+
+  result = AssessJointResult(individual_results);
+  if (result != kSuccess) {
+    LOG(kError) << "One of the operations for Anonymous Packets failed. "
+                << "Turn on INFO for feedback on which one. ";
+    return kDeleteSignaturePacketsFailure;
+  }
+
+  return kSuccess;
+}
+
+void UserCredentialsImpl::DeleteAnmid(OperationResults& results) {
+  std::shared_ptr<asymm::Keys> anmid(
+      new asymm::Keys(passport_.SignaturePacketDetails(passport::kAnmid, true)));
+  DeleteSignaturePacket(anmid, results, 0);
+}
+
+void UserCredentialsImpl::DeleteAnsmid(OperationResults& results) {
+  std::shared_ptr<asymm::Keys> ansmid(
+      new asymm::Keys(passport_.SignaturePacketDetails(passport::kAnsmid, true)));
+  DeleteSignaturePacket(ansmid, results, 1);
+}
+
+void UserCredentialsImpl::DeleteAntmid(OperationResults& results) {
+  std::shared_ptr<asymm::Keys> antmid(
+      new asymm::Keys(passport_.SignaturePacketDetails(passport::kAntmid, true)));
+  DeleteSignaturePacket(antmid, results, 2);
+}
+
+void UserCredentialsImpl::DeletePmid(OperationResults& results) {
+  asymm::Keys pmid(passport_.SignaturePacketDetails(passport::kPmid, true));
+  std::shared_ptr<asymm::Keys> maid(
+      new asymm::Keys(passport_.SignaturePacketDetails(passport::kMaid, true)));
+
+  std::string pmid_name(pca::ApplyTypeToName(pmid.identity, pca::kSignaturePacket));
+  if (!remote_chunk_store_->Delete(pmid_name,
+                                   std::bind(&UserCredentialsImpl::DeleteMaid, this,
+                                             args::_1, results, maid),
+                                   maid)) {
+    LOG(kError) << "Failed to delete PMID.";
+    DeleteMaid(false, results, nullptr);
+  }
+}
+
+void UserCredentialsImpl::DeleteMaid(bool result,
+                                     OperationResults& results,
+                                     std::shared_ptr<asymm::Keys> maid) {
+  if (!result) {
+    LOG(kError) << "Failed to delete PMID.";
+    OperationCallback(false, results, 3);
+    return;
+  }
+
+  std::shared_ptr<asymm::Keys> anmaid(
+      new asymm::Keys(passport_.SignaturePacketDetails(passport::kAnmaid, true)));
+  std::string maid_name(pca::ApplyTypeToName(maid->identity, pca::kSignaturePacket));
+  if (!remote_chunk_store_->Delete(maid_name,
+                                   std::bind(&UserCredentialsImpl::DeleteAnmaid, this,
+                                             args::_1, results, anmaid),
+                                   anmaid)) {
+    LOG(kError) << "Failed to delete MAID.";
+    DeleteAnmaid(false, results, nullptr);
+  }
+}
+
+void UserCredentialsImpl::DeleteAnmaid(bool result,
+                                       OperationResults& results,
+                                       std::shared_ptr<asymm::Keys> anmaid) {
+  if (!result) {
+    LOG(kError) << "Failed to delete MAID.";
+    OperationCallback(false, results, 3);
+    return;
+  }
+
+  DeleteSignaturePacket(anmaid, results, 3);
+}
+
+void UserCredentialsImpl::DeleteSignaturePacket(std::shared_ptr<asymm::Keys> packet,
+                                                OperationResults &results,
+                                                int index) {
+  std::string packet_name(pca::ApplyTypeToName(packet->identity, pca::kSignaturePacket));
+  if (!remote_chunk_store_->Delete(packet_name,
+                                   std::bind(&OperationCallback, args::_1, results, index),
+                                   packet)) {
+    LOG(kError) << "Failed to delete packet: " << index;
+    OperationCallback(false, results, index);
+  }
 }
 
 }  // namespace lifestuff

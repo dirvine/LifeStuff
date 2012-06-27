@@ -79,6 +79,18 @@ enum MessageContentIndexes {
   kMaxMessageContentIndexes = kKeysPublicKey
 };
 
+struct OperationResults {
+  OperationResults(boost::mutex &mutex_in,
+                   boost::condition_variable &conditional_variable_in,
+                   std::vector<int> &individual_results_in)
+      : mutex(mutex_in),
+        conditional_variable(conditional_variable_in),
+        individual_results(individual_results_in) {}
+  boost::mutex &mutex;
+  boost::condition_variable &conditional_variable;
+  std::vector<int> &individual_results;
+};
+
 std::string CreatePin();
 
 bool CheckKeywordValidity(const std::string &keyword);
@@ -94,9 +106,12 @@ void ChunkStoreOperationCallback(const bool &response,
                                  boost::condition_variable *cond_var,
                                  int *result);
 
-int WaitForResults(boost::mutex &mutex,  // NOLINT (Dan)
-                   boost::condition_variable &cond_var,  // NOLINT (Dan)
-                   std::vector<int> &results);  // NOLINT (Dan)
+int WaitForResults(boost::mutex &mutex,
+                   boost::condition_variable &cond_var,
+                   std::vector<int> &results);
+
+int AssessJointResult(const std::vector<int> &results);
+void OperationCallback(bool result, OperationResults &results, int index);
 
 std::string ComposeSignaturePacketName(const std::string &name);
 

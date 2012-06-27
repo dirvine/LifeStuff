@@ -64,6 +64,7 @@ enum ReturnCode {
   kChangeUsernamePinFailure = -201019,
   kChangePasswordFailure = -201020,
   kAtLeastOneFailure = -201021,
+  kDeleteSignaturePacketsFailure = -201022,
 
   // User Credentials
   kCredentialValidityFailure = -202001,
@@ -87,6 +88,7 @@ enum ReturnCode {
   kGenerateNewMMIDFailure = -206012,
   kRemoveContactFailure = -206013,
   kSetProfilePictureError = -206014,
+  kDeletePublicIdFailure = -206015,
 
   // MessageHandler
   kMessageHandlerException = -207001,

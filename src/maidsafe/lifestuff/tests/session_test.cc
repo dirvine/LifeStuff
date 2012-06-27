@@ -74,7 +74,7 @@ class SessionTest : public testing::Test {
                         ch->AddContact(c);
 
                         // Shares
-                        si->insert(std::make_pair("share_" + IntToString(n), n));
+                        si->insert(std::make_pair("share_" + IntToString(n), ShareDetails(n)));
                       }
                   });
   }

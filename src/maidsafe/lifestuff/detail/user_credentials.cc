@@ -107,6 +107,10 @@ int UserCredentials::ChangePassword(const std::string &new_password) {
   return impl_->ChangePassword(new_password);
 }
 
+int UserCredentials::DeleteUserCredentials() {
+  return impl_->DeleteUserCredentials();
+}
+
 }  // namespace lifestuff
 
 }  // namespace maidsafe

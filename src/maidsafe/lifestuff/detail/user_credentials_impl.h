@@ -61,81 +61,93 @@ class UserCredentialsImpl {
   UserCredentialsImpl(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
                       Session& session);
   ~UserCredentialsImpl();
-  int GetUserInfo(const std::string &username, const std::string &pin, const std::string &password);
-  int CreateUser(const std::string &username, const std::string &pin, const std::string &password);
+  int GetUserInfo(const std::string& username, const std::string& pin, const std::string& password);
+  int CreateUser(const std::string& username, const std::string& pin, const std::string& password);
 
   int SaveSession();
 
-  int ChangeUsernamePin(const std::string &new_username, const std::string &new_pin);
-  int ChangePassword(const std::string &new_password);
+  int ChangeUsernamePin(const std::string& new_username, const std::string& new_pin);
+  int ChangePassword(const std::string& new_password);
+  int DeleteUserCredentials();
 
  private:
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   Session& session_;
-  passport::Passport &passport_;
+  passport::Passport& passport_;
   boost::mutex single_threaded_class_mutex_;
 
-  void GetIdAndTemporaryId(const std::string &username,
-                           const std::string &pin,
-                           const std::string &password,
+  void GetIdAndTemporaryId(const std::string& username,
+                           const std::string& pin,
+                           const std::string& password,
                            bool surrogate,
-                           int *result,
-                           std::string *temporary_packet);
-  int HandleSerialisedDataMaps(const std::string &username,
-                               const std::string &pin,
-                               const std::string &password,
-                               const std::string &tmid_serialised_data_atlas,
-                               const std::string &stmid_serialised_data_atlas);
+                           int* result,
+                           std::string* temporary_packet);
+  int HandleSerialisedDataMaps(const std::string& username,
+                               const std::string& pin,
+                               const std::string& password,
+                               const std::string& tmid_serialised_data_atlas,
+                               const std::string& stmid_serialised_data_atlas);
 
   int ProcessSigningPackets();
   int StoreAnonymousPackets();
-  void StoreAnmid(OperationResults &results);  // NOLINT (Dan)
-  void StoreAnsmid(OperationResults &results);  // NOLINT (Dan)
-  void StoreAntmid(OperationResults &results);  // NOLINT (Dan)
+  void StoreAnmid(OperationResults& results);
+  void StoreAnsmid(OperationResults& results);
+  void StoreAntmid(OperationResults& results);
+  void StoreAnmaid(OperationResults& results);
+  void StoreMaid(bool result, OperationResults& results);
+  void StorePmid(bool result, OperationResults& results);
   void StoreSignaturePacket(std::shared_ptr<asymm::Keys> packet,
-                            OperationResults &results,  // NOLINT (Dan)
+                            OperationResults& results,
                             int index);
-  void StoreAnmaid(OperationResults &results);  // NOLINT (Dan)
-  void StoreMaid(bool result, OperationResults &results);  // NOLINT (Dan)
-  void StorePmid(bool result, OperationResults &results);  // NOLINT (Dan)
 
-  int ProcessIdentityPackets(const std::string &username,
-                             const std::string &pin,
-                             const std::string &password);
+  int ProcessIdentityPackets(const std::string& username,
+                             const std::string& pin,
+                             const std::string& password);
   int StoreIdentityPackets();
-  void StoreMid(OperationResults &results);  // NOLINT (Dan)
-  void StoreSmid(OperationResults &results);  // NOLINT (Dan)
-  void StoreTmid(OperationResults &results);  // NOLINT (Dan)
-  void StoreStmid(OperationResults &results);  // NOLINT (Dan)
-  void StoreIdentity(OperationResults &results,  // NOLINT (Dan)
+  void StoreMid(OperationResults& results);
+  void StoreSmid(OperationResults& results);
+  void StoreTmid(OperationResults& results);
+  void StoreStmid(OperationResults& results);
+  void StoreIdentity(OperationResults& results,
                      int identity_type,
                      int signer_type,
                      int index);
 
-  void ModifyMid(OperationResults &results);  // NOLINT (Dan)
-  void ModifySmid(OperationResults &results);  // NOLINT (Dan)
-  void ModifyIdentity(OperationResults &results,  // NOLINT (Dan)
+  void ModifyMid(OperationResults& results);
+  void ModifySmid(OperationResults& results);
+  void ModifyIdentity(OperationResults& results,
                       int identity_type,
                       int signer_type,
                       int index);
 
   int DeleteOldIdentityPackets();
-  void DeleteMid(OperationResults &results);  // NOLINT (Dan)
-  void DeleteSmid(OperationResults &results);  // NOLINT (Dan)
-  void DeleteTmid(OperationResults &results);  // NOLINT (Dan)
-  void DeleteStmid(OperationResults &results);  // NOLINT (Dan)
-  void DeleteIdentity(OperationResults &results,  // NOLINT (Dan)
+  void DeleteMid(OperationResults& results);
+  void DeleteSmid(OperationResults& results);
+  void DeleteTmid(OperationResults& results);
+  void DeleteStmid(OperationResults& results);
+  void DeleteIdentity(OperationResults& results,
                       int packet_type,
                       int signer_type,
                       int index);
 
+  int DeleteSignaturePackets();
+  void DeleteAnmid(OperationResults& results);
+  void DeleteAnsmid(OperationResults& results);
+  void DeleteAntmid(OperationResults& results);
+  void DeletePmid(OperationResults& results);
+  void DeleteMaid(bool result, OperationResults& results, std::shared_ptr<asymm::Keys> maid);
+  void DeleteAnmaid(bool result, OperationResults& results, std::shared_ptr<asymm::Keys> anmaid);
+  void DeleteSignaturePacket(std::shared_ptr<asymm::Keys> packet,
+                             OperationResults &results,
+                             int index);
+
   int DoChangePasswordAdditions();
   int DoChangePasswordRemovals();
 
-  int SerialiseAndSetIdentity(const std::string &username,
-                              const std::string &pin,
-                              const std::string &password,
-                              std::string *new_data_atlas);
+  int SerialiseAndSetIdentity(const std::string& username,
+                              const std::string& pin,
+                              const std::string& password,
+                              std::string* new_data_atlas);
 };
 
 }  // namespace lifestuff

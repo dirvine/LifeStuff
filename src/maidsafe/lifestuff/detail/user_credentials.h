@@ -75,6 +75,8 @@ class UserCredentials {
   int ChangePin(const std::string &new_pin);
   int ChangePassword(const std::string &new_password);
 
+  int DeleteUserCredentials();
+
  private:
   UserCredentials &operator=(const UserCredentials&);
   UserCredentials(const UserCredentials&);

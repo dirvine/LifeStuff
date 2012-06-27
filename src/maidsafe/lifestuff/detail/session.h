@@ -61,7 +61,7 @@ struct UserDetails {
 
 struct ShareDetails {
   ShareDetails() : share_type(0) {}
-  ShareDetails(int type) : share_type(type) {}
+  explicit ShareDetails(int type) : share_type(type) {}
   int share_type;
 };
 
@@ -89,6 +89,7 @@ class Session {
   passport::Passport& passport();
 
   int AddPublicId(const std::string &public_id);
+  int DeletePublicId(const std::string &public_id);
   bool OwnPublicId(const std::string &public_id);
   const ContactsHandlerPtr contacts_handler(const std::string &public_id);
   const ShareInformationPtr share_information(const std::string &public_id);

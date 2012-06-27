@@ -75,6 +75,10 @@ int Session::AddPublicId(const std::string &public_id) {
   return kSuccess;
 }
 
+int Session::DeletePublicId(const std::string &public_id) {
+  return public_id_details_.erase(public_id) == size_t(1) ? kSuccess : kPublicIdNotFoundFailure;
+}
+
 bool Session::OwnPublicId(const std::string &public_id) {
   return public_id_details_.find(public_id) != public_id_details_.end();
 }

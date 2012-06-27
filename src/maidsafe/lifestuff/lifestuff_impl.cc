@@ -507,21 +507,53 @@ int LifeStuffImpl::ChangePassword(const std::string &new_password,
 }
 
 int LifeStuffImpl::LeaveLifeStuff() {
+  state_ = kZeroth;
+  // Unmount
+  user_storage_->UnMountDrive();
+
   // Stop Messaging
   message_handler_->StopCheckingForNewMessages();
   public_id_->StopCheckingForNewContacts();
 
+  int result(0);
   // Leave all shares
+  std::vector<std::string> public_ids(session_.PublicIdentities());
+  std::for_each(public_ids.begin(),
+                public_ids.end(),
+                [&result, this](const std::string &public_id) {
+                  const ShareInformationPtr share_info(session_.share_information(public_id));
+                  if (share_info) {
+                    std::for_each(share_info->begin(),
+                                  share_info->end(),
+                                  [&public_id, &result, this]
+                                      (const ShareInformation::value_type& element) {
+                                    if (element.second.share_type == 0)
+                                      result += LeaveOpenShare(public_id, element.first);
+                                    else if (element.second.share_type == 1)
+                                      result += LeavePrivateShare(public_id, element.first);
+                                    else if (element.second.share_type == 1)
+                                      result += DeletePrivateShare(public_id, element.first, true);
+                                  });
+                  }
+                });
 
   // Delete all files
 
-  // Unmount
+  // Inform everyone of suicide?
 
   // Delete all public IDs
+  std::for_each(public_ids.begin(),
+                public_ids.end(),
+                [&result, this](const std::string &public_id) {
+                  result += public_id_->DeletePublicId(public_id);
+                });
 
   // Shut down vaults
 
-  // Remove all packets
+  // Delete accounts
+
+  // Remove all user credentials
+  result = user_credentials_->DeleteUserCredentials();
 
   return kSuccess;
 }

@@ -87,6 +87,7 @@ class PublicId {
   // Disallow/allow others add contact or send messages
   int DisablePublicId(const std::string &public_id);
   int EnablePublicId(const std::string &public_id);
+  int DeletePublicId(const std::string &public_id);
 
   // To confirm/reject a contact once user has decided on the introduction
   int ConfirmContact(const std::string &own_public_id, const std::string &recipient_public_id);

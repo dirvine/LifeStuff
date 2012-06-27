@@ -344,6 +344,75 @@ int PublicId::ModifyAppendability(const std::string &public_id, const char appen
   return kSuccess;
 }
 
+int PublicId::DeletePublicId(const std::string &public_id) {
+  std::vector<int> individual_results(4, kPendingResult);
+  boost::condition_variable condition_variable;
+  boost::mutex mutex;
+  OperationResults results(mutex, condition_variable, individual_results);
+
+  std::shared_ptr<asymm::Keys> inbox_keys(
+      new asymm::Keys(passport_.SignaturePacketDetails(passport::kMmid, true, public_id)));
+  std::shared_ptr<asymm::Keys> mpid(
+      new asymm::Keys(passport_.SignaturePacketDetails(passport::kMpid, true, public_id)));
+  std::shared_ptr<asymm::Keys> anmpid(
+      new asymm::Keys(passport_.SignaturePacketDetails(passport::kAnmpid, true, public_id)));
+  std::string inbox_name(SignaturePacketName(inbox_keys->identity)),
+              mpid_name(SignaturePacketName(mpid->identity)),
+              anmpid_name(SignaturePacketName(anmpid->identity)),
+              mcid_name(MaidsafeContactIdName(public_id));
+
+  if (!remote_chunk_store_->Delete(inbox_name,
+                                   std::bind(&OperationCallback, args::_1, results, 0),
+                                   inbox_keys)) {
+    LOG(kError) << "Failed to delete inbox.";
+    OperationCallback(false, results, 0);
+  }
+
+  if (!remote_chunk_store_->Delete(mcid_name,
+                                   std::bind(&OperationCallback, args::_1, results, 1),
+                                   mpid)) {
+    LOG(kError) << "Failed to delete MCID.";
+    OperationCallback(false, results, 1);
+  }
+
+  if (!remote_chunk_store_->Delete(mpid_name,
+                                   std::bind(&OperationCallback, args::_1, results, 2),
+                                   anmpid)) {
+    LOG(kError) << "Failed to delete MPID.";
+    OperationCallback(false, results, 2);
+  }
+
+  if (!remote_chunk_store_->Delete(anmpid_name,
+                                   std::bind(&OperationCallback, args::_1, results, 3),
+                                   anmpid)) {
+    LOG(kError) << "Failed to delete ANMPID.";
+    OperationCallback(false, results, 3);
+  }
+
+  int result(WaitForResults(mutex, condition_variable, individual_results));
+  if (result != kSuccess) {
+    LOG(kError) << "Wait for results timed out: " << result;
+    LOG(kError) << "inbox: " << individual_results.at(0)
+              << ", MCID: " << individual_results.at(1)
+              << ", MPID: " << individual_results.at(2)
+              << ", ANMPID: " << individual_results.at(3);
+    return result;
+  }
+
+  LOG(kInfo) << "inbox: " << individual_results.at(0)
+             << ", MCID: " << individual_results.at(1)
+             << ", MPID: " << individual_results.at(2)
+             << ", ANMPID: " << individual_results.at(3);
+  result = AssessJointResult(individual_results);
+  if (result != kSuccess) {
+    LOG(kError) << "One of the operations for " << public_id << " failed. "
+                << "Turn on INFO for feedback on which one. ";
+    return kDeletePublicIdFailure;
+  }
+
+  return kSuccess;
+}
+
 void PublicId::GetNewContacts(const bptime::seconds &interval,
                               const boost::system::error_code &error_code) {
   if (error_code) {

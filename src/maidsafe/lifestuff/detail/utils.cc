@@ -427,6 +427,24 @@ std::string IsoTimeWithMicroSeconds() {
   return bptime::to_iso_string(bptime::microsec_clock::universal_time());
 }
 
+void OperationCallback(bool result, OperationResults &results, int index) {
+  boost::mutex::scoped_lock barra_loch_an_duin(results.mutex);
+  results.individual_results.at(index) = result ? kSuccess : kRemoteChunkStoreFailure;
+  results.conditional_variable.notify_one();
+}
+
+int AssessJointResult(const std::vector<int> &results) {
+  auto it(std::find_if(results.begin(),
+                       results.end(),
+                       [&](const int &element)->bool {
+                         return element != kSuccess;
+                       }));
+  if (it != results.end())
+    return kAtLeastOneFailure;
+
+  return kSuccess;
+}
+
 }  // namespace lifestuff
 
 }  // namespace maidsafe
