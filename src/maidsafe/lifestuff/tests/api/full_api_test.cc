@@ -31,6 +31,7 @@
 #include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/user_credentials.h"
 #include "maidsafe/lifestuff/detail/user_storage.h"
+#include "maidsafe/lifestuff/tests/api/api_test_resources.h"
 
 namespace args = std::placeholders;
 namespace ba = boost::asio;
@@ -44,492 +45,6 @@ namespace maidsafe {
 namespace lifestuff {
 
 namespace test {
-
-namespace {
-
-struct ShareChangeLog {
-  ShareChangeLog()
-      : share_name(),
-        target_path(),
-        num_of_entries(1),
-        old_path(),
-        new_path(),
-        op_type() {}
-  ShareChangeLog(const std::string &share_name_in,
-                 const fs::path &target_path_in,
-                 const uint32_t &num_of_entries_in,
-                 const fs::path &old_path_in,
-                 const fs::path &new_path_in,
-                 const int &op_type_in)
-      : share_name(share_name_in),
-        target_path(target_path_in),
-        num_of_entries(num_of_entries_in),
-        old_path(old_path_in),
-        new_path(new_path_in),
-        op_type(op_type_in) {}
-
-  std::string share_name;
-  fs::path target_path;
-  uint32_t num_of_entries;
-  fs::path old_path;
-  fs::path new_path;
-  int op_type;
-};
-
-typedef std::vector<ShareChangeLog> ShareChangeLogBook;
-
-struct TestingVariables {
-  TestingVariables()
-      : chat_message(),
-        chat_message_received(false),
-        file_name(),
-        file_id(),
-        file_transfer_received(false),
-        newly_contacted(false),
-        confirmed(false),
-        picture_updated(false),
-        presence_announced(false),
-        removal_message(),
-        removed(false),
-        new_private_share_name(),
-        new_private_share_id(),
-        new_private_access_level(-1),
-        privately_invited(false),
-        new_open_share_id(),
-        openly_invited(false),
-        deleted_private_share_name(),
-        private_share_deleted(false),
-        access_private_share_name(),
-        private_member_access(0),
-        private_member_access_changed(false),
-        old_share_name(),
-        new_share_name(),
-        share_renamed(false),
-        share_changes() {}
-  std::string chat_message;
-  bool chat_message_received;
-  std::string file_name, file_id;
-  bool file_transfer_received,
-       newly_contacted,
-       confirmed,
-       picture_updated,
-       presence_announced;
-  std::string removal_message;
-  bool removed;
-  std::string new_private_share_name, new_private_share_id;
-  int new_private_access_level;
-  bool privately_invited;
-  std::string new_open_share_id;
-  bool openly_invited;
-  std::string deleted_private_share_name;
-  bool private_share_deleted;
-  std::string access_private_share_name;
-  int private_member_access;
-  bool private_member_access_changed;
-  std::string old_share_name;
-  std::string new_share_name;
-  bool share_renamed;
-  ShareChangeLogBook share_changes;
-};
-
-void ChatSlot(const std::string&,
-              const std::string&,
-              const std::string &signal_message,
-              const std::string&,
-              std::string *slot_message,
-              volatile bool *done) {
-  if (slot_message)
-    *slot_message = signal_message;
-  *done = true;
-}
-
-void FileTransferSlot(const std::string&,
-                      const std::string&,
-                      const std::string &signal_file_name,
-                      const std::string &signal_file_id,
-                      const std::string&,
-                      std::string *slot_file_name,
-                      std::string *slot_file_id,
-                      volatile bool *done) {
-  if (slot_file_name)
-    *slot_file_name = signal_file_name;
-  if (slot_file_id)
-    *slot_file_id = signal_file_id;
-  *done = true;
-}
-
-void MultipleFileTransferSlot(const std::string&,
-                              const std::string&,
-                              const std::string &signal_file_name,
-                              const std::string &signal_file_id,
-                              const std::string&,
-                              std::vector<std::string> *ids,
-                              std::vector<std::string> *names,
-                              size_t *total_files,
-                              volatile bool *done) {
-  ids->push_back(signal_file_id);
-  names->push_back(signal_file_name);
-  if (ids->size() == *total_files)
-    *done = true;
-}
-
-void NewContactSlot(const std::string&,
-                    const std::string&,
-                    const std::string&,
-                    volatile bool *done) {
-  *done = true;
-}
-
-
-void ContactConfirmationSlot(const std::string&,
-                             const std::string&,
-                             const std::string&,
-                             volatile bool *done) {
-  *done = true;
-}
-
-void ContactProfilePictureSlot(const std::string&,
-                               const std::string&,
-                               const std::string&,
-                               volatile bool *done) {
-  *done = true;
-}
-
-void ContactPresenceSlot(const std::string&,
-                         const std::string&,
-                         const std::string&,
-                         ContactPresence,
-                         volatile bool *done) {
-  *done = true;
-}
-
-void ContactDeletionSlot(const std::string&,
-                         const std::string&,
-                         const std::string &signal_message,
-                         const std::string&,
-                         std::string *slot_message,
-                         volatile bool *done) {
-  if (slot_message)
-    *slot_message = signal_message;
-  *done = true;
-}
-
-void PrivateShareInvitationSlot(const std::string&,
-                                const std::string&,
-                                const std::string &signal_share_name,
-                                const std::string &signal_share_id,
-                                int access_level,
-                                const std::string&,
-                                std::string *slot_share_name,
-                                std::string *slot_share_id,
-                                int *slot_access_level,
-                                volatile bool *done) {
-  if (slot_share_name)
-    *slot_share_name = signal_share_name;
-  if (slot_share_id)
-    *slot_share_id = signal_share_id;
-  if (slot_access_level)
-    *slot_access_level = access_level;
-  *done = true;
-}
-
-void PrivateShareDeletionSlot(const std::string&,
-                              const std::string &signal_share_name,
-                              const std::string&,
-                              const std::string&,
-                              const std::string&,
-                              std::string *slot_share_name,
-                              volatile bool *done) {
-  if (slot_share_name)
-    *slot_share_name = signal_share_name;
-  *done = true;
-}
-
-void PrivateMemberAccessChangeSlot(const std::string&,
-                                   const std::string&,
-                                   const std::string&,
-                                   const std::string&,
-                                   int signal_member_access,
-                                   std::string * /*slot_share_name*/,
-                                   int *slot_member_access,
-                                   volatile bool *done) {
-  if (slot_member_access)
-    *slot_member_access = signal_member_access;
-  *done = true;
-}
-
-void OpenShareInvitationSlot(const std::string&,
-                             const std::string&,
-                             const std::string&,
-                             const std::string& signal_share_id,
-                             const std::string&,
-                             std::string *slot_share_id,
-                             volatile bool *done) {
-  if (slot_share_id)
-    *slot_share_id = signal_share_id;
-  *done = true;
-}
-
-void ShareRenameSlot(const std::string& old_share_name,
-                     const std::string& new_share_name,
-                     std::string *slot_old_share_name,
-                     std::string *slot_new_share_name,
-                     volatile bool *done) {
-  if (slot_old_share_name)
-    *slot_old_share_name = old_share_name;
-  if (slot_new_share_name)
-    *slot_new_share_name = new_share_name;
-  *done = true;
-}
-
-void ShareChangedSlot(const std::string& share_name,
-                      const fs::path& target_path,
-                      const uint32_t& num_of_entries,
-                      const fs::path& old_path,
-                      const fs::path& new_path,
-                      const int& op_type,
-                      boost::mutex *mutex,
-                      ShareChangeLogBook *share_changes) {
-  if (mutex)
-    boost::mutex::scoped_lock lock(*mutex);
-  if (share_changes)
-    share_changes->push_back(ShareChangeLog(share_name, target_path,
-                                            num_of_entries, old_path,
-                                            new_path, op_type));
-}
-
-int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
-                                 LifeStuff &test_elements2,  // NOLINT (Dan)
-                                 TestingVariables &testing_variables1,  // NOLINT (Dan)
-                                 TestingVariables &testing_variables2,  // NOLINT (Dan)
-                                 const fs::path &test_dir,
-                                 const std::string &keyword1,
-                                 const std::string &pin1,
-                                 const std::string &password1,
-                                 const std::string &public_id1,
-                                 const std::string &keyword2,
-                                 const std::string &pin2,
-                                 const std::string &password2,
-                                 const std::string &public_id2,
-                                 bool several_files = false,
-                                 std::vector<std::string> *ids = nullptr,
-                                 std::vector<std::string> *names = nullptr,
-                                 size_t *total_files = nullptr,
-                                 boost::mutex *mutex = nullptr) {
-  FileTransferFunction ftf(std::bind(&FileTransferSlot,
-                                     args::_1, args::_2, args::_3, args::_4, args::_5,
-                                     &testing_variables2.file_name,
-                                     &testing_variables2.file_id,
-                                     &testing_variables2.file_transfer_received));
-  if (several_files) {
-    ftf = std::bind(&MultipleFileTransferSlot,
-                    args::_1, args::_2, args::_3, args::_4, args::_5,
-                    ids, names, total_files,
-                    &testing_variables2.file_transfer_received);
-  }
-  int result(0);
-  // Initialise and connect
-  result += test_elements1.Initialise(test_dir);
-  result += test_elements2.Initialise(test_dir);
-  result += test_elements1.ConnectToSignals(
-                std::bind(&ChatSlot, args::_1, args::_2, args::_3, args::_4,
-                          &testing_variables1.chat_message,
-                          &testing_variables1.chat_message_received),
-                std::bind(&FileTransferSlot,
-                          args::_1, args::_2, args::_3, args::_4, args::_5,
-                          &testing_variables1.file_name,
-                          &testing_variables1.file_id,
-                          &testing_variables1.file_transfer_received),
-                std::bind(&NewContactSlot, args::_1, args::_2, args::_3,
-                          &testing_variables1.newly_contacted),
-                std::bind(&ContactConfirmationSlot,
-                          args::_1, args::_2, args::_3,
-                          &testing_variables1.confirmed),
-                std::bind(&ContactProfilePictureSlot,
-                          args::_1, args::_2, args::_3,
-                          &testing_variables1.picture_updated),
-                std::bind(&ContactPresenceSlot,
-                          args::_1, args::_2, args::_3, args::_4,
-                          &testing_variables1.presence_announced),
-                std::bind(&ContactDeletionSlot,
-                          args::_1, args::_2, args::_3, args::_4,
-                          &testing_variables1.removal_message,
-                          &testing_variables1.removed),
-                std::bind(&PrivateShareInvitationSlot,
-                          args::_1, args::_2, args::_3,
-                          args::_4, args::_5, args::_6,
-                          &testing_variables1.new_private_share_name,
-                          &testing_variables1.new_private_share_id,
-                          &testing_variables1.new_private_access_level,
-                          &testing_variables1.privately_invited),
-                std::bind(&PrivateShareDeletionSlot,
-                          args::_1, args::_2, args::_3, args::_4, args::_5,
-                          &testing_variables1.deleted_private_share_name,
-                          &testing_variables1.private_share_deleted),
-                std::bind(&PrivateMemberAccessChangeSlot,
-                          args::_1, args::_2, args::_3, args::_4, args::_5,
-                          &testing_variables1.access_private_share_name,
-                          &testing_variables1.private_member_access,
-                          &testing_variables1.private_member_access_changed),
-                std::bind(&OpenShareInvitationSlot,
-                          args::_1, args::_2, args::_3, args::_4, args::_5,
-                          &testing_variables1.new_open_share_id,
-                          &testing_variables1.openly_invited),
-                std::bind(&ShareRenameSlot,
-                          args::_1, args::_2,
-                          &testing_variables1.old_share_name,
-                          &testing_variables1.new_share_name,
-                          &testing_variables1.share_renamed),
-                std::bind(&ShareChangedSlot,
-                          args::_1, args::_2, args::_3,
-                          args::_4, args::_5, args::_6,
-                          mutex,
-                          &testing_variables1.share_changes));
-  result += test_elements2.ConnectToSignals(
-                std::bind(&ChatSlot, args::_1, args::_2, args::_3, args::_4,
-                          &testing_variables2.chat_message,
-                          &testing_variables2.chat_message_received),
-                ftf,
-                std::bind(&NewContactSlot, args::_1, args::_2, args::_3,
-                          &testing_variables2.newly_contacted),
-                std::bind(&ContactConfirmationSlot,
-                          args::_1, args::_2, args::_3,
-                          &testing_variables2.confirmed),
-                std::bind(&ContactProfilePictureSlot,
-                          args::_1, args::_2, args::_3,
-                          &testing_variables2.picture_updated),
-                std::bind(&ContactPresenceSlot,
-                          args::_1, args::_2, args::_3, args::_4,
-                          &testing_variables2.presence_announced),
-                std::bind(&ContactDeletionSlot,
-                          args::_1, args::_2, args::_3, args::_4,
-                          &testing_variables2.removal_message,
-                          &testing_variables2.removed),
-                std::bind(&PrivateShareInvitationSlot,
-                          args::_1, args::_2, args::_3,
-                          args::_4, args::_5, args::_6,
-                          &testing_variables2.new_private_share_name,
-                          &testing_variables2.new_private_share_id,
-                          &testing_variables2.new_private_access_level,
-                          &testing_variables2.privately_invited),
-                std::bind(&PrivateShareDeletionSlot,
-                          args::_1, args::_2, args::_3, args::_4, args::_5,
-                          &testing_variables2.deleted_private_share_name,
-                          &testing_variables2.private_share_deleted),
-                std::bind(&PrivateMemberAccessChangeSlot,
-                          args::_1, args::_2, args::_3, args::_4, args::_5,
-                          &testing_variables2.access_private_share_name,
-                          &testing_variables2.private_member_access,
-                          &testing_variables2.private_member_access_changed),
-                std::bind(&OpenShareInvitationSlot,
-                          args::_1, args::_2, args::_3, args::_4, args::_5,
-                          &testing_variables2.new_open_share_id,
-                          &testing_variables2.openly_invited),
-                std::bind(&ShareRenameSlot,
-                          args::_1, args::_2,
-                          &testing_variables2.old_share_name,
-                          &testing_variables2.new_share_name,
-                          &testing_variables2.share_renamed),
-                std::bind(&ShareChangedSlot,
-                          args::_1, args::_2, args::_3,
-                          args::_4, args::_5, args::_6,
-                          mutex,
-                          &testing_variables2.share_changes));
-  if (result != kSuccess)
-    return result;
-
-  {
-    result += test_elements1.CreateUser(keyword1, pin1, password1);
-    result += test_elements1.CreatePublicId(public_id1);
-    result += test_elements1.LogOut();
-    if (result != kSuccess) {
-      LOG(kError) << "Failure log out 1";
-      return result;
-    }
-  }
-  {
-    result += test_elements2.CreateUser(keyword2, pin2, password2);
-    result += test_elements2.CreatePublicId(public_id2);
-    result += test_elements2.AddContact(public_id2, public_id1);
-    result += test_elements2.LogOut();
-    if (result != kSuccess) {
-      LOG(kError) << "Failure creating 2";
-      return result;
-    }
-  }
-  {
-    result += test_elements1.LogIn(keyword1, pin1, password1);
-
-    while (!testing_variables1.newly_contacted)
-      Sleep(bptime::milliseconds(100));
-
-    result += test_elements1.ConfirmContact(public_id1, public_id2);
-    result += test_elements1.LogOut();
-    if (result != kSuccess)
-      return result;
-  }
-  {
-    result += test_elements2.LogIn(keyword2, pin2, password2);
-//     LOG(kError) << "result: " << result;
-    while (!testing_variables2.confirmed)
-      Sleep(bptime::milliseconds(100));
-    result += test_elements2.LogOut();
-    if (result != kSuccess)
-      return result;
-  }
-
-  return result;
-}
-
-}  // namespace
-
-class OneUserApiTest : public testing::Test {
- public:
-  OneUserApiTest()
-    :  test_dir_(maidsafe::test::CreateTestPath()),
-      keyword_(RandomAlphaNumericString(6)),
-      pin_(CreatePin()),
-      password_(RandomAlphaNumericString(6)),
-      error_code_(),
-      done_(),
-      test_elements_() {}
-
- protected:
-  maidsafe::test::TestPath test_dir_;
-  std::string keyword_;
-  std::string pin_;
-  std::string password_;
-  boost::system::error_code error_code_;
-  volatile bool done_;
-  LifeStuff test_elements_;
-
-  virtual void SetUp() {
-    EXPECT_EQ(kSuccess, test_elements_.Initialise(*test_dir_));
-    EXPECT_EQ(kSuccess,
-              test_elements_.ConnectToSignals(ChatFunction(),
-                                              FileTransferFunction(),
-                                              NewContactFunction(),
-                                              ContactConfirmationFunction(),
-                                              ContactProfilePictureFunction(),
-                                              std::bind(&ContactPresenceSlot,
-                                                        args::_1, args::_2,
-                                                        args::_3, args::_4,
-                                                        &done_),
-                                              ContactDeletionFunction(),
-                                              PrivateShareInvitationFunction(),
-                                              PrivateShareDeletionFunction(),
-                                              PrivateMemberAccessChangeFunction(),
-                                              OpenShareInvitationFunction(),
-                                              ShareRenamedFunction(),
-                                              ShareChangedFunction()));
-    EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_));
-  }
-
-  virtual void TearDown() {
-    EXPECT_EQ(kSuccess, test_elements_.LogOut());
-    EXPECT_EQ(kSuccess, test_elements_.Finalise());
-  }
-};
 
 TEST_F(OneUserApiTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
   // Create directory
@@ -563,273 +78,7 @@ TEST_F(OneUserApiTest, FUNC_LargeFileForMemoryCheck) {
   EXPECT_EQ(0, error_code_.value());
 }
 
-TEST_F(OneUserApiTest, FUNC_ChangeCredentials) {
-  std::string new_pin(CreatePin());
-  EXPECT_EQ(kSuccess, test_elements_.CheckPassword(password_));
-  EXPECT_EQ(kSuccess, test_elements_.LogOut());
-
-  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
-  EXPECT_EQ(kSuccess, test_elements_.CheckPassword(password_));
-
-  // Change credentials
-  EXPECT_EQ(kSuccess, test_elements_.ChangeKeyword(keyword_ + keyword_, password_));
-  EXPECT_EQ(kSuccess, test_elements_.ChangePin(new_pin, password_));
-  EXPECT_EQ(kSuccess, test_elements_.ChangePassword(password_ + password_, password_));
-
-  EXPECT_EQ(kSuccess, test_elements_.LogOut());
-
-  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_ + keyword_, new_pin, password_ + password_));
-  EXPECT_EQ(kSuccess, test_elements_.ChangeKeyword(keyword_, password_ + password_));
-  EXPECT_EQ(kSuccess, test_elements_.LogOut());
-
-  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, new_pin, password_ + password_));
-  EXPECT_EQ(kSuccess, test_elements_.ChangePin(pin_, password_ + password_));
-  EXPECT_EQ(kSuccess, test_elements_.LogOut());
-
-  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_ + password_));
-  EXPECT_EQ(kSuccess, test_elements_.ChangePassword(password_, password_ + password_));
-  EXPECT_EQ(kSuccess, test_elements_.LogOut());
-
-  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
-  EXPECT_EQ(kSuccess, test_elements_.CheckPassword(password_));
-  EXPECT_EQ(kSuccess, test_elements_.ChangeKeyword(keyword_, password_));
-  EXPECT_EQ(kSuccess, test_elements_.ChangePin(pin_, password_));
-  EXPECT_EQ(kSuccess, test_elements_.ChangePassword(password_, password_));
-}
-
-void RandomSleep(const std::pair<int, int> sleeps) {
-  // Sleeps for random number of milliseconds m with m satisfying sleeps.first <= m < sleeps.second
-  if (sleeps.second > 0 && sleeps.first >= 0) {
-    if (sleeps.first < sleeps.second)
-      Sleep(bptime::milliseconds(RandomUint32() % (sleeps.second - sleeps.first) + sleeps.first));
-    else
-      Sleep(bptime::milliseconds(sleeps.first));
-  }
-}
-
-void RunChangePin(LifeStuff& test_elements,
-                  int& result,
-                  const std::string& new_pin,
-                  const std::string& password,
-                  const std::pair<int, int> sleeps) {
-  RandomSleep(sleeps);
-  result = test_elements.ChangePin(new_pin, password);
-}
-
-void RunChangeKeyword(LifeStuff& test_elements,
-                      int& result,
-                      const std::string& new_keyword,
-                      const std::string& password,
-                      const std::pair<int, int> sleeps) {
-  RandomSleep(sleeps);
-  result = test_elements.ChangeKeyword(new_keyword, password);
-}
-
-void RunChangePassword(LifeStuff& test_elements,
-                       int& result,
-                       const std::string& new_password,
-                       const std::string& password,
-                       const std::pair<int, int> sleeps) {
-  RandomSleep(sleeps);
-  result = test_elements.ChangePassword(new_password, password);
-}
-
-TEST_F(OneUserApiTest, FUNC_ChangePinAndPasswordSimultaneously) {
-  std::string new_pin(CreatePin());
-  std::string new_password(RandomAlphaNumericString(5));
-  int result_pin(0), result_password(0);
-
-  std::vector<std::pair<int, int> > sleep_values;
-  sleep_values.push_back(std::make_pair(0, 200));
-  sleep_values.push_back(std::make_pair(100, 200));
-  sleep_values.push_back(std::make_pair(100, 150));
-  sleep_values.push_back(std::make_pair(0, 10));
-
-  for (size_t i = 0; i < sleep_values.size(); ++i) {
-    boost::thread thread_pin(std::bind(&RunChangePin,
-                                       test_elements_,
-                                       std::ref(result_pin),
-                                       new_pin,
-                                       password_,
-                                       sleep_values.at(i)));
-    boost::thread thread_password(std::bind(&RunChangePassword,
-                                            test_elements_,
-                                            std::ref(result_password),
-                                            new_password,
-                                            password_,
-                                            sleep_values.at(i)));
-    thread_pin.join();
-    thread_password.join();
-    EXPECT_EQ(kSuccess, result_pin);
-    EXPECT_EQ(kSuccess, result_password);
-
-    EXPECT_EQ(kSuccess, test_elements_.LogOut());
-    ASSERT_EQ(kSuccess, test_elements_.LogIn(keyword_, new_pin, new_password));
-    new_pin.swap(pin_);
-    new_password.swap(password_);
-  }
-}
-
-TEST_F(OneUserApiTest, FUNC_ChangeKeywordAndPasswordSimultaneously) {
-  std::string new_keyword(RandomAlphaNumericString(5));
-  std::string new_password(RandomAlphaNumericString(5));
-  int result_keyword(0), result_password(0);
-
-  std::vector<std::pair<int, int> > sleep_values;
-  sleep_values.push_back(std::make_pair(0, 200));
-  sleep_values.push_back(std::make_pair(100, 200));
-  sleep_values.push_back(std::make_pair(100, 150));
-  sleep_values.push_back(std::make_pair(0, 10));
-
-  for (size_t i = 0; i < sleep_values.size(); ++i) {
-    boost::thread thread_keyword(std::bind(&RunChangeKeyword,
-                                           test_elements_,
-                                           std::ref(result_keyword),
-                                           new_keyword,
-                                           password_,
-                                           sleep_values.at(i)));
-    boost::thread thread_password(std::bind(&RunChangePassword,
-                                            test_elements_,
-                                            std::ref(result_password),
-                                            new_password,
-                                            password_,
-                                            sleep_values.at(i)));
-    thread_keyword.join();
-    thread_password.join();
-    EXPECT_EQ(kSuccess, result_keyword);
-    EXPECT_EQ(kSuccess, result_password);
-
-    EXPECT_EQ(kSuccess, test_elements_.LogOut());
-    ASSERT_EQ(kSuccess, test_elements_.LogIn(new_keyword, pin_, new_password));
-    new_keyword.swap(keyword_);
-    new_password.swap(password_);
-  }
-}
-
-TEST_F(OneUserApiTest, FUNC_ChangePinAndKeywordSimultaneously) {
-  std::string new_pin(CreatePin());
-  std::string new_keyword(RandomAlphaNumericString(5));
-  int result_pin(0), result_keyword(0);
-
-  std::vector<std::pair<int, int> > sleep_values;
-  sleep_values.push_back(std::make_pair(0, 5000));
-  sleep_values.push_back(std::make_pair(0, 200));
-  sleep_values.push_back(std::make_pair(100, 200));
-  sleep_values.push_back(std::make_pair(100, 150));
-  sleep_values.push_back(std::make_pair(0, 10));
-
-  for (size_t i = 0; i < sleep_values.size(); ++i) {
-    boost::thread thread_pin(std::bind(&RunChangePin,
-                                       test_elements_,
-                                       std::ref(result_pin),
-                                       new_pin,
-                                       password_,
-                                       sleep_values.at(i)));
-    boost::thread thread_keyword(std::bind(&RunChangeKeyword,
-                                           test_elements_,
-                                           std::ref(result_keyword),
-                                           new_keyword,
-                                           password_,
-                                           sleep_values.at(i)));
-    thread_pin.join();
-    thread_keyword.join();
-
-    EXPECT_EQ(kSuccess, result_pin);
-    EXPECT_EQ(kSuccess, result_keyword);
-
-    EXPECT_EQ(kSuccess, test_elements_.LogOut());
-    ASSERT_EQ(kSuccess, test_elements_.LogIn(new_keyword, new_pin, password_));
-    new_pin.swap(pin_);
-    new_keyword.swap(keyword_);
-  }
-}
-
-TEST_F(OneUserApiTest, FUNC_CreateUserWhenLoggedIn) {
-  EXPECT_NE(kSuccess, test_elements_.CreateUser(RandomAlphaNumericString(5),
-                                                CreatePin(),
-                                                RandomAlphaNumericString(5)));
-}
-
-TEST_F(OneUserApiTest, FUNC_LogOutCreateNewUser) {
-  EXPECT_EQ(kSuccess, test_elements_.LogOut());
-  EXPECT_EQ(kSuccess, test_elements_.CreateUser(RandomAlphaNumericString(5),
-                                                CreatePin(),
-                                                RandomAlphaNumericString(5)));
-}
-
-TEST_F(OneUserApiTest, FUNC_CreateInvalidUsers) {
-  std::string new_pin(CreatePin());
-  std::string new_keyword(RandomAlphaNumericString(5));
-  std::string new_password(RandomAlphaNumericString(5));
-
-  EXPECT_EQ(kSuccess, test_elements_.LogOut());
-
-  // Try to create existing account
-  EXPECT_NE(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_));
-
-  // Try to create new account when logged in
-  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
-  EXPECT_NE(kSuccess, test_elements_.CreateUser(new_keyword, new_pin, new_password));
-  EXPECT_EQ(kSuccess, test_elements_.LogOut());
-
-  // Bad Pin
-  EXPECT_NE(kSuccess, test_elements_.CreateUser(new_keyword, "", new_password));
-  EXPECT_NE(kSuccess, test_elements_.CreateUser(new_keyword, "0000", new_password));
-  std::string not_digits_only(RandomAlphaNumericString(4));
-  bool is_all_digits(true);
-  while (is_all_digits) {
-    try {
-      boost::lexical_cast<int>(not_digits_only);
-      is_all_digits = true;
-      not_digits_only = RandomAlphaNumericString(4);
-    }
-    catch(const std::exception &e) {
-      is_all_digits = false;
-    }
-  }
-  EXPECT_NE(kSuccess, test_elements_.CreateUser(new_keyword, not_digits_only, new_password));
-  EXPECT_NE(kSuccess, test_elements_.CreateUser(new_keyword,
-                                                CreatePin().erase(3, 1),
-                                                new_password));
-  EXPECT_NE(kSuccess, test_elements_.CreateUser(new_keyword,
-                                                CreatePin().append("1"),
-                                                new_password));
-
-  // Bad Keyword
-  EXPECT_NE(kSuccess, test_elements_.CreateUser(RandomAlphaNumericString(RandomUint32() % 5),
-                                                new_pin,
-                                                new_password));
-  EXPECT_NE(kSuccess, test_elements_.CreateUser(RandomAlphaNumericString(31),
-                                                new_pin,
-                                                new_password));
-  EXPECT_NE(kSuccess, test_elements_.CreateUser(RandomAlphaNumericString(RandomUint32() % 13 + 2) +
-                                                " " +
-                                                RandomAlphaNumericString(RandomUint32() % 14 + 2),
-                                                new_pin,
-                                                new_password));
-
-  // Bad Password
-  EXPECT_NE(kSuccess, test_elements_.CreateUser(new_keyword,
-                                                new_pin,
-                                                RandomAlphaNumericString(RandomUint32() % 5)));
-  EXPECT_NE(kSuccess, test_elements_.CreateUser(new_keyword,
-                                                new_pin,
-                                                RandomAlphaNumericString(31)));
-  EXPECT_NE(kSuccess,
-            test_elements_.CreateUser(new_keyword,
-                                      new_pin,
-                                      RandomAlphaNumericString(RandomUint32() % 13 + 2) + " " +
-                                      RandomAlphaNumericString(RandomUint32() % 14 + 2)));
-
-  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
-}
-
-TEST_F(OneUserApiTest, FUNC_TryChangeCredentialsToInvalid) {
-  std::string incorrect_password(RandomAlphaNumericString(RandomUint32() % 26 + 5));
-  while (incorrect_password == password_)
-    incorrect_password = RandomAlphaNumericString(RandomUint32() % 26 + 5);
-
-  // Create Public ID
+TEST_F(OneUserApiTest, FUNC_TryCreateInvalidPublicId) {
   EXPECT_NE(kSuccess, test_elements_.CreatePublicId(""));
   EXPECT_NE(kSuccess, test_elements_.CreatePublicId(RandomAlphaNumericString(31)));
   EXPECT_NE(kSuccess, test_elements_.CreatePublicId(" "));
@@ -847,62 +96,12 @@ TEST_F(OneUserApiTest, FUNC_TryChangeCredentialsToInvalid) {
   EXPECT_EQ(kSuccess,
             test_elements_.CreatePublicId(RandomAlphaNumericString(RandomUint32() % 14 + 1) + " " +
                                           RandomAlphaNumericString(RandomUint32() % 15 + 1)));
-
-  // Check Password
-  EXPECT_NE(kSuccess, test_elements_.CheckPassword(incorrect_password));
-  EXPECT_NE(kSuccess, test_elements_.CheckPassword(RandomAlphaNumericString(RandomUint32() % 5)));
-  EXPECT_NE(kSuccess, test_elements_.CheckPassword(RandomAlphaNumericString(31)));
-
-  // Change PIN
-  EXPECT_NE(kSuccess, test_elements_.ChangePin("", password_));
-  EXPECT_NE(kSuccess, test_elements_.ChangePin("0000", password_));
-  std::string not_digits_only(RandomAlphaNumericString(4));
-  bool is_all_digits(true);
-  while (is_all_digits) {
-    try {
-      boost::lexical_cast<int>(not_digits_only);
-      is_all_digits = true;
-      not_digits_only = RandomAlphaNumericString(4);
-    }
-    catch(const std::exception &e) {
-      is_all_digits = false;
-    }
-  }
-  EXPECT_NE(kSuccess, test_elements_.ChangePin(not_digits_only, password_));
-  EXPECT_NE(kSuccess, test_elements_.ChangePin(CreatePin().erase(3, 1), password_));
-  EXPECT_NE(kSuccess, test_elements_.ChangePin(CreatePin().append("1"), password_));
-  EXPECT_NE(kSuccess, test_elements_.ChangePin(CreatePin(), incorrect_password));
-
-  // Change Keyword
-  EXPECT_NE(kSuccess,
-            test_elements_.ChangeKeyword(RandomAlphaNumericString(RandomUint32() % 5), password_));
-  EXPECT_NE(kSuccess, test_elements_.ChangeKeyword(RandomAlphaNumericString(31), password_));
-  EXPECT_NE(kSuccess,
-            test_elements_.ChangeKeyword(RandomAlphaNumericString(RandomUint32() % 13 + 2) + " " +
-                                         RandomAlphaNumericString(RandomUint32() % 14 + 2),
-                                         password_));
-  // Change Password
-  EXPECT_NE(kSuccess,
-            test_elements_.ChangePassword(RandomAlphaNumericString(RandomUint32() % 5), password_));
-  EXPECT_NE(kSuccess, test_elements_.ChangePassword(RandomAlphaNumericString(31), password_));
-  EXPECT_NE(kSuccess,
-            test_elements_.ChangeKeyword(RandomAlphaNumericString(RandomUint32() % 13 + 2) + " " +
-                                         RandomAlphaNumericString(RandomUint32() % 14 + 2),
-                                         password_));
 }
 
 TEST_F(OneUserApiTest, FUNC_CreateSamePublicIdConsecutively) {
   std::string new_public_id(RandomAlphaNumericString(6));
   EXPECT_EQ(kSuccess, test_elements_.CreatePublicId(new_public_id));
   EXPECT_NE(kSuccess, test_elements_.CreatePublicId(new_public_id));
-}
-
-void RunCreatePublicId(LifeStuff& test_elements,
-                       int& result,
-                       const std::string& new_id,
-                       const std::pair<int, int> sleeps) {
-  RandomSleep(sleeps);
-  result = test_elements.CreatePublicId(new_id);
 }
 
 TEST_F(OneUserApiTest, FUNC_CreateSamePublicIdSimultaneously) {
@@ -917,12 +116,12 @@ TEST_F(OneUserApiTest, FUNC_CreateSamePublicIdSimultaneously) {
   sleep_values.push_back(std::make_pair(0, 10));
 
   for (size_t i = 0; i < sleep_values.size(); ++i) {
-    boost::thread thread_1(std::bind(&RunCreatePublicId,
+    boost::thread thread_1(std::bind(&sleepthreads::RunCreatePublicId,
                                      test_elements_,
                                      std::ref(result_1),
                                      new_public_id,
                                      sleep_values.at(i)));
-    boost::thread thread_2(std::bind(&RunCreatePublicId,
+    boost::thread thread_2(std::bind(&sleepthreads::RunCreatePublicId,
                                      test_elements_,
                                      std::ref(result_2),
                                      new_public_id,
@@ -954,58 +153,6 @@ TEST_F(OneUserApiTest, FUNC_CreateSamePublicIdSimultaneously) {
   }
 }
 
-TEST_F(OneUserApiTest, FUNC_ChangeCredentialsWhenLoggedOut) {
-  std::string new_pin(CreatePin());
-
-  EXPECT_EQ(kSuccess, test_elements_.LogOut());
-
-  EXPECT_NE(kSuccess, test_elements_.CheckPassword(password_));
-
-  // Change credentials
-  EXPECT_NE(kSuccess, test_elements_.ChangeKeyword(keyword_ + keyword_, password_));
-  EXPECT_NE(kSuccess, test_elements_.ChangePin(new_pin, password_));
-  EXPECT_NE(kSuccess, test_elements_.ChangePassword(password_ + password_, password_));
-
-  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
-}
-
-TEST_F(OneUserApiTest, FUNC_ChangeCredentialsAndLogOut) {
-  std::string new_pin(CreatePin());
-  std::string new_keyword(RandomAlphaNumericString(5));
-  std::string new_password(RandomAlphaNumericString(5));
-  int result(0);
-
-  boost::thread thread_pin(std::bind(&RunChangePin,
-                                     test_elements_,
-                                     std::ref(result),
-                                     new_pin,
-                                     password_,
-                                     std::make_pair(0, 0)));
-
-  test_elements_.LogOut();
-  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, new_pin, password_));
-
-  boost::thread thread_keyword(std::bind(&RunChangeKeyword,
-                                         test_elements_,
-                                         std::ref(result),
-                                         new_keyword,
-                                         password_,
-                                         std::make_pair(0, 0)));
-
-  test_elements_.LogOut();
-  EXPECT_EQ(kSuccess, test_elements_.LogIn(new_keyword, new_pin, password_));
-
-  boost::thread thread_password(std::bind(&RunChangePassword,
-                                          test_elements_,
-                                          std::ref(result),
-                                          new_password,
-                                          password_,
-                                          std::make_pair(0, 0)));
-
-  test_elements_.LogOut();
-  EXPECT_EQ(kSuccess, test_elements_.LogIn(new_keyword, new_pin, new_password));
-}
-
 TEST_F(OneUserApiTest, FUNC_AddInvalidContact) {
   std::string own_public_id(RandomAlphaNumericString(5));
   std::string public_id_1(RandomAlphaNumericString(6));
@@ -1024,282 +171,6 @@ TEST_F(OneUserApiTest, FUNC_AddOwnPublicIdAsContact) {
 
   EXPECT_NE(kSuccess, test_elements_.AddContact(public_id_1, public_id_1));
   EXPECT_NE(kSuccess, test_elements_.AddContact(public_id_1, public_id_2));
-}
-
-class TwoInstancesApiTest : public OneUserApiTest {
- public:
-  TwoInstancesApiTest()
-    : test_elements_2_(),
-      testing_variables_1_(),
-      testing_variables_2_() {}
-
- protected:
-  LifeStuff test_elements_2_;
-  TestingVariables testing_variables_1_;
-  TestingVariables testing_variables_2_;
-
-  virtual void SetUp() {
-    EXPECT_EQ(kSuccess, test_elements_.Initialise(*test_dir_));
-    EXPECT_EQ(kSuccess, test_elements_2_.Initialise(*test_dir_));
-    EXPECT_EQ(kSuccess,
-              test_elements_.ConnectToSignals(ChatFunction(),
-                                              FileTransferFunction(),
-                                              NewContactFunction(),
-                                              ContactConfirmationFunction(),
-                                              ContactProfilePictureFunction(),
-                                              std::bind(&ContactPresenceSlot,
-                                                        args::_1, args::_2,
-                                                        args::_3, args::_4,
-                                                        &done_),
-                                              ContactDeletionFunction(),
-                                              PrivateShareInvitationFunction(),
-                                              PrivateShareDeletionFunction(),
-                                              PrivateMemberAccessChangeFunction(),
-                                              OpenShareInvitationFunction(),
-                                              ShareRenamedFunction(),
-                                              ShareChangedFunction()));
-    EXPECT_EQ(kSuccess,
-              test_elements_2_.ConnectToSignals(ChatFunction(),
-                                              FileTransferFunction(),
-                                              NewContactFunction(),
-                                              ContactConfirmationFunction(),
-                                              ContactProfilePictureFunction(),
-                                              std::bind(&ContactPresenceSlot,
-                                                        args::_1, args::_2,
-                                                        args::_3, args::_4,
-                                                        &done_),
-                                              ContactDeletionFunction(),
-                                              PrivateShareInvitationFunction(),
-                                              PrivateShareDeletionFunction(),
-                                              PrivateMemberAccessChangeFunction(),
-                                              OpenShareInvitationFunction(),
-                                              ShareRenamedFunction(),
-                                              ShareChangedFunction()));
-  }
-
-  virtual void TearDown() {
-    EXPECT_EQ(kSuccess, test_elements_.Finalise());
-    EXPECT_EQ(kSuccess, test_elements_2_.Finalise());
-  }
-};
-
-TEST_F(TwoInstancesApiTest, FUNC_LogInFromTwoPlaces) {
-  EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_));
-  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_, pin_, password_));
-
-  EXPECT_NE(kSuccess, test_elements_.LogOut());
-  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
-}
-
-TEST_F(TwoInstancesApiTest, FUNC_NeverLogIn) {
-}
-
-void RunCreateUser(LifeStuff& test_elements,
-                   int& result,
-                   const std::string& keyword,
-                   const std::string& pin,
-                   const std::string& password,
-                   const std::pair<int, int> sleeps) {
-  RandomSleep(sleeps);
-  result = test_elements.CreateUser(keyword, pin, password);
-}
-
-TEST_F(TwoInstancesApiTest, FUNC_CreateSameUserSimultaneously) {
-  int result_1(0), result_2(0);
-  std::pair<int, int> sleeps(0, 0);
-  boost::thread thread_1(std::bind(&RunCreateUser,
-                                   test_elements_,
-                                   std::ref(result_1),
-                                   keyword_, pin_,
-                                   password_,
-                                   sleeps));
-  boost::thread thread_2(std::bind(&RunCreateUser,
-                                   test_elements_2_,
-                                   std::ref(result_2),
-                                   keyword_,
-                                   pin_,
-                                   password_,
-                                   sleeps));
-  thread_1.join();
-  thread_2.join();
-  EXPECT_TRUE((result_1 == kSuccess && result_2 != kSuccess) ||
-              (result_1 != kSuccess && result_2 == kSuccess));
-  result_1 = test_elements_.LogOut();
-  result_2 = test_elements_2_.LogOut();
-  EXPECT_TRUE((result_1 == kSuccess && result_2 != kSuccess) ||
-              (result_1 != kSuccess && result_2 == kSuccess));
-  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
-  EXPECT_EQ(kSuccess, test_elements_.LogOut());
-}
-
-class TwoUsersApiTest : public testing::Test {
- public:
-  TwoUsersApiTest()
-    : test_dir_(maidsafe::test::CreateTestPath()),
-      keyword_1_(RandomAlphaNumericString(6)),
-      pin_1_(CreatePin()),
-      password_1_(RandomAlphaNumericString(6)),
-      public_id_1_(RandomAlphaNumericString(5)),
-      keyword_2_(RandomAlphaNumericString(6)),
-      pin_2_(CreatePin()),
-      password_2_(RandomAlphaNumericString(6)),
-      public_id_2_(RandomAlphaNumericString(5)),
-      test_elements_1_(),
-      test_elements_2_(),
-      testing_variables_1_(),
-      testing_variables_2_() {}
-
- protected:
-  maidsafe::test::TestPath test_dir_;
-  std::string keyword_1_;
-  std::string pin_1_;
-  std::string password_1_;
-  std::string public_id_1_;
-  std::string keyword_2_;
-  std::string pin_2_;
-  std::string password_2_;
-  std::string public_id_2_;
-  LifeStuff test_elements_1_;
-  LifeStuff test_elements_2_;
-  TestingVariables testing_variables_1_;
-  TestingVariables testing_variables_2_;
-
-  virtual void SetUp() {
-    ASSERT_EQ(kSuccess,
-              CreateAndConnectTwoPublicIds(test_elements_1_, test_elements_2_,
-                                           testing_variables_1_, testing_variables_2_,
-                                           *test_dir_,
-                                           keyword_1_, pin_1_, password_1_, public_id_1_,
-                                           keyword_2_, pin_2_, password_2_, public_id_2_));
-  }
-
-  virtual void TearDown() {
-    if (test_elements_1_.state() == kConnected)
-      EXPECT_EQ(kSuccess, test_elements_1_.Finalise());
-    if (test_elements_2_.state() == kConnected)
-      EXPECT_EQ(kSuccess, test_elements_2_.Finalise());
-  }
-};
-
-TEST_F(TwoUsersApiTest, FUNC_ChangeCredentialsToSameConsecutively) {
-  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
-  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
-
-  std::string new_pin(CreatePin());
-  std::string new_keyword(RandomAlphaNumericString(5));
-
-  EXPECT_EQ(kSuccess, test_elements_1_.ChangePin(new_pin, password_1_));
-  EXPECT_EQ(kSuccess, test_elements_2_.ChangePin(new_pin, password_2_));
-  EXPECT_EQ(kSuccess, test_elements_1_.ChangeKeyword(new_keyword, password_1_));
-  EXPECT_NE(kSuccess, test_elements_2_.ChangeKeyword(new_keyword, password_2_));
-
-  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
-  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
-
-  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(new_keyword, new_pin, password_1_));
-  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, new_pin, password_2_));
-  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
-  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
-}
-
-TEST_F(TwoUsersApiTest, FUNC_ChangeCredentialsToSameSimultaneously) {
-  std::vector<std::pair<int, int> > sleep_values;
-  sleep_values.push_back(std::make_pair(0, 5000));
-  sleep_values.push_back(std::make_pair(0, 200));
-  sleep_values.push_back(std::make_pair(100, 200));
-  sleep_values.push_back(std::make_pair(100, 150));
-  sleep_values.push_back(std::make_pair(0, 0));
-
-  for (size_t i = 0; i < sleep_values.size(); ++i) {
-    LOG(kInfo) << "STARTING ITERATION NUMBER " << i;
-    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
-    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
-
-    std::string new_pin(CreatePin());
-    std::string new_keyword(RandomAlphaNumericString(5));
-
-    int result_pin_1(0), result_pin_2(0), result_keyword_1(0), result_keyword_2(0);
-
-    LOG(kInfo) << "THREADS STARTING";
-    boost::thread thread_pin_1(std::bind(&RunChangePin,
-                                         test_elements_1_,
-                                         std::ref(result_pin_1),
-                                         new_pin,
-                                         password_1_,
-                                         sleep_values.at(i)));
-    boost::thread thread_pin_2(std::bind(&RunChangePin,
-                                         test_elements_2_,
-                                         std::ref(result_pin_2),
-                                         new_pin,
-                                         password_2_,
-                                         sleep_values.at(i)));
-    boost::thread thread_keyword_1(std::bind(&RunChangeKeyword,
-                                             test_elements_1_,
-                                             std::ref(result_keyword_1),
-                                             new_keyword,
-                                             password_1_,
-                                             sleep_values.at(i)));
-    boost::thread thread_keyword_2(std::bind(&RunChangeKeyword,
-                                             test_elements_2_,
-                                             std::ref(result_keyword_2),
-                                             new_keyword,
-                                             password_2_,
-                                             sleep_values.at(i)));
-    thread_pin_1.join();
-    thread_pin_2.join();
-    thread_keyword_1.join();
-    thread_keyword_2.join();
-    LOG(kInfo) << "THREADS FINISHED";
-
-    if (result_pin_1 == kSuccess)
-      pin_1_ = new_pin;
-    if (result_pin_2 == kSuccess)
-      pin_2_ = new_pin;
-    if (result_keyword_1 == kSuccess)
-      keyword_1_ = new_keyword;
-    if (result_keyword_2 == kSuccess)
-      keyword_2_ = new_keyword;
-
-    LOG(kInfo) << "MID 1:\t" << HexSubstr(passport::MidName(keyword_1_, pin_1_, false));
-    LOG(kInfo) << "MID 2:\t" << HexSubstr(passport::MidName(keyword_2_, pin_2_, false));
-    LOG(kInfo) << "SMID 1:\t" << HexSubstr(passport::MidName(keyword_1_, pin_1_, true));
-    LOG(kInfo) << "SMID 2:\t" << HexSubstr(passport::MidName(keyword_2_, pin_2_, true));
-
-    EXPECT_FALSE(result_pin_1 == kSuccess &&
-                 result_pin_2 == kSuccess &&
-                 result_keyword_1 == kSuccess &&
-                 result_keyword_2 == kSuccess);
-
-    LOG(kInfo) << "LOGGING OUT";
-    int result_logout_1(test_elements_1_.LogOut());
-    int result_logout_2(test_elements_2_.LogOut());
-
-    if (result_logout_1 != kSuccess) {
-      if (result_logout_2 != kSuccess) {
-        LOG(kError) << "Both test elements failed to log out.";
-        break;
-      }
-      LOG(kError) << "Can't log out of test_elements_1_";
-      LOG(kInfo) << "Checking LogIn/LogOut: test_elements_2_; credentials 2";
-      EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
-      EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
-      LOG(kInfo) << "Checking LogIn/LogOut: test_elements_2_; credentials 1";
-      EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_1_, pin_1_, password_1_));
-      EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
-      break;
-    }
-    if (result_logout_2 != kSuccess) {
-      LOG(kError) << "Can't log out of test_elements_2_";
-      LOG(kInfo) << "Checking LogIn/LogOut: test_elements_1_; credentials 1";
-      EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
-      EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
-      LOG(kInfo) << "Checking LogIn/LogOut: test_elements_1_; credentials 2";
-      EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_2_, pin_2_, password_2_));
-      EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
-      break;
-    }
-    LOG(kInfo) << "ENDING ITERATION NUMBER " << i;
-  }
 }
 
 TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdConsecutively) {
@@ -1349,12 +220,12 @@ TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdSimultaneously) {
   sleep_values.push_back(std::make_pair(0, 10));
 
   for (size_t i = 0; i < sleep_values.size(); ++i) {
-    boost::thread thread_1(std::bind(&RunCreatePublicId,
+    boost::thread thread_1(std::bind(&sleepthreads::RunCreatePublicId,
                                      test_elements_1_,
                                      std::ref(result_1),
                                      new_public_id,
                                      sleep_values.at(i)));
-    boost::thread thread_2(std::bind(&RunCreatePublicId,
+    boost::thread thread_2(std::bind(&sleepthreads::RunCreatePublicId,
                                      test_elements_2_,
                                      std::ref(result_2),
                                      new_public_id,
@@ -1577,7 +448,7 @@ TEST(IndependentFullTest, FUNC_SendFileWithRejection) {
               password2(RandomAlphaNumericString(6)),
               public_id2(RandomAlphaNumericString(5));
   LifeStuff test_elements1, test_elements2;
-  TestingVariables testing_variables1, testing_variables2;
+  testresources::TestingVariables testing_variables1, testing_variables2;
   int file_count(0), file_max(10);
   size_t files_expected(file_max);
   std::vector<fs::path> file_paths;
@@ -1680,20 +551,13 @@ TEST_F(TwoUsersApiTest, FUNC_ProfilePicture) {
   }
 }
 
-void RunChangeProfilePicture(LifeStuff& test_elements_,
-                             int& result,
-                             const std::string public_id,
-                             const std::string file_content) {
-  result = test_elements_.ChangeProfilePicture(public_id, file_content);
-}
-
 TEST_F(TwoUsersApiTest, FUNC_ProfilePictureAndLogOut) {
   std::string file_content1, file_content2(RandomString(5 * 1024));
   int result(0);
 
   EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
   // Setting of profile image
-  boost::thread thread(std::bind(&RunChangeProfilePicture,
+  boost::thread thread(std::bind(&sleepthreads::RunChangeProfilePicture,
                                  test_elements_2_,
                                  std::ref(result),
                                  public_id_2_,
@@ -1710,7 +574,7 @@ TEST_F(TwoUsersApiTest, FUNC_ProfilePictureAndLogOut) {
 
   EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
   // Setting of profile image
-  boost::thread thread2(std::bind(&RunChangeProfilePicture,
+  boost::thread thread2(std::bind(&sleepthreads::RunChangeProfilePicture,
                                   test_elements_2_,
                                   std::ref(result),
                                   public_id_2_,
@@ -2296,61 +1160,6 @@ TEST_F(TwoUsersApiTest, FUNC_SameOpenShareName) {
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
 }
-
-class PrivateSharesApiTest : public ::testing::TestWithParam<int> {
- public:
-  PrivateSharesApiTest() : rights_(GetParam()),
-    test_dir_(maidsafe::test::CreateTestPath()),
-    keyword_1_(RandomAlphaNumericString(6)),
-    pin_1_(CreatePin()),
-    password_1_(RandomAlphaNumericString(6)),
-    public_id_1_(RandomAlphaNumericString(5)),
-    keyword_2_(RandomAlphaNumericString(6)),
-    pin_2_(CreatePin()),
-    password_2_(RandomAlphaNumericString(6)),
-    public_id_2_(RandomAlphaNumericString(5)),
-    test_elements_1_(),
-    test_elements_2_(),
-    testing_variables_1_(),
-    testing_variables_2_(),
-    share_name_1_(RandomAlphaNumericString(5)) {}
-
- protected:
-  int rights_;
-  maidsafe::test::TestPath test_dir_;
-  std::string keyword_1_;
-  std::string pin_1_;
-  std::string password_1_;
-  std::string public_id_1_;
-  std::string keyword_2_;
-  std::string pin_2_;
-  std::string password_2_;
-  std::string public_id_2_;
-  LifeStuff test_elements_1_;
-  LifeStuff test_elements_2_;
-  TestingVariables testing_variables_1_;
-  TestingVariables testing_variables_2_;
-  std::string share_name_1_;
-
-  virtual void SetUp() {
-    ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements_1_,
-                                                     test_elements_2_,
-                                                     testing_variables_1_,
-                                                     testing_variables_2_,
-                                                     *test_dir_,
-                                                     keyword_1_, pin_1_, password_1_,
-                                                     public_id_1_,
-                                                     keyword_2_, pin_2_, password_2_,
-                                                     public_id_2_));
-  }
-
-  virtual void TearDown() {
-    if (test_elements_1_.state() == kConnected)
-      EXPECT_EQ(kSuccess, test_elements_1_.Finalise());
-    if (test_elements_2_.state() == kConnected)
-      EXPECT_EQ(kSuccess, test_elements_2_.Finalise());
-  }
-};
 
 INSTANTIATE_TEST_CASE_P(ReadOnlyReadWrite,
                         PrivateSharesApiTest,
@@ -2939,7 +1748,6 @@ TEST_P(PrivateSharesApiTest, FUNC_CreateDeletePrivateShare) {
   }
 }
 
-
 TEST_F(TwoUsersApiTest, FUNC_MembershipDowngradePrivateShare) {
   std::string share_name1(RandomAlphaNumericString(5)),
               file_name1(RandomAlphaNumericString(5)),
@@ -3300,57 +2108,57 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
 
 TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
   LifeStuff test_elements3;
-  TestingVariables testing_variables3;
+  testresources::TestingVariables testing_variables3;
   std::string keyword3(RandomAlphaNumericString(6)),
               pin3(CreatePin()),
               password3(RandomAlphaNumericString(6)),
               public_id3(RandomAlphaNumericString(5));
   test_elements3.Initialise(*test_dir_);
   test_elements3.ConnectToSignals(
-                std::bind(&ChatSlot, args::_1, args::_2, args::_3, args::_4,
+                std::bind(&testresources::ChatSlot, args::_1, args::_2, args::_3, args::_4,
                           &testing_variables3.chat_message,
                           &testing_variables3.chat_message_received),
-                std::bind(&FileTransferSlot,
+                std::bind(&testresources::FileTransferSlot,
                           args::_1, args::_2, args::_3, args::_4, args::_5,
                           &testing_variables3.file_name,
                           &testing_variables3.file_id,
                           &testing_variables3.file_transfer_received),
-                std::bind(&NewContactSlot, args::_1, args::_2, args::_3,
+                std::bind(&testresources::NewContactSlot, args::_1, args::_2, args::_3,
                           &testing_variables3.newly_contacted),
-                std::bind(&ContactConfirmationSlot,
+                std::bind(&testresources::ContactConfirmationSlot,
                           args::_1, args::_2, args::_3,
                           &testing_variables3.confirmed),
-                std::bind(&ContactProfilePictureSlot,
+                std::bind(&testresources::ContactProfilePictureSlot,
                           args::_1, args::_2, args::_3,
                           &testing_variables3.picture_updated),
-                std::bind(&ContactPresenceSlot,
+                std::bind(&testresources::ContactPresenceSlot,
                           args::_1, args::_2, args::_3, args::_4,
                           &testing_variables3.presence_announced),
-                std::bind(&ContactDeletionSlot,
+                std::bind(&testresources::ContactDeletionSlot,
                           args::_1, args::_2, args::_3, args::_4,
                           &testing_variables3.removal_message,
                           &testing_variables3.removed),
-                std::bind(&PrivateShareInvitationSlot,
+                std::bind(&testresources::PrivateShareInvitationSlot,
                           args::_1, args::_2, args::_3,
                           args::_4, args::_5, args::_6,
                           &testing_variables3.new_private_share_name,
                           &testing_variables3.new_private_share_id,
                           &testing_variables3.new_private_access_level,
                           &testing_variables3.privately_invited),
-                std::bind(&PrivateShareDeletionSlot,
+                std::bind(&testresources::PrivateShareDeletionSlot,
                           args::_1, args::_2, args::_3, args::_4, args::_5,
                           &testing_variables3.deleted_private_share_name,
                           &testing_variables3.private_share_deleted),
-                std::bind(&PrivateMemberAccessChangeSlot,
+                std::bind(&testresources::PrivateMemberAccessChangeSlot,
                           args::_1, args::_2, args::_3, args::_4, args::_5,
                           &testing_variables3.access_private_share_name,
                           &testing_variables3.private_member_access,
                           &testing_variables3.private_member_access_changed),
-                std::bind(&OpenShareInvitationSlot,
+                std::bind(&testresources::OpenShareInvitationSlot,
                           args::_1, args::_2, args::_3, args::_4, args::_5,
                           &testing_variables3.new_open_share_id,
                           &testing_variables3.openly_invited),
-                std::bind(&ShareRenameSlot,
+                std::bind(&testresources::ShareRenameSlot,
                           args::_1, args::_2,
                           &testing_variables3.old_share_name,
                           &testing_variables3.new_share_name,
@@ -3483,29 +2291,6 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
   EXPECT_EQ(kSuccess, test_elements3.Finalise());
 }
 
-class TwoUsersMutexApiTest : public TwoUsersApiTest {
- public:
-  TwoUsersMutexApiTest()
-    : mutex_() {}
-
- protected:
-  boost::mutex mutex_;
-
-  virtual void SetUp() {
-    ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements_1_,
-                                                     test_elements_2_,
-                                                     testing_variables_1_,
-                                                     testing_variables_2_,
-                                                     *test_dir_,
-                                                     keyword_1_, pin_1_, password_1_,
-                                                     public_id_1_,
-                                                     keyword_2_, pin_2_, password_2_,
-                                                     public_id_2_, false,
-                                                     nullptr, nullptr, nullptr,
-                                                     &mutex_));
-  }
-};
-
 TEST_F(TwoUsersMutexApiTest, FUNC_AddModifyRemoveOneFile) {
   std::string share_name1(RandomAlphaNumericString(5)),
               file_name(RandomAlphaNumericString(5)),
@@ -3580,7 +2365,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_AddModifyRemoveOneFile) {
     Sleep(bptime::milliseconds(2000));
 
     EXPECT_EQ(expected_num_of_logs, testing_variables_1_.share_changes.size());
-    ShareChangeLog share_change_entry(
+    testresources::ShareChangeLog share_change_entry(
                       *testing_variables_1_.share_changes.begin());
     EXPECT_EQ(1, share_change_entry.num_of_entries);
     EXPECT_EQ(share_name1, share_change_entry.share_name);
@@ -3749,7 +2534,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_AddRemoveMultipleNodes) {
     // allowing enough time for the change to be logged
     Sleep(bptime::milliseconds(5000));
     EXPECT_EQ(1, testing_variables_2_.share_changes.size());
-    ShareChangeLog share_change_entry(
+    testresources::ShareChangeLog share_change_entry(
                       *testing_variables_2_.share_changes.begin());
     EXPECT_EQ(1, share_change_entry.num_of_entries);
     EXPECT_EQ(share_name, share_change_entry.share_name);
@@ -3927,7 +2712,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_RenameOneNode) {
     Sleep(bptime::milliseconds(2000));
 
     EXPECT_EQ(expected_num_of_logs, testing_variables_1_.share_changes.size());
-    ShareChangeLog share_change_entry(
+    testresources::ShareChangeLog share_change_entry(
                       *testing_variables_1_.share_changes.begin());
     EXPECT_EQ(1, share_change_entry.num_of_entries);
     EXPECT_EQ(share_name, share_change_entry.share_name);
@@ -3963,7 +2748,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_RenameOneNode) {
     Sleep(bptime::milliseconds(2000));
 
     EXPECT_EQ(expected_num_of_logs, testing_variables_2_.share_changes.size());
-    ShareChangeLog share_change_entry(
+    testresources::ShareChangeLog share_change_entry(
                       *testing_variables_2_.share_changes.begin());
     EXPECT_EQ(1, share_change_entry.num_of_entries);
     EXPECT_EQ(share_name, share_change_entry.share_name);
@@ -4043,7 +2828,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeToShareAndMoveOut) {
     // allowing enough time for the change to be logged
     Sleep(bptime::milliseconds(5000));
     EXPECT_EQ(1, testing_variables_2_.share_changes.size());
-    ShareChangeLog share_change_entry(
+    testresources::ShareChangeLog share_change_entry(
                       *testing_variables_2_.share_changes.begin());
     EXPECT_EQ(1, share_change_entry.num_of_entries);
     EXPECT_EQ(share_name, share_change_entry.share_name);
@@ -4074,7 +2859,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeToShareAndMoveOut) {
     Sleep(bptime::milliseconds(2000));
 
     EXPECT_EQ(expected_num_of_logs, testing_variables_1_.share_changes.size());
-    ShareChangeLog share_change_entry(
+    testresources::ShareChangeLog share_change_entry(
                       *testing_variables_1_.share_changes.begin());
     EXPECT_EQ(1, share_change_entry.num_of_entries);
     EXPECT_EQ(share_name, share_change_entry.share_name);
@@ -4155,7 +2940,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeInnerShare) {
     // allowing enough time for the change to be logged
     Sleep(bptime::milliseconds(5000));
     EXPECT_EQ(1, testing_variables_2_.share_changes.size());
-    ShareChangeLog share_change_entry(
+    testresources::ShareChangeLog share_change_entry(
                       *testing_variables_2_.share_changes.begin());
     EXPECT_EQ(2, share_change_entry.num_of_entries);
     EXPECT_EQ(share_name, share_change_entry.share_name);
@@ -4188,7 +2973,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeInnerShare) {
     Sleep(bptime::milliseconds(2000));
 
     EXPECT_EQ(expected_num_of_logs, testing_variables_1_.share_changes.size());
-    ShareChangeLog share_change_entry(
+    testresources::ShareChangeLog share_change_entry(
                       *testing_variables_1_.share_changes.begin());
     EXPECT_EQ(1, share_change_entry.num_of_entries);
     EXPECT_EQ(share_name, share_change_entry.share_name);
@@ -4458,7 +3243,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeToTrashThenMoveBack) {
     Sleep(bptime::milliseconds(2000));
 
     EXPECT_EQ(expected_num_of_logs, testing_variables_2_.share_changes.size());
-    ShareChangeLog share_change_entry(
+    testresources::ShareChangeLog share_change_entry(
                       *testing_variables_2_.share_changes.begin());
     EXPECT_EQ(1, share_change_entry.num_of_entries);
     EXPECT_EQ(share_name, share_change_entry.share_name);
