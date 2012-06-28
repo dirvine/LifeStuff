@@ -824,7 +824,7 @@ TEST_F(OneUserApiTest, FUNC_CreateInvalidUsers) {
   EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
 }
 
-TEST_F(OneUserApiTest, FUNC_TryInvalidCredentials) {
+TEST_F(OneUserApiTest, FUNC_TryChangeCredentialsToInvalid) {
   std::string incorrect_password(RandomAlphaNumericString(RandomUint32() % 26 + 5));
   while (incorrect_password == password_)
     incorrect_password = RandomAlphaNumericString(RandomUint32() % 26 + 5);
@@ -1122,20 +1122,14 @@ TEST_F(TwoInstancesApiTest, FUNC_CreateSameUserSimultaneously) {
                                    sleeps));
   thread_1.join();
   thread_2.join();
-  LOG(kInfo) << "Create 1 result: " << result_1;
-  LOG(kInfo) << "Create 2 result: " << result_2;
   EXPECT_TRUE((result_1 == kSuccess && result_2 != kSuccess) ||
               (result_1 != kSuccess && result_2 == kSuccess));
   result_1 = test_elements_.LogOut();
   result_2 = test_elements_2_.LogOut();
-  LOG(kInfo) << "Logout 1 result: " << result_1;
-  LOG(kInfo) << "Logout 2 result: " << result_2;
   EXPECT_TRUE((result_1 == kSuccess && result_2 != kSuccess) ||
               (result_1 != kSuccess && result_2 == kSuccess));
-  result_1 = test_elements_.state();
-  result_2 = test_elements_2_.state();
-  LOG(kInfo) << "State 1: " << result_1;
-  LOG(kInfo) << "State 2: " << result_2;
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
+  EXPECT_EQ(kSuccess, test_elements_.LogOut());
 }
 
 class TwoUsersApiTest : public testing::Test {
@@ -1209,64 +1203,103 @@ TEST_F(TwoUsersApiTest, FUNC_ChangeCredentialsToSameConsecutively) {
 }
 
 TEST_F(TwoUsersApiTest, FUNC_ChangeCredentialsToSameSimultaneously) {
-  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
-  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+  std::vector<std::pair<int, int> > sleep_values;
+  sleep_values.push_back(std::make_pair(0, 5000));
+  sleep_values.push_back(std::make_pair(0, 200));
+  sleep_values.push_back(std::make_pair(100, 200));
+  sleep_values.push_back(std::make_pair(100, 150));
+  sleep_values.push_back(std::make_pair(0, 0));
 
-  std::string new_pin(CreatePin());
-  std::string new_keyword(RandomAlphaNumericString(5));
+  for (size_t i = 0; i < sleep_values.size(); ++i) {
+    LOG(kInfo) << "STARTING ITERATION NUMBER " << i;
+    EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
 
-  int result_pin_1(0), result_pin_2(0), result_keyword_1(0), result_keyword_2(0);
+    std::string new_pin(CreatePin());
+    std::string new_keyword(RandomAlphaNumericString(5));
 
-  boost::thread thread_pin_1(std::bind(&RunChangePin,
-                                       test_elements_1_,
-                                       std::ref(result_pin_1),
-                                       new_pin,
-                                       password_1_,
-                                       std::make_pair(0, 0)));
-  boost::thread thread_pin_2(std::bind(&RunChangePin,
-                                       test_elements_2_,
-                                       std::ref(result_pin_2),
-                                       new_pin,
-                                       password_2_,
-                                       std::make_pair(0, 0)));
-  boost::thread thread_keyword_1(std::bind(&RunChangeKeyword,
-                                           test_elements_1_,
-                                           std::ref(result_keyword_1),
-                                           new_keyword,
-                                           password_1_,
-                                           std::make_pair(0, 0)));
-  boost::thread thread_keyword_2(std::bind(&RunChangeKeyword,
-                                           test_elements_2_,
-                                           std::ref(result_keyword_2),
-                                           new_keyword,
-                                           password_2_,
-                                           std::make_pair(0, 0)));
+    int result_pin_1(0), result_pin_2(0), result_keyword_1(0), result_keyword_2(0);
 
-  thread_pin_1.join();
-  thread_pin_2.join();
-  thread_keyword_1.join();
-  thread_keyword_2.join();
+    LOG(kInfo) << "THREADS STARTING";
+    boost::thread thread_pin_1(std::bind(&RunChangePin,
+                                         test_elements_1_,
+                                         std::ref(result_pin_1),
+                                         new_pin,
+                                         password_1_,
+                                         sleep_values.at(i)));
+    boost::thread thread_pin_2(std::bind(&RunChangePin,
+                                         test_elements_2_,
+                                         std::ref(result_pin_2),
+                                         new_pin,
+                                         password_2_,
+                                         sleep_values.at(i)));
+    boost::thread thread_keyword_1(std::bind(&RunChangeKeyword,
+                                             test_elements_1_,
+                                             std::ref(result_keyword_1),
+                                             new_keyword,
+                                             password_1_,
+                                             sleep_values.at(i)));
+    boost::thread thread_keyword_2(std::bind(&RunChangeKeyword,
+                                             test_elements_2_,
+                                             std::ref(result_keyword_2),
+                                             new_keyword,
+                                             password_2_,
+                                             sleep_values.at(i)));
+    thread_pin_1.join();
+    thread_pin_2.join();
+    thread_keyword_1.join();
+    thread_keyword_2.join();
+    LOG(kInfo) << "THREADS FINISHED";
 
-  EXPECT_FALSE(result_pin_1 == kSuccess &&
-               result_pin_2 == kSuccess &&
-               result_keyword_1 == kSuccess &&
-               result_keyword_2 == kSuccess);
-  if (result_pin_1)
-    pin_1_ = new_pin;
-  if (result_pin_2)
-    pin_2_ = new_pin;
-  if (result_keyword_1)
-    keyword_1_ = new_keyword;
-  if (result_keyword_2)
-    keyword_2_ = new_keyword;
+    if (result_pin_1 == kSuccess)
+      pin_1_ = new_pin;
+    if (result_pin_2 == kSuccess)
+      pin_2_ = new_pin;
+    if (result_keyword_1 == kSuccess)
+      keyword_1_ = new_keyword;
+    if (result_keyword_2 == kSuccess)
+      keyword_2_ = new_keyword;
 
-  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
-  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+    LOG(kInfo) << "MID 1:\t" << HexSubstr(passport::MidName(keyword_1_, pin_1_, false));
+    LOG(kInfo) << "MID 2:\t" << HexSubstr(passport::MidName(keyword_2_, pin_2_, false));
+    LOG(kInfo) << "SMID 1:\t" << HexSubstr(passport::MidName(keyword_1_, pin_1_, true));
+    LOG(kInfo) << "SMID 2:\t" << HexSubstr(passport::MidName(keyword_2_, pin_2_, true));
 
-  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
-  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
-  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
-  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+    EXPECT_FALSE(result_pin_1 == kSuccess &&
+                 result_pin_2 == kSuccess &&
+                 result_keyword_1 == kSuccess &&
+                 result_keyword_2 == kSuccess);
+
+    LOG(kInfo) << "LOGGING OUT";
+    int result_logout_1(test_elements_1_.LogOut());
+    int result_logout_2(test_elements_2_.LogOut());
+
+    if (result_logout_1 != kSuccess) {
+      if (result_logout_2 != kSuccess) {
+        LOG(kError) << "Both test elements failed to log out.";
+        break;
+      }
+      LOG(kError) << "Can't log out of test_elements_1_";
+      LOG(kInfo) << "Checking LogIn/LogOut: test_elements_2_; credentials 2";
+      EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+      EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+      LOG(kInfo) << "Checking LogIn/LogOut: test_elements_2_; credentials 1";
+      EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_1_, pin_1_, password_1_));
+      EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+      break;
+    }
+    if (result_logout_2 != kSuccess) {
+      LOG(kError) << "Can't log out of test_elements_2_";
+      LOG(kInfo) << "Checking LogIn/LogOut: test_elements_1_; credentials 1";
+      EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+      EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+      LOG(kInfo) << "Checking LogIn/LogOut: test_elements_1_; credentials 2";
+      EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_2_, pin_2_, password_2_));
+      EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+      break;
+    }
+    LOG(kInfo) << "ENDING ITERATION NUMBER " << i;
+  }
 }
 
 TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdConsecutively) {
