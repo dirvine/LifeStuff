@@ -250,11 +250,11 @@ int PublicId::CreatePublicId(const std::string &public_id, bool accepts_new_cont
 
 int PublicId::AddContact(const std::string &own_public_id,
                          const std::string &recipient_public_id) {
-  if (session_.contact_handler_map().find(recipient_public_id) !=
-      session_.contact_handler_map().end()) {
+  if (session_.OwnPublicId(recipient_public_id)) {
     LOG(kInfo) << "Cannot add own Public Id as a contact.";
     return kGeneralError;
   }
+
   Contact recipient_contact;
   recipient_contact.status = kRequestSent;
   recipient_contact.public_id = recipient_public_id;
