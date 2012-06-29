@@ -32,6 +32,7 @@
 #include "maidsafe/pd/client/node.h"
 #endif
 
+#include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
@@ -458,6 +459,105 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
   public_id1_->StopCheckingForNewContacts();
   public_id2_->StopCheckingForNewContacts();
   public_id3_->StopCheckingForNewContacts();
+}
+
+void NotificationFunction(const std::string&,
+                          const std::string&,
+                          boost::mutex& mutex,
+                          boost::condition_variable& condition_variable,
+                          bool& done) {
+    boost::mutex::scoped_lock lock(mutex);
+    done = true;
+    condition_variable.notify_one();
+}
+
+int ConnectTwoPublicIds(PublicId& public_id1,
+                        PublicId& public_id2,
+                        const std::string& id1,
+                        const std::string& id2,
+                        const bptime::seconds interval) {
+  int result(public_id1.CreatePublicId(id1, true));
+  if (result != kSuccess)
+    return -1;
+  result = public_id2.CreatePublicId(id2, true);
+  if (result != kSuccess)
+    return -2;
+
+  result = public_id2.AddContact(id2, id1);
+
+
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  bool done(false);
+  public_id1.ConnectToNewContactSignal(std::bind(&NotificationFunction, args::_1, args::_2,
+                                                 std::ref(mutex), std::ref(cond_var),
+                                                 std::ref(done)));
+  result = public_id1.StartCheckingForNewContacts(interval);
+  if (result != kSuccess)
+    return -3;
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    if (!cond_var.timed_wait(lock, interval * 2, [&done]()->bool { return done; }))  // NOLINT (Dan)
+      return -41;
+  }
+  if (!done)
+    return -42;
+  public_id1.StopCheckingForNewContacts();
+  if (result != kSuccess)
+    return -5;
+
+  result = public_id1.ConfirmContact(id1, id2);
+  if (result != kSuccess)
+    return -6;
+
+  done = false;
+  public_id2.ConnectToContactConfirmedSignal(std::bind(&NotificationFunction, args::_1, args::_2,
+                                                       std::ref(mutex), std::ref(cond_var),
+                                                       std::ref(done)));
+  result = public_id2.StartCheckingForNewContacts(interval);
+  if (result != kSuccess)
+    return -7;
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    if (!cond_var.timed_wait(lock, interval * 2, [&done]()->bool { return done; }))  // NOLINT (Dan)
+      return -81;
+  }
+  if (!done)
+    return -82;
+
+  public_id2.StopCheckingForNewContacts();
+
+  return kSuccess;
+}
+
+TEST_F(MessageHandlerTest, FUNC_DeletePublicIdUserPerception) {
+  ASSERT_EQ(kSuccess, ConnectTwoPublicIds(*public_id1_,
+                                          *public_id2_,
+                                          public_username1_,
+                                          public_username2_,
+                                          interval_));
+
+  InboxItem received;
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  bool done(false);
+  message_handler1_->ConnectToChatSignal(std::bind(&MessageHandlerTest::NewMessageSlot, this,
+                                                   args::_1, args::_2, args::_3, args::_4,
+                                                   &received, &mutex, &cond_var, &done));
+  ASSERT_EQ(kSuccess, message_handler1_->StartCheckingForNewMessages(interval_));
+
+  InboxItem sent(CreateMessage(public_username2_, public_username1_));
+  ASSERT_EQ(kSuccess, message_handler2_->Send(sent));
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    ASSERT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&]()->bool { return done; }));  // NOLINT (Dan)
+  }
+
+  ASSERT_TRUE(MessagesEqual(sent, received));
+  message_handler1_->StopCheckingForNewMessages();
+
+  ASSERT_EQ(kSuccess, public_id1_->DeletePublicId(public_username1_));
+  ASSERT_NE(kSuccess, message_handler2_->Send(sent));
 }
 
 }  // namespace test

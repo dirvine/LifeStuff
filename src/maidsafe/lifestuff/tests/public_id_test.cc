@@ -425,6 +425,42 @@ TEST_F(PublicIdTest, FUNC_EnablePublicId) {
   ASSERT_EQ(public_identity2_, received_public_identity_);
 }
 
+TEST_F(PublicIdTest, FUNC_DeletePublicIdPacketVerification) {
+  ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, true));
+
+  passport::Passport& pass(session1_.passport());
+  asymm::Keys mmid(pass.SignaturePacketDetails(passport::kMmid, true, public_identity1_)),
+              mpid(pass.SignaturePacketDetails(passport::kMpid, true, public_identity1_)),
+              anmpid(pass.SignaturePacketDetails(passport::kAnmpid, true, public_identity1_));
+  std::string mcid_name(crypto::Hash<crypto::SHA512>(public_identity1_));
+
+  ASSERT_EQ(kSuccess, public_id1_->DeletePublicId(public_identity1_));
+  ASSERT_EQ("", remote_chunk_store1_->Get(mmid.identity));
+  ASSERT_EQ("", remote_chunk_store1_->Get(mpid.identity));
+  ASSERT_EQ("", remote_chunk_store1_->Get(anmpid.identity));
+  ASSERT_EQ("", remote_chunk_store1_->Get(mcid_name));
+  ASSERT_EQ("", remote_chunk_store1_->Get(mmid.identity,
+                                          std::shared_ptr<asymm::Keys>(new asymm::Keys(mmid))));
+  ASSERT_EQ("", remote_chunk_store1_->Get(mcid_name,
+                                          std::shared_ptr<asymm::Keys>(new asymm::Keys(mpid))));
+
+  ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, false));
+  mmid = pass.SignaturePacketDetails(passport::kMmid, true, public_identity1_);
+  mpid = pass.SignaturePacketDetails(passport::kMpid, true, public_identity1_);
+  anmpid = pass.SignaturePacketDetails(passport::kAnmpid, true, public_identity1_);
+  mcid_name = crypto::Hash<crypto::SHA512>(public_identity1_);
+
+  ASSERT_EQ(kSuccess, public_id1_->DeletePublicId(public_identity1_));
+  ASSERT_EQ("", remote_chunk_store1_->Get(mmid.identity));
+  ASSERT_EQ("", remote_chunk_store1_->Get(mpid.identity));
+  ASSERT_EQ("", remote_chunk_store1_->Get(anmpid.identity));
+  ASSERT_EQ("", remote_chunk_store1_->Get(mcid_name));
+  ASSERT_EQ("", remote_chunk_store1_->Get(mmid.identity,
+                                          std::shared_ptr<asymm::Keys>(new asymm::Keys(mmid))));
+  ASSERT_EQ("", remote_chunk_store1_->Get(mcid_name,
+                                          std::shared_ptr<asymm::Keys>(new asymm::Keys(mpid))));
+}
+
 TEST_F(PublicIdTest, FUNC_RemoveContact) {
   // Detailed msg exchanging behaviour tests are undertaken as part of
   // message_handler_test. Here only basic functionality is tested

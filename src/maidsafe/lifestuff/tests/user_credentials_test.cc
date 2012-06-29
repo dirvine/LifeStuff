@@ -31,6 +31,8 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/private/chunk_store/remote_chunk_store.h"
+
 #include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/user_credentials.h"
@@ -300,6 +302,63 @@ TEST_F(UserCredentialsTest, FUNC_MultiUserCredentialsLoginAndLogout) {
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());
   LOG(kInfo) << "Logged out.\n===================\n";
+}
+
+TEST_F(UserCredentialsTest, FUNC_UserCredentialsDeletion) {
+  ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
+  passport::Passport& pass(session_.passport());
+  std::string anmid_name(pass.SignaturePacketDetails(passport::kAnmid, true).identity),
+              ansmid_name(pass.SignaturePacketDetails(passport::kAnsmid, true).identity),
+              antmid_name(pass.SignaturePacketDetails(passport::kAntmid, true).identity),
+              anmaid_name(pass.SignaturePacketDetails(passport::kAnmaid, true).identity),
+              maid_name(pass.SignaturePacketDetails(passport::kMaid, true).identity),
+              pmid_name(pass.SignaturePacketDetails(passport::kPmid, true).identity),
+              mid_name(pass.IdentityPacketName(passport::kMid, true)),
+              smid_name(pass.IdentityPacketName(passport::kSmid, true)),
+              tmid_name(pass.IdentityPacketName(passport::kTmid, true)),
+              stmid_name(pass.IdentityPacketName(passport::kStmid, true));
+  ASSERT_EQ(kSuccess, user_credentials_->DeleteUserCredentials());
+  ASSERT_EQ("", remote_chunk_store_->Get(anmid_name));
+  ASSERT_EQ("", remote_chunk_store_->Get(ansmid_name));
+  ASSERT_EQ("", remote_chunk_store_->Get(antmid_name));
+  ASSERT_EQ("", remote_chunk_store_->Get(anmaid_name));
+  ASSERT_EQ("", remote_chunk_store_->Get(maid_name));
+  ASSERT_EQ("", remote_chunk_store_->Get(pmid_name));
+  ASSERT_EQ("", remote_chunk_store_->Get(mid_name));
+  ASSERT_EQ("", remote_chunk_store_->Get(smid_name));
+  ASSERT_EQ("", remote_chunk_store_->Get(tmid_name));
+  ASSERT_EQ("", remote_chunk_store_->Get(stmid_name));
+
+  ASSERT_NE(kSuccess, user_credentials_->Logout());
+  ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
+  ASSERT_EQ(kSuccess, user_credentials_->Logout());
+  ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
+
+  anmid_name = pass.SignaturePacketDetails(passport::kAnmid, true).identity;
+  ansmid_name = pass.SignaturePacketDetails(passport::kAnsmid, true).identity;
+  antmid_name = pass.SignaturePacketDetails(passport::kAntmid, true).identity;
+  anmaid_name = pass.SignaturePacketDetails(passport::kAnmaid, true).identity;
+  maid_name = pass.SignaturePacketDetails(passport::kMaid, true).identity;
+  pmid_name = pass.SignaturePacketDetails(passport::kPmid, true).identity;
+  mid_name = pass.IdentityPacketName(passport::kMid, true);
+  smid_name = pass.IdentityPacketName(passport::kSmid, true);
+  tmid_name = pass.IdentityPacketName(passport::kTmid, true);
+  stmid_name = pass.IdentityPacketName(passport::kStmid, true);
+
+  ASSERT_EQ(kSuccess, user_credentials_->DeleteUserCredentials());
+  ASSERT_EQ("", remote_chunk_store_->Get(anmid_name));
+  ASSERT_EQ("", remote_chunk_store_->Get(ansmid_name));
+  ASSERT_EQ("", remote_chunk_store_->Get(antmid_name));
+  ASSERT_EQ("", remote_chunk_store_->Get(anmaid_name));
+  ASSERT_EQ("", remote_chunk_store_->Get(maid_name));
+  ASSERT_EQ("", remote_chunk_store_->Get(pmid_name));
+  ASSERT_EQ("", remote_chunk_store_->Get(mid_name));
+  ASSERT_EQ("", remote_chunk_store_->Get(smid_name));
+  ASSERT_EQ("", remote_chunk_store_->Get(tmid_name));
+  ASSERT_EQ("", remote_chunk_store_->Get(stmid_name));
+
+  ASSERT_NE(kSuccess, user_credentials_->Logout());
+  ASSERT_NE(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
 }
 
 }  // namespace test

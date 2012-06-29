@@ -356,7 +356,7 @@ int PublicId::DeletePublicId(const std::string &public_id) {
       new asymm::Keys(passport_.SignaturePacketDetails(passport::kMpid, true, public_id)));
   std::shared_ptr<asymm::Keys> anmpid(
       new asymm::Keys(passport_.SignaturePacketDetails(passport::kAnmpid, true, public_id)));
-  std::string inbox_name(SignaturePacketName(inbox_keys->identity)),
+  std::string inbox_name(AppendableByAllName(inbox_keys->identity)),
               mpid_name(SignaturePacketName(mpid->identity)),
               anmpid_name(SignaturePacketName(anmpid->identity)),
               mcid_name(MaidsafeContactIdName(public_id));
@@ -410,6 +410,12 @@ int PublicId::DeletePublicId(const std::string &public_id) {
     return kDeletePublicIdFailure;
   }
 
+  result = session_.DeletePublicId(public_id);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to delete from session: " << public_id;
+    return kDeletePublicIdFailure;
+  }
+
   return kSuccess;
 }
 
@@ -440,7 +446,7 @@ void PublicId::GetNewContacts(const bptime::seconds &interval,
 void PublicId::GetContactsHandle() {
   std::vector<std::string> selectables(session_.PublicIdentities());
   for (auto it(selectables.begin()); it != selectables.end(); ++it) {
-    LOG(kError) << "PublicId::GetNewContacts: " << (*it);
+    LOG(kInfo) << "PublicId::GetNewContacts: " << (*it);
     std::shared_ptr<asymm::Keys> mpid(new asymm::Keys(
         passport_.SignaturePacketDetails(passport::kMpid, true, *it)));
     std::string mpid_packet(remote_chunk_store_->Get(MaidsafeContactIdName(*it), mpid));
