@@ -66,8 +66,11 @@ class UserCredentialsImpl {
 
   int SaveSession();
 
-  int ChangeUsernamePin(const std::string& new_username, const std::string& new_pin);
-  int ChangePassword(const std::string& new_password);
+  int ChangePin(const std::string &new_pin);
+  int ChangeKeyword(const std::string new_keyword);
+  int ChangeUsernamePin(const std::string &new_username, const std::string &new_pin);
+  int ChangePassword(const std::string &new_password);
+
   int DeleteUserCredentials();
 
  private:

@@ -47,11 +47,20 @@ UserCredentials::~UserCredentials() {}
 int UserCredentials::CreateUser(const std::string &keyword,
                                 const std::string &pin,
                                 const std::string &password) {
-  if (!CheckKeywordValidity(keyword) ||
-      !CheckPinValidity(pin) ||
-      !CheckPasswordValidity(password)) {
-    LOG(kError) << "Incorrect inputs.";
-    return kCredentialValidityFailure;
+  int result(CheckKeywordValidity(keyword));
+  if (result != kSuccess) {
+    LOG(kInfo) << "Invalid keyword: " << keyword << "    Return code: " << result << ")";
+    return result;
+  }
+  result = CheckPinValidity(pin);
+  if (result != kSuccess) {
+    LOG(kInfo) << "Invalid pin: " << pin << "    Return code: " << result << ")";
+    return result;
+  }
+  result = CheckPasswordValidity(password);
+  if (result != kSuccess) {
+    LOG(kInfo) << "Invalid password: " << password << "    (Return code: " << result << ")";
+    return result;
   }
 
   return impl_->CreateUser(keyword, pin, password);
@@ -60,11 +69,20 @@ int UserCredentials::CreateUser(const std::string &keyword,
 int UserCredentials::LogIn(const std::string &keyword,
                            const std::string &pin,
                            const std::string &password) {
-  if (!CheckKeywordValidity(keyword) ||
-      !CheckPinValidity(pin) ||
-      !CheckPasswordValidity(password)) {
-    LOG(kError) << "Incorrect inputs.";
-    return kCredentialValidityFailure;
+  int result(CheckKeywordValidity(keyword));
+  if (result != kSuccess) {
+    LOG(kInfo) << "Invalid keyword: " << keyword << "    Return code: " << result << ")";
+    return result;
+  }
+  result = CheckPinValidity(pin);
+  if (result != kSuccess) {
+    LOG(kInfo) << "Invalid pin: " << pin << "    Return code: " << result << ")";
+    return result;
+  }
+  result = CheckPasswordValidity(password);
+  if (result != kSuccess) {
+    LOG(kInfo) << "Invalid password: " << password << "    Return code: " << result << ")";
+    return result;
   }
 
   return impl_->GetUserInfo(keyword, pin, password);
@@ -81,27 +99,30 @@ int UserCredentials::Logout() {
 int UserCredentials::SaveSession() { return impl_->SaveSession(); }
 
 int UserCredentials::ChangeKeyword(const std::string &new_keyword) {
-  if (!CheckKeywordValidity(new_keyword)) {
+  int result(CheckKeywordValidity(new_keyword));
+  if (result != kSuccess) {
     LOG(kError) << "Incorrect input.";
-    return kChangeUsernamePinFailure;
+    return result;
   }
 
-  return impl_->ChangeUsernamePin(new_keyword, session_.pin());
+  return impl_->ChangeKeyword(new_keyword);
 }
 
 int UserCredentials::ChangePin(const std::string &new_pin) {
-  if (!CheckPinValidity(new_pin)) {
+  int result(CheckPinValidity(new_pin));
+  if (result != kSuccess) {
     LOG(kError) << "Incorrect input.";
-    return kChangeUsernamePinFailure;
+    return result;
   }
 
-  return impl_->ChangeUsernamePin(session_.keyword(), new_pin);
+  return impl_->ChangePin(new_pin);
 }
 
 int UserCredentials::ChangePassword(const std::string &new_password) {
-  if (!CheckPasswordValidity(new_password)) {
+  int result(CheckPasswordValidity(new_password));
+  if (result != kSuccess) {
     LOG(kError) << "Incorrect input.";
-    return kChangeUsernamePinFailure;
+    return result;
   }
 
   return impl_->ChangePassword(new_password);

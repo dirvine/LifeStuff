@@ -224,8 +224,8 @@ int LifeStuffImpl::ConnectToSignals(
 }
 
 int LifeStuffImpl::Finalise() {
-  if (state_ != kLoggedOut) {
-    LOG(kError) << "Need to be logged out to finalise.";
+  if (state_ != kConnected) {
+    LOG(kError) << "Need to be connected to finalise.";
     return kGeneralError;
   }
 
@@ -337,7 +337,7 @@ int LifeStuffImpl::CreatePublicId(const std::string &public_id) {
 int LifeStuffImpl::LogIn(const std::string &keyword,
                          const std::string &pin,
                          const std::string &password) {
-  if (!(state_ == kConnected || state_ == kLoggedOut)) {
+  if (!state_ == kConnected) {
     LOG(kError) << "Make sure that object is initialised and connected";
     return kGeneralError;
   }
@@ -431,7 +431,7 @@ int LifeStuffImpl::LogOut() {
                   << mount_path();
   session_.Reset();
 
-  state_ = kLoggedOut;
+  state_ = kConnected;
 
   return kSuccess;
 }

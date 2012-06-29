@@ -149,13 +149,14 @@ void PublicId::StopCheckingForNewContacts() {
 }
 
 int PublicId::CreatePublicId(const std::string &public_id, bool accepts_new_contacts) {
-  if (public_id.empty()) {
-    LOG(kError) << "Public ID name empty";
-    return kPublicIdEmpty;
+  int result(CheckPublicIdValidity(public_id));
+  if (result != kSuccess) {
+    LOG(kError) << "Public ID invalid.";
+    return result;
   }
 
   // Create packets (pending) in passport
-  int result(passport_.CreateSelectableIdentity(public_id));
+  result = passport_.CreateSelectableIdentity(public_id);
   if (result != kSuccess) {
     LOG(kError) << "Failed to create Public ID with name " << public_id;
     return result;
@@ -249,6 +250,11 @@ int PublicId::CreatePublicId(const std::string &public_id, bool accepts_new_cont
 
 int PublicId::AddContact(const std::string &own_public_id,
                          const std::string &recipient_public_id) {
+  if (session_.contact_handler_map().find(recipient_public_id) !=
+      session_.contact_handler_map().end()) {
+    LOG(kInfo) << "Cannot add own Public Id as a contact.";
+    return kGeneralError;
+  }
   Contact recipient_contact;
   recipient_contact.status = kRequestSent;
   recipient_contact.public_id = recipient_public_id;

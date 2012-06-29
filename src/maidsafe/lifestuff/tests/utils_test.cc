@@ -53,25 +53,25 @@ TEST(UtilsTest, BEH_WordValidity) {
               too_short(RandomAlphaNumericString(4)),
               too_long(RandomAlphaNumericString(31)),
               correct(RandomAlphaNumericString(18));
-  EXPECT_FALSE(CheckKeywordValidity(one_leading));
-  EXPECT_FALSE(CheckKeywordValidity(three_leading));
-  EXPECT_FALSE(CheckKeywordValidity(one_trailing));
-  EXPECT_FALSE(CheckKeywordValidity(three_trailing));
-  EXPECT_FALSE(CheckKeywordValidity(one_middle));
-  EXPECT_FALSE(CheckKeywordValidity(three_middle));
-  EXPECT_FALSE(CheckKeywordValidity(too_short));
-  EXPECT_FALSE(CheckKeywordValidity(too_long));
-  EXPECT_TRUE(CheckKeywordValidity(correct));
+  EXPECT_EQ(kWordPatternInvalid, CheckKeywordValidity(one_leading));
+  EXPECT_EQ(kWordPatternInvalid, CheckKeywordValidity(three_leading));
+  EXPECT_EQ(kWordPatternInvalid, CheckKeywordValidity(one_trailing));
+  EXPECT_EQ(kWordPatternInvalid, CheckKeywordValidity(three_trailing));
+  EXPECT_EQ(kWordPatternInvalid, CheckKeywordValidity(one_middle));
+  EXPECT_EQ(kWordPatternInvalid, CheckKeywordValidity(three_middle));
+  EXPECT_EQ(kWordSizeInvalid, CheckKeywordValidity(too_short));
+  EXPECT_EQ(kWordSizeInvalid, CheckKeywordValidity(too_long));
+  EXPECT_EQ(kSuccess, CheckKeywordValidity(correct));
 
-  EXPECT_FALSE(CheckPasswordValidity(one_leading));
-  EXPECT_FALSE(CheckPasswordValidity(three_leading));
-  EXPECT_FALSE(CheckPasswordValidity(one_trailing));
-  EXPECT_FALSE(CheckPasswordValidity(three_trailing));
-  EXPECT_FALSE(CheckPasswordValidity(one_middle));
-  EXPECT_FALSE(CheckPasswordValidity(three_middle));
-  EXPECT_FALSE(CheckPasswordValidity(too_short));
-  EXPECT_FALSE(CheckPasswordValidity(too_long));
-  EXPECT_TRUE(CheckPasswordValidity(correct));
+  EXPECT_EQ(kWordPatternInvalid, CheckPasswordValidity(one_leading));
+  EXPECT_EQ(kWordPatternInvalid, CheckPasswordValidity(three_leading));
+  EXPECT_EQ(kWordPatternInvalid, CheckPasswordValidity(one_trailing));
+  EXPECT_EQ(kWordPatternInvalid, CheckPasswordValidity(three_trailing));
+  EXPECT_EQ(kWordPatternInvalid, CheckPasswordValidity(one_middle));
+  EXPECT_EQ(kWordPatternInvalid, CheckPasswordValidity(three_middle));
+  EXPECT_EQ(kWordSizeInvalid, CheckPasswordValidity(too_short));
+  EXPECT_EQ(kWordSizeInvalid, CheckPasswordValidity(too_long));
+  EXPECT_EQ(kSuccess, CheckPasswordValidity(correct));
 }
 
 TEST(UtilsTest, BEH_PinValidity) {
@@ -81,30 +81,35 @@ TEST(UtilsTest, BEH_PinValidity) {
               non_number3("11a1"), non_number4("111a"),
               non_number5("aaaa"), non_number6("1aa1"),
               non_number7("a11a"), non_number8("1a1a"),
-              all_zeros("0000");
-  EXPECT_FALSE(CheckPinValidity(too_short));
-  EXPECT_FALSE(CheckPinValidity(too_long));
-  EXPECT_FALSE(CheckPinValidity(non_number1));
-  EXPECT_FALSE(CheckPinValidity(non_number2));
-  EXPECT_FALSE(CheckPinValidity(non_number3));
-  EXPECT_FALSE(CheckPinValidity(non_number4));
-  EXPECT_FALSE(CheckPinValidity(non_number5));
-  EXPECT_FALSE(CheckPinValidity(non_number6));
-  EXPECT_FALSE(CheckPinValidity(non_number7));
-  EXPECT_FALSE(CheckPinValidity(non_number8));
-  EXPECT_FALSE(CheckPinValidity(all_zeros));
+              all_zeros("0000"), negative_number("-111"),
+              short_non_number("a11"), long_non_number("a1111");
+  EXPECT_EQ(kPinSizeInvalid, CheckPinValidity(too_short));
+  EXPECT_EQ(kPinSizeInvalid, CheckPinValidity(too_long));
+  EXPECT_EQ(kPinPatternInvalid, CheckPinValidity(non_number1));
+  EXPECT_EQ(kPinPatternInvalid, CheckPinValidity(non_number2));
+  EXPECT_EQ(kPinPatternInvalid, CheckPinValidity(non_number3));
+  EXPECT_EQ(kPinPatternInvalid, CheckPinValidity(non_number4));
+  EXPECT_EQ(kPinPatternInvalid, CheckPinValidity(non_number5));
+  EXPECT_EQ(kPinPatternInvalid, CheckPinValidity(non_number6));
+  EXPECT_EQ(kPinPatternInvalid, CheckPinValidity(non_number7));
+  EXPECT_EQ(kPinPatternInvalid, CheckPinValidity(non_number8));
+  EXPECT_EQ(kPinPatternInvalid, CheckPinValidity(all_zeros));
+  EXPECT_EQ(kPinPatternInvalid, CheckPinValidity(negative_number));
+  EXPECT_EQ(kPinSizeInvalid, CheckPinValidity(short_non_number));
+  EXPECT_EQ(kPinSizeInvalid, CheckPinValidity(long_non_number));
+
 
   for (int n = 0; n < 100; ++n) {
     std::string pin(CreatePin());
-    EXPECT_TRUE(CheckPinValidity(pin)) << pin;
+    EXPECT_EQ(kSuccess, CheckPinValidity(pin)) << pin;
   }
 
   std::string one_starting_zero("0333"),
               two_starting_zeros("0022"),
               three_starting_zeros("0001");
-  EXPECT_TRUE(CheckPinValidity(one_starting_zero));
-  EXPECT_TRUE(CheckPinValidity(two_starting_zeros));
-  EXPECT_TRUE(CheckPinValidity(three_starting_zeros));
+  EXPECT_EQ(kSuccess, CheckPinValidity(one_starting_zero));
+  EXPECT_EQ(kSuccess, CheckPinValidity(two_starting_zeros));
+  EXPECT_EQ(kSuccess, CheckPinValidity(three_starting_zeros));
 }
 
 TEST(UtilsTest, BEH_GetNameInPath) {

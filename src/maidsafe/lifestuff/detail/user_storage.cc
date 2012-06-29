@@ -105,6 +105,7 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
     LOG(kError) << "Failed to Mount Drive: " << result;
     return;
   }
+  mount_status_ = true;
 #else
   mount_dir_ = mount_dir_path;
   mount_thread_.reset(new boost::thread([this, drive_logo] {
@@ -113,9 +114,8 @@ void UserStorage::MountDrive(const fs::path &mount_dir_path,
                                 session_->max_space(),
                                 session_->used_space());
   }));
-  drive_in_user_space_->WaitUntilMounted();
+  mount_status_ = drive_in_user_space_->WaitUntilMounted();
 #endif
-  mount_status_ = true;
   ConnectToShareRenamedSignal(share_renamed_function_);
   ConnectToShareChangedSignal(share_changed_function_);
 }

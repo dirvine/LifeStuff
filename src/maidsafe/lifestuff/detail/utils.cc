@@ -73,45 +73,71 @@ bool AcceptableWordPattern(const std::string &word) {
   return !boost::regex_search(word.begin(), word.end(), space);
 }
 
-bool CheckWordValidity(const std::string &word) {
+int CheckWordValidity(const std::string &word) {
   if (!AcceptableWordSize(word)) {
     LOG(kError) << "Unacceptable size: " << word.size();
-    return false;
+    return kWordSizeInvalid;
   }
 
   if (!AcceptableWordPattern(word)) {
     LOG(kError) << "Unacceptable pattern: '" << word << "'";
-    return false;
+    return kWordPatternInvalid;
   }
 
-  return true;
+  return kSuccess;
 }
 
-bool CheckKeywordValidity(const std::string &keyword) {
+int CheckKeywordValidity(const std::string &keyword) {
   return CheckWordValidity(keyword);
 }
 
-bool CheckPasswordValidity(const std::string &password) {
+int CheckPasswordValidity(const std::string &password) {
   return CheckWordValidity(password);
 }
 
-bool CheckPinValidity(const std::string &pin) {
+int CheckPinValidity(const std::string &pin) {
+  if (pin.size() != kPinSize) {
+    LOG(kError) << "PIN wrong size: " << pin;
+    return kPinSizeInvalid;
+  }
+
   try {
     int peen(boost::lexical_cast<int>(pin));
     if (peen < 1) {
       LOG(kError) << "PIN out of range: " << peen;
-      return false;
+      return kPinPatternInvalid;
     }
-    std::string pattern("[0-9]{" +
-                        boost::lexical_cast<std::string>(kPinSize) +
-                        "}");
-    boost::regex rx(pattern);
-    return boost::regex_match(pin.begin(), pin.end(), rx);
+    return kSuccess;
   }
   catch(const std::exception &e) {
     LOG(kError) << e.what();
-    return false;
+    return kPinPatternInvalid;
   }
+}
+
+int CheckPublicIdValidity(const std::string &public_id) {
+  if (public_id.empty()) {
+    LOG(kError) << "Public ID empty.";
+    return kPublicIdEmpty;
+  }
+  if (public_id.length() > kMaxPublicIdSize) {
+    LOG(kError) << "Public ID too long: '" << public_id << "'";
+    return kPublicIdLengthInvalid;
+  }
+  if (public_id.at(0) == ' ') {
+    LOG(kError) << "Public ID starts with space: '" << public_id << "'";
+    return kPublicIdEndSpaceInvalid;
+  }
+  if (public_id.at(public_id.length() - 1) == ' ') {
+    LOG(kError) << "Public ID ends with space: '" << public_id << "'";
+    return kPublicIdEndSpaceInvalid;
+  }
+  boost::regex double_space("  ");
+  if (boost::regex_search(public_id.begin(), public_id.end(), double_space)) {
+    LOG(kError) << "Public ID contains double space: '" << public_id << "'";
+    return kPublicIdDoubleSpaceInvalid;
+  }
+  return kSuccess;
 }
 
 fs::path CreateTestDirectory(fs::path const& parent, std::string *tail) {

@@ -93,7 +93,9 @@ set(CLIENT_CONTROLLER_TEST_CC "${PATH_TO_TESTS}/user_credentials_test.cc")
 set(PUBLIC_ID_TEST_CC "${PATH_TO_TESTS}/public_id_test.cc"
                       "${PATH_TO_TESTS}/message_handler_test.cc")
 set(USER_STORAGE_TEST_CC "${PATH_TO_TESTS}/user_storage_test.cc")
-set(API_TEST_CC "${PATH_TO_TESTS}/full_api_test.cc")
+set(API_TEST_CC "${PATH_TO_TESTS}/api/full_api_test.cc"
+                "${PATH_TO_TESTS}/api/api_user_credentials_test.cc"
+                "${PATH_TO_TESTS}/api/api_test_resources.cc")
 set(LIFESTUFF_TESTS_CC "${PATH_TO_TESTS}/contacts_test.cc"
                        "${PATH_TO_TESTS}/session_test.cc"
                        "${PATH_TO_TESTS}/utils_test.cc")

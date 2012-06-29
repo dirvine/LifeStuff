@@ -648,10 +648,20 @@ void UserCredentialsImpl::ModifyIdentity(OperationResults &results,  // NOLINT (
   }
 }
 
+int UserCredentialsImpl::ChangePin(const std::string &new_pin) {
+  boost::mutex::scoped_lock loch_a_phuill(single_threaded_class_mutex_);
+  std::string keyword(session_.keyword());
+  return ChangeUsernamePin(keyword, new_pin);
+}
+
+int UserCredentialsImpl::ChangeKeyword(const std::string new_keyword) {
+  boost::mutex::scoped_lock loch_a_phuill(single_threaded_class_mutex_);
+  std::string pin(session_.pin());
+  return ChangeUsernamePin(new_keyword, pin);
+}
+
 int UserCredentialsImpl::ChangeUsernamePin(const std::string &new_keyword,
                                            const std::string &new_pin) {
-  boost::mutex::scoped_lock loch_a_phuill(single_threaded_class_mutex_);
-
   BOOST_ASSERT(!new_keyword.empty());
   BOOST_ASSERT(!new_pin.empty());
 
@@ -683,7 +693,6 @@ int UserCredentialsImpl::ChangeUsernamePin(const std::string &new_keyword,
   session_.set_keyword(new_keyword);
   session_.set_pin(new_pin);
   session_.set_serialised_data_atlas(serialised_data_atlas);
-
   return kSuccess;
 }
 
