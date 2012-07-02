@@ -160,7 +160,7 @@ class LifeStuffImpl {
   int DeleteHiddenFile(const fs::path &absolute_path);
 
   /// Private Shares
-  // If error code is given, map of rsults should be empty. If nobody added,
+  // If error code is given, map of results should be empty. If nobody added,
   // revert everything. Directory has to be moved, not copied. If directory
   // already exists in shared stuff, append ending as dropbox does. If a
   // contact is passed in as owner, it should fail for that contact.
@@ -229,6 +229,9 @@ class LifeStuffImpl {
   fs::path mount_path() const;
 
  private:
+  void ShareRenameSlot(const std::string& old_share_name,
+                       const std::string& new_share_name);
+
   int thread_count_;
   LifeStuffState state_;
   fs::path buffered_path_;

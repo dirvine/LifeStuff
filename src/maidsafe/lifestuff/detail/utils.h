@@ -79,6 +79,16 @@ enum MessageContentIndexes {
   kMaxMessageContentIndexes = kKeysPublicKey
 };
 
+enum ShareType {
+  kOpenOwner = 0,
+  kOpenMember = 1,
+  kPrivateOwner = 2,
+  kPrivateMember = 3,
+
+  // Max
+  kMaxShareType = kPrivateMember
+};
+
 struct OperationResults {
   OperationResults(boost::mutex &mutex_in,
                    boost::condition_variable &conditional_variable_in,
