@@ -531,11 +531,11 @@ int LifeStuffImpl::LeaveLifeStuff() {
                                   share_info->end(),
                                   [&public_id, &result, this]
                                       (const ShareInformation::value_type& element) {
-                                    if (element.second.share_type == 0)
+                                    if (element.second.share_type <= kOpenMember)
                                       result += LeaveOpenShare(public_id, element.first);
-                                    else if (element.second.share_type == 1)
+                                    else if (element.second.share_type == kPrivateMember)
                                       result += LeavePrivateShare(public_id, element.first);
-                                    else if (element.second.share_type == 1)
+                                    else if (element.second.share_type == kPrivateOwner)
                                       result += DeletePrivateShare(public_id, element.first, true);
                                   });
                   }
