@@ -531,7 +531,7 @@ int LifeStuffImpl::LeaveLifeStuff() {
                                   share_info->end(),
                                   [&public_id, &result, this]
                                       (const ShareInformation::value_type& element) {
-                                    if (element.second.share_type <= kOpenMember)
+                                    if (element.second.share_type <= kOpenOwner)
                                       result += LeaveOpenShare(public_id, element.first);
                                     else if (element.second.share_type == kPrivateMember)
                                       result += LeavePrivateShare(public_id, element.first);
@@ -1053,7 +1053,12 @@ int LifeStuffImpl::GetPrivateShareList(const std::string &my_public_id, StringIn
     return result;
   }
 
-  return user_storage_->GetAllShares(share_names);
+  for (auto it(session_.share_information(my_public_id)->begin());
+       it != session_.share_information(my_public_id)->end(); ++it)
+    if ((*it).second.share_type >= kPrivateMember)
+      share_names->insert(std::make_pair((*it).first, (*it).second.share_type));
+  return kSuccess;
+  // return user_storage_->GetAllShares(share_names);
 }
 
 int LifeStuffImpl::GetPrivateShareMembers(const std::string &my_public_id,
@@ -1095,28 +1100,31 @@ int LifeStuffImpl::GetPrivateSharesIncludingMember(const std::string &my_public_
     return result;
   }
 
-  StringIntMap all_share_names;
-  result = user_storage_->GetAllShares(&all_share_names);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed getting all shares in "
-                << "GetPrivateSharesIncludingMember.";
-    return result;
-  }
+  std::vector<std::string> all_share_names;
+  for (auto it(session_.share_information(my_public_id)->begin());
+       it != session_.share_information(my_public_id)->end(); ++it)
+    if ((*it).second.share_type >= kPrivateMember)
+      all_share_names.push_back((*it).first);
+//   StringIntMap all_share_names;
+//   result = user_storage_->GetAllShares(&all_share_names);
+//   if (result != kSuccess) {
+//     LOG(kError) << "Failed getting all shares in "
+//                 << "GetPrivateSharesIncludingMember.";
+//     return result;
+//   }
 
   for (auto it = all_share_names.begin(); it != all_share_names.end(); ++it) {
     StringIntMap share_members;
-    fs::path share_dir(mount_path() / kSharedStuff / (*it).first);
+    fs::path share_dir(mount_path() / kSharedStuff / (*it));
     result = user_storage_->GetAllShareUsers(share_dir, &share_members);
-    if (result != kSuccess) {
+    if (result != kSuccess)
       LOG(kError) << "Failed to get members for " << share_dir.string();
-    } else {
-      std::vector<std::string> member_ids;
+    else
       for (auto itr = share_members.begin(); itr != share_members.end(); ++itr)
-        member_ids.push_back((*itr).first);
-      auto itr(std::find(member_ids.begin(), member_ids.end(), contact_public_id));
-      if (itr != member_ids.end())
-        share_names->push_back((*it).first);
-    }
+        if ((*itr).first == contact_public_id) {
+          share_names->push_back(*it);
+          break;
+        }
   }
   return kSuccess;
 }
@@ -1458,16 +1466,20 @@ int LifeStuffImpl::GetOpenShareList(const std::string &my_public_id,
     LOG(kError) << "Parameter share name must be valid.";
     return kGeneralError;
   }
-  StringIntMap shares;
-  int result(GetPrivateShareList(my_public_id, &shares));
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to get open share list.";
-    return result;
-  }
-  share_names->clear();
-  auto end(shares.end());
-  for (auto it = shares.begin(); it != end; ++it)
-    share_names->push_back(it->first);
+  for (auto it(session_.share_information(my_public_id)->begin());
+      it != session_.share_information(my_public_id)->end(); ++it)
+  if ((*it).second.share_type < kPrivateMember)
+    share_names->push_back((*it).first);
+//   StringIntMap shares;
+//   int result(GetPrivateShareList(my_public_id, &shares));
+//   if (result != kSuccess) {
+//     LOG(kError) << "Failed to get open share list.";
+//     return result;
+//   }
+//   share_names->clear();
+//   auto end(shares.end());
+//   for (auto it = shares.begin(); it != end; ++it)
+//     share_names->push_back(it->first);
   return kSuccess;
 }
 

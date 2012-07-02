@@ -80,13 +80,13 @@ enum MessageContentIndexes {
 };
 
 enum ShareType {
-  kOpenOwner = 0,
-  kOpenMember = 1,
-  kPrivateOwner = 2,
-  kPrivateMember = 3,
+  kOpenMember = 0,
+  kOpenOwner = 1,
+  kPrivateMember = 2,
+  kPrivateOwner = 3,
 
   // Max
-  kMaxShareType = kPrivateMember
+  kMaxShareType = kPrivateOwner
 };
 
 struct OperationResults {
