@@ -231,6 +231,11 @@ class LifeStuffImpl {
  private:
   void ShareRenameSlot(const std::string& old_share_name,
                        const std::string& new_share_name);
+  void MemberAccessChangeSlot(const std::string &share_id,
+                              const std::string &directory_id,
+                              const std::string &new_share_id,
+                              const asymm::Keys &key_ring,
+                              int access_right);
 
   int thread_count_;
   LifeStuffState state_;

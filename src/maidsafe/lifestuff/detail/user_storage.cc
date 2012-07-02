@@ -970,16 +970,16 @@ int UserStorage::GetShareDetails(const fs::path &relative_path,
   }
   return result;
 }
-void UserStorage::MemberAccessChange(const std::string &share_id,
-                                     const std::string &directory_id,
-                                     const std::string &new_share_id,
-                                     const asymm::Keys &key_ring,
-                                     int access_right) {
+std::string UserStorage::MemberAccessChange(const std::string &share_id,
+                                            const std::string &directory_id,
+                                            const std::string &new_share_id,
+                                            const asymm::Keys &key_ring,
+                                            int access_right) {
   fs::path relative_path;
   int result(GetShareDetails(share_id, &relative_path, nullptr, nullptr, nullptr));
   if (result != kSuccess) {
     LOG(kError) << "Failed to find share details: " << result;
-    return;
+    return "";
   }
   if (access_right <= kShareReadOnly) {
     asymm::Keys empty_key_ring;
@@ -999,8 +999,9 @@ void UserStorage::MemberAccessChange(const std::string &share_id,
   }
   if (result != kSuccess) {
     LOG(kError) << "Failed to update share details: " << result;
-    return;
+    return "";
   }
+  return relative_path.filename().string();
 }
 
 int UserStorage::GetPrivateSharesContactBeingOwner(const std::string &/*my_public_id*/,

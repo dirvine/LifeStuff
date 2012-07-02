@@ -166,11 +166,11 @@ class UserStorage {
                       std::string *directory_id,
                       std::map<std::string, int> *share_users,
                       std::string *owner_id) const;
-  void MemberAccessChange(const std::string &share_id,
-                          const std::string &directory_id,
-                          const std::string &new_share_id,
-                          const asymm::Keys &key_ring,
-                          int access_right);
+  std::string MemberAccessChange(const std::string &share_id,
+                                 const std::string &directory_id,
+                                 const std::string &new_share_id,
+                                 const asymm::Keys &key_ring,
+                                 int access_right);
   int MovingShare(const std::string &sender_public_username,
                   const std::string &share_id,
                   const fs::path &relative_path,

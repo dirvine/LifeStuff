@@ -533,7 +533,7 @@ int LifeStuffImpl::LeaveLifeStuff() {
                                       (const ShareInformation::value_type& element) {
                                     if (element.second.share_type <= kOpenOwner)
                                       result += LeaveOpenShare(public_id, element.first);
-                                    else if (element.second.share_type == kPrivateMember)
+                                    else if (element.second.share_type < kPrivateOwner)
                                       result += LeavePrivateShare(public_id, element.first);
                                     else if (element.second.share_type == kPrivateOwner)
                                       result += DeletePrivateShare(public_id, element.first, true);
@@ -1055,8 +1055,8 @@ int LifeStuffImpl::GetPrivateShareList(const std::string &my_public_id, StringIn
 
   for (auto it(session_.share_information(my_public_id)->begin());
        it != session_.share_information(my_public_id)->end(); ++it)
-    if ((*it).second.share_type >= kPrivateMember)
-      share_names->insert(std::make_pair((*it).first, (*it).second.share_type));
+    if ((*it).second.share_type > kOpenOwner)
+      share_names->insert(std::make_pair((*it).first, (*it).second.share_type - 3));
   return kSuccess;
   // return user_storage_->GetAllShares(share_names);
 }
@@ -1103,7 +1103,7 @@ int LifeStuffImpl::GetPrivateSharesIncludingMember(const std::string &my_public_
   std::vector<std::string> all_share_names;
   for (auto it(session_.share_information(my_public_id)->begin());
        it != session_.share_information(my_public_id)->end(); ++it)
-    if ((*it).second.share_type >= kPrivateMember)
+    if ((*it).second.share_type > kOpenOwner)
       all_share_names.push_back((*it).first);
 //   StringIntMap all_share_names;
 //   result = user_storage_->GetAllShares(&all_share_names);
@@ -1177,11 +1177,13 @@ int LifeStuffImpl::AcceptPrivateShareInvitation(const std::string &my_public_id,
   // fs::path relative_path(message.content(1));
   std::string directory_id(message.content(kDirectoryId));
   asymm::Keys share_keyring;
+  ShareDetails share_details(kPrivateReadOnlyMember);
   if (!message.content(kKeysIdentity).empty()) {
     share_keyring.identity = message.content(kKeysIdentity);
     share_keyring.validation_token = message.content(kKeysValidationToken);
     asymm::DecodePrivateKey(message.content(kKeysPrivateKey), &(share_keyring.private_key));
     asymm::DecodePublicKey(message.content(kKeysPublicKey), &(share_keyring.public_key));
+    share_details.share_type = kPrivateReadWriteMember;
   }
   // remove the temp share invitation file no matter insertion succeed or not
   user_storage_->DeleteHiddenFile(hidden_file);
@@ -1195,8 +1197,7 @@ int LifeStuffImpl::AcceptPrivateShareInvitation(const std::string &my_public_id,
                                       directory_id,
                                       share_keyring);
   if (result == kSuccess)
-    session_.share_information(my_public_id)->insert(std::make_pair(*share_name,
-                                                                    ShareDetails(kPrivateMember)));
+    session_.share_information(my_public_id)->insert(std::make_pair(*share_name, share_details));
   RespondInvitation(message.receiver_public_id(),
                     message.sender_public_id(),
                     share_id,
@@ -1468,7 +1469,7 @@ int LifeStuffImpl::GetOpenShareList(const std::string &my_public_id,
   }
   for (auto it(session_.share_information(my_public_id)->begin());
       it != session_.share_information(my_public_id)->end(); ++it)
-  if ((*it).second.share_type < kPrivateMember)
+  if ((*it).second.share_type <= kOpenOwner)
     share_names->push_back((*it).first);
 //   StringIntMap shares;
 //   int result(GetPrivateShareList(my_public_id, &shares));
@@ -1568,8 +1569,8 @@ int LifeStuffImpl::AcceptOpenShareInvitation(const std::string &my_public_id,
   if (result != kSuccess)
     LOG(kError) << "Failed to add user to open share, result " << result;
   else
-    session_.share_information(my_public_id)->insert(std::make_pair(*share_name,
-                                                                    ShareDetails(kOpenMember)));
+    session_.share_information(my_public_id)->insert(
+        std::make_pair(*share_name, ShareDetails(kOpenReadWriteMember)));
   return result;
 }
 
@@ -1685,7 +1686,7 @@ void LifeStuffImpl::ConnectInternalElements() {
       boost::bind(&UserStorage::UpdateShare, user_storage_.get(), _1, _2, _3, _4, _5));
 
   message_handler_->ConnectToPrivateMemberAccessLevelSignal(
-      boost::bind(&UserStorage::MemberAccessChange, user_storage_.get(), _4, _5, _6, _7, _8));
+      boost::bind(&LifeStuffImpl::MemberAccessChangeSlot, this, _4, _5, _6, _7, _8));
 
   public_id_->ConnectToContactConfirmedSignal(
       boost::bind(&MessageHandler::InformConfirmedContactOnline, message_handler_.get(), _1, _2));
@@ -1785,12 +1786,37 @@ void LifeStuffImpl::DoSaveSession() {
 
 void LifeStuffImpl::ShareRenameSlot(const std::string& old_share_name,
                                     const std::string& new_share_name) {
-std::vector<std::string> identities(session_.PublicIdentities());
+  std::vector<std::string> identities(session_.PublicIdentities());
   for (auto it(identities.begin()); it != identities.end(); ++it) {
     auto itr(session_.share_information(*it)->find(old_share_name));
     if (itr != session_.share_information(*it)->end()) {
       session_.share_information(*it)->insert(std::make_pair(new_share_name, (*itr).second));
       session_.share_information(*it)->erase(old_share_name);
+    }
+  }
+}
+
+void LifeStuffImpl::MemberAccessChangeSlot(const std::string &share_id,
+                                           const std::string &directory_id,
+                                           const std::string &new_share_id,
+                                           const asymm::Keys &key_ring,
+                                           int access_right) {
+  std::string share_name(user_storage_->MemberAccessChange(share_id, directory_id, new_share_id,
+                                                           key_ring, access_right));
+  if (!share_name.empty()) {
+    std::vector<std::string> identities(session_.PublicIdentities());
+    for (auto it(identities.begin()); it != identities.end(); ++it) {
+      auto itr(session_.share_information(*it)->find(share_name));
+      if (itr != session_.share_information(*it)->end()) {
+        if ((access_right == kShareReadOnly) &&
+            (((*itr).second.share_type == kOpenReadWriteMember) ||
+             ((*itr).second.share_type == kPrivateReadWriteMember)))
+          (*itr).second.share_type -= 1;
+        if ((access_right == kShareReadWrite) &&
+            (((*itr).second.share_type == kOpenReadOnlyMember) ||
+             ((*itr).second.share_type == kPrivateReadOnlyMember)))
+          (*itr).second.share_type += 1;
+      }
     }
   }
 }
