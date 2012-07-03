@@ -1724,7 +1724,9 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
   remote_chunk_store_.reset(new pcs::RemoteChunkStore(node_->chunk_store(),
                                                       node_->chunk_manager(),
                                                       node_->chunk_action_authority()));
-  user_credentials_.reset(new UserCredentials(remote_chunk_store_, session_));
+  user_credentials_.reset(new UserCredentials(*remote_chunk_store_,
+                                              session_,
+                                              asio_service_.service()));
 #endif
 
   public_id_.reset(new PublicId(remote_chunk_store_, session_, asio_service_.service()));
