@@ -275,6 +275,9 @@ int PublicId::AddContact(const std::string &own_public_id,
     result = contacts_handler->AddContact(recipient_contact);
   }
 
+  if (result == kSuccess)
+    session_.set_changed(true);
+
   return result;
 }
 
@@ -514,6 +517,7 @@ void PublicId::ProcessRequests(const std::string &own_public_id,
           result = contacts_handler->UpdateContact(mic);
           if (result == kSuccess) {
             (*contact_confirmed_signal_)(own_public_id, public_id, introduction.timestamp());
+            session_.set_changed(true);
           } else {
             LOG(kError) << "Failed to update contact after confirmation.";
           }
@@ -526,6 +530,8 @@ void PublicId::ProcessRequests(const std::string &own_public_id,
           result = contacts_handler->UpdateContact(mic);
           if (result != kSuccess) {
             LOG(kError) << "Failed to update MMID.";
+          } else {
+            session_.set_changed(true);
           }
         } else {
           LOG(kError) << "Failed to update contact after inbox move.";
@@ -539,8 +545,10 @@ void PublicId::ProcessRequests(const std::string &own_public_id,
       result += GetPublicKey(inbox_name, mic, 1);
       if (result == kSuccess) {
         result = contacts_handler->AddContact(mic);
-        if (result == kSuccess)
+        if (result == kSuccess) {
+          session_.set_changed(true);
           (*new_contact_signal_)(own_public_id, public_id, introduction.timestamp());
+        }
       } else {
         LOG(kError) << "Failed get keys of new contact.";
       }
@@ -575,6 +583,7 @@ int PublicId::ConfirmContact(const std::string &own_public_id,
     LOG(kError) << "Failed to confirm " << recipient_public_id;
     return -1;
   }
+  session_.set_changed(true);
 
   return kSuccess;
 }
@@ -587,7 +596,11 @@ int PublicId::RejectContact(const std::string &own_public_id,
     return kPublicIdNotFoundFailure;
   }
 
-  return contacts_handler->DeleteContact(recipient_public_id);
+  int result(contacts_handler->DeleteContact(recipient_public_id));
+  if (result == kSuccess)
+    session_.set_changed(true);
+
+  return result;
 }
 
 void PublicId::RemoveContactHandle(const std::string &public_id, const std::string &contact_name) {
@@ -675,6 +688,7 @@ int PublicId::RemoveContact(const std::string &public_id, const std::string &con
   }
 
   passport_.ConfirmMovedMaidsafeInbox(public_id);
+  session_.set_changed(true);
   // Informs each contact in the list about the new MMID
   std::vector<Contact> contacts;
   uint16_t status(kConfirmed | kRequestSent);

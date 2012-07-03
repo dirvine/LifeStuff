@@ -421,8 +421,7 @@ void MessageHandler::ProcessContactPresence(const InboxItem &presence_message) {
   }
 }
 
-void MessageHandler::ProcessContactProfilePicture(
-    const InboxItem &profile_picture_message) {
+void MessageHandler::ProcessContactProfilePicture(const InboxItem &profile_picture_message) {
   if (profile_picture_message.content.size() != 1U || profile_picture_message.content[0].empty()) {
     // Drop silently
     LOG(kWarning) << profile_picture_message.sender_public_id
@@ -452,6 +451,7 @@ void MessageHandler::ProcessContactProfilePicture(
     LOG(kWarning) << "Failed to update picture DM in session: " << result;
     return;
   }
+  session_.set_changed(true);
 
   contact_profile_picture_signal_(receiver, sender, profile_picture_message.timestamp);
 }

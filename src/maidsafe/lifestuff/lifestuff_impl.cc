@@ -995,9 +995,15 @@ int LifeStuffImpl::CreatePrivateShareFromExistingDirectory(
                                       contacts,
                                       drive::kMsPrivateShare,
                                       results);
-  if (result == kSuccess)
-    session_.share_information(my_public_id)->insert(std::make_pair(*share_name,
-                                                                    ShareDetails(kPrivateOwner)));
+  if (result == kSuccess) {
+    auto insert_result(session_.share_information(my_public_id)->insert(
+        std::make_pair(*share_name, ShareDetails(kPrivateOwner))));
+    if (!insert_result.second) {
+      LOG(kError) << "Failed to insert share to session.";
+      return kGeneralError;
+    }
+    session_.set_changed(true);
+  }
   return result;
 }
 
@@ -1036,9 +1042,15 @@ int LifeStuffImpl::CreateEmptyPrivateShare(const std::string &my_public_id,
                                       contacts,
                                       drive::kMsPrivateShare,
                                       results);
-  if (result == kSuccess)
-    session_.share_information(my_public_id)->insert(std::make_pair(*share_name,
-                                                                    ShareDetails(kPrivateOwner)));
+  if (result == kSuccess) {
+    auto insert_result(session_.share_information(my_public_id)->insert(
+        std::make_pair(*share_name, ShareDetails(kPrivateOwner))));
+    if (!insert_result.second) {
+      LOG(kError) << "Failed to insert share to session.";
+      return kGeneralError;
+    }
+    session_.set_changed(true);
+  }
   return result;
 }
 
@@ -1054,12 +1066,21 @@ int LifeStuffImpl::GetPrivateShareList(const std::string &my_public_id, StringIn
     return result;
   }
 
-  for (auto it(session_.share_information(my_public_id)->begin());
-       it != session_.share_information(my_public_id)->end(); ++it)
-    if ((*it).second.share_type > kOpenOwner)
-      share_names->insert(std::make_pair((*it).first, (*it).second.share_type - 3));
+  ShareInformationPtr share_information(session_.share_information(my_public_id));
+  if (!share_information) {
+    LOG(kError) << "The user holds no such publc identity: " << my_public_id;
+    return kPublicIdNotFoundFailure;
+  }
+
+  std::for_each(share_information->begin(),
+                share_information->end(),
+                [&](const ShareInformation::value_type& element) {
+                  if (element.second.share_type > kOpenOwner)
+                    share_names->insert(std::make_pair(element.first,
+                                                       element.second.share_type - 3));
+                });
+
   return kSuccess;
-  // return user_storage_->GetAllShares(share_names);
 }
 
 int LifeStuffImpl::GetPrivateShareMembers(const std::string &my_public_id,
@@ -1101,31 +1122,34 @@ int LifeStuffImpl::GetPrivateSharesIncludingMember(const std::string &my_public_
     return result;
   }
 
+  ShareInformationPtr share_information(session_.share_information(my_public_id));
+  if (!share_information) {
+    LOG(kError) << "The user holds no such publc identity: " << my_public_id;
+    return kPublicIdNotFoundFailure;
+  }
+
   std::vector<std::string> all_share_names;
-  for (auto it(session_.share_information(my_public_id)->begin());
-       it != session_.share_information(my_public_id)->end(); ++it)
-    if ((*it).second.share_type > kOpenOwner)
-      all_share_names.push_back((*it).first);
-//   StringIntMap all_share_names;
-//   result = user_storage_->GetAllShares(&all_share_names);
-//   if (result != kSuccess) {
-//     LOG(kError) << "Failed getting all shares in "
-//                 << "GetPrivateSharesIncludingMember.";
-//     return result;
-//   }
+  std::for_each(share_information->begin(),
+                share_information->end(),
+                [&all_share_names](const ShareInformation::value_type& element) {
+                  if (element.second.share_type > kOpenOwner)
+                    all_share_names.push_back(element.first);
+                });
 
   for (auto it = all_share_names.begin(); it != all_share_names.end(); ++it) {
     StringIntMap share_members;
     fs::path share_dir(mount_path() / kSharedStuff / (*it));
     result = user_storage_->GetAllShareUsers(share_dir, &share_members);
-    if (result != kSuccess)
+    if (result != kSuccess) {
       LOG(kError) << "Failed to get members for " << share_dir.string();
-    else
-      for (auto itr = share_members.begin(); itr != share_members.end(); ++itr)
+    } else {
+      for (auto itr = share_members.begin(); itr != share_members.end(); ++itr) {
         if ((*itr).first == contact_public_id) {
           share_names->push_back(*it);
           break;
         }
+      }
+    }
   }
   return kSuccess;
 }
@@ -1197,8 +1221,17 @@ int LifeStuffImpl::AcceptPrivateShareInvitation(const std::string &my_public_id,
                                       share_name,
                                       directory_id,
                                       share_keyring);
-  if (result == kSuccess)
-    session_.share_information(my_public_id)->insert(std::make_pair(*share_name, share_details));
+  if (result == kSuccess) {
+    auto insert_result(session_.share_information(my_public_id)->insert(
+        std::make_pair(*share_name, share_details)));
+    if (!insert_result.second) {
+      LOG(kError) << "Failed to insert share into session.";
+      return kGeneralError;
+    }
+
+    session_.set_changed(true);
+  }
+
   RespondInvitation(message.receiver_public_id(),
                     message.sender_public_id(),
                     share_id,
@@ -1342,8 +1375,10 @@ int LifeStuffImpl::DeletePrivateShare(const std::string &my_public_id,
 
   fs::path share_dir(mount_path() / kSharedStuff / share_name);
   result = user_storage_->StopShare(my_public_id, share_dir, delete_data);
-  if (result == kSuccess)
+  if (result == kSuccess) {
     session_.share_information(my_public_id)->erase(share_name);
+    session_.set_changed(true);
+  }
   return result;
 }
 
@@ -1357,8 +1392,10 @@ int LifeStuffImpl::LeavePrivateShare(const std::string &my_public_id,
 
   fs::path share_dir(mount_path() / kSharedStuff / share_name);
   result = user_storage_->RemoveShare(share_dir, my_public_id);
-  if (result == kSuccess)
+  if (result == kSuccess) {
     session_.share_information(my_public_id)->erase(share_name);
+    session_.set_changed(true);
+  }
   return result;
 }
 
@@ -1408,8 +1445,14 @@ int LifeStuffImpl::CreateOpenShareFromExistingDirectory(const std::string &my_pu
     LOG(kError) << "Failed to create open share: " << result;
     return result;
   } else {
-    session_.share_information(my_public_id)->insert(std::make_pair(*share_name,
-                                                                    ShareDetails(kOpenOwner)));
+    auto insert_result(session_.share_information(my_public_id)->insert(
+        std::make_pair(*share_name, ShareDetails(kOpenOwner))));
+    if (!insert_result.second) {
+      LOG(kError) << "Failed to insert share into session.";
+      return kGeneralError;
+    }
+
+    session_.set_changed(true);
   }
   return kSuccess;
 }
@@ -1445,9 +1488,17 @@ int LifeStuffImpl::CreateEmptyOpenShare(const std::string &my_public_id,
   for (uint32_t i = 0; i != contacts.size(); ++i)
     liaisons.insert(std::make_pair(contacts[i], 1));
   result = user_storage_->CreateOpenShare(my_public_id, fs::path(), share, liaisons, results);
-  if (result == kSuccess)
-    session_.share_information(my_public_id)->insert(std::make_pair(*share_name,
-                                                                    ShareDetails(kOpenOwner)));
+  if (result == kSuccess) {
+    auto insert_result(session_.share_information(my_public_id)->insert(
+        std::make_pair(*share_name, ShareDetails(kOpenOwner))));
+    if (!insert_result.second) {
+      LOG(kError) << "Failed to insert share into session.";
+      return kGeneralError;
+    }
+
+    session_.set_changed(true);
+  }
+
   return result;
 }
 
@@ -1468,20 +1519,20 @@ int LifeStuffImpl::GetOpenShareList(const std::string &my_public_id,
     LOG(kError) << "Parameter share name must be valid.";
     return kGeneralError;
   }
-  for (auto it(session_.share_information(my_public_id)->begin());
-      it != session_.share_information(my_public_id)->end(); ++it)
-  if ((*it).second.share_type <= kOpenOwner)
-    share_names->push_back((*it).first);
-//   StringIntMap shares;
-//   int result(GetPrivateShareList(my_public_id, &shares));
-//   if (result != kSuccess) {
-//     LOG(kError) << "Failed to get open share list.";
-//     return result;
-//   }
-//   share_names->clear();
-//   auto end(shares.end());
-//   for (auto it = shares.begin(); it != end; ++it)
-//     share_names->push_back(it->first);
+
+  ShareInformationPtr share_information(session_.share_information(my_public_id));
+  if (!share_information) {
+    LOG(kError) << "the user holds no such publc identity: " << my_public_id;
+    return kPublicIdNotFoundFailure;
+  }
+
+  std::for_each(share_information->begin(),
+                share_information->end(),
+                [&](const ShareInformation::value_type& element) {
+                  if (element.second.share_type <= kOpenOwner)
+                    share_names->push_back(element.first);
+                });
+
   return kSuccess;
 }
 
@@ -1567,11 +1618,13 @@ int LifeStuffImpl::AcceptOpenShareInvitation(const std::string &my_public_id,
                     share_id,
                     *share_name,
                     message_handler_);
-  if (result != kSuccess)
+  if (result != kSuccess) {
     LOG(kError) << "Failed to add user to open share, result " << result;
-  else
+  } else {
     session_.share_information(my_public_id)->insert(
         std::make_pair(*share_name, ShareDetails(kOpenReadWriteMember)));
+    session_.set_changed(true);
+  }
   return result;
 }
 
@@ -1646,6 +1699,8 @@ int LifeStuffImpl::LeaveOpenShare(const std::string &my_public_id,
     }
   }
   session_.share_information(my_public_id)->erase(share_name);
+  session_.set_changed(true);
+
   return kSuccess;
 }
 
@@ -1790,13 +1845,17 @@ void LifeStuffImpl::DoSaveSession() {
 void LifeStuffImpl::ShareRenameSlot(const std::string& old_share_name,
                                     const std::string& new_share_name) {
   std::vector<std::string> identities(session_.PublicIdentities());
+  bool modified(false);
   for (auto it(identities.begin()); it != identities.end(); ++it) {
     auto itr(session_.share_information(*it)->find(old_share_name));
     if (itr != session_.share_information(*it)->end()) {
       session_.share_information(*it)->insert(std::make_pair(new_share_name, (*itr).second));
       session_.share_information(*it)->erase(old_share_name);
+      modified = true;
     }
   }
+  if (modified)
+    session_.set_changed(true);
 }
 
 void LifeStuffImpl::MemberAccessChangeSlot(const std::string &share_id,
@@ -1813,12 +1872,15 @@ void LifeStuffImpl::MemberAccessChangeSlot(const std::string &share_id,
       if (itr != session_.share_information(*it)->end()) {
         if ((access_right == kShareReadOnly) &&
             (((*itr).second.share_type == kOpenReadWriteMember) ||
-             ((*itr).second.share_type == kPrivateReadWriteMember)))
+             ((*itr).second.share_type == kPrivateReadWriteMember))) {
           (*itr).second.share_type -= 1;
-        if ((access_right == kShareReadWrite) &&
+          session_.set_changed(true);
+        } else if ((access_right == kShareReadWrite) &&
             (((*itr).second.share_type == kOpenReadOnlyMember) ||
-             ((*itr).second.share_type == kPrivateReadOnlyMember)))
+             ((*itr).second.share_type == kPrivateReadOnlyMember))) {
           (*itr).second.share_type += 1;
+          session_.set_changed(true);
+        }
       }
     }
   }
