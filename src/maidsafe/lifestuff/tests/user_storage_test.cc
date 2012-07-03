@@ -248,11 +248,11 @@ class UserStorageTest : public testing::TestWithParam<bool> {
                                                                    args::_2, args::_3, args::_4,
                                                                    args::_5));
     message_handler1_->ConnectToPrivateMemberAccessLevelSignal(
-      std::bind(&UserStorage::MemberAccessChange, user_storage1_.get(),
-                args::_4, args::_5, args::_6, args::_7, args::_8));
+        std::bind(&UserStorage::MemberAccessChange, user_storage1_.get(),
+                  args::_4, args::_5, args::_6, args::_7, args::_8));
     message_handler2_->ConnectToPrivateMemberAccessLevelSignal(
-      std::bind(&UserStorage::MemberAccessChange, user_storage2_.get(),
-                args::_4, args::_5, args::_6, args::_7, args::_8));
+        std::bind(&UserStorage::MemberAccessChange, user_storage2_.get(),
+                  args::_4, args::_5, args::_6, args::_7, args::_8));
   }
 
   void TearDown() {
@@ -260,6 +260,9 @@ class UserStorageTest : public testing::TestWithParam<bool> {
     public_id2_->StopCheckingForNewContacts();
     message_handler1_->StopCheckingForNewMessages();
     message_handler2_->StopCheckingForNewMessages();
+
+    user_credentials1_->Logout();
+    user_credentials2_->Logout();
 
     asio_service1_.Stop();
     asio_service2_.Stop();
@@ -950,6 +953,7 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
   // tear down
   public_id3->StopCheckingForNewContacts();
   message_handler3->StopCheckingForNewMessages();
+  user_credentials3->Logout();
   asio_service3.Stop();
   remote_chunk_store3->WaitForCompletion();
 }

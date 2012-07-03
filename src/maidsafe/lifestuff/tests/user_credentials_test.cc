@@ -117,19 +117,6 @@ class UserCredentialsTest : public testing::Test {
   UserCredentialsTest &operator=(const UserCredentialsTest&);
 };
 
-TEST_F(UserCredentialsTest, FUNC_DirectCreate) {
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
-  LOG(kInfo) << "Preconditions fulfilled.\n===================\n";
-
-  ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
-  ASSERT_EQ(keyword_, session_.keyword());
-  ASSERT_EQ(pin_, session_.pin());
-  ASSERT_EQ(password_, session_.password());
-  LOG(kInfo) << "User created.\n===================\n";
-}
-
 TEST_F(UserCredentialsTest, FUNC_LoginSequence) {
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
@@ -261,7 +248,7 @@ TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
   LOG(kInfo) << "Can't log in with old u/p/w.";
 }
 
-TEST_F(UserCredentialsTest, FUNC_ParallelLogin) {
+TEST_F(UserCredentialsTest, DISABLED_FUNC_ParallelLogin) {
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());

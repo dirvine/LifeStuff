@@ -1062,7 +1062,7 @@ void UserCredentialsImpl::DeleteSignaturePacket(std::shared_ptr<asymm::Keys> pac
 
 void UserCredentialsImpl::SessionSaver(const bptime::seconds &interval,
                                        const boost::system::error_code &error_code) {
-  LOG(kError) << "UserCredentialsImpl::SessionSaver!!! Wooohooooo";
+  LOG(kInfo) << "UserCredentialsImpl::SessionSaver!!! Wooohooooo";
   if (error_code) {
     if (error_code != boost::asio::error::operation_aborted) {
       LOG(kWarning) << "Refresh timer error: " << error_code.message();
