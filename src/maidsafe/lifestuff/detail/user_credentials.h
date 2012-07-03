@@ -59,8 +59,9 @@ class Session;
 
 class UserCredentials {
  public:
-  UserCredentials(std::shared_ptr<pcs::RemoteChunkStore> chunk_store,
-                  Session& session_);
+  UserCredentials(pcs::RemoteChunkStore& chunk_store,
+                  Session& session,
+                  boost::asio::io_service& service);
 
   ~UserCredentials();
   void Init(const fs::path &chunk_store_dir);
@@ -82,7 +83,6 @@ class UserCredentials {
   UserCredentials(const UserCredentials&);
 
   Session& session_;
-  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<UserCredentialsImpl> impl_;
 };
 

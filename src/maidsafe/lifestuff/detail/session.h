@@ -52,11 +52,13 @@ struct UserDetails {
         root_parent_id(),
         max_space(1073741824),
         used_space(0),
-        serialised_data_atlas() {}
+        serialised_data_atlas(),
+        changed(false) {}
   DefConLevels defconlevel;
   std::string keyword, pin, password, session_name, unique_user_id, root_parent_id;
   int64_t max_space, used_space;
   std::string serialised_data_atlas;
+  bool changed;
 };
 
 struct ShareDetails {
@@ -105,6 +107,7 @@ class Session {
   int64_t max_space() const;
   int64_t used_space() const;
   std::string serialised_data_atlas() const;
+  bool changed() const;
 
   void set_def_con_level(DefConLevels defconlevel);
   void set_keyword(const std::string &keyword);
@@ -117,6 +120,7 @@ class Session {
   void set_max_space(const int64_t &max_space);
   void set_used_space(const int64_t &used_space);
   void set_serialised_data_atlas(const std::string &serialised_data_atlas);
+  void set_changed(bool state);
 
   int ParseDataAtlas(const std::string &serialised_session);
   int SerialiseDataAtlas(std::string *serialised_session);

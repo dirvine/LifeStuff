@@ -46,9 +46,9 @@ class SessionTest : public testing::Test {
 
   void SetUp() { session_.Reset(); }
 
-  void SetUsernamePinPassword(const std::string &keyword,
-                              const std::string &pin,
-                              const std::string &password) {
+  void SetUsernamePinPassword(const std::string& keyword,
+                              const std::string& pin,
+                              const std::string& password) {
     session_.set_keyword(keyword);
     session_.set_pin(pin);
     session_.set_password(password);
@@ -60,7 +60,7 @@ class SessionTest : public testing::Test {
     int result(0);
     std::for_each(public_ids.begin(),
                   public_ids.end(),
-                  [this, &result] (const std::string &pub_id) {
+                  [this, &result] (const std::string& pub_id) {
                       const ContactsHandlerPtr ch(this->session_.contacts_handler(pub_id));
                       const ShareInformationPtr si(this->session_.share_information(pub_id));
                       for (int n(0); n < 5; ++n) {
@@ -151,7 +151,7 @@ class SessionTest : public testing::Test {
     return true;
   }
 
-  bool EquivalentDataAtlases(const DataAtlas &lhs, const DataAtlas &rhs) {
+  bool EquivalentDataAtlases(const DataAtlas& lhs, const DataAtlas& rhs) {
     // Drive data
     if (lhs.drive_data().root_parent_id() != rhs.drive_data().root_parent_id() ||
         lhs.drive_data().unique_user_id() != rhs.drive_data().unique_user_id()) {
@@ -203,7 +203,7 @@ class SessionTest : public testing::Test {
     return true;
   }
 
-  bool EqualSessions(Session &lhs, Session &rhs) {  // NOLINT (Dan)
+  bool EqualSessions(Session& lhs, Session& rhs) {
     if (lhs.def_con_level() != rhs.def_con_level())
       return false;
     if (lhs.keyword() != rhs.keyword())
@@ -245,7 +245,7 @@ class SessionTest : public testing::Test {
 
  private:
   explicit SessionTest(const SessionTest&);
-  SessionTest &operator=(const SessionTest&);
+  SessionTest& operator=(const SessionTest&);
 };
 
 TEST_F(SessionTest, BEH_SetsGetsAndReset) {

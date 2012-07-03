@@ -79,7 +79,9 @@ class UserCredentialsTest : public testing::Test {
 #else
   remote_chunk_store_ = BuildChunkStore(*test_dir_, &node_);
 #endif
-    user_credentials_.reset(new UserCredentials(remote_chunk_store_, session_));
+    user_credentials_.reset(new UserCredentials(*remote_chunk_store_,
+                                                session_,
+                                                asio_service_.service()));
   }
 
   void TearDown() {
@@ -95,7 +97,9 @@ class UserCredentialsTest : public testing::Test {
 #else
     remote_chunk_store2_ = BuildChunkStore(*test_dir_, &node2_);
 #endif
-    user_credentials2_.reset(new UserCredentials(remote_chunk_store2_, session2_));
+    user_credentials2_.reset(new UserCredentials(*remote_chunk_store2_,
+                                                 session2_,
+                                                 asio_service2_.service()));
   }
 
   std::shared_ptr<fs::path> test_dir_;
@@ -359,6 +363,45 @@ TEST_F(UserCredentialsTest, FUNC_UserCredentialsDeletion) {
 
   ASSERT_NE(kSuccess, user_credentials_->Logout());
   ASSERT_NE(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
+}
+
+TEST_F(UserCredentialsTest, DISABLED_FUNC_SessionSaverTimer) {
+  ASSERT_TRUE(session_.keyword().empty());
+  ASSERT_TRUE(session_.pin().empty());
+  ASSERT_TRUE(session_.password().empty());
+  LOG(kInfo) << "Preconditions fulfilled.\n===================\n";
+
+  ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
+  LOG(kInfo) << "Created user.\n===================\n";
+  Sleep(bptime::seconds(3));
+  LOG(kInfo) << "Slept 3.\n===================\n";
+  ASSERT_EQ(kSuccess, session_.AddPublicId(RandomAlphaNumericString(5)));
+  LOG(kInfo) << "Modified session.\n===================\n";
+  Sleep(bptime::seconds(/*kSecondsInterval * 12*/5));
+  LOG(kInfo) << "Slept 3.\n===================\n";
+  ASSERT_EQ(kSuccess, user_credentials_->Logout());
+  LOG(kInfo) << "Logout.\n===================\n";
+  Sleep(bptime::seconds(5));
+  LOG(kInfo) << "Slept 5.\n===================\n";
+
+  ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
+  LOG(kInfo) << "Log in.\n===================\n";
+  Sleep(bptime::seconds(3));
+  LOG(kInfo) << "Slept 3.\n===================\n";
+  ASSERT_EQ(kSuccess, session_.AddPublicId(RandomAlphaNumericString(5)));
+  LOG(kInfo) << "Modified session.\n===================\n";
+  Sleep(bptime::seconds(/*kSecondsInterval * 12*/5));
+  LOG(kInfo) << "Slept 3.\n===================\n";
+  ASSERT_EQ(kSuccess, user_credentials_->Logout());
+  LOG(kInfo) << "Logout.\n===================\n";
+  Sleep(bptime::seconds(5));
+  LOG(kInfo) << "Slept 5.\n===================\n";
+
+  ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
+  LOG(kInfo) << "Log in.\n===================\n";
+  ASSERT_EQ(kSuccess, user_credentials_->Logout());
+  LOG(kInfo) << "Logout.\n===================\n";
+  Sleep(bptime::seconds(5));
 }
 
 }  // namespace test

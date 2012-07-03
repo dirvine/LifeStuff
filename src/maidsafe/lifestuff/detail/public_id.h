@@ -66,7 +66,7 @@ class PublicId {
 
   PublicId(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
            Session& session,
-           ba::io_service &asio_service);  // NOLINT (Fraser)
+           ba::io_service &asio_service);
   ~PublicId();
 
   // Periodically retrieves saved MCIDs from MPID and fires new_contact_signal_

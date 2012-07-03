@@ -228,9 +228,9 @@ void ChunkStoreOperationCallback(const bool &response,
   cond_var->notify_all();
 }
 
-int WaitForResults(boost::mutex &mutex,  // NOLINT (Dan)
-                   boost::condition_variable &cond_var,  // NOLINT (Dan)
-                   std::vector<int> &results) {  // NOLINT (Dan)
+int WaitForResults(boost::mutex& mutex,
+                   boost::condition_variable& cond_var,
+                   std::vector<int>& results) {
   assert(results.size() < 50U);
   size_t size(results.size());
   try {

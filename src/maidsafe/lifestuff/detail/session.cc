@@ -58,6 +58,7 @@ void Session::Reset() {
   user_details_.max_space = 1073741824;
   user_details_.used_space = 0;
   user_details_.serialised_data_atlas.clear();
+  user_details_.changed = false;
 
   passport_.Clear(true, true, true);
   public_id_details_.clear();
@@ -72,10 +73,13 @@ int Session::AddPublicId(const std::string &public_id) {
     return kPublicIdInsertionFailure;
   }
 
+  user_details_.changed = true;
+
   return kSuccess;
 }
 
 int Session::DeletePublicId(const std::string &public_id) {
+  user_details_.changed = true;
   return public_id_details_.erase(public_id) == size_t(1) ? kSuccess : kPublicIdNotFoundFailure;
 }
 
@@ -123,6 +127,7 @@ std::string Session::root_parent_id() const { return user_details_.root_parent_i
 int64_t Session::max_space() const { return user_details_.max_space; }
 int64_t Session::used_space() const { return user_details_.used_space; }
 std::string Session::serialised_data_atlas() const { return user_details_.serialised_data_atlas; }
+bool Session::changed() const { return user_details_.changed; }
 
 void Session::set_def_con_level(DefConLevels defconlevel) {
   user_details_.defconlevel = defconlevel;
@@ -163,6 +168,7 @@ void Session::set_used_space(const int64_t &used_space) {
 void Session::set_serialised_data_atlas(const std::string &serialised_data_atlas) {
   user_details_.serialised_data_atlas = serialised_data_atlas;
 }
+void Session::set_changed(bool state) { user_details_.changed = state; }
 
 int Session::ParseDataAtlas(const std::string &serialised_data_atlas) {
   DataAtlas data_atlas;

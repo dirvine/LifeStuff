@@ -651,16 +651,18 @@ int UserStorage::GetAllShareUsers(const fs::path &absolute_path,
   return kSuccess;
 }
 
-int UserStorage::InvitationResponse(const std::string &user_id,
-                                    const std::string &share_name,
-                                    const std::string &share_id) {
+void UserStorage::InvitationResponse(const std::string &user_id,
+                                     const std::string &share_name,
+                                     const std::string &share_id) {
   std::vector<std::string> user_ids;
   user_ids.push_back(user_id);
 
+  int result(0);
   if (share_name.empty())
-    return drive_in_user_space_->RemoveShareUsers(share_id, user_ids);
+    result = drive_in_user_space_->RemoveShareUsers(share_id, user_ids);
   else
-    return drive_in_user_space_->ConfirmShareUsers(share_id, user_ids);
+    result = drive_in_user_space_->ConfirmShareUsers(share_id, user_ids);
+  LOG(kInfo) << "Action on confirmation result: " << result;
 }
 
 int UserStorage::UserLeavingShare(const std::string &share_id, const std::string &user_id) {

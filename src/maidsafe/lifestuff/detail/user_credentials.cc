@@ -35,12 +35,11 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-UserCredentials::UserCredentials(
-    std::shared_ptr<pcs::RemoteChunkStore> chunk_store,
-    Session& session)
+UserCredentials::UserCredentials(pcs::RemoteChunkStore& chunk_store,
+                                 Session& session,
+                                 boost::asio::io_service& service)
     : session_(session),
-      remote_chunk_store_(chunk_store),
-      impl_(new UserCredentialsImpl(chunk_store, session)) {}
+      impl_(new UserCredentialsImpl(chunk_store, session, service)) {}
 
 UserCredentials::~UserCredentials() {}
 
@@ -89,14 +88,14 @@ int UserCredentials::LogIn(const std::string &keyword,
 }
 
 int UserCredentials::Logout() {
-  int result(impl_->SaveSession());
+  int result(impl_->SaveSession(true));
   if (result == kSuccess)
     session_.Reset();
 
   return result;
 }
 
-int UserCredentials::SaveSession() { return impl_->SaveSession(); }
+int UserCredentials::SaveSession() { return impl_->SaveSession(false); }
 
 int UserCredentials::ChangeKeyword(const std::string &new_keyword) {
   int result(CheckKeywordValidity(new_keyword));

@@ -51,10 +51,9 @@ std::string AppendableByAllType(const std::string &mmid) {
 
 }  // namespace
 
-MessageHandler::MessageHandler(
-    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
-    Session& session,
-    boost::asio::io_service &asio_service)  // NOLINT (Fraser)
+MessageHandler::MessageHandler(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
+                               Session& session,
+                               boost::asio::io_service &asio_service)
     : remote_chunk_store_(remote_chunk_store),
       session_(session),
       passport_(session_.passport()),

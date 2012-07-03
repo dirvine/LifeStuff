@@ -108,7 +108,9 @@ int LifeStuffImpl::Initialise(const boost::filesystem::path &base_directory) {
 
   buffered_path_ = buffered_chunk_store_path;
 
-  user_credentials_.reset(new UserCredentials(remote_chunk_store_, session_));
+  user_credentials_.reset(new UserCredentials(*remote_chunk_store_,
+                                              session_,
+                                              asio_service_.service()));
 
   state_ = kInitialised;
 
@@ -337,7 +339,7 @@ int LifeStuffImpl::CreatePublicId(const std::string &public_id) {
 int LifeStuffImpl::LogIn(const std::string &keyword,
                          const std::string &pin,
                          const std::string &password) {
-  if (!state_ == kConnected) {
+  if (state_ != kConnected) {
     LOG(kError) << "Make sure that object is initialised and connected";
     return kGeneralError;
   }
@@ -363,9 +365,8 @@ int LifeStuffImpl::LogIn(const std::string &keyword,
         return kGeneralError;
       } else if (error_code != boost::system::errc::no_such_file_or_directory) {
         if (!fs::create_directories(mount_dir, error_code) || error_code) {
-          LOG(kError) << "Failed to create mount directory at "
-                      << mount_dir.string() << " - " << error_code.value()
-                      << ": " << error_code.message();
+          LOG(kError) << "Failed to create mount directory at " << mount_dir.string()
+                      << " - " << error_code.value() << ": " << error_code.message();
           return kGeneralError;
         }
       }

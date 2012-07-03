@@ -141,9 +141,9 @@ class UserStorage {
                        const std::vector<std::string> &user_ids,
                        bool private_share);
   int UserLeavingShare(const std::string &share_id, const std::string &user_id);
-  int InvitationResponse(const std::string &user_id,
-                         const std::string &share_name,
-                         const std::string &share_id);
+  void InvitationResponse(const std::string &user_id,
+                          const std::string &share_name,
+                          const std::string &share_id);
   int RemoveOpenShareUsers(const fs::path &absolute_path,
                            const std::vector<std::string> &user_ids);
   int GetShareUsersRights(const fs::path &absolute_path,

@@ -27,6 +27,8 @@
 #include <memory>
 #include <string>
 
+#include "boost/asio/deadline_timer.hpp"
+#include "boost/asio/io_service.hpp"
 #include "boost/thread/mutex.hpp"
 
 #include "maidsafe/common/rsa.h"
@@ -58,13 +60,15 @@ struct OperationResults;
 
 class UserCredentialsImpl {
  public:
-  UserCredentialsImpl(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
-                      Session& session);
+  UserCredentialsImpl(pcs::RemoteChunkStore& remote_chunk_store,
+                      Session& session,
+                      boost::asio::io_service& service);
   ~UserCredentialsImpl();
+
   int GetUserInfo(const std::string& username, const std::string& pin, const std::string& password);
   int CreateUser(const std::string& username, const std::string& pin, const std::string& password);
 
-  int SaveSession();
+  int SaveSession(bool log_out);
 
   int ChangePin(const std::string &new_pin);
   int ChangeKeyword(const std::string new_keyword);
@@ -74,10 +78,16 @@ class UserCredentialsImpl {
   int DeleteUserCredentials();
 
  private:
-  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
+  pcs::RemoteChunkStore& remote_chunk_store_;
   Session& session_;
   passport::Passport& passport_;
   boost::mutex single_threaded_class_mutex_;
+  boost::asio::io_service &asio_service_;
+  boost::asio::deadline_timer session_saver_timer_;
+  bool session_saver_timer_active_, session_saved_once_;
+  const boost::posix_time::seconds session_saver_interval_;
+
+  void StartSessionSaver();
 
   void GetIdAndTemporaryId(const std::string& username,
                            const std::string& pin,
@@ -151,6 +161,9 @@ class UserCredentialsImpl {
                               const std::string& pin,
                               const std::string& password,
                               std::string* new_data_atlas);
+
+  void SessionSaver(const boost::posix_time::seconds &interval,
+                    const boost::system::error_code &error_code);
 };
 
 }  // namespace lifestuff
