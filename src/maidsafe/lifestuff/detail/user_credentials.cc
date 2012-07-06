@@ -90,10 +90,26 @@ int UserCredentials::LogIn(const std::string &keyword,
 
 int UserCredentials::Logout() {
   int result(impl_->SaveSession());
-  if (result == kSuccess)
-    session_.Reset();
 
-  return result;
+  std::vector<int> individual_result(1, kPendingResult);
+  boost::condition_variable condition_variable;
+  boost::mutex mutex;
+  OperationResults operation_result(mutex, condition_variable, individual_result);
+  impl_->ModifyLid(operation_result, session_.keyword(), session_.pin(), session_.password(),
+                   false);
+  int result2 = WaitForResults(mutex, condition_variable, individual_result);
+  if (result2 != kSuccess) {
+    LOG(kError) << "Modifying LID timed out.";
+  }
+
+  if (result == kSuccess && result2 == kSuccess) {
+    session_.Reset();
+    return kSuccess;
+  }
+  if (result != kSuccess)
+    return result;
+  else
+    return result2;
 }
 
 int UserCredentials::SaveSession() { return impl_->SaveSession(); }

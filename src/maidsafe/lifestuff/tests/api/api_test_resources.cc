@@ -441,6 +441,16 @@ void RunChangeProfilePicture(LifeStuff& test_elements_,
   result = test_elements_.ChangeProfilePicture(public_id, file_content);
 }
 
+void RunLogIn(LifeStuff& test_elements,
+              int& result,
+              const std::string& keyword,
+              const std::string& pin,
+              const std::string& password,
+              const std::pair<int, int> sleeps) {
+  RandomSleep(sleeps);
+  result = test_elements.LogIn(keyword, pin, password);
+}
+
 }  // namespace sleepthreads
 
 void OneUserApiTest::SetUp() {

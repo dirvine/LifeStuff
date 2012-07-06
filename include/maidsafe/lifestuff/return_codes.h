@@ -65,6 +65,8 @@ enum ReturnCode {
   kChangePasswordFailure = -201020,
   kAtLeastOneFailure = -201021,
   kDeleteSignaturePacketsFailure = -201022,
+  kAccountAlreadyLoggedIn = -201023,
+  kCorruptedLidPacket = -201024,
 
   // User Credentials
   // kCredentialValidityFailure = -202001,

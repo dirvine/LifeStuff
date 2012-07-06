@@ -344,7 +344,7 @@ int LifeStuffImpl::LogIn(const std::string &keyword,
 
   int result(user_credentials_->LogIn(keyword, pin, password));
   if (result != kSuccess) {
-    LOG(kError) << "User doesn't exist.";
+    LOG(kError) << "LogIn failed with result: " << result;
     return result;
   }
 

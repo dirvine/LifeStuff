@@ -65,6 +65,11 @@ class UserCredentialsImpl {
   int CreateUser(const std::string& username, const std::string& pin, const std::string& password);
 
   int SaveSession();
+  void ModifyLid(OperationResults operation_result,
+                 const std::string keyword,
+                 const std::string pin,
+                 const std::string password,
+                 bool online);
 
   int ChangePin(const std::string &new_pin);
   int ChangeKeyword(const std::string new_keyword);
@@ -79,6 +84,10 @@ class UserCredentialsImpl {
   passport::Passport& passport_;
   boost::mutex single_threaded_class_mutex_;
 
+  void GetAndLockLid(const std::string& keyword,
+              const std::string& pin,
+              const std::string& password,
+              int* result);
   void GetIdAndTemporaryId(const std::string& username,
                            const std::string& pin,
                            const std::string& password,
@@ -115,6 +124,11 @@ class UserCredentialsImpl {
                      int identity_type,
                      int signer_type,
                      int index);
+  void StoreLid(OperationResults operation_result,
+                const std::string keyword,
+                const std::string pin,
+                const std::string password,
+                bool online);
 
   void ModifyMid(OperationResults& results);
   void ModifySmid(OperationResults& results);
@@ -132,6 +146,9 @@ class UserCredentialsImpl {
                       int packet_type,
                       int signer_type,
                       int index);
+  void DeleteLid(OperationResults result,
+                 const std::string& keyword,
+                 const std::string& pin);
 
   int DeleteSignaturePackets();
   void DeleteAnmid(OperationResults& results);

@@ -301,7 +301,14 @@ void RunChangeProfilePicture(LifeStuff& test_elements_,
                              const std::string public_id,
                              const std::string file_content);
 
-}  // namespace
+void RunLogIn(LifeStuff& test_elements,
+              int& result,
+              const std::string& keyword,
+              const std::string& pin,
+              const std::string& password,
+              const std::pair<int, int> sleeps);
+
+}  // namespace sleepthreads
 
 class OneUserApiTest : public testing::Test {
  public:
