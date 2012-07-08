@@ -514,7 +514,7 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
     asymm::Keys key_ring;
     private_member_access_change_signal_(inbox_item.receiver_public_id,
                                          inbox_item.sender_public_id,
-                                         inbox_item.content[kShareName],
+                                         share_name,
                                          inbox_item.content[kShareId],
                                          kShareReadOnly,
                                          inbox_item.timestamp);
@@ -535,7 +535,7 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
     }
     private_member_access_change_signal_(inbox_item.receiver_public_id,
                                          inbox_item.sender_public_id,
-                                         inbox_item.content[kShareName],
+                                         share_name,
                                          inbox_item.content[kShareId],
                                          kShareReadWrite,
                                          inbox_item.timestamp);
