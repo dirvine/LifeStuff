@@ -276,11 +276,10 @@ int UserStorage::CreateShare(const std::string &sender_public_id,
   results.push_back(kPendingResult);
 
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
-  VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback,
-                                         args::_1,
-                                         &mutex,
-                                         &cond_var,
-                                         &results[0]));
+  VoidFunctionOneBool callback([&] (const bool& response) {
+                                 return ChunkStoreOperationCallback(response, &mutex, &cond_var,
+                                                                    &results[0]);
+                               });
   std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
   if (!chunk_store_->Store(packet_id,
                            ComposeSignaturePacketValue(key_ring),
@@ -355,11 +354,10 @@ int UserStorage::CreateOpenShare(const std::string &sender_public_id,
   results.push_back(kPendingResult);
 
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
-  VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback,
-                                         args::_1,
-                                         &mutex,
-                                         &cond_var,
-                                         &results[0]));
+  VoidFunctionOneBool callback([&] (const bool& response) {
+                                 return ChunkStoreOperationCallback(response, &mutex, &cond_var,
+                                                                    &results[0]);
+                               });
   std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
   if (!chunk_store_->Store(packet_id,
                            ComposeSignaturePacketValue(key_ring),
@@ -479,8 +477,10 @@ int UserStorage::StopShare(const std::string &sender_public_id,
 
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
 
-  VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
-                                         &mutex, &cond_var, &results[0]));
+  VoidFunctionOneBool callback([&] (const bool& response) {
+                                 return ChunkStoreOperationCallback(response, &mutex, &cond_var,
+                                                                    &results[0]);
+                               });
   std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
   if (!chunk_store_->Delete(packet_id, callback, key_shared)) {
     boost::mutex::scoped_lock lock(mutex);
@@ -724,8 +724,10 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
   results.push_back(kPendingResult);
 
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
-  VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
-                                         &mutex, &cond_var, &results[0]));
+  VoidFunctionOneBool callback([&] (const bool& response) {
+                                 return ChunkStoreOperationCallback(response, &mutex, &cond_var,
+                                                                    &results[0]);
+                               });
   std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
   if (!chunk_store_->Store(packet_id,
                            ComposeSignaturePacketValue(key_ring),
