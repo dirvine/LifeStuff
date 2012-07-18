@@ -334,7 +334,7 @@ class UserStorageTest : public testing::TestWithParam<bool> {
   boost::condition_variable cond_var_;
 };
 
-INSTANTIATE_TEST_CASE_P(PivateAndOpenShareTests, UserStorageTest,
+INSTANTIATE_TEST_CASE_P(PrivateAndOpenShareTests, UserStorageTest,
                         testing::Values(drive::kMsOpenShare, drive::kMsPrivateShare));
 
 TEST_P(UserStorageTest, FUNC_CreateShare) {
