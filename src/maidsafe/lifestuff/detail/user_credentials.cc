@@ -35,12 +35,11 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-UserCredentials::UserCredentials(
-    std::shared_ptr<pcs::RemoteChunkStore> chunk_store,
-    Session& session)
+UserCredentials::UserCredentials(pcs::RemoteChunkStore& chunk_store,
+                                 Session& session,
+                                 boost::asio::io_service& service)
     : session_(session),
-      remote_chunk_store_(chunk_store),
-      impl_(new UserCredentialsImpl(chunk_store, session)) {}
+      impl_(new UserCredentialsImpl(chunk_store, session, service)) {}
 
 UserCredentials::~UserCredentials() {}
 
@@ -89,30 +88,19 @@ int UserCredentials::LogIn(const std::string &keyword,
 }
 
 int UserCredentials::Logout() {
-  int result(impl_->SaveSession());
+  int result(impl_->SaveSession(true));
+  if (result == kSuccess)
+    session_.Reset();
 
-  std::vector<int> individual_result(1, kPendingResult);
-  boost::condition_variable condition_variable;
-  boost::mutex mutex;
-  OperationResults operation_result(mutex, condition_variable, individual_result);
-  impl_->ModifyLid(operation_result, session_.keyword(), session_.pin(), session_.password(),
-                   false);
-  int result2 = WaitForResults(mutex, condition_variable, individual_result);
-  if (result2 != kSuccess) {
-    LOG(kError) << "Modifying LID timed out.";
-  }
-
-  if (result == kSuccess && result2 == kSuccess) {
+  if (result == kSuccess) {
     session_.Reset();
     return kSuccess;
-  }
-  if (result != kSuccess)
+  } else {
     return result;
-  else
-    return result2;
+  }
 }
 
-int UserCredentials::SaveSession() { return impl_->SaveSession(); }
+int UserCredentials::SaveSession() { return impl_->SaveSession(false); }
 
 int UserCredentials::ChangeKeyword(const std::string &new_keyword) {
   int result(CheckKeywordValidity(new_keyword));

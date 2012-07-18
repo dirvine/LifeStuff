@@ -177,11 +177,15 @@ class UserStorageTest : public testing::TestWithParam<bool> {
     remote_chunk_store1_ = BuildChunkStore(*test_dir_, &node1_);
     remote_chunk_store2_ = BuildChunkStore(*test_dir_, &node2_);
 #endif
-    user_credentials1_.reset(new UserCredentials(remote_chunk_store1_, session1_));
+    user_credentials1_.reset(new UserCredentials(*remote_chunk_store1_,
+                                                 session1_,
+                                                 asio_service1_.service()));
     EXPECT_EQ(kSuccess, user_credentials1_->CreateUser(RandomAlphaNumericString(6),
                                                        CreatePin(),
                                                        RandomAlphaNumericString(6)));
-    user_credentials2_.reset(new UserCredentials(remote_chunk_store2_, session2_));
+    user_credentials2_.reset(new UserCredentials(*remote_chunk_store2_,
+                                                 session2_,
+                                                 asio_service2_.service()));
     EXPECT_EQ(kSuccess, user_credentials2_->CreateUser(RandomAlphaNumericString(6),
                                                        CreatePin(),
                                                        RandomAlphaNumericString(6)));
@@ -244,11 +248,11 @@ class UserStorageTest : public testing::TestWithParam<bool> {
                                                                    args::_2, args::_3, args::_4,
                                                                    args::_5));
     message_handler1_->ConnectToPrivateMemberAccessLevelSignal(
-      std::bind(&UserStorage::MemberAccessChange, user_storage1_.get(),
-                args::_4, args::_5, args::_6, args::_7, args::_8));
+        std::bind(&UserStorage::MemberAccessChange, user_storage1_.get(),
+                  args::_4, args::_5, args::_6, args::_7, args::_8));
     message_handler2_->ConnectToPrivateMemberAccessLevelSignal(
-      std::bind(&UserStorage::MemberAccessChange, user_storage2_.get(),
-                args::_4, args::_5, args::_6, args::_7, args::_8));
+        std::bind(&UserStorage::MemberAccessChange, user_storage2_.get(),
+                  args::_4, args::_5, args::_6, args::_7, args::_8));
   }
 
   void TearDown() {
@@ -256,6 +260,9 @@ class UserStorageTest : public testing::TestWithParam<bool> {
     public_id2_->StopCheckingForNewContacts();
     message_handler1_->StopCheckingForNewMessages();
     message_handler2_->StopCheckingForNewMessages();
+
+    user_credentials1_->Logout();
+    user_credentials2_->Logout();
 
     asio_service1_.Stop();
     asio_service2_.Stop();
@@ -406,9 +413,7 @@ TEST_P(UserStorageTest, FUNC_LeaveShare) {
                       user_storage1_, _2, _3, &mutex_, &cond_var_)));
 
   MountDrive(user_storage1_, &session1_, false);
-  EXPECT_EQ(kSuccess, user_storage1_->InvitationResponse(pub_name2_,
-                                                         share_name.filename().string(),
-                                                         share_id));
+  user_storage1_->InvitationResponse(pub_name2_, share_name.filename().string(), share_id);
   users.clear();
   EXPECT_EQ(kSuccess, user_storage1_->GetAllShareUsers(directory0, &users));
   EXPECT_EQ(2, users.size());
@@ -778,8 +783,9 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
       asio_service3.service()));
 #endif
   Session session3;
-  std::shared_ptr<UserCredentials> user_credentials3(new UserCredentials(remote_chunk_store3,
-                                                                         session3));
+  std::shared_ptr<UserCredentials> user_credentials3(new UserCredentials(*remote_chunk_store3,
+                                                                         session3,
+                                                                         asio_service3.service()));
   EXPECT_EQ(kSuccess, user_credentials3->CreateUser(RandomAlphaNumericString(6),
                                                     CreatePin(),
                                                     RandomAlphaNumericString(6)));
@@ -947,6 +953,7 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
   // tear down
   public_id3->StopCheckingForNewContacts();
   message_handler3->StopCheckingForNewMessages();
+  user_credentials3->Logout();
   asio_service3.Stop();
   remote_chunk_store3->WaitForCompletion();
 }

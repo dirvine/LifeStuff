@@ -192,19 +192,19 @@ void ShareChangedSlot(const std::string& share_name,
                                             new_path, op_type));
 }
 
-int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
-                                 LifeStuff &test_elements2,  // NOLINT (Dan)
-                                 testresources::TestingVariables &testing_variables1,  // NOLINT (Dan)
-                                 testresources::TestingVariables &testing_variables2,  // NOLINT (Dan)
-                                 const fs::path &test_dir,
-                                 const std::string &keyword1,
-                                 const std::string &pin1,
-                                 const std::string &password1,
-                                 const std::string &public_id1,
-                                 const std::string &keyword2,
-                                 const std::string &pin2,
-                                 const std::string &password2,
-                                 const std::string &public_id2,
+int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
+                                 LifeStuff& test_elements2,
+                                 testresources::TestingVariables& testing_variables1,
+                                 testresources::TestingVariables& testing_variables2,
+                                 const fs::path& test_dir,
+                                 const std::string& keyword1,
+                                 const std::string& pin1,
+                                 const std::string& password1,
+                                 const std::string& public_id1,
+                                 const std::string& keyword2,
+                                 const std::string& pin2,
+                                 const std::string& password2,
+                                 const std::string& public_id2,
                                  bool several_files,
                                  std::vector<std::string> *ids,
                                  std::vector<std::string> *names,

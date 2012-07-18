@@ -64,7 +64,7 @@ class MessageHandler {
 
   MessageHandler(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
                  Session& session,
-                 ba::io_service &asio_service);  // NOLINT (Fraser)
+                 ba::io_service &asio_service);
   ~MessageHandler();
 
   void StartUp(bptime::seconds interval);
@@ -151,7 +151,7 @@ class MessageHandler {
   passport::Passport& passport_;
   ba::deadline_timer get_new_messages_timer_;
   bool get_new_messages_timer_active_;
-  ba::io_service &asio_service_;  // NOLINT (Dan)
+  ba::io_service &asio_service_;
   bool start_up_done_;
   ReceivedMessagesMap received_messages_;
 

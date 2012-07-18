@@ -51,10 +51,9 @@ std::string AppendableByAllType(const std::string &mmid) {
 
 }  // namespace
 
-MessageHandler::MessageHandler(
-    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
-    Session& session,
-    boost::asio::io_service &asio_service)  // NOLINT (Fraser)
+MessageHandler::MessageHandler(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
+                               Session& session,
+                               boost::asio::io_service &asio_service)
     : remote_chunk_store_(remote_chunk_store),
       session_(session),
       passport_(session_.passport()),
@@ -422,8 +421,7 @@ void MessageHandler::ProcessContactPresence(const InboxItem &presence_message) {
   }
 }
 
-void MessageHandler::ProcessContactProfilePicture(
-    const InboxItem &profile_picture_message) {
+void MessageHandler::ProcessContactProfilePicture(const InboxItem &profile_picture_message) {
   if (profile_picture_message.content.size() != 1U || profile_picture_message.content[0].empty()) {
     // Drop silently
     LOG(kWarning) << profile_picture_message.sender_public_id
@@ -453,6 +451,7 @@ void MessageHandler::ProcessContactProfilePicture(
     LOG(kWarning) << "Failed to update picture DM in session: " << result;
     return;
   }
+  session_.set_changed(true);
 
   contact_profile_picture_signal_(receiver, sender, profile_picture_message.timestamp);
 }
@@ -515,7 +514,7 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
     asymm::Keys key_ring;
     private_member_access_change_signal_(inbox_item.receiver_public_id,
                                          inbox_item.sender_public_id,
-                                         inbox_item.content[kShareName],
+                                         share_name,
                                          inbox_item.content[kShareId],
                                          kShareReadOnly,
                                          inbox_item.timestamp);
@@ -536,7 +535,7 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
     }
     private_member_access_change_signal_(inbox_item.receiver_public_id,
                                          inbox_item.sender_public_id,
-                                         inbox_item.content[kShareName],
+                                         share_name,
                                          inbox_item.content[kShareId],
                                          kShareReadWrite,
                                          inbox_item.timestamp);

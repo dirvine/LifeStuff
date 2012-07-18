@@ -59,12 +59,12 @@ struct ShareChangeLog {
         old_path(),
         new_path(),
         op_type() {}
-  ShareChangeLog(const std::string &share_name_in,
-                 const fs::path &target_path_in,
-                 const uint32_t &num_of_entries_in,
-                 const fs::path &old_path_in,
-                 const fs::path &new_path_in,
-                 const int &op_type_in)
+  ShareChangeLog(const std::string& share_name_in,
+                 const fs::path& target_path_in,
+                 const uint32_t& num_of_entries_in,
+                 const fs::path& old_path_in,
+                 const fs::path& new_path_in,
+                 const int& op_type_in)
       : share_name(share_name_in),
         target_path(target_path_in),
         num_of_entries(num_of_entries_in),
@@ -138,99 +138,99 @@ struct TestingVariables {
 
 void ChatSlot(const std::string&,
               const std::string&,
-              const std::string &signal_message,
+              const std::string& signal_message,
               const std::string&,
-              std::string *slot_message,
-              volatile bool *done);
+              std::string* slot_message,
+              volatile bool* done);
 
 void FileTransferSlot(const std::string&,
                       const std::string&,
-                      const std::string &signal_file_name,
-                      const std::string &signal_file_id,
+                      const std::string& signal_file_name,
+                      const std::string& signal_file_id,
                       const std::string&,
-                      std::string *slot_file_name,
-                      std::string *slot_file_id,
-                      volatile bool *done);
+                      std::string* slot_file_name,
+                      std::string* slot_file_id,
+                      volatile bool* done);
 
 void MultipleFileTransferSlot(const std::string&,
                               const std::string&,
-                              const std::string &signal_file_name,
-                              const std::string &signal_file_id,
+                              const std::string& signal_file_name,
+                              const std::string& signal_file_id,
                               const std::string&,
-                              std::vector<std::string> *ids,
-                              std::vector<std::string> *names,
-                              size_t *total_files,
-                              volatile bool *done);
+                              std::vector<std::string>* ids,
+                              std::vector<std::string>* names,
+                              size_t* total_files,
+                              volatile bool* done);
 
 void NewContactSlot(const std::string&,
                     const std::string&,
                     const std::string&,
-                    volatile bool *done);
+                    volatile bool* done);
 
 void ContactConfirmationSlot(const std::string&,
                              const std::string&,
                              const std::string&,
-                             volatile bool *done);
+                             volatile bool* done);
 
 void ContactProfilePictureSlot(const std::string&,
                                const std::string&,
                                const std::string&,
-                               volatile bool *done);
+                               volatile bool* done);
 
 void ContactPresenceSlot(const std::string&,
                          const std::string&,
                          const std::string&,
                          ContactPresence,
-                         volatile bool *done);
+                         volatile bool* done);
 
 void ContactDeletionSlot(const std::string&,
                          const std::string&,
-                         const std::string &signal_message,
+                         const std::string& signal_message,
                          const std::string&,
-                         std::string *slot_message,
-                         volatile bool *done);
+                         std::string* slot_message,
+                         volatile bool* done);
 
 void PrivateShareInvitationSlot(const std::string&,
                                 const std::string&,
-                                const std::string &signal_share_name,
-                                const std::string &signal_share_id,
+                                const std::string& signal_share_name,
+                                const std::string& signal_share_id,
                                 int access_level,
                                 const std::string&,
-                                std::string *slot_share_name,
-                                std::string *slot_share_id,
-                                int *slot_access_level,
-                                volatile bool *done);
+                                std::string* slot_share_name,
+                                std::string* slot_share_id,
+                                int* slot_access_level,
+                                volatile bool* done);
 
 void PrivateShareDeletionSlot(const std::string&,
-                              const std::string &signal_share_name,
+                              const std::string& signal_share_name,
                               const std::string&,
                               const std::string&,
                               const std::string&,
-                              std::string *slot_share_name,
-                              volatile bool *done);
+                              std::string* slot_share_name,
+                              volatile bool* done);
 
 void PrivateMemberAccessChangeSlot(const std::string&,
                                    const std::string&,
                                    const std::string&,
                                    const std::string&,
                                    int signal_member_access,
-                                   std::string * /*slot_share_name*/,
-                                   int *slot_member_access,
-                                   volatile bool *done);
+                                   std::string*  /*slot_share_name*/,
+                                   int* slot_member_access,
+                                   volatile bool* done);
 
 void OpenShareInvitationSlot(const std::string&,
                              const std::string&,
                              const std::string&,
                              const std::string& signal_share_id,
                              const std::string&,
-                             std::string *slot_share_id,
-                             volatile bool *done);
+                             std::string* slot_share_id,
+                             volatile bool* done);
 
 void ShareRenameSlot(const std::string& old_share_name,
                      const std::string& new_share_name,
-                     std::string *slot_old_share_name,
-                     std::string *slot_new_share_name,
-                     volatile bool *done);
+                     std::string* slot_old_share_name,
+                     std::string* slot_new_share_name,
+                     volatile bool* done);
 
 void ShareChangedSlot(const std::string& share_name,
                       const fs::path& target_path,
@@ -238,27 +238,27 @@ void ShareChangedSlot(const std::string& share_name,
                       const fs::path& old_path,
                       const fs::path& new_path,
                       const int& op_type,
-                      boost::mutex *mutex,
-                      ShareChangeLogBook *share_changes);
+                      boost::mutex* mutex,
+                      ShareChangeLogBook* share_changes);
 
-int CreateAndConnectTwoPublicIds(LifeStuff &test_elements1,  // NOLINT (Dan)
-                                 LifeStuff &test_elements2,  // NOLINT (Dan)
-                                 testresources::TestingVariables &testing_variables1,  // NOLINT (Dan)
-                                 testresources::TestingVariables &testing_variables2,  // NOLINT (Dan)
-                                 const fs::path &test_dir,
-                                 const std::string &keyword1,
-                                 const std::string &pin1,
-                                 const std::string &password1,
-                                 const std::string &public_id1,
-                                 const std::string &keyword2,
-                                 const std::string &pin2,
-                                 const std::string &password2,
-                                 const std::string &public_id2,
+int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
+                                 LifeStuff& test_elements2,
+                                 testresources::TestingVariables& testing_variables1,
+                                 testresources::TestingVariables& testing_variables2,
+                                 const fs::path& test_dir,
+                                 const std::string& keyword1,
+                                 const std::string& pin1,
+                                 const std::string& password1,
+                                 const std::string& public_id1,
+                                 const std::string& keyword2,
+                                 const std::string& pin2,
+                                 const std::string& password2,
+                                 const std::string& public_id2,
                                  bool several_files = false,
-                                 std::vector<std::string> *ids = nullptr,
-                                 std::vector<std::string> *names = nullptr,
-                                 size_t *total_files = nullptr,
-                                 boost::mutex *mutex = nullptr);
+                                 std::vector<std::string>* ids = nullptr,
+                                 std::vector<std::string>* names = nullptr,
+                                 size_t* total_files = nullptr,
+                                 boost::mutex* mutex = nullptr);
 
 }  // namespace testresources
 
