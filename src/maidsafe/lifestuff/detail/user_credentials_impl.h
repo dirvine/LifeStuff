@@ -33,6 +33,7 @@
 
 #include "maidsafe/common/rsa.h"
 
+
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
 
@@ -48,6 +49,28 @@ namespace pcs = maidsafe::priv::chunk_store;
 namespace passport { class Passport; }
 
 namespace lifestuff {
+
+namespace account_locking {
+
+std::string LidName(const std::string& keyword, const std::string& pin);
+
+std::string EncryptAccountStatus(const std::string& keyword,
+                                 const std::string& pin,
+                                 const std::string& password,
+                                 const std::string& account_status);
+
+std::string DecryptAccountStatus(const std::string& keyword,
+                                 const std::string& pin,
+                                 const std::string& password,
+                                 const std::string& encrypted_account_status);
+
+int ProcessAccountStatus(const std::string& keyword,
+                         const std::string& pin,
+                         const std::string& password,
+                         const std::string& lid_packet);
+
+}  // namespace account_locking
+
 
 class Session;
 struct OperationResults;
@@ -89,10 +112,9 @@ class UserCredentialsImpl {
 
   void StartSessionSaver();
 
-  void GetAndLockLid(const std::string& keyword,
-              const std::string& pin,
-              const std::string& password,
-              int* result);
+  int GetAndLockLid(const std::string& keyword,
+                    const std::string& pin,
+                    const std::string& password);
   void GetIdAndTemporaryId(const std::string& username,
                            const std::string& pin,
                            const std::string& password,
@@ -129,11 +151,10 @@ class UserCredentialsImpl {
                      int identity_type,
                      int signer_type,
                      int index);
-  void StoreLid(OperationResults operation_result,
-                const std::string keyword,
-                const std::string pin,
-                const std::string password,
-                bool online);
+  int StoreLid(const std::string keyword,
+               const std::string pin,
+               const std::string password,
+               bool online);
 
   void ModifyMid(OperationResults& results);
   void ModifySmid(OperationResults& results);
@@ -141,11 +162,10 @@ class UserCredentialsImpl {
                       int identity_type,
                       int signer_type,
                       int index);
-  void ModifyLid(OperationResults operation_result,
-                 const std::string keyword,
-                 const std::string pin,
-                 const std::string password,
-                 bool online);
+  int ModifyLid(const std::string keyword,
+                const std::string pin,
+                const std::string password,
+                bool online);
 
   int DeleteOldIdentityPackets();
   void DeleteMid(OperationResults& results);
@@ -156,9 +176,8 @@ class UserCredentialsImpl {
                       int packet_type,
                       int signer_type,
                       int index);
-  void DeleteLid(OperationResults result,
-                 const std::string& keyword,
-                 const std::string& pin);
+  int DeleteLid(const std::string& keyword,
+                const std::string& pin);
 
   int DeleteSignaturePackets();
   void DeleteAnmid(OperationResults& results);

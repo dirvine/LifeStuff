@@ -61,7 +61,7 @@ bs2::connection MessageHandler::ConnectToOpenShareInvitationSignal(
   return open_share_invitation_signal_.connect(function);
 }
 
-bs2::connection MessageHandler::ConnectToShareInvitationResponsSignal(
+bs2::connection MessageHandler::ConnectToShareInvitationResponseSignal(
     const ShareInvitationResponseFunction &function) {
   return share_invitation_response_signal_.connect(function);
 }

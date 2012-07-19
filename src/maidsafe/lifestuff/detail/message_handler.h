@@ -102,7 +102,7 @@ class MessageHandler {
   bs2::connection ConnectToContactDeletionSignal(const ContactDeletionFunction &function);
   bs2::connection ConnectToPrivateShareUserLeavingSignal(
       const PrivateShareUserLeavingSignal::slot_type &function);
-  bs2::connection ConnectToShareInvitationResponsSignal(
+  bs2::connection ConnectToShareInvitationResponseSignal(
       const ShareInvitationResponseFunction &function);
 
   // Intra library connections

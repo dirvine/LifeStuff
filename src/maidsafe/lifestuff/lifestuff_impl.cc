@@ -1720,7 +1720,7 @@ void LifeStuffImpl::ConnectInternalElements() {
   message_handler_->ConnectToParseAndSaveDataMapSignal(
       boost::bind(&UserStorage::ParseAndSaveDataMap, user_storage_.get(), _1, _2, _3));
 
-  message_handler_->ConnectToShareInvitationResponsSignal(
+  message_handler_->ConnectToShareInvitationResponseSignal(
       boost::bind(&UserStorage::InvitationResponse, user_storage_.get(), _1, _3, _4));
 
   message_handler_->ConnectToSavePrivateShareDataSignal(
