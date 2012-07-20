@@ -807,9 +807,11 @@ int UserCredentialsImpl::StoreLid(const std::string keyword,
   boost::mutex mutex;
   OperationResults operation_result(mutex, condition_variable, individual_result);
   if (!remote_chunk_store_.Store(packet_name,
-                                  signed_data.SerializeAsString(),
-                                  std::bind(&OperationCallback, args::_1, operation_result, 0),
-                                  signer)) {
+                                 signed_data.SerializeAsString(),
+                                 [&] (bool result) {
+                                   return OperationCallback(result, operation_result, 0);
+                                 },
+                                 signer)) {
     LOG(kError) << "Failed to store LID.";
     OperationCallback(false, operation_result, 0);
   }
@@ -964,9 +966,11 @@ int UserCredentialsImpl::ModifyLid(const std::string keyword,
   boost::mutex mutex;
   OperationResults operation_result(mutex, condition_variable, individual_result);
   if (!remote_chunk_store_.Modify(packet_name,
-                                   signed_data.SerializeAsString(),
-                                   std::bind(&OperationCallback, args::_1, operation_result, 0),
-                                   signer)) {
+                                  signed_data.SerializeAsString(),
+                                  [&] (bool result) {
+                                    return OperationCallback(result, operation_result, 0);
+                                  },
+                                  signer)) {
     LOG(kError) << "Failed to modify LID.";
     OperationCallback(false, operation_result, 0);
   }
@@ -1125,8 +1129,10 @@ int UserCredentialsImpl::DeleteLid(const std::string &keyword,
   boost::mutex mutex;
   OperationResults operation_result(mutex, condition_variable, individual_result);
   if (!remote_chunk_store_.Delete(packet_name,
-                                   std::bind(&OperationCallback, args::_1, operation_result, 0),
-                                   signer)) {
+                                  [&] (bool result) {
+                                    return OperationCallback(result, operation_result, 0);
+                                  },
+                                  signer)) {
     LOG(kError) << "Failed to delete LID.";
     OperationCallback(false, operation_result, 0);
   }

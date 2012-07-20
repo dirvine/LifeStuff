@@ -406,19 +406,17 @@ TEST_F(TwoInstancesApiTest, FUNC_LogInFromTwoPlacesSimultaneously) {
   sleep_values.push_back(std::make_pair(0, 10));
 
   for (size_t i = 0; i < sleep_values.size(); ++i) {
-    boost::thread thread_1(std::bind(&sleepthreads::RunLogIn,
-                                     test_elements_,
-                                     std::ref(result_1),
-                                     keyword_, pin_,
-                                     password_,
-                                     sleep_values.at(i)));
-    boost::thread thread_2(std::bind(&sleepthreads::RunLogIn,
-                                     test_elements_2_,
-                                     std::ref(result_2),
-                                     keyword_,
-                                     pin_,
-                                     password_,
-                                     sleep_values.at(i)));
+    boost::thread thread_1([&] { return sleepthreads::RunLogIn(test_elements_,
+                                                               std::ref(result_1),
+                                                               keyword_, pin_,
+                                                               password_,
+                                                               sleep_values.at(i)); });  // NOLINT (Alison)
+    boost::thread thread_2([&] { return sleepthreads::RunLogIn(test_elements_2_,
+                                                               std::ref(result_2),
+                                                               keyword_,
+                                                               pin_,
+                                                               password_,
+                                                               sleep_values.at(i)); });  // NOLINT (Alison)
     thread_1.join();
     thread_2.join();
     EXPECT_TRUE((result_1 == kSuccess && result_2 != kSuccess) ||
