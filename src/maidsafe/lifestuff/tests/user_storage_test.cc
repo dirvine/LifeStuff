@@ -209,11 +209,14 @@ class UserStorageTest : public testing::TestWithParam<bool> {
     user_storage1_.reset(new UserStorage(remote_chunk_store1_, *message_handler1_));
     user_storage2_.reset(new UserStorage(remote_chunk_store2_, *message_handler2_));
 
-    public_id1_->ConnectToContactConfirmedSignal(std::bind(&UserStorageTest::NewContactSlot, this,
-                                                           args::_1, args::_2, &mutex_,
-                                                           &cond_var_));
-    public_id2_->ConnectToNewContactSignal(std::bind(&UserStorageTest::NewContactSlot, this,
-                                                     args::_1, args::_2, &mutex_, &cond_var_));
+    public_id1_->ConnectToContactConfirmedSignal(
+        [&] (const std::string& s_1, const std::string& s_2, const std::string&) {
+          return NewContactSlot(s_1, s_2, &mutex_, &cond_var_);
+        });
+    public_id2_->ConnectToNewContactSignal(
+        [&] (const std::string& s_1, const std::string& s_2, const std::string&) {
+          return NewContactSlot(s_1, s_2, &mutex_, &cond_var_);
+        });
 
     EXPECT_EQ(kSuccess, public_id1_->CreatePublicId(pub_name1_, true));
     EXPECT_EQ(kSuccess, public_id2_->CreatePublicId(pub_name2_, true));
@@ -233,26 +236,56 @@ class UserStorageTest : public testing::TestWithParam<bool> {
 
     public_id1_->StopCheckingForNewContacts();
     public_id2_->StopCheckingForNewContacts();
-    message_handler1_->ConnectToPrivateShareDetailsSignal(boost::bind(&UserStorage::GetShareDetails,
-                                                                      user_storage1_.get(), _1, _2,
-                                                                      nullptr, nullptr, nullptr));
-    message_handler2_->ConnectToPrivateShareDetailsSignal(boost::bind(&UserStorage::GetShareDetails,
-                                                                      user_storage2_.get(), _1, _2,
-                                                                      nullptr, nullptr, nullptr));
-    message_handler1_->ConnectToPrivateShareUpdateSignal(std::bind(&UserStorage::UpdateShare,
-                                                                   user_storage1_.get(), args::_1,
-                                                                   args::_2, args::_3, args::_4,
-                                                                   args::_5));
-    message_handler2_->ConnectToPrivateShareUpdateSignal(std::bind(&UserStorage::UpdateShare,
-                                                                   user_storage2_.get(), args::_1,
-                                                                   args::_2, args::_3, args::_4,
-                                                                   args::_5));
+    message_handler1_->ConnectToPrivateShareDetailsSignal(
+        [&] (const std::string& share_id, fs::path* relative_path) {
+          return user_storage1_.get()->GetShareDetails(share_id, relative_path, nullptr, nullptr,
+                                                       nullptr);
+        });
+    message_handler2_->ConnectToPrivateShareDetailsSignal(
+        [&] (const std::string& share_id, fs::path* relative_path) {
+          return user_storage2_.get()->GetShareDetails(share_id, relative_path, nullptr, nullptr,
+                                                       nullptr);
+        });
+    message_handler1_->ConnectToPrivateShareUpdateSignal(
+        [&] (const std::string& share_id, const std::string* new_share_id,
+             const std::string* new_directory_id, const asymm::Keys* new_key_ring,
+             int* access_right) {
+          return user_storage1_.get()->UpdateShare(share_id, new_share_id,
+                                                   new_directory_id, new_key_ring, access_right);
+        });
+    message_handler2_->ConnectToPrivateShareUpdateSignal(
+        [&] (const std::string& share_id, const std::string* new_share_id,
+             const std::string* new_directory_id, const asymm::Keys* new_key_ring,
+             int* access_right) {
+          return user_storage2_.get()->UpdateShare(share_id, new_share_id, new_directory_id,
+                                                   new_key_ring, access_right);
+        });
     message_handler1_->ConnectToPrivateMemberAccessLevelSignal(
-        std::bind(&UserStorage::MemberAccessChange, user_storage1_.get(),
-                  args::_4, args::_5, args::_6, args::_7, args::_8));
+        [&] (const std::string&,
+             const std::string&,
+             const std::string&,
+             const std::string &share_id,
+             const std::string &directory_id,
+             const std::string &new_share_id,
+             const asymm::Keys &key_ring,
+             int access_right,
+             const std::string&) {
+          return user_storage1_.get()->MemberAccessChange(share_id, directory_id, new_share_id,
+                                                          key_ring, access_right);
+        });
     message_handler2_->ConnectToPrivateMemberAccessLevelSignal(
-        std::bind(&UserStorage::MemberAccessChange, user_storage2_.get(),
-                  args::_4, args::_5, args::_6, args::_7, args::_8));
+        [&] (const std::string&,
+             const std::string&,
+             const std::string&,
+             const std::string &share_id,
+             const std::string &directory_id,
+             const std::string &new_share_id,
+             const asymm::Keys &key_ring,
+             int access_right,
+             const std::string&) {
+          return user_storage2_.get()->MemberAccessChange(share_id, directory_id, new_share_id,
+                                                          key_ring, access_right);
+        });
   }
 
   void TearDown() {
@@ -328,11 +361,20 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
 
   bs2::connection accept_share_invitation_connection(
       message_handler2_->ConnectToPrivateShareInvitationSignal(
-          boost::bind(&UserStorageTest::DoAcceptShareInvitationTest, this, user_storage2_,
-                      _1, _2, _3, _4, &mutex_, &cond_var_)));
+          [&] (const std::string& receiver,
+               const std::string& sender,
+               const std::string& share_tag,
+               const std::string& share_id,
+               const int& /*access level*/,
+               const std::string& /*timestamp*/) {
+          return DoAcceptShareInvitationTest(user_storage2_, receiver, sender, share_tag,
+                                             share_id, &mutex_, &cond_var_);
+          }));
   bs2::connection save_share_data_connection(
       message_handler2_->ConnectToSavePrivateShareDataSignal(
-          boost::bind(&UserStorage::SavePrivateShareData, user_storage2_.get(), _1, _2)));
+          [&] (const std::string& serialised_share_data, const std::string& share_id) {
+            return user_storage2_.get()->SavePrivateShareData(serialised_share_data, share_id);
+          }));
   MountDrive(user_storage2_, &session2_, true);
   fs::path share_root_directory_2(user_storage2_->mount_dir() / kSharedStuff);
   EXPECT_TRUE(fs::create_directories(share_root_directory_2, error_code))
@@ -373,11 +415,20 @@ TEST_P(UserStorageTest, FUNC_LeaveShare) {
 
   bs2::connection accept_share_invitation_connection(
       message_handler2_->ConnectToPrivateShareInvitationSignal(
-          boost::bind(&UserStorageTest::DoAcceptShareInvitationTest, this, user_storage2_,
-                      _1, _2, _3, _4, &mutex_, &cond_var_)));
+          [&] (const std::string& receiver,
+               const std::string& sender,
+               const std::string& share_tag,
+               const std::string& share_id,
+               const int& /*access level*/,
+               const std::string& /*timestamp*/) {
+          return DoAcceptShareInvitationTest(user_storage2_, receiver, sender, share_tag,
+                                             share_id, &mutex_, &cond_var_);
+          }));
   bs2::connection save_share_data_connection(
       message_handler2_->ConnectToSavePrivateShareDataSignal(
-          boost::bind(&UserStorage::SavePrivateShareData, user_storage2_.get(), _1, _2)));
+          [&] (const std::string& serialised_share_data, const std::string& share_id) {
+            return user_storage2_.get()->SavePrivateShareData(serialised_share_data, share_id);
+          }));
 
   MountDrive(user_storage2_, &session2_, true);
   fs::path share_root_directory_2(user_storage2_->mount_dir() / kSharedStuff);
@@ -409,8 +460,11 @@ TEST_P(UserStorageTest, FUNC_LeaveShare) {
 
   bs2::connection share_user_leaving_connection(
       message_handler1_->ConnectToPrivateShareUserLeavingSignal(
-          boost::bind(&UserStorageTest::UserLeavingShare, this,
-                      user_storage1_, _2, _3, &mutex_, &cond_var_)));
+          [&] (const std::string& /*share name*/,
+               const std::string& share_id,
+               const std::string& user_id) {
+            return UserLeavingShare(user_storage1_, share_id, user_id, &mutex_, &cond_var_);
+          }));
 
   MountDrive(user_storage1_, &session1_, false);
   user_storage1_->InvitationResponse(pub_name2_, share_name.filename().string(), share_id);
@@ -447,11 +501,21 @@ TEST_P(UserStorageTest, FUNC_AddUser) {
 
   bs2::connection accept_share_invitation_connection(
       message_handler2_->ConnectToPrivateShareInvitationSignal(
-          boost::bind(&UserStorageTest::DoAcceptShareInvitationTest, this, user_storage2_,
-                      _1, _2, _3, _4, &mutex_, &cond_var_)));
+          [&] (const std::string& receiver,
+               const std::string& sender,
+               const std::string& share_tag,
+               const std::string& share_id,
+               const int& /*access level*/,
+               const std::string& /*timestamp*/) {
+          return DoAcceptShareInvitationTest(user_storage2_, receiver, sender, share_tag,
+                                             share_id, &mutex_, &cond_var_);
+          }));
   bs2::connection save_share_data_connection(
       message_handler2_->ConnectToSavePrivateShareDataSignal(
-          boost::bind(&UserStorage::SavePrivateShareData, user_storage2_.get(), _1, _2)));
+          [&] (const std::string& serialised_share_data,
+               const std::string& share_id) {
+            return user_storage2_.get()->SavePrivateShareData(serialised_share_data, share_id);
+          }));
 
   MountDrive(user_storage2_, &session2_, true);
   fs::path share_root_directory_2(user_storage2_->mount_dir() / kSharedStuff);
@@ -512,11 +576,22 @@ TEST_P(UserStorageTest, FUNC_AddReadWriteUser) {
 
   bs2::connection accept_share_invitation_connection(
       message_handler2_->ConnectToPrivateShareInvitationSignal(
-          boost::bind(&UserStorageTest::DoAcceptShareInvitationTest,
-                      this, user_storage2_, _1, _2, _3, _4, &mutex_, &cond_var_)));
+          [&] (const std::string& receiver,
+               const std::string& sender,
+               const std::string& share_tag,
+               const std::string& share_id,
+               const int& /*access level*/,
+               const std::string& /*timestamp*/) {
+            return DoAcceptShareInvitationTest(user_storage2_, receiver, sender, share_tag,
+                                               share_id, &mutex_, &cond_var_);
+          }));
+
   bs2::connection save_share_data_connection(
       message_handler2_->ConnectToSavePrivateShareDataSignal(
-          boost::bind(&UserStorage::SavePrivateShareData, user_storage2_.get(), _1, _2)));
+          [&] (const std::string& serialised_share_data,
+               const std::string& share_id) {
+            return user_storage2_.get()->SavePrivateShareData(serialised_share_data, share_id);
+          }));
 
   MountDrive(user_storage2_, &session2_, true);
   fs::path directory1(user_storage2_->mount_dir() / kSharedStuff / tail);
@@ -565,16 +640,33 @@ TEST_P(UserStorageTest, FUNC_UpgradeUserToReadWrite) {
 
   bs2::connection accept_share_invitation_connection(
       message_handler2_->ConnectToPrivateShareInvitationSignal(
-          boost::bind(&UserStorageTest::DoAcceptShareInvitationTest,
-                      this, user_storage2_,
-                      _1, _2, _3, _4, &mutex_, &cond_var_)));
-  bs2::connection member_access_level_connection(
-      message_handler2_->ConnectToPrivateMemberAccessLevelSignal(
-          std::bind(&UserStorageTest::DoUpgradeTest, this, user_storage2_, args::_1, args::_2,
-                    args::_3, args::_8, &mutex_, &cond_var_)));
+          [&] (const std::string& receiver,
+               const std::string& sender,
+               const std::string& share_tag,
+               const std::string& share_id,
+               const int& /*access level*/,
+               const std::string& /*timestamp*/) {
+          return DoAcceptShareInvitationTest(user_storage2_, receiver, sender, share_tag,
+                                             share_id, &mutex_, &cond_var_);
+          }));
+  message_handler2_->ConnectToPrivateMemberAccessLevelSignal(
+      [&] (const std::string& receiver,
+           const std::string& sender,
+           const std::string& share_name,
+           const std::string&,
+           const std::string&,
+           const std::string&,
+           const asymm::Keys&,
+           int access_level,
+           const std::string&) {
+        return DoUpgradeTest(user_storage2_, receiver, sender, share_name, access_level, &mutex_,
+                             &cond_var_);
+      });
   bs2::connection save_share_data_connection(
       message_handler2_->ConnectToSavePrivateShareDataSignal(
-          boost::bind(&UserStorage::SavePrivateShareData, user_storage2_.get(), _1, _2)));
+          [&] (const std::string& serialised_share_data, const std::string& share_id) {
+            return user_storage2_.get()->SavePrivateShareData(serialised_share_data, share_id);
+          }));
 
   MountDrive(user_storage2_, &session2_, true);
   fs::path share_root_directory_2(user_storage2_->mount_dir() / kSharedStuff);
@@ -637,15 +729,29 @@ TEST_P(UserStorageTest, FUNC_StopShareByOwner) {
 
   bs2::connection accept_share_invitation_connection(
       message_handler2_->ConnectToPrivateShareInvitationSignal(
-          boost::bind(&UserStorageTest::DoAcceptShareInvitationTest, this, user_storage2_,
-                      _1, _2, _3, _4, &mutex_, &cond_var_)));
+          [&] (const std::string& receiver,
+               const std::string& sender,
+               const std::string& share_tag,
+               const std::string& share_id,
+               const int& /*access level*/,
+               const std::string& /*timestamp*/) {
+          return DoAcceptShareInvitationTest(user_storage2_, receiver, sender, share_tag,
+                                             share_id, &mutex_, &cond_var_);
+          }));
   bs2::connection leave_share_connection(
       message_handler2_->ConnectToPrivateShareDeletionSignal(
-          boost::bind(&UserStorageTest::DoLeaveTest, this, user_storage2_,
-                      _1, _2, &mutex_, &cond_var_)));
+          [&] (const std::string& receiver,
+               const std::string& share_id,
+               const std::string&,
+               const std::string&,
+               const std::string&) {
+            return DoLeaveTest(user_storage2_, receiver, share_id, &mutex_, &cond_var_);
+          }));
   bs2::connection save_share_data_connection(
       message_handler2_->ConnectToSavePrivateShareDataSignal(
-          boost::bind(&UserStorage::SavePrivateShareData, user_storage2_.get(), _1, _2)));
+          [&] (const std::string& serialised_share_data, const std::string& share_id) {
+            return user_storage2_.get()->SavePrivateShareData(serialised_share_data, share_id);
+          }));
 
   MountDrive(user_storage2_, &session2_, true);
   fs::path share_root_directory_2(user_storage2_->mount_dir() / kSharedStuff);
@@ -708,15 +814,29 @@ TEST_P(UserStorageTest, FUNC_RemoveUserByOwner) {
 
   bs2::connection accept_share_invitation_connection(
       message_handler2_->ConnectToPrivateShareInvitationSignal(
-          boost::bind(&UserStorageTest::DoAcceptShareInvitationTest,
-                      this, user_storage2_, _1, _2, _3, _4, &mutex_, &cond_var_)));
+          [&] (const std::string& receiver,
+               const std::string& sender,
+               const std::string& share_tag,
+               const std::string& share_id,
+               const int& /*access level*/,
+               const std::string& /*timestamp*/) {
+          return DoAcceptShareInvitationTest(user_storage2_, receiver, sender, share_tag,
+                                             share_id, &mutex_, &cond_var_);
+          }));
   bs2::connection leave_share_connection(
       message_handler2_->ConnectToPrivateShareDeletionSignal(
-          boost::bind(&UserStorageTest::DoLeaveTest, this,
-                      user_storage2_, _1, _2, &mutex_, &cond_var_)));
+          [&] (const std::string& receiver,
+               const std::string& share_id,
+               const std::string&,
+               const std::string&,
+               const std::string&) {
+            return DoLeaveTest(user_storage2_, receiver, share_id, &mutex_, &cond_var_);
+          }));
   bs2::connection save_share_data_connection(
       message_handler2_->ConnectToSavePrivateShareDataSignal(
-          boost::bind(&UserStorage::SavePrivateShareData, user_storage2_.get(), _1, _2)));
+          [&] (const std::string& serialised_share_data, const std::string& share_id) {
+            return user_storage2_.get()->SavePrivateShareData(serialised_share_data, share_id);
+          }));
 
   MountDrive(user_storage2_, &session2_, true);
   fs::path share_root_directory_2(user_storage2_->mount_dir() / kSharedStuff);
@@ -798,12 +918,15 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
   std::shared_ptr<UserStorage> user_storage3(new UserStorage(remote_chunk_store3,
                                                              *message_handler3));
   std::string pub_name3("User 3");
-  message_handler3->ConnectToPrivateShareDetailsSignal(boost::bind(&UserStorage::GetShareDetails,
-                                                                   user_storage3.get(),
-                                                                   _1, _2, nullptr, nullptr,
-                                                                   nullptr));
-  public_id3->ConnectToNewContactSignal(boost::bind(&UserStorageTest::NewContactSlot,
-                                                    this, _1, _2, &mutex_, &cond_var_));
+  message_handler3->ConnectToPrivateShareDetailsSignal(
+      [&] (const std::string& share_id, fs::path* relative_path) {
+        return user_storage3.get()->GetShareDetails(share_id, relative_path, nullptr, nullptr,
+                                                    nullptr);
+      });
+  public_id3->ConnectToNewContactSignal(
+      [&] (const std::string& s_1, const std::string& s_2, const std::string&) {
+        return NewContactSlot(s_1, s_2, &mutex_, &cond_var_);
+      });
 
   public_id3->CreatePublicId(pub_name3, true);
 
@@ -844,15 +967,29 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
 
   bs2::connection accept_share_invitation_connection_1(
       message_handler2_->ConnectToPrivateShareInvitationSignal(
-          boost::bind(&UserStorageTest::DoAcceptShareInvitationTest,
-                      this, user_storage2_, _1, _2, _3, _4, &mutex_, &cond_var_)));
+          [&] (const std::string& receiver,
+               const std::string& sender,
+               const std::string& share_tag,
+               const std::string& share_id,
+               const int& /*access level*/,
+               const std::string& /*timestamp*/) {
+          return DoAcceptShareInvitationTest(user_storage2_, receiver, sender, share_tag,
+                                             share_id, &mutex_, &cond_var_);
+          }));
   bs2::connection leave_share_connection_1(
       message_handler2_->ConnectToPrivateShareDeletionSignal(
-          boost::bind(&UserStorageTest::DoLeaveTest, this,
-                      user_storage2_, _1, _2, &mutex_, &cond_var_)));
+          [&] (const std::string& receiver,
+               const std::string& share_id,
+               const std::string&,
+               const std::string&,
+               const std::string&) {
+            return DoLeaveTest(user_storage2_, receiver, share_id, &mutex_, &cond_var_);
+          }));
   bs2::connection save_share_data_connection_1(
       message_handler2_->ConnectToSavePrivateShareDataSignal(
-          boost::bind(&UserStorage::SavePrivateShareData, user_storage2_.get(), _1, _2)));
+          [&] (const std::string& serialised_share_data, const std::string& share_id) {
+            return user_storage2_.get()->SavePrivateShareData(serialised_share_data, share_id);
+          }));
 
   MountDrive(user_storage2_, &session2_, true);
   fs::path share_root_directory_2(user_storage2_->mount_dir() / kSharedStuff);
@@ -873,15 +1010,28 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
 
   bs2::connection accept_share_invitation_connection_2(
       message_handler3->ConnectToPrivateShareInvitationSignal(
-          boost::bind(&UserStorageTest::DoAcceptShareInvitationTest,
-                      this, user_storage3, _1, _2, _3, _4, &mutex_, &cond_var_)));
+          [&] (const std::string& receiver,
+               const std::string& sender,
+               const std::string& share_tag,
+               const std::string& share_id,
+               const int& /*access level*/,
+               const std::string& /*timestamp*/) {
+          return DoAcceptShareInvitationTest(user_storage3, receiver, sender, share_tag,
+                                             share_id, &mutex_, &cond_var_);
+          }));
   bs2::connection save_share_data_connection_2(
       message_handler3->ConnectToSavePrivateShareDataSignal(
-          boost::bind(&UserStorage::SavePrivateShareData, user_storage3.get(), _1, _2)));
+          [&] (const std::string& serialised_share_data, const std::string& share_id) {
+            return user_storage3.get()->SavePrivateShareData(serialised_share_data, share_id);
+          }));
   bs2::connection update_share_data_connection_2(
       message_handler3->ConnectToPrivateShareUpdateSignal(
-          std::bind(&UserStorage::UpdateShare, user_storage3.get(),
-                    args::_1, args::_2, args::_3, args::_4, args::_5)));
+        [&] (const std::string& share_id, const std::string* new_share_id,
+             const std::string* new_directory_id, const asymm::Keys* new_key_ring,
+             int* access_right) {
+          return user_storage3.get()->UpdateShare(share_id, new_share_id,
+                                                   new_directory_id, new_key_ring, access_right);
+        }));
 
   MountDrive(user_storage3, &session3, true);
   fs::path share_root_directory_3(user_storage3->mount_dir() / kSharedStuff);

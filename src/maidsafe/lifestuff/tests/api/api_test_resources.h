@@ -214,7 +214,7 @@ void PrivateMemberAccessChangeSlot(const std::string&,
                                    const std::string&,
                                    const std::string&,
                                    int signal_member_access,
-                                   std::string*  /*slot_share_name*/,
+                                   const std::string&  /*slot_share_name*/,
                                    int* slot_member_access,
                                    volatile bool* done);
 
