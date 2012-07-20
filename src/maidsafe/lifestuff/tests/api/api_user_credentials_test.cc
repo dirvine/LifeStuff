@@ -92,18 +92,21 @@ TEST_F(OneUserApiTest, FUNC_ChangePinAndPasswordSimultaneously) {
   sleep_values.push_back(std::make_pair(0, 10));
 
   for (size_t i = 0; i < sleep_values.size(); ++i) {
-    boost::thread thread_pin(std::bind(&sleepthreads::RunChangePin,
-                                       test_elements_,
-                                       std::ref(result_pin),
-                                       new_pin,
-                                       password_,
-                                       sleep_values.at(i)));
-    boost::thread thread_password(std::bind(&sleepthreads::RunChangePassword,
-                                            test_elements_,
-                                            std::ref(result_password),
-                                            new_password,
-                                            password_,
-                                            sleep_values.at(i)));
+    boost::thread thread_pin([&] {
+                               return sleepthreads::RunChangePin(test_elements_,
+                                                                 std::ref(result_pin),
+                                                                 new_pin,
+                                                                 password_,
+                                                                 sleep_values.at(i));
+                             });
+    boost::thread thread_password([&] {
+                                    return sleepthreads::RunChangePassword(
+                                        test_elements_,
+                                        std::ref(result_password),
+                                        new_password,
+                                        password_,
+                                        sleep_values.at(i));
+                                  });
     thread_pin.join();
     thread_password.join();
     EXPECT_EQ(kSuccess, result_pin);
@@ -128,18 +131,20 @@ TEST_F(OneUserApiTest, FUNC_ChangeKeywordAndPasswordSimultaneously) {
   sleep_values.push_back(std::make_pair(0, 10));
 
   for (size_t i = 0; i < sleep_values.size(); ++i) {
-    boost::thread thread_keyword(std::bind(&sleepthreads::RunChangeKeyword,
-                                           test_elements_,
-                                           std::ref(result_keyword),
-                                           new_keyword,
-                                           password_,
-                                           sleep_values.at(i)));
-    boost::thread thread_password(std::bind(&sleepthreads::RunChangePassword,
-                                            test_elements_,
-                                            std::ref(result_password),
-                                            new_password,
-                                            password_,
-                                            sleep_values.at(i)));
+    boost::thread thread_keyword([&] {
+                                   sleepthreads::RunChangeKeyword(test_elements_,
+                                                                  std::ref(result_keyword),
+                                                                  new_keyword,
+                                                                  password_,
+                                                                  sleep_values.at(i));
+                                 });
+    boost::thread thread_password([&] {
+                                    sleepthreads::RunChangePassword(test_elements_,
+                                                                    std::ref(result_password),
+                                                                    new_password,
+                                                                    password_,
+                                                                    sleep_values.at(i));
+                                  });
     thread_keyword.join();
     thread_password.join();
     EXPECT_EQ(kSuccess, result_keyword);
@@ -165,18 +170,20 @@ TEST_F(OneUserApiTest, FUNC_ChangePinAndKeywordSimultaneously) {
   sleep_values.push_back(std::make_pair(0, 10));
 
   for (size_t i = 0; i < sleep_values.size(); ++i) {
-    boost::thread thread_pin(std::bind(&sleepthreads::RunChangePin,
-                                       test_elements_,
-                                       std::ref(result_pin),
-                                       new_pin,
-                                       password_,
-                                       sleep_values.at(i)));
-    boost::thread thread_keyword(std::bind(&sleepthreads::RunChangeKeyword,
-                                           test_elements_,
-                                           std::ref(result_keyword),
-                                           new_keyword,
-                                           password_,
-                                           sleep_values.at(i)));
+    boost::thread thread_pin([&] {
+                               return sleepthreads::RunChangePin(test_elements_,
+                                                                 std::ref(result_pin),
+                                                                 new_pin,
+                                                                 password_,
+                                                                 sleep_values.at(i));
+                             });
+    boost::thread thread_keyword([&] {
+                                   return sleepthreads::RunChangeKeyword(test_elements_,
+                                                                         std::ref(result_keyword),
+                                                                         new_keyword,
+                                                                         password_,
+                                                                         sleep_values.at(i));
+                                 });
     thread_pin.join();
     thread_keyword.join();
 
@@ -339,32 +346,35 @@ TEST_F(OneUserApiTest, FUNC_ChangeCredentialsAndLogOut) {
   std::string new_password(RandomAlphaNumericString(5));
   int result(0);
 
-  boost::thread thread_pin(std::bind(&sleepthreads::RunChangePin,
-                                     test_elements_,
-                                     std::ref(result),
-                                     new_pin,
-                                     password_,
-                                     std::make_pair(0, 0)));
+  boost::thread thread_pin([&] {
+                             return sleepthreads::RunChangePin(test_elements_,
+                                                               std::ref(result),
+                                                               new_pin,
+                                                               password_,
+                                                               std::make_pair(0, 0));
+                           });
 
   test_elements_.LogOut();
   EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, new_pin, password_));
 
-  boost::thread thread_keyword(std::bind(&sleepthreads::RunChangeKeyword,
-                                         test_elements_,
-                                         std::ref(result),
-                                         new_keyword,
-                                         password_,
-                                         std::make_pair(0, 0)));
+  boost::thread thread_keyword([&] {
+                                 return sleepthreads::RunChangeKeyword(test_elements_,
+                                                                       std::ref(result),
+                                                                       new_keyword,
+                                                                       password_,
+                                                                       std::make_pair(0, 0));
+                               });
 
   test_elements_.LogOut();
   EXPECT_EQ(kSuccess, test_elements_.LogIn(new_keyword, new_pin, password_));
 
-  boost::thread thread_password(std::bind(&sleepthreads::RunChangePassword,
-                                          test_elements_,
-                                          std::ref(result),
-                                          new_password,
-                                          password_,
-                                          std::make_pair(0, 0)));
+  boost::thread thread_password([&] {
+                                  return sleepthreads::RunChangePassword(test_elements_,
+                                                                         std::ref(result),
+                                                                         new_password,
+                                                                         password_,
+                                                                         std::make_pair(0, 0));
+                                });
 
   test_elements_.LogOut();
   EXPECT_EQ(kSuccess, test_elements_.LogIn(new_keyword, new_pin, new_password));
@@ -428,19 +438,21 @@ TEST_F(TwoInstancesApiTest, FUNC_NeverLogIn) {
 TEST_F(TwoInstancesApiTest, FUNC_CreateSameUserSimultaneously) {
   int result_1(0), result_2(0);
   std::pair<int, int> sleeps(0, 0);
-  boost::thread thread_1(std::bind(&sleepthreads::RunCreateUser,
-                                   test_elements_,
-                                   std::ref(result_1),
-                                   keyword_, pin_,
-                                   password_,
-                                   sleeps));
-  boost::thread thread_2(std::bind(&sleepthreads::RunCreateUser,
-                                   test_elements_2_,
-                                   std::ref(result_2),
-                                   keyword_,
-                                   pin_,
-                                   password_,
-                                   sleeps));
+  boost::thread thread_1([&] {
+                           return sleepthreads::RunCreateUser(test_elements_,
+                                                              std::ref(result_1),
+                                                              keyword_, pin_,
+                                                              password_,
+                                                              sleeps);
+                         });
+  boost::thread thread_2([&] {
+                           sleepthreads::RunCreateUser(test_elements_2_,
+                                                       std::ref(result_2),
+                                                       keyword_,
+                                                       pin_,
+                                                       password_,
+                                                       sleeps);
+                         });
   thread_1.join();
   thread_2.join();
   EXPECT_TRUE((result_1 == kSuccess && result_2 != kSuccess) ||
@@ -493,30 +505,38 @@ TEST_F(TwoUsersApiTest, FUNC_ChangeCredentialsToSameSimultaneously) {
     int result_pin_1(0), result_pin_2(0), result_keyword_1(0), result_keyword_2(0);
 
     LOG(kInfo) << "THREADS STARTING";
-    boost::thread thread_pin_1(std::bind(&sleepthreads::RunChangePin,
-                                         test_elements_1_,
-                                         std::ref(result_pin_1),
-                                         new_pin,
-                                         password_1_,
-                                         sleep_values.at(i)));
-    boost::thread thread_pin_2(std::bind(&sleepthreads::RunChangePin,
-                                         test_elements_2_,
-                                         std::ref(result_pin_2),
-                                         new_pin,
-                                         password_2_,
-                                         sleep_values.at(i)));
-    boost::thread thread_keyword_1(std::bind(&sleepthreads::RunChangeKeyword,
-                                             test_elements_1_,
-                                             std::ref(result_keyword_1),
-                                             new_keyword,
-                                             password_1_,
-                                             sleep_values.at(i)));
-    boost::thread thread_keyword_2(std::bind(&sleepthreads::RunChangeKeyword,
-                                             test_elements_2_,
-                                             std::ref(result_keyword_2),
-                                             new_keyword,
-                                             password_2_,
-                                             sleep_values.at(i)));
+    boost::thread thread_pin_1(
+        [&] {
+          return sleepthreads::RunChangePin(test_elements_1_,
+                                            std::ref(result_pin_1),
+                                            new_pin,
+                                            password_1_,
+                                            sleep_values.at(i));
+        });
+    boost::thread thread_pin_2(
+        [&] {
+          return sleepthreads::RunChangePin(test_elements_2_,
+                                            std::ref(result_pin_2),
+                                            new_pin,
+                                            password_2_,
+                                            sleep_values.at(i));
+        });
+    boost::thread thread_keyword_1(
+        [&] {
+          return sleepthreads::RunChangeKeyword(test_elements_1_,
+                                                std::ref(result_keyword_1),
+                                                new_keyword,
+                                                password_1_,
+                                                sleep_values.at(i));
+        });
+    boost::thread thread_keyword_2(
+        [&] {
+          return sleepthreads::RunChangeKeyword(test_elements_2_,
+                                                std::ref(result_keyword_2),
+                                                new_keyword,
+                                                password_2_,
+                                                sleep_values.at(i));
+        });
     thread_pin_1.join();
     thread_pin_2.join();
     thread_keyword_1.join();

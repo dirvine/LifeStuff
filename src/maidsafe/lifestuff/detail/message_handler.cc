@@ -119,10 +119,9 @@ int MessageHandler::StartCheckingForNewMessages(bptime::seconds interval) {
   }
   get_new_messages_timer_active_ = true;
   get_new_messages_timer_.expires_from_now(interval);
-  get_new_messages_timer_.async_wait(std::bind(&MessageHandler::GetNewMessages,
-                                               this,
-                                               interval,
-                                               std::placeholders::_1));
+  get_new_messages_timer_.async_wait([=] (const boost::system::error_code& error_code) {
+                                       return GetNewMessages(interval, error_code);
+                                     });
   return kSuccess;
 }
 
@@ -190,8 +189,10 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
   result = kPendingResult;
 
   std::string inbox_id(AppendableByAllType(recipient_contact.inbox_name));
-  VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
-                                         &mutex, &cond_var, &result));
+  VoidFunctionOneBool callback([&] (const bool& response) {
+                                 return ChunkStoreOperationCallback(response, &mutex, &cond_var,
+                                                                    &result);
+                               });
   if (!remote_chunk_store_->Modify(inbox_id, signed_data.SerializeAsString(), callback, mmid)) {
     LOG(kError) << "Immediate remote chunkstore failure.";
     return kRemoteChunkStoreFailure;
@@ -201,7 +202,7 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
     boost::mutex::scoped_lock lock(mutex);
     if (!cond_var.timed_wait(lock,
                              bptime::seconds(kSecondsInterval),
-                             [&result]()->bool { return result != kPendingResult; })) {  // NOLINT (Dan)
+                             [&result] { return result != kPendingResult; })) {  // NOLINT (Dan)
       LOG(kError) << "Timed out storing packet.";
       return kPublicIdTimeout;
     }
@@ -249,8 +250,9 @@ int MessageHandler::SendPresenceMessage(const std::string &own_public_id,
 
 void MessageHandler::InformConfirmedContactOnline(const std::string &own_public_id,
                                                   const std::string &recipient_public_id) {
-  asio_service_.post(std::bind(&MessageHandler::SendPresenceMessage, this,
-                               own_public_id, recipient_public_id, kOnline));
+  asio_service_.post([=] {
+                       return SendPresenceMessage(own_public_id, recipient_public_id, kOnline);
+                     });
 }
 
 void MessageHandler::SendEveryone(const InboxItem &message) {
@@ -265,7 +267,7 @@ void MessageHandler::SendEveryone(const InboxItem &message) {
   while (it_map != contacts.end()) {
     InboxItem local_message(message);
     local_message.receiver_public_id = (*it_map++).public_id;
-    asio_service_.post(std::bind(&MessageHandler::Send, this, local_message));
+    asio_service_.post([=] { return Send(local_message); });  // NOLINT (Alison)
   }
 }
 
@@ -288,10 +290,9 @@ void MessageHandler::GetNewMessages(const bptime::seconds &interval,
   RetrieveMessagesForAllIds();
 
   get_new_messages_timer_.expires_from_now(interval);
-  get_new_messages_timer_.async_wait(std::bind(&MessageHandler::GetNewMessages,
-                                               this,
-                                               interval,
-                                               std::placeholders::_1));
+  get_new_messages_timer_.async_wait([=] (const boost::system::error_code& error_code) {
+                                       return GetNewMessages(interval, error_code);
+                                     });
 }
 
 void MessageHandler::ProcessRetrieved(const std::string& public_id,
@@ -413,8 +414,9 @@ void MessageHandler::ProcessContactPresence(const InboxItem &presence_message) {
       contact_presence_signal_(receiver, sender, presence_message.timestamp, kOffline);
 
     // Send message so they know we're online when they come back
-    asio_service_.post(std::bind(&MessageHandler::SendPresenceMessage, this,
-                                 receiver, sender, kOnline));
+    asio_service_.post([=] {
+                         return SendPresenceMessage(receiver, sender, kOnline);
+                       });
   } else {
     LOG(kWarning) << presence_message.sender_public_id
                   << " has sent a presence message with wrong content.";

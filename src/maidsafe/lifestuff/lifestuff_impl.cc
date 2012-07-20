@@ -287,8 +287,10 @@ int LifeStuffImpl::CreateUser(const std::string &keyword,
     LOG(kError) << "Failed to mount";
     return kGeneralError;
   }
-  user_storage_->ConnectToShareRenamedSignal(std::bind(&LifeStuffImpl::ShareRenameSlot,
-                                                       this, args::_1, args::_2));
+  user_storage_->ConnectToShareRenamedSignal(
+      [this] (const std::string& old_share_name, const std::string& new_share_name) {
+        return ShareRenameSlot(old_share_name, new_share_name);
+      });
 
   fs::path mount_path(user_storage_->mount_dir());
   fs::create_directories(mount_path / kMyStuff / kDownloadStuff, error_code);
@@ -341,6 +343,7 @@ int LifeStuffImpl::CreatePublicId(const std::string &public_id) {
 int LifeStuffImpl::LogIn(const std::string &keyword,
                          const std::string &pin,
                          const std::string &password) {
+  session_.Reset();
   if (state_ != kConnected) {
     LOG(kError) << "Make sure that object is initialised and connected";
     return kGeneralError;
@@ -381,8 +384,10 @@ int LifeStuffImpl::LogIn(const std::string &keyword,
     LOG(kError) << "Failed to mount";
     return kGeneralError;
   }
-  user_storage_->ConnectToShareRenamedSignal(std::bind(&LifeStuffImpl::ShareRenameSlot,
-                                                       this, args::_1, args::_2));
+  user_storage_->ConnectToShareRenamedSignal(
+      [this] (const std::string& old_share_name, const std::string& new_share_name) {
+        return ShareRenameSlot(old_share_name, new_share_name);
+      });
 
   if (!session_.PublicIdentities().empty()) {
     public_id_->StartUp(interval_);
@@ -525,7 +530,7 @@ int LifeStuffImpl::LeaveLifeStuff() {
   std::vector<std::string> public_ids(session_.PublicIdentities());
   std::for_each(public_ids.begin(),
                 public_ids.end(),
-                [&result, this](const std::string &public_id) {
+                [&result, this] (const std::string &public_id) {
                   const ShareInformationPtr share_info(session_.share_information(public_id));
                   if (share_info) {
                     std::for_each(share_info->begin(),
@@ -549,7 +554,7 @@ int LifeStuffImpl::LeaveLifeStuff() {
   // Delete all public IDs
   std::for_each(public_ids.begin(),
                 public_ids.end(),
-                [&result, this](const std::string &public_id) {
+                [&result, this] (const std::string &public_id) {
                   result += public_id_->DeletePublicId(public_id);
                 });
 
@@ -1074,7 +1079,7 @@ int LifeStuffImpl::GetPrivateShareList(const std::string &my_public_id, StringIn
 
   std::for_each(share_information->begin(),
                 share_information->end(),
-                [&](const ShareInformation::value_type& element) {
+                [=] (const ShareInformation::value_type& element) {
                   if (element.second.share_type > kOpenOwner)
                     share_names->insert(std::make_pair(element.first,
                                                        element.second.share_type - 3));
@@ -1131,7 +1136,7 @@ int LifeStuffImpl::GetPrivateSharesIncludingMember(const std::string &my_public_
   std::vector<std::string> all_share_names;
   std::for_each(share_information->begin(),
                 share_information->end(),
-                [&all_share_names](const ShareInformation::value_type& element) {
+                [&all_share_names] (const ShareInformation::value_type& element) {
                   if (element.second.share_type > kOpenOwner)
                     all_share_names.push_back(element.first);
                 });
@@ -1528,7 +1533,7 @@ int LifeStuffImpl::GetOpenShareList(const std::string &my_public_id,
 
   std::for_each(share_information->begin(),
                 share_information->end(),
-                [&](const ShareInformation::value_type& element) {
+                [=] (const ShareInformation::value_type& element) {
                   if (element.second.share_type <= kOpenOwner)
                     share_names->push_back(element.first);
                 });
@@ -1718,41 +1723,91 @@ fs::path LifeStuffImpl::mount_path() const {
 
 void LifeStuffImpl::ConnectInternalElements() {
   message_handler_->ConnectToParseAndSaveDataMapSignal(
-      boost::bind(&UserStorage::ParseAndSaveDataMap, user_storage_.get(), _1, _2, _3));
+      [&] (const std::string& file_name,
+           const std::string& serialised_data_map,
+           std::string* data_map_hash) {
+        return user_storage_.get()->ParseAndSaveDataMap(file_name, serialised_data_map,
+                                                        data_map_hash);
+      });
 
   message_handler_->ConnectToShareInvitationResponseSignal(
-      boost::bind(&UserStorage::InvitationResponse, user_storage_.get(), _1, _3, _4));
+      [&] (const std::string& user_id,
+           const std::string& share_name,
+           const std::string&,
+           const std::string& share_id,
+           const std::string&) {
+        return user_storage_.get()->InvitationResponse(user_id, share_name, share_id);
+      });
 
   message_handler_->ConnectToSavePrivateShareDataSignal(
-      boost::bind(&UserStorage::SavePrivateShareData, user_storage_.get(), _1, _2));
+      [&] (const std::string &serialised_share_data,
+           const std::string &share_id) {
+        return user_storage_.get()->SavePrivateShareData(serialised_share_data, share_id);
+      });
 
   message_handler_->ConnectToDeletePrivateShareDataSignal(
-      boost::bind(&UserStorage::DeletePrivateShareData, user_storage_.get(), _1));
+      [&] (const std::string& share_id) {
+        return user_storage_.get()->DeletePrivateShareData(share_id);
+      });
 
   message_handler_->ConnectToPrivateShareUserLeavingSignal(
-      boost::bind(&UserStorage::UserLeavingShare, user_storage_.get(), _2, _3));
+      [&] (const std::string&, const std::string& share_id, const std::string& user_id) {
+        return user_storage_.get()->UserLeavingShare(share_id, user_id);
+      });
 
   message_handler_->ConnectToSaveOpenShareDataSignal(
-      boost::bind(&UserStorage::SaveOpenShareData, user_storage_.get(), _1, _2));
+      [&] (const std::string& serialised_share_data, const std::string& share_id) {
+        return user_storage_.get()->SaveOpenShareData(serialised_share_data, share_id);
+      });
 
   message_handler_->ConnectToPrivateShareDeletionSignal(
-      boost::bind(&UserStorage::ShareDeleted, user_storage_.get(), _3));
+      [&] (const std::string&, const std::string&, const std::string &share_name,
+           const std::string&, const std::string&) {
+        return user_storage_.get()->ShareDeleted(share_name);
+      });
 
   message_handler_->ConnectToPrivateShareUpdateSignal(
-      boost::bind(&UserStorage::UpdateShare, user_storage_.get(), _1, _2, _3, _4, _5));
+      [&] (const std::string& share_id,
+           const std::string* new_share_id,
+           const std::string* new_directory_id,
+           const asymm::Keys* new_key_ring,
+           int* access_right) {
+        return user_storage_.get()->UpdateShare(share_id, new_share_id, new_directory_id,
+                                                new_key_ring, access_right);
+      });
 
   message_handler_->ConnectToPrivateMemberAccessLevelSignal(
-      boost::bind(&LifeStuffImpl::MemberAccessChangeSlot, this, _4, _5, _6, _7, _8));
+      [&] (const std::string&,
+           const std::string&,
+           const std::string&,
+           const std::string& share_id,
+           const std::string& directory_id,
+           const std::string& new_share_id,
+           const asymm::Keys& key_ring,
+           int access_right,
+           const std::string&) {
+        return MemberAccessChangeSlot(share_id, directory_id, new_share_id, key_ring, access_right);
+      });
 
   public_id_->ConnectToContactConfirmedSignal(
-      boost::bind(&MessageHandler::InformConfirmedContactOnline, message_handler_.get(), _1, _2));
+      [&] (const std::string& own_public_id, const std::string& recipient_public_id,
+           const std::string&) {
+        return message_handler_.get()->InformConfirmedContactOnline(own_public_id,
+                                                                    recipient_public_id);
+      });
 
   message_handler_->ConnectToContactDeletionSignal(
-      boost::bind(&PublicId::RemoveContactHandle, public_id_.get(), _1, _2));
+      [&] (const std::string& public_id, const std::string& contact_name,
+           const std::string&,
+           const std::string&) {
+      return public_id_.get()->RemoveContactHandle(public_id, contact_name);
+      });
 
   message_handler_->ConnectToPrivateShareDetailsSignal(
-      boost::bind(&UserStorage::GetShareDetails, user_storage_.get(), _1, _2, nullptr, nullptr,
-      nullptr));
+      [&] (const std::string& share_id, fs::path* relative_path) {
+      return user_storage_.get()->GetShareDetails(share_id, relative_path, nullptr, nullptr,
+                                                  nullptr);
+      });
 }
 
 int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
@@ -1829,7 +1884,7 @@ void LifeStuffImpl::InvokeDoSession() {
   {
     boost::mutex::scoped_lock loch_(save_session_mutex_);
     saving_session_ = true;
-    asio_service_.service().post(std::bind(&LifeStuffImpl::DoSaveSession, this));
+    asio_service_.service().post([this] { return DoSaveSession(); });  // NOLINT (Alison)
   }
 }
 

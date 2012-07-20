@@ -243,15 +243,17 @@ int UserCredentialsImpl::GetUserInfo(const std::string &keyword,
   // Obtain MID, TMID
   int mid_tmid_result(kSuccess);
   std::string tmid_packet;
-  boost::thread mid_tmid_thread(std::bind(&UserCredentialsImpl::GetIdAndTemporaryId, this,
-                                          keyword, pin, password, false, &mid_tmid_result,
-                                          &tmid_packet));
+  boost::thread mid_tmid_thread([&] {
+                                  return GetIdAndTemporaryId(keyword, pin, password, false,
+                                                             &mid_tmid_result, &tmid_packet);
+                                });
   // Obtain SMID, STMID
   int smid_stmid_result(kSuccess);
   std::string stmid_packet;
-  boost::thread smid_stmid_thread(std::bind(&UserCredentialsImpl::GetIdAndTemporaryId, this,
-                                            keyword, pin, password, true, &smid_stmid_result,
-                                            &stmid_packet));
+  boost::thread smid_stmid_thread([&] {
+                                    return GetIdAndTemporaryId(keyword, pin, password, false,
+                                                               &smid_stmid_result, &stmid_packet);
+                                  });
 
   // Wait for them to finish
   mid_tmid_thread.join();
@@ -324,7 +326,7 @@ int UserCredentialsImpl::GetAndLockLid(const std::string& keyword,
 void UserCredentialsImpl::StartSessionSaver() {
   session_saver_timer_active_ = true;
   session_saver_timer_.expires_from_now(bptime::seconds(session_saver_interval_));
-  session_saver_timer_.async_wait([=](const boost::system::error_code &error_code) {
+  session_saver_timer_.async_wait([=] (const boost::system::error_code &error_code) {
                                     this->SessionSaver(bptime::seconds(session_saver_interval_),
                                                        error_code);
                                   });
@@ -548,9 +550,11 @@ void UserCredentialsImpl::StoreSignaturePacket(std::shared_ptr<asymm::Keys> pack
 
   CreateSignaturePacketInfo(packet, &packet_name, &packet_content);
   if (!remote_chunk_store_.Store(packet_name,
-                                  packet_content,
-                                  std::bind(&OperationCallback, args::_1, results, index),
-                                  packet)) {
+                                 packet_content,
+                                 [&] (bool result) {
+                                   return OperationCallback(result, results, index);
+                                 },
+                                 packet)) {
     LOG(kError) << "Failed to store: " << index;
     OperationCallback(false, results, index);
   }
@@ -563,10 +567,9 @@ void UserCredentialsImpl::StoreAnmaid(OperationResults &results) {
 
   CreateSignaturePacketInfo(anmaid, &packet_name, &packet_content);
   if (!remote_chunk_store_.Store(packet_name,
-                                  packet_content,
-                                  std::bind(&UserCredentialsImpl::StoreMaid,
-                                            this, args::_1, results),
-                                  anmaid)) {
+                                 packet_content,
+                                 [&] (bool result) { return StoreMaid(result, results); },
+                                 anmaid)) {
     LOG(kError) << "Failed to store ANMAID.";
     StoreMaid(false, results);
   }
@@ -596,10 +599,9 @@ void UserCredentialsImpl::StoreMaid(bool result, OperationResults &results) {
   }
   signed_maid.set_data(maid_string_public_key);
   if (!remote_chunk_store_.Store(maid_name,
-                                  signed_maid.SerializeAsString(),
-                                  std::bind(&UserCredentialsImpl::StorePmid,
-                                            this, args::_1, results),
-                                  anmaid)) {
+                                 signed_maid.SerializeAsString(),
+                                 [&] (bool result) { return StorePmid(result, results); },
+                                 anmaid)) {
     LOG(kError) << "Failed to store MAID.";
     StorePmid(false, results);
   }
@@ -630,9 +632,11 @@ void UserCredentialsImpl::StorePmid(bool result, OperationResults &results) {
   signed_pmid.set_data(pmid_string_public_key);
 
   if (!remote_chunk_store_.Store(pmid_name,
-                                  signed_pmid.SerializeAsString(),
-                                  std::bind(&OperationCallback, args::_1, results, 3),
-                                  maid)) {
+                                 signed_pmid.SerializeAsString(),
+                                 [&] (bool result) {
+                                   return OperationCallback(result, results, 3);
+                                 },
+                                 maid)) {
     LOG(kError) << "Failed to store PMID.";
     OperationCallback(false, results, 3);
   }
@@ -754,9 +758,11 @@ void UserCredentialsImpl::StoreIdentity(OperationResults &results,
   signed_data.set_data(packet_content);
   signed_data.set_signature(signature);
   if (!remote_chunk_store_.Store(packet_name,
-                                  signed_data.SerializeAsString(),
-                                  std::bind(&OperationCallback, args::_1, results, index),
-                                  signer)) {
+                                 signed_data.SerializeAsString(),
+                                 [&] (bool result) {
+                                   return OperationCallback(result, results, index);
+                                 },
+                                 signer)) {
     LOG(kError) << "Failed to store: " << index;
     OperationCallback(false, results, index);
   }
@@ -908,9 +914,11 @@ void UserCredentialsImpl::ModifyIdentity(OperationResults &results,
   signed_data.set_data(content);
   signed_data.set_signature(signature);
   if (!remote_chunk_store_.Modify(name,
-                                   signed_data.SerializeAsString(),
-                                   std::bind(&OperationCallback, args::_1, results, index),
-                                   signer)) {
+                                  signed_data.SerializeAsString(),
+                                  [&] (bool result) {
+                                    return OperationCallback(result, results, index);
+                                  },
+                                  signer)) {
     LOG(kError) << "Failed to modify: " << index;
     OperationCallback(false, results, index);
   }
@@ -1093,8 +1101,10 @@ void UserCredentialsImpl::DeleteIdentity(OperationResults &results,
   std::shared_ptr<asymm::Keys> signer(new asymm::Keys(passport_.SignaturePacketDetails(sig_type,
                                                                                        true)));
   if (!remote_chunk_store_.Delete(name,
-                                   std::bind(&OperationCallback, args::_1, results, index),
-                                   signer)) {
+                                  [&] (bool result) {
+                                    return OperationCallback(result, results, index);
+                                  },
+                                  signer)) {
     LOG(kError) << "Failed to delete: " << index;
     OperationCallback(false, results, index);
   }
@@ -1334,9 +1344,8 @@ void UserCredentialsImpl::DeletePmid(OperationResults& results) {
 
   std::string pmid_name(pca::ApplyTypeToName(pmid.identity, pca::kSignaturePacket));
   if (!remote_chunk_store_.Delete(pmid_name,
-                                   std::bind(&UserCredentialsImpl::DeleteMaid, this,
-                                             args::_1, results, maid),
-                                   maid)) {
+                                  [&] (bool result) { return DeleteMaid(result, results, maid); },
+                                  maid)) {
     LOG(kError) << "Failed to delete PMID.";
     DeleteMaid(false, results, nullptr);
   }
@@ -1355,9 +1364,10 @@ void UserCredentialsImpl::DeleteMaid(bool result,
       new asymm::Keys(passport_.SignaturePacketDetails(passport::kAnmaid, true)));
   std::string maid_name(pca::ApplyTypeToName(maid->identity, pca::kSignaturePacket));
   if (!remote_chunk_store_.Delete(maid_name,
-                                   std::bind(&UserCredentialsImpl::DeleteAnmaid, this,
-                                             args::_1, results, anmaid),
-                                   anmaid)) {
+                                  [&] (bool result) {
+                                    return DeleteAnmaid(result, results, anmaid);
+                                  },
+                                  anmaid)) {
     LOG(kError) << "Failed to delete MAID.";
     DeleteAnmaid(false, results, nullptr);
   }
@@ -1380,8 +1390,10 @@ void UserCredentialsImpl::DeleteSignaturePacket(std::shared_ptr<asymm::Keys> pac
                                                 int index) {
   std::string packet_name(pca::ApplyTypeToName(packet->identity, pca::kSignaturePacket));
   if (!remote_chunk_store_.Delete(packet_name,
-                                   std::bind(&OperationCallback, args::_1, results, index),
-                                   packet)) {
+                                  [&] (bool result) {
+                                    return OperationCallback(result, results, index);
+                                  },
+                                  packet)) {
     LOG(kError) << "Failed to delete packet: " << index;
     OperationCallback(false, results, index);
   }
@@ -1407,7 +1419,7 @@ void UserCredentialsImpl::SessionSaver(const bptime::seconds &interval,
   LOG(kInfo) << "Session saver result: " << result;
 
   session_saver_timer_.expires_from_now(bptime::seconds(interval));
-  session_saver_timer_.async_wait([=](const boost::system::error_code &error_code) {
+  session_saver_timer_.async_wait([=] (const boost::system::error_code &error_code) {
                                     this->SessionSaver(bptime::seconds(interval), error_code);
                                   });
 }

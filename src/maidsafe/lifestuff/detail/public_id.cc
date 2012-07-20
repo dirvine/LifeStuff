@@ -136,10 +136,9 @@ int PublicId::StartCheckingForNewContacts(const bptime::seconds &interval) {
     return kNoPublicIds;
   }
   get_new_contacts_timer_.expires_from_now(interval);
-  get_new_contacts_timer_.async_wait(std::bind(&PublicId::GetNewContacts,
-                                               this,
-                                               interval,
-                                               std::placeholders::_1));
+  get_new_contacts_timer_.async_wait([=] (const boost::system::error_code error_code) {
+                                       return PublicId::GetNewContacts(interval, error_code);
+                                     });
   return kSuccess;
 }
 
@@ -183,8 +182,10 @@ int PublicId::CreatePublicId(const std::string &public_id, bool accepts_new_cont
   results.push_back(kPendingResult);
   results.push_back(kPendingResult);
 
-  VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
-                                         &mutex, &cond_var, &results[0]));
+  VoidFunctionOneBool callback = [&] (const bool& response) {
+                                   return ChunkStoreOperationCallback(response, &mutex, &cond_var,
+                                                                      &results[0]);
+                                 };
   if (!remote_chunk_store_->Store(AppendableByAllName(mmid->identity),
                                   AppendableIdValue(*mmid, true),
                                   callback,
@@ -193,7 +194,9 @@ int PublicId::CreatePublicId(const std::string &public_id, bool accepts_new_cont
     results[0] = kRemoteChunkStoreFailure;
   }
 
-  callback = std::bind(&ChunkStoreOperationCallback, args::_1, &mutex, &cond_var, &results[1]);
+  callback = [&] (const bool& response) {
+      return ChunkStoreOperationCallback(response, &mutex, &cond_var, &results[1]);
+    };
   std::string anmpid_name(SignaturePacketName(anmpid->identity));
   if (!remote_chunk_store_->Store(anmpid_name, SignaturePacketValue(*anmpid), callback, anmpid)) {
     boost::mutex::scoped_lock lock(mutex);
@@ -201,14 +204,18 @@ int PublicId::CreatePublicId(const std::string &public_id, bool accepts_new_cont
   }
 
   std::string mpid_name(SignaturePacketName(mpid->identity));
-  callback = std::bind(&ChunkStoreOperationCallback, args::_1, &mutex, &cond_var, &results[2]);
+  callback = [&] (const bool& response) {
+               return ChunkStoreOperationCallback(response, &mutex, &cond_var, &results[2]);
+             };
   if (!remote_chunk_store_->Store(mpid_name, SignaturePacketValue(*mpid), callback, anmpid)) {
     boost::mutex::scoped_lock lock(mutex);
     results[2] = kRemoteChunkStoreFailure;
   }
 
   std::string mcid_name(MaidsafeContactIdName(public_id));
-  callback = std::bind(&ChunkStoreOperationCallback, args::_1, &mutex, &cond_var, &results[3]);
+  callback = [&] (const bool& response) {
+               return ChunkStoreOperationCallback(response, &mutex, &cond_var, &results[3]);
+             };
   if (!remote_chunk_store_->Store(mcid_name,
                                   AppendableIdValue(*mpid, accepts_new_contacts),
                                   callback,
@@ -317,8 +324,10 @@ int PublicId::ModifyAppendability(const std::string &public_id, const char appen
     return kGetPublicIdError;
   }
 
-  VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
-                                         &mutex, &cond_var, &results[0]));
+  VoidFunctionOneBool callback = [&] (const bool& response) {
+                                   return ChunkStoreOperationCallback(response, &mutex, &cond_var,
+                                                                      &results[0]);
+                                 };
   if (!remote_chunk_store_->Modify(MaidsafeContactIdName(public_id),
                                    ComposeModifyAppendableByAll(mpid->private_key, appendability),
                                    callback,
@@ -328,7 +337,9 @@ int PublicId::ModifyAppendability(const std::string &public_id, const char appen
     results[0] = kRemoteChunkStoreFailure;
   }
 
-  callback = std::bind(&ChunkStoreOperationCallback, args::_1, &mutex, &cond_var, &results[1]);
+  callback = [&] (const bool& response) {
+               return ChunkStoreOperationCallback(response, &mutex, &cond_var, &results[1]);
+             };
   if (!remote_chunk_store_->Modify(AppendableByAllName(mmid->identity),
                                    ComposeModifyAppendableByAll(mmid->private_key, appendability),
                                    callback,
@@ -371,28 +382,36 @@ int PublicId::DeletePublicId(const std::string &public_id) {
               mcid_name(MaidsafeContactIdName(public_id));
 
   if (!remote_chunk_store_->Delete(inbox_name,
-                                   std::bind(&OperationCallback, args::_1, results, 0),
+                                   [&] (bool result) {
+                                     return OperationCallback(result, results, 0);
+                                   },
                                    inbox_keys)) {
     LOG(kError) << "Failed to delete inbox.";
     OperationCallback(false, results, 0);
   }
 
   if (!remote_chunk_store_->Delete(mcid_name,
-                                   std::bind(&OperationCallback, args::_1, results, 1),
+                                   [&] (bool result) {
+                                     return OperationCallback(result, results, 1);
+                                   },
                                    mpid)) {
     LOG(kError) << "Failed to delete MCID.";
     OperationCallback(false, results, 1);
   }
 
   if (!remote_chunk_store_->Delete(mpid_name,
-                                   std::bind(&OperationCallback, args::_1, results, 2),
+                                   [&] (bool result) {
+                                     return OperationCallback(result, results, 2);
+                                   },
                                    anmpid)) {
     LOG(kError) << "Failed to delete MPID.";
     OperationCallback(false, results, 2);
   }
 
   if (!remote_chunk_store_->Delete(anmpid_name,
-                                   std::bind(&OperationCallback, args::_1, results, 3),
+                                   [&] (bool result) {
+                                     return OperationCallback(result, results, 3);
+                                   },
                                    anmpid)) {
     LOG(kError) << "Failed to delete ANMPID.";
     OperationCallback(false, results, 3);
@@ -446,10 +465,9 @@ void PublicId::GetNewContacts(const bptime::seconds &interval,
 
   GetContactsHandle();
   get_new_contacts_timer_.expires_at(get_new_contacts_timer_.expires_at() + interval);
-  get_new_contacts_timer_.async_wait(std::bind(&PublicId::GetNewContacts,
-                                               this,
-                                               interval,
-                                               std::placeholders::_1));
+  get_new_contacts_timer_.async_wait([=] (const boost::system::error_code error_code) {
+                                       return PublicId::GetNewContacts(interval, error_code);
+                                     });
 }
 
 void PublicId::GetContactsHandle() {
@@ -604,7 +622,7 @@ int PublicId::RejectContact(const std::string &own_public_id,
 }
 
 void PublicId::RemoveContactHandle(const std::string &public_id, const std::string &contact_name) {
-  asio_service_.post(std::bind(&PublicId::RemoveContact, this, public_id, contact_name));
+  asio_service_.post([=] { return PublicId::RemoveContact(public_id, contact_name); });  // NOLINT (Alison)
 }
 
 int PublicId::RemoveContact(const std::string &public_id, const std::string &contact_name) {
@@ -636,8 +654,10 @@ int PublicId::RemoveContact(const std::string &public_id, const std::string &con
   std::vector<int> results;
   results.push_back(kPendingResult);
 
-  VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
-                                         &mutex, &cond_var, &results[0]));
+  VoidFunctionOneBool callback = [&] (const bool& response) {
+                                   return ChunkStoreOperationCallback(response, &mutex, &cond_var,
+                                                                      &results[0]);
+                                 };
   std::shared_ptr<asymm::Keys> new_mmid(new asymm::Keys(
       passport_.SignaturePacketDetails(passport::kMmid, false, public_id)));
   if (!remote_chunk_store_->Store(AppendableByAllName(new_mmid->identity),
@@ -667,7 +687,9 @@ int PublicId::RemoveContact(const std::string &public_id, const std::string &con
   results[0] = kPendingResult;
   std::shared_ptr<asymm::Keys> old_mmid(new asymm::Keys(
       passport_.SignaturePacketDetails(passport::kMmid, true, public_id)));
-  callback = std::bind(&ChunkStoreOperationCallback, args::_1, &mutex, &cond_var, &results[0]);
+  callback = [&] (const bool& response) {
+               return ChunkStoreOperationCallback(response, &mutex, &cond_var, &results[0]);
+             };
   if (!remote_chunk_store_->Modify(AppendableByAllName(old_mmid->identity),
                                    ComposeModifyAppendableByAll(old_mmid->private_key,
                                                                 pca::kModifiableByOwner),
@@ -751,8 +773,10 @@ int PublicId::InformContactInfo(const std::string &public_id,
 
     // Store encrypted MCID at recipient's MPID's name
     std::string contact_id(MaidsafeContactIdName(recipient_public_id));
-    VoidFunctionOneBool callback(std::bind(&ChunkStoreOperationCallback, args::_1,
-                                           &mutex, &cond_var, &results[i]));
+    VoidFunctionOneBool callback = [&] (const bool& response) {
+                                     return ChunkStoreOperationCallback(response, &mutex, &cond_var,
+                                                                        &results[i]);
+                                   };
     if (!remote_chunk_store_->Modify(contact_id,
                                      signed_data.SerializeAsString(),
                                      callback,
