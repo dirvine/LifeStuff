@@ -716,8 +716,7 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string &my_public_id,
   return kSuccess;
 }
 
-std::string LifeStuffImpl::GetOwnProfilePicture(
-    const std::string &my_public_id) {
+std::string LifeStuffImpl::GetOwnProfilePicture(const std::string &my_public_id) {
   // Read contents, put them in a string, give them back. Should not be a file
   // over a certain size (kFileRecontructionLimit).
   int result(PreContactChecks(my_public_id));
@@ -1663,8 +1662,7 @@ int LifeStuffImpl::RejectOpenShareInvitation(const std::string &my_public_id,
   return user_storage_->DeleteHiddenFile(hidden_file);
 }
 
-int LifeStuffImpl::LeaveOpenShare(const std::string &my_public_id,
-                                  const std::string &share_name) {
+int LifeStuffImpl::LeaveOpenShare(const std::string &my_public_id, const std::string &share_name) {
   int result(PreContactChecks(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks.";
@@ -1726,7 +1724,8 @@ void LifeStuffImpl::ConnectInternalElements() {
       [&] (const std::string& file_name,
            const std::string& serialised_data_map,
            std::string* data_map_hash) {
-        return user_storage_.get()->ParseAndSaveDataMap(file_name, serialised_data_map,
+        return user_storage_.get()->ParseAndSaveDataMap(file_name,
+                                                        serialised_data_map,
                                                         data_map_hash);
       });
 
@@ -1761,8 +1760,11 @@ void LifeStuffImpl::ConnectInternalElements() {
       });
 
   message_handler_->ConnectToPrivateShareDeletionSignal(
-      [&] (const std::string&, const std::string&, const std::string &share_name,
-           const std::string&, const std::string&) {
+      [&] (const std::string&,
+           const std::string&,
+           const std::string& share_name,
+           const std::string&,
+           const std::string&) {
         return user_storage_.get()->ShareDeleted(share_name);
       });
 
@@ -1772,8 +1774,11 @@ void LifeStuffImpl::ConnectInternalElements() {
            const std::string* new_directory_id,
            const asymm::Keys* new_key_ring,
            int* access_right) {
-        return user_storage_.get()->UpdateShare(share_id, new_share_id, new_directory_id,
-                                                new_key_ring, access_right);
+        return user_storage_.get()->UpdateShare(share_id,
+                                                new_share_id,
+                                                new_directory_id,
+                                                new_key_ring,
+                                                access_right);
       });
 
   message_handler_->ConnectToPrivateMemberAccessLevelSignal(
@@ -1805,7 +1810,10 @@ void LifeStuffImpl::ConnectInternalElements() {
 
   message_handler_->ConnectToPrivateShareDetailsSignal(
       [&] (const std::string& share_id, fs::path* relative_path) {
-      return user_storage_.get()->GetShareDetails(share_id, relative_path, nullptr, nullptr,
+      return user_storage_.get()->GetShareDetails(share_id,
+                                                  relative_path,
+                                                  nullptr,
+                                                  nullptr,
                                                   nullptr);
       });
 }
@@ -1918,21 +1926,24 @@ void LifeStuffImpl::MemberAccessChangeSlot(const std::string &share_id,
                                            const std::string &new_share_id,
                                            const asymm::Keys &key_ring,
                                            int access_right) {
-  std::string share_name(user_storage_->MemberAccessChange(share_id, directory_id, new_share_id,
-                                                           key_ring, access_right));
+  std::string share_name(user_storage_->MemberAccessChange(share_id,
+                                                           directory_id,
+                                                           new_share_id,
+                                                           key_ring,
+                                                           access_right));
   if (!share_name.empty()) {
     std::vector<std::string> identities(session_.PublicIdentities());
     for (auto it(identities.begin()); it != identities.end(); ++it) {
       auto itr(session_.share_information(*it)->find(share_name));
       if (itr != session_.share_information(*it)->end()) {
-        if ((access_right == kShareReadOnly) &&
-            (((*itr).second.share_type == kOpenReadWriteMember) ||
-             ((*itr).second.share_type == kPrivateReadWriteMember))) {
+        if (access_right == kShareReadOnly &&
+                ((*itr).second.share_type == kOpenReadWriteMember ||
+                (*itr).second.share_type == kPrivateReadWriteMember)) {
           (*itr).second.share_type -= 1;
           session_.set_changed(true);
-        } else if ((access_right == kShareReadWrite) &&
-            (((*itr).second.share_type == kOpenReadOnlyMember) ||
-             ((*itr).second.share_type == kPrivateReadOnlyMember))) {
+        } else if (access_right == kShareReadWrite &&
+                       ((*itr).second.share_type == kOpenReadOnlyMember ||
+                       (*itr).second.share_type == kPrivateReadOnlyMember)) {
           (*itr).second.share_type += 1;
           session_.set_changed(true);
         }

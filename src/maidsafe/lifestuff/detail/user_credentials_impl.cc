@@ -237,8 +237,10 @@ int UserCredentialsImpl::GetUserInfo(const std::string &keyword,
                                                                       pca::kModifiableByOwner)));
 
   int lid_result(lid::ProcessAccountStatus(keyword, pin, password, lid_packet));
-  if (lid_result != kSuccess)
+  if (lid_result != kSuccess) {
+    LOG(kError) << "Account can't be logged in: " << lid_result;
     return lid_result;
+  }
 
   // Obtain MID, TMID
   int mid_tmid_result(kSuccess);
@@ -258,8 +260,6 @@ int UserCredentialsImpl::GetUserInfo(const std::string &keyword,
   // Wait for them to finish
   mid_tmid_thread.join();
   smid_stmid_thread.join();
-
-  // Evaluate results
 
   // Evaluate MID & TMID
   if (mid_tmid_result == kIdPacketNotFound && smid_stmid_result == kIdPacketNotFound) {
@@ -284,8 +284,10 @@ int UserCredentialsImpl::GetUserInfo(const std::string &keyword,
 
   // Recheck LID & lock it.
   lid_result = GetAndLockLid(keyword, pin, password);
-  if (lid_result != kSuccess)
+  if (lid_result != kSuccess) {
+    LOG(kError) << "Failed to lock LID.";
     return lid_result;
+  }
 
   session_.set_keyword(keyword);
   session_.set_pin(pin);
@@ -313,10 +315,11 @@ int UserCredentialsImpl::GetAndLockLid(const std::string& keyword,
   std::string lid_name(pca::ApplyTypeToName(lid::LidName(keyword, pin), pca::kModifiableByOwner));
 
   std::string lid_packet;
-  std::shared_ptr<asymm::Keys> keys(new asymm::Keys(
-                                      passport_.SignaturePacketDetails(passport::kAnmid, true)));
+  std::shared_ptr<asymm::Keys> keys(
+      new asymm::Keys(passport_.SignaturePacketDetails(passport::kAnmid, true)));
   int get_lock_result(remote_chunk_store_.GetAndLock(lid_name, "", keys, &lid_packet));
   if (get_lock_result != kSuccess) {
+    LOG(kError) << "Failed to GetAndLock LID: " << get_lock_result;
     return get_lock_result;
   }
 
@@ -943,8 +946,8 @@ int UserCredentialsImpl::ModifyLid(const std::string keyword,
   std::string encrypted_account_status(lid::EncryptAccountStatus(keyword, pin, password,
                                                                  account_status));
 
-  std::shared_ptr<asymm::Keys> signer(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kAnmid, true)));
+  std::shared_ptr<asymm::Keys> signer(
+      new asymm::Keys(passport_.SignaturePacketDetails(passport::kAnmid, true)));
   asymm::Signature signature;
   int result(asymm::Sign(encrypted_account_status, signer->private_key, &signature));
   if (result != kSuccess) {
