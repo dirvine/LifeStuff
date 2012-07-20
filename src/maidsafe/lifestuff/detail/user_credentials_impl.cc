@@ -803,13 +803,13 @@ int UserCredentialsImpl::StoreLid(const std::string keyword,
                                   signer)) {
     LOG(kError) << "Failed to store LID.";
     OperationCallback(false, operation_result, 0);
-    return individual_result.at(0);
   }
   result = WaitForResults(mutex, condition_variable, individual_result);
   if (result != kSuccess) {
     LOG(kError) << "Failed to store LID:" << result;
+    return result;
   }
-  return result;
+  return individual_result.at(0);
 }
 
 int UserCredentialsImpl::SaveSession(bool log_out) {
@@ -958,13 +958,13 @@ int UserCredentialsImpl::ModifyLid(const std::string keyword,
                                    signer)) {
     LOG(kError) << "Failed to modify LID.";
     OperationCallback(false, operation_result, 0);
-    return individual_result.at(0);
   }
   result = WaitForResults(mutex, condition_variable, individual_result);
   if (result != kSuccess) {
     LOG(kError) << "Failed to modify LID:" << result;
+    return result;
   }
-  return result;
+  return individual_result.at(0);
 }
 
 int UserCredentialsImpl::ChangePin(const std::string &new_pin) {
@@ -1116,13 +1116,13 @@ int UserCredentialsImpl::DeleteLid(const std::string &keyword,
                                    signer)) {
     LOG(kError) << "Failed to delete LID.";
     OperationCallback(false, operation_result, 0);
-    return individual_result.at(0);
   }
   int result = WaitForResults(mutex, condition_variable, individual_result);
   if (result != kSuccess) {
     LOG(kError) << "Storing new LID timed out.";
+    return result;
   }
-  return result;
+  return individual_result.at(0);
 }
 
 int UserCredentialsImpl::ChangePassword(const std::string &new_password) {
