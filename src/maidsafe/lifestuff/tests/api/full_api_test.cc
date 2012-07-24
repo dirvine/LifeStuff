@@ -2864,6 +2864,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeToShareAndMoveOut) {
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
+  LOG(kError) << "\n\n1\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.privately_invited)
@@ -2899,6 +2900,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeToShareAndMoveOut) {
 
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
+  LOG(kError) << "\n\n2\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
@@ -2930,6 +2932,7 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeToShareAndMoveOut) {
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
+  LOG(kError) << "\n\n3\n\n";
 }
 
 TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeInnerShare) {
