@@ -641,9 +641,8 @@ int UserStorage::OpenShareInvitation(const std::string &sender_public_id,
 
 int UserStorage::GetAllShareUsers(const fs::path &absolute_path,
                                   std::map<std::string, int> *all_share_users) const {
-  int result(GetShareDetails(
-                 drive_in_user_space_->RelativePath(absolute_path),
-                 nullptr, nullptr, nullptr, nullptr, all_share_users, nullptr));
+  int result(GetShareDetails(drive_in_user_space_->RelativePath(absolute_path),
+                             nullptr, nullptr, nullptr, nullptr, all_share_users, nullptr));
   if (result != kSuccess) {
     LOG(kError) << "Failed to get share details for " << absolute_path;
     return result;
@@ -940,12 +939,10 @@ int UserStorage::GetShareDetails(const std::string &share_id,
                                                    directory_id,
                                                    share_users));
   if (share_users) {
-    std::vector<std::string> unconfirmed_users;
-    for (auto it = share_users->begin(); it != share_users->end(); ++it)
+    for (auto it = share_users->begin(); it != share_users->end(); ++it) {
       if ((*it).second < kShareRemover)
-        unconfirmed_users.push_back((*it).first);
-    for (auto it = unconfirmed_users.begin(); it != unconfirmed_users.end(); ++it)
-      share_users->erase(*it);
+        (*it).second = kUnconfirmed;
+    }
   }
   return result;
 }

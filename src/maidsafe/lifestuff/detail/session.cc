@@ -43,51 +43,72 @@ namespace lifestuff {
 Session::Session()
     : passport_(),
       user_details_(),
-      public_id_details_() {}
+      user_details_mutex_(),
+      public_id_details_(),
+      public_id_details_mutex_() {}
 
 Session::~Session() {}
 
 void Session::Reset() {
-  user_details_.defconlevel = kDefCon3;
-  user_details_.keyword.clear();
-  user_details_.pin.clear();
-  user_details_.password.clear();
-  user_details_.session_name.clear();
-  user_details_.unique_user_id.clear();
-  user_details_.root_parent_id.clear();
-  user_details_.max_space = 1073741824;
-  user_details_.used_space = 0;
-  user_details_.serialised_data_atlas.clear();
-  user_details_.changed = false;
+  {
+    boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
+    user_details_.defconlevel = kDefCon3;
+    user_details_.keyword.clear();
+    user_details_.pin.clear();
+    user_details_.password.clear();
+    user_details_.session_name.clear();
+    user_details_.unique_user_id.clear();
+    user_details_.root_parent_id.clear();
+    user_details_.max_space = 1073741824;
+    user_details_.used_space = 0;
+    user_details_.serialised_data_atlas.clear();
+    user_details_.changed = false;
+  }
 
   passport_.Clear(true, true, true);
-  public_id_details_.clear();
+  {
+    boost::mutex::scoped_lock arran_coire_fhionn_lochan(public_id_details_mutex_);
+    public_id_details_.clear();
+  }
 }
 
 passport::Passport& Session::passport() { return passport_; }
 
 int Session::AddPublicId(const std::string &public_id) {
-  auto result(public_id_details_.insert(std::make_pair(public_id, PublicIdDetails())));
-  if (!result.second) {
-    LOG(kError) << "Failure to add public id to session: " << public_id;
-    return kPublicIdInsertionFailure;
+  {
+    boost::mutex::scoped_lock arran_coire_fhionn_lochan(public_id_details_mutex_);
+    auto result(public_id_details_.insert(std::make_pair(public_id, PublicIdDetails())));
+    if (!result.second) {
+      LOG(kError) << "Failure to add public id to session: " << public_id;
+      return kPublicIdInsertionFailure;
+    }
   }
 
-  user_details_.changed = true;
+  {
+    boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
+    user_details_.changed = true;
+  }
 
   return kSuccess;
 }
 
 int Session::DeletePublicId(const std::string &public_id) {
-  user_details_.changed = true;
+  {
+    boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
+    user_details_.changed = true;
+  }
+
+  boost::mutex::scoped_lock arran_coire_fhionn_lochan(public_id_details_mutex_);
   return public_id_details_.erase(public_id) == size_t(1) ? kSuccess : kPublicIdNotFoundFailure;
 }
 
 bool Session::OwnPublicId(const std::string &public_id) {
+  boost::mutex::scoped_lock arran_coire_fhionn_lochan(public_id_details_mutex_);
   return public_id_details_.find(public_id) != public_id_details_.end();
 }
 
 const ContactsHandlerPtr Session::contacts_handler(const std::string &public_id) {
+  boost::mutex::scoped_lock arran_coire_fhionn_lochan(public_id_details_mutex_);
   auto it(public_id_details_.find(public_id));
   if (it == public_id_details_.end()) {
     LOG(kError) << "Failure to find public id: " << public_id;
@@ -97,78 +118,172 @@ const ContactsHandlerPtr Session::contacts_handler(const std::string &public_id)
   return (*it).second.contacts_handler;
 }
 
-const ShareInformationPtr Session::share_information(const std::string &public_id) {
-  auto it(public_id_details_.find(public_id));
-  if (it == public_id_details_.end()) {
-    LOG(kError) << "Failure to find public id: " << public_id;
-    return ShareInformationPtr();
+const ShareInformationDetail Session::share_information(const std::string &public_id) {
+  ShareInformationDetail share_information_detail;
+  {
+    boost::mutex::scoped_lock arran_coire_fhionn_lochan(public_id_details_mutex_);
+    auto it(public_id_details_.find(public_id));
+    if (it == public_id_details_.end()) {
+      LOG(kError) << "Failure to find public id: " << public_id;
+      return share_information_detail;
+    }
+
+    share_information_detail.first = (*it).second.share_information_mutex;
+    share_information_detail.second = (*it).second.share_information;
   }
 
-  return (*it).second.share_information;
+  return share_information_detail;
 }
 
-const ProfilePicturePtr Session::profile_picture_data_map(const std::string &public_id) {
-  auto it(public_id_details_.find(public_id));
-  if (it == public_id_details_.end()) {
-    LOG(kError) << "Failure to find public id: " << public_id;
-    return ProfilePicturePtr();
+const ProfilePictureDetail Session::profile_picture_data_map(const std::string &public_id) {
+  ProfilePictureDetail profile_picture_detail;
+  {
+    boost::mutex::scoped_lock arran_coire_fhionn_lochan(public_id_details_mutex_);
+    auto it(public_id_details_.find(public_id));
+    if (it == public_id_details_.end()) {
+      LOG(kError) << "Failure to find public id: " << public_id;
+      return profile_picture_detail;
+    }
+
+    profile_picture_detail.first = (*it).second.profile_picture_data_map_mutex;
+    profile_picture_detail.second = (*it).second.profile_picture_data_map;
   }
 
-  return (*it).second.profile_picture_data_map;
+  return profile_picture_detail;
 }
 
-DefConLevels Session::def_con_level() const { return user_details_.defconlevel; }
-std::string Session::keyword() const { return user_details_.keyword; }
-std::string Session::pin() const { return user_details_.pin; }
-std::string Session::password() const { return user_details_.password; }
-std::string Session::session_name() const { return user_details_.session_name; }
-std::string Session::unique_user_id() const { return user_details_.unique_user_id; }
-std::string Session::root_parent_id() const { return user_details_.root_parent_id; }
-int64_t Session::max_space() const { return user_details_.max_space; }
-int64_t Session::used_space() const { return user_details_.used_space; }
-std::string Session::serialised_data_atlas() const { return user_details_.serialised_data_atlas; }
-bool Session::changed() const { return user_details_.changed; }
+DefConLevels Session::def_con_level() const {
+  return user_details_.defconlevel;
+}
+
+std::string Session::keyword() const {
+  boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
+  return user_details_.keyword;
+}
+
+std::string Session::pin() const {
+  return user_details_.pin;
+}
+
+std::string Session::password() const {
+  boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
+  return user_details_.password;
+}
+
+std::string Session::session_name() const {
+  boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
+  return user_details_.session_name;
+}
+
+std::string Session::unique_user_id() const {
+  boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
+  return user_details_.unique_user_id;
+}
+
+std::string Session::root_parent_id() const {
+  boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
+  return user_details_.root_parent_id;
+}
+
+int64_t Session::max_space() const {
+  boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
+  return user_details_.max_space;
+}
+
+int64_t Session::used_space() const {
+  boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
+  return user_details_.used_space;
+}
+
+std::string Session::serialised_data_atlas() const {
+  boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
+  return user_details_.serialised_data_atlas;
+}
+
+bool Session::changed() const {
+  boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
+  return user_details_.changed;
+}
 
 void Session::set_def_con_level(DefConLevels defconlevel) {
+  boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
   user_details_.defconlevel = defconlevel;
 }
-void Session::set_keyword(const std::string &keyword) { user_details_.keyword = keyword; }
-void Session::set_pin(const std::string &pin) { user_details_.pin = pin; }
-void Session::set_password(const std::string &password) { user_details_.password = password; }
+
+void Session::set_keyword(const std::string &keyword) {
+  boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
+  user_details_.keyword = keyword;
+}
+
+void Session::set_pin(const std::string &pin) {
+  boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
+  user_details_.pin = pin;
+}
+
+void Session::set_password(const std::string &password) {
+  boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
+  user_details_.password = password;
+}
+
 bool Session::set_session_name() {
-  if (keyword().empty() || pin().empty()) {
-    LOG(kError) << "keyword: " << std::boolalpha << keyword().empty()
-                << ", pin: " << std::boolalpha << pin().empty();
+  boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
+  if (user_details_.keyword.empty() || user_details_.pin.empty()) {
+    LOG(kError) << "keyword: " << std::boolalpha << user_details_.keyword.empty()
+                << ", pin: " << std::boolalpha << user_details_.pin.empty();
     return false;
   }
-  user_details_.session_name = EncodeToHex(crypto::Hash<crypto::SHA1>(pin() + keyword()));
+
+  user_details_.session_name = EncodeToHex(crypto::Hash<crypto::SHA1>(user_details_.pin +
+                                                                      user_details_.keyword));
   return true;
 }
-void Session::clear_session_name() { user_details_.session_name.clear(); }
+
+void Session::clear_session_name() {
+  boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
+  user_details_.session_name.clear();
+}
+
 void Session::set_unique_user_id(const std::string &unique_user_id) {
   if (unique_user_id.empty())
     LOG(kWarning) << "Passed empty unique user ID.";
+
+  boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
   user_details_.unique_user_id = unique_user_id;
 }
+
 void Session::set_root_parent_id(const std::string &root_parent_id) {
   if (root_parent_id.empty())
     LOG(kWarning) << "Passed empty root parent ID.";
+
+  boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
   user_details_.root_parent_id = root_parent_id;
 }
+
 void Session::set_max_space(const int64_t &max_space) {
   if (max_space == 0)
     LOG(kWarning) << "Passed zero maximum space.";
+
+  boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
   user_details_.max_space = max_space;
 }
+
 void Session::set_used_space(const int64_t &used_space) {
   if (used_space > user_details_.max_space)
     LOG(kWarning) << "Passed used space greater than maximum.";
+
+  boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
   user_details_.used_space = used_space;
 }
+
 void Session::set_serialised_data_atlas(const std::string &serialised_data_atlas) {
+  boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
   user_details_.serialised_data_atlas = serialised_data_atlas;
 }
-void Session::set_changed(bool state) { user_details_.changed = state; }
+
+void Session::set_changed(bool state) {
+  boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
+  user_details_.changed = state;
+}
 
 int Session::ParseDataAtlas(const std::string &serialised_data_atlas) {
   DataAtlas data_atlas;

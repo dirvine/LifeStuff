@@ -184,44 +184,6 @@ int ContactsHandler::UpdateContact(const Contact &contact) {
   return kSuccess;
 }
 
-int ContactsHandler::UpdateMpidName(const std::string &public_id,
-                                    const std::string &new_mpid_name) {
-  ContactSet::iterator it = contact_set_.find(public_id);
-  if (it == contact_set_.end()) {
-    LOG(kError) << "Contact(" << public_id << ") not present in list.";
-    return -79;
-  }
-
-  Contact contact = *it;
-  contact.mpid_name = new_mpid_name;
-
-  if (!contact_set_.replace(it, contact)) {
-    LOG(kError) << "Failed to replace contact in set " << contact.public_id;
-    return -79;
-  }
-
-  return kSuccess;
-}
-
-int ContactsHandler::UpdateMmidName(const std::string &public_id,
-                                    const std::string &new_inbox_name) {
-  ContactSet::iterator it = contact_set_.find(public_id);
-  if (it == contact_set_.end()) {
-    LOG(kError) << "Contact(" << public_id << ") not present in list.";
-    return -79;
-  }
-
-  Contact contact = *it;
-  contact.inbox_name = new_inbox_name;
-
-  if (!contact_set_.replace(it, contact)) {
-    LOG(kError) << "Failed to replace contact in set " << contact.public_id;
-    return -79;
-  }
-
-  return kSuccess;
-}
-
 int ContactsHandler::UpdateProfilePictureDataMap(const std::string &public_id,
                                                  const std::string &profile_picture_data_map) {
   ContactSet::iterator it = contact_set_.find(public_id);
@@ -232,44 +194,6 @@ int ContactsHandler::UpdateProfilePictureDataMap(const std::string &public_id,
 
   Contact contact = *it;
   contact.profile_picture_data_map = profile_picture_data_map;
-  if (!contact_set_.replace(it, contact)) {
-    LOG(kError) << "Failed to replace contact in set " << contact.public_id;
-    return -79;
-  }
-
-  return kSuccess;
-}
-
-int ContactsHandler::UpdateMpidPublicKey(const std::string &public_id,
-                                         const asymm::PublicKey &new_mpid_public_key) {
-  ContactSet::iterator it = contact_set_.find(public_id);
-  if (it == contact_set_.end()) {
-    LOG(kError) << "Contact(" << public_id << ") not present in list.";
-    return -79;
-  }
-
-  Contact contact = *it;
-  contact.mpid_public_key = new_mpid_public_key;
-
-  if (!contact_set_.replace(it, contact)) {
-    LOG(kError) << "Failed to replace contact in set " << contact.public_id;
-    return -79;
-  }
-
-  return kSuccess;
-}
-
-int ContactsHandler::UpdateMmidPublicKey(const std::string &public_id,
-                                         const asymm::PublicKey &new_inbox_public_key) {
-  ContactSet::iterator it = contact_set_.find(public_id);
-  if (it == contact_set_.end()) {
-    LOG(kError) << "Contact(" << public_id << ") not present in list.";
-    return -79;
-  }
-
-  Contact contact = *it;
-  contact.inbox_public_key = new_inbox_public_key;
-
   if (!contact_set_.replace(it, contact)) {
     LOG(kError) << "Failed to replace contact in set " << contact.public_id;
     return -79;

@@ -746,11 +746,13 @@ int PublicId::InformContactInfo(const std::string &public_id,
     introduction.set_inbox_name(inbox.identity);
     introduction.set_public_id(public_id);
     introduction.set_timestamp(IsoTimeWithMicroSeconds());
-    const ProfilePicturePtr profile_picture_data_map(session_.profile_picture_data_map(public_id));
-    if (profile_picture_data_map)
-      introduction.set_profile_picture_data_map(*profile_picture_data_map);
-    else
+    ProfilePictureDetail profile_picture_data_map(session_.profile_picture_data_map(public_id));
+    if (profile_picture_data_map.second) {
+      boost::mutex::scoped_lock loch(*profile_picture_data_map.first);
+      introduction.set_profile_picture_data_map(*(profile_picture_data_map.second));
+    } else {
       LOG(kInfo) << "Failure to find profile picture data map for public id: " << public_id;
+    }
 
     std::string encrypted_introduction;
     int result(asymm::Encrypt(introduction.SerializeAsString(),

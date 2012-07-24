@@ -28,7 +28,10 @@
 #include <map>
 #include <string>
 #include <set>
+#include <utility>
 #include <vector>
+
+#include "boost/thread/mutex.hpp"
 
 #include "maidsafe/passport/passport.h"
 
@@ -73,13 +76,19 @@ typedef std::shared_ptr<ContactsHandler> ContactsHandlerPtr;
 typedef std::shared_ptr<ShareInformation> ShareInformationPtr;
 typedef std::shared_ptr<std::string> ProfilePicturePtr;
 
+typedef std::pair<std::shared_ptr<boost::mutex>, ShareInformationPtr> ShareInformationDetail;
+typedef std::pair<std::shared_ptr<boost::mutex>, ProfilePicturePtr> ProfilePictureDetail;
+
 struct PublicIdDetails {
   PublicIdDetails() : profile_picture_data_map(new std::string(kBlankProfilePicture)),
                       contacts_handler(new ContactsHandler),
-                      share_information(new ShareInformation) {}
+                      share_information(new ShareInformation),
+                      profile_picture_data_map_mutex(new boost::mutex),
+                      share_information_mutex(new boost::mutex) {}
   ProfilePicturePtr profile_picture_data_map;
   ContactsHandlerPtr contacts_handler;
   ShareInformationPtr share_information;
+  std::shared_ptr<boost::mutex> profile_picture_data_map_mutex, share_information_mutex;
 };
 
 class Session {
@@ -94,8 +103,8 @@ class Session {
   int DeletePublicId(const std::string &public_id);
   bool OwnPublicId(const std::string &public_id);
   const ContactsHandlerPtr contacts_handler(const std::string &public_id);
-  const ShareInformationPtr share_information(const std::string &public_id);
-  const ProfilePicturePtr profile_picture_data_map(const std::string &public_id);
+  const ShareInformationDetail share_information(const std::string &public_id);
+  const ProfilePictureDetail profile_picture_data_map(const std::string &public_id);
 
   DefConLevels def_con_level() const;
   std::string keyword() const;
@@ -135,7 +144,9 @@ class Session {
 
   passport::Passport passport_;
   UserDetails user_details_;
+  mutable boost::mutex user_details_mutex_;
   std::map<std::string, PublicIdDetails> public_id_details_;
+  boost::mutex public_id_details_mutex_;
 
   bool CreateTestPackets(bool with_public_ids);
 };
