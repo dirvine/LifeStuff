@@ -1570,9 +1570,9 @@ TEST_F(TwoUsersApiTest, FUNC_RenamePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name1,
                                                                 &results));
-    EXPECT_EQ(0, results.size());
+    EXPECT_EQ(1U, results.size());
     EXPECT_TRUE(results.end() == results.find(public_id_1_));
-    EXPECT_TRUE(results.end() == results.find(public_id_2_));
+    EXPECT_EQ(kShareReadWriteUnConfirmed, results.find(public_id_2_)->second);
 
     fs::path share_path(test_elements_1_.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
@@ -1775,9 +1775,9 @@ TEST_F(TwoUsersApiTest, FUNC_MembershipDowngradePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name1,
                                                                 &results));
-    EXPECT_EQ(0, results.size());
+    EXPECT_EQ(1U, results.size());
     EXPECT_TRUE(results.end() == results.find(public_id_1_));
-    EXPECT_TRUE(results.end() == results.find(public_id_2_));
+    EXPECT_EQ(kShareReadWriteUnConfirmed, results.find(public_id_2_)->second);
 
     fs::path share_path(test_elements_1_.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
@@ -1974,7 +1974,8 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
     StringIntMap shares_members;
 
     test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name1, &shares_members);
-    EXPECT_EQ(0, shares_members.size());
+    EXPECT_EQ(1, shares_members.size());
+    EXPECT_EQ(kShareReadOnlyUnConfirmed, shares_members.find(public_id_2_)->second);
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
@@ -2062,7 +2063,8 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
     StringIntMap shares_members;
 
     test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name1, &shares_members);
-    EXPECT_EQ(0, shares_members.size());
+    EXPECT_EQ(1, shares_members.size());
+    EXPECT_EQ(kShareReadOnlyUnConfirmed, shares_members.find(public_id_2_)->second);
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
@@ -2271,7 +2273,9 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
     EXPECT_EQ(kSuccess, results[public_id_2_]);
     StringIntMap shares_members;
     test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name1, &shares_members);
-    EXPECT_EQ(0, shares_members.size());
+    EXPECT_EQ(2U, shares_members.size());
+    EXPECT_EQ(kShareReadOnlyUnConfirmed, shares_members.find(public_id_2_)->second);
+    EXPECT_EQ(kShareReadOnlyUnConfirmed, shares_members.find(public_id3)->second);
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
@@ -2375,7 +2379,8 @@ TEST_F(TwoUsersMutexApiTest, FUNC_AddModifyRemoveOneFile) {
     EXPECT_EQ(kSuccess, results[public_id_2_]);
     StringIntMap shares_members;
     test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name1, &shares_members);
-    EXPECT_EQ(0, shares_members.size());
+    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(kShareReadWriteUnConfirmed, shares_members.find(public_id_2_)->second);
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
@@ -2518,7 +2523,8 @@ TEST_F(TwoUsersMutexApiTest, FUNC_AddRemoveMultipleNodes) {
     test_elements_1_.GetPrivateShareMembers(public_id_1_,
                                             share_name,
                                             &shares_members);
-    EXPECT_EQ(0, shares_members.size());
+    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(kShareReadWriteUnConfirmed, shares_members.find(public_id_2_)->second);
 
     fs::path sub_directory(directory1 / sub_directory_name);
     fs::path further_sub_director(sub_directory / further_sub_directory_name);
@@ -2722,7 +2728,8 @@ TEST_F(TwoUsersMutexApiTest, FUNC_RenameOneNode) {
     test_elements_1_.GetPrivateShareMembers(public_id_1_,
                                             share_name,
                                             &shares_members);
-    EXPECT_EQ(0, shares_members.size());
+    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(kShareReadWriteUnConfirmed, shares_members.find(public_id_2_)->second);
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
@@ -2849,7 +2856,8 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeToShareAndMoveOut) {
     test_elements_1_.GetPrivateShareMembers(public_id_1_,
                                             share_name,
                                             &shares_members);
-    EXPECT_EQ(0, shares_members.size());
+    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(kShareReadWriteUnConfirmed, shares_members.find(public_id_2_)->second);
 
     fs::path directory(test_elements_1_.mount_path() / sub_directory_name);
     EXPECT_TRUE(fs::create_directory(directory, error_code));
@@ -2961,9 +2969,10 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeInnerShare) {
     EXPECT_EQ(kSuccess, results[public_id_2_]);
     StringIntMap shares_members;
     test_elements_1_.GetPrivateShareMembers(public_id_1_,
-                                          share_name,
-                                          &shares_members);
-    EXPECT_EQ(0, shares_members.size());
+                                            share_name,
+                                            &shares_members);
+    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(kShareReadWriteUnConfirmed, shares_members.find(public_id_2_)->second);
 
     fs::path sub_directory(directory1 / sub_directory_name);
     EXPECT_TRUE(fs::create_directory(sub_directory, error_code));
@@ -3209,7 +3218,8 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeToTrashThenMoveBack) {
     test_elements_1_.GetPrivateShareMembers(public_id_1_,
                                             share_name,
                                             &shares_members);
-    EXPECT_EQ(0, shares_members.size());
+    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(kShareReadWriteUnConfirmed, shares_members.find(public_id_2_)->second);
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
