@@ -130,7 +130,8 @@ class LifeStuff {
                               StringIntMap *results);
   int GetPrivateShareList(const std::string &my_public_id, StringIntMap *shares_names);
   // For owners only
-  int GetPrivateShareMembers(const std::string &my_public_id, const std::string &share_name,
+  int GetPrivateShareMembers(const std::string &my_public_id,
+                             const std::string &share_name,
                              StringIntMap *shares_members);
   int GetPrivateSharesIncludingMember(const std::string &my_public_id,
                                       const std::string &contact_public_id,
