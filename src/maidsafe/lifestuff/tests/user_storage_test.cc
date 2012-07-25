@@ -210,15 +210,17 @@ class UserStorageTest : public testing::TestWithParam<bool> {
     user_storage2_.reset(new UserStorage(remote_chunk_store2_, *message_handler2_));
 
     public_id1_->ConnectToContactConfirmedSignal(
-        [&] (const std::string& s_1, const std::string& s_2, const std::string&) {
-          return NewContactSlot(s_1, s_2, &mutex_, &cond_var_);
+        [&] (const std::string& own_public_id,
+             const std::string& contact_public_id,
+             const std::string& /*timestamp*/) {
+          return NewContactSlot(own_public_id, contact_public_id, &mutex_, &cond_var_);
         });
     public_id2_->ConnectToNewContactSignal(
-        [&] (const std::string& s_1,
-             const std::string& s_2,
-             const std::string&,
-             const std::string&) {
-          return NewContactSlot(s_1, s_2, &mutex_, &cond_var_);
+        [&] (const std::string& own_public_id,
+             const std::string& contact_public_id,
+             const std::string& /*message*/,
+             const std::string& /*timestamp*/) {
+          return NewContactSlot(own_public_id, contact_public_id, &mutex_, &cond_var_);
         });
 
     EXPECT_EQ(kSuccess, public_id1_->CreatePublicId(pub_name1_, true));
@@ -927,8 +929,11 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
                                                     nullptr);
       });
   public_id3->ConnectToNewContactSignal(
-      [&] (const std::string& s_1, const std::string& s_2, const std::string&, const std::string&) {
-        return NewContactSlot(s_1, s_2, &mutex_, &cond_var_);
+      [&] (const std::string& own_public_id,
+           const std::string& contact_public_id,
+           const std::string& /*message*/,
+           const std::string& /*timestamp*/) {
+        return NewContactSlot(own_public_id, contact_public_id, &mutex_, &cond_var_);
       });
 
   public_id3->CreatePublicId(pub_name3, true);
