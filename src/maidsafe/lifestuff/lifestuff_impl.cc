@@ -569,15 +569,16 @@ int LifeStuffImpl::LeaveLifeStuff() {
 }
 
 /// Contact operations
-int LifeStuffImpl::AddContact(const std::string &my_public_id,
-                              const std::string &contact_public_id) {
+int LifeStuffImpl::AddContact(const std::string& my_public_id,
+                              const std::string& contact_public_id,
+                              const std::string& message) {
   int result(PreContactChecks(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in AddContact.";
     return result;
   }
 
-  return public_id_->AddContact(my_public_id, contact_public_id);
+  return public_id_->AddContact(my_public_id, contact_public_id, message);
 }
 
 int LifeStuffImpl::ConfirmContact(const std::string &my_public_id,

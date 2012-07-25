@@ -623,6 +623,26 @@ TEST_F(TwoUsersApiTest, FUNC_RemoveContact) {
   }
 }
 
+TEST_F(TwoUsersApiTest, FUNC_AddContactWithMessage) {
+  test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_);
+  test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_);
+
+  const std::string public_id_3(RandomAlphaNumericString(RandomUint32() % 30 + 1));
+  test_elements_1_.CreatePublicId(public_id_3);
+  testing_variables_1_.newly_contacted = false;
+
+  const std::string message(RandomAlphaNumericString(RandomUint32() % 90 + 10));
+  test_elements_2_.AddContact(public_id_2_, public_id_3, message);
+
+  while (!testing_variables_1_.newly_contacted)
+    Sleep(bptime::milliseconds(100));
+  EXPECT_EQ(testing_variables_1_.contact_request_message, message);
+  test_elements_1_.ConfirmContact(public_id_1_, public_id_3);
+
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+}
+
 TEST_F(TwoUsersApiTest, FUNC_CreateEmptyOpenShare) {
   std::string share_name(RandomAlphaNumericString(5)),
               file_name(RandomAlphaNumericString(5)),
@@ -2141,8 +2161,11 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
         },
         [&] (const std::string& s_1,
              const std::string& s_2,
-             const std::string& s_3) {
-          return testresources::NewContactSlot(s_1, s_2, s_3, &testing_variables3.newly_contacted);
+             const std::string& s_3,
+             const std::string& s_4) {
+          return testresources::NewContactSlot(s_1, s_2, s_3, s_4,
+                                               &testing_variables3.newly_contacted,
+                                               &testing_variables3.contact_request_message);
         },
         [&] (const std::string& s_1,
              const std::string& s_2,
@@ -2222,7 +2245,7 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
                                                 &testing_variables3.new_share_name,
                                                 &testing_variables3.share_renamed);
         },
-                ShareChangedFunction());
+        ShareChangedFunction());
   test_elements3.CreateUser(keyword3, pin3, password3);
   test_elements3.CreatePublicId(public_id3);
   test_elements3.AddContact(public_id3, public_id_1_);

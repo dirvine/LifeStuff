@@ -214,7 +214,10 @@ class UserStorageTest : public testing::TestWithParam<bool> {
           return NewContactSlot(s_1, s_2, &mutex_, &cond_var_);
         });
     public_id2_->ConnectToNewContactSignal(
-        [&] (const std::string& s_1, const std::string& s_2, const std::string&) {
+        [&] (const std::string& s_1,
+             const std::string& s_2,
+             const std::string&,
+             const std::string&) {
           return NewContactSlot(s_1, s_2, &mutex_, &cond_var_);
         });
 
@@ -223,7 +226,7 @@ class UserStorageTest : public testing::TestWithParam<bool> {
     public_id1_->StartCheckingForNewContacts(interval_);
     public_id2_->StartCheckingForNewContacts(interval_);
 
-    EXPECT_EQ(kSuccess, public_id1_->AddContact(pub_name1_, pub_name2_));
+    EXPECT_EQ(kSuccess, public_id1_->AddContact(pub_name1_, pub_name2_, ""));
     {
       boost::mutex::scoped_lock lock(mutex_);
       EXPECT_TRUE(cond_var_.timed_wait(lock, interval_ * 2));
@@ -924,7 +927,7 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
                                                     nullptr);
       });
   public_id3->ConnectToNewContactSignal(
-      [&] (const std::string& s_1, const std::string& s_2, const std::string&) {
+      [&] (const std::string& s_1, const std::string& s_2, const std::string&, const std::string&) {
         return NewContactSlot(s_1, s_2, &mutex_, &cond_var_);
       });
 
@@ -933,7 +936,7 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
   public_id1_->StartCheckingForNewContacts(interval_);
   public_id3->StartCheckingForNewContacts(interval_);
 
-  public_id1_->AddContact(pub_name1_, pub_name3);
+  public_id1_->AddContact(pub_name1_, pub_name3, "");
   {
     boost::mutex::scoped_lock lock(mutex_);
     EXPECT_TRUE(cond_var_.timed_wait(lock, interval_ * 2));
