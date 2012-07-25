@@ -73,7 +73,8 @@ enum LifeStuffState {
 
 /// THIS ENUM MUST BE KEPT IN SYNC WITH THE ONE IN DRIVE'S CONFIG.H !!!
 enum PrivateShareRoles {
-  kUnconfirmed = -2,
+  kShareReadOnlyUnConfirmed = -10,
+  kShareReadWriteUnConfirmed = -9,
   kShareRemover  = -1,
   kShareReadOnly = 0,
   kShareReadWrite = 1,

@@ -938,12 +938,12 @@ int UserStorage::GetShareDetails(const std::string &share_id,
                                                    share_keyring,
                                                    directory_id,
                                                    share_users));
-  if (share_users) {
-    for (auto it = share_users->begin(); it != share_users->end(); ++it) {
-      if ((*it).second < kShareRemover)
-        (*it).second = kUnconfirmed;
-    }
-  }
+//  if (share_users) {
+//    for (auto it = share_users->begin(); it != share_users->end(); ++it) {
+//      if ((*it).second < kShareRemover)
+//        (*it).second = kUnconfirmed;
+//    }
+//  }
   return result;
 }
 
@@ -961,14 +961,14 @@ int UserStorage::GetShareDetails(const fs::path &relative_path,
                                                    directory_id,
                                                    share_users,
                                                    owner_id));
-  if (share_users) {
-    std::vector<std::string> unconfirmed_users;
-    for (auto it = share_users->begin(); it != share_users->end(); ++it)
-      if ((*it).second < kShareRemover)
-        unconfirmed_users.push_back((*it).first);
-    for (auto it = unconfirmed_users.begin(); it != unconfirmed_users.end(); ++it)
-      share_users->erase(*it);
-  }
+//  if (share_users) {
+//    std::vector<std::string> unconfirmed_users;
+//    for (auto it = share_users->begin(); it != share_users->end(); ++it)
+//      if ((*it).second < kShareRemover)
+//        unconfirmed_users.push_back((*it).first);
+//    for (auto it = unconfirmed_users.begin(); it != unconfirmed_users.end(); ++it)
+//      share_users->erase(*it);
+//  }
   return result;
 }
 std::string UserStorage::MemberAccessChange(const std::string &share_id,
