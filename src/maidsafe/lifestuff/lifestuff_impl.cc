@@ -1572,7 +1572,7 @@ int LifeStuffImpl::GetOpenShareList(const std::string &my_public_id,
 
 int LifeStuffImpl::GetOpenShareMembers(const std::string &my_public_id,
                                        const std::string &share_name,
-                                       std::vector<std::string> *share_members) {
+                                       StringIntMap *share_members) {
   if (!share_members) {
     LOG(kError) << "Parameter share name must be valid.";
     return kGeneralError;
@@ -1593,7 +1593,7 @@ int LifeStuffImpl::GetOpenShareMembers(const std::string &my_public_id,
   share_members->clear();
   for (auto it = share_users.begin(); it != share_users.end(); ++it) {
     if (it->first != my_public_id)
-      share_members->push_back(it->first);
+      share_members->insert(std::make_pair(it->first, it->second));
   }
   return kSuccess;
 }
@@ -1704,7 +1704,7 @@ int LifeStuffImpl::LeaveOpenShare(const std::string &my_public_id,
     return result;
   }
   fs::path share(mount_path() / kSharedStuff / share_name);
-  std::vector<std::string> members;
+  StringIntMap members;
   result = GetOpenShareMembers(my_public_id, share_name, &members);
   if (result != kSuccess) {
     LOG(kError) << "Failed to get members of share " << share;
@@ -1723,9 +1723,8 @@ int LifeStuffImpl::LeaveOpenShare(const std::string &my_public_id,
       return result;
     }
   } else {
-    members.clear();
-    members.push_back(my_public_id);
-    result = user_storage_->RemoveOpenShareUsers(share, members);
+    std::vector<std::string> member_list(1, my_public_id);
+    result = user_storage_->RemoveOpenShareUsers(share, member_list);
     if (result != kSuccess) {
       LOG(kError) << "Failed to remove share user " << my_public_id << " from share " << share;
       return result;

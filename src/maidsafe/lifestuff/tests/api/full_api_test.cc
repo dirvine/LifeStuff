@@ -881,7 +881,7 @@ TEST_F(TwoUsersApiTest, FUNC_InviteOpenShareMembers) {
     EXPECT_TRUE(WriteFile(file_path, file_content1));
 
     fs::path directory(test_elements_1_.mount_path() / kMyStuff / directory_name);
-    StringIntMap  results;
+    StringIntMap results;
     std::vector<std::string> contacts;
     fs::path share_directory2(directory / share2_name);
     EXPECT_EQ(kSuccess, test_elements_1_.CreateOpenShareFromExistingDirectory(public_id_1_,
@@ -908,7 +908,7 @@ TEST_F(TwoUsersApiTest, FUNC_InviteOpenShareMembers) {
     EXPECT_EQ(kSuccess, test_elements_1_.GetOpenShareList(public_id_1_, &shares));
     EXPECT_EQ(2, shares.size());
 
-    std::vector<std::string> members;
+    StringIntMap members;
     EXPECT_EQ(kSuccess, test_elements_1_.GetOpenShareMembers(public_id_1_, share2_name, &members));
     EXPECT_EQ(0, members.size());
 
@@ -941,7 +941,7 @@ TEST_F(TwoUsersApiTest, FUNC_InviteOpenShareMembers) {
     EXPECT_EQ(kSuccess, test_elements_2_.GetOpenShareList(public_id_2_, &shares));
     EXPECT_EQ(1, shares.size());
 
-    std::vector<std::string> members;
+    StringIntMap members;
     EXPECT_EQ(kSuccess, test_elements_2_.GetOpenShareMembers(public_id_2_, share2_name, &members));
     EXPECT_EQ(1, members.size());
 
@@ -1047,7 +1047,7 @@ TEST_F(TwoUsersApiTest, FUNC_LeaveOpenShare) {
     EXPECT_EQ(kSuccess, test_elements_2_.GetOpenShareList(public_id_2_, &shares));
     EXPECT_EQ(1, shares.size());
 
-    std::vector<std::string> members;
+    StringIntMap members;
     EXPECT_EQ(kSuccess, test_elements_2_.GetOpenShareMembers(public_id_2_, share_name, &members));
     EXPECT_EQ(0, members.size());
 
@@ -1159,7 +1159,7 @@ TEST_F(TwoUsersApiTest, FUNC_SameOpenShareName) {
     EXPECT_EQ(kSuccess, test_elements_1_.GetOpenShareList(public_id_1_, &shares));
     EXPECT_EQ(2, shares.size());
 
-    std::vector<std::string> members;
+    StringIntMap members;
     EXPECT_EQ(kSuccess, test_elements_1_.GetOpenShareMembers(public_id_1_, share_name, &members));
     EXPECT_EQ(0, members.size());
 

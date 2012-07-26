@@ -24,6 +24,7 @@
 
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
+#include "maidsafe/private/utils/utilities.h"
 
 #include "maidsafe/encrypt/data_map.h"
 
@@ -38,6 +39,7 @@
 
 namespace args = std::placeholders;
 namespace pca = maidsafe::priv::chunk_actions;
+namespace utils = maidsafe::priv::utilities;
 
 namespace maidsafe {
 
@@ -190,7 +192,9 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
 
   std::string inbox_id(AppendableByAllType(recipient_contact.inbox_name));
   VoidFunctionOneBool callback([&] (const bool& response) {
-                                 return ChunkStoreOperationCallback(response, &mutex, &cond_var,
+                                 utils::ChunkStoreOperationCallback(response,
+                                                                    &mutex,
+                                                                    &cond_var,
                                                                     &result);
                                });
   if (!remote_chunk_store_->Modify(inbox_id, signed_data.SerializeAsString(), callback, mmid)) {
