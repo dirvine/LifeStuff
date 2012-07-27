@@ -32,14 +32,11 @@
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/encrypt/self_encryptor.h"
 
+#include "maidsafe/passport/passport.h"
+
 #include "maidsafe/lifestuff/detail/contacts.h"
 #include "maidsafe/lifestuff/detail/data_atlas_pb.h"
 #include "maidsafe/lifestuff/detail/message_handler.h"
-#include "maidsafe/lifestuff/detail/session.h"
-
-
-#include "maidsafe/passport/passport.h"
-
 #include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/utils.h"
 
@@ -490,7 +487,9 @@ int UserStorage::StopShare(const std::string &sender_public_id,
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
 
   VoidFunctionOneBool callback([&] (const bool& response) {
-                                 return utils::ChunkStoreOperationCallback(response, &mutex, &cond_var,
+                                 utils::ChunkStoreOperationCallback(response,
+                                                                    &mutex,
+                                                                    &cond_var,
                                                                     &results[0]);
                                });
   std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
@@ -736,7 +735,9 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
 
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
   VoidFunctionOneBool callback([&] (const bool& response) {
-                                 return utils::ChunkStoreOperationCallback(response, &mutex, &cond_var,
+                                 utils::ChunkStoreOperationCallback(response,
+                                                                    &mutex,
+                                                                    &cond_var,
                                                                     &results[0]);
                                });
   std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));

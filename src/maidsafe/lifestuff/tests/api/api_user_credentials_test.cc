@@ -380,7 +380,7 @@ TEST_F(OneUserApiTest, FUNC_ChangeCredentialsAndLogOut) {
   EXPECT_EQ(kSuccess, test_elements_.LogIn(new_keyword, new_pin, new_password));
 }
 
-TEST_F(TwoInstancesApiTest, FUNC_LogInFromTwoPlaces) {
+TEST_F(TwoInstancesApiTest, DISABLED_FUNC_LogInFromTwoPlaces) {
   EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_));
   EXPECT_EQ(kAccountAlreadyLoggedIn, test_elements_2_.LogIn(keyword_, pin_, password_));
 
@@ -394,7 +394,7 @@ TEST_F(TwoInstancesApiTest, FUNC_LogInFromTwoPlaces) {
   EXPECT_NE(kSuccess, test_elements_2_.LogOut());
 }
 
-TEST_F(TwoInstancesApiTest, FUNC_LogInFromTwoPlacesSimultaneously) {
+TEST_F(TwoInstancesApiTest, DISABLED_FUNC_LogInFromTwoPlacesSimultaneously) {
   EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_));
   EXPECT_EQ(kSuccess, test_elements_.LogOut());
 
