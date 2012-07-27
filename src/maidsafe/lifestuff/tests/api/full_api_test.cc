@@ -789,7 +789,7 @@ TEST_F(TwoUsersApiTest, FUNC_CreateOpenShare) {
     EXPECT_FALSE(testing_variables_2_.new_open_share_id.empty());
     EXPECT_EQ(kSuccess,
               test_elements_2_.RejectOpenShareInvitation(public_id_2_,
-                                                       testing_variables_2_.new_open_share_id));
+                                                         testing_variables_2_.new_open_share_id));
     fs::path share(test_elements_2_.mount_path() / kSharedStuff / share_name),
              file_path(share / file2_name);
     EXPECT_FALSE(fs::exists(share, error_code));
@@ -854,10 +854,10 @@ TEST_F(TwoUsersApiTest, FUNC_InviteOpenShareMembers) {
     contacts.push_back(public_id_2_);
     results.insert(std::make_pair(public_id_2_, kGeneralError));
     EXPECT_EQ(kSuccess, test_elements_1_.CreateOpenShareFromExistingDirectory(public_id_1_,
-                                                                            share_directory1,
-                                                                            contacts,
-                                                                            &share1_name,
-                                                                            &results));
+                                                                              share_directory1,
+                                                                              contacts,
+                                                                              &share1_name,
+                                                                              &results));
     fs::path share(test_elements_1_.mount_path() / kSharedStuff / share1_name);
     EXPECT_EQ(kSuccess, results[public_id_2_]);
     EXPECT_TRUE(fs::exists(share, error_code));
@@ -881,7 +881,7 @@ TEST_F(TwoUsersApiTest, FUNC_InviteOpenShareMembers) {
     EXPECT_FALSE(testing_variables_2_.new_open_share_id.empty());
     EXPECT_EQ(kSuccess,
               test_elements_2_.RejectOpenShareInvitation(public_id_2_,
-                                                       testing_variables_2_.new_open_share_id));
+                                                         testing_variables_2_.new_open_share_id));
     fs::path share(test_elements_2_.mount_path() / kSharedStuff / share1_name),
              file_path(share / file2_name);
     EXPECT_FALSE(fs::exists(share, error_code));
@@ -917,10 +917,9 @@ TEST_F(TwoUsersApiTest, FUNC_InviteOpenShareMembers) {
     EXPECT_EQ(0, error_code.value());
 
     int count(0), limit(30);
-    while ((fs::exists(directory / share2_name, error_code) && !error_code) &&
-           count++ < limit) {
+    while (fs::exists(directory / share2_name, error_code) && !error_code && count++ < limit)
       Sleep(bptime::milliseconds(100));
-    }
+
     EXPECT_FALSE(fs::exists(directory / share2_name, error_code));
     EXPECT_NE(0, error_code.value());
 

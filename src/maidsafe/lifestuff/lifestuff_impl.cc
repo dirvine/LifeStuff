@@ -1647,6 +1647,8 @@ int LifeStuffImpl::GetOpenShareMembers(const std::string &my_public_id,
     return result;
   }
 
+  share_members->erase(my_public_id);
+
   return kSuccess;
 }
 
@@ -1823,9 +1825,9 @@ void LifeStuffImpl::ConnectInternalElements() {
       [&] (const std::string& file_name,
            const std::string& serialised_data_map,
            std::string* data_map_hash) {
-        return user_storage_.get()->ParseAndSaveDataMap(file_name,
-                                                        serialised_data_map,
-                                                        data_map_hash);
+        return user_storage_->ParseAndSaveDataMap(file_name,
+                                                  serialised_data_map,
+                                                  data_map_hash);
       });
 
   message_handler_->ConnectToShareInvitationResponseSignal(
@@ -1834,28 +1836,28 @@ void LifeStuffImpl::ConnectInternalElements() {
            const std::string&,
            const std::string& share_id,
            const std::string&) {
-        return user_storage_.get()->InvitationResponse(user_id, share_name, share_id);
+        return user_storage_->InvitationResponse(user_id, share_name, share_id);
       });
 
   message_handler_->ConnectToSavePrivateShareDataSignal(
       [&] (const std::string &serialised_share_data,
            const std::string &share_id) {
-        return user_storage_.get()->SavePrivateShareData(serialised_share_data, share_id);
+        return user_storage_->SavePrivateShareData(serialised_share_data, share_id);
       });
 
   message_handler_->ConnectToDeletePrivateShareDataSignal(
       [&] (const std::string& share_id) {
-        return user_storage_.get()->DeletePrivateShareData(share_id);
+        return user_storage_->DeletePrivateShareData(share_id);
       });
 
   message_handler_->ConnectToPrivateShareUserLeavingSignal(
       [&] (const std::string&, const std::string& share_id, const std::string& user_id) {
-        return user_storage_.get()->UserLeavingShare(share_id, user_id);
+        return user_storage_->UserLeavingShare(share_id, user_id);
       });
 
   message_handler_->ConnectToSaveOpenShareDataSignal(
       [&] (const std::string& serialised_share_data, const std::string& share_id) {
-        return user_storage_.get()->SaveOpenShareData(serialised_share_data, share_id);
+        return user_storage_->SaveOpenShareData(serialised_share_data, share_id);
       });
 
   message_handler_->ConnectToPrivateShareDeletionSignal(
@@ -1864,7 +1866,7 @@ void LifeStuffImpl::ConnectInternalElements() {
            const std::string& share_name,
            const std::string&,
            const std::string&) {
-        return user_storage_.get()->ShareDeleted(share_name);
+        return user_storage_->ShareDeleted(share_name);
       });
 
   message_handler_->ConnectToPrivateShareUpdateSignal(
@@ -1873,11 +1875,11 @@ void LifeStuffImpl::ConnectInternalElements() {
            const std::string* new_directory_id,
            const asymm::Keys* new_key_ring,
            int* access_right) {
-        return user_storage_.get()->UpdateShare(share_id,
-                                                new_share_id,
-                                                new_directory_id,
-                                                new_key_ring,
-                                                access_right);
+        return user_storage_->UpdateShare(share_id,
+                                          new_share_id,
+                                          new_directory_id,
+                                          new_key_ring,
+                                          access_right);
       });
 
   message_handler_->ConnectToPrivateMemberAccessLevelSignal(
@@ -1896,24 +1898,24 @@ void LifeStuffImpl::ConnectInternalElements() {
   public_id_->ConnectToContactConfirmedSignal(
       [&] (const std::string& own_public_id, const std::string& recipient_public_id,
            const std::string&) {
-        return message_handler_.get()->InformConfirmedContactOnline(own_public_id,
-                                                                    recipient_public_id);
+        return message_handler_->InformConfirmedContactOnline(own_public_id,
+                                                              recipient_public_id);
       });
 
   message_handler_->ConnectToContactDeletionSignal(
       [&] (const std::string& public_id, const std::string& contact_name,
            const std::string&,
            const std::string&) {
-      return public_id_.get()->RemoveContactHandle(public_id, contact_name);
+      return public_id_->RemoveContactHandle(public_id, contact_name);
       });
 
   message_handler_->ConnectToPrivateShareDetailsSignal(
       [&] (const std::string& share_id, fs::path* relative_path) {
-      return user_storage_.get()->GetShareDetails(share_id,
-                                                  relative_path,
-                                                  nullptr,
-                                                  nullptr,
-                                                  nullptr);
+      return user_storage_->GetShareDetails(share_id,
+                                            relative_path,
+                                            nullptr,
+                                            nullptr,
+                                            nullptr);
       });
 }
 
