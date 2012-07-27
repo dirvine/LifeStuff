@@ -117,9 +117,10 @@ int LifeStuff::LeaveLifeStuff() {
 }
 
 /// Contact operations
-int LifeStuff::AddContact(const std::string &my_public_id,
-                          const std::string &contact_public_id) {
-  return lifestuff_impl->AddContact(my_public_id, contact_public_id);
+int LifeStuff::AddContact(const std::string& my_public_id,
+                          const std::string& contact_public_id,
+                          const std::string& message) {
+  return lifestuff_impl->AddContact(my_public_id, contact_public_id, message);
 }
 
 int LifeStuff::ConfirmContact(const std::string &my_public_id,

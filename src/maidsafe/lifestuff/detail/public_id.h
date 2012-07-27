@@ -57,6 +57,7 @@ class PublicId {
  public:
   typedef bs2::signal<void(const std::string&,  // NOLINT (Fraser)
                            const std::string&,
+                           const std::string&,
                            const std::string&)> NewContactSignal;
   typedef std::shared_ptr<NewContactSignal> NewContactSignalPtr;
   typedef bs2::signal<void(const std::string&,  // NOLINT (Fraser)
@@ -82,7 +83,8 @@ class PublicId {
   int CreatePublicId(const std::string &public_id, bool accepts_new_contacts);
 
   // Appends our info as an MCID to the recipient's MPID packet.
-  int AddContact(const std::string &own_public_id, const std::string &recipient_public_id);
+  int AddContact(const std::string& own_public_id, const std::string& recipient_public_id,
+                 const std::string& message);
 
   // Disallow/allow others add contact or send messages
   int DisablePublicId(const std::string &public_id);
@@ -121,7 +123,8 @@ class PublicId {
   // i.e. enable/disable others add new contact and send msg
   int ModifyAppendability(const std::string &public_id, const char appendability);
   // Notify each contact in the list about the contact_info
-  int InformContactInfo(const std::string &public_id, const std::vector<Contact> &contacts);
+  int InformContactInfo(const std::string& public_id, const std::vector<Contact>& contacts,
+                        const std::string& message);
   int GetPublicKey(const std::string& packet_name, Contact& contact, int type);
 
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;

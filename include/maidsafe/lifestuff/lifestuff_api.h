@@ -79,7 +79,8 @@ class LifeStuff {
   int LeaveLifeStuff();  // ='(
 
   /// Contact operations
-  int AddContact(const std::string &my_public_id, const std::string &contact_public_id);
+  int AddContact(const std::string& my_public_id, const std::string& contact_public_id,
+                 const std::string& message = "");
   int ConfirmContact(const std::string &my_public_id, const std::string &contact_public_id);
   int DeclineContact(const std::string &my_public_id, const std::string &contact_public_id);
   int RemoveContact(const std::string &my_public_id,

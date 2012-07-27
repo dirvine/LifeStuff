@@ -169,8 +169,6 @@ typedef FiveStringsFunction FileTransferFunction;
 
 /// Contact info
 // Own & other public ID, Timestamp
-typedef ThreeStringsFunction NewContactFunction;
-// Own & other public ID, Timestamp
 typedef ThreeStringsFunction ContactConfirmationFunction;
 // Own & other public ID, Timestamp
 typedef ThreeStringsFunction ContactProfilePictureFunction;
@@ -181,6 +179,8 @@ typedef std::function<void(const std::string&,          // Own public ID
         ContactPresenceFunction;
 // Own public ID, Contact public ID, Message, Timestamp
 typedef FourStringsFunction ContactDeletionFunction;
+// Own & other public ID, Message, Timestamp
+typedef FourStringsFunction NewContactFunction;
 
 }  // namespace lifestuff
 

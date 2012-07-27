@@ -255,8 +255,9 @@ int PublicId::CreatePublicId(const std::string &public_id, bool accepts_new_cont
   return kSuccess;
 }
 
-int PublicId::AddContact(const std::string &own_public_id,
-                         const std::string &recipient_public_id) {
+int PublicId::AddContact(const std::string& own_public_id,
+                         const std::string& recipient_public_id,
+                         const std::string& message) {
   if (session_.OwnPublicId(recipient_public_id)) {
     LOG(kInfo) << "Cannot add own Public Id as a contact.";
     return kGeneralError;
@@ -272,7 +273,7 @@ int PublicId::AddContact(const std::string &own_public_id,
   }
 
   std::vector<Contact> contacts(1, recipient_contact);
-  result = InformContactInfo(own_public_id, contacts);
+  result = InformContactInfo(own_public_id, contacts, message);
   if (result == kSuccess) {
     const ContactsHandlerPtr contacts_handler(session_.contacts_handler(own_public_id));
     if (!contacts_handler) {
@@ -565,7 +566,11 @@ void PublicId::ProcessRequests(const std::string &own_public_id,
         result = contacts_handler->AddContact(mic);
         if (result == kSuccess) {
           session_.set_changed(true);
-          (*new_contact_signal_)(own_public_id, public_id, introduction.timestamp());
+          if (introduction.has_message())
+            (*new_contact_signal_)(own_public_id, public_id, introduction.message(),
+                                   introduction.timestamp());
+          else
+            (*new_contact_signal_)(own_public_id, public_id, "", introduction.timestamp());
         }
       } else {
         LOG(kError) << "Failed get keys of new contact.";
@@ -590,7 +595,7 @@ int PublicId::ConfirmContact(const std::string &own_public_id,
   }
 
   std::vector<Contact> contacts(1, mic);
-  result = InformContactInfo(own_public_id, contacts);
+  result = InformContactInfo(own_public_id, contacts, "");
   if (result != kSuccess) {
     LOG(kError) << "Failed to send confirmation to " << recipient_public_id;
     return -1;
@@ -715,13 +720,14 @@ int PublicId::RemoveContact(const std::string &public_id, const std::string &con
   std::vector<Contact> contacts;
   uint16_t status(kConfirmed | kRequestSent);
   contacts_handler->OrderedContacts(&contacts, kAlphabetical, status);
-  result = InformContactInfo(public_id, contacts);
+  result = InformContactInfo(public_id, contacts, "");
 
   return result;
 }
 
-int PublicId::InformContactInfo(const std::string &public_id,
-                                const std::vector<Contact> &contacts) {
+int PublicId::InformContactInfo(const std::string& public_id,
+                                const std::vector<Contact>& contacts,
+                                const std::string& message) {
   // Get our MMID name, and MPID private key
   asymm::Keys inbox(passport_.SignaturePacketDetails(passport::kMmid, true, public_id));
   std::shared_ptr<asymm::Keys> mpid(new asymm::Keys(
@@ -746,6 +752,9 @@ int PublicId::InformContactInfo(const std::string &public_id,
     introduction.set_inbox_name(inbox.identity);
     introduction.set_public_id(public_id);
     introduction.set_timestamp(IsoTimeWithMicroSeconds());
+    if (!message.empty())
+      introduction.set_message(message);
+
     ProfilePictureDetail profile_picture_data_map(session_.profile_picture_data_map(public_id));
     if (profile_picture_data_map.second) {
       boost::mutex::scoped_lock loch(*profile_picture_data_map.first);
