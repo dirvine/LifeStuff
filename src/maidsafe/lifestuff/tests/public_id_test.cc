@@ -252,7 +252,6 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, true));
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_identity2_, true));
 
-  // Connect a slot which will reject the new contact
   bool done(false);
   public_id1_->ConnectToNewContactSignal(
       [&] (const std::string& own_public_id,
@@ -416,6 +415,57 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithRefusal) {
   ASSERT_EQ(kSuccess, public_id1_->RejectContact(public_identity1_, public_identity2_));
   received_contact = Contact();
   ASSERT_NE(kSuccess, contacts_handler1->ContactInfo(public_identity2_, &received_contact));
+}
+
+TEST_F(PublicIdTest, FUNC_FixAsynchronousConfirmedContact) {
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  bool done(false);
+  // Create users who both accept new contacts
+  ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, true));
+  ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_identity2_, true));
+
+  const ContactsHandlerPtr contacts_handler(session2_.contacts_handler(public_identity2_));
+  Contact contact;
+  contact.status = kConfirmed;
+  asymm::Keys keys_mmid(session1_.passport().SignaturePacketDetails(passport::kMmid,
+                                                               true,
+                                                               public_identity1_));
+  asymm::Keys keys_mpid(session1_.passport().SignaturePacketDetails(passport::kMpid,
+                                                               true,
+                                                               public_identity1_));
+
+  contact.public_id = public_identity1_;
+  contact.mpid_public_key = keys_mpid.public_key;
+  contact.inbox_name = keys_mmid.identity;
+
+  EXPECT_EQ(kSuccess, contacts_handler->AddContact(contact));
+
+  std::string confirmed_contact;
+  public_id1_->ConnectToContactConfirmedSignal(
+      [&] (const std::string& own_public_id,
+           const std::string& contact_public_id,
+           const std::string& /*timestamp*/) {
+        return PublicIdTest::ContactConfirmedSlot(own_public_id, contact_public_id,
+                                                  &confirmed_contact, &mutex, &cond_var, &done);
+      });
+
+  EXPECT_EQ(kSuccess, public_id1_->AddContact(public_identity1_, public_identity2_, ""));
+  EXPECT_EQ(kSuccess, public_id2_->StartCheckingForNewContacts(interval_));
+  EXPECT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
+
+  {
+  boost::mutex::scoped_lock lock(mutex);
+  ASSERT_TRUE(cond_var.timed_wait(lock, interval_ * 3, [&] ()->bool { return done; }));  // NOLINT (Alison)
+  }
+
+  ASSERT_EQ(public_identity2_, confirmed_contact);
+  Contact received_contact;
+  ASSERT_EQ(kSuccess,
+            session1_.contacts_handler(public_identity1_)->ContactInfo(public_identity2_,
+                                                                       &received_contact));
+  ASSERT_EQ(kConfirmed, received_contact.status);
+  ASSERT_FALSE(received_contact.inbox_name.empty());
 }
 
 TEST_F(PublicIdTest, FUNC_DisablePublicId) {

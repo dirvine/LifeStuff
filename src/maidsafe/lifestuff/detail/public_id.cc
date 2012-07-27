@@ -515,67 +515,100 @@ void PublicId::ProcessRequests(const std::string &own_public_id,
     // TODO(Team#5#): 2012-04-03 - Handle case where the request comes from
     //                             someone who is already accepted, ie, might
     //                             have blocked us and wants in again.
-    std::string public_id(introduction.public_id()),
-                inbox_name(introduction.inbox_name()),
-                profile_picture_data_map(introduction.profile_picture_data_map());
 
     const ContactsHandlerPtr contacts_handler(session_.contacts_handler(own_public_id));
     if (!contacts_handler) {
       LOG(kError) << "User does not hold such public id: " << own_public_id;
       continue;
     }
-
     Contact mic;
-    result = contacts_handler->ContactInfo(public_id, &mic);
+    result = contacts_handler->ContactInfo(introduction.public_id(), &mic);
     if (result == kSuccess) {
       if (mic.status == kRequestSent) {  // Contact confirmation
-        mic.status = kConfirmed;
-        mic.profile_picture_data_map = profile_picture_data_map;
-        result = GetPublicKey(inbox_name, mic, 1);
-        if (result == kSuccess) {
-          result = contacts_handler->UpdateContact(mic);
-          if (result == kSuccess) {
-            (*contact_confirmed_signal_)(own_public_id, public_id, introduction.timestamp());
-            session_.set_changed(true);
-          } else {
-            LOG(kError) << "Failed to update contact after confirmation.";
-          }
-        } else {
-          LOG(kError) << "Failed to update contact after confirmation.";
-        }
-      } else if (mic.status == kConfirmed) {  // Contact moving its inbox
-        result = GetPublicKey(inbox_name, mic, 1);
-        if (result == kSuccess) {
-          result = contacts_handler->UpdateContact(mic);
-          if (result != kSuccess) {
-            LOG(kError) << "Failed to update MMID.";
-          } else {
-            session_.set_changed(true);
-          }
-        } else {
-          LOG(kError) << "Failed to update contact after inbox move.";
+        ProcessContactConfirmation(mic, contacts_handler, own_public_id, introduction, session_);
+      } else if (mic.status == kConfirmed) {
+        if (introduction.inbox_name() == mic.inbox_name) {  // Out of sync request
+          ProcessMisplacedContactRequest(mic, own_public_id);
+        } else {  // Contact has moved their inbox
+          ProcessContactMoveInbox(mic, contacts_handler, introduction.inbox_name(), session_);
         }
       }
     } else {  // New contact
-      mic.status = kPendingResponse;
-      mic.public_id = public_id;
-      mic.profile_picture_data_map = profile_picture_data_map;
-      result = GetPublicKey(crypto::Hash<crypto::SHA512>(public_id), mic, 0);
-      result += GetPublicKey(inbox_name, mic, 1);
-      if (result == kSuccess) {
-        result = contacts_handler->AddContact(mic);
-        if (result == kSuccess) {
-          session_.set_changed(true);
-          if (introduction.has_message())
-            (*new_contact_signal_)(own_public_id, public_id, introduction.message(),
-                                   introduction.timestamp());
-          else
-            (*new_contact_signal_)(own_public_id, public_id, "", introduction.timestamp());
-        }
-      } else {
-        LOG(kError) << "Failed get keys of new contact.";
-      }
+      ProcessNewContact(mic, contacts_handler, own_public_id, introduction, session_);
     }
+  }
+}
+
+void PublicId::ProcessContactConfirmation(Contact& contact,
+                                          const ContactsHandlerPtr contacts_handler,
+                                          const std::string& own_public_id,
+                                          const Introduction& introduction,
+                                          Session& session) {
+  contact.status = kConfirmed;
+  contact.profile_picture_data_map = introduction.profile_picture_data_map();
+  int result = GetPublicKey(introduction.inbox_name(), contact, 1);
+  if (result == kSuccess) {
+    result = contacts_handler->UpdateContact(contact);
+    if (result == kSuccess) {
+      (*contact_confirmed_signal_)(own_public_id, introduction.public_id(),
+                                   introduction.timestamp());
+      session.set_changed(true);
+    } else {
+      LOG(kError) << "Failed to update contact after confirmation.";
+    }
+  } else {
+    LOG(kError) << "Failed to update contact after confirmation.";
+  }
+}
+
+void PublicId::ProcessContactMoveInbox(Contact& contact,
+                                       const ContactsHandlerPtr contacts_handler,
+                                       const std::string& inbox_name,
+                                       Session& session) {
+  int result = GetPublicKey(inbox_name, contact, 1);
+  if (result == kSuccess) {
+    result = contacts_handler->UpdateContact(contact);
+    if (result != kSuccess) {
+      LOG(kError) << "Failed to update MMID.";
+    } else {
+      session.set_changed(true);
+    }
+  } else {
+    LOG(kError) << "Failed to update contact after inbox move.";
+  }
+}
+
+void PublicId::ProcessNewContact(Contact& contact,
+                                 const ContactsHandlerPtr contacts_handler,
+                                 const std::string& own_public_id,
+                                 const Introduction& introduction,
+                                 Session& session) {
+  contact.status = kPendingResponse;
+  std::string public_id(introduction.public_id());
+  contact.public_id = public_id;
+  contact.profile_picture_data_map = introduction.profile_picture_data_map();
+  int result = GetPublicKey(crypto::Hash<crypto::SHA512>(public_id), contact, 0);
+  result += GetPublicKey(introduction.inbox_name(), contact, 1);
+  if (result == kSuccess) {
+    result = contacts_handler->AddContact(contact);
+    if (result == kSuccess) {
+      session.set_changed(true);
+      if (introduction.has_message())
+        (*new_contact_signal_)(own_public_id, public_id, introduction.message(),
+                               introduction.timestamp());
+      else
+        (*new_contact_signal_)(own_public_id, public_id, "", introduction.timestamp());
+    }
+  } else {
+    LOG(kError) << "Failed get keys of new contact.";
+  }
+}
+
+void PublicId::ProcessMisplacedContactRequest(Contact& contact, const std::string& own_public_id) {
+  std::vector<Contact> contacts(1, contact);
+  int result = InformContactInfo(own_public_id, contacts, "");
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to send confirmation to " << contact.public_id;
   }
 }
 
@@ -806,7 +839,6 @@ int PublicId::InformContactInfo(const std::string& public_id,
     if (results[j] != kSuccess)
       return kSendContactInfoFailure;
   }
-
   return kSuccess;
 }
 

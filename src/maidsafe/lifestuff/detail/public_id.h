@@ -37,6 +37,7 @@
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
+#include "maidsafe/lifestuff/detail/session.h"
 
 namespace ba = boost::asio;
 namespace bptime = boost::posix_time;
@@ -52,6 +53,7 @@ class Passport;
 namespace lifestuff {
 
 class Session;
+class Introduction;
 
 class PublicId {
  public:
@@ -119,6 +121,21 @@ class PublicId {
   void ProcessRequests(const std::string &mpid_name,
                        const std::string &retrieved_mpid_packet,
                        std::shared_ptr<asymm::Keys> mpid);
+  void ProcessContactConfirmation(Contact& contact,
+                                  const ContactsHandlerPtr contacts_handler,
+                                  const std::string& own_public_id,
+                                  const Introduction& introduction,
+                                  Session& session);
+  void ProcessContactMoveInbox(Contact& contact,
+                               const ContactsHandlerPtr contacts_handler,
+                               const std::string& inbox_name,
+                               Session& session);
+  void ProcessNewContact(Contact& contact,
+                         const ContactsHandlerPtr contacts_handler,
+                         const std::string& own_public_id,
+                         const Introduction& introduction,
+                         Session& session);
+  void ProcessMisplacedContactRequest(Contact& contact, const std::string& own_public_id);
   // Modify the Appendability of MCID and MMID associated with the public_id
   // i.e. enable/disable others add new contact and send msg
   int ModifyAppendability(const std::string &public_id, const char appendability);
