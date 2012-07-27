@@ -304,7 +304,7 @@ int LifeStuff::GetOpenShareList(const std::string &my_public_id,
 
 int LifeStuff::GetOpenShareMembers(const std::string &my_public_id,
                                    const std::string &share_name,
-                                   std::vector<std::string> *share_members) {
+                                   StringIntMap *share_members) {
   return lifestuff_impl->GetOpenShareMembers(my_public_id, share_name, share_members);
 }
 

@@ -171,7 +171,7 @@ class LifeStuff {
   int GetOpenShareList(const std::string &my_public_id, std::vector<std::string> *shares_names);
   int GetOpenShareMembers(const std::string &my_public_id,
                           const std::string &share_name,
-                          std::vector<std::string> *shares_members);
+                          StringIntMap *shares_members);
   int AcceptOpenShareInvitation(const std::string &my_public_id,
                                 const std::string &contact_public_id,
                                 const std::string &share_id,

@@ -37,6 +37,7 @@
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
+#include "maidsafe/private/utils/utilities.h"
 
 #include "maidsafe/passport/passport.h"
 
@@ -47,6 +48,7 @@ namespace args = std::placeholders;
 namespace pca = maidsafe::priv::chunk_actions;
 namespace bptime = boost::posix_time;
 namespace lid = maidsafe::lifestuff::account_locking;
+namespace utils = maidsafe::priv::utilities;
 
 namespace maidsafe {
 
@@ -504,7 +506,7 @@ int UserCredentialsImpl::StoreAnonymousPackets() {
   // PMID path: ANMAID, MAID, PMID
   StoreAnmaid(results);
 
-  int result(WaitForResults(mutex, condition_variable, individual_results));
+  int result(utils::WaitForResults(mutex, condition_variable, individual_results));
   if (result != kSuccess) {
     LOG(kError) << "Wait for results timed out: " << result;
     LOG(kError) << "ANMID: " << individual_results.at(0)
@@ -701,7 +703,7 @@ int UserCredentialsImpl::StoreIdentityPackets() {
   // STMID
   StoreStmid(results);
 
-  int result(WaitForResults(mutex, condition_variable, individual_results));
+  int result(utils::WaitForResults(mutex, condition_variable, individual_results));
   if (result != kSuccess) {
     LOG(kError) << "Wait for results timed out.";
     return result;
@@ -815,7 +817,7 @@ int UserCredentialsImpl::StoreLid(const std::string keyword,
     LOG(kError) << "Failed to store LID.";
     OperationCallback(false, operation_result, 0);
   }
-  result = WaitForResults(mutex, condition_variable, individual_result);
+  result = utils::WaitForResults(mutex, condition_variable, individual_result);
   if (result != kSuccess) {
     LOG(kError) << "Failed to store LID:" << result;
     return result;
@@ -862,7 +864,7 @@ int UserCredentialsImpl::SaveSession(bool log_out) {
   StoreTmid(results);
   DeleteStmid(results);
 
-  result = WaitForResults(mutex, condition_variable, individual_results);
+  result = utils::WaitForResults(mutex, condition_variable, individual_results);
   if (result != kSuccess) {
     LOG(kError) << "Failed to store new identity packets: Time out.";
     return kSaveSessionFailure;
@@ -974,7 +976,7 @@ int UserCredentialsImpl::ModifyLid(const std::string keyword,
     LOG(kError) << "Failed to modify LID.";
     OperationCallback(false, operation_result, 0);
   }
-  result = WaitForResults(mutex, condition_variable, individual_result);
+  result = utils::WaitForResults(mutex, condition_variable, individual_result);
   if (result != kSuccess) {
     LOG(kError) << "Failed to modify LID:" << result;
     return result;
@@ -1055,7 +1057,7 @@ int UserCredentialsImpl::DeleteOldIdentityPackets() {
   DeleteTmid(results);
   DeleteStmid(results);
 
-  int result(WaitForResults(mutex, condition_variable, individual_results));
+  int result(utils::WaitForResults(mutex, condition_variable, individual_results));
   if (result != kSuccess) {
     LOG(kError) << "Wait for results timed out.";
     return result;
@@ -1136,7 +1138,7 @@ int UserCredentialsImpl::DeleteLid(const std::string &keyword,
     LOG(kError) << "Failed to delete LID.";
     OperationCallback(false, operation_result, 0);
   }
-  int result = WaitForResults(mutex, condition_variable, individual_result);
+  int result = utils::WaitForResults(mutex, condition_variable, individual_result);
   if (result != kSuccess) {
     LOG(kError) << "Storing new LID timed out.";
     return result;
@@ -1190,7 +1192,7 @@ int UserCredentialsImpl::DoChangePasswordAdditions() {
   StoreTmid(new_results);
   StoreStmid(new_results);
 
-  int result(WaitForResults(mutex, condition_variable, individual_results));
+  int result(utils::WaitForResults(mutex, condition_variable, individual_results));
   if (result != kSuccess) {
     LOG(kError) << "Failed to store new identity packets: Time out.";
     return kChangePasswordFailure;
@@ -1222,7 +1224,7 @@ int UserCredentialsImpl::DoChangePasswordRemovals() {
   DeleteTmid(del_results);
   DeleteStmid(del_results);
 
-  int result(WaitForResults(mutex, condition_variable, individual_results));
+  int result(utils::WaitForResults(mutex, condition_variable, individual_results));
   if (result != kSuccess) {
     LOG(kError) << "Failed to store new identity packets: Time out.";
     return kChangePasswordFailure;
@@ -1304,7 +1306,7 @@ int UserCredentialsImpl::DeleteSignaturePackets() {
   // PMID path: PMID, MAID, ANMAID
   DeletePmid(results);
 
-  int result(WaitForResults(mutex, condition_variable, individual_results));
+  int result(utils::WaitForResults(mutex, condition_variable, individual_results));
   if (result != kSuccess) {
     LOG(kError) << "Wait for results timed out: " << result;
     LOG(kError) << "ANMID: " << individual_results.at(0)

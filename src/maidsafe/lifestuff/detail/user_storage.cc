@@ -27,6 +27,8 @@
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/private/utils/utilities.h"
+
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/encrypt/self_encryptor.h"
 
@@ -36,8 +38,14 @@
 #include "maidsafe/lifestuff/detail/session.h"
 
 
+#include "maidsafe/passport/passport.h"
+
+#include "maidsafe/lifestuff/detail/session.h"
+#include "maidsafe/lifestuff/detail/utils.h"
+
 namespace args = std::placeholders;
 namespace fs = boost::filesystem;
+namespace utils = maidsafe::priv::utilities;
 
 namespace maidsafe {
 
@@ -277,18 +285,20 @@ int UserStorage::CreateShare(const std::string &sender_public_id,
 
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
   VoidFunctionOneBool callback([&] (const bool& response) {
-                                 return ChunkStoreOperationCallback(response, &mutex, &cond_var,
+                                 utils::ChunkStoreOperationCallback(response,
+                                                                    &mutex,
+                                                                    &cond_var,
                                                                     &results[0]);
                                });
   std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
   if (!chunk_store_->Store(packet_id,
-                           ComposeSignaturePacketValue(key_ring),
+                           utils::SerialisedSignedData(key_ring),
                            callback,
                            key_shared)) {
     boost::mutex::scoped_lock lock(mutex);
     results[0] = kRemoteChunkStoreFailure;
   }
-  result = WaitForResults(mutex, cond_var, results);
+  result = utils::WaitForResults(mutex, cond_var, results);
   if (result != kSuccess) {
     LOG(kError) << "Timed out waiting for the response";
     return result;
@@ -355,18 +365,20 @@ int UserStorage::CreateOpenShare(const std::string &sender_public_id,
 
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
   VoidFunctionOneBool callback([&] (const bool& response) {
-                                 return ChunkStoreOperationCallback(response, &mutex, &cond_var,
+                                 utils::ChunkStoreOperationCallback(response,
+                                                                    &mutex,
+                                                                    &cond_var,
                                                                     &results[0]);
                                });
   std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
   if (!chunk_store_->Store(packet_id,
-                           ComposeSignaturePacketValue(key_ring),
+                           utils::SerialisedSignedData(key_ring),
                            callback,
                            key_shared)) {
     boost::mutex::scoped_lock lock(mutex);
     results[0] = kRemoteChunkStoreFailure;
   }
-  result = WaitForResults(mutex, cond_var, results);
+  result = utils::WaitForResults(mutex, cond_var, results);
   if (result != kSuccess) {
     LOG(kError) << "Timed out waiting for the response";
     return result;
@@ -478,7 +490,7 @@ int UserStorage::StopShare(const std::string &sender_public_id,
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
 
   VoidFunctionOneBool callback([&] (const bool& response) {
-                                 return ChunkStoreOperationCallback(response, &mutex, &cond_var,
+                                 return utils::ChunkStoreOperationCallback(response, &mutex, &cond_var,
                                                                     &results[0]);
                                });
   std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
@@ -487,7 +499,7 @@ int UserStorage::StopShare(const std::string &sender_public_id,
     results[0] = kRemoteChunkStoreFailure;
   }
 
-  result = WaitForResults(mutex, cond_var, results);
+  result = utils::WaitForResults(mutex, cond_var, results);
   if (result != kSuccess) {
     LOG(kError) << "Failed to get a response.";
     return result;
@@ -724,19 +736,19 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
 
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
   VoidFunctionOneBool callback([&] (const bool& response) {
-                                 return ChunkStoreOperationCallback(response, &mutex, &cond_var,
+                                 return utils::ChunkStoreOperationCallback(response, &mutex, &cond_var,
                                                                     &results[0]);
                                });
   std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
   if (!chunk_store_->Store(packet_id,
-                           ComposeSignaturePacketValue(key_ring),
+                           utils::SerialisedSignedData(key_ring),
                            callback,
                            key_shared)) {
     boost::mutex::scoped_lock lock(mutex);
     results[0] = kRemoteChunkStoreFailure;
   }
 
-  result = WaitForResults(mutex, cond_var, results);
+  result = utils::WaitForResults(mutex, cond_var, results);
   if (result != kSuccess) {
     LOG(kError) << "Failed to get response.";
     return result;
@@ -769,7 +781,7 @@ int UserStorage::MovingShare(const std::string &sender_public_id,
     results[0] = kRemoteChunkStoreFailure;
   }
 
-  result = WaitForResults(mutex, cond_var, results);
+  result = utils::WaitForResults(mutex, cond_var, results);
   if (result != kSuccess) {
     LOG(kError) << "Failed to get response.";
     return result;
@@ -938,12 +950,12 @@ int UserStorage::GetShareDetails(const std::string &share_id,
                                                    share_keyring,
                                                    directory_id,
                                                    share_users));
-  if (share_users) {
-    for (auto it = share_users->begin(); it != share_users->end(); ++it) {
-      if ((*it).second < kShareRemover)
-        (*it).second = kUnconfirmed;
-    }
-  }
+//  if (share_users) {
+//    for (auto it = share_users->begin(); it != share_users->end(); ++it) {
+//      if ((*it).second < kShareRemover)
+//        (*it).second = kUnconfirmed;
+//    }
+//  }
   return result;
 }
 
@@ -961,14 +973,14 @@ int UserStorage::GetShareDetails(const fs::path &relative_path,
                                                    directory_id,
                                                    share_users,
                                                    owner_id));
-  if (share_users) {
-    std::vector<std::string> unconfirmed_users;
-    for (auto it = share_users->begin(); it != share_users->end(); ++it)
-      if ((*it).second < kShareRemover)
-        unconfirmed_users.push_back((*it).first);
-    for (auto it = unconfirmed_users.begin(); it != unconfirmed_users.end(); ++it)
-      share_users->erase(*it);
-  }
+//  if (share_users) {
+//    std::vector<std::string> unconfirmed_users;
+//    for (auto it = share_users->begin(); it != share_users->end(); ++it)
+//      if ((*it).second < kShareRemover)
+//        unconfirmed_users.push_back((*it).first);
+//    for (auto it = unconfirmed_users.begin(); it != unconfirmed_users.end(); ++it)
+//      share_users->erase(*it);
+//  }
   return result;
 }
 std::string UserStorage::MemberAccessChange(const std::string &share_id,
