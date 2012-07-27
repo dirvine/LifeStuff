@@ -552,9 +552,9 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
   }
   ASSERT_TRUE(MessagesEqual(sent, received));
   message_handler1_->StopCheckingForNewMessages();
-  public_id1_->StopCheckingForNewContacts();
-  public_id2_->StopCheckingForNewContacts();
   public_id3_->StopCheckingForNewContacts();
+  public_id2_->StopCheckingForNewContacts();
+  public_id1_->StopCheckingForNewContacts();
 }
 
 void NotificationFunction(const std::string&,

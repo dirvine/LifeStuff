@@ -127,7 +127,7 @@ int MessageHandler::StartCheckingForNewMessages(bptime::seconds interval) {
 
 void MessageHandler::StopCheckingForNewMessages() {
   get_new_messages_timer_active_ = false;
-  get_new_messages_timer_.expires_at(boost::posix_time::pos_infin);
+  get_new_messages_timer_.cancel();
 }
 
 int MessageHandler::Send(const InboxItem &inbox_item) {
@@ -277,6 +277,7 @@ void MessageHandler::GetNewMessages(const bptime::seconds &interval,
     if (error_code != ba::error::operation_aborted) {
       LOG(kWarning) << "Refresh timer error: " << error_code.message();
     } else {
+      LOG(kInfo) << "Timer cancel triggered: " << error_code.message();
       return;
     }
   }
