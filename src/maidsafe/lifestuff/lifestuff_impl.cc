@@ -1449,6 +1449,7 @@ int LifeStuffImpl::CreateOpenShareFromExistingDirectory(const std::string &my_pu
     return false;
   }
 
+  *share_name = lifestuff_directory.filename().string();
   std::string generated_name(GetNameInPath(share_path, *share_name));
   if (generated_name.empty()) {
     LOG(kError) << "Failed to generate name for share.";
