@@ -115,21 +115,10 @@ fs::path CreateTestDirectory(fs::path const& parent, std::string *tail);
 int CreateTestFile(fs::path const& parent, int size_in_mb, std::string *file_name);
 int CreateSmallTestFile(fs::path const& parent, int size_in_kb, std::string *file_name);
 
-void ChunkStoreOperationCallback(const bool &response,
-                                 boost::mutex *mutex,
-                                 boost::condition_variable *cond_var,
-                                 int *result);
-
-int WaitForResults(boost::mutex &mutex,
-                   boost::condition_variable &cond_var,
-                   std::vector<int> &results);
-
 int AssessJointResult(const std::vector<int> &results);
 void OperationCallback(bool result, OperationResults &results, int index);
 
 std::string ComposeSignaturePacketName(const std::string &name);
-
-std::string ComposeSignaturePacketValue(const asymm::Keys &packet);
 
 std::shared_ptr<encrypt::DataMap> ParseSerialisedDataMap(const std::string &serialised_data_map);
 

@@ -84,14 +84,17 @@ int UserCredentials::LogIn(const std::string &keyword,
     return result;
   }
 
-  return impl_->GetUserInfo(keyword, pin, password);
+  result = impl_->GetUserInfo(keyword, pin, password);
+  if (result != kSuccess)
+    session_.Reset();
+  return result;
 }
 
 int UserCredentials::Logout() {
   int result(impl_->SaveSession(true));
+
   if (result == kSuccess)
     session_.Reset();
-
   return result;
 }
 

@@ -125,7 +125,8 @@ class LifeStuffImpl {
   int LeaveLifeStuff();  // ='(
 
   /// Contact operations
-  int AddContact(const std::string &my_public_id, const std::string &contact_public_id);
+  int AddContact(const std::string& my_public_id, const std::string& contact_public_id,
+                 const std::string& message);
   int ConfirmContact(const std::string &my_public_id, const std::string &contact_public_id);
   int DeclineContact(const std::string &my_public_id, const std::string &contact_public_id);
   int RemoveContact(const std::string &my_public_id,
@@ -216,7 +217,7 @@ class LifeStuffImpl {
   int GetOpenShareList(const std::string &my_public_id, std::vector<std::string> *share_names);
   int GetOpenShareMembers(const std::string &my_public_id,
                           const std::string &share_name,
-                          std::vector<std::string> *share_members);
+                          StringIntMap *share_members);
   int AcceptOpenShareInvitation(const std::string &my_public_id,
                                 const std::string &contact_public_id,
                                 const std::string &share_id,

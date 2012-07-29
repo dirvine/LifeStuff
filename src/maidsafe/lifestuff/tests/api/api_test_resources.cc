@@ -70,9 +70,12 @@ void MultipleFileTransferSlot(const std::string&,
 
 void NewContactSlot(const std::string&,
                     const std::string&,
+                    const std::string& message,
                     const std::string&,
-                    volatile bool *done) {
+                    volatile bool *done,
+                    std::string* contact_request_message) {
   *done = true;
+  *contact_request_message = message;
 }
 
 void ContactConfirmationSlot(const std::string&,
@@ -221,23 +224,26 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                  size_t *total_files,
                                  boost::mutex *mutex) {
   FileTransferFunction ftf =
-      [&] (const std::string& s_1,
-           const std::string& s_2,
+      [&] (const std::string& own_public_id,
+           const std::string& contact_public_id,
            const std::string& signal_file_name,
            const std::string& signal_file_id,
-           const std::string& s_5) {
-        return FileTransferSlot(s_1, s_2, signal_file_name, signal_file_id, s_5,
+           const std::string& timestamp) {
+        return FileTransferSlot(own_public_id, contact_public_id, signal_file_name, signal_file_id,
+                                timestamp,
                                 &testing_variables2.file_name,
                                 &testing_variables2.file_id,
                                 &testing_variables2.file_transfer_received);
       };
   if (several_files) {
-  ftf = [&] (const std::string& s_1,
-             const std::string& s_2,
+  ftf = [&] (const std::string& own_public_id,
+             const std::string& contact_public_id,
              const std::string& signal_file_name,
              const std::string& signal_file_id,
-             const std::string& s_5) {
-          return MultipleFileTransferSlot(s_1, s_2, signal_file_name, signal_file_id, s_5,
+             const std::string& timestamp) {
+          return MultipleFileTransferSlot(own_public_id, contact_public_id, signal_file_name,
+                                          signal_file_id,
+                                          timestamp,
                                           ids, names, total_files,
                                           &testing_variables2.file_transfer_received);
         };
@@ -247,97 +253,113 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
   result += test_elements1.Initialise(test_dir);
   result += test_elements2.Initialise(test_dir);
   result += test_elements1.ConnectToSignals(
-                [&] (const std::string& s_1,
-                     const std::string& s_2,
+                [&] (const std::string& own_public_id,
+                     const std::string& contact_public_id,
                      const std::string& signal_message,
-                     const std::string& s_4) {
-                  return ChatSlot(s_1, s_2, signal_message, s_4,
+                     const std::string& timestamp) {
+                  return ChatSlot(own_public_id, contact_public_id, signal_message, timestamp,
                                   &testing_variables1.chat_message,
                                   &testing_variables1.chat_message_received);
                 },
-                [&] (const std::string& s_1,
-                     const std::string& s_2,
+                [&] (const std::string& own_public_id,
+                     const std::string& contact_public_id,
                      const std::string& signal_file_name,
                      const std::string& signal_file_id,
-                     const std::string& s_5) {
-                  return FileTransferSlot(s_1, s_2, signal_file_name, signal_file_id, s_5,
+                     const std::string& timestamp) {
+                  return FileTransferSlot(own_public_id, contact_public_id, signal_file_name,
+                                          signal_file_id,
+                                          timestamp,
                                           &testing_variables1.file_name,
                                           &testing_variables1.file_id,
                                           &testing_variables1.file_transfer_received);
                 },
-                [&] (const std::string& s_1,
-                     const std::string& s_2,
-                     const std::string& s_3) {
-                  return NewContactSlot(s_1, s_2, s_3, &testing_variables1.newly_contacted);
+                [&] (const std::string& own_public_id,
+                     const std::string& contact_public_id,
+                     const std::string& message,
+                     const std::string& timestamp) {
+                  return NewContactSlot(own_public_id, contact_public_id, message, timestamp,
+                                        &testing_variables1.newly_contacted,
+                                        &testing_variables1.contact_request_message);
                 },
-                [&] (const std::string& s_1,
-                     const std::string& s_2,
-                     const std::string& s_3) {
-                  return ContactConfirmationSlot(s_1, s_2, s_3,
+                [&] (const std::string& own_public_id,
+                     const std::string& contact_public_id,
+                     const std::string& timestamp) {
+                  return ContactConfirmationSlot(own_public_id, contact_public_id, timestamp,
                                                  &testing_variables1.confirmed);
                 },
-                [&] (const std::string& s_1,
-                     const std::string& s_2,
-                     const std::string& s_3) {
-                  return ContactProfilePictureSlot(s_1, s_2, s_3,
+                [&] (const std::string& own_public_id,
+                     const std::string& contact_public_id,
+                     const std::string& timestamp) {
+                  return ContactProfilePictureSlot(own_public_id, contact_public_id, timestamp,
                                                    &testing_variables1.picture_updated);
                 },
-                [&] (const std::string& s_1,
-                     const std::string& s_2,
-                     const std::string& s_3,
+                [&] (const std::string& own_public_id,
+                     const std::string& contact_public_id,
+                     const std::string& timestamp,
                     ContactPresence contact_presence) {
-                  return ContactPresenceSlot(s_1, s_2, s_3, contact_presence,
+                  return ContactPresenceSlot(own_public_id, contact_public_id, timestamp,
+                                             contact_presence,
                                              &testing_variables1.presence_announced);
                 },
-                [&] (const std::string& s_1,
-                     const std::string& s_2,
+                [&] (const std::string& own_public_id,
+                     const std::string& contact_public_id,
                      const std::string& signal_message,
-                     const std::string& s_4) {
-                  return ContactDeletionSlot(s_1, s_2, signal_message, s_4,
+                     const std::string& timestamp) {
+                  return ContactDeletionSlot(own_public_id, contact_public_id, signal_message,
+                                             timestamp,
                                              &testing_variables1.removal_message,
                                              &testing_variables1.removed);
                 },
-                [&] (const std::string& s_1,
-                     const std::string& s_2,
+                [&] (const std::string& own_public_id,
+                     const std::string& contact_public_id,
                      const std::string& signal_share_name,
                      const std::string& signal_share_id,
                      int access_level,
-                     const std::string& s_5) {
-                  return PrivateShareInvitationSlot(s_1, s_2, signal_share_name, signal_share_id,
+                     const std::string& timestamp) {
+                  return PrivateShareInvitationSlot(own_public_id, contact_public_id,
+                                                    signal_share_name,
+                                                    signal_share_id,
                                                     access_level,
-                                                    s_5,
+                                                    timestamp,
                                                     &testing_variables1.new_private_share_name,
                                                     &testing_variables1.new_private_share_id,
                                                     &testing_variables1.new_private_access_level,
                                                     &testing_variables1.privately_invited);
                 },
-                [&] (const std::string& s_1,
+                [&] (const std::string& own_public_id,
+                     const std::string& contact_public_id,
                      const std::string& signal_share_name,
-                     const std::string& s_3,
-                     const std::string& s_4,
-                     const std::string& s_5) {
-                  return PrivateShareDeletionSlot(s_1, signal_share_name, s_3, s_4, s_5,
+                     const std::string& signal_share_id,
+                     const std::string& timestamp) {
+                  return PrivateShareDeletionSlot(own_public_id, contact_public_id,
+                                                  signal_share_name,
+                                                  signal_share_id,
+                                                  timestamp,
                                                   &testing_variables1.deleted_private_share_name,
                                                   &testing_variables1.private_share_deleted);
                 },
-                [&] (const std::string& s_1,
-                     const std::string& s_2,
-                     const std::string& s_3,
-                     const std::string& s_4,
+                [&] (const std::string& own_public_id,
+                     const std::string& contact_public_id,
+                     const std::string& signal_share_name,
+                     const std::string& signal_share_id,
                      int signal_member_access,
                      const std::string /*&time_stamp*/) {
                   return PrivateMemberAccessChangeSlot(
-                        s_1, s_2, s_3, s_4, signal_member_access,
+                        own_public_id, contact_public_id, signal_share_name, signal_share_id,
+                        signal_member_access,
                         testing_variables1.access_private_share_name,
                         &testing_variables1.private_member_access,
                         &testing_variables1.private_member_access_changed);
                 },
-                [&] (const std::string& s_1,
-                     const std::string& s_2,
-                     const std::string& s_3,
+                [&] (const std::string& own_public_id,
+                     const std::string& contact_public_id,
+                     const std::string& signal_share_name,
                      const std::string& signal_share_id,
-                     const std::string& s_5) {
-                  return OpenShareInvitationSlot(s_1, s_2, s_3, signal_share_id, s_5,
+                     const std::string& timestamp) {
+                  return OpenShareInvitationSlot(own_public_id, contact_public_id,
+                                                 signal_share_name,
+                                                 signal_share_id,
+                                                 timestamp,
                                                  &testing_variables1.new_open_share_id,
                                                  &testing_variables1.openly_invited);
                 },
@@ -361,88 +383,102 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                           &testing_variables1.share_changes);
                 });
   result += test_elements2.ConnectToSignals(
-                [&] (const std::string& s_1,
-                     const std::string& s_2,
+                [&] (const std::string& own_public_id,
+                     const std::string& contact_public_id,
                      const std::string& signal_message,
-                     const std::string& s_4) {
-                  return ChatSlot(s_1, s_2, signal_message, s_4,
+                     const std::string& timestamp) {
+                  return ChatSlot(own_public_id, contact_public_id, signal_message, timestamp,
                                   &testing_variables2.chat_message,
                                   &testing_variables2.chat_message_received);
                 },
                 ftf,
-                [&] (const std::string& s_1,
-                     const std::string& s_2,
-                     const std::string& s_3) {
-                  return NewContactSlot(s_1, s_2, s_3, &testing_variables2.newly_contacted);
+                [&] (const std::string& own_public_id,
+                     const std::string& contact_public_id,
+                     const std::string& message,
+                     const std::string& timestamp) {
+                  return NewContactSlot(own_public_id, contact_public_id, message, timestamp,
+                                        &testing_variables2.newly_contacted,
+                                        &testing_variables2.contact_request_message);
                 },
-                [&] (const std::string& s_1,
-                     const std::string& s_2,
-                     const std::string& s_3) {
-                  return ContactConfirmationSlot(s_1, s_2, s_3,
+                [&] (const std::string& own_public_id,
+                     const std::string& contact_public_id,
+                     const std::string& timestamp) {
+                  return ContactConfirmationSlot(own_public_id, contact_public_id, timestamp,
                                                  &testing_variables2.confirmed);
                 },
-                [&] (const std::string& s_1,
-                     const std::string& s_2,
-                     const std::string& s_3) {
-                  return ContactProfilePictureSlot(s_1, s_2, s_3,
+                [&] (const std::string& own_public_id,
+                     const std::string& contact_public_id,
+                     const std::string& timestamp) {
+                  return ContactProfilePictureSlot(own_public_id, contact_public_id, timestamp,
                                                    &testing_variables2.picture_updated);
                 },
-                [&] (const std::string& s_1,
-                     const std::string& s_2,
-                     const std::string& s_3,
+                [&] (const std::string& own_public_id,
+                     const std::string& contact_public_id,
+                     const std::string& timestamp,
                     ContactPresence contact_presence) {
-                  return ContactPresenceSlot(s_1, s_2, s_3, contact_presence,
+                  return ContactPresenceSlot(own_public_id, contact_public_id, timestamp,
+                                             contact_presence,
                                              &testing_variables2.presence_announced);
                 },
-                [&] (const std::string& s_1,
-                     const std::string& s_2,
+                [&] (const std::string& own_public_id,
+                     const std::string& contact_public_id,
                      const std::string& signal_message,
-                     const std::string& s_4) {
-                  return ContactDeletionSlot(s_1, s_2, signal_message, s_4,
+                     const std::string& timestamp) {
+                  return ContactDeletionSlot(own_public_id, contact_public_id, signal_message,
+                                             timestamp,
                                              &testing_variables2.removal_message,
                                              &testing_variables2.removed);
                 },
-                [&] (const std::string& s_1,
-                     const std::string& s_2,
+                [&] (const std::string& own_public_id,
+                     const std::string& contact_public_id,
                      const std::string& signal_share_name,
                      const std::string& signal_share_id,
                      int access_level,
-                     const std::string& s_5) {
-                  return PrivateShareInvitationSlot(s_1, s_2, signal_share_name, signal_share_id,
+                     const std::string& timestamp) {
+                  return PrivateShareInvitationSlot(own_public_id, contact_public_id,
+                                                    signal_share_name,
+                                                    signal_share_id,
                                                     access_level,
-                                                    s_5,
+                                                    timestamp,
                                                     &testing_variables2.new_private_share_name,
                                                     &testing_variables2.new_private_share_id,
                                                     &testing_variables2.new_private_access_level,
                                                     &testing_variables2.privately_invited);
                 },
-                [&] (const std::string& s_1,
+                [&] (const std::string& own_public_id,
+                     const std::string& contact_public_id,
                      const std::string& signal_share_name,
-                     const std::string& s_3,
-                     const std::string& s_4,
-                     const std::string& s_5) {
-                  return PrivateShareDeletionSlot(s_1, signal_share_name, s_3, s_4, s_5,
+                     const std::string& signal_share_id,
+                     const std::string& timestamp) {
+                  return PrivateShareDeletionSlot(own_public_id, contact_public_id,
+                                                  signal_share_name,
+                                                  signal_share_id,
+                                                  timestamp,
                                                   &testing_variables2.deleted_private_share_name,
                                                   &testing_variables2.private_share_deleted);
                 },
-                [&] (const std::string& s_1,
-                     const std::string& s_2,
-                     const std::string& s_3,
-                     const std::string& s_4,
+                [&] (const std::string& own_public_id,
+                     const std::string& contact_public_id,
+                     const std::string& signal_share_name,
+                     const std::string& signal_share_id,
                      int signal_member_access,
-                     const std::string /*&time_stamp*/) {
+                     const std::string /*&timestamp*/) {
                   return PrivateMemberAccessChangeSlot(
-                        s_1, s_2, s_3, s_4, signal_member_access,
+                        own_public_id, contact_public_id, signal_share_name, signal_share_id,
+                        signal_member_access,
                         testing_variables2.access_private_share_name,
                         &testing_variables2.private_member_access,
                         &testing_variables2.private_member_access_changed);
                 },
-                [&] (const std::string& s_1,
-                     const std::string& s_2,
-                     const std::string& s_3,
+                [&] (const std::string& own_public_id,
+                     const std::string& contact_public_id,
+                     const std::string& signal_share_name,
                      const std::string& signal_share_id,
-                     const std::string& s_5) {
-                  return OpenShareInvitationSlot(s_1, s_2, s_3, signal_share_id, s_5,
+                     const std::string& timestamp) {
+                  return OpenShareInvitationSlot(own_public_id, contact_public_id,
+                                                 signal_share_name,
+                                                 signal_share_id,
+                                                 timestamp,
                                                  &testing_variables2.new_open_share_id,
                                                  &testing_variables2.openly_invited);
                 },
@@ -577,6 +613,16 @@ void RunChangeProfilePicture(LifeStuff& test_elements_,
   result = test_elements_.ChangeProfilePicture(public_id, file_content);
 }
 
+void RunLogIn(LifeStuff& test_elements,
+              int& result,
+              const std::string& keyword,
+              const std::string& pin,
+              const std::string& password,
+              const std::pair<int, int> sleeps) {
+  RandomSleep(sleeps);
+  result = test_elements.LogIn(keyword, pin, password);
+}
+
 }  // namespace sleepthreads
 
 void OneUserApiTest::SetUp() {
@@ -587,12 +633,13 @@ void OneUserApiTest::SetUp() {
                                             NewContactFunction(),
                                             ContactConfirmationFunction(),
                                             ContactProfilePictureFunction(),
-                                            [&] (const std::string& s_1,
-                                                 const std::string& s_2,
-                                                 const std::string& s_3,
+                                            [&] (const std::string& own_public_id,
+                                                 const std::string& contact_public_id,
+                                                 const std::string& timestamp,
                                                  ContactPresence cp) {
                                               return testresources::ContactPresenceSlot(
-                                                  s_1, s_2, s_3, cp, &done_);
+                                                  own_public_id, contact_public_id, timestamp, cp,
+                                                  &done_);
                                             },
                                             ContactDeletionFunction(),
                                             PrivateShareInvitationFunction(),
@@ -618,12 +665,13 @@ void TwoInstancesApiTest::SetUp() {
                                             NewContactFunction(),
                                             ContactConfirmationFunction(),
                                             ContactProfilePictureFunction(),
-                                            [&] (const std::string& s_1,
-                                                 const std::string& s_2,
-                                                 const std::string& s_3,
+                                            [&] (const std::string& own_public_id,
+                                                 const std::string& contact_public_id,
+                                                 const std::string& timestamp,
                                                  ContactPresence cp) {
                                               return testresources::ContactPresenceSlot(
-                                                  s_1, s_2, s_3, cp, &done_);
+                                                  own_public_id, contact_public_id, timestamp, cp,
+                                                  &done_);
                                             },
                                             ContactDeletionFunction(),
                                             PrivateShareInvitationFunction(),
@@ -638,12 +686,13 @@ void TwoInstancesApiTest::SetUp() {
                                             NewContactFunction(),
                                             ContactConfirmationFunction(),
                                             ContactProfilePictureFunction(),
-                                              [&] (const std::string& s_1,
-                                                   const std::string& s_2,
-                                                   const std::string& s_3,
+                                              [&] (const std::string& own_public_id,
+                                                   const std::string& contact_public_id,
+                                                   const std::string& timestamp,
                                                    ContactPresence cp) {
                                                 return testresources::ContactPresenceSlot(
-                                                    s_1, s_2, s_3, cp, &done_);
+                                                    own_public_id, contact_public_id, timestamp, cp,
+                                                    &done_);
                                               },
                                             ContactDeletionFunction(),
                                             PrivateShareInvitationFunction(),

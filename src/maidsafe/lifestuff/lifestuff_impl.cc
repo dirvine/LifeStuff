@@ -351,7 +351,7 @@ int LifeStuffImpl::LogIn(const std::string &keyword,
 
   int result(user_credentials_->LogIn(keyword, pin, password));
   if (result != kSuccess) {
-    LOG(kError) << "User doesn't exist.";
+    LOG(kError) << "LogIn failed with result: " << result;
     return result;
   }
 
@@ -531,10 +531,11 @@ int LifeStuffImpl::LeaveLifeStuff() {
   std::for_each(public_ids.begin(),
                 public_ids.end(),
                 [&result, this] (const std::string &public_id) {
-                  const ShareInformationPtr share_info(session_.share_information(public_id));
-                  if (share_info) {
-                    std::for_each(share_info->begin(),
-                                  share_info->end(),
+                  const ShareInformationDetail share_info(session_.share_information(public_id));
+                  if (share_info.first) {
+                    boost::mutex::scoped_lock loch(*share_info.first);
+                    std::for_each(share_info.second->begin(),
+                                  share_info.second->end(),
                                   [&public_id, &result, this]
                                       (const ShareInformation::value_type& element) {
                                     if (element.second.share_type <= kOpenOwner)
@@ -569,15 +570,16 @@ int LifeStuffImpl::LeaveLifeStuff() {
 }
 
 /// Contact operations
-int LifeStuffImpl::AddContact(const std::string &my_public_id,
-                              const std::string &contact_public_id) {
+int LifeStuffImpl::AddContact(const std::string& my_public_id,
+                              const std::string& contact_public_id,
+                              const std::string& message) {
   int result(PreContactChecks(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in AddContact.";
     return result;
   }
 
-  return public_id_->AddContact(my_public_id, contact_public_id);
+  return public_id_->AddContact(my_public_id, contact_public_id, message);
 }
 
 int LifeStuffImpl::ConfirmContact(const std::string &my_public_id,
@@ -703,12 +705,17 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string &my_public_id,
   }
 
   // Set in session
-  const ProfilePicturePtr profile_picture_data_map(session_.profile_picture_data_map(my_public_id));
-  if (!profile_picture_data_map) {
+  const ProfilePictureDetail profile_picture_data_map(
+      session_.profile_picture_data_map(my_public_id));
+  if (!profile_picture_data_map.first) {
     LOG(kError) << "User does not hold such public ID: " << my_public_id;
     return kPublicIdNotFoundFailure;
   }
-  *profile_picture_data_map = message.content[0];
+
+  {
+    boost::mutex::scoped_lock loch(*profile_picture_data_map.first);
+    *profile_picture_data_map.second = message.content[0];
+  }
 
   // Send to everybody
   message_handler_->SendEveryone(message);
@@ -716,8 +723,7 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string &my_public_id,
   return kSuccess;
 }
 
-std::string LifeStuffImpl::GetOwnProfilePicture(
-    const std::string &my_public_id) {
+std::string LifeStuffImpl::GetOwnProfilePicture(const std::string &my_public_id) {
   // Read contents, put them in a string, give them back. Should not be a file
   // over a certain size (kFileRecontructionLimit).
   int result(PreContactChecks(my_public_id));
@@ -1001,8 +1007,14 @@ int LifeStuffImpl::CreatePrivateShareFromExistingDirectory(
                                       drive::kMsPrivateShare,
                                       results);
   if (result == kSuccess) {
-    auto insert_result(session_.share_information(my_public_id)->insert(
-        std::make_pair(*share_name, ShareDetails(kPrivateOwner))));
+    const ShareInformationDetail share_information(session_.share_information(my_public_id));
+    if (!share_information.first) {
+      LOG(kError) << "The user holds no such publc identity: " << my_public_id;
+      return kPublicIdNotFoundFailure;
+    }
+
+    auto insert_result(share_information.second->insert(
+                           std::make_pair(*share_name, ShareDetails(kPrivateOwner))));
     if (!insert_result.second) {
       LOG(kError) << "Failed to insert share to session.";
       return kGeneralError;
@@ -1048,18 +1060,26 @@ int LifeStuffImpl::CreateEmptyPrivateShare(const std::string &my_public_id,
                                       drive::kMsPrivateShare,
                                       results);
   if (result == kSuccess) {
-    ShareInformationPtr share_information(session_.share_information(my_public_id));
-    if (!share_information) {
+    const ShareInformationDetail share_information(session_.share_information(my_public_id));
+    if (!share_information.first) {
       LOG(kError) << "The user holds no such publc identity: " << my_public_id;
       return kPublicIdNotFoundFailure;
     }
-    auto insert_result(share_information->insert(std::make_pair(*share_name,
-                                                                ShareDetails(kPrivateOwner))));
-    if (!insert_result.second) {
-      LOG(kError) << "Failed to insert share to session.";
-      return kGeneralError;
+
+    bool session_changed(false);
+    {
+      boost::mutex::scoped_lock loch(*share_information.first);
+      auto insert_result(share_information.second->insert(
+                             std::make_pair(*share_name, ShareDetails(kPrivateOwner))));
+      if (!insert_result.second) {
+        LOG(kError) << "Failed to insert share to session.";
+        return kGeneralError;
+      }
+      session_changed = true;
     }
-    session_.set_changed(true);
+
+    if (session_changed)
+      session_.set_changed(true);
   }
   return result;
 }
@@ -1076,19 +1096,22 @@ int LifeStuffImpl::GetPrivateShareList(const std::string &my_public_id, StringIn
     return result;
   }
 
-  ShareInformationPtr share_information(session_.share_information(my_public_id));
-  if (!share_information) {
+  const ShareInformationDetail share_information(session_.share_information(my_public_id));
+  if (!share_information.first) {
     LOG(kError) << "The user holds no such publc identity: " << my_public_id;
     return kPublicIdNotFoundFailure;
   }
 
-  std::for_each(share_information->begin(),
-                share_information->end(),
-                [=] (const ShareInformation::value_type& element) {
-                  if (element.second.share_type > kOpenOwner)
-                    share_names->insert(std::make_pair(element.first,
-                                                       element.second.share_type - 3));
-                });
+  {
+    boost::mutex::scoped_lock loch(*share_information.first);
+    std::for_each(share_information.second->begin(),
+                  share_information.second->end(),
+                  [=] (const ShareInformation::value_type& element) {
+                    if (element.second.share_type > kOpenOwner)
+                      share_names->insert(std::make_pair(element.first,
+                                                         element.second.share_type - 3));
+                  });
+  }
 
   return kSuccess;
 }
@@ -1132,19 +1155,22 @@ int LifeStuffImpl::GetPrivateSharesIncludingMember(const std::string &my_public_
     return result;
   }
 
-  ShareInformationPtr share_information(session_.share_information(my_public_id));
-  if (!share_information) {
+  const ShareInformationDetail share_information(session_.share_information(my_public_id));
+  if (!share_information.first) {
     LOG(kError) << "The user holds no such publc identity: " << my_public_id;
     return kPublicIdNotFoundFailure;
   }
 
   std::vector<std::string> all_share_names;
-  std::for_each(share_information->begin(),
-                share_information->end(),
-                [&all_share_names] (const ShareInformation::value_type& element) {
-                  if (element.second.share_type > kOpenOwner)
-                    all_share_names.push_back(element.first);
-                });
+  {
+    boost::mutex::scoped_lock loch(*share_information.first);
+    std::for_each(share_information.second->begin(),
+                  share_information.second->end(),
+                  [&all_share_names] (const ShareInformation::value_type& element) {
+                    if (element.second.share_type > kOpenOwner)
+                      all_share_names.push_back(element.first);
+                  });
+  }
 
   for (auto it = all_share_names.begin(); it != all_share_names.end(); ++it) {
     StringIntMap share_members;
@@ -1232,15 +1258,20 @@ int LifeStuffImpl::AcceptPrivateShareInvitation(const std::string &my_public_id,
                                       directory_id,
                                       share_keyring);
   if (result == kSuccess) {
-    ShareInformationPtr share_information(session_.share_information(my_public_id));
-    if (!share_information) {
+    const ShareInformationDetail share_information(session_.share_information(my_public_id));
+    if (!share_information.first) {
       LOG(kError) << "The user holds no such publc identity: " << my_public_id;
       return kPublicIdNotFoundFailure;
     }
-    auto insert_result(share_information->insert(std::make_pair(*share_name, share_details)));
-    if (!insert_result.second) {
-      LOG(kError) << "Failed to insert share into session.";
-      return kGeneralError;
+
+    {
+      boost::mutex::scoped_lock loch(*share_information.first);
+      auto insert_result(share_information.second->insert(std::make_pair(*share_name,
+                                                                         share_details)));
+      if (!insert_result.second) {
+        LOG(kError) << "Failed to insert share into session.";
+        return kGeneralError;
+      }
     }
 
     session_.set_changed(true);
@@ -1390,12 +1421,16 @@ int LifeStuffImpl::DeletePrivateShare(const std::string &my_public_id,
   fs::path share_dir(mount_path() / kSharedStuff / share_name);
   result = user_storage_->StopShare(my_public_id, share_dir, delete_data);
   if (result == kSuccess) {
-    ShareInformationPtr share_information(session_.share_information(my_public_id));
-    if (!share_information) {
+    const ShareInformationDetail share_information(session_.share_information(my_public_id));
+    if (!share_information.first) {
       LOG(kError) << "The user holds no such publc identity: " << my_public_id;
       return kPublicIdNotFoundFailure;
     }
-    share_information->erase(share_name);
+
+    {
+      boost::mutex::scoped_lock loch(*share_information.first);
+      share_information.second->erase(share_name);
+    }
     session_.set_changed(true);
   }
   return result;
@@ -1412,12 +1447,16 @@ int LifeStuffImpl::LeavePrivateShare(const std::string &my_public_id,
   fs::path share_dir(mount_path() / kSharedStuff / share_name);
   result = user_storage_->RemoveShare(share_dir, my_public_id);
   if (result == kSuccess) {
-    ShareInformationPtr share_information(session_.share_information(my_public_id));
-    if (!share_information) {
+    const ShareInformationDetail share_information(session_.share_information(my_public_id));
+    if (!share_information.first) {
       LOG(kError) << "The user holds no such publc identity: " << my_public_id;
       return kPublicIdNotFoundFailure;
     }
-    share_information->erase(share_name);
+
+    {
+      boost::mutex::scoped_lock loch(*share_information.first);
+      share_information.second->erase(share_name);
+    }
     session_.set_changed(true);
   }
   return result;
@@ -1470,19 +1509,26 @@ int LifeStuffImpl::CreateOpenShareFromExistingDirectory(const std::string &my_pu
     LOG(kError) << "Failed to create open share: " << result;
     return result;
   } else {
-    ShareInformationPtr share_information(session_.share_information(my_public_id));
-    if (!share_information) {
+    const ShareInformationDetail share_information(session_.share_information(my_public_id));
+    if (!share_information.first) {
       LOG(kError) << "The user holds no such publc identity: " << my_public_id;
       return kPublicIdNotFoundFailure;
     }
-    auto insert_result(share_information->insert(std::make_pair(*share_name,
-                                                                ShareDetails(kOpenOwner))));
-    if (!insert_result.second) {
-      LOG(kError) << "Failed to insert share into session.";
-      return kGeneralError;
+
+    bool session_changed(false);
+    {
+      boost::mutex::scoped_lock loch(*share_information.first);
+      auto insert_result(share_information.second->insert(
+                             std::make_pair(*share_name, ShareDetails(kOpenOwner))));
+      if (!insert_result.second) {
+        LOG(kError) << "Failed to insert share into session.";
+        return kGeneralError;
+      }
+      session_changed = true;
     }
 
-    session_.set_changed(true);
+    if (session_changed)
+      session_.set_changed(true);
   }
   return kSuccess;
 }
@@ -1519,19 +1565,27 @@ int LifeStuffImpl::CreateEmptyOpenShare(const std::string &my_public_id,
     liaisons.insert(std::make_pair(contacts[i], 1));
   result = user_storage_->CreateOpenShare(my_public_id, fs::path(), share, liaisons, results);
   if (result == kSuccess) {
-    ShareInformationPtr share_information(session_.share_information(my_public_id));
-    if (!share_information) {
+    const ShareInformationDetail share_information(session_.share_information(my_public_id));
+    if (!share_information.first) {
       LOG(kError) << "The user holds no such publc identity: " << my_public_id;
       return kPublicIdNotFoundFailure;
     }
-    auto insert_result(share_information->insert(std::make_pair(*share_name,
-                                                                ShareDetails(kOpenOwner))));
-    if (!insert_result.second) {
-      LOG(kError) << "Failed to insert share into session.";
-      return kGeneralError;
+
+    bool session_changed(false);
+    {
+      boost::mutex::scoped_lock loch(*share_information.first);
+      auto insert_result(share_information.second->insert(
+                             std::make_pair(*share_name, ShareDetails(kOpenOwner))));
+      if (!insert_result.second) {
+        LOG(kError) << "Failed to insert share into session.";
+        return kGeneralError;
+      }
+
+      session_changed = true;
     }
 
-    session_.set_changed(true);
+    if (session_changed)
+      session_.set_changed(true);
   }
 
   return result;
@@ -1555,47 +1609,47 @@ int LifeStuffImpl::GetOpenShareList(const std::string &my_public_id,
     return kGeneralError;
   }
 
-  ShareInformationPtr share_information(session_.share_information(my_public_id));
-  if (!share_information) {
+  const ShareInformationDetail share_information(session_.share_information(my_public_id));
+  if (!share_information.first) {
     LOG(kError) << "the user holds no such publc identity: " << my_public_id;
     return kPublicIdNotFoundFailure;
   }
 
-  std::for_each(share_information->begin(),
-                share_information->end(),
-                [=] (const ShareInformation::value_type& element) {
-                  if (element.second.share_type <= kOpenOwner)
-                    share_names->push_back(element.first);
-                });
+  {
+    boost::mutex::scoped_lock loch(*share_information.first);
+    std::for_each(share_information.second->begin(),
+                  share_information.second->end(),
+                  [=] (const ShareInformation::value_type& element) {
+                    if (element.second.share_type <= kOpenOwner)
+                      share_names->push_back(element.first);
+                  });
+  }
 
   return kSuccess;
 }
 
 int LifeStuffImpl::GetOpenShareMembers(const std::string &my_public_id,
                                        const std::string &share_name,
-                                       std::vector<std::string> *share_members) {
+                                       StringIntMap *share_members) {
   if (!share_members) {
     LOG(kError) << "Parameter share name must be valid.";
     return kGeneralError;
   }
-  StringIntMap share_users;
+
   int result(PreContactChecks(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks.";
     return result;
   }
   fs::path share_dir(mount_path() / kSharedStuff / share_name);
-  result = user_storage_->GetAllShareUsers(share_dir, &share_users);
+  result = user_storage_->GetAllShareUsers(share_dir, share_members);
   if (result != kSuccess) {
     LOG(kError) << "Failed to get open share members.";
     return result;
   }
 
-  share_members->clear();
-  for (auto it = share_users.begin(); it != share_users.end(); ++it) {
-    if (it->first != my_public_id)
-      share_members->push_back(it->first);
-  }
+  share_members->erase(my_public_id);
+
   return kSuccess;
 }
 
@@ -1656,12 +1710,17 @@ int LifeStuffImpl::AcceptOpenShareInvitation(const std::string &my_public_id,
   if (result != kSuccess) {
     LOG(kError) << "Failed to add user to open share, result " << result;
   } else {
-    ShareInformationPtr share_information(session_.share_information(my_public_id));
-    if (!share_information) {
+    const ShareInformationDetail share_information(session_.share_information(my_public_id));
+    if (!share_information.first) {
       LOG(kError) << "The user holds no such publc identity: " << my_public_id;
       return kPublicIdNotFoundFailure;
     }
-    share_information->insert(std::make_pair(*share_name, ShareDetails(kOpenReadWriteMember)));
+
+    {
+      boost::mutex::scoped_lock loch(*share_information.first);
+      share_information.second->insert(std::make_pair(*share_name,
+                                                      ShareDetails(kOpenReadWriteMember)));
+    }
     session_.set_changed(true);
   }
   return result;
@@ -1697,15 +1756,14 @@ int LifeStuffImpl::RejectOpenShareInvitation(const std::string &my_public_id,
   return user_storage_->DeleteHiddenFile(hidden_file);
 }
 
-int LifeStuffImpl::LeaveOpenShare(const std::string &my_public_id,
-                                  const std::string &share_name) {
+int LifeStuffImpl::LeaveOpenShare(const std::string &my_public_id, const std::string &share_name) {
   int result(PreContactChecks(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks.";
     return result;
   }
   fs::path share(mount_path() / kSharedStuff / share_name);
-  std::vector<std::string> members;
+  StringIntMap members;
   result = GetOpenShareMembers(my_public_id, share_name, &members);
   if (result != kSuccess) {
     LOG(kError) << "Failed to get members of share " << share;
@@ -1724,9 +1782,8 @@ int LifeStuffImpl::LeaveOpenShare(const std::string &my_public_id,
       return result;
     }
   } else {
-    members.clear();
-    members.push_back(my_public_id);
-    result = user_storage_->RemoveOpenShareUsers(share, members);
+    std::vector<std::string> member_list(1, my_public_id);
+    result = user_storage_->RemoveOpenShareUsers(share, member_list);
     if (result != kSuccess) {
       LOG(kError) << "Failed to remove share user " << my_public_id << " from share " << share;
       return result;
@@ -1737,12 +1794,16 @@ int LifeStuffImpl::LeaveOpenShare(const std::string &my_public_id,
       return result;
     }
   }
-  ShareInformationPtr share_information(session_.share_information(my_public_id));
-  if (!share_information) {
+  const ShareInformationDetail share_information(session_.share_information(my_public_id));
+  if (!share_information.first) {
     LOG(kError) << "The user holds no such publc identity: " << my_public_id;
     return kPublicIdNotFoundFailure;
   }
-  share_information->erase(share_name);
+
+  {
+    boost::mutex::scoped_lock loch(*share_information.first);
+    share_information.second->erase(share_name);
+  }
   session_.set_changed(true);
 
   return kSuccess;
@@ -1765,44 +1826,48 @@ void LifeStuffImpl::ConnectInternalElements() {
       [&] (const std::string& file_name,
            const std::string& serialised_data_map,
            std::string* data_map_hash) {
-        return user_storage_.get()->ParseAndSaveDataMap(file_name, serialised_data_map,
-                                                        data_map_hash);
+        return user_storage_->ParseAndSaveDataMap(file_name,
+                                                  serialised_data_map,
+                                                  data_map_hash);
       });
 
-  message_handler_->ConnectToShareInvitationResponsSignal(
+  message_handler_->ConnectToShareInvitationResponseSignal(
       [&] (const std::string& user_id,
            const std::string& share_name,
            const std::string&,
            const std::string& share_id,
            const std::string&) {
-        return user_storage_.get()->InvitationResponse(user_id, share_name, share_id);
+        return user_storage_->InvitationResponse(user_id, share_name, share_id);
       });
 
   message_handler_->ConnectToSavePrivateShareDataSignal(
       [&] (const std::string &serialised_share_data,
            const std::string &share_id) {
-        return user_storage_.get()->SavePrivateShareData(serialised_share_data, share_id);
+        return user_storage_->SavePrivateShareData(serialised_share_data, share_id);
       });
 
   message_handler_->ConnectToDeletePrivateShareDataSignal(
       [&] (const std::string& share_id) {
-        return user_storage_.get()->DeletePrivateShareData(share_id);
+        return user_storage_->DeletePrivateShareData(share_id);
       });
 
   message_handler_->ConnectToPrivateShareUserLeavingSignal(
       [&] (const std::string&, const std::string& share_id, const std::string& user_id) {
-        return user_storage_.get()->UserLeavingShare(share_id, user_id);
+        return user_storage_->UserLeavingShare(share_id, user_id);
       });
 
   message_handler_->ConnectToSaveOpenShareDataSignal(
       [&] (const std::string& serialised_share_data, const std::string& share_id) {
-        return user_storage_.get()->SaveOpenShareData(serialised_share_data, share_id);
+        return user_storage_->SaveOpenShareData(serialised_share_data, share_id);
       });
 
   message_handler_->ConnectToPrivateShareDeletionSignal(
-      [&] (const std::string&, const std::string&, const std::string &share_name,
-           const std::string&, const std::string&) {
-        return user_storage_.get()->ShareDeleted(share_name);
+      [&] (const std::string&,
+           const std::string&,
+           const std::string& share_name,
+           const std::string&,
+           const std::string&) {
+        return user_storage_->ShareDeleted(share_name);
       });
 
   message_handler_->ConnectToPrivateShareUpdateSignal(
@@ -1811,8 +1876,11 @@ void LifeStuffImpl::ConnectInternalElements() {
            const std::string* new_directory_id,
            const asymm::Keys* new_key_ring,
            int* access_right) {
-        return user_storage_.get()->UpdateShare(share_id, new_share_id, new_directory_id,
-                                                new_key_ring, access_right);
+        return user_storage_->UpdateShare(share_id,
+                                          new_share_id,
+                                          new_directory_id,
+                                          new_key_ring,
+                                          access_right);
       });
 
   message_handler_->ConnectToPrivateMemberAccessLevelSignal(
@@ -1831,21 +1899,24 @@ void LifeStuffImpl::ConnectInternalElements() {
   public_id_->ConnectToContactConfirmedSignal(
       [&] (const std::string& own_public_id, const std::string& recipient_public_id,
            const std::string&) {
-        return message_handler_.get()->InformConfirmedContactOnline(own_public_id,
-                                                                    recipient_public_id);
+        return message_handler_->InformConfirmedContactOnline(own_public_id,
+                                                              recipient_public_id);
       });
 
   message_handler_->ConnectToContactDeletionSignal(
       [&] (const std::string& public_id, const std::string& contact_name,
            const std::string&,
            const std::string&) {
-      return public_id_.get()->RemoveContactHandle(public_id, contact_name);
+      return public_id_->RemoveContactHandle(public_id, contact_name);
       });
 
   message_handler_->ConnectToPrivateShareDetailsSignal(
       [&] (const std::string& share_id, fs::path* relative_path) {
-      return user_storage_.get()->GetShareDetails(share_id, relative_path, nullptr, nullptr,
-                                                  nullptr);
+      return user_storage_->GetShareDetails(share_id,
+                                            relative_path,
+                                            nullptr,
+                                            nullptr,
+                                            nullptr);
       });
 }
 
@@ -1941,15 +2012,17 @@ void LifeStuffImpl::ShareRenameSlot(const std::string& old_share_name,
   std::vector<std::string> identities(session_.PublicIdentities());
   bool modified(false);
   for (auto it(identities.begin()); it != identities.end(); ++it) {
-    ShareInformationPtr share_information(session_.share_information(*it));
-    if (!share_information) {
+    const ShareInformationDetail share_information(session_.share_information(*it));
+    if (!share_information.first) {
       LOG(kError) << "The user holds no such publc identity: " << *it;
       return;
     }
-    auto itr(share_information->find(old_share_name));
-    if (itr != share_information->end()) {
-      share_information->insert(std::make_pair(new_share_name, (*itr).second));
-      share_information->erase(old_share_name);
+
+    boost::mutex::scoped_lock loch(*share_information.first);
+    auto itr(share_information.second->find(old_share_name));
+    if (itr != share_information.second->end()) {
+      share_information.second->insert(std::make_pair(new_share_name, (*itr).second));
+      share_information.second->erase(old_share_name);
       modified = true;
     }
   }
@@ -1962,30 +2035,41 @@ void LifeStuffImpl::MemberAccessChangeSlot(const std::string &share_id,
                                            const std::string &new_share_id,
                                            const asymm::Keys &key_ring,
                                            int access_right) {
-  std::string share_name(user_storage_->MemberAccessChange(share_id, directory_id, new_share_id,
-                                                           key_ring, access_right));
+  std::string share_name(user_storage_->MemberAccessChange(share_id,
+                                                           directory_id,
+                                                           new_share_id,
+                                                           key_ring,
+                                                           access_right));
   if (!share_name.empty()) {
     std::vector<std::string> identities(session_.PublicIdentities());
     for (auto it(identities.begin()); it != identities.end(); ++it) {
-      ShareInformationPtr share_information(session_.share_information(*it));
-      if (!share_information) {
-        LOG(kError) << "The user holds no such publc identity: " << *it;
+      const ShareInformationDetail share_information(session_.share_information(*it));
+      if (!share_information.first) {
+        LOG(kError) << "The user holds no such publc identity: " << (*it);
         return;
       }
-      auto itr(share_information->find(share_name));
-      if (itr != share_information->end()) {
-        if (access_right == kShareReadOnly &&
-                ((*itr).second.share_type == kOpenReadWriteMember ||
-                (*itr).second.share_type == kPrivateReadWriteMember)) {
-          (*itr).second.share_type -= 1;
-          session_.set_changed(true);
-        } else if (access_right == kShareReadWrite &&
-                      ((*itr).second.share_type == kOpenReadOnlyMember ||
-                      (*itr).second.share_type == kPrivateReadOnlyMember)) {
-          (*itr).second.share_type += 1;
-          session_.set_changed(true);
+
+      bool session_changed(false);
+      {
+        boost::mutex::scoped_lock loch(*share_information.first);
+        auto itr(share_information.second->find(share_name));
+        if (itr != share_information.second->end()) {
+          if (access_right == kShareReadOnly &&
+                  ((*itr).second.share_type == kOpenReadWriteMember ||
+                  (*itr).second.share_type == kPrivateReadWriteMember)) {
+            (*itr).second.share_type -= 1;
+            session_changed = true;
+          } else if (access_right == kShareReadWrite &&
+                         ((*itr).second.share_type == kOpenReadOnlyMember ||
+                         (*itr).second.share_type == kPrivateReadOnlyMember)) {
+            (*itr).second.share_type += 1;
+            session_changed = true;
+          }
         }
       }
+
+      if (session_changed)
+        session_.set_changed(true);
     }
   }
 }

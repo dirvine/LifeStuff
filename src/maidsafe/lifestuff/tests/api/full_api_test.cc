@@ -623,6 +623,26 @@ TEST_F(TwoUsersApiTest, FUNC_RemoveContact) {
   }
 }
 
+TEST_F(TwoUsersApiTest, FUNC_AddContactWithMessage) {
+  test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_);
+  test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_);
+
+  const std::string public_id_3(RandomAlphaNumericString(RandomUint32() % 30 + 1));
+  test_elements_1_.CreatePublicId(public_id_3);
+  testing_variables_1_.newly_contacted = false;
+
+  const std::string message(RandomAlphaNumericString(RandomUint32() % 90 + 10));
+  test_elements_2_.AddContact(public_id_2_, public_id_3, message);
+
+  while (!testing_variables_1_.newly_contacted)
+    Sleep(bptime::milliseconds(100));
+  EXPECT_EQ(testing_variables_1_.contact_request_message, message);
+  test_elements_1_.ConfirmContact(public_id_1_, public_id_3);
+
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+}
+
 TEST_F(TwoUsersApiTest, FUNC_CreateEmptyOpenShare) {
   std::string share_name(RandomAlphaNumericString(5)),
               file_name(RandomAlphaNumericString(5)),
@@ -769,7 +789,7 @@ TEST_F(TwoUsersApiTest, FUNC_CreateOpenShare) {
     EXPECT_FALSE(testing_variables_2_.new_open_share_id.empty());
     EXPECT_EQ(kSuccess,
               test_elements_2_.RejectOpenShareInvitation(public_id_2_,
-                                                       testing_variables_2_.new_open_share_id));
+                                                         testing_variables_2_.new_open_share_id));
     fs::path share(test_elements_2_.mount_path() / kSharedStuff / share_name),
              file_path(share / file2_name);
     EXPECT_FALSE(fs::exists(share, error_code));
@@ -834,10 +854,10 @@ TEST_F(TwoUsersApiTest, FUNC_InviteOpenShareMembers) {
     contacts.push_back(public_id_2_);
     results.insert(std::make_pair(public_id_2_, kGeneralError));
     EXPECT_EQ(kSuccess, test_elements_1_.CreateOpenShareFromExistingDirectory(public_id_1_,
-                                                                            share_directory1,
-                                                                            contacts,
-                                                                            &share1_name,
-                                                                            &results));
+                                                                              share_directory1,
+                                                                              contacts,
+                                                                              &share1_name,
+                                                                              &results));
     fs::path share(test_elements_1_.mount_path() / kSharedStuff / share1_name);
     EXPECT_EQ(kSuccess, results[public_id_2_]);
     EXPECT_TRUE(fs::exists(share, error_code));
@@ -861,7 +881,7 @@ TEST_F(TwoUsersApiTest, FUNC_InviteOpenShareMembers) {
     EXPECT_FALSE(testing_variables_2_.new_open_share_id.empty());
     EXPECT_EQ(kSuccess,
               test_elements_2_.RejectOpenShareInvitation(public_id_2_,
-                                                       testing_variables_2_.new_open_share_id));
+                                                         testing_variables_2_.new_open_share_id));
     fs::path share(test_elements_2_.mount_path() / kSharedStuff / share1_name),
              file_path(share / file2_name);
     EXPECT_FALSE(fs::exists(share, error_code));
@@ -881,7 +901,7 @@ TEST_F(TwoUsersApiTest, FUNC_InviteOpenShareMembers) {
     EXPECT_TRUE(WriteFile(file_path, file_content1));
 
     fs::path directory(test_elements_1_.mount_path() / kMyStuff / directory_name);
-    StringIntMap  results;
+    StringIntMap results;
     std::vector<std::string> contacts;
     fs::path share_directory2(directory / share2_name);
     EXPECT_EQ(kSuccess, test_elements_1_.CreateOpenShareFromExistingDirectory(public_id_1_,
@@ -897,10 +917,9 @@ TEST_F(TwoUsersApiTest, FUNC_InviteOpenShareMembers) {
     EXPECT_EQ(0, error_code.value());
 
     int count(0), limit(30);
-    while ((fs::exists(directory / share2_name, error_code) && !error_code) &&
-           count++ < limit) {
+    while (fs::exists(directory / share2_name, error_code) && !error_code && count++ < limit)
       Sleep(bptime::milliseconds(100));
-    }
+
     EXPECT_FALSE(fs::exists(directory / share2_name, error_code));
     EXPECT_NE(0, error_code.value());
 
@@ -908,7 +927,7 @@ TEST_F(TwoUsersApiTest, FUNC_InviteOpenShareMembers) {
     EXPECT_EQ(kSuccess, test_elements_1_.GetOpenShareList(public_id_1_, &shares));
     EXPECT_EQ(2, shares.size());
 
-    std::vector<std::string> members;
+    StringIntMap members;
     EXPECT_EQ(kSuccess, test_elements_1_.GetOpenShareMembers(public_id_1_, share2_name, &members));
     EXPECT_EQ(0, members.size());
 
@@ -941,7 +960,7 @@ TEST_F(TwoUsersApiTest, FUNC_InviteOpenShareMembers) {
     EXPECT_EQ(kSuccess, test_elements_2_.GetOpenShareList(public_id_2_, &shares));
     EXPECT_EQ(1, shares.size());
 
-    std::vector<std::string> members;
+    StringIntMap members;
     EXPECT_EQ(kSuccess, test_elements_2_.GetOpenShareMembers(public_id_2_, share2_name, &members));
     EXPECT_EQ(1, members.size());
 
@@ -1047,7 +1066,7 @@ TEST_F(TwoUsersApiTest, FUNC_LeaveOpenShare) {
     EXPECT_EQ(kSuccess, test_elements_2_.GetOpenShareList(public_id_2_, &shares));
     EXPECT_EQ(1, shares.size());
 
-    std::vector<std::string> members;
+    StringIntMap members;
     EXPECT_EQ(kSuccess, test_elements_2_.GetOpenShareMembers(public_id_2_, share_name, &members));
     EXPECT_EQ(0, members.size());
 
@@ -1159,7 +1178,7 @@ TEST_F(TwoUsersApiTest, FUNC_SameOpenShareName) {
     EXPECT_EQ(kSuccess, test_elements_1_.GetOpenShareList(public_id_1_, &shares));
     EXPECT_EQ(2, shares.size());
 
-    std::vector<std::string> members;
+    StringIntMap members;
     EXPECT_EQ(kSuccess, test_elements_1_.GetOpenShareMembers(public_id_1_, share_name, &members));
     EXPECT_EQ(0, members.size());
 
@@ -1570,9 +1589,9 @@ TEST_F(TwoUsersApiTest, FUNC_RenamePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name1,
                                                                 &results));
-    EXPECT_EQ(0, results.size());
+    EXPECT_EQ(1U, results.size());
     EXPECT_TRUE(results.end() == results.find(public_id_1_));
-    EXPECT_TRUE(results.end() == results.find(public_id_2_));
+    EXPECT_EQ(kShareReadWriteUnConfirmed, results.find(public_id_2_)->second);
 
     fs::path share_path(test_elements_1_.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
@@ -1775,9 +1794,9 @@ TEST_F(TwoUsersApiTest, FUNC_MembershipDowngradePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name1,
                                                                 &results));
-    EXPECT_EQ(0, results.size());
+    EXPECT_EQ(1U, results.size());
     EXPECT_TRUE(results.end() == results.find(public_id_1_));
-    EXPECT_TRUE(results.end() == results.find(public_id_2_));
+    EXPECT_EQ(kShareReadWriteUnConfirmed, results.find(public_id_2_)->second);
 
     fs::path share_path(test_elements_1_.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
@@ -1974,7 +1993,8 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
     StringIntMap shares_members;
 
     test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name1, &shares_members);
-    EXPECT_EQ(0, shares_members.size());
+    EXPECT_EQ(1, shares_members.size());
+    EXPECT_EQ(kShareReadOnlyUnConfirmed, shares_members.find(public_id_2_)->second);
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
@@ -2062,7 +2082,8 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
     StringIntMap shares_members;
 
     test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name1, &shares_members);
-    EXPECT_EQ(0, shares_members.size());
+    EXPECT_EQ(1, shares_members.size());
+    EXPECT_EQ(kShareReadOnlyUnConfirmed, shares_members.find(public_id_2_)->second);
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
@@ -2121,108 +2142,122 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
               public_id3(RandomAlphaNumericString(5));
   test_elements3.Initialise(*test_dir_);
   test_elements3.ConnectToSignals(
-        [&] (const std::string& s_1,
-             const std::string& s_2,
-             const std::string& s_3,
-             const std::string& s_4) {
-          return testresources::ChatSlot(s_1, s_2, s_3, s_4,
-                          &testing_variables3.chat_message,
-                          &testing_variables3.chat_message_received);
+        [&] (const std::string& own_public_id,
+             const std::string& contact_public_id,
+             const std::string& signal_message,
+             const std::string& timestamp) {
+          return testresources::ChatSlot(own_public_id, contact_public_id, signal_message,
+                                         timestamp,
+                                         &testing_variables3.chat_message,
+                                         &testing_variables3.chat_message_received);
         },
-        [&] (const std::string& s_1,
-             const std::string& s_2,
-             const std::string& s_3,
-             const std::string& s_4,
-             const std::string& s_5) {
-          return testresources::FileTransferSlot(s_1, s_2, s_3, s_4, s_5,
-                                  &testing_variables3.file_name,
-                                  &testing_variables3.file_id,
-                                  &testing_variables3.file_transfer_received);
+        [&] (const std::string& own_public_id,
+             const std::string& contact_public_id,
+             const std::string& signal_file_name,
+             const std::string& signal_file_id,
+             const std::string& timestamp) {
+          return testresources::FileTransferSlot(own_public_id, contact_public_id, signal_file_name,
+                                                 signal_file_id,
+                                                 timestamp,
+                                                 &testing_variables3.file_name,
+                                                 &testing_variables3.file_id,
+                                                 &testing_variables3.file_transfer_received);
         },
-        [&] (const std::string& s_1,
-             const std::string& s_2,
-             const std::string& s_3) {
-          return testresources::NewContactSlot(s_1, s_2, s_3, &testing_variables3.newly_contacted);
+        [&] (const std::string& own_public_id,
+             const std::string& contact_public_id,
+             const std::string& message,
+             const std::string& timestamp) {
+          return testresources::NewContactSlot(own_public_id, contact_public_id, message, timestamp,
+                                               &testing_variables3.newly_contacted,
+                                               &testing_variables3.contact_request_message);
         },
-        [&] (const std::string& s_1,
-             const std::string& s_2,
-             const std::string& s_3) {
-          return testresources::ContactConfirmationSlot(s_1, s_2, s_3,
+        [&] (const std::string& own_public_id,
+             const std::string& contact_public_id,
+             const std::string& timestamp) {
+          return testresources::ContactConfirmationSlot(own_public_id, contact_public_id, timestamp,
                                                         &testing_variables3.confirmed);
         },
-        [&] (const std::string& s_1,
-             const std::string& s_2,
-             const std::string& s_3) {
-          return testresources::ContactProfilePictureSlot(s_1, s_2, s_3,
+        [&] (const std::string& own_public_id,
+             const std::string& contact_public_id,
+             const std::string& timestamp) {
+          return testresources::ContactProfilePictureSlot(own_public_id, contact_public_id,
+                                                          timestamp,
                                                           &testing_variables3.picture_updated);
         },
-        [&] (const std::string& s_1,
-             const std::string& s_2,
-             const std::string& s_3,
+        [&] (const std::string& own_public_id,
+             const std::string& contact_public_id,
+             const std::string& timestamp,
             ContactPresence cp) {
-          return testresources::ContactPresenceSlot(s_1, s_2, s_3, cp,
+          return testresources::ContactPresenceSlot(own_public_id, contact_public_id, timestamp, cp,
                                                     &testing_variables3.presence_announced);
         },
-        [&] (const std::string& s_1,
-             const std::string& s_2,
-             const std::string& s_3,
-             const std::string& s_4) {
-          return testresources::ContactDeletionSlot(s_1, s_2, s_3, s_4,
+        [&] (const std::string& own_public_id,
+             const std::string& contact_public_id,
+             const std::string& signal_message,
+             const std::string& timestamp) {
+          return testresources::ContactDeletionSlot(own_public_id, contact_public_id,
+                                                    signal_message,
+                                                    timestamp,
                                                     &testing_variables3.removal_message,
                                                     &testing_variables3.removed);
 },
-        [&] (const std::string& s_1,
-             const std::string& s_2,
-             const std::string& s_3,
-             const std::string& s_4,
+        [&] (const std::string& own_public_id,
+             const std::string& contact_public_id,
+             const std::string& signal_share_name,
+             const std::string& signal_share_id,
              int access_level,
-             const std::string& s_5) {
+             const std::string& timestamp) {
           return testresources::PrivateShareInvitationSlot(
-              s_1, s_2, s_3, s_4, access_level, s_5,
+              own_public_id, contact_public_id, signal_share_name, signal_share_id, access_level,
+              timestamp,
               &testing_variables3.new_private_share_name,
               &testing_variables3.new_private_share_id,
               &testing_variables3.new_private_access_level,
               &testing_variables3.privately_invited);
         },
-        [&] (const std::string& s_1,
-             const std::string& s_2,
-             const std::string& s_3,
-             const std::string& s_4,
-             const std::string& s_5) {
+        [&] (const std::string& own_public_id,
+             const std::string& contact_public_id,
+             const std::string& signal_share_name,
+             const std::string& signal_share_id,
+             const std::string& timestamp) {
           return testresources::PrivateShareDeletionSlot(
-              s_1, s_2, s_3, s_4, s_5,
+              own_public_id, contact_public_id, signal_share_name, signal_share_id, timestamp,
               &testing_variables3.deleted_private_share_name,
               &testing_variables3.private_share_deleted);
         },
-        [&] (const std::string& s_1,
-             const std::string& s_2,
-             const std::string& s_3,
-             const std::string& s_4,
+        [&] (const std::string& own_public_id,
+             const std::string& contact_public_id,
+             const std::string& signal_share_name,
+             const std::string& signal_share_id,
              int signal_member_access,
-             const std::string /*&time_stamp*/) {
+             const std::string /*&timestamp*/) {
           return testresources::PrivateMemberAccessChangeSlot(
-              s_1, s_2, s_3, s_4, signal_member_access,
+              own_public_id, contact_public_id, signal_share_name, signal_share_id,
+              signal_member_access,
               testing_variables3.access_private_share_name,
               &testing_variables3.private_member_access,
               &testing_variables3.private_member_access_changed);
         },
-        [&] (const std::string& s_1,
-             const std::string& s_2,
-             const std::string& s_3,
-             const std::string& s_4,
-             const std::string& s_5) {
-          return testresources::OpenShareInvitationSlot(s_1, s_2, s_3, s_4, s_5,
+        [&] (const std::string& own_public_id,
+             const std::string& contact_public_id,
+             const std::string& signal_share_name,
+             const std::string& signal_share_id,
+             const std::string& timestamp) {
+          return testresources::OpenShareInvitationSlot(own_public_id, contact_public_id,
+                                                        signal_share_name,
+                                                        signal_share_id,
+                                                        timestamp,
                                                         &testing_variables3.new_open_share_id,
                                                         &testing_variables3.openly_invited);
         },
-        [&] (const std::string& s_1,
-             const std::string& s_2) {
-          return testresources::ShareRenameSlot(s_1, s_2,
+        [&] (const std::string& old_share_name,
+             const std::string& new_share_name) {
+          return testresources::ShareRenameSlot(old_share_name, new_share_name,
                                                 &testing_variables3.old_share_name,
                                                 &testing_variables3.new_share_name,
                                                 &testing_variables3.share_renamed);
         },
-                ShareChangedFunction());
+        ShareChangedFunction());
   test_elements3.CreateUser(keyword3, pin3, password3);
   test_elements3.CreatePublicId(public_id3);
   test_elements3.AddContact(public_id3, public_id_1_);
@@ -2271,7 +2306,9 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
     EXPECT_EQ(kSuccess, results[public_id_2_]);
     StringIntMap shares_members;
     test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name1, &shares_members);
-    EXPECT_EQ(0, shares_members.size());
+    EXPECT_EQ(2U, shares_members.size());
+    EXPECT_EQ(kShareReadOnlyUnConfirmed, shares_members.find(public_id_2_)->second);
+    EXPECT_EQ(kShareReadOnlyUnConfirmed, shares_members.find(public_id3)->second);
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
@@ -2375,7 +2412,8 @@ TEST_F(TwoUsersMutexApiTest, FUNC_AddModifyRemoveOneFile) {
     EXPECT_EQ(kSuccess, results[public_id_2_]);
     StringIntMap shares_members;
     test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name1, &shares_members);
-    EXPECT_EQ(0, shares_members.size());
+    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(kShareReadWriteUnConfirmed, shares_members.find(public_id_2_)->second);
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
@@ -2518,7 +2556,8 @@ TEST_F(TwoUsersMutexApiTest, FUNC_AddRemoveMultipleNodes) {
     test_elements_1_.GetPrivateShareMembers(public_id_1_,
                                             share_name,
                                             &shares_members);
-    EXPECT_EQ(0, shares_members.size());
+    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(kShareReadWriteUnConfirmed, shares_members.find(public_id_2_)->second);
 
     fs::path sub_directory(directory1 / sub_directory_name);
     fs::path further_sub_director(sub_directory / further_sub_directory_name);
@@ -2722,7 +2761,8 @@ TEST_F(TwoUsersMutexApiTest, FUNC_RenameOneNode) {
     test_elements_1_.GetPrivateShareMembers(public_id_1_,
                                             share_name,
                                             &shares_members);
-    EXPECT_EQ(0, shares_members.size());
+    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(kShareReadWriteUnConfirmed, shares_members.find(public_id_2_)->second);
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
@@ -2849,7 +2889,8 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeToShareAndMoveOut) {
     test_elements_1_.GetPrivateShareMembers(public_id_1_,
                                             share_name,
                                             &shares_members);
-    EXPECT_EQ(0, shares_members.size());
+    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(kShareReadWriteUnConfirmed, shares_members.find(public_id_2_)->second);
 
     fs::path directory(test_elements_1_.mount_path() / sub_directory_name);
     EXPECT_TRUE(fs::create_directory(directory, error_code));
@@ -2961,9 +3002,10 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeInnerShare) {
     EXPECT_EQ(kSuccess, results[public_id_2_]);
     StringIntMap shares_members;
     test_elements_1_.GetPrivateShareMembers(public_id_1_,
-                                          share_name,
-                                          &shares_members);
-    EXPECT_EQ(0, shares_members.size());
+                                            share_name,
+                                            &shares_members);
+    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(kShareReadWriteUnConfirmed, shares_members.find(public_id_2_)->second);
 
     fs::path sub_directory(directory1 / sub_directory_name);
     EXPECT_TRUE(fs::create_directory(sub_directory, error_code));
@@ -3209,7 +3251,8 @@ TEST_F(TwoUsersMutexApiTest, FUNC_MoveNodeToTrashThenMoveBack) {
     test_elements_1_.GetPrivateShareMembers(public_id_1_,
                                             share_name,
                                             &shares_members);
-    EXPECT_EQ(0, shares_members.size());
+    EXPECT_EQ(1U, shares_members.size());
+    EXPECT_EQ(kShareReadWriteUnConfirmed, shares_members.find(public_id_2_)->second);
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }

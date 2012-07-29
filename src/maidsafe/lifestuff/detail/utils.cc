@@ -150,9 +150,7 @@ fs::path CreateTestDirectory(fs::path const& parent, std::string *tail) {
   return directory;
 }
 
-int CreateTestFile(fs::path const& parent,
-                   int size_in_mb,
-                   std::string *file_name) {
+int CreateTestFile(fs::path const& parent, int size_in_mb, std::string *file_name) {
   if (size_in_mb > 1024) {
     LOG(kError) << "This function doesn't create files larger than 1024MB.";
     return -1;
@@ -182,9 +180,7 @@ int CreateTestFile(fs::path const& parent,
   return kSuccess;
 }
 
-int CreateSmallTestFile(fs::path const& parent,
-                        int size_in_kb,
-                        std::string *file_name) {
+int CreateSmallTestFile(fs::path const& parent, int size_in_kb, std::string *file_name) {
   if (size_in_kb > 1024) {
     LOG(kError) << "This function doesn't create files larger than 1024MB.";
     return -1;
@@ -214,62 +210,8 @@ int CreateSmallTestFile(fs::path const& parent,
   return kSuccess;
 }
 
-void ChunkStoreOperationCallback(const bool &response,
-                                 boost::mutex *mutex,
-                                 boost::condition_variable *cond_var,
-                                 int *result) {
-  if (!mutex || !cond_var || !result)
-    return;
-  boost::mutex::scoped_lock lock(*mutex);
-  if (response)
-    *result = kSuccess;
-  else
-    *result = kRemoteChunkStoreFailure;
-  cond_var->notify_all();
-}
-
-int WaitForResults(boost::mutex& mutex,
-                   boost::condition_variable& cond_var,
-                   std::vector<int>& results) {
-  assert(results.size() < 50U);
-  size_t size(results.size());
-  try {
-    boost::mutex::scoped_lock lock(mutex);
-    if (!cond_var.timed_wait(lock,
-                             bptime::seconds(static_cast<int>(kSecondsInterval * size)),
-                             [&]()->bool {
-                               for (size_t i(0); i < size; ++i) {
-                                 if (results.at(i) == kPendingResult) {
-                                   LOG(kError) << "Element " << i << " still pending.";
-                                   return false;
-                                 }
-                               }
-                               return true;
-                             })) {
-      LOG(kError) << "Timed out during waiting response: ";
-      for (size_t n(0); n < size; ++n)
-        LOG(kError) << results[n] << " - ";
-      return kOperationTimeOut;
-    }
-  }
-  catch(const std::exception &e) {
-    LOG(kError) << "Exception Failure during waiting response : " << e.what();
-    return kOperationTimeOut;
-  }
-  return kSuccess;
-}
-
 std::string ComposeSignaturePacketName(const std::string &name) {
   return name + std::string (1, pca::kSignaturePacket);
-}
-
-std::string ComposeSignaturePacketValue(const asymm::Keys &packet) {
-  std::string public_key;
-  asymm::EncodePublicKey(packet.public_key, &public_key);
-  pca::SignedData signed_data;
-  signed_data.set_data(public_key);
-  signed_data.set_signature(packet.validation_token);
-  return signed_data.SerializeAsString();
 }
 
 std::string PutFilenameData(const std::string &file_name) {
@@ -306,8 +248,7 @@ void GetFilenameData(const std::string &content,
   }
 }
 
-std::string GetNameInPath(const fs::path &save_path,
-                          const std::string &file_name) {
+std::string GetNameInPath(const fs::path &save_path, const std::string &file_name) {
   int index(0), limit(2000);
   fs::path path_file_name(file_name);
   std::string stem(path_file_name.stem().string()),
@@ -324,8 +265,7 @@ std::string GetNameInPath(const fs::path &save_path,
   return path_file_name.string();
 }
 
-encrypt::DataMapPtr ParseSerialisedDataMap(
-    const std::string &serialised_data_map) {
+encrypt::DataMapPtr ParseSerialisedDataMap(const std::string &serialised_data_map) {
   encrypt::DataMapPtr data_map(new encrypt::DataMap);
   std::istringstream input_stream(serialised_data_map, std::ios_base::binary);
   try {

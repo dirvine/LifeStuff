@@ -57,12 +57,11 @@ class SessionTest : public testing::Test {
   void CreateTestSession(bool with_public_ids) {
     ASSERT_TRUE(session_.CreateTestPackets(with_public_ids));
     std::vector<std::string> public_ids(session_.PublicIdentities());
-    int result(0);
     std::for_each(public_ids.begin(),
                   public_ids.end(),
-                  [this, &result] (const std::string& pub_id) {
+                  [this] (const std::string& pub_id) {
                       const ContactsHandlerPtr ch(this->session_.contacts_handler(pub_id));
-                      const ShareInformationPtr si(this->session_.share_information(pub_id));
+                      const ShareInformationDetail si(this->session_.share_information(pub_id));
                       for (int n(0); n < 5; ++n) {
                         Contact c(RandomAlphaNumericString(5),
                                   "",
@@ -74,7 +73,8 @@ class SessionTest : public testing::Test {
                         ch->AddContact(c);
 
                         // Shares
-                        si->insert(std::make_pair("share_" + IntToString(n), ShareDetails(n)));
+                        si.second->insert(std::make_pair("share_" + IntToString(n),
+                                                         ShareDetails(n)));
                       }
                   });
   }
@@ -232,11 +232,11 @@ class SessionTest : public testing::Test {
       if (!EqualContactHandlers(lhs.contacts_handler(lhs_public_ids[n]),
                                 rhs.contacts_handler(rhs_public_ids[n])))
         return false;
-      if (*lhs.profile_picture_data_map(lhs_public_ids[n]) !=
-          *rhs.profile_picture_data_map(rhs_public_ids[n]))
+      if (*lhs.profile_picture_data_map(lhs_public_ids[n]).second !=
+          *rhs.profile_picture_data_map(rhs_public_ids[n]).second)
         return false;
-      if (!EqualShareInformations(lhs.share_information(lhs_public_ids[n]),
-                                  rhs.share_information(rhs_public_ids[n])))
+      if (!EqualShareInformations(lhs.share_information(lhs_public_ids[n]).second,
+                                  rhs.share_information(rhs_public_ids[n]).second))
         return false;
     }
 

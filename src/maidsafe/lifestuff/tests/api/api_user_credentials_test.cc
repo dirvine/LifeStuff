@@ -380,13 +380,54 @@ TEST_F(OneUserApiTest, FUNC_ChangeCredentialsAndLogOut) {
   EXPECT_EQ(kSuccess, test_elements_.LogIn(new_keyword, new_pin, new_password));
 }
 
-// Disabled till functionality to log out other instances is in place
 TEST_F(TwoInstancesApiTest, DISABLED_FUNC_LogInFromTwoPlaces) {
   EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_));
-  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_, pin_, password_));
+  EXPECT_EQ(kAccountAlreadyLoggedIn, test_elements_2_.LogIn(keyword_, pin_, password_));
 
-  EXPECT_NE(kSuccess, test_elements_.LogOut());
-  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_.LogOut());
+  EXPECT_NE(kSuccess, test_elements_2_.LogOut());
+
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
+  EXPECT_EQ(kAccountAlreadyLoggedIn, test_elements_2_.LogIn(keyword_, pin_, password_));
+
+  EXPECT_EQ(kSuccess, test_elements_.LogOut());
+  EXPECT_NE(kSuccess, test_elements_2_.LogOut());
+}
+
+TEST_F(TwoInstancesApiTest, DISABLED_FUNC_LogInFromTwoPlacesSimultaneously) {
+  EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_));
+  EXPECT_EQ(kSuccess, test_elements_.LogOut());
+
+  int result_1(0), result_2(0);
+  std::vector<std::pair<int, int> > sleep_values;
+  sleep_values.push_back(std::make_pair(0, 200));
+  sleep_values.push_back(std::make_pair(100, 200));
+  sleep_values.push_back(std::make_pair(100, 150));
+  sleep_values.push_back(std::make_pair(0, 10));
+
+  for (size_t i = 0; i < sleep_values.size(); ++i) {
+    boost::thread thread_1([&] { return sleepthreads::RunLogIn(test_elements_,
+                                                               std::ref(result_1),
+                                                               keyword_, pin_,
+                                                               password_,
+                                                               sleep_values.at(i)); });  // NOLINT (Alison)
+    boost::thread thread_2([&] { return sleepthreads::RunLogIn(test_elements_2_,
+                                                               std::ref(result_2),
+                                                               keyword_,
+                                                               pin_,
+                                                               password_,
+                                                               sleep_values.at(i)); });  // NOLINT (Alison)
+    thread_1.join();
+    thread_2.join();
+    EXPECT_TRUE((result_1 == kSuccess && result_2 != kSuccess) ||
+                (result_1 != kSuccess && result_2 == kSuccess));
+    result_1 = test_elements_.LogOut();
+    result_2 = test_elements_2_.LogOut();
+    EXPECT_TRUE((result_1 == kSuccess && result_2 != kSuccess) ||
+                (result_1 != kSuccess && result_2 == kSuccess));
+    EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
+    EXPECT_EQ(kSuccess, test_elements_.LogOut());
+  }
 }
 
 TEST_F(TwoInstancesApiTest, FUNC_NeverLogIn) {

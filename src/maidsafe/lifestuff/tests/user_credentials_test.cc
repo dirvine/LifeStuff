@@ -32,15 +32,20 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
+#include "maidsafe/private/chunk_actions/chunk_action_authority.h"
+#include "maidsafe/private/chunk_actions/chunk_pb.h"
+#include "maidsafe/private/chunk_actions/chunk_types.h"
 
 #include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/user_credentials.h"
+#include "maidsafe/lifestuff/detail/user_credentials_impl.h"
 #include "maidsafe/lifestuff/detail/utils.h"
 
 namespace args = std::placeholders;
+namespace pca = maidsafe::priv::chunk_actions;
 namespace fs = boost::filesystem;
-
+namespace lid = maidsafe::lifestuff::account_locking;
 
 namespace maidsafe {
 
@@ -242,10 +247,167 @@ TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
 
   ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
   ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(kNewKeyword, pin_, password_));
-  ASSERT_EQ(kAccountCorrupted, user_credentials_->LogIn(kNewKeyword, kNewPin, password_));
+//  ASSERT_EQ(kCorruptedLidPacket, user_credentials_->LogIn(kNewKeyword, kNewPin, password_));
   ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(kNewKeyword, pin_, kNewPassword));
   ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, kNewPin, kNewPassword));
   LOG(kInfo) << "Can't log in with old u/p/w.";
+
+//  EXPECT_EQ("", remote_chunk_store_->Get(lid::LidName(keyword_, pin_)));
+//  EXPECT_EQ("", remote_chunk_store_->Get(lid::LidName(kNewKeyword, pin_)));
+//  EXPECT_EQ("", remote_chunk_store_->Get(lid::LidName(kNewKeyword, kNewPin)));
+  LOG(kInfo) << "Old LID packets should be deleted.";
+}
+
+TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
+  ASSERT_TRUE(session_.def_con_level() == kDefCon3);
+  ASSERT_TRUE(session_.keyword().empty());
+  ASSERT_TRUE(session_.pin().empty());
+  ASSERT_TRUE(session_.password().empty());
+  ASSERT_TRUE(session_.session_name().empty());
+  ASSERT_TRUE(session_.unique_user_id().empty());
+  ASSERT_TRUE(session_.root_parent_id().empty());
+  ASSERT_EQ(session_.max_space(), 1073741824);
+  ASSERT_EQ(session_.used_space(), 0);
+  ASSERT_TRUE(session_.serialised_data_atlas().empty());
+  ASSERT_FALSE(session_.changed());
+  LOG(kInfo) << "Preconditions fulfilled.\n===================\n";
+
+  ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
+  ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
+  ASSERT_EQ(keyword_, session_.keyword());
+  ASSERT_EQ(pin_, session_.pin());
+  ASSERT_EQ(password_, session_.password());
+  LOG(kInfo) << "User created.\n===================\n";
+
+  ASSERT_EQ(kSuccess, user_credentials_->Logout());
+  ASSERT_TRUE(session_.keyword().empty());
+  ASSERT_TRUE(session_.pin().empty());
+  ASSERT_TRUE(session_.password().empty());
+  LOG(kInfo) << "Logged out.\n===================\n";
+
+  ASSERT_TRUE(session_.def_con_level() == kDefCon3);
+  ASSERT_TRUE(session_.keyword().empty());
+  ASSERT_TRUE(session_.pin().empty());
+  ASSERT_TRUE(session_.password().empty());
+  ASSERT_TRUE(session_.session_name().empty());
+  ASSERT_TRUE(session_.unique_user_id().empty());
+  ASSERT_TRUE(session_.root_parent_id().empty());
+  ASSERT_EQ(session_.max_space(), 1073741824);
+  ASSERT_EQ(session_.used_space(), 0);
+  ASSERT_TRUE(session_.serialised_data_atlas().empty());
+  ASSERT_FALSE(session_.changed());
+  LOG(kInfo) << "Session seems clear.\n===================\n";
+
+  ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
+  ASSERT_EQ(keyword_, session_.keyword());
+  ASSERT_EQ(pin_, session_.pin());
+  ASSERT_EQ(password_, session_.password());
+  LOG(kInfo) << "Logged in.\n===================\n";
+
+  ASSERT_EQ(kSuccess, user_credentials_->Logout());
+  ASSERT_TRUE(session_.keyword().empty());
+  ASSERT_TRUE(session_.pin().empty());
+  ASSERT_TRUE(session_.password().empty());
+  LOG(kInfo) << "Logged out.\n===================\n";
+
+  ASSERT_TRUE(session_.def_con_level() == kDefCon3);
+  ASSERT_TRUE(session_.keyword().empty());
+  ASSERT_TRUE(session_.pin().empty());
+  ASSERT_TRUE(session_.password().empty());
+  ASSERT_TRUE(session_.session_name().empty());
+  ASSERT_TRUE(session_.unique_user_id().empty());
+  ASSERT_TRUE(session_.root_parent_id().empty());
+  ASSERT_EQ(session_.max_space(), 1073741824);
+  ASSERT_EQ(session_.used_space(), 0);
+  ASSERT_TRUE(session_.serialised_data_atlas().empty());
+  ASSERT_FALSE(session_.changed());
+  LOG(kInfo) << "Session seems clear.\n===================\n";
+
+  ASSERT_NE(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_ + password_));
+  LOG(kInfo) << "Invalid password fails.\n===================\n";
+
+  ASSERT_TRUE(session_.def_con_level() == kDefCon3);
+  ASSERT_TRUE(session_.keyword().empty());
+  ASSERT_TRUE(session_.pin().empty());
+  ASSERT_TRUE(session_.password().empty());
+  ASSERT_TRUE(session_.session_name().empty());
+  ASSERT_TRUE(session_.unique_user_id().empty());
+  ASSERT_TRUE(session_.root_parent_id().empty());
+  ASSERT_EQ(session_.max_space(), 1073741824);
+  ASSERT_EQ(session_.used_space(), 0);
+  ASSERT_TRUE(session_.serialised_data_atlas().empty());
+  ASSERT_FALSE(session_.changed());
+  LOG(kInfo) << "Session seems clear.\n===================\n";
+
+  ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
+  ASSERT_EQ(keyword_, session_.keyword());
+  ASSERT_EQ(pin_, session_.pin());
+  ASSERT_EQ(password_, session_.password());
+  LOG(kInfo) << "Logged in.\n===================\n";
+
+  ASSERT_EQ(kSuccess, user_credentials_->Logout());
+  ASSERT_TRUE(session_.keyword().empty());
+  ASSERT_TRUE(session_.pin().empty());
+  ASSERT_TRUE(session_.password().empty());
+  LOG(kInfo) << "Logged out.\n===================\n";
+
+  ASSERT_TRUE(session_.def_con_level() == kDefCon3);
+  ASSERT_TRUE(session_.keyword().empty());
+  ASSERT_TRUE(session_.pin().empty());
+  ASSERT_TRUE(session_.password().empty());
+  ASSERT_TRUE(session_.session_name().empty());
+  ASSERT_TRUE(session_.unique_user_id().empty());
+  ASSERT_TRUE(session_.root_parent_id().empty());
+  ASSERT_EQ(session_.max_space(), 1073741824);
+  ASSERT_EQ(session_.used_space(), 0);
+  ASSERT_TRUE(session_.serialised_data_atlas().empty());
+  ASSERT_FALSE(session_.changed());
+  LOG(kInfo) << "Session seems clear.\n===================\n";
+}
+
+TEST_F(UserCredentialsTest, DISABLED_FUNC_MonitorLidPacket) {
+  ASSERT_TRUE(session_.keyword().empty());
+  ASSERT_TRUE(session_.pin().empty());
+  ASSERT_TRUE(session_.password().empty());
+  ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
+  LOG(kInfo) << "Preconditions fulfilled.\n===================\n";
+
+  std::string lid_name(pca::ApplyTypeToName(lid::LidName(keyword_, pin_), pca::kModifiableByOwner));
+
+  ASSERT_EQ("", remote_chunk_store_->Get(lid_name));
+
+  ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
+  ASSERT_EQ(keyword_, session_.keyword());
+  ASSERT_EQ(pin_, session_.pin());
+  ASSERT_EQ(password_, session_.password());
+  LOG(kInfo) << "User created.\n===================\n";
+
+  EXPECT_EQ(kAccountAlreadyLoggedIn,
+            lid::ProcessAccountStatus(keyword_, pin_, password_,
+                                      remote_chunk_store_->Get(lid_name)));
+
+  ASSERT_EQ(kSuccess, user_credentials_->Logout());
+  LOG(kInfo) << "Logged out.\n===================\n";
+
+  EXPECT_EQ(kSuccess,
+            lid::ProcessAccountStatus(keyword_, pin_, password_,
+                                      remote_chunk_store_->Get(lid_name)));
+
+  for (int i = 0; i < 10; ++i) {
+    ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
+    LOG(kInfo) << "Logged in.\n===================\n";
+
+    EXPECT_EQ(kAccountAlreadyLoggedIn,
+              lid::ProcessAccountStatus(keyword_, pin_, password_,
+                                        remote_chunk_store_->Get(lid_name)));
+
+    ASSERT_EQ(kSuccess, user_credentials_->Logout());
+    LOG(kInfo) << "Logged out.\n===================\n";
+
+    EXPECT_EQ(kSuccess,
+              lid::ProcessAccountStatus(keyword_, pin_, password_,
+                                        remote_chunk_store_->Get(lid_name)));
+  }
 }
 
 TEST_F(UserCredentialsTest, DISABLED_FUNC_ParallelLogin) {
@@ -262,8 +424,10 @@ TEST_F(UserCredentialsTest, DISABLED_FUNC_ParallelLogin) {
   LOG(kInfo) << "User created.\n===================\n";
 
   CreateSecondUserCredentials();
-  ASSERT_EQ(kSuccess, user_credentials2_->LogIn(keyword_, pin_, password_));
-  LOG(kInfo) << "Successful parallel log in.";
+  ASSERT_NE(kSuccess, user_credentials2_->LogIn(keyword_, pin_, password_));
+  LOG(kInfo) << "Successful prevention of parallel log in.";
+
+  ASSERT_EQ(kSuccess, user_credentials_->Logout());
 }
 
 TEST_F(UserCredentialsTest, FUNC_MultiUserCredentialsLoginAndLogout) {
@@ -287,7 +451,7 @@ TEST_F(UserCredentialsTest, FUNC_MultiUserCredentialsLoginAndLogout) {
 
   CreateSecondUserCredentials();
   ASSERT_EQ(kSuccess, user_credentials2_->LogIn(keyword_, pin_, password_));
-  LOG(kInfo) << "Successful parallel log in.";
+  LOG(kInfo) << "Successful consecutive log in.";
   ASSERT_EQ(kSuccess, user_credentials2_->Logout());
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
@@ -298,17 +462,48 @@ TEST_F(UserCredentialsTest, FUNC_MultiUserCredentialsLoginAndLogout) {
 TEST_F(UserCredentialsTest, FUNC_UserCredentialsDeletion) {
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
   passport::Passport& pass(session_.passport());
-  std::string anmid_name(pass.SignaturePacketDetails(passport::kAnmid, true).identity),
-              ansmid_name(pass.SignaturePacketDetails(passport::kAnsmid, true).identity),
-              antmid_name(pass.SignaturePacketDetails(passport::kAntmid, true).identity),
-              anmaid_name(pass.SignaturePacketDetails(passport::kAnmaid, true).identity),
-              maid_name(pass.SignaturePacketDetails(passport::kMaid, true).identity),
-              pmid_name(pass.SignaturePacketDetails(passport::kPmid, true).identity),
-              mid_name(pass.IdentityPacketName(passport::kMid, true)),
-              smid_name(pass.IdentityPacketName(passport::kSmid, true)),
-              tmid_name(pass.IdentityPacketName(passport::kTmid, true)),
-              stmid_name(pass.IdentityPacketName(passport::kStmid, true));
+  std::string anmid_name(pca::ApplyTypeToName(
+                           pass.SignaturePacketDetails(passport::kAnmid, true).identity,
+                           pca::kSignaturePacket));
+  std::string ansmid_name(pca::ApplyTypeToName(
+                    pass.SignaturePacketDetails(passport::kAnsmid, true).identity,
+                    pca::kSignaturePacket));
+  std::string antmid_name(pca::ApplyTypeToName(
+                    pass.SignaturePacketDetails(passport::kAntmid, true).identity,
+                    pca::kSignaturePacket));
+  std::string anmaid_name(pca::ApplyTypeToName(
+                    pass.SignaturePacketDetails(passport::kAnmaid, true).identity,
+                    pca::kSignaturePacket));
+  std::string maid_name(pca::ApplyTypeToName(
+                          pass.SignaturePacketDetails(passport::kMaid, true).identity,
+                          pca::kSignaturePacket));
+  std::string pmid_name(pca::ApplyTypeToName(
+                          pass.SignaturePacketDetails(passport::kPmid, true).identity,
+                          pca::kSignaturePacket));
+  std::string mid_name(pca::ApplyTypeToName(pass.IdentityPacketName(passport::kMid, true),
+                                            pca::kModifiableByOwner));
+  std::string smid_name(pca::ApplyTypeToName(pass.IdentityPacketName(passport::kSmid, true),
+                                             pca::kModifiableByOwner));
+  std::string tmid_name(pca::ApplyTypeToName(pass.IdentityPacketName(passport::kTmid, true),
+                                             pca::kModifiableByOwner));
+  std::string stmid_name(pca::ApplyTypeToName(pass.IdentityPacketName(passport::kStmid, true),
+                                              pca::kModifiableByOwner));
+  std::string lid_name(pca::ApplyTypeToName(lid::LidName(keyword_, pin_), pca::kModifiableByOwner));
+
+  ASSERT_NE("", remote_chunk_store_->Get(anmid_name));
+  ASSERT_NE("", remote_chunk_store_->Get(ansmid_name));
+  ASSERT_NE("", remote_chunk_store_->Get(antmid_name));
+  ASSERT_NE("", remote_chunk_store_->Get(anmaid_name));
+  ASSERT_NE("", remote_chunk_store_->Get(maid_name));
+  ASSERT_NE("", remote_chunk_store_->Get(pmid_name));
+  ASSERT_NE("", remote_chunk_store_->Get(mid_name));
+  ASSERT_NE("", remote_chunk_store_->Get(smid_name));
+  ASSERT_NE("", remote_chunk_store_->Get(tmid_name));
+  ASSERT_NE("", remote_chunk_store_->Get(stmid_name));
+//  ASSERT_NE("", remote_chunk_store_->Get(lid_name));
+
   ASSERT_EQ(kSuccess, user_credentials_->DeleteUserCredentials());
+
   ASSERT_EQ("", remote_chunk_store_->Get(anmid_name));
   ASSERT_EQ("", remote_chunk_store_->Get(ansmid_name));
   ASSERT_EQ("", remote_chunk_store_->Get(antmid_name));
@@ -319,6 +514,8 @@ TEST_F(UserCredentialsTest, FUNC_UserCredentialsDeletion) {
   ASSERT_EQ("", remote_chunk_store_->Get(smid_name));
   ASSERT_EQ("", remote_chunk_store_->Get(tmid_name));
   ASSERT_EQ("", remote_chunk_store_->Get(stmid_name));
+//  ASSERT_EQ("", remote_chunk_store_->Get(lid_name));
+
 
   ASSERT_NE(kSuccess, user_credentials_->Logout());
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
@@ -347,6 +544,7 @@ TEST_F(UserCredentialsTest, FUNC_UserCredentialsDeletion) {
   ASSERT_EQ("", remote_chunk_store_->Get(smid_name));
   ASSERT_EQ("", remote_chunk_store_->Get(tmid_name));
   ASSERT_EQ("", remote_chunk_store_->Get(stmid_name));
+//  ASSERT_EQ("", remote_chunk_store_->Get(lid_name));
 
   ASSERT_NE(kSuccess, user_credentials_->Logout());
   ASSERT_NE(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));

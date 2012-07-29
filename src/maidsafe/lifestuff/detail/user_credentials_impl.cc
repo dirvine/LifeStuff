@@ -37,6 +37,7 @@
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
+#include "maidsafe/private/utils/utilities.h"
 
 #include "maidsafe/passport/passport.h"
 
@@ -46,10 +47,144 @@
 namespace args = std::placeholders;
 namespace pca = maidsafe::priv::chunk_actions;
 namespace bptime = boost::posix_time;
+namespace lid = maidsafe::lifestuff::account_locking;
+namespace utils = maidsafe::priv::utilities;
 
 namespace maidsafe {
 
 namespace lifestuff {
+
+namespace account_locking {
+
+const std::string kLidAppendix("lidl");
+
+std::string LidName(const std::string& keyword, const std::string& pin) {
+  return crypto::Hash<crypto::SHA512>(crypto::Hash<crypto::SHA512>(keyword) +
+                                      crypto::Hash<crypto::SHA512>(pin) +
+                                      kLidAppendix);
+}
+
+std::string EncryptAccountStatus(const std::string& keyword,
+                                 const std::string& pin,
+                                 const std::string& password,
+                                 const std::string& account_status) {
+  if (account_status.empty()) {
+    LOG(kError) << "Empty account status.";
+    return "";
+  }
+
+  if (keyword.empty() || pin.empty() || password.empty()) {
+    LOG(kError) << "One or more user credentials is empty.";
+    return "";
+  }
+
+  std::string salt(crypto::Hash<crypto::SHA512>(pin + keyword));
+  uint32_t pin_num;
+  try {
+    pin_num = boost::lexical_cast<uint32_t>(pin);
+  }
+  catch(boost::bad_lexical_cast & e) {
+    LOG(kError) << "Bad pin:" << e.what();
+    return "";
+  }
+
+  std::string secure_password;
+  int result = crypto::SecurePassword(password, salt, pin_num, &secure_password);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to create secure password.  Result: " << result;
+    return "";
+  }
+
+  std::string secure_key(secure_password.substr(0, crypto::AES256_KeySize));
+  std::string secure_iv(secure_password.substr(crypto::AES256_KeySize, crypto::AES256_IVSize));
+
+  std::string encrypted_account_status(crypto::SymmEncrypt(account_status, secure_key, secure_iv));
+  if (encrypted_account_status.empty()) {
+    LOG(kError) << "Failed to encrypt given account status.";
+    return "";
+  }
+  return encrypted_account_status;
+}
+
+std::string DecryptAccountStatus(const std::string& keyword,
+                                 const std::string& pin,
+                                 const std::string& password,
+                                 const std::string& encrypted_account_status) {
+  if (encrypted_account_status.empty()) {
+    LOG(kError) << "Empty encrypted account status.";
+    return "";
+  }
+
+  if (keyword.empty() || pin.empty() || password.empty()) {
+    LOG(kError) << "One or more user credentials is empty.";
+    return "";
+  }
+
+  std::string salt(crypto::Hash<crypto::SHA512>(pin + keyword));
+  uint32_t pin_num;
+  try {
+    pin_num = boost::lexical_cast<uint32_t>(pin);
+  }
+  catch(boost::bad_lexical_cast & e) {
+    LOG(kError) << "Bad pin:" << e.what();
+    return "";
+  }
+
+  std::string secure_password;
+  int result = crypto::SecurePassword(password, salt, pin_num, &secure_password);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to create secure password.  Result: " << result;
+    return "";
+  }
+
+  std::string secure_key(secure_password.substr(0, crypto::AES256_KeySize));
+  std::string secure_iv(secure_password.substr(crypto::AES256_KeySize, crypto::AES256_IVSize));
+
+  std::string account_status_(crypto::SymmDecrypt(encrypted_account_status, secure_key, secure_iv));
+  if (account_status_.empty()) {
+    LOG(kError) << "DecryptAccountStatus: Failed decryption.";
+    return "";
+  }
+
+  return account_status_;
+}
+
+int ProcessAccountStatus(const std::string& keyword,
+                         const std::string& pin,
+                         const std::string& password,
+                         const std::string& lid_packet) {
+  if (lid_packet.empty()) {
+    LOG(kInfo) << "LID not found.";
+    return kUserDoesntExist;
+  }
+
+  pca::SignedData packet;
+  if (!packet.ParseFromString(lid_packet) || packet.data().empty()) {
+    LOG(kError) << "LID packet corrupted: Failed parse.";
+    return kCorruptedLidPacket;
+  }
+
+  std::string decrypted_account_status(DecryptAccountStatus(keyword, pin, password, packet.data()));
+  if (decrypted_account_status.empty()) {
+    LOG(kError) << "LID packet corrupted: Failed decryption.";
+    return kCorruptedLidPacket;
+  }
+
+  try {
+    int account_status(boost::lexical_cast<int>(decrypted_account_status));
+    if (account_status >= 0) {
+      LOG(kError) << "LID packet implies account logged in elsewhere.";
+      return kAccountAlreadyLoggedIn;
+    }
+  }
+  catch(const std::exception &e) {
+    LOG(kError) << e.what();
+    return kCorruptedLidPacket;
+  }
+  return kSuccess;
+}
+
+}  // namespace account_locking
 
 namespace {
 
@@ -63,7 +198,7 @@ int CreateSignaturePacketInfo(std::shared_ptr<asymm::Keys> packet,
   std::string public_key;
   asymm::EncodePublicKey(packet->public_key, &public_key);
   if (public_key.empty()) {
-    LOG(kError) << "Public key not properly enconded.";
+    LOG(kError) << "Public key not properly encoded.";
     return kCreateSignaturePacketInfoFailure;
   }
 
@@ -99,26 +234,36 @@ int UserCredentialsImpl::GetUserInfo(const std::string &keyword,
                                      const std::string &password) {
   boost::mutex::scoped_lock loch_a_phuill(single_threaded_class_mutex_);
 
+  // Check LID
+//  std::string lid_packet(remote_chunk_store_.Get(pca::ApplyTypeToName(lid::LidName(keyword, pin),
+//                                                                      pca::kModifiableByOwner)));
+
+//  int lid_result(lid::ProcessAccountStatus(keyword, pin, password, lid_packet));
+//  if (lid_result != kSuccess) {
+//    LOG(kError) << "Account can't be logged in: " << lid_result;
+//    return lid_result;
+//  }
+
   // Obtain MID, TMID
   int mid_tmid_result(kSuccess);
   std::string tmid_packet;
   boost::thread mid_tmid_thread([&] {
-                                  return GetIdAndTemporaryId(keyword, pin, password, false,
-                                                             &mid_tmid_result, &tmid_packet);
+                                  GetIdAndTemporaryId(keyword, pin, password, false,
+                                                      &mid_tmid_result, &tmid_packet);
                                 });
   // Obtain SMID, STMID
   int smid_stmid_result(kSuccess);
   std::string stmid_packet;
   boost::thread smid_stmid_thread([&] {
-                                    return GetIdAndTemporaryId(keyword, pin, password, false,
-                                                               &smid_stmid_result, &stmid_packet);
+                                    GetIdAndTemporaryId(keyword, pin, password, true,
+                                                        &smid_stmid_result, &stmid_packet);
                                   });
 
   // Wait for them to finish
   mid_tmid_thread.join();
   smid_stmid_thread.join();
 
-  // Evaluate results
+  // Evaluate MID & TMID
   if (mid_tmid_result == kIdPacketNotFound && smid_stmid_result == kIdPacketNotFound) {
     LOG(kInfo) << "User doesn't exist: " << keyword << ", " << pin;
     return kUserDoesntExist;
@@ -139,6 +284,13 @@ int UserCredentialsImpl::GetUserInfo(const std::string &keyword,
     return result;
   }
 
+  // Recheck LID & lock it.
+//  lid_result = GetAndLockLid(keyword, pin, password);
+//  if (lid_result != kSuccess) {
+//    LOG(kError) << "Failed to lock LID.";
+//    return lid_result;
+//  }
+
   session_.set_keyword(keyword);
   session_.set_pin(pin);
   session_.set_password(password);
@@ -147,10 +299,33 @@ int UserCredentialsImpl::GetUserInfo(const std::string &keyword,
     return kSessionFailure;
   }
 
+//  result = ModifyLid(keyword, pin, password, true);
+//  if (result != kSuccess) {
+//    LOG(kError) << "Failed to modify LID.";
+//    return result;
+//  }
+
   session_saved_once_ = false;
   StartSessionSaver();
 
   return kSuccess;
+}
+
+int UserCredentialsImpl::GetAndLockLid(const std::string& keyword,
+                                       const std::string& pin,
+                                       const std::string& password) {
+  std::string lid_name(pca::ApplyTypeToName(lid::LidName(keyword, pin), pca::kModifiableByOwner));
+
+  std::string lid_packet;
+  std::shared_ptr<asymm::Keys> keys(
+      new asymm::Keys(passport_.SignaturePacketDetails(passport::kAnmid, true)));
+  int get_lock_result(remote_chunk_store_.GetAndLock(lid_name, "", keys, &lid_packet));
+  if (get_lock_result != kSuccess) {
+    LOG(kError) << "Failed to GetAndLock LID: " << get_lock_result;
+    return get_lock_result;
+  }
+
+  return lid::ProcessAccountStatus(keyword, pin, password, lid_packet);
 }
 
 void UserCredentialsImpl::StartSessionSaver() {
@@ -275,6 +450,12 @@ int UserCredentialsImpl::CreateUser(const std::string &keyword,
     return kSessionFailure;
   }
 
+//  result = StoreLid(keyword, pin, password, true);
+//  if (result != kSuccess) {
+//    LOG(kError) << "Failed to create LID.";
+//    return result;
+//  }
+
   session_.set_keyword(keyword);
   session_.set_pin(pin);
   session_.set_password(password);
@@ -325,7 +506,7 @@ int UserCredentialsImpl::StoreAnonymousPackets() {
   // PMID path: ANMAID, MAID, PMID
   StoreAnmaid(results);
 
-  int result(WaitForResults(mutex, condition_variable, individual_results));
+  int result(utils::WaitForResults(mutex, condition_variable, individual_results));
   if (result != kSuccess) {
     LOG(kError) << "Wait for results timed out: " << result;
     LOG(kError) << "ANMID: " << individual_results.at(0)
@@ -522,7 +703,7 @@ int UserCredentialsImpl::StoreIdentityPackets() {
   // STMID
   StoreStmid(results);
 
-  int result(WaitForResults(mutex, condition_variable, individual_results));
+  int result(utils::WaitForResults(mutex, condition_variable, individual_results));
   if (result != kSuccess) {
     LOG(kError) << "Wait for results timed out.";
     return result;
@@ -592,12 +773,71 @@ void UserCredentialsImpl::StoreIdentity(OperationResults &results,
   }
 }
 
+int UserCredentialsImpl::StoreLid(const std::string keyword,
+                                  const std::string pin,
+                                  const std::string password,
+                                  bool online) {
+  std::string packet_name(pca::ApplyTypeToName(lid::LidName(keyword, pin),
+                                               pca::kModifiableByOwner));
+  int status(RandomInt32());
+  if (online) {
+    while (status < 0)
+      status = RandomInt32();
+  } else {
+    while (status >= 0)
+      status = RandomInt32();
+  }
+  std::string account_status(boost::lexical_cast<std::string>(status));
+  std::string encrypted_account_status(lid::EncryptAccountStatus(keyword, pin, password,
+                                                                 account_status));
+
+  std::shared_ptr<asymm::Keys> signer(new asymm::Keys(
+      passport_.SignaturePacketDetails(passport::kAnmid, true)));
+  asymm::Signature signature;
+  int result(asymm::Sign(encrypted_account_status, signer->private_key, &signature));
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to sign content: " << result;
+    return result;
+  }
+
+  pca::SignedData signed_data;
+  signed_data.set_data(encrypted_account_status);
+  signed_data.set_signature(signature);
+
+  std::vector<int> individual_result(1, kPendingResult);
+  boost::condition_variable condition_variable;
+  boost::mutex mutex;
+  OperationResults operation_result(mutex, condition_variable, individual_result);
+  if (!remote_chunk_store_.Store(packet_name,
+                                 signed_data.SerializeAsString(),
+                                 [&] (bool result) {
+                                   return OperationCallback(result, operation_result, 0);
+                                 },
+                                 signer)) {
+    LOG(kError) << "Failed to store LID.";
+    OperationCallback(false, operation_result, 0);
+  }
+  result = utils::WaitForResults(mutex, condition_variable, individual_result);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to store LID:" << result;
+    return result;
+  }
+  return individual_result.at(0);
+}
+
 int UserCredentialsImpl::SaveSession(bool log_out) {
   boost::mutex::scoped_lock loch_a_phuill(single_threaded_class_mutex_);
 
   if (log_out) {
     session_saver_timer_active_ = false;
-    session_saver_timer_.expires_at(boost::posix_time::pos_infin);
+    session_saver_timer_.cancel();
+
+//    int result(ModifyLid(session_.keyword(), session_.pin(), session_.password(), false));
+//    if (result != kSuccess) {
+//      LOG(kError) << "Failed to modify LID.";
+//      return result;
+//    }
+
     if (!session_.changed() && session_saved_once_) {
       LOG(kInfo) << "Session has not changed.";
       return kSuccess;
@@ -624,7 +864,7 @@ int UserCredentialsImpl::SaveSession(bool log_out) {
   StoreTmid(results);
   DeleteStmid(results);
 
-  result = WaitForResults(mutex, condition_variable, individual_results);
+  result = utils::WaitForResults(mutex, condition_variable, individual_results);
   if (result != kSuccess) {
     LOG(kError) << "Failed to store new identity packets: Time out.";
     return kSaveSessionFailure;
@@ -691,6 +931,59 @@ void UserCredentialsImpl::ModifyIdentity(OperationResults &results,
   }
 }
 
+int UserCredentialsImpl::ModifyLid(const std::string keyword,
+                                   const std::string pin,
+                                   const std::string password,
+                                   bool online) {
+  std::string packet_name(lid::LidName(keyword, pin));
+  packet_name = pca::ApplyTypeToName(packet_name, pca::kModifiableByOwner);
+  int status(RandomInt32());
+  if (online) {
+    if (status < 0)
+      status = 0 - status;
+  } else {
+    if (status >= 0) {
+      status = 0 - status;
+    }
+  }
+  std::string account_status(boost::lexical_cast<std::string>(status));
+  std::string encrypted_account_status(lid::EncryptAccountStatus(keyword, pin, password,
+                                                                 account_status));
+
+  std::shared_ptr<asymm::Keys> signer(
+      new asymm::Keys(passport_.SignaturePacketDetails(passport::kAnmid, true)));
+  asymm::Signature signature;
+  int result(asymm::Sign(encrypted_account_status, signer->private_key, &signature));
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to sign content: " << result;
+    return result;
+  }
+
+  pca::SignedData signed_data;
+  signed_data.set_data(encrypted_account_status);
+  signed_data.set_signature(signature);
+
+  std::vector<int> individual_result(1, kPendingResult);
+  boost::condition_variable condition_variable;
+  boost::mutex mutex;
+  OperationResults operation_result(mutex, condition_variable, individual_result);
+  if (!remote_chunk_store_.Modify(packet_name,
+                                  signed_data.SerializeAsString(),
+                                  [&] (bool result) {
+                                    return OperationCallback(result, operation_result, 0);
+                                  },
+                                  signer)) {
+    LOG(kError) << "Failed to modify LID.";
+    OperationCallback(false, operation_result, 0);
+  }
+  result = utils::WaitForResults(mutex, condition_variable, individual_result);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to modify LID:" << result;
+    return result;
+  }
+  return individual_result.at(0);
+}
+
 int UserCredentialsImpl::ChangePin(const std::string &new_pin) {
   boost::mutex::scoped_lock loch_a_phuill(single_threaded_class_mutex_);
   std::string keyword(session_.keyword());
@@ -721,11 +1014,23 @@ int UserCredentialsImpl::ChangeUsernamePin(const std::string &new_keyword,
     return result;
   }
 
+//  result = StoreLid(new_keyword, new_pin, session_.password(), true);
+//  if (result != kSuccess) {
+//    LOG(kError) << "Failed to store new LID.";
+//    return result;
+//  }
+
   result = DeleteOldIdentityPackets();
   if (result != kSuccess) {
     LOG(kError) << "Failed to delete old identity packets: " << result;
     return result;
   }
+
+//  result = DeleteLid(session_.keyword(), session_.pin());
+//  if (result != kSuccess) {
+//    LOG(kError) << "Failed to delete old LID.";
+//    return result;
+//  }
 
   result = passport_.ConfirmIdentityPackets();
   if (result != kSuccess) {
@@ -752,7 +1057,7 @@ int UserCredentialsImpl::DeleteOldIdentityPackets() {
   DeleteTmid(results);
   DeleteStmid(results);
 
-  int result(WaitForResults(mutex, condition_variable, individual_results));
+  int result(utils::WaitForResults(mutex, condition_variable, individual_results));
   if (result != kSuccess) {
     LOG(kError) << "Wait for results timed out.";
     return result;
@@ -814,6 +1119,33 @@ void UserCredentialsImpl::DeleteIdentity(OperationResults &results,
   }
 }
 
+int UserCredentialsImpl::DeleteLid(const std::string &keyword,
+                                   const std::string &pin) {
+  std::string packet_name(pca::ApplyTypeToName(lid::LidName(keyword, pin),
+                                               pca::kModifiableByOwner));
+  std::shared_ptr<asymm::Keys> signer(new asymm::Keys(
+                                          passport_.SignaturePacketDetails(passport::kAnmid,
+                                                                           true)));
+  std::vector<int> individual_result(1, kPendingResult);
+  boost::condition_variable condition_variable;
+  boost::mutex mutex;
+  OperationResults operation_result(mutex, condition_variable, individual_result);
+  if (!remote_chunk_store_.Delete(packet_name,
+                                  [&] (bool result) {
+                                    return OperationCallback(result, operation_result, 0);
+                                  },
+                                  signer)) {
+    LOG(kError) << "Failed to delete LID.";
+    OperationCallback(false, operation_result, 0);
+  }
+  int result = utils::WaitForResults(mutex, condition_variable, individual_result);
+  if (result != kSuccess) {
+    LOG(kError) << "Storing new LID timed out.";
+    return result;
+  }
+  return individual_result.at(0);
+}
+
 int UserCredentialsImpl::ChangePassword(const std::string &new_password) {
   boost::mutex::scoped_lock loch_a_phuill(single_threaded_class_mutex_);
 
@@ -860,7 +1192,7 @@ int UserCredentialsImpl::DoChangePasswordAdditions() {
   StoreTmid(new_results);
   StoreStmid(new_results);
 
-  int result(WaitForResults(mutex, condition_variable, individual_results));
+  int result(utils::WaitForResults(mutex, condition_variable, individual_results));
   if (result != kSuccess) {
     LOG(kError) << "Failed to store new identity packets: Time out.";
     return kChangePasswordFailure;
@@ -892,7 +1224,7 @@ int UserCredentialsImpl::DoChangePasswordRemovals() {
   DeleteTmid(del_results);
   DeleteStmid(del_results);
 
-  int result(WaitForResults(mutex, condition_variable, individual_results));
+  int result(utils::WaitForResults(mutex, condition_variable, individual_results));
   if (result != kSuccess) {
     LOG(kError) << "Failed to store new identity packets: Time out.";
     return kChangePasswordFailure;
@@ -944,6 +1276,12 @@ int UserCredentialsImpl::DeleteUserCredentials() {
     return result;
   }
 
+//  result = DeleteLid(session_.keyword(), session_.pin());
+//  if (result != kSuccess) {
+//    LOG(kError) << "Failed to delete LID.";
+//    return result;
+//  }
+
   result = DeleteSignaturePackets();
   if (result != kSuccess) {
     LOG(kError) << "Failed to delete signature packets.";
@@ -968,7 +1306,7 @@ int UserCredentialsImpl::DeleteSignaturePackets() {
   // PMID path: PMID, MAID, ANMAID
   DeletePmid(results);
 
-  int result(WaitForResults(mutex, condition_variable, individual_results));
+  int result(utils::WaitForResults(mutex, condition_variable, individual_results));
   if (result != kSuccess) {
     LOG(kError) << "Wait for results timed out: " << result;
     LOG(kError) << "ANMID: " << individual_results.at(0)

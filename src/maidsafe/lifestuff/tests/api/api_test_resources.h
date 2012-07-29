@@ -109,7 +109,8 @@ struct TestingVariables {
         old_share_name(),
         new_share_name(),
         share_renamed(false),
-        share_changes() {}
+        share_changes(),
+        contact_request_message() {}
   std::string chat_message;
   bool chat_message_received;
   std::string file_name, file_id;
@@ -134,6 +135,7 @@ struct TestingVariables {
   std::string new_share_name;
   bool share_renamed;
   ShareChangeLogBook share_changes;
+  std::string contact_request_message;
 };
 
 void ChatSlot(const std::string&,
@@ -165,7 +167,9 @@ void MultipleFileTransferSlot(const std::string&,
 void NewContactSlot(const std::string&,
                     const std::string&,
                     const std::string&,
-                    volatile bool* done);
+                    const std::string&,
+                    volatile bool* done,
+                    std::string* contact_request_message);
 
 void ContactConfirmationSlot(const std::string&,
                              const std::string&,
@@ -301,7 +305,14 @@ void RunChangeProfilePicture(LifeStuff& test_elements_,
                              const std::string public_id,
                              const std::string file_content);
 
-}  // namespace
+void RunLogIn(LifeStuff& test_elements,
+              int& result,
+              const std::string& keyword,
+              const std::string& pin,
+              const std::string& password,
+              const std::pair<int, int> sleeps);
+
+}  // namespace sleepthreads
 
 class OneUserApiTest : public testing::Test {
  public:

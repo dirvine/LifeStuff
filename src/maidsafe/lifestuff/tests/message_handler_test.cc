@@ -77,6 +77,7 @@ class MessageHandlerTest : public testing::Test {
         public_username2_("User 2 " + RandomAlphaNumericString(8)),
         public_username3_("User 3 " + RandomAlphaNumericString(8)),
         received_public_username_(),
+        received_message_(),
 #ifndef LOCAL_TARGETS_ONLY
         node1_(),
         node2_(),
@@ -88,11 +89,13 @@ class MessageHandlerTest : public testing::Test {
 
   void NewContactSlot(const std::string&,
                       const std::string &other_public_username,
+                      const std::string& message,
                       boost::mutex *mutex,
                       boost::condition_variable *cond_var,
                       bool *done) {
     boost::mutex::scoped_lock lock(*mutex);
     received_public_username_ = other_public_username;
+    received_message_ = message;
     *done = true;
     cond_var->notify_one();
   }
@@ -249,7 +252,8 @@ class MessageHandlerTest : public testing::Test {
 
   AsioService asio_service1_, asio_service2_, asio_service3_;
 
-  std::string public_username1_, public_username2_, public_username3_, received_public_username_;
+  std::string public_username1_, public_username2_, public_username3_, received_public_username_,
+              received_message_;
 #ifndef LOCAL_TARGETS_ONLY
   std::shared_ptr<pd::Node> node1_, node2_, node3_;
 #endif
@@ -270,11 +274,19 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
   boost::condition_variable cond_var;
   bool done(false);
   public_id1_->ConnectToNewContactSignal(
-      [&] (const std::string& s_1, const std::string& s_2, const std::string&) {
-        return MessageHandlerTest::NewContactSlot(s_1, s_2, &mutex, &cond_var, &done);
+      [&] (const std::string& own_public_id,
+           const std::string& contact_public_id,
+           const std::string& message,
+           const std::string& /*timestamp*/) {
+        return MessageHandlerTest::NewContactSlot(own_public_id,
+                                                  contact_public_id,
+                                                  message,
+                                                  &mutex,
+                                                  &cond_var,
+                                                  &done);
       });
   EXPECT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
-  EXPECT_EQ(kSuccess, public_id2_->AddContact(public_username2_, public_username1_));
+  EXPECT_EQ(kSuccess, public_id2_->AddContact(public_username2_, public_username1_, ""));
   {
     boost::mutex::scoped_lock lock(mutex);
     EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
@@ -289,9 +301,17 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
   InboxItem received;
   done = false;
   message_handler2_->ConnectToChatSignal(
-      [&] (const std::string& s_1, const std::string& s_2, const std::string& s_3,
-           const std::string& s_4) {
-        return MessageHandlerTest::NewMessageSlot(s_1, s_2, s_3, s_4, &received, &mutex, &cond_var,
+      [&] (const std::string& own_public_id,
+           const std::string& contact_public_id,
+           const std::string& message,
+           const std::string& timestamp) {
+        return MessageHandlerTest::NewMessageSlot(own_public_id,
+                                                  contact_public_id,
+                                                  message,
+                                                  timestamp,
+                                                  &received,
+                                                  &mutex,
+                                                  &cond_var,
                                                   &done);
       });
   EXPECT_EQ(kSuccess, message_handler2_->StartCheckingForNewMessages(interval_));
@@ -329,11 +349,19 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
   boost::condition_variable cond_var;
   bool done(false);
   public_id1_->ConnectToNewContactSignal(
-        [&] (const std::string& s_1, const std::string& s_2, const std::string&) {
-          return MessageHandlerTest::NewContactSlot(s_1, s_2, &mutex, &cond_var, &done);
+        [&] (const std::string& own_public_id,
+             const std::string& contact_public_id,
+             const std::string& message,
+             const std::string& /*timestamp*/) {
+          return MessageHandlerTest::NewContactSlot(own_public_id,
+                                                    contact_public_id,
+                                                    message,
+                                                    &mutex,
+                                                    &cond_var,
+                                                    &done);
         });
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
-  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_username2_, public_username1_));
+  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_username2_, public_username1_, ""));
   {
     boost::mutex::scoped_lock lock(mutex);
     EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
@@ -355,10 +383,18 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
   done = false;
   bs2::connection connection(
       message_handler2_->ConnectToChatSignal(
-          [&] (const std::string& s_1, const std::string& s_2, const std::string& s_3,
-               const std::string& s_4) {
-            return MessageHandlerTest::SeveralMessagesSlot(s_1, s_2, s_3, s_4, &received_messages,
-                                                           &mutex, &cond_var, &multiple_messages_,
+          [&] (const std::string& own_public_id,
+               const std::string& contact_public_id,
+               const std::string& message,
+               const std::string& timestamp) {
+            return MessageHandlerTest::SeveralMessagesSlot(own_public_id,
+                                                           contact_public_id,
+                                                           message,
+                                                           timestamp,
+                                                           &received_messages,
+                                                           &mutex,
+                                                           &cond_var,
+                                                           &multiple_messages_,
                                                            &done);
           }));
   ASSERT_EQ(kSuccess, message_handler2_->StartCheckingForNewMessages(interval_));
@@ -387,10 +423,18 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
   received_messages.clear();
   done = false;
   connection = message_handler2_->ConnectToChatSignal(
-      [&] (const std::string& s_1, const std::string& s_2, const std::string& s_3,
-           const std::string& s_4) {
-        return MessageHandlerTest::SeveralMessagesSlot(s_1, s_2, s_3, s_4, &received_messages,
-                                                       &mutex, &cond_var, &multiple_messages_,
+      [&] (const std::string& own_public_id,
+           const std::string& contact_public_id,
+           const std::string& message,
+           const std::string& timestamp) {
+        return MessageHandlerTest::SeveralMessagesSlot(own_public_id,
+                                                       contact_public_id,
+                                                       message,
+                                                       timestamp,
+                                                       &received_messages,
+                                                       &mutex,
+                                                       &cond_var,
+                                                       &multiple_messages_,
                                                        &done);
       });
   ASSERT_EQ(kSuccess, message_handler2_->StartCheckingForNewMessages(interval_));
@@ -414,23 +458,45 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
   boost::condition_variable cond_var;
   bool done(false), done2(false), done3(false);
   public_id1_->ConnectToContactConfirmedSignal(
-      [&] (const std::string& s_1, const std::string& s_2, const std::string&) {
-        return MessageHandlerTest::NewContactCountSlot(s_1, s_2, &mutex, &cond_var, &done);
+      [&] (const std::string& own_public_id,
+           const std::string& contact_public_id,
+           const std::string& /*timestamp*/) {
+        return MessageHandlerTest::NewContactCountSlot(own_public_id,
+                                                       contact_public_id,
+                                                       &mutex,
+                                                       &cond_var,
+                                                       &done);
       });
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   public_id2_->ConnectToNewContactSignal(
-      [&] (const std::string& s_1, const std::string& s_2, const std::string&) {
-        return MessageHandlerTest::NewContactSlot(s_1, s_2, &mutex, &cond_var, &done2);
+      [&] (const std::string& own_public_id,
+           const std::string& contact_public_id,
+           const std::string& message,
+           const std::string& /*timestamp*/) {
+        return MessageHandlerTest::NewContactSlot(own_public_id,
+                                                  contact_public_id,
+                                                  message,
+                                                  &mutex,
+                                                  &cond_var,
+                                                  &done2);
       });
   ASSERT_EQ(kSuccess, public_id2_->StartCheckingForNewContacts(interval_));
   public_id3_->ConnectToNewContactSignal(
-      [&] (const std::string& s_1, const std::string& s_2, const std::string&) {
-        return MessageHandlerTest::NewContactSlot(s_1, s_2, &mutex, &cond_var, &done3);
+      [&] (const std::string& own_public_id,
+           const std::string& contact_public_id,
+           const std::string& message,
+           const std::string& /*timestamp*/) {
+        return MessageHandlerTest::NewContactSlot(own_public_id,
+                                                  contact_public_id,
+                                                  message,
+                                                  &mutex,
+                                                  &cond_var,
+                                                  &done3);
       });
   ASSERT_EQ(kSuccess, public_id3_->StartCheckingForNewContacts(interval_));
 
-  ASSERT_EQ(kSuccess, public_id1_->AddContact(public_username1_, public_username2_));
-  ASSERT_EQ(kSuccess, public_id1_->AddContact(public_username1_, public_username3_));
+  ASSERT_EQ(kSuccess, public_id1_->AddContact(public_username1_, public_username2_, ""));
+  ASSERT_EQ(kSuccess, public_id1_->AddContact(public_username1_, public_username3_, ""));
   {
     boost::mutex::scoped_lock lock(mutex);
     EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done2 && done3; }));  // NOLINT (Dan)
@@ -446,9 +512,17 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
   InboxItem received;
   done = false;
   message_handler1_->ConnectToChatSignal(
-      [&] (const std::string& s_1, const std::string& s_2, const std::string& s_3,
-           const std::string& s_4) {
-        return MessageHandlerTest::NewMessageSlot(s_1, s_2, s_3, s_4, &received, &mutex, &cond_var,
+      [&] (const std::string& own_public_id,
+           const std::string& contact_public_id,
+           const std::string& message,
+           const std::string& timestamp) {
+        return MessageHandlerTest::NewMessageSlot(own_public_id,
+                                                  contact_public_id,
+                                                  message,
+                                                  timestamp,
+                                                  &received,
+                                                  &mutex,
+                                                  &cond_var,
                                                   &done);
       });
   ASSERT_EQ(kSuccess, message_handler1_->StartCheckingForNewMessages(interval_));
@@ -478,9 +552,9 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
   }
   ASSERT_TRUE(MessagesEqual(sent, received));
   message_handler1_->StopCheckingForNewMessages();
-  public_id1_->StopCheckingForNewContacts();
-  public_id2_->StopCheckingForNewContacts();
   public_id3_->StopCheckingForNewContacts();
+  public_id2_->StopCheckingForNewContacts();
+  public_id1_->StopCheckingForNewContacts();
 }
 
 void NotificationFunction(const std::string&,
@@ -505,15 +579,22 @@ int ConnectTwoPublicIds(PublicId& public_id1,
   if (result != kSuccess)
     return -2;
 
-  result = public_id2.AddContact(id2, id1);
+  result = public_id2.AddContact(id2, id1, "");
 
 
   boost::mutex mutex;
   boost::condition_variable cond_var;
   bool done(false);
   public_id1.ConnectToNewContactSignal(
-      [&] (const std::string& s_1, const std::string& s_2, const std::string&) {
-        return NotificationFunction(s_1, s_2, std::ref(mutex), std::ref(cond_var), std::ref(done));
+      [&] (const std::string& own_public_id,
+           const std::string& contact_public_id,
+           const std::string& /*message*/,
+           const std::string& /*timestamp*/) {
+        return NotificationFunction(own_public_id,
+                                    contact_public_id,
+                                    std::ref(mutex),
+                                    std::ref(cond_var),
+                                    std::ref(done));
       });
   result = public_id1.StartCheckingForNewContacts(interval);
   if (result != kSuccess)
@@ -535,8 +616,14 @@ int ConnectTwoPublicIds(PublicId& public_id1,
 
   done = false;
   public_id2.ConnectToContactConfirmedSignal(
-      [&] (const std::string& s_1, const std::string& s_2, const std::string&) {
-        NotificationFunction(s_1, s_2, std::ref(mutex), std::ref(cond_var), std::ref(done));
+      [&] (const std::string& own_public_id,
+           const std::string& contact_public_id,
+           const std::string& /*timestamp*/) {
+        NotificationFunction(own_public_id,
+                             contact_public_id,
+                             std::ref(mutex),
+                             std::ref(cond_var),
+                             std::ref(done));
       });
   result = public_id2.StartCheckingForNewContacts(interval);
   if (result != kSuccess)
@@ -566,9 +653,17 @@ TEST_F(MessageHandlerTest, FUNC_DeletePublicIdUserPerception) {
   boost::condition_variable cond_var;
   bool done(false);
   message_handler1_->ConnectToChatSignal(
-      [&] (const std::string& s_1, const std::string& s_2, const std::string& s_3,
-           const std::string& s_4) {
-        MessageHandlerTest::NewMessageSlot(s_1, s_2, s_3, s_4, &received, &mutex, &cond_var,
+      [&] (const std::string& own_public_id,
+           const std::string& contact_public_id,
+           const std::string& message,
+           const std::string& timestamp) {
+        MessageHandlerTest::NewMessageSlot(own_public_id,
+                                           contact_public_id,
+                                           message,
+                                           timestamp,
+                                           &received,
+                                           &mutex,
+                                           &cond_var,
                                            &done);
       });
   ASSERT_EQ(kSuccess, message_handler1_->StartCheckingForNewMessages(interval_));

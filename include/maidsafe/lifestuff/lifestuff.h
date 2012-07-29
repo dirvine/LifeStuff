@@ -73,7 +73,8 @@ enum LifeStuffState {
 
 /// THIS ENUM MUST BE KEPT IN SYNC WITH THE ONE IN DRIVE'S CONFIG.H !!!
 enum PrivateShareRoles {
-  kUnconfirmed = -2,
+  kShareReadOnlyUnConfirmed = -10,
+  kShareReadWriteUnConfirmed = -9,
   kShareRemover  = -1,
   kShareReadOnly = 0,
   kShareReadWrite = 1,
@@ -169,8 +170,6 @@ typedef FiveStringsFunction FileTransferFunction;
 
 /// Contact info
 // Own & other public ID, Timestamp
-typedef ThreeStringsFunction NewContactFunction;
-// Own & other public ID, Timestamp
 typedef ThreeStringsFunction ContactConfirmationFunction;
 // Own & other public ID, Timestamp
 typedef ThreeStringsFunction ContactProfilePictureFunction;
@@ -181,6 +180,8 @@ typedef std::function<void(const std::string&,          // Own public ID
         ContactPresenceFunction;
 // Own public ID, Contact public ID, Message, Timestamp
 typedef FourStringsFunction ContactDeletionFunction;
+// Own & other public ID, Message, Timestamp
+typedef FourStringsFunction NewContactFunction;
 
 }  // namespace lifestuff
 
