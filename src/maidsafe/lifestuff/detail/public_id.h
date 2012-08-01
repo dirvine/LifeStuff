@@ -52,6 +52,14 @@ class Passport;
 
 namespace lifestuff {
 
+enum IntroductionType {
+  kFriendRequest,
+  kFriendResponse,
+  kDefriend,
+  kMovedInbox,
+  kFixAsync
+};
+
 class Session;
 class Introduction;
 
@@ -66,6 +74,11 @@ class PublicId {
                            const std::string&,
                            const std::string&)> ContactConfirmedSignal;  // NOLINT (Dan)
   typedef std::shared_ptr<ContactConfirmedSignal> ContactConfirmedSignalPtr;
+  typedef bs2::signal<void(const std::string&,  // NOLINT (Alison)
+                           const std::string&,
+                           const std::string&,
+                           const std::string&)> ContactDeletionSignal;
+  typedef std::shared_ptr<ContactDeletionSignal> ContactDeletionSignalPtr;
 
   PublicId(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
            Session& session,
@@ -99,13 +112,18 @@ class PublicId {
 
   // Remove a contact from current contact list, and inform other contacts the new MMID
   void RemoveContactHandle(const std::string &public_id, const std::string &contact_name);
-  int RemoveContact(const std::string &public_id, const std::string &contact_name);
+  int RemoveContact(const std::string &public_id,
+                    const std::string &contact_name,
+                    const bool& instigator,
+                    const std::string& message = "");
 
 
   // Signals
   bs2::connection ConnectToNewContactSignal(const NewContactFunction &new_contact_slot);
   bs2::connection ConnectToContactConfirmedSignal(
       const ContactConfirmationFunction &contact_confirmation_slot);
+  bs2::connection ConnectToContactDeletionSignal(
+      const ContactDeletionFunction& contact_deletion_slot);
 
   // Lists
   std::map<std::string, ContactStatus> ContactList(const std::string &public_id,
@@ -136,12 +154,18 @@ class PublicId {
                          const Introduction& introduction,
                          Session& session);
   void ProcessMisplacedContactRequest(Contact& contact, const std::string& own_public_id);
+  void ProcessContactDeletion(const std::string& own_public_id,
+                              const std::string& contact_public_id,
+                              const std::string& message,
+                              const std::string& timestamp);
+
   // Modify the Appendability of MCID and MMID associated with the public_id
   // i.e. enable/disable others add new contact and send msg
   int ModifyAppendability(const std::string &public_id, const char appendability);
   // Notify each contact in the list about the contact_info
   int InformContactInfo(const std::string& public_id, const std::vector<Contact>& contacts,
-                        const std::string& message);
+                        const std::string& message, const IntroductionType& type,
+                        const std::string& inbox_name = "");
   int GetPublicKey(const std::string& packet_name, Contact& contact, int type);
 
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
@@ -151,6 +175,7 @@ class PublicId {
   bool get_new_contacts_timer_active_;
   NewContactSignalPtr new_contact_signal_;
   ContactConfirmedSignalPtr contact_confirmed_signal_;
+  ContactDeletionSignalPtr contact_deletion_signal_;
   boost::asio::io_service &asio_service_;
 };
 

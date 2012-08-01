@@ -42,7 +42,6 @@ enum InboxItemType {
   kFileTransfer,
   kContactPresence,
   kContactProfilePicture,
-  kContactDeletion,
   kRespondToShareInvitation,
   kPrivateShareInvitation,
   kPrivateShareDeletion,

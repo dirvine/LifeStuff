@@ -73,7 +73,6 @@ MessageHandler::MessageHandler(std::shared_ptr<pcs::RemoteChunkStore> remote_chu
       private_member_access_change_signal_(),
       open_share_invitation_signal_(),
       share_invitation_response_signal_(),
-      contact_deletion_signal_(),
       private_share_user_leaving_signal_(),
       parse_and_save_data_map_signal_(),
       private_share_details_signal_(),
@@ -340,8 +339,6 @@ void MessageHandler::ProcessRetrieved(const std::string& public_id,
                                      break;
         case kContactPresence: ProcessContactPresence(inbox_item);
                                break;
-        case kContactDeletion: ProcessContactDeletion(inbox_item);
-                               break;
         case kPrivateShareInvitation:
         case kPrivateShareDeletion:
         case kPrivateShareMembershipUpgrade:
@@ -587,18 +584,6 @@ void MessageHandler::ProcessOpenShareInvitation(const InboxItem &inbox_item) {
                                 inbox_item.content[kShareName],
                                 inbox_item.content[kShareId],
                                 inbox_item.timestamp);
-}
-
-void MessageHandler::ProcessContactDeletion(const InboxItem &deletion_item) {
-  std::string my_public_id(deletion_item.receiver_public_id),
-              contact_public_id(deletion_item.sender_public_id);
-  // PublicId - To run RemoveContact
-  // UserStorage - To remove contact from all shares
-  // UI - To do whatever it is they do out there, in that crazy world
-  contact_deletion_signal_(my_public_id,
-                           contact_public_id,
-                           deletion_item.content.at(0),
-                           deletion_item.timestamp);
 }
 
 void MessageHandler::RetrieveMessagesForAllIds() {

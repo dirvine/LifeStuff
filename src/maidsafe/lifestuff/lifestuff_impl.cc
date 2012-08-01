@@ -177,8 +177,8 @@ int LifeStuffImpl::ConnectToSignals(
   if (contact_deletion_function) {
     slots_.contact_deletion_function = contact_deletion_function;
     ++connects;
-    if (message_handler_)
-      message_handler_->ConnectToContactDeletionSignal(contact_deletion_function);
+    if (public_id_)
+      public_id_->ConnectToContactDeletionSignal(contact_deletion_function);
   }
   if (private_share_invitation_function) {
     slots_.private_share_invitation_function = private_share_invitation_function;
@@ -634,18 +634,8 @@ int LifeStuffImpl::RemoveContact(const std::string &my_public_id,
   for (auto it = share_names.begin(); it != share_names.end(); ++it)
     LeavePrivateShare(my_public_id, *it);
 
-  // Send message to removal
-  InboxItem inbox_item(kContactDeletion);
-  inbox_item.receiver_public_id = contact_public_id;
-  inbox_item.sender_public_id = my_public_id;
-  inbox_item.content.push_back(removal_message);
-
-  result = message_handler_->Send(inbox_item);
-  if (result != kSuccess)
-    LOG(kError) << "Failed in sending out removal message.";
-
   // Remove the contact
-  result = public_id_->RemoveContact(my_public_id, contact_public_id);
+  result = public_id_->RemoveContact(my_public_id, contact_public_id, true, removal_message);
   if (result != kSuccess)
     LOG(kError) << "Failed remove contact in RemoveContact.";
 
@@ -1903,11 +1893,11 @@ void LifeStuffImpl::ConnectInternalElements() {
                                                               recipient_public_id);
       });
 
-  message_handler_->ConnectToContactDeletionSignal(
+  public_id_->ConnectToContactDeletionSignal(
       [&] (const std::string& public_id, const std::string& contact_name,
-           const std::string&,
-           const std::string&) {
-      return public_id_->RemoveContactHandle(public_id, contact_name);
+           const std::string& /*message*/,
+           const std::string& /*timestamp*/) {
+        return public_id_->RemoveContactHandle(public_id, contact_name);
       });
 
   message_handler_->ConnectToPrivateShareDetailsSignal(

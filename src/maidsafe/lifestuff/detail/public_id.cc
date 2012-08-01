@@ -120,6 +120,7 @@ PublicId::PublicId(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
       get_new_contacts_timer_active_(false),
       new_contact_signal_(new NewContactSignal),
       contact_confirmed_signal_(new ContactConfirmedSignal),
+      contact_deletion_signal_(new ContactDeletionSignal),
       asio_service_(asio_service) {}
 
 PublicId::~PublicId() { StopCheckingForNewContacts(); }
@@ -277,7 +278,7 @@ int PublicId::AddContact(const std::string& own_public_id,
   }
 
   std::vector<Contact> contacts(1, recipient_contact);
-  result = InformContactInfo(own_public_id, contacts, message);
+  result = InformContactInfo(own_public_id, contacts, message, kFriendRequest);
   if (result == kSuccess) {
     const ContactsHandlerPtr contacts_handler(session_.contacts_handler(own_public_id));
     if (!contacts_handler) {
@@ -527,18 +528,45 @@ void PublicId::ProcessRequests(const std::string &own_public_id,
     }
     Contact mic;
     result = contacts_handler->ContactInfo(introduction.public_id(), &mic);
-    if (result == kSuccess) {
-      if (mic.status == kRequestSent) {  // Contact confirmation
-        ProcessContactConfirmation(mic, contacts_handler, own_public_id, introduction, session_);
-      } else if (mic.status == kConfirmed) {
-        if (introduction.inbox_name() == mic.inbox_name) {  // Out of sync request
+    int type(introduction.type());
+    switch (type) {
+    case kFriendRequest:
+      if (result != kSuccess) {
+        ProcessNewContact(mic, contacts_handler, own_public_id, introduction, session_);
+      } else {
+        if (mic.status == kConfirmed && introduction.inbox_name() == mic.inbox_name)
           ProcessMisplacedContactRequest(mic, own_public_id);
-        } else {  // Contact has moved their inbox
-          ProcessContactMoveInbox(mic, contacts_handler, introduction.inbox_name(), session_);
-        }
+        else
+          LOG(kError) << "Introduction of type kFriendRequest doesn't match current state!";
       }
-    } else {  // New contact
-      ProcessNewContact(mic, contacts_handler, own_public_id, introduction, session_);
+      break;
+    case kFriendResponse:
+      if (result == kSuccess && mic.status == kRequestSent)
+        ProcessContactConfirmation(mic, contacts_handler, own_public_id, introduction, session_);
+      else
+        LOG(kError) << "Introduction of type kFriendResponse doesn't match current state!";
+      break;
+    case kDefriend:
+        ProcessContactDeletion(own_public_id,
+                               introduction.public_id(),
+                               introduction.message(),
+                               introduction.timestamp());
+        break;
+    case kMovedInbox:
+      if (result == kSuccess &&
+          mic.status == kConfirmed &&
+          introduction.inbox_name() != mic.inbox_name)
+        ProcessContactMoveInbox(mic, contacts_handler, introduction.inbox_name(), session_);
+      else
+        LOG(kError) << "Introduction of type kMovedInbox doesn't match current state!";
+      break;
+    case kFixAsync:
+      if (result == kSuccess && mic.status == kRequestSent)
+        ProcessContactConfirmation(mic, contacts_handler, own_public_id, introduction, session_);
+      else
+        LOG(kError) << "Introduction of type kFixAsync doesn't match current state!";
+      break;
+    default: LOG(kError) << "Introduction of unrecognised type!";
     }
   }
 }
@@ -597,11 +625,8 @@ void PublicId::ProcessNewContact(Contact& contact,
     result = contacts_handler->AddContact(contact);
     if (result == kSuccess) {
       session.set_changed(true);
-      if (introduction.has_message())
-        (*new_contact_signal_)(own_public_id, public_id, introduction.message(),
-                               introduction.timestamp());
-      else
-        (*new_contact_signal_)(own_public_id, public_id, "", introduction.timestamp());
+      (*new_contact_signal_)(own_public_id, public_id, introduction.message(),
+                             introduction.timestamp());
     }
   } else {
     LOG(kError) << "Failed get keys of new contact.";
@@ -610,10 +635,22 @@ void PublicId::ProcessNewContact(Contact& contact,
 
 void PublicId::ProcessMisplacedContactRequest(Contact& contact, const std::string& own_public_id) {
   std::vector<Contact> contacts(1, contact);
-  int result = InformContactInfo(own_public_id, contacts, "");
+  int result = InformContactInfo(own_public_id, contacts, "", kFixAsync);
   if (result != kSuccess) {
     LOG(kError) << "Failed to send confirmation to " << contact.public_id;
   }
+}
+
+void PublicId::ProcessContactDeletion(const std::string &own_public_id,
+                                      const std::string &contact_public_id,
+                                      const std::string &message,
+                                      const std::string &timestamp) {
+  // TODO(Alison) - remove thread & sleep
+  boost::thread temp_thread(
+      [=] {
+        sleep(5);
+        (*contact_deletion_signal_)(own_public_id, contact_public_id, message, timestamp);
+      });
 }
 
 int PublicId::ConfirmContact(const std::string &own_public_id,
@@ -632,7 +669,7 @@ int PublicId::ConfirmContact(const std::string &own_public_id,
   }
 
   std::vector<Contact> contacts(1, mic);
-  result = InformContactInfo(own_public_id, contacts, "");
+  result = InformContactInfo(own_public_id, contacts, "", kFriendResponse);
   if (result != kSuccess) {
     LOG(kError) << "Failed to send confirmation to " << recipient_public_id;
     return -1;
@@ -664,10 +701,13 @@ int PublicId::RejectContact(const std::string &own_public_id,
 }
 
 void PublicId::RemoveContactHandle(const std::string &public_id, const std::string &contact_name) {
-  asio_service_.post([=] { return PublicId::RemoveContact(public_id, contact_name); });  // NOLINT (Alison)
+  asio_service_.post([=] { return PublicId::RemoveContact(public_id, contact_name, false); });  // NOLINT (Alison)
 }
 
-int PublicId::RemoveContact(const std::string &public_id, const std::string &contact_name) {
+int PublicId::RemoveContact(const std::string &public_id,
+                            const std::string &contact_name,
+                            const bool& instigator,
+                            const std::string& removal_message) {
   if (public_id.empty() || contact_name.empty()) {
     LOG(kError) << "Public ID name empty";
     return kPublicIdEmpty;
@@ -683,6 +723,10 @@ int PublicId::RemoveContact(const std::string &public_id, const std::string &con
     LOG(kError) << "Contact doesn't exist in list: " << contact_name;
     return kContactNotFoundFailure;
   }
+
+  // Get current inbox identity so we can send a deletion message without our new inbox location
+  std::string old_inbox_identity(
+      passport_.SignaturePacketDetails(passport::kMmid, true, public_id).identity);
 
   // Generate a new MMID and store it
   int result(passport_.MoveMaidsafeInbox(public_id));
@@ -719,6 +763,14 @@ int PublicId::RemoveContact(const std::string &public_id, const std::string &con
     return kRemoveContactFailure;
   }
 
+  // Get contact we're deleting so we can message him later
+  Contact deleted_contact;
+  result = contacts_handler->ContactInfo(contact_name, &deleted_contact);
+  if (result != kSuccess) {
+    LOG(kInfo) << "Failed to remove contact: " << contact_name;
+    return result;
+  }
+
   result = contacts_handler->DeleteContact(contact_name);
   if (result != kSuccess) {
     LOG(kError) << "Failed to remove contact : " << contact_name;
@@ -753,23 +805,41 @@ int PublicId::RemoveContact(const std::string &public_id, const std::string &con
 
   passport_.ConfirmMovedMaidsafeInbox(public_id);
   session_.set_changed(true);
+
+  if (instigator) {
+    // Inform the deleted contact that we have deleted him
+    std::vector<Contact> deleted_contact_vector(1, deleted_contact);
+    result = InformContactInfo(public_id, deleted_contact_vector, removal_message, kDefriend,
+                               old_inbox_identity);
+    if (result != kSuccess) {
+      LOG(kError) << "Failed to notify deleted contact of the deletion.";
+      return result;
+    }
+  }
+
   // Informs each contact in the list about the new MMID
   std::vector<Contact> contacts;
   uint16_t status(kConfirmed | kRequestSent);
   contacts_handler->OrderedContacts(&contacts, kAlphabetical, status);
-  result = InformContactInfo(public_id, contacts, "");
+  result = InformContactInfo(public_id, contacts, "", kMovedInbox);
 
   return result;
 }
 
 int PublicId::InformContactInfo(const std::string& public_id,
                                 const std::vector<Contact>& contacts,
-                                const std::string& message) {
+                                const std::string& message,
+                                const IntroductionType& type,
+                                const std::string& inbox_name) {
   // Get our MMID name, and MPID private key
-  asymm::Keys inbox(passport_.SignaturePacketDetails(passport::kMmid, true, public_id));
+  std::string inbox_identity;
+  if (inbox_name.empty())
+    inbox_identity = passport_.SignaturePacketDetails(passport::kMmid, true, public_id).identity;
+  else
+    inbox_identity = inbox_name;
   std::shared_ptr<asymm::Keys> mpid(new asymm::Keys(
       passport_.SignaturePacketDetails(passport::kMpid, true, public_id)));
-  if (!mpid || mpid->identity.empty() || inbox.identity.empty()) {
+  if (!mpid || mpid->identity.empty() || inbox_identity.empty()) {
     LOG(kError) << "Failed to get own public ID data: " << public_id;
     return kGetPublicIdError;
   }
@@ -786,11 +856,11 @@ int PublicId::InformContactInfo(const std::string& public_id,
     asymm::PublicKey recipient_public_key(contacts[i].mpid_public_key);
 
     Introduction introduction;
-    introduction.set_inbox_name(inbox.identity);
+    introduction.set_inbox_name(inbox_identity);
     introduction.set_public_id(public_id);
     introduction.set_timestamp(IsoTimeWithMicroSeconds());
-    if (!message.empty())
-      introduction.set_message(message);
+    introduction.set_type(type);
+    introduction.set_message(message);
 
     ProfilePictureDetail profile_picture_data_map(session_.profile_picture_data_map(public_id));
     if (profile_picture_data_map.second) {
@@ -905,6 +975,11 @@ bs2::connection PublicId::ConnectToNewContactSignal(const NewContactFunction &ne
 bs2::connection PublicId::ConnectToContactConfirmedSignal(
     const ContactConfirmationFunction &contact_confirmation_slot) {
   return contact_confirmed_signal_->connect(contact_confirmation_slot);
+}
+
+bs2::connection PublicId::ConnectToContactDeletionSignal(
+    const ContactDeletionFunction &contact_deletion_slot) {
+  return contact_deletion_signal_->connect(contact_deletion_slot);
 }
 
 }  // namespace lifestuff

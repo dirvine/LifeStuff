@@ -7,7 +7,8 @@ message Introduction {
   required bytes public_id = 2;
   required bytes profile_picture_data_map = 3;
   required bytes timestamp = 4;
-  optional bytes message = 5;
+  required uint32 type = 5;
+  required bytes message = 6;
 }
 
 // Generic message for use in sending messages/files, sharing folders,

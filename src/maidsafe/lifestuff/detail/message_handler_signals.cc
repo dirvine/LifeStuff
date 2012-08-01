@@ -67,11 +67,6 @@ bs2::connection MessageHandler::ConnectToShareInvitationResponseSignal(
 }
 
 /// Intra and extra library connections
-bs2::connection MessageHandler::ConnectToContactDeletionSignal(
-    const ContactDeletionFunction &function) {
-  return contact_deletion_signal_.connect(function);
-}
-
 bs2::connection MessageHandler::ConnectToPrivateShareUserLeavingSignal(
     const PrivateShareUserLeavingSignal::slot_type &function) {
   return private_share_user_leaving_signal_.connect(function);

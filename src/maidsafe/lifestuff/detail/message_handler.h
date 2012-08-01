@@ -99,7 +99,6 @@ class MessageHandler {
       const ContactProfilePictureFunction &function);
 
   // Intra and extra library connections
-  bs2::connection ConnectToContactDeletionSignal(const ContactDeletionFunction &function);
   bs2::connection ConnectToPrivateShareUserLeavingSignal(
       const PrivateShareUserLeavingSignal::slot_type &function);
   bs2::connection ConnectToShareInvitationResponseSignal(
@@ -141,7 +140,6 @@ class MessageHandler {
   void ProcessFileTransfer(const InboxItem &file_transfer_message);
   void ProcessShareInvitationResponse(const InboxItem &inbox_item);
   void ProcessPrivateShare(const InboxItem &private_share_message);
-  void ProcessContactDeletion(const InboxItem &deletion_message);
 
   void ContentsDontParseAsDataMap(const std::string& serialised_dm, std::string* data_map);
   void ProcessPresenceMessages();
@@ -167,7 +165,6 @@ class MessageHandler {
   ShareInvitationResponseSignal share_invitation_response_signal_;
 
   /// Intra and extra library signals
-  ContactDeletionSignal contact_deletion_signal_;
   PrivateShareUserLeavingSignal private_share_user_leaving_signal_;
 
   /// Intra library signals

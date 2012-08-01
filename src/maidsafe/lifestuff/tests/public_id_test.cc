@@ -601,11 +601,11 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, true));
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_identity2_, true));
 
-  ASSERT_EQ(kPublicIdEmpty, public_id1_->RemoveContact(public_identity1_, ""));
-  ASSERT_EQ(kPublicIdEmpty, public_id1_->RemoveContact("", public_identity2_));
+  ASSERT_EQ(kPublicIdEmpty, public_id1_->RemoveContact(public_identity1_, "", true));
+  ASSERT_EQ(kPublicIdEmpty, public_id1_->RemoveContact("", public_identity2_, true));
 
   ASSERT_EQ(kContactNotFoundFailure,
-            public_id1_->RemoveContact(public_identity1_, public_identity2_));
+            public_id1_->RemoveContact(public_identity1_, public_identity2_, true));
 
   bool done(false);
   public_id1_->ConnectToNewContactSignal(
@@ -626,12 +626,12 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
   ASSERT_FALSE(received_public_identity_.empty());
 
   done = false;
-  ASSERT_EQ(kSuccess, public_id1_->RemoveContact(public_identity1_, public_identity2_));
+  ASSERT_EQ(kSuccess, public_id1_->RemoveContact(public_identity1_, public_identity2_, true));
 
   // Although sending msg is disallowed, sending contact_info shall be allowed
   received_public_identity_.clear();
   ASSERT_EQ(-77, public_id2_->AddContact(public_identity2_, public_identity1_, ""));
-  ASSERT_EQ(kSuccess, public_id2_->RemoveContact(public_identity2_, public_identity1_));
+  ASSERT_EQ(kSuccess, public_id2_->RemoveContact(public_identity2_, public_identity1_, true));
   ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_, ""));
   {
     boost::mutex::scoped_lock lock(mutex);
