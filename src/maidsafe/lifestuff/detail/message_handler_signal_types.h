@@ -95,11 +95,6 @@ typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
                          const std::string&)> ShareInvitationResponseSignal;
 
 /// Intra and extra library signals2
-typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
-                         const std::string&,
-                         const std::string&,
-                         const std::string&)> ContactDeletionSignal;
-
 typedef bs2::signal<void(const std::string&,  // share name
                          const std::string&,  // share id
                          const std::string&)> PrivateShareUserLeavingSignal;  // user_id  // NOLINT (Dan)

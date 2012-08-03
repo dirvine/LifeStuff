@@ -1889,15 +1889,7 @@ void LifeStuffImpl::ConnectInternalElements() {
   public_id_->ConnectToContactConfirmedSignal(
       [&] (const std::string& own_public_id, const std::string& recipient_public_id,
            const std::string&) {
-        return message_handler_->InformConfirmedContactOnline(own_public_id,
-                                                              recipient_public_id);
-      });
-
-  public_id_->ConnectToContactDeletionSignal(
-      [&] (const std::string& public_id, const std::string& contact_name,
-           const std::string& /*message*/,
-           const std::string& /*timestamp*/) {
-        return public_id_->RemoveContactHandle(public_id, contact_name);
+        message_handler_->InformConfirmedContactOnline(own_public_id, recipient_public_id);
       });
 
   message_handler_->ConnectToPrivateShareDetailsSignal(

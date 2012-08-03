@@ -33,6 +33,8 @@
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
+#include "maidsafe/private/chunk_actions/chunk_action_authority.h"
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 
@@ -212,6 +214,68 @@ int CreateSmallTestFile(fs::path const& parent, int size_in_kb, std::string *fil
 
 std::string ComposeSignaturePacketName(const std::string &name) {
   return name + std::string (1, pca::kSignaturePacket);
+}
+
+std::string ComposeModifyAppendableByAll(const asymm::PrivateKey& signing_key,
+                                         const char appendability) {
+  std::string appendability_string(1, appendability);
+  pca::SignedData signed_data;
+  std::string signature;
+
+  asymm::Sign(appendability_string, signing_key, &signature);
+  signed_data.set_data(appendability_string);
+  signed_data.set_signature(signature);
+  pca::ModifyAppendableByAll modify;
+  modify.mutable_allow_others_to_append()->CopyFrom(signed_data);
+  return modify.SerializeAsString();
+}
+
+std::string AppendableIdValue(const asymm::Keys& data, bool accepts_new_contacts) {
+  pca::AppendableByAll contact_id;
+  pca::SignedData *identity_key = contact_id.mutable_identity_key();
+  pca::SignedData *allow_others_to_append = contact_id.mutable_allow_others_to_append();
+
+  std::string public_key;
+  asymm::EncodePublicKey(data.public_key, &public_key);
+  identity_key->set_data(public_key);
+  identity_key->set_signature(data.validation_token);
+  allow_others_to_append->set_data(accepts_new_contacts ? std::string(1, pca::kAppendableByAll) :
+                                                          std::string(1, pca::kModifiableByOwner));
+
+  asymm::Signature packet_signature;
+  int result(asymm::Sign(allow_others_to_append->data(), data.private_key, &packet_signature));
+  if (result != kSuccess) {
+    LOG(kError) << "AppendableIdValue - Failed to sign";
+    return "";
+  }
+
+  allow_others_to_append->set_signature(packet_signature);
+
+  return contact_id.SerializeAsString();
+}
+
+std::string MaidsafeContactIdName(const std::string& public_id) {
+  return crypto::Hash<crypto::SHA512>(public_id) + std::string(1, pca::kAppendableByAll);
+}
+
+std::string SignaturePacketName(const std::string& name) {
+  return name + std::string (1, pca::kSignaturePacket);
+}
+
+std::string AppendableByAllName(const std::string& name) {
+  return name + std::string (1, pca::kAppendableByAll);
+}
+
+std::string SignaturePacketValue(const asymm::Keys& keys) {
+  pca::SignedData signed_data;
+  std::string serialised_public_key;
+  asymm::EncodePublicKey(keys.public_key, &serialised_public_key);
+  if (serialised_public_key.empty())
+    return "";
+
+  signed_data.set_data(serialised_public_key);
+  signed_data.set_signature(keys.validation_token);
+  return signed_data.SerializeAsString();
 }
 
 std::string PutFilenameData(const std::string &file_name) {

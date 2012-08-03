@@ -118,6 +118,13 @@ int AssessJointResult(const std::vector<int> &results);
 void OperationCallback(bool result, OperationResults &results, int index);
 
 std::string ComposeSignaturePacketName(const std::string &name);
+std::string ComposeModifyAppendableByAll(const asymm::PrivateKey& signing_key,
+                                         const char appendability);
+std::string AppendableIdValue(const asymm::Keys& data, bool accepts_new_contacts);
+std::string MaidsafeContactIdName(const std::string& public_id);
+std::string SignaturePacketName(const std::string& name);
+std::string AppendableByAllName(const std::string& name);
+std::string SignaturePacketValue(const asymm::Keys& keys);
 
 std::shared_ptr<encrypt::DataMap> ParseSerialisedDataMap(const std::string &serialised_data_map);
 
