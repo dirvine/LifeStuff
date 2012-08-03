@@ -175,6 +175,41 @@ TEST_F(OneUserApiTest, FUNC_AddOwnPublicIdAsContact) {
   EXPECT_NE(kSuccess, test_elements_.AddContact(public_id_1, public_id_2));
 }
 
+TEST_F(OneUserApiTest, FUNC_ChangeProfilePictureAfterSaveSession) {
+  std::string public_id(RandomAlphaNumericString(5));
+  EXPECT_EQ(kSuccess, test_elements_.CreatePublicId(public_id));
+  for (int n(1); n < 1001; n+=100) {
+    LOG(kError) << "\n\n\n";
+    std::string profile_picture1(RandomString(1177 * n)), profile_picture2(RandomString(1177 * n));
+    EXPECT_EQ(kSuccess, test_elements_.ChangeProfilePicture(public_id, profile_picture1));
+    std::string retrieved_picture(test_elements_.GetOwnProfilePicture(public_id));
+    EXPECT_EQ(profile_picture1, retrieved_picture);
+    EXPECT_EQ(kSuccess, test_elements_.LogOut());
+
+    EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
+    retrieved_picture = test_elements_.GetOwnProfilePicture(public_id);
+    EXPECT_EQ(profile_picture1, retrieved_picture);
+    Sleep(bptime::seconds(65));
+    EXPECT_EQ(kSuccess, test_elements_.ChangeProfilePicture(public_id, profile_picture2));
+    retrieved_picture = test_elements_.GetOwnProfilePicture(public_id);
+    EXPECT_EQ(profile_picture2, retrieved_picture);
+    EXPECT_EQ(kSuccess, test_elements_.LogOut());
+
+    EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
+    retrieved_picture = test_elements_.GetOwnProfilePicture(public_id);
+    EXPECT_EQ(profile_picture2, retrieved_picture);
+    Sleep(bptime::seconds(65));
+    EXPECT_EQ(kSuccess, test_elements_.ChangeProfilePicture(public_id, profile_picture1));
+    retrieved_picture = test_elements_.GetOwnProfilePicture(public_id);
+    EXPECT_EQ(profile_picture1, retrieved_picture);
+    EXPECT_EQ(kSuccess, test_elements_.LogOut());
+
+    EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
+    retrieved_picture = test_elements_.GetOwnProfilePicture(public_id);
+    EXPECT_EQ(profile_picture1, retrieved_picture);
+  }
+}
+
 TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdConsecutively) {
   EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
   EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));

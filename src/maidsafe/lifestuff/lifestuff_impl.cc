@@ -289,7 +289,7 @@ int LifeStuffImpl::CreateUser(const std::string &keyword,
   }
   user_storage_->ConnectToShareRenamedSignal(
       [this] (const std::string& old_share_name, const std::string& new_share_name) {
-        return ShareRenameSlot(old_share_name, new_share_name);
+        this->ShareRenameSlot(old_share_name, new_share_name);
       });
 
   fs::path mount_path(user_storage_->mount_dir());
@@ -386,7 +386,7 @@ int LifeStuffImpl::LogIn(const std::string &keyword,
   }
   user_storage_->ConnectToShareRenamedSignal(
       [this] (const std::string& old_share_name, const std::string& new_share_name) {
-        return ShareRenameSlot(old_share_name, new_share_name);
+        this->ShareRenameSlot(old_share_name, new_share_name);
       });
 
   if (!session_.PublicIdentities().empty()) {
@@ -652,8 +652,8 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string &my_public_id,
 
   if (profile_picture_contents.empty() ||
       profile_picture_contents.size() > kFileRecontructionLimit) {
-    LOG(kError) << "Contents of picture inadequate("
-                << profile_picture_contents.size() << "). Good day!";
+    LOG(kError) << "Contents of picture inadequate(" << profile_picture_contents.size()
+                << "). Good day!";
     return kGeneralError;
   }
 
@@ -667,8 +667,7 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string &my_public_id,
                                                              "_profile_picture" +
                                                              kHiddenFileExtension));
     if (WriteHiddenFile(profile_picture_path, profile_picture_contents, true) != kSuccess) {
-      LOG(kError) << "Failed to write profile picture file: "
-                  << profile_picture_path;
+      LOG(kError) << "Failed to write profile picture file: " << profile_picture_path;
       return kGeneralError;
     }
 
@@ -681,8 +680,8 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string &my_public_id,
       data_map.clear();
       result = user_storage_->GetHiddenFileDataMap(profile_picture_path, &data_map);
       if ((result != kSuccess || data_map.empty()) && count == limit) {
-        LOG(kError) << "Failed obtaining DM of profile picture: " << result
-                    << ", file: " << profile_picture_path;
+        LOG(kError) << "Failed obtaining DM of profile picture: " << result << ", file: "
+                    << profile_picture_path;
         return result;
       }
 
@@ -706,6 +705,8 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string &my_public_id,
     boost::mutex::scoped_lock loch(*profile_picture_data_map.first);
     *profile_picture_data_map.second = message.content[0];
   }
+  session_.set_changed(true);
+  LOG(kError) << "Session set to changed.";
 
   // Send to everybody
   message_handler_->SendEveryone(message);
@@ -732,6 +733,7 @@ std::string LifeStuffImpl::GetOwnProfilePicture(const std::string &my_public_id)
     return "";
   }
 
+  LOG(kError) << "LifeStuffImpl::GetOwnProfilePicture!!";
   return profile_picture_contents;
 }
 

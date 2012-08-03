@@ -426,9 +426,10 @@ void MessageHandler::ProcessContactPresence(const InboxItem &presence_message) {
 }
 
 void MessageHandler::ProcessContactProfilePicture(const InboxItem &profile_picture_message) {
+std::cout << "\n\n\nMessageHandler::ProcessContactProfilePicture!!!!!\n\n\n";
   if (profile_picture_message.content.size() != 1U || profile_picture_message.content[0].empty()) {
     // Drop silently
-    LOG(kWarning) << profile_picture_message.sender_public_id
+    LOG(kError) << profile_picture_message.sender_public_id
                   << " has sent a profile picture message with bad content.";
     return;
   }
@@ -438,7 +439,7 @@ void MessageHandler::ProcessContactProfilePicture(const InboxItem &profile_pictu
   if (profile_picture_message.content[0] != kBlankProfilePicture) {
     encrypt::DataMapPtr data_map(ParseSerialisedDataMap(profile_picture_message.content[0]));
     if (!data_map) {
-      LOG(kWarning) << "Data map didn't parse.";
+      LOG(kError) << "Data map didn't parse.";
       return;
     }
   }
@@ -452,7 +453,7 @@ void MessageHandler::ProcessContactProfilePicture(const InboxItem &profile_pictu
   int result(contacts_handler->UpdateProfilePictureDataMap(sender,
                                                            profile_picture_message.content[0]));
   if (result != kSuccess) {
-    LOG(kWarning) << "Failed to update picture DM in session: " << result;
+    LOG(kError) << "Failed to update picture DM in session: " << result;
     return;
   }
   session_.set_changed(true);

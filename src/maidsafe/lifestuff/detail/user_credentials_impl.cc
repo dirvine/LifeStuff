@@ -839,11 +839,11 @@ int UserCredentialsImpl::SaveSession(bool log_out) {
 //    }
 
     if (!session_.changed() && session_saved_once_) {
-      LOG(kInfo) << "Session has not changed.";
+      LOG(kError) << "Session has not changed.";
       return kSuccess;
     }
   } else if (!session_.changed()) {
-    LOG(kInfo) << "Session has not changed.";
+    LOG(kError) << "Session has not changed.";
     return kSuccess;
   }
 
@@ -870,7 +870,7 @@ int UserCredentialsImpl::SaveSession(bool log_out) {
     return kSaveSessionFailure;
   }
 
-  LOG(kInfo) << "MID: " << individual_results.at(0)
+  LOG(kError) << "MID: " << individual_results.at(0)
              << ", SMID: " << individual_results.at(1)
              << ", TMID: " << individual_results.at(2)
              << ", STMID: " << individual_results.at(3);
@@ -1412,10 +1412,10 @@ void UserCredentialsImpl::DeleteSignaturePacket(std::shared_ptr<asymm::Keys> pac
 
 void UserCredentialsImpl::SessionSaver(const bptime::seconds &interval,
                                        const boost::system::error_code &error_code) {
-  LOG(kInfo) << "UserCredentialsImpl::SessionSaver!!! Wooohooooo";
+  LOG(kError) << "UserCredentialsImpl::SessionSaver!!! Wooohooooo";
   if (error_code) {
     if (error_code != boost::asio::error::operation_aborted) {
-      LOG(kWarning) << "Refresh timer error: " << error_code.message();
+      LOG(kError) << "Refresh timer error: " << error_code.message();
     } else {
       return;
     }
@@ -1427,7 +1427,7 @@ void UserCredentialsImpl::SessionSaver(const bptime::seconds &interval,
   }
 
   int result(SaveSession(false));
-  LOG(kInfo) << "Session saver result: " << result;
+  LOG(kError) << "Session saver result: " << result;
 
   session_saver_timer_.expires_from_now(bptime::seconds(interval));
   session_saver_timer_.async_wait([=] (const boost::system::error_code &error_code) {

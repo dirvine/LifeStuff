@@ -637,9 +637,11 @@ void OneUserApiTest::SetUp() {
                                                  const std::string& contact_public_id,
                                                  const std::string& timestamp,
                                                  ContactPresence cp) {
-                                              return testresources::ContactPresenceSlot(
-                                                  own_public_id, contact_public_id, timestamp, cp,
-                                                  &done_);
+                                              testresources::ContactPresenceSlot(own_public_id,
+                                                                                 contact_public_id,
+                                                                                 timestamp,
+                                                                                 cp,
+                                                                                 &done_);
                                             },
                                             ContactDeletionFunction(),
                                             PrivateShareInvitationFunction(),
