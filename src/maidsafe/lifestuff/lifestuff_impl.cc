@@ -644,6 +644,7 @@ int LifeStuffImpl::RemoveContact(const std::string &my_public_id,
 
 int LifeStuffImpl::ChangeProfilePicture(const std::string &my_public_id,
                                         const std::string &profile_picture_contents) {
+  LOG(kError) << "ChangeProfilePicture: " << profile_picture_contents.size();
   int result(PreContactChecks(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in ChangeProfilePicture.";
@@ -666,18 +667,23 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string &my_public_id,
     fs::path profile_picture_path(mount_path() / std::string(my_public_id +
                                                              "_profile_picture" +
                                                              kHiddenFileExtension));
-    if (WriteHiddenFile(profile_picture_path, profile_picture_contents, true) != kSuccess) {
+//    if (!WriteFile(profile_picture_path, profile_picture_contents/*, true*/)/* != kSuccess*/) {
+    if (user_storage_->WriteHiddenFile(profile_picture_path, profile_picture_contents, true) !=
+        kSuccess) {
       LOG(kError) << "Failed to write profile picture file: " << profile_picture_path;
       return kGeneralError;
     }
-
+    LOG(kError) << "Wrote file.";
+//    Sleep(bptime::seconds(5));
+//    LOG(kError) << "Petit wee sleep.";
 
     // Get datamap
     std::string data_map;
     std::string reconstructed;
-    int count(0), limit(100);
+    int count(0), limit(10);
     while (reconstructed != profile_picture_contents && count++ < limit) {
       data_map.clear();
+//      result = user_storage_->GetDataMap(profile_picture_path, &data_map);
       result = user_storage_->GetHiddenFileDataMap(profile_picture_path, &data_map);
       if ((result != kSuccess || data_map.empty()) && count == limit) {
         LOG(kError) << "Failed obtaining DM of profile picture: " << result << ", file: "
@@ -685,9 +691,16 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string &my_public_id,
         return result;
       }
 
+      LOG(kError) << "Size of what will be tried to be reconstructed: " << profile_picture_contents.size();
       reconstructed = user_storage_->ConstructFile(data_map);
-      Sleep(bptime::milliseconds(50));
+      Sleep(bptime::milliseconds(500));
     }
+
+    if (reconstructed != profile_picture_contents) {
+      LOG(kError) << "Failed to reconstruct profile picture file: " << profile_picture_path;
+      return kGeneralError;
+    }
+
     message.content.push_back(data_map);
   } else {
     message.content.push_back(kBlankProfilePicture);
@@ -723,17 +736,31 @@ std::string LifeStuffImpl::GetOwnProfilePicture(const std::string &my_public_id)
     return "";
   }
 
+  const ProfilePictureDetail profile_picture_data_map(
+      session_.profile_picture_data_map(my_public_id));
+  if (!profile_picture_data_map.first) {
+    LOG(kError) << "User does not hold such public ID: " << my_public_id;
+    return "";
+  }
+
+  {
+    boost::mutex::scoped_lock loch(*profile_picture_data_map.first);
+    if (*profile_picture_data_map.second == kBlankProfilePicture)
+      return "";
+  }
+
   fs::path profile_picture_path(mount_path() / std::string(my_public_id +
                                                            "_profile_picture" +
                                                            kHiddenFileExtension));
   std::string profile_picture_contents;
+//  if (!ReadFile(profile_picture_path, &profile_picture_contents)/* != kSuccess*/ ||
   if (ReadHiddenFile(profile_picture_path, &profile_picture_contents) != kSuccess ||
       profile_picture_contents.empty()) {
     LOG(kError) << "Failed reading profile picture: " << profile_picture_path;
     return "";
   }
 
-  LOG(kError) << "LifeStuffImpl::GetOwnProfilePicture!!";
+//  LOG(kError) << "LifeStuffImpl::GetOwnProfilePicture!!";
   return profile_picture_contents;
 }
 

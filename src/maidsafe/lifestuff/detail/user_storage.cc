@@ -1253,6 +1253,7 @@ std::string UserStorage::ConstructFile(const std::string &serialised_data_map) {
     file_size += (*it).size;
     ++it;
   }
+  LOG(kError) << "I now officially think that the file is this big: " << file_size;
 
   // TODO(Team): decide based on the size whether to go ahead.
   // Update: It's now only possible to read a file up to uint32_t size.
@@ -1261,7 +1262,10 @@ std::string UserStorage::ConstructFile(const std::string &serialised_data_map) {
 
   encrypt::SelfEncryptor self_encryptor(data_map, *chunk_store_);
   std::unique_ptr<char[]> contents(new char[file_size]);
-  self_encryptor.Read(contents.get(), file_size, 0);
+  if (!self_encryptor.Read(contents.get(), file_size, 0)) {
+    LOG(kError) << "Failure to read contents from SE: " << file_size;
+    return "";
+  }
   std::string file_content(contents.get(), file_size);
 
   return file_content;

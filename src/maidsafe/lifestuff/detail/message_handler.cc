@@ -426,7 +426,6 @@ void MessageHandler::ProcessContactPresence(const InboxItem &presence_message) {
 }
 
 void MessageHandler::ProcessContactProfilePicture(const InboxItem &profile_picture_message) {
-std::cout << "\n\n\nMessageHandler::ProcessContactProfilePicture!!!!!\n\n\n";
   if (profile_picture_message.content.size() != 1U || profile_picture_message.content[0].empty()) {
     // Drop silently
     LOG(kError) << profile_picture_message.sender_public_id
