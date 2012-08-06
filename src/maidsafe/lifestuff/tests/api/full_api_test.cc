@@ -178,7 +178,7 @@ TEST_F(OneUserApiTest, FUNC_AddOwnPublicIdAsContact) {
 TEST_F(OneUserApiTest, FUNC_ChangeProfilePictureAfterSaveSession) {
   std::string public_id(RandomAlphaNumericString(5));
   EXPECT_EQ(kSuccess, test_elements_.CreatePublicId(public_id));
-  for (int n(1); n < 1001; n+=100) {
+  for (int n(1001); n > 1; n-=100) {
     LOG(kError) << "\n\n\n";
     std::string profile_picture1(RandomString(1177 * n)), profile_picture2(RandomString(1177 * n));
     EXPECT_EQ(kSuccess, test_elements_.ChangeProfilePicture(public_id, profile_picture1));
@@ -189,7 +189,7 @@ TEST_F(OneUserApiTest, FUNC_ChangeProfilePictureAfterSaveSession) {
     EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
     retrieved_picture = test_elements_.GetOwnProfilePicture(public_id);
     EXPECT_EQ(profile_picture1, retrieved_picture);
-    Sleep(bptime::seconds(65));
+//    Sleep(bptime::seconds(65));
     EXPECT_EQ(kSuccess, test_elements_.ChangeProfilePicture(public_id, profile_picture2));
     retrieved_picture = test_elements_.GetOwnProfilePicture(public_id);
     EXPECT_EQ(profile_picture2, retrieved_picture);
@@ -198,7 +198,7 @@ TEST_F(OneUserApiTest, FUNC_ChangeProfilePictureAfterSaveSession) {
     EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
     retrieved_picture = test_elements_.GetOwnProfilePicture(public_id);
     EXPECT_EQ(profile_picture2, retrieved_picture);
-    Sleep(bptime::seconds(65));
+//    Sleep(bptime::seconds(65));
     EXPECT_EQ(kSuccess, test_elements_.ChangeProfilePicture(public_id, profile_picture1));
     retrieved_picture = test_elements_.GetOwnProfilePicture(public_id);
     EXPECT_EQ(profile_picture1, retrieved_picture);

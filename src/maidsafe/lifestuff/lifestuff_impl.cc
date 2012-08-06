@@ -675,7 +675,7 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string &my_public_id,
     }
     LOG(kError) << "Wrote file.";
 //    Sleep(bptime::seconds(5));
-//    LOG(kError) << "Petit wee sleep.";
+//    LOG(kError) << "Petite wee sleep.";
 
     // Get datamap
     std::string data_map;
@@ -684,15 +684,17 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string &my_public_id,
     while (reconstructed != profile_picture_contents && count++ < limit) {
       data_map.clear();
 //      result = user_storage_->GetDataMap(profile_picture_path, &data_map);
-      result = user_storage_->GetHiddenFileDataMap(profile_picture_path, &data_map);
-      if ((result != kSuccess || data_map.empty()) && count == limit) {
+//      result = user_storage_->GetHiddenFileDataMap(profile_picture_path, &data_map);
+      result = ReadHiddenFile(profile_picture_path, &reconstructed);
+      if ((result != kSuccess/* || data_map.empty()*/) && count == limit) {
         LOG(kError) << "Failed obtaining DM of profile picture: " << result << ", file: "
                     << profile_picture_path;
         return result;
       }
 
       LOG(kError) << "Size of what will be tried to be reconstructed: " << profile_picture_contents.size();
-      reconstructed = user_storage_->ConstructFile(data_map);
+      LOG(kError) << "Size of reconstructed: " << reconstructed.size();
+//      reconstructed = user_storage_->ConstructFile(data_map);
       Sleep(bptime::milliseconds(500));
     }
 
