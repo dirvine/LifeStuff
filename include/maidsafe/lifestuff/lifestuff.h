@@ -46,7 +46,7 @@ enum DefConLevels {
 
 enum ContactStatus {
   kAll = 0x00,
-  kUnitialised = 0x01,
+  kUninitialised = 0x01,
   kRequestSent = 0x02,
   kPendingResponse = 0x04,
   kConfirmed = 0x08,

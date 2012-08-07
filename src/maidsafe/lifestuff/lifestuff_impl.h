@@ -151,11 +151,11 @@ class LifeStuffImpl {
                const fs::path& absolute_path);
   int AcceptSentFile(const std::string& identifier,
                      const fs::path& absolute_path = fs::path(),
-                     std::string *file_name = nullptr);
+                     std::string* file_name = nullptr);
   int RejectSentFile(const std::string& identifier);
 
   /// Filesystem
-  int ReadHiddenFile(const fs::path& absolute_path, std::string *content) const;
+  int ReadHiddenFile(const fs::path& absolute_path, std::string* content) const;
   int WriteHiddenFile(const fs::path& absolute_path,
                       const std::string& content,
                       bool overwrite_existing);
@@ -169,31 +169,31 @@ class LifeStuffImpl {
   int CreatePrivateShareFromExistingDirectory(const std::string& my_public_id,
                                               const fs::path& directory_in_lifestuff_drive,
                                               const StringIntMap& contacts,
-                                              std::string *share_name,
-                                              StringIntMap *results);
+                                              std::string* share_name,
+                                              StringIntMap* results);
   int CreateEmptyPrivateShare(const std::string& my_public_id,
                               const StringIntMap& contacts,
-                              std::string *share_name,
-                              StringIntMap *results);
-  int GetPrivateShareList(const std::string& my_public_id, StringIntMap *share_names);
+                              std::string* share_name,
+                              StringIntMap* results);
+  int GetPrivateShareList(const std::string& my_public_id, StringIntMap* share_names);
   // For owners only
   int GetPrivateShareMembers(const std::string& my_public_id,
                              const std::string& share_name,
-                             StringIntMap *share_members);
+                             StringIntMap* share_members);
   int GetPrivateSharesIncludingMember(const std::string& my_public_id,
                                       const std::string& contact_public_id,
-                                      std::vector<std::string> *share_names);
+                                      std::vector<std::string>* share_names);
   // Should create a directory adapting to other possible shares
   int AcceptPrivateShareInvitation(const std::string& my_public_id,
                                    const std::string& contact_public_id,
                                    const std::string& share_id,
-                                   std::string *share_name);
+                                   std::string* share_name);
   int RejectPrivateShareInvitation(const std::string& my_public_id, const std::string& share_id);
   // Only for owners
   int EditPrivateShareMembers(const std::string& my_public_id,
                               const StringIntMap& public_ids,
                               const std::string& share_name,
-                              StringIntMap *results);
+                              StringIntMap* results);
   // Only for owners
   int DeletePrivateShare(const std::string& my_public_id,
                          const std::string& share_name,
@@ -205,24 +205,24 @@ class LifeStuffImpl {
   int CreateOpenShareFromExistingDirectory(const std::string& my_public_id,
                                            const fs::path& directory_in_lifestuff_drive,
                                            const std::vector<std::string>& contacts,
-                                           std::string *share_name,
-                                           StringIntMap *results);
+                                           std::string* share_name,
+                                           StringIntMap* results);
   int CreateEmptyOpenShare(const std::string& my_public_id,
                            const std::vector<std::string>& contacts,
-                           std::string *share_name,
-                           StringIntMap *results);
+                           std::string* share_name,
+                           StringIntMap* results);
   int InviteMembersToOpenShare(const std::string& my_public_id,
                                const std::vector<std::string>& contacts,
                                const std::string& share_name,
-                               StringIntMap *results);
-  int GetOpenShareList(const std::string& my_public_id, std::vector<std::string> *share_names);
+                               StringIntMap* results);
+  int GetOpenShareList(const std::string& my_public_id, std::vector<std::string>* share_names);
   int GetOpenShareMembers(const std::string& my_public_id,
                           const std::string& share_name,
-                          StringIntMap *share_members);
+                          StringIntMap* share_members);
   int AcceptOpenShareInvitation(const std::string& my_public_id,
                                 const std::string& contact_public_id,
                                 const std::string& share_id,
-                                std::string *share_name);
+                                std::string* share_name);
   int RejectOpenShareInvitation(const std::string& my_public_id, const std::string& share_id);
   int LeaveOpenShare(const std::string& my_public_id, const std::string& share_name);
 

@@ -64,17 +64,17 @@ class UserCredentials {
                   boost::asio::io_service& service);
 
   ~UserCredentials();
-  void Init(const fs::path &chunk_store_dir);
+  void Init(const fs::path& chunk_store_dir);
 
   // User credential operations
-  int LogIn(const std::string &keyword, const std::string &pin, const std::string &password);
-  int CreateUser(const std::string &keyword, const std::string &pin, const std::string &password);
+  int LogIn(const std::string& keyword, const std::string& pin, const std::string& password);
+  int CreateUser(const std::string& keyword, const std::string& pin, const std::string& password);
   int Logout();
   int SaveSession();
 
-  int ChangeKeyword(const std::string &new_keyword);
-  int ChangePin(const std::string &new_pin);
-  int ChangePassword(const std::string &new_password);
+  int ChangeKeyword(const std::string& new_keyword);
+  int ChangePin(const std::string& new_pin);
+  int ChangePassword(const std::string& new_password);
 
   int DeleteUserCredentials();
 

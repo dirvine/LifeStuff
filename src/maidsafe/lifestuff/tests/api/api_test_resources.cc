@@ -29,10 +29,10 @@ namespace testresources {
 
 void ChatSlot(const std::string&,
               const std::string&,
-              const std::string &signal_message,
+              const std::string& signal_message,
               const std::string&,
-              std::string *slot_message,
-              volatile bool *done) {
+              std::string* slot_message,
+              volatile bool* done) {
   if (slot_message)
     *slot_message = signal_message;
   *done = true;
@@ -40,12 +40,12 @@ void ChatSlot(const std::string&,
 
 void FileTransferSlot(const std::string&,
                       const std::string&,
-                      const std::string &signal_file_name,
-                      const std::string &signal_file_id,
+                      const std::string& signal_file_name,
+                      const std::string& signal_file_id,
                       const std::string&,
-                      std::string *slot_file_name,
-                      std::string *slot_file_id,
-                      volatile bool *done) {
+                      std::string* slot_file_name,
+                      std::string* slot_file_id,
+                      volatile bool* done) {
   if (slot_file_name)
     *slot_file_name = signal_file_name;
   if (slot_file_id)
@@ -55,13 +55,13 @@ void FileTransferSlot(const std::string&,
 
 void MultipleFileTransferSlot(const std::string&,
                               const std::string&,
-                              const std::string &signal_file_name,
-                              const std::string &signal_file_id,
+                              const std::string& signal_file_name,
+                              const std::string& signal_file_id,
                               const std::string&,
-                              std::vector<std::string> *ids,
-                              std::vector<std::string> *names,
-                              size_t *total_files,
-                              volatile bool *done) {
+                              std::vector<std::string>* ids,
+                              std::vector<std::string>* names,
+                              size_t* total_files,
+                              volatile bool* done) {
   ids->push_back(signal_file_id);
   names->push_back(signal_file_name);
   if (ids->size() == *total_files)
@@ -72,7 +72,7 @@ void NewContactSlot(const std::string&,
                     const std::string&,
                     const std::string& message,
                     const std::string&,
-                    volatile bool *done,
+                    volatile bool* done,
                     std::string* contact_request_message) {
   *done = true;
   *contact_request_message = message;
@@ -81,14 +81,14 @@ void NewContactSlot(const std::string&,
 void ContactConfirmationSlot(const std::string&,
                              const std::string&,
                              const std::string&,
-                             volatile bool *done) {
+                             volatile bool* done) {
   *done = true;
 }
 
 void ContactProfilePictureSlot(const std::string&,
                                const std::string&,
                                const std::string&,
-                               volatile bool *done) {
+                               volatile bool* done) {
   *done = true;
 }
 
@@ -96,16 +96,16 @@ void ContactPresenceSlot(const std::string&,
                          const std::string&,
                          const std::string&,
                          ContactPresence,
-                         volatile bool *done) {
+                         volatile bool* done) {
   *done = true;
 }
 
 void ContactDeletionSlot(const std::string&,
                          const std::string&,
-                         const std::string &signal_message,
+                         const std::string& signal_message,
                          const std::string&,
-                         std::string *slot_message,
-                         volatile bool *done) {
+                         std::string* slot_message,
+                         volatile bool* done) {
   if (slot_message)
     *slot_message = signal_message;
   *done = true;
@@ -113,14 +113,14 @@ void ContactDeletionSlot(const std::string&,
 
 void PrivateShareInvitationSlot(const std::string&,
                                 const std::string&,
-                                const std::string &signal_share_name,
-                                const std::string &signal_share_id,
+                                const std::string& signal_share_name,
+                                const std::string& signal_share_id,
                                 int access_level,
                                 const std::string&,
-                                std::string *slot_share_name,
-                                std::string *slot_share_id,
-                                int *slot_access_level,
-                                volatile bool *done) {
+                                std::string* slot_share_name,
+                                std::string* slot_share_id,
+                                int* slot_access_level,
+                                volatile bool* done) {
   if (slot_share_name)
     *slot_share_name = signal_share_name;
   if (slot_share_id)
@@ -131,12 +131,12 @@ void PrivateShareInvitationSlot(const std::string&,
 }
 
 void PrivateShareDeletionSlot(const std::string&,
-                              const std::string &signal_share_name,
+                              const std::string& signal_share_name,
                               const std::string&,
                               const std::string&,
                               const std::string&,
-                              std::string *slot_share_name,
-                              volatile bool *done) {
+                              std::string* slot_share_name,
+                              volatile bool* done) {
   if (slot_share_name)
     *slot_share_name = signal_share_name;
   *done = true;
@@ -149,7 +149,7 @@ void PrivateMemberAccessChangeSlot(const std::string&,
                                    int signal_member_access,
                                    const std::string& /*slot_share_name*/,
                                    int* slot_member_access,
-                                   volatile bool *done) {
+                                   volatile bool* done) {
   if (slot_member_access)
     *slot_member_access = signal_member_access;
   *done = true;
@@ -160,8 +160,8 @@ void OpenShareInvitationSlot(const std::string&,
                              const std::string&,
                              const std::string& signal_share_id,
                              const std::string&,
-                             std::string *slot_share_id,
-                             volatile bool *done) {
+                             std::string* slot_share_id,
+                             volatile bool* done) {
   if (slot_share_id)
     *slot_share_id = signal_share_id;
   *done = true;
@@ -169,9 +169,9 @@ void OpenShareInvitationSlot(const std::string&,
 
 void ShareRenameSlot(const std::string& old_share_name,
                      const std::string& new_share_name,
-                     std::string *slot_old_share_name,
-                     std::string *slot_new_share_name,
-                     volatile bool *done) {
+                     std::string* slot_old_share_name,
+                     std::string* slot_new_share_name,
+                     volatile bool* done) {
   if (slot_old_share_name)
     *slot_old_share_name = old_share_name;
   if (slot_new_share_name)
@@ -185,8 +185,8 @@ void ShareChangedSlot(const std::string& share_name,
                       const fs::path& old_path,
                       const fs::path& new_path,
                       const int& op_type,
-                      boost::mutex *mutex,
-                      ShareChangeLogBook *share_changes) {
+                      boost::mutex* mutex,
+                      ShareChangeLogBook* share_changes) {
   if (mutex && share_changes) {
     boost::mutex::scoped_lock lock(*mutex);
     share_changes->push_back(ShareChangeLog(share_name,
@@ -219,10 +219,10 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                  const std::string& password2,
                                  const std::string& public_id2,
                                  bool several_files,
-                                 std::vector<std::string> *ids,
-                                 std::vector<std::string> *names,
-                                 size_t *total_files,
-                                 boost::mutex *mutex) {
+                                 std::vector<std::string>* ids,
+                                 std::vector<std::string>* names,
+                                 size_t* total_files,
+                                 boost::mutex* mutex) {
   FileTransferFunction ftf =
       [&] (const std::string& own_public_id,
            const std::string& contact_public_id,

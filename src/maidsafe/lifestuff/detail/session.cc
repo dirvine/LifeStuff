@@ -74,7 +74,7 @@ void Session::Reset() {
 
 passport::Passport& Session::passport() { return passport_; }
 
-int Session::AddPublicId(const std::string &public_id) {
+int Session::AddPublicId(const std::string& public_id) {
   {
     boost::mutex::scoped_lock arran_coire_fhionn_lochan(public_id_details_mutex_);
     auto result(public_id_details_.insert(std::make_pair(public_id, PublicIdDetails())));
@@ -92,7 +92,7 @@ int Session::AddPublicId(const std::string &public_id) {
   return kSuccess;
 }
 
-int Session::DeletePublicId(const std::string &public_id) {
+int Session::DeletePublicId(const std::string& public_id) {
   {
     boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
     user_details_.changed = true;
@@ -102,12 +102,12 @@ int Session::DeletePublicId(const std::string &public_id) {
   return public_id_details_.erase(public_id) == size_t(1) ? kSuccess : kPublicIdNotFoundFailure;
 }
 
-bool Session::OwnPublicId(const std::string &public_id) {
+bool Session::OwnPublicId(const std::string& public_id) {
   boost::mutex::scoped_lock arran_coire_fhionn_lochan(public_id_details_mutex_);
   return public_id_details_.find(public_id) != public_id_details_.end();
 }
 
-const ContactsHandlerPtr Session::contacts_handler(const std::string &public_id) {
+const ContactsHandlerPtr Session::contacts_handler(const std::string& public_id) {
   boost::mutex::scoped_lock arran_coire_fhionn_lochan(public_id_details_mutex_);
   auto it(public_id_details_.find(public_id));
   if (it == public_id_details_.end()) {
@@ -118,7 +118,7 @@ const ContactsHandlerPtr Session::contacts_handler(const std::string &public_id)
   return (*it).second.contacts_handler;
 }
 
-const ShareInformationDetail Session::share_information(const std::string &public_id) {
+const ShareInformationDetail Session::share_information(const std::string& public_id) {
   ShareInformationDetail share_information_detail;
   {
     boost::mutex::scoped_lock arran_coire_fhionn_lochan(public_id_details_mutex_);
@@ -135,7 +135,7 @@ const ShareInformationDetail Session::share_information(const std::string &publi
   return share_information_detail;
 }
 
-const ProfilePictureDetail Session::profile_picture_data_map(const std::string &public_id) {
+const ProfilePictureDetail Session::profile_picture_data_map(const std::string& public_id) {
   ProfilePictureDetail profile_picture_detail;
   {
     boost::mutex::scoped_lock arran_coire_fhionn_lochan(public_id_details_mutex_);
@@ -210,17 +210,17 @@ void Session::set_def_con_level(DefConLevels defconlevel) {
   user_details_.defconlevel = defconlevel;
 }
 
-void Session::set_keyword(const std::string &keyword) {
+void Session::set_keyword(const std::string& keyword) {
   boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
   user_details_.keyword = keyword;
 }
 
-void Session::set_pin(const std::string &pin) {
+void Session::set_pin(const std::string& pin) {
   boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
   user_details_.pin = pin;
 }
 
-void Session::set_password(const std::string &password) {
+void Session::set_password(const std::string& password) {
   boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
   user_details_.password = password;
 }
@@ -243,7 +243,7 @@ void Session::clear_session_name() {
   user_details_.session_name.clear();
 }
 
-void Session::set_unique_user_id(const std::string &unique_user_id) {
+void Session::set_unique_user_id(const std::string& unique_user_id) {
   if (unique_user_id.empty())
     LOG(kWarning) << "Passed empty unique user ID.";
 
@@ -251,7 +251,7 @@ void Session::set_unique_user_id(const std::string &unique_user_id) {
   user_details_.unique_user_id = unique_user_id;
 }
 
-void Session::set_root_parent_id(const std::string &root_parent_id) {
+void Session::set_root_parent_id(const std::string& root_parent_id) {
   if (root_parent_id.empty())
     LOG(kWarning) << "Passed empty root parent ID.";
 
@@ -259,7 +259,7 @@ void Session::set_root_parent_id(const std::string &root_parent_id) {
   user_details_.root_parent_id = root_parent_id;
 }
 
-void Session::set_max_space(const int64_t &max_space) {
+void Session::set_max_space(const int64_t& max_space) {
   if (max_space == 0)
     LOG(kWarning) << "Passed zero maximum space.";
 
@@ -267,7 +267,7 @@ void Session::set_max_space(const int64_t &max_space) {
   user_details_.max_space = max_space;
 }
 
-void Session::set_used_space(const int64_t &used_space) {
+void Session::set_used_space(const int64_t& used_space) {
   if (used_space > user_details_.max_space)
     LOG(kWarning) << "Passed used space greater than maximum.";
 
@@ -275,7 +275,7 @@ void Session::set_used_space(const int64_t &used_space) {
   user_details_.used_space = used_space;
 }
 
-void Session::set_serialised_data_atlas(const std::string &serialised_data_atlas) {
+void Session::set_serialised_data_atlas(const std::string& serialised_data_atlas) {
   boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
   user_details_.serialised_data_atlas = serialised_data_atlas;
 }
@@ -285,7 +285,7 @@ void Session::set_changed(bool state) {
   user_details_.changed = state;
 }
 
-int Session::ParseDataAtlas(const std::string &serialised_data_atlas) {
+int Session::ParseDataAtlas(const std::string& serialised_data_atlas) {
   DataAtlas data_atlas;
   if (serialised_data_atlas.empty()) {
     LOG(kError) << "TMID brought is empty.";
@@ -343,10 +343,10 @@ int Session::ParseDataAtlas(const std::string &serialised_data_atlas) {
   return kSuccess;
 }
 
-int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
+int Session::SerialiseDataAtlas(std::string* serialised_data_atlas) {
   BOOST_ASSERT(serialised_data_atlas);
   DataAtlas data_atlas;
-  DriveData *drive_data(data_atlas.mutable_drive_data());
+  DriveData* drive_data(data_atlas.mutable_drive_data());
   drive_data->set_unique_user_id(unique_user_id());
   drive_data->set_root_parent_id(root_parent_id());
   drive_data->set_max_space(max_space());
@@ -361,12 +361,12 @@ int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
     return -1;
   }
 
-  PassportData *passport_data(data_atlas.mutable_passport_data());
+  PassportData* passport_data(data_atlas.mutable_passport_data());
   passport_data->set_serialised_keyring(serialised_keyring);
 
   std::vector<Contact> contacts;
   for (auto it(public_id_details_.begin()); it != public_id_details_.end(); ++it) {
-    PublicIdentity *pub_id(data_atlas.add_public_ids());
+    PublicIdentity* pub_id(data_atlas.add_public_ids());
     pub_id->set_public_id((*it).first);
     pub_id->set_profile_picture_data_map(*(*it).second.profile_picture_data_map);
     (*it).second.contacts_handler->OrderedContacts(&contacts, kAlphabetical, kRequestSent |
@@ -374,7 +374,7 @@ int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
                                                                              kConfirmed |
                                                                              kBlocked);
     for (size_t n(0); n < contacts.size(); ++n) {
-      PublicContact *pc(pub_id->add_contacts());
+      PublicContact* pc(pub_id->add_contacts());
       pc->set_public_id(contacts[n].public_id);
       pc->set_mpid_name(contacts[n].mpid_name);
       pc->set_inbox_name(contacts[n].inbox_name);
@@ -392,7 +392,7 @@ int Session::SerialiseDataAtlas(std::string *serialised_data_atlas) {
 
     ShareInformationPtr share_information((*it).second.share_information);
     for (auto it(share_information->begin()); it != share_information->end(); ++it) {
-      ShareInformationContainer *sic(pub_id->add_shares());
+      ShareInformationContainer* sic(pub_id->add_shares());
       sic->set_share_name(it->first);
       sic->set_share_type(it->second.share_type);
     }

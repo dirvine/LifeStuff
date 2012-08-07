@@ -47,7 +47,7 @@ namespace lifestuff {
 
 namespace {
 
-std::string AppendableByAllType(const std::string &mmid) {
+std::string AppendableByAllType(const std::string& mmid) {
   return mmid + std::string(1, pca::kAppendableByAll);
 }
 
@@ -55,7 +55,7 @@ std::string AppendableByAllType(const std::string &mmid) {
 
 MessageHandler::MessageHandler(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
                                Session& session,
-                               boost::asio::io_service &asio_service)
+                               boost::asio::io_service& asio_service)
     : remote_chunk_store_(remote_chunk_store),
       session_(session),
       passport_(session_.passport()),
@@ -131,7 +131,7 @@ void MessageHandler::StopCheckingForNewMessages() {
   get_new_messages_timer_.cancel();
 }
 
-int MessageHandler::Send(const InboxItem &inbox_item) {
+int MessageHandler::Send(const InboxItem& inbox_item) {
   Message message;
   if (!InboxToProtobuf(inbox_item, &message)) {
     LOG(kError) << "Invalid message. Won't send. Good day. I said: 'Good day!'";
@@ -210,7 +210,7 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
       return kPublicIdTimeout;
     }
   }
-  catch(const std::exception &e) {
+  catch(const std::exception& e) {
     LOG(kError) << "Failed to store packet: " << e.what();
     return kMessageHandlerException;
   }
@@ -222,9 +222,9 @@ int MessageHandler::Send(const InboxItem &inbox_item) {
   return kSuccess;
 }
 
-int MessageHandler::SendPresenceMessage(const std::string &own_public_id,
-                                        const std::string &recipient_public_id,
-                                        const ContactPresence &presence) {
+int MessageHandler::SendPresenceMessage(const std::string& own_public_id,
+                                        const std::string& recipient_public_id,
+                                        const ContactPresence& presence) {
   InboxItem inbox_item(kContactPresence);
   inbox_item.sender_public_id  = own_public_id;
   inbox_item.receiver_public_id = recipient_public_id;
@@ -251,14 +251,14 @@ int MessageHandler::SendPresenceMessage(const std::string &own_public_id,
   return result;
 }
 
-void MessageHandler::InformConfirmedContactOnline(const std::string &own_public_id,
-                                                  const std::string &recipient_public_id) {
+void MessageHandler::InformConfirmedContactOnline(const std::string& own_public_id,
+                                                  const std::string& recipient_public_id) {
   asio_service_.post([=] {
                        return SendPresenceMessage(own_public_id, recipient_public_id, kOnline);
                      });
 }
 
-void MessageHandler::SendEveryone(const InboxItem &message) {
+void MessageHandler::SendEveryone(const InboxItem& message) {
   std::vector<Contact> contacts;
   const ContactsHandlerPtr contacts_handler(session_.contacts_handler(message.sender_public_id));
   if (!contacts_handler) {
@@ -274,8 +274,8 @@ void MessageHandler::SendEveryone(const InboxItem &message) {
   }
 }
 
-void MessageHandler::GetNewMessages(const bptime::seconds &interval,
-                                    const boost::system::error_code &error_code) {
+void MessageHandler::GetNewMessages(const bptime::seconds& interval,
+                                    const boost::system::error_code& error_code) {
   if (error_code) {
     if (error_code != ba::error::operation_aborted) {
       LOG(kWarning) << "Refresh timer error: " << error_code.message();
@@ -355,7 +355,7 @@ void MessageHandler::ProcessRetrieved(const std::string& public_id,
   }
 }
 
-void MessageHandler::ProcessFileTransfer(const InboxItem &inbox_item) {
+void MessageHandler::ProcessFileTransfer(const InboxItem& inbox_item) {
   if (inbox_item.content.size() != 2U ||
       inbox_item.content[0].empty() ||
       inbox_item.content[1].empty()) {
@@ -388,7 +388,7 @@ void MessageHandler::ProcessFileTransfer(const InboxItem &inbox_item) {
                         inbox_item.timestamp);
 }
 
-void MessageHandler::ProcessContactPresence(const InboxItem &presence_message) {
+void MessageHandler::ProcessContactPresence(const InboxItem& presence_message) {
   if (presence_message.content.size() != 1U) {
     // Drop silently
     LOG(kWarning) << presence_message.sender_public_id
@@ -425,7 +425,7 @@ void MessageHandler::ProcessContactPresence(const InboxItem &presence_message) {
   }
 }
 
-void MessageHandler::ProcessContactProfilePicture(const InboxItem &profile_picture_message) {
+void MessageHandler::ProcessContactProfilePicture(const InboxItem& profile_picture_message) {
   if (profile_picture_message.content.size() != 1U || profile_picture_message.content[0].empty()) {
     // Drop silently
     LOG(kError) << profile_picture_message.sender_public_id
@@ -460,7 +460,7 @@ void MessageHandler::ProcessContactProfilePicture(const InboxItem &profile_pictu
   contact_profile_picture_signal_(receiver, sender, profile_picture_message.timestamp);
 }
 
-void MessageHandler::ProcessShareInvitationResponse(const InboxItem &inbox_item) {
+void MessageHandler::ProcessShareInvitationResponse(const InboxItem& inbox_item) {
   if (inbox_item.content.empty() || inbox_item.content[kShareId].empty()) {
     LOG(kError) << "No share ID.";
     return;
@@ -472,7 +472,7 @@ void MessageHandler::ProcessShareInvitationResponse(const InboxItem &inbox_item)
                                     inbox_item.timestamp);
 }
 
-void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
+void MessageHandler::ProcessPrivateShare(const InboxItem& inbox_item) {
   if (inbox_item.content.empty() || inbox_item.content[kShareId].empty()) {
     LOG(kError) << "No share ID.";
     return;
@@ -571,7 +571,7 @@ void MessageHandler::ProcessPrivateShare(const InboxItem &inbox_item) {
   }
 }
 
-void MessageHandler::ProcessOpenShareInvitation(const InboxItem &inbox_item) {
+void MessageHandler::ProcessOpenShareInvitation(const InboxItem& inbox_item) {
   BOOST_ASSERT(inbox_item.item_type == kOpenShareInvitation);
   Message message;
   InboxToProtobuf(inbox_item, &message);
@@ -604,7 +604,7 @@ void MessageHandler::RetrieveMessagesForAllIds() {
   }
 }
 
-bool MessageHandler::ProtobufToInbox(const Message &message, InboxItem *inbox_item) const {
+bool MessageHandler::ProtobufToInbox(const Message& message, InboxItem* inbox_item) const {
   if (!message.IsInitialized()) {
     LOG(kWarning) << "Message not initialised.";
     return false;
@@ -630,7 +630,7 @@ bool MessageHandler::ProtobufToInbox(const Message &message, InboxItem *inbox_it
   return true;
 }
 
-bool MessageHandler::InboxToProtobuf(const InboxItem &inbox_item, Message *message) const {
+bool MessageHandler::InboxToProtobuf(const InboxItem& inbox_item, Message* message) const {
   if (!message)
     return false;
 
@@ -644,7 +644,7 @@ bool MessageHandler::InboxToProtobuf(const InboxItem &inbox_item, Message *messa
   return true;
 }
 
-bool MessageHandler::MessagePreviouslyReceived(const std::string &message) {
+bool MessageHandler::MessagePreviouslyReceived(const std::string& message) {
   if (received_messages_.find(message) == received_messages_.end()) {
     received_messages_.insert(std::make_pair(message,
                                              GetDurationSinceEpoch().total_milliseconds()));

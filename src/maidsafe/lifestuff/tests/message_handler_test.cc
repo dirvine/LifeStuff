@@ -88,11 +88,11 @@ class MessageHandlerTest : public testing::Test {
         invitations_(0) {}
 
   void NewContactSlot(const std::string&,
-                      const std::string &other_public_username,
+                      const std::string& other_public_username,
                       const std::string& message,
-                      boost::mutex *mutex,
-                      boost::condition_variable *cond_var,
-                      bool *done) {
+                      boost::mutex* mutex,
+                      boost::condition_variable* cond_var,
+                      bool* done) {
     boost::mutex::scoped_lock lock(*mutex);
     received_public_username_ = other_public_username;
     received_message_ = message;
@@ -100,11 +100,11 @@ class MessageHandlerTest : public testing::Test {
     cond_var->notify_one();
   }
 
-  void NewContactCountSlot(const std::string &/*own_public_username*/,
-                           const std::string &other_public_username,
-                           boost::mutex *mutex,
-                           boost::condition_variable *cond_var,
-                           bool *done) {
+  void NewContactCountSlot(const std::string& /*own_public_username*/,
+                           const std::string& other_public_username,
+                           boost::mutex* mutex,
+                           boost::condition_variable* cond_var,
+                           bool* done) {
     boost::mutex::scoped_lock lock(*mutex);
     received_public_username_ = other_public_username;
     ++invitations_;
@@ -114,14 +114,14 @@ class MessageHandlerTest : public testing::Test {
     }
   }
 
-  void NewMessageSlot(const std::string &own_public_username,
-                      const std::string &other_public_username,
-                      const std::string &message,
-                      const std::string &timestamp,
-                      InboxItem *slot_message,
-                      boost::mutex *mutex,
-                      boost::condition_variable *cond_var,
-                      bool *done) {
+  void NewMessageSlot(const std::string& own_public_username,
+                      const std::string& other_public_username,
+                      const std::string& message,
+                      const std::string& timestamp,
+                      InboxItem* slot_message,
+                      boost::mutex* mutex,
+                      boost::condition_variable* cond_var,
+                      bool* done) {
     boost::mutex::scoped_lock lock(*mutex);
     slot_message->receiver_public_id = own_public_username;
     slot_message->sender_public_id = other_public_username;
@@ -132,15 +132,15 @@ class MessageHandlerTest : public testing::Test {
     cond_var->notify_one();
   }
 
-  void SeveralMessagesSlot(const std::string &own_public_username,
-                           const std::string &other_public_username,
-                           const std::string &message,
-                           const std::string &timestamp,
-                           std::vector<InboxItem> *messages,
-                           boost::mutex *mutex,
-                           boost::condition_variable *cond_var,
-                           size_t *count,
-                           bool *done) {
+  void SeveralMessagesSlot(const std::string& own_public_username,
+                           const std::string& other_public_username,
+                           const std::string& message,
+                           const std::string& timestamp,
+                           std::vector<InboxItem>* messages,
+                           boost::mutex* mutex,
+                           boost::condition_variable* cond_var,
+                           size_t* count,
+                           bool* done) {
     boost::mutex::scoped_lock lock(*mutex);
     InboxItem slot_message;
     slot_message.receiver_public_id = own_public_username;
@@ -207,7 +207,7 @@ class MessageHandlerTest : public testing::Test {
     remote_chunk_store3_->WaitForCompletion();
   }
 
-  bool MessagesEqual(const InboxItem &left, const InboxItem &right) const {
+  bool MessagesEqual(const InboxItem& left, const InboxItem& right) const {
     if (left.item_type != right.item_type) {
       LOG(kError) << "Different type.";
       return false;
@@ -233,7 +233,7 @@ class MessageHandlerTest : public testing::Test {
     return true;
   }
 
-  InboxItem CreateMessage(const std::string &sender, const std::string &receiver) {
+  InboxItem CreateMessage(const std::string& sender, const std::string& receiver) {
     InboxItem sent;
     sent.sender_public_id = sender;
     sent.receiver_public_id = receiver;

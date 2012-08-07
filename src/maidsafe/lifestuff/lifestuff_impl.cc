@@ -70,7 +70,7 @@ LifeStuffImpl::LifeStuffImpl()
 
 LifeStuffImpl::~LifeStuffImpl() {}
 
-int LifeStuffImpl::Initialise(const boost::filesystem::path &base_directory) {
+int LifeStuffImpl::Initialise(const boost::filesystem::path& base_directory) {
   if (state_ != kZeroth) {
     LOG(kError) << "Make sure that object is in the original Zeroth state. Asimov rules.";
     return kGeneralError;
@@ -118,19 +118,19 @@ int LifeStuffImpl::Initialise(const boost::filesystem::path &base_directory) {
 }
 
 int LifeStuffImpl::ConnectToSignals(
-    const ChatFunction &chat_slot,
-    const FileTransferFunction &file_slot,
-    const NewContactFunction &new_contact_slot,
-    const ContactConfirmationFunction &confirmed_contact_slot,
-    const ContactProfilePictureFunction &profile_picture_slot,
-    const ContactPresenceFunction &contact_presence_slot,
-    const ContactDeletionFunction &contact_deletion_function,
-    const PrivateShareInvitationFunction &private_share_invitation_function,
-    const PrivateShareDeletionFunction &private_share_deletion_function,
-    const PrivateMemberAccessChangeFunction &private_access_change_function,
-    const OpenShareInvitationFunction &open_share_invitation_function,
-    const ShareRenamedFunction &share_renamed_function,
-    const ShareChangedFunction &share_changed_function) {
+    const ChatFunction& chat_slot,
+    const FileTransferFunction& file_slot,
+    const NewContactFunction& new_contact_slot,
+    const ContactConfirmationFunction& confirmed_contact_slot,
+    const ContactProfilePictureFunction& profile_picture_slot,
+    const ContactPresenceFunction& contact_presence_slot,
+    const ContactDeletionFunction& contact_deletion_function,
+    const PrivateShareInvitationFunction& private_share_invitation_function,
+    const PrivateShareDeletionFunction& private_share_deletion_function,
+    const PrivateMemberAccessChangeFunction& private_access_change_function,
+    const OpenShareInvitationFunction& open_share_invitation_function,
+    const ShareRenamedFunction& share_renamed_function,
+    const ShareChangedFunction& share_changed_function) {
   if (state_ != kInitialised) {
     LOG(kError) << "Make sure that object is initialised";
     return kGeneralError;
@@ -251,9 +251,9 @@ int LifeStuffImpl::Finalise() {
 }
 
 /// Credential operations
-int LifeStuffImpl::CreateUser(const std::string &keyword,
-                              const std::string &pin,
-                              const std::string &password) {
+int LifeStuffImpl::CreateUser(const std::string& keyword,
+                              const std::string& pin,
+                              const std::string& password) {
   if (state_ != kConnected) {
     LOG(kError) << "Make sure that object is initialised and connected";
     return kGeneralError;
@@ -313,7 +313,7 @@ int LifeStuffImpl::CreateUser(const std::string &keyword,
   return kSuccess;
 }
 
-int LifeStuffImpl::CreatePublicId(const std::string &public_id) {
+int LifeStuffImpl::CreatePublicId(const std::string& public_id) {
   if (state_ != kLoggedIn) {
     LOG(kError) << "Wrong state to create a public ID.";
     return kGeneralError;
@@ -340,9 +340,9 @@ int LifeStuffImpl::CreatePublicId(const std::string &public_id) {
   return kSuccess;
 }
 
-int LifeStuffImpl::LogIn(const std::string &keyword,
-                         const std::string &pin,
-                         const std::string &password) {
+int LifeStuffImpl::LogIn(const std::string& keyword,
+                         const std::string& pin,
+                         const std::string& password) {
   session_.Reset();
   if (state_ != kConnected) {
     LOG(kError) << "Make sure that object is initialised and connected";
@@ -446,7 +446,7 @@ int LifeStuffImpl::LogOut() {
   return kSuccess;
 }
 
-int LifeStuffImpl::CheckPassword(const std::string &password) {
+int LifeStuffImpl::CheckPassword(const std::string& password) {
   if (state_ != kLoggedIn) {
     LOG(kError) << "Should be logged in to log out.";
     return kGeneralError;
@@ -455,7 +455,7 @@ int LifeStuffImpl::CheckPassword(const std::string &password) {
   return session_.password() == password ? kSuccess : kGeneralError;
 }
 
-int LifeStuffImpl::ChangeKeyword(const std::string &new_keyword, const std::string &password) {
+int LifeStuffImpl::ChangeKeyword(const std::string& new_keyword, const std::string& password) {
   if (state_ != kLoggedIn) {
     LOG(kError) << "Should be logged in to log out.";
     return kGeneralError;
@@ -475,7 +475,7 @@ int LifeStuffImpl::ChangeKeyword(const std::string &new_keyword, const std::stri
   return user_credentials_->ChangeKeyword(new_keyword);
 }
 
-int LifeStuffImpl::ChangePin(const std::string &new_pin, const std::string &password) {
+int LifeStuffImpl::ChangePin(const std::string& new_pin, const std::string& password) {
   if (state_ != kLoggedIn) {
     LOG(kError) << "Should be logged in to log out.";
     return kGeneralError;
@@ -495,8 +495,8 @@ int LifeStuffImpl::ChangePin(const std::string &new_pin, const std::string &pass
   return user_credentials_->ChangePin(new_pin);
 }
 
-int LifeStuffImpl::ChangePassword(const std::string &new_password,
-                                  const std::string &current_password) {
+int LifeStuffImpl::ChangePassword(const std::string& new_password,
+                                  const std::string& current_password) {
   if (state_ != kLoggedIn) {
     LOG(kError) << "Should be logged in to log out.";
     return kGeneralError;
@@ -530,7 +530,7 @@ int LifeStuffImpl::LeaveLifeStuff() {
   std::vector<std::string> public_ids(session_.PublicIdentities());
   std::for_each(public_ids.begin(),
                 public_ids.end(),
-                [&result, this] (const std::string &public_id) {
+                [&result, this] (const std::string& public_id) {
                   const ShareInformationDetail share_info(session_.share_information(public_id));
                   if (share_info.first) {
                     boost::mutex::scoped_lock loch(*share_info.first);
@@ -555,7 +555,7 @@ int LifeStuffImpl::LeaveLifeStuff() {
   // Delete all public IDs
   std::for_each(public_ids.begin(),
                 public_ids.end(),
-                [&result, this] (const std::string &public_id) {
+                [&result, this] (const std::string& public_id) {
                   result += public_id_->DeletePublicId(public_id);
                 });
 
@@ -582,8 +582,8 @@ int LifeStuffImpl::AddContact(const std::string& my_public_id,
   return public_id_->AddContact(my_public_id, contact_public_id, message);
 }
 
-int LifeStuffImpl::ConfirmContact(const std::string &my_public_id,
-                                  const std::string &contact_public_id) {
+int LifeStuffImpl::ConfirmContact(const std::string& my_public_id,
+                                  const std::string& contact_public_id) {
   int result(PreContactChecks(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in ConfirmContact.";
@@ -599,8 +599,8 @@ int LifeStuffImpl::ConfirmContact(const std::string &my_public_id,
   return message_handler_->SendPresenceMessage(my_public_id, contact_public_id, kOnline);
 }
 
-int LifeStuffImpl::DeclineContact(const std::string &my_public_id,
-                                  const std::string &contact_public_id) {
+int LifeStuffImpl::DeclineContact(const std::string& my_public_id,
+                                  const std::string& contact_public_id) {
   int result(PreContactChecks(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in DeclineContact.";
@@ -610,9 +610,9 @@ int LifeStuffImpl::DeclineContact(const std::string &my_public_id,
   return public_id_->RejectContact(my_public_id, contact_public_id);
 }
 
-int LifeStuffImpl::RemoveContact(const std::string &my_public_id,
-                                 const std::string &contact_public_id,
-                                 const std::string &removal_message) {
+int LifeStuffImpl::RemoveContact(const std::string& my_public_id,
+                                 const std::string& contact_public_id,
+                                 const std::string& removal_message) {
   int result(PreContactChecks(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in RemoveContact.";
@@ -642,8 +642,8 @@ int LifeStuffImpl::RemoveContact(const std::string &my_public_id,
   return result;
 }
 
-int LifeStuffImpl::ChangeProfilePicture(const std::string &my_public_id,
-                                        const std::string &profile_picture_contents) {
+int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
+                                        const std::string& profile_picture_contents) {
   LOG(kError) << "ChangeProfilePicture: " << profile_picture_contents.size();
   int result(PreContactChecks(my_public_id));
   if (result != kSuccess) {
@@ -692,7 +692,8 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string &my_public_id,
         return result;
       }
 
-      LOG(kError) << "Size of what will be tried to be reconstructed: " << profile_picture_contents.size();
+      LOG(kError) << "Size of what will be tried to be reconstructed: "
+                  << profile_picture_contents.size();
       LOG(kError) << "Size of reconstructed: " << reconstructed.size();
 //      reconstructed = user_storage_->ConstructFile(data_map);
       Sleep(bptime::milliseconds(500));
@@ -729,7 +730,7 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string &my_public_id,
   return kSuccess;
 }
 
-std::string LifeStuffImpl::GetOwnProfilePicture(const std::string &my_public_id) {
+std::string LifeStuffImpl::GetOwnProfilePicture(const std::string& my_public_id) {
   // Read contents, put them in a string, give them back. Should not be a file
   // over a certain size (kFileRecontructionLimit).
   int result(PreContactChecks(my_public_id));
@@ -745,11 +746,11 @@ std::string LifeStuffImpl::GetOwnProfilePicture(const std::string &my_public_id)
     return "";
   }
 
-  //{
-  //  boost::mutex::scoped_lock loch(*profile_picture_data_map.first);
-  //  if (*profile_picture_data_map.second == kBlankProfilePicture)
-  //    return "";
-  //}
+  // {
+  //   boost::mutex::scoped_lock loch(*profile_picture_data_map.first);
+  //   if (*profile_picture_data_map.second == kBlankProfilePicture)
+  //     return "";
+  // }
 
   fs::path profile_picture_path(mount_path() / std::string(my_public_id +
                                                            "_profile_picture" +
@@ -766,8 +767,8 @@ std::string LifeStuffImpl::GetOwnProfilePicture(const std::string &my_public_id)
   return profile_picture_contents;
 }
 
-std::string LifeStuffImpl::GetContactProfilePicture(const std::string &my_public_id,
-                                                    const std::string &contact_public_id) {
+std::string LifeStuffImpl::GetContactProfilePicture(const std::string& my_public_id,
+                                                    const std::string& contact_public_id) {
   int result(PreContactChecks(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in GetContactProfilePicture.";
@@ -799,7 +800,7 @@ std::string LifeStuffImpl::GetContactProfilePicture(const std::string &my_public
   return user_storage_->ConstructFile(contact.profile_picture_data_map);
 }
 
-ContactMap LifeStuffImpl::GetContacts(const std::string &my_public_id, uint16_t bitwise_status) {
+ContactMap LifeStuffImpl::GetContacts(const std::string& my_public_id, uint16_t bitwise_status) {
   int result(PreContactChecks(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in GetContacts.";
@@ -825,9 +826,9 @@ std::vector<std::string> LifeStuffImpl::PublicIdsList() const {
 }
 
 /// Messaging
-int LifeStuffImpl::SendChatMessage(const std::string &sender_public_id,
-                                   const std::string &receiver_public_id,
-                                   const std::string &message) {
+int LifeStuffImpl::SendChatMessage(const std::string& sender_public_id,
+                                   const std::string& receiver_public_id,
+                                   const std::string& message) {
   if (state_ != kLoggedIn) {
     LOG(kError) << "Wrong state: " << state_;
     return kGeneralError;
@@ -846,9 +847,9 @@ int LifeStuffImpl::SendChatMessage(const std::string &sender_public_id,
   return message_handler_->Send(inbox_item);
 }
 
-int LifeStuffImpl::SendFile(const std::string &sender_public_id,
-                            const std::string &receiver_public_id,
-                            const fs::path &absolute_path) {
+int LifeStuffImpl::SendFile(const std::string& sender_public_id,
+                            const std::string& receiver_public_id,
+                            const fs::path& absolute_path) {
   if (state_ != kLoggedIn) {
     LOG(kError) << "Wrong state: " << state_;
     return kGeneralError;
@@ -876,9 +877,9 @@ int LifeStuffImpl::SendFile(const std::string &sender_public_id,
   return kSuccess;
 }
 
-int LifeStuffImpl::AcceptSentFile(const std::string &identifier,
-                                  const fs::path &absolute_path,
-                                  std::string *file_name) {
+int LifeStuffImpl::AcceptSentFile(const std::string& identifier,
+                                  const fs::path& absolute_path,
+                                  std::string* file_name) {
   if (state_ != kLoggedIn) {
     LOG(kError) << "Wrong state: " << state_;
     return kGeneralError;
@@ -940,7 +941,7 @@ int LifeStuffImpl::AcceptSentFile(const std::string &identifier,
   return kSuccess;
 }
 
-int LifeStuffImpl::RejectSentFile(const std::string &identifier) {
+int LifeStuffImpl::RejectSentFile(const std::string& identifier) {
   if (state_ != kLoggedIn) {
     LOG(kError) << "Wrong state: " << state_;
     return kGeneralError;
@@ -951,7 +952,7 @@ int LifeStuffImpl::RejectSentFile(const std::string &identifier) {
 }
 
 /// Filesystem
-int LifeStuffImpl::ReadHiddenFile(const fs::path &absolute_path, std::string *content) const {
+int LifeStuffImpl::ReadHiddenFile(const fs::path& absolute_path, std::string* content) const {
   if (state_ != kLoggedIn) {
     LOG(kError) << "Wrong state: " << state_;
     return kGeneralError;
@@ -965,8 +966,8 @@ int LifeStuffImpl::ReadHiddenFile(const fs::path &absolute_path, std::string *co
   return user_storage_->ReadHiddenFile(absolute_path, content);
 }
 
-int LifeStuffImpl::WriteHiddenFile(const fs::path &absolute_path,
-                                   const std::string &content,
+int LifeStuffImpl::WriteHiddenFile(const fs::path& absolute_path,
+                                   const std::string& content,
                                    bool overwrite_existing) {
   if (state_ != kLoggedIn) {
     LOG(kError) << "Wrong state: " << state_;
@@ -976,7 +977,7 @@ int LifeStuffImpl::WriteHiddenFile(const fs::path &absolute_path,
   return user_storage_->WriteHiddenFile(absolute_path, content, overwrite_existing);
 }
 
-int LifeStuffImpl::DeleteHiddenFile(const fs::path &absolute_path) {
+int LifeStuffImpl::DeleteHiddenFile(const fs::path& absolute_path) {
   if (state_ != kLoggedIn) {
     LOG(kError) << "Wrong state: " << state_;
     return kGeneralError;
@@ -987,11 +988,11 @@ int LifeStuffImpl::DeleteHiddenFile(const fs::path &absolute_path) {
 
 /// Private Shares
 int LifeStuffImpl::CreatePrivateShareFromExistingDirectory(
-    const std::string &my_public_id,
-    const fs::path &directory_in_lifestuff_drive,
-    const StringIntMap &contacts,
-    std::string *share_name,
-    StringIntMap *results) {
+    const std::string& my_public_id,
+    const fs::path& directory_in_lifestuff_drive,
+    const StringIntMap& contacts,
+    std::string* share_name,
+    StringIntMap* results) {
   if (!share_name) {
     LOG(kError) << "Share name parameter must be valid.";
     return kGeneralError;
@@ -1045,10 +1046,10 @@ int LifeStuffImpl::CreatePrivateShareFromExistingDirectory(
   return result;
 }
 
-int LifeStuffImpl::CreateEmptyPrivateShare(const std::string &my_public_id,
-                                           const StringIntMap &contacts,
-                                           std::string *share_name,
-                                           StringIntMap *results) {
+int LifeStuffImpl::CreateEmptyPrivateShare(const std::string& my_public_id,
+                                           const StringIntMap& contacts,
+                                           std::string* share_name,
+                                           StringIntMap* results) {
   if (!share_name) {
     LOG(kError) << "Share name must be provided.";
     return kGeneralError;
@@ -1105,7 +1106,7 @@ int LifeStuffImpl::CreateEmptyPrivateShare(const std::string &my_public_id,
   return result;
 }
 
-int LifeStuffImpl::GetPrivateShareList(const std::string &my_public_id, StringIntMap *share_names) {
+int LifeStuffImpl::GetPrivateShareList(const std::string& my_public_id, StringIntMap* share_names) {
   if (!share_names) {
     LOG(kError) << "Share names parameter must be valid.";
     return kGeneralError;
@@ -1137,9 +1138,9 @@ int LifeStuffImpl::GetPrivateShareList(const std::string &my_public_id, StringIn
   return kSuccess;
 }
 
-int LifeStuffImpl::GetPrivateShareMembers(const std::string &my_public_id,
-                                          const std::string &share_name,
-                                          StringIntMap *share_members) {
+int LifeStuffImpl::GetPrivateShareMembers(const std::string& my_public_id,
+                                          const std::string& share_name,
+                                          StringIntMap* share_members) {
   if (!share_members) {
     LOG(kError) << "Share members parameter must be valid.";
     return kGeneralError;
@@ -1163,9 +1164,9 @@ int LifeStuffImpl::GetPrivateShareMembers(const std::string &my_public_id,
   return kSuccess;
 }
 
-int LifeStuffImpl::GetPrivateSharesIncludingMember(const std::string &my_public_id,
-                                                   const std::string &contact_public_id,
-                                                   std::vector<std::string> *share_names) {
+int LifeStuffImpl::GetPrivateSharesIncludingMember(const std::string& my_public_id,
+                                                   const std::string& contact_public_id,
+                                                   std::vector<std::string>* share_names) {
   if (!share_names) {
     LOG(kError) << "Share names parameter must be valid.";
     return kGeneralError;
@@ -1212,10 +1213,10 @@ int LifeStuffImpl::GetPrivateSharesIncludingMember(const std::string &my_public_
 }
 
 // The response shall come with a local share_name; if empty provided, it is a rejection
-void RespondInvitation(const std::string &send_from,
-                       const std::string &send_to,
-                       const std::string &share_id,
-                       const std::string &share_name,
+void RespondInvitation(const std::string& send_from,
+                       const std::string& send_to,
+                       const std::string& share_id,
+                       const std::string& share_name,
                        std::shared_ptr<MessageHandler> message_handler) {
   InboxItem message(kRespondToShareInvitation);
   message.sender_public_id = send_from;
@@ -1225,10 +1226,10 @@ void RespondInvitation(const std::string &send_from,
   message_handler->Send(message);
 }
 
-int LifeStuffImpl::AcceptPrivateShareInvitation(const std::string &my_public_id,
-                                                const std::string &contact_public_id,
-                                                const std::string &share_id,
-                                                std::string *share_name) {
+int LifeStuffImpl::AcceptPrivateShareInvitation(const std::string& my_public_id,
+                                                const std::string& contact_public_id,
+                                                const std::string& share_id,
+                                                std::string* share_name) {
   if (!share_name) {
     LOG(kError) << "Share name parameter must be valid.";
     return kGeneralError;
@@ -1306,8 +1307,8 @@ int LifeStuffImpl::AcceptPrivateShareInvitation(const std::string &my_public_id,
   return result;
 }
 
-int LifeStuffImpl::RejectPrivateShareInvitation(const std::string &my_public_id,
-                                                const std::string &share_id) {
+int LifeStuffImpl::RejectPrivateShareInvitation(const std::string& my_public_id,
+                                                const std::string& share_id) {
   int result(PreContactChecks(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in RejectPrivateShareInvitation.";
@@ -1337,10 +1338,10 @@ int LifeStuffImpl::RejectPrivateShareInvitation(const std::string &my_public_id,
   return user_storage_->DeleteHiddenFile(hidden_file);
 }
 
-int LifeStuffImpl::EditPrivateShareMembers(const std::string &my_public_id,
-                                           const StringIntMap &public_ids,
-                                           const std::string &share_name,
-                                           StringIntMap *results) {
+int LifeStuffImpl::EditPrivateShareMembers(const std::string& my_public_id,
+                                           const StringIntMap& public_ids,
+                                           const std::string& share_name,
+                                           StringIntMap* results) {
   if (!results) {
     LOG(kError) << "Results parameter must be valid.";
     return kGeneralError;
@@ -1430,8 +1431,8 @@ int LifeStuffImpl::EditPrivateShareMembers(const std::string &my_public_id,
   return kSuccess;
 }
 
-int LifeStuffImpl::DeletePrivateShare(const std::string &my_public_id,
-                                      const std::string &share_name,
+int LifeStuffImpl::DeletePrivateShare(const std::string& my_public_id,
+                                      const std::string& share_name,
                                       bool delete_data) {
   int result(PreContactChecks(my_public_id));
   if (result != kSuccess) {
@@ -1457,8 +1458,8 @@ int LifeStuffImpl::DeletePrivateShare(const std::string &my_public_id,
   return result;
 }
 
-int LifeStuffImpl::LeavePrivateShare(const std::string &my_public_id,
-                                     const std::string &share_name) {
+int LifeStuffImpl::LeavePrivateShare(const std::string& my_public_id,
+                                     const std::string& share_name) {
   int result(PreContactChecks(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in LeavePrivateShare.";
@@ -1483,11 +1484,11 @@ int LifeStuffImpl::LeavePrivateShare(const std::string &my_public_id,
   return result;
 }
 
-int LifeStuffImpl::CreateOpenShareFromExistingDirectory(const std::string &my_public_id,
-                                                        const fs::path &lifestuff_directory,
-                                                        const std::vector<std::string> &contacts,
-                                                        std::string *share_name,
-                                                        StringIntMap *results) {
+int LifeStuffImpl::CreateOpenShareFromExistingDirectory(const std::string& my_public_id,
+                                                        const fs::path& lifestuff_directory,
+                                                        const std::vector<std::string>& contacts,
+                                                        std::string* share_name,
+                                                        StringIntMap* results) {
   if (!share_name) {
     LOG(kError) << "Parameter share name must be valid.";
     return kGeneralError;
@@ -1554,10 +1555,10 @@ int LifeStuffImpl::CreateOpenShareFromExistingDirectory(const std::string &my_pu
   return kSuccess;
 }
 
-int LifeStuffImpl::CreateEmptyOpenShare(const std::string &my_public_id,
-                                        const std::vector<std::string> &contacts,
-                                        std::string *share_name,
-                                        StringIntMap *results) {
+int LifeStuffImpl::CreateEmptyOpenShare(const std::string& my_public_id,
+                                        const std::vector<std::string>& contacts,
+                                        std::string* share_name,
+                                        StringIntMap* results) {
   if (!share_name) {
     LOG(kError) << "Parameter share name must be valid.";
     return kGeneralError;
@@ -1612,10 +1613,10 @@ int LifeStuffImpl::CreateEmptyOpenShare(const std::string &my_public_id,
   return result;
 }
 
-int LifeStuffImpl::InviteMembersToOpenShare(const std::string &my_public_id,
-                                            const std::vector<std::string> &contacts,
-                                            const std::string &share_name,
-                                            StringIntMap *results) {
+int LifeStuffImpl::InviteMembersToOpenShare(const std::string& my_public_id,
+                                            const std::vector<std::string>& contacts,
+                                            const std::string& share_name,
+                                            StringIntMap* results) {
   StringIntMap liaisons;
   fs::path share(mount_path() / drive::kMsShareRoot / share_name);
   for (uint32_t i = 0; i != contacts.size(); ++i)
@@ -1623,8 +1624,8 @@ int LifeStuffImpl::InviteMembersToOpenShare(const std::string &my_public_id,
   return user_storage_->OpenShareInvitation(my_public_id, share, liaisons, results);
 }
 
-int LifeStuffImpl::GetOpenShareList(const std::string &my_public_id,
-                                    std::vector<std::string> *share_names) {
+int LifeStuffImpl::GetOpenShareList(const std::string& my_public_id,
+                                    std::vector<std::string>* share_names) {
   if (!share_names) {
     LOG(kError) << "Parameter share name must be valid.";
     return kGeneralError;
@@ -1649,9 +1650,9 @@ int LifeStuffImpl::GetOpenShareList(const std::string &my_public_id,
   return kSuccess;
 }
 
-int LifeStuffImpl::GetOpenShareMembers(const std::string &my_public_id,
-                                       const std::string &share_name,
-                                       StringIntMap *share_members) {
+int LifeStuffImpl::GetOpenShareMembers(const std::string& my_public_id,
+                                       const std::string& share_name,
+                                       StringIntMap* share_members) {
   if (!share_members) {
     LOG(kError) << "Parameter share name must be valid.";
     return kGeneralError;
@@ -1674,10 +1675,10 @@ int LifeStuffImpl::GetOpenShareMembers(const std::string &my_public_id,
   return kSuccess;
 }
 
-int LifeStuffImpl::AcceptOpenShareInvitation(const std::string &my_public_id,
-                                             const std::string &contact_public_id,
-                                             const std::string &share_id,
-                                             std::string *share_name) {
+int LifeStuffImpl::AcceptOpenShareInvitation(const std::string& my_public_id,
+                                             const std::string& contact_public_id,
+                                             const std::string& share_id,
+                                             std::string* share_name) {
   if (!share_name) {
     LOG(kError) << "Parameter share name must be valid.";
     return kGeneralError;
@@ -1747,8 +1748,8 @@ int LifeStuffImpl::AcceptOpenShareInvitation(const std::string &my_public_id,
   return result;
 }
 
-int LifeStuffImpl::RejectOpenShareInvitation(const std::string &my_public_id,
-                                             const std::string &share_id) {
+int LifeStuffImpl::RejectOpenShareInvitation(const std::string& my_public_id,
+                                             const std::string& share_id) {
   int result(PreContactChecks(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks.";
@@ -1777,7 +1778,7 @@ int LifeStuffImpl::RejectOpenShareInvitation(const std::string &my_public_id,
   return user_storage_->DeleteHiddenFile(hidden_file);
 }
 
-int LifeStuffImpl::LeaveOpenShare(const std::string &my_public_id, const std::string &share_name) {
+int LifeStuffImpl::LeaveOpenShare(const std::string& my_public_id, const std::string& share_name) {
   int result(PreContactChecks(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks.";
@@ -1862,8 +1863,8 @@ void LifeStuffImpl::ConnectInternalElements() {
       });
 
   message_handler_->ConnectToSavePrivateShareDataSignal(
-      [&] (const std::string &serialised_share_data,
-           const std::string &share_id) {
+      [&] (const std::string& serialised_share_data,
+           const std::string& share_id) {
         return user_storage_->SavePrivateShareData(serialised_share_data, share_id);
       });
 
@@ -2041,10 +2042,10 @@ void LifeStuffImpl::ShareRenameSlot(const std::string& old_share_name,
     session_.set_changed(true);
 }
 
-void LifeStuffImpl::MemberAccessChangeSlot(const std::string &share_id,
-                                           const std::string &directory_id,
-                                           const std::string &new_share_id,
-                                           const asymm::Keys &key_ring,
+void LifeStuffImpl::MemberAccessChangeSlot(const std::string& share_id,
+                                           const std::string& directory_id,
+                                           const std::string& new_share_id,
+                                           const asymm::Keys& key_ring,
                                            int access_right) {
   std::string share_name(user_storage_->MemberAccessChange(share_id,
                                                            directory_id,

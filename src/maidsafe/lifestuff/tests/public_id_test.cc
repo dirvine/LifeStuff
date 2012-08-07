@@ -87,11 +87,11 @@ class PublicIdTest : public testing::Test {
         interval_(3) {}
 
   void NewContactSlot(const std::string&,
-                      const std::string &contact_public_id,
+                      const std::string& contact_public_id,
                       const std::string& message,
-                      boost::mutex *mutex,
-                      boost::condition_variable *cond_var,
-                      bool *done) {
+                      boost::mutex* mutex,
+                      boost::condition_variable* cond_var,
+                      bool* done) {
     boost::mutex::scoped_lock lock(*mutex);
     received_public_identity_ = contact_public_id;
     received_message_ = message;
@@ -100,12 +100,12 @@ class PublicIdTest : public testing::Test {
   }
 
   void NewContactCounterSlot(const std::string&,
-                             const std::string &contact_public_id,
-                             const int &times,
-                             int *counter,
+                             const std::string& contact_public_id,
+                             const int& times,
+                             int* counter,
                              boost::mutex* mutex,
                              boost::condition_variable* cond_var,
-                             bool *done) {
+                             bool* done) {
     boost::mutex::scoped_lock lock(*mutex);
     received_public_identity_ = contact_public_id;
     ++(*counter);
@@ -119,8 +119,8 @@ class PublicIdTest : public testing::Test {
                           const std::string& contact_public_id,
                           const std::string& message,
                           boost::mutex* mutex,
-                          boost::condition_variable *cond_var,
-                          bool *done) {
+                          boost::condition_variable* cond_var,
+                          bool* done) {
     boost::mutex::scoped_lock lock(*mutex);
     received_public_identity_ = contact_public_id;
     received_message_ = message;
@@ -129,11 +129,11 @@ class PublicIdTest : public testing::Test {
   }
 
   void ContactConfirmedSlot(const std::string&,
-                            const std::string &signal_public_id,
-                            std::string *slot_public_id,
+                            const std::string& signal_public_id,
+                            std::string* slot_public_id,
                             boost::mutex* mutex,
                             boost::condition_variable* cond_var,
-                            bool *done) {
+                            bool* done) {
     boost::mutex::scoped_lock lock(*mutex);
     *slot_public_id  = signal_public_id;
     *done = true;
@@ -208,7 +208,10 @@ class PublicIdTest : public testing::Test {
                                                                                         &cond_var,
                                                                                         &result);
                                          };
-    ASSERT_TRUE(remote_chunk_store2_->Store(new_inbox_name, new_inbox_value, callback, shared_keys));
+    ASSERT_TRUE(remote_chunk_store2_->Store(new_inbox_name,
+                                            new_inbox_value,
+                                            callback,
+                                            shared_keys));
     {
       boost::mutex::scoped_lock lock(mutex);
       ASSERT_TRUE(cond_var.timed_wait(lock,

@@ -66,16 +66,16 @@ std::string CreatePin() {
   return pin_stream.str();
 }
 
-bool AcceptableWordSize(const std::string &word) {
+bool AcceptableWordSize(const std::string& word) {
   return word.size() >= kMinWordSize && word.size() <= kMaxWordSize;
 }
 
-bool AcceptableWordPattern(const std::string &word) {
+bool AcceptableWordPattern(const std::string& word) {
   boost::regex space(" ");
   return !boost::regex_search(word.begin(), word.end(), space);
 }
 
-int CheckWordValidity(const std::string &word) {
+int CheckWordValidity(const std::string& word) {
   if (!AcceptableWordSize(word)) {
     LOG(kError) << "Unacceptable size: " << word.size();
     return kWordSizeInvalid;
@@ -89,15 +89,15 @@ int CheckWordValidity(const std::string &word) {
   return kSuccess;
 }
 
-int CheckKeywordValidity(const std::string &keyword) {
+int CheckKeywordValidity(const std::string& keyword) {
   return CheckWordValidity(keyword);
 }
 
-int CheckPasswordValidity(const std::string &password) {
+int CheckPasswordValidity(const std::string& password) {
   return CheckWordValidity(password);
 }
 
-int CheckPinValidity(const std::string &pin) {
+int CheckPinValidity(const std::string& pin) {
   if (pin.size() != kPinSize) {
     LOG(kError) << "PIN wrong size: " << pin;
     return kPinSizeInvalid;
@@ -111,13 +111,13 @@ int CheckPinValidity(const std::string &pin) {
     }
     return kSuccess;
   }
-  catch(const std::exception &e) {
+  catch(const std::exception& e) {
     LOG(kError) << e.what();
     return kPinPatternInvalid;
   }
 }
 
-int CheckPublicIdValidity(const std::string &public_id) {
+int CheckPublicIdValidity(const std::string& public_id) {
   if (public_id.empty()) {
     LOG(kError) << "Public ID empty.";
     return kPublicIdEmpty;
@@ -142,7 +142,7 @@ int CheckPublicIdValidity(const std::string &public_id) {
   return kSuccess;
 }
 
-fs::path CreateTestDirectory(fs::path const& parent, std::string *tail) {
+fs::path CreateTestDirectory(fs::path const& parent, std::string* tail) {
   *tail = RandomAlphaNumericString(5);
   fs::path directory(parent / (*tail));
   boost::system::error_code error_code;
@@ -152,7 +152,7 @@ fs::path CreateTestDirectory(fs::path const& parent, std::string *tail) {
   return directory;
 }
 
-int CreateTestFile(fs::path const& parent, int size_in_mb, std::string *file_name) {
+int CreateTestFile(fs::path const& parent, int size_in_mb, std::string* file_name) {
   if (size_in_mb > 1024) {
     LOG(kError) << "This function doesn't create files larger than 1024MB.";
     return -1;
@@ -174,7 +174,7 @@ int CreateTestFile(fs::path const& parent, int size_in_mb, std::string *file_nam
       file_out.write(random_string.data(), random_string.size());
     file_out.close();
   }
-  catch(const std::exception &e) {
+  catch(const std::exception& e) {
     LOG(kError) << "Failed to write file " << file_path << ": " << e.what();
     return -1;
   }
@@ -182,7 +182,7 @@ int CreateTestFile(fs::path const& parent, int size_in_mb, std::string *file_nam
   return kSuccess;
 }
 
-int CreateSmallTestFile(fs::path const& parent, int size_in_kb, std::string *file_name) {
+int CreateSmallTestFile(fs::path const& parent, int size_in_kb, std::string* file_name) {
   if (size_in_kb > 1024) {
     LOG(kError) << "This function doesn't create files larger than 1024MB.";
     return -1;
@@ -204,7 +204,7 @@ int CreateSmallTestFile(fs::path const& parent, int size_in_kb, std::string *fil
       file_out.write(random_string.data(), random_string.size());
     file_out.close();
   }
-  catch(const std::exception &e) {
+  catch(const std::exception& e) {
     LOG(kError) << "Failed to write file " << file_path << ": " << e.what();
     return -1;
   }
@@ -212,7 +212,7 @@ int CreateSmallTestFile(fs::path const& parent, int size_in_kb, std::string *fil
   return kSuccess;
 }
 
-std::string ComposeSignaturePacketName(const std::string &name) {
+std::string ComposeSignaturePacketName(const std::string& name) {
   return name + std::string (1, pca::kSignaturePacket);
 }
 
@@ -232,8 +232,8 @@ std::string ComposeModifyAppendableByAll(const asymm::PrivateKey& signing_key,
 
 std::string AppendableIdValue(const asymm::Keys& data, bool accepts_new_contacts) {
   pca::AppendableByAll contact_id;
-  pca::SignedData *identity_key = contact_id.mutable_identity_key();
-  pca::SignedData *allow_others_to_append = contact_id.mutable_allow_others_to_append();
+  pca::SignedData* identity_key = contact_id.mutable_identity_key();
+  pca::SignedData* allow_others_to_append = contact_id.mutable_allow_others_to_append();
 
   std::string public_key;
   asymm::EncodePublicKey(data.public_key, &public_key);
@@ -278,7 +278,7 @@ std::string SignaturePacketValue(const asymm::Keys& keys) {
   return signed_data.SerializeAsString();
 }
 
-std::string PutFilenameData(const std::string &file_name) {
+std::string PutFilenameData(const std::string& file_name) {
   if (file_name.size() > 255U)
     return "";
   try {
@@ -289,15 +289,15 @@ std::string PutFilenameData(const std::string &file_name) {
     data += file_name;
     return data;
   }
-  catch(const std::exception &e) {
+  catch(const std::exception& e) {
     LOG(kError) << e.what();
     return "";
   }
 }
 
-void GetFilenameData(const std::string &content,
-                     std::string *file_name,
-                     std::string *serialised_data_map) {
+void GetFilenameData(const std::string& content,
+                     std::string* file_name,
+                     std::string* serialised_data_map) {
   if (content.size() < 5U)
     return;
 
@@ -307,12 +307,12 @@ void GetFilenameData(const std::string &content,
     chars_to_read += 3;
     *serialised_data_map = content.substr(chars_to_read);
   }
-  catch(const std::exception &e) {
+  catch(const std::exception& e) {
     LOG(kError) << e.what();
   }
 }
 
-std::string GetNameInPath(const fs::path &save_path, const std::string &file_name) {
+std::string GetNameInPath(const fs::path& save_path, const std::string& file_name) {
   int index(0), limit(2000);
   fs::path path_file_name(file_name);
   std::string stem(path_file_name.stem().string()),
@@ -329,21 +329,21 @@ std::string GetNameInPath(const fs::path &save_path, const std::string &file_nam
   return path_file_name.string();
 }
 
-encrypt::DataMapPtr ParseSerialisedDataMap(const std::string &serialised_data_map) {
+encrypt::DataMapPtr ParseSerialisedDataMap(const std::string& serialised_data_map) {
 //  LOG(kError) << "ParseSerialisedDataMap - input size: " << serialised_data_map.size();
   encrypt::DataMapPtr data_map(new encrypt::DataMap);
   std::istringstream input_stream(serialised_data_map, std::ios_base::binary);
   try {
     boost::archive::text_iarchive input_archive(input_stream);
     input_archive >> *data_map;
-  } catch(const boost::archive::archive_exception &e) {
+  } catch(const boost::archive::archive_exception& e) {
     LOG(kError) << e.what();
     return encrypt::DataMapPtr();
   }
   return data_map;
 }
 
-bool CheckCorrectKeys(const std::vector<std::string> &content, asymm::Keys *keys) {
+bool CheckCorrectKeys(const std::vector<std::string>& content, asymm::Keys* keys) {
   if (content.at(kKeysIdentity).empty())
     return true;
   asymm::DecodePrivateKey(content.at(kKeysPrivateKey), &(keys->private_key));
@@ -370,7 +370,7 @@ int CopyDir(const fs::path& source, const fs::path& dest) {
     if (!fs::exists(dest))
       fs::create_directory(dest);
   }
-  catch(const fs::filesystem_error &e) {
+  catch(const fs::filesystem_error& e) {
     LOG(kError) << e.what();
     return kGeneralError;
   }
@@ -388,7 +388,7 @@ int CopyDir(const fs::path& source, const fs::path& dest) {
         fs::copy_file(current, fs::path(dest / current.filename()));
       }
     }
-    catch(const fs::filesystem_error &e) {
+    catch(const fs::filesystem_error& e) {
       LOG(kError) << e.what();
     }
   }
@@ -458,16 +458,16 @@ std::string IsoTimeWithMicroSeconds() {
   return bptime::to_iso_string(bptime::microsec_clock::universal_time());
 }
 
-void OperationCallback(bool result, OperationResults &results, int index) {
+void OperationCallback(bool result, OperationResults& results, int index) {
   boost::mutex::scoped_lock barra_loch_an_duin(results.mutex);
   results.individual_results.at(index) = result ? kSuccess : kRemoteChunkStoreFailure;
   results.conditional_variable.notify_one();
 }
 
-int AssessJointResult(const std::vector<int> &results) {
+int AssessJointResult(const std::vector<int>& results) {
   auto it(std::find_if(results.begin(),
                        results.end(),
-                       [&](const int &element)->bool {
+                       [&](const int& element)->bool {
                          return element != kSuccess;
                        }));
   if (it != results.end())

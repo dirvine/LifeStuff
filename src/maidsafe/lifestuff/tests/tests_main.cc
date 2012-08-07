@@ -25,7 +25,7 @@
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/test.h"
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   maidsafe::log::Logging::instance().AddFilter("common", maidsafe::log::kFatal);
   maidsafe::log::Logging::instance().AddFilter("private", maidsafe::log::kFatal);
   maidsafe::log::Logging::instance().AddFilter("encrypt", maidsafe::log::kFatal);

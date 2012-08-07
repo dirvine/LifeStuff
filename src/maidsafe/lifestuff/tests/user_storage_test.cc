@@ -82,13 +82,13 @@ class UserStorageTest : public testing::TestWithParam<bool> {
       mutex_(),
       cond_var_() {}
 
-  void DoAcceptShareInvitationTest(const std::shared_ptr<UserStorage> &user_storage,
-                                   const std::string &/*receiver*/,
-                                   const std::string &sender,
-                                   const std::string &/*share_tag*/,
-                                   const std::string &share_id,
-                                   boost::mutex *mutex,
-                                   boost::condition_variable *cond_var) {
+  void DoAcceptShareInvitationTest(const std::shared_ptr<UserStorage>& user_storage,
+                                   const std::string& /*receiver*/,
+                                   const std::string& sender,
+                                   const std::string& /*share_tag*/,
+                                   const std::string& share_id,
+                                   boost::mutex* mutex,
+                                   boost::condition_variable* cond_var) {
     boost::mutex::scoped_lock lock(*mutex);
     std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
     temp_name +=  kHiddenFileExtension;
@@ -120,34 +120,34 @@ class UserStorageTest : public testing::TestWithParam<bool> {
     cond_var->notify_one();
   }
 
-  void UserLeavingShare(const std::shared_ptr<UserStorage> &user_storage,
-                        const std::string &share_id,
-                        const std::string &user_id,
-                        boost::mutex *mutex,
-                        boost::condition_variable *cond_var) {
+  void UserLeavingShare(const std::shared_ptr<UserStorage>& user_storage,
+                        const std::string& share_id,
+                        const std::string& user_id,
+                        boost::mutex* mutex,
+                        boost::condition_variable* cond_var) {
     boost::mutex::scoped_lock lock(*mutex);
     EXPECT_EQ(kSuccess, user_storage->UserLeavingShare(share_id, user_id));
     cond_var->notify_one();
   }
 
-  void DoUpgradeTest(const std::shared_ptr<UserStorage> &/*user_storage*/,
-                     const std::string &receiver,
-                     const std::string &sender,
-                     const std::string &share_name,
+  void DoUpgradeTest(const std::shared_ptr<UserStorage>& /*user_storage*/,
+                     const std::string& receiver,
+                     const std::string& sender,
+                     const std::string& share_name,
                      int access_level,
-                     boost::mutex *mutex,
-                     boost::condition_variable *cond_var) {
+                     boost::mutex* mutex,
+                     boost::condition_variable* cond_var) {
     boost::mutex::scoped_lock lock(*mutex);
     LOG(kError) << "From: " << sender << ", to: " << receiver << ", name: "
                 << share_name << ", access_level: " << access_level;
     cond_var->notify_one();
   }
 
-  void DoLeaveTest(const std::shared_ptr<UserStorage> &user_storage,
-                   const std::string &/*receiver*/,
-                   const std::string &share_id,
-                   boost::mutex *mutex,
-                   boost::condition_variable *cond_var) {
+  void DoLeaveTest(const std::shared_ptr<UserStorage>& user_storage,
+                   const std::string& /*receiver*/,
+                   const std::string& share_id,
+                   boost::mutex* mutex,
+                   boost::condition_variable* cond_var) {
     fs::path relative_path;
     boost::mutex::scoped_lock lock(*mutex);
     user_storage->GetShareDetails(share_id, &relative_path, nullptr, nullptr, nullptr);
@@ -158,8 +158,8 @@ class UserStorageTest : public testing::TestWithParam<bool> {
 
   void NewContactSlot(const std::string&,
                       const std::string&,
-                      boost::mutex *mutex,
-                      boost::condition_variable *cond_var) {
+                      boost::mutex* mutex,
+                      boost::condition_variable* cond_var) {
     boost::mutex::scoped_lock lock(*mutex);
     cond_var->notify_one();
   }
@@ -269,10 +269,10 @@ class UserStorageTest : public testing::TestWithParam<bool> {
         [&] (const std::string&,
              const std::string&,
              const std::string&,
-             const std::string &share_id,
-             const std::string &directory_id,
-             const std::string &new_share_id,
-             const asymm::Keys &key_ring,
+             const std::string& share_id,
+             const std::string& directory_id,
+             const std::string& new_share_id,
+             const asymm::Keys& key_ring,
              int access_right,
              const std::string&) {
           return user_storage1_->MemberAccessChange(share_id, directory_id, new_share_id,
@@ -282,10 +282,10 @@ class UserStorageTest : public testing::TestWithParam<bool> {
         [&] (const std::string&,
              const std::string&,
              const std::string&,
-             const std::string &share_id,
-             const std::string &directory_id,
-             const std::string &new_share_id,
-             const asymm::Keys &key_ring,
+             const std::string& share_id,
+             const std::string& directory_id,
+             const std::string& new_share_id,
+             const asymm::Keys& key_ring,
              int access_right,
              const std::string&) {
           return user_storage2_->MemberAccessChange(share_id, directory_id, new_share_id,

@@ -236,7 +236,7 @@ TEST_F(OneUserApiTest, FUNC_CreateInvalidUsers) {
       is_all_digits = true;
       not_digits_only = RandomAlphaNumericString(4);
     }
-    catch(const std::exception &/*e*/) {
+    catch(const std::exception& /*e*/) {
       is_all_digits = false;
     }
   }
@@ -298,7 +298,7 @@ TEST_F(OneUserApiTest, FUNC_TryChangeCredentialsToInvalid) {
       is_all_digits = true;
       not_digits_only = RandomAlphaNumericString(4);
     }
-    catch(const std::exception &/*e*/) {
+    catch(const std::exception& /*e*/) {
       is_all_digits = false;
     }
   }
