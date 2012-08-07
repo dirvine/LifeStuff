@@ -1253,7 +1253,6 @@ std::string UserStorage::ConstructFile(const std::string &serialised_data_map) {
     file_size += (*it).size;
     ++it;
   }
-  LOG(kError) << "I now officially think that the file is this big: " << file_size;
 
   // TODO(Team): decide based on the size whether to go ahead.
   // Update: It's now only possible to read a file up to uint32_t size.
