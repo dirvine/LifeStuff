@@ -736,11 +736,11 @@ std::string LifeStuffImpl::GetOwnProfilePicture(const std::string &my_public_id)
     return "";
   }
 
-  {
-    boost::mutex::scoped_lock loch(*profile_picture_data_map.first);
-    if (*profile_picture_data_map.second == kBlankProfilePicture)
-      return "";
-  }
+  //{
+  //  boost::mutex::scoped_lock loch(*profile_picture_data_map.first);
+  //  if (*profile_picture_data_map.second == kBlankProfilePicture)
+  //    return "";
+  //}
 
   fs::path profile_picture_path(mount_path() / std::string(my_public_id +
                                                            "_profile_picture" +
@@ -1993,11 +1993,9 @@ int LifeStuffImpl::PreContactChecks(const std::string &my_public_id) {
 }
 
 void LifeStuffImpl::InvokeDoSession() {
-  {
-    boost::mutex::scoped_lock loch_(save_session_mutex_);
-    saving_session_ = true;
-    asio_service_.service().post([this] { return DoSaveSession(); });  // NOLINT (Alison)
-  }
+  boost::mutex::scoped_lock loch_(save_session_mutex_);
+  saving_session_ = true;
+  asio_service_.service().post([this] { return DoSaveSession(); });  // NOLINT (Alison)
 }
 
 void LifeStuffImpl::DoSaveSession() {
