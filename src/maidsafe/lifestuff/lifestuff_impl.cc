@@ -684,7 +684,7 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string &my_public_id,
     while (reconstructed != profile_picture_contents && count++ < limit) {
       data_map.clear();
 //      result = user_storage_->GetDataMap(profile_picture_path, &data_map);
-//      result = user_storage_->GetHiddenFileDataMap(profile_picture_path, &data_map);
+      result = user_storage_->GetHiddenFileDataMap(profile_picture_path, &data_map);
       result = ReadHiddenFile(profile_picture_path, &reconstructed);
       if ((result != kSuccess/* || data_map.empty()*/) && count == limit) {
         LOG(kError) << "Failed obtaining DM of profile picture: " << result << ", file: "
@@ -745,11 +745,11 @@ std::string LifeStuffImpl::GetOwnProfilePicture(const std::string &my_public_id)
     return "";
   }
 
-  {
-    boost::mutex::scoped_lock loch(*profile_picture_data_map.first);
-    if (*profile_picture_data_map.second == kBlankProfilePicture)
-      return "";
-  }
+  //{
+  //  boost::mutex::scoped_lock loch(*profile_picture_data_map.first);
+  //  if (*profile_picture_data_map.second == kBlankProfilePicture)
+  //    return "";
+  //}
 
   fs::path profile_picture_path(mount_path() / std::string(my_public_id +
                                                            "_profile_picture" +
@@ -2004,11 +2004,9 @@ int LifeStuffImpl::PreContactChecks(const std::string &my_public_id) {
 }
 
 void LifeStuffImpl::InvokeDoSession() {
-  {
-    boost::mutex::scoped_lock loch_(save_session_mutex_);
-    saving_session_ = true;
-    asio_service_.service().post([this] { return DoSaveSession(); });  // NOLINT (Alison)
-  }
+  boost::mutex::scoped_lock loch_(save_session_mutex_);
+  saving_session_ = true;
+  asio_service_.service().post([this] { return DoSaveSession(); });  // NOLINT (Alison)
 }
 
 void LifeStuffImpl::DoSaveSession() {
