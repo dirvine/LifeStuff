@@ -736,11 +736,11 @@ std::string LifeStuffImpl::GetOwnProfilePicture(const std::string &my_public_id)
     return "";
   }
 
-  //{
-  //  boost::mutex::scoped_lock loch(*profile_picture_data_map.first);
-  //  if (*profile_picture_data_map.second == kBlankProfilePicture)
-  //    return "";
-  //}
+  {
+    boost::mutex::scoped_lock loch(*profile_picture_data_map.first);
+    if (*profile_picture_data_map.second == kBlankProfilePicture)
+      return "";
+  }
 
   fs::path profile_picture_path(mount_path() / std::string(my_public_id +
                                                            "_profile_picture" +

@@ -202,13 +202,16 @@ class PublicIdTest : public testing::Test {
     std::shared_ptr<asymm::Keys> shared_keys(new asymm::Keys(new_inbox_keys));
 
     int result(kPendingResult);
-    std::function<void(bool)> callback = [&] (const bool& response) {
+    std::function<void(bool)> callback = [&] (const bool& response) {  // NOLINT (Dan)
                                            priv::utilities::ChunkStoreOperationCallback(response,
                                                                                         &mutex,
                                                                                         &cond_var,
                                                                                         &result);
                                          };
-    ASSERT_TRUE(remote_chunk_store2_->Store(new_inbox_name, new_inbox_value, callback, shared_keys));
+    ASSERT_TRUE(remote_chunk_store2_->Store(new_inbox_name,
+                                            new_inbox_value,
+                                            callback,
+                                            shared_keys));
     {
       boost::mutex::scoped_lock lock(mutex);
       ASSERT_TRUE(cond_var.timed_wait(lock,
