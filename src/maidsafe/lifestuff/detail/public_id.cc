@@ -74,7 +74,7 @@ int PublicId::StartCheckingForNewContacts(const bptime::seconds& interval) {
   }
   get_new_contacts_timer_.expires_from_now(interval);
   get_new_contacts_timer_.async_wait([=] (const boost::system::error_code error_code) {
-                                       return PublicId::GetNewContacts(interval, error_code);
+                                       GetNewContacts(interval, error_code);
                                      });
   return kSuccess;
 }
@@ -323,7 +323,7 @@ int PublicId::DeletePublicId(const std::string& public_id) {
 
   if (!remote_chunk_store_->Delete(inbox_name,
                                    [&] (bool result) {
-                                     return OperationCallback(result, results, 0);
+                                     OperationCallback(result, results, 0);
                                    },
                                    inbox_keys)) {
     LOG(kError) << "Failed to delete inbox.";
@@ -332,7 +332,7 @@ int PublicId::DeletePublicId(const std::string& public_id) {
 
   if (!remote_chunk_store_->Delete(mcid_name,
                                    [&] (bool result) {
-                                     return OperationCallback(result, results, 1);
+                                     OperationCallback(result, results, 1);
                                    },
                                    mpid)) {
     LOG(kError) << "Failed to delete MCID.";
@@ -341,7 +341,7 @@ int PublicId::DeletePublicId(const std::string& public_id) {
 
   if (!remote_chunk_store_->Delete(mpid_name,
                                    [&] (bool result) {
-                                     return OperationCallback(result, results, 2);
+                                     OperationCallback(result, results, 2);
                                    },
                                    anmpid)) {
     LOG(kError) << "Failed to delete MPID.";
@@ -350,7 +350,7 @@ int PublicId::DeletePublicId(const std::string& public_id) {
 
   if (!remote_chunk_store_->Delete(anmpid_name,
                                    [&] (bool result) {
-                                     return OperationCallback(result, results, 3);
+                                     OperationCallback(result, results, 3);
                                    },
                                    anmpid)) {
     LOG(kError) << "Failed to delete ANMPID.";
@@ -406,7 +406,7 @@ void PublicId::GetNewContacts(const bptime::seconds& interval,
   GetContactsHandle();
   get_new_contacts_timer_.expires_at(get_new_contacts_timer_.expires_at() + interval);
   get_new_contacts_timer_.async_wait([=] (const boost::system::error_code error_code) {
-                                       return PublicId::GetNewContacts(interval, error_code);
+                                       GetNewContacts(interval, error_code);
                                      });
 }
 
@@ -595,10 +595,10 @@ void PublicId::ProcessContactDeletion(const std::string& own_public_id,
                                       const std::string& contact_public_id,
                                       const std::string& message,
                                       const std::string& timestamp) {
-  asio_service_.post([=] { return RemoveContactHandle(own_public_id,
-                                                      contact_public_id,
-                                                      message,
-                                                      timestamp);
+  asio_service_.post([=] { RemoveContactHandle(own_public_id,
+                                               contact_public_id,
+                                               message,
+                                               timestamp);
                          });
 }
 

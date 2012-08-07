@@ -278,12 +278,12 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
            const std::string& contact_public_id,
            const std::string& message,
            const std::string& /*timestamp*/) {
-        return MessageHandlerTest::NewContactSlot(own_public_id,
-                                                  contact_public_id,
-                                                  message,
-                                                  &mutex,
-                                                  &cond_var,
-                                                  &done);
+        MessageHandlerTest::NewContactSlot(own_public_id,
+                                           contact_public_id,
+                                           message,
+                                           &mutex,
+                                           &cond_var,
+                                           &done);
       });
   EXPECT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   EXPECT_EQ(kSuccess, public_id2_->AddContact(public_username2_, public_username1_, ""));
@@ -305,14 +305,14 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
            const std::string& contact_public_id,
            const std::string& message,
            const std::string& timestamp) {
-        return MessageHandlerTest::NewMessageSlot(own_public_id,
-                                                  contact_public_id,
-                                                  message,
-                                                  timestamp,
-                                                  &received,
-                                                  &mutex,
-                                                  &cond_var,
-                                                  &done);
+        MessageHandlerTest::NewMessageSlot(own_public_id,
+                                           contact_public_id,
+                                           message,
+                                           timestamp,
+                                           &received,
+                                           &mutex,
+                                           &cond_var,
+                                           &done);
       });
   EXPECT_EQ(kSuccess, message_handler2_->StartCheckingForNewMessages(interval_));
 
@@ -353,12 +353,12 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
              const std::string& contact_public_id,
              const std::string& message,
              const std::string& /*timestamp*/) {
-          return MessageHandlerTest::NewContactSlot(own_public_id,
-                                                    contact_public_id,
-                                                    message,
-                                                    &mutex,
-                                                    &cond_var,
-                                                    &done);
+          MessageHandlerTest::NewContactSlot(own_public_id,
+                                             contact_public_id,
+                                             message,
+                                             &mutex,
+                                             &cond_var,
+                                             &done);
         });
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   ASSERT_EQ(kSuccess, public_id2_->AddContact(public_username2_, public_username1_, ""));
@@ -387,15 +387,15 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
                const std::string& contact_public_id,
                const std::string& message,
                const std::string& timestamp) {
-            return MessageHandlerTest::SeveralMessagesSlot(own_public_id,
-                                                           contact_public_id,
-                                                           message,
-                                                           timestamp,
-                                                           &received_messages,
-                                                           &mutex,
-                                                           &cond_var,
-                                                           &multiple_messages_,
-                                                           &done);
+            MessageHandlerTest::SeveralMessagesSlot(own_public_id,
+                                                    contact_public_id,
+                                                    message,
+                                                    timestamp,
+                                                    &received_messages,
+                                                    &mutex,
+                                                    &cond_var,
+                                                    &multiple_messages_,
+                                                    &done);
           }));
   ASSERT_EQ(kSuccess, message_handler2_->StartCheckingForNewMessages(interval_));
   {
@@ -427,15 +427,15 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
            const std::string& contact_public_id,
            const std::string& message,
            const std::string& timestamp) {
-        return MessageHandlerTest::SeveralMessagesSlot(own_public_id,
-                                                       contact_public_id,
-                                                       message,
-                                                       timestamp,
-                                                       &received_messages,
-                                                       &mutex,
-                                                       &cond_var,
-                                                       &multiple_messages_,
-                                                       &done);
+        MessageHandlerTest::SeveralMessagesSlot(own_public_id,
+                                                contact_public_id,
+                                                message,
+                                                timestamp,
+                                                &received_messages,
+                                                &mutex,
+                                                &cond_var,
+                                                &multiple_messages_,
+                                                &done);
       });
   ASSERT_EQ(kSuccess, message_handler2_->StartCheckingForNewMessages(interval_));
   {
@@ -461,11 +461,11 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
       [&] (const std::string& own_public_id,
            const std::string& contact_public_id,
            const std::string& /*timestamp*/) {
-        return MessageHandlerTest::NewContactCountSlot(own_public_id,
-                                                       contact_public_id,
-                                                       &mutex,
-                                                       &cond_var,
-                                                       &done);
+        MessageHandlerTest::NewContactCountSlot(own_public_id,
+                                                contact_public_id,
+                                                &mutex,
+                                                &cond_var,
+                                                &done);
       });
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   public_id2_->ConnectToNewContactSignal(
@@ -473,12 +473,12 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
            const std::string& contact_public_id,
            const std::string& message,
            const std::string& /*timestamp*/) {
-        return MessageHandlerTest::NewContactSlot(own_public_id,
-                                                  contact_public_id,
-                                                  message,
-                                                  &mutex,
-                                                  &cond_var,
-                                                  &done2);
+        MessageHandlerTest::NewContactSlot(own_public_id,
+                                           contact_public_id,
+                                           message,
+                                           &mutex,
+                                           &cond_var,
+                                           &done2);
       });
   ASSERT_EQ(kSuccess, public_id2_->StartCheckingForNewContacts(interval_));
   public_id3_->ConnectToNewContactSignal(
@@ -486,12 +486,12 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
            const std::string& contact_public_id,
            const std::string& message,
            const std::string& /*timestamp*/) {
-        return MessageHandlerTest::NewContactSlot(own_public_id,
-                                                  contact_public_id,
-                                                  message,
-                                                  &mutex,
-                                                  &cond_var,
-                                                  &done3);
+        MessageHandlerTest::NewContactSlot(own_public_id,
+                                           contact_public_id,
+                                           message,
+                                           &mutex,
+                                           &cond_var,
+                                           &done3);
       });
   ASSERT_EQ(kSuccess, public_id3_->StartCheckingForNewContacts(interval_));
 
@@ -516,14 +516,14 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
            const std::string& contact_public_id,
            const std::string& message,
            const std::string& timestamp) {
-        return MessageHandlerTest::NewMessageSlot(own_public_id,
-                                                  contact_public_id,
-                                                  message,
-                                                  timestamp,
-                                                  &received,
-                                                  &mutex,
-                                                  &cond_var,
-                                                  &done);
+        MessageHandlerTest::NewMessageSlot(own_public_id,
+                                           contact_public_id,
+                                           message,
+                                           timestamp,
+                                           &received,
+                                           &mutex,
+                                           &cond_var,
+                                           &done);
       });
   ASSERT_EQ(kSuccess, message_handler1_->StartCheckingForNewMessages(interval_));
 
@@ -590,11 +590,11 @@ int ConnectTwoPublicIds(PublicId& public_id1,
            const std::string& contact_public_id,
            const std::string& /*message*/,
            const std::string& /*timestamp*/) {
-        return NotificationFunction(own_public_id,
-                                    contact_public_id,
-                                    std::ref(mutex),
-                                    std::ref(cond_var),
-                                    std::ref(done));
+        NotificationFunction(own_public_id,
+                             contact_public_id,
+                             std::ref(mutex),
+                             std::ref(cond_var),
+                             std::ref(done));
       });
   result = public_id1.StartCheckingForNewContacts(interval);
   if (result != kSuccess)

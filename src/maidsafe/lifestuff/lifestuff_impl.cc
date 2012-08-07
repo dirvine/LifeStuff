@@ -1847,7 +1847,7 @@ void LifeStuffImpl::ConnectInternalElements() {
            const std::string&,
            const std::string& share_id,
            const std::string&) {
-        return user_storage_->InvitationResponse(user_id, share_name, share_id);
+        user_storage_->InvitationResponse(user_id, share_name, share_id);
       });
 
   message_handler_->ConnectToSavePrivateShareDataSignal(
@@ -1877,7 +1877,7 @@ void LifeStuffImpl::ConnectInternalElements() {
            const std::string& share_name,
            const std::string&,
            const std::string&) {
-        return user_storage_->ShareDeleted(share_name);
+        user_storage_->ShareDeleted(share_name);
       });
 
   message_handler_->ConnectToPrivateShareUpdateSignal(
@@ -1903,7 +1903,7 @@ void LifeStuffImpl::ConnectInternalElements() {
            const asymm::Keys& key_ring,
            int access_right,
            const std::string&) {
-        return MemberAccessChangeSlot(share_id, directory_id, new_share_id, key_ring, access_right);
+        MemberAccessChangeSlot(share_id, directory_id, new_share_id, key_ring, access_right);
       });
 
   public_id_->ConnectToContactConfirmedSignal(
@@ -1995,7 +1995,7 @@ int LifeStuffImpl::PreContactChecks(const std::string &my_public_id) {
 void LifeStuffImpl::InvokeDoSession() {
   boost::mutex::scoped_lock loch_(save_session_mutex_);
   saving_session_ = true;
-  asio_service_.service().post([this] { return DoSaveSession(); });  // NOLINT (Alison)
+  asio_service_.service().post([this] { DoSaveSession(); });  // NOLINT (Alison)
 }
 
 void LifeStuffImpl::DoSaveSession() {

@@ -121,7 +121,7 @@ int MessageHandler::StartCheckingForNewMessages(bptime::seconds interval) {
   get_new_messages_timer_active_ = true;
   get_new_messages_timer_.expires_from_now(interval);
   get_new_messages_timer_.async_wait([=] (const boost::system::error_code& error_code) {
-                                       return GetNewMessages(interval, error_code);
+                                       GetNewMessages(interval, error_code);
                                      });
   return kSuccess;
 }
@@ -295,7 +295,7 @@ void MessageHandler::GetNewMessages(const bptime::seconds& interval,
 
   get_new_messages_timer_.expires_from_now(interval);
   get_new_messages_timer_.async_wait([=] (const boost::system::error_code& error_code) {
-                                       return GetNewMessages(interval, error_code);
+                                       GetNewMessages(interval, error_code);
                                      });
 }
 
