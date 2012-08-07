@@ -592,43 +592,26 @@ TEST_F(TwoUsersApiTest, FUNC_ProfilePicture) {
 
 TEST_F(TwoUsersApiTest, FUNC_ProfilePictureAndLogOut) {
   std::string file_content1, file_content2(RandomString(5 * 1024));
-  int result(0);
-
   EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
   // Setting of profile image
-  boost::thread thread([&] {
-                         return sleepthreads::RunChangeProfilePicture(test_elements_2_,
-                                                                      std::ref(result),
-                                                                      public_id_2_,
-                                                                      file_content2);
-                      });
+  EXPECT_EQ(kSuccess, test_elements_2_.ChangeProfilePicture(public_id_2_, file_content2));
   EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 
   EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
-
   file_content1 = test_elements_1_.GetContactProfilePicture(public_id_1_, public_id_2_);
   EXPECT_TRUE(file_content2 == file_content1);
   EXPECT_NE(kSuccess, test_elements_1_.ChangeProfilePicture(public_id_1_, ""));
-
   EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
 
   EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
   // Setting of profile image
-  boost::thread thread2([&] {
-                          return sleepthreads::RunChangeProfilePicture(test_elements_2_,
-                                                                       std::ref(result),
-                                                                       public_id_2_,
-                                                                       kBlankProfilePicture);
-                        });
-
+  EXPECT_EQ(kSuccess, test_elements_2_.ChangeProfilePicture(public_id_2_, kBlankProfilePicture));
   EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 
   testing_variables_1_.picture_updated = false;
   EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
-
   file_content1 = test_elements_1_.GetContactProfilePicture(public_id_1_, public_id_2_);
   EXPECT_TRUE(kBlankProfilePicture == file_content1);
-
   EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
 }
 
