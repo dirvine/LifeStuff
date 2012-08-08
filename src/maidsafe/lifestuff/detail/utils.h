@@ -42,7 +42,6 @@ enum InboxItemType {
   kFileTransfer,
   kContactPresence,
   kContactProfilePicture,
-  kContactDeletion,
   kRespondToShareInvitation,
   kPrivateShareInvitation,
   kPrivateShareDeletion,
@@ -92,42 +91,49 @@ enum ShareType {
 };
 
 struct OperationResults {
-  OperationResults(boost::mutex &mutex_in,
-                   boost::condition_variable &conditional_variable_in,
-                   std::vector<int> &individual_results_in)
+  OperationResults(boost::mutex& mutex_in,
+                   boost::condition_variable& conditional_variable_in,
+                   std::vector<int>& individual_results_in)
       : mutex(mutex_in),
         conditional_variable(conditional_variable_in),
         individual_results(individual_results_in) {}
-  boost::mutex &mutex;
-  boost::condition_variable &conditional_variable;
-  std::vector<int> &individual_results;
+  boost::mutex& mutex;
+  boost::condition_variable& conditional_variable;
+  std::vector<int>& individual_results;
 };
 
 std::string CreatePin();
 
-int CheckKeywordValidity(const std::string &keyword);
-int CheckPinValidity(const std::string &pin);
-int CheckPasswordValidity(const std::string &password);
+int CheckKeywordValidity(const std::string& keyword);
+int CheckPinValidity(const std::string& pin);
+int CheckPasswordValidity(const std::string& password);
 
-int CheckPublicIdValidity(const std::string &public_id);
+int CheckPublicIdValidity(const std::string& public_id);
 
-fs::path CreateTestDirectory(fs::path const& parent, std::string *tail);
-int CreateTestFile(fs::path const& parent, int size_in_mb, std::string *file_name);
-int CreateSmallTestFile(fs::path const& parent, int size_in_kb, std::string *file_name);
+fs::path CreateTestDirectory(fs::path const& parent, std::string* tail);
+int CreateTestFile(fs::path const& parent, int size_in_mb, std::string* file_name);
+int CreateSmallTestFile(fs::path const& parent, int size_in_kb, std::string* file_name);
 
-int AssessJointResult(const std::vector<int> &results);
-void OperationCallback(bool result, OperationResults &results, int index);
+int AssessJointResult(const std::vector<int>& results);
+void OperationCallback(bool result, OperationResults& results, int index);
 
-std::string ComposeSignaturePacketName(const std::string &name);
+std::string ComposeSignaturePacketName(const std::string& name);
+std::string ComposeModifyAppendableByAll(const asymm::PrivateKey& signing_key,
+                                         const char appendability);
+std::string AppendableIdValue(const asymm::Keys& data, bool accepts_new_contacts);
+std::string MaidsafeContactIdName(const std::string& public_id);
+std::string SignaturePacketName(const std::string& name);
+std::string AppendableByAllName(const std::string& name);
+std::string SignaturePacketValue(const asymm::Keys& keys);
 
-std::shared_ptr<encrypt::DataMap> ParseSerialisedDataMap(const std::string &serialised_data_map);
+std::shared_ptr<encrypt::DataMap> ParseSerialisedDataMap(const std::string& serialised_data_map);
 
-std::string PutFilenameData(const std::string &file_name);
-void GetFilenameData(const std::string &content,
-                     std::string *file_name,
-                     std::string *serialised_data_map);
-std::string GetNameInPath(const fs::path &save_path, const std::string &file_name);
-bool CheckCorrectKeys(const std::vector<std::string> &content, asymm::Keys *keys);
+std::string PutFilenameData(const std::string& file_name);
+void GetFilenameData(const std::string& content,
+                     std::string* file_name,
+                     std::string* serialised_data_map);
+std::string GetNameInPath(const fs::path& save_path, const std::string& file_name);
+bool CheckCorrectKeys(const std::vector<std::string>& content, asymm::Keys* keys);
 int CopyDir(const fs::path& source, const fs::path& dest);
 int CopyDirectoryContent(const fs::path& from, const fs::path& to);
 bool VerifyOrCreatePath(const fs::path& path);

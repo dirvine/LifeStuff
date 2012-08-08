@@ -24,7 +24,7 @@ namespace test {
 
 class ContactsTest : public testing::Test {
  protected:
-  ContactsHandler *sch_;
+  ContactsHandler* sch_;
   std::string name_;
   int test;
   asymm::Keys keys_;
@@ -38,7 +38,7 @@ class ContactsTest : public testing::Test {
         keys_(),
         keys1_(),
         contact_("dan.schmidt", "abcdefghijk", "Dan Schmidt Valle", "Picky",
-                 asymm::PublicKey(), asymm::PublicKey(), kUnitialised) {
+                 asymm::PublicKey(), asymm::PublicKey(), kUninitialised) {
     GenerateKeyPair(&keys_);
     GenerateKeyPair(&keys1_);
   }
@@ -211,7 +211,7 @@ TEST_F(ContactsTest, BEH_ListContacts_Status) {
   int indexing(0);
   int status_index(0);
   std::vector<ContactStatus> types;
-  types.push_back(kUnitialised);
+  types.push_back(kUninitialised);
   types.push_back(kRequestSent);
   types.push_back(kPendingResponse);
   types.push_back(kConfirmed);
@@ -259,14 +259,14 @@ TEST_F(ContactsTest, BEH_ListContacts_Status) {
   } while (status_index < 5);
 
   // Enquire multiple status at once
-  sch_->OrderedContacts(&mi_list, kPopular, kUnitialised | kPendingResponse);
+  sch_->OrderedContacts(&mi_list, kPopular, kUninitialised | kPendingResponse);
   ASSERT_EQ(size_t(40), mi_list.size());
   for (unsigned int n = 0; n < mi_list.size()-1; n++) {
     Contact mic = mi_list[n];
     Contact mic1 = mi_list[n+1];
     ASSERT_GE(mic.rank, mic1.rank);
-    ASSERT_NE(0, mic.status & (kUnitialised | kPendingResponse));
-    ASSERT_NE(0, mic1.status & (kUnitialised | kPendingResponse));
+    ASSERT_NE(0, mic.status & (kUninitialised | kPendingResponse));
+    ASSERT_NE(0, mic1.status & (kUninitialised | kPendingResponse));
   }
   sch_->OrderedContacts(&mi_list, kLastContacted,
                         kRequestSent | kConfirmed | kBlocked);

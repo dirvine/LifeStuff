@@ -41,16 +41,16 @@ namespace pd { class Node; }
 namespace lifestuff {
 
 #ifdef LOCAL_TARGETS_ONLY
-std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path &buffered_chunk_store_path,
-                                                       const fs::path &local_chunk_manager_path,
-                                                       boost::asio::io_service &asio_service);
+std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path& buffered_chunk_store_path,
+                                                       const fs::path& local_chunk_manager_path,
+                                                       boost::asio::io_service& asio_service);
 #else
-std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path &base_dir,
-                                                       std::shared_ptr<pd::Node> *node);
+std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path& base_dir,
+                                                       std::shared_ptr<pd::Node>* node);
 
-int RetrieveBootstrapContacts(const fs::path &download_dir);
+int RetrieveBootstrapContacts(const fs::path& download_dir);
 
-std::shared_ptr<pd::Node> SetupNode(const fs::path &base_dir);
+std::shared_ptr<pd::Node> SetupNode(const fs::path& base_dir);
 #endif
 
 }  // namespace lifestuff

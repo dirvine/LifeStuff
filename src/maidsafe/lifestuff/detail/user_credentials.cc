@@ -43,9 +43,9 @@ UserCredentials::UserCredentials(pcs::RemoteChunkStore& chunk_store,
 
 UserCredentials::~UserCredentials() {}
 
-int UserCredentials::CreateUser(const std::string &keyword,
-                                const std::string &pin,
-                                const std::string &password) {
+int UserCredentials::CreateUser(const std::string& keyword,
+                                const std::string& pin,
+                                const std::string& password) {
   int result(CheckKeywordValidity(keyword));
   if (result != kSuccess) {
     LOG(kInfo) << "Invalid keyword: " << keyword << "    Return code: " << result << ")";
@@ -65,9 +65,9 @@ int UserCredentials::CreateUser(const std::string &keyword,
   return impl_->CreateUser(keyword, pin, password);
 }
 
-int UserCredentials::LogIn(const std::string &keyword,
-                           const std::string &pin,
-                           const std::string &password) {
+int UserCredentials::LogIn(const std::string& keyword,
+                           const std::string& pin,
+                           const std::string& password) {
   int result(CheckKeywordValidity(keyword));
   if (result != kSuccess) {
     LOG(kInfo) << "Invalid keyword: " << keyword << "    Return code: " << result << ")";
@@ -100,7 +100,7 @@ int UserCredentials::Logout() {
 
 int UserCredentials::SaveSession() { return impl_->SaveSession(false); }
 
-int UserCredentials::ChangeKeyword(const std::string &new_keyword) {
+int UserCredentials::ChangeKeyword(const std::string& new_keyword) {
   int result(CheckKeywordValidity(new_keyword));
   if (result != kSuccess) {
     LOG(kError) << "Incorrect input.";
@@ -110,7 +110,7 @@ int UserCredentials::ChangeKeyword(const std::string &new_keyword) {
   return impl_->ChangeKeyword(new_keyword);
 }
 
-int UserCredentials::ChangePin(const std::string &new_pin) {
+int UserCredentials::ChangePin(const std::string& new_pin) {
   int result(CheckPinValidity(new_pin));
   if (result != kSuccess) {
     LOG(kError) << "Incorrect input.";
@@ -120,7 +120,7 @@ int UserCredentials::ChangePin(const std::string &new_pin) {
   return impl_->ChangePin(new_pin);
 }
 
-int UserCredentials::ChangePassword(const std::string &new_password) {
+int UserCredentials::ChangePassword(const std::string& new_password) {
   int result(CheckPasswordValidity(new_password));
   if (result != kSuccess) {
     LOG(kError) << "Incorrect input.";

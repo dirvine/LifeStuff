@@ -41,17 +41,17 @@ Contact::Contact()
       profile_picture_data_map(),
       mpid_public_key(),
       inbox_public_key(),
-      status(kUnitialised),
+      status(kUninitialised),
       rank(0),
       last_contact(0),
       presence(kOffline) {}
 
-Contact::Contact(const std::string &public_name_in,
-                 const std::string &mpid_name_in,
-                 const std::string &inbox_name_in,
-                 const std::string &profile_picture_data_map_in,
-                 const asymm::PublicKey &mpid_public_key_in,
-                 const asymm::PublicKey &inbox_public_key_in,
+Contact::Contact(const std::string& public_name_in,
+                 const std::string& mpid_name_in,
+                 const std::string& inbox_name_in,
+                 const std::string& profile_picture_data_map_in,
+                 const asymm::PublicKey& mpid_public_key_in,
+                 const asymm::PublicKey& inbox_public_key_in,
                  ContactStatus status)
     : public_id(public_name_in),
       mpid_name(mpid_name_in),
@@ -63,7 +63,7 @@ Contact::Contact(const std::string &public_name_in,
       rank(0),
       last_contact(0),
       presence(kOffline) {}
-Contact::Contact(const PublicContact &contact)
+Contact::Contact(const PublicContact& contact)
     : public_id(contact.public_id()),
       mpid_name(),
       inbox_name(contact.inbox_name()),
@@ -75,7 +75,7 @@ Contact::Contact(const PublicContact &contact)
       last_contact(contact.last_contact()),
       presence(kOffline) {}
 
-bool Contact::Equals(const Contact &other) {
+bool Contact::Equals(const Contact& other) {
   if (public_id != other.public_id ||
       mpid_name != other.mpid_name ||
       inbox_name != other.inbox_name ||
@@ -111,15 +111,15 @@ bool Contact::Equals(const Contact &other) {
 }
 
 //  ContactsHandler
-int ContactsHandler::AddContact(const std::string &public_id,
-                                const std::string &mpid_name,
-                                const std::string &inbox_name,
-                                const std::string &profile_picture_data_map,
-                                const asymm::PublicKey &mpid_public_key,
-                                const asymm::PublicKey &inbox_public_key,
+int ContactsHandler::AddContact(const std::string& public_id,
+                                const std::string& mpid_name,
+                                const std::string& inbox_name,
+                                const std::string& profile_picture_data_map,
+                                const asymm::PublicKey& mpid_public_key,
+                                const asymm::PublicKey& inbox_public_key,
                                 ContactStatus status,
-                                const uint32_t &rank,
-                                const uint32_t &last_contact) {
+                                const uint32_t& rank,
+                                const uint32_t& last_contact) {
   Contact contact(public_id,
                   mpid_name,
                   inbox_name,
@@ -142,7 +142,7 @@ int ContactsHandler::AddContact(const std::string &public_id,
   return kSuccess;
 }
 
-int ContactsHandler::AddContact(const Contact &contact) {
+int ContactsHandler::AddContact(const Contact& contact) {
   auto result(contact_set_.insert(contact));
   if (!result.second) {
     LOG(kError) << "Failed to insert contact " << contact.public_id;
@@ -152,12 +152,12 @@ int ContactsHandler::AddContact(const Contact &contact) {
   return kSuccess;
 }
 
-int ContactsHandler::DeleteContact(const std::string &public_id) {
+int ContactsHandler::DeleteContact(const std::string& public_id) {
   auto erased(contact_set_.erase(public_id));
   return erased == 1U ? kSuccess : -78;
 }
 
-int ContactsHandler::UpdateContact(const Contact &contact) {
+int ContactsHandler::UpdateContact(const Contact& contact) {
   ContactSet::iterator it = contact_set_.find(contact.public_id);
   if (it == contact_set_.end()) {
     LOG(kError) << "Contact(" << contact.public_id << ") not present in list.";
@@ -184,8 +184,8 @@ int ContactsHandler::UpdateContact(const Contact &contact) {
   return kSuccess;
 }
 
-int ContactsHandler::UpdateProfilePictureDataMap(const std::string &public_id,
-                                                 const std::string &profile_picture_data_map) {
+int ContactsHandler::UpdateProfilePictureDataMap(const std::string& public_id,
+                                                 const std::string& profile_picture_data_map) {
   ContactSet::iterator it = contact_set_.find(public_id);
   if (it == contact_set_.end()) {
     LOG(kError) << "Contact(" << public_id << ") not present in list.";
@@ -202,7 +202,7 @@ int ContactsHandler::UpdateProfilePictureDataMap(const std::string &public_id,
   return kSuccess;
 }
 
-int ContactsHandler::UpdateStatus(const std::string &public_id, const ContactStatus &status) {
+int ContactsHandler::UpdateStatus(const std::string& public_id, const ContactStatus& status) {
   ContactSet::iterator it = contact_set_.find(public_id);
   if (it == contact_set_.end()) {
     LOG(kError) << "Contact(" << public_id << ") not present in list.";
@@ -220,7 +220,7 @@ int ContactsHandler::UpdateStatus(const std::string &public_id, const ContactSta
   return kSuccess;
 }
 
-int ContactsHandler::UpdatePresence(const std::string &public_id, const ContactPresence &presence) {
+int ContactsHandler::UpdatePresence(const std::string& public_id, const ContactPresence& presence) {
   ContactSet::iterator it = contact_set_.find(public_id);
   if (it == contact_set_.end()) {
     LOG(kError) << "Contact(" << public_id << ") not present in list.";
@@ -239,7 +239,7 @@ int ContactsHandler::UpdatePresence(const std::string &public_id, const ContactP
   return kSuccess;
 }
 
-int ContactsHandler::TouchContact(const std::string &public_id) {
+int ContactsHandler::TouchContact(const std::string& public_id) {
   ContactSet::iterator it = contact_set_.find(public_id);
   if (it == contact_set_.end()) {
     LOG(kError) << "Contact(" << public_id << ") not present in contact list.";
@@ -258,7 +258,7 @@ int ContactsHandler::TouchContact(const std::string &public_id) {
   return kSuccess;
 }
 
-int ContactsHandler::ContactInfo(const std::string &public_id, Contact *contact) {
+int ContactsHandler::ContactInfo(const std::string& public_id, Contact* contact) {
   ContactSet::iterator it = contact_set_.find(public_id);
   if (it == contact_set_.end()) {
     LOG(kError) << "Contact(" << public_id
@@ -270,16 +270,16 @@ int ContactsHandler::ContactInfo(const std::string &public_id, Contact *contact)
   return kSuccess;
 }
 
-void ContactsHandler::OrderedContacts(std::vector<Contact> *contacts,
+void ContactsHandler::OrderedContacts(std::vector<Contact>* contacts,
                                       ContactOrder type,
                                       uint16_t bitwise_status) {
   BOOST_ASSERT(contacts);
   contacts->clear();
-  ContactSet *enquiry_pool = &contact_set_;
+  ContactSet* enquiry_pool = &contact_set_;
   ContactSet contacts_set;
   if (bitwise_status != 0x00) {
-    if (kUnitialised & bitwise_status)
-      GetContactsByStatus(&contacts_set, kUnitialised);
+    if (kUninitialised & bitwise_status)
+      GetContactsByStatus(&contacts_set, kUninitialised);
     if (kRequestSent & bitwise_status)
       GetContactsByStatus(&contacts_set, kRequestSent);
     if (kPendingResponse & bitwise_status)
@@ -303,7 +303,7 @@ void ContactsHandler::OrderedContacts(std::vector<Contact> *contacts,
   }
 }
 
-void ContactsHandler::OnlineContacts(std::vector<Contact> *online_contacts) {
+void ContactsHandler::OnlineContacts(std::vector<Contact>* online_contacts) {
   online_contacts->clear();
   auto it_pair(contact_set_.get<Presence>().equal_range(kOnline));
   online_contacts->assign(it_pair.first, it_pair.second);
@@ -312,10 +312,10 @@ void ContactsHandler::OnlineContacts(std::vector<Contact> *online_contacts) {
 ContactMap ContactsHandler::GetContacts(uint16_t bitwise_status) {
   ContactMap contact_map;
 
-  ContactSet *enquiry_pool = &contact_set_;
+  ContactSet* enquiry_pool = &contact_set_;
   ContactSet contacts;
-  if (kUnitialised & bitwise_status)
-    GetContactsByStatus(&contacts, kUnitialised);
+  if (kUninitialised & bitwise_status)
+    GetContactsByStatus(&contacts, kUninitialised);
   if (kRequestSent & bitwise_status)
     GetContactsByStatus(&contacts, kRequestSent);
   if (kPendingResponse & bitwise_status)
@@ -335,12 +335,12 @@ ContactMap ContactsHandler::GetContacts(uint16_t bitwise_status) {
 }
 
 template <typename T>
-void ContactsHandler::GetContactsByOrder(ContactSet *contacts, std::vector<Contact> *list) {
+void ContactsHandler::GetContactsByOrder(ContactSet* contacts, std::vector<Contact>* list) {
   for (auto it(contacts->get<T>().begin()); it != contacts->get<T>().end(); ++it)
     list->push_back(*it);
 }
 
-void ContactsHandler::GetContactsByStatus(ContactSet *contacts, ContactStatus status) {
+void ContactsHandler::GetContactsByStatus(ContactSet* contacts, ContactStatus status) {
   auto pit = contact_set_.get<Status>().equal_range(status);
   auto it_begin = pit.first;
   auto it_end = pit.second;

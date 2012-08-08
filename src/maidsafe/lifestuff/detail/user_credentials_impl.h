@@ -93,10 +93,10 @@ class UserCredentialsImpl {
 
   int SaveSession(bool log_out);
 
-  int ChangePin(const std::string &new_pin);
+  int ChangePin(const std::string& new_pin);
   int ChangeKeyword(const std::string new_keyword);
-  int ChangeUsernamePin(const std::string &new_username, const std::string &new_pin);
-  int ChangePassword(const std::string &new_password);
+  int ChangeUsernamePin(const std::string& new_username, const std::string& new_pin);
+  int ChangePassword(const std::string& new_password);
 
   int DeleteUserCredentials();
 
@@ -105,7 +105,7 @@ class UserCredentialsImpl {
   Session& session_;
   passport::Passport& passport_;
   boost::mutex single_threaded_class_mutex_;
-  boost::asio::io_service &asio_service_;
+  boost::asio::io_service& asio_service_;
   boost::asio::deadline_timer session_saver_timer_;
   bool session_saver_timer_active_, session_saved_once_;
   const boost::posix_time::seconds session_saver_interval_;
@@ -187,7 +187,7 @@ class UserCredentialsImpl {
   void DeleteMaid(bool result, OperationResults& results, std::shared_ptr<asymm::Keys> maid);
   void DeleteAnmaid(bool result, OperationResults& results, std::shared_ptr<asymm::Keys> anmaid);
   void DeleteSignaturePacket(std::shared_ptr<asymm::Keys> packet,
-                             OperationResults &results,
+                             OperationResults& results,
                              int index);
 
   int DoChangePasswordAdditions();
@@ -198,8 +198,8 @@ class UserCredentialsImpl {
                               const std::string& password,
                               std::string* new_data_atlas);
 
-  void SessionSaver(const boost::posix_time::seconds &interval,
-                    const boost::system::error_code &error_code);
+  void SessionSaver(const boost::posix_time::seconds& interval,
+                    const boost::system::error_code& error_code);
 };
 
 }  // namespace lifestuff

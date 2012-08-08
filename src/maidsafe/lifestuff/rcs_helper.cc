@@ -48,9 +48,9 @@ namespace maidsafe {
 namespace lifestuff {
 
 #ifdef LOCAL_TARGETS_ONLY
-std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path &buffered_chunk_store_path,
-                                                       const fs::path &local_chunk_manager_path,
-                                                       boost::asio::io_service &asio_service) {
+std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path& buffered_chunk_store_path,
+                                                       const fs::path& local_chunk_manager_path,
+                                                       boost::asio::io_service& asio_service) {
   boost::system::error_code error_code;
   fs::create_directories(local_chunk_manager_path / "lock", error_code);
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store(
@@ -61,8 +61,8 @@ std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path &buffered_
   return remote_chunk_store;
 }
 #else
-std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path &base_dir,
-                                                       std::shared_ptr<pd::Node> *node) {
+std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path& base_dir,
+                                                       std::shared_ptr<pd::Node>* node) {
   BOOST_ASSERT(node);
   *node = SetupNode(base_dir);
   if (*node) {
@@ -78,7 +78,7 @@ std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path &base_dir,
   }
 }
 
-int RetrieveBootstrapContacts(const fs::path &download_dir) {
+int RetrieveBootstrapContacts(const fs::path& download_dir) {
   std::ostringstream bootstrap_stream(std::ios::binary);
   try {
     boost::asio::io_service io_service;
@@ -155,7 +155,7 @@ int RetrieveBootstrapContacts(const fs::path &download_dir) {
       return error.value();
     }
   }
-  catch(const std::exception &e) {
+  catch(const std::exception& e) {
     LOG(kError) << "Exception: " << e.what();
     return kGeneralException;
   }
@@ -166,7 +166,7 @@ int RetrieveBootstrapContacts(const fs::path &download_dir) {
   return kSuccess;
 }
 
-std::shared_ptr<pd::Node> SetupNode(const fs::path &base_dir) {
+std::shared_ptr<pd::Node> SetupNode(const fs::path& base_dir) {
   auto node = std::make_shared<pd::Node>();
 
   // TODO(Team) Move bootstrap file to where Routing can find it

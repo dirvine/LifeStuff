@@ -82,13 +82,13 @@ class UserStorageTest : public testing::TestWithParam<bool> {
       mutex_(),
       cond_var_() {}
 
-  void DoAcceptShareInvitationTest(const std::shared_ptr<UserStorage> &user_storage,
-                                   const std::string &/*receiver*/,
-                                   const std::string &sender,
-                                   const std::string &/*share_tag*/,
-                                   const std::string &share_id,
-                                   boost::mutex *mutex,
-                                   boost::condition_variable *cond_var) {
+  void DoAcceptShareInvitationTest(const std::shared_ptr<UserStorage>& user_storage,
+                                   const std::string& /*receiver*/,
+                                   const std::string& sender,
+                                   const std::string& /*share_tag*/,
+                                   const std::string& share_id,
+                                   boost::mutex* mutex,
+                                   boost::condition_variable* cond_var) {
     boost::mutex::scoped_lock lock(*mutex);
     std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)));
     temp_name +=  kHiddenFileExtension;
@@ -120,34 +120,34 @@ class UserStorageTest : public testing::TestWithParam<bool> {
     cond_var->notify_one();
   }
 
-  void UserLeavingShare(const std::shared_ptr<UserStorage> &user_storage,
-                        const std::string &share_id,
-                        const std::string &user_id,
-                        boost::mutex *mutex,
-                        boost::condition_variable *cond_var) {
+  void UserLeavingShare(const std::shared_ptr<UserStorage>& user_storage,
+                        const std::string& share_id,
+                        const std::string& user_id,
+                        boost::mutex* mutex,
+                        boost::condition_variable* cond_var) {
     boost::mutex::scoped_lock lock(*mutex);
     EXPECT_EQ(kSuccess, user_storage->UserLeavingShare(share_id, user_id));
     cond_var->notify_one();
   }
 
-  void DoUpgradeTest(const std::shared_ptr<UserStorage> &/*user_storage*/,
-                     const std::string &receiver,
-                     const std::string &sender,
-                     const std::string &share_name,
+  void DoUpgradeTest(const std::shared_ptr<UserStorage>& /*user_storage*/,
+                     const std::string& receiver,
+                     const std::string& sender,
+                     const std::string& share_name,
                      int access_level,
-                     boost::mutex *mutex,
-                     boost::condition_variable *cond_var) {
+                     boost::mutex* mutex,
+                     boost::condition_variable* cond_var) {
     boost::mutex::scoped_lock lock(*mutex);
     LOG(kError) << "From: " << sender << ", to: " << receiver << ", name: "
                 << share_name << ", access_level: " << access_level;
     cond_var->notify_one();
   }
 
-  void DoLeaveTest(const std::shared_ptr<UserStorage> &user_storage,
-                   const std::string &/*receiver*/,
-                   const std::string &share_id,
-                   boost::mutex *mutex,
-                   boost::condition_variable *cond_var) {
+  void DoLeaveTest(const std::shared_ptr<UserStorage>& user_storage,
+                   const std::string& /*receiver*/,
+                   const std::string& share_id,
+                   boost::mutex* mutex,
+                   boost::condition_variable* cond_var) {
     fs::path relative_path;
     boost::mutex::scoped_lock lock(*mutex);
     user_storage->GetShareDetails(share_id, &relative_path, nullptr, nullptr, nullptr);
@@ -158,8 +158,8 @@ class UserStorageTest : public testing::TestWithParam<bool> {
 
   void NewContactSlot(const std::string&,
                       const std::string&,
-                      boost::mutex *mutex,
-                      boost::condition_variable *cond_var) {
+                      boost::mutex* mutex,
+                      boost::condition_variable* cond_var) {
     boost::mutex::scoped_lock lock(*mutex);
     cond_var->notify_one();
   }
@@ -213,14 +213,14 @@ class UserStorageTest : public testing::TestWithParam<bool> {
         [&] (const std::string& own_public_id,
              const std::string& contact_public_id,
              const std::string& /*timestamp*/) {
-          return NewContactSlot(own_public_id, contact_public_id, &mutex_, &cond_var_);
+          NewContactSlot(own_public_id, contact_public_id, &mutex_, &cond_var_);
         });
     public_id2_->ConnectToNewContactSignal(
         [&] (const std::string& own_public_id,
              const std::string& contact_public_id,
              const std::string& /*message*/,
              const std::string& /*timestamp*/) {
-          return NewContactSlot(own_public_id, contact_public_id, &mutex_, &cond_var_);
+          NewContactSlot(own_public_id, contact_public_id, &mutex_, &cond_var_);
         });
 
     EXPECT_EQ(kSuccess, public_id1_->CreatePublicId(pub_name1_, true));
@@ -269,10 +269,10 @@ class UserStorageTest : public testing::TestWithParam<bool> {
         [&] (const std::string&,
              const std::string&,
              const std::string&,
-             const std::string &share_id,
-             const std::string &directory_id,
-             const std::string &new_share_id,
-             const asymm::Keys &key_ring,
+             const std::string& share_id,
+             const std::string& directory_id,
+             const std::string& new_share_id,
+             const asymm::Keys& key_ring,
              int access_right,
              const std::string&) {
           return user_storage1_->MemberAccessChange(share_id, directory_id, new_share_id,
@@ -282,10 +282,10 @@ class UserStorageTest : public testing::TestWithParam<bool> {
         [&] (const std::string&,
              const std::string&,
              const std::string&,
-             const std::string &share_id,
-             const std::string &directory_id,
-             const std::string &new_share_id,
-             const asymm::Keys &key_ring,
+             const std::string& share_id,
+             const std::string& directory_id,
+             const std::string& new_share_id,
+             const asymm::Keys& key_ring,
              int access_right,
              const std::string&) {
           return user_storage2_->MemberAccessChange(share_id, directory_id, new_share_id,
@@ -372,8 +372,8 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
                const std::string& share_id,
                const int& /*access level*/,
                const std::string& /*timestamp*/) {
-          return DoAcceptShareInvitationTest(user_storage2_, receiver, sender, share_tag,
-                                             share_id, &mutex_, &cond_var_);
+          DoAcceptShareInvitationTest(user_storage2_, receiver, sender, share_tag,
+                                      share_id, &mutex_, &cond_var_);
           }));
   bs2::connection save_share_data_connection(
       message_handler2_->ConnectToSavePrivateShareDataSignal(
@@ -426,8 +426,8 @@ TEST_P(UserStorageTest, FUNC_LeaveShare) {
                const std::string& share_id,
                const int& /*access level*/,
                const std::string& /*timestamp*/) {
-          return DoAcceptShareInvitationTest(user_storage2_, receiver, sender, share_tag,
-                                             share_id, &mutex_, &cond_var_);
+          DoAcceptShareInvitationTest(user_storage2_, receiver, sender, share_tag,
+                                      share_id, &mutex_, &cond_var_);
           }));
   bs2::connection save_share_data_connection(
       message_handler2_->ConnectToSavePrivateShareDataSignal(
@@ -468,7 +468,7 @@ TEST_P(UserStorageTest, FUNC_LeaveShare) {
           [&] (const std::string& /*share name*/,
                const std::string& share_id,
                const std::string& user_id) {
-            return UserLeavingShare(user_storage1_, share_id, user_id, &mutex_, &cond_var_);
+            UserLeavingShare(user_storage1_, share_id, user_id, &mutex_, &cond_var_);
           }));
 
   MountDrive(user_storage1_, &session1_, false);
@@ -512,8 +512,8 @@ TEST_P(UserStorageTest, FUNC_AddUser) {
                const std::string& share_id,
                const int& /*access level*/,
                const std::string& /*timestamp*/) {
-          return DoAcceptShareInvitationTest(user_storage2_, receiver, sender, share_tag,
-                                             share_id, &mutex_, &cond_var_);
+          DoAcceptShareInvitationTest(user_storage2_, receiver, sender, share_tag,
+                                      share_id, &mutex_, &cond_var_);
           }));
   bs2::connection save_share_data_connection(
       message_handler2_->ConnectToSavePrivateShareDataSignal(
@@ -587,8 +587,8 @@ TEST_P(UserStorageTest, FUNC_AddReadWriteUser) {
                const std::string& share_id,
                const int& /*access level*/,
                const std::string& /*timestamp*/) {
-            return DoAcceptShareInvitationTest(user_storage2_, receiver, sender, share_tag,
-                                               share_id, &mutex_, &cond_var_);
+            DoAcceptShareInvitationTest(user_storage2_, receiver, sender, share_tag,
+                                        share_id, &mutex_, &cond_var_);
           }));
 
   bs2::connection save_share_data_connection(
@@ -651,8 +651,8 @@ TEST_P(UserStorageTest, FUNC_UpgradeUserToReadWrite) {
                const std::string& share_id,
                const int& /*access level*/,
                const std::string& /*timestamp*/) {
-          return DoAcceptShareInvitationTest(user_storage2_, receiver, sender, share_tag,
-                                             share_id, &mutex_, &cond_var_);
+          DoAcceptShareInvitationTest(user_storage2_, receiver, sender, share_tag,
+                                      share_id, &mutex_, &cond_var_);
           }));
   message_handler2_->ConnectToPrivateMemberAccessLevelSignal(
       [&] (const std::string& receiver,
@@ -664,8 +664,8 @@ TEST_P(UserStorageTest, FUNC_UpgradeUserToReadWrite) {
            const asymm::Keys&,
            int access_level,
            const std::string&) {
-        return DoUpgradeTest(user_storage2_, receiver, sender, share_name, access_level, &mutex_,
-                             &cond_var_);
+        DoUpgradeTest(user_storage2_, receiver, sender, share_name, access_level, &mutex_,
+                      &cond_var_);
       });
   bs2::connection save_share_data_connection(
       message_handler2_->ConnectToSavePrivateShareDataSignal(
@@ -740,8 +740,8 @@ TEST_P(UserStorageTest, FUNC_StopShareByOwner) {
                const std::string& share_id,
                const int& /*access level*/,
                const std::string& /*timestamp*/) {
-          return DoAcceptShareInvitationTest(user_storage2_, receiver, sender, share_tag,
-                                             share_id, &mutex_, &cond_var_);
+          DoAcceptShareInvitationTest(user_storage2_, receiver, sender, share_tag,
+                                      share_id, &mutex_, &cond_var_);
           }));
   bs2::connection leave_share_connection(
       message_handler2_->ConnectToPrivateShareDeletionSignal(
@@ -750,7 +750,7 @@ TEST_P(UserStorageTest, FUNC_StopShareByOwner) {
                const std::string&,
                const std::string&,
                const std::string&) {
-            return DoLeaveTest(user_storage2_, receiver, share_id, &mutex_, &cond_var_);
+            DoLeaveTest(user_storage2_, receiver, share_id, &mutex_, &cond_var_);
           }));
   bs2::connection save_share_data_connection(
       message_handler2_->ConnectToSavePrivateShareDataSignal(
@@ -825,8 +825,8 @@ TEST_P(UserStorageTest, FUNC_RemoveUserByOwner) {
                const std::string& share_id,
                const int& /*access level*/,
                const std::string& /*timestamp*/) {
-          return DoAcceptShareInvitationTest(user_storage2_, receiver, sender, share_tag,
-                                             share_id, &mutex_, &cond_var_);
+          DoAcceptShareInvitationTest(user_storage2_, receiver, sender, share_tag,
+                                      share_id, &mutex_, &cond_var_);
           }));
   bs2::connection leave_share_connection(
       message_handler2_->ConnectToPrivateShareDeletionSignal(
@@ -835,7 +835,7 @@ TEST_P(UserStorageTest, FUNC_RemoveUserByOwner) {
                const std::string&,
                const std::string&,
                const std::string&) {
-            return DoLeaveTest(user_storage2_, receiver, share_id, &mutex_, &cond_var_);
+            DoLeaveTest(user_storage2_, receiver, share_id, &mutex_, &cond_var_);
           }));
   bs2::connection save_share_data_connection(
       message_handler2_->ConnectToSavePrivateShareDataSignal(
@@ -933,7 +933,7 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
            const std::string& contact_public_id,
            const std::string& /*message*/,
            const std::string& /*timestamp*/) {
-        return NewContactSlot(own_public_id, contact_public_id, &mutex_, &cond_var_);
+        NewContactSlot(own_public_id, contact_public_id, &mutex_, &cond_var_);
       });
 
   public_id3->CreatePublicId(pub_name3, true);
@@ -981,8 +981,8 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
                const std::string& share_id,
                const int& /*access level*/,
                const std::string& /*timestamp*/) {
-          return DoAcceptShareInvitationTest(user_storage2_, receiver, sender, share_tag,
-                                             share_id, &mutex_, &cond_var_);
+          DoAcceptShareInvitationTest(user_storage2_, receiver, sender, share_tag,
+                                      share_id, &mutex_, &cond_var_);
           }));
   bs2::connection leave_share_connection_1(
       message_handler2_->ConnectToPrivateShareDeletionSignal(
@@ -991,7 +991,7 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
                const std::string&,
                const std::string&,
                const std::string&) {
-            return DoLeaveTest(user_storage2_, receiver, share_id, &mutex_, &cond_var_);
+            DoLeaveTest(user_storage2_, receiver, share_id, &mutex_, &cond_var_);
           }));
   bs2::connection save_share_data_connection_1(
       message_handler2_->ConnectToSavePrivateShareDataSignal(
@@ -1024,8 +1024,8 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
                const std::string& share_id,
                const int& /*access level*/,
                const std::string& /*timestamp*/) {
-          return DoAcceptShareInvitationTest(user_storage3, receiver, sender, share_tag,
-                                             share_id, &mutex_, &cond_var_);
+          DoAcceptShareInvitationTest(user_storage3, receiver, sender, share_tag,
+                                      share_id, &mutex_, &cond_var_);
           }));
   bs2::connection save_share_data_connection_2(
       message_handler3->ConnectToSavePrivateShareDataSignal(

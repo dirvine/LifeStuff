@@ -64,7 +64,7 @@ class MessageHandler {
 
   MessageHandler(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
                  Session& session,
-                 ba::io_service &asio_service);
+                 ba::io_service& asio_service);
   ~MessageHandler();
 
   void StartUp(bptime::seconds interval);
@@ -76,72 +76,70 @@ class MessageHandler {
   int StartCheckingForNewMessages(boost::posix_time::seconds interval);
   void StopCheckingForNewMessages();
 
-  int Send(const InboxItem &message);
-  int SendPresenceMessage(const std::string &own_public_id,
-                          const std::string &recipient_public_id,
-                          const ContactPresence &presence);
-  void InformConfirmedContactOnline(const std::string &own_public_id,
-                                    const std::string &recipient_public_id);
-  void SendEveryone(const InboxItem &message);
+  int Send(const InboxItem& message);
+  int SendPresenceMessage(const std::string& own_public_id,
+                          const std::string& recipient_public_id,
+                          const ContactPresence& presence);
+  void InformConfirmedContactOnline(const std::string& own_public_id,
+                                    const std::string& recipient_public_id);
+  void SendEveryone(const InboxItem& message);
 
   // Extra library connections
-  bs2::connection ConnectToChatSignal(const ChatFunction &function);
-  bs2::connection ConnectToFileTransferSignal(const FileTransferFunction &function);
-  bs2::connection ConnectToOpenShareInvitationSignal(const OpenShareInvitationFunction &function);
+  bs2::connection ConnectToChatSignal(const ChatFunction& function);
+  bs2::connection ConnectToFileTransferSignal(const FileTransferFunction& function);
+  bs2::connection ConnectToOpenShareInvitationSignal(const OpenShareInvitationFunction& function);
   bs2::connection ConnectToPrivateShareInvitationSignal(
-      const PrivateShareInvitationFunction &function);
-  bs2::connection ConnectToPrivateShareDeletionSignal(const PrivateShareDeletionFunction &function);
+      const PrivateShareInvitationFunction& function);
+  bs2::connection ConnectToPrivateShareDeletionSignal(const PrivateShareDeletionFunction& function);
   bs2::connection ConnectToPrivateMemberAccessChangeSignal(
-      const PrivateMemberAccessChangeFunction &function);
-  bs2::connection ConnectToContactPresenceSignal(const ContactPresenceFunction &function);
+      const PrivateMemberAccessChangeFunction& function);
+  bs2::connection ConnectToContactPresenceSignal(const ContactPresenceFunction& function);
 
   bs2::connection ConnectToContactProfilePictureSignal(
-      const ContactProfilePictureFunction &function);
+      const ContactProfilePictureFunction& function);
 
   // Intra and extra library connections
-  bs2::connection ConnectToContactDeletionSignal(const ContactDeletionFunction &function);
   bs2::connection ConnectToPrivateShareUserLeavingSignal(
-      const PrivateShareUserLeavingSignal::slot_type &function);
+      const PrivateShareUserLeavingSignal::slot_type& function);
   bs2::connection ConnectToShareInvitationResponseSignal(
-      const ShareInvitationResponseFunction &function);
+      const ShareInvitationResponseFunction& function);
 
   // Intra library connections
   bs2::connection ConnectToPrivateShareDetailsSignal(
-      boost::function<int(const std::string &share_id, fs::path *relative_path)> function);  // NOLINT (Dan)
-//      const PrivateShareDetailsSignal::slot_type &function);
+      boost::function<int(const std::string& share_id, fs::path* relative_path)> function);  // NOLINT (Dan)
+//      const PrivateShareDetailsSignal::slot_type& function);
   bs2::connection ConnectToParseAndSaveDataMapSignal(
-      const ParseAndSaveDataMapSignal::slot_type &function);
+      const ParseAndSaveDataMapSignal::slot_type& function);
   bs2::connection ConnectToPrivateShareUpdateSignal(
-      const PrivateShareUpdateSignal::slot_type &function);
+      const PrivateShareUpdateSignal::slot_type& function);
   bs2::connection ConnectToPrivateMemberAccessLevelSignal(
-      const PrivateMemberAccessLevelSignal::slot_type &function);
+      const PrivateMemberAccessLevelSignal::slot_type& function);
   bs2::connection ConnectToSavePrivateShareDataSignal(
-      const SavePrivateShareDataSignal::slot_type &function);
+      const SavePrivateShareDataSignal::slot_type& function);
   bs2::connection ConnectToDeletePrivateShareDataSignal(
-      const DeletePrivateShareDataSignal::slot_type &function);
+      const DeletePrivateShareDataSignal::slot_type& function);
   bs2::connection ConnectToSaveOpenShareDataSignal(
-      const SaveOpenShareDataSignal::slot_type &function);
+      const SaveOpenShareDataSignal::slot_type& function);
 
  private:
   MessageHandler(const MessageHandler&);
   MessageHandler& operator=(const MessageHandler&);
 
-  bool ProtobufToInbox(const Message &message, InboxItem *inbox_item) const;
-  bool InboxToProtobuf(const InboxItem &inbox_item, Message *message) const;
-  void GetNewMessages(const bptime::seconds &interval, const boost::system::error_code &error_code);
+  bool ProtobufToInbox(const Message& message, InboxItem* inbox_item) const;
+  bool InboxToProtobuf(const InboxItem& inbox_item, Message* message) const;
+  void GetNewMessages(const bptime::seconds& interval, const boost::system::error_code& error_code);
   void ProcessRetrieved(const std::string& public_id, const std::string& retrieved_mmid_packet);
   void RetrieveMessagesForAllIds();
-  bool MessagePreviouslyReceived(const std::string &message);
+  bool MessagePreviouslyReceived(const std::string& message);
   void ClearExpiredReceivedMessages();
   void EnqueuePresenceMessages(ContactPresence presence);
 
-  void ProcessContactPresence(const InboxItem &presence_message);
-  void ProcessContactProfilePicture(const InboxItem &profile_message);
-  void ProcessOpenShareInvitation(const InboxItem &open_share_invitation);
-  void ProcessFileTransfer(const InboxItem &file_transfer_message);
-  void ProcessShareInvitationResponse(const InboxItem &inbox_item);
-  void ProcessPrivateShare(const InboxItem &private_share_message);
-  void ProcessContactDeletion(const InboxItem &deletion_message);
+  void ProcessContactPresence(const InboxItem& presence_message);
+  void ProcessContactProfilePicture(const InboxItem& profile_message);
+  void ProcessOpenShareInvitation(const InboxItem& open_share_invitation);
+  void ProcessFileTransfer(const InboxItem& file_transfer_message);
+  void ProcessShareInvitationResponse(const InboxItem& inbox_item);
+  void ProcessPrivateShare(const InboxItem& private_share_message);
 
   void ContentsDontParseAsDataMap(const std::string& serialised_dm, std::string* data_map);
   void ProcessPresenceMessages();
@@ -151,7 +149,7 @@ class MessageHandler {
   passport::Passport& passport_;
   ba::deadline_timer get_new_messages_timer_;
   bool get_new_messages_timer_active_;
-  ba::io_service &asio_service_;
+  ba::io_service& asio_service_;
   bool start_up_done_;
   ReceivedMessagesMap received_messages_;
 
@@ -167,7 +165,6 @@ class MessageHandler {
   ShareInvitationResponseSignal share_invitation_response_signal_;
 
   /// Intra and extra library signals
-  ContactDeletionSignal contact_deletion_signal_;
   PrivateShareUserLeavingSignal private_share_user_leaving_signal_;
 
   /// Intra library signals

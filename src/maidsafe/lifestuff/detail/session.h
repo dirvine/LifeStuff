@@ -99,12 +99,12 @@ class Session {
 
   passport::Passport& passport();
 
-  int AddPublicId(const std::string &public_id);
-  int DeletePublicId(const std::string &public_id);
-  bool OwnPublicId(const std::string &public_id);
-  const ContactsHandlerPtr contacts_handler(const std::string &public_id);
-  const ShareInformationDetail share_information(const std::string &public_id);
-  const ProfilePictureDetail profile_picture_data_map(const std::string &public_id);
+  int AddPublicId(const std::string& public_id);
+  int DeletePublicId(const std::string& public_id);
+  bool OwnPublicId(const std::string& public_id);
+  const ContactsHandlerPtr contacts_handler(const std::string& public_id);
+  const ShareInformationDetail share_information(const std::string& public_id);
+  const ProfilePictureDetail profile_picture_data_map(const std::string& public_id);
 
   DefConLevels def_con_level() const;
   std::string keyword() const;
@@ -119,20 +119,20 @@ class Session {
   bool changed() const;
 
   void set_def_con_level(DefConLevels defconlevel);
-  void set_keyword(const std::string &keyword);
-  void set_pin(const std::string &pin);
-  void set_password(const std::string &password);
+  void set_keyword(const std::string& keyword);
+  void set_pin(const std::string& pin);
+  void set_password(const std::string& password);
   bool set_session_name();
   void clear_session_name();
-  void set_unique_user_id(const std::string &unique_user_id);
-  void set_root_parent_id(const std::string &root_parent_id);
-  void set_max_space(const int64_t &max_space);
-  void set_used_space(const int64_t &used_space);
-  void set_serialised_data_atlas(const std::string &serialised_data_atlas);
+  void set_unique_user_id(const std::string& unique_user_id);
+  void set_root_parent_id(const std::string& root_parent_id);
+  void set_max_space(const int64_t& max_space);
+  void set_used_space(const int64_t& used_space);
+  void set_serialised_data_atlas(const std::string& serialised_data_atlas);
   void set_changed(bool state);
 
-  int ParseDataAtlas(const std::string &serialised_session);
-  int SerialiseDataAtlas(std::string *serialised_session);
+  int ParseDataAtlas(const std::string& serialised_session);
+  int SerialiseDataAtlas(std::string* serialised_session);
 
   std::vector<std::string> PublicIdentities() const;
 

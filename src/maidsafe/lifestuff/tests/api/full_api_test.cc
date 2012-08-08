@@ -117,16 +117,16 @@ TEST_F(OneUserApiTest, FUNC_CreateSamePublicIdSimultaneously) {
 
   for (size_t i = 0; i < sleep_values.size(); ++i) {
     boost::thread thread_1([&] {
-                             return sleepthreads::RunCreatePublicId(test_elements_,
-                                                                    std::ref(result_1),
-                                                                    new_public_id,
-                                                                    sleep_values.at(i));
+                             sleepthreads::RunCreatePublicId(test_elements_,
+                                                             std::ref(result_1),
+                                                             new_public_id,
+                                                             sleep_values.at(i));
                            });
     boost::thread thread_2([&] {
-                             return sleepthreads::RunCreatePublicId(test_elements_,
-                                                                    std::ref(result_2),
-                                                                    new_public_id,
-                                                                    sleep_values.at(i));
+                             sleepthreads::RunCreatePublicId(test_elements_,
+                                                             std::ref(result_2),
+                                                             new_public_id,
+                                                             sleep_values.at(i));
                            });
     thread_1.join();
     thread_2.join();
@@ -173,6 +173,41 @@ TEST_F(OneUserApiTest, FUNC_AddOwnPublicIdAsContact) {
 
   EXPECT_NE(kSuccess, test_elements_.AddContact(public_id_1, public_id_1));
   EXPECT_NE(kSuccess, test_elements_.AddContact(public_id_1, public_id_2));
+}
+
+TEST_F(OneUserApiTest, FUNC_ChangeProfilePictureAfterSaveSession) {
+  std::string public_id(RandomAlphaNumericString(5));
+  EXPECT_EQ(kSuccess, test_elements_.CreatePublicId(public_id));
+  for (int n(1001); n > 1; n-=100) {
+    LOG(kError) << "\n\n\n";
+    std::string profile_picture1(RandomString(1177 * n)), profile_picture2(RandomString(1177 * n));
+    EXPECT_EQ(kSuccess, test_elements_.ChangeProfilePicture(public_id, profile_picture1));
+    std::string retrieved_picture(test_elements_.GetOwnProfilePicture(public_id));
+    EXPECT_EQ(profile_picture1, retrieved_picture);
+    EXPECT_EQ(kSuccess, test_elements_.LogOut());
+
+    EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
+    retrieved_picture = test_elements_.GetOwnProfilePicture(public_id);
+    EXPECT_EQ(profile_picture1, retrieved_picture);
+//    Sleep(bptime::seconds(65));
+    EXPECT_EQ(kSuccess, test_elements_.ChangeProfilePicture(public_id, profile_picture2));
+    retrieved_picture = test_elements_.GetOwnProfilePicture(public_id);
+    EXPECT_EQ(profile_picture2, retrieved_picture);
+    EXPECT_EQ(kSuccess, test_elements_.LogOut());
+
+    EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
+    retrieved_picture = test_elements_.GetOwnProfilePicture(public_id);
+    EXPECT_EQ(profile_picture2, retrieved_picture);
+//    Sleep(bptime::seconds(65));
+    EXPECT_EQ(kSuccess, test_elements_.ChangeProfilePicture(public_id, profile_picture1));
+    retrieved_picture = test_elements_.GetOwnProfilePicture(public_id);
+    EXPECT_EQ(profile_picture1, retrieved_picture);
+    EXPECT_EQ(kSuccess, test_elements_.LogOut());
+
+    EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
+    retrieved_picture = test_elements_.GetOwnProfilePicture(public_id);
+    EXPECT_EQ(profile_picture1, retrieved_picture);
+  }
 }
 
 TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdConsecutively) {
@@ -223,16 +258,16 @@ TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdSimultaneously) {
 
   for (size_t i = 0; i < sleep_values.size(); ++i) {
     boost::thread thread_1([&] {
-                             return sleepthreads::RunCreatePublicId(test_elements_1_,
-                                                                    std::ref(result_1),
-                                                                    new_public_id,
-                                                                    sleep_values.at(i));
+                             sleepthreads::RunCreatePublicId(test_elements_1_,
+                                                             std::ref(result_1),
+                                                             new_public_id,
+                                                             sleep_values.at(i));
                            });
     boost::thread thread_2([&] {
-                             return sleepthreads::RunCreatePublicId(test_elements_2_,
-                                                                    std::ref(result_2),
-                                                                    new_public_id,
-                                                                    sleep_values.at(i));
+                             sleepthreads::RunCreatePublicId(test_elements_2_,
+                                                             std::ref(result_2),
+                                                             new_public_id,
+                                                             sleep_values.at(i));
                            });
 
     thread_1.join();
@@ -557,43 +592,26 @@ TEST_F(TwoUsersApiTest, FUNC_ProfilePicture) {
 
 TEST_F(TwoUsersApiTest, FUNC_ProfilePictureAndLogOut) {
   std::string file_content1, file_content2(RandomString(5 * 1024));
-  int result(0);
-
   EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
   // Setting of profile image
-  boost::thread thread([&] {
-                         return sleepthreads::RunChangeProfilePicture(test_elements_2_,
-                                                                      std::ref(result),
-                                                                      public_id_2_,
-                                                                      file_content2);
-                      });
+  EXPECT_EQ(kSuccess, test_elements_2_.ChangeProfilePicture(public_id_2_, file_content2));
   EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 
   EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
-
   file_content1 = test_elements_1_.GetContactProfilePicture(public_id_1_, public_id_2_);
   EXPECT_TRUE(file_content2 == file_content1);
   EXPECT_NE(kSuccess, test_elements_1_.ChangeProfilePicture(public_id_1_, ""));
-
   EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
 
   EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
   // Setting of profile image
-  boost::thread thread2([&] {
-                          return sleepthreads::RunChangeProfilePicture(test_elements_2_,
-                                                                       std::ref(result),
-                                                                       public_id_2_,
-                                                                       kBlankProfilePicture);
-                        });
-
+  EXPECT_EQ(kSuccess, test_elements_2_.ChangeProfilePicture(public_id_2_, kBlankProfilePicture));
   EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 
   testing_variables_1_.picture_updated = false;
   EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
-
   file_content1 = test_elements_1_.GetContactProfilePicture(public_id_1_, public_id_2_);
   EXPECT_TRUE(kBlankProfilePicture == file_content1);
-
   EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
 }
 
@@ -2145,60 +2163,60 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
              const std::string& contact_public_id,
              const std::string& signal_message,
              const std::string& timestamp) {
-          return testresources::ChatSlot(own_public_id, contact_public_id, signal_message,
-                                         timestamp,
-                                         &testing_variables3.chat_message,
-                                         &testing_variables3.chat_message_received);
+          testresources::ChatSlot(own_public_id, contact_public_id, signal_message,
+                                  timestamp,
+                                  &testing_variables3.chat_message,
+                                  &testing_variables3.chat_message_received);
         },
         [&] (const std::string& own_public_id,
              const std::string& contact_public_id,
              const std::string& signal_file_name,
              const std::string& signal_file_id,
              const std::string& timestamp) {
-          return testresources::FileTransferSlot(own_public_id, contact_public_id, signal_file_name,
-                                                 signal_file_id,
-                                                 timestamp,
-                                                 &testing_variables3.file_name,
-                                                 &testing_variables3.file_id,
-                                                 &testing_variables3.file_transfer_received);
+          testresources::FileTransferSlot(own_public_id, contact_public_id, signal_file_name,
+                                          signal_file_id,
+                                          timestamp,
+                                          &testing_variables3.file_name,
+                                          &testing_variables3.file_id,
+                                          &testing_variables3.file_transfer_received);
         },
         [&] (const std::string& own_public_id,
              const std::string& contact_public_id,
              const std::string& message,
              const std::string& timestamp) {
-          return testresources::NewContactSlot(own_public_id, contact_public_id, message, timestamp,
-                                               &testing_variables3.newly_contacted,
-                                               &testing_variables3.contact_request_message);
+          testresources::NewContactSlot(own_public_id, contact_public_id, message, timestamp,
+                                        &testing_variables3.newly_contacted,
+                                        &testing_variables3.contact_request_message);
         },
         [&] (const std::string& own_public_id,
              const std::string& contact_public_id,
              const std::string& timestamp) {
-          return testresources::ContactConfirmationSlot(own_public_id, contact_public_id, timestamp,
-                                                        &testing_variables3.confirmed);
+          testresources::ContactConfirmationSlot(own_public_id, contact_public_id, timestamp,
+                                                 &testing_variables3.confirmed);
         },
         [&] (const std::string& own_public_id,
              const std::string& contact_public_id,
              const std::string& timestamp) {
-          return testresources::ContactProfilePictureSlot(own_public_id, contact_public_id,
-                                                          timestamp,
-                                                          &testing_variables3.picture_updated);
+          testresources::ContactProfilePictureSlot(own_public_id, contact_public_id,
+                                                   timestamp,
+                                                   &testing_variables3.picture_updated);
         },
         [&] (const std::string& own_public_id,
              const std::string& contact_public_id,
              const std::string& timestamp,
             ContactPresence cp) {
-          return testresources::ContactPresenceSlot(own_public_id, contact_public_id, timestamp, cp,
-                                                    &testing_variables3.presence_announced);
+          testresources::ContactPresenceSlot(own_public_id, contact_public_id, timestamp, cp,
+                                             &testing_variables3.presence_announced);
         },
         [&] (const std::string& own_public_id,
              const std::string& contact_public_id,
              const std::string& signal_message,
              const std::string& timestamp) {
-          return testresources::ContactDeletionSlot(own_public_id, contact_public_id,
-                                                    signal_message,
-                                                    timestamp,
-                                                    &testing_variables3.removal_message,
-                                                    &testing_variables3.removed);
+          testresources::ContactDeletionSlot(own_public_id, contact_public_id,
+                                             signal_message,
+                                             timestamp,
+                                             &testing_variables3.removal_message,
+                                             &testing_variables3.removed);
 },
         [&] (const std::string& own_public_id,
              const std::string& contact_public_id,
@@ -2206,7 +2224,7 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
              const std::string& signal_share_id,
              int access_level,
              const std::string& timestamp) {
-          return testresources::PrivateShareInvitationSlot(
+          testresources::PrivateShareInvitationSlot(
               own_public_id, contact_public_id, signal_share_name, signal_share_id, access_level,
               timestamp,
               &testing_variables3.new_private_share_name,
@@ -2219,7 +2237,7 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
              const std::string& signal_share_name,
              const std::string& signal_share_id,
              const std::string& timestamp) {
-          return testresources::PrivateShareDeletionSlot(
+          testresources::PrivateShareDeletionSlot(
               own_public_id, contact_public_id, signal_share_name, signal_share_id, timestamp,
               &testing_variables3.deleted_private_share_name,
               &testing_variables3.private_share_deleted);
@@ -2230,7 +2248,7 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
              const std::string& signal_share_id,
              int signal_member_access,
              const std::string /*&timestamp*/) {
-          return testresources::PrivateMemberAccessChangeSlot(
+          testresources::PrivateMemberAccessChangeSlot(
               own_public_id, contact_public_id, signal_share_name, signal_share_id,
               signal_member_access,
               testing_variables3.access_private_share_name,
@@ -2242,19 +2260,19 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
              const std::string& signal_share_name,
              const std::string& signal_share_id,
              const std::string& timestamp) {
-          return testresources::OpenShareInvitationSlot(own_public_id, contact_public_id,
-                                                        signal_share_name,
-                                                        signal_share_id,
-                                                        timestamp,
-                                                        &testing_variables3.new_open_share_id,
-                                                        &testing_variables3.openly_invited);
+          testresources::OpenShareInvitationSlot(own_public_id, contact_public_id,
+                                                 signal_share_name,
+                                                 signal_share_id,
+                                                 timestamp,
+                                                 &testing_variables3.new_open_share_id,
+                                                 &testing_variables3.openly_invited);
         },
         [&] (const std::string& old_share_name,
              const std::string& new_share_name) {
-          return testresources::ShareRenameSlot(old_share_name, new_share_name,
-                                                &testing_variables3.old_share_name,
-                                                &testing_variables3.new_share_name,
-                                                &testing_variables3.share_renamed);
+          testresources::ShareRenameSlot(old_share_name, new_share_name,
+                                         &testing_variables3.old_share_name,
+                                         &testing_variables3.new_share_name,
+                                         &testing_variables3.share_renamed);
         },
         ShareChangedFunction());
   test_elements3.CreateUser(keyword3, pin3, password3);
