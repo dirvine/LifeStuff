@@ -193,7 +193,8 @@ class LifeStuffImpl {
   int EditPrivateShareMembers(const std::string& my_public_id,
                               const StringIntMap& public_ids,
                               const std::string& share_name,
-                              StringIntMap* results);
+                              StringIntMap* results,
+                              bool inform_contacts);
   // Only for owners
   int DeletePrivateShare(const std::string& my_public_id,
                          const std::string& share_name,
