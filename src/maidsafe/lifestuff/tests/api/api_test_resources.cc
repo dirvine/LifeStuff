@@ -144,12 +144,13 @@ void PrivateShareDeletionSlot(const std::string&,
 
 void PrivateMemberAccessChangeSlot(const std::string&,
                                    const std::string&,
-                                   const std::string&,
+                                   const std::string& share_name,
                                    const std::string&,
                                    int signal_member_access,
                                    const std::string& /*slot_share_name*/,
                                    int* slot_member_access,
                                    volatile bool *done) {
+  ASSERT_NE("", share_name);
   if (slot_member_access)
     *slot_member_access = signal_member_access;
   *done = true;
