@@ -692,7 +692,6 @@ TEST_F(TwoUsersApiTest, FUNC_CreateEmptyOpenShare) {
                                                          public_id_1_,
                                                          testing_variables_2_.new_open_share_id,
                                                          &share_name));
-
     fs::path share(test_elements_2_.mount_path() / kSharedStuff / share_name);
     EXPECT_TRUE(fs::is_directory(share, error_code));
     fs::path file_path(share / file_name);
