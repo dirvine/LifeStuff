@@ -196,14 +196,15 @@ class LifeStuffImpl {
                               const StringIntMap& public_ids,
                               const std::string& share_name,
                               StringIntMap* results,
-                              bool inform_contacts);
+                              bool inform_contacts = true);
   // Only for owners
   int DeletePrivateShare(const std::string& my_public_id,
                          const std::string& share_name,
                          bool delete_data);
   // Should work for RO and full access. Only for non-owners
   int LeavePrivateShare(const std::string& my_public_id,
-                        const std::string& share_name);
+                        const std::string& share_name,
+                        bool inform_contacts = true);
 
   /// Open Shares
   int CreateOpenShareFromExistingDirectory(const std::string& my_public_id,

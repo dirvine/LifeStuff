@@ -118,7 +118,9 @@ class UserStorage {
   int StopShare(const std::string& sender_public_username,
                 const fs::path& absolute_path,
                 bool delete_data);
-  int RemoveShare(const fs::path& absolute_path, const std::string& sender_public_username = "");
+  int RemoveShare(const fs::path& absolute_path,
+                  const std::string& sender_public_username = "",
+                  bool inform_contact = true);
   void ShareDeleted(const std::string& share_id);
   int UpdateShare(const std::string& share_id,
                   const std::string* new_share_id,
@@ -138,8 +140,7 @@ class UserStorage {
   int GetAllShareUsers(const fs::path& absolute_path, StringIntMap* all_share_users) const;
   int RemoveShareUsers(const std::string& sender_public_username,
                        const fs::path& absolute_path,
-                       const std::vector<std::string>& user_ids,
-                       bool private_share);
+                       const std::vector<std::string>& user_ids);
   int UserLeavingShare(const std::string& share_id, const std::string& user_id);
   void InvitationResponse(const std::string& user_id,
                           const std::string& share_name,
@@ -176,15 +177,17 @@ class UserStorage {
                 const fs::path& relative_path,
                 const asymm::Keys& old_key_ring,
                 bool private_share,
-                const StringIntMap& contacts,
                 std::string* new_share_id_return = nullptr,
                 std::string* new_directory_id = nullptr,
                 asymm::Keys* new_key_ring = nullptr);
   int DowngradeShareUsersRights(const std::string& sender_public_username,
                                 const fs::path& absolute_path,
                                 const StringIntMap& contacts,
-                                StringIntMap* results,
-                                bool private_share);
+                                StringIntMap* results);
+  int UpgradeShareUsersRights(const std::string& sender_public_id,
+                              const fs::path& absolute_path,
+                              const StringIntMap& contacts,
+                              StringIntMap* results);
   int GetPrivateSharesContactBeingOwner(const std::string& my_public_id,
                                         const std::string& contact_public_id,
                                         std::vector<std::string>* shares_names);
