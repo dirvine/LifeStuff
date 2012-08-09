@@ -1220,20 +1220,6 @@ int LifeStuffImpl::GetPrivateSharesIncludingMember(const std::string& my_public_
   return kSuccess;
 }
 
-// The response shall come with a local share_name; if empty provided, it is a rejection
-void RespondInvitation(const std::string& send_from,
-                       const std::string& send_to,
-                       const std::string& share_id,
-                       const std::string& share_name,
-                       std::shared_ptr<MessageHandler> message_handler) {
-  InboxItem message(kRespondToShareInvitation);
-  message.sender_public_id = send_from;
-  message.receiver_public_id = send_to;
-  message.content.push_back(share_id);
-  message.content.push_back(share_name);
-  message_handler->Send(message);
-}
-
 int LifeStuffImpl::AcceptPrivateShareInvitation(const std::string& my_public_id,
                                                 const std::string& contact_public_id,
                                                 const std::string& share_id,
@@ -1277,10 +1263,11 @@ int LifeStuffImpl::AcceptPrivateShareInvitation(const std::string& my_public_id,
     share_details.share_type = kPrivateReadWriteMember;
   }
   // remove the temp share invitation file no matter insertion succeed or not
-  user_storage_->DeleteHiddenFile(hidden_file);
-
+  result = user_storage_->DeleteHiddenFile(hidden_file);
+  if (result != kSuccess) {
+    LOG(kWarning) << "Failed to delete hidden file.";
+  }
   fs::path share_dir(mount_path() / kSharedStuff / *share_name);
-
   result = user_storage_->InsertShare(share_dir,
                                       share_id,
                                       contact_public_id,
@@ -1306,12 +1293,18 @@ int LifeStuffImpl::AcceptPrivateShareInvitation(const std::string& my_public_id,
 
     session_.set_changed(true);
   }
-
-  RespondInvitation(message.receiver_public_id(),
-                    message.sender_public_id(),
-                    share_id,
-                    *share_name,
-                    message_handler_);
+  asymm::Keys keys;
+  StringIntMap contacts;
+  contacts.insert(std::make_pair(message.sender_public_id(), 0));
+  // Non-empty share_name implies acceptance...
+  result = user_storage_->InformContactsOperation(kRespondToShareInvitation,
+                                                  my_public_id,
+                                                  contacts,
+                                                  share_id,
+                                                  *share_name,
+                                                  "",
+                                                  keys,
+                                                  "");
   return result;
 }
 
@@ -1336,14 +1329,23 @@ int LifeStuffImpl::RejectPrivateShareInvitation(const std::string& my_public_id,
   Message message;
   if (!message.ParseFromString(serialised_share_data))
     LOG(kError) << "Failed to parse data in hidden file for private share.";
-
-  RespondInvitation(message.receiver_public_id(),
-                    message.sender_public_id(),
-                    share_id,
-                    "",
-                    message_handler_);
-
-  return user_storage_->DeleteHiddenFile(hidden_file);
+  result = user_storage_->DeleteHiddenFile(hidden_file);
+  if (result != kSuccess) {
+    LOG(kWarning) << "Failed to delete hidden file.";
+  }
+  asymm::Keys keys;
+  StringIntMap contacts;
+  contacts.insert(std::make_pair(message.sender_public_id(), 0));
+  // Empty share_name implies rejection...
+  result = user_storage_->InformContactsOperation(kRespondToShareInvitation,
+                                                  my_public_id,
+                                                  contacts,
+                                                  share_id,
+                                                  "",
+                                                  "",
+                                                  keys,
+                                                  "");
+  return result;
 }
 
 int LifeStuffImpl::EditPrivateShareMembers(const std::string& my_public_id,
@@ -1953,12 +1955,6 @@ int LifeStuffImpl::AcceptOpenShareInvitation(const std::string& my_public_id,
   StringIntMap contacts;
   contacts.insert(std::make_pair(my_public_id, 1));
   result = user_storage_->AddOpenShareUser(share_dir, contacts);
-
-  RespondInvitation(message.receiver_public_id(),
-                    message.sender_public_id(),
-                    share_id,
-                    *share_name,
-                    message_handler_);
   if (result != kSuccess) {
     LOG(kError) << "Failed to add user to open share, result " << result;
   } else {
@@ -1975,6 +1971,17 @@ int LifeStuffImpl::AcceptOpenShareInvitation(const std::string& my_public_id,
     }
     session_.set_changed(true);
   }
+  asymm::Keys keys;
+  contacts.clear();
+  contacts.insert(std::make_pair(message.sender_public_id(), 0));
+  result = user_storage_->InformContactsOperation(kRespondToShareInvitation,
+                                                  my_public_id,
+                                                  contacts,
+                                                  share_id,
+                                                  *share_name,
+                                                  "",
+                                                  keys,
+                                                  "");
   return result;
 }
 
@@ -2000,12 +2007,22 @@ int LifeStuffImpl::RejectOpenShareInvitation(const std::string& my_public_id,
   if (!message.ParseFromString(serialised_share_data))
     LOG(kError) << "Failed to parse data in hidden file for private share.";
 
-  RespondInvitation(message.receiver_public_id(),
-                    message.sender_public_id(),
-                    share_id,
-                    "",
-                    message_handler_);
-  return user_storage_->DeleteHiddenFile(hidden_file);
+  result = user_storage_->DeleteHiddenFile(hidden_file);
+  if (result != kSuccess) {
+    LOG(kWarning) << "Failed to delete hidden file.";
+  }
+  asymm::Keys keys;
+  StringIntMap contacts;
+  contacts.insert(std::make_pair(message.sender_public_id(), 0));
+  result = user_storage_->InformContactsOperation(kRespondToShareInvitation,
+                                                  my_public_id,
+                                                  contacts,
+                                                  share_id,
+                                                  "",
+                                                  "",
+                                                  keys,
+                                                  "");
+  return result;
 }
 
 int LifeStuffImpl::LeaveOpenShare(const std::string& my_public_id, const std::string& share_name) {
