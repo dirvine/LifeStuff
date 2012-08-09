@@ -136,7 +136,7 @@ int LifeStuff::DeclineContact(const std::string& my_public_id,
 int LifeStuff::RemoveContact(const std::string& my_public_id,
                              const std::string& contact_public_id,
                              const std::string& removal_message) {
-  return lifestuff_impl->RemoveContact(my_public_id, contact_public_id, removal_message);
+  return lifestuff_impl->RemoveContact(my_public_id, contact_public_id, removal_message, "", true);
 }
 
 int LifeStuff::ChangeProfilePicture(const std::string& my_public_id,

@@ -65,6 +65,7 @@ LifeStuffImpl::LifeStuffImpl()
       public_id_(),
       message_handler_(),
       slots_(),
+      contact_deletion_received_slot(),
       save_session_mutex_(),
       saving_session_(false) {}
 
@@ -178,7 +179,7 @@ int LifeStuffImpl::ConnectToSignals(
     slots_.contact_deletion_function = contact_deletion_function;
     ++connects;
     if (public_id_)
-      public_id_->ConnectToContactDeletionSignal(contact_deletion_function);
+      public_id_->ConnectToContactDeletionProcessedSignal(contact_deletion_function);
   }
   if (private_share_invitation_function) {
     slots_.private_share_invitation_function = private_share_invitation_function;
@@ -215,6 +216,17 @@ int LifeStuffImpl::ConnectToSignals(
     ++connects;
     if (user_storage_)
       user_storage_->ConnectToShareChangedSignal(share_changed_function);
+  }
+
+  contact_deletion_received_slot =
+      [&] (const std::string& own_public_id,
+           const std::string& contact_public_id,
+           const std::string& removal_message,
+           const std::string& timestamp) {
+        RemoveContact(own_public_id, contact_public_id, removal_message, timestamp, false);
+      };
+  if (public_id_) {
+    public_id_->ConnectToContactDeletionReceivedSignal(contact_deletion_received_slot);
   }
 
   if (connects > 0) {
@@ -389,12 +401,11 @@ int LifeStuffImpl::LogIn(const std::string& keyword,
         this->ShareRenameSlot(old_share_name, new_share_name);
       });
 
+  state_ = kLoggedIn;
   if (!session_.PublicIdentities().empty()) {
     public_id_->StartUp(interval_);
     message_handler_->StartUp(interval_);
   }
-
-  state_ = kLoggedIn;
 
   return kSuccess;
 }
@@ -612,30 +623,39 @@ int LifeStuffImpl::DeclineContact(const std::string& my_public_id,
 
 int LifeStuffImpl::RemoveContact(const std::string& my_public_id,
                                  const std::string& contact_public_id,
-                                 const std::string& removal_message) {
+                                 const std::string& removal_message,
+                                 const std::string& timestamp,
+                                 const bool& instigator) {
   int result(PreContactChecks(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in RemoveContact.";
     return result;
   }
 
+  // TODO(Alison): 09/08/12 - Remove contact from all Private shares owned by self (no messaging)
+  // TODO(Alison): 09/08/12 - Remove self from all Private shares owned by contact (no messaging)
+
   // For private shares, if share_members can be fetched, indicates owner
   // otherwise, only the owner(inviter) of the share can be fetched
-  std::vector<std::string> share_names;
-  GetPrivateSharesIncludingMember(my_public_id, contact_public_id, &share_names);
-  StringIntMap contact_to_remove;
-  contact_to_remove.insert(std::make_pair(contact_public_id, kShareRemover));
-  for (auto it = share_names.begin(); it != share_names.end(); ++it) {
-    StringIntMap results;
-    EditPrivateShareMembers(my_public_id, contact_to_remove, *it, &results);
-  }
-  share_names.clear();
-  user_storage_->GetPrivateSharesContactBeingOwner(my_public_id, contact_public_id, &share_names);
-  for (auto it = share_names.begin(); it != share_names.end(); ++it)
-    LeavePrivateShare(my_public_id, *it);
+//  std::vector<std::string> share_names;
+//  GetPrivateSharesIncludingMember(my_public_id, contact_public_id, &share_names);
+//  StringIntMap contact_to_remove;
+//  contact_to_remove.insert(std::make_pair(contact_public_id, kShareRemover));
+//  for (auto it = share_names.begin(); it != share_names.end(); ++it) {
+//    StringIntMap results;
+//    EditPrivateShareMembers(my_public_id, contact_to_remove, *it, &results);
+//  }
+//  share_names.clear();
+//  user_storage_->GetPrivateSharesContactBeingOwner(my_public_id, contact_public_id, &share_names);
+//  for (auto it = share_names.begin(); it != share_names.end(); ++it)
+//    LeavePrivateShare(my_public_id, *it);
 
   // Remove the contact
-  result = public_id_->RemoveContact(my_public_id, contact_public_id, true, removal_message);
+  result = public_id_->RemoveContact(my_public_id,
+                                     contact_public_id,
+                                     removal_message,
+                                     timestamp,
+                                     instigator);
   if (result != kSuccess)
     LOG(kError) << "Failed remove contact in RemoveContact.";
 

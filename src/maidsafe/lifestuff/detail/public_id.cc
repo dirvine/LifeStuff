@@ -54,7 +54,8 @@ PublicId::PublicId(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
       get_new_contacts_timer_active_(false),
       new_contact_signal_(new NewContactSignal),
       contact_confirmed_signal_(new ContactConfirmedSignal),
-      contact_deletion_signal_(new ContactDeletionSignal),
+      contact_deletion_received_signal_(new ContactDeletionReceivedSignal),
+      contact_deletion_processed_signal_(new ContactDeletionProcessedSignal),
       asio_service_(asio_service) {}
 
 PublicId::~PublicId() { StopCheckingForNewContacts(); }
@@ -489,10 +490,10 @@ void PublicId::ProcessRequests(const std::string& own_public_id,
           LOG(kError) << "Introduction of type kFriendResponse doesn't match current state!";
         break;
       case kDefriend:
-          ProcessContactDeletion(own_public_id,
-                                 introduction.public_id(),
-                                 introduction.message(),
-                                 introduction.timestamp());
+        (*contact_deletion_received_signal_)(own_public_id,
+                                             introduction.public_id(),
+                                             introduction.message(),
+                                             introduction.timestamp());
           break;
       case kMovedInbox:
         if (result == kSuccess &&
@@ -591,17 +592,6 @@ void PublicId::ProcessMisplacedContactRequest(Contact& contact, const std::strin
   }
 }
 
-void PublicId::ProcessContactDeletion(const std::string& own_public_id,
-                                      const std::string& contact_public_id,
-                                      const std::string& message,
-                                      const std::string& timestamp) {
-  asio_service_.post([=] { RemoveContactHandle(own_public_id,
-                                               contact_public_id,
-                                               message,
-                                               timestamp);
-                         });
-}
-
 int PublicId::ConfirmContact(const std::string& own_public_id,
                              const std::string& recipient_public_id) {
   const ContactsHandlerPtr contacts_handler(session_.contacts_handler(own_public_id));
@@ -649,19 +639,11 @@ int PublicId::RejectContact(const std::string& own_public_id,
   return result;
 }
 
-void PublicId::RemoveContactHandle(const std::string& own_public_id,
-                                   const std::string& contact_public_id,
-                                   const std::string& message,
-                                   const std::string& timestamp) {
-  int result(RemoveContact(own_public_id, contact_public_id, false, message));
-  if (result == kSuccess)
-    (*contact_deletion_signal_)(own_public_id, contact_public_id, message, timestamp);
-}
-
 int PublicId::RemoveContact(const std::string& own_public_id,
                             const std::string& contact_public_id,
-                            const bool& instigator,
-                            const std::string& removal_message) {
+                            const std::string& removal_message,
+                            const std::string& timestamp,
+                            const bool& instigator) {
   if (own_public_id.empty() || contact_public_id.empty()) {
     LOG(kError) << "Public ID name empty";
     return kPublicIdEmpty;
@@ -775,12 +757,18 @@ int PublicId::RemoveContact(const std::string& own_public_id,
       return result;
     }
   }
-
   // Informs each contact in the list about the new MMID
   std::vector<Contact> contacts;
   uint16_t status(kConfirmed | kRequestSent);
   contacts_handler->OrderedContacts(&contacts, kAlphabetical, status);
   result = InformContactInfo(own_public_id, contacts, "", kMovedInbox);
+
+  if (!instigator) {
+    (*contact_deletion_processed_signal_)(own_public_id,
+                                          contact_public_id,
+                                          removal_message,
+                                          timestamp);
+  }
 
   return result;
 }
@@ -938,9 +926,14 @@ bs2::connection PublicId::ConnectToContactConfirmedSignal(
   return contact_confirmed_signal_->connect(contact_confirmation_slot);
 }
 
-bs2::connection PublicId::ConnectToContactDeletionSignal(
+bs2::connection PublicId::ConnectToContactDeletionReceivedSignal(
+    const ContactDeletionReceivedFunction& contact_deletion_received_slot) {
+  return contact_deletion_received_signal_->connect(contact_deletion_received_slot);
+}
+
+bs2::connection PublicId::ConnectToContactDeletionProcessedSignal(
     const ContactDeletionFunction& contact_deletion_slot) {
-  return contact_deletion_signal_->connect(contact_deletion_slot);
+  return contact_deletion_processed_signal_->connect(contact_deletion_slot);
 }
 
 }  // namespace lifestuff

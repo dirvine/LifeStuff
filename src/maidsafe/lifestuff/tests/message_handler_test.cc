@@ -536,7 +536,7 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
   }
   ASSERT_TRUE(MessagesEqual(sent, received));
 
-  public_id1_->RemoveContact(public_username1_, public_username2_, true, "");
+  public_id1_->RemoveContact(public_username1_, public_username2_, "", "", true);
   Sleep(interval_ * 2);
 
   received = InboxItem();

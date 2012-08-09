@@ -132,7 +132,9 @@ class LifeStuffImpl {
   int DeclineContact(const std::string& my_public_id, const std::string& contact_public_id);
   int RemoveContact(const std::string& my_public_id,
                     const std::string& contact_public_id,
-                    const std::string& removal_message);
+                    const std::string& removal_message,
+                    const std::string& timestamp,
+                    const bool& instigator);
   int ChangeProfilePicture(const std::string& my_public_id,
                            const std::string& profile_picture_contents);
   std::string GetOwnProfilePicture(const std::string& my_public_id);
@@ -199,7 +201,8 @@ class LifeStuffImpl {
                          const std::string& share_name,
                          bool delete_data);
   // Should work for RO and full access. Only for non-owners
-  int LeavePrivateShare(const std::string& my_public_id, const std::string& share_name);
+  int LeavePrivateShare(const std::string& my_public_id,
+                        const std::string& share_name);
 
   /// Open Shares
   int CreateOpenShareFromExistingDirectory(const std::string& my_public_id,
@@ -257,6 +260,7 @@ class LifeStuffImpl {
   std::shared_ptr<PublicId> public_id_;
   std::shared_ptr<MessageHandler> message_handler_;
   Slots slots_;
+  ContactDeletionReceivedFunction contact_deletion_received_slot;
 
   // Session saving control
   boost::mutex save_session_mutex_;

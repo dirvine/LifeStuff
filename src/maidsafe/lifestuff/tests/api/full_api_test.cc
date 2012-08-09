@@ -1987,7 +1987,7 @@ TEST_F(TwoUsersApiTest, FUNC_MembershipUpgradePrivateShare) {
   }
 }
 
-TEST_F(TwoUsersApiTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
   std::string removal_message("It's not me, it's you.");
   std::string share_name1(RandomAlphaNumericString(5));
   boost::system::error_code error_code;
@@ -2077,7 +2077,7 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
   }
 }
 
-TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
   std::string removal_message("It's not me, it's you.");
   std::string share_name1(RandomAlphaNumericString(5));
   fs::path directory1, directory2;
