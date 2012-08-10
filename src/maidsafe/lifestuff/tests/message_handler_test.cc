@@ -61,6 +61,9 @@ class MessageHandlerTest : public testing::Test {
         session1_(),
         session2_(),
         session3_(),
+        asio_service1_(10),
+        asio_service2_(10),
+        asio_service3_(10),
         remote_chunk_store1_(),
         remote_chunk_store2_(),
         remote_chunk_store3_(),
@@ -70,9 +73,6 @@ class MessageHandlerTest : public testing::Test {
         message_handler1_(),
         message_handler2_(),
         message_handler3_(),
-        asio_service1_(10),
-        asio_service2_(10),
-        asio_service3_(10),
         public_username1_("User 1 " + RandomAlphaNumericString(8)),
         public_username2_("User 2 " + RandomAlphaNumericString(8)),
         public_username3_("User 3 " + RandomAlphaNumericString(8)),
@@ -244,13 +244,12 @@ class MessageHandlerTest : public testing::Test {
 
   std::shared_ptr<fs::path> test_dir_;
   Session session1_, session2_, session3_;
+  AsioService asio_service1_, asio_service2_, asio_service3_;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store1_,
                                          remote_chunk_store2_,
                                          remote_chunk_store3_;
   std::shared_ptr<PublicId> public_id1_, public_id2_, public_id3_;
   std::shared_ptr<MessageHandler> message_handler1_, message_handler2_, message_handler3_;
-
-  AsioService asio_service1_, asio_service2_, asio_service3_;
 
   std::string public_username1_, public_username2_, public_username3_, received_public_username_,
               received_message_;

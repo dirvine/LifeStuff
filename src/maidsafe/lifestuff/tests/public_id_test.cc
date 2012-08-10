@@ -70,12 +70,12 @@ class PublicIdTest : public testing::Test {
       : test_dir_(maidsafe::test::CreateTestPath()),
         session1_(),
         session2_(),
+        asio_service1_(5),
+        asio_service2_(5),
         remote_chunk_store1_(),
         remote_chunk_store2_(),
         public_id1_(),
         public_id2_(),
-        asio_service1_(5),
-        asio_service2_(5),
         public_identity1_("User 1 " + RandomAlphaNumericString(8)),
         public_identity2_("User 2 " + RandomAlphaNumericString(8)),
         received_public_identity_(),
@@ -224,11 +224,10 @@ class PublicIdTest : public testing::Test {
 
   std::shared_ptr<fs::path> test_dir_;
   Session session1_, session2_;
+  AsioService asio_service1_, asio_service2_;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store1_,
                                          remote_chunk_store2_;
   std::shared_ptr<PublicId> public_id1_, public_id2_;
-
-  AsioService asio_service1_, asio_service2_;
 
   std::string public_identity1_, public_identity2_, received_public_identity_, received_message_;
 #ifndef LOCAL_TARGETS_ONLY
@@ -672,7 +671,6 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
     ASSERT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
   }
   ASSERT_FALSE(received_public_identity_.empty());
-  public_id1_->StopCheckingForNewContacts();
 }
 
 TEST_F(PublicIdTest, FUNC_ContactList) {

@@ -82,9 +82,7 @@ MessageHandler::MessageHandler(std::shared_ptr<pcs::RemoteChunkStore> remote_chu
       delete_private_share_data_signal_(),
       save_open_share_data_signal_() {}
 
-MessageHandler::~MessageHandler() {
-  StopCheckingForNewMessages();
-}
+MessageHandler::~MessageHandler() {}
 
 void MessageHandler::StartUp(bptime::seconds interval) {
   // Retrive once all messages
@@ -127,8 +125,10 @@ int MessageHandler::StartCheckingForNewMessages(bptime::seconds interval) {
 }
 
 void MessageHandler::StopCheckingForNewMessages() {
-  get_new_messages_timer_active_ = false;
-  get_new_messages_timer_.cancel();
+  if (get_new_messages_timer_active_) {
+    get_new_messages_timer_active_ = false;
+    get_new_messages_timer_.cancel();
+  }
 }
 
 int MessageHandler::Send(const InboxItem& inbox_item) {
