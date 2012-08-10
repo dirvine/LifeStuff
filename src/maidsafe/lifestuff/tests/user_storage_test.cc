@@ -320,6 +320,68 @@ class UserStorageTest : public testing::TestWithParam<bool> {
     Sleep(interval_ * 2);
   }
 
+  int RemoveAndInformShareUsers(std::shared_ptr<UserStorage> user_storage,
+                                const std::string& sender_public_id,
+                                const fs::path& absolute_path,
+                                const std::vector<std::string>& members_to_remove,
+                                const StringIntMap& users) {
+    std::string share_id, new_share_id, new_directory_id;
+    asymm::Keys key_ring, new_key_ring;
+    fs::path relative_path(absolute_path.root_directory() / absolute_path.relative_path());
+    StringIntMap remaining_members(users), removed_members;
+    int result(kSuccess);
+    result = user_storage->RemoveShareUsers(sender_public_id, absolute_path, members_to_remove);
+    result += user_storage->GetShareDetails(relative_path,
+                                            nullptr,
+                                            &key_ring,
+                                            &share_id,
+                                            nullptr,
+                                            nullptr,
+                                            nullptr);
+    result += user_storage->MoveShare(sender_public_id,
+                                      share_id,
+                                      relative_path,
+                                      key_ring,
+                                      true,
+                                      &new_share_id,
+                                      &new_directory_id,
+                                      &new_key_ring);
+    remaining_members.erase(sender_public_id);
+    std::for_each(members_to_remove.begin(),
+                  members_to_remove.end(),
+                  [&](const std::string& member) {
+                    remaining_members.erase(member);
+                  });
+    std::find_if(users.begin(),
+                 users.end(),
+                 [&](const std::pair<std::string, int>& member)->bool {
+                    std::find_if(members_to_remove.begin(),
+                                 members_to_remove.end(),
+                                 [&](const std::string& user)->bool {
+                                   if (member.first == user) {
+                                     removed_members.insert(member);
+                                   }
+                                   return true;
+                                 });
+                    return true;
+                 });
+    result += user_storage->InformContactsOperation(kPrivateShareDeletion,
+                                                    sender_public_id,
+                                                    removed_members,
+                                                    share_id);
+    if (!remaining_members.empty()) {
+      result += user_storage->InformContactsOperation(kPrivateShareKeysUpdate,
+                                                      sender_public_id,
+                                                      remaining_members,
+                                                      share_id,
+                                                      "",
+                                                      new_directory_id,
+                                                      new_key_ring,
+                                                      new_share_id);
+    }
+    return result;
+  }
+
   maidsafe::test::TestPath test_dir_;
   fs::path mount_dir_;
   bool private_share_;
@@ -865,7 +927,7 @@ TEST_P(UserStorageTest, FUNC_RemoveUserByOwner) {
   std::vector<std::string> user_ids;
   user_ids.push_back(pub_name2_);
   EXPECT_EQ(kSuccess,
-            user_storage1_->RemoveShareUsers(pub_name1_, directory0, user_ids));
+            RemoveAndInformShareUsers(user_storage1_, pub_name1_, directory0, user_ids, users));
   tail = "I0E1k";
   fs::path sub_directory0(directory0 / tail);
   fs::create_directory(sub_directory0, error_code);
@@ -1062,8 +1124,10 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
   EXPECT_TRUE(fs::exists(directory0, error_code)) << directory0;
   std::vector<std::string> user_ids;
   user_ids.push_back(pub_name2_);
+  /*EXPECT_EQ(kSuccess,
+            user_storage1_->RemoveShareUsers(pub_name1_, directory0, user_ids));*/
   EXPECT_EQ(kSuccess,
-            user_storage1_->RemoveShareUsers(pub_name1_, directory0, user_ids));
+            RemoveAndInformShareUsers(user_storage1_, pub_name1_, directory0, user_ids, users));
   tail = "I0E1k";
   fs::path sub_directory0(directory0 / tail);
   fs::create_directory(sub_directory0, error_code);
