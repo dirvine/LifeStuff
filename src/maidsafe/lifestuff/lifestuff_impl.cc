@@ -994,6 +994,17 @@ int LifeStuffImpl::DeleteHiddenFile(const fs::path& absolute_path) {
   return user_storage_->DeleteHiddenFile(absolute_path);
 }
 
+int LifeStuffImpl::SearchHiddenFiles(const fs::path& absolute_path,
+                                     const std::string& regex,
+                                     std::list<std::string>* results) {
+  if (state_ != kLoggedIn) {
+    LOG(kError) << "Wrong state: " << state_;
+    return kGeneralError;
+  }
+
+  return user_storage_->SearchHiddenFiles(absolute_path, regex, results);
+}
+
 /// Private Shares
 int LifeStuffImpl::CreatePrivateShareFromExistingDirectory(
     const std::string& my_public_id,
@@ -1519,6 +1530,12 @@ int LifeStuffImpl::EditPrivateShareMembers(const std::string& my_public_id,
         if (inform_remaining_result != kSuccess) {
           return inform_remaining_result;
         }
+      } else {
+        BOOST_ASSERT(members_to_downgrade.empty());
+        BOOST_ASSERT(members_to_upgrade.empty());
+        BOOST_ASSERT(members_to_add.empty());
+        BOOST_ASSERT(members_to_remove.size() == 1);
+        return kSuccess;
       }
     }
   }

@@ -200,6 +200,12 @@ int LifeStuff::DeleteHiddenFile(const fs::path& absolute_path) {
   return lifestuff_impl->DeleteHiddenFile(absolute_path);
 }
 
+int LifeStuff::SearchHiddenFiles(const fs::path& absolute_path,
+                                 const std::string& regex,
+                                 std::list<std::string>* results) {
+  return lifestuff_impl->SearchHiddenFiles(absolute_path, regex, results);
+}
+
 /// Private Shares
 int LifeStuff::CreatePrivateShareFromExistingDirectory(const std::string& my_public_id,
                                                        const fs::path& directory_in_lifestuff_drive,
