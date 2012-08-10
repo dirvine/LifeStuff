@@ -865,7 +865,7 @@ TEST_P(UserStorageTest, FUNC_RemoveUserByOwner) {
   std::vector<std::string> user_ids;
   user_ids.push_back(pub_name2_);
   EXPECT_EQ(kSuccess,
-            user_storage1_->RemoveShareUsers(pub_name1_, directory0, user_ids, private_share_));
+            user_storage1_->RemoveShareUsers(pub_name1_, directory0, user_ids));
   tail = "I0E1k";
   fs::path sub_directory0(directory0 / tail);
   fs::create_directory(sub_directory0, error_code);
@@ -1063,7 +1063,7 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
   std::vector<std::string> user_ids;
   user_ids.push_back(pub_name2_);
   EXPECT_EQ(kSuccess,
-            user_storage1_->RemoveShareUsers(pub_name1_, directory0, user_ids, private_share_));
+            user_storage1_->RemoveShareUsers(pub_name1_, directory0, user_ids));
   tail = "I0E1k";
   fs::path sub_directory0(directory0 / tail);
   fs::create_directory(sub_directory0, error_code);

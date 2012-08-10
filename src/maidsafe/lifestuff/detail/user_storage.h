@@ -222,6 +222,7 @@ class UserStorage {
                               const asymm::Keys& key_ring = asymm::Keys(),
                               const std::string& new_share_id = "",
                               StringIntMap* contacts_results = nullptr);
+
  private:
   UserStorage &operator=(const UserStorage&);
   UserStorage(const UserStorage&);
