@@ -641,6 +641,61 @@ TEST_F(TwoUsersApiTest, FUNC_RemoveContact) {
   }
 }
 
+TEST_F(TwoUsersApiTest, FUNC_RemoveContactAddContact) {
+  for (int i = 0; i < 2; ++i) {
+    std::string removal_message(RandomAlphaNumericString(RandomUint32() % 20 + 10));
+    {
+      EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+
+      EXPECT_EQ(kSuccess, test_elements_1_.RemoveContact(public_id_1_, public_id_2_,
+                                                         removal_message));
+      EXPECT_TRUE(test_elements_1_.GetContacts(public_id_1_).empty());
+
+      EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+    }
+    {
+      EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+      while (!testing_variables_2_.removed)
+        Sleep(bptime::milliseconds(100));
+
+      EXPECT_EQ(removal_message, testing_variables_2_.removal_message);
+      bool contact_deleted(false);
+      while (!contact_deleted)
+        contact_deleted = test_elements_2_.GetContacts(public_id_2_).empty();
+      EXPECT_TRUE(contact_deleted);
+
+      EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+    }
+
+    test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_);
+    test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_);
+    const std::string request_message(RandomAlphaNumericString(RandomUint32() % 20 + 10));
+
+    if (i % 2 == 0) {
+      testing_variables_2_.newly_contacted = false;
+
+      test_elements_1_.AddContact(public_id_1_, public_id_2_, request_message);
+
+      while (!testing_variables_2_.newly_contacted)
+        Sleep(bptime::milliseconds(100));
+      EXPECT_EQ(testing_variables_2_.contact_request_message, request_message);
+      test_elements_2_.ConfirmContact(public_id_2_, public_id_1_);
+    } else {
+      testing_variables_1_.newly_contacted = false;
+
+      test_elements_2_.AddContact(public_id_2_, public_id_1_, request_message);
+
+      while (!testing_variables_1_.newly_contacted)
+        Sleep(bptime::milliseconds(100));
+      EXPECT_EQ(testing_variables_1_.contact_request_message, request_message);
+      test_elements_1_.ConfirmContact(public_id_1_, public_id_2_);
+    }
+
+    EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+    EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+  }
+}
+
 TEST_F(TwoUsersApiTest, FUNC_AddContactWithMessage) {
   test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_);
   test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_);
@@ -659,6 +714,47 @@ TEST_F(TwoUsersApiTest, FUNC_AddContactWithMessage) {
 
   EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+}
+
+TEST_F(TwoUsersApiTest, FUNC_AddThenRemoveOfflineUser) {
+  test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_);
+
+  const std::string public_id_3(RandomAlphaNumericString(RandomUint32() % 30 + 1));
+  test_elements_1_.CreatePublicId(public_id_3);
+
+  const std::string add_message(RandomAlphaNumericString(RandomUint32() % 90));
+  EXPECT_EQ(kSuccess, test_elements_1_.AddContact(public_id_3, public_id_2_, add_message));
+
+  const std::string remove_message(RandomAlphaNumericString(RandomUint32() % 90));
+  EXPECT_EQ(kSuccess, test_elements_1_.RemoveContact(public_id_3, public_id_2_, remove_message));
+
+  EXPECT_TRUE(test_elements_1_.GetContacts(public_id_3).empty());
+
+  test_elements_1_.LogOut();
+
+  testing_variables_2_.newly_contacted = false;
+  testing_variables_2_.removed = false;
+  test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_);
+
+  int i(0);
+  while (!testing_variables_2_.newly_contacted && i < 60) {
+    ++i;
+    Sleep(bptime::milliseconds(100));
+  }
+  EXPECT_TRUE(testing_variables_2_.newly_contacted);
+  EXPECT_EQ(add_message, testing_variables_2_.contact_request_message);
+
+  i = 0;
+  while (!testing_variables_2_.removed && i < 60) {
+    ++i;
+    Sleep(bptime::milliseconds(100));
+  }
+  EXPECT_TRUE(testing_variables_2_.removed);
+  EXPECT_EQ(remove_message, testing_variables_2_.removal_message);
+
+  EXPECT_EQ(1, test_elements_2_.GetContacts(public_id_2_).size());
+
+  test_elements_2_.LogOut();
 }
 
 TEST_F(TwoUsersApiTest, FUNC_CreateEmptyOpenShare) {
