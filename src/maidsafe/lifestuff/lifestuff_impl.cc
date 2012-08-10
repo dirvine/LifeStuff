@@ -637,18 +637,18 @@ int LifeStuffImpl::RemoveContact(const std::string& my_public_id,
 
   // For private shares, if share_members can be fetched, indicates owner
   // otherwise, only the owner(inviter) of the share can be fetched
-//  std::vector<std::string> share_names;
-//  GetPrivateSharesIncludingMember(my_public_id, contact_public_id, &share_names);
-//  StringIntMap contact_to_remove;
-//  contact_to_remove.insert(std::make_pair(contact_public_id, kShareRemover));
-//  for (auto it = share_names.begin(); it != share_names.end(); ++it) {
-//    StringIntMap results;
-//    EditPrivateShareMembers(my_public_id, contact_to_remove, *it, &results);
-//  }
-//  share_names.clear();
-//  user_storage_->GetPrivateSharesContactBeingOwner(my_public_id, contact_public_id, &share_names);
-//  for (auto it = share_names.begin(); it != share_names.end(); ++it)
-//    LeavePrivateShare(my_public_id, *it);
+  std::vector<std::string> share_names;
+  GetPrivateSharesIncludingMember(my_public_id, contact_public_id, &share_names);
+  StringIntMap contact_to_remove;
+  contact_to_remove.insert(std::make_pair(contact_public_id, kShareRemover));
+  for (auto it = share_names.begin(); it != share_names.end(); ++it) {
+    StringIntMap results;
+    EditPrivateShareMembers(my_public_id, contact_to_remove, *it, &results, false);
+  }
+  share_names.clear();
+  user_storage_->GetPrivateSharesContactBeingOwner(my_public_id, contact_public_id, &share_names);
+  for (auto it = share_names.begin(); it != share_names.end(); ++it)
+    LeavePrivateShare(my_public_id, *it, false);
 
   // Remove the contact
   result = public_id_->RemoveContact(my_public_id,
@@ -1220,20 +1220,6 @@ int LifeStuffImpl::GetPrivateSharesIncludingMember(const std::string& my_public_
   return kSuccess;
 }
 
-// The response shall come with a local share_name; if empty provided, it is a rejection
-void RespondInvitation(const std::string& send_from,
-                       const std::string& send_to,
-                       const std::string& share_id,
-                       const std::string& share_name,
-                       std::shared_ptr<MessageHandler> message_handler) {
-  InboxItem message(kRespondToShareInvitation);
-  message.sender_public_id = send_from;
-  message.receiver_public_id = send_to;
-  message.content.push_back(share_id);
-  message.content.push_back(share_name);
-  message_handler->Send(message);
-}
-
 int LifeStuffImpl::AcceptPrivateShareInvitation(const std::string& my_public_id,
                                                 const std::string& contact_public_id,
                                                 const std::string& share_id,
@@ -1277,10 +1263,11 @@ int LifeStuffImpl::AcceptPrivateShareInvitation(const std::string& my_public_id,
     share_details.share_type = kPrivateReadWriteMember;
   }
   // remove the temp share invitation file no matter insertion succeed or not
-  user_storage_->DeleteHiddenFile(hidden_file);
-
+  result = user_storage_->DeleteHiddenFile(hidden_file);
+  if (result != kSuccess) {
+    LOG(kWarning) << "Failed to delete hidden file.";
+  }
   fs::path share_dir(mount_path() / kSharedStuff / *share_name);
-
   result = user_storage_->InsertShare(share_dir,
                                       share_id,
                                       contact_public_id,
@@ -1306,12 +1293,18 @@ int LifeStuffImpl::AcceptPrivateShareInvitation(const std::string& my_public_id,
 
     session_.set_changed(true);
   }
-
-  RespondInvitation(message.receiver_public_id(),
-                    message.sender_public_id(),
-                    share_id,
-                    *share_name,
-                    message_handler_);
+  asymm::Keys keys;
+  StringIntMap contacts;
+  contacts.insert(std::make_pair(message.sender_public_id(), 0));
+  // Non-empty share_name implies acceptance...
+  result = user_storage_->InformContactsOperation(kRespondToShareInvitation,
+                                                  my_public_id,
+                                                  contacts,
+                                                  share_id,
+                                                  *share_name,
+                                                  "",
+                                                  keys,
+                                                  "");
   return result;
 }
 
@@ -1336,59 +1329,327 @@ int LifeStuffImpl::RejectPrivateShareInvitation(const std::string& my_public_id,
   Message message;
   if (!message.ParseFromString(serialised_share_data))
     LOG(kError) << "Failed to parse data in hidden file for private share.";
-
-  RespondInvitation(message.receiver_public_id(),
-                    message.sender_public_id(),
-                    share_id,
-                    "",
-                    message_handler_);
-
-  return user_storage_->DeleteHiddenFile(hidden_file);
+  result = user_storage_->DeleteHiddenFile(hidden_file);
+  if (result != kSuccess) {
+    LOG(kWarning) << "Failed to delete hidden file.";
+  }
+  asymm::Keys keys;
+  StringIntMap contacts;
+  contacts.insert(std::make_pair(message.sender_public_id(), 0));
+  // Empty share_name implies rejection...
+  result = user_storage_->InformContactsOperation(kRespondToShareInvitation,
+                                                  my_public_id,
+                                                  contacts,
+                                                  share_id,
+                                                  "",
+                                                  "",
+                                                  keys,
+                                                  "");
+  return result;
 }
 
 int LifeStuffImpl::EditPrivateShareMembers(const std::string& my_public_id,
                                            const StringIntMap& public_ids,
                                            const std::string& share_name,
-                                           StringIntMap* results) {
+                                           StringIntMap* results,
+                                           bool inform_contacts) {
   if (!results) {
-    LOG(kError) << "Results parameter must be valid.";
+    LOG(kError) << "Results parameter invalid.";
     return kGeneralError;
   }
-
   StringIntMap share_members;
   int result(GetPrivateShareMembers(my_public_id, share_name, &share_members));
   if (result != kSuccess) {
-    LOG(kError) << "Failure to get members.";
+    LOG(kError) << "Failed to get share members for " << share_name;
     return result;
   }
-
-  std::vector<std::string> member_ids;
+  std::vector<std::string> member_ids; 
   for (auto it = share_members.begin(); it != share_members.end(); ++it)
-    member_ids.push_back((*it).first);
-
+    member_ids.push_back(it->first);
   StringIntMap members_to_add, members_to_upgrade, members_to_downgrade;
   std::vector<std::string> members_to_remove;
   for (auto it = public_ids.begin(); it != public_ids.end(); ++it) {
-    auto itr(std::find(member_ids.begin(), member_ids.end(), (*it).first));
+    auto itr(std::find(member_ids.begin(), member_ids.end(), it->first));
     if (itr != member_ids.end()) {
-      // -1 indicates removing the existing member
-      //  0 indicates downgrading the existing member
-      //  1 indicates upgrading the existing member
-      if ((*it).second == kShareRemover)
+      if (it->second == kShareRemover) // Remove existing share user.
         members_to_remove.push_back(*itr);
-      if (share_members[(*it).first] != (*it).second) {
-        if ((*it).second == kShareReadOnly)
+      if (share_members[it->first] != it->second) {
+        if (it->second == kShareReadOnly) // Downgrade existing share user.
           members_to_downgrade.insert(*it);
-        if ((*it).second >= kShareReadWrite)
+        if (it->second >= kShareReadWrite) // Upgrade existing share user.
           members_to_upgrade.insert(*it);
       }
     } else {
-      // a non-existing user indicates an adding
-      members_to_add.insert(*it);
+      members_to_add.insert(*it); // Add non-existing share user.
     }
   }
-  fs::path share_dir(mount_path() / kSharedStuff / share_name);
-  // Add new users
+
+  fs::path share_dir(mount_path() / kSharedStuff / share_name),
+           shared_relative_path(share_dir.root_directory() / share_dir.relative_path());
+  std::string share_id, new_share_id, new_directory_id;
+  asymm::Keys new_key_ring;
+  bool downgraded_members_informed(false), upgraded_members_informed(false);
+  // Remove members...
+  if (!members_to_remove.empty()) {
+    result = user_storage_->RemoveShareUsers(my_public_id,
+                                             share_dir,
+                                             members_to_remove);
+    if (result != kSuccess) {
+      LOG(kError) << "Failed to remove share members for " << share_name;
+      for (auto it = members_to_remove.begin(); it != members_to_remove.end(); ++it)
+        results->insert(std::make_pair(*it, result));
+    } else {
+      for (auto it = members_to_remove.begin(); it != members_to_remove.end(); ++it)
+        results->insert(std::make_pair(*it, kSuccess));
+    }
+    asymm::Keys key_ring;
+    StringIntMap share_members;
+    result = user_storage_->GetShareDetails(shared_relative_path,
+                                            nullptr,
+                                            &key_ring,
+                                            &share_id,
+                                            nullptr,
+                                            &share_members,
+                                            nullptr);
+    if (result != kSuccess) {
+      LOG(kError) << "Failed to get share details for " << share_name;
+    } else {
+      result = user_storage_->MoveShare(my_public_id,
+                                        share_id,
+                                        shared_relative_path,
+                                        key_ring,
+                                        true,
+                                        &new_share_id,
+                                        &new_directory_id,
+                                        &new_key_ring);
+      if (result != kSuccess) {
+        LOG(kError) << "Failed to move share " << share_name;
+      }
+      
+      if (inform_contacts) {
+        int inform_remaining_result(kSuccess);
+        std::for_each(members_to_remove.begin(),
+                      members_to_remove.end(),
+                      [&](const std::string& member) {
+                          share_members.erase(member);
+                      });
+        if (!members_to_downgrade.empty()) {
+          std::for_each(members_to_downgrade.begin(),
+                        members_to_downgrade.end(),
+                        [&](const std::pair<std::string, int>& member) {
+                          share_members.erase(member.first);
+                        });
+          results->clear();
+          result = user_storage_->DowngradeShareUsersRights(my_public_id,
+                                                            share_dir,
+                                                            members_to_downgrade,
+                                                            results);
+          if (result != kSuccess) {
+            LOG(kError) << "Failed to downgrade share members for " << share_name;
+          }
+          asymm::Keys key_ring;
+          result = user_storage_->InformContactsOperation(kPrivateShareMembershipDowngrade,
+                                                          my_public_id,
+                                                          *results,
+                                                          share_id,
+                                                          "",
+                                                          new_directory_id,
+                                                          key_ring,
+                                                          new_share_id);
+          if (result != kSuccess) {
+            LOG(kError) << "Failed to inform contacts of downgrade for " << share_name;
+            return result;
+          }
+          downgraded_members_informed = true;
+        }
+        if (!members_to_upgrade.empty()) {
+          std::for_each(members_to_upgrade.begin(),
+                        members_to_upgrade.end(),
+                        [&](const std::pair<std::string, int>& member) {
+                          share_members.erase(member.first);
+                        });
+          results->clear();
+          result = user_storage_->UpgradeShareUsersRights(my_public_id,
+                                                          share_dir,
+                                                          members_to_upgrade,
+                                                          results);
+          if (result != kSuccess) {
+            LOG(kError) << "Failed to upgrade share members for " << share_name;
+          }
+          result = user_storage_->InformContactsOperation(kPrivateShareMembershipUpgrade,
+                                                          my_public_id,
+                                                          *results,
+                                                          share_id,
+                                                          "",
+                                                          new_directory_id,
+                                                          new_key_ring,
+                                                          new_share_id);
+          if (result != kSuccess) {
+            LOG(kError) << "Failed to inform contacts of upgrade for " << share_name;
+            return result;
+          }
+          upgraded_members_informed = true;
+        }
+        result = user_storage_->InformContactsOperation(kPrivateShareKeysUpdate,
+                                                        my_public_id,
+                                                        share_members,
+                                                        share_id,
+                                                        "",
+                                                        new_directory_id,
+                                                        new_key_ring,
+                                                        new_share_id);
+        if (result != kSuccess) {
+          LOG(kError) << "Failed to inform remaining contacts of share: " << Base32Substr(share_id)
+                      << ", with result of : " << result;
+          inform_remaining_result = result;
+        }
+        StringIntMap removed_members;
+        for (auto it = members_to_remove.begin(); it != members_to_remove.end(); ++it) {
+          removed_members.insert(std::make_pair(*it, kShareReadOnly));
+        }
+        result = user_storage_->InformContactsOperation(kPrivateShareDeletion,
+                                                        my_public_id,
+                                                        removed_members,
+                                                        share_id);
+        if (result != kSuccess) {
+          LOG(kError) << "Failed to inform removed contacts of share: " << Base32Substr(share_id)
+                      << ", with result of : " << result;
+          return result;
+        }
+        if (inform_remaining_result != kSuccess) {
+          return inform_remaining_result;
+        }
+      }
+    }
+  }
+   // Downgrade members...
+  if (!members_to_downgrade.empty()) {
+    if (!downgraded_members_informed) {
+      result = user_storage_->DowngradeShareUsersRights(my_public_id,
+                                                        share_dir,
+                                                        members_to_downgrade,
+                                                        results);
+      if (result != kSuccess) {
+        LOG(kError) << "Failed to downgrade rights: " << result;
+        return result;
+      }
+      asymm::Keys old_key_ring;
+      StringIntMap share_members;
+      result = user_storage_->GetShareDetails(shared_relative_path,
+                                              nullptr,
+                                              &old_key_ring,
+                                              &share_id,
+                                              nullptr,
+                                              &share_members,
+                                              nullptr);
+      if (result != kSuccess) {
+        LOG(kError) << "Failed to get share details for " << share_name;
+      } else {
+        result = user_storage_->MoveShare(my_public_id,
+                                          share_id,
+                                          shared_relative_path,
+                                          old_key_ring,
+                                          true,
+                                          &new_share_id,
+                                          &new_directory_id,
+                                          &new_key_ring);
+        if (result != kSuccess) {
+          LOG(kError) << "Failed to move share " << share_name;
+        }
+        asymm::Keys key_ring;
+        std::for_each(members_to_downgrade.begin(),
+                      members_to_downgrade.end(),
+                      [&](const std::pair<std::string, int>& member) {
+                        share_members.erase(member.first);
+                      });
+        if (!members_to_upgrade.empty()) {
+          std::for_each(members_to_upgrade.begin(),
+                        members_to_upgrade.end(),
+                        [&](const std::pair<std::string, int>& member) {
+                          share_members.erase(member.first);
+                        });
+          results->clear();
+          result = user_storage_->UpgradeShareUsersRights(my_public_id,
+                                                          share_dir,
+                                                          members_to_upgrade,
+                                                          results);
+          if (result != kSuccess) {
+            LOG(kError) << "Failed to upgrade share members for " << share_name;
+          }
+          result = user_storage_->InformContactsOperation(kPrivateShareMembershipUpgrade,
+                                                          my_public_id,
+                                                          *results,
+                                                          share_id,
+                                                          "",
+                                                          new_directory_id,
+                                                          new_key_ring,
+                                                          new_share_id);
+          if (result != kSuccess) {
+            LOG(kError) << "Failed to inform contacts of upgrade for " << share_name;
+            return result;
+          }
+          upgraded_members_informed = true;
+        }
+        result = user_storage_->InformContactsOperation(kPrivateShareMembershipDowngrade,
+                                                        my_public_id,
+                                                        *results,
+                                                        share_id,
+                                                        "",
+                                                        new_directory_id,
+                                                        key_ring,
+                                                        new_share_id);
+        if (result != kSuccess) {
+          LOG(kError) << "Failed to inform contacts of downgrade for " << share_name;
+          return result;
+        }
+        result = user_storage_->InformContactsOperation(kPrivateShareKeysUpdate,
+                                                        my_public_id,
+                                                        share_members,
+                                                        share_id,
+                                                        "",
+                                                        new_directory_id,
+                                                        new_key_ring,
+                                                        new_share_id);
+        if (result != kSuccess) {
+          LOG(kError) << "Failed to inform remaining contacts of share: " << Base32Substr(share_id)
+                      << ", with result of : " << result;
+        }
+      }
+    }
+  }
+  // Upgrade members...
+  if (!members_to_upgrade.empty()) {
+    if (!upgraded_members_informed) {
+      result = user_storage_->GetShareDetails(shared_relative_path,
+                                              nullptr,
+                                              &new_key_ring,
+                                              &share_id,
+                                              nullptr,
+                                              nullptr,
+                                              nullptr);
+      results->clear();
+      result = user_storage_->UpgradeShareUsersRights(my_public_id,
+                                                      share_dir,
+                                                      members_to_upgrade,
+                                                      results);
+      if (result != kSuccess) {
+        LOG(kError) << "Failed to upgrade share members for " << share_name;
+      }
+      result = user_storage_->InformContactsOperation(kPrivateShareMembershipUpgrade,
+                                                      my_public_id,
+                                                      *results,
+                                                      share_id,
+                                                      "",
+                                                      "",
+                                                      new_key_ring,
+                                                      "");
+      if (result != kSuccess) {
+        LOG(kError) << "Failed to inform contacts of upgrade for " << share_name;
+        return result;
+      }
+    }
+  }
+  // Add new members...
   if (!members_to_add.empty()) {
     StringIntMap add_users_results;
     result += user_storage_->AddShareUsers(my_public_id,
@@ -1397,44 +1658,6 @@ int LifeStuffImpl::EditPrivateShareMembers(const std::string& my_public_id,
                                            drive::kMsPrivateShare,
                                            &add_users_results);
     results->insert(add_users_results.begin(), add_users_results.end());
-  }
-  // Remove users
-  if (!members_to_remove.empty()) {
-    result = user_storage_->RemoveShareUsers(my_public_id,
-                                             share_dir,
-                                             members_to_remove,
-                                             drive::kMsPrivateShare);
-    if (result == kSuccess) {
-      for (auto it = members_to_remove.begin(); it != members_to_remove.end(); ++it)
-        results->insert(std::make_pair(*it, kSuccess));
-    } else {
-      for (auto it = members_to_remove.begin(); it != members_to_remove.end(); ++it)
-        results->insert(std::make_pair(*it, result));
-    }
-  }
-  // Upgrade users
-  if (!members_to_upgrade.empty()) {
-    for (auto it = members_to_upgrade.begin();
-         it != members_to_upgrade.end(); ++it) {
-      result = user_storage_->SetShareUsersRights(my_public_id,
-                                                  share_dir,
-                                                  (*it).first,
-                                                  (*it).second,
-                                                  drive::kMsPrivateShare);
-      results->insert(std::make_pair((*it).first, result));
-    }
-  }
-  // Downgrade users
-  if (!members_to_downgrade.empty()) {
-    result = user_storage_->DowngradeShareUsersRights(my_public_id,
-                                                      share_dir,
-                                                      members_to_downgrade,
-                                                      results,
-                                                      drive::kMsPrivateShare);
-    if (result != kSuccess) {
-      LOG(kError) << "Failed to downgrade rights: " << result;
-      return result;
-    }
   }
   return kSuccess;
 }
@@ -1467,7 +1690,8 @@ int LifeStuffImpl::DeletePrivateShare(const std::string& my_public_id,
 }
 
 int LifeStuffImpl::LeavePrivateShare(const std::string& my_public_id,
-                                     const std::string& share_name) {
+                                     const std::string& share_name,
+                                     bool inform_contacts) {
   int result(PreContactChecks(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in LeavePrivateShare.";
@@ -1475,7 +1699,7 @@ int LifeStuffImpl::LeavePrivateShare(const std::string& my_public_id,
   }
 
   fs::path share_dir(mount_path() / kSharedStuff / share_name);
-  result = user_storage_->RemoveShare(share_dir, my_public_id);
+  result = user_storage_->RemoveShare(share_dir, my_public_id, inform_contacts);
   if (result == kSuccess) {
     const ShareInformationDetail share_information(session_.share_information(my_public_id));
     if (!share_information.first) {
@@ -1731,12 +1955,6 @@ int LifeStuffImpl::AcceptOpenShareInvitation(const std::string& my_public_id,
   StringIntMap contacts;
   contacts.insert(std::make_pair(my_public_id, 1));
   result = user_storage_->AddOpenShareUser(share_dir, contacts);
-
-  RespondInvitation(message.receiver_public_id(),
-                    message.sender_public_id(),
-                    share_id,
-                    *share_name,
-                    message_handler_);
   if (result != kSuccess) {
     LOG(kError) << "Failed to add user to open share, result " << result;
   } else {
@@ -1753,6 +1971,17 @@ int LifeStuffImpl::AcceptOpenShareInvitation(const std::string& my_public_id,
     }
     session_.set_changed(true);
   }
+  asymm::Keys keys;
+  contacts.clear();
+  contacts.insert(std::make_pair(message.sender_public_id(), 0));
+  result = user_storage_->InformContactsOperation(kRespondToShareInvitation,
+                                                  my_public_id,
+                                                  contacts,
+                                                  share_id,
+                                                  *share_name,
+                                                  "",
+                                                  keys,
+                                                  "");
   return result;
 }
 
@@ -1778,12 +2007,22 @@ int LifeStuffImpl::RejectOpenShareInvitation(const std::string& my_public_id,
   if (!message.ParseFromString(serialised_share_data))
     LOG(kError) << "Failed to parse data in hidden file for private share.";
 
-  RespondInvitation(message.receiver_public_id(),
-                    message.sender_public_id(),
-                    share_id,
-                    "",
-                    message_handler_);
-  return user_storage_->DeleteHiddenFile(hidden_file);
+  result = user_storage_->DeleteHiddenFile(hidden_file);
+  if (result != kSuccess) {
+    LOG(kWarning) << "Failed to delete hidden file.";
+  }
+  asymm::Keys keys;
+  StringIntMap contacts;
+  contacts.insert(std::make_pair(message.sender_public_id(), 0));
+  result = user_storage_->InformContactsOperation(kRespondToShareInvitation,
+                                                  my_public_id,
+                                                  contacts,
+                                                  share_id,
+                                                  "",
+                                                  "",
+                                                  keys,
+                                                  "");
+  return result;
 }
 
 int LifeStuffImpl::LeaveOpenShare(const std::string& my_public_id, const std::string& share_name) {

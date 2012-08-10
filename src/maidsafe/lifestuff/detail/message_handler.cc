@@ -466,8 +466,8 @@ void MessageHandler::ProcessShareInvitationResponse(const InboxItem& inbox_item)
     return;
   }
   share_invitation_response_signal_(inbox_item.sender_public_id,
-                                    inbox_item.receiver_public_id,
                                     inbox_item.content[kShareName],
+                                    inbox_item.receiver_public_id,
                                     inbox_item.content[kShareId],
                                     inbox_item.timestamp);
 }
