@@ -333,10 +333,25 @@ int UserStorage::CreateOpenShare(const std::string& sender_public_id,
                                  StringIntMap* contacts_results) {
   int result(kSuccess);
   if (!drive_path.empty()) {
-    result = drive_in_user_space_->MoveDirectory(drive_path, share_path);
+    /*result = drive_in_user_space_->MoveDirectory(drive_path, share_path);
     if (result != kSuccess) {
       LOG(kError) << "Failed to create share directory " << share_path;
       return result;
+    }*/
+    boost::system::error_code error_code;
+    fs::create_directory(share_path, error_code);
+    if (error_code) {
+      LOG(kError) << "Failed creating directory " << share_path << ": " << error_code.message();
+      return kGeneralError;
+    }
+    result = CopyDirectoryContent(drive_path, share_path);
+    if (result != kSuccess) {
+      LOG(kError) << "Failed to copy share directory content " << share_path;
+      return result;
+    }
+    fs::remove_all(drive_path, error_code);
+    if (error_code) {
+      LOG(kError) << "Failed deleting directory " << drive_path << ": " << error_code.message();
     }
   } else {
     boost::system::error_code error_code;

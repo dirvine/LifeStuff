@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <utility>
 #include <vector>
 
 #include "maidsafe/common/asio_service.h"
@@ -1374,7 +1375,7 @@ int LifeStuffImpl::EditPrivateShareMembers(const std::string& my_public_id,
     LOG(kError) << "Failed to get share members for " << share_name;
     return result;
   }
-  std::vector<std::string> member_ids; 
+  std::vector<std::string> member_ids;
   for (auto it = share_members.begin(); it != share_members.end(); ++it)
     member_ids.push_back(it->first);
   StringIntMap members_to_add, members_to_upgrade, members_to_downgrade;
@@ -1382,16 +1383,16 @@ int LifeStuffImpl::EditPrivateShareMembers(const std::string& my_public_id,
   for (auto it = public_ids.begin(); it != public_ids.end(); ++it) {
     auto itr(std::find(member_ids.begin(), member_ids.end(), it->first));
     if (itr != member_ids.end()) {
-      if (it->second == kShareRemover) // Remove existing share user.
+      if (it->second == kShareRemover)  // Remove existing share user.
         members_to_remove.push_back(*itr);
       if (share_members[it->first] != it->second) {
-        if (it->second == kShareReadOnly) // Downgrade existing share user.
+        if (it->second == kShareReadOnly)  // Downgrade existing share user.
           members_to_downgrade.insert(*it);
-        if (it->second >= kShareReadWrite) // Upgrade existing share user.
+        if (it->second >= kShareReadWrite)  // Upgrade existing share user.
           members_to_upgrade.insert(*it);
       }
     } else {
-      members_to_add.insert(*it); // Add non-existing share user.
+      members_to_add.insert(*it);  // Add non-existing share user.
     }
   }
 
@@ -1436,7 +1437,7 @@ int LifeStuffImpl::EditPrivateShareMembers(const std::string& my_public_id,
       if (result != kSuccess) {
         LOG(kError) << "Failed to move share " << share_name;
       }
-      
+
       if (inform_contacts) {
         int inform_remaining_result(kSuccess);
         std::for_each(members_to_remove.begin(),
@@ -1539,7 +1540,7 @@ int LifeStuffImpl::EditPrivateShareMembers(const std::string& my_public_id,
       }
     }
   }
-   // Downgrade members...
+  // Downgrade members...
   if (!members_to_downgrade.empty()) {
     if (!downgraded_members_informed) {
       result = user_storage_->DowngradeShareUsersRights(my_public_id,
