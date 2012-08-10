@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
   maidsafe::log::Logging::instance().AddFilter("lifestuff", maidsafe::log::kInfo);
   maidsafe::log::Logging::instance().SetColour(maidsafe::log::ColourMode::kPartialLine);
 
-
+  testing::FLAGS_gtest_catch_exceptions = false;
   testing::InitGoogleTest(&argc, argv);
   int result(RUN_ALL_TESTS());
   int test_count = testing::UnitTest::GetInstance()->test_to_run_count();
