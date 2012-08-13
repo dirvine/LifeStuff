@@ -1398,7 +1398,7 @@ int LifeStuffImpl::EditPrivateShareMembers(const std::string& my_public_id,
   }
 
   fs::path share_dir(mount_path() / kSharedStuff / share_name),
-           shared_relative_path(share_dir.root_directory() / share_dir.relative_path());
+           shared_relative_path(drive::RelativePath(mount_path(), share_dir));
   std::string share_id, new_share_id, new_directory_id;
   asymm::Keys new_key_ring;
   bool downgraded_members_informed(false), upgraded_members_informed(false);

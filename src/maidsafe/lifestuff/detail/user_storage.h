@@ -84,7 +84,7 @@ class UserStorage {
   bool ParseAndSaveDataMap(const std::string& file_name,
                            const std::string& serialised_data_map,
                            std::string* data_map_hash);
-  int GetDataMap(const fs::path& absolute_path, std::string* serialised_data_map) const;
+  int GetDataMap(const fs::path& absolute_path, std::string* serialised_data_map);
   int InsertDataMap(const fs::path& absolute_path, const std::string& serialised_data_map);
   int GetDirectoryListing(const fs::path& absolute_path,
                           std::string* parent_id,
@@ -137,7 +137,7 @@ class UserStorage {
                           const fs::path& absolute_path,
                           const StringIntMap& contacts,
                           StringIntMap* contacts_results);
-  int GetAllShareUsers(const fs::path& absolute_path, StringIntMap* all_share_users) const;
+  int GetAllShareUsers(const fs::path& absolute_path, StringIntMap* all_share_users);
   int RemoveShareUsers(const std::string& sender_public_username,
                        const fs::path& absolute_path,
                        const std::vector<std::string>& user_ids);
@@ -149,7 +149,7 @@ class UserStorage {
                            const std::vector<std::string>& user_ids);
   int GetShareUsersRights(const fs::path& absolute_path,
                           const std::string& user_id,
-                          int* admin_rights) const;
+                          int* admin_rights);
   int SetShareUsersRights(const std::string& sender_public_username,
                           const fs::path& absolute_path,
                           const std::string& user_id,
@@ -192,11 +192,11 @@ class UserStorage {
                                         const std::string& contact_public_id,
                                         std::vector<std::string>* shares_names);
   // **************************** File Notes ***********************************
-  int GetNotes(const fs::path& absolute_path, std::vector<std::string>* notes) const;
+  int GetNotes(const fs::path& absolute_path, std::vector<std::string>* notes);
   int AddNote(const fs::path& absolute_path, const std::string& note);
 
   // *************************** Hidden Files **********************************
-  int ReadHiddenFile(const fs::path& absolute_path, std::string* content) const;
+  int ReadHiddenFile(const fs::path& absolute_path, std::string* content);
   int WriteHiddenFile(const fs::path& absolute_path,
                       const std::string& content,
                       bool overwrite_existing);
