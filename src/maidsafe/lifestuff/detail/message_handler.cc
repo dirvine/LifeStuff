@@ -119,7 +119,7 @@ int MessageHandler::StartCheckingForNewMessages(bptime::seconds interval) {
   get_new_messages_timer_active_ = true;
   get_new_messages_timer_.expires_from_now(interval);
   get_new_messages_timer_.async_wait([=] (const boost::system::error_code& error_code) {
-                                       return GetNewMessages(interval, error_code);
+                                       GetNewMessages(interval, error_code);
                                      });
   return kSuccess;
 }
@@ -295,7 +295,7 @@ void MessageHandler::GetNewMessages(const bptime::seconds& interval,
 
   get_new_messages_timer_.expires_from_now(interval);
   get_new_messages_timer_.async_wait([=] (const boost::system::error_code& error_code) {
-                                       return GetNewMessages(interval, error_code);
+                                       GetNewMessages(interval, error_code);
                                      });
 }
 
@@ -466,8 +466,8 @@ void MessageHandler::ProcessShareInvitationResponse(const InboxItem& inbox_item)
     return;
   }
   share_invitation_response_signal_(inbox_item.sender_public_id,
-                                    inbox_item.receiver_public_id,
                                     inbox_item.content[kShareName],
+                                    inbox_item.receiver_public_id,
                                     inbox_item.content[kShareId],
                                     inbox_item.timestamp);
 }
@@ -537,12 +537,6 @@ void MessageHandler::ProcessPrivateShare(const InboxItem& inbox_item) {
       LOG(kError) << "Incorrect elements in message.";
       return;
     }
-    private_member_access_change_signal_(inbox_item.receiver_public_id,
-                                         inbox_item.sender_public_id,
-                                         share_name,
-                                         inbox_item.content[kShareId],
-                                         kShareReadWrite,
-                                         inbox_item.timestamp);
     private_member_access_level_signal_(inbox_item.receiver_public_id,
                                         inbox_item.sender_public_id,
                                         inbox_item.content[kShareName],
@@ -552,6 +546,12 @@ void MessageHandler::ProcessPrivateShare(const InboxItem& inbox_item) {
                                         key_ring,
                                         kShareReadWrite,
                                         inbox_item.timestamp);
+    private_member_access_change_signal_(inbox_item.receiver_public_id,
+                                         inbox_item.sender_public_id,
+                                         share_name,
+                                         inbox_item.content[kShareId],
+                                         kShareReadWrite,
+                                         inbox_item.timestamp);
   } else if (inbox_item.item_type == kPrivateShareInvitation) {
     Message message;
     InboxToProtobuf(inbox_item, &message);

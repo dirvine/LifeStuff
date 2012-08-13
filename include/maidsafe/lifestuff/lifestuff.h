@@ -179,7 +179,9 @@ typedef std::function<void(const std::string&,          // Own public ID
                            ContactPresence presence)>   // online/offline
         ContactPresenceFunction;
 // Own public ID, Contact public ID, Message, Timestamp
-typedef FourStringsFunction ContactDeletionFunction;
+typedef FourStringsFunction ContactDeletionReceivedFunction;
+// Own public ID, Contact public ID, Message, Timestamp
+typedef FourStringsFunction ContactDeletionFunction;  // For when deletion has been processed
 // Own & other public ID, Message, Timestamp
 typedef FourStringsFunction NewContactFunction;
 
