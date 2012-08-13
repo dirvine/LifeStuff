@@ -327,12 +327,12 @@ class UserStorageTest : public testing::TestWithParam<bool> {
                                 const StringIntMap& users) {
     std::string share_id, new_share_id, new_directory_id;
     asymm::Keys key_ring, new_key_ring;
-    fs::path relative_path(absolute_path.root_directory() / absolute_path.relative_path());
+    fs::path relative_path(drive::RelativePath(user_storage->mount_dir(),
+                               absolute_path.root_directory() / absolute_path.relative_path()));
     StringIntMap remaining_members(users), removed_members;
     int result(kSuccess);
     result = user_storage->RemoveShareUsers(sender_public_id, absolute_path, members_to_remove);
-    result += user_storage->GetShareDetails(drive::RelativePath(user_storage->mount_dir(),
-                                                                relative_path),
+    result += user_storage->GetShareDetails(relative_path,
                                             nullptr,
                                             &key_ring,
                                             &share_id,
@@ -341,7 +341,7 @@ class UserStorageTest : public testing::TestWithParam<bool> {
                                             nullptr);
     result += user_storage->MoveShare(sender_public_id,
                                       share_id,
-                                      drive::RelativePath(user_storage->mount_dir(), relative_path),
+                                      relative_path,
                                       key_ring,
                                       true,
                                       &new_share_id,

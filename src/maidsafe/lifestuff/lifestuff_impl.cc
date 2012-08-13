@@ -651,14 +651,16 @@ int LifeStuffImpl::RemoveContact(const std::string& my_public_id,
   StringIntMap contact_to_remove;
   contact_to_remove.insert(std::make_pair(contact_public_id, kShareRemover));
   for (auto it = share_names.begin(); it != share_names.end(); ++it) {
-    LOG(kError) << "Removing share " << *it;
     StringIntMap results;
-    EditPrivateShareMembers(my_public_id, contact_to_remove, *it, &results, false);
+    result = EditPrivateShareMembers(my_public_id, contact_to_remove, *it, &results, false);
+    LOG(kInfo) << "Removing " << contact_public_id << " from " << (*it) << ", result: " << result;
   }
   share_names.clear();
   user_storage_->GetPrivateSharesContactBeingOwner(my_public_id, contact_public_id, &share_names);
-  for (auto it = share_names.begin(); it != share_names.end(); ++it)
-    LeavePrivateShare(my_public_id, *it, false);
+  for (auto it = share_names.begin(); it != share_names.end(); ++it) {
+    result = LeavePrivateShare(my_public_id, *it, false);
+    LOG(kInfo) << "Removing oneself from " << (*it) << ", result: " << result;
+  }
 
   // Remove the contact
   result = public_id_->RemoveContact(my_public_id,
@@ -1458,7 +1460,7 @@ int LifeStuffImpl::EditPrivateShareMembers(const std::string& my_public_id,
         if (!members_to_downgrade.empty()) {
           std::for_each(members_to_downgrade.begin(),
                         members_to_downgrade.end(),
-                        [&](const std::pair<std::string, int>& member) {
+                        [&](const StringIntMap::value_type& member) {
                           share_members.erase(member.first);
                         });
           results->clear();
@@ -1487,7 +1489,7 @@ int LifeStuffImpl::EditPrivateShareMembers(const std::string& my_public_id,
         if (!members_to_upgrade.empty()) {
           std::for_each(members_to_upgrade.begin(),
                         members_to_upgrade.end(),
-                        [&](const std::pair<std::string, int>& member) {
+                        [&](const StringIntMap::value_type& member) {
                           share_members.erase(member.first);
                         });
           results->clear();
@@ -1594,7 +1596,7 @@ int LifeStuffImpl::EditPrivateShareMembers(const std::string& my_public_id,
         if (!members_to_upgrade.empty()) {
           std::for_each(members_to_upgrade.begin(),
                         members_to_upgrade.end(),
-                        [&](const std::pair<std::string, int>& member) {
+                        [&](const StringIntMap::value_type& member) {
                           share_members.erase(member.first);
                         });
           results->clear();
