@@ -24,6 +24,7 @@
 #ifndef MAIDSAFE_LIFESTUFF_LIFESTUFF_IMPL_H_
 #define MAIDSAFE_LIFESTUFF_LIFESTUFF_IMPL_H_
 
+#include <list>
 #include <map>
 #include <string>
 #include <vector>
