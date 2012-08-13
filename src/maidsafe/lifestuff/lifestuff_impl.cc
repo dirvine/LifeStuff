@@ -67,7 +67,6 @@ LifeStuffImpl::LifeStuffImpl()
       public_id_(),
       message_handler_(),
       slots_(),
-      contact_deletion_received_slot(),
       save_session_mutex_(),
       saving_session_(false) {}
 
@@ -220,7 +219,6 @@ int LifeStuffImpl::ConnectToSignals(
       user_storage_->ConnectToShareChangedSignal(share_changed_function);
   }
 
-  contact_deletion_received_slot =
       [&] (const std::string& own_public_id,
            const std::string& contact_public_id,
            const std::string& removal_message,
@@ -228,7 +226,16 @@ int LifeStuffImpl::ConnectToSignals(
         RemoveContact(own_public_id, contact_public_id, removal_message, timestamp, false);
       };
   if (public_id_) {
-    public_id_->ConnectToContactDeletionReceivedSignal(contact_deletion_received_slot);
+    public_id_->ConnectToContactDeletionReceivedSignal([&] (const std::string& own_public_id,
+                                                            const std::string& contact_public_id,
+                                                            const std::string& removal_message,
+                                                            const std::string& timestamp) {
+                                                          RemoveContact(own_public_id,
+                                                                        contact_public_id,
+                                                                        removal_message,
+                                                                        timestamp,
+                                                                        false);
+                                                        });
   }
 
   if (connects > 0) {
@@ -644,6 +651,7 @@ int LifeStuffImpl::RemoveContact(const std::string& my_public_id,
   StringIntMap contact_to_remove;
   contact_to_remove.insert(std::make_pair(contact_public_id, kShareRemover));
   for (auto it = share_names.begin(); it != share_names.end(); ++it) {
+    LOG(kError) << "Removing share " << *it;
     StringIntMap results;
     EditPrivateShareMembers(my_public_id, contact_to_remove, *it, &results, false);
   }
@@ -1399,6 +1407,7 @@ int LifeStuffImpl::EditPrivateShareMembers(const std::string& my_public_id,
 
   fs::path share_dir(mount_path() / kSharedStuff / share_name),
            shared_relative_path(drive::RelativePath(mount_path(), share_dir));
+
   std::string share_id, new_share_id, new_directory_id;
   asymm::Keys new_key_ring;
   bool downgraded_members_informed(false), upgraded_members_informed(false);
@@ -1562,7 +1571,8 @@ int LifeStuffImpl::EditPrivateShareMembers(const std::string& my_public_id,
                                               &share_members,
                                               nullptr);
       if (result != kSuccess) {
-        LOG(kError) << "Failed to get share details for " << share_name;
+        LOG(kError) << "Failed to get share details for " << share_name << ", path: "
+                    << shared_relative_path;
       } else {
         result = user_storage_->MoveShare(my_public_id,
                                           share_id,
@@ -1578,7 +1588,7 @@ int LifeStuffImpl::EditPrivateShareMembers(const std::string& my_public_id,
         asymm::Keys key_ring;
         std::for_each(members_to_downgrade.begin(),
                       members_to_downgrade.end(),
-                      [&](const std::pair<std::string, int>& member) {
+                      [&](const StringIntMap::value_type& member) {
                         share_members.erase(member.first);
                       });
         if (!members_to_upgrade.empty()) {

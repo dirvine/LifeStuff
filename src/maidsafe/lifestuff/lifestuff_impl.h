@@ -239,14 +239,6 @@ class LifeStuffImpl {
   fs::path mount_path() const;
 
  private:
-  void ShareRenameSlot(const std::string& old_share_name,
-                       const std::string& new_share_name);
-  void MemberAccessChangeSlot(const std::string& share_id,
-                              const std::string& directory_id,
-                              const std::string& new_share_id,
-                              const asymm::Keys& key_ring,
-                              int access_right);
-
   int thread_count_;
   LifeStuffState state_;
   fs::path buffered_path_;
@@ -265,7 +257,6 @@ class LifeStuffImpl {
   std::shared_ptr<PublicId> public_id_;
   std::shared_ptr<MessageHandler> message_handler_;
   Slots slots_;
-  ContactDeletionReceivedFunction contact_deletion_received_slot;
 
   // Session saving control
   boost::mutex save_session_mutex_;
@@ -276,6 +267,13 @@ class LifeStuffImpl {
   int PreContactChecks(const std::string& my_public_id);
   void InvokeDoSession();
   void DoSaveSession();
+  void ShareRenameSlot(const std::string& old_share_name,
+                       const std::string& new_share_name);
+  void MemberAccessChangeSlot(const std::string& share_id,
+                              const std::string& directory_id,
+                              const std::string& new_share_id,
+                              const asymm::Keys& key_ring,
+                              int access_right);
 };
 
 }  // namespace lifestuff

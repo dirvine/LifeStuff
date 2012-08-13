@@ -536,7 +536,7 @@ int UserStorage::RemoveShare(const fs::path& absolute_path,
   }
 
   fs::path relative_path(drive::RelativePath(mount_dir(), absolute_path));
-  asymm::Keys key_ring;
+//  asymm::Keys key_ring;
   std::string share_id;
   std::string owner_id;
   int result(GetShareDetails(relative_path,
@@ -596,7 +596,7 @@ int UserStorage::AddShareUsers(const std::string& sender_public_id,
                                const StringIntMap& contacts,
                                bool private_share,
                                StringIntMap* contacts_results) {
-  fs::path relative_path(drive::RelativePath(mount_dir(), absolute_path));
+  fs::path relative_path(drive::RelativePath(mount_dir_, absolute_path));
 
   int result(drive_in_user_space_->AddShareUsers(relative_path,
                                                  contacts,
@@ -693,8 +693,7 @@ int UserStorage::GetAllShareUsers(const fs::path& absolute_path,
 void UserStorage::InvitationResponse(const std::string& user_id,
                                      const std::string& share_name,
                                      const std::string& share_id) {
-  std::vector<std::string> user_ids;
-  user_ids.push_back(user_id);
+  std::vector<std::string> user_ids(1, user_id);
 
   int result(0);
   if (share_name.empty())

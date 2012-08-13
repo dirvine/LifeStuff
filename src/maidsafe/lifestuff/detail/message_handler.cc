@@ -537,12 +537,6 @@ void MessageHandler::ProcessPrivateShare(const InboxItem& inbox_item) {
       LOG(kError) << "Incorrect elements in message.";
       return;
     }
-    private_member_access_change_signal_(inbox_item.receiver_public_id,
-                                         inbox_item.sender_public_id,
-                                         share_name,
-                                         inbox_item.content[kShareId],
-                                         kShareReadWrite,
-                                         inbox_item.timestamp);
     private_member_access_level_signal_(inbox_item.receiver_public_id,
                                         inbox_item.sender_public_id,
                                         inbox_item.content[kShareName],
@@ -552,6 +546,12 @@ void MessageHandler::ProcessPrivateShare(const InboxItem& inbox_item) {
                                         key_ring,
                                         kShareReadWrite,
                                         inbox_item.timestamp);
+    private_member_access_change_signal_(inbox_item.receiver_public_id,
+                                         inbox_item.sender_public_id,
+                                         share_name,
+                                         inbox_item.content[kShareId],
+                                         kShareReadWrite,
+                                         inbox_item.timestamp);
   } else if (inbox_item.item_type == kPrivateShareInvitation) {
     Message message;
     InboxToProtobuf(inbox_item, &message);

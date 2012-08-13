@@ -1917,6 +1917,7 @@ TEST_F(TwoUsersApiTest, FUNC_MembershipDowngradePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
+  LOG(kError) << "\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.privately_invited)
@@ -1940,6 +1941,7 @@ TEST_F(TwoUsersApiTest, FUNC_MembershipDowngradePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
+  LOG(kError) << "\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
@@ -1967,11 +1969,13 @@ TEST_F(TwoUsersApiTest, FUNC_MembershipDowngradePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
+  LOG(kError) << "\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
-
+    LOG(kError) << "Before signal";
     while (!testing_variables_2_.private_member_access_changed)
       Sleep(bptime::milliseconds(100));
+    LOG(kError) << "After signal";
     StringIntMap shares;
     EXPECT_EQ(kSuccess, test_elements_2_.GetPrivateShareList(public_id_2_, &shares));
 
@@ -1987,6 +1991,7 @@ TEST_F(TwoUsersApiTest, FUNC_MembershipDowngradePrivateShare) {
     EXPECT_TRUE(ReadFile(a_file_path, &local_content));
     EXPECT_EQ(file_content2, local_content);
 
+    LOG(kError) << "Before logout!!!!";
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
 }
@@ -2015,6 +2020,7 @@ TEST_F(TwoUsersApiTest, FUNC_MembershipUpgradePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
+  LOG(kError) << "\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.privately_invited)
@@ -2038,6 +2044,7 @@ TEST_F(TwoUsersApiTest, FUNC_MembershipUpgradePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
+  LOG(kError) << "\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
@@ -2055,14 +2062,14 @@ TEST_F(TwoUsersApiTest, FUNC_MembershipUpgradePrivateShare) {
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
+  LOG(kError) << "\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
 
     while (!testing_variables_2_.private_member_access_changed)
       Sleep(bptime::milliseconds(100));
     StringIntMap shares;
-    EXPECT_EQ(kSuccess,
-              test_elements_2_.GetPrivateShareList(public_id_2_, &shares));
+    EXPECT_EQ(kSuccess, test_elements_2_.GetPrivateShareList(public_id_2_, &shares));
 
     EXPECT_EQ(1U, shares.size());
     EXPECT_FALSE(shares.find(share_name1) == shares.end());
@@ -2082,7 +2089,7 @@ TEST_F(TwoUsersApiTest, FUNC_MembershipUpgradePrivateShare) {
   }
 }
 
-TEST_F(TwoUsersApiTest, DISABLED_FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
+TEST_F(TwoUsersApiTest, FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
   std::string removal_message("It's not me, it's you.");
   std::string share_name1(RandomAlphaNumericString(5));
   boost::system::error_code error_code;
@@ -2111,6 +2118,7 @@ TEST_F(TwoUsersApiTest, DISABLED_FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
+  LOG(kError) << "\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.privately_invited)
@@ -2129,6 +2137,7 @@ TEST_F(TwoUsersApiTest, DISABLED_FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
 
     EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
+  LOG(kError) << "\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
 
@@ -2151,19 +2160,24 @@ TEST_F(TwoUsersApiTest, DISABLED_FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
 
     EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   }
+  LOG(kError) << "\n\n\n";
   {
     EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+    LOG(kError) << "removed 1";
     while (!testing_variables_2_.removed)
       Sleep(bptime::milliseconds(100));
 
     EXPECT_EQ(removal_message, testing_variables_2_.removal_message);
     bool contact_deleted(false);
+    LOG(kError) << "removed 2";
     while (!contact_deleted)
       contact_deleted = test_elements_2_.GetContacts(public_id_2_).empty();
     EXPECT_TRUE(contact_deleted);
 
-    while (!testing_variables_2_.private_share_deleted)
-      Sleep(bptime::milliseconds(100));
+    LOG(kError) << "removed 3";
+//    while (!testing_variables_2_.private_share_deleted)
+//      Sleep(bptime::milliseconds(100));
+//    LOG(kError) << "removed 4";
     fs::path share_path(test_elements_2_.mount_path() / kSharedStuff / share_name1);
     Sleep(bptime::milliseconds(100));
     EXPECT_FALSE(fs::is_directory(share_path, error_code));
@@ -2172,7 +2186,7 @@ TEST_F(TwoUsersApiTest, DISABLED_FUNC_PrivateShareOwnerRemoveNonOwnerContact) {
   }
 }
 
-TEST_F(TwoUsersApiTest, DISABLED_FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
+TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveOwnerContact) {
   std::string removal_message("It's not me, it's you.");
   std::string share_name1(RandomAlphaNumericString(5));
   fs::path directory1, directory2;
