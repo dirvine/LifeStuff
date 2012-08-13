@@ -84,7 +84,7 @@ class UserStorage {
   bool ParseAndSaveDataMap(const std::string& file_name,
                            const std::string& serialised_data_map,
                            std::string* data_map_hash);
-  int GetDataMap(const fs::path& absolute_path, std::string* serialised_data_map) const;
+  int GetDataMap(const fs::path& absolute_path, std::string* serialised_data_map);
   int InsertDataMap(const fs::path& absolute_path, const std::string& serialised_data_map);
   int GetDirectoryListing(const fs::path& absolute_path,
                           std::string* parent_id,
@@ -118,7 +118,9 @@ class UserStorage {
   int StopShare(const std::string& sender_public_username,
                 const fs::path& absolute_path,
                 bool delete_data);
-  int RemoveShare(const fs::path& absolute_path, const std::string& sender_public_username = "");
+  int RemoveShare(const fs::path& absolute_path,
+                  const std::string& sender_public_username = "",
+                  bool inform_contact = true);
   void ShareDeleted(const std::string& share_id);
   int UpdateShare(const std::string& share_id,
                   const std::string* new_share_id,
@@ -135,11 +137,10 @@ class UserStorage {
                           const fs::path& absolute_path,
                           const StringIntMap& contacts,
                           StringIntMap* contacts_results);
-  int GetAllShareUsers(const fs::path& absolute_path, StringIntMap* all_share_users) const;
+  int GetAllShareUsers(const fs::path& absolute_path, StringIntMap* all_share_users);
   int RemoveShareUsers(const std::string& sender_public_username,
                        const fs::path& absolute_path,
-                       const std::vector<std::string>& user_ids,
-                       bool private_share);
+                       const std::vector<std::string>& user_ids);
   int UserLeavingShare(const std::string& share_id, const std::string& user_id);
   void InvitationResponse(const std::string& user_id,
                           const std::string& share_name,
@@ -148,7 +149,7 @@ class UserStorage {
                            const std::vector<std::string>& user_ids);
   int GetShareUsersRights(const fs::path& absolute_path,
                           const std::string& user_id,
-                          int* admin_rights) const;
+                          int* admin_rights);
   int SetShareUsersRights(const std::string& sender_public_username,
                           const fs::path& absolute_path,
                           const std::string& user_id,
@@ -171,27 +172,31 @@ class UserStorage {
                                  const std::string& new_share_id,
                                  const asymm::Keys& key_ring,
                                  int access_right);
-  int MovingShare(const std::string& sender_public_username,
-                  const std::string& share_id,
-                  const fs::path& relative_path,
-                  const asymm::Keys& old_key_ring,
-                  bool private_share,
-                  const StringIntMap& contacts,
-                  std::string* new_share_id_return = nullptr);
+  int MoveShare(const std::string& sender_public_username,
+                const std::string& share_id,
+                const fs::path& relative_path,
+                const asymm::Keys& old_key_ring,
+                bool private_share,
+                std::string* new_share_id_return = nullptr,
+                std::string* new_directory_id = nullptr,
+                asymm::Keys* new_key_ring = nullptr);
   int DowngradeShareUsersRights(const std::string& sender_public_username,
                                 const fs::path& absolute_path,
                                 const StringIntMap& contacts,
-                                StringIntMap* results,
-                                bool private_share);
+                                StringIntMap* results);
+  int UpgradeShareUsersRights(const std::string& sender_public_id,
+                              const fs::path& absolute_path,
+                              const StringIntMap& contacts,
+                              StringIntMap* results);
   int GetPrivateSharesContactBeingOwner(const std::string& my_public_id,
                                         const std::string& contact_public_id,
                                         std::vector<std::string>* shares_names);
   // **************************** File Notes ***********************************
-  int GetNotes(const fs::path& absolute_path, std::vector<std::string>* notes) const;
+  int GetNotes(const fs::path& absolute_path, std::vector<std::string>* notes);
   int AddNote(const fs::path& absolute_path, const std::string& note);
 
   // *************************** Hidden Files **********************************
-  int ReadHiddenFile(const fs::path& absolute_path, std::string* content) const;
+  int ReadHiddenFile(const fs::path& absolute_path, std::string* content);
   int WriteHiddenFile(const fs::path& absolute_path,
                       const std::string& content,
                       bool overwrite_existing);
@@ -208,9 +213,6 @@ class UserStorage {
 
   std::string ConstructFile(const std::string& serialised_data_map);
 
- private:
-  UserStorage &operator=(const UserStorage&);
-  UserStorage(const UserStorage&);
   int InformContactsOperation(InboxItemType item_type,
                               const std::string& sender_public_username,
                               const StringIntMap& contacts,
@@ -220,6 +222,10 @@ class UserStorage {
                               const asymm::Keys& key_ring = asymm::Keys(),
                               const std::string& new_share_id = "",
                               StringIntMap* contacts_results = nullptr);
+
+ private:
+  UserStorage &operator=(const UserStorage&);
+  UserStorage(const UserStorage&);
   int InformContacts(InboxItemType item_type,
                      const std::string& sender_public_username,
                      const StringIntMap& contacts,

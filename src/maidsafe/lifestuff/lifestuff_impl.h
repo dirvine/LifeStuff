@@ -24,6 +24,7 @@
 #ifndef MAIDSAFE_LIFESTUFF_LIFESTUFF_IMPL_H_
 #define MAIDSAFE_LIFESTUFF_LIFESTUFF_IMPL_H_
 
+#include <list>
 #include <map>
 #include <string>
 #include <vector>
@@ -132,7 +133,9 @@ class LifeStuffImpl {
   int DeclineContact(const std::string& my_public_id, const std::string& contact_public_id);
   int RemoveContact(const std::string& my_public_id,
                     const std::string& contact_public_id,
-                    const std::string& removal_message);
+                    const std::string& removal_message,
+                    const std::string& timestamp,
+                    const bool& instigator);
   int ChangeProfilePicture(const std::string& my_public_id,
                            const std::string& profile_picture_contents);
   std::string GetOwnProfilePicture(const std::string& my_public_id);
@@ -160,7 +163,9 @@ class LifeStuffImpl {
                       const std::string& content,
                       bool overwrite_existing);
   int DeleteHiddenFile(const fs::path& absolute_path);
-
+  int SearchHiddenFiles(const fs::path& absolute_path,
+                        const std::string& regex,
+                        std::list<std::string>* results);
   /// Private Shares
   // If error code is given, map of results should be empty. If nobody added,
   // revert everything. Directory has to be moved, not copied. If directory
@@ -193,13 +198,16 @@ class LifeStuffImpl {
   int EditPrivateShareMembers(const std::string& my_public_id,
                               const StringIntMap& public_ids,
                               const std::string& share_name,
-                              StringIntMap* results);
+                              StringIntMap* results,
+                              bool inform_contacts = true);
   // Only for owners
   int DeletePrivateShare(const std::string& my_public_id,
                          const std::string& share_name,
                          bool delete_data);
   // Should work for RO and full access. Only for non-owners
-  int LeavePrivateShare(const std::string& my_public_id, const std::string& share_name);
+  int LeavePrivateShare(const std::string& my_public_id,
+                        const std::string& share_name,
+                        bool inform_contacts = true);
 
   /// Open Shares
   int CreateOpenShareFromExistingDirectory(const std::string& my_public_id,
@@ -231,14 +239,6 @@ class LifeStuffImpl {
   fs::path mount_path() const;
 
  private:
-  void ShareRenameSlot(const std::string& old_share_name,
-                       const std::string& new_share_name);
-  void MemberAccessChangeSlot(const std::string& share_id,
-                              const std::string& directory_id,
-                              const std::string& new_share_id,
-                              const asymm::Keys& key_ring,
-                              int access_right);
-
   int thread_count_;
   LifeStuffState state_;
   fs::path buffered_path_;
@@ -267,6 +267,13 @@ class LifeStuffImpl {
   int PreContactChecks(const std::string& my_public_id);
   void InvokeDoSession();
   void DoSaveSession();
+  void ShareRenameSlot(const std::string& old_share_name,
+                       const std::string& new_share_name);
+  void MemberAccessChangeSlot(const std::string& share_id,
+                              const std::string& directory_id,
+                              const std::string& new_share_id,
+                              const asymm::Keys& key_ring,
+                              int access_right);
 };
 
 }  // namespace lifestuff

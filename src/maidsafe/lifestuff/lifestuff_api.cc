@@ -136,7 +136,7 @@ int LifeStuff::DeclineContact(const std::string& my_public_id,
 int LifeStuff::RemoveContact(const std::string& my_public_id,
                              const std::string& contact_public_id,
                              const std::string& removal_message) {
-  return lifestuff_impl->RemoveContact(my_public_id, contact_public_id, removal_message);
+  return lifestuff_impl->RemoveContact(my_public_id, contact_public_id, removal_message, "", true);
 }
 
 int LifeStuff::ChangeProfilePicture(const std::string& my_public_id,
@@ -198,6 +198,12 @@ int LifeStuff::WriteHiddenFile(const fs::path& absolute_path,
 
 int LifeStuff::DeleteHiddenFile(const fs::path& absolute_path) {
   return lifestuff_impl->DeleteHiddenFile(absolute_path);
+}
+
+int LifeStuff::SearchHiddenFiles(const fs::path& absolute_path,
+                                 const std::string& regex,
+                                 std::list<std::string>* results) {
+  return lifestuff_impl->SearchHiddenFiles(absolute_path, regex, results);
 }
 
 /// Private Shares

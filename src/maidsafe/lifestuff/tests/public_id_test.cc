@@ -637,11 +637,11 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, true));
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_identity2_, true));
 
-  ASSERT_EQ(kPublicIdEmpty, public_id1_->RemoveContact(public_identity1_, "", true, ""));
-  ASSERT_EQ(kPublicIdEmpty, public_id1_->RemoveContact("", public_identity2_, true, ""));
+  ASSERT_EQ(kPublicIdEmpty, public_id1_->RemoveContact(public_identity1_, "", "", "", true));
+  ASSERT_EQ(kPublicIdEmpty, public_id1_->RemoveContact("", public_identity2_, "", "", true));
 
   ASSERT_EQ(kContactNotFoundFailure,
-            public_id1_->RemoveContact(public_identity1_, public_identity2_, true, ""));
+            public_id1_->RemoveContact(public_identity1_, public_identity2_, "", "", true));
 
   bool done(false);
   public_id1_->ConnectToNewContactSignal(
@@ -660,12 +660,14 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
   ASSERT_FALSE(received_public_identity_.empty());
 
   done = false;
-  ASSERT_EQ(kSuccess, public_id1_->RemoveContact(public_identity1_, public_identity2_, true, ""));
+  ASSERT_EQ(kSuccess, public_id1_->RemoveContact(public_identity1_, public_identity2_, "", "",
+                                                 true));
 
   // Although sending msg is disallowed, sending contact_info shall be allowed
   received_public_identity_.clear();
   ASSERT_EQ(-77, public_id2_->AddContact(public_identity2_, public_identity1_, ""));
-  ASSERT_EQ(kSuccess, public_id2_->RemoveContact(public_identity2_, public_identity1_, true, ""));
+  ASSERT_EQ(kSuccess, public_id2_->RemoveContact(public_identity2_, public_identity1_, "", "",
+                                                 true));
   ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_, ""));
   {
     boost::mutex::scoped_lock lock(mutex);
@@ -673,6 +675,70 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
   }
   ASSERT_FALSE(received_public_identity_.empty());
   public_id1_->StopCheckingForNewContacts();
+}
+
+TEST_F(PublicIdTest, FUNC_RemoveContactMoveInbox) {
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  const std::string public_identity3(RandomAlphaNumericString(10));
+  ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, true));
+  ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_identity2_, true));
+  ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity3, true));
+
+  bool done(false);
+  public_id1_->ConnectToNewContactSignal(
+      [&] (const std::string& own_public_id,
+           const std::string& contact_public_id,
+           const std::string& message,
+           const std::string& /*timestamp*/) {
+          NewContactSlot(own_public_id, contact_public_id, message, &mutex, &cond_var, &done);
+      });
+  // 2 adds 1 and 3
+  ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
+  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_, ""));
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    ASSERT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Alison)
+  }
+  ASSERT_FALSE(received_public_identity_.empty());
+
+  done = false;
+  received_public_identity_ = "";
+    ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity3, ""));
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    ASSERT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Alison)
+  }
+  ASSERT_FALSE(received_public_identity_.empty());
+
+  const std::string old_inbox_name_2 =
+      session2_.passport().SignaturePacketDetails(passport::kMmid,
+                                                  true,
+                                                  public_identity2_).identity;
+
+  // 2 removes 1
+  done = false;
+  ASSERT_EQ(kSuccess, public_id2_->RemoveContact(public_identity2_, public_identity1_, "", "",
+                                                 true));
+
+  // Check that 3 has been given 2's new inbox name
+  Contact contact;
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    ASSERT_TRUE(cond_var.timed_wait(lock, interval_ * 2,
+                                    [&] ()->bool {
+                                      session1_.contacts_handler(public_identity3)->ContactInfo(
+                                          public_identity2_,
+                                          &contact);
+                                      return contact.inbox_name != old_inbox_name_2;
+                                    }));
+  }
+  EXPECT_NE(contact.inbox_name, old_inbox_name_2);
+
+  EXPECT_EQ(contact.inbox_name,
+            session2_.passport().SignaturePacketDetails(passport::kMmid,
+                                                          true,
+                                                          public_identity2_).identity);
 }
 
 TEST_F(PublicIdTest, FUNC_ContactList) {
