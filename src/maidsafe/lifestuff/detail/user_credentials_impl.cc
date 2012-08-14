@@ -1254,12 +1254,11 @@ int UserCredentialsImpl::SerialiseAndSetIdentity(const std::string& keyword,
     return kSessionSerialisationFailure;
   }
 
-  result = passport_.SetIdentityPackets(
-               keyword.empty()? session_.keyword() : keyword,
-               pin. empty() ? session_.pin() : pin,
-               password.empty() ? session_.password() : password,
-               *serialised_data_atlas,
-               session_.serialised_data_atlas());
+  result = passport_.SetIdentityPackets(keyword.empty()? session_.keyword() : keyword,
+                                        pin. empty() ? session_.pin() : pin,
+                                        password.empty() ? session_.password() : password,
+                                        *serialised_data_atlas,
+                                        session_.serialised_data_atlas());
 
   if (result != kSuccess) {
     LOG(kError) << "Failed to set new identity packets: " << result;
@@ -1412,7 +1411,7 @@ void UserCredentialsImpl::DeleteSignaturePacket(std::shared_ptr<asymm::Keys> pac
 
 void UserCredentialsImpl::SessionSaver(const bptime::seconds& interval,
                                        const boost::system::error_code& error_code) {
-  LOG(kError) << "UserCredentialsImpl::SessionSaver!!! Wooohooooo";
+  LOG(kInfo) << "UserCredentialsImpl::SessionSaver!!! Wooohooooo";
   if (error_code) {
     if (error_code != boost::asio::error::operation_aborted) {
       LOG(kError) << "Refresh timer error: " << error_code.message();
@@ -1427,7 +1426,7 @@ void UserCredentialsImpl::SessionSaver(const bptime::seconds& interval,
   }
 
   int result(SaveSession(false));
-  LOG(kError) << "Session saver result: " << result;
+  LOG(kInfo) << "Session saver result: " << result;
 
   session_saver_timer_.expires_from_now(bptime::seconds(interval));
   session_saver_timer_.async_wait([=] (const boost::system::error_code& error_code) {
