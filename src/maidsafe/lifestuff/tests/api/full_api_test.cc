@@ -242,6 +242,7 @@ TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdConsecutively) {
   EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 }
 
+#ifndef MAIDSAFE_APPLE
 TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdSimultaneously) {
   EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
   EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
@@ -302,6 +303,7 @@ TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdSimultaneously) {
   EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 }
+#endif
 
 TEST_F(TwoUsersApiTest, FUNC_SendFileSaveToGivenPath) {
   boost::system::error_code error_code;
@@ -506,13 +508,11 @@ TEST(IndependentFullTest, FUNC_SendFileWithRejection) {
                                                    &files_expected));
 
   boost::system::error_code error_code;
-
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(keyword1, pin1, password1));
 
     for (; file_count < file_max; ++file_count) {
-      file_paths.push_back(fs::path(test_elements1.mount_path() /
-                                    RandomAlphaNumericString(8)));
+      file_paths.push_back(fs::path(test_elements1.mount_path() / RandomAlphaNumericString(8)));
       std::ofstream ofstream(file_paths[file_count].c_str(), std::ios::binary);
       file_contents.push_back(RandomString(5 * 1024));
       ofstream << file_contents[file_count];

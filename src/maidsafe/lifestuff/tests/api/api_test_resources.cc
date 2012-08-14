@@ -224,30 +224,32 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                  std::vector<std::string>* names,
                                  size_t* total_files,
                                  boost::mutex* mutex) {
-  FileTransferFunction ftf =
-      [&] (const std::string& own_public_id,
-           const std::string& contact_public_id,
-           const std::string& signal_file_name,
-           const std::string& signal_file_id,
-           const std::string& timestamp) {
-        FileTransferSlot(own_public_id, contact_public_id, signal_file_name, signal_file_id,
-                         timestamp,
-                         &testing_variables2.file_name,
-                         &testing_variables2.file_id,
-                         &testing_variables2.file_transfer_received);
-      };
+  FileTransferFunction ftf;
   if (several_files) {
-  ftf = [&] (const std::string& own_public_id,
-             const std::string& contact_public_id,
-             const std::string& signal_file_name,
-             const std::string& signal_file_id,
-             const std::string& timestamp) {
-          MultipleFileTransferSlot(own_public_id, contact_public_id, signal_file_name,
-                                   signal_file_id,
-                                   timestamp,
-                                   ids, names, total_files,
-                                   &testing_variables2.file_transfer_received);
-        };
+    ftf = std::bind(&MultipleFileTransferSlot, args::_1, args::_2, args::_3, args::_4, args::_5,
+                    ids, names, total_files, &testing_variables2.file_transfer_received);
+            /*[&ids, &names, &total_files, &testing_variables2] (const std::string& own_public_id,
+               const std::string& contact_public_id,
+               const std::string& signal_file_name,
+               const std::string& signal_file_id,
+               const std::string& timestamp) {
+            LOG(kError) << "Binding lambda";
+            MultipleFileTransferSlot(own_public_id, contact_public_id, signal_file_name,
+                                     signal_file_id, timestamp, ids, names, total_files,
+                                     &testing_variables2.file_transfer_received);
+          };*/
+  } else {
+     ftf = [&] (const std::string& own_public_id,
+                                        const std::string& contact_public_id,
+                                        const std::string& signal_file_name,
+                                        const std::string& signal_file_id,
+                                        const std::string& timestamp) {
+                                      FileTransferSlot(own_public_id, contact_public_id, signal_file_name,
+                                                       signal_file_id, timestamp,
+                                                       &testing_variables2.file_name,
+                                                       &testing_variables2.file_id,
+                                                       &testing_variables2.file_transfer_received);
+                                    };
   }
   int result(0);
   // Initialise and connect
