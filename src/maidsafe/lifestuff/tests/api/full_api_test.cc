@@ -666,32 +666,33 @@ TEST_F(TwoUsersApiTest, FUNC_RemoveContactAddContact) {
       EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
     }
 
-    test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_);
-    test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_);
     const std::string request_message(RandomAlphaNumericString(RandomUint32() % 20 + 10));
 
     if (i % 2 == 0) {
       testing_variables_2_.newly_contacted = false;
-
+      test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_);
       test_elements_1_.AddContact(public_id_1_, public_id_2_, request_message);
+      EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
 
+      test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_);
       while (!testing_variables_2_.newly_contacted)
         Sleep(bptime::milliseconds(100));
       EXPECT_EQ(testing_variables_2_.contact_request_message, request_message);
       test_elements_2_.ConfirmContact(public_id_2_, public_id_1_);
+      EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
     } else {
       testing_variables_1_.newly_contacted = false;
-
+      test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_);
       test_elements_2_.AddContact(public_id_2_, public_id_1_, request_message);
+      EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 
+      test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_);
       while (!testing_variables_1_.newly_contacted)
         Sleep(bptime::milliseconds(100));
       EXPECT_EQ(testing_variables_1_.contact_request_message, request_message);
       test_elements_1_.ConfirmContact(public_id_1_, public_id_2_);
+      EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
     }
-
-    EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
-    EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
 }
 
