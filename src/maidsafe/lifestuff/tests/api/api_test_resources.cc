@@ -244,8 +244,11 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                         const std::string& signal_file_name,
                                         const std::string& signal_file_id,
                                         const std::string& timestamp) {
-                                      FileTransferSlot(own_public_id, contact_public_id, signal_file_name,
-                                                       signal_file_id, timestamp,
+                                      FileTransferSlot(own_public_id,
+                                                       contact_public_id,
+                                                       signal_file_name,
+                                                       signal_file_id,
+                                                       timestamp,
                                                        &testing_variables2.file_name,
                                                        &testing_variables2.file_id,
                                                        &testing_variables2.file_transfer_received);
