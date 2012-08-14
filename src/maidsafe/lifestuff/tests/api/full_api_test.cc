@@ -698,22 +698,22 @@ TEST_F(TwoUsersApiTest, FUNC_RemoveContactAddContact) {
 
 TEST_F(TwoUsersApiTest, FUNC_AddContactWithMessage) {
   test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_);
-  test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_);
-
   const std::string public_id_3(RandomAlphaNumericString(RandomUint32() % 30 + 1));
   test_elements_1_.CreatePublicId(public_id_3);
   testing_variables_1_.newly_contacted = false;
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
 
+  test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_);
   const std::string message(RandomAlphaNumericString(RandomUint32() % 90 + 10));
   test_elements_2_.AddContact(public_id_2_, public_id_3, message);
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 
+  test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_);
   while (!testing_variables_1_.newly_contacted)
     Sleep(bptime::milliseconds(100));
   EXPECT_EQ(testing_variables_1_.contact_request_message, message);
   test_elements_1_.ConfirmContact(public_id_1_, public_id_3);
-
   EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
-  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 }
 
 TEST_F(TwoUsersApiTest, FUNC_AddThenRemoveOfflineUser) {
