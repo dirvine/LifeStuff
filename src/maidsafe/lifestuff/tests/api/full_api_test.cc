@@ -212,19 +212,17 @@ TEST_F(OneUserApiTest, FUNC_ChangeProfilePictureAfterSaveSession) {
 
 TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdConsecutively) {
   EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
-  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
   std::string new_public_id(RandomAlphaNumericString(6));
 
   EXPECT_EQ(kSuccess, test_elements_1_.CreatePublicId(new_public_id));
   EXPECT_NE(kSuccess, test_elements_1_.CreatePublicId(new_public_id));
-  EXPECT_NE(kSuccess, test_elements_2_.CreatePublicId(new_public_id));
-
   EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+  EXPECT_NE(kSuccess, test_elements_2_.CreatePublicId(new_public_id));
   EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 
   EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
-  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
-
   int new_instances(0);
   std::vector<std::string>::iterator it;
   std::vector<std::string> names(test_elements_1_.PublicIdsList());
@@ -232,14 +230,15 @@ TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdConsecutively) {
     if (*it == new_public_id)
       ++new_instances;
   }
+  EXPECT_EQ(new_instances, 1);
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
   names = test_elements_2_.PublicIdsList();
   for (it = names.begin(); it < names.end(); it++) {
     if (*it == new_public_id)
       ++new_instances;
   }
-  EXPECT_EQ(new_instances, 1);
-
-  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 }
 
