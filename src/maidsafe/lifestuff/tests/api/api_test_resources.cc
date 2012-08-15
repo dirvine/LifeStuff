@@ -226,45 +226,45 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                  boost::mutex* mutex) {
   int result(0);
   result = CreatePublicId(test_elements1,
-                           testing_variables1,
-                           test_dir,
-                           keyword1,
-                           pin1,
-                           password1,
-                           public_id1,
-                           false,
-                           ids,
-                           names,
-                           total_files,
-                           mutex);
+                          testing_variables1,
+                          test_dir,
+                          keyword1,
+                          pin1,
+                          password1,
+                          public_id1,
+                          false,
+                          ids,
+                          names,
+                          total_files,
+                          mutex);
   if (result != kSuccess)
     return result;
   result = CreatePublicId(test_elements2,
-                           testing_variables2,
-                           test_dir,
-                           keyword2,
-                           pin2,
-                           password2,
-                           public_id2,
-                           several_files,
-                           ids,
-                           names,
-                           total_files,
-                           mutex);
+                          testing_variables2,
+                          test_dir,
+                          keyword2,
+                          pin2,
+                          password2,
+                          public_id2,
+                          several_files,
+                          ids,
+                          names,
+                          total_files,
+                          mutex);
   if (result != kSuccess)
     return result;
   result = ConnectTwoPublicIds(test_elements1,
-                                test_elements2,
-                                testing_variables1,
-                                testing_variables2,
-                                keyword1,
-                                pin1,
-                                password1,
-                                public_id1,
-                                keyword2,
-                                pin2,
-                                password2,
-                                public_id2);
+                               test_elements2,
+                               testing_variables1,
+                               testing_variables2,
+                               keyword1,
+                               pin1,
+                               password1,
+                               public_id1,
+                               keyword2,
+                               pin2,
+                               password2,
+                               public_id2);
   return result;
 }
 
@@ -488,6 +488,8 @@ int ConnectTwoPublicIds(LifeStuff& test_elements1,
                         const std::string& password2,
                         const std::string& public_id2) {
   int result(0);
+  testing_variables1.newly_contacted = false;
+  testing_variables2.confirmed = false;
   {
     result += test_elements2.LogIn(keyword2, pin2, password2);
     result += test_elements2.AddContact(public_id2, public_id1);

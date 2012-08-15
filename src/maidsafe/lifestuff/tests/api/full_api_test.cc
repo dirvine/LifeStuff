@@ -2249,148 +2249,37 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
               pin3(CreatePin()),
               password3(RandomAlphaNumericString(6)),
               public_id3(RandomAlphaNumericString(5));
-  test_elements3.Initialise(*test_dir_);
-  test_elements3.ConnectToSignals(
-        [&] (const std::string& own_public_id,
-             const std::string& contact_public_id,
-             const std::string& signal_message,
-             const std::string& timestamp) {
-          testresources::ChatSlot(own_public_id, contact_public_id, signal_message,
-                                  timestamp,
-                                  &testing_variables3.chat_message,
-                                  &testing_variables3.chat_message_received);
-        },
-        [&] (const std::string& own_public_id,
-             const std::string& contact_public_id,
-             const std::string& signal_file_name,
-             const std::string& signal_file_id,
-             const std::string& timestamp) {
-          testresources::FileTransferSlot(own_public_id, contact_public_id, signal_file_name,
-                                          signal_file_id,
-                                          timestamp,
-                                          &testing_variables3.file_name,
-                                          &testing_variables3.file_id,
-                                          &testing_variables3.file_transfer_received);
-        },
-        [&] (const std::string& own_public_id,
-             const std::string& contact_public_id,
-             const std::string& message,
-             const std::string& timestamp) {
-          testresources::NewContactSlot(own_public_id, contact_public_id, message, timestamp,
-                                        &testing_variables3.newly_contacted,
-                                        &testing_variables3.contact_request_message);
-        },
-        [&] (const std::string& own_public_id,
-             const std::string& contact_public_id,
-             const std::string& timestamp) {
-          testresources::ContactConfirmationSlot(own_public_id, contact_public_id, timestamp,
-                                                 &testing_variables3.confirmed);
-        },
-        [&] (const std::string& own_public_id,
-             const std::string& contact_public_id,
-             const std::string& timestamp) {
-          testresources::ContactProfilePictureSlot(own_public_id, contact_public_id,
-                                                   timestamp,
-                                                   &testing_variables3.picture_updated);
-        },
-        [&] (const std::string& own_public_id,
-             const std::string& contact_public_id,
-             const std::string& timestamp,
-            ContactPresence cp) {
-          testresources::ContactPresenceSlot(own_public_id, contact_public_id, timestamp, cp,
-                                             &testing_variables3.presence_announced);
-        },
-        [&] (const std::string& own_public_id,
-             const std::string& contact_public_id,
-             const std::string& signal_message,
-             const std::string& timestamp) {
-          testresources::ContactDeletionSlot(own_public_id, contact_public_id,
-                                             signal_message,
-                                             timestamp,
-                                             &testing_variables3.removal_message,
-                                             &testing_variables3.removed);
-},
-        [&] (const std::string& own_public_id,
-             const std::string& contact_public_id,
-             const std::string& signal_share_name,
-             const std::string& signal_share_id,
-             int access_level,
-             const std::string& timestamp) {
-          testresources::PrivateShareInvitationSlot(
-              own_public_id, contact_public_id, signal_share_name, signal_share_id, access_level,
-              timestamp,
-              &testing_variables3.new_private_share_name,
-              &testing_variables3.new_private_share_id,
-              &testing_variables3.new_private_access_level,
-              &testing_variables3.privately_invited);
-        },
-        [&] (const std::string& own_public_id,
-             const std::string& contact_public_id,
-             const std::string& signal_share_name,
-             const std::string& signal_share_id,
-             const std::string& timestamp) {
-          testresources::PrivateShareDeletionSlot(
-              own_public_id, contact_public_id, signal_share_name, signal_share_id, timestamp,
-              &testing_variables3.deleted_private_share_name,
-              &testing_variables3.private_share_deleted);
-        },
-        [&] (const std::string& own_public_id,
-             const std::string& contact_public_id,
-             const std::string& signal_share_name,
-             const std::string& signal_share_id,
-             int signal_member_access,
-             const std::string /*&timestamp*/) {
-          testresources::PrivateMemberAccessChangeSlot(
-              own_public_id, contact_public_id, signal_share_name, signal_share_id,
-              signal_member_access,
-              testing_variables3.access_private_share_name,
-              &testing_variables3.private_member_access,
-              &testing_variables3.private_member_access_changed);
-        },
-        [&] (const std::string& own_public_id,
-             const std::string& contact_public_id,
-             const std::string& signal_share_name,
-             const std::string& signal_share_id,
-             const std::string& timestamp) {
-          testresources::OpenShareInvitationSlot(own_public_id, contact_public_id,
-                                                 signal_share_name,
-                                                 signal_share_id,
-                                                 timestamp,
-                                                 &testing_variables3.new_open_share_id,
-                                                 &testing_variables3.openly_invited);
-        },
-        [&] (const std::string& old_share_name,
-             const std::string& new_share_name) {
-          testresources::ShareRenameSlot(old_share_name, new_share_name,
-                                         &testing_variables3.old_share_name,
-                                         &testing_variables3.new_share_name,
-                                         &testing_variables3.share_renamed);
-        },
-        ShareChangedFunction());
-  test_elements3.CreateUser(keyword3, pin3, password3);
-  test_elements3.CreatePublicId(public_id3);
-  test_elements3.AddContact(public_id3, public_id_1_);
-  test_elements3.AddContact(public_id3, public_id_2_);
-  test_elements3.LogOut();
-
-  testing_variables_1_.newly_contacted = false;
-  test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_);
-  while (!testing_variables_1_.newly_contacted)
-    Sleep(bptime::milliseconds(100));
-  test_elements_1_.ConfirmContact(public_id_1_, public_id3);
-  test_elements_1_.LogOut();
-
-  testing_variables_2_.newly_contacted = false;
-  test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_);
-  while (!testing_variables_2_.newly_contacted)
-    Sleep(bptime::milliseconds(100));
-  test_elements_2_.ConfirmContact(public_id_2_, public_id3);
-  test_elements_2_.LogOut();
-
-  test_elements3.LogIn(keyword3, pin3, password3);
-    while (!testing_variables3.confirmed)
-      Sleep(bptime::milliseconds(100));
-  test_elements3.LogOut();
+  ASSERT_EQ(kSuccess, CreatePublicId(test_elements3,
+                                     testing_variables3,
+                                     *test_dir_,
+                                     keyword3,
+                                     pin3,
+                                     password3,
+                                     public_id3));
+  ASSERT_EQ(kSuccess, ConnectTwoPublicIds(test_elements3,
+                                          test_elements_1_,
+                                          testing_variables3,
+                                          testing_variables_1_,
+                                          keyword3,
+                                          pin3,
+                                          password3,
+                                          public_id3,
+                                          keyword_1_,
+                                          pin_1_,
+                                          password_1_,
+                                          public_id_1_));
+  ASSERT_EQ(kSuccess, ConnectTwoPublicIds(test_elements3,
+                                          test_elements_2_,
+                                          testing_variables3,
+                                          testing_variables_2_,
+                                          keyword3,
+                                          pin3,
+                                          password3,
+                                          public_id3,
+                                          keyword_2_,
+                                          pin_2_,
+                                          password_2_,
+                                          public_id_2_));
 
   std::string removal_message("It's not me, it's you.");
   std::string share_name1(RandomAlphaNumericString(5));
