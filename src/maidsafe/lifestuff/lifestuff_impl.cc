@@ -356,7 +356,7 @@ int LifeStuffImpl::CreatePublicId(const std::string& public_id) {
     message_handler_->StartUp(interval_);
   }
 
-  InvokeDoSession();
+  session_.set_changed(true);
 
   return kSuccess;
 }
@@ -770,8 +770,10 @@ std::string LifeStuffImpl::GetOwnProfilePicture(const std::string& my_public_id)
 
   {
     boost::mutex::scoped_lock loch(*profile_picture_data_map.first);
-    if (*profile_picture_data_map.second == kBlankProfilePicture)
+    if (*profile_picture_data_map.second == kBlankProfilePicture) {
+      LOG(kInfo) << "Blank picture in session.";
       return "";
+    }
   }
 
   fs::path profile_picture_path(mount_path() / std::string(my_public_id +
@@ -2280,21 +2282,6 @@ int LifeStuffImpl::PreContactChecks(const std::string &my_public_id) {
   }
 
   return kSuccess;
-}
-
-void LifeStuffImpl::InvokeDoSession() {
-  boost::mutex::scoped_lock loch_(save_session_mutex_);
-  saving_session_ = true;
-  asio_service_.service().post([this] { DoSaveSession(); });  // NOLINT (Alison)
-}
-
-void LifeStuffImpl::DoSaveSession() {
-  int result(user_credentials_->SaveSession());
-  LOG(kInfo) << "Save session result: " << result;
-  {
-    boost::mutex::scoped_lock loch_lussa(save_session_mutex_);
-    saving_session_ = false;
-  }
 }
 
 void LifeStuffImpl::ShareRenameSlot(const std::string& old_share_name,

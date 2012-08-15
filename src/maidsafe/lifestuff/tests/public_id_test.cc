@@ -74,12 +74,12 @@ class PublicIdTest : public testing::Test {
       : test_dir_(maidsafe::test::CreateTestPath()),
         session1_(),
         session2_(),
+        asio_service1_(5),
+        asio_service2_(5),
         remote_chunk_store1_(),
         remote_chunk_store2_(),
         public_id1_(),
         public_id2_(),
-        asio_service1_(5),
-        asio_service2_(5),
         public_identity1_("User 1 " + RandomAlphaNumericString(8)),
         public_identity2_("User 2 " + RandomAlphaNumericString(8)),
         received_public_identity_(),
@@ -255,11 +255,10 @@ class PublicIdTest : public testing::Test {
 
   std::shared_ptr<fs::path> test_dir_;
   Session session1_, session2_;
+  AsioService asio_service1_, asio_service2_;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store1_,
                                          remote_chunk_store2_;
   std::shared_ptr<PublicId> public_id1_, public_id2_;
-
-  AsioService asio_service1_, asio_service2_;
 
   std::string public_identity1_, public_identity2_, received_public_identity_, received_message_;
 #ifndef LOCAL_TARGETS_ONLY
@@ -943,9 +942,9 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
   }
 
   EXPECT_FALSE(session1_.contacts_handler(public_identity1_)->GetContacts(
-                 kConfirmed | kRequestSent).empty());
+                   kConfirmed | kRequestSent).empty());
   EXPECT_FALSE(session2_.contacts_handler(public_identity2_)->GetContacts(
-                 kConfirmed | kRequestSent).empty());
+                   kConfirmed | kRequestSent).empty());
 
   // 1 removes 2
   done = false;
@@ -964,6 +963,7 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
     boost::mutex::scoped_lock lock(mutex);
     ASSERT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Alison)
   }
+  ASSERT_FALSE(received_public_identity_.empty());
   EXPECT_EQ(received_message_, message);
   received_message_.clear();
 
@@ -984,18 +984,16 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
     boost::mutex::scoped_lock lock(mutex);
     ASSERT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Alison)
   }
-    EXPECT_EQ(received_message_, message);
-    received_message_.clear();
+  EXPECT_EQ(received_message_, message);
+  received_message_.clear();
 
   EXPECT_TRUE(session1_.changed());
   EXPECT_TRUE(session2_.changed());
 
   EXPECT_TRUE(session1_.contacts_handler(public_identity1_)->GetContacts(
-                kConfirmed | kRequestSent).empty());
+                  kConfirmed | kRequestSent).empty());
   EXPECT_TRUE(session2_.contacts_handler(public_identity2_)->GetContacts(
-                kConfirmed | kRequestSent).empty());
-
-  // add each other again?
+                  kConfirmed | kRequestSent).empty());
 }
 
 TEST_F(PublicIdTest, FUNC_RemoveContactMoveInbox) {

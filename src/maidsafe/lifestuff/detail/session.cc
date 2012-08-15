@@ -368,7 +368,10 @@ int Session::SerialiseDataAtlas(std::string* serialised_data_atlas) {
   for (auto it(public_id_details_.begin()); it != public_id_details_.end(); ++it) {
     PublicIdentity* pub_id(data_atlas.add_public_ids());
     pub_id->set_public_id((*it).first);
-    pub_id->set_profile_picture_data_map(*(*it).second.profile_picture_data_map);
+    {
+      boost::mutex::scoped_lock loch(*(*it).second.profile_picture_data_map_mutex);
+      pub_id->set_profile_picture_data_map(*(*it).second.profile_picture_data_map);
+    }
     (*it).second.contacts_handler->OrderedContacts(&contacts, kAlphabetical, kRequestSent |
                                                                              kPendingResponse |
                                                                              kConfirmed |
