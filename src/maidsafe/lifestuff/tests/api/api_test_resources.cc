@@ -224,20 +224,76 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                  std::vector<std::string>* names,
                                  size_t* total_files,
                                  boost::mutex* mutex) {
+  int result(0);
+  result = CreatePublicId(test_elements1,
+                           testing_variables1,
+                           test_dir,
+                           keyword1,
+                           pin1,
+                           password1,
+                           public_id1,
+                           false,
+                           ids,
+                           names,
+                           total_files,
+                           mutex);
+  if (result != kSuccess)
+    return result;
+  result = CreatePublicId(test_elements2,
+                           testing_variables2,
+                           test_dir,
+                           keyword2,
+                           pin2,
+                           password2,
+                           public_id2,
+                           several_files,
+                           ids,
+                           names,
+                           total_files,
+                           mutex);
+  if (result != kSuccess)
+    return result;
+  result = ConnectTwoPublicIds(test_elements1,
+                                test_elements2,
+                                testing_variables1,
+                                testing_variables2,
+                                keyword1,
+                                pin1,
+                                password1,
+                                public_id1,
+                                keyword2,
+                                pin2,
+                                password2,
+                                public_id2);
+  return result;
+}
+
+int CreatePublicId(LifeStuff& test_elements,
+                   testresources::TestingVariables& testing_variables,
+                   const fs::path& test_dir,
+                   const std::string& keyword,
+                   const std::string& pin,
+                   const std::string& password,
+                   const std::string& public_id,
+                   bool several_files,
+                   std::vector<std::string>* ids,
+                   std::vector<std::string>* names,
+                   size_t* total_files,
+                   boost::mutex* mutex) {
   FileTransferFunction ftf =
-      [&] (const std::string& own_public_id,
+      [=, &testing_variables] (const std::string& own_public_id,
            const std::string& contact_public_id,
            const std::string& signal_file_name,
            const std::string& signal_file_id,
            const std::string& timestamp) {
         FileTransferSlot(own_public_id, contact_public_id, signal_file_name, signal_file_id,
                          timestamp,
-                         &testing_variables2.file_name,
-                         &testing_variables2.file_id,
-                         &testing_variables2.file_transfer_received);
+                         &testing_variables.file_name,
+                         &testing_variables.file_id,
+                         &testing_variables.file_transfer_received);
       };
   if (several_files) {
-  ftf = [&] (const std::string& own_public_id,
+      ftf = [=, &testing_variables] (const std::string& own_public_id,
              const std::string& contact_public_id,
              const std::string& signal_file_name,
              const std::string& signal_file_id,
@@ -246,151 +302,21 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                    signal_file_id,
                                    timestamp,
                                    ids, names, total_files,
-                                   &testing_variables2.file_transfer_received);
-        };
+                                   &testing_variables.file_transfer_received);
+      };
   }
+
   int result(0);
   // Initialise and connect
-  result += test_elements1.Initialise(test_dir);
-  result += test_elements2.Initialise(test_dir);
-  result += test_elements1.ConnectToSignals(
+  result += test_elements.Initialise(test_dir);
+  result += test_elements.ConnectToSignals(
                 [&] (const std::string& own_public_id,
                      const std::string& contact_public_id,
                      const std::string& signal_message,
                      const std::string& timestamp) {
                   ChatSlot(own_public_id, contact_public_id, signal_message, timestamp,
-                           &testing_variables1.chat_message,
-                           &testing_variables1.chat_message_received);
-                },
-                [&] (const std::string& own_public_id,
-                     const std::string& contact_public_id,
-                     const std::string& signal_file_name,
-                     const std::string& signal_file_id,
-                     const std::string& timestamp) {
-                  FileTransferSlot(own_public_id, contact_public_id, signal_file_name,
-                                   signal_file_id,
-                                   timestamp,
-                                   &testing_variables1.file_name,
-                                   &testing_variables1.file_id,
-                                   &testing_variables1.file_transfer_received);
-                },
-                [&] (const std::string& own_public_id,
-                     const std::string& contact_public_id,
-                     const std::string& message,
-                     const std::string& timestamp) {
-                  NewContactSlot(own_public_id, contact_public_id, message, timestamp,
-                                 &testing_variables1.newly_contacted,
-                                 &testing_variables1.contact_request_message);
-                },
-                [&] (const std::string& own_public_id,
-                     const std::string& contact_public_id,
-                     const std::string& timestamp) {
-                  ContactConfirmationSlot(own_public_id, contact_public_id, timestamp,
-                                          &testing_variables1.confirmed);
-                },
-                [&] (const std::string& own_public_id,
-                     const std::string& contact_public_id,
-                     const std::string& timestamp) {
-                  ContactProfilePictureSlot(own_public_id, contact_public_id, timestamp,
-                                            &testing_variables1.picture_updated);
-                },
-                [&] (const std::string& own_public_id,
-                     const std::string& contact_public_id,
-                     const std::string& timestamp,
-                    ContactPresence contact_presence) {
-                  ContactPresenceSlot(own_public_id, contact_public_id, timestamp,
-                                      contact_presence,
-                                      &testing_variables1.presence_announced);
-                },
-                [&] (const std::string& own_public_id,
-                     const std::string& contact_public_id,
-                     const std::string& signal_message,
-                     const std::string& timestamp) {
-                  ContactDeletionSlot(own_public_id, contact_public_id, signal_message,
-                                      timestamp,
-                                      &testing_variables1.removal_message,
-                                      &testing_variables1.removed);
-                },
-                [&] (const std::string& own_public_id,
-                     const std::string& contact_public_id,
-                     const std::string& signal_share_name,
-                     const std::string& signal_share_id,
-                     int access_level,
-                     const std::string& timestamp) {
-                  PrivateShareInvitationSlot(own_public_id, contact_public_id,
-                                             signal_share_name,
-                                             signal_share_id,
-                                             access_level,
-                                             timestamp,
-                                             &testing_variables1.new_private_share_name,
-                                             &testing_variables1.new_private_share_id,
-                                             &testing_variables1.new_private_access_level,
-                                             &testing_variables1.privately_invited);
-                },
-                [&] (const std::string& own_public_id,
-                     const std::string& contact_public_id,
-                     const std::string& signal_share_name,
-                     const std::string& signal_share_id,
-                     const std::string& timestamp) {
-                  PrivateShareDeletionSlot(own_public_id, contact_public_id,
-                                           signal_share_name,
-                                           signal_share_id,
-                                           timestamp,
-                                           &testing_variables1.deleted_private_share_name,
-                                           &testing_variables1.private_share_deleted);
-                },
-                [&] (const std::string& own_public_id,
-                     const std::string& contact_public_id,
-                     const std::string& signal_share_name,
-                     const std::string& signal_share_id,
-                     int signal_member_access,
-                     const std::string /*&time_stamp*/) {
-                  PrivateMemberAccessChangeSlot(
-                      own_public_id, contact_public_id, signal_share_name, signal_share_id,
-                      signal_member_access,
-                      testing_variables1.access_private_share_name,
-                      &testing_variables1.private_member_access,
-                      &testing_variables1.private_member_access_changed);
-                },
-                [&] (const std::string& own_public_id,
-                     const std::string& contact_public_id,
-                     const std::string& signal_share_name,
-                     const std::string& signal_share_id,
-                     const std::string& timestamp) {
-                  OpenShareInvitationSlot(own_public_id, contact_public_id,
-                                          signal_share_name,
-                                          signal_share_id,
-                                          timestamp,
-                                          &testing_variables1.new_open_share_id,
-                                          &testing_variables1.openly_invited);
-                },
-                [&] (const std::string& old_share_name,
-                     const std::string& new_share_name) {
-                  ShareRenameSlot(old_share_name, new_share_name,
-                                  &testing_variables1.old_share_name,
-                                  &testing_variables1.new_share_name,
-                                  &testing_variables1.share_renamed);
-                },
-                [&] (const std::string& share_name,
-                     const fs::path& target_path,
-                     const uint32_t& num_of_entries,
-                     const fs::path& old_path,
-                     const fs::path& new_path,
-                     const int& op_type) {
-                  ShareChangedSlot(share_name, target_path, num_of_entries, old_path,
-                                   new_path,
-                                   op_type,
-                                   mutex,
-                                   &testing_variables1.share_changes);
-                });
-  result += test_elements2.ConnectToSignals(
-                [&] (const std::string& own_public_id,
-                     const std::string& contact_public_id,
-                     const std::string& signal_message,
-                     const std::string& timestamp) {
-                  ChatSlot(own_public_id, contact_public_id, signal_message, timestamp,
-                           &testing_variables2.chat_message,
-                           &testing_variables2.chat_message_received);
+                           &testing_variables.chat_message,
+                           &testing_variables.chat_message_received);
                 },
                 ftf,
                 [&] (const std::string& own_public_id,
@@ -398,20 +324,20 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                      const std::string& message,
                      const std::string& timestamp) {
                   NewContactSlot(own_public_id, contact_public_id, message, timestamp,
-                                 &testing_variables2.newly_contacted,
-                                 &testing_variables2.contact_request_message);
+                                 &testing_variables.newly_contacted,
+                                 &testing_variables.contact_request_message);
                 },
                 [&] (const std::string& own_public_id,
                      const std::string& contact_public_id,
                      const std::string& timestamp) {
                   ContactConfirmationSlot(own_public_id, contact_public_id, timestamp,
-                                          &testing_variables2.confirmed);
+                                          &testing_variables.confirmed);
                 },
                 [&] (const std::string& own_public_id,
                      const std::string& contact_public_id,
                      const std::string& timestamp) {
                   ContactProfilePictureSlot(own_public_id, contact_public_id, timestamp,
-                                            &testing_variables2.picture_updated);
+                                            &testing_variables.picture_updated);
                 },
                 [&] (const std::string& own_public_id,
                      const std::string& contact_public_id,
@@ -419,7 +345,7 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                     ContactPresence contact_presence) {
                   ContactPresenceSlot(own_public_id, contact_public_id, timestamp,
                                       contact_presence,
-                                      &testing_variables2.presence_announced);
+                                      &testing_variables.presence_announced);
                 },
                 [&] (const std::string& own_public_id,
                      const std::string& contact_public_id,
@@ -427,8 +353,8 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                      const std::string& timestamp) {
                   ContactDeletionSlot(own_public_id, contact_public_id, signal_message,
                                       timestamp,
-                                      &testing_variables2.removal_message,
-                                      &testing_variables2.removed);
+                                      &testing_variables.removal_message,
+                                      &testing_variables.removed);
                 },
                 [&] (const std::string& own_public_id,
                      const std::string& contact_public_id,
@@ -441,10 +367,10 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                              signal_share_id,
                                              access_level,
                                              timestamp,
-                                             &testing_variables2.new_private_share_name,
-                                             &testing_variables2.new_private_share_id,
-                                             &testing_variables2.new_private_access_level,
-                                             &testing_variables2.privately_invited);
+                                             &testing_variables.new_private_share_name,
+                                             &testing_variables.new_private_share_id,
+                                             &testing_variables.new_private_access_level,
+                                             &testing_variables.privately_invited);
                 },
                 [&] (const std::string& own_public_id,
                      const std::string& contact_public_id,
@@ -455,8 +381,8 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                            signal_share_name,
                                            signal_share_id,
                                            timestamp,
-                                           &testing_variables2.deleted_private_share_name,
-                                           &testing_variables2.private_share_deleted);
+                                           &testing_variables.deleted_private_share_name,
+                                           &testing_variables.private_share_deleted);
                 },
                 [&] (const std::string& own_public_id,
                      const std::string& contact_public_id,
@@ -467,9 +393,9 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                   PrivateMemberAccessChangeSlot(
                       own_public_id, contact_public_id, signal_share_name, signal_share_id,
                       signal_member_access,
-                      testing_variables2.access_private_share_name,
-                      &testing_variables2.private_member_access,
-                      &testing_variables2.private_member_access_changed);
+                      testing_variables.access_private_share_name,
+                      &testing_variables.private_member_access,
+                      &testing_variables.private_member_access_changed);
                 },
                 [&] (const std::string& own_public_id,
                      const std::string& contact_public_id,
@@ -480,47 +406,62 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                           signal_share_name,
                                           signal_share_id,
                                           timestamp,
-                                          &testing_variables2.new_open_share_id,
-                                          &testing_variables2.openly_invited);
+                                          &testing_variables.new_open_share_id,
+                                          &testing_variables.openly_invited);
                 },
                 [&] (const std::string& old_share_name,
                      const std::string& new_share_name) {
                   ShareRenameSlot(old_share_name, new_share_name,
-                                  &testing_variables2.old_share_name,
-                                  &testing_variables2.new_share_name,
-                                  &testing_variables2.share_renamed);
+                                  &testing_variables.old_share_name,
+                                  &testing_variables.new_share_name,
+                                  &testing_variables.share_renamed);
                 },
-                [&] (const std::string& share_name,
-                     const fs::path& target_path,
-                     const uint32_t& num_of_entries,
-                     const fs::path& old_path,
-                     const fs::path& new_path,
-                     const int& op_type) {
+                [=, &testing_variables] (const std::string& share_name,
+                                         const fs::path& target_path,
+                                         const uint32_t& num_of_entries,
+                                         const fs::path& old_path,
+                                         const fs::path& new_path,
+                                         const int& op_type) {
                   ShareChangedSlot(share_name, target_path, num_of_entries, old_path,
                                    new_path,
                                    op_type,
                                    mutex,
-                                   &testing_variables2.share_changes);
+                                   &testing_variables.share_changes);
                 });
   if (result != kSuccess)
     return result;
 
   {
-    result += test_elements1.CreateUser(keyword1, pin1, password1);
-    result += test_elements1.CreatePublicId(public_id1);
-    result += test_elements1.LogOut();
+    result += test_elements.CreateUser(keyword, pin, password);
+    result += test_elements.CreatePublicId(public_id);
+    result += test_elements.LogOut();
     if (result != kSuccess) {
-      LOG(kError) << "Failure log out 1";
+      LOG(kError) << "Failure creating account";
       return result;
     }
   }
+  return result;
+}
+
+int ConnectTwoPublicIds(LifeStuff& test_elements1,
+                        LifeStuff& test_elements2,
+                        testresources::TestingVariables& testing_variables1,
+                        testresources::TestingVariables& testing_variables2,
+                        const std::string& keyword1,
+                        const std::string& pin1,
+                        const std::string& password1,
+                        const std::string& public_id1,
+                        const std::string& keyword2,
+                        const std::string& pin2,
+                        const std::string& password2,
+                        const std::string& public_id2) {
+  int result(0);
   {
-    result += test_elements2.CreateUser(keyword2, pin2, password2);
-    result += test_elements2.CreatePublicId(public_id2);
+    result += test_elements2.LogIn(keyword2, pin2, password2);
     result += test_elements2.AddContact(public_id2, public_id1);
     result += test_elements2.LogOut();
     if (result != kSuccess) {
-      LOG(kError) << "Failure creating 2";
+      LOG(kError) << "Failure adding contact";
       return result;
     }
   }
@@ -532,12 +473,13 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
 
     result += test_elements1.ConfirmContact(public_id1, public_id2);
     result += test_elements1.LogOut();
-    if (result != kSuccess)
+    if (result != kSuccess) {
+      LOG(kError) << "Failure confirming contact";
       return result;
+    }
   }
   {
     result += test_elements2.LogIn(keyword2, pin2, password2);
-//     LOG(kError) << "result: " << result;
     while (!testing_variables2.confirmed)
       Sleep(bptime::milliseconds(100));
     result += test_elements2.LogOut();
