@@ -226,33 +226,30 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                  boost::mutex* mutex) {
   FileTransferFunction ftf;
   if (several_files) {
-    ftf = std::bind(&MultipleFileTransferSlot, args::_1, args::_2, args::_3, args::_4, args::_5,
-                    ids, names, total_files, &testing_variables2.file_transfer_received);
-            /*[&ids, &names, &total_files, &testing_variables2] (const std::string& own_public_id,
-               const std::string& contact_public_id,
-               const std::string& signal_file_name,
-               const std::string& signal_file_id,
-               const std::string& timestamp) {
-            LOG(kError) << "Binding lambda";
+    ftf = [=, &testing_variables2] (const std::string& own_public_id,
+                                    const std::string& contact_public_id,
+                                    const std::string& signal_file_name,
+                                    const std::string& signal_file_id,
+                                    const std::string& timestamp) {
             MultipleFileTransferSlot(own_public_id, contact_public_id, signal_file_name,
                                      signal_file_id, timestamp, ids, names, total_files,
                                      &testing_variables2.file_transfer_received);
-          };*/
+          };
   } else {
      ftf = [&] (const std::string& own_public_id,
-                                        const std::string& contact_public_id,
-                                        const std::string& signal_file_name,
-                                        const std::string& signal_file_id,
-                                        const std::string& timestamp) {
-                                      FileTransferSlot(own_public_id,
-                                                       contact_public_id,
-                                                       signal_file_name,
-                                                       signal_file_id,
-                                                       timestamp,
-                                                       &testing_variables2.file_name,
-                                                       &testing_variables2.file_id,
-                                                       &testing_variables2.file_transfer_received);
-                                    };
+                const std::string& contact_public_id,
+                const std::string& signal_file_name,
+                const std::string& signal_file_id,
+                const std::string& timestamp) {
+             FileTransferSlot(own_public_id,
+                              contact_public_id,
+                              signal_file_name,
+                              signal_file_id,
+                              timestamp,
+                              &testing_variables2.file_name,
+                              &testing_variables2.file_id,
+                              &testing_variables2.file_transfer_received);
+           };
   }
   int result(0);
   // Initialise and connect
@@ -376,13 +373,16 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                   &testing_variables1.new_share_name,
                                   &testing_variables1.share_renamed);
                 },
-                [&] (const std::string& share_name,
-                     const fs::path& target_path,
-                     const uint32_t& num_of_entries,
-                     const fs::path& old_path,
-                     const fs::path& new_path,
-                     const int& op_type) {
-                  ShareChangedSlot(share_name, target_path, num_of_entries, old_path,
+                [=, &testing_variables1] (const std::string& share_name,
+                                          const fs::path& target_path,
+                                          const uint32_t& num_of_entries,
+                                          const fs::path& old_path,
+                                          const fs::path& new_path,
+                                          const int& op_type) {
+                  ShareChangedSlot(share_name,
+                                   target_path,
+                                   num_of_entries,
+                                   old_path,
                                    new_path,
                                    op_type,
                                    mutex,
@@ -422,16 +422,14 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                      const std::string& contact_public_id,
                      const std::string& timestamp,
                     ContactPresence contact_presence) {
-                  ContactPresenceSlot(own_public_id, contact_public_id, timestamp,
-                                      contact_presence,
+                  ContactPresenceSlot(own_public_id, contact_public_id, timestamp, contact_presence,
                                       &testing_variables2.presence_announced);
                 },
                 [&] (const std::string& own_public_id,
                      const std::string& contact_public_id,
                      const std::string& signal_message,
                      const std::string& timestamp) {
-                  ContactDeletionSlot(own_public_id, contact_public_id, signal_message,
-                                      timestamp,
+                  ContactDeletionSlot(own_public_id, contact_public_id, signal_message, timestamp,
                                       &testing_variables2.removal_message,
                                       &testing_variables2.removed);
                 },
@@ -495,13 +493,16 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                   &testing_variables2.new_share_name,
                                   &testing_variables2.share_renamed);
                 },
-                [&] (const std::string& share_name,
-                     const fs::path& target_path,
-                     const uint32_t& num_of_entries,
-                     const fs::path& old_path,
-                     const fs::path& new_path,
-                     const int& op_type) {
-                  ShareChangedSlot(share_name, target_path, num_of_entries, old_path,
+                [=, &testing_variables2] (const std::string& share_name,
+                                          const fs::path& target_path,
+                                          const uint32_t& num_of_entries,
+                                          const fs::path& old_path,
+                                          const fs::path& new_path,
+                                          const int& op_type) {
+                  ShareChangedSlot(share_name,
+                                   target_path,
+                                   num_of_entries,
+                                   old_path,
                                    new_path,
                                    op_type,
                                    mutex,
