@@ -210,7 +210,7 @@ TEST_F(OneUserApiTest, FUNC_ChangeProfilePictureAfterSaveSession) {
   }
 }
 
-TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdConsecutively) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_CreateSamePublicIdConsecutively) {
   EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
   EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
   std::string new_public_id(RandomAlphaNumericString(6));
@@ -243,7 +243,7 @@ TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdConsecutively) {
   EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 }
 
-TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdSimultaneously) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_CreateSamePublicIdSimultaneously) {
   EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
   EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
 
@@ -641,7 +641,7 @@ TEST_F(TwoUsersApiTest, FUNC_RemoveContact) {
   }
 }
 
-TEST_F(TwoUsersApiTest, FUNC_RemoveContactAddContact) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_RemoveContactAddContact) {
   for (int i = 0; i < 2; ++i) {
     std::string removal_message(RandomAlphaNumericString(RandomUint32() % 20 + 10));
     {
@@ -696,7 +696,7 @@ TEST_F(TwoUsersApiTest, FUNC_RemoveContactAddContact) {
   }
 }
 
-TEST_F(TwoUsersApiTest, FUNC_AddContactWithMessage) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_AddContactWithMessage) {
   test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_);
   test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_);
 
