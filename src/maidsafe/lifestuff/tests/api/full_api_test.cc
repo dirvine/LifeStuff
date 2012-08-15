@@ -179,52 +179,50 @@ TEST_F(OneUserApiTest, FUNC_ChangeProfilePictureAfterSaveSession) {
   std::string public_id(RandomAlphaNumericString(5));
   EXPECT_EQ(kSuccess, test_elements_.CreatePublicId(public_id));
   for (int n(1001); n > 1; n-=100) {
-    LOG(kError) << "\n\n\n";
     std::string profile_picture1(RandomString(1177 * n)), profile_picture2(RandomString(1177 * n));
     EXPECT_EQ(kSuccess, test_elements_.ChangeProfilePicture(public_id, profile_picture1));
     std::string retrieved_picture(test_elements_.GetOwnProfilePicture(public_id));
-    EXPECT_EQ(profile_picture1, retrieved_picture);
+    EXPECT_TRUE(profile_picture1 == retrieved_picture);
     EXPECT_EQ(kSuccess, test_elements_.LogOut());
 
+    LOG(kError) << "\n\n\n";
     EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
     retrieved_picture = test_elements_.GetOwnProfilePicture(public_id);
-    EXPECT_EQ(profile_picture1, retrieved_picture);
-//    Sleep(bptime::seconds(65));
+    EXPECT_TRUE(profile_picture1 == retrieved_picture);
     EXPECT_EQ(kSuccess, test_elements_.ChangeProfilePicture(public_id, profile_picture2));
     retrieved_picture = test_elements_.GetOwnProfilePicture(public_id);
-    EXPECT_EQ(profile_picture2, retrieved_picture);
+    EXPECT_TRUE(profile_picture2 == retrieved_picture);
     EXPECT_EQ(kSuccess, test_elements_.LogOut());
 
+    LOG(kError) << "\n\n\n";
     EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
     retrieved_picture = test_elements_.GetOwnProfilePicture(public_id);
-    EXPECT_EQ(profile_picture2, retrieved_picture);
-//    Sleep(bptime::seconds(65));
+    EXPECT_TRUE(profile_picture2 == retrieved_picture);
     EXPECT_EQ(kSuccess, test_elements_.ChangeProfilePicture(public_id, profile_picture1));
     retrieved_picture = test_elements_.GetOwnProfilePicture(public_id);
-    EXPECT_EQ(profile_picture1, retrieved_picture);
+    EXPECT_TRUE(profile_picture1 == retrieved_picture);
     EXPECT_EQ(kSuccess, test_elements_.LogOut());
 
+    LOG(kError) << "\n\n\n";
     EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
     retrieved_picture = test_elements_.GetOwnProfilePicture(public_id);
-    EXPECT_EQ(profile_picture1, retrieved_picture);
+    EXPECT_TRUE(profile_picture1 == retrieved_picture);
   }
 }
 
-TEST_F(TwoUsersApiTest, DISABLED_FUNC_CreateSamePublicIdConsecutively) {
+TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdConsecutively) {
   EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
-  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
   std::string new_public_id(RandomAlphaNumericString(6));
 
   EXPECT_EQ(kSuccess, test_elements_1_.CreatePublicId(new_public_id));
   EXPECT_NE(kSuccess, test_elements_1_.CreatePublicId(new_public_id));
-  EXPECT_NE(kSuccess, test_elements_2_.CreatePublicId(new_public_id));
-
   EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+  EXPECT_NE(kSuccess, test_elements_2_.CreatePublicId(new_public_id));
   EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 
   EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
-  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
-
   int new_instances(0);
   std::vector<std::string>::iterator it;
   std::vector<std::string> names(test_elements_1_.PublicIdsList());
@@ -232,18 +230,20 @@ TEST_F(TwoUsersApiTest, DISABLED_FUNC_CreateSamePublicIdConsecutively) {
     if (*it == new_public_id)
       ++new_instances;
   }
+  EXPECT_EQ(new_instances, 1);
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
   names = test_elements_2_.PublicIdsList();
   for (it = names.begin(); it < names.end(); it++) {
     if (*it == new_public_id)
       ++new_instances;
   }
-  EXPECT_EQ(new_instances, 1);
-
-  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 }
 
-TEST_F(TwoUsersApiTest, DISABLED_FUNC_CreateSamePublicIdSimultaneously) {
+#ifndef MAIDSAFE_APPLE
+TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdSimultaneously) {
   EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
   EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
 
@@ -303,6 +303,7 @@ TEST_F(TwoUsersApiTest, DISABLED_FUNC_CreateSamePublicIdSimultaneously) {
   EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
   EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 }
+#endif
 
 TEST_F(TwoUsersApiTest, FUNC_SendFileSaveToGivenPath) {
   boost::system::error_code error_code;
@@ -507,13 +508,11 @@ TEST(IndependentFullTest, FUNC_SendFileWithRejection) {
                                                    &files_expected));
 
   boost::system::error_code error_code;
-
   {
     EXPECT_EQ(kSuccess, test_elements1.LogIn(keyword1, pin1, password1));
 
     for (; file_count < file_max; ++file_count) {
-      file_paths.push_back(fs::path(test_elements1.mount_path() /
-                                    RandomAlphaNumericString(8)));
+      file_paths.push_back(fs::path(test_elements1.mount_path() / RandomAlphaNumericString(8)));
       std::ofstream ofstream(file_paths[file_count].c_str(), std::ios::binary);
       file_contents.push_back(RandomString(5 * 1024));
       ofstream << file_contents[file_count];
@@ -641,7 +640,7 @@ TEST_F(TwoUsersApiTest, FUNC_RemoveContact) {
   }
 }
 
-TEST_F(TwoUsersApiTest, DISABLED_FUNC_RemoveContactAddContact) {
+TEST_F(TwoUsersApiTest, FUNC_RemoveContactAddContact) {
   for (int i = 0; i < 2; ++i) {
     std::string removal_message(RandomAlphaNumericString(RandomUint32() % 20 + 10));
     {
@@ -667,53 +666,54 @@ TEST_F(TwoUsersApiTest, DISABLED_FUNC_RemoveContactAddContact) {
       EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
     }
 
-    test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_);
-    test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_);
     const std::string request_message(RandomAlphaNumericString(RandomUint32() % 20 + 10));
 
     if (i % 2 == 0) {
       testing_variables_2_.newly_contacted = false;
-
+      test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_);
       test_elements_1_.AddContact(public_id_1_, public_id_2_, request_message);
+      EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
 
+      test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_);
       while (!testing_variables_2_.newly_contacted)
         Sleep(bptime::milliseconds(100));
       EXPECT_EQ(testing_variables_2_.contact_request_message, request_message);
       test_elements_2_.ConfirmContact(public_id_2_, public_id_1_);
+      EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
     } else {
       testing_variables_1_.newly_contacted = false;
-
+      test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_);
       test_elements_2_.AddContact(public_id_2_, public_id_1_, request_message);
+      EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 
+      test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_);
       while (!testing_variables_1_.newly_contacted)
         Sleep(bptime::milliseconds(100));
       EXPECT_EQ(testing_variables_1_.contact_request_message, request_message);
       test_elements_1_.ConfirmContact(public_id_1_, public_id_2_);
+      EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
     }
-
-    EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
-    EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   }
 }
 
-TEST_F(TwoUsersApiTest, DISABLED_FUNC_AddContactWithMessage) {
+TEST_F(TwoUsersApiTest, FUNC_AddContactWithMessage) {
   test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_);
-  test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_);
-
   const std::string public_id_3(RandomAlphaNumericString(RandomUint32() % 30 + 1));
   test_elements_1_.CreatePublicId(public_id_3);
   testing_variables_1_.newly_contacted = false;
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
 
+  test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_);
   const std::string message(RandomAlphaNumericString(RandomUint32() % 90 + 10));
   test_elements_2_.AddContact(public_id_2_, public_id_3, message);
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 
+  test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_);
   while (!testing_variables_1_.newly_contacted)
     Sleep(bptime::milliseconds(100));
   EXPECT_EQ(testing_variables_1_.contact_request_message, message);
   test_elements_1_.ConfirmContact(public_id_1_, public_id_3);
-
   EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
-  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 }
 
 TEST_F(TwoUsersApiTest, FUNC_AddThenRemoveOfflineUser) {

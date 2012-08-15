@@ -58,7 +58,7 @@ PublicId::PublicId(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
       contact_deletion_processed_signal_(new ContactDeletionProcessedSignal),
       asio_service_(asio_service) {}
 
-PublicId::~PublicId() { StopCheckingForNewContacts(); }
+PublicId::~PublicId() {}
 
 void PublicId::StartUp(const bptime::seconds& interval) {
   GetContactsHandle();
@@ -81,8 +81,11 @@ int PublicId::StartCheckingForNewContacts(const bptime::seconds& interval) {
 }
 
 void PublicId::StopCheckingForNewContacts() {
-  get_new_contacts_timer_active_ = false;
-  get_new_contacts_timer_.cancel();
+  if (get_new_contacts_timer_active_) {
+    get_new_contacts_timer_active_ = false;
+    // boost::this_thread::disable_interruption disable_interruption;
+    get_new_contacts_timer_.cancel();
+  }
 }
 
 int PublicId::CreatePublicId(const std::string& public_id, bool accepts_new_contacts) {

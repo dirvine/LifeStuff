@@ -265,8 +265,6 @@ class LifeStuffImpl {
   void ConnectInternalElements();
   int SetValidPmidAndInitialisePublicComponents();
   int PreContactChecks(const std::string& my_public_id);
-  void InvokeDoSession();
-  void DoSaveSession();
   void ShareRenameSlot(const std::string& old_share_name,
                        const std::string& new_share_name);
   void MemberAccessChangeSlot(const std::string& share_id,
