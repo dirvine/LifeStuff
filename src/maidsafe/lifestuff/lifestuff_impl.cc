@@ -218,24 +218,20 @@ int LifeStuffImpl::ConnectToSignals(
     if (user_storage_)
       user_storage_->ConnectToShareChangedSignal(share_changed_function);
   }
-
-      [&] (const std::string& own_public_id,
-           const std::string& contact_public_id,
-           const std::string& removal_message,
-           const std::string& timestamp) {
-        RemoveContact(own_public_id, contact_public_id, removal_message, timestamp, false);
-      };
   if (public_id_) {
-    public_id_->ConnectToContactDeletionReceivedSignal([&] (const std::string& own_public_id,
-                                                            const std::string& contact_public_id,
-                                                            const std::string& removal_message,
-                                                            const std::string& timestamp) {
-                                                          RemoveContact(own_public_id,
-                                                                        contact_public_id,
-                                                                        removal_message,
-                                                                        timestamp,
-                                                                        false);
-                                                        });
+    public_id_->ConnectToContactDeletionReceivedSignal(
+        [&] (const std::string& own_public_id,
+             const std::string& contact_public_id,
+             const std::string& removal_message,
+             const std::string& timestamp) {
+          int result(RemoveContact(own_public_id,
+                                   contact_public_id,
+                                   removal_message,
+                                   timestamp,
+                                   false));
+          if (result != kSuccess)
+            LOG(kError) << "Failed to remove contact after receiving contact deletion signal!";
+        });
   }
 
   if (connects > 0) {
