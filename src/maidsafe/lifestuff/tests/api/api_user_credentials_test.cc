@@ -24,13 +24,6 @@
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/lifestuff_api.h"
-#include "maidsafe/lifestuff/detail/contacts.h"
-#include "maidsafe/lifestuff/detail/data_atlas_pb.h"
-#include "maidsafe/lifestuff/detail/message_handler.h"
-#include "maidsafe/lifestuff/detail/public_id.h"
-#include "maidsafe/lifestuff/detail/session.h"
-#include "maidsafe/lifestuff/detail/user_credentials.h"
-#include "maidsafe/lifestuff/detail/user_storage.h"
 #include "maidsafe/lifestuff/tests/api/api_test_resources.h"
 
 namespace args = std::placeholders;
