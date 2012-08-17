@@ -487,41 +487,221 @@ int ConnectTwoPublicIds(LifeStuff& test_elements1,
                         const std::string& pin2,
                         const std::string& password2,
                         const std::string& public_id2) {
+  // First user adds second user
   int result(0);
-  testing_variables1.newly_contacted = false;
-  testing_variables2.confirmed = false;
+  testing_variables1.confirmed = false;
+  testing_variables2.newly_contacted = false;
   {
-    result += test_elements2.LogIn(keyword2, pin2, password2);
-    result += test_elements2.AddContact(public_id2, public_id1);
-    result += test_elements2.LogOut();
+    result += test_elements1.LogIn(keyword1, pin1, password1);
+    result += test_elements1.AddContact(public_id1, public_id2);
+    result += test_elements1.LogOut();
     if (result != kSuccess) {
       LOG(kError) << "Failure adding contact";
       return result;
     }
   }
   {
-    result += test_elements1.LogIn(keyword1, pin1, password1);
+    result += test_elements2.LogIn(keyword2, pin2, password2);
 
-    while (!testing_variables1.newly_contacted)
+    while (!testing_variables2.newly_contacted)
       Sleep(bptime::milliseconds(100));
 
-    result += test_elements1.ConfirmContact(public_id1, public_id2);
-    result += test_elements1.LogOut();
+    result += test_elements2.ConfirmContact(public_id2, public_id1);
+    result += test_elements2.LogOut();
     if (result != kSuccess) {
       LOG(kError) << "Failure confirming contact";
       return result;
     }
   }
   {
-    result += test_elements2.LogIn(keyword2, pin2, password2);
-    while (!testing_variables2.confirmed)
+    result += test_elements1.LogIn(keyword1, pin1, password1);
+    while (!testing_variables1.confirmed)
       Sleep(bptime::milliseconds(100));
-    result += test_elements2.LogOut();
+    result += test_elements1.LogOut();
     if (result != kSuccess)
       return result;
   }
 
   return result;
+}
+
+void CreateShareAddingOneContact(LifeStuff& test_elements_a,
+                                 LifeStuff& test_elements_b,
+                                 testresources::TestingVariables& testing_variables_b,
+                                 const std::string& keyword_a,
+                                 const std::string& pin_a,
+                                 const std::string& password_a,
+                                 const std::string& public_id_a,
+                                 const std::string& keyword_b,
+                                 const std::string& pin_b,
+                                 const std::string& password_b,
+                                 const std::string& public_id_b,
+                                 std::string share_name,
+                                 const int& rights) {
+  LOG(kInfo) << "\n\nCreating share " << share_name <<
+                " owned by " << public_id_a <<
+                " and inviting " << public_id_b << "\n";
+
+  if (rights != kShareReadWrite && rights != kShareReadOnly) {
+    LOG(kInfo) << "CreateShareAddingOneContact given incorrect rights value: " << rights;
+    return;
+  }
+
+  testing_variables_b.privately_invited = false;
+  testing_variables_b.new_private_share_id.clear();
+  boost::system::error_code error_code;
+
+  // a creates share, inviting b
+  EXPECT_EQ(kSuccess, test_elements_a.LogIn(keyword_a, pin_a, password_a));
+
+  StringIntMap contacts, results;
+  contacts.insert(std::make_pair(public_id_b, rights));
+  results.insert(std::make_pair(public_id_b, kGeneralError));
+
+  EXPECT_EQ(kSuccess,
+            test_elements_a.CreateEmptyPrivateShare(public_id_a, contacts,
+                                                    &share_name, &results));
+  fs::path directory1(test_elements_a.mount_path() / kSharedStuff / share_name);
+  EXPECT_TRUE(fs::is_directory(directory1, error_code)) << directory1;
+  EXPECT_EQ(0, error_code.value());
+  EXPECT_EQ(kSuccess, results[public_id_b]);
+  StringIntMap shares_members;
+  test_elements_a.GetPrivateShareMembers(public_id_a, share_name, &shares_members);
+  EXPECT_EQ(1U, shares_members.size());
+  PrivateShareRoles expected_state(kShareReadOnlyUnConfirmed);
+  if (rights == kShareReadWrite)
+    expected_state = kShareReadWriteUnConfirmed;
+  EXPECT_EQ(expected_state, shares_members.find(public_id_b)->second);
+
+  EXPECT_EQ(kSuccess, test_elements_a.LogOut());
+
+  // b accepts invitation into share
+  EXPECT_EQ(kSuccess, test_elements_b.LogIn(keyword_b, pin_b, password_b));
+  while (!testing_variables_b.privately_invited)
+    Sleep(bptime::milliseconds(100));
+  EXPECT_FALSE(testing_variables_b.new_private_share_id.empty());
+  EXPECT_EQ(
+      kSuccess,
+      test_elements_b.AcceptPrivateShareInvitation(public_id_b,
+                                                   public_id_a,
+                                                   testing_variables_b.new_private_share_id,
+                                                   &share_name));
+  fs::path directory2(test_elements_b.mount_path() / kSharedStuff / share_name);
+  EXPECT_TRUE(fs::is_directory(directory2, error_code)) << directory2;
+  EXPECT_EQ(kSuccess, test_elements_b.LogOut());
+}
+
+void AddOneContactToExistingShare(LifeStuff& test_elements_a,
+                                  LifeStuff& test_elements_b,
+                                  testresources::TestingVariables& testing_variables_b,
+                                  const std::string& keyword_a,
+                                  const std::string& pin_a,
+                                  const std::string& password_a,
+                                  const std::string& public_id_a,
+                                  const std::string& keyword_b,
+                                  const std::string& pin_b,
+                                  const std::string& password_b,
+                                  const std::string& public_id_b,
+                                  std::string share_name,
+                                  const int& rights) {
+  LOG(kInfo) << "\n\nInviting " << public_id_b <<
+                " into share " << share_name <<
+                " owned by " << public_id_a << "\n";
+
+  if (rights != kShareReadWrite && rights != kShareReadOnly) {
+    LOG(kInfo) << "AddOneContactToExistingShare given incorrect rights value: " << rights;
+    return;
+  }
+
+  testing_variables_b.privately_invited = false;
+  testing_variables_b.new_private_share_id.clear();
+  boost::system::error_code error_code;
+
+  // a invites b into share
+  EXPECT_EQ(kSuccess, test_elements_a.LogIn(keyword_a, pin_a, password_a));
+
+  StringIntMap results;
+  EXPECT_EQ(kSuccess, test_elements_a.GetPrivateShareMembers(public_id_a,
+                                                             share_name,
+                                                             &results));
+  EXPECT_EQ(1U, results.size());
+  EXPECT_TRUE(results.end() == results.find(public_id_a));
+  EXPECT_TRUE(results.end() == results.find(public_id_b));
+
+  StringIntMap amendments;
+  results.clear();
+  amendments.insert(std::make_pair(public_id_b, rights));
+  EXPECT_EQ(kSuccess, test_elements_a.EditPrivateShareMembers(public_id_a,
+                                                              amendments,
+                                                              share_name,
+                                                              &results));
+  EXPECT_EQ(kSuccess, results[public_id_b]);
+  results[public_id_b] = -1;
+  EXPECT_EQ(kSuccess, test_elements_a.GetPrivateShareMembers(public_id_a,
+                                                             share_name,
+                                                             &results));
+  PrivateShareRoles expected_state(kShareReadOnlyUnConfirmed);
+  if (rights == kShareReadWrite)
+    expected_state = kShareReadWriteUnConfirmed;
+  EXPECT_EQ(expected_state, results[public_id_b]);
+
+  EXPECT_EQ(kSuccess, test_elements_a.LogOut());
+
+  // b accepts invitation into share
+  EXPECT_EQ(kSuccess, test_elements_b.LogIn(keyword_b, pin_b, password_b));
+  while (!testing_variables_b.privately_invited)
+    Sleep(bptime::milliseconds(100));
+  EXPECT_FALSE(testing_variables_b.new_private_share_id.empty());
+  EXPECT_EQ(
+      kSuccess,
+      test_elements_b.AcceptPrivateShareInvitation(public_id_b,
+                                                   public_id_a,
+                                                   testing_variables_b.new_private_share_id,
+                                                   &share_name));
+  fs::path directory2(test_elements_b.mount_path() / kSharedStuff / share_name);
+  EXPECT_TRUE(fs::is_directory(directory2, error_code)) << directory2;
+  EXPECT_EQ(kSuccess, test_elements_b.LogOut());
+}
+
+void TwoUsersDefriendEachOther(LifeStuff& test_elements_a,
+                               LifeStuff& test_elements_b,
+                               testresources::TestingVariables& testing_variables_b,
+                               const std::string& keyword_a,
+                               const std::string& pin_a,
+                               const std::string& password_a,
+                               const std::string& public_id_a,
+                               const std::string& keyword_b,
+                               const std::string& pin_b,
+                               const std::string& password_b,
+                               const std::string& public_id_b) {
+  int i(0);
+  testing_variables_b.removed = false;
+
+  EXPECT_EQ(kSuccess, test_elements_b.LogIn(keyword_b, pin_b, password_b)) << "Public ID: "
+                                                                           << public_id_b;
+  int num_contacts_b(test_elements_b.GetContacts(public_id_b).size());
+  EXPECT_EQ(kSuccess, test_elements_b.LogOut());
+
+  EXPECT_EQ(kSuccess, test_elements_a.LogIn(keyword_a, pin_a, password_a));
+
+  int num_contacts_a(test_elements_a.GetContacts(public_id_a).size());
+  EXPECT_EQ(kSuccess, test_elements_a.RemoveContact(public_id_a, public_id_b, ""));
+  EXPECT_EQ(test_elements_a.GetContacts(public_id_a).size(), num_contacts_a - 1);
+  EXPECT_EQ(kSuccess, test_elements_a.LogOut());
+
+  EXPECT_EQ(kSuccess, test_elements_b.LogIn(keyword_b, pin_b, password_b));
+  while (!testing_variables_b.removed && i < 150) {
+    ++i;
+    Sleep(bptime::milliseconds(100));
+  }
+  EXPECT_TRUE(testing_variables_b.removed);
+  if (i >= 150) {
+    LOG(kInfo) << "Removing contact taken too long! (" << public_id_a <<
+                  " removing " << public_id_b << ")";
+    ASSERT_TRUE(false);
+  }
+  EXPECT_EQ(test_elements_b.GetContacts(public_id_b).size(), num_contacts_b - 1);
+  EXPECT_EQ(kSuccess, test_elements_b.LogOut());
 }
 
 }  // namespace testresources
