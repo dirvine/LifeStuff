@@ -71,24 +71,33 @@ struct ShareDetails {
 };
 
 typedef std::map<std::string, ShareDetails> ShareInformation;
+typedef std::map<std::string, std::string> TempLifestuffCard;
+typedef std::vector<std::string> SocialInfo;
 
 typedef std::shared_ptr<ContactsHandler> ContactsHandlerPtr;
 typedef std::shared_ptr<ShareInformation> ShareInformationPtr;
-typedef std::shared_ptr<std::string> ProfilePicturePtr;
+typedef std::shared_ptr<SocialInfo> SocialInfoPtr;
+typedef std::shared_ptr<TempLifestuffCard> TempLifestuffCardPtr;
 
 typedef std::pair<std::shared_ptr<boost::mutex>, ShareInformationPtr> ShareInformationDetail;
-typedef std::pair<std::shared_ptr<boost::mutex>, ProfilePicturePtr> ProfilePictureDetail;
+typedef std::pair<std::shared_ptr<boost::mutex>, SocialInfoPtr> SocialInfoDetail;
+typedef std::pair<std::shared_ptr<boost::mutex>, TempLifestuffCardPtr> TempLifestuffCardDetail;
 
 struct PublicIdDetails {
-  PublicIdDetails() : profile_picture_data_map(new std::string(kBlankProfilePicture)),
+  PublicIdDetails() : social_info(new SocialInfo/*{"a", "b"}*/),
                       contacts_handler(new ContactsHandler),
                       share_information(new ShareInformation),
-                      profile_picture_data_map_mutex(new boost::mutex),
-                      share_information_mutex(new boost::mutex) {}
-  ProfilePicturePtr profile_picture_data_map;
+                      lifestuff_cards(new TempLifestuffCard),
+                      social_info_mutex(new boost::mutex),
+                      share_information_mutex(new boost::mutex),
+                      temp_lifestuff_card_mutex(new boost::mutex) {}
+  SocialInfoPtr social_info;
   ContactsHandlerPtr contacts_handler;
   ShareInformationPtr share_information;
-  std::shared_ptr<boost::mutex> profile_picture_data_map_mutex, share_information_mutex;
+  TempLifestuffCardPtr lifestuff_cards;
+  std::shared_ptr<boost::mutex> social_info_mutex,
+                                share_information_mutex,
+                                temp_lifestuff_card_mutex;
 };
 
 class Session {
@@ -99,12 +108,12 @@ class Session {
 
   passport::Passport& passport();
 
-  int AddPublicId(const std::string& public_id);
+  int AddPublicId(const std::string& public_id, const std::string& pointer_to_lifestuff_card);
   int DeletePublicId(const std::string& public_id);
   bool OwnPublicId(const std::string& public_id);
   const ContactsHandlerPtr contacts_handler(const std::string& public_id);
   const ShareInformationDetail share_information(const std::string& public_id);
-  const ProfilePictureDetail profile_picture_data_map(const std::string& public_id);
+  const SocialInfoDetail social_info(const std::string& public_id);
 
   DefConLevels def_con_level() const;
   std::string keyword() const;

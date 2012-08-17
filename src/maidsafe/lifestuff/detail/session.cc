@@ -35,6 +35,7 @@
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
 #include "maidsafe/lifestuff/detail/data_atlas_pb.h"
+#include "maidsafe/lifestuff/detail/utils.h"
 
 namespace maidsafe {
 
@@ -74,7 +75,8 @@ void Session::Reset() {
 
 passport::Passport& Session::passport() { return passport_; }
 
-int Session::AddPublicId(const std::string& public_id) {
+int Session::AddPublicId(const std::string& public_id,
+                         const std::string& /*pointer_to_lifestuff_card*/) {
   {
     boost::mutex::scoped_lock arran_coire_fhionn_lochan(public_id_details_mutex_);
     auto result(public_id_details_.insert(std::make_pair(public_id, PublicIdDetails())));
@@ -87,6 +89,10 @@ int Session::AddPublicId(const std::string& public_id) {
   {
     boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
     user_details_.changed = true;
+  }
+
+  {
+
   }
 
   return kSuccess;
@@ -135,21 +141,21 @@ const ShareInformationDetail Session::share_information(const std::string& publi
   return share_information_detail;
 }
 
-const ProfilePictureDetail Session::profile_picture_data_map(const std::string& public_id) {
-  ProfilePictureDetail profile_picture_detail;
+const SocialInfoDetail Session::social_info(const std::string& public_id) {
+  SocialInfoDetail social_info_detail;
   {
     boost::mutex::scoped_lock arran_coire_fhionn_lochan(public_id_details_mutex_);
     auto it(public_id_details_.find(public_id));
     if (it == public_id_details_.end()) {
       LOG(kError) << "Failure to find public id: " << public_id;
-      return profile_picture_detail;
+      return social_info_detail;
     }
 
-    profile_picture_detail.first = (*it).second.profile_picture_data_map_mutex;
-    profile_picture_detail.second = (*it).second.profile_picture_data_map;
+    social_info_detail.first = (*it).second.social_info_mutex;
+    social_info_detail.second = (*it).second.social_info;
   }
 
-  return profile_picture_detail;
+  return social_info_detail;
 }
 
 DefConLevels Session::def_con_level() const {
@@ -311,8 +317,10 @@ int Session::ParseDataAtlas(const std::string& serialised_data_atlas) {
   for (int id_count(0); id_count < data_atlas.public_ids_size(); ++id_count) {
     pub_id = data_atlas.public_ids(id_count).public_id();
     PublicIdDetails public_id_details;
-    *public_id_details.profile_picture_data_map =
-        data_atlas.public_ids(id_count).profile_picture_data_map();
+    public_id_details.social_info->push_back(
+        data_atlas.public_ids(id_count).profile_picture_data_map());
+    public_id_details.social_info->push_back(
+        data_atlas.public_ids(id_count).pointer_to_info());
 
     for (int contact_count(0);
          contact_count < data_atlas.public_ids(id_count).contacts_size();
@@ -369,8 +377,9 @@ int Session::SerialiseDataAtlas(std::string* serialised_data_atlas) {
     PublicIdentity* pub_id(data_atlas.add_public_ids());
     pub_id->set_public_id((*it).first);
     {
-      boost::mutex::scoped_lock loch(*(*it).second.profile_picture_data_map_mutex);
-      pub_id->set_profile_picture_data_map(*(*it).second.profile_picture_data_map);
+      boost::mutex::scoped_lock loch(*(*it).second.social_info_mutex);
+      pub_id->set_profile_picture_data_map((*it).second.social_info->at(kPicture));
+      pub_id->set_pointer_to_info((*it).second.social_info->at(kInfoPointer));
     }
     (*it).second.contacts_handler->OrderedContacts(&contacts, kAlphabetical, kRequestSent |
                                                                              kPendingResponse |
@@ -390,6 +399,7 @@ int Session::SerialiseDataAtlas(std::string* serialised_data_atlas) {
       pc->set_rank(contacts[n].rank);
       pc->set_last_contact(contacts[n].last_contact);
       pc->set_profile_picture_data_map(contacts[n].profile_picture_data_map);
+      pc->set_pointer_to_info(contacts[n].pointer_to_info);
       LOG(kInfo) << "Added contact " << contacts[n].public_id << " to " << (*it).first << " map.";
     }
 

@@ -90,6 +90,11 @@ enum ShareType {
   kMaxShareType = kPrivateOwner
 };
 
+enum SocialInfoFields {
+  kPicture = 0,
+  kInfoPointer
+};
+
 struct OperationResults {
   OperationResults(boost::mutex& mutex_in,
                    boost::condition_variable& conditional_variable_in,

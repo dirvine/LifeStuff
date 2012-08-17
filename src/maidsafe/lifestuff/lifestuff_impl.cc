@@ -732,16 +732,15 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
   }
 
   // Set in session
-  const ProfilePictureDetail profile_picture_data_map(
-      session_.profile_picture_data_map(my_public_id));
-  if (!profile_picture_data_map.first) {
+  const SocialInfoDetail social_info(session_.social_info(my_public_id));
+  if (!social_info.first) {
     LOG(kError) << "User does not hold such public ID: " << my_public_id;
     return kPublicIdNotFoundFailure;
   }
 
   {
-    boost::mutex::scoped_lock loch(*profile_picture_data_map.first);
-    *profile_picture_data_map.second = message.content[0];
+    boost::mutex::scoped_lock loch(*social_info.first);
+    social_info.second->at(kPicture) = message.content[0];
   }
   session_.set_changed(true);
   LOG(kError) << "Session set to changed.";
@@ -761,16 +760,15 @@ std::string LifeStuffImpl::GetOwnProfilePicture(const std::string& my_public_id)
     return "";
   }
 
-  const ProfilePictureDetail profile_picture_data_map(
-      session_.profile_picture_data_map(my_public_id));
-  if (!profile_picture_data_map.first) {
+  const SocialInfoDetail social_info(session_.social_info(my_public_id));
+  if (!social_info.first) {
     LOG(kError) << "User does not hold such public ID: " << my_public_id;
     return "";
   }
 
   {
-    boost::mutex::scoped_lock loch(*profile_picture_data_map.first);
-    if (*profile_picture_data_map.second == kBlankProfilePicture) {
+    boost::mutex::scoped_lock loch(*social_info.first);
+    if (social_info.second->at(kPicture) == kBlankProfilePicture) {
       LOG(kInfo) << "Blank picture in session.";
       return "";
     }

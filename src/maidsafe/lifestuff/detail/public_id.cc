@@ -189,7 +189,11 @@ int PublicId::CreatePublicId(const std::string& public_id, bool accepts_new_cont
     return result;
   }
 
-  result = session_.AddPublicId(public_id);
+  // Store the lifestuff card
+  std::string lifestuff_card_address;
+  result = StoreLifestuffCard(mmid, lifestuff_card_address);
+
+  result = session_.AddPublicId(public_id, lifestuff_card_address);
   if (result != kSuccess) {
     LOG(kError) << "Failed to add entry for " << public_id;
     return result;
@@ -842,10 +846,11 @@ int PublicId::InformContactInfo(const std::string& public_id,
     introduction.set_type(type);
     introduction.set_message(message);
 
-    ProfilePictureDetail profile_picture_data_map(session_.profile_picture_data_map(public_id));
-    if (profile_picture_data_map.second) {
-      boost::mutex::scoped_lock loch(*profile_picture_data_map.first);
-      introduction.set_profile_picture_data_map(*(profile_picture_data_map.second));
+    SocialInfoDetail social_info(session_.social_info(public_id));
+    if (social_info.first) {
+      boost::mutex::scoped_lock loch(*social_info.first);
+      introduction.set_profile_picture_data_map(social_info.second->at(kPicture));
+      introduction.set_pointer_to_info(social_info.second->at(kInfoPointer));
     } else {
       LOG(kInfo) << "Failure to find profile picture data map for public id: " << public_id;
     }
