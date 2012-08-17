@@ -143,11 +143,6 @@ class PublicId {
   bs2::connection ConnectToContactDeletionProcessedSignal(
       const ContactDeletionFunction& contact_deletion_slot);
 
-  // Lists
-  std::map<std::string, ContactStatus> ContactList(const std::string& own_public_id,
-                                                   ContactOrder type = kLastContacted,
-                                                   uint16_t bitwise_status = kConfirmed) const;
-
  private:
   PublicId(const PublicId&);
   PublicId& operator=(const PublicId&);

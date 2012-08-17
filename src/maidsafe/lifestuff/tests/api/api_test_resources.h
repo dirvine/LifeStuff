@@ -264,6 +264,32 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                  size_t* total_files = nullptr,
                                  boost::mutex* mutex = nullptr);
 
+int CreatePublicId(LifeStuff& test_elements,
+                   testresources::TestingVariables& testing_variables,
+                   const fs::path& test_dir,
+                   const std::string& keyword,
+                   const std::string& pin,
+                   const std::string& password,
+                   const std::string& public_id,
+                   bool several_files = false,
+                   std::vector<std::string>* ids = nullptr,
+                   std::vector<std::string>* names = nullptr,
+                   size_t* total_files = nullptr,
+                   boost::mutex* mutex = nullptr);
+
+int ConnectTwoPublicIds(LifeStuff& test_elements1,
+                        LifeStuff& test_elements2,
+                        testresources::TestingVariables& testing_variables1,
+                        testresources::TestingVariables& testing_variables2,
+                        const std::string& keyword1,
+                        const std::string& pin1,
+                        const std::string& password1,
+                        const std::string& public_id1,
+                        const std::string& keyword2,
+                        const std::string& pin2,
+                        const std::string& password2,
+                        const std::string& public_id2);
+
 }  // namespace testresources
 
 namespace sleepthreads {
