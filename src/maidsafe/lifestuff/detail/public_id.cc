@@ -684,7 +684,10 @@ void PublicId::ProcessRequests(const std::string& own_public_id,
         if (result == kSuccess &&
             (contact.status == kConfirmed || contact.status == kPendingResponse) &&
             introduction.inbox_name() != contact.inbox_name)
-          ProcessContactMoveInbox(contact, contacts_handler, introduction.inbox_name());
+          ProcessContactMoveInbox(contact,
+                                  contacts_handler,
+                                  introduction.inbox_name(),
+                                  introduction.pointer_to_info());
         else
           LOG(kError) << "Introduction of type kMovedInbox doesn't match current state!";
         break;
@@ -705,6 +708,7 @@ void PublicId::ProcessContactConfirmation(Contact& contact,
                                           const Introduction& introduction) {
   contact.status = kConfirmed;
   contact.profile_picture_data_map = introduction.profile_picture_data_map();
+  contact.pointer_to_info = introduction.pointer_to_info();
   int result = GetPublicKey(introduction.inbox_name(), contact, 1);
   if (result == kSuccess) {
     result = contacts_handler->UpdateContact(contact);
@@ -722,8 +726,10 @@ void PublicId::ProcessContactConfirmation(Contact& contact,
 
 void PublicId::ProcessContactMoveInbox(Contact& contact,
                                        const ContactsHandlerPtr contacts_handler,
-                                       const std::string& inbox_name) {
+                                       const std::string& inbox_name,
+                                       const std::string& pointer_to_info) {
   int result = GetPublicKey(inbox_name, contact, 1);
+  contact.pointer_to_info = pointer_to_info;
   if (result == kSuccess) {
     result = contacts_handler->UpdateContact(contact);
     if (result != kSuccess) {
@@ -745,6 +751,7 @@ void PublicId::ProcessNewContact(Contact& contact,
   std::string public_id(introduction.public_id());
   contact.public_id = public_id;
   contact.profile_picture_data_map = introduction.profile_picture_data_map();
+  contact.pointer_to_info = introduction.pointer_to_info();
   int result = GetPublicKey(crypto::Hash<crypto::SHA512>(public_id), contact, 0);
   result += GetPublicKey(introduction.inbox_name(), contact, 1);
   if (result != kSuccess) {

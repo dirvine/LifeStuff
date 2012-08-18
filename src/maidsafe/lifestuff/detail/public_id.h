@@ -160,7 +160,8 @@ class PublicId {
                                   const Introduction& introduction);
   void ProcessContactMoveInbox(Contact& contact,
                                const ContactsHandlerPtr contacts_handler,
-                               const std::string& inbox_name);
+                               const std::string& inbox_name,
+                               const std::string& pointer_to_info);
   void ProcessNewContact(Contact& contact,
                          const ContactsHandlerPtr contacts_handler,
                          const std::string& own_public_id,

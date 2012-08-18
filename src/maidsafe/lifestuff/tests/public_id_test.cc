@@ -309,7 +309,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdAntiSocial) {
 
   {
     boost::mutex::scoped_lock lock(mutex);
-    EXPECT_FALSE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+    ASSERT_FALSE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
   }
   ASSERT_TRUE(received_public_identity_.empty());
   ASSERT_TRUE(received_message_.empty());
@@ -371,6 +371,8 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
   // Create users who both accept new contacts
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, true));
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_identity2_, true));
+  std::string card1(session1_.social_info(public_identity1_).second->at(kInfoPointer)),
+              card2(session2_.social_info(public_identity2_).second->at(kInfoPointer));
 
   // Connect a slot which will reject the new contact
   public_id1_->ConnectToNewContactSignal(
@@ -433,6 +435,11 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
   ASSERT_EQ(kSuccess, contacts_handler2->ContactInfo(public_identity1_, &received_contact));
   ASSERT_EQ(kConfirmed, received_contact.status);
   ASSERT_FALSE(received_contact.inbox_name.empty());
+
+  // Check LS cards
+  ASSERT_EQ(card1, received_contact.pointer_to_info);
+  ASSERT_EQ(kSuccess, contacts_handler1->ContactInfo(public_identity2_, &received_contact));
+  ASSERT_EQ(card2, received_contact.pointer_to_info);
 }
 
 TEST_F(PublicIdTest, FUNC_CreatePublicIdWithRefusal) {
@@ -492,10 +499,10 @@ TEST_F(PublicIdTest, FUNC_AddContactsIncorrectly) {
 
   // incorrect additions
   std::string wrong_name("Name 42");
-  EXPECT_NE(kSuccess, public_id1_->AddContact(wrong_name, wrong_name, ""));
-  EXPECT_NE(kSuccess, public_id1_->AddContact(public_identity1_, wrong_name, ""));
-  EXPECT_EQ(kGeneralError, public_id1_->AddContact(public_identity1_, public_identity1_, ""));
-  EXPECT_EQ(kGeneralError, public_id1_->AddContact(public_identity1_, public_identity3, ""));
+  ASSERT_NE(kSuccess, public_id1_->AddContact(wrong_name, wrong_name, ""));
+  ASSERT_NE(kSuccess, public_id1_->AddContact(public_identity1_, wrong_name, ""));
+  ASSERT_EQ(kGeneralError, public_id1_->AddContact(public_identity1_, public_identity1_, ""));
+  ASSERT_EQ(kGeneralError, public_id1_->AddContact(public_identity1_, public_identity3, ""));
 
 
   // 2 adds 1 (correct)
@@ -517,7 +524,7 @@ TEST_F(PublicIdTest, FUNC_AddContactsIncorrectly) {
   ASSERT_FALSE(received_public_identity_.empty());
 
   // 2 adds 1 again (incorrect)
-  EXPECT_EQ(-77, public_id2_->AddContact(public_identity2_, public_identity1_, ""));
+  ASSERT_EQ(-77, public_id2_->AddContact(public_identity2_, public_identity1_, ""));
 
   // 2 confirms 1
   done = false;
@@ -536,15 +543,15 @@ TEST_F(PublicIdTest, FUNC_AddContactsIncorrectly) {
   }
 
   // 2 adds 1 again (incorrect)
-  EXPECT_EQ(-77, public_id2_->AddContact(public_identity2_, public_identity1_, ""));
+  ASSERT_EQ(-77, public_id2_->AddContact(public_identity2_, public_identity1_, ""));
 }
 
 TEST_F(PublicIdTest, FUNC_ConfirmContactsIncorrectly) {
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, true));
 
-  EXPECT_EQ(kPublicIdNotFoundFailure, public_id1_->ConfirmContact(public_identity2_,
+  ASSERT_EQ(kPublicIdNotFoundFailure, public_id1_->ConfirmContact(public_identity2_,
                                                                   public_identity2_));
-  EXPECT_EQ(-1, public_id1_->ConfirmContact(public_identity1_, public_identity2_));
+  ASSERT_EQ(-1, public_id1_->ConfirmContact(public_identity1_, public_identity2_));
 }
 
 TEST_F(PublicIdTest, FUNC_RejectContactsIncorrectly) {
@@ -556,9 +563,9 @@ TEST_F(PublicIdTest, FUNC_RejectContactsIncorrectly) {
 
   // Invalid rejections
   std::string wrong_name("Name 42");
-  EXPECT_EQ(kPublicIdNotFoundFailure, public_id1_->RejectContact(wrong_name, wrong_name));
-  EXPECT_NE(kSuccess, public_id1_->RejectContact(public_identity1_, wrong_name));
-  EXPECT_NE(kSuccess, public_id1_->RejectContact(public_identity1_, public_identity2_));
+  ASSERT_EQ(kPublicIdNotFoundFailure, public_id1_->RejectContact(wrong_name, wrong_name));
+  ASSERT_NE(kSuccess, public_id1_->RejectContact(public_identity1_, wrong_name));
+  ASSERT_NE(kSuccess, public_id1_->RejectContact(public_identity1_, public_identity2_));
 
 
   // 2 adds 1
@@ -580,7 +587,7 @@ TEST_F(PublicIdTest, FUNC_RejectContactsIncorrectly) {
   ASSERT_FALSE(received_public_identity_.empty());
 
   // Invalid rejection
-  EXPECT_NE(kSuccess, public_id2_->RejectContact(public_identity2_, public_identity1_));
+  ASSERT_NE(kSuccess, public_id2_->RejectContact(public_identity2_, public_identity1_));
 
   // 2 confirms 1
   done = false;
@@ -599,7 +606,7 @@ TEST_F(PublicIdTest, FUNC_RejectContactsIncorrectly) {
   }
 
   // Invalid rejection
-  EXPECT_NE(kSuccess, public_id1_->RejectContact(public_identity1_, public_identity2_));
+  ASSERT_NE(kSuccess, public_id1_->RejectContact(public_identity1_, public_identity2_));
 }
 
 TEST_F(PublicIdTest, FUNC_RemoveContactsIncorrectly) {
@@ -706,7 +713,7 @@ TEST_F(PublicIdTest, FUNC_FixAsynchronousConfirmedContact) {
   contact.mpid_public_key = keys_mpid.public_key;
   contact.inbox_name = keys_mmid.identity;
 
-  EXPECT_EQ(kSuccess, contacts_handler->AddContact(contact));
+  ASSERT_EQ(kSuccess, contacts_handler->AddContact(contact));
 
   std::string confirmed_contact;
   public_id1_->ConnectToContactConfirmedSignal(
@@ -717,9 +724,9 @@ TEST_F(PublicIdTest, FUNC_FixAsynchronousConfirmedContact) {
                              &cond_var, &done);
       });
 
-  EXPECT_EQ(kSuccess, public_id1_->AddContact(public_identity1_, public_identity2_, ""));
-  EXPECT_EQ(kSuccess, public_id2_->StartCheckingForNewContacts(interval_));
-  EXPECT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
+  ASSERT_EQ(kSuccess, public_id1_->AddContact(public_identity1_, public_identity2_, ""));
+  ASSERT_EQ(kSuccess, public_id2_->StartCheckingForNewContacts(interval_));
+  ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
 
   {
   boost::mutex::scoped_lock lock(mutex);
@@ -766,7 +773,7 @@ TEST_F(PublicIdTest, FUNC_DisablePublicId) {
             public_id2_->AddContact(public_identity2_, public_identity1_, message));
   {
     boost::mutex::scoped_lock lock(mutex);
-    EXPECT_FALSE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+    ASSERT_FALSE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
   }
   ASSERT_TRUE(received_public_identity_.empty());
   ASSERT_TRUE(received_message_.empty());
@@ -802,7 +809,7 @@ TEST_F(PublicIdTest, FUNC_EnablePublicId) {
             public_id2_->AddContact(public_identity2_, public_identity1_, message));
   {
     boost::mutex::scoped_lock lock(mutex);
-    EXPECT_FALSE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+    ASSERT_FALSE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
   }
   ASSERT_TRUE(received_public_identity_.empty());
   ASSERT_TRUE(received_message_.empty());
@@ -823,26 +830,29 @@ TEST_F(PublicIdTest, FUNC_EnablePublicId) {
 TEST_F(PublicIdTest, FUNC_DeletePublicIdPacketVerification) {
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, true));
 
+  std::string card_address(session1_.social_info(public_identity1_).second->at(kInfoPointer));
   passport::Passport& pass(session1_.passport());
   asymm::Keys mmid(pass.SignaturePacketDetails(passport::kMmid, true, public_identity1_)),
               mpid(pass.SignaturePacketDetails(passport::kMpid, true, public_identity1_)),
               anmpid(pass.SignaturePacketDetails(passport::kAnmpid, true, public_identity1_));
   std::string mcid_name(crypto::Hash<crypto::SHA512>(public_identity1_));
 
-  EXPECT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
                                                                pca::kAppendableByAll)));
-  EXPECT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mpid.identity,
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mpid.identity,
                                                                pca::kSignaturePacket)));
-  EXPECT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(anmpid.identity,
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(anmpid.identity,
                                                                pca::kSignaturePacket)));
-  EXPECT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
                                                                pca::kAppendableByAll)));
-  EXPECT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
                                                                pca::kAppendableByAll),
                                           std::shared_ptr<asymm::Keys>(new asymm::Keys(mmid))));
-  EXPECT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
                                                                pca::kAppendableByAll),
                                           std::shared_ptr<asymm::Keys>(new asymm::Keys(mpid))));
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(card_address,
+                                                               pca::kModifiableByOwner)));
 
   ASSERT_EQ(kSuccess, public_id1_->DeletePublicId(public_identity1_));
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
@@ -859,27 +869,32 @@ TEST_F(PublicIdTest, FUNC_DeletePublicIdPacketVerification) {
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
                                                                pca::kAppendableByAll),
                                           std::shared_ptr<asymm::Keys>(new asymm::Keys(mpid))));
+  ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(card_address,
+                                                               pca::kModifiableByOwner)));
 
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, false));
+  card_address = session1_.social_info(public_identity1_).second->at(kInfoPointer);
   mmid = pass.SignaturePacketDetails(passport::kMmid, true, public_identity1_);
   mpid = pass.SignaturePacketDetails(passport::kMpid, true, public_identity1_);
   anmpid = pass.SignaturePacketDetails(passport::kAnmpid, true, public_identity1_);
   mcid_name = crypto::Hash<crypto::SHA512>(public_identity1_);
 
-  EXPECT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
                                                                pca::kAppendableByAll)));
-  EXPECT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mpid.identity,
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mpid.identity,
                                                                pca::kSignaturePacket)));
-  EXPECT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(anmpid.identity,
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(anmpid.identity,
                                                                pca::kSignaturePacket)));
-  EXPECT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
                                                                pca::kAppendableByAll)));
-  EXPECT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
                                                                pca::kAppendableByAll),
                                           std::shared_ptr<asymm::Keys>(new asymm::Keys(mmid))));
-  EXPECT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
                                                                pca::kAppendableByAll),
                                           std::shared_ptr<asymm::Keys>(new asymm::Keys(mpid))));
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(card_address,
+                                                               pca::kModifiableByOwner)));
 
   ASSERT_EQ(kSuccess, public_id1_->DeletePublicId(public_identity1_));
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
@@ -896,6 +911,8 @@ TEST_F(PublicIdTest, FUNC_DeletePublicIdPacketVerification) {
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
                                                                pca::kAppendableByAll),
                                           std::shared_ptr<asymm::Keys>(new asymm::Keys(mpid))));
+  ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(card_address,
+                                                               pca::kModifiableByOwner)));
 }
 
 TEST_F(PublicIdTest, FUNC_RemoveContact) {
@@ -906,6 +923,8 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
 
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, true));
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_identity2_, true));
+  std::string card1(session1_.social_info(public_identity1_).second->at(kInfoPointer)),
+              card2(session2_.social_info(public_identity2_).second->at(kInfoPointer));
 
   // 2 adds 1
   bool done(false);
@@ -941,9 +960,9 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
     ASSERT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Alison)
   }
 
-  EXPECT_FALSE(session1_.contacts_handler(public_identity1_)->GetContacts(
+  ASSERT_FALSE(session1_.contacts_handler(public_identity1_)->GetContacts(
                    kConfirmed | kRequestSent).empty());
-  EXPECT_FALSE(session2_.contacts_handler(public_identity2_)->GetContacts(
+  ASSERT_FALSE(session2_.contacts_handler(public_identity2_)->GetContacts(
                    kConfirmed | kRequestSent).empty());
 
   // 1 removes 2
@@ -957,15 +976,16 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
           ContactDeletionReceivedSlot(own_public_id, contact_public_id, message, &mutex, &cond_var,
                                       &done);
       });
-  ASSERT_EQ(kSuccess, public_id1_->RemoveContact(public_identity1_, public_identity2_, message, "",
-                                                 true));
+  ASSERT_EQ(kSuccess,
+            public_id1_->RemoveContact(public_identity1_, public_identity2_, message, "", true));
   {
     boost::mutex::scoped_lock lock(mutex);
     ASSERT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Alison)
   }
   ASSERT_FALSE(received_public_identity_.empty());
-  EXPECT_EQ(received_message_, message);
+  ASSERT_EQ(received_message_, message);
   received_message_.clear();
+  ASSERT_EQ("", remote_chunk_store2_->Get(pca::ApplyTypeToName(card1, pca::kModifiableByOwner)));
 
   // 2 processes the deletion by 1
   done = false;
@@ -975,24 +995,24 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
            const std::string& message,
            const std::string& /*timestamp*/) {
           ContactDeletionProcessedSlot(own_public_id, contact_public_id, message, &mutex,
-                                       &cond_var,
-                                       &done);
+                                       &cond_var, &done);
       });
-  ASSERT_EQ(kSuccess, public_id2_->RemoveContact(public_identity2_, public_identity1_, message, "",
-                                                 false));
+  ASSERT_EQ(kSuccess,
+            public_id2_->RemoveContact(public_identity2_, public_identity1_, message, "", false));
   {
     boost::mutex::scoped_lock lock(mutex);
     ASSERT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Alison)
   }
-  EXPECT_EQ(received_message_, message);
+  ASSERT_EQ(received_message_, message);
   received_message_.clear();
+  ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(card2, pca::kModifiableByOwner)));
 
-  EXPECT_TRUE(session1_.changed());
-  EXPECT_TRUE(session2_.changed());
+  ASSERT_TRUE(session1_.changed());
+  ASSERT_TRUE(session2_.changed());
 
-  EXPECT_TRUE(session1_.contacts_handler(public_identity1_)->GetContacts(
+  ASSERT_TRUE(session1_.contacts_handler(public_identity1_)->GetContacts(
                   kConfirmed | kRequestSent).empty());
-  EXPECT_TRUE(session2_.contacts_handler(public_identity2_)->GetContacts(
+  ASSERT_TRUE(session2_.contacts_handler(public_identity2_)->GetContacts(
                   kConfirmed | kRequestSent).empty());
 }
 
@@ -1010,7 +1030,7 @@ TEST_F(PublicIdTest, FUNC_RemoveContactMoveInbox) {
            const std::string& contact_public_id,
            const std::string& message,
            const std::string& /*timestamp*/) {
-          NewContactSlot(own_public_id, contact_public_id, message, &mutex, &cond_var, &done);
+        NewContactSlot(own_public_id, contact_public_id, message, &mutex, &cond_var, &done);
       });
   // 2 adds 1 and 3
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
@@ -1030,15 +1050,14 @@ TEST_F(PublicIdTest, FUNC_RemoveContactMoveInbox) {
   }
   ASSERT_FALSE(received_public_identity_.empty());
 
-  const std::string old_inbox_name_2 =
-      session2_.passport().SignaturePacketDetails(passport::kMmid,
-                                                  true,
-                                                  public_identity2_).identity;
+  std::string old_inbox_name_2(session2_.passport().SignaturePacketDetails(
+                                   passport::kMmid, true, public_identity2_).identity);
+  std::string old_card_address_2(session2_.social_info(public_identity2_).second->at(kInfoPointer));
 
   // 2 removes 1
   done = false;
-  ASSERT_EQ(kSuccess, public_id2_->RemoveContact(public_identity2_, public_identity1_, "", "",
-                                                 true));
+  ASSERT_EQ(kSuccess,
+            public_id2_->RemoveContact(public_identity2_, public_identity1_, "", "", true));
 
   // Check that 3 has been given 2's new inbox name
   Contact contact;
@@ -1052,12 +1071,15 @@ TEST_F(PublicIdTest, FUNC_RemoveContactMoveInbox) {
                                       return contact.inbox_name != old_inbox_name_2;
                                     }));
   }
-  EXPECT_NE(contact.inbox_name, old_inbox_name_2);
+  ASSERT_NE(contact.inbox_name, old_inbox_name_2);
+  ASSERT_NE(contact.pointer_to_info, old_card_address_2);
 
-  EXPECT_EQ(contact.inbox_name,
+  ASSERT_EQ(contact.inbox_name,
             session2_.passport().SignaturePacketDetails(passport::kMmid,
-                                                          true,
-                                                          public_identity2_).identity);
+                                                        true,
+                                                        public_identity2_).identity);
+  ASSERT_EQ(contact.pointer_to_info,
+           session2_.social_info(public_identity2_).second->at(kInfoPointer));
 }
 
 TEST_F(PublicIdTest, FUNC_MovedInbox) {
@@ -1167,8 +1189,8 @@ TEST_F(PublicIdTest, FUNC_MovedInbox) {
   std::string post_inbox_name_in_id1(contacts_id2[0].inbox_name);
   session1_.contacts_handler(public_id3)->ContactInfo(public_identity2_, &contacts_id2[1]);
   std::string post_inbox_name_in_id3(contacts_id2[1].inbox_name);
-  EXPECT_EQ(new_inbox_name, post_inbox_name_in_id1);
-  EXPECT_EQ(new_inbox_name, post_inbox_name_in_id3);
+  ASSERT_EQ(new_inbox_name, post_inbox_name_in_id1);
+  ASSERT_EQ(new_inbox_name, post_inbox_name_in_id3);
 }
 
 }  // namespace test
