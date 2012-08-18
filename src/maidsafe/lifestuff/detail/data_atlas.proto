@@ -22,8 +22,9 @@ message Message {
 
 message LifeStuffCard {
   required bool empty = 1;
-  repeated bytes key = 2;
-  repeated bytes value = 3;
+  required bytes timestamp = 2;
+  repeated bytes key = 3;
+  repeated bytes value = 4;
 }
 
 message PublicContact {

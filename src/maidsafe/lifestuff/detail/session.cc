@@ -41,6 +41,43 @@ namespace maidsafe {
 
 namespace lifestuff {
 
+PublicIdDetails::PublicIdDetails() : social_info(new SocialInfo { kBlankProfilePicture, ""}),
+                                     contacts_handler(new ContactsHandler),
+                                     share_information(new ShareInformation),
+                                     lifestuff_cards(new TempLifestuffCard),
+                                     social_info_mutex(new boost::mutex),
+                                     share_information_mutex(new boost::mutex),
+                                     temp_lifestuff_card_mutex(new boost::mutex) {}
+
+PublicIdDetails::PublicIdDetails(const std::string& card_address)
+    : social_info(new SocialInfo { kBlankProfilePicture, card_address }),
+      contacts_handler(new ContactsHandler),
+      share_information(new ShareInformation),
+      lifestuff_cards(new TempLifestuffCard),
+      social_info_mutex(new boost::mutex),
+      share_information_mutex(new boost::mutex),
+      temp_lifestuff_card_mutex(new boost::mutex) {}
+
+PublicIdDetails& PublicIdDetails::operator=(const PublicIdDetails& other) {
+  this->social_info = (other.social_info);
+  this->contacts_handler = (other.contacts_handler);
+  this->share_information = (other.share_information);
+  this->lifestuff_cards = (other.lifestuff_cards);
+  this->social_info_mutex = (other.social_info_mutex);
+  this->share_information_mutex = (other.share_information_mutex);
+  this->temp_lifestuff_card_mutex = (other.temp_lifestuff_card_mutex);
+  return *this;
+}
+
+PublicIdDetails::PublicIdDetails(const PublicIdDetails& other)
+    : social_info(other.social_info),
+      contacts_handler(other.contacts_handler),
+      share_information(other.share_information),
+      lifestuff_cards(other.lifestuff_cards),
+      social_info_mutex(other.social_info_mutex),
+      share_information_mutex(other.share_information_mutex),
+      temp_lifestuff_card_mutex(other.temp_lifestuff_card_mutex) {}
+
 Session::Session()
     : passport_(),
       user_details_(),
@@ -75,11 +112,11 @@ void Session::Reset() {
 
 passport::Passport& Session::passport() { return passport_; }
 
-int Session::AddPublicId(const std::string& public_id,
-                         const std::string& /*pointer_to_lifestuff_card*/) {
+int Session::AddPublicId(const std::string& public_id, const std::string& pointer_to_card) {
   {
     boost::mutex::scoped_lock arran_coire_fhionn_lochan(public_id_details_mutex_);
-    auto result(public_id_details_.insert(std::make_pair(public_id, PublicIdDetails())));
+    auto result(public_id_details_.insert(std::make_pair(public_id,
+                                                         PublicIdDetails(pointer_to_card))));
     if (!result.second) {
       LOG(kError) << "Failure to add public id to session: " << public_id;
       return kPublicIdInsertionFailure;
@@ -89,10 +126,6 @@ int Session::AddPublicId(const std::string& public_id,
   {
     boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
     user_details_.changed = true;
-  }
-
-  {
-
   }
 
   return kSuccess;
@@ -317,10 +350,10 @@ int Session::ParseDataAtlas(const std::string& serialised_data_atlas) {
   for (int id_count(0); id_count < data_atlas.public_ids_size(); ++id_count) {
     pub_id = data_atlas.public_ids(id_count).public_id();
     PublicIdDetails public_id_details;
-    public_id_details.social_info->push_back(
-        data_atlas.public_ids(id_count).profile_picture_data_map());
-    public_id_details.social_info->push_back(
-        data_atlas.public_ids(id_count).pointer_to_info());
+    public_id_details.social_info->at(kPicture) =
+        data_atlas.public_ids(id_count).profile_picture_data_map();
+    public_id_details.social_info->at(kInfoPointer) =
+        data_atlas.public_ids(id_count).pointer_to_info();
 
     for (int contact_count(0);
          contact_count < data_atlas.public_ids(id_count).contacts_size();

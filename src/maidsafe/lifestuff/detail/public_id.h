@@ -179,6 +179,11 @@ class PublicId {
                         const std::string& inbox_name = "");
   int GetPublicKey(const std::string& packet_name, Contact& contact, int type);
 
+  int StoreLifestuffCard(std::shared_ptr<asymm::Keys> mmid,
+                         std::string& lifestuff_card_address);
+  int RemoveLifestuffCard(const std::string& lifestuff_card_address,
+                          std::shared_ptr<asymm::Keys> mmid);
+
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   Session& session_;
   passport::Passport& passport_;

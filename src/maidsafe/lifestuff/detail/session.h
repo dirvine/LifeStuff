@@ -84,13 +84,11 @@ typedef std::pair<std::shared_ptr<boost::mutex>, SocialInfoPtr> SocialInfoDetail
 typedef std::pair<std::shared_ptr<boost::mutex>, TempLifestuffCardPtr> TempLifestuffCardDetail;
 
 struct PublicIdDetails {
-  PublicIdDetails() : social_info(new SocialInfo/*{"a", "b"}*/),
-                      contacts_handler(new ContactsHandler),
-                      share_information(new ShareInformation),
-                      lifestuff_cards(new TempLifestuffCard),
-                      social_info_mutex(new boost::mutex),
-                      share_information_mutex(new boost::mutex),
-                      temp_lifestuff_card_mutex(new boost::mutex) {}
+  PublicIdDetails();
+  explicit PublicIdDetails(const std::string& card_address);
+  PublicIdDetails& operator=(const PublicIdDetails& other);
+  PublicIdDetails(const PublicIdDetails& other);
+
   SocialInfoPtr social_info;
   ContactsHandlerPtr contacts_handler;
   ShareInformationPtr share_information;

@@ -23,6 +23,7 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
+#include "maidsafe/private/chunk_actions/chunk_action_authority.h"
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 #include "maidsafe/private/utils/utilities.h"
@@ -192,6 +193,9 @@ int PublicId::CreatePublicId(const std::string& public_id, bool accepts_new_cont
   // Store the lifestuff card
   std::string lifestuff_card_address;
   result = StoreLifestuffCard(mmid, lifestuff_card_address);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to add entry for " << public_id;
+  }
 
   result = session_.AddPublicId(public_id, lifestuff_card_address);
   if (result != kSuccess) {
@@ -267,43 +271,47 @@ int PublicId::DeletePublicId(const std::string& public_id) {
               anmpid_name(SignaturePacketName(anmpid->identity)),
               mcid_name(MaidsafeContactIdName(public_id));
 
+  std::string card_address;
+  int result(0);
+  SocialInfoDetail social_info(session_.social_info(public_id));
+  if (social_info.first) {
+    {
+      boost::mutex::scoped_lock loch(*social_info.first);
+      card_address = social_info.second->at(kInfoPointer);
+    }
+    result = RemoveLifestuffCard(card_address, inbox_keys);
+    LOG(kInfo) << "Deleting LS card: " << result;
+  }
+
   if (!remote_chunk_store_->Delete(inbox_name,
-                                   [&] (bool result) {
-                                     OperationCallback(result, results, 0);
-                                   },
+                                   [&] (bool result) { OperationCallback(result, results, 0); },  // NOLINT (Dan)
                                    inbox_keys)) {
     LOG(kError) << "Failed to delete inbox.";
     OperationCallback(false, results, 0);
   }
 
   if (!remote_chunk_store_->Delete(mcid_name,
-                                   [&] (bool result) {
-                                     OperationCallback(result, results, 1);
-                                   },
+                                   [&] (bool result) { OperationCallback(result, results, 1); },  // NOLINT (Dan)
                                    mpid)) {
     LOG(kError) << "Failed to delete MCID.";
     OperationCallback(false, results, 1);
   }
 
   if (!remote_chunk_store_->Delete(mpid_name,
-                                   [&] (bool result) {
-                                     OperationCallback(result, results, 2);
-                                   },
+                                   [&] (bool result) { OperationCallback(result, results, 2); },  // NOLINT (Dan)
                                    anmpid)) {
     LOG(kError) << "Failed to delete MPID.";
     OperationCallback(false, results, 2);
   }
 
   if (!remote_chunk_store_->Delete(anmpid_name,
-                                   [&] (bool result) {
-                                     OperationCallback(result, results, 3);
-                                   },
+                                   [&] (bool result) { OperationCallback(result, results, 3); },  // NOLINT (Dan)
                                    anmpid)) {
     LOG(kError) << "Failed to delete ANMPID.";
     OperationCallback(false, results, 3);
   }
 
-  int result(utils::WaitForResults(mutex, condition_variable, individual_results));
+  result = utils::WaitForResults(mutex, condition_variable, individual_results);
   if (result != kSuccess) {
     LOG(kError) << "Wait for results timed out: " << result;
     LOG(kError) << "inbox: " << individual_results.at(0)
@@ -449,8 +457,23 @@ int PublicId::RemoveContact(const std::string& own_public_id,
     return result;
   }
   if (results[0] != kSuccess) {
-    LOG(kError) << "Failed to store new MMID when remove a contact.";
+    LOG(kError) << "Failed to store new MMID when removing a contact.";
     return kRemoveContactFailure;
+  }
+
+  std::string new_card_address;
+  result = StoreLifestuffCard(new_mmid, new_card_address);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to store new lifestuff card when removing a contact.";
+    return kRemoveContactFailure;
+  }
+
+  SocialInfoDetail social_info(session_.social_info(own_public_id));
+  std::string old_card_address;
+  if (social_info.first) {
+    boost::mutex::scoped_lock loch(*social_info.first);
+    old_card_address = social_info.second->at(kInfoPointer);
+    social_info.second->at(kInfoPointer) = new_card_address;
   }
 
   // Get contact we're deleting so we can message him later
@@ -489,11 +512,17 @@ int PublicId::RemoveContact(const std::string& own_public_id,
     return result;
   }
   if (results[0] != kSuccess) {
-    LOG(kError) << "Failed to invalidate previous MMID when remove a contact.";
+    LOG(kError) << "Failed to invalidate previous MMID when removing a contact.";
     return kRemoveContactFailure;
   }
 
   passport_.ConfirmMovedMaidsafeInbox(own_public_id);
+  result = RemoveLifestuffCard(old_card_address, old_mmid);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to remove old lifestuff card.";
+    return result;
+  }
+
   session_.set_changed(true);
 
   if (instigator) {
@@ -937,6 +966,87 @@ int PublicId::GetPublicKey(const std::string& packet_name, Contact& contact, int
 
   return kSuccess;
 }
+
+std::string EmptyCardContent(const asymm::PrivateKey& private_key) {
+  pca::SignedData signed_data;
+  LifeStuffCard lifestuff_card;
+  lifestuff_card.set_empty(true);
+  lifestuff_card.set_timestamp(IsoTimeWithMicroSeconds());
+  signed_data.set_data(lifestuff_card.SerializeAsString());
+
+  std::string signature;
+  asymm::Sign(signed_data.data(), private_key, &signature);
+  signed_data.set_signature(signature);
+
+  return signed_data.SerializeAsString();
+}
+
+int PublicId::StoreLifestuffCard(std::shared_ptr<asymm::Keys> mmid,
+                                 std::string& lifestuff_card_address) {
+  int attempts(0), wait_result(kSuccess);
+  std::string card_address, empty_card_content(EmptyCardContent(mmid->private_key));
+  std::vector<int> results(1, kPendingResult);
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  VoidFunctionOneBool callback = [&] (const bool& response) {
+                                   utils::ChunkStoreOperationCallback(response,
+                                                                      &mutex,
+                                                                      &cond_var,
+                                                                      &results[0]);
+                                 };
+  while (attempts++ < 10) {
+    results[0] = kPendingResult;
+    card_address = pca::ApplyTypeToName(RandomString(64), pca::kModifiableByOwner);
+    if (!remote_chunk_store_->Store(card_address, empty_card_content, callback, mmid)) {
+      LOG(kInfo) << "Failed to store lifestuff card, attempt: " << (attempts - 1);
+      return kRemoteChunkStoreFailure;
+    }
+
+    wait_result = utils::WaitForResults(mutex, cond_var, results);
+    if (wait_result == kSuccess && results[0] == kSuccess) {
+      LOG(kInfo) << "Success storing the lifestuff card.";
+      break;
+    }
+  }
+
+  lifestuff_card_address = card_address.substr(0, 64);
+
+  return kSuccess;
+}
+
+int PublicId::RemoveLifestuffCard(const std::string& lifestuff_card_address,
+                                  std::shared_ptr<asymm::Keys> mmid) {
+  std::vector<int> results(1, kPendingResult);
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  VoidFunctionOneBool callback = [&] (const bool& response) {
+                                   utils::ChunkStoreOperationCallback(response,
+                                                                      &mutex,
+                                                                      &cond_var,
+                                                                      &results[0]);
+                                 };
+  if (!remote_chunk_store_->Delete(pca::ApplyTypeToName(lifestuff_card_address,
+                                                        pca::kModifiableByOwner),
+                                   callback,
+                                   mmid)) {
+    LOG(kError) << "Failed to delete lifestuff card.";
+    return kRemoteChunkStoreFailure;
+  }
+
+  int wait_result(utils::WaitForResults(mutex, cond_var, results));
+  if (wait_result != kSuccess) {
+    LOG(kInfo) << "Timed out deleting the lifestuff card.";
+    return wait_result;
+  }
+
+  if (results[0] != kSuccess) {
+    LOG(kInfo) << "Failure deleting the lifestuff card.";
+    return kRemoteChunkStoreFailure;
+  }
+
+  return kSuccess;
+}
+
 
 }  // namespace lifestuff
 

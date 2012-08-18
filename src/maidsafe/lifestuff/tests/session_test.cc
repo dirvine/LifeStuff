@@ -67,6 +67,7 @@ class SessionTest : public testing::Test {
                                   "",
                                   "inbox_name_in",
                                   kBlankProfilePicture,
+                                  RandomString(64),
                                   asymm::PublicKey(),
                                   asymm::PublicKey(),
                                   kConfirmed);
@@ -137,6 +138,8 @@ class SessionTest : public testing::Test {
     if (lhs.public_id() != rhs.public_id())
       return false;
     if (lhs.profile_picture_data_map() != rhs.profile_picture_data_map())
+      return false;
+    if (lhs.pointer_to_info() != rhs.pointer_to_info())
       return false;
     if (lhs.contacts_size() != rhs.contacts_size())
       return false;
@@ -232,8 +235,11 @@ class SessionTest : public testing::Test {
       if (!EqualContactHandlers(lhs.contacts_handler(lhs_public_ids[n]),
                                 rhs.contacts_handler(rhs_public_ids[n])))
         return false;
-      if (*lhs.profile_picture_data_map(lhs_public_ids[n]).second !=
-          *rhs.profile_picture_data_map(rhs_public_ids[n]).second)
+      if (lhs.social_info(lhs_public_ids[n]).second->at(kPicture) !=
+          rhs.social_info(rhs_public_ids[n]).second->at(kPicture))
+        return false;
+      if (lhs.social_info(lhs_public_ids[n]).second->at(kInfoPointer) !=
+          rhs.social_info(rhs_public_ids[n]).second->at(kInfoPointer))
         return false;
       if (!EqualShareInformations(lhs.share_information(lhs_public_ids[n]).second,
                                   rhs.share_information(rhs_public_ids[n]).second))

@@ -120,6 +120,7 @@ typedef std::function<void(const std::string&,
 typedef std::function<void(int)> VoidFunctionOneInt;  // NOLINT (Dan)
 typedef std::function<void(bool)> VoidFunctionOneBool;  // NOLINT (Dan)
 typedef std::map<std::string, int> StringIntMap;
+typedef std::map<std::string, std::string> SocialInfoMap;
 typedef std::map<std::string, std::pair<ContactStatus, ContactPresence>> ContactMap;
 
 /// Private Shares

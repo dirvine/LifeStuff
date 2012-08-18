@@ -37,7 +37,7 @@ class ContactsTest : public testing::Test {
         test(0),
         keys_(),
         keys1_(),
-        contact_("dan.schmidt", "abcdefghijk", "Dan Schmidt Valle", "Picky",
+        contact_("dan.schmidt", "abcdefghijk", "Dan Schmidt Valle", "Picky", "Info",
                  asymm::PublicKey(), asymm::PublicKey(), kUninitialised) {
     GenerateKeyPair(&keys_);
     GenerateKeyPair(&keys1_);
@@ -86,6 +86,7 @@ TEST_F(ContactsTest, BEH_AddContacts) {
                                   msc.mpid_name,
                                   msc.inbox_name,
                                   msc.profile_picture_data_map,
+                                  msc.pointer_to_info,
                                   msc.mpid_public_key,
                                   msc.inbox_public_key,
                                   msc.status,
@@ -100,6 +101,7 @@ TEST_F(ContactsTest, BEH_AddContacts) {
                                 msc.mpid_name,
                                 msc.inbox_name,
                                 msc.profile_picture_data_map,
+                                msc.pointer_to_info,
                                 msc.mpid_public_key,
                                 msc.inbox_public_key,
                                 msc.status,
