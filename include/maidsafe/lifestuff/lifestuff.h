@@ -185,7 +185,11 @@ typedef FourStringsFunction ContactDeletionReceivedFunction;
 typedef FourStringsFunction ContactDeletionFunction;  // For when deletion has been processed
 // Own & other public ID, Message, Timestamp
 typedef FourStringsFunction NewContactFunction;
-
+// Lifestuff Card change
+typedef std::function<void(const std::string&,          // Own public ID
+                           const std::string&,          // Contact public ID
+                           const SocialInfoMap&,
+                           const std::string&)> LifestuffCardUpdateFunction;
 }  // namespace lifestuff
 
 }  // namespace maidsafe

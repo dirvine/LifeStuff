@@ -71,17 +71,14 @@ struct ShareDetails {
 };
 
 typedef std::map<std::string, ShareDetails> ShareInformation;
-typedef std::map<std::string, std::string> TempLifestuffCard;
 typedef std::vector<std::string> SocialInfo;
 
 typedef std::shared_ptr<ContactsHandler> ContactsHandlerPtr;
 typedef std::shared_ptr<ShareInformation> ShareInformationPtr;
 typedef std::shared_ptr<SocialInfo> SocialInfoPtr;
-typedef std::shared_ptr<TempLifestuffCard> TempLifestuffCardPtr;
 
 typedef std::pair<std::shared_ptr<boost::mutex>, ShareInformationPtr> ShareInformationDetail;
 typedef std::pair<std::shared_ptr<boost::mutex>, SocialInfoPtr> SocialInfoDetail;
-typedef std::pair<std::shared_ptr<boost::mutex>, TempLifestuffCardPtr> TempLifestuffCardDetail;
 
 struct PublicIdDetails {
   PublicIdDetails();
@@ -92,10 +89,7 @@ struct PublicIdDetails {
   SocialInfoPtr social_info;
   ContactsHandlerPtr contacts_handler;
   ShareInformationPtr share_information;
-  TempLifestuffCardPtr lifestuff_cards;
-  std::shared_ptr<boost::mutex> social_info_mutex,
-                                share_information_mutex,
-                                temp_lifestuff_card_mutex;
+  std::shared_ptr<boost::mutex> social_info_mutex, share_information_mutex;
 };
 
 class Session {

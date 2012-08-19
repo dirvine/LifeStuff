@@ -53,10 +53,11 @@ PublicId::PublicId(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
       passport_(session_.passport()),
       get_new_contacts_timer_(asio_service),
       get_new_contacts_timer_active_(false),
-      new_contact_signal_(new NewContactSignal),
-      contact_confirmed_signal_(new ContactConfirmedSignal),
-      contact_deletion_received_signal_(new ContactDeletionReceivedSignal),
-      contact_deletion_processed_signal_(new ContactDeletionProcessedSignal),
+      new_contact_signal_(),
+      contact_confirmed_signal_(),
+      contact_deletion_received_signal_(),
+      contact_deletion_processed_signal_(),
+      lifestuff_card_updated_signal_(),
       asio_service_(asio_service) {}
 
 PublicId::~PublicId() {}
@@ -545,32 +546,131 @@ int PublicId::RemoveContact(const std::string& own_public_id,
   result = InformContactInfo(own_public_id, contacts, "", kMovedInbox);
 
   if (!instigator) {
-    (*contact_deletion_processed_signal_)(own_public_id,
-                                          contact_public_id,
-                                          removal_message,
-                                          timestamp);
+    contact_deletion_processed_signal_(own_public_id,
+                                       contact_public_id,
+                                       removal_message,
+                                       timestamp);
   }
 
   return result;
 }
 
+int PublicId::GetLifestuffCard(const std::string& my_public_id,
+                               const std::string& contact_public_id,
+                               SocialInfoMap& social_info) {
+  std::string card_address(contact_public_id.empty() ? GetOwnCardAddress(my_public_id) :
+                                                       GetContactCardAddress(my_public_id,
+                                                                             contact_public_id));
+
+  if (card_address.empty()) {
+    LOG(kError) << "Net address not found.";
+    return kPublicIdNotFoundFailure;
+  }
+
+  return RetrieveLifestuffCard(card_address, social_info);
+}
+
+int PublicId::SetLifestuffCard(const std::string& my_public_id, const SocialInfoMap& social_info) {
+  LifeStuffCard lifestuff_card;
+  lifestuff_card.set_timestamp(IsoTimeWithMicroSeconds());
+  if (social_info.empty()) {
+    lifestuff_card.set_empty(true);
+  } else {
+    lifestuff_card.set_empty(false);
+    std::for_each(social_info.begin(),
+                  social_info.end(),
+                  [&lifestuff_card] (const SocialInfoMap::value_type &element) {
+                    lifestuff_card.add_key(element.first);
+                    lifestuff_card.add_value(element.second);
+                  });
+  }
+
+  pca::SignedData signed_data;
+  signed_data.set_data(lifestuff_card.SerializeAsString());
+  std::string signature;
+  std::shared_ptr<asymm::Keys> mmid(new asymm::Keys(session_.passport().SignaturePacketDetails(
+                                                        passport::kMmid,
+                                                        true,
+                                                        my_public_id)));
+  if (asymm::Sign(signed_data.data(), mmid->private_key, &signature) != kSuccess ||
+      signature.empty()) {
+    LOG(kError) << "Failed to sign card.";
+    return kPublicIdException;
+  }
+  signed_data.set_signature(signature);
+
+  std::string card_address;
+  SocialInfoDetail detail(session_.social_info(my_public_id));
+  if (!detail.first) {
+    LOG(kError) << "No such public id " << my_public_id;
+    return kPublicIdNotFoundFailure;
+  } else {
+    boost::mutex::scoped_lock loch(*detail.first);
+    card_address = pca::ApplyTypeToName(detail.second->at(kInfoPointer), pca::kModifiableByOwner);
+  }
+
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  std::vector<int> results;
+  results.push_back(kPendingResult);
+
+  VoidFunctionOneBool callback = [&] (const bool& response) {
+                                   utils::ChunkStoreOperationCallback(response,
+                                                                      &mutex,
+                                                                      &cond_var,
+                                                                      &results[0]);
+                                 };
+  if (!remote_chunk_store_->Modify(card_address, signed_data.SerializeAsString(), callback, mmid)) {
+    LOG(kError) << "Immediate chunkstore error.";
+    return kRemoteChunkStoreFailure;
+  }
+
+  int wait_result(utils::WaitForResults(mutex, cond_var, results));
+  if (wait_result != kSuccess) {
+    LOG(kError) << "Timed out";
+    return wait_result;
+  }
+
+  if (results[0] != kSuccess) {
+    LOG(kError) << "Error modifying lifestuff card.";
+    return kRemoteChunkStoreFailure;
+  }
+
+  std::vector<Contact> contacts;
+  session_.contacts_handler(my_public_id)->OrderedContacts(&contacts,
+                                                           kAlphabetical,
+                                                           kConfirmed | kPendingResponse);
+  wait_result = InformContactInfo(my_public_id, contacts, "", kLifestuffCardChanged);
+  if (wait_result != kSuccess) {
+    LOG(kError) << "Failed to inform all contacts.";
+    return wait_result;
+  }
+
+  return kSuccess;
+}
+
 bs2::connection PublicId::ConnectToNewContactSignal(const NewContactFunction& new_contact_slot) {
-  return new_contact_signal_->connect(new_contact_slot);
+  return new_contact_signal_.connect(new_contact_slot);
 }
 
 bs2::connection PublicId::ConnectToContactConfirmedSignal(
     const ContactConfirmationFunction& contact_confirmation_slot) {
-  return contact_confirmed_signal_->connect(contact_confirmation_slot);
+  return contact_confirmed_signal_.connect(contact_confirmation_slot);
 }
 
 bs2::connection PublicId::ConnectToContactDeletionReceivedSignal(
     const ContactDeletionReceivedFunction& contact_deletion_received_slot) {
-  return contact_deletion_received_signal_->connect(contact_deletion_received_slot);
+  return contact_deletion_received_signal_.connect(contact_deletion_received_slot);
 }
 
 bs2::connection PublicId::ConnectToContactDeletionProcessedSignal(
     const ContactDeletionFunction& contact_deletion_slot) {
-  return contact_deletion_processed_signal_->connect(contact_deletion_slot);
+  return contact_deletion_processed_signal_.connect(contact_deletion_slot);
+}
+
+bs2::connection PublicId::ConnectToLifestuffCardUpdatedSignal(
+    const LifestuffCardUpdateFunction& lifestuff_card_update_slot) {
+  return lifestuff_card_updated_signal_.connect(lifestuff_card_update_slot);
 }
 
 void PublicId::GetNewContacts(const bptime::seconds& interval,
@@ -675,10 +775,10 @@ void PublicId::ProcessRequests(const std::string& own_public_id,
           LOG(kError) << "Introduction of type kFriendResponse doesn't match current state!";
         break;
       case kDefriend:
-        (*contact_deletion_received_signal_)(own_public_id,
-                                             introduction.public_id(),
-                                             introduction.message(),
-                                             introduction.timestamp());
+        contact_deletion_received_signal_(own_public_id,
+                                          introduction.public_id(),
+                                          introduction.message(),
+                                          introduction.timestamp());
           break;
       case kMovedInbox:
         if (result == kSuccess &&
@@ -697,6 +797,16 @@ void PublicId::ProcessRequests(const std::string& own_public_id,
         else
           LOG(kError) << "Introduction of type kFixAsync doesn't match current state!";
         break;
+      case kLifestuffCardChanged:
+        if (result == kSuccess &&
+            (contact.status == kConfirmed || contact.status == kPendingResponse))
+          ProcessNewLifestuffCardInformation(contact.pointer_to_info,
+                                             own_public_id,
+                                             contact.public_id,
+                                             introduction.timestamp());
+        else
+          LOG(kError) << "Introduction of type kLifestuffCardChanged doesn't match current state!";
+        break;
       default: LOG(kError) << "Introduction of unrecognised type!";
     }
   }
@@ -713,8 +823,8 @@ void PublicId::ProcessContactConfirmation(Contact& contact,
   if (result == kSuccess) {
     result = contacts_handler->UpdateContact(contact);
     if (result == kSuccess) {
-      (*contact_confirmed_signal_)(own_public_id, introduction.public_id(),
-                                   introduction.timestamp());
+      contact_confirmed_signal_(own_public_id, introduction.public_id(),
+                                introduction.timestamp());
       session_.set_changed(true);
     } else {
       LOG(kError) << "Failed to update contact after confirmation.";
@@ -769,10 +879,10 @@ void PublicId::ProcessNewContact(Contact& contact,
   result = contacts_handler->AddContact(contact);
   if (result == kSuccess) {
     session_.set_changed(true);
-    (*new_contact_signal_)(own_public_id,
-                           public_id,
-                           introduction.message(),
-                           introduction.timestamp());
+    new_contact_signal_(own_public_id,
+                        public_id,
+                        introduction.message(),
+                        introduction.timestamp());
   }
 }
 
@@ -782,6 +892,19 @@ void PublicId::ProcessMisplacedContactRequest(Contact& contact, const std::strin
   if (result != kSuccess) {
     LOG(kError) << "Failed to send confirmation to " << contact.public_id;
   }
+}
+
+void PublicId::ProcessNewLifestuffCardInformation(const std::string& card_address,
+                                                  const std::string& own_public_id,
+                                                  const std::string& contact_public_id,
+                                                  const std::string& timestamp) {
+  SocialInfoMap social_info_map;
+  int result(RetrieveLifestuffCard(card_address, social_info_map));
+  if (result != kSuccess) {
+    LOG(kError) << "Failure retrieving the new map " << Base64Substr(card_address);
+    return;
+  }
+  lifestuff_card_updated_signal_(own_public_id, contact_public_id, social_info_map, timestamp);
 }
 
 int PublicId::ModifyAppendability(const std::string& public_id, const char appendability) {
@@ -1050,6 +1173,61 @@ int PublicId::RemoveLifestuffCard(const std::string& lifestuff_card_address,
     LOG(kInfo) << "Failure deleting the lifestuff card.";
     return kRemoteChunkStoreFailure;
   }
+
+  return kSuccess;
+}
+
+std::string PublicId::GetOwnCardAddress(const std::string& my_public_id) {
+  const SocialInfoDetail details(session_.social_info(my_public_id));
+  if (!details.first) {
+    LOG(kError) << "No social deatils for " << my_public_id;
+    return "";
+  }
+
+  boost::mutex::scoped_lock loch(*details.first);
+  return details.second->at(kInfoPointer);
+}
+
+std::string PublicId::GetContactCardAddress(const std::string& my_public_id,
+                                    const std::string& contact_public_id) {
+  const ContactsHandlerPtr contact_handler(session_.contacts_handler(my_public_id));
+  if (!contact_handler) {
+    LOG(kError) << "No such public id " << my_public_id;
+    return "";
+  }
+
+  Contact contact;
+  contact_handler->ContactInfo(contact_public_id, &contact);
+
+  return contact.pointer_to_info;
+}
+
+int PublicId::RetrieveLifestuffCard(const std::string& lifestuff_card_address,
+                                    SocialInfoMap& social_info) {
+  std::string card_address(pca::ApplyTypeToName(lifestuff_card_address, pca::kModifiableByOwner));
+  std::string net_lifestuff_card(remote_chunk_store_->Get(card_address));
+
+  pca::SignedData signed_data;
+  if (!signed_data.ParseFromString(net_lifestuff_card)) {
+    LOG(kError) << "Network data doesn't parse for " << Base64Substr(lifestuff_card_address);
+    return kRemoteChunkStoreFailure;
+  }
+
+  LifeStuffCard lifestuff_card;
+  if (!lifestuff_card.ParseFromString(signed_data.data())) {
+    LOG(kError) << "Network data doesn't parse for " << Base64Substr(lifestuff_card_address);
+    return kRemoteChunkStoreFailure;
+  }
+
+  if (lifestuff_card.empty()) {
+    LOG(kInfo) << "Card is empty for " << Base64Substr(lifestuff_card_address);
+    return kSuccess;
+  }
+
+  int size(lifestuff_card.key_size() > lifestuff_card.value_size() ? lifestuff_card.value_size() :
+                                                                     lifestuff_card.key_size());
+  for (int n(0); n < size; ++n)
+    social_info[lifestuff_card.key(n)] = lifestuff_card.value(n);
 
   return kSuccess;
 }

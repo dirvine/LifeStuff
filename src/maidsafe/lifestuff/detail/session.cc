@@ -41,31 +41,25 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-PublicIdDetails::PublicIdDetails() : social_info(new SocialInfo { kBlankProfilePicture, ""}),
+PublicIdDetails::PublicIdDetails() : social_info(new SocialInfo { kBlankProfilePicture, "" }),
                                      contacts_handler(new ContactsHandler),
                                      share_information(new ShareInformation),
-                                     lifestuff_cards(new TempLifestuffCard),
                                      social_info_mutex(new boost::mutex),
-                                     share_information_mutex(new boost::mutex),
-                                     temp_lifestuff_card_mutex(new boost::mutex) {}
+                                     share_information_mutex(new boost::mutex) {}
 
 PublicIdDetails::PublicIdDetails(const std::string& card_address)
     : social_info(new SocialInfo { kBlankProfilePicture, card_address }),
       contacts_handler(new ContactsHandler),
       share_information(new ShareInformation),
-      lifestuff_cards(new TempLifestuffCard),
       social_info_mutex(new boost::mutex),
-      share_information_mutex(new boost::mutex),
-      temp_lifestuff_card_mutex(new boost::mutex) {}
+      share_information_mutex(new boost::mutex) {}
 
 PublicIdDetails& PublicIdDetails::operator=(const PublicIdDetails& other) {
-  this->social_info = (other.social_info);
-  this->contacts_handler = (other.contacts_handler);
-  this->share_information = (other.share_information);
-  this->lifestuff_cards = (other.lifestuff_cards);
-  this->social_info_mutex = (other.social_info_mutex);
-  this->share_information_mutex = (other.share_information_mutex);
-  this->temp_lifestuff_card_mutex = (other.temp_lifestuff_card_mutex);
+  this->social_info = other.social_info;
+  this->contacts_handler = other.contacts_handler;
+  this->share_information = other.share_information;
+  this->social_info_mutex = other.social_info_mutex;
+  this->share_information_mutex = other.share_information_mutex;
   return *this;
 }
 
@@ -73,10 +67,8 @@ PublicIdDetails::PublicIdDetails(const PublicIdDetails& other)
     : social_info(other.social_info),
       contacts_handler(other.contacts_handler),
       share_information(other.share_information),
-      lifestuff_cards(other.lifestuff_cards),
       social_info_mutex(other.social_info_mutex),
-      share_information_mutex(other.share_information_mutex),
-      temp_lifestuff_card_mutex(other.temp_lifestuff_card_mutex) {}
+      share_information_mutex(other.share_information_mutex) {}
 
 Session::Session()
     : passport_(),

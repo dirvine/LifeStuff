@@ -144,9 +144,7 @@ class LifeStuffImpl {
   int GetLifestuffCard(const std::string& my_public_id,
                        const std::string& contact_public_id,
                        SocialInfoMap& social_info);
-  int SetLifestuffCard(const std::string& my_public_id,
-                       const std::string& contact_public_id,
-                       const SocialInfoMap& social_info);
+  int SetLifestuffCard(const std::string& my_public_id, const SocialInfoMap& social_info);
   ContactMap GetContacts(const std::string& my_public_id,
                          uint16_t bitwise_status = kConfirmed | kRequestSent);
   std::vector<std::string> PublicIdsList() const;

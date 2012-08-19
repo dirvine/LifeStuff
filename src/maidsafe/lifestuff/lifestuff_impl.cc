@@ -820,6 +820,17 @@ std::string LifeStuffImpl::GetContactProfilePicture(const std::string& my_public
   return user_storage_->ConstructFile(contact.profile_picture_data_map);
 }
 
+int LifeStuffImpl::GetLifestuffCard(const std::string& my_public_id,
+                                    const std::string& contact_public_id,
+                                    SocialInfoMap& social_info) {
+  return public_id_->GetLifestuffCard(my_public_id, contact_public_id, social_info);
+}
+
+int LifeStuffImpl::SetLifestuffCard(const std::string& my_public_id,
+                                    const SocialInfoMap& social_info) {
+  return public_id_->SetLifestuffCard(my_public_id, social_info);
+}
+
 ContactMap LifeStuffImpl::GetContacts(const std::string& my_public_id, uint16_t bitwise_status) {
   int result(PreContactChecks(my_public_id));
   if (result != kSuccess) {
