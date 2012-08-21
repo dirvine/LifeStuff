@@ -202,8 +202,7 @@ class UserStorage {
                       bool overwrite_existing);
   int DeleteHiddenFile(const fs::path& absolute_path);
   int SearchHiddenFiles(const fs::path& absolute_path,
-                        const std::string& regex,
-                        std::list<std::string>* results);
+                        std::vector<std::string>* results);
   int GetHiddenFileDataMap(const boost::filesystem3::path& absolute_path, std::string* data_map);
 
   // ************************* Signals Handling ********************************
