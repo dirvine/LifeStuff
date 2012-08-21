@@ -132,7 +132,8 @@ int LifeStuffImpl::ConnectToSignals(
     const PrivateMemberAccessChangeFunction& private_access_change_function,
     const OpenShareInvitationFunction& open_share_invitation_function,
     const ShareRenamedFunction& share_renamed_function,
-    const ShareChangedFunction& share_changed_function) {
+    const ShareChangedFunction& share_changed_function,
+    const LifestuffCardUpdateFunction& lifestuff_card_update_function) {
   if (state_ != kInitialised) {
     LOG(kError) << "Make sure that object is initialised";
     return kGeneralError;
@@ -217,6 +218,12 @@ int LifeStuffImpl::ConnectToSignals(
     ++connects;
     if (user_storage_)
       user_storage_->ConnectToShareChangedSignal(share_changed_function);
+  }
+  if (lifestuff_card_update_function) {
+      slots_.lifestuff_card_update_function = lifestuff_card_update_function;
+      ++connects;
+      if (user_storage_)
+        public_id_->ConnectToLifestuffCardUpdatedSignal(lifestuff_card_update_function);
   }
 
       [&] (const std::string& own_public_id,
@@ -2275,7 +2282,8 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
                             slots_.private_access_change_function,
                             slots_.open_share_invitation_function,
                             slots_.share_renamed_function,
-                            slots_.share_changed_function);
+                            slots_.share_changed_function,
+                            slots_.lifestuff_card_update_function);
   return result;
 }
 

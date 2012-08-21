@@ -61,7 +61,8 @@ class LifeStuff {
                        const PrivateMemberAccessChangeFunction& access_change_function,
                        const OpenShareInvitationFunction& open_share_invitation_function,
                        const ShareRenamedFunction& share_renamed_function,
-                       const ShareChangedFunction& share_changed_function);
+                       const ShareChangedFunction& share_changed_function,
+                       const LifestuffCardUpdateFunction& lifestuff_card_update_function);
 
   int Finalise();
 
@@ -92,6 +93,10 @@ class LifeStuff {
   std::string GetOwnProfilePicture(const std::string& my_public_id);
   std::string GetContactProfilePicture(const std::string& my_public_id,
                                        const std::string& contact_public_id);
+  int GetLifestuffCard(const std::string& my_public_id,
+                       const std::string& contact_public_id,
+                       SocialInfoMap& social_info);
+  int SetLifestuffCard(const std::string& my_public_id, const SocialInfoMap& social_info);
   ContactMap GetContacts(const std::string& my_public_id,
                          uint16_t bitwise_status = kConfirmed | kRequestSent);
   std::vector<std::string> PublicIdsList() const;
@@ -188,7 +193,7 @@ class LifeStuff {
   fs::path mount_path() const;
 
  private:
-  std::shared_ptr<LifeStuffImpl> lifestuff_impl;
+  std::shared_ptr<LifeStuffImpl> lifestuff_impl_;
 };
 
 }  // namespace lifestuff
