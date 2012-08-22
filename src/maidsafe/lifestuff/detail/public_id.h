@@ -97,7 +97,6 @@ class PublicId {
   typedef std::shared_ptr<ContactDeletionProcessedSignal> ContactDeletionProcessedSignalPtr;
   typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
                            const std::string&,
-                           const SocialInfoMap&,
                            const std::string&)> LifestuffCardUpdatedSignal;
 
   PublicId(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,

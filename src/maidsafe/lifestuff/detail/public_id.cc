@@ -353,6 +353,10 @@ int PublicId::ConfirmContact(const std::string& own_public_id,
   Contact mic;
   int result(contacts_handler->ContactInfo(recipient_public_id, &mic));
   if (result != 0 || mic.status != kPendingResponse) {
+    if (result != 0)
+      LOG(kError) << "AAAAAAAAAAAAAA";
+    if (mic.status != kPendingResponse)
+      LOG(kError) << "BBBBBBBBBBBBBB";
     LOG(kError) << "No such pending username found: " << recipient_public_id;
     return -1;
   }
@@ -637,9 +641,7 @@ int PublicId::SetLifestuffCard(const std::string& my_public_id, const SocialInfo
   }
 
   std::vector<Contact> contacts;
-  session_.contacts_handler(my_public_id)->OrderedContacts(&contacts,
-                                                           kAlphabetical,
-                                                           kConfirmed | kPendingResponse);
+  session_.contacts_handler(my_public_id)->OnlineContacts(&contacts);
   wait_result = InformContactInfo(my_public_id, contacts, "", kLifestuffCardChanged);
   if (wait_result != kSuccess) {
     LOG(kError) << "Failed to inform all contacts.";
@@ -800,10 +802,9 @@ void PublicId::ProcessRequests(const std::string& own_public_id,
       case kLifestuffCardChanged:
         if (result == kSuccess &&
             (contact.status == kConfirmed || contact.status == kPendingResponse))
-          ProcessNewLifestuffCardInformation(contact.pointer_to_info,
-                                             own_public_id,
-                                             contact.public_id,
-                                             introduction.timestamp());
+          lifestuff_card_updated_signal_(own_public_id,
+                                         contact.public_id,
+                                         introduction.timestamp());
         else
           LOG(kError) << "Introduction of type kLifestuffCardChanged doesn't match current state!";
         break;
@@ -883,6 +884,8 @@ void PublicId::ProcessNewContact(Contact& contact,
                         public_id,
                         introduction.message(),
                         introduction.timestamp());
+  } else {
+    LOG(kInfo) << "Dropping contact " << contact.public_id;
   }
 }
 
@@ -892,19 +895,6 @@ void PublicId::ProcessMisplacedContactRequest(Contact& contact, const std::strin
   if (result != kSuccess) {
     LOG(kError) << "Failed to send confirmation to " << contact.public_id;
   }
-}
-
-void PublicId::ProcessNewLifestuffCardInformation(const std::string& card_address,
-                                                  const std::string& own_public_id,
-                                                  const std::string& contact_public_id,
-                                                  const std::string& timestamp) {
-  SocialInfoMap social_info_map;
-  int result(RetrieveLifestuffCard(card_address, social_info_map));
-  if (result != kSuccess) {
-    LOG(kError) << "Failure retrieving the new map " << Base64Substr(card_address);
-    return;
-  }
-  lifestuff_card_updated_signal_(own_public_id, contact_public_id, social_info_map, timestamp);
 }
 
 int PublicId::ModifyAppendability(const std::string& public_id, const char appendability) {

@@ -206,8 +206,10 @@ void ShareChangedSlot(const std::string& share_name,
   }
 }
 
-void LifestuffCardSlot(const SocialInfoMap& map_in, volatile bool* done, SocialInfoMap* map) {
-  *map = map_in;
+void LifestuffCardSlot(const std::string&,
+                       const std::string&,
+                       const std::string&,
+                       volatile bool* done) {
   *done = true;
 }
 
@@ -465,13 +467,13 @@ int CreatePublicId(LifeStuff& test_elements,
                                    mutex,
                                    &testing_variables.share_changes);
                 },
-                [&] (const std::string& /*own_id*/,
-                     const std::string& /*contact_id*/,
-                     const SocialInfoMap& social_info,
-                     const std::string& /*timestamp*/) {
-                  LifestuffCardSlot(social_info,
-                                    &testing_variables.social_info_map_changed,
-                                    &testing_variables.social_info_map);
+                [&] (const std::string& own_id,
+                     const std::string& contact_id,
+                     const std::string& timestamp) {
+                  LifestuffCardSlot(own_id,
+                                    contact_id,
+                                    timestamp,
+                                    &testing_variables.social_info_map_changed);
                 });
   if (result != kSuccess)
     return result;

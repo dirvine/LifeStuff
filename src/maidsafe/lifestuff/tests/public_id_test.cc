@@ -72,21 +72,20 @@ void ExchangeSlot(boost::mutex* mutex,
   cond_var->notify_one();
 }
 
-void LifestuffCardSlot(const SocialInfoMap& map_in,
-                       boost::mutex* mutex,
+void LifestuffCardSlot(boost::mutex* mutex,
                        boost::condition_variable* cond_var,
-                       bool* done,
-                       SocialInfoMap* map) {
+                       bool* done) {
   boost::mutex::scoped_lock loch(*mutex);
-  *map = map_in;
   *done = true;
   cond_var->notify_one();
 }
 
 int CreateAndConnectTwoIds(PublicId& public_id1,
                            const std::string& public_identity1,
+                           Session& session1,
                            PublicId& public_id2,
-                           const std::string& public_identity2) {
+                           const std::string& public_identity2,
+                           Session& session2) {
   int result(public_id1.CreatePublicId(public_identity1, true));
   if (result != kSuccess)
     return result;
@@ -139,19 +138,32 @@ int CreateAndConnectTwoIds(PublicId& public_id1,
       return -1;
   }
 
+  session1.contacts_handler(public_identity1)->UpdatePresence(public_identity2, kOnline);
+  session2.contacts_handler(public_identity2)->UpdatePresence(public_identity1, kOnline);
+
   return kSuccess;
 }
 
-SocialInfoMap CreateRandomSocialInfoMap() {
+SocialInfoMap CreateRandomSocialInfoMap(const size_t& size) {
   SocialInfoMap sim;
-  while (sim.size() < 10U)
+  while (sim.size() < size)
     sim[RandomAlphaNumericString(8)] = RandomAlphaNumericString(10);
   return sim;
 }
 
-}  // namespace
+void ChangeMapValues(SocialInfoMap& social_info_map) {
+  std::for_each(social_info_map.begin(),
+                social_info_map.end(),
+                [&] (const SocialInfoMap::value_type& element) {
+                  social_info_map[element.first] = RandomAlphaNumericString(20);
+                });
+}
 
-typedef std::map<std::string, ContactStatus> ContactMap;
+bool EqualMaps(const SocialInfoMap& lhs, const SocialInfoMap& rhs) {
+  return lhs.size() == rhs.size() && std::equal(lhs.begin(), lhs.end(), rhs.begin());
+}
+
+}  // namespace
 
 class PublicIdTest : public testing::Test {
  public:
@@ -1278,41 +1290,252 @@ TEST_F(PublicIdTest, FUNC_MovedInbox) {
   ASSERT_EQ(new_inbox_name, post_inbox_name_in_id3);
 }
 
-TEST_F(PublicIdTest, FUNC_LifestuffCard) {
+TEST_F(PublicIdTest, FUNC_LifestuffCardSetAndGet) {
   // Connect two public ids
   ASSERT_EQ(kSuccess, CreateAndConnectTwoIds(*public_id1_,
                                              public_identity1_,
+                                             session1_,
                                              *public_id2_,
-                                             public_identity2_));
+                                             public_identity2_,
+                                             session2_));
 
-  SocialInfoMap received_social_info_map;
+  SocialInfoMap received_social_info_map, own_social_info_map;
   boost::mutex mutex;
   boost::condition_variable cond_var;
   bool done(false);
   public_id2_->ConnectToLifestuffCardUpdatedSignal(
         [&] (const std::string& /*own_public_id*/,
              const std::string& /*contact_public_id*/,
-             const SocialInfoMap& map,
              const std::string& /*timestamp*/) {
-          LifestuffCardSlot(map, &mutex, &cond_var, &done, &received_social_info_map);
+          LifestuffCardSlot(&mutex, &cond_var, &done);
         });
 
   // Change one of the LS cards
-  SocialInfoMap social_info_map(CreateRandomSocialInfoMap());
+  SocialInfoMap social_info_map(CreateRandomSocialInfoMap(10));
   ASSERT_EQ(kSuccess, public_id1_->SetLifestuffCard(public_identity1_, social_info_map));
+  ASSERT_EQ(kSuccess, public_id1_->GetLifestuffCard(public_identity1_, "", own_social_info_map));
+  ASSERT_TRUE(EqualMaps(social_info_map, own_social_info_map));
   {
     boost::mutex::scoped_lock loch(mutex);
     ASSERT_TRUE(cond_var.timed_wait(loch, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
   }
+  ASSERT_TRUE(done);
+  ASSERT_EQ(kSuccess, public_id2_->GetLifestuffCard(public_identity2_,
+                                                    public_identity1_,
+                                                    received_social_info_map));
+  ASSERT_TRUE(EqualMaps(social_info_map, received_social_info_map));
 
-  // Check result
-  std::for_each(social_info_map.begin(),
-                social_info_map.end(),
-                [&] (const SocialInfoMap::value_type& element) {
-                  auto it(received_social_info_map.find(element.first));
-                  ASSERT_FALSE(it == received_social_info_map.end());
-                  ASSERT_EQ(element.second,  (*it).second);
-                });
+  // New map
+  own_social_info_map.clear();
+  received_social_info_map.clear();
+  done = false;
+  social_info_map = CreateRandomSocialInfoMap(10);
+  ASSERT_EQ(kSuccess, public_id1_->SetLifestuffCard(public_identity1_, social_info_map));
+  ASSERT_EQ(kSuccess, public_id1_->GetLifestuffCard(public_identity1_, "", own_social_info_map));
+  ASSERT_TRUE(EqualMaps(social_info_map, own_social_info_map));
+  {
+    boost::mutex::scoped_lock loch(mutex);
+    ASSERT_TRUE(cond_var.timed_wait(loch, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+  }
+  ASSERT_TRUE(done);
+  ASSERT_EQ(kSuccess, public_id2_->GetLifestuffCard(public_identity2_,
+                                                    public_identity1_,
+                                                    received_social_info_map));
+  ASSERT_TRUE(EqualMaps(social_info_map, received_social_info_map));
+
+  // Modified values in map
+  own_social_info_map.clear();
+  received_social_info_map.clear();
+  done = false;
+  ChangeMapValues(social_info_map);
+  ASSERT_EQ(kSuccess, public_id1_->SetLifestuffCard(public_identity1_, social_info_map));
+  ASSERT_EQ(kSuccess, public_id1_->GetLifestuffCard(public_identity1_, "", own_social_info_map));
+  ASSERT_TRUE(EqualMaps(social_info_map, own_social_info_map));
+  {
+    boost::mutex::scoped_lock loch(mutex);
+    ASSERT_TRUE(cond_var.timed_wait(loch, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+  }
+  ASSERT_TRUE(done);
+  ASSERT_EQ(kSuccess, public_id2_->GetLifestuffCard(public_identity2_,
+                                                    public_identity1_,
+                                                    received_social_info_map));
+  ASSERT_TRUE(EqualMaps(social_info_map, received_social_info_map));
+
+  // Change to smaller map
+  own_social_info_map.clear();
+  received_social_info_map.clear();
+  done = false;
+  social_info_map = CreateRandomSocialInfoMap(5);
+  ASSERT_EQ(kSuccess, public_id1_->SetLifestuffCard(public_identity1_, social_info_map));
+  ASSERT_EQ(kSuccess, public_id1_->GetLifestuffCard(public_identity1_, "", own_social_info_map));
+  ASSERT_TRUE(EqualMaps(social_info_map, own_social_info_map));
+  {
+    boost::mutex::scoped_lock loch(mutex);
+    ASSERT_TRUE(cond_var.timed_wait(loch, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+  }
+  ASSERT_TRUE(done);
+  ASSERT_EQ(kSuccess, public_id2_->GetLifestuffCard(public_identity2_,
+                                                    public_identity1_,
+                                                    received_social_info_map));
+  ASSERT_TRUE(EqualMaps(social_info_map, received_social_info_map));
+
+  // Change to empty map
+  social_info_map.clear();
+  own_social_info_map.clear();
+  received_social_info_map.clear();
+  done = false;
+  ASSERT_EQ(kSuccess, public_id1_->SetLifestuffCard(public_identity1_, social_info_map));
+  ASSERT_EQ(kSuccess, public_id1_->GetLifestuffCard(public_identity1_, "", own_social_info_map));
+  ASSERT_TRUE(EqualMaps(social_info_map, own_social_info_map));
+  {
+    boost::mutex::scoped_lock loch(mutex);
+    ASSERT_TRUE(cond_var.timed_wait(loch, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+  }
+  ASSERT_TRUE(done);
+  ASSERT_EQ(kSuccess, public_id2_->GetLifestuffCard(public_identity2_,
+                                                    public_identity1_,
+                                                    received_social_info_map));
+  ASSERT_TRUE(EqualMaps(social_info_map, received_social_info_map));
+
+  // Fill up map again
+  received_social_info_map.clear();
+  own_social_info_map.clear();
+  done = false;
+  social_info_map = CreateRandomSocialInfoMap(20);
+  ASSERT_EQ(kSuccess, public_id1_->SetLifestuffCard(public_identity1_, social_info_map));
+  ASSERT_EQ(kSuccess, public_id1_->GetLifestuffCard(public_identity1_, "", own_social_info_map));
+  ASSERT_TRUE(EqualMaps(social_info_map, own_social_info_map));
+  {
+    boost::mutex::scoped_lock loch(mutex);
+    ASSERT_TRUE(cond_var.timed_wait(loch, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+  }
+  ASSERT_TRUE(done);
+  ASSERT_EQ(kSuccess, public_id2_->GetLifestuffCard(public_identity2_,
+                                                    public_identity1_,
+                                                    received_social_info_map));
+  ASSERT_TRUE(EqualMaps(social_info_map, received_social_info_map));
+}
+
+int CreatePublicIdObject(std::shared_ptr<PublicId>& public_id,
+                         AsioService& asio_service,
+                         Session& session,
+                         std::shared_ptr<pcs::RemoteChunkStore>& remote_chunk_store,
+                         maidsafe::test::TestPath& test_dir,
+                         const std::string& public_identity) {
+  session.Reset();
+  asio_service.Start();
+#ifdef LOCAL_TARGETS_ONLY
+  remote_chunk_store = BuildChunkStore(*test_dir / RandomAlphaNumericString(8),
+                                       *test_dir / "simulation",
+                                       asio_service.service());
+#endif
+
+  public_id.reset(new PublicId(remote_chunk_store, session, asio_service.service()));
+
+  return public_id->CreatePublicId(public_identity, true);
+}
+
+int ConnectTwoIds(PublicId& public_id1,
+                  const std::string& public_identity1,
+                  PublicId& public_id3,
+                  const std::string& public_identity3) {
+  boost::mutex mutex, mutex3;
+  boost::condition_variable cond_var, cond_var3;
+  bool done(false), done3(false);
+  bptime::seconds interval(3);
+  public_id3.ConnectToNewContactSignal(
+      [&] (const std::string& /*own_public_id*/,
+           const std::string& /*contact_public_id*/,
+           const std::string& /*message*/,
+           const std::string& /*timestamp*/) {
+        ExchangeSlot(&mutex3, &cond_var3, &done3);
+      });
+
+  public_id1.ConnectToContactConfirmedSignal(
+      [&] (const std::string& /*own_public_id*/,
+           const std::string& /*contact_public_id*/,
+           const std::string& /*timestamp*/) {
+        ExchangeSlot(&mutex, &cond_var, &done);
+      });
+
+  int result(public_id1.AddContact(public_identity1, public_identity3, ""));
+  if (result != kSuccess)
+    return result;
+
+  {
+    boost::mutex::scoped_lock loch(mutex3);
+    if (!cond_var3.timed_wait(loch, interval * 2, [&] ()->bool { return done3; }))  // NOLINT (Dan)
+      return -1;
+  }
+
+  result = public_id3.ConfirmContact(public_identity3, public_identity1);
+  if (result != kSuccess)
+    return result;
+
+  {
+    boost::mutex::scoped_lock loch(mutex);
+    if (!cond_var.timed_wait(loch, interval * 2, [&] ()->bool { return done; }))  // NOLINT (Dan)
+      return -1;
+  }
+
+  return kSuccess;
+}
+
+TEST_F(PublicIdTest, FUNC_LifestuffCardOnlineOfflineContacts) {
+  // Connect two public ids
+  EXPECT_EQ(kSuccess, CreateAndConnectTwoIds(*public_id1_,
+                                             public_identity1_,
+                                             session1_,
+                                             *public_id2_,
+                                             public_identity2_,
+                                             session2_));
+
+  AsioService asio_service3(5);
+  Session session3;
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store3;
+  std::shared_ptr<PublicId> public_id3;
+  std::string public_identity3("User 3 " + RandomAlphaNumericString(8));
+  EXPECT_EQ(kSuccess, CreatePublicIdObject(public_id3,
+                                           asio_service3,
+                                           session3,
+                                           remote_chunk_store3,
+                                           test_dir_,
+                                           public_identity3));
+  EXPECT_EQ(kSuccess, public_id3->StartCheckingForNewContacts(interval_));
+
+  EXPECT_EQ(kSuccess, ConnectTwoIds(*public_id1_,
+                                    public_identity1_,
+                                    *public_id3,
+                                    public_identity3));
+
+  boost::mutex mutex2, mutex3;
+  boost::condition_variable cond_var2, cond_var3;
+  bool done2(false), done3(false);
+  public_id2_->ConnectToLifestuffCardUpdatedSignal(
+        [&] (const std::string& /*own_public_id*/,
+             const std::string& /*contact_public_id*/,
+             const std::string& /*timestamp*/) {
+          LifestuffCardSlot(&mutex2, &cond_var2, &done2);
+        });
+  public_id3->ConnectToLifestuffCardUpdatedSignal(
+      [&] (const std::string& /*own_public_id*/,
+           const std::string& /*contact_public_id*/,
+           const std::string& /*timestamp*/) {
+        LifestuffCardSlot(&mutex3, &cond_var3, &done3);
+      });
+
+  SocialInfoMap social_info_map(CreateRandomSocialInfoMap(10));
+  ASSERT_EQ(kSuccess, public_id1_->SetLifestuffCard(public_identity1_, social_info_map));
+  {
+    boost::mutex::scoped_lock loch(mutex3);
+    ASSERT_FALSE(cond_var3.timed_wait(loch, interval_ * 2, [&] ()->bool { return done3; }));  // NOLINT (Dan)
+  }
+  ASSERT_TRUE(done2);
+  ASSERT_FALSE(done3);
+
+  public_id3->StopCheckingForNewContacts();
+  asio_service3.Stop();
+  remote_chunk_store3->WaitForCompletion();
 }
 
 }  // namespace test
