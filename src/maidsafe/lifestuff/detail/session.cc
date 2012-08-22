@@ -41,18 +41,24 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-PublicIdDetails::PublicIdDetails() : social_info(new SocialInfo { kBlankProfilePicture, "" }),
+PublicIdDetails::PublicIdDetails() : social_info(new SocialInfo),
                                      contacts_handler(new ContactsHandler),
                                      share_information(new ShareInformation),
                                      social_info_mutex(new boost::mutex),
-                                     share_information_mutex(new boost::mutex) {}
+                                     share_information_mutex(new boost::mutex) {
+  social_info->push_back(kBlankProfilePicture);
+  social_info->push_back("");
+}
 
 PublicIdDetails::PublicIdDetails(const std::string& card_address)
-    : social_info(new SocialInfo { kBlankProfilePicture, card_address }),
+    : social_info(new SocialInfo),
       contacts_handler(new ContactsHandler),
       share_information(new ShareInformation),
       social_info_mutex(new boost::mutex),
-      share_information_mutex(new boost::mutex) {}
+      share_information_mutex(new boost::mutex) {
+  social_info->push_back(kBlankProfilePicture);
+  social_info->push_back(card_address);
+}
 
 PublicIdDetails& PublicIdDetails::operator=(const PublicIdDetails& other) {
   this->social_info = other.social_info;
