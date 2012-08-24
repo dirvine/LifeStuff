@@ -39,6 +39,7 @@ Contact::Contact()
       mpid_name(),
       inbox_name(),
       profile_picture_data_map(),
+      pointer_to_info(),
       mpid_public_key(),
       inbox_public_key(),
       status(kUninitialised),
@@ -50,6 +51,7 @@ Contact::Contact(const std::string& public_name_in,
                  const std::string& mpid_name_in,
                  const std::string& inbox_name_in,
                  const std::string& profile_picture_data_map_in,
+                 const std::string& pointer_to_info_in,
                  const asymm::PublicKey& mpid_public_key_in,
                  const asymm::PublicKey& inbox_public_key_in,
                  ContactStatus status)
@@ -57,6 +59,7 @@ Contact::Contact(const std::string& public_name_in,
       mpid_name(mpid_name_in),
       inbox_name(inbox_name_in),
       profile_picture_data_map(profile_picture_data_map_in),
+      pointer_to_info(pointer_to_info_in),
       mpid_public_key(mpid_public_key_in),
       inbox_public_key(inbox_public_key_in),
       status(status),
@@ -68,6 +71,7 @@ Contact::Contact(const PublicContact& contact)
       mpid_name(),
       inbox_name(contact.inbox_name()),
       profile_picture_data_map(contact.profile_picture_data_map()),
+      pointer_to_info(contact.pointer_to_info()),
       mpid_public_key(),
       inbox_public_key(),
       status(static_cast<ContactStatus>(contact.status())),
@@ -80,6 +84,7 @@ bool Contact::Equals(const Contact& other) {
       mpid_name != other.mpid_name ||
       inbox_name != other.inbox_name ||
       profile_picture_data_map != other.profile_picture_data_map ||
+      pointer_to_info != other.pointer_to_info ||
       status != other.status ||
       rank != other.rank ||
       last_contact != other.last_contact ||
@@ -115,6 +120,7 @@ int ContactsHandler::AddContact(const std::string& public_id,
                                 const std::string& mpid_name,
                                 const std::string& inbox_name,
                                 const std::string& profile_picture_data_map,
+                                const std::string& pointer_to_info,
                                 const asymm::PublicKey& mpid_public_key,
                                 const asymm::PublicKey& inbox_public_key,
                                 ContactStatus status,
@@ -124,6 +130,7 @@ int ContactsHandler::AddContact(const std::string& public_id,
                   mpid_name,
                   inbox_name,
                   profile_picture_data_map,
+                  pointer_to_info,
                   mpid_public_key,
                   inbox_public_key,
                   status);
@@ -174,6 +181,7 @@ int ContactsHandler::UpdateContact(const Contact& contact) {
   local_contact.rank = contact.rank;
   local_contact.last_contact = contact.last_contact;
   local_contact.profile_picture_data_map = contact.profile_picture_data_map;
+  local_contact.pointer_to_info = contact.pointer_to_info;
 
   if (!contact_set_.replace(it, local_contact)) {
     LOG(kError) << "Failed to replace contact in set " << contact.public_id;
@@ -194,6 +202,24 @@ int ContactsHandler::UpdateProfilePictureDataMap(const std::string& public_id,
 
   Contact contact = *it;
   contact.profile_picture_data_map = profile_picture_data_map;
+  if (!contact_set_.replace(it, contact)) {
+    LOG(kError) << "Failed to replace contact in set " << contact.public_id;
+    return -79;
+  }
+
+  return kSuccess;
+}
+
+int ContactsHandler::UpdatePointerToInfo(const std::string& public_id,
+                                         const std::string& pointer_to_info) {
+  ContactSet::iterator it = contact_set_.find(public_id);
+  if (it == contact_set_.end()) {
+    LOG(kError) << "Contact(" << public_id << ") not present in list.";
+    return -79;
+  }
+
+  Contact contact = *it;
+  contact.pointer_to_info = pointer_to_info;
   if (!contact_set_.replace(it, contact)) {
     LOG(kError) << "Failed to replace contact in set " << contact.public_id;
     return -79;

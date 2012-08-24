@@ -63,7 +63,8 @@ enum IntroductionType {
   kFriendResponse,
   kDefriend,
   kMovedInbox,
-  kFixAsync
+  kFixAsync,
+  kLifestuffCardChanged
 };
 
 namespace test {
@@ -94,6 +95,9 @@ class PublicId {
                            const std::string&,
                            const std::string&)> ContactDeletionProcessedSignal;
   typedef std::shared_ptr<ContactDeletionProcessedSignal> ContactDeletionProcessedSignalPtr;
+  typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
+                           const std::string&,
+                           const std::string&)> LifestuffCardUpdatedSignal;
 
   PublicId(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
            Session& session,
@@ -133,6 +137,11 @@ class PublicId {
                     const std::string& timestamp,
                     const bool& instigator);
 
+  // Lifestuff Card
+  int GetLifestuffCard(const std::string& my_public_id,
+                       const std::string& contact_public_id,
+                       SocialInfoMap& social_info);
+  int SetLifestuffCard(const std::string& my_public_id, const SocialInfoMap& social_info);
 
   // Signals
   bs2::connection ConnectToNewContactSignal(const NewContactFunction& new_contact_slot);
@@ -142,6 +151,8 @@ class PublicId {
       const ContactDeletionReceivedFunction& contact_deletion_received_slot);
   bs2::connection ConnectToContactDeletionProcessedSignal(
       const ContactDeletionFunction& contact_deletion_slot);
+  bs2::connection ConnectToLifestuffCardUpdatedSignal(
+      const LifestuffCardUpdateFunction& lifestuff_card_update_slot);
 
  private:
   PublicId(const PublicId&);
@@ -160,14 +171,18 @@ class PublicId {
                                   const Introduction& introduction);
   void ProcessContactMoveInbox(Contact& contact,
                                const ContactsHandlerPtr contacts_handler,
-                               const std::string& inbox_name);
+                               const std::string& inbox_name,
+                               const std::string& pointer_to_info);
   void ProcessNewContact(Contact& contact,
                          const ContactsHandlerPtr contacts_handler,
                          const std::string& own_public_id,
                          const Introduction& introduction,
                          const priv::chunk_actions::SignedData& singed_introduction);
   void ProcessMisplacedContactRequest(Contact& contact, const std::string& own_public_id);
-
+  void ProcessNewLifestuffCardInformation(const std::string& card_address,
+                                          const std::string& own_public_id,
+                                          const std::string& contact_public_id,
+                                          const std::string& timestamp);
   // Modify the Appendability of MCID and MMID associated with the public_id
   // i.e. enable/disable others add new contact and send msg
   int ModifyAppendability(const std::string& own_public_id, const char appendability);
@@ -179,15 +194,26 @@ class PublicId {
                         const std::string& inbox_name = "");
   int GetPublicKey(const std::string& packet_name, Contact& contact, int type);
 
+  int StoreLifestuffCard(std::shared_ptr<asymm::Keys> mmid,
+                         std::string& lifestuff_card_address);
+  int RemoveLifestuffCard(const std::string& lifestuff_card_address,
+                          std::shared_ptr<asymm::Keys> mmid);
+  std::string GetOwnCardAddress(const std::string& my_public_id);
+  std::string GetContactCardAddress(const std::string& my_public_id,
+                                    const std::string& contact_public_id);
+  int RetrieveLifestuffCard(const std::string& lifestuff_card_address,
+                            SocialInfoMap& social_info);
+
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
   Session& session_;
   passport::Passport& passport_;
   ba::deadline_timer get_new_contacts_timer_;
   bool get_new_contacts_timer_active_;
-  NewContactSignalPtr new_contact_signal_;
-  ContactConfirmedSignalPtr contact_confirmed_signal_;
-  ContactDeletionReceivedSignalPtr contact_deletion_received_signal_;
-  ContactDeletionProcessedSignalPtr contact_deletion_processed_signal_;
+  NewContactSignal new_contact_signal_;
+  ContactConfirmedSignal contact_confirmed_signal_;
+  ContactDeletionReceivedSignal contact_deletion_received_signal_;
+  ContactDeletionProcessedSignal contact_deletion_processed_signal_;
+  LifestuffCardUpdatedSignal lifestuff_card_updated_signal_;
   boost::asio::io_service& asio_service_;
 };
 

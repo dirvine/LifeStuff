@@ -560,7 +560,7 @@ TEST_F(UserCredentialsTest, DISABLED_FUNC_SessionSaverTimer) {
   LOG(kInfo) << "Created user.\n===================\n";
   Sleep(bptime::seconds(3));
   LOG(kInfo) << "Slept 3.\n===================\n";
-  ASSERT_EQ(kSuccess, session_.AddPublicId(RandomAlphaNumericString(5)));
+  ASSERT_EQ(kSuccess, session_.AddPublicId(RandomAlphaNumericString(5), RandomString(64)));
   LOG(kInfo) << "Modified session.\n===================\n";
   Sleep(bptime::seconds(/*kSecondsInterval * 12*/5));
   LOG(kInfo) << "Slept 3.\n===================\n";
@@ -573,7 +573,7 @@ TEST_F(UserCredentialsTest, DISABLED_FUNC_SessionSaverTimer) {
   LOG(kInfo) << "Log in.\n===================\n";
   Sleep(bptime::seconds(3));
   LOG(kInfo) << "Slept 3.\n===================\n";
-  ASSERT_EQ(kSuccess, session_.AddPublicId(RandomAlphaNumericString(5)));
+  ASSERT_EQ(kSuccess, session_.AddPublicId(RandomAlphaNumericString(5), RandomString(64)));
   LOG(kInfo) << "Modified session.\n===================\n";
   Sleep(bptime::seconds(/*kSecondsInterval * 12*/5));
   LOG(kInfo) << "Slept 3.\n===================\n";
