@@ -310,7 +310,7 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
     }
   }
 
-  user_storage_->MountDrive(mount_dir, &session_, true);
+  user_storage_->MountDrive(mount_dir, &session_, true, false);
   if (!user_storage_->mount_status()) {
     LOG(kError) << "Failed to mount";
     return kGeneralError;
@@ -324,16 +324,19 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
   fs::create_directories(mount_path / kMyStuff / kDownloadStuff, error_code);
   if (error_code) {
     LOG(kError) << "Failed creating My Stuff: " << error_code.message();
+    user_storage_->UnMountDrive();
     return kGeneralError;
   }
   fs::create_directory(mount_path / kSharedStuff, error_code);
   if (error_code) {
     LOG(kError) << "Failed creating Shared Stuff: " << error_code.message();
+    user_storage_->UnMountDrive();
     return kGeneralError;
   }
   result = user_credentials_->SaveSession();
   if (result != kSuccess) {
     LOG(kWarning) << "Failed to save session.";
+    user_storage_->UnMountDrive();
   }
 
   state_ = kLoggedIn;
@@ -406,8 +409,7 @@ int LifeStuffImpl::LogIn(const std::string& keyword,
     }
   }
 
-  user_storage_->MountDrive(mount_dir, &session_, false);
-
+  user_storage_->MountDrive(mount_dir, &session_, false, false);
   if (!user_storage_->mount_status()) {
     LOG(kError) << "Failed to mount";
     return kGeneralError;

@@ -63,6 +63,7 @@ UserStorage::UserStorage(std::shared_ptr<pcs::RemoteChunkStore> chunk_store,
 void UserStorage::MountDrive(const fs::path& mount_dir_path,
                              Session* session,
                              bool creation,
+                             bool read_only,
                              const std::string& drive_logo) {
   if (mount_status_) {
     LOG(kInfo) << "Already mounted.";
@@ -105,7 +106,8 @@ void UserStorage::MountDrive(const fs::path& mount_dir_path,
   result = drive_in_user_space_->Mount(mount_dir_,
                                        drive_logo,
                                        session->max_space(),
-                                       session->used_space());
+                                       session->used_space(),
+                                       read_only);
   if (result != kSuccess) {
     LOG(kError) << "Failed to Mount Drive: " << result;
     return;
@@ -113,12 +115,13 @@ void UserStorage::MountDrive(const fs::path& mount_dir_path,
   mount_status_ = true;
 #else
   mount_dir_ = mount_dir_path;
-  mount_thread_.reset(new boost::thread([this, drive_logo] {
-    drive_in_user_space_->Mount(mount_dir_,
-                                drive_logo,
-                                session_->max_space(),
-                                session_->used_space());
-  }));
+  mount_thread_.reset(new boost::thread([this, drive_logo, read_only] {
+                                          drive_in_user_space_->Mount(mount_dir_,
+                                                                      drive_logo,
+                                                                      session_->max_space(),
+                                                                      session_->used_space(),
+                                                                      read_only);
+                                        }));
   mount_status_ = drive_in_user_space_->WaitUntilMounted();
 #endif
   ConnectToShareRenamedSignal(share_renamed_function_);
