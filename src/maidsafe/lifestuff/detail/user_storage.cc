@@ -1075,10 +1075,8 @@ int UserStorage::DeleteHiddenFile(const fs::path& absolute_path) {
 }
 
 int UserStorage::SearchHiddenFiles(const fs::path& absolute_path,
-                                   const std::string& regex,
-                                   std::list<std::string>* results) {
+                                   std::vector<std::string>* results) {
   return drive_in_user_space_->SearchHiddenFiles(drive::RelativePath(mount_dir(), absolute_path),
-                                                 regex,
                                                  results);
 }
 

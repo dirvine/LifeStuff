@@ -327,8 +327,7 @@ class UserStorageTest : public testing::TestWithParam<bool> {
                                 const StringIntMap& users) {
     std::string share_id, new_share_id, new_directory_id;
     asymm::Keys key_ring, new_key_ring;
-    fs::path relative_path(drive::RelativePath(user_storage->mount_dir(),
-                               absolute_path.root_directory() / absolute_path.relative_path()));
+    fs::path relative_path(drive::RelativePath(user_storage->mount_dir(), absolute_path));
     StringIntMap remaining_members(users), removed_members;
     int result(kSuccess);
     result = user_storage->RemoveShareUsers(sender_public_id, absolute_path, members_to_remove);
@@ -927,8 +926,11 @@ TEST_P(UserStorageTest, FUNC_RemoveUserByOwner) {
   EXPECT_TRUE(fs::exists(directory0, error_code)) << directory0;
   std::vector<std::string> user_ids;
   user_ids.push_back(pub_name2_);
-  EXPECT_EQ(kSuccess,
-            RemoveAndInformShareUsers(user_storage1_, pub_name1_, directory0, user_ids, users));
+  EXPECT_EQ(kSuccess, RemoveAndInformShareUsers(user_storage1_,
+                                                pub_name1_,
+                                                directory0,
+                                                user_ids,
+                                                users));
   tail = "I0E1k";
   fs::path sub_directory0(directory0 / tail);
   fs::create_directory(sub_directory0, error_code);
@@ -1125,10 +1127,11 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
   EXPECT_TRUE(fs::exists(directory0, error_code)) << directory0;
   std::vector<std::string> user_ids;
   user_ids.push_back(pub_name2_);
-  /*EXPECT_EQ(kSuccess,
-            user_storage1_->RemoveShareUsers(pub_name1_, directory0, user_ids));*/
-  EXPECT_EQ(kSuccess,
-            RemoveAndInformShareUsers(user_storage1_, pub_name1_, directory0, user_ids, users));
+  EXPECT_EQ(kSuccess, RemoveAndInformShareUsers(user_storage1_,
+                                                pub_name1_,
+                                                directory0,
+                                                user_ids,
+                                                users));
   tail = "I0E1k";
   fs::path sub_directory0(directory0 / tail);
   fs::create_directory(sub_directory0, error_code);

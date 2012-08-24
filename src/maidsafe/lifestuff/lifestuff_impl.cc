@@ -1027,14 +1027,13 @@ int LifeStuffImpl::DeleteHiddenFile(const fs::path& absolute_path) {
 }
 
 int LifeStuffImpl::SearchHiddenFiles(const fs::path& absolute_path,
-                                     const std::string& regex,
-                                     std::list<std::string>* results) {
+                                     std::vector<std::string>* results) {
   if (state_ != kLoggedIn) {
     LOG(kError) << "Wrong state: " << state_;
     return kGeneralError;
   }
 
-  return user_storage_->SearchHiddenFiles(absolute_path, regex, results);
+  return user_storage_->SearchHiddenFiles(absolute_path, results);
 }
 
 /// Private Shares
