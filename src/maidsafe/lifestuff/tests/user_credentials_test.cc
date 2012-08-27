@@ -82,7 +82,7 @@ class UserCredentialsTest : public testing::Test {
                                         *test_dir_ / "simulation",
                                         asio_service_.service());
 #else
-  remote_chunk_store_ = BuildChunkStore(*test_dir_, &node_);
+  remote_chunk_store_ = BuildChunkStore(*test_dir_, node_);
 #endif
     user_credentials_.reset(new UserCredentials(*remote_chunk_store_,
                                                 session_,
@@ -100,7 +100,7 @@ class UserCredentialsTest : public testing::Test {
                                            *test_dir_ / "simulation",
                                            asio_service2_.service());
 #else
-    remote_chunk_store2_ = BuildChunkStore(*test_dir_, &node2_);
+    remote_chunk_store2_ = BuildChunkStore(*test_dir_, node2_);
 #endif
     user_credentials2_.reset(new UserCredentials(*remote_chunk_store2_,
                                                  session2_,
