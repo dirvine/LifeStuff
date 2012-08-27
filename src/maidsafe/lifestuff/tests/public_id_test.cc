@@ -283,8 +283,8 @@ class PublicIdTest : public testing::Test {
                                            *test_dir_ / "simulation",
                                            asio_service2_.service());
 #else
-    remote_chunk_store1_ = BuildChunkStore(*test_dir_, &node1_);
-    remote_chunk_store2_ = BuildChunkStore(*test_dir_, &node2_);
+    remote_chunk_store1_ = BuildChunkStore(*test_dir_, node1_);
+    remote_chunk_store2_ = BuildChunkStore(*test_dir_, node2_);
 #endif
 
     public_id1_.reset(new PublicId(remote_chunk_store1_, session1_, asio_service1_.service()));

@@ -101,7 +101,7 @@ int LifeStuffImpl::Initialise(const boost::filesystem::path& base_directory) {
                                         asio_service_.service());
   simulation_path_ = network_simulation_path;
 #else
-  remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path, &node_);
+  remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path, node_);
 #endif
   if (!remote_chunk_store_) {
     LOG(kError) << "Could not initialise chunk store.";
