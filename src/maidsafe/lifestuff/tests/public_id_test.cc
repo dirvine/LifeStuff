@@ -1428,6 +1428,9 @@ int CreatePublicIdObject(std::shared_ptr<PublicId>& public_id,
   remote_chunk_store = BuildChunkStore(*test_dir / RandomAlphaNumericString(8),
                                        *test_dir / "simulation",
                                        asio_service.service());
+#else
+  // Suppress Windows unused variable warning
+  (void)test_dir;
 #endif
 
   public_id.reset(new PublicId(remote_chunk_store, session, asio_service.service()));
