@@ -1709,7 +1709,7 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
   EXPECT_EQ(kSuccess, test_elements3.Finalise());
 }
 
-TEST_P(PrivateSharesApiTest, DISABLED_FUNC_PrivateSharesTwoOwnersRemoveEachOther) {
+TEST_P(PrivateSharesApiTest, FUNC_PrivateSharesTwoOwnersRemoveEachOther) {
   std::string share_name_1(RandomAlphaNumericString(7));
   std::string share_name_2(RandomAlphaNumericString(7));
 
