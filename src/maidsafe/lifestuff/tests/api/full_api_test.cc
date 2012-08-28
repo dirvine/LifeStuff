@@ -1221,12 +1221,14 @@ TEST_F(TwoUsersApiTest, FUNC_MembershipDowngradePrivateShare) {
     contacts.insert(std::make_pair(public_id_2_, kShareReadWrite));
     results.insert(std::make_pair(public_id_2_, kGeneralError));
 
-    EXPECT_EQ(kSuccess,
-              test_elements_1_.CreateEmptyPrivateShare(public_id_1_, contacts,
-                                                       &share_name1, &results));
+    EXPECT_EQ(kSuccess, test_elements_1_.CreateEmptyPrivateShare(public_id_1_,
+                                                                 contacts,
+                                                                 &share_name1,
+                                                                 &results));
     EXPECT_EQ(kSuccess, results[public_id_2_]);
 
-    EXPECT_EQ(kSuccess, test_elements_1_.GetPrivateShareMembers(public_id_1_, share_name1,
+    EXPECT_EQ(kSuccess, test_elements_1_.GetPrivateShareMembers(public_id_1_,
+                                                                share_name1,
                                                                 &results));
     EXPECT_EQ(1U, results.size());
     EXPECT_TRUE(results.end() == results.find(public_id_1_));
@@ -1324,9 +1326,10 @@ TEST_F(TwoUsersApiTest, FUNC_MembershipUpgradePrivateShare) {
     contacts.insert(std::make_pair(public_id_2_, kShareReadOnly));
     results.insert(std::make_pair(public_id_2_, kGeneralError));
 
-    EXPECT_EQ(kSuccess,
-              test_elements_1_.CreateEmptyPrivateShare(public_id_1_, contacts,
-                                                       &share_name1, &results));
+    EXPECT_EQ(kSuccess, test_elements_1_.CreateEmptyPrivateShare(public_id_1_,
+                                                                 contacts,
+                                                                 &share_name1,
+                                                                 &results));
 
     fs::path share_path(test_elements_1_.mount_path() / kSharedStuff / share_name1);
     EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
