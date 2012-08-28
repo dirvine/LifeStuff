@@ -206,6 +206,13 @@ void ShareChangedSlot(const std::string& share_name,
   }
 }
 
+void LifestuffCardSlot(const std::string&,
+                       const std::string&,
+                       const std::string&,
+                       volatile bool* done) {
+  *done = true;
+}
+
 int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                  LifeStuff& test_elements2,
                                  testresources::TestingVariables& testing_variables1,
@@ -459,6 +466,14 @@ int CreatePublicId(LifeStuff& test_elements,
                                    op_type,
                                    mutex,
                                    &testing_variables.share_changes);
+                },
+                [&] (const std::string& own_id,
+                     const std::string& contact_id,
+                     const std::string& timestamp) {
+                  LifestuffCardSlot(own_id,
+                                    contact_id,
+                                    timestamp,
+                                    &testing_variables.social_info_map_changed);
                 });
   if (result != kSuccess)
     return result;
@@ -806,7 +821,8 @@ void OneUserApiTest::SetUp() {
                                             PrivateMemberAccessChangeFunction(),
                                             OpenShareInvitationFunction(),
                                             ShareRenamedFunction(),
-                                            ShareChangedFunction()));
+                                            ShareChangedFunction(),
+                                            LifestuffCardUpdateFunction()));
   EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_));
 }
 
@@ -840,7 +856,8 @@ void TwoInstancesApiTest::SetUp() {
                                             PrivateMemberAccessChangeFunction(),
                                             OpenShareInvitationFunction(),
                                             ShareRenamedFunction(),
-                                            ShareChangedFunction()));
+                                            ShareChangedFunction(),
+                                            LifestuffCardUpdateFunction()));
   EXPECT_EQ(kSuccess,
             test_elements_2_.ConnectToSignals(ChatFunction(),
                                             FileTransferFunction(),
@@ -863,7 +880,8 @@ void TwoInstancesApiTest::SetUp() {
                                             PrivateMemberAccessChangeFunction(),
                                             OpenShareInvitationFunction(),
                                             ShareRenamedFunction(),
-                                            ShareChangedFunction()));
+                                            ShareChangedFunction(),
+                                            LifestuffCardUpdateFunction()));
 }
 
 void TwoInstancesApiTest::TearDown() {

@@ -146,7 +146,6 @@ TEST_F(OneUserApiTest, FUNC_ChangeProfilePictureAfterSaveSession) {
     EXPECT_TRUE(profile_picture1 == retrieved_picture);
     EXPECT_EQ(kSuccess, test_elements_.LogOut());
 
-    LOG(kError) << "\n\n\n";
     EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
     retrieved_picture = test_elements_.GetOwnProfilePicture(public_id);
     EXPECT_TRUE(profile_picture1 == retrieved_picture);
@@ -155,7 +154,6 @@ TEST_F(OneUserApiTest, FUNC_ChangeProfilePictureAfterSaveSession) {
     EXPECT_TRUE(profile_picture2 == retrieved_picture);
     EXPECT_EQ(kSuccess, test_elements_.LogOut());
 
-    LOG(kError) << "\n\n\n";
     EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
     retrieved_picture = test_elements_.GetOwnProfilePicture(public_id);
     EXPECT_TRUE(profile_picture2 == retrieved_picture);
@@ -164,7 +162,6 @@ TEST_F(OneUserApiTest, FUNC_ChangeProfilePictureAfterSaveSession) {
     EXPECT_TRUE(profile_picture1 == retrieved_picture);
     EXPECT_EQ(kSuccess, test_elements_.LogOut());
 
-    LOG(kError) << "\n\n\n";
     EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
     retrieved_picture = test_elements_.GetOwnProfilePicture(public_id);
     EXPECT_TRUE(profile_picture1 == retrieved_picture);

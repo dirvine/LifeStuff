@@ -71,24 +71,25 @@ struct ShareDetails {
 };
 
 typedef std::map<std::string, ShareDetails> ShareInformation;
+typedef std::vector<std::string> SocialInfo;
 
 typedef std::shared_ptr<ContactsHandler> ContactsHandlerPtr;
 typedef std::shared_ptr<ShareInformation> ShareInformationPtr;
-typedef std::shared_ptr<std::string> ProfilePicturePtr;
+typedef std::shared_ptr<SocialInfo> SocialInfoPtr;
 
 typedef std::pair<std::shared_ptr<boost::mutex>, ShareInformationPtr> ShareInformationDetail;
-typedef std::pair<std::shared_ptr<boost::mutex>, ProfilePicturePtr> ProfilePictureDetail;
+typedef std::pair<std::shared_ptr<boost::mutex>, SocialInfoPtr> SocialInfoDetail;
 
 struct PublicIdDetails {
-  PublicIdDetails() : profile_picture_data_map(new std::string(kBlankProfilePicture)),
-                      contacts_handler(new ContactsHandler),
-                      share_information(new ShareInformation),
-                      profile_picture_data_map_mutex(new boost::mutex),
-                      share_information_mutex(new boost::mutex) {}
-  ProfilePicturePtr profile_picture_data_map;
+  PublicIdDetails();
+  explicit PublicIdDetails(const std::string& card_address);
+  PublicIdDetails& operator=(const PublicIdDetails& other);
+  PublicIdDetails(const PublicIdDetails& other);
+
+  SocialInfoPtr social_info;
   ContactsHandlerPtr contacts_handler;
   ShareInformationPtr share_information;
-  std::shared_ptr<boost::mutex> profile_picture_data_map_mutex, share_information_mutex;
+  std::shared_ptr<boost::mutex> social_info_mutex, share_information_mutex;
 };
 
 class Session {
@@ -99,12 +100,12 @@ class Session {
 
   passport::Passport& passport();
 
-  int AddPublicId(const std::string& public_id);
+  int AddPublicId(const std::string& public_id, const std::string& pointer_to_lifestuff_card);
   int DeletePublicId(const std::string& public_id);
   bool OwnPublicId(const std::string& public_id);
   const ContactsHandlerPtr contacts_handler(const std::string& public_id);
   const ShareInformationDetail share_information(const std::string& public_id);
-  const ProfilePictureDetail profile_picture_data_map(const std::string& public_id);
+  const SocialInfoDetail social_info(const std::string& public_id);
 
   DefConLevels def_con_level() const;
   std::string keyword() const;

@@ -46,9 +46,7 @@ std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path& buffered_
                                                        boost::asio::io_service& asio_service);
 #else
 std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path& base_dir,
-                                                       std::shared_ptr<pd::Node>* node);
-
-int RetrieveBootstrapContacts(const fs::path& download_dir);
+                                                       std::shared_ptr<pd::Node>& node);
 
 std::shared_ptr<pd::Node> SetupNode(const fs::path& base_dir);
 #endif

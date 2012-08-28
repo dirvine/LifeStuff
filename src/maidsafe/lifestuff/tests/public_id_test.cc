@@ -64,9 +64,106 @@ std::string GenerateNonemptyMessage() {
   return RandomAlphaNumericString(15);
 }
 
-}  // namespace
+void ExchangeSlot(boost::mutex* mutex,
+                  boost::condition_variable* cond_var,
+                  bool* done) {
+  boost::mutex::scoped_lock loch(*mutex);
+  *done = true;
+  cond_var->notify_one();
+}
 
-typedef std::map<std::string, ContactStatus> ContactMap;
+void LifestuffCardSlot(boost::mutex* mutex,
+                       boost::condition_variable* cond_var,
+                       bool* done) {
+  boost::mutex::scoped_lock loch(*mutex);
+  *done = true;
+  cond_var->notify_one();
+}
+
+int CreateAndConnectTwoIds(PublicId& public_id1,
+                           const std::string& public_identity1,
+                           Session& session1,
+                           PublicId& public_id2,
+                           const std::string& public_identity2,
+                           Session& session2) {
+  int result(public_id1.CreatePublicId(public_identity1, true));
+  if (result != kSuccess)
+    return result;
+  result = public_id2.CreatePublicId(public_identity2, true);
+  if (result != kSuccess)
+    return result;
+
+  boost::mutex mutex, mutex2;
+  boost::condition_variable cond_var, cond_var2;
+  bool done(false), done2(false);
+  bptime::seconds interval(3);
+  public_id1.ConnectToNewContactSignal(
+      [&] (const std::string& /*own_public_id*/,
+           const std::string& /*contact_public_id*/,
+           const std::string& /*message*/,
+           const std::string& /*timestamp*/) {
+        ExchangeSlot(&mutex, &cond_var, &done);
+      });
+
+  public_id2.ConnectToContactConfirmedSignal(
+      [&] (const std::string& /*own_public_id*/,
+           const std::string& /*contact_public_id*/,
+           const std::string& /*timestamp*/) {
+        ExchangeSlot(&mutex2, &cond_var2, &done2);
+      });
+
+  result = public_id2.AddContact(public_identity2, public_identity1, "");
+  if (result != kSuccess)
+    return result;
+  result = public_id1.StartCheckingForNewContacts(interval);
+  if (result != kSuccess)
+    return result;
+
+  {
+    boost::mutex::scoped_lock loch(mutex);
+    if (!cond_var.timed_wait(loch, interval * 2, [&] ()->bool { return done; }))  // NOLINT (Dan)
+      return -1;
+  }
+
+  result = public_id1.ConfirmContact(public_identity1, public_identity2);
+  if (result != kSuccess)
+    return result;
+  result = public_id2.StartCheckingForNewContacts(interval);
+  if (result != kSuccess)
+    return result;
+
+  {
+    boost::mutex::scoped_lock loch(mutex2);
+    if (!cond_var2.timed_wait(loch, interval * 2, [&] ()->bool { return done2; }))  // NOLINT (Dan)
+      return -1;
+  }
+
+  session1.contacts_handler(public_identity1)->UpdatePresence(public_identity2, kOnline);
+  session2.contacts_handler(public_identity2)->UpdatePresence(public_identity1, kOnline);
+
+  return kSuccess;
+}
+
+SocialInfoMap CreateRandomSocialInfoMap(const size_t& size) {
+  SocialInfoMap sim;
+  while (sim.size() < size)
+    sim[RandomAlphaNumericString(8)] = RandomAlphaNumericString(10);
+  return sim;
+}
+
+void ChangeMapValues(SocialInfoMap& social_info_map) {
+  std::for_each(social_info_map.begin(),
+                social_info_map.end(),
+                [&] (const SocialInfoMap::value_type& element) {
+                  social_info_map[element.first] = RandomAlphaNumericString(20);
+                });
+}
+
+bool EqualMaps(const SocialInfoMap& lhs, const SocialInfoMap& rhs) {
+  return lhs.size() == rhs.size() && std::equal(lhs.begin(), lhs.end(), rhs.begin());
+}
+
+}  // namespace
 
 class PublicIdTest : public testing::Test {
  public:
@@ -186,8 +283,8 @@ class PublicIdTest : public testing::Test {
                                            *test_dir_ / "simulation",
                                            asio_service2_.service());
 #else
-    remote_chunk_store1_ = BuildChunkStore(*test_dir_, &node1_);
-    remote_chunk_store2_ = BuildChunkStore(*test_dir_, &node2_);
+    remote_chunk_store1_ = BuildChunkStore(*test_dir_, node1_);
+    remote_chunk_store2_ = BuildChunkStore(*test_dir_, node2_);
 #endif
 
     public_id1_.reset(new PublicId(remote_chunk_store1_, session1_, asio_service1_.service()));
@@ -309,7 +406,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdAntiSocial) {
 
   {
     boost::mutex::scoped_lock lock(mutex);
-    EXPECT_FALSE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+    ASSERT_FALSE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
   }
   ASSERT_TRUE(received_public_identity_.empty());
   ASSERT_TRUE(received_message_.empty());
@@ -371,6 +468,8 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
   // Create users who both accept new contacts
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, true));
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_identity2_, true));
+  std::string card1(session1_.social_info(public_identity1_).second->at(kInfoPointer)),
+              card2(session2_.social_info(public_identity2_).second->at(kInfoPointer));
 
   // Connect a slot which will reject the new contact
   public_id1_->ConnectToNewContactSignal(
@@ -433,6 +532,11 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
   ASSERT_EQ(kSuccess, contacts_handler2->ContactInfo(public_identity1_, &received_contact));
   ASSERT_EQ(kConfirmed, received_contact.status);
   ASSERT_FALSE(received_contact.inbox_name.empty());
+
+  // Check LS cards
+  ASSERT_EQ(card1, received_contact.pointer_to_info);
+  ASSERT_EQ(kSuccess, contacts_handler1->ContactInfo(public_identity2_, &received_contact));
+  ASSERT_EQ(card2, received_contact.pointer_to_info);
 }
 
 TEST_F(PublicIdTest, FUNC_CreatePublicIdWithRefusal) {
@@ -492,10 +596,10 @@ TEST_F(PublicIdTest, FUNC_AddContactsIncorrectly) {
 
   // incorrect additions
   std::string wrong_name("Name 42");
-  EXPECT_NE(kSuccess, public_id1_->AddContact(wrong_name, wrong_name, ""));
-  EXPECT_NE(kSuccess, public_id1_->AddContact(public_identity1_, wrong_name, ""));
-  EXPECT_EQ(kGeneralError, public_id1_->AddContact(public_identity1_, public_identity1_, ""));
-  EXPECT_EQ(kGeneralError, public_id1_->AddContact(public_identity1_, public_identity3, ""));
+  ASSERT_NE(kSuccess, public_id1_->AddContact(wrong_name, wrong_name, ""));
+  ASSERT_NE(kSuccess, public_id1_->AddContact(public_identity1_, wrong_name, ""));
+  ASSERT_EQ(kGeneralError, public_id1_->AddContact(public_identity1_, public_identity1_, ""));
+  ASSERT_EQ(kGeneralError, public_id1_->AddContact(public_identity1_, public_identity3, ""));
 
 
   // 2 adds 1 (correct)
@@ -517,7 +621,7 @@ TEST_F(PublicIdTest, FUNC_AddContactsIncorrectly) {
   ASSERT_FALSE(received_public_identity_.empty());
 
   // 2 adds 1 again (incorrect)
-  EXPECT_EQ(-77, public_id2_->AddContact(public_identity2_, public_identity1_, ""));
+  ASSERT_EQ(-77, public_id2_->AddContact(public_identity2_, public_identity1_, ""));
 
   // 2 confirms 1
   done = false;
@@ -536,15 +640,15 @@ TEST_F(PublicIdTest, FUNC_AddContactsIncorrectly) {
   }
 
   // 2 adds 1 again (incorrect)
-  EXPECT_EQ(-77, public_id2_->AddContact(public_identity2_, public_identity1_, ""));
+  ASSERT_EQ(-77, public_id2_->AddContact(public_identity2_, public_identity1_, ""));
 }
 
 TEST_F(PublicIdTest, FUNC_ConfirmContactsIncorrectly) {
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, true));
 
-  EXPECT_EQ(kPublicIdNotFoundFailure, public_id1_->ConfirmContact(public_identity2_,
+  ASSERT_EQ(kPublicIdNotFoundFailure, public_id1_->ConfirmContact(public_identity2_,
                                                                   public_identity2_));
-  EXPECT_EQ(-1, public_id1_->ConfirmContact(public_identity1_, public_identity2_));
+  ASSERT_EQ(-1, public_id1_->ConfirmContact(public_identity1_, public_identity2_));
 }
 
 TEST_F(PublicIdTest, FUNC_RejectContactsIncorrectly) {
@@ -556,9 +660,9 @@ TEST_F(PublicIdTest, FUNC_RejectContactsIncorrectly) {
 
   // Invalid rejections
   std::string wrong_name("Name 42");
-  EXPECT_EQ(kPublicIdNotFoundFailure, public_id1_->RejectContact(wrong_name, wrong_name));
-  EXPECT_NE(kSuccess, public_id1_->RejectContact(public_identity1_, wrong_name));
-  EXPECT_NE(kSuccess, public_id1_->RejectContact(public_identity1_, public_identity2_));
+  ASSERT_EQ(kPublicIdNotFoundFailure, public_id1_->RejectContact(wrong_name, wrong_name));
+  ASSERT_NE(kSuccess, public_id1_->RejectContact(public_identity1_, wrong_name));
+  ASSERT_NE(kSuccess, public_id1_->RejectContact(public_identity1_, public_identity2_));
 
 
   // 2 adds 1
@@ -580,7 +684,7 @@ TEST_F(PublicIdTest, FUNC_RejectContactsIncorrectly) {
   ASSERT_FALSE(received_public_identity_.empty());
 
   // Invalid rejection
-  EXPECT_NE(kSuccess, public_id2_->RejectContact(public_identity2_, public_identity1_));
+  ASSERT_NE(kSuccess, public_id2_->RejectContact(public_identity2_, public_identity1_));
 
   // 2 confirms 1
   done = false;
@@ -599,7 +703,7 @@ TEST_F(PublicIdTest, FUNC_RejectContactsIncorrectly) {
   }
 
   // Invalid rejection
-  EXPECT_NE(kSuccess, public_id1_->RejectContact(public_identity1_, public_identity2_));
+  ASSERT_NE(kSuccess, public_id1_->RejectContact(public_identity1_, public_identity2_));
 }
 
 TEST_F(PublicIdTest, FUNC_RemoveContactsIncorrectly) {
@@ -706,7 +810,7 @@ TEST_F(PublicIdTest, FUNC_FixAsynchronousConfirmedContact) {
   contact.mpid_public_key = keys_mpid.public_key;
   contact.inbox_name = keys_mmid.identity;
 
-  EXPECT_EQ(kSuccess, contacts_handler->AddContact(contact));
+  ASSERT_EQ(kSuccess, contacts_handler->AddContact(contact));
 
   std::string confirmed_contact;
   public_id1_->ConnectToContactConfirmedSignal(
@@ -717,9 +821,9 @@ TEST_F(PublicIdTest, FUNC_FixAsynchronousConfirmedContact) {
                              &cond_var, &done);
       });
 
-  EXPECT_EQ(kSuccess, public_id1_->AddContact(public_identity1_, public_identity2_, ""));
-  EXPECT_EQ(kSuccess, public_id2_->StartCheckingForNewContacts(interval_));
-  EXPECT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
+  ASSERT_EQ(kSuccess, public_id1_->AddContact(public_identity1_, public_identity2_, ""));
+  ASSERT_EQ(kSuccess, public_id2_->StartCheckingForNewContacts(interval_));
+  ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
 
   {
   boost::mutex::scoped_lock lock(mutex);
@@ -766,7 +870,7 @@ TEST_F(PublicIdTest, FUNC_DisablePublicId) {
             public_id2_->AddContact(public_identity2_, public_identity1_, message));
   {
     boost::mutex::scoped_lock lock(mutex);
-    EXPECT_FALSE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+    ASSERT_FALSE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
   }
   ASSERT_TRUE(received_public_identity_.empty());
   ASSERT_TRUE(received_message_.empty());
@@ -802,7 +906,7 @@ TEST_F(PublicIdTest, FUNC_EnablePublicId) {
             public_id2_->AddContact(public_identity2_, public_identity1_, message));
   {
     boost::mutex::scoped_lock lock(mutex);
-    EXPECT_FALSE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+    ASSERT_FALSE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
   }
   ASSERT_TRUE(received_public_identity_.empty());
   ASSERT_TRUE(received_message_.empty());
@@ -823,26 +927,29 @@ TEST_F(PublicIdTest, FUNC_EnablePublicId) {
 TEST_F(PublicIdTest, FUNC_DeletePublicIdPacketVerification) {
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, true));
 
+  std::string card_address(session1_.social_info(public_identity1_).second->at(kInfoPointer));
   passport::Passport& pass(session1_.passport());
   asymm::Keys mmid(pass.SignaturePacketDetails(passport::kMmid, true, public_identity1_)),
               mpid(pass.SignaturePacketDetails(passport::kMpid, true, public_identity1_)),
               anmpid(pass.SignaturePacketDetails(passport::kAnmpid, true, public_identity1_));
   std::string mcid_name(crypto::Hash<crypto::SHA512>(public_identity1_));
 
-  EXPECT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
                                                                pca::kAppendableByAll)));
-  EXPECT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mpid.identity,
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mpid.identity,
                                                                pca::kSignaturePacket)));
-  EXPECT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(anmpid.identity,
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(anmpid.identity,
                                                                pca::kSignaturePacket)));
-  EXPECT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
                                                                pca::kAppendableByAll)));
-  EXPECT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
                                                                pca::kAppendableByAll),
                                           std::shared_ptr<asymm::Keys>(new asymm::Keys(mmid))));
-  EXPECT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
                                                                pca::kAppendableByAll),
                                           std::shared_ptr<asymm::Keys>(new asymm::Keys(mpid))));
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(card_address,
+                                                               pca::kModifiableByOwner)));
 
   ASSERT_EQ(kSuccess, public_id1_->DeletePublicId(public_identity1_));
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
@@ -859,27 +966,32 @@ TEST_F(PublicIdTest, FUNC_DeletePublicIdPacketVerification) {
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
                                                                pca::kAppendableByAll),
                                           std::shared_ptr<asymm::Keys>(new asymm::Keys(mpid))));
+  ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(card_address,
+                                                               pca::kModifiableByOwner)));
 
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, false));
+  card_address = session1_.social_info(public_identity1_).second->at(kInfoPointer);
   mmid = pass.SignaturePacketDetails(passport::kMmid, true, public_identity1_);
   mpid = pass.SignaturePacketDetails(passport::kMpid, true, public_identity1_);
   anmpid = pass.SignaturePacketDetails(passport::kAnmpid, true, public_identity1_);
   mcid_name = crypto::Hash<crypto::SHA512>(public_identity1_);
 
-  EXPECT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
                                                                pca::kAppendableByAll)));
-  EXPECT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mpid.identity,
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mpid.identity,
                                                                pca::kSignaturePacket)));
-  EXPECT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(anmpid.identity,
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(anmpid.identity,
                                                                pca::kSignaturePacket)));
-  EXPECT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
                                                                pca::kAppendableByAll)));
-  EXPECT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
                                                                pca::kAppendableByAll),
                                           std::shared_ptr<asymm::Keys>(new asymm::Keys(mmid))));
-  EXPECT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
                                                                pca::kAppendableByAll),
                                           std::shared_ptr<asymm::Keys>(new asymm::Keys(mpid))));
+  ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(card_address,
+                                                               pca::kModifiableByOwner)));
 
   ASSERT_EQ(kSuccess, public_id1_->DeletePublicId(public_identity1_));
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
@@ -896,6 +1008,8 @@ TEST_F(PublicIdTest, FUNC_DeletePublicIdPacketVerification) {
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
                                                                pca::kAppendableByAll),
                                           std::shared_ptr<asymm::Keys>(new asymm::Keys(mpid))));
+  ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(card_address,
+                                                               pca::kModifiableByOwner)));
 }
 
 TEST_F(PublicIdTest, FUNC_RemoveContact) {
@@ -906,6 +1020,8 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
 
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, true));
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_identity2_, true));
+  std::string card1(session1_.social_info(public_identity1_).second->at(kInfoPointer)),
+              card2(session2_.social_info(public_identity2_).second->at(kInfoPointer));
 
   // 2 adds 1
   bool done(false);
@@ -941,9 +1057,9 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
     ASSERT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Alison)
   }
 
-  EXPECT_FALSE(session1_.contacts_handler(public_identity1_)->GetContacts(
+  ASSERT_FALSE(session1_.contacts_handler(public_identity1_)->GetContacts(
                    kConfirmed | kRequestSent).empty());
-  EXPECT_FALSE(session2_.contacts_handler(public_identity2_)->GetContacts(
+  ASSERT_FALSE(session2_.contacts_handler(public_identity2_)->GetContacts(
                    kConfirmed | kRequestSent).empty());
 
   // 1 removes 2
@@ -957,15 +1073,16 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
           ContactDeletionReceivedSlot(own_public_id, contact_public_id, message, &mutex, &cond_var,
                                       &done);
       });
-  ASSERT_EQ(kSuccess, public_id1_->RemoveContact(public_identity1_, public_identity2_, message, "",
-                                                 true));
+  ASSERT_EQ(kSuccess,
+            public_id1_->RemoveContact(public_identity1_, public_identity2_, message, "", true));
   {
     boost::mutex::scoped_lock lock(mutex);
     ASSERT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Alison)
   }
   ASSERT_FALSE(received_public_identity_.empty());
-  EXPECT_EQ(received_message_, message);
+  ASSERT_EQ(received_message_, message);
   received_message_.clear();
+  ASSERT_EQ("", remote_chunk_store2_->Get(pca::ApplyTypeToName(card1, pca::kModifiableByOwner)));
 
   // 2 processes the deletion by 1
   done = false;
@@ -975,24 +1092,24 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
            const std::string& message,
            const std::string& /*timestamp*/) {
           ContactDeletionProcessedSlot(own_public_id, contact_public_id, message, &mutex,
-                                       &cond_var,
-                                       &done);
+                                       &cond_var, &done);
       });
-  ASSERT_EQ(kSuccess, public_id2_->RemoveContact(public_identity2_, public_identity1_, message, "",
-                                                 false));
+  ASSERT_EQ(kSuccess,
+            public_id2_->RemoveContact(public_identity2_, public_identity1_, message, "", false));
   {
     boost::mutex::scoped_lock lock(mutex);
     ASSERT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Alison)
   }
-  EXPECT_EQ(received_message_, message);
+  ASSERT_EQ(received_message_, message);
   received_message_.clear();
+  ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(card2, pca::kModifiableByOwner)));
 
-  EXPECT_TRUE(session1_.changed());
-  EXPECT_TRUE(session2_.changed());
+  ASSERT_TRUE(session1_.changed());
+  ASSERT_TRUE(session2_.changed());
 
-  EXPECT_TRUE(session1_.contacts_handler(public_identity1_)->GetContacts(
+  ASSERT_TRUE(session1_.contacts_handler(public_identity1_)->GetContacts(
                   kConfirmed | kRequestSent).empty());
-  EXPECT_TRUE(session2_.contacts_handler(public_identity2_)->GetContacts(
+  ASSERT_TRUE(session2_.contacts_handler(public_identity2_)->GetContacts(
                   kConfirmed | kRequestSent).empty());
 }
 
@@ -1010,7 +1127,7 @@ TEST_F(PublicIdTest, FUNC_RemoveContactMoveInbox) {
            const std::string& contact_public_id,
            const std::string& message,
            const std::string& /*timestamp*/) {
-          NewContactSlot(own_public_id, contact_public_id, message, &mutex, &cond_var, &done);
+        NewContactSlot(own_public_id, contact_public_id, message, &mutex, &cond_var, &done);
       });
   // 2 adds 1 and 3
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
@@ -1030,15 +1147,14 @@ TEST_F(PublicIdTest, FUNC_RemoveContactMoveInbox) {
   }
   ASSERT_FALSE(received_public_identity_.empty());
 
-  const std::string old_inbox_name_2 =
-      session2_.passport().SignaturePacketDetails(passport::kMmid,
-                                                  true,
-                                                  public_identity2_).identity;
+  std::string old_inbox_name_2(session2_.passport().SignaturePacketDetails(
+                                   passport::kMmid, true, public_identity2_).identity);
+  std::string old_card_address_2(session2_.social_info(public_identity2_).second->at(kInfoPointer));
 
   // 2 removes 1
   done = false;
-  ASSERT_EQ(kSuccess, public_id2_->RemoveContact(public_identity2_, public_identity1_, "", "",
-                                                 true));
+  ASSERT_EQ(kSuccess,
+            public_id2_->RemoveContact(public_identity2_, public_identity1_, "", "", true));
 
   // Check that 3 has been given 2's new inbox name
   Contact contact;
@@ -1052,12 +1168,15 @@ TEST_F(PublicIdTest, FUNC_RemoveContactMoveInbox) {
                                       return contact.inbox_name != old_inbox_name_2;
                                     }));
   }
-  EXPECT_NE(contact.inbox_name, old_inbox_name_2);
+  ASSERT_NE(contact.inbox_name, old_inbox_name_2);
+  ASSERT_NE(contact.pointer_to_info, old_card_address_2);
 
-  EXPECT_EQ(contact.inbox_name,
+  ASSERT_EQ(contact.inbox_name,
             session2_.passport().SignaturePacketDetails(passport::kMmid,
-                                                          true,
-                                                          public_identity2_).identity);
+                                                        true,
+                                                        public_identity2_).identity);
+  ASSERT_EQ(contact.pointer_to_info,
+           session2_.social_info(public_identity2_).second->at(kInfoPointer));
 }
 
 TEST_F(PublicIdTest, FUNC_MovedInbox) {
@@ -1167,8 +1286,259 @@ TEST_F(PublicIdTest, FUNC_MovedInbox) {
   std::string post_inbox_name_in_id1(contacts_id2[0].inbox_name);
   session1_.contacts_handler(public_id3)->ContactInfo(public_identity2_, &contacts_id2[1]);
   std::string post_inbox_name_in_id3(contacts_id2[1].inbox_name);
-  EXPECT_EQ(new_inbox_name, post_inbox_name_in_id1);
-  EXPECT_EQ(new_inbox_name, post_inbox_name_in_id3);
+  ASSERT_EQ(new_inbox_name, post_inbox_name_in_id1);
+  ASSERT_EQ(new_inbox_name, post_inbox_name_in_id3);
+}
+
+TEST_F(PublicIdTest, FUNC_LifestuffCardSetAndGet) {
+  // Connect two public ids
+  ASSERT_EQ(kSuccess, CreateAndConnectTwoIds(*public_id1_,
+                                             public_identity1_,
+                                             session1_,
+                                             *public_id2_,
+                                             public_identity2_,
+                                             session2_));
+
+  SocialInfoMap received_social_info_map, own_social_info_map;
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  bool done(false);
+  public_id2_->ConnectToLifestuffCardUpdatedSignal(
+        [&] (const std::string& /*own_public_id*/,
+             const std::string& /*contact_public_id*/,
+             const std::string& /*timestamp*/) {
+          LifestuffCardSlot(&mutex, &cond_var, &done);
+        });
+
+  // Change one of the LS cards
+  SocialInfoMap social_info_map(CreateRandomSocialInfoMap(10));
+  ASSERT_EQ(kSuccess, public_id1_->SetLifestuffCard(public_identity1_, social_info_map));
+  ASSERT_EQ(kSuccess, public_id1_->GetLifestuffCard(public_identity1_, "", own_social_info_map));
+  ASSERT_TRUE(EqualMaps(social_info_map, own_social_info_map));
+  {
+    boost::mutex::scoped_lock loch(mutex);
+    ASSERT_TRUE(cond_var.timed_wait(loch, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+  }
+  ASSERT_TRUE(done);
+  ASSERT_EQ(kSuccess, public_id2_->GetLifestuffCard(public_identity2_,
+                                                    public_identity1_,
+                                                    received_social_info_map));
+  ASSERT_TRUE(EqualMaps(social_info_map, received_social_info_map));
+
+  // New map
+  own_social_info_map.clear();
+  received_social_info_map.clear();
+  done = false;
+  social_info_map = CreateRandomSocialInfoMap(10);
+  ASSERT_EQ(kSuccess, public_id1_->SetLifestuffCard(public_identity1_, social_info_map));
+  ASSERT_EQ(kSuccess, public_id1_->GetLifestuffCard(public_identity1_, "", own_social_info_map));
+  ASSERT_TRUE(EqualMaps(social_info_map, own_social_info_map));
+  {
+    boost::mutex::scoped_lock loch(mutex);
+    ASSERT_TRUE(cond_var.timed_wait(loch, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+  }
+  ASSERT_TRUE(done);
+  ASSERT_EQ(kSuccess, public_id2_->GetLifestuffCard(public_identity2_,
+                                                    public_identity1_,
+                                                    received_social_info_map));
+  ASSERT_TRUE(EqualMaps(social_info_map, received_social_info_map));
+
+  // Modified values in map
+  own_social_info_map.clear();
+  received_social_info_map.clear();
+  done = false;
+  ChangeMapValues(social_info_map);
+  ASSERT_EQ(kSuccess, public_id1_->SetLifestuffCard(public_identity1_, social_info_map));
+  ASSERT_EQ(kSuccess, public_id1_->GetLifestuffCard(public_identity1_, "", own_social_info_map));
+  ASSERT_TRUE(EqualMaps(social_info_map, own_social_info_map));
+  {
+    boost::mutex::scoped_lock loch(mutex);
+    ASSERT_TRUE(cond_var.timed_wait(loch, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+  }
+  ASSERT_TRUE(done);
+  ASSERT_EQ(kSuccess, public_id2_->GetLifestuffCard(public_identity2_,
+                                                    public_identity1_,
+                                                    received_social_info_map));
+  ASSERT_TRUE(EqualMaps(social_info_map, received_social_info_map));
+
+  // Change to smaller map
+  own_social_info_map.clear();
+  received_social_info_map.clear();
+  done = false;
+  social_info_map = CreateRandomSocialInfoMap(5);
+  ASSERT_EQ(kSuccess, public_id1_->SetLifestuffCard(public_identity1_, social_info_map));
+  ASSERT_EQ(kSuccess, public_id1_->GetLifestuffCard(public_identity1_, "", own_social_info_map));
+  ASSERT_TRUE(EqualMaps(social_info_map, own_social_info_map));
+  {
+    boost::mutex::scoped_lock loch(mutex);
+    ASSERT_TRUE(cond_var.timed_wait(loch, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+  }
+  ASSERT_TRUE(done);
+  ASSERT_EQ(kSuccess, public_id2_->GetLifestuffCard(public_identity2_,
+                                                    public_identity1_,
+                                                    received_social_info_map));
+  ASSERT_TRUE(EqualMaps(social_info_map, received_social_info_map));
+
+  // Change to empty map
+  social_info_map.clear();
+  own_social_info_map.clear();
+  received_social_info_map.clear();
+  done = false;
+  ASSERT_EQ(kSuccess, public_id1_->SetLifestuffCard(public_identity1_, social_info_map));
+  ASSERT_EQ(kSuccess, public_id1_->GetLifestuffCard(public_identity1_, "", own_social_info_map));
+  ASSERT_TRUE(EqualMaps(social_info_map, own_social_info_map));
+  {
+    boost::mutex::scoped_lock loch(mutex);
+    ASSERT_TRUE(cond_var.timed_wait(loch, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+  }
+  ASSERT_TRUE(done);
+  ASSERT_EQ(kSuccess, public_id2_->GetLifestuffCard(public_identity2_,
+                                                    public_identity1_,
+                                                    received_social_info_map));
+  ASSERT_TRUE(EqualMaps(social_info_map, received_social_info_map));
+
+  // Fill up map again
+  received_social_info_map.clear();
+  own_social_info_map.clear();
+  done = false;
+  social_info_map = CreateRandomSocialInfoMap(20);
+  ASSERT_EQ(kSuccess, public_id1_->SetLifestuffCard(public_identity1_, social_info_map));
+  ASSERT_EQ(kSuccess, public_id1_->GetLifestuffCard(public_identity1_, "", own_social_info_map));
+  ASSERT_TRUE(EqualMaps(social_info_map, own_social_info_map));
+  {
+    boost::mutex::scoped_lock loch(mutex);
+    ASSERT_TRUE(cond_var.timed_wait(loch, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+  }
+  ASSERT_TRUE(done);
+  ASSERT_EQ(kSuccess, public_id2_->GetLifestuffCard(public_identity2_,
+                                                    public_identity1_,
+                                                    received_social_info_map));
+  ASSERT_TRUE(EqualMaps(social_info_map, received_social_info_map));
+}
+
+int CreatePublicIdObject(std::shared_ptr<PublicId>& public_id,
+                         AsioService& asio_service,
+                         Session& session,
+                         std::shared_ptr<pcs::RemoteChunkStore>& remote_chunk_store,
+                         maidsafe::test::TestPath& test_dir,
+                         const std::string& public_identity) {
+  session.Reset();
+  asio_service.Start();
+#ifdef LOCAL_TARGETS_ONLY
+  remote_chunk_store = BuildChunkStore(*test_dir / RandomAlphaNumericString(8),
+                                       *test_dir / "simulation",
+                                       asio_service.service());
+#else
+  // Suppress Windows unused variable warning
+  (void)test_dir;
+#endif
+
+  public_id.reset(new PublicId(remote_chunk_store, session, asio_service.service()));
+
+  return public_id->CreatePublicId(public_identity, true);
+}
+
+int ConnectTwoIds(PublicId& public_id1,
+                  const std::string& public_identity1,
+                  PublicId& public_id3,
+                  const std::string& public_identity3) {
+  boost::mutex mutex, mutex3;
+  boost::condition_variable cond_var, cond_var3;
+  bool done(false), done3(false);
+  bptime::seconds interval(3);
+  public_id3.ConnectToNewContactSignal(
+      [&] (const std::string& /*own_public_id*/,
+           const std::string& /*contact_public_id*/,
+           const std::string& /*message*/,
+           const std::string& /*timestamp*/) {
+        ExchangeSlot(&mutex3, &cond_var3, &done3);
+      });
+
+  public_id1.ConnectToContactConfirmedSignal(
+      [&] (const std::string& /*own_public_id*/,
+           const std::string& /*contact_public_id*/,
+           const std::string& /*timestamp*/) {
+        ExchangeSlot(&mutex, &cond_var, &done);
+      });
+
+  int result(public_id1.AddContact(public_identity1, public_identity3, ""));
+  if (result != kSuccess)
+    return result;
+
+  {
+    boost::mutex::scoped_lock loch(mutex3);
+    if (!cond_var3.timed_wait(loch, interval * 2, [&] ()->bool { return done3; }))  // NOLINT (Dan)
+      return -1;
+  }
+
+  result = public_id3.ConfirmContact(public_identity3, public_identity1);
+  if (result != kSuccess)
+    return result;
+
+  {
+    boost::mutex::scoped_lock loch(mutex);
+    if (!cond_var.timed_wait(loch, interval * 2, [&] ()->bool { return done; }))  // NOLINT (Dan)
+      return -1;
+  }
+
+  return kSuccess;
+}
+
+TEST_F(PublicIdTest, FUNC_LifestuffCardOnlineOfflineContacts) {
+  // Connect two public ids
+  EXPECT_EQ(kSuccess, CreateAndConnectTwoIds(*public_id1_,
+                                             public_identity1_,
+                                             session1_,
+                                             *public_id2_,
+                                             public_identity2_,
+                                             session2_));
+
+  AsioService asio_service3(5);
+  Session session3;
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store3;
+  std::shared_ptr<PublicId> public_id3;
+  std::string public_identity3("User 3 " + RandomAlphaNumericString(8));
+  EXPECT_EQ(kSuccess, CreatePublicIdObject(public_id3,
+                                           asio_service3,
+                                           session3,
+                                           remote_chunk_store3,
+                                           test_dir_,
+                                           public_identity3));
+  EXPECT_EQ(kSuccess, public_id3->StartCheckingForNewContacts(interval_));
+
+  EXPECT_EQ(kSuccess, ConnectTwoIds(*public_id1_,
+                                    public_identity1_,
+                                    *public_id3,
+                                    public_identity3));
+
+  boost::mutex mutex2, mutex3;
+  boost::condition_variable cond_var2, cond_var3;
+  bool done2(false), done3(false);
+  public_id2_->ConnectToLifestuffCardUpdatedSignal(
+        [&] (const std::string& /*own_public_id*/,
+             const std::string& /*contact_public_id*/,
+             const std::string& /*timestamp*/) {
+          LifestuffCardSlot(&mutex2, &cond_var2, &done2);
+        });
+  public_id3->ConnectToLifestuffCardUpdatedSignal(
+      [&] (const std::string& /*own_public_id*/,
+           const std::string& /*contact_public_id*/,
+           const std::string& /*timestamp*/) {
+        LifestuffCardSlot(&mutex3, &cond_var3, &done3);
+      });
+
+  SocialInfoMap social_info_map(CreateRandomSocialInfoMap(10));
+  ASSERT_EQ(kSuccess, public_id1_->SetLifestuffCard(public_identity1_, social_info_map));
+  {
+    boost::mutex::scoped_lock loch(mutex3);
+    ASSERT_FALSE(cond_var3.timed_wait(loch, interval_ * 2, [&] ()->bool { return done3; }));  // NOLINT (Dan)
+  }
+  ASSERT_TRUE(done2);
+  ASSERT_FALSE(done3);
+
+  public_id3->StopCheckingForNewContacts();
+  asio_service3.Stop();
+  remote_chunk_store3->WaitForCompletion();
 }
 
 }  // namespace test

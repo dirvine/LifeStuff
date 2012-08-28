@@ -120,6 +120,7 @@ typedef std::function<void(const std::string&,
 typedef std::function<void(int)> VoidFunctionOneInt;  // NOLINT (Dan)
 typedef std::function<void(bool)> VoidFunctionOneBool;  // NOLINT (Dan)
 typedef std::map<std::string, int> StringIntMap;
+typedef std::map<std::string, std::string> SocialInfoMap;
 typedef std::map<std::string, std::pair<ContactStatus, ContactPresence>> ContactMap;
 
 /// Private Shares
@@ -184,7 +185,8 @@ typedef FourStringsFunction ContactDeletionReceivedFunction;
 typedef FourStringsFunction ContactDeletionFunction;  // For when deletion has been processed
 // Own & other public ID, Message, Timestamp
 typedef FourStringsFunction NewContactFunction;
-
+// Lifestuff Card change: Own & other public ID, Timestamp
+typedef ThreeStringsFunction LifestuffCardUpdateFunction;
 }  // namespace lifestuff
 
 }  // namespace maidsafe

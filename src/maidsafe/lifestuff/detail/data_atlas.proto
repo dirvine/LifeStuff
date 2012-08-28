@@ -1,18 +1,17 @@
 package maidsafe.lifestuff;
 
-// Message used to send owner's contact info to recipient for acceptance into
-// recipient's contact list
+// Message used to send owner's contact info to recipient for acceptance into recipient's list
 message Introduction {
   required bytes inbox_name = 1;
   required bytes public_id = 2;
   required bytes profile_picture_data_map = 3;
-  required bytes timestamp = 4;
-  required uint32 type = 5;
-  required bytes message = 6;
+  required bytes pointer_to_info = 4;
+  required bytes timestamp = 5;
+  required uint32 type = 6;
+  required bytes message = 7;
 }
 
-// Generic message for use in sending messages/files, sharing folders,
-// annotating files, etc.
+// Generic message for use in sending messages/files, sharing folders, annotating files, etc.
 message Message {
   required uint32 type = 1;
   required bytes sender_public_id = 2;
@@ -21,17 +20,24 @@ message Message {
   required bytes timestamp = 5;
 }
 
+message LifeStuffCard {
+  required bool empty = 1;
+  required bytes timestamp = 2;
+  repeated bytes key = 3;
+  repeated bytes value = 4;
+}
+
 message PublicContact {
   required bytes public_id = 1;
-  optional bytes mpid_name = 2;
+  required bytes mpid_name = 2;
   required bytes inbox_name = 3;
-  required bytes profile_picture_data_map = 5;
-  optional bytes mpid_public_key = 6;
-  optional bytes inbox_public_key = 7;
-  required uint32 status = 8;
-  required uint32 rank = 9;
-  required uint32 last_contact = 10;
-  optional bytes pointer_to_info = 11;
+  required bytes mpid_public_key = 4;
+  required bytes inbox_public_key = 5;
+  required bytes profile_picture_data_map = 6;
+  required uint32 status = 7;
+  required uint32 rank = 8;
+  required uint32 last_contact = 9;
+  required bytes pointer_to_info = 10;
 }
 
 message ShareInformationContainer {
@@ -42,8 +48,9 @@ message ShareInformationContainer {
 message PublicIdentity {
   required bytes public_id = 1;
   required bytes profile_picture_data_map = 2;
-  repeated PublicContact contacts = 3;
-  repeated ShareInformationContainer shares = 4;
+  required bytes pointer_to_info = 3;
+  repeated PublicContact contacts = 4;
+  repeated ShareInformationContainer shares = 5;
 }
 
 message PassportData {

@@ -101,7 +101,7 @@ int LifeStuffImpl::Initialise(const boost::filesystem::path& base_directory) {
                                         asio_service_.service());
   simulation_path_ = network_simulation_path;
 #else
-  remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path, &node_);
+  remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path, node_);
 #endif
   if (!remote_chunk_store_) {
     LOG(kError) << "Could not initialise chunk store.";
@@ -132,7 +132,8 @@ int LifeStuffImpl::ConnectToSignals(
     const PrivateMemberAccessChangeFunction& private_access_change_function,
     const OpenShareInvitationFunction& open_share_invitation_function,
     const ShareRenamedFunction& share_renamed_function,
-    const ShareChangedFunction& share_changed_function) {
+    const ShareChangedFunction& share_changed_function,
+    const LifestuffCardUpdateFunction& lifestuff_card_update_function) {
   if (state_ != kInitialised) {
     LOG(kError) << "Make sure that object is initialised";
     return kGeneralError;
@@ -217,6 +218,12 @@ int LifeStuffImpl::ConnectToSignals(
     ++connects;
     if (user_storage_)
       user_storage_->ConnectToShareChangedSignal(share_changed_function);
+  }
+  if (lifestuff_card_update_function) {
+      slots_.lifestuff_card_update_function = lifestuff_card_update_function;
+      ++connects;
+      if (user_storage_)
+        public_id_->ConnectToLifestuffCardUpdatedSignal(lifestuff_card_update_function);
   }
   if (public_id_) {
     public_id_->ConnectToContactDeletionReceivedSignal(
@@ -728,16 +735,15 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
   }
 
   // Set in session
-  const ProfilePictureDetail profile_picture_data_map(
-      session_.profile_picture_data_map(my_public_id));
-  if (!profile_picture_data_map.first) {
+  const SocialInfoDetail social_info(session_.social_info(my_public_id));
+  if (!social_info.first) {
     LOG(kError) << "User does not hold such public ID: " << my_public_id;
     return kPublicIdNotFoundFailure;
   }
 
   {
-    boost::mutex::scoped_lock loch(*profile_picture_data_map.first);
-    *profile_picture_data_map.second = message.content[0];
+    boost::mutex::scoped_lock loch(*social_info.first);
+    social_info.second->at(kPicture) = message.content[0];
   }
   session_.set_changed(true);
   LOG(kError) << "Session set to changed.";
@@ -757,16 +763,15 @@ std::string LifeStuffImpl::GetOwnProfilePicture(const std::string& my_public_id)
     return "";
   }
 
-  const ProfilePictureDetail profile_picture_data_map(
-      session_.profile_picture_data_map(my_public_id));
-  if (!profile_picture_data_map.first) {
+  const SocialInfoDetail social_info(session_.social_info(my_public_id));
+  if (!social_info.first) {
     LOG(kError) << "User does not hold such public ID: " << my_public_id;
     return "";
   }
 
   {
-    boost::mutex::scoped_lock loch(*profile_picture_data_map.first);
-    if (*profile_picture_data_map.second == kBlankProfilePicture) {
+    boost::mutex::scoped_lock loch(*social_info.first);
+    if (social_info.second->at(kPicture) == kBlankProfilePicture) {
       LOG(kInfo) << "Blank picture in session.";
       return "";
     }
@@ -816,6 +821,17 @@ std::string LifeStuffImpl::GetContactProfilePicture(const std::string& my_public
   // Read contents, put them in a string, give them back. Should not be
   // over a certain size (kFileRecontructionLimit).
   return user_storage_->ConstructFile(contact.profile_picture_data_map);
+}
+
+int LifeStuffImpl::GetLifestuffCard(const std::string& my_public_id,
+                                    const std::string& contact_public_id,
+                                    SocialInfoMap& social_info) {
+  return public_id_->GetLifestuffCard(my_public_id, contact_public_id, social_info);
+}
+
+int LifeStuffImpl::SetLifestuffCard(const std::string& my_public_id,
+                                    const SocialInfoMap& social_info) {
+  return public_id_->SetLifestuffCard(my_public_id, social_info);
 }
 
 ContactMap LifeStuffImpl::GetContacts(const std::string& my_public_id, uint16_t bitwise_status) {
@@ -1005,14 +1021,13 @@ int LifeStuffImpl::DeleteHiddenFile(const fs::path& absolute_path) {
 }
 
 int LifeStuffImpl::SearchHiddenFiles(const fs::path& absolute_path,
-                                     const std::string& regex,
-                                     std::list<std::string>* results) {
+                                     std::vector<std::string>* results) {
   if (state_ != kLoggedIn) {
     LOG(kError) << "Wrong state: " << state_;
     return kGeneralError;
   }
 
-  return user_storage_->SearchHiddenFiles(absolute_path, regex, results);
+  return user_storage_->SearchHiddenFiles(absolute_path, results);
 }
 
 /// Private Shares
@@ -2262,7 +2277,8 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
                             slots_.private_access_change_function,
                             slots_.open_share_invitation_function,
                             slots_.share_renamed_function,
-                            slots_.share_changed_function);
+                            slots_.share_changed_function,
+                            slots_.lifestuff_card_update_function);
   return result;
 }
 

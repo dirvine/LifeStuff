@@ -110,7 +110,8 @@ struct TestingVariables {
         new_share_name(),
         share_renamed(false),
         share_changes(),
-        contact_request_message() {}
+        contact_request_message(),
+        social_info_map_changed(false) {}
   std::string chat_message;
   bool chat_message_received;
   std::string file_name, file_id;
@@ -136,6 +137,7 @@ struct TestingVariables {
   bool share_renamed;
   ShareChangeLogBook share_changes;
   std::string contact_request_message;
+  bool social_info_map_changed;
 };
 
 void ChatSlot(const std::string&,
@@ -244,6 +246,11 @@ void ShareChangedSlot(const std::string& share_name,
                       const int& op_type,
                       boost::mutex* mutex,
                       ShareChangeLogBook* share_changes);
+
+void LifestuffCardSlot(const std::string&,
+                       const std::string&,
+                       const std::string&,
+                       volatile bool* done);
 
 int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                  LifeStuff& test_elements2,
