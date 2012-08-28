@@ -412,7 +412,7 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
   EXPECT_TRUE(fs::create_directories(share_root_directory_1, error_code))
               << share_root_directory_1 << ": " << error_code.message();
 
-  StringIntMap users;
+  StringIntMap users, results;
   if (private_share_)
     users.insert(std::make_pair(pub_name2_, kShareReadOnly));
   else
@@ -423,7 +423,14 @@ TEST_P(UserStorageTest, FUNC_CreateShare) {
                                                   fs::path(),
                                                   directory0,
                                                   users,
-                                                  private_share_));
+                                                  private_share_,
+                                                  &results));
+  EXPECT_EQ(users.size(), results.size());
+  std::for_each(results.begin(),
+                results.end(),
+                [&](const StringIntMap::value_type& result) {
+                  EXPECT_EQ(kSuccess, result.second);
+                });
 
   user_storage1_->UnMountDrive();
 
@@ -470,15 +477,26 @@ TEST_P(UserStorageTest, FUNC_LeaveShare) {
   EXPECT_TRUE(fs::create_directories(share_root_directory_1, error_code))
               << share_root_directory_1 << ": " << error_code.message();
 
-  StringIntMap users;
+  StringIntMap users, results;
   if (private_share_)
     users.insert(std::make_pair(pub_name2_, kShareReadOnly));
   else
     users.insert(std::make_pair(pub_name2_, kShareReadWrite));
   std::string tail;
   fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir(), &tail));
-  EXPECT_EQ(kSuccess,
-            user_storage1_->CreateShare(pub_name1_, fs::path(), directory0, users, private_share_));
+  EXPECT_EQ(kSuccess, user_storage1_->CreateShare(pub_name1_,
+                                                  fs::path(),
+                                                  directory0,
+                                                  users,
+                                                  private_share_,
+                                                  &results));
+  EXPECT_EQ(users.size(), results.size());
+  std::for_each(results.begin(),
+                results.end(),
+                [&](const StringIntMap::value_type& result) {
+                  EXPECT_EQ(kSuccess, result.second);
+                });
+
   user_storage1_->UnMountDrive();
 
   bs2::connection accept_share_invitation_connection(
@@ -560,11 +578,22 @@ TEST_P(UserStorageTest, FUNC_AddUser) {
   EXPECT_TRUE(fs::create_directories(share_root_directory_1, error_code))
               << share_root_directory_1 << ": " << error_code.message();
 
-  StringIntMap users;
+  StringIntMap users, results;
   std::string tail;
   fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir(), &tail));
-  EXPECT_EQ(kSuccess,
-            user_storage1_->CreateShare(pub_name1_, fs::path(), directory0, users, private_share_));
+  EXPECT_EQ(kSuccess, user_storage1_->CreateShare(pub_name1_,
+                                                  fs::path(),
+                                                  directory0,
+                                                  users,
+                                                  private_share_,
+                                                  &results));
+  EXPECT_EQ(users.size(), results.size());
+  std::for_each(results.begin(),
+                results.end(),
+                [&](const StringIntMap::value_type& result) {
+                  EXPECT_EQ(kSuccess, result.second);
+                });
+
   UnMountDrive(user_storage1_);
 
   bs2::connection accept_share_invitation_connection(
@@ -606,7 +635,12 @@ TEST_P(UserStorageTest, FUNC_AddUser) {
   MountDrive(user_storage1_, &session1_, false);
   EXPECT_TRUE(fs::exists(directory0, error_code)) << directory0 << error_code.message();
   users.insert(std::make_pair(pub_name2_, kShareReadOnly));
-  EXPECT_EQ(kSuccess, user_storage1_->AddShareUsers(pub_name1_, directory0, users, private_share_));
+  results.clear();
+  EXPECT_EQ(kSuccess, user_storage1_->AddShareUsers(pub_name1_,
+                                                    directory0,
+                                                    users,
+                                                    private_share_,
+                                                    &results));
   UnMountDrive(user_storage1_);
 
   MountDrive(user_storage2_, &session2_, false);
@@ -629,7 +663,7 @@ TEST_P(UserStorageTest, FUNC_AddReadWriteUser) {
   EXPECT_TRUE(fs::create_directories(share_root_directory_1, error_code))
                 << share_root_directory_1 << ": " << error_code.message();
 
-  StringIntMap users;
+  StringIntMap users, results;
   users.insert(std::make_pair(pub_name2_, kShareReadWrite));
   std::string tail, old_tail;
   fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir(), &tail));
@@ -639,7 +673,8 @@ TEST_P(UserStorageTest, FUNC_AddReadWriteUser) {
                                                   directory0,
                                                   share_root_directory_1 / tail,
                                                   users,
-                                                  private_share_));
+                                                  private_share_,
+                                                  &results));
   UnMountDrive(user_storage1_);
 
   bs2::connection accept_share_invitation_connection(
@@ -698,12 +733,16 @@ TEST_P(UserStorageTest, FUNC_UpgradeUserToReadWrite) {
   EXPECT_TRUE(fs::create_directories(share_root_directory_1, error_code))
               << share_root_directory_1 << ": " << error_code.message();
 
-  StringIntMap users;
+  StringIntMap users, results;
   users.insert(std::make_pair(pub_name2_, kShareReadOnly));
   std::string tail;
   fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir(), &tail));
-  EXPECT_EQ(kSuccess,
-            user_storage1_->CreateShare(pub_name1_, fs::path(), directory0, users, private_share_));
+  EXPECT_EQ(kSuccess, user_storage1_->CreateShare(pub_name1_,
+                                                  fs::path(),
+                                                  directory0,
+                                                  users,
+                                                  private_share_,
+                                                  &results));
   UnMountDrive(user_storage1_);
 
   bs2::connection accept_share_invitation_connection(
@@ -785,14 +824,18 @@ TEST_P(UserStorageTest, FUNC_StopShareByOwner) {
   EXPECT_TRUE(fs::create_directories(share_root_directory_1, error_code))
               << share_root_directory_1 << ": " << error_code.message();
 
-  StringIntMap users;
+  StringIntMap users, results;
   users.insert(std::make_pair(pub_name2_, kShareReadOnly));
   std::string tail;
   fs::path directory0(CreateTestDirectory(user_storage1_->mount_dir(), &tail));
   EXPECT_TRUE(fs::exists(directory0, error_code)) << directory0
                                                   << error_code.message();
-  EXPECT_EQ(kSuccess,
-            user_storage1_->CreateShare(pub_name1_, fs::path(), directory0, users, private_share_));
+  EXPECT_EQ(kSuccess, user_storage1_->CreateShare(pub_name1_,
+                                                  fs::path(),
+                                                  directory0,
+                                                  users,
+                                                  private_share_,
+                                                  &results));
   UnMountDrive(user_storage1_);
 
   bs2::connection accept_share_invitation_connection(
@@ -869,15 +912,19 @@ TEST_P(UserStorageTest, FUNC_RemoveUserByOwner) {
   EXPECT_TRUE(fs::create_directories(share_root_directory_1, error_code))
               << share_root_directory_1 << ": " << error_code.message();
 
-  StringIntMap users;
+  StringIntMap users, results;
   users.insert(std::make_pair(pub_name2_, kShareReadOnly));
   std::string tail("OTJUP");
   fs::path directory0(user_storage1_->mount_dir() / tail);
   fs::create_directory(directory0, error_code);
   EXPECT_EQ(0, error_code.value());
 
-  EXPECT_EQ(kSuccess,
-            user_storage1_->CreateShare(pub_name1_, fs::path(), directory0, users, private_share_));
+  EXPECT_EQ(kSuccess, user_storage1_->CreateShare(pub_name1_,
+                                                  fs::path(),
+                                                  directory0,
+                                                  users,
+                                                  private_share_,
+                                                  &results));
   UnMountDrive(user_storage1_);
 
   bs2::connection accept_share_invitation_connection(
@@ -1030,7 +1077,7 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
   EXPECT_TRUE(fs::create_directories(share_root_directory_1, error_code))
               << share_root_directory_1 << ": " << error_code.message();
 
-  StringIntMap users;
+  StringIntMap users, results;
   users.insert(std::make_pair(pub_name2_, kShareReadOnly));
   users.insert(std::make_pair(pub_name3, kShareReadWrite));
   std::string tail("OTJUP");
@@ -1038,8 +1085,12 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
   fs::create_directory(directory0, error_code);
   EXPECT_EQ(0, error_code.value());
 
-  EXPECT_EQ(kSuccess,
-            user_storage1_->CreateShare(pub_name1_, fs::path(), directory0, users, private_share_));
+  EXPECT_EQ(kSuccess, user_storage1_->CreateShare(pub_name1_,
+                                                  fs::path(),
+                                                  directory0,
+                                                  users,
+                                                  private_share_,
+                                                  &results));
   UnMountDrive(user_storage1_);
 
   bs2::connection accept_share_invitation_connection_1(

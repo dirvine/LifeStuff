@@ -454,7 +454,7 @@ TEST_F(TwoInstancesApiTest, FUNC_CreateSameUserSimultaneously) {
   EXPECT_EQ(kSuccess, test_elements_.LogOut());
 }
 
-TEST_F(TwoUsersApiTest, FUNC_ChangeCredentialsToSameConsecutively) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_ChangeCredentialsToSameConsecutively) {
 #ifndef MAIDSAFE_APPLE
   EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
   EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
@@ -477,7 +477,7 @@ TEST_F(TwoUsersApiTest, FUNC_ChangeCredentialsToSameConsecutively) {
 #endif
 }
 
-TEST_F(TwoUsersApiTest, FUNC_ChangeCredentialsToSameSimultaneously) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_ChangeCredentialsToSameSimultaneously) {
 #ifndef MAIDSAFE_APPLE
   std::vector<std::pair<int, int> > sleep_values;
   sleep_values.push_back(std::make_pair(0, 200));

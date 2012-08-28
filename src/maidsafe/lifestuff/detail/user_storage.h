@@ -102,12 +102,12 @@ class UserStorage {
                   const fs::path& share_path,
                   const StringIntMap& contacts,
                   bool private_share,
-                  StringIntMap* contacts_results = nullptr);
+                  StringIntMap* contacts_results);
   int CreateOpenShare(const std::string& sender_public_username,
                       const fs::path& drive_path,
                       const fs::path& share_path,
                       const StringIntMap& contacts,
-                      StringIntMap* contacts_results = nullptr);
+                      StringIntMap* contacts_results);
   int GetAllShares(StringIntMap* shares_names);
   int InsertShare(const fs::path& absolute_path,
                   const std::string& share_id,
@@ -131,7 +131,7 @@ class UserStorage {
                     const fs::path& absolute_path,
                     const StringIntMap& contacts,
                     bool private_share,
-                    StringIntMap* contacts_results = nullptr);
+                    StringIntMap* contacts_results);
   int AddOpenShareUser(const fs::path& absolute_path, const StringIntMap& contacts);
   int OpenShareInvitation(const std::string& sender_public_username,
                           const fs::path& absolute_path,
