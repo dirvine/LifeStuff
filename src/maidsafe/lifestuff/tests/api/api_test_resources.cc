@@ -702,6 +702,11 @@ void TwoUsersDefriendEachOther(LifeStuff& test_elements_a,
   int num_contacts_a(test_elements_a.GetContacts(public_id_a).size());
   EXPECT_EQ(kSuccess, test_elements_a.RemoveContact(public_id_a, public_id_b, ""));
   EXPECT_EQ(test_elements_a.GetContacts(public_id_a).size(), num_contacts_a - 1);
+  std::vector<std::string>* share_names(new std::vector<std::string>);
+  EXPECT_EQ(kSuccess,
+            test_elements_a.GetPrivateSharesIncludingMember(public_id_a, public_id_b, share_names));
+  EXPECT_EQ(0, share_names->size());
+  share_names->clear();
   EXPECT_EQ(kSuccess, test_elements_a.LogOut());
 
   EXPECT_EQ(kSuccess, test_elements_b.LogIn(keyword_b, pin_b, password_b));
@@ -716,6 +721,9 @@ void TwoUsersDefriendEachOther(LifeStuff& test_elements_a,
     EXPECT_TRUE(false);
   }
   EXPECT_EQ(test_elements_b.GetContacts(public_id_b).size(), num_contacts_b - 1);
+  EXPECT_EQ(kSuccess,
+            test_elements_b.GetPrivateSharesIncludingMember(public_id_b, public_id_a, share_names));
+  EXPECT_EQ(0, share_names->size());
   EXPECT_EQ(kSuccess, test_elements_b.LogOut());
 }
 
