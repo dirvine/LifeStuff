@@ -200,7 +200,7 @@ TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdConsecutively) {
   EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 }
 
-TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdSimultaneously) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_CreateSamePublicIdSimultaneously) {
 #ifndef MAIDSAFE_APPLE
   EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
   EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
