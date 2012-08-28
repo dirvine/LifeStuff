@@ -140,7 +140,8 @@ int LifeStuffImpl::ConnectToSignals(
     const OpenShareInvitationFunction& open_share_invitation_function,
     const ShareRenamedFunction& share_renamed_function,
     const ShareChangedFunction& share_changed_function,
-    const LifestuffCardUpdateFunction& lifestuff_card_update_function) {
+    const LifestuffCardUpdateFunction& lifestuff_card_update_function,
+    const UpdateAvailableFunction& software_update_available_function) {
   if (state_ != kInitialised) {
     LOG(kError) << "Make sure that object is initialised";
     return kGeneralError;
@@ -227,29 +228,31 @@ int LifeStuffImpl::ConnectToSignals(
       user_storage_->ConnectToShareChangedSignal(share_changed_function);
   }
   if (lifestuff_card_update_function) {
-      slots_.lifestuff_card_update_function = lifestuff_card_update_function;
-      ++connects;
-      if (user_storage_)
-        public_id_->ConnectToLifestuffCardUpdatedSignal(lifestuff_card_update_function);
+    slots_.lifestuff_card_update_function = lifestuff_card_update_function;
+    ++connects;
+    if (user_storage_)
+      public_id_->ConnectToLifestuffCardUpdatedSignal(lifestuff_card_update_function);
+  }
+  if (software_update_available_function) {
+    slots_.software_update_available_function = software_update_available_function;
+    ++connects;
+#ifndef LOCAL_TARGETS_ONLY
+    if (client_controller_)
+      client_controller_->on_new_version_available().connect(software_update_available_function);
+#endif
   }
 
-      [&] (const std::string& own_public_id,
-           const std::string& contact_public_id,
-           const std::string& removal_message,
-           const std::string& timestamp) {
-        RemoveContact(own_public_id, contact_public_id, removal_message, timestamp, false);
-      };
   if (public_id_) {
     public_id_->ConnectToContactDeletionReceivedSignal([&] (const std::string& own_public_id,
                                                             const std::string& contact_public_id,
                                                             const std::string& removal_message,
                                                             const std::string& timestamp) {
-                                                          RemoveContact(own_public_id,
-                                                                        contact_public_id,
-                                                                        removal_message,
-                                                                        timestamp,
-                                                                        false);
-                                                        });
+                                                         RemoveContact(own_public_id,
+                                                                       contact_public_id,
+                                                                       removal_message,
+                                                                       timestamp,
+                                                                       false);
+                                                       });
   }
 
   if (connects > 0) {
@@ -2289,7 +2292,8 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
                             slots_.open_share_invitation_function,
                             slots_.share_renamed_function,
                             slots_.share_changed_function,
-                            slots_.lifestuff_card_update_function);
+                            slots_.lifestuff_card_update_function,
+                            slots_.software_update_available_function);
   return result;
 }
 

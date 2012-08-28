@@ -62,7 +62,8 @@ class LifeStuff {
                        const OpenShareInvitationFunction& open_share_invitation_function,
                        const ShareRenamedFunction& share_renamed_function,
                        const ShareChangedFunction& share_changed_function,
-                       const LifestuffCardUpdateFunction& lifestuff_card_update_function);
+                       const LifestuffCardUpdateFunction& lifestuff_card_update_function,
+                       const UpdateAvailableFunction& software_update_available_function);
 
   int Finalise();
 

@@ -187,6 +187,9 @@ typedef FourStringsFunction ContactDeletionFunction;  // For when deletion has b
 typedef FourStringsFunction NewContactFunction;
 // Lifestuff Card change: Own & other public ID, Timestamp
 typedef ThreeStringsFunction LifestuffCardUpdateFunction;
+
+/// New version update
+typedef std::function<void(const std::string&)> UpdateAvailableFunction;  // NOLINT (Dan)
 }  // namespace lifestuff
 
 }  // namespace maidsafe
