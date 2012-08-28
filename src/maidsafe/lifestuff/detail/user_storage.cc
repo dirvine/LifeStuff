@@ -658,16 +658,19 @@ int UserStorage::AddShareUsers(const std::string& sender_public_id,
     }
     return result;
   }
-  std::for_each(contacts_results->begin(),
-                contacts_results->end(),
-                [&](const StringIntMap::value_type& contact_result) {
-                  if (contact_result.second != kSuccess)
-                    contacts_to_remove.push_back(contact_result.first);
-                });
-  if (!contacts_to_remove.empty()) {
-    result = RemoveShareUsers(sender_public_id, absolute_path, contacts_to_remove);
-    if (result != kSuccess) {
-      LOG(kError) << "Failed to remove failed contacts.";
+  if (contacts_results) {
+    std::for_each(contacts_results->begin(),
+                  contacts_results->end(),
+                  [&](const StringIntMap::value_type& contact_result) {
+                    if (contact_result.second != kSuccess)
+                      contacts_to_remove.push_back(contact_result.first);
+                  });
+    if (!contacts_to_remove.empty()) {
+      result = RemoveShareUsers(sender_public_id, absolute_path, contacts_to_remove);
+      if (result != kSuccess) {
+        LOG(kError) << "Failed to remove failed contacts.";
+        return result;
+      }
     }
   }
   return kSuccess;
