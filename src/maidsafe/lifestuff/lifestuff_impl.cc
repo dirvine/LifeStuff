@@ -644,9 +644,6 @@ int LifeStuffImpl::RemoveContact(const std::string& my_public_id,
     return result;
   }
 
-  // TODO(Alison): 09/08/12 - Remove contact from all Private shares owned by self (no messaging)
-  // TODO(Alison): 09/08/12 - Remove self from all Private shares owned by contact (no messaging)
-
   // For private shares, if share_members can be fetched, indicates owner
   // otherwise, only the owner(inviter) of the share can be fetched
   std::vector<std::string> share_names;

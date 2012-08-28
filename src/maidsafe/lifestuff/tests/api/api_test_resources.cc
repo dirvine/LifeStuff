@@ -713,7 +713,7 @@ void TwoUsersDefriendEachOther(LifeStuff& test_elements_a,
   if (i >= 150) {
     LOG(kInfo) << "Removing contact taken too long! (" << public_id_a <<
                   " removing " << public_id_b << ")";
-    ASSERT_TRUE(false);
+    EXPECT_TRUE(false);
   }
   EXPECT_EQ(test_elements_b.GetContacts(public_id_b).size(), num_contacts_b - 1);
   EXPECT_EQ(kSuccess, test_elements_b.LogOut());

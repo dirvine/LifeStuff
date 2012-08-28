@@ -1706,13 +1706,178 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
   EXPECT_EQ(kSuccess, test_elements3.Finalise());
 }
 
+TEST_P(PrivateSharesApiTest, DISABLED_FUNC_PrivateSharesTwoOwnersRemoveEachOther) {
+  std::string share_name_1(RandomAlphaNumericString(7));
+  std::string share_name_2(RandomAlphaNumericString(7));
+
+  // 1 creates share_name_1, inviting 2
+  CreateShareAddingOneContact(test_elements_1_,
+                              test_elements_2_,
+                              testing_variables_2_,
+                              keyword_1_,
+                              pin_1_,
+                              password_1_,
+                              public_id_1_,
+                              keyword_2_,
+                              pin_2_,
+                              password_2_,
+                              public_id_2_,
+                              share_name_1,
+                              rights_);
+
+  // 2 creates share_name_2, inviting 1
+  CreateShareAddingOneContact(test_elements_2_,
+                              test_elements_1_,
+                              testing_variables_1_,
+                              keyword_2_,
+                              pin_2_,
+                              password_2_,
+                              public_id_2_,
+                              keyword_1_,
+                              pin_1_,
+                              password_1_,
+                              public_id_1_,
+                              share_name_2,
+                              rights_);
+
+  // Check 1 and 2 can log in/out
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+
+  // 2 removes 1
+  LOG(kInfo) << "\n\n2 removing 1\n";
+  TwoUsersDefriendEachOther(test_elements_2_,
+                            test_elements_1_,
+                            testing_variables_1_,
+                            keyword_2_,
+                            pin_2_,
+                            password_2_,
+                            public_id_2_,
+                            keyword_1_,
+                            pin_1_,
+                            password_1_,
+                            public_id_1_);
+
+  // Check 1 and 2 can log in/out
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+}
+
+TEST_P(PrivateSharesApiTest, FUNC_PrivateShareTwoNonOwnersRemoveEachOther) {
+  LifeStuff test_elements_3;
+  testresources::TestingVariables testing_variables_3;
+  std::string keyword_3(RandomAlphaNumericString(6)),
+              pin_3(CreatePin()),
+              password_3(RandomAlphaNumericString(6)),
+              public_id_3(RandomAlphaNumericString(5));
+  ASSERT_EQ(kSuccess, CreatePublicId(test_elements_3,
+                                     testing_variables_3,
+                                     *test_dir_,
+                                     keyword_3,
+                                     pin_3,
+                                     password_3,
+                                     public_id_3));
+  // 1 added 2 in setup
+  // 1 adds 3
+  ASSERT_EQ(kSuccess, ConnectTwoPublicIds(test_elements_1_,
+                                          test_elements_3,
+                                          testing_variables_1_,
+                                          testing_variables_3,
+                                          keyword_1_,
+                                          pin_1_,
+                                          password_1_,
+                                          public_id_1_,
+                                          keyword_3,
+                                          pin_3,
+                                          password_3,
+                                          public_id_3));
+  // 2 adds 3
+  ASSERT_EQ(kSuccess, ConnectTwoPublicIds(test_elements_2_,
+                                          test_elements_3,
+                                          testing_variables_2_,
+                                          testing_variables_3,
+                                          keyword_2_,
+                                          pin_2_,
+                                          password_2_,
+                                          public_id_2_,
+                                          keyword_3,
+                                          pin_3,
+                                          password_3,
+                                          public_id_3));
+
+  std::string share_name_3(RandomAlphaNumericString(7));
+
+  // 3 creates share_name_3, inviting 2
+  CreateShareAddingOneContact(test_elements_3,
+                              test_elements_2_,
+                              testing_variables_2_,
+                              keyword_3,
+                              pin_3,
+                              password_3,
+                              public_id_3,
+                              keyword_2_,
+                              pin_2_,
+                              password_2_,
+                              public_id_2_,
+                              share_name_3,
+                              rights_);
+
+  // 3 adds 1 to share_name_3
+  AddOneContactToExistingShare(test_elements_3,
+                               test_elements_1_,
+                               testing_variables_1_,
+                               keyword_3,
+                               pin_3,
+                               password_3,
+                               public_id_3,
+                               keyword_1_,
+                               pin_1_,
+                               password_1_,
+                               public_id_1_,
+                               share_name_3,
+                               rights_);
+  // Check ability to log in/out
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_3.LogIn(keyword_3, pin_3, password_3));
+  EXPECT_EQ(kSuccess, test_elements_3.LogOut());
+
+  // 2 removes 1
+  LOG(kInfo) << "\n\n2 removing 1\n";
+  TwoUsersDefriendEachOther(test_elements_2_,
+                            test_elements_1_,
+                            testing_variables_1_,
+                            keyword_2_,
+                            pin_2_,
+                            password_2_,
+                            public_id_2_,
+                            keyword_1_,
+                            pin_1_,
+                            password_1_,
+                            public_id_1_);
+
+    // Check ability to log in/out
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_3.LogIn(keyword_3, pin_3, password_3));
+  EXPECT_EQ(kSuccess, test_elements_3.LogOut());
+}
+
 TEST_P(PrivateSharesApiTest, DISABLED_FUNC_PrivateSharesMutualRemovalWithUninvolvedOnlooker) {
   LifeStuff test_elements_3;
   testresources::TestingVariables testing_variables_3;
   std::string keyword_3(RandomAlphaNumericString(6)),
               pin_3(CreatePin()),
               password_3(RandomAlphaNumericString(6)),
-              public_id_3("User 3" + RandomAlphaNumericString(5));
+              public_id_3(RandomAlphaNumericString(5));
   ASSERT_EQ(kSuccess, CreatePublicId(test_elements_3,
                                      testing_variables_3,
                                      *test_dir_,
@@ -1753,7 +1918,7 @@ TEST_P(PrivateSharesApiTest, DISABLED_FUNC_PrivateSharesMutualRemovalWithUninvol
                               share_name_1,
                               rights_);
 
-  // 1 creates share_name_1, inviting 2
+  // 2 creates share_name_2, inviting 1
   CreateShareAddingOneContact(test_elements_2_,
                               test_elements_1_,
                               testing_variables_1_,
@@ -1767,6 +1932,15 @@ TEST_P(PrivateSharesApiTest, DISABLED_FUNC_PrivateSharesMutualRemovalWithUninvol
                               public_id_1_,
                               share_name_2,
                               rights_);
+
+  // Check ability to log in/out
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_3.LogIn(keyword_3, pin_3, password_3));
+  EXPECT_EQ(kSuccess, test_elements_3.LogOut());
+
   // 2 removes 1
   LOG(kInfo) << "\n\n2 removing 1\n";
   TwoUsersDefriendEachOther(test_elements_2_,
@@ -1781,6 +1955,14 @@ TEST_P(PrivateSharesApiTest, DISABLED_FUNC_PrivateSharesMutualRemovalWithUninvol
                             password_1_,
                             public_id_1_);
 
+    // Check ability to log in/out
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_3.LogIn(keyword_3, pin_3, password_3));
+  EXPECT_EQ(kSuccess, test_elements_3.LogOut());
+
   // 3 removes 1
   LOG(kInfo) << "\n\n3 removing 1\n";
   TwoUsersDefriendEachOther(test_elements_3,
@@ -1794,9 +1976,18 @@ TEST_P(PrivateSharesApiTest, DISABLED_FUNC_PrivateSharesMutualRemovalWithUninvol
                             pin_1_,
                             password_1_,
                             public_id_1_);
+
+  // Check ability to log in/out
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_3.LogIn(keyword_3, pin_3, password_3));
+  EXPECT_EQ(kSuccess, test_elements_3.LogOut());
 }
 
 TEST_P(PrivateSharesApiTest, DISABLED_FUNC_PrivateShareBefriendDefriendCombinations) {
+  // TODO(Alison) - review test structure
   LifeStuff test_elements_3, test_elements_4;
   testresources::TestingVariables testing_variables_3, testing_variables_4;
   std::string keyword_3(RandomAlphaNumericString(6)),
