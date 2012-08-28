@@ -16,14 +16,9 @@
 
 #include "maidsafe/lifestuff/rcs_helper.h"
 
-#include <fstream>  // NOLINT (Fraser)
-#include <iostream>  // NOLINT (Fraser)
-#include <istream>  // NOLINT (Fraser)
-#include <ostream>  // NOLINT (Fraser)
 #include <string>
+#include <utility>
 #include <vector>
-
-#include "boost/archive/text_iarchive.hpp"
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
@@ -61,9 +56,11 @@ std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path& buffered_
   return remote_chunk_store;
 }
 #else
-std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path& base_dir,
-                                                       std::shared_ptr<pd::Node>& node) {
-  node = SetupNode(base_dir);
+std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
+    const fs::path& base_dir,
+    const std::vector<std::pair<std::string, uint16_t>>& endopints,  // NOLINT (Dan)
+    std::shared_ptr<pd::Node>& node) {
+  node = SetupNode(base_dir, endopints);
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store(
       new pcs::RemoteChunkStore(node->chunk_store(),
                                 node->chunk_manager(),
@@ -72,7 +69,9 @@ std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path& base_dir,
   return remote_chunk_store;
 }
 
-std::shared_ptr<pd::Node> SetupNode(const fs::path& base_dir) {
+std::shared_ptr<pd::Node> SetupNode(
+    const fs::path& base_dir,
+    const std::vector<std::pair<std::string, uint16_t>>& /*endopints*/) {  // NOLINT (Dan)
   auto node = std::make_shared<pd::Node>();
 
   int result(node->Start(base_dir / "buffered_chunk_store"));

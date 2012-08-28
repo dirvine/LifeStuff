@@ -59,6 +59,7 @@ LifeStuffImpl::LifeStuffImpl()
       asio_service_(thread_count_),
       remote_chunk_store_(),
 #ifndef LOCAL_TARGETS_ONLY
+      client_controller_(),
       node_(),
 #endif
       session_(),
@@ -101,7 +102,13 @@ int LifeStuffImpl::Initialise(const boost::filesystem::path& base_directory) {
                                         asio_service_.service());
   simulation_path_ = network_simulation_path;
 #else
-  remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path, node_);
+  client_controller_.reset(new priv::process_management::ClientController);
+  std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
+  if (!client_controller_->BootstrapEndpoints(bootstrap_endpoints)) {
+    LOG(kError) << "Failuer to initialise client controller. No bootstrap information.";
+    return kGeneralError;
+  }
+  remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path, bootstrap_endpoints, node_);
 #endif
   if (!remote_chunk_store_) {
     LOG(kError) << "Could not initialise chunk store.";
