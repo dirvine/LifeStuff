@@ -137,10 +137,28 @@ if(NOT ${LOCAL_TARGETS_ONLY})
   ms_add_executable(TESTlifestuff_user_storage "Tests/LifeStuff" ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC})
   ms_add_executable(TESTlifestuff_api "Tests/LifeStuff" ${API_TEST_CC} ${TESTS_MAIN_CC})
   target_link_libraries(maidsafe_lifestuff maidsafe_lifestuff_detail maidsafe_pd maidsafe_routing)
-  target_link_libraries(TESTlifestuff_public_id maidsafe_lifestuff)
-  target_link_libraries(TESTlifestuff_user_credentials maidsafe_lifestuff)
-  target_link_libraries(TESTlifestuff_user_storage maidsafe_lifestuff)
-  target_link_libraries(TESTlifestuff_api maidsafe_lifestuff)
+  set(NetworkTargets TESTlifestuff_public_id TESTlifestuff_user_credentials TESTlifestuff_user_storage TESTlifestuff_api)
+  foreach(NetworkTarget ${NetworkTargets})
+    target_link_libraries(${NetworkTarget} maidsafe_lifestuff)
+    add_dependencies(${NetworkTarget} pd-keys-helper)  
+    add_custom_command(TARGET ${NetworkTarget}
+                       PRE_BUILD
+                       COMMAND ${CMAKE_COMMAND} -E echo "#ifndef MAIDSAFE_PD_CLIENT_KEYS_HELPER_H_" > ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                               ${CMAKE_COMMAND} -E echo "#define MAIDSAFE_PD_CLIENT_KEYS_HELPER_H_" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                               ${CMAKE_COMMAND} -E echo "" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                               ${CMAKE_COMMAND} -E echo "#include \\\"boost/filesystem/path.hpp\\\"" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                               ${CMAKE_COMMAND} -E echo "namespace maidsafe {" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                               ${CMAKE_COMMAND} -E echo "namespace pd {" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                               ${CMAKE_COMMAND} -E echo "boost::filesystem::path kKeysHelperExecutable() {" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                               ${CMAKE_COMMAND} -E echo "  static boost::filesystem::path exe(\\\"$<TARGET_FILE:pd-keys-helper>\\\");" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                               ${CMAKE_COMMAND} -E echo "  return exe;" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                               ${CMAKE_COMMAND} -E echo "}" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                               ${CMAKE_COMMAND} -E echo "}  // namespace pd" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                               ${CMAKE_COMMAND} -E echo "}  // namespace maidsafe" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                               ${CMAKE_COMMAND} -E echo "#endif  // MAIDSAFE_PD_CLIENT_KEYS_HELPER_H_" >> ${PROJECT_BINARY_DIR}/keys_helper.h
+                       )
+  endforeach()
+  include_directories(${PROJECT_BINARY_DIR})
 endif()
 
 rename_outdated_built_exes()

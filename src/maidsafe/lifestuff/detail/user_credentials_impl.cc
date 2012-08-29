@@ -44,6 +44,7 @@
 #include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/utils.h"
 
+
 namespace args = std::placeholders;
 namespace pca = maidsafe::priv::chunk_actions;
 namespace bptime = boost::posix_time;
@@ -247,14 +248,14 @@ int UserCredentialsImpl::GetUserInfo(const std::string& keyword,
   // Obtain MID, TMID
   int mid_tmid_result(kSuccess);
   std::string tmid_packet;
-  boost::thread mid_tmid_thread([&] {
+  boost::thread mid_tmid_thread([=, &mid_tmid_result, &tmid_packet] {
                                   GetIdAndTemporaryId(keyword, pin, password, false,
                                                       &mid_tmid_result, &tmid_packet);
                                 });
   // Obtain SMID, STMID
   int smid_stmid_result(kSuccess);
   std::string stmid_packet;
-  boost::thread smid_stmid_thread([&] {
+  boost::thread smid_stmid_thread([=, &smid_stmid_result, &stmid_packet] {
                                     GetIdAndTemporaryId(keyword, pin, password, true,
                                                         &smid_stmid_result, &stmid_packet);
                                   });

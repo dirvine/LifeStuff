@@ -26,6 +26,11 @@
 #include <string>
 #include <vector>
 
+#include "boost/process/child.hpp"
+#include "boost/process/execute.hpp"
+#include "boost/process/initializers.hpp"
+#include "boost/process/wait_for_exit.hpp"
+
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/test.h"
@@ -42,9 +47,13 @@
 #include "maidsafe/lifestuff/detail/user_credentials_impl.h"
 #include "maidsafe/lifestuff/detail/utils.h"
 
+#include "keys_helper.h"
+
+
 namespace args = std::placeholders;
 namespace pca = maidsafe::priv::chunk_actions;
 namespace fs = boost::filesystem;
+namespace bp = boost::process;
 namespace lid = maidsafe::lifestuff::account_locking;
 
 namespace maidsafe {
@@ -78,11 +87,26 @@ class UserCredentialsTest : public testing::Test {
     asio_service_.Start();
     asio_service2_.Start();
 #ifdef LOCAL_TARGETS_ONLY
-  remote_chunk_store_ = BuildChunkStore(*test_dir_ / RandomAlphaNumericString(8),
-                                        *test_dir_ / "simulation",
-                                        asio_service_.service());
+    remote_chunk_store_ = BuildChunkStore(*test_dir_ / RandomAlphaNumericString(8),
+                                          *test_dir_ / "simulation",
+                                          asio_service_.service());
 #else
-  remote_chunk_store_ = BuildChunkStore(*test_dir_, node_);
+    boost::system::error_code error_code;
+    bp::child child(bp::execute(
+      bp::initializers::run_exe(pd::kKeysHelperExecutable()),
+      bp::initializers::set_cmd_line(pd::kKeysHelperExecutable().wstring() + L" --print"),
+      bp::initializers::set_on_error(error_code),
+      bp::initializers::inherit_env()
+    ));
+
+    ASSERT_FALSE(error_code) << "Failed to execute " << pd::kKeysHelperExecutable() << ": "
+                             << error_code.message();
+
+    auto exit_code = wait_for_exit(child);
+    LOG(kInfo) << pd::kKeysHelperExecutable() << " has completed with exit code " << exit_code;
+
+    //std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
+    //remote_chunk_store_ = BuildChunkStore(*test_dir_, bootstrap_endpoints, node_);
 #endif
     user_credentials_.reset(new UserCredentials(*remote_chunk_store_,
                                                 session_,
