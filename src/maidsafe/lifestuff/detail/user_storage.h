@@ -203,7 +203,7 @@ class UserStorage {
   int DeleteHiddenFile(const fs::path& absolute_path);
   int SearchHiddenFiles(const fs::path& absolute_path,
                         std::vector<std::string>* results);
-  int GetHiddenFileDataMap(const boost::filesystem3::path& absolute_path, std::string* data_map);
+  int GetHiddenFileDataMap(const boost::filesystem::path& absolute_path, std::string* data_map);
 
   // ************************* Signals Handling ********************************
   bs2::connection ConnectToDriveChanged(drive::DriveChangedSlotPtr slot) const;
