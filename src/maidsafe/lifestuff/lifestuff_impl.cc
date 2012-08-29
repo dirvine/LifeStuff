@@ -101,7 +101,7 @@ int LifeStuffImpl::Initialise(const boost::filesystem::path& base_directory) {
                                         asio_service_.service());
   simulation_path_ = network_simulation_path;
 #else
-  remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path, &node_);
+  remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path, node_);
 #endif
   if (!remote_chunk_store_) {
     LOG(kError) << "Could not initialise chunk store.";
@@ -225,24 +225,20 @@ int LifeStuffImpl::ConnectToSignals(
       if (user_storage_)
         public_id_->ConnectToLifestuffCardUpdatedSignal(lifestuff_card_update_function);
   }
-
-      [&] (const std::string& own_public_id,
-           const std::string& contact_public_id,
-           const std::string& removal_message,
-           const std::string& timestamp) {
-        RemoveContact(own_public_id, contact_public_id, removal_message, timestamp, false);
-      };
   if (public_id_) {
-    public_id_->ConnectToContactDeletionReceivedSignal([&] (const std::string& own_public_id,
-                                                            const std::string& contact_public_id,
-                                                            const std::string& removal_message,
-                                                            const std::string& timestamp) {
-                                                          RemoveContact(own_public_id,
-                                                                        contact_public_id,
-                                                                        removal_message,
-                                                                        timestamp,
-                                                                        false);
-                                                        });
+    public_id_->ConnectToContactDeletionReceivedSignal(
+        [&] (const std::string& own_public_id,
+             const std::string& contact_public_id,
+             const std::string& removal_message,
+             const std::string& timestamp) {
+          int result(RemoveContact(own_public_id,
+                                   contact_public_id,
+                                   removal_message,
+                                   timestamp,
+                                   false));
+          if (result != kSuccess)
+            LOG(kError) << "Failed to remove contact after receiving contact deletion signal!";
+        });
   }
 
   if (connects > 0) {
@@ -649,9 +645,6 @@ int LifeStuffImpl::RemoveContact(const std::string& my_public_id,
     LOG(kError) << "Failed pre checks in RemoveContact.";
     return result;
   }
-
-  // TODO(Alison): 09/08/12 - Remove contact from all Private shares owned by self (no messaging)
-  // TODO(Alison): 09/08/12 - Remove self from all Private shares owned by contact (no messaging)
 
   // For private shares, if share_members can be fetched, indicates owner
   // otherwise, only the owner(inviter) of the share can be fetched

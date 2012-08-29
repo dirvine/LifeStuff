@@ -297,6 +297,60 @@ int ConnectTwoPublicIds(LifeStuff& test_elements1,
                         const std::string& password2,
                         const std::string& public_id2);
 
+void CreatePrivateShareAddingOneContact(LifeStuff& test_elements_a,
+                                        LifeStuff& test_elements_b,
+                                        testresources::TestingVariables& testing_variables_b,
+                                        const std::string& keyword_a,
+                                        const std::string& pin_a,
+                                        const std::string& password_a,
+                                        const std::string& public_id_a,
+                                        const std::string& keyword_b,
+                                        const std::string& pin_b,
+                                        const std::string& password_b,
+                                        const std::string& public_id_b,
+                                        std::string share_name,
+                                        const int& rights);
+
+void AddOneContactToExistingPrivateShare(LifeStuff& test_elements_a,
+                                         LifeStuff& test_elements_b,
+                                         testresources::TestingVariables& testing_variables_b,
+                                         const std::string& keyword_a,
+                                         const std::string& pin_a,
+                                         const std::string& password_a,
+                                         const std::string& public_id_a,
+                                         const std::string& keyword_b,
+                                         const std::string& pin_b,
+                                         const std::string& password_b,
+                                         const std::string& public_id_b,
+                                         std::string share_name,
+                                         const int& rights);
+
+void CreateOpenShareAddingOneContact(LifeStuff& test_elements_a,
+                                     LifeStuff& test_elements_b,
+                                     testresources::TestingVariables& testing_variables_b,
+                                     const std::string& keyword_a,
+                                     const std::string& pin_a,
+                                     const std::string& password_a,
+                                     const std::string& public_id_a,
+                                     const std::string& keyword_b,
+                                     const std::string& pin_b,
+                                     const std::string& password_b,
+                                     const std::string& public_id_b,
+                                     std::string share_name);
+
+void TwoUsersDefriendEachOther(LifeStuff& test_elements_a,
+                               LifeStuff& test_elements_b,
+                               testresources::TestingVariables& testing_variables_b,
+                               const std::string& keyword_a,
+                               const std::string& pin_a,
+                               const std::string& password_a,
+                               const std::string& public_id_a,
+                               const std::string& keyword_b,
+                               const std::string& pin_b,
+                               const std::string& password_b,
+                               const std::string& public_id_b);
+
+
 }  // namespace testresources
 
 namespace sleepthreads {

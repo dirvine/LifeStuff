@@ -283,8 +283,8 @@ class PublicIdTest : public testing::Test {
                                            *test_dir_ / "simulation",
                                            asio_service2_.service());
 #else
-    remote_chunk_store1_ = BuildChunkStore(*test_dir_, &node1_);
-    remote_chunk_store2_ = BuildChunkStore(*test_dir_, &node2_);
+    remote_chunk_store1_ = BuildChunkStore(*test_dir_, node1_);
+    remote_chunk_store2_ = BuildChunkStore(*test_dir_, node2_);
 #endif
 
     public_id1_.reset(new PublicId(remote_chunk_store1_, session1_, asio_service1_.service()));
@@ -1428,6 +1428,9 @@ int CreatePublicIdObject(std::shared_ptr<PublicId>& public_id,
   remote_chunk_store = BuildChunkStore(*test_dir / RandomAlphaNumericString(8),
                                        *test_dir / "simulation",
                                        asio_service.service());
+#else
+  // Suppress Windows unused variable warning
+  (void)test_dir;
 #endif
 
   public_id.reset(new PublicId(remote_chunk_store, session, asio_service.service()));

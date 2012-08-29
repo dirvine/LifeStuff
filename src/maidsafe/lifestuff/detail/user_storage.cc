@@ -255,10 +255,25 @@ int UserStorage::CreateShare(const std::string& sender_public_id,
                              StringIntMap* contacts_results) {
   int result(kSuccess);
   if (!drive_path.empty()) {
-    result = drive_in_user_space_->MoveDirectory(drive_path, share_path);
+    /*result = drive_in_user_space_->MoveDirectory(drive_path, share_path);
     if (result != kSuccess) {
       LOG(kError) << "Failed to create share directory " << share_path;
       return result;
+    }*/
+    boost::system::error_code error_code;
+    fs::create_directory(share_path, error_code);
+    if (error_code) {
+      LOG(kError) << "Failed creating directory " << share_path << ": " << error_code.message();
+      return kGeneralError;
+    }
+    result = CopyDirectoryContent(drive_path, share_path);
+    if (result != kSuccess) {
+      LOG(kError) << "Failed to copy share directory content " << share_path;
+      return result;
+    }
+    fs::remove_all(drive_path, error_code);
+    if (error_code) {
+      LOG(kError) << "Failed deleting directory " << drive_path << ": " << error_code.message();
     }
   } else {
     boost::system::error_code error_code;
@@ -623,6 +638,7 @@ int UserStorage::AddShareUsers(const std::string& sender_public_id,
     LOG(kError) << "Failed to get share details: " << absolute_path.string();
     return result;
   }
+  std::vector<std::string> contacts_to_remove;
   result = InformContactsOperation(kPrivateShareInvitation,
                                    sender_public_id,
                                    contacts,
@@ -634,9 +650,32 @@ int UserStorage::AddShareUsers(const std::string& sender_public_id,
                                    contacts_results);
   if (result != kSuccess) {
     LOG(kError) << "Failed to inform contacts: " << absolute_path.string();
+    std::for_each(contacts.begin(),
+                  contacts.end(),
+                  [&](const StringIntMap::value_type& contact) {
+                    contacts_to_remove.push_back(contact.first);
+                  });
+    result = RemoveShareUsers(sender_public_id, absolute_path, contacts_to_remove);
+    if (result != kSuccess) {
+      LOG(kError) << "Failed to remove contacts.";
+    }
     return result;
   }
-
+  if (contacts_results) {
+    std::for_each(contacts_results->begin(),
+                  contacts_results->end(),
+                  [&](const StringIntMap::value_type& contact_result) {
+                    if (contact_result.second != kSuccess)
+                      contacts_to_remove.push_back(contact_result.first);
+                  });
+    if (!contacts_to_remove.empty()) {
+      result = RemoveShareUsers(sender_public_id, absolute_path, contacts_to_remove);
+      if (result != kSuccess) {
+        LOG(kError) << "Failed to remove failed contacts.";
+        return result;
+      }
+    }
+  }
   return kSuccess;
 }
 
