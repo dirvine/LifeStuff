@@ -1714,34 +1714,34 @@ TEST_P(PrivateSharesApiTest, DISABLED_FUNC_PrivateSharesTwoOwnersRemoveEachOther
   std::string share_name_2(RandomAlphaNumericString(7));
 
   // 1 creates share_name_1, inviting 2
-  CreateShareAddingOneContact(test_elements_1_,
-                              test_elements_2_,
-                              testing_variables_2_,
-                              keyword_1_,
-                              pin_1_,
-                              password_1_,
-                              public_id_1_,
-                              keyword_2_,
-                              pin_2_,
-                              password_2_,
-                              public_id_2_,
-                              share_name_1,
-                              rights_);
+  CreatePrivateShareAddingOneContact(test_elements_1_,
+                                     test_elements_2_,
+                                     testing_variables_2_,
+                                     keyword_1_,
+                                     pin_1_,
+                                     password_1_,
+                                     public_id_1_,
+                                     keyword_2_,
+                                     pin_2_,
+                                     password_2_,
+                                     public_id_2_,
+                                     share_name_1,
+                                     rights_);
 
   // 2 creates share_name_2, inviting 1
-  CreateShareAddingOneContact(test_elements_2_,
-                              test_elements_1_,
-                              testing_variables_1_,
-                              keyword_2_,
-                              pin_2_,
-                              password_2_,
-                              public_id_2_,
-                              keyword_1_,
-                              pin_1_,
-                              password_1_,
-                              public_id_1_,
-                              share_name_2,
-                              rights_);
+  CreatePrivateShareAddingOneContact(test_elements_2_,
+                                     test_elements_1_,
+                                     testing_variables_1_,
+                                     keyword_2_,
+                                     pin_2_,
+                                     password_2_,
+                                     public_id_2_,
+                                     keyword_1_,
+                                     pin_1_,
+                                     password_1_,
+                                     public_id_1_,
+                                     share_name_2,
+                                     rights_);
 
   // Check 1 and 2 can log in/out
   EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
@@ -1815,34 +1815,34 @@ TEST_P(PrivateSharesApiTest, FUNC_PrivateShareTwoNonOwnersRemoveEachOther) {
   std::string share_name_3(RandomAlphaNumericString(7));
 
   // 3 creates share_name_3, inviting 2
-  CreateShareAddingOneContact(test_elements_3,
-                              test_elements_2_,
-                              testing_variables_2_,
-                              keyword_3,
-                              pin_3,
-                              password_3,
-                              public_id_3,
-                              keyword_2_,
-                              pin_2_,
-                              password_2_,
-                              public_id_2_,
-                              share_name_3,
-                              rights_);
+  CreatePrivateShareAddingOneContact(test_elements_3,
+                                     test_elements_2_,
+                                     testing_variables_2_,
+                                     keyword_3,
+                                     pin_3,
+                                     password_3,
+                                     public_id_3,
+                                     keyword_2_,
+                                     pin_2_,
+                                     password_2_,
+                                     public_id_2_,
+                                     share_name_3,
+                                     rights_);
 
   // 3 adds 1 to share_name_3
-  AddOneContactToExistingShare(test_elements_3,
-                               test_elements_1_,
-                               testing_variables_1_,
-                               keyword_3,
-                               pin_3,
-                               password_3,
-                               public_id_3,
-                               keyword_1_,
-                               pin_1_,
-                               password_1_,
-                               public_id_1_,
-                               share_name_3,
-                               rights_);
+  AddOneContactToExistingPrivateShare(test_elements_3,
+                                      test_elements_1_,
+                                      testing_variables_1_,
+                                      keyword_3,
+                                      pin_3,
+                                      password_3,
+                                      public_id_3,
+                                      keyword_1_,
+                                      pin_1_,
+                                      password_1_,
+                                      public_id_1_,
+                                      share_name_3,
+                                      rights_);
   // Check ability to log in/out
   EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
   EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
@@ -1907,34 +1907,34 @@ TEST_P(PrivateSharesApiTest, DISABLED_FUNC_PrivateSharesMutualRemovalWithUninvol
   std::string share_name_2(RandomAlphaNumericString(7));
 
   // 1 creates share_name_1, inviting 2
-  CreateShareAddingOneContact(test_elements_1_,
-                              test_elements_2_,
-                              testing_variables_2_,
-                              keyword_1_,
-                              pin_1_,
-                              password_1_,
-                              public_id_1_,
-                              keyword_2_,
-                              pin_2_,
-                              password_2_,
-                              public_id_2_,
-                              share_name_1,
-                              rights_);
+  CreatePrivateShareAddingOneContact(test_elements_1_,
+                                     test_elements_2_,
+                                     testing_variables_2_,
+                                     keyword_1_,
+                                     pin_1_,
+                                     password_1_,
+                                     public_id_1_,
+                                     keyword_2_,
+                                     pin_2_,
+                                     password_2_,
+                                     public_id_2_,
+                                     share_name_1,
+                                     rights_);
 
   // 2 creates share_name_2, inviting 1
-  CreateShareAddingOneContact(test_elements_2_,
-                              test_elements_1_,
-                              testing_variables_1_,
-                              keyword_2_,
-                              pin_2_,
-                              password_2_,
-                              public_id_2_,
-                              keyword_1_,
-                              pin_1_,
-                              password_1_,
-                              public_id_1_,
-                              share_name_2,
-                              rights_);
+  CreatePrivateShareAddingOneContact(test_elements_2_,
+                                     test_elements_1_,
+                                     testing_variables_1_,
+                                     keyword_2_,
+                                     pin_2_,
+                                     password_2_,
+                                     public_id_2_,
+                                     keyword_1_,
+                                     pin_1_,
+                                     password_1_,
+                                     public_id_1_,
+                                     share_name_2,
+                                     rights_);
 
   // Check ability to log in/out
   EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
@@ -1987,6 +1987,70 @@ TEST_P(PrivateSharesApiTest, DISABLED_FUNC_PrivateSharesMutualRemovalWithUninvol
   EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   EXPECT_EQ(kSuccess, test_elements_3.LogIn(keyword_3, pin_3, password_3));
   EXPECT_EQ(kSuccess, test_elements_3.LogOut());
+}
+
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_PrivateSharesOwnersOfDifferentTypesRemoveEachOther) {
+  std::string share_name_1(RandomAlphaNumericString(7));
+  std::string share_name_2(RandomAlphaNumericString(7));
+
+  // 1 creates share_name_1, giving 2 read only access
+  CreatePrivateShareAddingOneContact(test_elements_1_,
+                                     test_elements_2_,
+                                     testing_variables_2_,
+                                     keyword_1_,
+                                     pin_1_,
+                                     password_1_,
+                                     public_id_1_,
+                                     keyword_2_,
+                                     pin_2_,
+                                     password_2_,
+                                     public_id_2_,
+                                     share_name_1,
+                                     kShareReadOnly);
+  // 2 creates share_name_2, giving 1 full access
+  CreatePrivateShareAddingOneContact(test_elements_2_,
+                                     test_elements_1_,
+                                     testing_variables_1_,
+                                     keyword_2_,
+                                     pin_2_,
+                                     password_2_,
+                                     public_id_2_,
+                                     keyword_1_,
+                                     pin_1_,
+                                     password_1_,
+                                     public_id_1_,
+                                     share_name_2,
+                                     kShareReadWrite);
+
+  // Check 1 and 2 can log in/out
+  LOG(kInfo) << "\n\n1 logging in and out!\n";
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+  LOG(kInfo) << "\n\n2 logging in and out!\n";
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+
+  // 2 removes 1
+  LOG(kInfo) << "\n\n2 removing 1\n";
+  TwoUsersDefriendEachOther(test_elements_2_,
+                            test_elements_1_,
+                            testing_variables_1_,
+                            keyword_2_,
+                            pin_2_,
+                            password_2_,
+                            public_id_2_,
+                            keyword_1_,
+                            pin_1_,
+                            password_1_,
+                            public_id_1_);
+
+  // Check 1 and 2 can log in/out
+  LOG(kInfo) << "\n\n1 logging in and out again!\n";
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+  LOG(kInfo) << "\n\n2 logging in and out again!\n";
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 }
 
 TEST_P(PrivateSharesApiTest, DISABLED_FUNC_PrivateShareBefriendDefriendCombinations) {
@@ -2065,114 +2129,114 @@ TEST_P(PrivateSharesApiTest, DISABLED_FUNC_PrivateShareBefriendDefriendCombinati
 
 
   // 1 creates share_name_1, inviting 2
-  CreateShareAddingOneContact(test_elements_1_,
-                              test_elements_2_,
-                              testing_variables_2_,
-                              keyword_1_,
-                              pin_1_,
-                              password_1_,
-                              public_id_1_,
-                              keyword_2_,
-                              pin_2_,
-                              password_2_,
-                              public_id_2_,
-                              share_name_1,
-                              rights_);
+  CreatePrivateShareAddingOneContact(test_elements_1_,
+                                     test_elements_2_,
+                                     testing_variables_2_,
+                                     keyword_1_,
+                                     pin_1_,
+                                     password_1_,
+                                     public_id_1_,
+                                     keyword_2_,
+                                     pin_2_,
+                                     password_2_,
+                                     public_id_2_,
+                                     share_name_1,
+                                     rights_);
   // 2 creates share_name_2, inviting 1
-  CreateShareAddingOneContact(test_elements_2_,
-                              test_elements_1_,
-                              testing_variables_1_,
-                              keyword_2_,
-                              pin_2_,
-                              password_2_,
-                              public_id_2_,
-                              keyword_1_,
-                              pin_1_,
-                              password_1_,
-                              public_id_1_,
-                              share_name_2,
-                              rights_);
+  CreatePrivateShareAddingOneContact(test_elements_2_,
+                                     test_elements_1_,
+                                     testing_variables_1_,
+                                     keyword_2_,
+                                     pin_2_,
+                                     password_2_,
+                                     public_id_2_,
+                                     keyword_1_,
+                                     pin_1_,
+                                     password_1_,
+                                     public_id_1_,
+                                     share_name_2,
+                                     rights_);
 //  // 3 creates share_name_3, inviting 4
-//  CreateShareAddingOneContact(test_elements_3,
-//                    test_elements_4,
-//                    testing_variables_4,
-//                    keyword_3,
-//                    pin_3,
-//                    password_3,
-//                    public_id_3,
-//                    keyword_4,
-//                    pin_4,
-//                    password_4,
-//                    public_id_4,
-//                    share_name_3);
+//  CreatePrivateShareAddingOneContact(test_elements_3,
+//                                     test_elements_4,
+//                                     testing_variables_4,
+//                                     keyword_3,
+//                                     pin_3,
+//                                     password_3,
+//                                     public_id_3,
+//                                     keyword_4,
+//                                     pin_4,
+//                                     password_4,
+//                                     public_id_4,
+//                                     share_name_3);
 //  // 4 creates share_name_4, inviting 3
-//  CreateShareAddingOneContact(test_elements_4,
-//                    test_elements_3,
-//                    testing_variables_3,
-//                    keyword_4,
-//                    pin_4,
-//                    password_4,
-//                    public_id_4,
-//                    keyword_3,
-//                    pin_3,
-//                    password_3,
-//                    public_id_3,
-//                    share_name_4);
+//  CreatePrivateShareAddingOneContact(test_elements_4,
+//                                     test_elements_3,
+//                                     testing_variables_3,
+//                                     keyword_4,
+//                                     pin_4,
+//                                     password_4,
+//                                     public_id_4,
+//                                     keyword_3,
+//                                     pin_3,
+//                                     password_3,
+//                                     public_id_3,
+//                                     share_name_4);
 
 
 
 //  // 1 invites 3 into share_name_1
-//  AddOneContactToExistingShare(test_elements_1_,
-//                    test_elements_3,
-//                    testing_variables_3,
-//                    keyword_1_,
-//                    pin_1_,
-//                    password_1_,
-//                    public_id_1_,
-//                    keyword_3,
-//                    pin_3,
-//                    password_3,
-//                    public_id_3,
-//                    share_name_1);
+//  AddOneContactToExistingPrivateShare(test_elements_1_,
+//                                      test_elements_3,
+//                                      testing_variables_3,
+//                                      keyword_1_,
+//                                      pin_1_,
+//                                      password_1_,
+//                                      public_id_1_,
+//                                      keyword_3,
+//                                      pin_3,
+//                                      password_3,
+//                                      public_id_3,
+//                                      share_name_1);
 //  // 2 invites 4 into share_name_2
-//  AddOneContactToExistingShare(test_elements_2_,
-//                    test_elements_4,
-//                    testing_variables_4,
-//                    keyword_2_,
-//                    pin_2_,
-//                    password_2_,
-//                    public_id_2_,
-//                    keyword_4,
-//                    pin_4,
-//                    password_4,
-//                    public_id_4,
-//                    share_name_2);
+//  AddOneContactToExistingPrivateShare(test_elements_2_,
+//                                      test_elements_4,
+//                                      testing_variables_4,
+//                                      keyword_2_,
+//                                      pin_2_,
+//                                      password_2_,
+//                                      public_id_2_,
+//                                      keyword_4,
+//                                      pin_4,
+//                                      password_4,
+//                                      public_id_4,
+//                                      share_name_2);
 //  // 3 invites 1 into share_name_3
-//  AddOneContactToExistingShare(test_elements_3,
-//                    test_elements_1_,
-//                    testing_variables_1_,
-//                    keyword_3,
-//                    pin_3,
-//                    password_3,
-//                    public_id_3,
-//                    keyword_1_,
-//                    pin_1_,
-//                    password_1_,
-//                    public_id_1_,
-//                    share_name_3);
+//  AddOneContactToExistingPrivateShare(test_elements_3,
+//                                      test_elements_1_,
+//                                      testing_variables_1_,
+//                                      keyword_3,
+//                                      pin_3,
+//                                      password_3,
+//                                      public_id_3,
+//                                      keyword_1_,
+//                                      pin_1_,
+//                                      password_1_,
+//                                      public_id_1_,
+//                                      share_name_3);
 //  // 4 invites 2 into share_name_4
-//  AddOneContactToExistingShare(test_elements_4,
-//                    test_elements_2_,
-//                    testing_variables_2_,
-//                    keyword_4,
-//                    pin_4,
-//                    password_4,
-//                    public_id_4,
-//                    keyword_2_,
-//                    pin_2_,
-//                    password_2_,
-//                    public_id_2_,
-//                    share_name_4);
+//  AddOneContactToExistingPrivateShare(test_elements_4,
+//                                      test_elements_2_,
+//                                      testing_variables_2_,
+//                                      keyword_4,
+//                                      pin_4,
+//                                      password_4,
+//                                      public_id_4,
+//                                      keyword_2_,
+//                                      pin_2_,
+//                                      password_2_,
+//                                      public_id_2_,
+//                                      share_name_4);
 
   // 2 removes 1
   TwoUsersDefriendEachOther(test_elements_2_,
@@ -2231,6 +2295,70 @@ TEST_P(PrivateSharesApiTest, DISABLED_FUNC_PrivateShareBefriendDefriendCombinati
 //                  4);
 
   // TODO(Alison) - check shares
+}
+
+TEST_P(PrivateSharesApiTest, DISABLED_FUNC_MixedSharesOwnersOfDifferentTypesRemoveEachOther) {
+  std::string share_name_1(RandomAlphaNumericString(7));
+  std::string share_name_2(RandomAlphaNumericString(7));
+
+  // 1 creates Private Share share_name_1, inviting 2
+  CreatePrivateShareAddingOneContact(test_elements_1_,
+                                     test_elements_2_,
+                                     testing_variables_2_,
+                                     keyword_1_,
+                                     pin_1_,
+                                     password_1_,
+                                     public_id_1_,
+                                     keyword_2_,
+                                     pin_2_,
+                                     password_2_,
+                                     public_id_2_,
+                                     share_name_1,
+                                     rights_);
+
+  // 2 creates Open Share share_name_2, inviting 1
+  CreateOpenShareAddingOneContact(test_elements_2_,
+                                  test_elements_1_,
+                                  testing_variables_1_,
+                                  keyword_2_,
+                                  pin_2_,
+                                  password_2_,
+                                  public_id_2_,
+                                  keyword_1_,
+                                  pin_1_,
+                                  password_1_,
+                                  public_id_1_,
+                                  share_name_2);
+
+  // Check 1 and 2 can log in/out
+  LOG(kInfo) << "\n\n1 logging in and out!\n";
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+  LOG(kInfo) << "\n\n2 logging in and out!\n";
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+
+  // 2 removes 1
+  LOG(kInfo) << "\n\n2 removing 1\n";
+  TwoUsersDefriendEachOther(test_elements_2_,
+                            test_elements_1_,
+                            testing_variables_1_,
+                            keyword_2_,
+                            pin_2_,
+                            password_2_,
+                            public_id_2_,
+                            keyword_1_,
+                            pin_1_,
+                            password_1_,
+                            public_id_1_);
+
+  // Check 1 and 2 can log in/out
+  LOG(kInfo) << "\n\n1 logging in and out again!\n";
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+  LOG(kInfo) << "\n\n2 logging in and out again!\n";
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 }
 
 TEST_F(TwoUsersMutexApiTest, FUNC_AddModifyRemoveOneFile) {

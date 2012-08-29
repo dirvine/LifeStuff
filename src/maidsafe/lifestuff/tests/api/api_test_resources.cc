@@ -540,7 +540,7 @@ int ConnectTwoPublicIds(LifeStuff& test_elements1,
   return result;
 }
 
-void CreateShareAddingOneContact(LifeStuff& test_elements_a,
+void CreatePrivateShareAddingOneContact(LifeStuff& test_elements_a,
                                  LifeStuff& test_elements_b,
                                  testresources::TestingVariables& testing_variables_b,
                                  const std::string& keyword_a,
@@ -553,12 +553,12 @@ void CreateShareAddingOneContact(LifeStuff& test_elements_a,
                                  const std::string& public_id_b,
                                  std::string share_name,
                                  const int& rights) {
-  LOG(kInfo) << "\n\nCreating share " << share_name <<
+  LOG(kInfo) << "\n\nCreating private share " << share_name <<
                 " owned by " << public_id_a <<
                 " and inviting " << public_id_b << "\n";
 
   if (rights != kShareReadWrite && rights != kShareReadOnly) {
-    LOG(kInfo) << "CreateShareAddingOneContact given incorrect rights value: " << rights;
+    LOG(kInfo) << "CreatePrivateShareAddingOneContact given incorrect rights value: " << rights;
     return;
   }
 
@@ -606,7 +606,7 @@ void CreateShareAddingOneContact(LifeStuff& test_elements_a,
   EXPECT_EQ(kSuccess, test_elements_b.LogOut());
 }
 
-void AddOneContactToExistingShare(LifeStuff& test_elements_a,
+void AddOneContactToExistingPrivateShare(LifeStuff& test_elements_a,
                                   LifeStuff& test_elements_b,
                                   testresources::TestingVariables& testing_variables_b,
                                   const std::string& keyword_a,
@@ -624,7 +624,7 @@ void AddOneContactToExistingShare(LifeStuff& test_elements_a,
                 " owned by " << public_id_a << "\n";
 
   if (rights != kShareReadWrite && rights != kShareReadOnly) {
-    LOG(kInfo) << "AddOneContactToExistingShare given incorrect rights value: " << rights;
+    LOG(kInfo) << "AddOneContactToExistingPrivateShare given incorrect rights value: " << rights;
     return;
   }
 
@@ -675,6 +675,57 @@ void AddOneContactToExistingShare(LifeStuff& test_elements_a,
                                                    &share_name));
   fs::path directory2(test_elements_b.mount_path() / kSharedStuff / share_name);
   EXPECT_TRUE(fs::is_directory(directory2, error_code)) << directory2;
+  EXPECT_EQ(kSuccess, test_elements_b.LogOut());
+}
+
+void CreateOpenShareAddingOneContact(LifeStuff &test_elements_a,
+                                     LifeStuff &test_elements_b,
+                                     TestingVariables &testing_variables_b,
+                                     const std::string &keyword_a,
+                                     const std::string &pin_a,
+                                     const std::string &password_a,
+                                     const std::string &public_id_a,
+                                     const std::string &keyword_b,
+                                     const std::string &pin_b,
+                                     const std::string &password_b,
+                                     const std::string &public_id_b,
+                                     std::string share_name) {
+  LOG(kInfo) << "\n\nCreating open share " << share_name <<
+                " owned by " << public_id_a <<
+                " and inviting " << public_id_b << "\n";
+
+  testing_variables_b.openly_invited = false;
+  testing_variables_b.new_open_share_id.clear();
+
+  boost::system::error_code error_code;
+
+  // a creates share, inviting b
+  EXPECT_EQ(kSuccess, test_elements_a.LogIn(keyword_a, pin_a, password_a));
+
+  StringIntMap results;
+  std::vector<std::string> contacts;
+  contacts.push_back(public_id_b);
+  results.insert(std::make_pair(public_id_b, kGeneralError));
+  EXPECT_EQ(kSuccess,
+            test_elements_a.CreateEmptyOpenShare(public_id_a, contacts, &share_name, &results));
+  fs::path share_path(test_elements_a.mount_path() / kSharedStuff / share_name);
+  EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
+  EXPECT_EQ(0, error_code.value());
+  EXPECT_EQ(kSuccess, results[public_id_b]);
+  EXPECT_EQ(kSuccess, test_elements_a.LogOut());
+
+  // b accepts invitation into share
+  EXPECT_EQ(kSuccess, test_elements_b.LogIn(keyword_b, pin_b, password_b));
+  while (!testing_variables_b.openly_invited)
+    Sleep(bptime::milliseconds(100));
+  EXPECT_FALSE(testing_variables_b.new_open_share_id.empty());
+  EXPECT_EQ(kSuccess,
+            test_elements_b.AcceptOpenShareInvitation(public_id_b,
+                                                      public_id_a,
+                                                      testing_variables_b.new_open_share_id,
+                                                      &share_name));
+  fs::path share(test_elements_b.mount_path() / kSharedStuff / share_name);
+  EXPECT_TRUE(fs::is_directory(share, error_code)) << share;
   EXPECT_EQ(kSuccess, test_elements_b.LogOut());
 }
 
