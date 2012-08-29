@@ -242,19 +242,6 @@ int LifeStuffImpl::ConnectToSignals(
 #endif
   }
 
-  if (public_id_) {
-    public_id_->ConnectToContactDeletionReceivedSignal([&] (const std::string& own_public_id,
-                                                            const std::string& contact_public_id,
-                                                            const std::string& removal_message,
-                                                            const std::string& timestamp) {
-                                                         RemoveContact(own_public_id,
-                                                                       contact_public_id,
-                                                                       removal_message,
-                                                                       timestamp,
-                                                                       false);
-                                                       });
-  }
-
   if (connects > 0) {
     state_ = kConnected;
     return kSuccess;
@@ -657,9 +644,6 @@ int LifeStuffImpl::RemoveContact(const std::string& my_public_id,
     LOG(kError) << "Failed pre checks in RemoveContact.";
     return result;
   }
-
-  // TODO(Alison): 09/08/12 - Remove contact from all Private shares owned by self (no messaging)
-  // TODO(Alison): 09/08/12 - Remove self from all Private shares owned by contact (no messaging)
 
   // For private shares, if share_members can be fetched, indicates owner
   // otherwise, only the owner(inviter) of the share can be fetched
@@ -2223,12 +2207,6 @@ void LifeStuffImpl::ConnectInternalElements() {
         MemberAccessChangeSlot(share_id, directory_id, new_share_id, key_ring, access_right);
       });
 
-  public_id_->ConnectToContactConfirmedSignal(
-      [&] (const std::string& own_public_id, const std::string& recipient_public_id,
-           const std::string&) {
-        message_handler_->InformConfirmedContactOnline(own_public_id, recipient_public_id);
-      });
-
   message_handler_->ConnectToPrivateShareDetailsSignal(
       [&] (const std::string& share_id, fs::path* relative_path) {
       return user_storage_->GetShareDetails(share_id,
@@ -2236,6 +2214,26 @@ void LifeStuffImpl::ConnectInternalElements() {
                                             nullptr,
                                             nullptr,
                                             nullptr);
+      });
+
+  public_id_->ConnectToContactConfirmedSignal(
+      [&] (const std::string& own_public_id, const std::string& recipient_public_id,
+           const std::string&) {
+        message_handler_->InformConfirmedContactOnline(own_public_id, recipient_public_id);
+      });
+
+  public_id_->ConnectToContactDeletionReceivedSignal(
+      [&] (const std::string& own_public_id,
+           const std::string& contact_public_id,
+           const std::string& removal_message,
+           const std::string& timestamp) {
+        int result(RemoveContact(own_public_id,
+                                 contact_public_id,
+                                 removal_message,
+                                 timestamp,
+                                 false));
+        if (result != kSuccess)
+          LOG(kError) << "Failed to remove contact after receiving contact deletion signal!";
       });
 }
 
