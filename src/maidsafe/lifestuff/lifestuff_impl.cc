@@ -296,6 +296,14 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
     return result;
   }
 
+#ifndef LOCAL_TARGETS_ONLY
+  result = CreateVaultInLocalMachine();
+  if (result != kSuccess)  {
+    LOG(kError) << "Failed to create vault. No LifeStuff for you!";
+    return result;
+  }
+#endif
+
   boost::system::error_code error_code;
   fs::path mount_dir(GetHomeDir() / kAppHomeDirectory / session_.session_name());
   if (!fs::exists(mount_dir, error_code)) {
@@ -312,10 +320,6 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
     LOG(kError) << "Failed to mount";
     return kGeneralError;
   }
-  user_storage_->ConnectToShareRenamedSignal(
-      [this] (const std::string& old_share_name, const std::string& new_share_name) {
-        this->ShareRenameSlot(old_share_name, new_share_name);
-      });
 
   fs::path mount_path(user_storage_->mount_dir());
   fs::create_directories(mount_path / kMyStuff / kDownloadStuff, error_code);
@@ -328,6 +332,7 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
     LOG(kError) << "Failed creating Shared Stuff: " << error_code.message();
     return kGeneralError;
   }
+
   result = user_credentials_->SaveSession();
   if (result != kSuccess) {
     LOG(kWarning) << "Failed to save session.";
@@ -409,10 +414,6 @@ int LifeStuffImpl::LogIn(const std::string& keyword,
     LOG(kError) << "Failed to mount";
     return kGeneralError;
   }
-  user_storage_->ConnectToShareRenamedSignal(
-      [this] (const std::string& old_share_name, const std::string& new_share_name) {
-        this->ShareRenameSlot(old_share_name, new_share_name);
-      });
 
   state_ = kLoggedIn;
   if (!session_.PublicIdentities().empty()) {
@@ -2136,10 +2137,8 @@ void LifeStuffImpl::ConnectInternalElements() {
   message_handler_->ConnectToParseAndSaveDataMapSignal(
       [&] (const std::string& file_name,
            const std::string& serialised_data_map,
-           std::string* data_map_hash) {
-        return user_storage_->ParseAndSaveDataMap(file_name,
-                                                  serialised_data_map,
-                                                  data_map_hash);
+           std::string* data_map_hash)->int {
+        return user_storage_->ParseAndSaveDataMap(file_name, serialised_data_map, data_map_hash);
       });
 
   message_handler_->ConnectToShareInvitationResponseSignal(
@@ -2152,23 +2151,22 @@ void LifeStuffImpl::ConnectInternalElements() {
       });
 
   message_handler_->ConnectToSavePrivateShareDataSignal(
-      [&] (const std::string& serialised_share_data,
-           const std::string& share_id) {
+      [&] (const std::string& serialised_share_data, const std::string& share_id)->int {
         return user_storage_->SavePrivateShareData(serialised_share_data, share_id);
       });
 
   message_handler_->ConnectToDeletePrivateShareDataSignal(
-      [&] (const std::string& share_id) {
+      [&] (const std::string& share_id)->int {
         return user_storage_->DeletePrivateShareData(share_id);
       });
 
   message_handler_->ConnectToPrivateShareUserLeavingSignal(
       [&] (const std::string&, const std::string& share_id, const std::string& user_id) {
-        return user_storage_->UserLeavingShare(share_id, user_id);
+        user_storage_->UserLeavingShare(share_id, user_id);
       });
 
   message_handler_->ConnectToSaveOpenShareDataSignal(
-      [&] (const std::string& serialised_share_data, const std::string& share_id) {
+      [&] (const std::string& serialised_share_data, const std::string& share_id)->int {
         return user_storage_->SaveOpenShareData(serialised_share_data, share_id);
       });
 
@@ -2187,11 +2185,11 @@ void LifeStuffImpl::ConnectInternalElements() {
            const std::string* new_directory_id,
            const asymm::Keys* new_key_ring,
            int* access_right) {
-        return user_storage_->UpdateShare(share_id,
-                                          new_share_id,
-                                          new_directory_id,
-                                          new_key_ring,
-                                          access_right);
+        user_storage_->UpdateShare(share_id,
+                                   new_share_id,
+                                   new_directory_id,
+                                   new_key_ring,
+                                   access_right);
       });
 
   message_handler_->ConnectToPrivateMemberAccessLevelSignal(
@@ -2208,16 +2206,17 @@ void LifeStuffImpl::ConnectInternalElements() {
       });
 
   message_handler_->ConnectToPrivateShareDetailsSignal(
-      [&] (const std::string& share_id, fs::path* relative_path) {
-      return user_storage_->GetShareDetails(share_id,
-                                            relative_path,
-                                            nullptr,
-                                            nullptr,
-                                            nullptr);
+      [&] (const std::string& share_id, fs::path* relative_path)->int {
+        return user_storage_->GetShareDetails(share_id,
+                                              relative_path,
+                                              nullptr,
+                                              nullptr,
+                                              nullptr);
       });
 
   public_id_->ConnectToContactConfirmedSignal(
-      [&] (const std::string& own_public_id, const std::string& recipient_public_id,
+      [&] (const std::string& own_public_id,
+           const std::string& recipient_public_id,
            const std::string&) {
         message_handler_->InformConfirmedContactOnline(own_public_id, recipient_public_id);
       });
@@ -2235,6 +2234,11 @@ void LifeStuffImpl::ConnectInternalElements() {
         if (result != kSuccess)
           LOG(kError) << "Failed to remove contact after receiving contact deletion signal!";
       });
+
+  user_storage_->ConnectToShareRenamedSignal([&] (const std::string& old_share_name,
+                                                  const std::string& new_share_name) {
+                                               ShareRenameSlot(old_share_name, new_share_name);
+                                             });
 }
 
 int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
@@ -2375,6 +2379,25 @@ void LifeStuffImpl::MemberAccessChangeSlot(const std::string& share_id,
     }
   }
 }
+
+#ifndef LOCAL_TARGETS_ONLY
+int LifeStuffImpl::CreateVaultInLocalMachine() {
+  std::string account_name(session_.passport().SignaturePacketDetails(passport::kMaid,
+                                                                      true).identity);
+  asymm::Keys pmid_keys(session_.passport().SignaturePacketDetails(passport::kPmid, true));
+  if (account_name.empty() || pmid_keys.identity.empty()) {
+    LOG(kError) << "Failed to obtain credentials to start vault from session.";
+    return kVaultCreationFailure;
+  }
+
+  if (!client_controller_->StartVault(pmid_keys, account_name)) {
+    LOG(kError) << "Failed to create vault.";
+    return kVaultCreationFailure;
+  }
+
+  return kSuccess;
+}
+#endif
 
 }  // namespace lifestuff
 

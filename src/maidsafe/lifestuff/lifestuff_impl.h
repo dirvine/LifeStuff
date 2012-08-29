@@ -283,6 +283,9 @@ class LifeStuffImpl {
                               const std::string& new_share_id,
                               const asymm::Keys& key_ring,
                               int access_right);
+#ifndef LOCAL_TARGETS_ONLY
+  int CreateVaultInLocalMachine();
+#endif
 };
 
 }  // namespace lifestuff

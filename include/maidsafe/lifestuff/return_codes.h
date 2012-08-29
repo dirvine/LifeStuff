@@ -41,6 +41,7 @@ enum ReturnCode {
   kInvalidPublicKey = -200006,
   kOperationTimeOut = -200007,
   kRemoteChunkStoreFailure = -200008,
+  kVaultCreationFailure = -200009,
 
   // Authentication
   kAuthenticationError = -201001,
