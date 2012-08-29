@@ -178,6 +178,10 @@ class PublicId {
                          const std::string& own_public_id,
                          const Introduction& introduction,
                          const priv::chunk_actions::SignedData& singed_introduction);
+  int ProcessRequestWhenExpectingResponse(Contact& contact,
+                                          const ContactsHandlerPtr contacts_handler,
+                                          const std::string& own_public_id,
+                                          const Introduction& introduction);
   void ProcessMisplacedContactRequest(Contact& contact, const std::string& own_public_id);
   void ProcessNewLifestuffCardInformation(const std::string& card_address,
                                           const std::string& own_public_id,
