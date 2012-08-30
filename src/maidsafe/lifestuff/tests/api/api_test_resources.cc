@@ -745,12 +745,12 @@ void TwoUsersDefriendEachOther(LifeStuff& test_elements_a,
 
   EXPECT_EQ(kSuccess, test_elements_b.LogIn(keyword_b, pin_b, password_b)) << "Public ID: "
                                                                            << public_id_b;
-  int num_contacts_b(test_elements_b.GetContacts(public_id_b).size());
+  size_t num_contacts_b(test_elements_b.GetContacts(public_id_b).size());
   EXPECT_EQ(kSuccess, test_elements_b.LogOut());
 
   EXPECT_EQ(kSuccess, test_elements_a.LogIn(keyword_a, pin_a, password_a));
 
-  int num_contacts_a(test_elements_a.GetContacts(public_id_a).size());
+  size_t num_contacts_a(test_elements_a.GetContacts(public_id_a).size());
   EXPECT_EQ(kSuccess, test_elements_a.RemoveContact(public_id_a, public_id_b, ""));
   EXPECT_EQ(test_elements_a.GetContacts(public_id_a).size(), num_contacts_a - 1);
   std::vector<std::string>* share_names(new std::vector<std::string>);
