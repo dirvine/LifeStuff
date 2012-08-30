@@ -24,6 +24,7 @@
 
 #include <list>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -31,6 +32,7 @@
 #include "boost/asio/io_service.hpp"
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
+#include "boost/thread/thread.hpp"
 
 #ifdef WIN32
 #  include "maidsafe/drive/win_drive.h"
