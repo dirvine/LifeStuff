@@ -718,14 +718,14 @@ TEST_F(PublicIdTest, FUNC_RemoveContactsIncorrectly) {
             public_id1_->RemoveContact(public_identity1_, public_identity2_, "", "", true));
 }
 
-TEST_F(PublicIdTest, DISABLED_FUNC_RejectThenAddContact)  {
+TEST_F(PublicIdTest, FUNC_RejectThenAddContact)  {
   boost::mutex mutex;
   boost::condition_variable cond_var;
-  // Create users who both accept new contacts
+
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, true));
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_identity2_, true));
 
-  // Connect a slot for contact requests
+  // Connect slot for 1 getting contact requests
   bool done(false);
   public_id1_->ConnectToNewContactSignal(
       [&] (const std::string& own_public_id,
@@ -735,7 +735,7 @@ TEST_F(PublicIdTest, DISABLED_FUNC_RejectThenAddContact)  {
         ContactRequestSlot(own_public_id, contact_public_id, message, &mutex, &cond_var, &done);
        });
 
-  // 2 adds contact and checks own state
+  // 2 adds 1 and checks own state
   std::string message(GenerateMessage());
   ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_, message));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
@@ -763,29 +763,51 @@ TEST_F(PublicIdTest, DISABLED_FUNC_RejectThenAddContact)  {
   received_contact = Contact();
   ASSERT_NE(kSuccess, contacts_handler1->ContactInfo(public_identity2_, &received_contact));
 
-  // slot for contact requests
   done = false;
-  public_id2_->ConnectToNewContactSignal(
+  std::string confirmed_contact;
+  // Connect slot for 2 getting contact confirmations
+  public_id2_->ConnectToContactConfirmedSignal(
       [&] (const std::string& own_public_id,
            const std::string& contact_public_id,
-           const std::string& message,
            const std::string& /*timestamp*/) {
-        ContactRequestSlot(own_public_id, contact_public_id, message, &mutex, &cond_var, &done);
-       });
+        ContactConfirmedSlot(own_public_id, contact_public_id, &confirmed_contact, &mutex,
+                             &cond_var, &done);
+      });
+  // Connect slot for 1 getting contact confirmations
+  public_id1_->ConnectToContactConfirmedSignal(
+      [&] (const std::string& own_public_id,
+           const std::string& contact_public_id,
+           const std::string& /*timestamp*/) {
+        ContactConfirmedSlot(own_public_id, contact_public_id, &confirmed_contact, &mutex,
+                             &cond_var, &done);
+      });
 
-  // 1 adds 2 again
+  // 1 adds 2
   message = GenerateMessage();
   ASSERT_EQ(kSuccess, public_id1_->AddContact(public_identity1_, public_identity2_, message));
   ASSERT_EQ(kSuccess, public_id2_->StartCheckingForNewContacts(interval_));
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    ASSERT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Alison)
+  }
+  done = false;
+  confirmed_contact.clear();
 
+  // 1 awaits an automatic friend confirmation from 2
+  ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   {
     boost::mutex::scoped_lock lock(mutex);
     ASSERT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Alison)
   }
 
-  ASSERT_EQ(public_identity1_, received_public_identity_);
-  ASSERT_EQ(message, received_message_);
-  ASSERT_EQ(kSuccess, public_id2_->ConfirmContact(public_identity2_, public_identity1_));
+  // Check states
+  received_contact = Contact();
+  ASSERT_EQ(kSuccess, contacts_handler1->ContactInfo(public_identity2_, &received_contact));
+  ASSERT_EQ(kConfirmed, received_contact.status);
+
+  received_contact = Contact();
+  ASSERT_EQ(kSuccess, contacts_handler2->ContactInfo(public_identity1_, &received_contact));
+  ASSERT_EQ(kConfirmed, received_contact.status);
 }
 
 TEST_F(PublicIdTest, FUNC_FixAsynchronousConfirmedContact) {

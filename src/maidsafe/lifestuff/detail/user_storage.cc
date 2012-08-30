@@ -1119,7 +1119,7 @@ int UserStorage::SearchHiddenFiles(const fs::path& absolute_path,
                                                  results);
 }
 
-int UserStorage::GetHiddenFileDataMap(const boost::filesystem3::path& absolute_path,
+int UserStorage::GetHiddenFileDataMap(const boost::filesystem::path& absolute_path,
                                       std::string* data_map) {
   return drive_in_user_space_->GetDataMapHidden(drive::RelativePath(mount_dir(), absolute_path),
                                                 data_map);
