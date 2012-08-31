@@ -102,7 +102,11 @@ set(LIFESTUFF_TESTS_CC "${PATH_TO_TESTS}/contacts_test.cc"
                        "${PATH_TO_TESTS}/utils_test.cc")
 set(NETWORK_HELPER_CC "${PATH_TO_TESTS}/network_helper.cc")
 set(NETWORK_HELPER_H "${PATH_TO_TESTS}/network_helper.h")
-set(NETWORK_HELPER_FILES ${NETWORK_HELPER_CC} ${NETWORK_HELPER_H})
+set(NETWORK_HELPER_PROTOS "${PATH_TO_TESTS}/bootstrap.pb.cc"
+                          "${PATH_TO_TESTS}/bootstrap.pb.h"
+                          "${PATH_TO_TESTS}/bootstrap_pb.h"
+                          "${PATH_TO_TESTS}/bootstrap.proto")
+set(NETWORK_HELPER_FILES ${NETWORK_HELPER_CC} ${NETWORK_HELPER_H} ${NETWORK_HELPER_PROTOS})
 
 source_group("Tests Source Files" FILES ${TESTS_MAIN_CC}
                                         ${CLIENT_CONTROLLER_TEST_CC}
@@ -114,6 +118,8 @@ source_group("Tests Source Files" FILES ${TESTS_MAIN_CC}
 
 source_group("Tests Header Files" FILES ${PROJECT_BINARY_DIR}/keys_helper.h
                                         ${NETWORK_HELPER_H})
+
+source_group("Tests Proto Files" FILES ${NETWORK_HELPER_PROTOS})
 
 
 ###################################################################################################
@@ -186,7 +192,9 @@ rename_outdated_built_exes()
 # Set compiler and linker flags                                                                   #
 ###################################################################################################
 include(maidsafe_standard_flags)
-ms_disable_warnings(${PATH_TO_DETAIL}/data_atlas.pb.cc)
+
+file(GLOB_RECURSE PROTO_SOURCE_FILES "${PATH_TO_SRC}/*.pb.cc")
+ms_disable_warnings(${PROTO_SOURCE_FILES})
 
 set_target_properties(maidsafe_lifestuff_local
                       TESTlifestuff_general

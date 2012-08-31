@@ -18,9 +18,12 @@
 #define MAIDSAFE_LIFESTUFF_TESTS_NETWORK_HELPER_H_
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "boost/filesystem/path.hpp"
+#include "boost/iostreams/device/file_descriptor.hpp"
+#include "boost/iostreams/stream.hpp"
 #include "boost/process/child.hpp"
 
 #include "maidsafe/common/test.h"
@@ -40,7 +43,9 @@ class NetworkHelper {
   testing::AssertionResult StopLocalNetwork();
 
  private:
-   std::vector<boost::process::child> vault_processes_;
+   typedef std::unique_ptr<boost::iostreams::stream<boost::iostreams::file_descriptor_source>>
+      InStreamPtr;
+   std::vector<std::pair<boost::process::child, InStreamPtr>> vault_processes_;
 };
 
 }  // namespace test

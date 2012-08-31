@@ -87,8 +87,7 @@ class UserCredentialsTest : public testing::Test {
                                           asio_service_.service());
 #else
     ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 8));
-    //std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
-    //remote_chunk_store_ = BuildChunkStore(*test_dir_, bootstrap_endpoints, node_);
+    remote_chunk_store_ = BuildChunkStore(*test_dir_, node_);
 #endif
     user_credentials_.reset(new UserCredentials(*remote_chunk_store_,
                                                 session_,
