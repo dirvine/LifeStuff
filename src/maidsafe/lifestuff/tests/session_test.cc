@@ -293,7 +293,7 @@ TEST_F(SessionTest, BEH_SetsGetsAndReset) {
   ASSERT_EQ("", session_.root_parent_id());
 }
 
-TEST_F(SessionTest, BEH_SessionName) {
+TEST_F(SessionTest, DISABLED_BEH_SessionName) {
   // Check session is empty
   ASSERT_EQ("", session_.session_name());
   ASSERT_EQ("", session_.keyword());

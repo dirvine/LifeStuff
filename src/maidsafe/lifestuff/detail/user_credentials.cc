@@ -85,7 +85,7 @@ int UserCredentials::LogIn(const std::string& keyword,
   }
 
   result = impl_->GetUserInfo(keyword, pin, password);
-  if (result != kSuccess)
+  if (result != kSuccess && result != kReadOnlyRestrictedSuccess)
     session_.Reset();
   return result;
 }

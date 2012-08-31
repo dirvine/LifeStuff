@@ -50,7 +50,6 @@ namespace lifestuff {
 
 LifeStuffImpl::LifeStuffImpl()
     : thread_count_(kThreads),
-      state_(kZeroth),
       buffered_path_(),
 #ifdef LOCAL_TARGETS_ONLY
       simulation_path_(),
@@ -73,7 +72,7 @@ LifeStuffImpl::LifeStuffImpl()
 LifeStuffImpl::~LifeStuffImpl() {}
 
 int LifeStuffImpl::Initialise(const boost::filesystem::path& base_directory) {
-  if (state_ != kZeroth) {
+  if (session_.state() != kZeroth) {
     LOG(kError) << "Make sure that object is in the original Zeroth state. Asimov rules.";
     return kGeneralError;
   }
@@ -114,7 +113,7 @@ int LifeStuffImpl::Initialise(const boost::filesystem::path& base_directory) {
                                               session_,
                                               asio_service_.service()));
 
-  state_ = kInitialised;
+  session_.set_state(kInitialised);
 
   return kSuccess;
 }
@@ -134,7 +133,7 @@ int LifeStuffImpl::ConnectToSignals(
     const ShareRenamedFunction& share_renamed_function,
     const ShareChangedFunction& share_changed_function,
     const LifestuffCardUpdateFunction& lifestuff_card_update_function) {
-  if (state_ != kInitialised) {
+  if (session_.state() != kInitialised) {
     LOG(kError) << "Make sure that object is initialised";
     return kGeneralError;
   }
@@ -242,7 +241,7 @@ int LifeStuffImpl::ConnectToSignals(
   }
 
   if (connects > 0) {
-    state_ = kConnected;
+    session_.set_state(kConnected);
     return kSuccess;
   }
 
@@ -250,7 +249,7 @@ int LifeStuffImpl::ConnectToSignals(
 }
 
 int LifeStuffImpl::Finalise() {
-  if (state_ != kConnected) {
+  if (session_.state() != kConnected) {
     LOG(kError) << "Need to be connected to finalise.";
     return kGeneralError;
   }
@@ -269,7 +268,7 @@ int LifeStuffImpl::Finalise() {
   public_id_.reset();
   user_credentials_.reset();
   user_storage_.reset();
-  state_ = kZeroth;
+  session_.set_state(kZeroth);
 
   return kSuccess;
 }
@@ -278,7 +277,7 @@ int LifeStuffImpl::Finalise() {
 int LifeStuffImpl::CreateUser(const std::string& keyword,
                               const std::string& pin,
                               const std::string& password) {
-  if (state_ != kConnected) {
+  if (session_.state() != kConnected) {
     LOG(kError) << "Make sure that object is initialised and connected";
     return kGeneralError;
   }
@@ -335,14 +334,16 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
     user_storage_->UnMountDrive();
   }
 
-  state_ = kLoggedIn;
+  session_.set_state(kLoggedIn);
 
   return kSuccess;
 }
 
 int LifeStuffImpl::CreatePublicId(const std::string& public_id) {
-  if (state_ != kLoggedIn) {
+  if (session_.state() != kLoggedIn) {
     LOG(kError) << "Wrong state to create a public ID.";
+    if (session_.state() == kLoggedInReadOnly)
+      return kReadOnlyFailure;
     return kGeneralError;
   }
 
@@ -371,22 +372,30 @@ int LifeStuffImpl::LogIn(const std::string& keyword,
                          const std::string& pin,
                          const std::string& password) {
   session_.Reset();
-  if (state_ != kConnected) {
+  if (session_.state() != kConnected) {
     LOG(kError) << "Make sure that object is initialised and connected";
     return kGeneralError;
   }
 
   int result(user_credentials_->LogIn(keyword, pin, password));
-  if (result != kSuccess) {
+  if (result != kSuccess && result != kReadOnlyRestrictedSuccess) {
     LOG(kError) << "LogIn failed with result: " << result;
     return result;
   }
 
+  LifeStuffState anticipated_state;
+  if (result == kSuccess)
+    anticipated_state = kLoggedIn;
+  else
+    anticipated_state = kLoggedInReadOnly;
+
+//  if (anticipated_state == kLoggedIn) {
   result = SetValidPmidAndInitialisePublicComponents();
   if (result != kSuccess)  {
     LOG(kError) << "Failed to set valid PMID";
     return result;
   }
+//  }
 
   boost::system::error_code error_code;
   fs::path mount_dir(GetHomeDir() / kAppHomeDirectory / session_.session_name());
@@ -405,7 +414,10 @@ int LifeStuffImpl::LogIn(const std::string& keyword,
     }
   }
 
-  user_storage_->MountDrive(mount_dir, &session_, false, false);
+  if (anticipated_state == kLoggedIn)
+    user_storage_->MountDrive(mount_dir, &session_, false, false);
+  else
+    user_storage_->MountDrive(mount_dir, &session_, false, true);
   if (!user_storage_->mount_status()) {
     LOG(kError) << "Failed to mount";
     return kGeneralError;
@@ -415,28 +427,35 @@ int LifeStuffImpl::LogIn(const std::string& keyword,
         this->ShareRenameSlot(old_share_name, new_share_name);
       });
 
-  state_ = kLoggedIn;
-  if (!session_.PublicIdentities().empty()) {
-    public_id_->StartUp(interval_);
-    message_handler_->StartUp(interval_);
+  session_.set_state(anticipated_state);
+  if (anticipated_state == kLoggedIn) {
+    if (!session_.PublicIdentities().empty()) {
+      public_id_->StartUp(interval_);
+      message_handler_->StartUp(interval_);
+    }
   }
 
-  return kSuccess;
+  if (anticipated_state == kLoggedIn)
+    return kSuccess;
+  else
+    return kReadOnlyRestrictedSuccess;
 }
 
 int LifeStuffImpl::LogOut() {
-  if (state_ != kLoggedIn) {
+  if (session_.state() != kLoggedIn && session_.state() != kLoggedInReadOnly) {
     LOG(kError) << "Should be logged in to log out.";
     return kGeneralError;
   }
 
-  bool saving_session(true);
-  while (saving_session) {
-    {
-      boost::mutex::scoped_lock loch_tangy(save_session_mutex_);
-      saving_session = saving_session_;
+  if (session_.state() == kLoggedIn) {
+    bool saving_session(true);
+    while (saving_session) {
+      {
+        boost::mutex::scoped_lock loch_tangy(save_session_mutex_);
+        saving_session = saving_session_;
+      }
+      Sleep(bptime::milliseconds(100));
     }
-    Sleep(bptime::milliseconds(100));
   }
 
   user_storage_->UnMountDrive();
@@ -445,12 +464,18 @@ int LifeStuffImpl::LogOut() {
     return kGeneralError;
   }
 
-  public_id_->ShutDown();
-  message_handler_->ShutDown();
+  if (session_.state() == kLoggedIn) {
+    public_id_->ShutDown();
+    message_handler_->ShutDown();
+  }
 
-  if (user_credentials_->Logout() != kSuccess) {
-    LOG(kError) << "Failed to log out.";
-    return kGeneralError;
+  if (session_.state() == kLoggedIn) {
+    if (user_credentials_->Logout() != kSuccess) {
+      LOG(kError) << "Failed to log out.";
+      return kGeneralError;
+    }
+  } else {
+    session_.Reset();
   }
 
   if (!remote_chunk_store_->WaitForCompletion()) {
@@ -466,14 +491,14 @@ int LifeStuffImpl::LogOut() {
                   << mount_path();
   session_.Reset();
 
-  state_ = kConnected;
+  session_.set_state(kConnected);
 
   return kSuccess;
 }
 
 int LifeStuffImpl::CheckPassword(const std::string& password) {
-  if (state_ != kLoggedIn) {
-    LOG(kError) << "Should be logged in to log out.";
+  if (session_.state() != kLoggedIn && session_.state() != kLoggedInReadOnly) {
+    LOG(kError) << "Should be logged in to check password.";
     return kGeneralError;
   }
 
@@ -481,8 +506,10 @@ int LifeStuffImpl::CheckPassword(const std::string& password) {
 }
 
 int LifeStuffImpl::ChangeKeyword(const std::string& new_keyword, const std::string& password) {
-  if (state_ != kLoggedIn) {
-    LOG(kError) << "Should be logged in to log out.";
+  if (session_.state() != kLoggedIn) {
+    LOG(kError) << "Should be logged in to change keyword.";
+    if (session_.state() == kLoggedInReadOnly)
+      return kReadOnlyFailure;
     return kGeneralError;
   }
 
@@ -501,8 +528,10 @@ int LifeStuffImpl::ChangeKeyword(const std::string& new_keyword, const std::stri
 }
 
 int LifeStuffImpl::ChangePin(const std::string& new_pin, const std::string& password) {
-  if (state_ != kLoggedIn) {
-    LOG(kError) << "Should be logged in to log out.";
+  if (session_.state() != kLoggedIn) {
+    LOG(kError) << "Should be logged in to change pin.";
+    if (session_.state() == kLoggedInReadOnly)
+      return kReadOnlyFailure;
     return kGeneralError;
   }
 
@@ -522,8 +551,10 @@ int LifeStuffImpl::ChangePin(const std::string& new_pin, const std::string& pass
 
 int LifeStuffImpl::ChangePassword(const std::string& new_password,
                                   const std::string& current_password) {
-  if (state_ != kLoggedIn) {
-    LOG(kError) << "Should be logged in to log out.";
+  if (session_.state() != kLoggedIn) {
+    LOG(kError) << "Should be logged in to change password.";
+    if (session_.state() == kLoggedInReadOnly)
+      return kReadOnlyFailure;
     return kGeneralError;
   }
 
@@ -542,7 +573,7 @@ int LifeStuffImpl::ChangePassword(const std::string& new_password,
 }
 
 int LifeStuffImpl::LeaveLifeStuff() {
-  state_ = kZeroth;
+  session_.set_state(kZeroth);
   // Unmount
   user_storage_->UnMountDrive();
 
@@ -598,7 +629,7 @@ int LifeStuffImpl::LeaveLifeStuff() {
 int LifeStuffImpl::AddContact(const std::string& my_public_id,
                               const std::string& contact_public_id,
                               const std::string& message) {
-  int result(PreContactChecks(my_public_id));
+  int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in AddContact.";
     return result;
@@ -609,7 +640,7 @@ int LifeStuffImpl::AddContact(const std::string& my_public_id,
 
 int LifeStuffImpl::ConfirmContact(const std::string& my_public_id,
                                   const std::string& contact_public_id) {
-  int result(PreContactChecks(my_public_id));
+  int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in ConfirmContact.";
     return result;
@@ -626,7 +657,7 @@ int LifeStuffImpl::ConfirmContact(const std::string& my_public_id,
 
 int LifeStuffImpl::DeclineContact(const std::string& my_public_id,
                                   const std::string& contact_public_id) {
-  int result(PreContactChecks(my_public_id));
+  int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in DeclineContact.";
     return result;
@@ -640,7 +671,7 @@ int LifeStuffImpl::RemoveContact(const std::string& my_public_id,
                                  const std::string& removal_message,
                                  const std::string& timestamp,
                                  const bool& instigator) {
-  int result(PreContactChecks(my_public_id));
+  int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in RemoveContact.";
     return result;
@@ -678,7 +709,7 @@ int LifeStuffImpl::RemoveContact(const std::string& my_public_id,
 
 int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
                                         const std::string& profile_picture_contents) {
-  int result(PreContactChecks(my_public_id));
+  int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in ChangeProfilePicture.";
     return result;
@@ -756,7 +787,7 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
 std::string LifeStuffImpl::GetOwnProfilePicture(const std::string& my_public_id) {
   // Read contents, put them in a string, give them back. Should not be a file
   // over a certain size (kFileRecontructionLimit).
-  int result(PreContactChecks(my_public_id));
+  int result(PreContactChecksReadOnly(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in ChangeProfilePicture.";
     return "";
@@ -791,7 +822,7 @@ std::string LifeStuffImpl::GetOwnProfilePicture(const std::string& my_public_id)
 
 std::string LifeStuffImpl::GetContactProfilePicture(const std::string& my_public_id,
                                                     const std::string& contact_public_id) {
-  int result(PreContactChecks(my_public_id));
+  int result(PreContactChecksReadOnly(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in GetContactProfilePicture.";
     return "";
@@ -825,16 +856,23 @@ std::string LifeStuffImpl::GetContactProfilePicture(const std::string& my_public
 int LifeStuffImpl::GetLifestuffCard(const std::string& my_public_id,
                                     const std::string& contact_public_id,
                                     SocialInfoMap& social_info) {
+  // TODO(Alison) - do we need to check session_.state() here?
   return public_id_->GetLifestuffCard(my_public_id, contact_public_id, social_info);
 }
 
 int LifeStuffImpl::SetLifestuffCard(const std::string& my_public_id,
                                     const SocialInfoMap& social_info) {
+  if (session_.state() != kLoggedIn) {
+    LOG(kError) << "Should be logged in to set LifeStuff card.";
+    if (session_.state() == kLoggedInReadOnly)
+      return kReadOnlyFailure;
+    return kGeneralError;
+  }
   return public_id_->SetLifestuffCard(my_public_id, social_info);
 }
 
 ContactMap LifeStuffImpl::GetContacts(const std::string& my_public_id, uint16_t bitwise_status) {
-  int result(PreContactChecks(my_public_id));
+  int result(PreContactChecksReadOnly(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in GetContacts.";
     return ContactMap();
@@ -850,8 +888,8 @@ ContactMap LifeStuffImpl::GetContacts(const std::string& my_public_id, uint16_t 
 }
 
 std::vector<std::string> LifeStuffImpl::PublicIdsList() const {
-  if (state_ != kLoggedIn) {
-    LOG(kError) << "Wrong state: " << state_;
+  if (session_.state() != kLoggedIn && session_.state() != kLoggedInReadOnly) {
+    LOG(kError) << "Wrong state: " << session_.state();
     return std::vector<std::string>();
   }
 
@@ -862,8 +900,10 @@ std::vector<std::string> LifeStuffImpl::PublicIdsList() const {
 int LifeStuffImpl::SendChatMessage(const std::string& sender_public_id,
                                    const std::string& receiver_public_id,
                                    const std::string& message) {
-  if (state_ != kLoggedIn) {
-    LOG(kError) << "Wrong state: " << state_;
+  if (session_.state() != kLoggedIn) {
+    LOG(kError) << "Wrong state: " << session_.state();
+    if (session_.state() == kLoggedInReadOnly)
+      return kReadOnlyFailure;
     return kGeneralError;
   }
 
@@ -883,8 +923,10 @@ int LifeStuffImpl::SendChatMessage(const std::string& sender_public_id,
 int LifeStuffImpl::SendFile(const std::string& sender_public_id,
                             const std::string& receiver_public_id,
                             const fs::path& absolute_path) {
-  if (state_ != kLoggedIn) {
-    LOG(kError) << "Wrong state: " << state_;
+  if (session_.state() != kLoggedIn) {
+    LOG(kError) << "Wrong state: " << session_.state();
+    if (session_.state() == kLoggedInReadOnly)
+      return kReadOnlyFailure;
     return kGeneralError;
   }
 
@@ -913,8 +955,10 @@ int LifeStuffImpl::SendFile(const std::string& sender_public_id,
 int LifeStuffImpl::AcceptSentFile(const std::string& identifier,
                                   const fs::path& absolute_path,
                                   std::string* file_name) {
-  if (state_ != kLoggedIn) {
-    LOG(kError) << "Wrong state: " << state_;
+  if (session_.state() != kLoggedIn) {
+    LOG(kError) << "Wrong state: " << session_.state();
+    if (session_.state() == kLoggedInReadOnly)
+      return kReadOnlyFailure;
     return kGeneralError;
   }
 
@@ -975,8 +1019,10 @@ int LifeStuffImpl::AcceptSentFile(const std::string& identifier,
 }
 
 int LifeStuffImpl::RejectSentFile(const std::string& identifier) {
-  if (state_ != kLoggedIn) {
-    LOG(kError) << "Wrong state: " << state_;
+  if (session_.state() != kLoggedIn) {
+    LOG(kError) << "Wrong state: " << session_.state();
+    if (session_.state() == kLoggedInReadOnly)
+      return kReadOnlyFailure;
     return kGeneralError;
   }
 
@@ -986,8 +1032,8 @@ int LifeStuffImpl::RejectSentFile(const std::string& identifier) {
 
 /// Filesystem
 int LifeStuffImpl::ReadHiddenFile(const fs::path& absolute_path, std::string* content) const {
-  if (state_ != kLoggedIn) {
-    LOG(kError) << "Wrong state: " << state_;
+  if (session_.state() != kLoggedIn && session_.state() != kLoggedInReadOnly) {
+    LOG(kError) << "Wrong state: " << session_.state();
     return kGeneralError;
   }
 
@@ -1002,8 +1048,10 @@ int LifeStuffImpl::ReadHiddenFile(const fs::path& absolute_path, std::string* co
 int LifeStuffImpl::WriteHiddenFile(const fs::path& absolute_path,
                                    const std::string& content,
                                    bool overwrite_existing) {
-  if (state_ != kLoggedIn) {
-    LOG(kError) << "Wrong state: " << state_;
+  if (session_.state() != kLoggedIn) {
+    LOG(kError) << "Wrong state: " << session_.state();
+    if (session_.state() == kLoggedInReadOnly)
+      return kReadOnlyFailure;
     return kGeneralError;
   }
 
@@ -1011,8 +1059,10 @@ int LifeStuffImpl::WriteHiddenFile(const fs::path& absolute_path,
 }
 
 int LifeStuffImpl::DeleteHiddenFile(const fs::path& absolute_path) {
-  if (state_ != kLoggedIn) {
-    LOG(kError) << "Wrong state: " << state_;
+  if (session_.state() != kLoggedIn) {
+    LOG(kError) << "Wrong state: " << session_.state();
+    if (session_.state() == kLoggedInReadOnly)
+      return kReadOnlyFailure;
     return kGeneralError;
   }
 
@@ -1021,8 +1071,8 @@ int LifeStuffImpl::DeleteHiddenFile(const fs::path& absolute_path) {
 
 int LifeStuffImpl::SearchHiddenFiles(const fs::path& absolute_path,
                                      std::vector<std::string>* results) {
-  if (state_ != kLoggedIn) {
-    LOG(kError) << "Wrong state: " << state_;
+  if (session_.state() != kLoggedIn && session_.state() != kLoggedInReadOnly) {
+    LOG(kError) << "Wrong state: " << session_.state();
     return kGeneralError;
   }
 
@@ -1040,7 +1090,7 @@ int LifeStuffImpl::CreatePrivateShareFromExistingDirectory(
     LOG(kError) << "Share name parameter must be valid.";
     return kGeneralError;
   }
-  int result(PreContactChecks(my_public_id));
+  int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in CreatePrivateShareFromExistingDirectory.";
     return result;
@@ -1098,7 +1148,7 @@ int LifeStuffImpl::CreateEmptyPrivateShare(const std::string& my_public_id,
     return kGeneralError;
   }
 
-  int result(PreContactChecks(my_public_id));
+  int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in CreateEmptyPrivateShare.";
     return result;
@@ -1155,7 +1205,7 @@ int LifeStuffImpl::GetPrivateShareList(const std::string& my_public_id, StringIn
     return kGeneralError;
   }
 
-  int result(PreContactChecks(my_public_id));
+  int result(PreContactChecksReadOnly(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in GetPrivateShareList.";
     return result;
@@ -1188,7 +1238,7 @@ int LifeStuffImpl::GetPrivateShareMembers(const std::string& my_public_id,
     LOG(kError) << "Share members parameter must be valid.";
     return kGeneralError;
   }
-  int result(PreContactChecks(my_public_id));
+  int result(PreContactChecksReadOnly(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in GetPrivateShareMemebers.";
     return result;
@@ -1214,7 +1264,7 @@ int LifeStuffImpl::GetPrivateSharesIncludingMember(const std::string& my_public_
     LOG(kError) << "Share names parameter must be valid.";
     return kGeneralError;
   }
-  int result(PreContactChecks(my_public_id));
+  int result(PreContactChecksReadOnly(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in GetPrivateShareList.";
     return result;
@@ -1264,7 +1314,7 @@ int LifeStuffImpl::AcceptPrivateShareInvitation(const std::string& my_public_id,
     return kGeneralError;
   }
 
-  int result(PreContactChecks(my_public_id));
+  int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in AcceptPrivateShareInvitation.";
     return result;
@@ -1345,7 +1395,7 @@ int LifeStuffImpl::AcceptPrivateShareInvitation(const std::string& my_public_id,
 
 int LifeStuffImpl::RejectPrivateShareInvitation(const std::string& my_public_id,
                                                 const std::string& share_id) {
-  int result(PreContactChecks(my_public_id));
+  int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in RejectPrivateShareInvitation.";
     return result;
@@ -1388,12 +1438,15 @@ int LifeStuffImpl::EditPrivateShareMembers(const std::string& my_public_id,
                                            const std::string& share_name,
                                            StringIntMap* results,
                                            bool inform_contacts) {
+  int result(PreContactChecksFullAccess(my_public_id));
+  if (result != kSuccess)
+    return result;
   if (!results) {
     LOG(kError) << "Results parameter invalid.";
     return kGeneralError;
   }
   StringIntMap share_members;
-  int result(GetPrivateShareMembers(my_public_id, share_name, &share_members));
+  result = GetPrivateShareMembers(my_public_id, share_name, &share_members);
   if (result != kSuccess) {
     LOG(kError) << "Failed to get share members for " << share_name;
     return result;
@@ -1708,7 +1761,7 @@ int LifeStuffImpl::EditPrivateShareMembers(const std::string& my_public_id,
 int LifeStuffImpl::DeletePrivateShare(const std::string& my_public_id,
                                       const std::string& share_name,
                                       bool delete_data) {
-  int result(PreContactChecks(my_public_id));
+  int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in DeletePrivateShare.";
     return result;
@@ -1735,7 +1788,7 @@ int LifeStuffImpl::DeletePrivateShare(const std::string& my_public_id,
 int LifeStuffImpl::LeavePrivateShare(const std::string& my_public_id,
                                      const std::string& share_name,
                                      bool inform_contacts) {
-  int result(PreContactChecks(my_public_id));
+  int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in LeavePrivateShare.";
     return result;
@@ -1770,7 +1823,7 @@ int LifeStuffImpl::CreateOpenShareFromExistingDirectory(const std::string& my_pu
   }
 
   boost::system::error_code error_code;
-  int result(PreContactChecks(my_public_id));
+  int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks.";
     return result;
@@ -1838,7 +1891,7 @@ int LifeStuffImpl::CreateEmptyOpenShare(const std::string& my_public_id,
     LOG(kError) << "Parameter share name must be valid.";
     return kGeneralError;
   }
-  int result(PreContactChecks(my_public_id));
+  int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks.";
     return result;
@@ -1892,6 +1945,11 @@ int LifeStuffImpl::InviteMembersToOpenShare(const std::string& my_public_id,
                                             const std::vector<std::string>& contacts,
                                             const std::string& share_name,
                                             StringIntMap* results) {
+  int result(PreContactChecksFullAccess(my_public_id));
+  if (result != kSuccess) {
+    LOG(kError) << "Failed pre checks.";
+    return result;
+  }
   StringIntMap liaisons;
   fs::path share(mount_path() / drive::kMsShareRoot / share_name);
   for (uint32_t i = 0; i != contacts.size(); ++i)
@@ -1904,6 +1962,11 @@ int LifeStuffImpl::GetOpenShareList(const std::string& my_public_id,
   if (!share_names) {
     LOG(kError) << "Parameter share name must be valid.";
     return kGeneralError;
+  }
+  int result(PreContactChecksReadOnly(my_public_id));
+  if (result != kSuccess) {
+    LOG(kError) << "Failed pre checks.";
+    return result;
   }
 
   const ShareInformationDetail share_information(session_.share_information(my_public_id));
@@ -1933,7 +1996,7 @@ int LifeStuffImpl::GetOpenShareMembers(const std::string& my_public_id,
     return kGeneralError;
   }
 
-  int result(PreContactChecks(my_public_id));
+  int result(PreContactChecksReadOnly(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks.";
     return result;
@@ -1958,7 +2021,7 @@ int LifeStuffImpl::AcceptOpenShareInvitation(const std::string& my_public_id,
     LOG(kError) << "Parameter share name must be valid.";
     return kGeneralError;
   }
-  int result(PreContactChecks(my_public_id));
+  int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks.";
     return result;
@@ -2030,7 +2093,7 @@ int LifeStuffImpl::AcceptOpenShareInvitation(const std::string& my_public_id,
 
 int LifeStuffImpl::RejectOpenShareInvitation(const std::string& my_public_id,
                                              const std::string& share_id) {
-  int result(PreContactChecks(my_public_id));
+  int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks.";
     return result;
@@ -2069,7 +2132,7 @@ int LifeStuffImpl::RejectOpenShareInvitation(const std::string& my_public_id,
 }
 
 int LifeStuffImpl::LeaveOpenShare(const std::string& my_public_id, const std::string& share_name) {
-  int result(PreContactChecks(my_public_id));
+  int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks.";
     return result;
@@ -2122,11 +2185,11 @@ int LifeStuffImpl::LeaveOpenShare(const std::string& my_public_id, const std::st
 }
 
 ///
-int LifeStuffImpl::state() const { return state_; }
+int LifeStuffImpl::state() const { return session_.state(); }
 
 fs::path LifeStuffImpl::mount_path() const {
-  if (state_ != kLoggedIn) {
-    LOG(kError) << "Wrong state: " << state_;
+  if (session_.state() != kLoggedIn && session_.state() != kLoggedInReadOnly) {
+    LOG(kError) << "Wrong state: " << session_.state();
     return fs::path();
   }
 
@@ -2262,7 +2325,7 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
   user_storage_.reset(new UserStorage(remote_chunk_store_, *message_handler_));
 
   ConnectInternalElements();
-  state_ = kInitialised;
+  session_.set_state(kInitialised);
 
   result = ConnectToSignals(slots_.chat_slot,
                             slots_.file_slot,
@@ -2281,8 +2344,24 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
   return result;
 }
 
-int LifeStuffImpl::PreContactChecks(const std::string &my_public_id) {
-  if (state_ != kLoggedIn) {
+int LifeStuffImpl::PreContactChecksFullAccess(const std::string &my_public_id) {
+  if (session_.state() != kLoggedIn) {
+    LOG(kError) << "Incorrect state. Should be logged in with full access.";
+    if (session_.state() == kLoggedInReadOnly)
+      return kReadOnlyFailure;
+    return kGeneralError;
+  }
+
+  if (!session_.OwnPublicId(my_public_id)) {
+    LOG(kError) << "User does not hold such public ID: " << my_public_id;
+    return kPublicIdNotFoundFailure;
+  }
+
+  return kSuccess;
+}
+
+int LifeStuffImpl::PreContactChecksReadOnly(const std::string &my_public_id) {
+  if (session_.state() != kLoggedIn && session_.state() != kLoggedInReadOnly) {
     LOG(kError) << "Incorrect state. Should be logged in.";
     return kGeneralError;
   }

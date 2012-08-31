@@ -173,7 +173,7 @@ int ProcessAccountStatus(const std::string& keyword,
   try {
     int account_status(boost::lexical_cast<int>(decrypted_account_status));
     if (account_status >= 0) {
-      LOG(kError) << "LID packet implies account logged in elsewhere.";
+      LOG(kInfo) << "LID packet implies account logged in elsewhere.";
       return kAccountAlreadyLoggedIn;
     }
   }
@@ -235,14 +235,14 @@ int UserCredentialsImpl::GetUserInfo(const std::string& keyword,
   boost::mutex::scoped_lock loch_a_phuill(single_threaded_class_mutex_);
 
   // Check LID
-//  std::string lid_packet(remote_chunk_store_.Get(pca::ApplyTypeToName(lid::LidName(keyword, pin),
-//                                                                      pca::kModifiableByOwner)));
+  std::string lid_packet(remote_chunk_store_.Get(pca::ApplyTypeToName(lid::LidName(keyword, pin),
+                                                                      pca::kModifiableByOwner)));
 
-//  int lid_result(lid::ProcessAccountStatus(keyword, pin, password, lid_packet));
-//  if (lid_result != kSuccess) {
-//    LOG(kError) << "Account can't be logged in: " << lid_result;
-//    return lid_result;
-//  }
+  int lid_result(lid::ProcessAccountStatus(keyword, pin, password, lid_packet));
+  if (lid_result != kSuccess && lid_result != kAccountAlreadyLoggedIn) {
+    LOG(kError) << "Account can't be logged in: " << lid_result;
+    return lid_result;
+  }
 
   // Obtain MID, TMID
   int mid_tmid_result(kSuccess);
@@ -284,12 +284,14 @@ int UserCredentialsImpl::GetUserInfo(const std::string& keyword,
     return result;
   }
 
-  // Recheck LID & lock it.
-//  lid_result = GetAndLockLid(keyword, pin, password);
-//  if (lid_result != kSuccess) {
-//    LOG(kError) << "Failed to lock LID.";
-//    return lid_result;
-//  }
+  if (lid_result == kSuccess) {
+    // Recheck LID & lock it.
+    lid_result = GetAndLockLid(keyword, pin, password);
+    if (lid_result != kSuccess) {
+      LOG(kError) << "Failed to lock LID.";
+      return lid_result;
+    }
+  }
 
   session_.set_keyword(keyword);
   session_.set_pin(pin);
@@ -299,16 +301,23 @@ int UserCredentialsImpl::GetUserInfo(const std::string& keyword,
     return kSessionFailure;
   }
 
-//  result = ModifyLid(keyword, pin, password, true);
-//  if (result != kSuccess) {
-//    LOG(kError) << "Failed to modify LID.";
-//    return result;
-//  }
+  if (lid_result == kSuccess) {
+    result = ModifyLid(keyword, pin, password, true);
+    if (result != kSuccess) {
+      LOG(kError) << "Failed to modify LID.";
+      return result;
+    }
+  }
 
-  session_saved_once_ = false;
-  StartSessionSaver();
+  if (lid_result == kSuccess) {
+    session_saved_once_ = false;
+    StartSessionSaver();
+  }
 
-  return kSuccess;
+  if (lid_result == kSuccess)
+    return kSuccess;
+  else
+    return kReadOnlyRestrictedSuccess;
 }
 
 int UserCredentialsImpl::GetAndLockLid(const std::string& keyword,
@@ -450,11 +459,11 @@ int UserCredentialsImpl::CreateUser(const std::string& keyword,
     return kSessionFailure;
   }
 
-//  result = StoreLid(keyword, pin, password, true);
-//  if (result != kSuccess) {
-//    LOG(kError) << "Failed to create LID.";
-//    return result;
-//  }
+  result = StoreLid(keyword, pin, password, true);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to create LID.";
+    return result;
+  }
 
   session_.set_keyword(keyword);
   session_.set_pin(pin);
@@ -832,11 +841,11 @@ int UserCredentialsImpl::SaveSession(bool log_out) {
     session_saver_timer_active_ = false;
     session_saver_timer_.cancel();
 
-//    int result(ModifyLid(session_.keyword(), session_.pin(), session_.password(), false));
-//    if (result != kSuccess) {
-//      LOG(kError) << "Failed to modify LID.";
-//      return result;
-//    }
+    int result(ModifyLid(session_.keyword(), session_.pin(), session_.password(), false));
+    if (result != kSuccess) {
+      LOG(kError) << "Failed to modify LID.";
+      return result;
+    }
 
     if (!session_.changed() && session_saved_once_) {
       LOG(kError) << "Session has not changed.";
@@ -1014,11 +1023,11 @@ int UserCredentialsImpl::ChangeUsernamePin(const std::string& new_keyword,
     return result;
   }
 
-//  result = StoreLid(new_keyword, new_pin, session_.password(), true);
-//  if (result != kSuccess) {
-//    LOG(kError) << "Failed to store new LID.";
-//    return result;
-//  }
+  result = StoreLid(new_keyword, new_pin, session_.password(), true);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to store new LID.";
+    return result;
+  }
 
   result = DeleteOldIdentityPackets();
   if (result != kSuccess) {
@@ -1026,11 +1035,11 @@ int UserCredentialsImpl::ChangeUsernamePin(const std::string& new_keyword,
     return result;
   }
 
-//  result = DeleteLid(session_.keyword(), session_.pin());
-//  if (result != kSuccess) {
-//    LOG(kError) << "Failed to delete old LID.";
-//    return result;
-//  }
+  result = DeleteLid(session_.keyword(), session_.pin());
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to delete old LID.";
+    return result;
+  }
 
   result = passport_.ConfirmIdentityPackets();
   if (result != kSuccess) {
@@ -1275,11 +1284,11 @@ int UserCredentialsImpl::DeleteUserCredentials() {
     return result;
   }
 
-//  result = DeleteLid(session_.keyword(), session_.pin());
-//  if (result != kSuccess) {
-//    LOG(kError) << "Failed to delete LID.";
-//    return result;
-//  }
+  result = DeleteLid(session_.keyword(), session_.pin());
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to delete LID.";
+    return result;
+  }
 
   result = DeleteSignaturePackets();
   if (result != kSuccess) {

@@ -77,20 +77,20 @@ int LifeStuff::Finalise() {
 }
 
 /// Credential operations
-int LifeStuff::CreateUser(const std::string& username,
+int LifeStuff::CreateUser(const std::string& keyword,
                           const std::string& pin,
                           const std::string& password) {
-  return lifestuff_impl_->CreateUser(username, pin, password);
+  return lifestuff_impl_->CreateUser(keyword, pin, password);
 }
 
 int LifeStuff::CreatePublicId(const std::string& public_id) {
   return lifestuff_impl_->CreatePublicId(public_id);
 }
 
-int LifeStuff::LogIn(const std::string& username,
+int LifeStuff::LogIn(const std::string& keyword,
                      const std::string& pin,
                      const std::string& password) {
-  return lifestuff_impl_->LogIn(username, pin, password);
+  return lifestuff_impl_->LogIn(keyword, pin, password);
 }
 
 int LifeStuff::LogOut() {
