@@ -390,13 +390,11 @@ int LifeStuffImpl::LogIn(const std::string& keyword,
   else
     anticipated_state = kLoggedInReadOnly;
 
-//  if (anticipated_state == kLoggedIn) {
   result = SetValidPmidAndInitialisePublicComponents();
   if (result != kSuccess)  {
     LOG(kError) << "Failed to set valid PMID";
     return result;
   }
-//  }
 
   boost::system::error_code error_code;
   fs::path mount_dir(GetHomeDir() / kAppHomeDirectory / session_.session_name());
@@ -415,10 +413,7 @@ int LifeStuffImpl::LogIn(const std::string& keyword,
     }
   }
 
-  if (anticipated_state == kLoggedIn)
-    user_storage_->MountDrive(mount_dir, &session_, false, false);
-  else
-    user_storage_->MountDrive(mount_dir, &session_, false, true);
+  user_storage_->MountDrive(mount_dir, &session_, false, anticipated_state == kLoggedInReadOnly);
   if (!user_storage_->mount_status()) {
     LOG(kError) << "Failed to mount";
     return kGeneralError;

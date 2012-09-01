@@ -293,7 +293,7 @@ TEST_F(SessionTest, BEH_SetsGetsAndReset) {
   ASSERT_EQ("", session_.root_parent_id());
 }
 
-TEST_F(SessionTest, DISABLED_BEH_SessionName) {
+TEST_F(SessionTest, BEH_SessionName) {
   // Check session is empty
   ASSERT_EQ("", session_.session_name());
   ASSERT_EQ("", session_.keyword());
@@ -303,16 +303,14 @@ TEST_F(SessionTest, DISABLED_BEH_SessionName) {
   ASSERT_FALSE(session_.set_session_name());
   ASSERT_EQ("", session_.session_name());
 
+  // Set the session values
   std::string keyword(RandomAlphaNumericString(6));
   std::string pin(CreatePin());
-  std::string session_name(EncodeToHex(crypto::Hash<crypto::SHA1>(pin + keyword)));
-
-  // Set the session values
   SetUsernamePinPassword(keyword, pin, "ccc");
   ASSERT_TRUE(session_.set_session_name());
 
   // Check session name
-  ASSERT_EQ(session_name, session_.session_name());
+  ASSERT_FALSE(session_.session_name().empty());
 
   // Reset value and check empty again
   session_.clear_session_name();
