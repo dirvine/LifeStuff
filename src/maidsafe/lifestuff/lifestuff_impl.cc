@@ -277,7 +277,7 @@ int LifeStuffImpl::Finalise() {
 int LifeStuffImpl::CreateUser(const std::string& keyword,
                               const std::string& pin,
                               const std::string& password,
-                              const fs::path& chunk_store) {
+                              const fs::path& /*chunk_store*/) {
   if (session_.state() != kConnected) {
     LOG(kError) << "Make sure that object is initialised and connected";
     return kGeneralError;
