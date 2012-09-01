@@ -79,8 +79,9 @@ int LifeStuff::Finalise() {
 /// Credential operations
 int LifeStuff::CreateUser(const std::string& keyword,
                           const std::string& pin,
-                          const std::string& password) {
-  return lifestuff_impl_->CreateUser(keyword, pin, password);
+                          const std::string& password,
+                          const fs::path& chunk_store) {
+  return lifestuff_impl_->CreateUser(keyword, pin, password, chunk_store);
 }
 
 int LifeStuff::CreatePublicId(const std::string& public_id) {

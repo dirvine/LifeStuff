@@ -115,7 +115,10 @@ class LifeStuffImpl {
   int Finalise();
 
   /// Credential operations
-  int CreateUser(const std::string& username, const std::string& pin, const std::string& password);
+  int CreateUser(const std::string& username,
+                 const std::string& pin,
+                 const std::string& password,
+                 const fs::path& chunk_store);
   int CreatePublicId(const std::string& public_id);
   int LogIn(const std::string& username, const std::string& pin, const std::string& password);
   int LogOut();

@@ -67,7 +67,10 @@ class LifeStuff {
   int Finalise();
 
   /// Credential operations
-  int CreateUser(const std::string& keyword, const std::string& pin, const std::string& password);
+  int CreateUser(const std::string& keyword,
+                 const std::string& pin,
+                 const std::string& password,
+                 const fs::path& chunk_store = fs::path());
   int CreatePublicId(const std::string& public_id);
   int LogIn(const std::string& keyword, const std::string& pin, const std::string& password);
   int LogOut();
