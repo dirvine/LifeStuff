@@ -34,6 +34,7 @@
 #include "maidsafe/common/rsa.h"
 
 
+#include "maidsafe/lifestuff/detail/data_atlas_pb.h"
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
 
@@ -64,10 +65,25 @@ std::string DecryptAccountStatus(const std::string& keyword,
                                  const std::string& password,
                                  const std::string& encrypted_account_status);
 
+LockingPacket CreateLockingPacket(const std::string& identifier);
+
+int AddItemToLockingPacket(LockingPacket& locking_packet,
+                           const std::string& identifier,
+                           bool full_access);
+
+int RemoveItemFromLockingPacket(LockingPacket& locking_packet,
+                                const std::string& identifier);
+
+int UpdateTimestampInLockingPacket(LockingPacket& locking_packet,
+                                   const std::string& identifier);
+
+int CheckLockingPacketForFullAccess(LockingPacket& locking_packet);
+
 int ProcessAccountStatus(const std::string& keyword,
                          const std::string& pin,
                          const std::string& password,
-                         const std::string& lid_packet);
+                         const std::string& lid_packet,
+                         LockingPacket& locking_packet);
 
 }  // namespace account_locking
 
@@ -93,6 +109,8 @@ class UserCredentialsImpl {
 
   int SaveSession(bool log_out);
 
+//  int UpdateLid(std::string identifier, bool logging_out);
+
   int ChangePin(const std::string& new_pin);
   int ChangeKeyword(const std::string new_keyword);
   int ChangeUsernamePin(const std::string& new_username, const std::string& new_pin);
@@ -114,7 +132,9 @@ class UserCredentialsImpl {
 
   int GetAndLockLid(const std::string& keyword,
                     const std::string& pin,
-                    const std::string& password);
+                    const std::string& password,
+                    std::string& lid_packet,
+                    LockingPacket& locking_packet);
   void GetIdAndTemporaryId(const std::string& username,
                            const std::string& pin,
                            const std::string& password,
@@ -154,7 +174,7 @@ class UserCredentialsImpl {
   int StoreLid(const std::string keyword,
                const std::string pin,
                const std::string password,
-               bool online);
+               const LockingPacket& locking_packet);
 
   void ModifyMid(OperationResults& results);
   void ModifySmid(OperationResults& results);
@@ -165,7 +185,7 @@ class UserCredentialsImpl {
   int ModifyLid(const std::string keyword,
                 const std::string pin,
                 const std::string password,
-                bool online);
+                const LockingPacket& locking_packet);
 
   int DeleteOldIdentityPackets();
   void DeleteMid(OperationResults& results);

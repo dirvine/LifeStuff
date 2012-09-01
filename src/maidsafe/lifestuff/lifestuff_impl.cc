@@ -465,7 +465,7 @@ int LifeStuffImpl::LogOut() {
     message_handler_->ShutDown();
   }
 
-  if (session_.state() == kLoggedIn) {
+  if (session_.state() == kLoggedIn || session_.state() == kLoggedInReadOnly) {
     if (user_credentials_->Logout() != kSuccess) {
       LOG(kError) << "Failed to log out.";
       return kGeneralError;

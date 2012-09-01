@@ -382,31 +382,47 @@ TEST_F(UserCredentialsTest, DISABLED_FUNC_MonitorLidPacket) {
   ASSERT_EQ(password_, session_.password());
   LOG(kInfo) << "User created.\n===================\n";
 
+  LockingPacket locking_packet;
   EXPECT_EQ(kAccountAlreadyLoggedIn,
-            lid::ProcessAccountStatus(keyword_, pin_, password_,
-                                      remote_chunk_store_->Get(lid_name)));
+            lid::ProcessAccountStatus(keyword_,
+                                      pin_,
+                                      password_,
+                                      remote_chunk_store_->Get(lid_name),
+                                      locking_packet));
 
   ASSERT_EQ(kSuccess, user_credentials_->Logout());
   LOG(kInfo) << "Logged out.\n===================\n";
 
+  locking_packet.Clear();
   EXPECT_EQ(kSuccess,
-            lid::ProcessAccountStatus(keyword_, pin_, password_,
-                                      remote_chunk_store_->Get(lid_name)));
+            lid::ProcessAccountStatus(keyword_,
+                                      pin_,
+                                      password_,
+                                      remote_chunk_store_->Get(lid_name),
+                                      locking_packet));
 
   for (int i = 0; i < 10; ++i) {
     ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
     LOG(kInfo) << "Logged in.\n===================\n";
 
+    locking_packet.Clear();
     EXPECT_EQ(kAccountAlreadyLoggedIn,
-              lid::ProcessAccountStatus(keyword_, pin_, password_,
-                                        remote_chunk_store_->Get(lid_name)));
+              lid::ProcessAccountStatus(keyword_,
+                                        pin_,
+                                        password_,
+                                        remote_chunk_store_->Get(lid_name),
+                                        locking_packet));
 
     ASSERT_EQ(kSuccess, user_credentials_->Logout());
     LOG(kInfo) << "Logged out.\n===================\n";
 
+    locking_packet.Clear();
     EXPECT_EQ(kSuccess,
-              lid::ProcessAccountStatus(keyword_, pin_, password_,
-                                        remote_chunk_store_->Get(lid_name)));
+              lid::ProcessAccountStatus(keyword_,
+                                        pin_,
+                                        password_,
+                                        remote_chunk_store_->Get(lid_name),
+                                        locking_packet));
   }
 }
 

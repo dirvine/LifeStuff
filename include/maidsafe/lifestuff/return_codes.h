@@ -110,7 +110,12 @@ enum ReturnCode {
   kNoShareTarget = -208001,
   kOwnerTryingToLeave = -208002,
   kNoKeyForUpgrade = -208003,
-  kInvalidKeyringForOpenShare = -208004
+  kInvalidKeyringForOpenShare = -208004,
+
+  // Other instances being logged in (LID)
+  kLidIdentifierAlreadyInUse = -209001,
+  kLidFullAccessUnavailable = -209002,
+  kLidIdentifierNotFound = -209003
 };
 
 }  // namespace lifestuff
