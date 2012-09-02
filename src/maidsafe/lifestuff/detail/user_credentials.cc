@@ -91,7 +91,10 @@ int UserCredentials::LogIn(const std::string& keyword,
 }
 
 int UserCredentials::Logout() {
+  LOG(kInfo) << "UserCredentials::Logout()";
   int result(impl_->SaveSession(true));
+  result += impl_->UpdateLid(true);
+  // TODO(Alison) - handle failure better?
 
   if (result == kSuccess)
     session_.Reset();
@@ -99,6 +102,8 @@ int UserCredentials::Logout() {
 }
 
 int UserCredentials::SaveSession() { return impl_->SaveSession(false); }
+
+int UserCredentials::UpdateLid() { return impl_->UpdateLid(false); }
 
 int UserCredentials::ChangeKeyword(const std::string& new_keyword) {
   int result(CheckKeywordValidity(new_keyword));

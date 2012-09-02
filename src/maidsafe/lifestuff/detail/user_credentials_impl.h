@@ -109,7 +109,7 @@ class UserCredentialsImpl {
 
   int SaveSession(bool log_out);
 
-//  int UpdateLid(std::string identifier, bool logging_out);
+  int UpdateLid(bool log_out);
 
   int ChangePin(const std::string& new_pin);
   int ChangeKeyword(const std::string new_keyword);

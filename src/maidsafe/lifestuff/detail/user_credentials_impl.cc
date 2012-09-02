@@ -164,6 +164,8 @@ LockingPacket CreateLockingPacket(const std::string& identifier) {
 int AddItemToLockingPacket(LockingPacket& locking_packet,
                            const std::string& identifier,
                            bool full_access) {
+  LOG(kInfo) << "AddItemToLockingPacket - locking_packet.locking_item_size() BEFORE: " <<
+                locking_packet.locking_item_size();
   for (int i = 0; i < locking_packet.locking_item_size(); ++i) {
     if (locking_packet.locking_item(i).identifier() == identifier) {
       LOG(kError) << "Item with identifier already exists! Identifier: " << identifier;
@@ -184,11 +186,15 @@ int AddItemToLockingPacket(LockingPacket& locking_packet,
   locking_item->set_timestamp(IsoTimeWithMicroSeconds());
   locking_item->set_full_access(full_access);
   locking_item->set_active(0);
+  LOG(kInfo) << "AddItemToLockingPacket - locking_packet.locking_item_size() AFTER: " <<
+                locking_packet.locking_item_size();
   return kSuccess;
 }
 
 int RemoveItemFromLockingPacket(LockingPacket& locking_packet,
                                 const std::string& identifier) {
+  LOG(kInfo) << "RemoveItemFromLockingPacket - locking_packet.locking_item_size() BEFORE: " <<
+                locking_packet.locking_item_size();
   LockingPacket new_locking_packet;
   new_locking_packet.set_space_filler(locking_packet.space_filler());
   for (int i = 0; i < locking_packet.locking_item_size(); ++i) {
@@ -204,16 +210,22 @@ int RemoveItemFromLockingPacket(LockingPacket& locking_packet,
   }
 
   locking_packet = new_locking_packet;
+  LOG(kInfo) << "RemoveItemFromLockingPacket - locking_packet.locking_item_size() AFTER: " <<
+                locking_packet.locking_item_size();
   return kSuccess;
 }
 
 int UpdateTimestampInLockingPacket(LockingPacket& locking_packet,
                                    const std::string& identifier) {
+  LOG(kInfo) << "UpdateTimestampInLockingPacket - locking_packet.locking_item_size() BEFORE: " <<
+                locking_packet.locking_item_size();
   int index(0);
   while (index < locking_packet.locking_item_size()) {
     if (locking_packet.locking_item(index).identifier() == identifier) {
       LockingItem locking_item = locking_packet.locking_item(index);
       locking_item.set_timestamp(IsoTimeWithMicroSeconds());
+      LOG(kInfo) << "UpdateTimestampInLockingPacket - locking_packet.locking_item_size() AFTER: " <<
+                    locking_packet.locking_item_size();
       return kSuccess;
     } else {
       ++index;
@@ -227,6 +239,7 @@ int CheckLockingPacketForFullAccess(LockingPacket& locking_packet) {
   // TODO(Alison) - check that identifier doesn't exist already?
   for (int i = 0; i < locking_packet.locking_item_size(); ++i) {
     if (locking_packet.locking_item(i).full_access()) {
+      // TODO(Alison) - check if it's the current user who has full access!
       LOG(kInfo) << "Item with full access already exists!";
       return kReadOnlyRestrictedSuccess;
     }
@@ -314,6 +327,7 @@ UserCredentialsImpl::~UserCredentialsImpl() {}
 int UserCredentialsImpl::GetUserInfo(const std::string& keyword,
                                      const std::string& pin,
                                      const std::string& password) {
+  LOG(kInfo) << "UserCredentialsImpl::GetUserInfo";
   boost::mutex::scoped_lock loch_a_phuill(single_threaded_class_mutex_);
 
   // TODO(Alison) - overwrite unintelligible LID
@@ -402,8 +416,8 @@ int UserCredentialsImpl::GetUserInfo(const std::string& keyword,
 
   if (anticipated_access == kSuccess) {
     session_saved_once_ = false;
-    StartSessionSaver();
   }
+  StartSessionSaver();
 
   if (anticipated_access == kSuccess)
   return kSuccess;
@@ -416,6 +430,7 @@ int UserCredentialsImpl::GetAndLockLid(const std::string& keyword,
                                        const std::string& password,
                                        std::string& lid_packet,
                                        LockingPacket& locking_packet) {
+  LOF(kInfo) << "UserCredentialsImpl::GetAndLockLid";
   std::string lid_name(pca::ApplyTypeToName(lid::LidName(keyword, pin), pca::kModifiableByOwner));
 
   std::shared_ptr<asymm::Keys> keys(
@@ -879,6 +894,7 @@ int UserCredentialsImpl::StoreLid(const std::string keyword,
                                   const std::string pin,
                                   const std::string password,
                                   const LockingPacket& locking_packet) {
+  LOG(kInfo) << "UserCredentialsImpl::StoreLid";
   std::string packet_name(pca::ApplyTypeToName(lid::LidName(keyword, pin),
                                                pca::kModifiableByOwner));
   std::string account_status(locking_packet.SerializeAsString());
@@ -925,30 +941,6 @@ int UserCredentialsImpl::SaveSession(bool log_out) {
   if (log_out) {
     session_saver_timer_active_ = false;
     session_saver_timer_.cancel();
-
-    std::string lid_packet;
-    LockingPacket locking_packet;
-    int result(GetAndLockLid(session_.keyword(),
-                             session_.pin(),
-                             session_.password(),
-                             lid_packet,
-                             locking_packet));
-    if (result != kSuccess) {
-      LOG(kError) << "Failed to get and lock LID.";
-      return result;
-    }
-
-    result = lid::RemoveItemFromLockingPacket(locking_packet, session_.session_name());
-    if (result != kSuccess) {
-      LOG(kError) << "Failed to remove item from locking packet.";
-      return result;
-    }
-
-    result = ModifyLid(session_.keyword(), session_.pin(), session_.password(), locking_packet);
-    if (result != kSuccess) {
-      LOG(kError) << "Failed to modify LID.";
-      return result;
-    }
 
     if (!session_.changed() && session_saved_once_) {
       LOG(kError) << "Session has not changed.";
@@ -1001,6 +993,44 @@ int UserCredentialsImpl::SaveSession(bool log_out) {
   return kSuccess;
 }
 
+int UserCredentialsImpl::UpdateLid(bool log_out) {
+  LOG(kInfo) << "UserCredentialsImpl::UpdateLid";
+  std::string lid_packet;
+  LockingPacket locking_packet;
+  int result(GetAndLockLid(session_.keyword(),
+                           session_.pin(),
+                           session_.password(),
+                           lid_packet,
+                           locking_packet));
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to get and lock LID.";
+    return result;
+  }
+
+  if (log_out) {
+    LOG(kInfo) << "UserCredentialsImpl::UpdateLid - Removing item :(";
+    result = lid::RemoveItemFromLockingPacket(locking_packet, session_.session_name());
+    if (result != kSuccess) {
+      LOG(kError) << "Failed to remove item from locking packet.";
+      return result;
+    }
+  } else {
+    LOG(kInfo) << "UserCredentialsImpl::UpdateLid - Updating timestamp :)";
+    result = lid::UpdateTimestampInLockingPacket(locking_packet, session_.session_name());
+    if (result != kSuccess) {
+      LOG(kError) << "Failed to update timestamp locking packet.";
+      return result;
+    }
+  }
+
+  result = ModifyLid(session_.keyword(), session_.pin(), session_.password(), locking_packet);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to modify LID.";
+    return result;
+  }
+  return kSuccess;
+}
+
 void UserCredentialsImpl::ModifyMid(OperationResults& results) {
   ModifyIdentity(results, passport::kMid, passport::kAnmid, 0);
 }
@@ -1047,6 +1077,7 @@ int UserCredentialsImpl::ModifyLid(const std::string keyword,
                                    const std::string pin,
                                    const std::string password,
                                    const LockingPacket& locking_packet) {
+  LOG(kInfo) << "UserCredentialsImpl::ModifyLid";
   std::string packet_name(lid::LidName(keyword, pin));
   packet_name = pca::ApplyTypeToName(packet_name, pca::kModifiableByOwner);
 
@@ -1553,8 +1584,19 @@ void UserCredentialsImpl::SessionSaver(const bptime::seconds& interval,
     return;
   }
 
-  int result(SaveSession(false));
-  LOG(kInfo) << "Session saver result: " << result;
+  int result(UpdateLid(false));
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to update LID: " << result;
+    // TODO(Alison) - do anything else about this?
+  } else {
+    LOG(kInfo) << "SessionSaver - Updated LID.";
+  }
+  if (session_.state() == kLoggedIn) {
+    int result(SaveSession(false));
+    LOG(kInfo) << "Session saver result: " << result;
+  } else {
+    LOG(kInfo) << "Not fully logged in - don't save session";
+  }
 
   session_saver_timer_.expires_from_now(bptime::seconds(interval));
   session_saver_timer_.async_wait([=] (const boost::system::error_code& error_code) {
