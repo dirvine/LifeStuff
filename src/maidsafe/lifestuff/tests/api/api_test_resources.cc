@@ -232,32 +232,32 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                  size_t* total_files,
                                  boost::mutex* mutex) {
   int result(0);
-  result = CreatePublicId(test_elements1,
-                          testing_variables1,
-                          test_dir,
-                          keyword1,
-                          pin1,
-                          password1,
-                          public_id1,
-                          false,
-                          ids,
-                          names,
-                          total_files,
-                          mutex);
+  result = CreateAccountWithPublicId(test_elements1,
+                                     testing_variables1,
+                                     test_dir,
+                                     keyword1,
+                                     pin1,
+                                     password1,
+                                     public_id1,
+                                     false,
+                                     ids,
+                                     names,
+                                     total_files,
+                                     mutex);
   if (result != kSuccess)
     return result;
-  result = CreatePublicId(test_elements2,
-                          testing_variables2,
-                          test_dir,
-                          keyword2,
-                          pin2,
-                          password2,
-                          public_id2,
-                          several_files,
-                          ids,
-                          names,
-                          total_files,
-                          mutex);
+  result = CreateAccountWithPublicId(test_elements2,
+                                     testing_variables2,
+                                     test_dir,
+                                     keyword2,
+                                     pin2,
+                                     password2,
+                                     public_id2,
+                                     several_files,
+                                     ids,
+                                     names,
+                                     total_files,
+                                     mutex);
   if (result != kSuccess)
     return result;
   result = ConnectTwoPublicIds(test_elements1,
@@ -275,13 +275,9 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
   return result;
 }
 
-int CreatePublicId(LifeStuff& test_elements,
+int InitialiseAndConnect(LifeStuff& test_elements,
                    testresources::TestingVariables& testing_variables,
                    const fs::path& test_dir,
-                   const std::string& keyword,
-                   const std::string& pin,
-                   const std::string& password,
-                   const std::string& public_id,
                    bool several_files,
                    std::vector<std::string>* ids,
                    std::vector<std::string>* names,
@@ -476,17 +472,39 @@ int CreatePublicId(LifeStuff& test_elements,
                                     &testing_variables.social_info_map_changed);
                 },
                 UpdateAvailableFunction());
-  if (result != kSuccess)
-    return result;
+  return result;
+}
 
-  {
-    result += test_elements.CreateUser(keyword, pin, password);
-    result += test_elements.CreatePublicId(public_id);
-    result += test_elements.LogOut();
-    if (result != kSuccess) {
-      LOG(kError) << "Failure creating account";
-      return result;
-    }
+int CreateAccountWithPublicId(LifeStuff& test_elements,
+                              testresources::TestingVariables& testing_variables,
+                              const fs::path& test_dir,
+                              const std::string& keyword,
+                              const std::string& pin,
+                              const std::string& password,
+                              const std::string& public_id,
+                              bool several_files,
+                              std::vector<std::string>* ids,
+                              std::vector<std::string>* names,
+                              size_t* total_files,
+                              boost::mutex* mutex) {
+  int result(0);
+  result = InitialiseAndConnect(test_elements,
+                                testing_variables,
+                                test_dir,
+                                several_files,
+                                ids,
+                                names,
+                                total_files,
+                                mutex);
+  if (result != kSuccess) {
+    LOG(kError) << "Failure initialising and connecting";
+    return result;
+  }
+  result += test_elements.CreateUser(keyword, pin, password);
+  result += test_elements.CreatePublicId(public_id);
+  result += test_elements.LogOut();
+  if (result != kSuccess) {
+    LOG(kError) << "Failure creating account";
   }
   return result;
 }
@@ -746,12 +764,13 @@ void TwoUsersDefriendEachOther(LifeStuff& test_elements_a,
 
   EXPECT_EQ(kSuccess, test_elements_b.LogIn(keyword_b, pin_b, password_b)) << "Public ID: "
                                                                            << public_id_b;
-  int num_contacts_b(test_elements_b.GetContacts(public_id_b).size());
+  size_t num_contacts_b(test_elements_b.GetContacts(public_id_b).size());
   EXPECT_EQ(kSuccess, test_elements_b.LogOut());
 
   EXPECT_EQ(kSuccess, test_elements_a.LogIn(keyword_a, pin_a, password_a));
 
-  int num_contacts_a(test_elements_a.GetContacts(public_id_a).size());
+
+  size_t num_contacts_a(test_elements_a.GetContacts(public_id_a).size());
   EXPECT_EQ(kSuccess, test_elements_a.RemoveContact(public_id_a, public_id_b, ""));
   EXPECT_EQ(test_elements_a.GetContacts(public_id_a).size(), num_contacts_a - 1);
   std::vector<std::string>* share_names(new std::vector<std::string>);

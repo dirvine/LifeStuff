@@ -24,6 +24,7 @@
 
 #include <list>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -31,6 +32,7 @@
 #include "boost/asio/io_service.hpp"
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
+#include "boost/thread/thread.hpp"
 
 #ifdef WIN32
 #  include "maidsafe/drive/win_drive.h"
@@ -75,6 +77,7 @@ class UserStorage {
   virtual void MountDrive(const fs::path& mount_dir_path,
                           Session* session,
                           bool creation,
+                          bool read_only,
                           const std::string& drive_logo = "LifeStuff Drive");
   virtual void UnMountDrive();
   virtual fs::path mount_dir();
@@ -203,7 +206,7 @@ class UserStorage {
   int DeleteHiddenFile(const fs::path& absolute_path);
   int SearchHiddenFiles(const fs::path& absolute_path,
                         std::vector<std::string>* results);
-  int GetHiddenFileDataMap(const boost::filesystem3::path& absolute_path, std::string* data_map);
+  int GetHiddenFileDataMap(const boost::filesystem::path& absolute_path, std::string* data_map);
 
   // ************************* Signals Handling ********************************
   bs2::connection ConnectToDriveChanged(drive::DriveChangedSlotPtr slot) const;

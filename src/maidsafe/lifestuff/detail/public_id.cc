@@ -359,7 +359,6 @@ int PublicId::ConfirmContact(const std::string& own_public_id,
     LOG(kError) << "No such pending username found: " << recipient_public_id;
     return -1;
   }
-
   std::vector<Contact> contacts(1, mic);
   result = InformContactInfo(own_public_id, contacts, "", kFriendResponse);
   if (result != kSuccess) {
@@ -765,6 +764,11 @@ void PublicId::ProcessRequests(const std::string& own_public_id,
         } else {
           if (contact.status == kConfirmed && introduction.inbox_name() == contact.inbox_name)
             ProcessMisplacedContactRequest(contact, own_public_id);
+          else if (contact.status == kRequestSent)
+            ProcessRequestWhenExpectingResponse(contact,
+                                                contacts_handler,
+                                                own_public_id,
+                                                introduction);
           else
             LOG(kError) << "Introduction of type kFriendRequest doesn't match current state!";
         }
@@ -886,6 +890,51 @@ void PublicId::ProcessNewContact(Contact& contact,
   } else {
     LOG(kInfo) << "Dropping contact " << contact.public_id;
   }
+}
+
+int PublicId::ProcessRequestWhenExpectingResponse(Contact& contact,
+                                                  const ContactsHandlerPtr contacts_handler,
+                                                  const std::string& own_public_id,
+                                                  const Introduction& introduction) {
+  int result(contacts_handler->ContactInfo(introduction.public_id(), &contact));
+  std::string recipient_public_id(introduction.public_id());
+  if (result != 0 || contact.status != kRequestSent) {
+    if (result != 0)
+      LOG(kError) << "AAAAAAAAAAAAAA";
+    if (contact.status != kRequestSent)
+      LOG(kError) << "BBBBBBBBBBBBBB";
+    LOG(kError) << "No such kRequestSent username found: " << recipient_public_id;
+    return -1;
+  }
+
+  contact.status = kConfirmed;
+  contact.profile_picture_data_map = introduction.profile_picture_data_map();
+  contact.pointer_to_info = introduction.pointer_to_info();
+  result = GetPublicKey(introduction.inbox_name(), contact, 1);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to get contact's public key!";
+    return -1;
+  }
+
+  std::vector<Contact> contacts(1, contact);
+  result = InformContactInfo(own_public_id, contacts, "", kFriendResponse);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to send confirmation to " << recipient_public_id;
+    return -1;
+  }
+
+  result = contacts_handler->UpdateContact(contact);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to update contact after confirmation.";
+    return -1;
+  }
+
+  contact_confirmed_signal_(own_public_id,
+                            recipient_public_id,
+                            introduction.timestamp());
+  session_.set_changed(true);
+
+  return kSuccess;
 }
 
 void PublicId::ProcessMisplacedContactRequest(Contact& contact, const std::string& own_public_id) {

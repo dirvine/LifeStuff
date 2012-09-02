@@ -118,6 +118,7 @@ class Session {
   int64_t used_space() const;
   std::string serialised_data_atlas() const;
   bool changed() const;
+  LifeStuffState state() const;
 
   void set_def_con_level(DefConLevels defconlevel);
   void set_keyword(const std::string& keyword);
@@ -131,6 +132,7 @@ class Session {
   void set_used_space(const int64_t& used_space);
   void set_serialised_data_atlas(const std::string& serialised_data_atlas);
   void set_changed(bool state);
+  void set_state(const LifeStuffState& state);
 
   int ParseDataAtlas(const std::string& serialised_session);
   int SerialiseDataAtlas(std::string* serialised_session);
@@ -143,6 +145,7 @@ class Session {
   Session &operator=(const Session&);
   Session(const Session&);
 
+  LifeStuffState state_;
   passport::Passport passport_;
   UserDetails user_details_;
   mutable boost::mutex user_details_mutex_;

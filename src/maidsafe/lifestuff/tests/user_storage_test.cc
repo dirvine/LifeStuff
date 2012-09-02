@@ -312,7 +312,7 @@ class UserStorageTest : public testing::TestWithParam<bool> {
   void MountDrive(std::shared_ptr<UserStorage> user_storage,
                   Session* session,
                   bool creation) {
-    user_storage->MountDrive(mount_dir_, session, creation);
+    user_storage->MountDrive(mount_dir_, session, creation, false);
     Sleep(interval_ * 2);
   }
 
