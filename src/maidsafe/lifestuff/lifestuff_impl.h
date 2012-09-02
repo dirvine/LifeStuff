@@ -37,6 +37,7 @@
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 #ifndef LOCAL_TARGETS_ONLY
+#include "maidsafe/routing/routing_api.h"
 #include "maidsafe/private/process_management/client_controller.h"
 #include "maidsafe/pd/client/node.h"
 #endif
@@ -262,6 +263,7 @@ class LifeStuffImpl {
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
 #ifndef LOCAL_TARGETS_ONLY
   std::shared_ptr<priv::process_management::ClientController> client_controller_;
+  std::map<std::string, std::shared_ptr<routing::Routing>> routing_objects_;
   std::shared_ptr<pd::Node> node_;
 #endif
   Session session_;
@@ -288,6 +290,8 @@ class LifeStuffImpl {
                               int access_right);
 #ifndef LOCAL_TARGETS_ONLY
   int CreateVaultInLocalMachine();
+  int EstablishMaidRoutingObject(
+      const std::vector<std::pair<std::string, uint16_t>>& bootstrap_endpoints);
 #endif
 };
 

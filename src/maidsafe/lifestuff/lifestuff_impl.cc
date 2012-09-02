@@ -2474,6 +2474,36 @@ int LifeStuffImpl::CreateVaultInLocalMachine() {
 
   return kSuccess;
 }
+
+int LifeStuffImpl::EstablishMaidRoutingObject(
+    const std::vector<std::pair<std::string, uint16_t> >& bootstrap_endpoints) {
+  asymm::Keys maid(session_.passport().SignaturePacketDetails(passport::kMaid, true));
+  std::shared_ptr maid_routing(std::make_shared<routing::Routing>(maid, true));
+  auto result(routing_objects_.insert(std::make_pair(maid.identity, maid_routing)));
+  if (!result.second) {
+    LOG(kError) << "Failed to insert MAID to map.";
+    return -1;
+  }
+
+  // Functors
+  routing::Functors routing_functors;
+  routing_functors.message_received = routing::MessageReceivedFunctor();
+  routing_functors.network_status = routing::NetworkStatusFunctor();
+  routing_functors.request_public_key = routing::RequestPublicKeyFunctor();
+
+  // Bootstrap endpoints to udp endpoints
+  std::vector<boost::asio::ip::udp::endpoint> peer_endpoints;
+  for (auto& element : bootstrap_endpoints) {
+    boost::asio::ip::udp::endpoint ep;
+    ep.address(boost::asio::ip::address::from_string(element.first));
+    ep.port(element.second);
+    peer_endpoints.push_back(ep);
+  }
+
+  maid_routing->Join(routing_functors, peer_endpoints);
+
+  // Wait till joined
+}
 #endif
 
 }  // namespace lifestuff
