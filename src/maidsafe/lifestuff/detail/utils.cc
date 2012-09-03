@@ -23,7 +23,6 @@
 #include <ostream>  // NOLINT (Fraser)
 #include <vector>
 
-#include "boost/archive/text_iarchive.hpp"
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include "boost/regex.hpp"
 #include "boost/thread/condition_variable.hpp"
@@ -332,12 +331,8 @@ std::string GetNameInPath(const fs::path& save_path, const std::string& file_nam
 encrypt::DataMapPtr ParseSerialisedDataMap(const std::string& serialised_data_map) {
 //  LOG(kError) << "ParseSerialisedDataMap - input size: " << serialised_data_map.size();
   encrypt::DataMapPtr data_map(new encrypt::DataMap);
-  std::istringstream input_stream(serialised_data_map, std::ios_base::binary);
-  try {
-    boost::archive::text_iarchive input_archive(input_stream);
-    input_archive >> *data_map;
-  } catch(const boost::archive::archive_exception& e) {
-    LOG(kError) << e.what();
+  if (encrypt::ParseDataMap(serialised_data_map, *data_map) != kSuccess) {
+    LOG(kError) << "Failed to parse DataMap.";
     return encrypt::DataMapPtr();
   }
   return data_map;

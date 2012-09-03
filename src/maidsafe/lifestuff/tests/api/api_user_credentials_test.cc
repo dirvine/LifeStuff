@@ -371,21 +371,207 @@ TEST_F(OneUserApiTest, FUNC_ChangeCredentialsAndLogOut) {
   EXPECT_EQ(kSuccess, test_elements_.LogIn(new_keyword, new_pin, new_password));
 }
 
-TEST_F(TwoInstancesApiTest, DISABLED_FUNC_LogInFromTwoPlaces) {
+TEST_F(TwoInstancesApiTest, FUNC_BasicLogInFromTwoPlaces) {
   EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_));
-  EXPECT_EQ(kAccountAlreadyLoggedIn, test_elements_2_.LogIn(keyword_, pin_, password_));
-
   EXPECT_EQ(kSuccess, test_elements_.LogOut());
-  EXPECT_NE(kSuccess, test_elements_2_.LogOut());
 
   EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
-  EXPECT_EQ(kAccountAlreadyLoggedIn, test_elements_2_.LogIn(keyword_, pin_, password_));
+  EXPECT_EQ(kReadOnlyRestrictedSuccess, test_elements_2_.LogIn(keyword_, pin_, password_));
 
   EXPECT_EQ(kSuccess, test_elements_.LogOut());
-  EXPECT_NE(kSuccess, test_elements_2_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
+  EXPECT_EQ(kReadOnlyRestrictedSuccess, test_elements_2_.LogIn(keyword_, pin_, password_));
+
+  EXPECT_EQ(kSuccess, test_elements_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_, pin_, password_));
+  EXPECT_EQ(kReadOnlyRestrictedSuccess, test_elements_.LogIn(keyword_, pin_, password_));
+
+  EXPECT_EQ(kSuccess, test_elements_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 }
 
-TEST_F(TwoInstancesApiTest, DISABLED_FUNC_LogInFromTwoPlacesSimultaneously) {
+TEST_F(TwoInstancesApiTest, FUNC_LogInFromTwoPlacesCheckFileSystem) {
+  EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_));
+
+  std::string directory;
+  fs::path path_directory(CreateTestDirectory(test_elements_.mount_path(), &directory));
+  EXPECT_TRUE(fs::exists(path_directory, error_code_));
+  EXPECT_EQ(0, error_code_.value());
+
+  std::string file;
+  EXPECT_EQ(kSuccess, CreateTestFile(test_elements_.mount_path(), 0.1, &file));
+  EXPECT_TRUE(fs::exists(test_elements_.mount_path() / file, error_code_));
+  EXPECT_EQ(0, error_code_.value());
+
+  EXPECT_EQ(kSuccess, test_elements_.LogOut());
+
+
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
+  EXPECT_EQ(kReadOnlyRestrictedSuccess, test_elements_2_.LogIn(keyword_, pin_, password_));
+
+  // Directory should exist for both instances
+  path_directory = test_elements_.mount_path() / directory;
+  EXPECT_TRUE(fs::exists(path_directory, error_code_));
+  EXPECT_EQ(0, error_code_.value());
+
+  path_directory = test_elements_2_.mount_path() / directory;
+  EXPECT_TRUE(fs::exists(path_directory, error_code_));
+  EXPECT_EQ(0, error_code_.value());
+
+  // File should exist for both instances
+  fs::path path_file = test_elements_.mount_path() / file;
+  EXPECT_TRUE(fs::exists(path_file, error_code_));
+  EXPECT_EQ(0, error_code_.value());
+
+  path_file = test_elements_2_.mount_path() / file;
+  EXPECT_TRUE(fs::exists(path_file, error_code_));
+  EXPECT_EQ(0, error_code_.value());
+
+
+  std::string directory2;
+
+  // Try to create directory
+  path_directory = CreateTestDirectory(test_elements_2_.mount_path(), &directory2);
+  EXPECT_FALSE(fs::exists(path_directory, error_code_));
+  EXPECT_NE(0, error_code_.value());
+
+  // Try to move directory
+  path_directory = test_elements_2_.mount_path() / directory;
+  fs::rename(path_directory, test_elements_2_.mount_path() / directory2, error_code_);
+  EXPECT_NE(0, error_code_.value());
+
+  // Try to delete directory
+  path_directory = test_elements_2_.mount_path() / directory;
+  EXPECT_FALSE(fs::remove(path_directory, error_code_));
+  EXPECT_NE(0, error_code_.value());
+
+
+  std::string file2;
+
+  // Try to create file
+  EXPECT_NE(kSuccess, CreateTestFile(test_elements_2_.mount_path(), 0.1, &file2));
+  EXPECT_FALSE(fs::exists(test_elements_2_.mount_path() / file2, error_code_));
+  EXPECT_NE(0, error_code_.value());
+
+  // Try to modify file  // TODO(Alison) - how?
+
+  // Try to move file
+  path_file = test_elements_2_.mount_path() / file;
+  fs::rename(path_file, test_elements_2_.mount_path() / file2, error_code_);
+  EXPECT_NE(0, error_code_.value());
+
+  // Try to delete file
+  path_file = test_elements_2_.mount_path() / file;
+  EXPECT_FALSE(fs::remove(path_file, error_code_));
+  EXPECT_NE(0, error_code_.value());
+
+
+  EXPECT_EQ(kSuccess, test_elements_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+}
+
+TEST_F(TwoUsersApiTest, FUNC_LogInFromTwoPlacesCheckContacts) {
+  // test_elements_1_ - user 1 (full access)
+  // test_elements_2_ - user 2 (full access)
+  // test_elements_3  - user 1 (read only)
+  LifeStuff test_elements_3;
+  testresources::TestingVariables testing_variables_3;
+  InitialiseAndConnect(test_elements_3,
+                       testing_variables_3,
+                       *test_dir_);
+
+  std::string public_id_3(RandomAlphaNumericString(5)),
+              public_id_4(RandomAlphaNumericString(5));
+
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+  EXPECT_EQ(kReadOnlyRestrictedSuccess, test_elements_3.LogIn(keyword_1_, pin_1_, password_1_));
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_2_, pin_2_, password_2_));
+
+  // Try creating public ID
+  EXPECT_EQ(kReadOnlyFailure, test_elements_3.CreatePublicId(public_id_3));
+  EXPECT_EQ(kSuccess, test_elements_1_.CreatePublicId(public_id_3));
+
+
+  // Try adding 2 as a contact
+  testing_variables_2_.newly_contacted = false;
+  EXPECT_EQ(kReadOnlyFailure, test_elements_3.AddContact(public_id_3, public_id_2_, ""));
+  EXPECT_EQ(kSuccess, test_elements_1_.AddContact(public_id_3, public_id_2_, ""));
+  int i(0);
+  while (!testing_variables_2_.newly_contacted && i < 100) {
+    ++i;
+    Sleep(bptime::milliseconds(100));
+  }
+  EXPECT_TRUE(testing_variables_2_.newly_contacted);
+
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+  testing_variables_1_.confirmed = false;
+  testing_variables_3.confirmed = false;
+
+  // 2 accepts the friend request
+  EXPECT_EQ(kSuccess, test_elements_2_.ConfirmContact(public_id_2_, public_id_3));
+  i = 0;
+  while (!testing_variables_3.confirmed && i < 100) {
+    ++i;
+    Sleep(bptime::milliseconds(100));
+  }
+
+  // RO instance shouldn't get confirmation
+  EXPECT_FALSE(testing_variables_3.confirmed);
+  EXPECT_EQ(i, 100);
+
+  // RW instance should get confirmation
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+  i = 0;
+  while (!testing_variables_1_.confirmed && i < 100) {
+    ++i;
+    Sleep(bptime::milliseconds(100));
+  }
+  EXPECT_TRUE(testing_variables_1_.confirmed);
+
+  // RO shouldn't be able to remove contact
+  EXPECT_EQ(kReadOnlyFailure, test_elements_3.RemoveContact(public_id_3, public_id_2_, ""));
+
+
+  // 4 adds as friend
+  EXPECT_EQ(kSuccess, test_elements_2_.CreatePublicId(public_id_4));
+  testing_variables_1_.newly_contacted = false;
+  testing_variables_3.newly_contacted = false;
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_2_.AddContact(public_id_4, public_id_3, ""));
+
+  // RO instance shouldn't be contacted about contact request
+  i = 0;
+  while (!testing_variables_3.newly_contacted && i < 100) {
+    ++i;
+    Sleep(bptime::milliseconds(100));
+  }
+  EXPECT_FALSE(testing_variables_3.newly_contacted);
+  EXPECT_EQ(i, 100);
+
+  // RW instance should be contacted about contact request
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+  i = 0;
+  while (!testing_variables_1_.newly_contacted && i < 100) {
+    ++i;
+    Sleep(bptime::milliseconds(100));
+  }
+  EXPECT_TRUE(testing_variables_1_.newly_contacted);
+
+  // RO instance tries accepting/declining request from 4
+  EXPECT_EQ(kReadOnlyFailure, test_elements_3.ConfirmContact(public_id_3, public_id_4));
+  EXPECT_EQ(kReadOnlyFailure, test_elements_3.DeclineContact(public_id_3, public_id_4));
+
+
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
+  EXPECT_EQ(kSuccess, test_elements_3.LogOut());
+}
+
+TEST_F(TwoInstancesApiTest, FUNC_LogInFromTwoPlacesSimultaneously) {
   EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_));
   EXPECT_EQ(kSuccess, test_elements_.LogOut());
 

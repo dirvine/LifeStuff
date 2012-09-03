@@ -271,7 +271,16 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                  size_t* total_files = nullptr,
                                  boost::mutex* mutex = nullptr);
 
-int CreatePublicId(LifeStuff& test_elements,
+int InitialiseAndConnect(LifeStuff& test_elements,
+                   testresources::TestingVariables& testing_variables,
+                   const fs::path& test_dir,
+                   bool several_files = false,
+                   std::vector<std::string>* ids = nullptr,
+                   std::vector<std::string>* names = nullptr,
+                   size_t* total_files = nullptr,
+                   boost::mutex* mutex = nullptr);
+
+int CreateAccountWithPublicId(LifeStuff& test_elements,
                    testresources::TestingVariables& testing_variables,
                    const fs::path& test_dir,
                    const std::string& keyword,

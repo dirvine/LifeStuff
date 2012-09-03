@@ -115,7 +115,10 @@ class LifeStuffImpl {
   int Finalise();
 
   /// Credential operations
-  int CreateUser(const std::string& username, const std::string& pin, const std::string& password);
+  int CreateUser(const std::string& username,
+                 const std::string& pin,
+                 const std::string& password,
+                 const fs::path& chunk_store);
   int CreatePublicId(const std::string& public_id);
   int LogIn(const std::string& username, const std::string& pin, const std::string& password);
   int LogOut();
@@ -246,7 +249,6 @@ class LifeStuffImpl {
 
  private:
   int thread_count_;
-  LifeStuffState state_;
   fs::path buffered_path_;
 #ifdef LOCAL_TARGETS_ONLY
   fs::path simulation_path_;
@@ -270,7 +272,8 @@ class LifeStuffImpl {
 
   void ConnectInternalElements();
   int SetValidPmidAndInitialisePublicComponents();
-  int PreContactChecks(const std::string& my_public_id);
+  int PreContactChecksFullAccess(const std::string& my_public_id);
+  int PreContactChecksReadOnly(const std::string& my_public_id);
   void ShareRenameSlot(const std::string& old_share_name,
                        const std::string& new_share_name);
   void MemberAccessChangeSlot(const std::string& share_id,

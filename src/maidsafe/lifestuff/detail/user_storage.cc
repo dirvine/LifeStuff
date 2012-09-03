@@ -63,6 +63,7 @@ UserStorage::UserStorage(std::shared_ptr<pcs::RemoteChunkStore> chunk_store,
 void UserStorage::MountDrive(const fs::path& mount_dir_path,
                              Session* session,
                              bool creation,
+                             bool read_only,
                              const std::string& drive_logo) {
   if (mount_status_) {
     LOG(kInfo) << "Already mounted.";
@@ -105,7 +106,8 @@ void UserStorage::MountDrive(const fs::path& mount_dir_path,
   result = drive_in_user_space_->Mount(mount_dir_,
                                        drive_logo,
                                        session->max_space(),
-                                       session->used_space());
+                                       session->used_space(),
+                                       read_only);
   if (result != kSuccess) {
     LOG(kError) << "Failed to Mount Drive: " << result;
     return;
@@ -113,12 +115,13 @@ void UserStorage::MountDrive(const fs::path& mount_dir_path,
   mount_status_ = true;
 #else
   mount_dir_ = mount_dir_path;
-  mount_thread_.reset(new boost::thread([this, drive_logo] {
-    drive_in_user_space_->Mount(mount_dir_,
-                                drive_logo,
-                                session_->max_space(),
-                                session_->used_space());
-  }));
+  mount_thread_.reset(new boost::thread([this, drive_logo, read_only] {
+                                          drive_in_user_space_->Mount(mount_dir_,
+                                                                      drive_logo,
+                                                                      session_->max_space(),
+                                                                      session_->used_space(),
+                                                                      read_only);
+                                        }));
   mount_status_ = drive_in_user_space_->WaitUntilMounted();
 #endif
   ConnectToShareRenamedSignal(share_renamed_function_);
@@ -701,6 +704,7 @@ int UserStorage::OpenShareInvitation(const std::string& sender_public_id,
     LOG(kError) << "Failed to get share details: " << absolute_path.string();
     return result;
   }
+  std::vector<std::string> contacts_to_remove;
   result = InformContacts(kOpenShareInvitation,
                           sender_public_id,
                           contacts,
@@ -711,8 +715,32 @@ int UserStorage::OpenShareInvitation(const std::string& sender_public_id,
                           "",
                           contacts_results);
   if (result != kSuccess) {
-    LOG(kError) << "Failed to inform contacts: " << absolute_path.string();
+    LOG(kError) << "Failed to inform contacts for " << absolute_path;
+    std::for_each(contacts.begin(),
+                  contacts.end(),
+                  [&](const StringIntMap::value_type& contact) {
+                    contacts_to_remove.push_back(contact.first);
+                  });
+    result = RemoveShareUsers(sender_public_id, absolute_path, contacts_to_remove);
+    if (result != kSuccess) {
+      LOG(kError) << "Failed to remove contacts.";
+    }
     return result;
+  }
+  if (contacts_results) {
+    std::for_each(contacts_results->begin(),
+                  contacts_results->end(),
+                  [&](const StringIntMap::value_type& contact_result) {
+                    if (contact_result.second != kSuccess)
+                      contacts_to_remove.push_back(contact_result.first);
+                  });
+    if (!contacts_to_remove.empty()) {
+      result = RemoveShareUsers(sender_public_id, absolute_path, contacts_to_remove);
+      if (result != kSuccess) {
+        LOG(kError) << "Failed to remove failed contacts.";
+        return result;
+      }
+    }
   }
   return kSuccess;
 }
