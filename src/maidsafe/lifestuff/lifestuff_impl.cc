@@ -60,6 +60,7 @@ LifeStuffImpl::LifeStuffImpl()
 #ifndef LOCAL_TARGETS_ONLY
       client_controller_(),
       node_(),
+      routings_handler_(),
 #endif
       session_(),
       user_credentials_(),
@@ -302,6 +303,10 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
     LOG(kError) << "Failed to create vault. No LifeStuff for you!";
     return result;
   }
+
+  routings_handler_ = std::make_shared<RoutingsHandler>(*remote_chunk_store_,
+                                                        session_,
+                                                        ValidatedMessageSignal());
 #endif
 
   boost::system::error_code error_code;
@@ -2476,33 +2481,14 @@ int LifeStuffImpl::CreateVaultInLocalMachine() {
 }
 
 int LifeStuffImpl::EstablishMaidRoutingObject(
-    const std::vector<std::pair<std::string, uint16_t> >& bootstrap_endpoints) {
+    const std::vector<std::pair<std::string, uint16_t>>& bootstrap_endpoints) {
   asymm::Keys maid(session_.passport().SignaturePacketDetails(passport::kMaid, true));
-  std::shared_ptr maid_routing(std::make_shared<routing::Routing>(maid, true));
-  auto result(routing_objects_.insert(std::make_pair(maid.identity, maid_routing)));
-  if (!result.second) {
-    LOG(kError) << "Failed to insert MAID to map.";
-    return -1;
+  if (!routings_handler_->AddRoutingObject(maid, bootstrap_endpoints, maid.identity)) {
+    LOG(kError) << "Failed to adding MAID routing.";
+    return kGeneralError;
   }
 
-  // Functors
-  routing::Functors routing_functors;
-  routing_functors.message_received = routing::MessageReceivedFunctor();
-  routing_functors.network_status = routing::NetworkStatusFunctor();
-  routing_functors.request_public_key = routing::RequestPublicKeyFunctor();
-
-  // Bootstrap endpoints to udp endpoints
-  std::vector<boost::asio::ip::udp::endpoint> peer_endpoints;
-  for (auto& element : bootstrap_endpoints) {
-    boost::asio::ip::udp::endpoint ep;
-    ep.address(boost::asio::ip::address::from_string(element.first));
-    ep.port(element.second);
-    peer_endpoints.push_back(ep);
-  }
-
-  maid_routing->Join(routing_functors, peer_endpoints);
-
-  // Wait till joined
+  return kSuccess;
 }
 #endif
 

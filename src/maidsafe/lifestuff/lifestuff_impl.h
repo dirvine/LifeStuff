@@ -40,6 +40,7 @@
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/private/process_management/client_controller.h"
 #include "maidsafe/pd/client/node.h"
+#include "maidsafe/lifestuff/detail/routings_handler.h"
 #endif
 
 #include "maidsafe/lifestuff/lifestuff.h"
@@ -263,8 +264,8 @@ class LifeStuffImpl {
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
 #ifndef LOCAL_TARGETS_ONLY
   std::shared_ptr<priv::process_management::ClientController> client_controller_;
-  std::map<std::string, std::shared_ptr<routing::Routing>> routing_objects_;
   std::shared_ptr<pd::Node> node_;
+  std::shared_ptr<RoutingsHandler> routings_handler_;
 #endif
   Session session_;
   std::shared_ptr<UserCredentials> user_credentials_;

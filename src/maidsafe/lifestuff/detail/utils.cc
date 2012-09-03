@@ -476,6 +476,61 @@ int AssessJointResult(const std::vector<int>& results) {
   return kSuccess;
 }
 
+bool MessagePointToPoint(const std::string& unwrapped_message,
+                         const asymm::PublicKey& recipient_public_key,
+                         const asymm::PrivateKey& sender_private_key,
+                         std::string& final_message) {
+  std::string encrypted_message;
+  int result(asymm::Encrypt(unwrapped_message, recipient_public_key, &encrypted_message));
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to encrypt message: " << result;
+    return false;
+  }
+
+  pca::SignedData signed_data;
+  signed_data.set_data(encrypted_message);
+
+  std::string message_signature;
+  result = asymm::Sign(signed_data.data(), sender_private_key, &message_signature);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to sign message: " << result;
+    return false;
+  }
+  signed_data.set_signature(message_signature);
+
+  if (!signed_data.SerializeToString(&final_message)) {
+    LOG(kError) << "Failed to sign message: " << result;
+    return false;
+  }
+
+  return true;
+}
+
+bool PointToPointMessageValid(const std::string& wrapped_message,
+                              const asymm::PublicKey& sender_public_key,
+                              const asymm::PrivateKey& receiver_private_key,
+                              std::string& final_message) {
+  pca::SignedData signed_data;
+  if (!signed_data.ParseFromString(wrapped_message)) {
+    LOG(kError) << "Message doesn't parse to SignedData.";
+    return false;
+  }
+
+  int result(asymm::CheckSignature(signed_data.data(), signed_data.signature(), sender_public_key));
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to validate signature of message: " << result;
+    return false;
+  }
+
+  result = asymm::Decrypt(signed_data.data(), receiver_private_key, &final_message);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to decrypt message: " << result;
+    return false;
+  }
+
+  return true;
+}
+
 }  // namespace lifestuff
 
 }  // namespace maidsafe

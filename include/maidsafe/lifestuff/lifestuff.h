@@ -123,6 +123,8 @@ typedef std::function<void(bool)> VoidFunctionOneBool;  // NOLINT (Dan)
 typedef std::map<std::string, int> StringIntMap;
 typedef std::map<std::string, std::string> SocialInfoMap;
 typedef std::map<std::string, std::pair<ContactStatus, ContactPresence>> ContactMap;
+typedef std::function<bool(const std::string&, std::string&)> ValidatedMessageSignal;
+
 
 /// Private Shares
 // Own ID, Contact ID, Share Name, Share ID, Access Level, Timestamp
