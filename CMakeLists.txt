@@ -74,9 +74,6 @@ set(ALL_FILES_DETAIL_DIR ${SOURCE_FILES_DETAIL_DIR}
                          ${HEADER_FILES_DETAIL_DIR}
                          "${PATH_TO_INCLUDE}/lifestuff.h"
                          "${PATH_TO_INCLUDE}/return_codes.h")
-if(NOT ${LOCAL_TARGETS_ONLY})
-list(REMOVE_ITEM ALL_FILES_DETAIL_DIR "${PATH_TO_DETAIL}/routings_handler.h" "${PATH_TO_DETAIL}/routings_handler.cc")
-endif()
 
 set(STYLE_ALL ${ALL_FILES_DETAIL_DIR} ${ALL_FILES_LIFESTUFF_DIR})
 list(REMOVE_ITEM STYLE_ALL "${PATH_TO_DETAIL}/data_atlas.pb.h"
