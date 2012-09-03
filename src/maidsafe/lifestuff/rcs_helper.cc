@@ -23,8 +23,6 @@
 #include <string>
 #include <vector>
 
-#include "boost/archive/text_iarchive.hpp"
-
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 

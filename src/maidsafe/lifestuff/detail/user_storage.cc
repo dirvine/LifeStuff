@@ -704,6 +704,7 @@ int UserStorage::OpenShareInvitation(const std::string& sender_public_id,
     LOG(kError) << "Failed to get share details: " << absolute_path.string();
     return result;
   }
+  std::vector<std::string> contacts_to_remove;
   result = InformContacts(kOpenShareInvitation,
                           sender_public_id,
                           contacts,
@@ -714,8 +715,32 @@ int UserStorage::OpenShareInvitation(const std::string& sender_public_id,
                           "",
                           contacts_results);
   if (result != kSuccess) {
-    LOG(kError) << "Failed to inform contacts: " << absolute_path.string();
+    LOG(kError) << "Failed to inform contacts for " << absolute_path;
+    std::for_each(contacts.begin(),
+                  contacts.end(),
+                  [&](const StringIntMap::value_type& contact) {
+                    contacts_to_remove.push_back(contact.first);
+                  });
+    result = RemoveShareUsers(sender_public_id, absolute_path, contacts_to_remove);
+    if (result != kSuccess) {
+      LOG(kError) << "Failed to remove contacts.";
+    }
     return result;
+  }
+  if (contacts_results) {
+    std::for_each(contacts_results->begin(),
+                  contacts_results->end(),
+                  [&](const StringIntMap::value_type& contact_result) {
+                    if (contact_result.second != kSuccess)
+                      contacts_to_remove.push_back(contact_result.first);
+                  });
+    if (!contacts_to_remove.empty()) {
+      result = RemoveShareUsers(sender_public_id, absolute_path, contacts_to_remove);
+      if (result != kSuccess) {
+        LOG(kError) << "Failed to remove failed contacts.";
+        return result;
+      }
+    }
   }
   return kSuccess;
 }
