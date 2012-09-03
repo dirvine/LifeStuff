@@ -852,7 +852,11 @@ std::string LifeStuffImpl::GetContactProfilePicture(const std::string& my_public
 int LifeStuffImpl::GetLifestuffCard(const std::string& my_public_id,
                                     const std::string& contact_public_id,
                                     SocialInfoMap& social_info) {
-  // TODO(Alison) - do we need to check session_.state() here?
+  int result(PreContactChecksReadOnly(my_public_id));
+  if (result != kSuccess) {
+    LOG(kError) << "Failed pre checks in GetLifestuffCard.";
+    return result;
+  }
   return public_id_->GetLifestuffCard(my_public_id, contact_public_id, social_info);
 }
 

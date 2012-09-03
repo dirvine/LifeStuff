@@ -457,8 +457,6 @@ TEST_F(TwoInstancesApiTest, FUNC_LogInFromTwoPlacesCheckFileSystem) {
   EXPECT_FALSE(fs::exists(test_elements_2_.mount_path() / file2, error_code_));
   EXPECT_NE(0, error_code_.value());
 
-  // Try to modify file  // TODO(Alison) - how?
-
   // Try to move file
   path_file = test_elements_2_.mount_path() / file;
   fs::rename(path_file, test_elements_2_.mount_path() / file2, error_code_);
@@ -572,6 +570,7 @@ TEST_F(TwoUsersApiTest, FUNC_LogInFromTwoPlacesCheckContacts) {
 }
 
 TEST_F(TwoInstancesApiTest, DISABLED_FUNC_LogInFromTwoPlacesSimultaneously) {
+#ifdef MAIDSAFE_LINUX
   EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_));
   EXPECT_EQ(kSuccess, test_elements_.LogOut());
 
@@ -605,6 +604,7 @@ TEST_F(TwoInstancesApiTest, DISABLED_FUNC_LogInFromTwoPlacesSimultaneously) {
     EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
     EXPECT_EQ(kSuccess, test_elements_.LogOut());
   }
+#endif
 }
 
 TEST_F(TwoInstancesApiTest, FUNC_NeverLogIn) {

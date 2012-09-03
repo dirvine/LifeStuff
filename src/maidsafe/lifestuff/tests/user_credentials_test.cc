@@ -247,7 +247,7 @@ TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
 
   ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
   ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(kNewKeyword, pin_, password_));
-  ASSERT_EQ(kCorruptedLidPacket, user_credentials_->LogIn(kNewKeyword, kNewPin, password_));
+  ASSERT_EQ(kAccountCorrupted, user_credentials_->LogIn(kNewKeyword, kNewPin, password_));
   ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(kNewKeyword, pin_, kNewPassword));
   ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, kNewPin, kNewPassword));
   LOG(kInfo) << "Can't log in with old u/p/w.";

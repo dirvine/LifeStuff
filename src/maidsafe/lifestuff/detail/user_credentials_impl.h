@@ -26,6 +26,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "boost/asio/deadline_timer.hpp"
 #include "boost/asio/io_service.hpp"
@@ -74,10 +75,16 @@ int AddItemToLockingPacket(LockingPacket& locking_packet,
 int RemoveItemFromLockingPacket(LockingPacket& locking_packet,
                                 const std::string& identifier);
 
+int RemoveItemsFromLockingPacket(LockingPacket& locking_packet,
+                                 std::vector<std::string> identifiers);
+
 int UpdateTimestampInLockingPacket(LockingPacket& locking_packet,
                                    const std::string& identifier);
 
-int CheckLockingPacketForFullAccess(LockingPacket& locking_packet);
+int CheckLockingPacketForFullAccess(const LockingPacket& locking_packet);
+
+int CheckLockingPacketForOthersLoggedIn(const LockingPacket& locking_packet,
+                                        const std::string& identifier);
 
 int ProcessAccountStatus(const std::string& keyword,
                          const std::string& pin,
@@ -109,7 +116,7 @@ class UserCredentialsImpl {
 
   int SaveSession(bool log_out);
 
-  int UpdateLid(bool log_out);
+  int AssessAndUpdateLid(bool log_out);
 
   int ChangePin(const std::string& new_pin);
   int ChangeKeyword(const std::string new_keyword);
