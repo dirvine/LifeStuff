@@ -77,8 +77,7 @@ PublicIdDetails::PublicIdDetails(const PublicIdDetails& other)
       share_information_mutex(other.share_information_mutex) {}
 
 Session::Session()
-    : state_(kZeroth),
-      passport_(),
+    : passport_(),
       user_details_(),
       user_details_mutex_(),
       public_id_details_(),
@@ -100,6 +99,7 @@ void Session::Reset() {
     user_details_.used_space = 0;
     user_details_.serialised_data_atlas.clear();
     user_details_.changed = false;
+    user_details_.session_access_level = kNoAccess;
   }
 
   passport_.Clear(true, true, true);
@@ -243,8 +243,9 @@ bool Session::changed() const {
   return user_details_.changed;
 }
 
-LifeStuffState Session::state() const {
-  return state_;
+SessionAccessLevel Session::session_access_level() const {
+  boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
+  return user_details_.session_access_level;
 }
 
 void Session::set_def_con_level(DefConLevels defconlevel) {
@@ -328,8 +329,9 @@ void Session::set_changed(bool state) {
   user_details_.changed = state;
 }
 
-void Session::set_state(const LifeStuffState &state) {
-  state_ = state;
+void Session::set_session_access_level(SessionAccessLevel session_access_level) {
+  boost::mutex::scoped_lock arran_lochan_am_hill(user_details_mutex_);
+  user_details_.session_access_level = session_access_level;
 }
 
 int Session::ParseDataAtlas(const std::string& serialised_data_atlas) {

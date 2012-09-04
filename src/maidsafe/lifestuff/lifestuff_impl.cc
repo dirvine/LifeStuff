@@ -68,13 +68,14 @@ LifeStuffImpl::LifeStuffImpl()
       public_id_(),
       message_handler_(),
       slots_(),
+      state_(kZeroth),
       save_session_mutex_(),
       saving_session_(false) {}
 
 LifeStuffImpl::~LifeStuffImpl() {}
 
 int LifeStuffImpl::Initialise(const boost::filesystem::path& base_directory) {
-  if (session_.state() != kZeroth) {
+  if (state_ != kZeroth) {
     LOG(kError) << "Make sure that object is in the original Zeroth state. Asimov rules.";
     return kGeneralError;
   }
@@ -121,7 +122,7 @@ int LifeStuffImpl::Initialise(const boost::filesystem::path& base_directory) {
                                               session_,
                                               asio_service_.service()));
 
-  session_.set_state(kInitialised);
+  state_ = kInitialised;
 
   return kSuccess;
 }
@@ -142,7 +143,7 @@ int LifeStuffImpl::ConnectToSignals(
     const ShareChangedFunction& share_changed_function,
     const LifestuffCardUpdateFunction& lifestuff_card_update_function,
     const UpdateAvailableFunction& software_update_available_function) {
-  if (session_.state() != kInitialised) {
+  if (state_ != kInitialised) {
     LOG(kError) << "Make sure that object is initialised";
     return kGeneralError;
   }
@@ -243,7 +244,7 @@ int LifeStuffImpl::ConnectToSignals(
   }
 
   if (connects > 0) {
-    session_.set_state(kConnected);
+    state_ = kConnected;
     return kSuccess;
   }
 
@@ -251,7 +252,7 @@ int LifeStuffImpl::ConnectToSignals(
 }
 
 int LifeStuffImpl::Finalise() {
-  if (session_.state() != kConnected) {
+  if (state_ != kConnected) {
     LOG(kError) << "Need to be connected to finalise.";
     return kGeneralError;
   }
@@ -270,7 +271,7 @@ int LifeStuffImpl::Finalise() {
   public_id_.reset();
   user_credentials_.reset();
   user_storage_.reset();
-  session_.set_state(kZeroth);
+  state_ = kZeroth;
 
   return kSuccess;
 }
@@ -280,7 +281,7 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
                               const std::string& pin,
                               const std::string& password,
                               const fs::path& /*chunk_store*/) {
-  if (session_.state() != kConnected) {
+  if (state_ != kConnected) {
     LOG(kError) << "Make sure that object is initialised and connected";
     return kGeneralError;
   }
@@ -346,15 +347,15 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
     user_storage_->UnMountDrive();
   }
 
-  session_.set_state(kLoggedIn);
+  state_ = kLoggedIn;
 
   return kSuccess;
 }
 
 int LifeStuffImpl::CreatePublicId(const std::string& public_id) {
-  if (session_.state() != kLoggedIn) {
+  if (state_ != kLoggedIn) {
     LOG(kError) << "Wrong state to create a public ID.";
-    if (session_.state() == kLoggedInReadOnly)
+    if (state_ == kLoggedInReadOnly)
       return kReadOnlyFailure;
     return kGeneralError;
   }
@@ -384,7 +385,7 @@ int LifeStuffImpl::LogIn(const std::string& keyword,
                          const std::string& pin,
                          const std::string& password) {
   session_.Reset();
-  if (session_.state() != kConnected) {
+  if (state_ != kConnected) {
     LOG(kError) << "Make sure that object is initialised and connected";
     return kGeneralError;
   }
@@ -430,7 +431,7 @@ int LifeStuffImpl::LogIn(const std::string& keyword,
     return kGeneralError;
   }
 
-  session_.set_state(anticipated_state);
+  state_ = anticipated_state;
   if (anticipated_state == kLoggedIn) {
     if (!session_.PublicIdentities().empty()) {
       public_id_->StartUp(interval_);
@@ -445,12 +446,12 @@ int LifeStuffImpl::LogIn(const std::string& keyword,
 }
 
 int LifeStuffImpl::LogOut() {
-  if (session_.state() != kLoggedIn && session_.state() != kLoggedInReadOnly) {
+  if (state_ != kLoggedIn && state_ != kLoggedInReadOnly) {
     LOG(kError) << "Should be logged in to log out.";
     return kGeneralError;
   }
 
-  if (session_.state() == kLoggedIn) {
+  if (state_ == kLoggedIn) {
     bool saving_session(true);
     while (saving_session) {
       {
@@ -467,12 +468,12 @@ int LifeStuffImpl::LogOut() {
     return kGeneralError;
   }
 
-  if (session_.state() == kLoggedIn) {
+  if (state_ == kLoggedIn) {
     public_id_->ShutDown();
     message_handler_->ShutDown();
   }
 
-  if (session_.state() == kLoggedIn) {
+  if (state_ == kLoggedIn) {
     if (user_credentials_->Logout() != kSuccess) {
       LOG(kError) << "Failed to log out.";
       return kGeneralError;
@@ -494,13 +495,13 @@ int LifeStuffImpl::LogOut() {
                   << mount_path();
   session_.Reset();
 
-  session_.set_state(kConnected);
+  state_ = kConnected;
 
   return kSuccess;
 }
 
 int LifeStuffImpl::CheckPassword(const std::string& password) {
-  if (session_.state() != kLoggedIn && session_.state() != kLoggedInReadOnly) {
+  if (state_ != kLoggedIn && state_ != kLoggedInReadOnly) {
     LOG(kError) << "Should be logged in to check password.";
     return kGeneralError;
   }
@@ -509,9 +510,9 @@ int LifeStuffImpl::CheckPassword(const std::string& password) {
 }
 
 int LifeStuffImpl::ChangeKeyword(const std::string& new_keyword, const std::string& password) {
-  if (session_.state() != kLoggedIn) {
+  if (state_ != kLoggedIn) {
     LOG(kError) << "Should be logged in to change keyword.";
-    if (session_.state() == kLoggedInReadOnly)
+    if (state_ == kLoggedInReadOnly)
       return kReadOnlyFailure;
     return kGeneralError;
   }
@@ -531,9 +532,9 @@ int LifeStuffImpl::ChangeKeyword(const std::string& new_keyword, const std::stri
 }
 
 int LifeStuffImpl::ChangePin(const std::string& new_pin, const std::string& password) {
-  if (session_.state() != kLoggedIn) {
+  if (state_ != kLoggedIn) {
     LOG(kError) << "Should be logged in to change pin.";
-    if (session_.state() == kLoggedInReadOnly)
+    if (state_ == kLoggedInReadOnly)
       return kReadOnlyFailure;
     return kGeneralError;
   }
@@ -554,9 +555,9 @@ int LifeStuffImpl::ChangePin(const std::string& new_pin, const std::string& pass
 
 int LifeStuffImpl::ChangePassword(const std::string& new_password,
                                   const std::string& current_password) {
-  if (session_.state() != kLoggedIn) {
+  if (state_ != kLoggedIn) {
     LOG(kError) << "Should be logged in to change password.";
-    if (session_.state() == kLoggedInReadOnly)
+    if (state_ == kLoggedInReadOnly)
       return kReadOnlyFailure;
     return kGeneralError;
   }
@@ -576,7 +577,7 @@ int LifeStuffImpl::ChangePassword(const std::string& new_password,
 }
 
 int LifeStuffImpl::LeaveLifeStuff() {
-  session_.set_state(kZeroth);
+  state_ = kZeroth;
   // Unmount
   user_storage_->UnMountDrive();
 
@@ -859,15 +860,15 @@ std::string LifeStuffImpl::GetContactProfilePicture(const std::string& my_public
 int LifeStuffImpl::GetLifestuffCard(const std::string& my_public_id,
                                     const std::string& contact_public_id,
                                     SocialInfoMap& social_info) {
-  // TODO(Alison) - do we need to check session_.state() here?
+  // TODO(Alison) - do we need to check state_ here?
   return public_id_->GetLifestuffCard(my_public_id, contact_public_id, social_info);
 }
 
 int LifeStuffImpl::SetLifestuffCard(const std::string& my_public_id,
                                     const SocialInfoMap& social_info) {
-  if (session_.state() != kLoggedIn) {
+  if (state_ != kLoggedIn) {
     LOG(kError) << "Should be logged in to set LifeStuff card.";
-    if (session_.state() == kLoggedInReadOnly)
+    if (state_ == kLoggedInReadOnly)
       return kReadOnlyFailure;
     return kGeneralError;
   }
@@ -891,8 +892,8 @@ ContactMap LifeStuffImpl::GetContacts(const std::string& my_public_id, uint16_t 
 }
 
 std::vector<std::string> LifeStuffImpl::PublicIdsList() const {
-  if (session_.state() != kLoggedIn && session_.state() != kLoggedInReadOnly) {
-    LOG(kError) << "Wrong state: " << session_.state();
+  if (state_ != kLoggedIn && state_ != kLoggedInReadOnly) {
+    LOG(kError) << "Wrong state: " << state_;
     return std::vector<std::string>();
   }
 
@@ -903,9 +904,9 @@ std::vector<std::string> LifeStuffImpl::PublicIdsList() const {
 int LifeStuffImpl::SendChatMessage(const std::string& sender_public_id,
                                    const std::string& receiver_public_id,
                                    const std::string& message) {
-  if (session_.state() != kLoggedIn) {
-    LOG(kError) << "Wrong state: " << session_.state();
-    if (session_.state() == kLoggedInReadOnly)
+  if (state_ != kLoggedIn) {
+    LOG(kError) << "Wrong state: " << state_;
+    if (state_ == kLoggedInReadOnly)
       return kReadOnlyFailure;
     return kGeneralError;
   }
@@ -926,9 +927,9 @@ int LifeStuffImpl::SendChatMessage(const std::string& sender_public_id,
 int LifeStuffImpl::SendFile(const std::string& sender_public_id,
                             const std::string& receiver_public_id,
                             const fs::path& absolute_path) {
-  if (session_.state() != kLoggedIn) {
-    LOG(kError) << "Wrong state: " << session_.state();
-    if (session_.state() == kLoggedInReadOnly)
+  if (state_ != kLoggedIn) {
+    LOG(kError) << "Wrong state: " << state_;
+    if (state_ == kLoggedInReadOnly)
       return kReadOnlyFailure;
     return kGeneralError;
   }
@@ -958,9 +959,9 @@ int LifeStuffImpl::SendFile(const std::string& sender_public_id,
 int LifeStuffImpl::AcceptSentFile(const std::string& identifier,
                                   const fs::path& absolute_path,
                                   std::string* file_name) {
-  if (session_.state() != kLoggedIn) {
-    LOG(kError) << "Wrong state: " << session_.state();
-    if (session_.state() == kLoggedInReadOnly)
+  if (state_ != kLoggedIn) {
+    LOG(kError) << "Wrong state: " << state_;
+    if (state_ == kLoggedInReadOnly)
       return kReadOnlyFailure;
     return kGeneralError;
   }
@@ -1022,9 +1023,9 @@ int LifeStuffImpl::AcceptSentFile(const std::string& identifier,
 }
 
 int LifeStuffImpl::RejectSentFile(const std::string& identifier) {
-  if (session_.state() != kLoggedIn) {
-    LOG(kError) << "Wrong state: " << session_.state();
-    if (session_.state() == kLoggedInReadOnly)
+  if (state_ != kLoggedIn) {
+    LOG(kError) << "Wrong state: " << state_;
+    if (state_ == kLoggedInReadOnly)
       return kReadOnlyFailure;
     return kGeneralError;
   }
@@ -1035,8 +1036,8 @@ int LifeStuffImpl::RejectSentFile(const std::string& identifier) {
 
 /// Filesystem
 int LifeStuffImpl::ReadHiddenFile(const fs::path& absolute_path, std::string* content) const {
-  if (session_.state() != kLoggedIn && session_.state() != kLoggedInReadOnly) {
-    LOG(kError) << "Wrong state: " << session_.state();
+  if (state_ != kLoggedIn && state_ != kLoggedInReadOnly) {
+    LOG(kError) << "Wrong state: " << state_;
     return kGeneralError;
   }
 
@@ -1051,9 +1052,9 @@ int LifeStuffImpl::ReadHiddenFile(const fs::path& absolute_path, std::string* co
 int LifeStuffImpl::WriteHiddenFile(const fs::path& absolute_path,
                                    const std::string& content,
                                    bool overwrite_existing) {
-  if (session_.state() != kLoggedIn) {
-    LOG(kError) << "Wrong state: " << session_.state();
-    if (session_.state() == kLoggedInReadOnly)
+  if (state_ != kLoggedIn) {
+    LOG(kError) << "Wrong state: " << state_;
+    if (state_ == kLoggedInReadOnly)
       return kReadOnlyFailure;
     return kGeneralError;
   }
@@ -1062,9 +1063,9 @@ int LifeStuffImpl::WriteHiddenFile(const fs::path& absolute_path,
 }
 
 int LifeStuffImpl::DeleteHiddenFile(const fs::path& absolute_path) {
-  if (session_.state() != kLoggedIn) {
-    LOG(kError) << "Wrong state: " << session_.state();
-    if (session_.state() == kLoggedInReadOnly)
+  if (state_ != kLoggedIn) {
+    LOG(kError) << "Wrong state: " << state_;
+    if (state_ == kLoggedInReadOnly)
       return kReadOnlyFailure;
     return kGeneralError;
   }
@@ -1074,8 +1075,8 @@ int LifeStuffImpl::DeleteHiddenFile(const fs::path& absolute_path) {
 
 int LifeStuffImpl::SearchHiddenFiles(const fs::path& absolute_path,
                                      std::vector<std::string>* results) {
-  if (session_.state() != kLoggedIn && session_.state() != kLoggedInReadOnly) {
-    LOG(kError) << "Wrong state: " << session_.state();
+  if (state_ != kLoggedIn && state_ != kLoggedInReadOnly) {
+    LOG(kError) << "Wrong state: " << state_;
     return kGeneralError;
   }
 
@@ -2188,11 +2189,11 @@ int LifeStuffImpl::LeaveOpenShare(const std::string& my_public_id, const std::st
 }
 
 ///
-int LifeStuffImpl::state() const { return session_.state(); }
+int LifeStuffImpl::state() const { return state_; }
 
 fs::path LifeStuffImpl::mount_path() const {
-  if (session_.state() != kLoggedIn && session_.state() != kLoggedInReadOnly) {
-    LOG(kError) << "Wrong state: " << session_.state();
+  if (state_ != kLoggedIn && state_ != kLoggedInReadOnly) {
+    LOG(kError) << "Wrong state: " << state_;
     return fs::path();
   }
 
@@ -2345,7 +2346,7 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
   user_storage_.reset(new UserStorage(remote_chunk_store_, *message_handler_));
 
   ConnectInternalElements();
-  session_.set_state(kInitialised);
+  state_ = kInitialised;
 
   result = ConnectToSignals(slots_.chat_slot,
                             slots_.file_slot,
@@ -2366,9 +2367,9 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
 }
 
 int LifeStuffImpl::PreContactChecksFullAccess(const std::string &my_public_id) {
-  if (session_.state() != kLoggedIn) {
+  if (state_ != kLoggedIn) {
     LOG(kError) << "Incorrect state. Should be logged in with full access.";
-    if (session_.state() == kLoggedInReadOnly)
+    if (state_ == kLoggedInReadOnly)
       return kReadOnlyFailure;
     return kGeneralError;
   }
@@ -2382,7 +2383,7 @@ int LifeStuffImpl::PreContactChecksFullAccess(const std::string &my_public_id) {
 }
 
 int LifeStuffImpl::PreContactChecksReadOnly(const std::string &my_public_id) {
-  if (session_.state() != kLoggedIn && session_.state() != kLoggedInReadOnly) {
+  if (state_ != kLoggedIn && state_ != kLoggedInReadOnly) {
     LOG(kError) << "Incorrect state. Should be logged in.";
     return kGeneralError;
   }
