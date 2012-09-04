@@ -434,14 +434,13 @@ int UserCredentialsImpl::GetUserInfo(const std::string& keyword,
     return result;
   }
 
-  int anticipated_access;
   result = GetAndLockLid(keyword, pin, password, lid_packet, locking_packet);
   if (result == kCorruptedLidPacket && lid_corrupted == true) {
     LOG(kInfo) << "Trying to fix corrupted packet...";
-    anticipated_access = kLoggedIn;
     session_.set_keyword(keyword);
     session_.set_pin(pin);
     session_.set_password(password);
+    session_.set_session_access_level(kFullAccess);
     if (!session_.set_session_name()) {
       LOG(kError) << "Failed to set session.";
       return kSessionFailure;
@@ -451,27 +450,25 @@ int UserCredentialsImpl::GetUserInfo(const std::string& keyword,
     LOG(kError) << "Failed to GetAndLock LID.";
     return result;
   } else {
-    if (lid::CheckLockingPacketForFullAccess(locking_packet) == kSuccess)
-      anticipated_access = kLoggedIn;
-    else
-      anticipated_access = kLoggedInReadOnly;
     session_.set_keyword(keyword);
     session_.set_pin(pin);
     session_.set_password(password);
+    if (lid::CheckLockingPacketForFullAccess(locking_packet) == kSuccess)
+      session_.set_session_access_level(kFullAccess);
+    else
+      session_.set_session_access_level(kReadOnly);
     if (!session_.set_session_name()) {
       LOG(kError) << "Failed to set session.";
       return kSessionFailure;
     }
 
-    bool full_access(true);
-    if (anticipated_access == kLoggedInReadOnly)
-      full_access = false;
-
     result = kGeneralError;
     int i(0);
     while (result != kSuccess && i < 10) {
       ++i;
-      result = lid::AddItemToLockingPacket(locking_packet, session_.session_name(), full_access);
+      result = lid::AddItemToLockingPacket(locking_packet,
+                                           session_.session_name(),
+                                           session_.session_access_level() == kFullAccess);
       if (result == kLidIdentifierAlreadyInUse) {
         if (i == 10) {
           LOG(kError) << "Failed to add item to locking packet";
@@ -493,12 +490,12 @@ int UserCredentialsImpl::GetUserInfo(const std::string& keyword,
     return result;
   }
 
-  if (anticipated_access == kLoggedIn) {
+  if (session_.session_access_level() == kFullAccess) {
     session_saved_once_ = false;
   }
   StartSessionSaver();
 
-  if (anticipated_access == kLoggedIn)
+  if (session_.session_access_level() == kFullAccess)
     return kSuccess;
   else
     return kReadOnlyRestrictedSuccess;
@@ -646,6 +643,7 @@ int UserCredentialsImpl::CreateUser(const std::string& keyword,
   session_.set_keyword(keyword);
   session_.set_pin(pin);
   session_.set_password(password);
+  session_.set_session_access_level(kFullAccess);
   if (!session_.set_session_name()) {
     LOG(kError) << "Failed to set session.";
     return kSessionFailure;
@@ -1096,14 +1094,14 @@ int UserCredentialsImpl::AssessAndUpdateLid(bool log_out) {
       else
         ++index;
     }
-    if (session_.state() == kLoggedIn) {
+    if (session_.session_access_level() == kFullAccess) {
       if (!locking_packet.locking_item(index).full_access()) {
         LOG(kError) << "session_.state() indicates full access but LID indicates read only!";
         // TODO(Alison) - emit signal demanding an immediate logout
         return kGeneralError;
       }
     }
-    if (session_.state() == kLoggedInReadOnly) {
+    if (session_.session_access_level() == kReadOnly) {
       if (locking_packet.locking_item(index).full_access()) {
         LOG(kError) << "This should never happen!" <<
                        " session_.state() indicates read only but LID indicates full access!";
@@ -1126,7 +1124,7 @@ int UserCredentialsImpl::AssessAndUpdateLid(bool log_out) {
           time_difference = current_time - entry_time;
           // LOG(kInfo) << "This entry's age is " << time_difference.hours() << " hour(s) and " <<
           // time_difference.minutes() << " mins.";
-          if (session_.state() == kLoggedInReadOnly &&
+          if (session_.session_access_level() == kReadOnly &&
               (time_difference.hours() >= 1 || time_difference.minutes() >= 5) &&
               locking_item.full_access()) {
             LOG(kInfo) << "Found outdated full access item - can take full access!";
@@ -1744,7 +1742,7 @@ void UserCredentialsImpl::SessionSaver(const bptime::seconds& interval,
     LOG(kError) << "Failed to update LID: " << result << " - won't SaveSession.";
     lid_success = false;
   } else {
-    if (session_.state() == kLoggedIn) {
+    if (session_.session_access_level() == kFullAccess) {
       result = SaveSession(false);
       LOG(kInfo) << "Session saver result: " << result;
     }
