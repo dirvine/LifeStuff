@@ -168,8 +168,7 @@ int AddItemToLockingPacket(LockingPacket& locking_packet,
   return kSuccess;
 }
 
-int RemoveItemFromLockingPacket(LockingPacket& locking_packet,
-                                const std::string& identifier) {
+int RemoveItemFromLockingPacket(LockingPacket& locking_packet, const std::string& identifier) {
   LOG(kInfo) << "RemoveItemFromLockingPacket - locking_packet.locking_item_size() BEFORE: " <<
                 locking_packet.locking_item_size();
   LockingPacket new_locking_packet;
@@ -193,7 +192,7 @@ int RemoveItemFromLockingPacket(LockingPacket& locking_packet,
 }
 
 int RemoveItemsFromLockingPacket(LockingPacket& locking_packet,
-                                 std::vector<std::string> identifiers) {
+                                 std::vector<std::string>& identifiers) {
   if (identifiers.empty()) {
     LOG(kInfo) << "RemoveItemsFromLockingPacket - none to remove";
     return kSuccess;
@@ -204,21 +203,18 @@ int RemoveItemsFromLockingPacket(LockingPacket& locking_packet,
   LockingPacket new_locking_packet;
   new_locking_packet.set_space_filler(locking_packet.space_filler());
 
-  uint j;
   std::string current_identifier;
   for (int i = 0; i < locking_packet.locking_item_size(); ++i) {
-    j = 0;
-    current_identifier = locking_packet.locking_item(i).identifier();
-    while (j < identifiers.size()) {
-      if (identifiers.at(j) == current_identifier)
-        break;
-      ++j;
-    }
-    if (j == identifiers.size()) {
+    auto it(std::find_if(identifiers.begin(),
+                         identifiers.end(),
+                         [&] (const std::string& element)->bool {
+                           return locking_packet.locking_item(i).identifier() == element;
+                         }));
+    if (it == identifiers.end()) {
       LockingItem* new_locking_item = new_locking_packet.add_locking_item();
       *new_locking_item = locking_packet.locking_item(i);
     } else {
-      identifiers.erase(identifiers.begin() + j);
+      identifiers.erase(it);
     }
   }
 
@@ -298,13 +294,12 @@ int ProcessAccountStatus(const std::string& keyword,
     return kCorruptedLidPacket;
   }
 
-  if (locking_packet.ParseFromString(decrypted_account_status)) {
-    return kSuccess;
-  } else {
+  if (!locking_packet.ParseFromString(decrypted_account_status)) {
     LOG(kError) << "Failed to parse string into LockingPacket.";
     return kCorruptedLidPacket;
   }
-  return kGeneralError;
+
+  return kSuccess;
 }
 
 }  // namespace account_locking

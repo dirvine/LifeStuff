@@ -42,14 +42,12 @@ int AddItemToLockingPacket(LockingPacket& locking_packet,
                            const std::string& identifier,
                            bool full_access);
 
-int RemoveItemFromLockingPacket(LockingPacket& locking_packet,
-                                const std::string& identifier);
+int RemoveItemFromLockingPacket(LockingPacket& locking_packet, const std::string& identifier);
 
 int RemoveItemsFromLockingPacket(LockingPacket& locking_packet,
-                                 std::vector<std::string> identifiers);
+                                 std::vector<std::string>& identifiers);
 
-int UpdateTimestampInLockingPacket(LockingPacket& locking_packet,
-                                   const std::string& identifier);
+int UpdateTimestampInLockingPacket(LockingPacket& locking_packet, const std::string& identifier);
 
 int CheckLockingPacketForFullAccess(const LockingPacket& locking_packet);
 
