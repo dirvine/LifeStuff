@@ -161,6 +161,16 @@ LockingPacket CreateLockingPacket(const std::string& identifier) {
   return locking_packet;
 }
 
+int CheckLockingPacketForIdentifier(LockingPacket& locking_packet, const std::string& identifier) {
+  for (int i = 0; i < locking_packet.locking_item_size(); ++i) {
+    if (locking_packet.locking_item(i).identifier() == identifier) {
+      LOG(kError) << "Item with identifier already exists! Identifier: " << identifier;
+      return kLidIdentifierAlreadyInUse;
+    }
+  }
+  return kSuccess;
+}
+
 int AddItemToLockingPacket(LockingPacket& locking_packet,
                            const std::string& identifier,
                            bool full_access) {
@@ -169,15 +179,18 @@ int AddItemToLockingPacket(LockingPacket& locking_packet,
   for (int i = 0; i < locking_packet.locking_item_size(); ++i) {
     if (locking_packet.locking_item(i).identifier() == identifier) {
       LOG(kError) << "Item with identifier already exists! Identifier: " << identifier;
+      LOG(kInfo) << "AddItemToLockingPacket - locking_packet.locking_item_size() AFTER: " <<
+                    locking_packet.locking_item_size();
       return kLidIdentifierAlreadyInUse;
     }
   }
 
+  bool need_to_wait(false);
   if (full_access) {
     for (int i = 0; i < locking_packet.locking_item_size(); ++i) {
       if (locking_packet.locking_item(i).full_access()) {
         LOG(kError) << "Item with full access already exists!";
-        return kLidFullAccessUnavailable;
+        need_to_wait = true;
       }
     }
   }
@@ -188,7 +201,11 @@ int AddItemToLockingPacket(LockingPacket& locking_packet,
   locking_item->set_active(0);
   LOG(kInfo) << "AddItemToLockingPacket - locking_packet.locking_item_size() AFTER: " <<
                 locking_packet.locking_item_size();
-  return kSuccess;
+
+  if (need_to_wait)
+    return kLidFullAccessUnavailable;
+  else
+    return kSuccess;
 }
 
 int RemoveItemFromLockingPacket(LockingPacket& locking_packet,
@@ -254,6 +271,18 @@ int RemoveItemsFromLockingPacket(LockingPacket& locking_packet,
   LOG(kInfo) << "RemoveItemsFromLockingPacket - locking_packet.locking_item_size() AFTER: " <<
                 locking_packet.locking_item_size();
   return kSuccess;
+}
+
+void OverthrowInstancesUsingLockingPacket(LockingPacket& locking_packet,
+                                          const std::string& identifier) {
+  LockingItem* locking_item;
+  for (int i = 0; i < locking_packet.locking_item_size(); ++i) {
+    if (locking_packet.locking_item(i).full_access() &&
+        locking_packet.locking_item(i).identifier() != identifier) {
+      locking_item = locking_packet.mutable_locking_item(i);
+      locking_item->set_full_access(false);
+    }
+  }
 }
 
 int UpdateTimestampInLockingPacket(LockingPacket& locking_packet,
@@ -371,7 +400,8 @@ UserCredentialsImpl::UserCredentialsImpl(pcs::RemoteChunkStore& remote_chunk_sto
       session_saver_timer_(asio_service_),
       session_saver_timer_active_(false),
       session_saved_once_(false),
-      session_saver_interval_(kSecondsInterval * 12) {}
+      session_saver_interval_(kSecondsInterval * 3),
+      immediate_quit_required_signal_() {}
 
 UserCredentialsImpl::~UserCredentialsImpl() {}
 
@@ -434,6 +464,7 @@ int UserCredentialsImpl::GetUserInfo(const std::string& keyword,
     return result;
   }
 
+  bool need_to_wait(false);
   result = GetAndLockLid(keyword, pin, password, lid_packet, locking_packet);
   if (result == kCorruptedLidPacket && lid_corrupted == true) {
     LOG(kInfo) << "Trying to fix corrupted packet...";
@@ -453,35 +484,32 @@ int UserCredentialsImpl::GetUserInfo(const std::string& keyword,
     session_.set_keyword(keyword);
     session_.set_pin(pin);
     session_.set_password(password);
-    if (lid::CheckLockingPacketForFullAccess(locking_packet) == kSuccess)
-      session_.set_session_access_level(kFullAccess);
-    else
-      session_.set_session_access_level(kReadOnly);
+    session_.set_session_access_level(kFullAccess);
     if (!session_.set_session_name()) {
       LOG(kError) << "Failed to set session.";
       return kSessionFailure;
     }
 
-    result = kGeneralError;
     int i(0);
-    while (result != kSuccess && i < 10) {
+    result = kGeneralError;
+    while (i < 10 && result != kSuccess) {
       ++i;
-      result = lid::AddItemToLockingPacket(locking_packet,
-                                           session_.session_name(),
-                                           session_.session_access_level() == kFullAccess);
-      if (result == kLidIdentifierAlreadyInUse) {
-        if (i == 10) {
-          LOG(kError) << "Failed to add item to locking packet";
-          return kLidIdentifierAlreadyInUse;
-        }
+      result = lid::CheckLockingPacketForIdentifier(locking_packet, session_.session_name());
+      if (result != kSuccess) {
         if (!session_.set_session_name()) {
           LOG(kError) << "Failed to set session name.";
           return kSessionFailure;
         }
-      } else if (result != kSuccess) {
-        return result;
       }
     }
+    result = lid::AddItemToLockingPacket(locking_packet, session_.session_name(), true);
+    if (result == kLidIdentifierAlreadyInUse) {
+      LOG(kError) << "Failed to add item to locking packet";
+      return result;
+    }
+    if (result == kLidFullAccessUnavailable)
+      need_to_wait = true;
+    lid::OverthrowInstancesUsingLockingPacket(locking_packet, session_.session_name());
   }
 
   result = ModifyLid(keyword, pin, password, locking_packet);
@@ -490,15 +518,15 @@ int UserCredentialsImpl::GetUserInfo(const std::string& keyword,
     return result;
   }
 
-  if (session_.session_access_level() == kFullAccess) {
-    session_saved_once_ = false;
+  if (need_to_wait) {
+    LOG(kInfo) << "Need to wait before logging in.";
+    Sleep(bptime::seconds(15));
   }
+
+  session_saved_once_ = false;
   StartSessionSaver();
 
-  if (session_.session_access_level() == kFullAccess)
-    return kSuccess;
-  else
-    return kReadOnlyRestrictedSuccess;
+  return kSuccess;
 }
 
 int UserCredentialsImpl::GetAndLockLid(const std::string& keyword,
@@ -1096,9 +1124,14 @@ int UserCredentialsImpl::AssessAndUpdateLid(bool log_out) {
     }
     if (session_.session_access_level() == kFullAccess) {
       if (!locking_packet.locking_item(index).full_access()) {
-        LOG(kError) << "session_.state() indicates full access but LID indicates read only!";
-        // TODO(Alison) - emit signal demanding an immediate logout
-        return kGeneralError;
+        LOG(kInfo) << "Quit - full access in LID has been changed to false!";
+        immediate_quit_required_signal_();
+        session_saver_timer_active_ = false;
+        session_saver_timer_.cancel();
+        session_.set_changed(false);
+        session_saved_once_ = true;
+        session_.set_session_access_level(kMustDie);
+        return kMustDieFailure;
       }
     }
     if (session_.session_access_level() == kReadOnly) {
@@ -1755,6 +1788,11 @@ void UserCredentialsImpl::SessionSaver(const bptime::seconds& interval,
   session_saver_timer_.async_wait([=] (const boost::system::error_code& error_code) {
                                     this->SessionSaver(bptime::seconds(interval), error_code);
                                   });
+}
+
+bs2::connection UserCredentialsImpl::ConnectToImmediateQuitRequiredSignal(
+    const ImmediateQuitRequiredFunction& immediate_quit_required_slot) {
+  return immediate_quit_required_signal_.connect(immediate_quit_required_slot);
 }
 
 }  // namespace lifestuff

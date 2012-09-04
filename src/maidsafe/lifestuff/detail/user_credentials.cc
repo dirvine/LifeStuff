@@ -144,6 +144,11 @@ int UserCredentials::DeleteUserCredentials() {
   return impl_->DeleteUserCredentials();
 }
 
+bs2::connection UserCredentials::ConnectToImmediateQuitRequiredSignal(
+    const ImmediateQuitRequiredFunction& immediate_quit_required_slot) {
+  return impl_->ConnectToImmediateQuitRequiredSignal(immediate_quit_required_slot);
+}
+
 }  // namespace lifestuff
 
 }  // namespace maidsafe

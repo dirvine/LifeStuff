@@ -43,6 +43,7 @@ enum ReturnCode {
   kRemoteChunkStoreFailure = -200008,
   kReadOnlyRestrictedSuccess = -200009,
   kReadOnlyFailure = -200010,
+  kMustDieFailure = -200011,
 
   // Authentication
   kAuthenticationError = -201001,

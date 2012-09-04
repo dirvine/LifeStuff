@@ -79,6 +79,9 @@ class UserCredentials {
 
   int DeleteUserCredentials();
 
+  bs2::connection ConnectToImmediateQuitRequiredSignal(
+      const ImmediateQuitRequiredFunction& immediate_quit_required_slot);
+
  private:
   UserCredentials &operator=(const UserCredentials&);
   UserCredentials(const UserCredentials&);

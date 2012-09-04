@@ -371,7 +371,7 @@ TEST_F(OneUserApiTest, FUNC_ChangeCredentialsAndLogOut) {
   EXPECT_EQ(kSuccess, test_elements_.LogIn(new_keyword, new_pin, new_password));
 }
 
-TEST_F(TwoInstancesApiTest, FUNC_BasicLogInFromTwoPlaces) {
+TEST_F(TwoInstancesApiTest, DISABLED_FUNC_BasicLogInFromTwoPlaces) {
   EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_));
   EXPECT_EQ(kSuccess, test_elements_.LogOut());
 
@@ -394,7 +394,7 @@ TEST_F(TwoInstancesApiTest, FUNC_BasicLogInFromTwoPlaces) {
   EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 }
 
-TEST_F(TwoInstancesApiTest, FUNC_LogInFromTwoPlacesCheckFileSystem) {
+TEST_F(TwoInstancesApiTest, DISABLED_FUNC_LogInFromTwoPlacesCheckFileSystem) {
   EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_));
 
   std::string directory;
@@ -472,7 +472,7 @@ TEST_F(TwoInstancesApiTest, FUNC_LogInFromTwoPlacesCheckFileSystem) {
   EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
 }
 
-TEST_F(TwoUsersApiTest, FUNC_LogInFromTwoPlacesCheckContacts) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_LogInFromTwoPlacesCheckContacts) {
   // test_elements_1_ - user 1 (full access)
   // test_elements_2_ - user 2 (full access)
   // test_elements_3  - user 1 (read only)

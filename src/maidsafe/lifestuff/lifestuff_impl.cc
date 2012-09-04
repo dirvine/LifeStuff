@@ -133,7 +133,8 @@ int LifeStuffImpl::ConnectToSignals(
     const OpenShareInvitationFunction& open_share_invitation_function,
     const ShareRenamedFunction& share_renamed_function,
     const ShareChangedFunction& share_changed_function,
-    const LifestuffCardUpdateFunction& lifestuff_card_update_function) {
+    const LifestuffCardUpdateFunction& lifestuff_card_update_function,
+    const ImmediateQuitRequiredFunction& immediate_quit_required_function) {
   if (state_ != kInitialised) {
     LOG(kError) << "Make sure that object is initialised";
     return kGeneralError;
@@ -222,8 +223,29 @@ int LifeStuffImpl::ConnectToSignals(
   if (lifestuff_card_update_function) {
       slots_.lifestuff_card_update_function = lifestuff_card_update_function;
       ++connects;
-      if (user_storage_)
+      if (public_id_)
         public_id_->ConnectToLifestuffCardUpdatedSignal(lifestuff_card_update_function);
+  }
+  if (immediate_quit_required_function) {
+    slots_.immediate_quit_required_function = immediate_quit_required_function;
+    ++connects;
+    if (user_credentials_)
+      user_credentials_->ConnectToImmediateQuitRequiredSignal(immediate_quit_required_function);
+  }
+  if (user_credentials_) {
+    ImmediateQuitRequiredFunction must_die = [&] {
+                                               LOG(kInfo) << "Immediate quit required! " <<
+                                                             "Stopping activity.";
+                                               user_storage_->UnMountDrive();
+                                               public_id_->ShutDown();
+                                               message_handler_->StopCheckingForNewMessages();
+                                             };
+    user_credentials_->ConnectToImmediateQuitRequiredSignal(must_die);
+    if (immediate_quit_required_function) {
+      slots_.immediate_quit_required_function = immediate_quit_required_function;
+      ++connects;
+      user_credentials_->ConnectToImmediateQuitRequiredSignal(immediate_quit_required_function);
+    }
   }
   if (public_id_) {
     public_id_->ConnectToContactDeletionReceivedSignal(
@@ -2149,9 +2171,10 @@ int LifeStuffImpl::LeaveOpenShare(const std::string& my_public_id, const std::st
 int LifeStuffImpl::state() const { return state_; }
 
 fs::path LifeStuffImpl::mount_path() const {
-  int result(CheckStateAndReadOnlyAccess());
-  if (result != kSuccess)
+  if (state_ != kLoggedIn) {
+    LOG(kError) << "Incorrect state. Should be logged in: " << state_;
     return fs::path();
+  }
 
   return user_storage_->mount_dir();
 }
@@ -2300,7 +2323,8 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
                             slots_.open_share_invitation_function,
                             slots_.share_renamed_function,
                             slots_.share_changed_function,
-                            slots_.lifestuff_card_update_function);
+                            slots_.lifestuff_card_update_function,
+                            slots_.immediate_quit_required_function);
   return result;
 }
 

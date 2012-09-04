@@ -31,6 +31,7 @@
 #include "boost/asio/deadline_timer.hpp"
 #include "boost/asio/io_service.hpp"
 #include "boost/thread/mutex.hpp"
+#include "boost/signals2.hpp"
 
 #include "maidsafe/common/rsa.h"
 
@@ -46,6 +47,7 @@ namespace chunk_store {
 class RemoteChunkStore;
 }  // namespace chunk_store
 }  // namespace priv
+namespace bs2 = boost::signals2;
 namespace pcs = maidsafe::priv::chunk_store;
 
 namespace passport { class Passport; }
@@ -68,6 +70,8 @@ std::string DecryptAccountStatus(const std::string& keyword,
 
 LockingPacket CreateLockingPacket(const std::string& identifier);
 
+int CheckLockingPacketForIdentifier(LockingPacket& locking_packet, const std::string& identifier);
+
 int AddItemToLockingPacket(LockingPacket& locking_packet,
                            const std::string& identifier,
                            bool full_access);
@@ -77,6 +81,9 @@ int RemoveItemFromLockingPacket(LockingPacket& locking_packet,
 
 int RemoveItemsFromLockingPacket(LockingPacket& locking_packet,
                                  std::vector<std::string> identifiers);
+
+void OverthrowInstancesUsingLockingPacket(LockingPacket& locking_packet,
+                                          const std::string& identifier);
 
 int UpdateTimestampInLockingPacket(LockingPacket& locking_packet,
                                    const std::string& identifier);
@@ -106,6 +113,9 @@ struct OperationResults;
 
 class UserCredentialsImpl {
  public:
+  typedef bs2::signal<void()> ImmediateQuitRequiredSignal;
+  typedef std::shared_ptr<ImmediateQuitRequiredSignal> ImmediateQuitRequiredSignalPtr;
+
   UserCredentialsImpl(pcs::RemoteChunkStore& remote_chunk_store,
                       Session& session,
                       boost::asio::io_service& service);
@@ -124,6 +134,9 @@ class UserCredentialsImpl {
   int ChangePassword(const std::string& new_password);
 
   int DeleteUserCredentials();
+
+  bs2::connection ConnectToImmediateQuitRequiredSignal(
+      const ImmediateQuitRequiredFunction& immediate_quit_required_slot);
 
  private:
   pcs::RemoteChunkStore& remote_chunk_store_;
@@ -227,6 +240,8 @@ class UserCredentialsImpl {
 
   void SessionSaver(const boost::posix_time::seconds& interval,
                     const boost::system::error_code& error_code);
+
+  ImmediateQuitRequiredSignal immediate_quit_required_signal_;
 };
 
 }  // namespace lifestuff

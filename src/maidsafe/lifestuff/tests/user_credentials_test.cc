@@ -71,7 +71,12 @@ class UserCredentialsTest : public testing::Test {
         user_credentials2_(),
         keyword_(RandomAlphaNumericString(8)),
         pin_(CreatePin()),
-        password_(RandomAlphaNumericString(8)) {}
+        password_(RandomAlphaNumericString(8)),
+        immediate_quit_required_(false) {}
+
+  void ImmediateQuitRequiredSlot() {
+    immediate_quit_required_ = true;
+  }
 
  protected:
   void SetUp() {
@@ -116,6 +121,7 @@ class UserCredentialsTest : public testing::Test {
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_, remote_chunk_store2_;
   std::shared_ptr<UserCredentials> user_credentials_, user_credentials2_;
   std::string keyword_, pin_, password_;
+  bool immediate_quit_required_;
 
  private:
   UserCredentialsTest(const UserCredentialsTest&);
@@ -270,6 +276,7 @@ TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
   ASSERT_EQ(session_.used_space(), 0);
   ASSERT_TRUE(session_.serialised_data_atlas().empty());
   ASSERT_FALSE(session_.changed());
+  ASSERT_EQ(session_.session_access_level(), kNoAccess);
   LOG(kInfo) << "Preconditions fulfilled.\n===================\n";
 
   ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
@@ -277,6 +284,7 @@ TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
   ASSERT_EQ(keyword_, session_.keyword());
   ASSERT_EQ(pin_, session_.pin());
   ASSERT_EQ(password_, session_.password());
+  ASSERT_EQ(session_.session_access_level(), kFullAccess);
   LOG(kInfo) << "User created.\n===================\n";
 
   ASSERT_EQ(kSuccess, user_credentials_->Logout());
@@ -296,12 +304,14 @@ TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
   ASSERT_EQ(session_.used_space(), 0);
   ASSERT_TRUE(session_.serialised_data_atlas().empty());
   ASSERT_FALSE(session_.changed());
+  ASSERT_EQ(session_.session_access_level(), kNoAccess);
   LOG(kInfo) << "Session seems clear.\n===================\n";
 
   ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
   ASSERT_EQ(keyword_, session_.keyword());
   ASSERT_EQ(pin_, session_.pin());
   ASSERT_EQ(password_, session_.password());
+  ASSERT_EQ(session_.session_access_level(), kFullAccess);
   LOG(kInfo) << "Logged in.\n===================\n";
 
   ASSERT_EQ(kSuccess, user_credentials_->Logout());
@@ -321,6 +331,7 @@ TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
   ASSERT_EQ(session_.used_space(), 0);
   ASSERT_TRUE(session_.serialised_data_atlas().empty());
   ASSERT_FALSE(session_.changed());
+  ASSERT_EQ(session_.session_access_level(), kNoAccess);
   LOG(kInfo) << "Session seems clear.\n===================\n";
 
   ASSERT_NE(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_ + password_));
@@ -337,6 +348,7 @@ TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
   ASSERT_EQ(session_.used_space(), 0);
   ASSERT_TRUE(session_.serialised_data_atlas().empty());
   ASSERT_FALSE(session_.changed());
+  ASSERT_EQ(session_.session_access_level(), kNoAccess);
   LOG(kInfo) << "Session seems clear.\n===================\n";
 
   ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
@@ -362,6 +374,7 @@ TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
   ASSERT_EQ(session_.used_space(), 0);
   ASSERT_TRUE(session_.serialised_data_atlas().empty());
   ASSERT_FALSE(session_.changed());
+  ASSERT_EQ(session_.session_access_level(), kNoAccess);
   LOG(kInfo) << "Session seems clear.\n===================\n";
 }
 
@@ -426,24 +439,68 @@ TEST_F(UserCredentialsTest, DISABLED_FUNC_MonitorLidPacket) {
   }
 }
 
-TEST_F(UserCredentialsTest, DISABLED_FUNC_ParallelLogin) {
+TEST_F(UserCredentialsTest, FUNC_ParallelLogin) {
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());
   LOG(kInfo) << "Preconditions fulfilled.\n===================\n";
 
   ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
+
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
   ASSERT_EQ(keyword_, session_.keyword());
   ASSERT_EQ(pin_, session_.pin());
   ASSERT_EQ(password_, session_.password());
-  LOG(kInfo) << "User created.\n===================\n";
+  ASSERT_EQ(kFullAccess, session_.session_access_level());
+  ASSERT_EQ(kSuccess, user_credentials_->Logout());
+
+  user_credentials_->ConnectToImmediateQuitRequiredSignal(
+    [&] { ImmediateQuitRequiredSlot(); }
+  );
+
+  ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
 
   CreateSecondUserCredentials();
-  ASSERT_NE(kSuccess, user_credentials2_->LogIn(keyword_, pin_, password_));
-  LOG(kInfo) << "Successful prevention of parallel log in.";
+  immediate_quit_required_ = false;
 
-  ASSERT_EQ(kSuccess, user_credentials_->Logout());
+  int result(kGeneralError);
+  boost::thread login_thread([&] () {
+                               result = user_credentials2_->LogIn(keyword_, pin_, password_);
+                             });
+
+  boost::thread wait_thread([&] () {
+                              int i(0);
+                              while (!immediate_quit_required_ && i < 15) {
+                                ++i;
+                                Sleep(bptime::seconds(1));
+                              };
+                            });
+
+  login_thread.join();
+  wait_thread.join();
+
+  EXPECT_EQ(result, kSuccess);
+
+  ASSERT_EQ(keyword_, session2_.keyword());
+  ASSERT_EQ(pin_, session2_.pin());
+  ASSERT_EQ(password_, session2_.password());
+  ASSERT_EQ(kFullAccess, session2_.session_access_level());
+
+  EXPECT_FALSE(session_.changed());
+  EXPECT_EQ(session_.session_access_level(), kMustDie);
+  EXPECT_EQ(kSuccess, user_credentials_->Logout());
+
+  EXPECT_TRUE(session_.keyword().empty());
+  EXPECT_TRUE(session_.pin().empty());
+  EXPECT_TRUE(session_.password().empty());
+  EXPECT_EQ(session_.session_access_level(), kNoAccess);
+
+  ASSERT_EQ(kSuccess, user_credentials2_->Logout());
+
+  EXPECT_TRUE(session2_.keyword().empty());
+  EXPECT_TRUE(session2_.pin().empty());
+  EXPECT_TRUE(session2_.password().empty());
+  EXPECT_EQ(session2_.session_access_level(), kNoAccess);
 }
 
 TEST_F(UserCredentialsTest, FUNC_MultiUserCredentialsLoginAndLogout) {
