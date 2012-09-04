@@ -65,8 +65,7 @@ class LifeStuff {
                        const ShareRenamedFunction& share_renamed_function,
                        const ShareChangedFunction& share_changed_function,
                        const LifestuffCardUpdateFunction& lifestuff_card_update_function,
-                       const ImmediateQuitRequiredFunction immediate_quit_required_function =
-                           ImmediateQuitRequiredFunction());
+                       const ImmediateQuitRequiredFunction& immediate_quit_required_function);
 
   int Finalise();
 

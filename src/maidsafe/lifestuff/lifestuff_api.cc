@@ -56,7 +56,7 @@ int LifeStuff::ConnectToSignals(
     const ShareRenamedFunction& share_renamed_function,
     const ShareChangedFunction& share_changed_function,
     const LifestuffCardUpdateFunction& lifestuff_card_update_function,
-    const ImmediateQuitRequiredFunction immediate_quit_required_function) {
+    const ImmediateQuitRequiredFunction& immediate_quit_required_function) {
   return lifestuff_impl_->ConnectToSignals(chat_slot,
                                            file_slot,
                                            new_contact_slot,
