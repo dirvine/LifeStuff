@@ -37,9 +37,9 @@
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 
 #include "maidsafe/lifestuff/rcs_helper.h"
+#include "maidsafe/lifestuff/detail/account_locking.h"
 #include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/user_credentials.h"
-#include "maidsafe/lifestuff/detail/user_credentials_impl.h"
 #include "maidsafe/lifestuff/detail/utils.h"
 
 namespace args = std::placeholders;
