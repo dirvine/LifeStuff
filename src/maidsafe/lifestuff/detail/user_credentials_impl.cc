@@ -187,8 +187,7 @@ int UserCredentialsImpl::GetUserInfo(const std::string& keyword,
 
     int i(0);
     result = kGeneralError;
-    while (i < 10 && result != kSuccess) {
-      ++i;
+    while (i++ < 10 && result != kSuccess) {
       result = lid::CheckLockingPacketForIdentifier(locking_packet, session_.session_name());
       if (result != kSuccess) {
         if (!session_.set_session_name()) {
