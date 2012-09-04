@@ -625,7 +625,7 @@ INSTANTIATE_TEST_CASE_P(ReadOnlyReadWrite,
                         PrivateSharesApiTest,
                         testing::Values(kShareReadOnly, kShareReadWrite));
 
-TEST_F(TwoUsersApiTest, FUNC_LogInFromTwoPlacesCheckOpenShares) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_LogInFromTwoPlacesCheckOpenShares) {
   // test_elements_1_ - user 1 (full access)
   // test_elements_2_ - user 2 (full access)
   // test_elements_3  - user 1 (read only)
@@ -685,7 +685,7 @@ TEST_F(TwoUsersApiTest, FUNC_LogInFromTwoPlacesCheckOpenShares) {
   EXPECT_TRUE(fs::exists(path_directory, error_code));
   EXPECT_EQ(0, error_code.value());
   std::string file;
-  EXPECT_EQ(kSuccess, CreateTestFile(test_elements_1_.mount_path() / directory, 0, &file)); // this function takes an int, 0.1 converts to 0
+  EXPECT_EQ(kSuccess, CreateSmallTestFile(test_elements_1_.mount_path() / directory, 1, &file));
   EXPECT_TRUE(fs::exists(test_elements_1_.mount_path() / directory / file, error_code));
   EXPECT_EQ(0, error_code.value());
 
@@ -711,7 +711,7 @@ TEST_F(TwoUsersApiTest, FUNC_LogInFromTwoPlacesCheckOpenShares) {
   EXPECT_EQ(kSuccess, test_elements_3.LogOut());
 }
 
-TEST_P(PrivateSharesApiTest, FUNC_LogInFromTwoPlacesCheckPrivateShares) {
+TEST_P(PrivateSharesApiTest, DISABLED_FUNC_LogInFromTwoPlacesCheckPrivateShares) {
   // test_elements_1_ - user 1 (full access)
   // test_elements_2_ - user 2 (full access)
   // test_elements_3  - user 1 (read only)
@@ -820,7 +820,7 @@ TEST_P(PrivateSharesApiTest, FUNC_LogInFromTwoPlacesCheckPrivateShares) {
   EXPECT_TRUE(fs::exists(test_elements_3.mount_path() / directory, error_code));
   EXPECT_EQ(0, error_code.value());
   std::string file;
-  EXPECT_EQ(kSuccess, CreateTestFile(test_elements_1_.mount_path() / directory, 0, &file)); // this function takes an int, 0.1 converts to 0
+  EXPECT_EQ(kSuccess, CreateSmallTestFile(test_elements_1_.mount_path() / directory, 1, &file));
   EXPECT_TRUE(fs::exists(test_elements_1_.mount_path() / directory / file, error_code));
   EXPECT_EQ(0, error_code.value());
   EXPECT_TRUE(fs::exists(test_elements_3.mount_path() / directory / file, error_code));
@@ -2002,7 +2002,7 @@ TEST_F(TwoUsersApiTest, FUNC_PrivateShareNonOwnerRemoveNonOwnerContact) {
   EXPECT_EQ(kSuccess, test_elements3.Finalise());
 }
 
-TEST_P(PrivateSharesApiTest, FUNC_PrivateSharesTwoOwnersRemoveEachOther) {
+TEST_P(PrivateSharesApiTest, DISABLED_FUNC_PrivateSharesTwoOwnersRemoveEachOther) {
   std::string share_name_1(RandomAlphaNumericString(7));
   std::string share_name_2(RandomAlphaNumericString(7));
 

@@ -43,6 +43,7 @@ enum ReturnCode {
   kRemoteChunkStoreFailure = -200008,
   kReadOnlyRestrictedSuccess = -200009,
   kReadOnlyFailure = -200010,
+  kMustDieFailure = -200011,
 
   // Authentication
   kAuthenticationError = -201001,
@@ -110,7 +111,12 @@ enum ReturnCode {
   kNoShareTarget = -208001,
   kOwnerTryingToLeave = -208002,
   kNoKeyForUpgrade = -208003,
-  kInvalidKeyringForOpenShare = -208004
+  kInvalidKeyringForOpenShare = -208004,
+
+  // Other instances being logged in (LID)
+  kLidIdentifierAlreadyInUse = -209001,
+  kLidFullAccessUnavailable = -209002,
+  kLidIdentifierNotFound = -209003
 };
 
 }  // namespace lifestuff
