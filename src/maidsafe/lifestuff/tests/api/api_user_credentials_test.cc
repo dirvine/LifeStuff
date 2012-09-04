@@ -403,7 +403,7 @@ TEST_F(TwoInstancesApiTest, FUNC_LogInFromTwoPlacesCheckFileSystem) {
   EXPECT_EQ(0, error_code_.value());
 
   std::string file;
-  EXPECT_EQ(kSuccess, CreateTestFile(test_elements_.mount_path(), 0.1, &file));
+  EXPECT_EQ(kSuccess, CreateTestFile(test_elements_.mount_path(), 0, &file)); // this function takes an int, 0.1 converts to 0
   EXPECT_TRUE(fs::exists(test_elements_.mount_path() / file, error_code_));
   EXPECT_EQ(0, error_code_.value());
 
@@ -453,7 +453,7 @@ TEST_F(TwoInstancesApiTest, FUNC_LogInFromTwoPlacesCheckFileSystem) {
   std::string file2;
 
   // Try to create file
-  EXPECT_NE(kSuccess, CreateTestFile(test_elements_2_.mount_path(), 0.1, &file2));
+  EXPECT_NE(kSuccess, CreateTestFile(test_elements_2_.mount_path(), 0, &file2)); // this function takes an int, 0.1 converts to 0
   EXPECT_FALSE(fs::exists(test_elements_2_.mount_path() / file2, error_code_));
   EXPECT_NE(0, error_code_.value());
 
