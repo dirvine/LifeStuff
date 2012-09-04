@@ -52,49 +52,6 @@ namespace passport { class Passport; }
 
 namespace lifestuff {
 
-namespace account_locking {
-
-std::string LidName(const std::string& keyword, const std::string& pin);
-
-std::string EncryptAccountStatus(const std::string& keyword,
-                                 const std::string& pin,
-                                 const std::string& password,
-                                 const std::string& account_status);
-
-std::string DecryptAccountStatus(const std::string& keyword,
-                                 const std::string& pin,
-                                 const std::string& password,
-                                 const std::string& encrypted_account_status);
-
-LockingPacket CreateLockingPacket(const std::string& identifier);
-
-int AddItemToLockingPacket(LockingPacket& locking_packet,
-                           const std::string& identifier,
-                           bool full_access);
-
-int RemoveItemFromLockingPacket(LockingPacket& locking_packet,
-                                const std::string& identifier);
-
-int RemoveItemsFromLockingPacket(LockingPacket& locking_packet,
-                                 std::vector<std::string> identifiers);
-
-int UpdateTimestampInLockingPacket(LockingPacket& locking_packet,
-                                   const std::string& identifier);
-
-int CheckLockingPacketForFullAccess(const LockingPacket& locking_packet);
-
-int CheckLockingPacketForOthersLoggedIn(const LockingPacket& locking_packet,
-                                        const std::string& identifier);
-
-int ProcessAccountStatus(const std::string& keyword,
-                         const std::string& pin,
-                         const std::string& password,
-                         const std::string& lid_packet,
-                         LockingPacket& locking_packet);
-
-}  // namespace account_locking
-
-
 class Session;
 struct OperationResults;
 
