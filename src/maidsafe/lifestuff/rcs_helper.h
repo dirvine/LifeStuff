@@ -48,12 +48,13 @@ std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path& buffered_
 #else
 std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
     const fs::path& base_dir,
-    const std::vector<std::pair<std::string, uint16_t>>& endopints,  // NOLINT (Dan)
-    std::shared_ptr<pd::Node>& node);
+    const std::vector<std::pair<std::string, uint16_t>>& endpoints,  // NOLINT (Dan)
+    std::shared_ptr<pd::Node>& node,
+    const std::function<void(const int&)> network_health_function);
 
 std::shared_ptr<pd::Node> SetupNode(
     const fs::path& base_dir,
-    const std::vector<std::pair<std::string, uint16_t>>& endopints,
+    const std::vector<std::pair<std::string, uint16_t>>& endpoints,
     const std::function<void(const int&)> network_health_function);  // NOLINT (Dan)
 #endif
 

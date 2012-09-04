@@ -110,7 +110,7 @@ int LifeStuffImpl::Initialise(const boost::filesystem::path& base_directory) {
   std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
   while (counter++ < kRetryLimit) {
     Sleep(bptime::milliseconds(100 + RandomUint32() % 1000));
-    client_controller_.reset(new priv::process_management::ClientController);
+    client_controller_.reset(new priv::process_management::ClientController([](std::string){}));
     if (client_controller_->BootstrapEndpoints(bootstrap_endpoints) && !bootstrap_endpoints.empty())
       counter = kRetryLimit;
     else
@@ -125,7 +125,7 @@ int LifeStuffImpl::Initialise(const boost::filesystem::path& base_directory) {
   remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path,
                                         bootstrap_endpoints,
                                         node_,
-                                        [&] (cosnt int& index) { NetworkHealthSlot(index); });
+                                        [&] (const int& index) { NetworkHealthSlot(index); });
 #endif
   if (!remote_chunk_store_) {
     LOG(kError) << "Could not initialise chunk store.";
@@ -254,10 +254,6 @@ int LifeStuffImpl::ConnectToSignals(
   if (software_update_available_function) {
     slots_.software_update_available_function = software_update_available_function;
     ++connects;
-#ifndef LOCAL_TARGETS_ONLY
-    if (client_controller_)
-      client_controller_->on_new_version_available().connect(software_update_available_function);
-#endif
   }
   if (network_health_function) {
     slots_.network_health_function = network_health_function;
@@ -2228,7 +2224,7 @@ void LifeStuffImpl::ConnectInternalElements() {
   message_handler_->ConnectToParseAndSaveDataMapSignal(
       [&] (const std::string& file_name,
            const std::string& serialised_data_map,
-           std::string* data_map_hash)->int {
+           std::string* data_map_hash)->bool {
         return user_storage_->ParseAndSaveDataMap(file_name, serialised_data_map, data_map_hash);
       });
 
@@ -2242,12 +2238,12 @@ void LifeStuffImpl::ConnectInternalElements() {
       });
 
   message_handler_->ConnectToSavePrivateShareDataSignal(
-      [&] (const std::string& serialised_share_data, const std::string& share_id)->int {
+      [&] (const std::string& serialised_share_data, const std::string& share_id)->bool {
         return user_storage_->SavePrivateShareData(serialised_share_data, share_id);
       });
 
   message_handler_->ConnectToDeletePrivateShareDataSignal(
-      [&] (const std::string& share_id)->int {
+      [&] (const std::string& share_id)->bool {
         return user_storage_->DeletePrivateShareData(share_id);
       });
 
@@ -2257,7 +2253,7 @@ void LifeStuffImpl::ConnectInternalElements() {
       });
 
   message_handler_->ConnectToSaveOpenShareDataSignal(
-      [&] (const std::string& serialised_share_data, const std::string& share_id)->int {
+      [&] (const std::string& serialised_share_data, const std::string& share_id)->bool {
         return user_storage_->SaveOpenShareData(serialised_share_data, share_id);
       });
 
@@ -2503,7 +2499,7 @@ int LifeStuffImpl::CreateVaultInLocalMachine(const fs::path& chunk_store) {
     return kVaultCreationFailure;
   }
 
-  if (!client_controller_->StartVault(pmid_keys, account_name/*, chunk_store*/)) {
+  if (!client_controller_->StartVault(pmid_keys, account_name, chunk_store)) {
     LOG(kError) << "Failed to create vault.";
     return kVaultCreationFailure;
   }

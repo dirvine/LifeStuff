@@ -20,6 +20,8 @@
 #include <utility>
 #include <vector>
 
+#include "boost/asio/ip/udp.hpp"
+
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
@@ -61,7 +63,7 @@ std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
     const std::vector<std::pair<std::string, uint16_t>>& endopints,  // NOLINT (Dan)
     std::shared_ptr<pd::Node>& node,
     const std::function<void(const int&)> network_health_function) {
-  node = SetupNode(base_dir, endopints);
+  node = SetupNode(base_dir, endopints, network_health_function);
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store(
       new pcs::RemoteChunkStore(node->chunk_store(),
                                 node->chunk_manager(),
@@ -80,12 +82,12 @@ std::shared_ptr<pd::Node> SetupNode(
   std::vector<boost::asio::ip::udp::endpoint> peer_endpoints;
   for (auto& element : endopints) {
     boost::asio::ip::udp::endpoint endpoint;
-    endpoint.ip(boost::asio::ip::address::from_string(element.first));
+    endpoint.address(boost::asio::ip::address::from_string(element.first));
     endpoint.port(element.second);
     peer_endpoints.push_back(endpoint);
   }
 
-  int result(node->Start(base_dir / "buffered_chunk_store"), peer_endpoints);
+  int result(node->Start(base_dir / "buffered_chunk_store", peer_endpoints));
   if (result != kSuccess) {
     LOG(kError) << "Failed to start PD node.  Result: " << result;
     return nullptr;
