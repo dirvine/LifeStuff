@@ -193,6 +193,9 @@ typedef ThreeStringsFunction LifestuffCardUpdateFunction;
 
 /// New version update
 typedef std::function<void(const std::string&)> UpdateAvailableFunction;  // NOLINT (Dan)
+
+/// Network health
+typedef std::function<void(const int&)> NetworkHealthFunction;  // NOLINT (Dan)
 }  // namespace lifestuff
 
 }  // namespace maidsafe

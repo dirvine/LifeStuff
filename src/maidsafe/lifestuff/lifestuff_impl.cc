@@ -48,6 +48,8 @@ namespace maidsafe {
 
 namespace lifestuff {
 
+const int kRetryLimit(10);
+
 LifeStuffImpl::LifeStuffImpl()
     : thread_count_(kThreads),
       buffered_path_(),
@@ -62,6 +64,7 @@ LifeStuffImpl::LifeStuffImpl()
       node_(),
       routings_handler_(),
 #endif
+      network_health_signal_(),
       session_(),
       user_credentials_(),
       user_storage_(),
@@ -103,13 +106,26 @@ int LifeStuffImpl::Initialise(const boost::filesystem::path& base_directory) {
                                         asio_service_.service());
   simulation_path_ = network_simulation_path;
 #else
-  client_controller_.reset(new priv::process_management::ClientController);
+  int counter(0);
   std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
-  if (!client_controller_->BootstrapEndpoints(bootstrap_endpoints)) {
-    LOG(kError) << "Failuer to initialise client controller. No bootstrap information.";
+  while (counter++ < kRetryLimit) {
+    Sleep(bptime::milliseconds(100 + RandomUint32() % 1000));
+    client_controller_.reset(new priv::process_management::ClientController);
+    if (client_controller_->BootstrapEndpoints(bootstrap_endpoints) && !bootstrap_endpoints.empty())
+      counter = kRetryLimit;
+    else
+      LOG(kWarning) << "Failure to initialise client controller. Try #" << counter;
+  }
+
+  if (bootstrap_endpoints.empty()) {
+    LOG(kWarning) << "Failure to initialise client controller. No bootstrap contacts.";
     return kGeneralError;
   }
-  remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path, bootstrap_endpoints, node_);
+
+  remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path,
+                                        bootstrap_endpoints,
+                                        node_,
+                                        [&] (cosnt int& index) { NetworkHealthSlot(index); });
 #endif
   if (!remote_chunk_store_) {
     LOG(kError) << "Could not initialise chunk store.";
@@ -142,7 +158,8 @@ int LifeStuffImpl::ConnectToSignals(
     const ShareRenamedFunction& share_renamed_function,
     const ShareChangedFunction& share_changed_function,
     const LifestuffCardUpdateFunction& lifestuff_card_update_function,
-    const UpdateAvailableFunction& software_update_available_function) {
+    const UpdateAvailableFunction& software_update_available_function,
+    const NetworkHealthFunction& network_health_function) {
   if (state_ != kInitialised) {
     LOG(kError) << "Make sure that object is initialised";
     return kGeneralError;
@@ -242,6 +259,11 @@ int LifeStuffImpl::ConnectToSignals(
       client_controller_->on_new_version_available().connect(software_update_available_function);
 #endif
   }
+  if (network_health_function) {
+    slots_.network_health_function = network_health_function;
+    ++connects;
+    network_health_signal_.connect(network_health_function);
+  }
 
   if (connects > 0) {
     state_ = kConnected;
@@ -280,7 +302,7 @@ int LifeStuffImpl::Finalise() {
 int LifeStuffImpl::CreateUser(const std::string& keyword,
                               const std::string& pin,
                               const std::string& password,
-                              const fs::path& /*chunk_store*/) {
+                              const fs::path& chunk_store) {
   if (state_ != kConnected) {
     LOG(kError) << "Make sure that object is initialised and connected";
     return kGeneralError;
@@ -298,8 +320,10 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
     return result;
   }
 
-#ifndef LOCAL_TARGETS_ONLY
-  result = CreateVaultInLocalMachine();
+#ifdef LOCAL_TARGETS_ONLY
+  LOG(kInfo) << "The chunkstore path for the ficticious vault is " << chunk_store;
+#else
+  result = CreateVaultInLocalMachine(chunk_store);
   if (result != kSuccess)  {
     LOG(kError) << "Failed to create vault. No LifeStuff for you!";
     return result;
@@ -2362,7 +2386,8 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
                             slots_.share_renamed_function,
                             slots_.share_changed_function,
                             slots_.lifestuff_card_update_function,
-                            slots_.software_update_available_function);
+                            slots_.software_update_available_function,
+                            slots_.network_health_function);
   return result;
 }
 
@@ -2463,8 +2488,13 @@ void LifeStuffImpl::MemberAccessChangeSlot(const std::string& share_id,
   }
 }
 
+void LifeStuffImpl::NetworkHealthSlot(const int& index) {
+  network_health_signal_(index);
+}
+
+
 #ifndef LOCAL_TARGETS_ONLY
-int LifeStuffImpl::CreateVaultInLocalMachine() {
+int LifeStuffImpl::CreateVaultInLocalMachine(const fs::path& chunk_store) {
   std::string account_name(session_.passport().SignaturePacketDetails(passport::kMaid,
                                                                       true).identity);
   asymm::Keys pmid_keys(session_.passport().SignaturePacketDetails(passport::kPmid, true));
@@ -2473,7 +2503,7 @@ int LifeStuffImpl::CreateVaultInLocalMachine() {
     return kVaultCreationFailure;
   }
 
-  if (!client_controller_->StartVault(pmid_keys, account_name)) {
+  if (!client_controller_->StartVault(pmid_keys, account_name/*, chunk_store*/)) {
     LOG(kError) << "Failed to create vault.";
     return kVaultCreationFailure;
   }

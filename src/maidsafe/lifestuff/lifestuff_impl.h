@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "boost/filesystem/path.hpp"
+#include "boost/signals2/signal.hpp"
 
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/utils.h"
@@ -78,7 +79,8 @@ struct Slots {
         share_renamed_function(),
         share_changed_function(),
         lifestuff_card_update_function(),
-        software_update_available_function() {}
+        software_update_available_function(),
+        network_health_function() {}
   ChatFunction chat_slot;
   FileTransferFunction file_slot;
   NewContactFunction new_contact_slot;
@@ -94,6 +96,7 @@ struct Slots {
   ShareChangedFunction share_changed_function;
   LifestuffCardUpdateFunction lifestuff_card_update_function;
   UpdateAvailableFunction software_update_available_function;
+  NetworkHealthFunction network_health_function;
 };
 
 class LifeStuffImpl {
@@ -117,7 +120,8 @@ class LifeStuffImpl {
                        const ShareRenamedFunction& share_renamed_function,
                        const ShareChangedFunction& share_changed_function,
                        const LifestuffCardUpdateFunction& lifestuff_card_update_function,
-                       const UpdateAvailableFunction& software_update_available_function);
+                       const UpdateAvailableFunction& software_update_available_function,
+                       const NetworkHealthFunction& network_health_function);
   int Finalise();
 
   /// Credential operations
@@ -267,6 +271,7 @@ class LifeStuffImpl {
   std::shared_ptr<pd::Node> node_;
   std::shared_ptr<RoutingsHandler> routings_handler_;
 #endif
+  boost::signals2::signal<void(const int&)> network_health_signal_;
   Session session_;
   std::shared_ptr<UserCredentials> user_credentials_;
   std::shared_ptr<UserStorage> user_storage_;
@@ -290,8 +295,9 @@ class LifeStuffImpl {
                               const std::string& new_share_id,
                               const asymm::Keys& key_ring,
                               int access_right);
+  void NetworkHealthSlot(const int& index);
 #ifndef LOCAL_TARGETS_ONLY
-  int CreateVaultInLocalMachine();
+  int CreateVaultInLocalMachine(const fs::path& chunk_store);
   int EstablishMaidRoutingObject(
       const std::vector<std::pair<std::string, uint16_t>>& bootstrap_endpoints);
 #endif

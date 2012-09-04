@@ -53,7 +53,8 @@ std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
 
 std::shared_ptr<pd::Node> SetupNode(
     const fs::path& base_dir,
-    const std::vector<std::pair<std::string, uint16_t>>& endopints);  // NOLINT (Dan)
+    const std::vector<std::pair<std::string, uint16_t>>& endopints,
+    const std::function<void(const int&)> network_health_function);  // NOLINT (Dan)
 #endif
 
 }  // namespace lifestuff
