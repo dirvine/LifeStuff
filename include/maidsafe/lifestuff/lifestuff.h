@@ -192,7 +192,7 @@ typedef FourStringsFunction NewContactFunction;
 typedef ThreeStringsFunction LifestuffCardUpdateFunction;
 
 /// New version update
-typedef std::function<void(const std::string&)> UpdateAvailableFunction;  // NOLINT (Dan)
+typedef std::function<void(std::string)> UpdateAvailableFunction;  // NOLINT (Dan)
 
 /// Network health
 typedef std::function<void(const int&)> NetworkHealthFunction;  // NOLINT (Dan)

@@ -27,6 +27,7 @@
 #include <list>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "boost/filesystem/path.hpp"
@@ -79,7 +80,6 @@ struct Slots {
         share_renamed_function(),
         share_changed_function(),
         lifestuff_card_update_function(),
-        software_update_available_function(),
         network_health_function() {}
   ChatFunction chat_slot;
   FileTransferFunction file_slot;
@@ -95,7 +95,6 @@ struct Slots {
   ShareRenamedFunction share_renamed_function;
   ShareChangedFunction share_changed_function;
   LifestuffCardUpdateFunction lifestuff_card_update_function;
-  UpdateAvailableFunction software_update_available_function;
   NetworkHealthFunction network_health_function;
 };
 
@@ -105,7 +104,8 @@ class LifeStuffImpl {
   ~LifeStuffImpl();
 
   /// State operations
-  int Initialise(const fs::path& base_directory = fs::path());
+  int Initialise(const UpdateAvailableFunction& software_update_available_function,
+                 const fs::path& base_directory);
   int ConnectToSignals(const ChatFunction& chat_slot,
                        const FileTransferFunction& file_slot,
                        const NewContactFunction& new_contact_slot,
@@ -120,7 +120,6 @@ class LifeStuffImpl {
                        const ShareRenamedFunction& share_renamed_function,
                        const ShareChangedFunction& share_changed_function,
                        const LifestuffCardUpdateFunction& lifestuff_card_update_function,
-                       const UpdateAvailableFunction& software_update_available_function,
                        const NetworkHealthFunction& network_health_function);
   int Finalise();
 
@@ -299,7 +298,7 @@ class LifeStuffImpl {
 #ifndef LOCAL_TARGETS_ONLY
   int CreateVaultInLocalMachine(const fs::path& chunk_store);
   int EstablishMaidRoutingObject(
-      const std::vector<std::pair<std::string, uint16_t>>& bootstrap_endpoints);
+      const std::vector<std::pair<std::string, uint16_t>>& bootstrap_endpoints);  // NOLINT (Dan)
 #endif
 };
 

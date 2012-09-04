@@ -37,8 +37,9 @@ LifeStuff::LifeStuff() : lifestuff_impl_(new LifeStuffImpl) {}
 
 LifeStuff::~LifeStuff() {}
 
-int LifeStuff::Initialise(const fs::path& base_directory) {
-  return lifestuff_impl_->Initialise(base_directory);
+int LifeStuff::Initialise(const UpdateAvailableFunction& software_update_available_function,
+                          const fs::path& base_directory) {
+  return lifestuff_impl_->Initialise(software_update_available_function, base_directory);
 }
 
 int LifeStuff::ConnectToSignals(
@@ -56,7 +57,6 @@ int LifeStuff::ConnectToSignals(
     const ShareRenamedFunction& share_renamed_function,
     const ShareChangedFunction& share_changed_function,
     const LifestuffCardUpdateFunction& lifestuff_card_update_function,
-    const UpdateAvailableFunction& software_update_available_function,
     const NetworkHealthFunction& network_health_function) {
   return lifestuff_impl_->ConnectToSignals(chat_slot,
                                            file_slot,
@@ -72,7 +72,6 @@ int LifeStuff::ConnectToSignals(
                                            share_renamed_function,
                                            share_changed_function,
                                            lifestuff_card_update_function,
-                                           software_update_available_function,
                                            network_health_function);
 }
 

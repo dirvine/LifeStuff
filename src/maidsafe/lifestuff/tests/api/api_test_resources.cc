@@ -276,13 +276,13 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
 }
 
 int InitialiseAndConnect(LifeStuff& test_elements,
-                   testresources::TestingVariables& testing_variables,
-                   const fs::path& test_dir,
-                   bool several_files,
-                   std::vector<std::string>* ids,
-                   std::vector<std::string>* names,
-                   size_t* total_files,
-                   boost::mutex* mutex) {
+                         testresources::TestingVariables& testing_variables,
+                         const fs::path& test_dir,
+                         bool several_files,
+                         std::vector<std::string>* ids,
+                         std::vector<std::string>* names,
+                         size_t* total_files,
+                         boost::mutex* mutex) {
   FileTransferFunction ftf;
   if (several_files) {
     ftf = [=, &testing_variables] (const std::string& own_public_id,
@@ -319,7 +319,7 @@ int InitialiseAndConnect(LifeStuff& test_elements,
 
   int result(0);
   // Initialise and connect
-  result += test_elements.Initialise(test_dir);
+  result += test_elements.Initialise(UpdateAvailableFunction(), test_dir);
   result += test_elements.ConnectToSignals(
                 [&] (const std::string& own_public_id,
                      const std::string& contact_public_id,
@@ -471,7 +471,7 @@ int InitialiseAndConnect(LifeStuff& test_elements,
                                     timestamp,
                                     &testing_variables.social_info_map_changed);
                 },
-                UpdateAvailableFunction());
+                NetworkHealthFunction());
   return result;
 }
 
@@ -877,7 +877,7 @@ void RunLogIn(LifeStuff& test_elements,
 }  // namespace sleepthreads
 
 void OneUserApiTest::SetUp() {
-  EXPECT_EQ(kSuccess, test_elements_.Initialise(*test_dir_));
+  EXPECT_EQ(kSuccess, test_elements_.Initialise(UpdateAvailableFunction(), *test_dir_));
   EXPECT_EQ(kSuccess,
             test_elements_.ConnectToSignals(ChatFunction(),
                                             FileTransferFunction(),
@@ -902,7 +902,7 @@ void OneUserApiTest::SetUp() {
                                             ShareRenamedFunction(),
                                             ShareChangedFunction(),
                                             LifestuffCardUpdateFunction(),
-                                            UpdateAvailableFunction()));
+                                            NetworkHealthFunction()));
   EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_));
 }
 
@@ -912,8 +912,8 @@ void OneUserApiTest::TearDown() {
 }
 
 void TwoInstancesApiTest::SetUp() {
-  EXPECT_EQ(kSuccess, test_elements_.Initialise(*test_dir_));
-  EXPECT_EQ(kSuccess, test_elements_2_.Initialise(*test_dir_));
+  EXPECT_EQ(kSuccess, test_elements_.Initialise(UpdateAvailableFunction(), *test_dir_));
+  EXPECT_EQ(kSuccess, test_elements_2_.Initialise(UpdateAvailableFunction(), *test_dir_));
   EXPECT_EQ(kSuccess,
             test_elements_.ConnectToSignals(ChatFunction(),
                                             FileTransferFunction(),
@@ -938,7 +938,7 @@ void TwoInstancesApiTest::SetUp() {
                                             ShareRenamedFunction(),
                                             ShareChangedFunction(),
                                             LifestuffCardUpdateFunction(),
-                                            UpdateAvailableFunction()));
+                                            NetworkHealthFunction()));
   EXPECT_EQ(kSuccess,
             test_elements_2_.ConnectToSignals(ChatFunction(),
                                             FileTransferFunction(),
@@ -963,7 +963,7 @@ void TwoInstancesApiTest::SetUp() {
                                             ShareRenamedFunction(),
                                             ShareChangedFunction(),
                                             LifestuffCardUpdateFunction(),
-                                            UpdateAvailableFunction()));
+                                            NetworkHealthFunction()));
 }
 
 void TwoInstancesApiTest::TearDown() {

@@ -17,6 +17,7 @@
 #include "maidsafe/lifestuff/detail/routings_handler.h"
 
 #include <chrono>
+#include <utility>
 #include <vector>
 
 #include "maidsafe/common/log.h"
@@ -70,7 +71,7 @@ RoutingsHandler::~RoutingsHandler() {}
 
 bool RoutingsHandler::AddRoutingObject(
     const asymm::Keys& owner_credentials,
-    const std::vector<std::pair<std::string, uint16_t>>& bootstrap_endpoints,
+    const std::vector<std::pair<std::string, uint16_t>>& bootstrap_endpoints,  // NOLINT (Dan)
     const std::string& search_id) {
   RoutingDetails routing_details(owner_credentials, search_id);
 
@@ -248,7 +249,7 @@ void RoutingsHandler::OnRequestReceived(const std::string& receiver_id,
   }
 
   asymm::PublicKey sender_public_key;
-  if(sender_id.String() == receiver_id) {
+  if (sender_id.String() == receiver_id) {
     sender_public_key = routing_details.keys.public_key;
   } else {
     // Well, this is not gonna be easy

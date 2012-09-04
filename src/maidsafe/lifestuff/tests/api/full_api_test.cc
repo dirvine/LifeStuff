@@ -685,7 +685,7 @@ TEST_F(TwoUsersApiTest, FUNC_LogInFromTwoPlacesCheckOpenShares) {
   EXPECT_TRUE(fs::exists(path_directory, error_code));
   EXPECT_EQ(0, error_code.value());
   std::string file;
-  EXPECT_EQ(kSuccess, CreateTestFile(test_elements_1_.mount_path() / directory, 0, &file)); // this function takes an int, 0.1 converts to 0
+  EXPECT_EQ(kSuccess, CreateTestFile(test_elements_1_.mount_path() / directory, 1, &file));
   EXPECT_TRUE(fs::exists(test_elements_1_.mount_path() / directory / file, error_code));
   EXPECT_EQ(0, error_code.value());
 
@@ -820,7 +820,7 @@ TEST_P(PrivateSharesApiTest, FUNC_LogInFromTwoPlacesCheckPrivateShares) {
   EXPECT_TRUE(fs::exists(test_elements_3.mount_path() / directory, error_code));
   EXPECT_EQ(0, error_code.value());
   std::string file;
-  EXPECT_EQ(kSuccess, CreateTestFile(test_elements_1_.mount_path() / directory, 0, &file)); // this function takes an int, 0.1 converts to 0
+  EXPECT_EQ(kSuccess, CreateTestFile(test_elements_1_.mount_path() / directory, 1, &file));
   EXPECT_TRUE(fs::exists(test_elements_1_.mount_path() / directory / file, error_code));
   EXPECT_EQ(0, error_code.value());
   EXPECT_TRUE(fs::exists(test_elements_3.mount_path() / directory / file, error_code));

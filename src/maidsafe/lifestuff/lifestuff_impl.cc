@@ -77,7 +77,8 @@ LifeStuffImpl::LifeStuffImpl()
 
 LifeStuffImpl::~LifeStuffImpl() {}
 
-int LifeStuffImpl::Initialise(const boost::filesystem::path& base_directory) {
+int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_available_function,
+                              const fs::path& base_directory) {
   if (state_ != kZeroth) {
     LOG(kError) << "Make sure that object is in the original Zeroth state. Asimov rules.";
     return kGeneralError;
@@ -110,7 +111,8 @@ int LifeStuffImpl::Initialise(const boost::filesystem::path& base_directory) {
   std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
   while (counter++ < kRetryLimit) {
     Sleep(bptime::milliseconds(100 + RandomUint32() % 1000));
-    client_controller_.reset(new priv::process_management::ClientController([](std::string){}));
+    client_controller_.reset(
+        new priv::process_management::ClientController(software_update_available_function));
     if (client_controller_->BootstrapEndpoints(bootstrap_endpoints) && !bootstrap_endpoints.empty())
       counter = kRetryLimit;
     else
@@ -125,7 +127,7 @@ int LifeStuffImpl::Initialise(const boost::filesystem::path& base_directory) {
   remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path,
                                         bootstrap_endpoints,
                                         node_,
-                                        [&] (const int& index) { NetworkHealthSlot(index); });
+                                        [&] (const int& index) { NetworkHealthSlot(index); });  // NOLINT (Dan)
 #endif
   if (!remote_chunk_store_) {
     LOG(kError) << "Could not initialise chunk store.";
@@ -158,7 +160,6 @@ int LifeStuffImpl::ConnectToSignals(
     const ShareRenamedFunction& share_renamed_function,
     const ShareChangedFunction& share_changed_function,
     const LifestuffCardUpdateFunction& lifestuff_card_update_function,
-    const UpdateAvailableFunction& software_update_available_function,
     const NetworkHealthFunction& network_health_function) {
   if (state_ != kInitialised) {
     LOG(kError) << "Make sure that object is initialised";
@@ -250,10 +251,6 @@ int LifeStuffImpl::ConnectToSignals(
     ++connects;
     if (user_storage_)
       public_id_->ConnectToLifestuffCardUpdatedSignal(lifestuff_card_update_function);
-  }
-  if (software_update_available_function) {
-    slots_.software_update_available_function = software_update_available_function;
-    ++connects;
   }
   if (network_health_function) {
     slots_.network_health_function = network_health_function;
@@ -2382,7 +2379,6 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
                             slots_.share_renamed_function,
                             slots_.share_changed_function,
                             slots_.lifestuff_card_update_function,
-                            slots_.software_update_available_function,
                             slots_.network_health_function);
   return result;
 }
@@ -2508,7 +2504,7 @@ int LifeStuffImpl::CreateVaultInLocalMachine(const fs::path& chunk_store) {
 }
 
 int LifeStuffImpl::EstablishMaidRoutingObject(
-    const std::vector<std::pair<std::string, uint16_t>>& bootstrap_endpoints) {
+    const std::vector<std::pair<std::string, uint16_t>>& bootstrap_endpoints) {  // NOLINT (Dan)
   asymm::Keys maid(session_.passport().SignaturePacketDetails(passport::kMaid, true));
   if (!routings_handler_->AddRoutingObject(maid, bootstrap_endpoints, maid.identity)) {
     LOG(kError) << "Failed to adding MAID routing.";

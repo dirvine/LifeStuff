@@ -14,14 +14,16 @@
  * @date  2012-09-03
  */
 
-#ifndef MAIDSAFE_LIFESTUFF_ROUTINGS_HANDLER_H_
-#define MAIDSAFE_LIFESTUFF_ROUTINGS_HANDLER_H_
+#ifndef MAIDSAFE_LIFESTUFF_DETAIL_ROUTINGS_HANDLER_H_
+#define MAIDSAFE_LIFESTUFF_DETAIL_ROUTINGS_HANDLER_H_
 
 #include <condition_variable>
 #include <functional>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "maidsafe/common/rsa.h"
@@ -47,7 +49,7 @@ class RoutingsHandler {
   ~RoutingsHandler();
 
   bool AddRoutingObject(const asymm::Keys& owner_credentials,
-                        const std::vector<std::pair<std::string, uint16_t>>& bootstrap_endpoints,
+                        const std::vector<std::pair<std::string, uint16_t>>& bootstrap_endpoints,  // NOLINT (Dan)
                         const std::string& search_id);
 
   bool Send(const std::string& source_id,
@@ -100,4 +102,4 @@ class RoutingsHandler {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_ROUTINGS_HANDLER_H_
+#endif  // MAIDSAFE_LIFESTUFF_DETAIL_ROUTINGS_HANDLER_H_

@@ -83,7 +83,10 @@ class UserCredentialsTest : public testing::Test {
                                         asio_service_.service());
 #else
     std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
-    remote_chunk_store_ = BuildChunkStore(*test_dir_, bootstrap_endpoints, node_);
+    remote_chunk_store_ = BuildChunkStore(*test_dir_,
+                                          bootstrap_endpoints,
+                                          node_,
+                                          NetworkHealthFunction());
 #endif
     user_credentials_.reset(new UserCredentials(*remote_chunk_store_,
                                                 session_,
@@ -102,7 +105,10 @@ class UserCredentialsTest : public testing::Test {
                                            asio_service2_.service());
 #else
     std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
-    remote_chunk_store2_ = BuildChunkStore(*test_dir_, bootstrap_endpoints, node2_);
+    remote_chunk_store2_ = BuildChunkStore(*test_dir_,
+                                           bootstrap_endpoints,
+                                           node2_,
+                                           NetworkHealthFunction());
 #endif
     user_credentials2_.reset(new UserCredentials(*remote_chunk_store2_,
                                                  session2_,
