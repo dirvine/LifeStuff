@@ -270,6 +270,7 @@ class LifeStuffImpl {
   std::shared_ptr<PublicId> public_id_;
   std::shared_ptr<MessageHandler> message_handler_;
   Slots slots_;
+  LifeStuffState state_;
 
   // Session saving control
   boost::mutex save_session_mutex_;
