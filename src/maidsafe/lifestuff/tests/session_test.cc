@@ -56,6 +56,8 @@ class SessionTest : public testing::Test {
 
   void CreateTestSession(bool with_public_ids) {
     ASSERT_TRUE(session_.CreateTestPackets(with_public_ids));
+    session_.set_unique_user_id(RandomString(64));
+    session_.set_root_parent_id(RandomString(64));
     std::vector<std::string> public_ids(session_.PublicIdentities());
     std::for_each(public_ids.begin(),
                   public_ids.end(),

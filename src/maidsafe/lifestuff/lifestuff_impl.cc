@@ -389,12 +389,6 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
     return kGeneralError;
   }
 
-  result = user_credentials_->SaveSession();
-  if (result != kSuccess) {
-    LOG(kWarning) << "Failed to save session.";
-    user_storage_->UnMountDrive();
-  }
-
   state_ = kLoggedIn;
 
   return kSuccess;
