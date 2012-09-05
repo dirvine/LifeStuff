@@ -236,10 +236,7 @@ int LifeStuffImpl::ConnectToSignals(
     ImmediateQuitRequiredFunction must_die = [&] {
                                                LOG(kInfo) << "Immediate quit required! " <<
                                                              "Stopping activity.";
-                                               user_storage_->UnMountDrive();
-                                               public_id_->ShutDown();
-                                               message_handler_->StopCheckingForNewMessages();
-                                               remote_chunk_store_->WaitForCompletion();
+                                               LogOut();
                                              };
     user_credentials_->ConnectToImmediateQuitRequiredSignal(must_die);
     if (immediate_quit_required_function) {
@@ -476,7 +473,8 @@ int LifeStuffImpl::LogOut() {
     return kGeneralError;
   }
 
-  if (session_.session_access_level() == kFullAccess) {
+  if (session_.session_access_level() == kFullAccess ||
+      session_.session_access_level() == kMustDie) {
     public_id_->ShutDown();
     message_handler_->ShutDown();
   }
