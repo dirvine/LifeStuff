@@ -345,6 +345,15 @@ int Session::ParseDataAtlas(const std::string& serialised_data_atlas) {
     return -9000;
   }
 
+  if (data_atlas.drive_data().unique_user_id().empty()) {
+    LOG(kError) << "Unique user ID is empty.";
+    return kTryAgainLater;
+  }
+  if (data_atlas.drive_data().root_parent_id().empty()) {
+    LOG(kError) << "Root parent id is empty.";
+    return kTryAgainLater;
+  }
+
   set_unique_user_id(data_atlas.drive_data().unique_user_id());
   set_root_parent_id(data_atlas.drive_data().root_parent_id());
   set_max_space(data_atlas.drive_data().max_space());

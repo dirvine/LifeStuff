@@ -44,6 +44,7 @@ enum ReturnCode {
   kReadOnlyRestrictedSuccess = -200009,
   kReadOnlyFailure = -200010,
   kMustDieFailure = -200011,
+  kTryAgainLater = -200012,
 
   // Authentication
   kAuthenticationError = -201001,
