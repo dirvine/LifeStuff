@@ -502,7 +502,7 @@ int UserCredentialsImpl::ProcessSigningPackets() {
 }
 
 int UserCredentialsImpl::StoreAnonymousPackets() {
-  std::vector<int> individual_results(4, kPendingResult);
+  std::vector<int> individual_results(4, priv::utilities::kPendingResult);
   boost::condition_variable condition_variable;
   boost::mutex mutex;
   OperationResults results(mutex, condition_variable, individual_results);
@@ -516,7 +516,8 @@ int UserCredentialsImpl::StoreAnonymousPackets() {
   // PMID path: ANMAID, MAID, PMID
   StoreAnmaid(results);
 
-  int result(utils::WaitForResults(mutex, condition_variable, individual_results));
+  int result(utils::WaitForResults(mutex, condition_variable, individual_results,
+             boost::posix_time::seconds(30)));
   if (result != kSuccess) {
     LOG(kError) << "Wait for results timed out: " << result;
     LOG(kError) << "ANMID: " << individual_results.at(0)
@@ -566,7 +567,7 @@ void UserCredentialsImpl::StoreSignaturePacket(std::shared_ptr<asymm::Keys> pack
   CreateSignaturePacketInfo(packet, &packet_name, &packet_content);
   if (!remote_chunk_store_.Store(packet_name,
                                  packet_content,
-                                 [&] (bool result) {
+                                 [&, index] (bool result) {
                                    OperationCallback(result, results, index);
                                  },
                                  packet)) {
@@ -699,7 +700,7 @@ int UserCredentialsImpl::ProcessIdentityPackets(const std::string& keyword,
 }
 
 int UserCredentialsImpl::StoreIdentityPackets() {
-  std::vector<int> individual_results(4, kPendingResult);
+  std::vector<int> individual_results(4, priv::utilities::kPendingResult);
   boost::condition_variable condition_variable;
   boost::mutex mutex;
   OperationResults results(mutex, condition_variable, individual_results);
@@ -713,7 +714,8 @@ int UserCredentialsImpl::StoreIdentityPackets() {
   // STMID
   StoreStmid(results);
 
-  int result(utils::WaitForResults(mutex, condition_variable, individual_results));
+  int result(utils::WaitForResults(mutex, condition_variable, individual_results,
+                                   boost::posix_time::seconds(60)));
   if (result != kSuccess) {
     LOG(kError) << "Wait for results timed out.";
     return result;
@@ -774,7 +776,7 @@ void UserCredentialsImpl::StoreIdentity(OperationResults& results,
   signed_data.set_signature(signature);
   if (!remote_chunk_store_.Store(packet_name,
                                  signed_data.SerializeAsString(),
-                                 [&] (bool result) {
+                                 [&, index] (bool result) {
                                    OperationCallback(result, results, index);
                                  },
                                  signer)) {
@@ -814,7 +816,7 @@ int UserCredentialsImpl::StoreLid(const std::string keyword,
   signed_data.set_data(encrypted_account_status);
   signed_data.set_signature(signature);
 
-  std::vector<int> individual_result(1, kPendingResult);
+  std::vector<int> individual_result(1, priv::utilities::kPendingResult);
   boost::condition_variable condition_variable;
   boost::mutex mutex;
   OperationResults operation_result(mutex, condition_variable, individual_result);
@@ -827,7 +829,8 @@ int UserCredentialsImpl::StoreLid(const std::string keyword,
     LOG(kError) << "Failed to store LID.";
     OperationCallback(false, operation_result, 0);
   }
-  result = utils::WaitForResults(mutex, condition_variable, individual_result);
+  result = utils::WaitForResults(mutex, condition_variable, individual_result,
+                                 boost::posix_time::seconds(30));
   if (result != kSuccess) {
     LOG(kError) << "Failed to store LID:" << result;
     return result;
@@ -864,7 +867,7 @@ int UserCredentialsImpl::SaveSession(bool log_out) {
     return result;
   }
 
-  std::vector<int> individual_results(4, kPendingResult);
+  std::vector<int> individual_results(4, priv::utilities::kPendingResult);
   boost::condition_variable condition_variable;
   boost::mutex mutex;
   OperationResults results(mutex, condition_variable, individual_results);
@@ -973,7 +976,7 @@ int UserCredentialsImpl::ModifyLid(const std::string keyword,
   signed_data.set_data(encrypted_account_status);
   signed_data.set_signature(signature);
 
-  std::vector<int> individual_result(1, kPendingResult);
+  std::vector<int> individual_result(1, priv::utilities::kPendingResult);
   boost::condition_variable condition_variable;
   boost::mutex mutex;
   OperationResults operation_result(mutex, condition_variable, individual_result);
@@ -1057,7 +1060,7 @@ int UserCredentialsImpl::ChangeUsernamePin(const std::string& new_keyword,
 }
 
 int UserCredentialsImpl::DeleteOldIdentityPackets() {
-  std::vector<int> individual_results(4, kPendingResult);
+  std::vector<int> individual_results(4, priv::utilities::kPendingResult);
   boost::condition_variable condition_variable;
   boost::mutex mutex;
   OperationResults results(mutex, condition_variable, individual_results);
@@ -1136,7 +1139,7 @@ int UserCredentialsImpl::DeleteLid(const std::string& keyword,
   std::shared_ptr<asymm::Keys> signer(new asymm::Keys(
                                           passport_.SignaturePacketDetails(passport::kAnmid,
                                                                            true)));
-  std::vector<int> individual_result(1, kPendingResult);
+  std::vector<int> individual_result(1, priv::utilities::kPendingResult);
   boost::condition_variable condition_variable;
   boost::mutex mutex;
   OperationResults operation_result(mutex, condition_variable, individual_result);
@@ -1192,7 +1195,7 @@ int UserCredentialsImpl::ChangePassword(const std::string& new_password) {
 }
 
 int UserCredentialsImpl::DoChangePasswordAdditions() {
-  std::vector<int> individual_results(4, kPendingResult);
+  std::vector<int> individual_results(4, priv::utilities::kPendingResult);
   boost::condition_variable condition_variable;
   boost::mutex mutex;
   OperationResults new_results(mutex, condition_variable, individual_results);
@@ -1228,8 +1231,8 @@ int UserCredentialsImpl::DoChangePasswordRemovals() {
   std::vector<int> individual_results(4, kSuccess);
   boost::condition_variable condition_variable;
   boost::mutex mutex;
-  individual_results[2] = kPendingResult;
-  individual_results[3] = kPendingResult;
+  individual_results[2] = priv::utilities::kPendingResult;
+  individual_results[3] = priv::utilities::kPendingResult;
   OperationResults del_results(mutex, condition_variable, individual_results);
   DeleteTmid(del_results);
   DeleteStmid(del_results);
@@ -1301,7 +1304,7 @@ int UserCredentialsImpl::DeleteUserCredentials() {
 }
 
 int UserCredentialsImpl::DeleteSignaturePackets() {
-  std::vector<int> individual_results(4, kPendingResult);
+  std::vector<int> individual_results(4, priv::utilities::kPendingResult);
   boost::condition_variable condition_variable;
   boost::mutex mutex;
   OperationResults results(mutex, condition_variable, individual_results);
