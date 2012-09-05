@@ -55,21 +55,23 @@ int LifeStuff::ConnectToSignals(
     const OpenShareInvitationFunction& open_share_invitation_function,
     const ShareRenamedFunction& share_renamed_function,
     const ShareChangedFunction& share_changed_function,
-    const LifestuffCardUpdateFunction& lifestuff_card_update_function) {
+    const LifestuffCardUpdateFunction& lifestuff_card_update_function,
+    const ImmediateQuitRequiredFunction& immediate_quit_required_function) {
   return lifestuff_impl_->ConnectToSignals(chat_slot,
-                                          file_slot,
-                                          new_contact_slot,
-                                          confirmed_contact_slot,
-                                          profile_picture_slot,
-                                          contact_presence_slot,
-                                          contact_deletion_function,
-                                          private_share_invitation_function,
-                                          private_share_deletion_function,
-                                          private_access_change_function,
-                                          open_share_invitation_function,
-                                          share_renamed_function,
-                                          share_changed_function,
-                                          lifestuff_card_update_function);
+                                           file_slot,
+                                           new_contact_slot,
+                                           confirmed_contact_slot,
+                                           profile_picture_slot,
+                                           contact_presence_slot,
+                                           contact_deletion_function,
+                                           private_share_invitation_function,
+                                           private_share_deletion_function,
+                                           private_access_change_function,
+                                           open_share_invitation_function,
+                                           share_renamed_function,
+                                           share_changed_function,
+                                           lifestuff_card_update_function,
+                                           immediate_quit_required_function);
 }
 
 int LifeStuff::Finalise() {

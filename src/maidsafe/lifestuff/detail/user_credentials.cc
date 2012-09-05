@@ -92,13 +92,23 @@ int UserCredentials::LogIn(const std::string& keyword,
 
 int UserCredentials::Logout() {
   int result(impl_->SaveSession(true));
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to save session on Logout";
+    return result;
+  }
+  result = impl_->AssessAndUpdateLid(true);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to update LID on Logout";
+    return result;
+  }
 
-  if (result == kSuccess)
-    session_.Reset();
-  return result;
+  session_.Reset();
+  return kSuccess;
 }
 
 int UserCredentials::SaveSession() { return impl_->SaveSession(false); }
+
+int UserCredentials::UpdateLid() { return impl_->AssessAndUpdateLid(false); }
 
 int UserCredentials::ChangeKeyword(const std::string& new_keyword) {
   int result(CheckKeywordValidity(new_keyword));
@@ -132,6 +142,11 @@ int UserCredentials::ChangePassword(const std::string& new_password) {
 
 int UserCredentials::DeleteUserCredentials() {
   return impl_->DeleteUserCredentials();
+}
+
+bs2::connection UserCredentials::ConnectToImmediateQuitRequiredSignal(
+    const ImmediateQuitRequiredFunction& immediate_quit_required_slot) {
+  return impl_->ConnectToImmediateQuitRequiredSignal(immediate_quit_required_slot);
 }
 
 }  // namespace lifestuff

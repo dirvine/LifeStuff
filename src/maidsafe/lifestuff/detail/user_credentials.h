@@ -71,12 +71,16 @@ class UserCredentials {
   int CreateUser(const std::string& keyword, const std::string& pin, const std::string& password);
   int Logout();
   int SaveSession();
+  int UpdateLid();
 
   int ChangeKeyword(const std::string& new_keyword);
   int ChangePin(const std::string& new_pin);
   int ChangePassword(const std::string& new_password);
 
   int DeleteUserCredentials();
+
+  bs2::connection ConnectToImmediateQuitRequiredSignal(
+      const ImmediateQuitRequiredFunction& immediate_quit_required_slot);
 
  private:
   UserCredentials &operator=(const UserCredentials&);
