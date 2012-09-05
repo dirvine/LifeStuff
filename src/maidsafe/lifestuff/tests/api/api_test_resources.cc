@@ -319,7 +319,7 @@ int InitialiseAndConnect(LifeStuff& test_elements,
 
   int result(0);
   // Initialise and connect
-  result += test_elements.Initialise(UpdateAvailableFunction(), test_dir);
+  result += test_elements.Initialise([] (std::string) {}, test_dir);
   result += test_elements.ConnectToSignals(
                 [&] (const std::string& own_public_id,
                      const std::string& contact_public_id,
@@ -878,7 +878,7 @@ void RunLogIn(LifeStuff& test_elements,
 }  // namespace sleepthreads
 
 void OneUserApiTest::SetUp() {
-  EXPECT_EQ(kSuccess, test_elements_.Initialise(UpdateAvailableFunction(), *test_dir_));
+  EXPECT_EQ(kSuccess, test_elements_.Initialise([] (std::string) {}, *test_dir_));
   EXPECT_EQ(kSuccess,
             test_elements_.ConnectToSignals(ChatFunction(),
                                             FileTransferFunction(),
@@ -914,8 +914,8 @@ void OneUserApiTest::TearDown() {
 }
 
 void TwoInstancesApiTest::SetUp() {
-  EXPECT_EQ(kSuccess, test_elements_.Initialise(UpdateAvailableFunction(), *test_dir_));
-  EXPECT_EQ(kSuccess, test_elements_2_.Initialise(UpdateAvailableFunction(), *test_dir_));
+  EXPECT_EQ(kSuccess, test_elements_.Initialise([] (std::string) {}, *test_dir_));
+  EXPECT_EQ(kSuccess, test_elements_2_.Initialise([] (std::string) {}, *test_dir_));
   EXPECT_EQ(kSuccess,
             test_elements_.ConnectToSignals(ChatFunction(),
                                             FileTransferFunction(),
