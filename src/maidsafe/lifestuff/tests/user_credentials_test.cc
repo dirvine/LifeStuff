@@ -60,12 +60,12 @@ class UserCredentialsTest : public testing::Test {
  public:
   UserCredentialsTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
-        network_(),
         session_(),
         session2_(),
         asio_service_(10),
         asio_service2_(10),
 #ifndef LOCAL_TARGETS_ONLY
+        network_(),
         node_(),
         node2_(),
 #endif
@@ -104,7 +104,9 @@ class UserCredentialsTest : public testing::Test {
   }
 
   void TearDown() {
+#ifndef LOCAL_TARGETS_ONLY
     EXPECT_TRUE(network_.StopLocalNetwork());
+#endif
     asio_service_.Stop();
     asio_service2_.Stop();
   }
@@ -127,10 +129,10 @@ class UserCredentialsTest : public testing::Test {
   }
 
   std::shared_ptr<fs::path> test_dir_;
-  NetworkHelper network_;
   Session session_, session2_;
   AsioService asio_service_, asio_service2_;
 #ifndef LOCAL_TARGETS_ONLY
+  NetworkHelper network_;
   std::shared_ptr<pd::Node> node_, node2_;
 #endif
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_, remote_chunk_store2_;
