@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <utility>
 
 #include "boost/asio.hpp"
 #include "boost/filesystem/path.hpp"
@@ -45,10 +46,16 @@ std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path& buffered_
                                                        const fs::path& local_chunk_manager_path,
                                                        boost::asio::io_service& asio_service);
 #else
-std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path& base_dir,
-                                                       std::shared_ptr<pd::Node>& node);
+std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
+    const fs::path& base_dir,
+    const std::vector<std::pair<std::string, uint16_t>>& endpoints,  // NOLINT (Dan)
+    std::shared_ptr<pd::Node>& node,
+    const std::function<void(const int&)> network_health_function);
 
-std::shared_ptr<pd::Node> SetupNode(const fs::path& base_dir);
+std::shared_ptr<pd::Node> SetupNode(
+    const fs::path& base_dir,
+    const std::vector<std::pair<std::string, uint16_t>>& endpoints,  // NOLINT (Dan)
+    const std::function<void(const int&)> network_health_function);
 #endif
 
 }  // namespace lifestuff

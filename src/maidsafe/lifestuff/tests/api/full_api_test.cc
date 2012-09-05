@@ -2070,6 +2070,7 @@ TEST_P(PrivateSharesApiTest, FUNC_PrivateShareTwoNonOwnersRemoveEachOther) {
               pin_3(CreatePin()),
               password_3(RandomAlphaNumericString(6)),
               public_id_3(RandomAlphaNumericString(5));
+
   ASSERT_EQ(kSuccess, CreateAccountWithPublicId(test_elements_3,
                                                 testing_variables_3,
                                                 *test_dir_,
@@ -2174,6 +2175,7 @@ TEST_P(PrivateSharesApiTest, DISABLED_FUNC_PrivateSharesMutualRemovalWithUninvol
               pin_3(CreatePin()),
               password_3(RandomAlphaNumericString(6)),
               public_id_3(RandomAlphaNumericString(5));
+
   ASSERT_EQ(kSuccess, CreateAccountWithPublicId(test_elements_3,
                                                 testing_variables_3,
                                                 *test_dir_,
@@ -2181,6 +2183,7 @@ TEST_P(PrivateSharesApiTest, DISABLED_FUNC_PrivateSharesMutualRemovalWithUninvol
                                                 pin_3,
                                                 password_3,
                                                 public_id_3));
+
   // 1 added 2 in setup
   // 1 adds 3
   ASSERT_EQ(kSuccess, ConnectTwoPublicIds(test_elements_1_,
@@ -2358,6 +2361,7 @@ TEST_P(PrivateSharesApiTest, DISABLED_FUNC_PrivateShareBefriendDefriendCombinati
               pin_4(CreatePin()),
               password_4(RandomAlphaNumericString(6)),
               public_id_4("User 4" + RandomAlphaNumericString(5));
+
   ASSERT_EQ(kSuccess, InitialiseAndConnect(test_elements_3,
                                            testing_variables_3,
                                            *test_dir_));

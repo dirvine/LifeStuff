@@ -38,11 +38,10 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-enum DefConLevels {
-  kDefCon1 = 1,
-  kDefCon2,
-  kDefCon3
-};
+enum DefConLevels { kDefCon1 = 1, kDefCon2, kDefCon3 };
+enum ContactOrder { kAlphabetical, kPopular, kLastContacted };
+enum ContactPresence { kOffline, kOnline };
+enum LifeStuffState { kZeroth, kInitialised, kConnected, kLoggedIn };
 
 enum ContactStatus {
   kAll = 0x00,
@@ -53,23 +52,6 @@ enum ContactStatus {
   kBlocked = 0x10
 };
 
-enum ContactOrder {
-  kAlphabetical,
-  kPopular,
-  kLastContacted
-};
-
-enum ContactPresence {
-  kOffline,
-  kOnline
-};
-
-enum LifeStuffState {
-  kZeroth,
-  kInitialised,
-  kConnected,
-  kLoggedIn
-};
 
 /// THIS ENUM MUST BE KEPT IN SYNC WITH THE ONE IN DRIVE'S CONFIG.H !!!
 enum PrivateShareRoles {
@@ -122,6 +104,8 @@ typedef std::function<void(bool)> VoidFunctionOneBool;  // NOLINT (Dan)
 typedef std::map<std::string, int> StringIntMap;
 typedef std::map<std::string, std::string> SocialInfoMap;
 typedef std::map<std::string, std::pair<ContactStatus, ContactPresence>> ContactMap;
+typedef std::function<bool(const std::string&, std::string&)> ValidatedMessageSignal;
+
 
 /// Private Shares
 // Own ID, Contact ID, Share Name, Share ID, Access Level, Timestamp
@@ -188,7 +172,13 @@ typedef FourStringsFunction NewContactFunction;
 // Lifestuff Card change: Own & other public ID, Timestamp
 typedef ThreeStringsFunction LifestuffCardUpdateFunction;
 
-// Quitting
+/// New version update
+typedef std::function<void(std::string)> UpdateAvailableFunction;  // NOLINT (Dan)
+
+/// Network health
+typedef std::function<void(const int&)> NetworkHealthFunction;  // NOLINT (Dan)
+
+/// Quitting
 typedef std::function<void()> ImmediateQuitRequiredFunction;
 }  // namespace lifestuff
 

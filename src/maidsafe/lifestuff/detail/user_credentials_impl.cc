@@ -153,7 +153,9 @@ int UserCredentialsImpl::GetUserInfo(const std::string& keyword,
 
   int result(HandleSerialisedDataMaps(keyword, pin, password, tmid_packet, stmid_packet));
   if (result != kSuccess) {
-    if (result != kUsingNextToLastSession) {
+    if (result == kTryAgainLater) {
+      return result;
+    } else if (result != kUsingNextToLastSession) {
       LOG(kError) << "Failed to initialise session: " << result;
       result = kAccountCorrupted;
     }
@@ -316,6 +318,8 @@ int UserCredentialsImpl::HandleSerialisedDataMaps(const std::string& keyword,
     if (result == kSuccess) {
       session_.set_serialised_data_atlas(tmid_serialised_data_atlas);
       tmid_da = tmid_serialised_data_atlas;
+    } else if (result == kTryAgainLater) {
+      return kTryAgainLater;
     }
   } else if (!stmid_serialised_data_atlas.empty()) {
     tmid_da = stmid_serialised_data_atlas;
@@ -324,6 +328,8 @@ int UserCredentialsImpl::HandleSerialisedDataMaps(const std::string& keyword,
     if (result == kSuccess) {
       session_.set_serialised_data_atlas(stmid_serialised_data_atlas);
       result = kUsingNextToLastSession;
+    } else if (result == kTryAgainLater) {
+      return kTryAgainLater;
     }
   }
 
@@ -371,6 +377,7 @@ int UserCredentialsImpl::CreateUser(const std::string& keyword,
     LOG(kError) << "Failed to set session.";
     return kSessionFailure;
   }
+  session_.set_changed(true);
 
   LockingPacket locking_packet(lid::CreateLockingPacket(session_.session_name()));
   result = StoreLid(keyword, pin, password, locking_packet);

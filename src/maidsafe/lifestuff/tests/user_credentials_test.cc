@@ -92,7 +92,11 @@ class UserCredentialsTest : public testing::Test {
                                           asio_service_.service());
 #else
     ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 8));
-    remote_chunk_store_ = BuildChunkStore(*test_dir_, node_);
+    std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
+    remote_chunk_store_ = BuildChunkStore(*test_dir_,
+                                          bootstrap_endpoints,
+                                          node_,
+                                          NetworkHealthFunction());
 #endif
     user_credentials_.reset(new UserCredentials(*remote_chunk_store_,
                                                 session_,
@@ -111,7 +115,11 @@ class UserCredentialsTest : public testing::Test {
                                            *test_dir_ / "simulation",
                                            asio_service2_.service());
 #else
-    remote_chunk_store2_ = BuildChunkStore(*test_dir_, node2_);
+    std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
+    remote_chunk_store2_ = BuildChunkStore(*test_dir_,
+                                           bootstrap_endpoints,
+                                           node2_,
+                                           NetworkHealthFunction());
 #endif
     user_credentials2_.reset(new UserCredentials(*remote_chunk_store2_,
                                                  session2_,
@@ -143,6 +151,8 @@ TEST_F(UserCredentialsTest, FUNC_LoginSequence) {
 
   ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
+  session_.set_unique_user_id(RandomString(64));
+  session_.set_root_parent_id(RandomString(64));
   ASSERT_EQ(keyword_, session_.keyword());
   ASSERT_EQ(pin_, session_.pin());
   ASSERT_EQ(password_, session_.password());
@@ -178,6 +188,8 @@ TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
   LOG(kInfo) << "Preconditions fulfilled.\n===================\n";
 
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
+  session_.set_unique_user_id(RandomString(64));
+  session_.set_root_parent_id(RandomString(64));
   ASSERT_EQ(keyword_, session_.keyword());
   ASSERT_EQ(pin_, session_.pin());
   ASSERT_EQ(password_, session_.password());
@@ -288,6 +300,8 @@ TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
 
   ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
+  session_.set_unique_user_id(RandomString(64));
+  session_.set_root_parent_id(RandomString(64));
   ASSERT_EQ(keyword_, session_.keyword());
   ASSERT_EQ(pin_, session_.pin());
   ASSERT_EQ(password_, session_.password());
@@ -397,6 +411,8 @@ TEST_F(UserCredentialsTest, DISABLED_FUNC_MonitorLidPacket) {
   ASSERT_EQ("", remote_chunk_store_->Get(lid_name));
 
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
+  session_.set_unique_user_id(RandomString(64));
+  session_.set_root_parent_id(RandomString(64));
   ASSERT_EQ(keyword_, session_.keyword());
   ASSERT_EQ(pin_, session_.pin());
   ASSERT_EQ(password_, session_.password());
@@ -455,6 +471,8 @@ TEST_F(UserCredentialsTest, FUNC_ParallelLogin) {
   ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
 
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
+  session_.set_unique_user_id(RandomString(64));
+  session_.set_root_parent_id(RandomString(64));
   ASSERT_EQ(keyword_, session_.keyword());
   ASSERT_EQ(pin_, session_.pin());
   ASSERT_EQ(password_, session_.password());
@@ -518,6 +536,8 @@ TEST_F(UserCredentialsTest, FUNC_MultiUserCredentialsLoginAndLogout) {
 
   ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
+  session_.set_unique_user_id(RandomString(64));
+  session_.set_root_parent_id(RandomString(64));
   ASSERT_EQ(keyword_, session_.keyword());
   ASSERT_EQ(pin_, session_.pin());
   ASSERT_EQ(password_, session_.password());
@@ -541,6 +561,8 @@ TEST_F(UserCredentialsTest, FUNC_MultiUserCredentialsLoginAndLogout) {
 
 TEST_F(UserCredentialsTest, FUNC_UserCredentialsDeletion) {
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
+  session_.set_unique_user_id(RandomString(64));
+  session_.set_root_parent_id(RandomString(64));
   passport::Passport& pass(session_.passport());
   std::string anmid_name(pca::ApplyTypeToName(
                            pass.SignaturePacketDetails(passport::kAnmid, true).identity,
@@ -599,6 +621,8 @@ TEST_F(UserCredentialsTest, FUNC_UserCredentialsDeletion) {
 
   ASSERT_NE(kSuccess, user_credentials_->Logout());
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
+  session_.set_unique_user_id(RandomString(64));
+  session_.set_root_parent_id(RandomString(64));
   ASSERT_EQ(kSuccess, user_credentials_->Logout());
   ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
 
@@ -637,6 +661,8 @@ TEST_F(UserCredentialsTest, DISABLED_FUNC_SessionSaverTimer) {
   LOG(kInfo) << "Preconditions fulfilled.\n===================\n";
 
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
+  session_.set_unique_user_id(RandomString(64));
+  session_.set_root_parent_id(RandomString(64));
   LOG(kInfo) << "Created user.\n===================\n";
   Sleep(bptime::seconds(3));
   LOG(kInfo) << "Slept 3.\n===================\n";

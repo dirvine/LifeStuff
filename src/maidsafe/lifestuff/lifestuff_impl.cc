@@ -48,6 +48,8 @@ namespace maidsafe {
 
 namespace lifestuff {
 
+const int kRetryLimit(10);
+
 LifeStuffImpl::LifeStuffImpl()
     : thread_count_(kThreads),
       buffered_path_(),
@@ -58,8 +60,11 @@ LifeStuffImpl::LifeStuffImpl()
       asio_service_(thread_count_),
       remote_chunk_store_(),
 #ifndef LOCAL_TARGETS_ONLY
+      client_controller_(),
       node_(),
+      routings_handler_(),
 #endif
+      network_health_signal_(),
       session_(),
       user_credentials_(),
       user_storage_(),
@@ -72,9 +77,15 @@ LifeStuffImpl::LifeStuffImpl()
 
 LifeStuffImpl::~LifeStuffImpl() {}
 
-int LifeStuffImpl::Initialise(const boost::filesystem::path& base_directory) {
+int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_available_function,
+                              const fs::path& base_directory) {
   if (state_ != kZeroth) {
     LOG(kError) << "Make sure that object is in the original Zeroth state. Asimov rules.";
+    return kGeneralError;
+  }
+
+  if (!software_update_available_function) {
+    LOG(kError) << "No function provided for SW update. Unacceptable. Good day!";
     return kGeneralError;
   }
 
@@ -101,7 +112,27 @@ int LifeStuffImpl::Initialise(const boost::filesystem::path& base_directory) {
                                         asio_service_.service());
   simulation_path_ = network_simulation_path;
 #else
-  remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path, node_);
+  int counter(0);
+  std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
+  while (counter++ < kRetryLimit) {
+    Sleep(bptime::milliseconds(100 + RandomUint32() % 1000));
+    client_controller_.reset(
+        new priv::process_management::ClientController(software_update_available_function));
+    if (client_controller_->BootstrapEndpoints(bootstrap_endpoints) && !bootstrap_endpoints.empty())
+      counter = kRetryLimit;
+    else
+      LOG(kWarning) << "Failure to initialise client controller. Try #" << counter;
+  }
+
+  if (bootstrap_endpoints.empty()) {
+    LOG(kWarning) << "Failure to initialise client controller. No bootstrap contacts.";
+    return kGeneralError;
+  }
+
+  remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path,
+                                        bootstrap_endpoints,
+                                        node_,
+                                        [&] (const int& index) { NetworkHealthSlot(index); });  // NOLINT (Dan)
 #endif
   if (!remote_chunk_store_) {
     LOG(kError) << "Could not initialise chunk store.";
@@ -134,6 +165,7 @@ int LifeStuffImpl::ConnectToSignals(
     const ShareRenamedFunction& share_renamed_function,
     const ShareChangedFunction& share_changed_function,
     const LifestuffCardUpdateFunction& lifestuff_card_update_function,
+    const NetworkHealthFunction& network_health_function,
     const ImmediateQuitRequiredFunction& immediate_quit_required_function) {
   if (state_ != kInitialised) {
     LOG(kError) << "Make sure that object is initialised";
@@ -221,6 +253,15 @@ int LifeStuffImpl::ConnectToSignals(
       user_storage_->ConnectToShareChangedSignal(share_changed_function);
   }
   if (lifestuff_card_update_function) {
+    slots_.lifestuff_card_update_function = lifestuff_card_update_function;
+    ++connects;
+    if (user_storage_)
+      public_id_->ConnectToLifestuffCardUpdatedSignal(lifestuff_card_update_function);
+  }
+  if (network_health_function) {
+    slots_.network_health_function = network_health_function;
+    ++connects;
+    network_health_signal_.connect(network_health_function);
       slots_.lifestuff_card_update_function = lifestuff_card_update_function;
       ++connects;
       if (public_id_)
@@ -246,21 +287,6 @@ int LifeStuffImpl::ConnectToSignals(
       ++connects;
       user_credentials_->ConnectToImmediateQuitRequiredSignal(immediate_quit_required_function);
     }
-  }
-  if (public_id_) {
-    public_id_->ConnectToContactDeletionReceivedSignal(
-        [&] (const std::string& own_public_id,
-             const std::string& contact_public_id,
-             const std::string& removal_message,
-             const std::string& timestamp) {
-          int result(RemoveContact(own_public_id,
-                                   contact_public_id,
-                                   removal_message,
-                                   timestamp,
-                                   false));
-          if (result != kSuccess)
-            LOG(kError) << "Failed to remove contact after receiving contact deletion signal!";
-        });
   }
 
   if (connects > 0) {
@@ -300,7 +326,7 @@ int LifeStuffImpl::Finalise() {
 int LifeStuffImpl::CreateUser(const std::string& keyword,
                               const std::string& pin,
                               const std::string& password,
-                              const fs::path& /*chunk_store*/) {
+                              const fs::path& chunk_store) {
   if (state_ != kConnected) {
     LOG(kError) << "Make sure that object is initialised and connected";
     return kGeneralError;
@@ -318,6 +344,20 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
     return result;
   }
 
+#ifdef LOCAL_TARGETS_ONLY
+  LOG(kInfo) << "The chunkstore path for the ficticious vault is " << chunk_store;
+#else
+  result = CreateVaultInLocalMachine(chunk_store);
+  if (result != kSuccess)  {
+    LOG(kError) << "Failed to create vault. No LifeStuff for you!";
+    return result;
+  }
+
+  routings_handler_ = std::make_shared<RoutingsHandler>(*remote_chunk_store_,
+                                                        session_,
+                                                        ValidatedMessageSignal());
+#endif
+
   boost::system::error_code error_code;
   fs::path mount_dir(GetHomeDir() / kAppHomeDirectory / session_.session_name());
   if (!fs::exists(mount_dir, error_code)) {
@@ -334,10 +374,6 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
     LOG(kError) << "Failed to mount";
     return kGeneralError;
   }
-  user_storage_->ConnectToShareRenamedSignal(
-      [this] (const std::string& old_share_name, const std::string& new_share_name) {
-        this->ShareRenameSlot(old_share_name, new_share_name);
-      });
 
   fs::path mount_path(user_storage_->mount_dir());
   fs::create_directories(mount_path / kMyStuff / kDownloadStuff, error_code);
@@ -351,11 +387,6 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
     LOG(kError) << "Failed creating Shared Stuff: " << error_code.message();
     user_storage_->UnMountDrive();
     return kGeneralError;
-  }
-  result = user_credentials_->SaveSession();
-  if (result != kSuccess) {
-    LOG(kWarning) << "Failed to save session.";
-    user_storage_->UnMountDrive();
   }
 
   state_ = kLoggedIn;
@@ -438,10 +469,6 @@ int LifeStuffImpl::LogIn(const std::string& keyword,
     LOG(kError) << "Failed to mount";
     return kGeneralError;
   }
-  user_storage_->ConnectToShareRenamedSignal(
-      [this] (const std::string& old_share_name, const std::string& new_share_name) {
-        this->ShareRenameSlot(old_share_name, new_share_name);
-      });
 
   state_ = kLoggedIn;
   if (anticipated_access_level == kFullAccess) {
@@ -2183,10 +2210,8 @@ void LifeStuffImpl::ConnectInternalElements() {
   message_handler_->ConnectToParseAndSaveDataMapSignal(
       [&] (const std::string& file_name,
            const std::string& serialised_data_map,
-           std::string* data_map_hash) {
-        return user_storage_->ParseAndSaveDataMap(file_name,
-                                                  serialised_data_map,
-                                                  data_map_hash);
+           std::string* data_map_hash)->bool {
+        return user_storage_->ParseAndSaveDataMap(file_name, serialised_data_map, data_map_hash);
       });
 
   message_handler_->ConnectToShareInvitationResponseSignal(
@@ -2199,23 +2224,22 @@ void LifeStuffImpl::ConnectInternalElements() {
       });
 
   message_handler_->ConnectToSavePrivateShareDataSignal(
-      [&] (const std::string& serialised_share_data,
-           const std::string& share_id) {
+      [&] (const std::string& serialised_share_data, const std::string& share_id)->bool {
         return user_storage_->SavePrivateShareData(serialised_share_data, share_id);
       });
 
   message_handler_->ConnectToDeletePrivateShareDataSignal(
-      [&] (const std::string& share_id) {
+      [&] (const std::string& share_id)->bool {
         return user_storage_->DeletePrivateShareData(share_id);
       });
 
   message_handler_->ConnectToPrivateShareUserLeavingSignal(
       [&] (const std::string&, const std::string& share_id, const std::string& user_id) {
-        return user_storage_->UserLeavingShare(share_id, user_id);
+        user_storage_->UserLeavingShare(share_id, user_id);
       });
 
   message_handler_->ConnectToSaveOpenShareDataSignal(
-      [&] (const std::string& serialised_share_data, const std::string& share_id) {
+      [&] (const std::string& serialised_share_data, const std::string& share_id)->bool {
         return user_storage_->SaveOpenShareData(serialised_share_data, share_id);
       });
 
@@ -2234,11 +2258,11 @@ void LifeStuffImpl::ConnectInternalElements() {
            const std::string* new_directory_id,
            const asymm::Keys* new_key_ring,
            int* access_right) {
-        return user_storage_->UpdateShare(share_id,
-                                          new_share_id,
-                                          new_directory_id,
-                                          new_key_ring,
-                                          access_right);
+        user_storage_->UpdateShare(share_id,
+                                   new_share_id,
+                                   new_directory_id,
+                                   new_key_ring,
+                                   access_right);
       });
 
   message_handler_->ConnectToPrivateMemberAccessLevelSignal(
@@ -2254,20 +2278,40 @@ void LifeStuffImpl::ConnectInternalElements() {
         MemberAccessChangeSlot(share_id, directory_id, new_share_id, key_ring, access_right);
       });
 
+  message_handler_->ConnectToPrivateShareDetailsSignal(
+      [&] (const std::string& share_id, fs::path* relative_path)->int {
+        return user_storage_->GetShareDetails(share_id,
+                                              relative_path,
+                                              nullptr,
+                                              nullptr,
+                                              nullptr);
+      });
+
   public_id_->ConnectToContactConfirmedSignal(
-      [&] (const std::string& own_public_id, const std::string& recipient_public_id,
+      [&] (const std::string& own_public_id,
+           const std::string& recipient_public_id,
            const std::string&) {
         message_handler_->InformConfirmedContactOnline(own_public_id, recipient_public_id);
       });
 
-  message_handler_->ConnectToPrivateShareDetailsSignal(
-      [&] (const std::string& share_id, fs::path* relative_path) {
-      return user_storage_->GetShareDetails(share_id,
-                                            relative_path,
-                                            nullptr,
-                                            nullptr,
-                                            nullptr);
+  public_id_->ConnectToContactDeletionReceivedSignal(
+      [&] (const std::string& own_public_id,
+           const std::string& contact_public_id,
+           const std::string& removal_message,
+           const std::string& timestamp) {
+        int result(RemoveContact(own_public_id,
+                                 contact_public_id,
+                                 removal_message,
+                                 timestamp,
+                                 false));
+        if (result != kSuccess)
+          LOG(kError) << "Failed to remove contact after receiving contact deletion signal!";
       });
+
+  user_storage_->ConnectToShareRenamedSignal([&] (const std::string& old_share_name,
+                                                  const std::string& new_share_name) {
+                                               ShareRenameSlot(old_share_name, new_share_name);
+                                             });
 }
 
 int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
@@ -2324,6 +2368,7 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
                             slots_.share_renamed_function,
                             slots_.share_changed_function,
                             slots_.lifestuff_card_update_function,
+                            slots_.network_health_function,
                             slots_.immediate_quit_required_function);
   return result;
 }
@@ -2451,6 +2496,41 @@ void LifeStuffImpl::MemberAccessChangeSlot(const std::string& share_id,
     }
   }
 }
+
+void LifeStuffImpl::NetworkHealthSlot(const int& index) {
+  network_health_signal_(index);
+}
+
+
+#ifndef LOCAL_TARGETS_ONLY
+int LifeStuffImpl::CreateVaultInLocalMachine(const fs::path& chunk_store) {
+  std::string account_name(session_.passport().SignaturePacketDetails(passport::kMaid,
+                                                                      true).identity);
+  asymm::Keys pmid_keys(session_.passport().SignaturePacketDetails(passport::kPmid, true));
+  if (account_name.empty() || pmid_keys.identity.empty()) {
+    LOG(kError) << "Failed to obtain credentials to start vault from session.";
+    return kVaultCreationFailure;
+  }
+
+  if (!client_controller_->StartVault(pmid_keys, account_name, chunk_store)) {
+    LOG(kError) << "Failed to create vault.";
+    return kVaultCreationFailure;
+  }
+
+  return kSuccess;
+}
+
+int LifeStuffImpl::EstablishMaidRoutingObject(
+    const std::vector<std::pair<std::string, uint16_t>>& bootstrap_endpoints) {  // NOLINT (Dan)
+  asymm::Keys maid(session_.passport().SignaturePacketDetails(passport::kMaid, true));
+  if (!routings_handler_->AddRoutingObject(maid, bootstrap_endpoints, maid.identity)) {
+    LOG(kError) << "Failed to adding MAID routing.";
+    return kGeneralError;
+  }
+
+  return kSuccess;
+}
+#endif
 
 }  // namespace lifestuff
 
