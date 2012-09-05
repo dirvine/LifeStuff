@@ -239,6 +239,7 @@ int LifeStuffImpl::ConnectToSignals(
                                                user_storage_->UnMountDrive();
                                                public_id_->ShutDown();
                                                message_handler_->StopCheckingForNewMessages();
+                                               remote_chunk_store_->WaitForCompletion();
                                              };
     user_credentials_->ConnectToImmediateQuitRequiredSignal(must_die);
     if (immediate_quit_required_function) {
