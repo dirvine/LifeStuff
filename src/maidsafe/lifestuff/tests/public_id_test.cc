@@ -336,7 +336,7 @@ class PublicIdTest : public testing::Test {
                 new_inbox_name(AppendableByAllName(new_inbox_keys.identity));
     std::shared_ptr<asymm::Keys> shared_keys(new asymm::Keys(new_inbox_keys));
 
-    int result(kPendingResult);
+    int result(priv::utilities::kPendingResult);
     std::function<void(bool)> callback = [&] (const bool& response) {  // NOLINT (Dan)
                                            priv::utilities::ChunkStoreOperationCallback(response,
                                                                                         &mutex,
@@ -350,8 +350,10 @@ class PublicIdTest : public testing::Test {
     {
       boost::mutex::scoped_lock lock(mutex);
       ASSERT_TRUE(cond_var.timed_wait(lock,
-                                      bptime::seconds(5),
-                                      [&result] ()->bool { return result != kPendingResult; }));  // NOLINT (Dan)
+                                      bptime::seconds(60),
+                                      [&result] ()->bool {
+                                        return result != priv::utilities::kPendingResult;
+                                      }));
     }
     ASSERT_EQ(kSuccess, result);
     inbox_name = new_inbox_keys.identity;
