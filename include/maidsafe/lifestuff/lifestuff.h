@@ -38,11 +38,10 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-enum DefConLevels {
-  kDefCon1 = 1,
-  kDefCon2,
-  kDefCon3
-};
+enum DefConLevels { kDefCon1 = 1, kDefCon2, kDefCon3 };
+enum ContactOrder { kAlphabetical, kPopular, kLastContacted };
+enum ContactPresence { kOffline, kOnline };
+enum LifeStuffState { kZeroth, kInitialised, kConnected, kLoggedIn };
 
 enum ContactStatus {
   kAll = 0x00,
@@ -53,24 +52,6 @@ enum ContactStatus {
   kBlocked = 0x10
 };
 
-enum ContactOrder {
-  kAlphabetical,
-  kPopular,
-  kLastContacted
-};
-
-enum ContactPresence {
-  kOffline,
-  kOnline
-};
-
-enum LifeStuffState {
-  kZeroth,
-  kInitialised,
-  kConnected,
-  kLoggedIn,
-  kLoggedInReadOnly
-};
 
 /// THIS ENUM MUST BE KEPT IN SYNC WITH THE ONE IN DRIVE'S CONFIG.H !!!
 enum PrivateShareRoles {
@@ -196,6 +177,9 @@ typedef std::function<void(std::string)> UpdateAvailableFunction;  // NOLINT (Da
 
 /// Network health
 typedef std::function<void(const int&)> NetworkHealthFunction;  // NOLINT (Dan)
+
+/// Quitting
+typedef std::function<void()> ImmediateQuitRequiredFunction;
 }  // namespace lifestuff
 
 }  // namespace maidsafe

@@ -41,6 +41,8 @@
 
 #include "maidsafe/passport/passport.h"
 
+#include "maidsafe/lifestuff/detail/account_locking.h"
+#include "maidsafe/lifestuff/detail/data_atlas_pb.h"
 #include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/utils.h"
 
@@ -53,138 +55,6 @@ namespace utils = maidsafe::priv::utilities;
 namespace maidsafe {
 
 namespace lifestuff {
-
-namespace account_locking {
-
-const std::string kLidAppendix("lidl");
-
-std::string LidName(const std::string& keyword, const std::string& pin) {
-  return crypto::Hash<crypto::SHA512>(crypto::Hash<crypto::SHA512>(keyword) +
-                                      crypto::Hash<crypto::SHA512>(pin) +
-                                      kLidAppendix);
-}
-
-std::string EncryptAccountStatus(const std::string& keyword,
-                                 const std::string& pin,
-                                 const std::string& password,
-                                 const std::string& account_status) {
-  if (account_status.empty()) {
-    LOG(kError) << "Empty account status.";
-    return "";
-  }
-
-  if (keyword.empty() || pin.empty() || password.empty()) {
-    LOG(kError) << "One or more user credentials is empty.";
-    return "";
-  }
-
-  std::string salt(crypto::Hash<crypto::SHA512>(pin + keyword));
-  uint32_t pin_num;
-  try {
-    pin_num = boost::lexical_cast<uint32_t>(pin);
-  }
-  catch(boost::bad_lexical_cast& e) {
-    LOG(kError) << "Bad pin:" << e.what();
-    return "";
-  }
-
-  std::string secure_password;
-  int result = crypto::SecurePassword(password, salt, pin_num, &secure_password);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to create secure password.  Result: " << result;
-    return "";
-  }
-
-  std::string secure_key(secure_password.substr(0, crypto::AES256_KeySize));
-  std::string secure_iv(secure_password.substr(crypto::AES256_KeySize, crypto::AES256_IVSize));
-
-  std::string encrypted_account_status(crypto::SymmEncrypt(account_status, secure_key, secure_iv));
-  if (encrypted_account_status.empty()) {
-    LOG(kError) << "Failed to encrypt given account status.";
-    return "";
-  }
-  return encrypted_account_status;
-}
-
-std::string DecryptAccountStatus(const std::string& keyword,
-                                 const std::string& pin,
-                                 const std::string& password,
-                                 const std::string& encrypted_account_status) {
-  if (encrypted_account_status.empty()) {
-    LOG(kError) << "Empty encrypted account status.";
-    return "";
-  }
-
-  if (keyword.empty() || pin.empty() || password.empty()) {
-    LOG(kError) << "One or more user credentials is empty.";
-    return "";
-  }
-
-  std::string salt(crypto::Hash<crypto::SHA512>(pin + keyword));
-  uint32_t pin_num;
-  try {
-    pin_num = boost::lexical_cast<uint32_t>(pin);
-  }
-  catch(boost::bad_lexical_cast& e) {
-    LOG(kError) << "Bad pin:" << e.what();
-    return "";
-  }
-
-  std::string secure_password;
-  int result = crypto::SecurePassword(password, salt, pin_num, &secure_password);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to create secure password.  Result: " << result;
-    return "";
-  }
-
-  std::string secure_key(secure_password.substr(0, crypto::AES256_KeySize));
-  std::string secure_iv(secure_password.substr(crypto::AES256_KeySize, crypto::AES256_IVSize));
-
-  std::string account_status_(crypto::SymmDecrypt(encrypted_account_status, secure_key, secure_iv));
-  if (account_status_.empty()) {
-    LOG(kError) << "DecryptAccountStatus: Failed decryption.";
-    return "";
-  }
-
-  return account_status_;
-}
-
-int ProcessAccountStatus(const std::string& keyword,
-                         const std::string& pin,
-                         const std::string& password,
-                         const std::string& lid_packet) {
-  if (lid_packet.empty()) {
-    LOG(kInfo) << "LID not found.";
-    return kUserDoesntExist;
-  }
-
-  pca::SignedData packet;
-  if (!packet.ParseFromString(lid_packet) || packet.data().empty()) {
-    LOG(kError) << "LID packet corrupted: Failed parse.";
-    return kCorruptedLidPacket;
-  }
-
-  std::string decrypted_account_status(DecryptAccountStatus(keyword, pin, password, packet.data()));
-  if (decrypted_account_status.empty()) {
-    LOG(kError) << "LID packet corrupted: Failed decryption.";
-    return kCorruptedLidPacket;
-  }
-
-  try {
-    int account_status(boost::lexical_cast<int>(decrypted_account_status));
-    if (account_status >= 0) {
-      LOG(kInfo) << "LID packet implies account logged in elsewhere.";
-      return kAccountAlreadyLoggedIn;
-    }
-  }
-  catch(const std::exception& e) {
-    LOG(kError) << e.what();
-    return kCorruptedLidPacket;
-  }
-  return kSuccess;
-}
-
-}  // namespace account_locking
 
 namespace {
 
@@ -225,7 +95,8 @@ UserCredentialsImpl::UserCredentialsImpl(pcs::RemoteChunkStore& remote_chunk_sto
       session_saver_timer_(asio_service_),
       session_saver_timer_active_(false),
       session_saved_once_(false),
-      session_saver_interval_(kSecondsInterval * 12) {}
+      session_saver_interval_(kSecondsInterval * 3),
+      immediate_quit_required_signal_() {}
 
 UserCredentialsImpl::~UserCredentialsImpl() {}
 
@@ -234,14 +105,18 @@ int UserCredentialsImpl::GetUserInfo(const std::string& keyword,
                                      const std::string& password) {
   boost::mutex::scoped_lock loch_a_phuill(single_threaded_class_mutex_);
 
-  // Check LID
   std::string lid_packet(remote_chunk_store_.Get(pca::ApplyTypeToName(lid::LidName(keyword, pin),
                                                                       pca::kModifiableByOwner)));
-
-  int lid_result(lid::ProcessAccountStatus(keyword, pin, password, lid_packet));
-  if (lid_result != kSuccess && lid_result != kAccountAlreadyLoggedIn) {
-    LOG(kError) << "Account can't be logged in: " << lid_result;
-    return lid_result;
+  LockingPacket locking_packet;
+  int lid_result(lid::ProcessAccountStatus(keyword, pin, password, lid_packet, locking_packet));
+  bool lid_corrupted(false);
+  if (lid_result != kSuccess) {
+    if (lid_result == kCorruptedLidPacket) {
+      lid_corrupted = true;
+    } else {
+      LOG(kError) << "Couldn't get or process LID. Account can't be logged in: " << lid_result;
+      return lid_result;
+    }
   }
 
   // Obtain MID, TMID
@@ -284,57 +159,85 @@ int UserCredentialsImpl::GetUserInfo(const std::string& keyword,
     return result;
   }
 
-  if (lid_result == kSuccess) {
-    // Recheck LID & lock it.
-    lid_result = GetAndLockLid(keyword, pin, password);
-    if (lid_result != kSuccess) {
-      LOG(kError) << "Failed to lock LID.";
-      return lid_result;
+  bool need_to_wait(false);
+  result = GetAndLockLid(keyword, pin, password, lid_packet, locking_packet);
+  if (result == kCorruptedLidPacket && lid_corrupted == true) {
+    LOG(kInfo) << "Trying to fix corrupted packet...";
+    session_.set_keyword(keyword);
+    session_.set_pin(pin);
+    session_.set_password(password);
+    session_.set_session_access_level(kFullAccess);
+    if (!session_.set_session_name()) {
+      LOG(kError) << "Failed to set session.";
+      return kSessionFailure;
     }
-  }
+    locking_packet = lid::CreateLockingPacket(session_.session_name());
+  } else if (result != kSuccess) {
+    LOG(kError) << "Failed to GetAndLock LID.";
+    return result;
+  } else {
+    session_.set_keyword(keyword);
+    session_.set_pin(pin);
+    session_.set_password(password);
+    session_.set_session_access_level(kFullAccess);
+    if (!session_.set_session_name()) {
+      LOG(kError) << "Failed to set session.";
+      return kSessionFailure;
+    }
 
-  session_.set_keyword(keyword);
-  session_.set_pin(pin);
-  session_.set_password(password);
-  if (!session_.set_session_name()) {
-    LOG(kError) << "Failed to set session.";
-    return kSessionFailure;
-  }
-
-  if (lid_result == kSuccess) {
-    result = ModifyLid(keyword, pin, password, true);
-    if (result != kSuccess) {
-      LOG(kError) << "Failed to modify LID.";
+    int i(0);
+    result = kGeneralError;
+    while (i++ < 10 && result != kSuccess) {
+      result = lid::CheckLockingPacketForIdentifier(locking_packet, session_.session_name());
+      if (result != kSuccess) {
+        if (!session_.set_session_name()) {
+          LOG(kError) << "Failed to set session name.";
+          return kSessionFailure;
+        }
+      }
+    }
+    result = lid::AddItemToLockingPacket(locking_packet, session_.session_name(), true);
+    if (result == kLidIdentifierAlreadyInUse) {
+      LOG(kError) << "Failed to add item to locking packet";
       return result;
     }
+    if (result == kLidFullAccessUnavailable)
+      need_to_wait = true;
+    lid::OverthrowInstancesUsingLockingPacket(locking_packet, session_.session_name());
   }
 
-  if (lid_result == kSuccess) {
-    session_saved_once_ = false;
-    StartSessionSaver();
+  result = ModifyLid(keyword, pin, password, locking_packet);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to modify LID.";
+    return result;
   }
 
-  if (lid_result == kSuccess)
-    return kSuccess;
-  else
-    return kReadOnlyRestrictedSuccess;
+  if (need_to_wait) {
+    LOG(kInfo) << "Need to wait before logging in.";
+    Sleep(bptime::seconds(15));
+  }
+
+  session_saved_once_ = false;
+  StartSessionSaver();
+
+  return kSuccess;
 }
 
 int UserCredentialsImpl::GetAndLockLid(const std::string& keyword,
                                        const std::string& pin,
-                                       const std::string& password) {
+                                       const std::string& password,
+                                       std::string& lid_packet,
+                                       LockingPacket& locking_packet) {
   std::string lid_name(pca::ApplyTypeToName(lid::LidName(keyword, pin), pca::kModifiableByOwner));
 
-  std::string lid_packet;
   std::shared_ptr<asymm::Keys> keys(
       new asymm::Keys(passport_.SignaturePacketDetails(passport::kAnmid, true)));
   int get_lock_result(remote_chunk_store_.GetAndLock(lid_name, "", keys, &lid_packet));
   if (get_lock_result != kSuccess) {
     LOG(kError) << "Failed to GetAndLock LID: " << get_lock_result;
     return get_lock_result;
-  }
-
-  return lid::ProcessAccountStatus(keyword, pin, password, lid_packet);
+  };
+  return lid::ProcessAccountStatus(keyword, pin, password, lid_packet, locking_packet);
 }
 
 void UserCredentialsImpl::StartSessionSaver() {
@@ -459,18 +362,20 @@ int UserCredentialsImpl::CreateUser(const std::string& keyword,
     return kSessionFailure;
   }
 
-  result = StoreLid(keyword, pin, password, true);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to create LID.";
-    return result;
-  }
-
   session_.set_keyword(keyword);
   session_.set_pin(pin);
   session_.set_password(password);
+  session_.set_session_access_level(kFullAccess);
   if (!session_.set_session_name()) {
     LOG(kError) << "Failed to set session.";
     return kSessionFailure;
+  }
+
+  LockingPacket locking_packet(lid::CreateLockingPacket(session_.session_name()));
+  result = StoreLid(keyword, pin, password, locking_packet);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to create LID.";
+    return result;
   }
 
   StartSessionSaver();
@@ -785,18 +690,10 @@ void UserCredentialsImpl::StoreIdentity(OperationResults& results,
 int UserCredentialsImpl::StoreLid(const std::string keyword,
                                   const std::string pin,
                                   const std::string password,
-                                  bool online) {
+                                  const LockingPacket& locking_packet) {
   std::string packet_name(pca::ApplyTypeToName(lid::LidName(keyword, pin),
                                                pca::kModifiableByOwner));
-  int status(RandomInt32());
-  if (online) {
-    while (status < 0)
-      status = RandomInt32();
-  } else {
-    while (status >= 0)
-      status = RandomInt32();
-  }
-  std::string account_status(boost::lexical_cast<std::string>(status));
+  std::string account_status(locking_packet.SerializeAsString());
   std::string encrypted_account_status(lid::EncryptAccountStatus(keyword, pin, password,
                                                                  account_status));
 
@@ -840,12 +737,6 @@ int UserCredentialsImpl::SaveSession(bool log_out) {
   if (log_out) {
     session_saver_timer_active_ = false;
     session_saver_timer_.cancel();
-
-    int result(ModifyLid(session_.keyword(), session_.pin(), session_.password(), false));
-    if (result != kSuccess) {
-      LOG(kError) << "Failed to modify LID.";
-      return result;
-    }
 
     if (!session_.changed() && session_saved_once_) {
       LOG(kError) << "Session has not changed.";
@@ -898,6 +789,110 @@ int UserCredentialsImpl::SaveSession(bool log_out) {
   return kSuccess;
 }
 
+int UserCredentialsImpl::AssessAndUpdateLid(bool log_out) {
+  std::string lid_packet;
+  LockingPacket locking_packet;
+  int result(GetAndLockLid(session_.keyword(),
+                           session_.pin(),
+                           session_.password(),
+                           lid_packet,
+                           locking_packet));
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to get and lock LID.";
+    return result;
+  }
+
+  if (log_out) {
+    result = lid::RemoveItemFromLockingPacket(locking_packet, session_.session_name());
+    if (result != kSuccess) {
+      LOG(kError) << "Failed to remove item from locking packet.";
+      return result;
+    }
+  } else {
+    int index(0);
+    while (index < locking_packet.locking_item_size()) {
+      if (locking_packet.locking_item(index).identifier() == session_.session_name())
+        break;
+      else
+        ++index;
+    }
+    if (session_.session_access_level() == kFullAccess) {
+      if (!locking_packet.locking_item(index).full_access()) {
+        LOG(kInfo) << "Quit - full access in LID has been changed to false!";
+        immediate_quit_required_signal_();
+        session_saver_timer_active_ = false;
+        session_saver_timer_.cancel();
+        session_.set_changed(false);
+        session_saved_once_ = true;
+        session_.set_session_access_level(kMustDie);
+        return kMustDieFailure;
+      }
+    }
+    if (session_.session_access_level() == kReadOnly) {
+      if (locking_packet.locking_item(index).full_access()) {
+        LOG(kError) << "This should never happen!" <<
+                       " session_.state() indicates read only but LID indicates full access!";
+        return kGeneralError;
+      }
+    }
+
+    bptime::ptime current_time = bptime::microsec_clock::universal_time();
+    bptime::ptime entry_time;
+    bptime::time_duration time_difference;
+    LockingItem locking_item;
+    std::vector<std::string> identifiers_to_remove;
+    for (int i = 0; i < locking_packet.locking_item_size(); ++i) {
+      locking_item = locking_packet.locking_item(i);
+      if (locking_item.identifier() != session_.session_name()) {
+        entry_time = bptime::from_iso_string(locking_item.timestamp());
+        if (entry_time > current_time) {
+          LOG(kError) << "Entry from LID is more recent than current time!";
+        } else {
+          time_difference = current_time - entry_time;
+          // LOG(kInfo) << "This entry's age is " << time_difference.hours() << " hour(s) and " <<
+          // time_difference.minutes() << " mins.";
+          if (session_.session_access_level() == kReadOnly &&
+              (time_difference.hours() >= 1 || time_difference.minutes() >= 5) &&
+              locking_item.full_access()) {
+            LOG(kInfo) << "Found outdated full access item - can take full access!";
+            // TODO(Alison) - get full access:
+            //              - unmount/remount drive; change state; notify GUI?
+            //              - change own access level in LID
+          }
+          if (time_difference.hours() >= 12) {
+            // LOG(kInfo) << "This entry is TOO OLD and we should get rid of it";
+            identifiers_to_remove.push_back(locking_item.identifier());
+          }
+        }
+      } else {
+        LOG(kInfo) << "Found own entry";
+      }
+    }
+
+    // Clear out old entries
+    if (!identifiers_to_remove.empty()) {
+      result = lid::RemoveItemsFromLockingPacket(locking_packet, identifiers_to_remove);
+      if (result != kSuccess) {
+        LOG(kInfo) << "Failed to remove some items.";
+      }
+    }
+
+    // Update timestamp of own entry
+    result = lid::UpdateTimestampInLockingPacket(locking_packet, session_.session_name());
+    if (result != kSuccess) {
+      LOG(kError) << "Failed to update timestamp locking packet.";
+      return result;
+    }
+  }
+
+  result = ModifyLid(session_.keyword(), session_.pin(), session_.password(), locking_packet);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to modify LID.";
+    return result;
+  }
+  return kSuccess;
+}
+
 void UserCredentialsImpl::ModifyMid(OperationResults& results) {
   ModifyIdentity(results, passport::kMid, passport::kAnmid, 0);
 }
@@ -943,19 +938,12 @@ void UserCredentialsImpl::ModifyIdentity(OperationResults& results,
 int UserCredentialsImpl::ModifyLid(const std::string keyword,
                                    const std::string pin,
                                    const std::string password,
-                                   bool online) {
+                                   const LockingPacket& locking_packet) {
+  LOG(kInfo) << "UserCredentialsImpl::ModifyLid";
   std::string packet_name(lid::LidName(keyword, pin));
   packet_name = pca::ApplyTypeToName(packet_name, pca::kModifiableByOwner);
-  int status(RandomInt32());
-  if (online) {
-    if (status < 0)
-      status = 0 - status;
-  } else {
-    if (status >= 0) {
-      status = 0 - status;
-    }
-  }
-  std::string account_status(boost::lexical_cast<std::string>(status));
+
+  std::string account_status(locking_packet.SerializeAsString());
   std::string encrypted_account_status(lid::EncryptAccountStatus(keyword, pin, password,
                                                                  account_status));
 
@@ -1009,6 +997,7 @@ int UserCredentialsImpl::ChangeUsernamePin(const std::string& new_keyword,
                                            const std::string& new_pin) {
   BOOST_ASSERT(!new_keyword.empty());
   BOOST_ASSERT(!new_pin.empty());
+  // TODO(Alison) - check LID and fail if any other instances are logged in
 
   std::string serialised_data_atlas;
   int result(SerialiseAndSetIdentity(new_keyword, new_pin, "", &serialised_data_atlas));
@@ -1023,7 +1012,10 @@ int UserCredentialsImpl::ChangeUsernamePin(const std::string& new_keyword,
     return result;
   }
 
-  result = StoreLid(new_keyword, new_pin, session_.password(), true);
+  result = StoreLid(new_keyword,
+                    new_pin,
+                    session_.password(),
+                    lid::CreateLockingPacket(session_.session_name()));
   if (result != kSuccess) {
     LOG(kError) << "Failed to store new LID.";
     return result;
@@ -1132,6 +1124,7 @@ int UserCredentialsImpl::DeleteLid(const std::string& keyword,
                                    const std::string& pin) {
   std::string packet_name(pca::ApplyTypeToName(lid::LidName(keyword, pin),
                                                pca::kModifiableByOwner));
+  // TODO(Alison) - check LID and fail if any other instances are logged in
   std::shared_ptr<asymm::Keys> signer(new asymm::Keys(
                                           passport_.SignaturePacketDetails(passport::kAnmid,
                                                                            true)));
@@ -1157,6 +1150,7 @@ int UserCredentialsImpl::DeleteLid(const std::string& keyword,
 
 int UserCredentialsImpl::ChangePassword(const std::string& new_password) {
   boost::mutex::scoped_lock loch_a_phuill(single_threaded_class_mutex_);
+  // TODO(Alison) - check LID and fail if any other instances are logged in
 
   std::string serialised_data_atlas;
   int result(SerialiseAndSetIdentity("", "", new_password, &serialised_data_atlas));
@@ -1181,6 +1175,23 @@ int UserCredentialsImpl::ChangePassword(const std::string& new_password) {
   if (result != kSuccess) {
     LOG(kError) << "Failed to set new identity packets: " << result;
     return kSetIdentityPacketsFailure;
+  }
+
+  std::string lid_packet;
+  LockingPacket locking_packet;
+  result = GetAndLockLid(session_.keyword(),
+                         session_.pin(),
+                         session_.password(),
+                         lid_packet,
+                         locking_packet);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to lock LID.";
+    return result;
+  }
+  result = ModifyLid(session_.keyword(), session_.pin(), new_password, locking_packet);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to modify LID.";
+    return result;
   }
 
   session_.set_password(new_password);
@@ -1278,7 +1289,25 @@ int UserCredentialsImpl::SerialiseAndSetIdentity(const std::string& keyword,
 }
 
 int UserCredentialsImpl::DeleteUserCredentials() {
-  int result(DeleteOldIdentityPackets());
+  std::string lid_packet;
+  LockingPacket locking_packet;
+  int lid_result(GetAndLockLid(session_.keyword(),
+                               session_.pin(),
+                               session_.password(),
+                               lid_packet,
+                               locking_packet));
+  if (lid_result != kSuccess) {
+    LOG(kError) << "Failed to GetAndLock LID.";
+    return lid_result;
+  }
+
+  int result(lid::CheckLockingPacketForOthersLoggedIn(locking_packet, session_.session_name()));
+  if (result != kSuccess) {
+    LOG(kError) << "Can't delete locking packet because of LID contents: " << result;
+    return result;
+  }
+
+  result = DeleteOldIdentityPackets();
   if (result != kSuccess) {
     LOG(kError) << "Failed to delete identity packets.";
     return result;
@@ -1434,13 +1463,30 @@ void UserCredentialsImpl::SessionSaver(const bptime::seconds& interval,
     return;
   }
 
-  int result(SaveSession(false));
-  LOG(kInfo) << "Session saver result: " << result;
+  bool lid_success(true);
+  int result(AssessAndUpdateLid(false));
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to update LID: " << result << " - won't SaveSession.";
+    lid_success = false;
+  } else {
+    if (session_.session_access_level() == kFullAccess) {
+      result = SaveSession(false);
+      LOG(kInfo) << "Session saver result: " << result;
+    }
+  }
 
-  session_saver_timer_.expires_from_now(bptime::seconds(interval));
+  if (lid_success)
+    session_saver_timer_.expires_from_now(bptime::seconds(interval));
+  else
+    session_saver_timer_.expires_from_now(interval + bptime::seconds(5));
   session_saver_timer_.async_wait([=] (const boost::system::error_code& error_code) {
                                     this->SessionSaver(bptime::seconds(interval), error_code);
                                   });
+}
+
+bs2::connection UserCredentialsImpl::ConnectToImmediateQuitRequiredSignal(
+    const ImmediateQuitRequiredFunction& immediate_quit_required_slot) {
+  return immediate_quit_required_signal_.connect(immediate_quit_required_slot);
 }
 
 }  // namespace lifestuff

@@ -471,7 +471,8 @@ int InitialiseAndConnect(LifeStuff& test_elements,
                                     timestamp,
                                     &testing_variables.social_info_map_changed);
                 },
-                NetworkHealthFunction());
+                NetworkHealthFunction(),
+                ImmediateQuitRequiredFunction());
   return result;
 }
 
@@ -902,7 +903,8 @@ void OneUserApiTest::SetUp() {
                                             ShareRenamedFunction(),
                                             ShareChangedFunction(),
                                             LifestuffCardUpdateFunction(),
-                                            NetworkHealthFunction()));
+                                            NetworkHealthFunction(),
+                                            ImmediateQuitRequiredFunction()));
   EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_));
 }
 
@@ -938,7 +940,8 @@ void TwoInstancesApiTest::SetUp() {
                                             ShareRenamedFunction(),
                                             ShareChangedFunction(),
                                             LifestuffCardUpdateFunction(),
-                                            NetworkHealthFunction()));
+                                            NetworkHealthFunction(),
+                                            ImmediateQuitRequiredFunction()));
   EXPECT_EQ(kSuccess,
             test_elements_2_.ConnectToSignals(ChatFunction(),
                                             FileTransferFunction(),
@@ -963,7 +966,8 @@ void TwoInstancesApiTest::SetUp() {
                                             ShareRenamedFunction(),
                                             ShareChangedFunction(),
                                             LifestuffCardUpdateFunction(),
-                                            NetworkHealthFunction()));
+                                            NetworkHealthFunction(),
+                                            ImmediateQuitRequiredFunction()));
 }
 
 void TwoInstancesApiTest::TearDown() {

@@ -30,10 +30,12 @@
 #include "boost/asio/deadline_timer.hpp"
 #include "boost/asio/io_service.hpp"
 #include "boost/thread/mutex.hpp"
+#include "boost/signals2.hpp"
 
 #include "maidsafe/common/rsa.h"
 
 
+#include "maidsafe/lifestuff/detail/data_atlas_pb.h"
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
 
@@ -44,33 +46,12 @@ namespace chunk_store {
 class RemoteChunkStore;
 }  // namespace chunk_store
 }  // namespace priv
+namespace bs2 = boost::signals2;
 namespace pcs = maidsafe::priv::chunk_store;
 
 namespace passport { class Passport; }
 
 namespace lifestuff {
-
-namespace account_locking {
-
-std::string LidName(const std::string& keyword, const std::string& pin);
-
-std::string EncryptAccountStatus(const std::string& keyword,
-                                 const std::string& pin,
-                                 const std::string& password,
-                                 const std::string& account_status);
-
-std::string DecryptAccountStatus(const std::string& keyword,
-                                 const std::string& pin,
-                                 const std::string& password,
-                                 const std::string& encrypted_account_status);
-
-int ProcessAccountStatus(const std::string& keyword,
-                         const std::string& pin,
-                         const std::string& password,
-                         const std::string& lid_packet);
-
-}  // namespace account_locking
-
 
 class Session;
 struct OperationResults;
@@ -83,6 +64,9 @@ struct OperationResults;
 
 class UserCredentialsImpl {
  public:
+  typedef bs2::signal<void()> ImmediateQuitRequiredSignal;
+  typedef std::shared_ptr<ImmediateQuitRequiredSignal> ImmediateQuitRequiredSignalPtr;
+
   UserCredentialsImpl(pcs::RemoteChunkStore& remote_chunk_store,
                       Session& session,
                       boost::asio::io_service& service);
@@ -93,12 +77,17 @@ class UserCredentialsImpl {
 
   int SaveSession(bool log_out);
 
+  int AssessAndUpdateLid(bool log_out);
+
   int ChangePin(const std::string& new_pin);
   int ChangeKeyword(const std::string new_keyword);
   int ChangeUsernamePin(const std::string& new_username, const std::string& new_pin);
   int ChangePassword(const std::string& new_password);
 
   int DeleteUserCredentials();
+
+  bs2::connection ConnectToImmediateQuitRequiredSignal(
+      const ImmediateQuitRequiredFunction& immediate_quit_required_slot);
 
  private:
   pcs::RemoteChunkStore& remote_chunk_store_;
@@ -114,7 +103,9 @@ class UserCredentialsImpl {
 
   int GetAndLockLid(const std::string& keyword,
                     const std::string& pin,
-                    const std::string& password);
+                    const std::string& password,
+                    std::string& lid_packet,
+                    LockingPacket& locking_packet);
   void GetIdAndTemporaryId(const std::string& username,
                            const std::string& pin,
                            const std::string& password,
@@ -154,7 +145,7 @@ class UserCredentialsImpl {
   int StoreLid(const std::string keyword,
                const std::string pin,
                const std::string password,
-               bool online);
+               const LockingPacket& locking_packet);
 
   void ModifyMid(OperationResults& results);
   void ModifySmid(OperationResults& results);
@@ -165,7 +156,7 @@ class UserCredentialsImpl {
   int ModifyLid(const std::string keyword,
                 const std::string pin,
                 const std::string password,
-                bool online);
+                const LockingPacket& locking_packet);
 
   int DeleteOldIdentityPackets();
   void DeleteMid(OperationResults& results);
@@ -200,6 +191,8 @@ class UserCredentialsImpl {
 
   void SessionSaver(const boost::posix_time::seconds& interval,
                     const boost::system::error_code& error_code);
+
+  ImmediateQuitRequiredSignal immediate_quit_required_signal_;
 };
 
 }  // namespace lifestuff

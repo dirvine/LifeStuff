@@ -44,6 +44,7 @@ enum ReturnCode {
   kVaultCreationFailure = -200009,
   kReadOnlyRestrictedSuccess = -200010,
   kReadOnlyFailure = -200011,
+  kMustDieFailure = -200012,
 
   // Authentication
   kAuthenticationError = -201001,
@@ -111,7 +112,12 @@ enum ReturnCode {
   kNoShareTarget = -208001,
   kOwnerTryingToLeave = -208002,
   kNoKeyForUpgrade = -208003,
-  kInvalidKeyringForOpenShare = -208004
+  kInvalidKeyringForOpenShare = -208004,
+
+  // Other instances being logged in (LID)
+  kLidIdentifierAlreadyInUse = -209001,
+  kLidFullAccessUnavailable = -209002,
+  kLidIdentifierNotFound = -209003
 };
 
 }  // namespace lifestuff
