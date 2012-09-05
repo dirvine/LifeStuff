@@ -187,7 +187,7 @@ int MessageHandler::Send(const InboxItem& inbox_item) {
   // Store encrypted MMID at recipient's MPID's name
   boost::mutex mutex;
   boost::condition_variable cond_var;
-  result = kPendingResult;
+  result = priv::utilities::kPendingResult;
 
   std::string inbox_id(AppendableByAllType(recipient_contact.inbox_name));
   VoidFunctionOneBool callback([&] (const bool& response) {
@@ -205,7 +205,7 @@ int MessageHandler::Send(const InboxItem& inbox_item) {
     boost::mutex::scoped_lock lock(mutex);
     if (!cond_var.timed_wait(lock,
                              bptime::seconds(kSecondsInterval),
-                             [&result] { return result != kPendingResult; })) {  // NOLINT (Dan)
+                             [&result] { return result != priv::utilities::kPendingResult; })) {  // NOLINT (Dan)
       LOG(kError) << "Timed out storing packet.";
       return kPublicIdTimeout;
     }

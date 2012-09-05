@@ -35,7 +35,7 @@ enum ReturnCode {
   kSuccess = 0,
   kGeneralError = -200001,
   kGeneralException = -200002,
-  kPendingResult = -200003,
+  //kPendingResult = -200003,
   kGetPublicKeyFailure = -200004,
   kGetMpidFailure = -200005,
   kInvalidPublicKey = -200006,

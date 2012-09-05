@@ -296,7 +296,7 @@ int UserStorage::CreateShare(const std::string& sender_public_id,
   boost::mutex mutex;
   boost::condition_variable cond_var;
   std::vector<int> results;
-  results.push_back(kPendingResult);
+  results.push_back(priv::utilities::kPendingResult);
 
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
   VoidFunctionOneBool callback([&] (const bool& response) {
@@ -391,7 +391,7 @@ int UserStorage::CreateOpenShare(const std::string& sender_public_id,
   boost::mutex mutex;
   boost::condition_variable cond_var;
   std::vector<int> results;
-  results.push_back(kPendingResult);
+  results.push_back(priv::utilities::kPendingResult);
 
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
   VoidFunctionOneBool callback([&] (const bool& response) {
@@ -515,7 +515,7 @@ int UserStorage::StopShare(const std::string& sender_public_id,
   boost::mutex mutex;
   boost::condition_variable cond_var;
   std::vector<int> results;
-  results.push_back(kPendingResult);
+  results.push_back(priv::utilities::kPendingResult);
 
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
 
@@ -817,7 +817,7 @@ int UserStorage::MoveShare(const std::string& sender_public_id,
   boost::mutex mutex;
   boost::condition_variable cond_var;
   std::vector<int> results;
-  results.push_back(kPendingResult);
+  results.push_back(priv::utilities::kPendingResult);
 
   std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
   VoidFunctionOneBool callback([&] (const bool& response) {
@@ -859,7 +859,7 @@ int UserStorage::MoveShare(const std::string& sender_public_id,
   }
 
   results.clear();
-  results.push_back(kPendingResult);
+  results.push_back(priv::utilities::kPendingResult);
 
   std::shared_ptr<asymm::Keys> old_key_shared(new asymm::Keys(old_key_ring));
   packet_id = ComposeSignaturePacketName(old_key_ring.identity);
