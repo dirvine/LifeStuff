@@ -32,6 +32,7 @@
 #include "boost/filesystem/path.hpp"
 
 #include "maidsafe/common/asio_service.h"
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
@@ -74,7 +75,8 @@ struct Slots {
         open_share_invitation_function(),
         share_renamed_function(),
         share_changed_function(),
-        lifestuff_card_update_function() {}
+        lifestuff_card_update_function(),
+        immediate_quit_required_function() {}
   ChatFunction chat_slot;
   FileTransferFunction file_slot;
   NewContactFunction new_contact_slot;
@@ -89,6 +91,7 @@ struct Slots {
   ShareRenamedFunction share_renamed_function;
   ShareChangedFunction share_changed_function;
   LifestuffCardUpdateFunction lifestuff_card_update_function;
+  ImmediateQuitRequiredFunction immediate_quit_required_function;
 };
 
 class LifeStuffImpl {
@@ -111,7 +114,8 @@ class LifeStuffImpl {
                        const OpenShareInvitationFunction& open_share_invitation_function,
                        const ShareRenamedFunction& share_renamed_function,
                        const ShareChangedFunction& share_changed_function,
-                       const LifestuffCardUpdateFunction& lifestuff_card_update_function);
+                       const LifestuffCardUpdateFunction& lifestuff_card_update_function,
+                       const ImmediateQuitRequiredFunction& immediate_quit_required_function);
   int Finalise();
 
   /// Credential operations
@@ -265,6 +269,7 @@ class LifeStuffImpl {
   std::shared_ptr<PublicId> public_id_;
   std::shared_ptr<MessageHandler> message_handler_;
   Slots slots_;
+  LifeStuffState state_;
 
   // Session saving control
   boost::mutex save_session_mutex_;
@@ -272,6 +277,8 @@ class LifeStuffImpl {
 
   void ConnectInternalElements();
   int SetValidPmidAndInitialisePublicComponents();
+  int CheckStateAndReadOnlyAccess() const;
+  int CheckStateAndFullAccess() const;
   int PreContactChecksFullAccess(const std::string& my_public_id);
   int PreContactChecksReadOnly(const std::string& my_public_id);
   void ShareRenameSlot(const std::string& old_share_name,

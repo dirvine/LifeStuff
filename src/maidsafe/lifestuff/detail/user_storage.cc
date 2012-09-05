@@ -693,13 +693,24 @@ int UserStorage::OpenShareInvitation(const std::string& sender_public_id,
                                      const fs::path& absolute_path,
                                      const StringIntMap& contacts,
                                      StringIntMap* contacts_results) {
-  int result(0);
   fs::path relative_path(drive::RelativePath(mount_dir(), absolute_path)),
            share_name;
+  int result(drive_in_user_space_->AddShareUsers(relative_path,
+                                                 contacts,
+                                                 false));
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to add users to share: " << absolute_path.string();
+    return result;
+  }
   std::string share_id, directory_id;
   asymm::Keys key_ring;
-  result = GetShareDetails(relative_path, &share_name, &key_ring, &share_id,
-                           &directory_id, nullptr, nullptr);
+  result = GetShareDetails(relative_path,
+                           &share_name,
+                           &key_ring,
+                           &share_id,
+                           &directory_id,
+                           nullptr,
+                           nullptr);
   if (result != kSuccess) {
     LOG(kError) << "Failed to get share details: " << absolute_path.string();
     return result;
