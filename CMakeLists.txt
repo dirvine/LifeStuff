@@ -151,10 +151,7 @@ if(NOT ${LOCAL_TARGETS_ONLY})
   ms_add_executable(TESTlifestuff_api "Tests/LifeStuff" ${API_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
   target_link_libraries(maidsafe_lifestuff maidsafe_lifestuff_detail maidsafe_pd maidsafe_routing)
   set(NetworkTargets TESTlifestuff_public_id TESTlifestuff_user_credentials TESTlifestuff_user_storage TESTlifestuff_api)
-  foreach(NetworkTarget ${NetworkTargets})
-    target_link_libraries(${NetworkTarget} maidsafe_lifestuff ${BoostIostreamsLibs} ${BoostRegexLibs})
-    add_dependencies(${NetworkTarget} pd-vault pd-keys-helper)
-    add_custom_command(TARGET ${NetworkTarget}
+    add_custom_command(TARGET maidsafe_lifestuff
                        PRE_BUILD
                        COMMAND ${CMAKE_COMMAND} -E echo "#ifndef MAIDSAFE_PD_CLIENT_KEYS_HELPER_H_" > ${PROJECT_BINARY_DIR}/keys_helper.h &&
                                ${CMAKE_COMMAND} -E echo "#define MAIDSAFE_PD_CLIENT_KEYS_HELPER_H_" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
@@ -182,6 +179,10 @@ if(NOT ${LOCAL_TARGETS_ONLY})
                                ${CMAKE_COMMAND} -E echo "#endif  // MAIDSAFE_PD_CLIENT_KEYS_HELPER_H_" >> ${PROJECT_BINARY_DIR}/keys_helper.h
                        VERBATIM
                        )
+    foreach(NetworkTarget ${NetworkTargets})
+    target_link_libraries(${NetworkTarget} maidsafe_lifestuff ${BoostIostreamsLibs} ${BoostRegexLibs})
+    add_dependencies(${NetworkTarget} pd-vault pd-keys-helper)
+
   endforeach()
   include_directories(${PROJECT_BINARY_DIR})
 endif()
