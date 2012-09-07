@@ -120,6 +120,7 @@ int LifeStuffImpl::Initialise(const boost::filesystem::path& base_directory) {
 }
 
 int LifeStuffImpl::ConnectToSignals(
+    const bool& set_slots,
     const ChatFunction& chat_slot,
     const FileTransferFunction& file_slot,
     const NewContactFunction& new_contact_slot,
@@ -140,133 +141,114 @@ int LifeStuffImpl::ConnectToSignals(
     return kGeneralError;
   }
 
-  int connects(0);
-  if (chat_slot) {
-    slots_.chat_slot = chat_slot;
-    ++connects;
-    if (message_handler_)
-      message_handler_->ConnectToChatSignal(chat_slot);
-  }
-  if (file_slot) {
-    slots_.file_slot = file_slot;
-    ++connects;
-    if (message_handler_)
-      message_handler_->ConnectToFileTransferSignal(file_slot);
-  }
-  if (new_contact_slot) {
-    slots_.new_contact_slot = new_contact_slot;
-    ++connects;
-    if (public_id_)
-      public_id_->ConnectToNewContactSignal(new_contact_slot);
-  }
-  if (confirmed_contact_slot) {
-    slots_.confirmed_contact_slot = confirmed_contact_slot;
-    ++connects;
-    if (public_id_)
-      public_id_->ConnectToContactConfirmedSignal(confirmed_contact_slot);
-  }
-  if (profile_picture_slot) {
-    slots_.profile_picture_slot = profile_picture_slot;
-    ++connects;
-    if (message_handler_)
-      message_handler_->ConnectToContactProfilePictureSignal(
-          profile_picture_slot);
-  }
-  if (contact_presence_slot) {
-    slots_.contact_presence_slot = contact_presence_slot;
-    ++connects;
-    if (message_handler_)
-      message_handler_->ConnectToContactPresenceSignal(contact_presence_slot);
-  }
-  if (contact_deletion_function) {
-    slots_.contact_deletion_function = contact_deletion_function;
-    ++connects;
-    if (public_id_)
-      public_id_->ConnectToContactDeletionProcessedSignal(contact_deletion_function);
-  }
-  if (private_share_invitation_function) {
-    slots_.private_share_invitation_function = private_share_invitation_function;
-    ++connects;
-    if (message_handler_)
-      message_handler_->ConnectToPrivateShareInvitationSignal(private_share_invitation_function);
-  }
-  if (private_share_deletion_function) {
-    slots_.private_share_deletion_function = private_share_deletion_function;
-    ++connects;
-    if (message_handler_)
-      message_handler_->ConnectToPrivateShareDeletionSignal(private_share_deletion_function);
-  }
-  if (private_access_change_function) {
-    slots_.private_access_change_function = private_access_change_function;
-    ++connects;
-    if (message_handler_)
-      message_handler_->ConnectToPrivateMemberAccessChangeSignal(private_access_change_function);
-  }
-  if (open_share_invitation_function) {
-    slots_.open_share_invitation_function = open_share_invitation_function;
-    ++connects;
-    if (message_handler_)
-      message_handler_->ConnectToOpenShareInvitationSignal(open_share_invitation_function);
-  }
-  if (share_renamed_function) {
-    slots_.share_renamed_function = share_renamed_function;
-    ++connects;
-    if (user_storage_)
-      user_storage_->ConnectToShareRenamedSignal(share_renamed_function);
-  }
-  if (share_changed_function) {
-    slots_.share_changed_function = share_changed_function;
-    ++connects;
-    if (user_storage_)
-      user_storage_->ConnectToShareChangedSignal(share_changed_function);
-  }
-  if (lifestuff_card_update_function) {
-      slots_.lifestuff_card_update_function = lifestuff_card_update_function;
+  if (set_slots) {
+    int connects(0);
+    if (chat_slot) {
       ++connects;
-      if (public_id_)
-        public_id_->ConnectToLifestuffCardUpdatedSignal(lifestuff_card_update_function);
-  }
-  if (immediate_quit_required_function) {
-    slots_.immediate_quit_required_function = immediate_quit_required_function;
-    ++connects;
-    if (user_credentials_)
-      user_credentials_->ConnectToImmediateQuitRequiredSignal(immediate_quit_required_function);
-  }
-  if (user_credentials_) {
+      slots_.chat_slot = chat_slot;
+    }
+    if (file_slot) {
+      ++connects;
+      slots_.file_slot = file_slot;
+    }
+    if (new_contact_slot) {
+      ++connects;
+      slots_.new_contact_slot = new_contact_slot;
+    }
+    if (confirmed_contact_slot) {
+      ++connects;
+      slots_.confirmed_contact_slot = confirmed_contact_slot;
+    }
+    if (profile_picture_slot) {
+      ++connects;
+      slots_.profile_picture_slot = profile_picture_slot;
+    }
+    if (contact_presence_slot) {
+      ++connects;
+      slots_.contact_presence_slot = contact_presence_slot;
+    }
+    if (contact_deletion_function) {
+      ++connects;
+      slots_.contact_deletion_function = contact_deletion_function;
+    }
+    if (private_share_invitation_function) {
+      ++connects;
+      slots_.private_share_invitation_function = private_share_invitation_function;
+    }
+    if (private_share_deletion_function) {
+      ++connects;
+      slots_.private_share_deletion_function = private_share_deletion_function;
+    }
+    if (private_access_change_function) {
+      ++connects;
+      slots_.private_access_change_function = private_access_change_function;
+    }
+    if (open_share_invitation_function) {
+      ++connects;
+      slots_.open_share_invitation_function = open_share_invitation_function;
+    }
+    if (share_renamed_function) {
+      ++connects;
+      slots_.share_renamed_function = share_renamed_function;
+    }
+    if (share_changed_function) {
+      ++connects;
+      slots_.share_changed_function = share_changed_function;
+    }
+    if (lifestuff_card_update_function) {
+      ++connects;
+      slots_.lifestuff_card_update_function = lifestuff_card_update_function;
+    }
+    if (immediate_quit_required_function) {
+      ++connects;
+      slots_.immediate_quit_required_function = immediate_quit_required_function;
+    }
+    if (connects == 0) {
+      return kGeneralError;
+    }
     ImmediateQuitRequiredFunction must_die = [&] {
                                                LOG(kInfo) << "Immediate quit required! " <<
                                                              "Stopping activity.";
                                                LogOut();
                                              };
     user_credentials_->ConnectToImmediateQuitRequiredSignal(must_die);
-    if (immediate_quit_required_function) {
-      slots_.immediate_quit_required_function = immediate_quit_required_function;
-      ++connects;
-      user_credentials_->ConnectToImmediateQuitRequiredSignal(immediate_quit_required_function);
-    }
-  }
-  if (public_id_) {
-    public_id_->ConnectToContactDeletionReceivedSignal(
-        [&] (const std::string& own_public_id,
-             const std::string& contact_public_id,
-             const std::string& removal_message,
-             const std::string& timestamp) {
-          int result(RemoveContact(own_public_id,
-                                   contact_public_id,
-                                   removal_message,
-                                   timestamp,
-                                   false));
-          if (result != kSuccess)
-            LOG(kError) << "Failed to remove contact after receiving contact deletion signal!";
-        });
-  }
-
-  if (connects > 0) {
     state_ = kConnected;
     return kSuccess;
   }
 
-  return kGeneralError;
+  if (!message_handler_ || !public_id_ || !user_storage_) {
+    LOG(kError) << "Unable to connect to signals.";
+    return kGeneralError;
+  }
+  message_handler_->ConnectToChatSignal(chat_slot);
+  message_handler_->ConnectToFileTransferSignal(file_slot);
+  public_id_->ConnectToNewContactSignal(new_contact_slot);
+  public_id_->ConnectToContactConfirmedSignal(confirmed_contact_slot);
+  message_handler_->ConnectToContactProfilePictureSignal(profile_picture_slot);
+  message_handler_->ConnectToContactPresenceSignal(contact_presence_slot);
+  public_id_->ConnectToContactDeletionProcessedSignal(contact_deletion_function);
+  message_handler_->ConnectToPrivateShareInvitationSignal(private_share_invitation_function);
+  message_handler_->ConnectToPrivateShareDeletionSignal(private_share_deletion_function);
+  message_handler_->ConnectToPrivateMemberAccessChangeSignal(private_access_change_function);
+  message_handler_->ConnectToOpenShareInvitationSignal(open_share_invitation_function);
+  user_storage_->ConnectToShareRenamedSignal(share_renamed_function);
+  user_storage_->ConnectToShareChangedSignal(share_changed_function);
+  public_id_->ConnectToLifestuffCardUpdatedSignal(lifestuff_card_update_function);
+  user_credentials_->ConnectToImmediateQuitRequiredSignal(immediate_quit_required_function);
+  public_id_->ConnectToContactDeletionReceivedSignal(
+      [&] (const std::string& own_public_id,
+           const std::string& contact_public_id,
+           const std::string& removal_message,
+           const std::string& timestamp) {
+        int result(RemoveContact(own_public_id,
+                                 contact_public_id,
+                                 removal_message,
+                                 timestamp,
+                                 false));
+        if (result != kSuccess)
+          LOG(kError) << "Failed to remove contact after receiving contact deletion signal!";
+      });
+  return kSuccess;
 }
 
 int LifeStuffImpl::Finalise() {
@@ -2304,7 +2286,8 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
   ConnectInternalElements();
   state_ = kInitialised;
 
-  result = ConnectToSignals(slots_.chat_slot,
+  result = ConnectToSignals(false,
+                            slots_.chat_slot,
                             slots_.file_slot,
                             slots_.new_contact_slot,
                             slots_.confirmed_contact_slot,
