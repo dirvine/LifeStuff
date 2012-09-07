@@ -66,7 +66,8 @@ std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path& base_dir,
       new pcs::RemoteChunkStore(node->chunk_store(),
                                 node->chunk_manager(),
                                 node->chunk_action_authority()));
-  remote_chunk_store->SetMaxActiveOps(32);
+  if (remote_chunk_store)
+    remote_chunk_store->SetMaxActiveOps(32);
   return remote_chunk_store;
 }
 
