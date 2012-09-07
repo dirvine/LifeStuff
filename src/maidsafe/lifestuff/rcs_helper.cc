@@ -62,13 +62,16 @@ std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path& buffered_
 std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path& base_dir,
                                                        std::shared_ptr<pd::Node>& node) {
   node = SetupNode(base_dir);
-  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store(
-      new pcs::RemoteChunkStore(node->chunk_store(),
-                                node->chunk_manager(),
-                                node->chunk_action_authority()));
-  if (remote_chunk_store)
-    remote_chunk_store->SetMaxActiveOps(32);
-  return remote_chunk_store;
+  if (node) {
+    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store(
+        new pcs::RemoteChunkStore(node->chunk_store(),
+                                  node->chunk_manager(),
+                                  node->chunk_action_authority()));
+    if (remote_chunk_store)
+      remote_chunk_store->SetMaxActiveOps(32);
+    return remote_chunk_store;
+  }
+  return std::shared_ptr<pcs::RemoteChunkStore>();
 }
 
 std::shared_ptr<pd::Node> SetupNode(const fs::path& base_dir) {
