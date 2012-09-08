@@ -42,7 +42,11 @@
 #include "maidsafe/lifestuff/detail/user_credentials.h"
 #include "maidsafe/lifestuff/detail/utils.h"
 
+#ifndef LOCAL_TARGETS_ONLY
+#include "maidsafe/pd/client/node.h"
+#include "maidsafe/pd/client/utils.h"
 #include "maidsafe/lifestuff/tests/network_helper.h"
+#endif
 
 
 namespace args = std::placeholders;
@@ -128,6 +132,23 @@ class UserCredentialsTest : public testing::Test {
                                                  asio_service2_.service()));
   }
 
+#ifndef LOCAL_TARGETS_ONLY
+  void ResetNodeAndDependencies() {
+    node_->Stop();
+    std::shared_ptr<asymm::Keys> maid(new asymm::Keys(
+        session_.passport().SignaturePacketDetails(passport::kMaid, true)));
+    node_->set_keys(maid);
+    node_->set_account_name("");
+    node_->Start(*test_dir_ / "buffered_chunk_store");
+    remote_chunk_store_.reset(new pcs::RemoteChunkStore(node_->chunk_store(),
+                                                        node_->chunk_manager(),
+                                                        node_->chunk_action_authority()));
+    user_credentials_.reset(new UserCredentials(*remote_chunk_store_,
+                                                session_,
+                                                asio_service_.service()));
+  }
+#endif
+
   std::shared_ptr<fs::path> test_dir_;
   Session session_, session2_;
   AsioService asio_service_, asio_service2_;
@@ -160,11 +181,15 @@ TEST_F(UserCredentialsTest, FUNC_LoginSequence) {
   ASSERT_EQ(password_, session_.password());
   LOG(kInfo) << "User created.\n===================\n";
 
-//  ASSERT_EQ(kSuccess, user_credentials_->Logout());
-//  ASSERT_TRUE(session_.keyword().empty());
-//  ASSERT_TRUE(session_.pin().empty());
-//  ASSERT_TRUE(session_.password().empty());
-//  LOG(kInfo) << "Logged out.\n===================\n";
+#ifndef LOCAL_TARGETS_ONLY
+  ResetNodeAndDependencies();
+#endif
+
+  ASSERT_EQ(kSuccess, user_credentials_->Logout());
+  ASSERT_TRUE(session_.keyword().empty());
+  ASSERT_TRUE(session_.pin().empty());
+  ASSERT_TRUE(session_.password().empty());
+  LOG(kInfo) << "Logged out.\n===================\n";
 
 //  ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
 //  ASSERT_EQ(keyword_, session_.keyword());

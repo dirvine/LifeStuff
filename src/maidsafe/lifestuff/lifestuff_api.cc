@@ -38,11 +38,8 @@ LifeStuff::LifeStuff() : lifestuff_impl_(new LifeStuffImpl) {}
 LifeStuff::~LifeStuff() {}
 
 int LifeStuff::Initialise(const UpdateAvailableFunction& software_update_available_function,
-                          const fs::path& base_directory,
-                          bool* stop_initialise) {
-  return lifestuff_impl_->Initialise(software_update_available_function,
-                                     base_directory,
-                                     stop_initialise);
+                          const fs::path& base_directory) {
+  return lifestuff_impl_->Initialise(software_update_available_function, base_directory);
 }
 
 int LifeStuff::ConnectToSignals(
