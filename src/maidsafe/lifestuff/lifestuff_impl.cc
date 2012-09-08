@@ -78,7 +78,8 @@ LifeStuffImpl::LifeStuffImpl()
 LifeStuffImpl::~LifeStuffImpl() {}
 
 int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_available_function,
-                              const fs::path& base_directory) {
+                              const fs::path& base_directory,
+                              bool* stop_initialise) {
   if (state_ != kZeroth) {
     LOG(kError) << "Make sure that object is in the original Zeroth state. Asimov rules.";
     return kGeneralError;
@@ -114,7 +115,7 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
 #else
   int counter(0);
   std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
-  while (counter++ < kRetryLimit) {
+  while (counter++ < kRetryLimit && (stop_initialise ? !(*stop_initialise) : true)) {
     Sleep(bptime::milliseconds(100 + RandomUint32() % 1000));
     client_controller_.reset(
         new priv::process_management::ClientController(software_update_available_function));
@@ -122,6 +123,11 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
       counter = kRetryLimit;
     else
       LOG(kWarning) << "Failure to initialise client controller. Try #" << counter;
+  }
+
+  if (stop_initialise && *stop_initialise) {
+    LOG(kInfo) << "Stopping initialise as requested =).";
+    return kGeneralError;
   }
 
   if (bootstrap_endpoints.empty()) {

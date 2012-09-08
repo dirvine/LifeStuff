@@ -108,7 +108,8 @@ class LifeStuffImpl {
 
   /// State operations
   int Initialise(const UpdateAvailableFunction& software_update_available_function,
-                 const fs::path& base_directory);
+                 const fs::path& base_directory,
+                 bool* stop_initialise = nullptr);
   int ConnectToSignals(const ChatFunction& chat_slot,
                        const FileTransferFunction& file_slot,
                        const NewContactFunction& new_contact_slot,
