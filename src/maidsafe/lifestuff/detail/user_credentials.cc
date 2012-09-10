@@ -46,97 +46,30 @@ UserCredentials::~UserCredentials() {}
 int UserCredentials::CreateUser(const std::string& keyword,
                                 const std::string& pin,
                                 const std::string& password) {
-  int result(CheckKeywordValidity(keyword));
-  if (result != kSuccess) {
-    LOG(kInfo) << "Invalid keyword: " << keyword << "    Return code: " << result << ")";
-    return result;
-  }
-  result = CheckPinValidity(pin);
-  if (result != kSuccess) {
-    LOG(kInfo) << "Invalid pin: " << pin << "    Return code: " << result << ")";
-    return result;
-  }
-  result = CheckPasswordValidity(password);
-  if (result != kSuccess) {
-    LOG(kInfo) << "Invalid password: " << password << "    (Return code: " << result << ")";
-    return result;
-  }
-
   return impl_->CreateUser(keyword, pin, password);
 }
 
 int UserCredentials::LogIn(const std::string& keyword,
                            const std::string& pin,
                            const std::string& password) {
-  int result(CheckKeywordValidity(keyword));
-  if (result != kSuccess) {
-    LOG(kInfo) << "Invalid keyword: " << keyword << "    Return code: " << result << ")";
-    return result;
-  }
-  result = CheckPinValidity(pin);
-  if (result != kSuccess) {
-    LOG(kInfo) << "Invalid pin: " << pin << "    Return code: " << result << ")";
-    return result;
-  }
-  result = CheckPasswordValidity(password);
-  if (result != kSuccess) {
-    LOG(kInfo) << "Invalid password: " << password << "    Return code: " << result << ")";
-    return result;
-  }
-
-  result = impl_->LogIn(keyword, pin, password);
-  if (result != kSuccess && result != kReadOnlyRestrictedSuccess)
-    session_.Reset();
-  return result;
+  return impl_->LogIn(keyword, pin, password);
 }
 
 int UserCredentials::Logout() {
-  int result(impl_->SaveSession(true));
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to save session on Logout";
-    return result;
-  }
-  result = impl_->AssessAndUpdateLid(true);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to update LID on Logout";
-    return result;
-  }
-
-  session_.Reset();
-  return kSuccess;
+  return impl_->LogOut();
 }
 
 int UserCredentials::SaveSession() { return impl_->SaveSession(false); }
 
-int UserCredentials::UpdateLid() { return impl_->AssessAndUpdateLid(false); }
-
 int UserCredentials::ChangeKeyword(const std::string& new_keyword) {
-  int result(CheckKeywordValidity(new_keyword));
-  if (result != kSuccess) {
-    LOG(kError) << "Incorrect input.";
-    return result;
-  }
-
   return impl_->ChangeKeyword(new_keyword);
 }
 
 int UserCredentials::ChangePin(const std::string& new_pin) {
-  int result(CheckPinValidity(new_pin));
-  if (result != kSuccess) {
-    LOG(kError) << "Incorrect input.";
-    return result;
-  }
-
   return impl_->ChangePin(new_pin);
 }
 
 int UserCredentials::ChangePassword(const std::string& new_password) {
-  int result(CheckPasswordValidity(new_password));
-  if (result != kSuccess) {
-    LOG(kError) << "Incorrect input.";
-    return result;
-  }
-
   return impl_->ChangePassword(new_password);
 }
 

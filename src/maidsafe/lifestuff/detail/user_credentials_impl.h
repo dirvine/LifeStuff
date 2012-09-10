@@ -74,6 +74,8 @@ class UserCredentialsImpl {
 
   int LogIn(const std::string& keyword, const std::string& pin, const std::string& password);
 
+  int LogOut();
+
   int CreateUser(const std::string& keyword, const std::string& pin, const std::string& password);
 
   int SaveSession(bool log_out);
@@ -99,6 +101,10 @@ class UserCredentialsImpl {
   boost::asio::deadline_timer session_saver_timer_;
   bool session_saver_timer_active_, session_saved_once_;
   const boost::posix_time::seconds session_saver_interval_;
+
+  int AttemptLogInProcess(const std::string& keyword,
+                          const std::string& pin,
+                          const std::string& password);
 
   int GetUserInfo(const std::string& keyword,
                   const std::string& pin,

@@ -370,13 +370,13 @@ void RunChangePin(LifeStuff& test_elements,
                   int& result,
                   const std::string& new_pin,
                   const std::string& password,
-                  const std::pair<int, int> sleeps);
+                  const std::pair<int, int> sleeps = std::make_pair(0, 0));
 
 void RunChangeKeyword(LifeStuff& test_elements,
                       int& result,
                       const std::string& new_keyword,
                       const std::string& password,
-                      const std::pair<int, int> sleeps);
+                      const std::pair<int, int> sleeps = std::make_pair(0, 0));
 
 void RunChangePassword(LifeStuff& test_elements,
                        int& result,
