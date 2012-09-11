@@ -67,6 +67,7 @@ LifeStuffImpl::LifeStuffImpl()
       message_handler_(),
       slots_(),
       state_(kZeroth),
+      logged_in_state_(kBaseState),
       save_session_mutex_(),
       saving_session_(false) {}
 
@@ -209,6 +210,8 @@ int LifeStuffImpl::ConnectToSignals(
     ImmediateQuitRequiredFunction must_die = [&] {
                                                LOG(kInfo) << "Immediate quit required! " <<
                                                              "Stopping activity.";
+                                               StopMessagesAndIntros();
+                                               UnMountDrive();
                                                LogOut();
                                              };
     user_credentials_->ConnectToImmediateQuitRequiredSignal(must_die);
@@ -286,6 +289,15 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
     return kGeneralError;
   }
 
+  if ((kCredentialsLoggedIn & logged_in_state_) == kCredentialsLoggedIn ||
+      (kDriveMounted & logged_in_state_) == kDriveMounted ||
+      (kMessagesAndIntrosStarted & logged_in_state_) == kMessagesAndIntrosStarted) {
+    LOG(kError) << "In unsuitable state to create user: " <<
+                   "make sure user_credentials are logged out, the drive is unmounted and " <<
+                   "messages and intros have been stopped.";
+    return kWrongOrderFailure;
+  }
+
   int result(user_credentials_->CreateUser(keyword, pin, password));
   if (result != kSuccess) {
     LOG(kError) << "Failed to Create User.";
@@ -298,42 +310,8 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
     return result;
   }
 
-  boost::system::error_code error_code;
-  fs::path mount_dir(GetHomeDir() / kAppHomeDirectory / session_.session_name());
-  if (!fs::exists(mount_dir, error_code)) {
-    fs::create_directories(mount_dir, error_code);
-    if (error_code) {
-      LOG(kError) << "Failed to create app directories - " << error_code.value()
-                  << ": " << error_code.message();
-      return kGeneralError;
-    }
-  }
-
-  user_storage_->MountDrive(mount_dir, &session_, true, false);
-  if (!user_storage_->mount_status()) {
-    LOG(kError) << "Failed to mount";
-    return kGeneralError;
-  }
-  user_storage_->ConnectToShareRenamedSignal(
-      [this] (const std::string& old_share_name, const std::string& new_share_name) {
-        this->ShareRenameSlot(old_share_name, new_share_name);
-      });
-
-  fs::path mount_path(user_storage_->mount_dir());
-  fs::create_directories(mount_path / kMyStuff / kDownloadStuff, error_code);
-  if (error_code) {
-    LOG(kError) << "Failed creating My Stuff: " << error_code.message();
-    user_storage_->UnMountDrive();
-    return kGeneralError;
-  }
-  fs::create_directory(mount_path / kSharedStuff, error_code);
-  if (error_code) {
-    LOG(kError) << "Failed creating Shared Stuff: " << error_code.message();
-    user_storage_->UnMountDrive();
-    return kGeneralError;
-  }
-
   state_ = kLoggedIn;
+  logged_in_state_ = kCreating | kCredentialsLoggedIn;
 
   return kSuccess;
 }
@@ -355,8 +333,11 @@ int LifeStuffImpl::CreatePublicId(const std::string& public_id) {
   }
 
   if (first_public_id) {
-    public_id_->StartCheckingForNewContacts(interval_);
+    public_id_->StartUp(interval_);
     message_handler_->StartUp(interval_);
+    if ((logged_in_state_ & kMessagesAndIntrosStarted) != kMessagesAndIntrosStarted) {
+      logged_in_state_ = logged_in_state_ ^ kMessagesAndIntrosStarted;
+    }
   }
 
   session_.set_changed(true);
@@ -373,22 +354,141 @@ int LifeStuffImpl::LogIn(const std::string& keyword,
     return kGeneralError;
   }
 
-  int result(user_credentials_->LogIn(keyword, pin, password));
-  if (result != kSuccess && result != kReadOnlyRestrictedSuccess) {
-    LOG(kError) << "LogIn failed with result: " << result;
-    return result;
+  if ((kCredentialsLoggedIn & logged_in_state_) == kCredentialsLoggedIn ||
+      (kDriveMounted & logged_in_state_) == kDriveMounted ||
+      (kMessagesAndIntrosStarted & logged_in_state_) == kMessagesAndIntrosStarted) {
+    LOG(kError) << "In unsuitable state to log in: " <<
+                   "make sure user_credentials are logged out, the drive is unmounted and " <<
+                   "messages and intros have been stopped.";
+    return kWrongOrderFailure;
   }
 
-  SessionAccessLevel anticipated_access_level;
-  if (result == kSuccess)
-    anticipated_access_level = kFullAccess;
-  else
-    anticipated_access_level = kReadOnly;
+  int login_result(user_credentials_->LogIn(keyword, pin, password));
+  if (login_result != kSuccess && login_result != kReadOnlyRestrictedSuccess) {
+    LOG(kError) << "LogIn failed with result: " << login_result;
+    return login_result;
+  }
 
-  result = SetValidPmidAndInitialisePublicComponents();
+  int result(SetValidPmidAndInitialisePublicComponents());
   if (result != kSuccess)  {
     LOG(kError) << "Failed to set valid PMID";
     return result;
+  }
+
+  state_ = kLoggedIn;
+  logged_in_state_ = kCredentialsLoggedIn;
+
+  return login_result;
+}
+
+int LifeStuffImpl::LogOut() {
+  if (state_ != kLoggedIn) {
+    LOG(kError) << "Should be logged in to log out.";
+    return kGeneralError;
+  }
+  if ((kMessagesAndIntrosStarted & logged_in_state_) == kMessagesAndIntrosStarted ||
+      (kDriveMounted & logged_in_state_) == kDriveMounted) {
+    LOG(kError) << "In incorrect state to log out. " <<
+                   "Make sure messages and intros have been stopped and drive has been unmounted.";
+    return kWrongOrderFailure;
+  }
+  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn) {
+    LOG(kError) << "In incorrect state to log out. " <<
+                   "Make user credentials are logged in first.";
+    return kWrongOrderFailure;
+  }
+
+//  if (session_.session_access_level() == kFullAccess) {
+//    bool saving_session(true);
+//    while (saving_session) {
+//      {
+//        boost::mutex::scoped_lock loch_tangy(save_session_mutex_);
+//        saving_session = saving_session_;
+//      }
+//      Sleep(bptime::milliseconds(100));
+//    }
+//  }
+
+  if (user_credentials_->Logout() != kSuccess) {
+    LOG(kError) << "Failed to log out.";
+    return kGeneralError;
+  }
+
+  if (!remote_chunk_store_->WaitForCompletion()) {
+    LOG(kError) << "Failed complete chunk operations.";
+    return kGeneralError;
+  }
+
+  session_.Reset();
+
+  state_ = kConnected;
+  logged_in_state_ = kBaseState;
+
+  return kSuccess;
+}
+
+int LifeStuffImpl::CreateAndMountDrive() {
+  if (session_.session_access_level() == kReadOnly) {
+    LOG(kError) << "Can't create and mount drive when session is read only!";
+    return kGeneralError;
+  }
+
+  if ((kCreating & logged_in_state_) != kCreating ||
+      (kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
+      (kDriveMounted & logged_in_state_) == kDriveMounted) {
+    LOG(kError) << "In unsuitable state to create and mount drive: " <<
+                   "make sure a CreateUser has just been run and drive is not already mounted.";
+    return kWrongOrderFailure;
+  }
+
+  boost::system::error_code error_code;
+  fs::path mount_dir(GetHomeDir() / kAppHomeDirectory / session_.session_name());
+  if (!fs::exists(mount_dir, error_code)) {
+    fs::create_directories(mount_dir, error_code);
+    if (error_code) {
+      LOG(kError) << "Failed to create app directories - " << error_code.value()
+                  << ": " << error_code.message();
+      return kGeneralError;
+    }
+  }
+
+  user_storage_->MountDrive(mount_dir, &session_, true, false);
+  if (!user_storage_->mount_status()) {
+    LOG(kError) << "Failed to mount";
+    return kGeneralError;
+  }
+
+  fs::path mount_path(user_storage_->mount_dir());
+  fs::create_directories(mount_path / kMyStuff / kDownloadStuff, error_code);
+  if (error_code) {
+    LOG(kError) << "Failed creating My Stuff: " << error_code.message();
+    user_storage_->UnMountDrive();
+    return kGeneralError;
+  }
+
+  fs::create_directory(mount_path / kSharedStuff, error_code);
+  if (error_code) {
+    LOG(kError) << "Failed creating Shared Stuff: " << error_code.message();
+    user_storage_->UnMountDrive();
+    return kGeneralError;
+  }
+
+  logged_in_state_ = logged_in_state_ ^ kDriveMounted;
+  return kSuccess;
+}
+
+int LifeStuffImpl::MountDrive(bool read_only) {
+  if (!read_only && session_.session_access_level() == kReadOnly) {
+    LOG(kError) << "Can't mount drive with full access when session is read only!";
+    return kGeneralError;
+  }
+
+  if ((kCreating & logged_in_state_) == kCreating ||
+      (kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
+      (kDriveMounted & logged_in_state_) == kDriveMounted) {
+    LOG(kError) << "In unsuitable state to mount drive: " <<
+                   "make sure LogIn has been run and drive is not already mounted.";
+    return kWrongOrderFailure;
   }
 
   boost::system::error_code error_code;
@@ -408,34 +508,25 @@ int LifeStuffImpl::LogIn(const std::string& keyword,
     }
   }
 
-  user_storage_->MountDrive(mount_dir, &session_, false, anticipated_access_level == kReadOnly);
+  user_storage_->MountDrive(mount_dir, &session_, false, read_only);
   if (!user_storage_->mount_status()) {
     LOG(kError) << "Failed to mount";
     return kGeneralError;
   }
-  user_storage_->ConnectToShareRenamedSignal(
-      [this] (const std::string& old_share_name, const std::string& new_share_name) {
-        this->ShareRenameSlot(old_share_name, new_share_name);
-      });
 
-  state_ = kLoggedIn;
-  if (anticipated_access_level == kFullAccess) {
-    if (!session_.PublicIdentities().empty()) {
-      public_id_->StartUp(interval_);
-      message_handler_->StartUp(interval_);
-    }
-  }
-
-  if (anticipated_access_level == kFullAccess)
-    return kSuccess;
-  else
+  logged_in_state_ = logged_in_state_ ^ kDriveMounted;
+  if (read_only)
     return kReadOnlyRestrictedSuccess;
+  return kSuccess;
 }
 
-int LifeStuffImpl::LogOut() {
-  if (state_ != kLoggedIn) {
-    LOG(kError) << "Should be logged in to log out.";
-    return kGeneralError;
+int LifeStuffImpl::UnMountDrive() {
+  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
+      (kMessagesAndIntrosStarted & logged_in_state_) == kMessagesAndIntrosStarted) {
+    LOG(kError) << "In unsuitable state to unmount drive: " <<
+                   "make sure user_credentials are logged in and"
+                   "messages and intros have been stopped.";
+    return kWrongOrderFailure;
   }
 
   if (session_.session_access_level() == kFullAccess) {
@@ -455,32 +546,52 @@ int LifeStuffImpl::LogOut() {
     return kGeneralError;
   }
 
-  if (session_.session_access_level() == kFullAccess ||
-      session_.session_access_level() == kMustDie) {
-    public_id_->ShutDown();
-    message_handler_->ShutDown();
-  }
-
-  if (user_credentials_->Logout() != kSuccess) {
-    LOG(kError) << "Failed to log out.";
-    return kGeneralError;
-  }
-
-  if (!remote_chunk_store_->WaitForCompletion()) {
-    LOG(kError) << "Failed complete chunk operations.";
-    return kGeneralError;
-  }
-
   // Delete mount directory
   boost::system::error_code error_code;
   fs::remove_all(mount_path(), error_code);
   if (error_code)
-    LOG(kWarning) << "Failed to delete mount directory: "
-                  << mount_path();
-  session_.Reset();
+    LOG(kWarning) << "Failed to delete mount directory: " << mount_path();
 
-  state_ = kConnected;
+  if ((kDriveMounted & logged_in_state_) == kDriveMounted)
+    logged_in_state_ = logged_in_state_ ^ kDriveMounted;
+  return kSuccess;
+}
 
+int LifeStuffImpl::StartMessagesAndIntros() {
+  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
+      (kDriveMounted & logged_in_state_) != kDriveMounted) {
+     LOG(kError) << "In unsuitable state to start mesages and intros: " <<
+                    "make sure user_credentials are logged in and drive is mounted.";
+     return kWrongOrderFailure;
+  }
+  if (session_.session_access_level() != kFullAccess) {
+    LOG(kError) << "Shouldn't check for messages/intros when session access level is " <<
+                   session_.session_access_level();
+    return kGeneralError;
+  }
+  if (session_.PublicIdentities().empty()) {
+    LOG(kInfo) << "Won't check for messages/intros because there is no public ID.";
+    return kNoPublicIds;
+  }
+
+  public_id_->StartUp(interval_);
+  message_handler_->StartUp(interval_);
+  if ((kMessagesAndIntrosStarted & logged_in_state_) != kMessagesAndIntrosStarted)
+    logged_in_state_ = logged_in_state_ ^ kMessagesAndIntrosStarted;
+  return kSuccess;
+}
+
+int LifeStuffImpl::StopMessagesAndIntros() {
+  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn) {
+     LOG(kError) << "In unsuitable state to stop messages and intros: " <<
+                    "make sure user_credentials are logged in.";
+     return kWrongOrderFailure;
+  }
+
+  public_id_->ShutDown();
+  message_handler_->ShutDown();
+  if ((kMessagesAndIntrosStarted & logged_in_state_) == kMessagesAndIntrosStarted)
+    logged_in_state_ = logged_in_state_ ^ kMessagesAndIntrosStarted;
   return kSuccess;
 }
 
@@ -552,6 +663,8 @@ int LifeStuffImpl::ChangePassword(const std::string& new_password,
 
 int LifeStuffImpl::LeaveLifeStuff() {
   state_ = kZeroth;
+  logged_in_state_ = kBaseState;  // TODO(Alison) - check this
+
   // Unmount
   user_storage_->UnMountDrive();
 
@@ -2146,9 +2259,16 @@ int LifeStuffImpl::LeaveOpenShare(const std::string& my_public_id, const std::st
 ///
 int LifeStuffImpl::state() const { return state_; }
 
+int LifeStuffImpl::logged_in_state() const { return logged_in_state_; }
+
 fs::path LifeStuffImpl::mount_path() const {
   if (state_ != kLoggedIn) {
     LOG(kError) << "Incorrect state. Should be logged in: " << state_;
+    return fs::path();
+  }
+  // TODO(Alison) - check logged_in_state_? Drive mounted?
+  if ((kDriveMounted & logged_in_state_) != kDriveMounted) {
+    LOG(kError) << "Incorrect logged_in_state_. Drive should be mounted: " << logged_in_state_;
     return fs::path();
   }
 
@@ -2230,12 +2350,6 @@ void LifeStuffImpl::ConnectInternalElements() {
         MemberAccessChangeSlot(share_id, directory_id, new_share_id, key_ring, access_right);
       });
 
-  public_id_->ConnectToContactConfirmedSignal(
-      [&] (const std::string& own_public_id, const std::string& recipient_public_id,
-           const std::string&) {
-        message_handler_->InformConfirmedContactOnline(own_public_id, recipient_public_id);
-      });
-
   message_handler_->ConnectToPrivateShareDetailsSignal(
       [&] (const std::string& share_id, fs::path* relative_path) {
       return user_storage_->GetShareDetails(share_id,
@@ -2243,6 +2357,17 @@ void LifeStuffImpl::ConnectInternalElements() {
                                             nullptr,
                                             nullptr,
                                             nullptr);
+      });
+
+  public_id_->ConnectToContactConfirmedSignal(
+      [&] (const std::string& own_public_id, const std::string& recipient_public_id,
+           const std::string&) {
+        message_handler_->InformConfirmedContactOnline(own_public_id, recipient_public_id);
+      });
+
+  user_storage_->ConnectToShareRenamedSignal(
+      [this] (const std::string& old_share_name, const std::string& new_share_name) {
+        this->ShareRenameSlot(old_share_name, new_share_name);
       });
 }
 
@@ -2311,6 +2436,11 @@ int LifeStuffImpl::CheckStateAndReadOnlyAccess() const {
     return kGeneralError;
   }
 
+  if ((kDriveMounted & logged_in_state_) != kDriveMounted) {
+    LOG(kError) << "Incorrect state. Drive should be mounted: " << logged_in_state_;
+    return kGeneralError;
+  }
+
   SessionAccessLevel session_access_level(session_.session_access_level());
   if (session_access_level != kFullAccess && session_access_level != kReadOnly) {
     LOG(kError) << "Insufficient access. Should have at least read access: " <<
@@ -2323,6 +2453,11 @@ int LifeStuffImpl::CheckStateAndReadOnlyAccess() const {
 int LifeStuffImpl::CheckStateAndFullAccess() const {
   if (state_ != kLoggedIn) {
     LOG(kError) << "Incorrect state. Should be logged in: " << state_;
+    return kGeneralError;
+  }
+
+  if ((kDriveMounted & logged_in_state_) != kDriveMounted) {
+    LOG(kError) << "Incorrect state. Drive should be mounted: " << logged_in_state_;
     return kGeneralError;
   }
 

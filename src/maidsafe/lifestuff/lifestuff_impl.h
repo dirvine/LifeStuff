@@ -127,6 +127,11 @@ class LifeStuffImpl {
   int CreatePublicId(const std::string& public_id);
   int LogIn(const std::string& username, const std::string& pin, const std::string& password);
   int LogOut();
+  int CreateAndMountDrive();
+  int MountDrive(bool read_only);
+  int UnMountDrive();
+  int StartMessagesAndIntros();
+  int StopMessagesAndIntros();
 
   int CheckPassword(const std::string& password);
   int ChangeKeyword(const std::string& new_username, const std::string& password);
@@ -248,8 +253,8 @@ class LifeStuffImpl {
   int RejectOpenShareInvitation(const std::string& my_public_id, const std::string& share_id);
   int LeaveOpenShare(const std::string& my_public_id, const std::string& share_name);
 
-  ///
   int state() const;
+  int logged_in_state() const;
   fs::path mount_path() const;
 
  private:
@@ -271,6 +276,7 @@ class LifeStuffImpl {
   std::shared_ptr<MessageHandler> message_handler_;
   Slots slots_;
   LifeStuffState state_;
+  uint logged_in_state_;
 
   // Session saving control
   boost::mutex save_session_mutex_;

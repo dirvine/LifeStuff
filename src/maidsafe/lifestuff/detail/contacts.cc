@@ -338,7 +338,6 @@ void ContactsHandler::OnlineContacts(std::vector<Contact>* online_contacts) {
 ContactMap ContactsHandler::GetContacts(uint16_t bitwise_status) {
   ContactMap contact_map;
 
-  ContactSet* enquiry_pool = &contact_set_;
   ContactSet contacts;
   if (kUninitialised & bitwise_status)
     GetContactsByStatus(&contacts, kUninitialised);
@@ -350,7 +349,7 @@ ContactMap ContactsHandler::GetContacts(uint16_t bitwise_status) {
     GetContactsByStatus(&contacts, kConfirmed);
   if (kBlocked & bitwise_status)
     GetContactsByStatus(&contacts, kBlocked);
-  enquiry_pool = &contacts;
+  ContactSet* enquiry_pool = &contacts;
 
   for (auto it(enquiry_pool->begin()); it != enquiry_pool->end(); ++it) {
     contact_map.insert(std::make_pair((*it).public_id,
