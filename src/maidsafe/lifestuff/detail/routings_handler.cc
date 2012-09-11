@@ -21,12 +21,12 @@
 #include <vector>
 
 #include "maidsafe/common/log.h"
+#include "maidsafe/common/node_id.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 
-#include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/return_codes.h"
 
 #include "maidsafe/lifestuff/return_codes.h"
@@ -87,7 +87,7 @@ bool RoutingsHandler::AddRoutingObject(
   // Functors
   routing::Functors functors;
   functors.message_received = [&, routing_details] (const std::string& wrapped_message,
-                                                    const routing::NodeId& group_claim,
+                                                    const NodeId& group_claim,
                                                     const routing::ReplyFunctor& reply_functor) {
                                 OnRequestReceived(routing_details.keys.identity,
                                                   wrapped_message,
@@ -95,7 +95,7 @@ bool RoutingsHandler::AddRoutingObject(
                                                   reply_functor);
                               };
 
-  functors.request_public_key = [this] (const routing::NodeId& node_id,
+  functors.request_public_key = [this] (const NodeId& node_id,
                                         const routing::GivePublicKeyFunctor& give_key) {
                                   OnPublicKeyRequested(node_id, give_key);
                                 };
@@ -143,7 +143,7 @@ bool RoutingsHandler::Send(const std::string& source_id,
     std::unique_lock<std::mutex> loch(routing_objects_mutex_);
     auto it(routing_objects_.find(source_id));
     if (it == routing_objects_.end()) {
-      LOG(kError) << "No such ID to send message: " << Base64Substr(source_id);
+      LOG(kError) << "No such ID to send message: " << Base32Substr(source_id);
       return false;
     }
     routing_details = it->second;
@@ -153,7 +153,7 @@ bool RoutingsHandler::Send(const std::string& source_id,
                                           destination_public_key,
                                           routing_details.keys.private_key));
   if (wrapped_message.empty()) {
-    LOG(kError) << "Failed to wrap message: " <<  Base64Substr(source_id);
+    LOG(kError) << "Failed to wrap message: " <<  Base32Substr(source_id);
     return false;
   }
 
@@ -172,8 +172,8 @@ bool RoutingsHandler::Send(const std::string& source_id,
                          };
   }
 
-  routing_details.routing_object->Send(routing::NodeId(destination_id),
-                                       routing::NodeId(),
+  routing_details.routing_object->Send(NodeId(destination_id),
+                                       NodeId(),
                                        wrapped_message,
                                        response_functor,
                                        boost::posix_time::seconds(10),
@@ -185,11 +185,11 @@ bool RoutingsHandler::Send(const std::string& source_id,
     if (!condition_variable.wait_for(message_loch,
                                      std::chrono::seconds(10),
                                      [&] ()->bool { return message_received; })) {
-      LOG(kError) << "Timed out waiting for response from " << Base64Substr(destination_id);
+      LOG(kError) << "Timed out waiting for response from " << Base32Substr(destination_id);
       return false;
     }
     if (message_from_routing.empty()) {
-      LOG(kError) << "Message from " << Base64Substr(destination_id) << " is empty. "
+      LOG(kError) << "Message from " << Base32Substr(destination_id) << " is empty. "
                   << "Probably timed out in routing.";
       return false;
     }
@@ -199,7 +199,7 @@ bool RoutingsHandler::Send(const std::string& source_id,
                        destination_public_key,
                        routing_details.keys.private_key,
                        unwrapped_message)) {
-      LOG(kError) << "Message from " << Base64Substr(destination_id) << " is not decryptable. "
+      LOG(kError) << "Message from " << Base32Substr(destination_id) << " is not decryptable. "
                   << "Probably corrupted.";
       return false;
     }
@@ -235,7 +235,7 @@ bool FindPublicKeyForSenderId(const ContactsHandlerPtr& contacts_handler,
 
 void RoutingsHandler::OnRequestReceived(const std::string& receiver_id,
                                         const std::string& wrapped_message,
-                                        const routing::NodeId& sender_id,
+                                        const NodeId& sender_id,
                                         const routing::ReplyFunctor& reply_functor) {
   RoutingDetails routing_details;
   {
@@ -276,7 +276,7 @@ void RoutingsHandler::OnRequestReceived(const std::string& receiver_id,
     reply_functor(response);
 }
 
-void RoutingsHandler::OnPublicKeyRequested(const routing::NodeId& node_id,
+void RoutingsHandler::OnPublicKeyRequested(const NodeId& node_id,
                                            const routing::GivePublicKeyFunctor& give_key) {
   std::string network_name(node_id.String() + std::string(1, pca::kSignaturePacket));
   std::string network_value(chunk_store_.Get(network_name));

@@ -36,6 +36,7 @@ if(NOT ${LOCAL_TARGETS_ONLY})
   include_directories(${rudp_SOURCE_DIR}/include)
   include_directories(${routing_SOURCE_DIR}/include)
   include_directories(${pd_SOURCE_DIR}/include)
+  include_directories(${pd_SOURCE_DIR}/src/)
 endif()
 
 
@@ -149,7 +150,7 @@ if(NOT ${LOCAL_TARGETS_ONLY})
   ms_add_executable(TESTlifestuff_user_credentials "Tests/LifeStuff" ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
   ms_add_executable(TESTlifestuff_user_storage "Tests/LifeStuff" ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
   ms_add_executable(TESTlifestuff_api "Tests/LifeStuff" ${API_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
-  target_link_libraries(maidsafe_lifestuff maidsafe_lifestuff_detail maidsafe_pd maidsafe_routing)
+  target_link_libraries(maidsafe_lifestuff maidsafe_lifestuff_detail maidsafe_pd_vault maidsafe_routing)
   set(NetworkTargets TESTlifestuff_public_id TESTlifestuff_user_credentials TESTlifestuff_user_storage TESTlifestuff_api)
     add_custom_command(TARGET maidsafe_lifestuff
                        PRE_BUILD

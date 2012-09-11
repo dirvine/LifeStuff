@@ -26,18 +26,18 @@
 #include "maidsafe/common/test.h"
 
 int main(int argc, char** argv) {
-//  maidsafe::log::Logging::instance().AddFilter("common", maidsafe::log::kFatal);
-//  maidsafe::log::Logging::instance().AddFilter("private", maidsafe::log::kFatal);
-//  maidsafe::log::Logging::instance().AddFilter("encrypt", maidsafe::log::kFatal);
-//  maidsafe::log::Logging::instance().AddFilter("drive", maidsafe::log::kFatal);
-//  maidsafe::log::Logging::instance().AddFilter("passport", maidsafe::log::kFatal);
+  maidsafe::log::Logging::instance().AddFilter("common", maidsafe::log::kFatal);
+  maidsafe::log::Logging::instance().AddFilter("private", maidsafe::log::kFatal);
+  maidsafe::log::Logging::instance().AddFilter("encrypt", maidsafe::log::kFatal);
+  maidsafe::log::Logging::instance().AddFilter("drive", maidsafe::log::kFatal);
+  maidsafe::log::Logging::instance().AddFilter("passport", maidsafe::log::kFatal);
 //#ifndef LOCAL_TARGETS_ONLY
-//  maidsafe::log::Logging::instance().AddFilter("rudp", maidsafe::log::kFatal);
-//  maidsafe::log::Logging::instance().AddFilter("routing", maidsafe::log::kFatal);
-//  maidsafe::log::Logging::instance().AddFilter("pd", maidsafe::log::kFatal);
+  maidsafe::log::Logging::instance().AddFilter("rudp", maidsafe::log::kError);
+  maidsafe::log::Logging::instance().AddFilter("routing", maidsafe::log::kVerbose);
+  maidsafe::log::Logging::instance().AddFilter("pd", maidsafe::log::kSuccess);
 //#endif
-//  maidsafe::log::Logging::instance().AddFilter("lifestuff", maidsafe::log::kError);
-  maidsafe::log::Logging::instance().AddFilter("*", maidsafe::log::kInfo);
+  maidsafe::log::Logging::instance().AddFilter("lifestuff", maidsafe::log::kSuccess);
+//  maidsafe::log::Logging::instance().AddFilter("*", maidsafe::log::kVerbose);
   maidsafe::log::Logging::instance().SetColour(maidsafe::log::ColourMode::kFullLine);
 
   testing::FLAGS_gtest_catch_exceptions = false;

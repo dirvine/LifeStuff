@@ -82,10 +82,10 @@ class RoutingsHandler {
 
   void OnRequestReceived(const std::string& owner_id,
                          const std::string& wrapped_message,
-                         const routing::NodeId& group_claim,
+                         const NodeId& group_claim,
                          const routing::ReplyFunctor& reply_functor);
 
-  void OnPublicKeyRequested(const routing::NodeId& node_id,
+  void OnPublicKeyRequested(const NodeId& node_id,
                             const routing::GivePublicKeyFunctor& give_key);
 
   std::string WrapMessage(const std::string &message,

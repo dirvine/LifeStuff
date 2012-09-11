@@ -45,6 +45,7 @@
 #ifndef LOCAL_TARGETS_ONLY
 #include "maidsafe/pd/client/node.h"
 #include "maidsafe/pd/client/utils.h"
+#include "maidsafe/pd/vault/node.h"
 #include "maidsafe/lifestuff/tests/network_helper.h"
 #endif
 
@@ -133,19 +134,44 @@ class UserCredentialsTest : public testing::Test {
   }
 
 #ifndef LOCAL_TARGETS_ONLY
-  void ResetNodeAndDependencies() {
-    node_->Stop();
+  int CreateVaultForClient(pd::vault::Node& vault_node) {
+    vault_node.set_do_backup_state(false);
+    vault_node.set_do_synchronise(true);
+    vault_node.set_do_check_integrity(false);
+    vault_node.set_do_announce_chunks(false);
+    std::string account_name(session_.passport().SignaturePacketDetails(passport::kMaid,
+                                                                        true).identity);
+    LOG(kSuccess) << "Account name for vault " << Base32Substr(account_name);
+    vault_node.set_account_name(account_name);
+    vault_node.set_keys(std::make_shared<asymm::Keys>(
+                            session_.passport().SignaturePacketDetails(passport::kPmid, true)));
+
+    return vault_node.Start(*test_dir_ / ("client_vault" + RandomAlphaNumericString(8)));
+  }
+
+  int ResetNodeAndDependencies() {
+    int result(node_->Stop());
+    if (result != kSuccess) {
+      LOG(kError) << "Failed to stop client node.";
+      return result;
+    }
     std::shared_ptr<asymm::Keys> maid(new asymm::Keys(
         session_.passport().SignaturePacketDetails(passport::kMaid, true)));
     node_->set_keys(maid);
-    node_->set_account_name("");
-    node_->Start(*test_dir_ / "buffered_chunk_store");
+    node_->set_account_name(maid->identity);
+    result = node_->Start(*test_dir_ / "buffered_chunk_store");
+    if (result != kSuccess) {
+      LOG(kError) << "Failed to start client node.";
+      return result;
+    }
+
     remote_chunk_store_.reset(new pcs::RemoteChunkStore(node_->chunk_store(),
                                                         node_->chunk_manager(),
                                                         node_->chunk_action_authority()));
     user_credentials_.reset(new UserCredentials(*remote_chunk_store_,
                                                 session_,
                                                 asio_service_.service()));
+    return kSuccess;
   }
 #endif
 
@@ -167,29 +193,34 @@ class UserCredentialsTest : public testing::Test {
 };
 
 TEST_F(UserCredentialsTest, FUNC_LoginSequence) {
-//  ASSERT_TRUE(session_.keyword().empty());
-//  ASSERT_TRUE(session_.pin().empty());
-//  ASSERT_TRUE(session_.password().empty());
-//  LOG(kInfo) << "Preconditions fulfilled.\n===================\n";
+  ASSERT_TRUE(session_.keyword().empty());
+  ASSERT_TRUE(session_.pin().empty());
+  ASSERT_TRUE(session_.password().empty());
+  ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
+  LOG(kSuccess) << "Preconditions fulfilled.\n===================\n";
 
-//  ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
   session_.set_unique_user_id(RandomString(64));
   session_.set_root_parent_id(RandomString(64));
   ASSERT_EQ(keyword_, session_.keyword());
   ASSERT_EQ(pin_, session_.pin());
   ASSERT_EQ(password_, session_.password());
-  LOG(kInfo) << "User created.\n===================\n";
+  LOG(kSuccess) << "User created.\n===================\n\n\n\n";
 
 #ifndef LOCAL_TARGETS_ONLY
-  ResetNodeAndDependencies();
+  pd::vault::Node node;
+  ASSERT_EQ(kSuccess, CreateVaultForClient(node));
+  LOG(kSuccess) << "Constructed vault.\n===================\n\n\n\n";
+  Sleep(bptime::seconds(15));
+  ASSERT_EQ(kSuccess, ResetNodeAndDependencies());
+  LOG(kSuccess) << "Constructed new client node.\n===================\n\n\n\n";
 #endif
 
-  ASSERT_EQ(kSuccess, user_credentials_->Logout());
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
-  LOG(kInfo) << "Logged out.\n===================\n";
+//  ASSERT_EQ(kSuccess, user_credentials_->Logout());
+//  ASSERT_TRUE(session_.keyword().empty());
+//  ASSERT_TRUE(session_.pin().empty());
+//  ASSERT_TRUE(session_.password().empty());
+//  LOG(kInfo) << "Logged out.\n===================\n";
 
 //  ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
 //  ASSERT_EQ(keyword_, session_.keyword());

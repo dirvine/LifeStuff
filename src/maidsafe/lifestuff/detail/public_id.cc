@@ -1247,18 +1247,18 @@ int PublicId::RetrieveLifestuffCard(const std::string& lifestuff_card_address,
 
   pca::SignedData signed_data;
   if (!signed_data.ParseFromString(net_lifestuff_card)) {
-    LOG(kError) << "Network data doesn't parse for " << Base64Substr(lifestuff_card_address);
+    LOG(kError) << "Network data doesn't parse for " << Base32Substr(lifestuff_card_address);
     return kRemoteChunkStoreFailure;
   }
 
   LifeStuffCard lifestuff_card;
   if (!lifestuff_card.ParseFromString(signed_data.data())) {
-    LOG(kError) << "Network data doesn't parse for " << Base64Substr(lifestuff_card_address);
+    LOG(kError) << "Network data doesn't parse for " << Base32Substr(lifestuff_card_address);
     return kRemoteChunkStoreFailure;
   }
 
   if (lifestuff_card.empty()) {
-    LOG(kInfo) << "Card is empty for " << Base64Substr(lifestuff_card_address);
+    LOG(kInfo) << "Card is empty for " << Base32Substr(lifestuff_card_address);
     return kSuccess;
   }
 
