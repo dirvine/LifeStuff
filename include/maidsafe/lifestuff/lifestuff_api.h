@@ -200,6 +200,7 @@ class LifeStuff {
 
   ///
   int state() const;
+  int logged_in_state() const;
   fs::path mount_path() const;
 
  private:
