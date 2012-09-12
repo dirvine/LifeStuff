@@ -46,6 +46,7 @@
 #include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/utils.h"
 
+
 namespace args = std::placeholders;
 namespace pca = maidsafe::priv::chunk_actions;
 namespace bptime = boost::posix_time;
@@ -143,6 +144,7 @@ int UserCredentialsImpl::AttemptLogInProcess(const std::string& keyword,
       return lid_result;
     }
   }
+
 
   std::string mid_packet, smid_packet;
   result = GetUserInfo(keyword, pin, password, false, mid_packet, smid_packet);
@@ -510,7 +512,7 @@ int UserCredentialsImpl::CreateUser(const std::string& keyword,
     return result;
   }
 
-  StartSessionSaver();
+//  StartSessionSaver();
 
   return kSuccess;
 }
@@ -538,7 +540,7 @@ int UserCredentialsImpl::ProcessSigningPackets() {
 }
 
 int UserCredentialsImpl::StoreAnonymousPackets() {
-  std::vector<int> individual_results(4, kPendingResult);
+  std::vector<int> individual_results(4, priv::utilities::kPendingResult);
   std::condition_variable condition_variable;
   std::mutex mutex;
   OperationResults results(mutex, condition_variable, individual_results);
@@ -552,7 +554,8 @@ int UserCredentialsImpl::StoreAnonymousPackets() {
   // PMID path: ANMAID, MAID, PMID
   StoreAnmaid(results);
 
-  int result(utils::WaitForResults(mutex, condition_variable, individual_results));
+  int result(utils::WaitForResults(mutex, condition_variable, individual_results,
+                                   std::chrono::seconds(30)));
   if (result != kSuccess) {
     LOG(kError) << "Wait for results timed out: " << result;
     LOG(kError) << "ANMID: " << individual_results.at(0)
@@ -602,7 +605,7 @@ void UserCredentialsImpl::StoreSignaturePacket(std::shared_ptr<asymm::Keys> pack
   CreateSignaturePacketInfo(packet, &packet_name, &packet_content);
   if (!remote_chunk_store_.Store(packet_name,
                                  packet_content,
-                                 [&] (bool result) {
+                                 [&, index] (bool result) {
                                    OperationCallback(result, results, index);
                                  },
                                  packet)) {
@@ -735,7 +738,7 @@ int UserCredentialsImpl::ProcessIdentityPackets(const std::string& keyword,
 }
 
 int UserCredentialsImpl::StoreIdentityPackets() {
-  std::vector<int> individual_results(4, kPendingResult);
+  std::vector<int> individual_results(4, priv::utilities::kPendingResult);
   std::condition_variable condition_variable;
   std::mutex mutex;
   OperationResults results(mutex, condition_variable, individual_results);
@@ -749,7 +752,8 @@ int UserCredentialsImpl::StoreIdentityPackets() {
   // STMID
   StoreStmid(results);
 
-  int result(utils::WaitForResults(mutex, condition_variable, individual_results));
+  int result(utils::WaitForResults(mutex, condition_variable, individual_results,
+                                   std::chrono::seconds(60)));
   if (result != kSuccess) {
     LOG(kError) << "Wait for results timed out.";
     return result;
@@ -810,7 +814,7 @@ void UserCredentialsImpl::StoreIdentity(OperationResults& results,
   signed_data.set_signature(signature);
   if (!remote_chunk_store_.Store(packet_name,
                                  signed_data.SerializeAsString(),
-                                 [&] (bool result) {
+                                 [&, index] (bool result) {
                                    OperationCallback(result, results, index);
                                  },
                                  signer)) {
@@ -842,7 +846,7 @@ int UserCredentialsImpl::StoreLid(const std::string keyword,
   signed_data.set_data(encrypted_account_status);
   signed_data.set_signature(signature);
 
-  std::vector<int> individual_result(1, kPendingResult);
+  std::vector<int> individual_result(1, priv::utilities::kPendingResult);
   std::condition_variable condition_variable;
   std::mutex mutex;
   OperationResults operation_result(mutex, condition_variable, individual_result);
@@ -855,7 +859,8 @@ int UserCredentialsImpl::StoreLid(const std::string keyword,
     LOG(kError) << "Failed to store LID.";
     OperationCallback(false, operation_result, 0);
   }
-  result = utils::WaitForResults(mutex, condition_variable, individual_result);
+  result = utils::WaitForResults(mutex, condition_variable, individual_result,
+                                 std::chrono::seconds(60));
   if (result != kSuccess) {
     LOG(kError) << "Failed to store LID:" << result;
     return result;
@@ -886,7 +891,7 @@ int UserCredentialsImpl::SaveSession(bool log_out) {
     return result;
   }
 
-  std::vector<int> individual_results(4, kPendingResult);
+  std::vector<int> individual_results(4, priv::utilities::kPendingResult);
   std::condition_variable condition_variable;
   std::mutex mutex;
   OperationResults results(mutex, condition_variable, individual_results);
@@ -896,7 +901,8 @@ int UserCredentialsImpl::SaveSession(bool log_out) {
   StoreTmid(results);
   DeleteStmid(results);
 
-  result = utils::WaitForResults(mutex, condition_variable, individual_results);
+  result = utils::WaitForResults(mutex, condition_variable, individual_results,
+                                 std::chrono::seconds(30));
   if (result != kSuccess) {
     LOG(kError) << "Failed to store new identity packets: Time out.";
     return kSaveSessionFailure;
@@ -1059,7 +1065,7 @@ void UserCredentialsImpl::ModifyIdentity(OperationResults& results,
   signed_data.set_signature(signature);
   if (!remote_chunk_store_.Modify(name,
                                   signed_data.SerializeAsString(),
-                                  [&] (bool result) {
+                                  [&, index] (bool result) {
                                     OperationCallback(result, results, index);
                                   },
                                   signer)) {
@@ -1092,7 +1098,7 @@ int UserCredentialsImpl::ModifyLid(const std::string keyword,
   signed_data.set_data(encrypted_account_status);
   signed_data.set_signature(signature);
 
-  std::vector<int> individual_result(1, kPendingResult);
+  std::vector<int> individual_result(1, priv::utilities::kPendingResult);
   std::condition_variable condition_variable;
   std::mutex mutex;
   OperationResults operation_result(mutex, condition_variable, individual_result);
@@ -1105,7 +1111,8 @@ int UserCredentialsImpl::ModifyLid(const std::string keyword,
     LOG(kError) << "Failed to modify LID.";
     OperationCallback(false, operation_result, 0);
   }
-  result = utils::WaitForResults(mutex, condition_variable, individual_result);
+  result = utils::WaitForResults(mutex, condition_variable, individual_result,
+                                 std::chrono::seconds(30));
   if (result != kSuccess) {
     LOG(kError) << "Failed to modify LID:" << result;
     return result;
@@ -1194,7 +1201,7 @@ int UserCredentialsImpl::ChangeKeywordPin(const std::string& new_keyword,
 }
 
 int UserCredentialsImpl::DeleteOldIdentityPackets() {
-  std::vector<int> individual_results(4, kPendingResult);
+  std::vector<int> individual_results(4, priv::utilities::kPendingResult);
   std::condition_variable condition_variable;
   std::mutex mutex;
   OperationResults results(mutex, condition_variable, individual_results);
@@ -1204,7 +1211,8 @@ int UserCredentialsImpl::DeleteOldIdentityPackets() {
   DeleteTmid(results);
   DeleteStmid(results);
 
-  int result(utils::WaitForResults(mutex, condition_variable, individual_results));
+  int result(utils::WaitForResults(mutex, condition_variable, individual_results,
+                                   std::chrono::seconds(30)));
   if (result != kSuccess) {
     LOG(kError) << "Wait for results timed out.";
     return result;
@@ -1257,7 +1265,7 @@ void UserCredentialsImpl::DeleteIdentity(OperationResults& results,
   std::shared_ptr<asymm::Keys> signer(new asymm::Keys(passport_.SignaturePacketDetails(sig_type,
                                                                                        true)));
   if (!remote_chunk_store_.Delete(name,
-                                  [&] (bool result) {
+                                  [&, index] (bool result) {
                                     OperationCallback(result, results, index);
                                   },
                                   signer)) {
@@ -1274,7 +1282,7 @@ int UserCredentialsImpl::DeleteLid(const std::string& keyword,
   std::shared_ptr<asymm::Keys> signer(new asymm::Keys(
                                           passport_.SignaturePacketDetails(passport::kAnmid,
                                                                            true)));
-  std::vector<int> individual_result(1, kPendingResult);
+  std::vector<int> individual_result(1, priv::utilities::kPendingResult);
   std::condition_variable condition_variable;
   std::mutex mutex;
   OperationResults operation_result(mutex, condition_variable, individual_result);
@@ -1286,7 +1294,8 @@ int UserCredentialsImpl::DeleteLid(const std::string& keyword,
     LOG(kError) << "Failed to delete LID.";
     OperationCallback(false, operation_result, 0);
   }
-  int result = utils::WaitForResults(mutex, condition_variable, individual_result);
+  int result = utils::WaitForResults(mutex, condition_variable, individual_result,
+                                     std::chrono::seconds(30));
   if (result != kSuccess) {
     LOG(kError) << "Storing new LID timed out.";
     return result;
@@ -1355,7 +1364,7 @@ int UserCredentialsImpl::ChangePassword(const std::string& new_password) {
 }
 
 int UserCredentialsImpl::DoChangePasswordAdditions() {
-  std::vector<int> individual_results(4, kPendingResult);
+  std::vector<int> individual_results(4, priv::utilities::kPendingResult);
   std::condition_variable condition_variable;
   std::mutex mutex;
   OperationResults new_results(mutex, condition_variable, individual_results);
@@ -1365,7 +1374,8 @@ int UserCredentialsImpl::DoChangePasswordAdditions() {
   StoreTmid(new_results);
   StoreStmid(new_results);
 
-  int result(utils::WaitForResults(mutex, condition_variable, individual_results));
+  int result(utils::WaitForResults(mutex, condition_variable, individual_results,
+                                   std::chrono::seconds(30)));
   if (result != kSuccess) {
     LOG(kError) << "Failed to store new identity packets: Time out.";
     return kChangePasswordFailure;
@@ -1389,15 +1399,17 @@ int UserCredentialsImpl::DoChangePasswordAdditions() {
 int UserCredentialsImpl::DoChangePasswordRemovals() {
   // Delete old TMID, STMID
   std::vector<int> individual_results(4, kSuccess);
+
   std::condition_variable condition_variable;
   std::mutex mutex;
-  individual_results[2] = kPendingResult;
-  individual_results[3] = kPendingResult;
+  individual_results[2] = priv::utilities::kPendingResult;
+  individual_results[3] = priv::utilities::kPendingResult;
   OperationResults del_results(mutex, condition_variable, individual_results);
   DeleteTmid(del_results);
   DeleteStmid(del_results);
 
-  int result(utils::WaitForResults(mutex, condition_variable, individual_results));
+  int result(utils::WaitForResults(mutex, condition_variable, individual_results,
+                                   std::chrono::seconds(30)));
   if (result != kSuccess) {
     LOG(kError) << "Failed to store new identity packets: Time out.";
     return kChangePasswordFailure;
@@ -1482,7 +1494,7 @@ int UserCredentialsImpl::DeleteUserCredentials() {
 }
 
 int UserCredentialsImpl::DeleteSignaturePackets() {
-  std::vector<int> individual_results(4, kPendingResult);
+  std::vector<int> individual_results(4, priv::utilities::kPendingResult);
   std::condition_variable condition_variable;
   std::mutex mutex;
   OperationResults results(mutex, condition_variable, individual_results);
@@ -1496,7 +1508,8 @@ int UserCredentialsImpl::DeleteSignaturePackets() {
   // PMID path: PMID, MAID, ANMAID
   DeletePmid(results);
 
-  int result(utils::WaitForResults(mutex, condition_variable, individual_results));
+  int result(utils::WaitForResults(mutex, condition_variable, individual_results,
+                                   std::chrono::seconds(30)));
   if (result != kSuccess) {
     LOG(kError) << "Wait for results timed out: " << result;
     LOG(kError) << "ANMID: " << individual_results.at(0)
@@ -1591,7 +1604,7 @@ void UserCredentialsImpl::DeleteSignaturePacket(std::shared_ptr<asymm::Keys> pac
                                                 int index) {
   std::string packet_name(pca::ApplyTypeToName(packet->identity, pca::kSignaturePacket));
   if (!remote_chunk_store_.Delete(packet_name,
-                                  [&] (bool result) {
+                                  [&, index] (bool result) {
                                     OperationCallback(result, results, index);
                                   },
                                   packet)) {

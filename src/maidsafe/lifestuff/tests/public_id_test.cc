@@ -283,8 +283,15 @@ class PublicIdTest : public testing::Test {
                                            *test_dir_ / "simulation",
                                            asio_service2_.service());
 #else
-    remote_chunk_store1_ = BuildChunkStore(*test_dir_, node1_);
-    remote_chunk_store2_ = BuildChunkStore(*test_dir_, node2_);
+    std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
+    remote_chunk_store1_ = BuildChunkStore(*test_dir_,
+                                           bootstrap_endpoints,
+                                           node1_,
+                                           NetworkHealthFunction());
+    remote_chunk_store2_ = BuildChunkStore(*test_dir_,
+                                           bootstrap_endpoints,
+                                           node2_,
+                                           NetworkHealthFunction());
 #endif
 
     public_id1_.reset(new PublicId(remote_chunk_store1_, session1_, asio_service1_.service()));
@@ -329,7 +336,7 @@ class PublicIdTest : public testing::Test {
                 new_inbox_name(AppendableByAllName(new_inbox_keys.identity));
     std::shared_ptr<asymm::Keys> shared_keys(new asymm::Keys(new_inbox_keys));
 
-    int result(kPendingResult);
+    int result(priv::utilities::kPendingResult);
     std::function<void(bool)> callback = [&] (const bool& response) {  // NOLINT (Dan)
                                            priv::utilities::ChunkStoreOperationCallback(response,
                                                                                         &mutex,
@@ -341,10 +348,13 @@ class PublicIdTest : public testing::Test {
                                             callback,
                                             shared_keys));
     {
+
       std::unique_lock<std::mutex> lock(mutex);
       ASSERT_TRUE(cond_var.wait_for(lock,
-                                    std::chrono::seconds(5),
-                                    [&result] ()->bool { return result != kPendingResult; }));  // NOLINT (Dan)
+                                    std::chrono::seconds(60),
+                                    [&result] ()->bool {
+                                      return result != priv::utilities::kPendingResult;
+                                    }));  // NOLINT (Dan)
     }
     ASSERT_EQ(kSuccess, result);
     inbox_name = new_inbox_keys.identity;

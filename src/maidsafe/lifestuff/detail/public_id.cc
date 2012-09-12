@@ -32,7 +32,6 @@
 
 #include "maidsafe/passport/passport.h"
 
-#include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
 #include "maidsafe/lifestuff/detail/data_atlas_pb.h"
@@ -122,10 +121,10 @@ int PublicId::CreatePublicId(const std::string& public_id, bool accepts_new_cont
   std::mutex mutex;
   std::condition_variable cond_var;
   std::vector<int> results;
-  results.push_back(kPendingResult);
-  results.push_back(kPendingResult);
-  results.push_back(kPendingResult);
-  results.push_back(kPendingResult);
+  results.push_back(priv::utilities::kPendingResult);
+  results.push_back(priv::utilities::kPendingResult);
+  results.push_back(priv::utilities::kPendingResult);
+  results.push_back(priv::utilities::kPendingResult);
 
   VoidFunctionOneBool callback = [&] (const bool& response) {
                                    utils::ChunkStoreOperationCallback(response,
@@ -258,7 +257,7 @@ int PublicId::EnablePublicId(const std::string& public_id) {
 }
 
 int PublicId::DeletePublicId(const std::string& public_id) {
-  std::vector<int> individual_results(4, kPendingResult);
+  std::vector<int> individual_results(4, priv::utilities::kPendingResult);
   std::condition_variable condition_variable;
   std::mutex mutex;
   OperationResults results(mutex, condition_variable, individual_results);
@@ -440,7 +439,7 @@ int PublicId::RemoveContact(const std::string& own_public_id,
   std::mutex mutex;
   std::condition_variable cond_var;
   std::vector<int> results;
-  results.push_back(kPendingResult);
+  results.push_back(priv::utilities::kPendingResult);
 
   VoidFunctionOneBool callback = [&] (const bool& response) {
                                    utils::ChunkStoreOperationCallback(response,
@@ -497,7 +496,7 @@ int PublicId::RemoveContact(const std::string& own_public_id,
   }
 
   // Invalidate previous MMID, i.e. put it into kModifiableByOwner
-  results[0] = kPendingResult;
+  results[0] = priv::utilities::kPendingResult;
   std::shared_ptr<asymm::Keys> old_mmid(new asymm::Keys(
       passport_.SignaturePacketDetails(passport::kMmid, true, own_public_id)));
   callback = [&] (const bool& response) {
@@ -617,7 +616,7 @@ int PublicId::SetLifestuffCard(const std::string& my_public_id, const SocialInfo
   std::mutex mutex;
   std::condition_variable cond_var;
   std::vector<int> results;
-  results.push_back(kPendingResult);
+  results.push_back(priv::utilities::kPendingResult);
 
   VoidFunctionOneBool callback = [&] (const bool& response) {
                                    utils::ChunkStoreOperationCallback(response,
@@ -958,8 +957,8 @@ int PublicId::ModifyAppendability(const std::string& public_id, const char appen
   std::mutex mutex;
   std::condition_variable cond_var;
   std::vector<int> results;
-  results.push_back(kPendingResult);
-  results.push_back(kPendingResult);
+  results.push_back(priv::utilities::kPendingResult);
+  results.push_back(priv::utilities::kPendingResult);
 
   std::shared_ptr<asymm::Keys> mpid(new asymm::Keys(
       passport_.SignaturePacketDetails(passport::kMpid, true, public_id)));
@@ -1031,7 +1030,7 @@ int PublicId::InformContactInfo(const std::string& public_id,
   // Inform each contact in the contact list of the MMID contact info
   std::mutex mutex;
   std::condition_variable cond_var;
-  std::vector<int> results(contacts.size(), kPendingResult);
+  std::vector<int> results(contacts.size(), priv::utilities::kPendingResult);
   size_t size(contacts.size());
 
   for (size_t i = 0; i < size; ++i) {
@@ -1156,7 +1155,7 @@ int PublicId::StoreLifestuffCard(std::shared_ptr<asymm::Keys> mmid,
                                  std::string& lifestuff_card_address) {
   int attempts(0), wait_result(kSuccess);
   std::string card_address, empty_card_content(EmptyCardContent(mmid->private_key));
-  std::vector<int> results(1, kPendingResult);
+  std::vector<int> results(1, priv::utilities::kPendingResult);
   std::mutex mutex;
   std::condition_variable cond_var;
   VoidFunctionOneBool callback = [&] (const bool& response) {
@@ -1166,7 +1165,7 @@ int PublicId::StoreLifestuffCard(std::shared_ptr<asymm::Keys> mmid,
                                                                       &results[0]);
                                  };
   while (attempts++ < 10) {
-    results[0] = kPendingResult;
+    results[0] = priv::utilities::kPendingResult;
     card_address = pca::ApplyTypeToName(RandomString(64), pca::kModifiableByOwner);
     if (!remote_chunk_store_->Store(card_address, empty_card_content, callback, mmid)) {
       LOG(kInfo) << "Failed to store lifestuff card, attempt: " << (attempts - 1);
@@ -1187,7 +1186,7 @@ int PublicId::StoreLifestuffCard(std::shared_ptr<asymm::Keys> mmid,
 
 int PublicId::RemoveLifestuffCard(const std::string& lifestuff_card_address,
                                   std::shared_ptr<asymm::Keys> mmid) {
-  std::vector<int> results(1, kPendingResult);
+  std::vector<int> results(1, priv::utilities::kPendingResult);
   std::mutex mutex;
   std::condition_variable cond_var;
   VoidFunctionOneBool callback = [&] (const bool& response) {
@@ -1250,18 +1249,18 @@ int PublicId::RetrieveLifestuffCard(const std::string& lifestuff_card_address,
 
   pca::SignedData signed_data;
   if (!signed_data.ParseFromString(net_lifestuff_card)) {
-    LOG(kError) << "Network data doesn't parse for " << Base64Substr(lifestuff_card_address);
+    LOG(kError) << "Network data doesn't parse for " << Base32Substr(lifestuff_card_address);
     return kRemoteChunkStoreFailure;
   }
 
   LifeStuffCard lifestuff_card;
   if (!lifestuff_card.ParseFromString(signed_data.data())) {
-    LOG(kError) << "Network data doesn't parse for " << Base64Substr(lifestuff_card_address);
+    LOG(kError) << "Network data doesn't parse for " << Base32Substr(lifestuff_card_address);
     return kRemoteChunkStoreFailure;
   }
 
   if (lifestuff_card.empty()) {
-    LOG(kInfo) << "Card is empty for " << Base64Substr(lifestuff_card_address);
+    LOG(kInfo) << "Card is empty for " << Base32Substr(lifestuff_card_address);
     return kSuccess;
   }
 

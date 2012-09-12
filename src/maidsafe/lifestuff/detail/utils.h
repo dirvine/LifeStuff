@@ -145,6 +145,14 @@ bool VerifyOrCreatePath(const fs::path& path);
 
 std::string IsoTimeWithMicroSeconds();
 
+bool MessagePointToPoint(const std::string& unwrapped_message,
+                         const asymm::PublicKey& recipient_public_key,
+                         const asymm::PrivateKey& sender_private_key,
+                         std::string& final_message);
+bool PointToPointMessageValid(const std::string& wrapped_message,
+                              const asymm::PublicKey& sender_public_key,
+                              const asymm::PrivateKey& receiver_private_key,
+                              std::string& final_message);
 }  // namespace lifestuff
 
 }  // namespace maidsafe

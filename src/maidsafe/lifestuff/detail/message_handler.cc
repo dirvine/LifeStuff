@@ -34,7 +34,6 @@
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
-#include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
 #include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/utils.h"
@@ -189,7 +188,7 @@ int MessageHandler::Send(const InboxItem& inbox_item) {
   // Store encrypted MMID at recipient's MPID's name
   std::mutex mutex;
   std::condition_variable cond_var;
-  result = kPendingResult;
+  result = priv::utilities::kPendingResult;
 
   std::string inbox_id(AppendableByAllType(recipient_contact.inbox_name));
   VoidFunctionOneBool callback([&] (const bool& response) {
@@ -204,10 +203,13 @@ int MessageHandler::Send(const InboxItem& inbox_item) {
   }
 
   try {
+
     std::unique_lock<std::mutex> lock(mutex);
     if (!cond_var.wait_for(lock,
                            std::chrono::seconds(kSecondsInterval),
-                           [&result] ()->bool { return result != kPendingResult; })) {  // NOLINT (Dan)
+                           [&result] ()->bool {
+                             return result != priv::utilities::kPendingResult;
+                           })) {
       LOG(kError) << "Timed out storing packet.";
       return kPublicIdTimeout;
     }

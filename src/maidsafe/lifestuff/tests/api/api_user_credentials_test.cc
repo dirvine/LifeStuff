@@ -81,7 +81,7 @@ TEST_F(OneUserApiTest, FUNC_ChangePinAndPasswordSimultaneously) {
   std::string new_password(RandomAlphaNumericString(5));
   int result_pin(0), result_password(0);
 
-  std::vector<std::pair<int, int> > sleep_values;
+  std::vector<std::pair<int, int>> sleep_values;
   sleep_values.push_back(std::make_pair(0, 200));
   sleep_values.push_back(std::make_pair(100, 200));
   sleep_values.push_back(std::make_pair(100, 150));
@@ -119,7 +119,7 @@ TEST_F(OneUserApiTest, FUNC_ChangeKeywordAndPasswordSimultaneously) {
   std::string new_password(RandomAlphaNumericString(5));
   int result_keyword(0), result_password(0);
 
-  std::vector<std::pair<int, int> > sleep_values;
+  std::vector<std::pair<int, int>> sleep_values;
   sleep_values.push_back(std::make_pair(0, 200));
   sleep_values.push_back(std::make_pair(100, 200));
   sleep_values.push_back(std::make_pair(100, 150));
@@ -157,7 +157,7 @@ TEST_F(OneUserApiTest, FUNC_ChangePinAndKeywordSimultaneously) {
   std::string new_keyword(RandomAlphaNumericString(5));
   int result_pin(0), result_keyword(0);
 
-  std::vector<std::pair<int, int> > sleep_values;
+  std::vector<std::pair<int, int>> sleep_values;
   sleep_values.push_back(std::make_pair(0, 200));
   sleep_values.push_back(std::make_pair(100, 200));
   sleep_values.push_back(std::make_pair(100, 150));
@@ -591,7 +591,7 @@ TEST_F(TwoInstancesApiTest, DISABLED_FUNC_LogInFromTwoPlacesSimultaneously) {
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
 
   int result_1(0), result_2(0);
-  std::vector<std::pair<int, int> > sleep_values;
+  std::vector<std::pair<int, int>> sleep_values;
   sleep_values.push_back(std::make_pair(0, 200));
   sleep_values.push_back(std::make_pair(100, 200));
   sleep_values.push_back(std::make_pair(100, 150));
@@ -996,7 +996,7 @@ TEST_F(TwoUsersApiTest, FUNC_ChangePinsAndKeywordsToSameSimultaneously) {
 
 TEST_F(TwoUsersApiTest, FUNC_ChangeCredentialsToSameSimultaneously) {
 #ifdef MAIDSAFE_LINUX
-  std::vector<std::pair<int, int> > sleep_values;
+  std::vector<std::pair<int, int>> sleep_values;
   sleep_values.push_back(std::make_pair(0, 200));
   sleep_values.push_back(std::make_pair(100, 200));
   sleep_values.push_back(std::make_pair(100, 150));
