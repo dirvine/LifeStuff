@@ -462,7 +462,7 @@ void OperationCallback(bool result, OperationResults& results, int index) {
 int AssessJointResult(const std::vector<int>& results) {
   auto it(std::find_if(results.begin(),
                        results.end(),
-                       [&] (const int& element)->bool { return element != kSuccess; }));
+                       [&] (const int& element)->bool { return element != kSuccess; }));  // NOLINT (Alison)
   if (it != results.end())
     return kAtLeastOneFailure;
 
