@@ -115,7 +115,7 @@ void UserStorage::MountDrive(const fs::path& mount_dir_path,
   mount_status_ = true;
 #else
   mount_dir_ = mount_dir_path;
-  mount_thread_.reset(new boost::thread([this, drive_logo, read_only] {
+  mount_thread_ = std::move(std::thread([this, drive_logo, read_only] {
                                           drive_in_user_space_->Mount(mount_dir_,
                                                                       drive_logo,
                                                                       session_->max_space(),
@@ -138,7 +138,7 @@ void UserStorage::UnMountDrive() {
 #else
   drive_in_user_space_->Unmount(max_space, used_space);
   drive_in_user_space_->WaitUntilUnMounted();
-  mount_thread_->join();
+  mount_thread_.join();
   boost::system::error_code error_code;
   fs::remove_all(mount_dir_, error_code);
 #endif
@@ -293,8 +293,8 @@ int UserStorage::CreateShare(const std::string& sender_public_id,
   }
 
   // Store packets
-  boost::mutex mutex;
-  boost::condition_variable cond_var;
+  std::mutex mutex;
+  std::condition_variable cond_var;
   std::vector<int> results;
   results.push_back(kPendingResult);
 
@@ -310,7 +310,7 @@ int UserStorage::CreateShare(const std::string& sender_public_id,
                            utils::SerialisedSignedData(key_ring),
                            callback,
                            key_shared)) {
-    boost::mutex::scoped_lock lock(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
     results[0] = kRemoteChunkStoreFailure;
   }
   result = utils::WaitForResults(mutex, cond_var, results);
@@ -388,8 +388,8 @@ int UserStorage::CreateOpenShare(const std::string& sender_public_id,
   }
 
   // Store packets
-  boost::mutex mutex;
-  boost::condition_variable cond_var;
+  std::mutex mutex;
+  std::condition_variable cond_var;
   std::vector<int> results;
   results.push_back(kPendingResult);
 
@@ -405,7 +405,7 @@ int UserStorage::CreateOpenShare(const std::string& sender_public_id,
                            utils::SerialisedSignedData(key_ring),
                            callback,
                            key_shared)) {
-    boost::mutex::scoped_lock lock(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
     results[0] = kRemoteChunkStoreFailure;
   }
   result = utils::WaitForResults(mutex, cond_var, results);
@@ -512,8 +512,8 @@ int UserStorage::StopShare(const std::string& sender_public_id,
     }
   }
   InformContactsOperation(kPrivateShareDeletion, sender_public_id, contacts, share_id);
-  boost::mutex mutex;
-  boost::condition_variable cond_var;
+  std::mutex mutex;
+  std::condition_variable cond_var;
   std::vector<int> results;
   results.push_back(kPendingResult);
 
@@ -527,7 +527,7 @@ int UserStorage::StopShare(const std::string& sender_public_id,
                                });
   std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
   if (!chunk_store_->Delete(packet_id, callback, key_shared)) {
-    boost::mutex::scoped_lock lock(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
     results[0] = kRemoteChunkStoreFailure;
   }
 
@@ -825,8 +825,8 @@ int UserStorage::MoveShare(const std::string& sender_public_id,
     return result;
   }
   // Store packets
-  boost::mutex mutex;
-  boost::condition_variable cond_var;
+  std::mutex mutex;
+  std::condition_variable cond_var;
   std::vector<int> results;
   results.push_back(kPendingResult);
 
@@ -842,7 +842,7 @@ int UserStorage::MoveShare(const std::string& sender_public_id,
                            utils::SerialisedSignedData(key_ring),
                            callback,
                            key_shared)) {
-    boost::mutex::scoped_lock lock(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
     results[0] = kRemoteChunkStoreFailure;
   }
 
@@ -875,7 +875,7 @@ int UserStorage::MoveShare(const std::string& sender_public_id,
   std::shared_ptr<asymm::Keys> old_key_shared(new asymm::Keys(old_key_ring));
   packet_id = ComposeSignaturePacketName(old_key_ring.identity);
   if (!chunk_store_->Delete(packet_id, callback, old_key_shared)) {
-    boost::mutex::scoped_lock lock(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
     results[0] = kRemoteChunkStoreFailure;
   }
 

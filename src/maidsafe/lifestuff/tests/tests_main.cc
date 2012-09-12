@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
   maidsafe::log::Logging::instance().AddFilter("routing", maidsafe::log::kFatal);
   maidsafe::log::Logging::instance().AddFilter("pd", maidsafe::log::kFatal);
 #endif
-  maidsafe::log::Logging::instance().AddFilter("lifestuff", maidsafe::log::kError);
+  maidsafe::log::Logging::instance().AddFilter("lifestuff", maidsafe::log::kInfo);
   maidsafe::log::Logging::instance().SetColour(maidsafe::log::ColourMode::kPartialLine);
 
   testing::FLAGS_gtest_catch_exceptions = false;

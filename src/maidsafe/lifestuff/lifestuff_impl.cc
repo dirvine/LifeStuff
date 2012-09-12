@@ -67,9 +67,7 @@ LifeStuffImpl::LifeStuffImpl()
       message_handler_(),
       slots_(),
       state_(kZeroth),
-      logged_in_state_(kBaseState),
-      save_session_mutex_(),
-      saving_session_(false) {}
+      logged_in_state_(kBaseState) {}
 
 LifeStuffImpl::~LifeStuffImpl() {}
 
@@ -205,6 +203,7 @@ int LifeStuffImpl::ConnectToSignals(
       slots_.immediate_quit_required_function = immediate_quit_required_function;
     }
     if (connects == 0) {
+      LOG(kError) << "No signals connected.";
       return kGeneralError;
     }
     ImmediateQuitRequiredFunction must_die = [&] {
@@ -223,6 +222,7 @@ int LifeStuffImpl::ConnectToSignals(
     LOG(kError) << "Unable to connect to signals.";
     return kGeneralError;
   }
+
   message_handler_->ConnectToChatSignal(chat_slot);
   message_handler_->ConnectToFileTransferSignal(file_slot);
   public_id_->ConnectToNewContactSignal(new_contact_slot);
@@ -402,7 +402,7 @@ int LifeStuffImpl::LogOut() {
 //    bool saving_session(true);
 //    while (saving_session) {
 //      {
-//        boost::mutex::scoped_lock loch_tangy(save_session_mutex_);
+//        std::unique_lock<std::mutex> loch_tangy(save_session_mutex_);
 //        saving_session = saving_session_;
 //      }
 //      Sleep(bptime::milliseconds(100));
@@ -529,16 +529,16 @@ int LifeStuffImpl::UnMountDrive() {
     return kWrongOrderFailure;
   }
 
-  if (session_.session_access_level() == kFullAccess) {
-    bool saving_session(true);
-    while (saving_session) {
-      {
-        boost::mutex::scoped_lock loch_tangy(save_session_mutex_);
-        saving_session = saving_session_;
-      }
-      Sleep(bptime::milliseconds(100));
-    }
-  }
+//  if (session_.session_access_level() == kFullAccess) {
+//    bool saving_session(true);
+//    while (saving_session) {
+//      {
+//        std::unique_lock<std::mutex> loch_tangy(save_session_mutex_);
+//        saving_session = saving_session_;
+//      }
+//      Sleep(bptime::milliseconds(100));
+//    }
+//  }
 
   user_storage_->UnMountDrive();
   if (user_storage_->mount_status()) {
@@ -665,12 +665,12 @@ int LifeStuffImpl::LeaveLifeStuff() {
   state_ = kZeroth;
   logged_in_state_ = kBaseState;  // TODO(Alison) - check this
 
-  // Unmount
-  user_storage_->UnMountDrive();
-
   // Stop Messaging
   message_handler_->StopCheckingForNewMessages();
   public_id_->StopCheckingForNewContacts();
+
+  // Unmount
+  user_storage_->UnMountDrive();
 
   int result(0);
   // Leave all shares
@@ -680,7 +680,7 @@ int LifeStuffImpl::LeaveLifeStuff() {
                 [&result, this] (const std::string& public_id) {
                   const ShareInformationDetail share_info(session_.share_information(public_id));
                   if (share_info.first) {
-                    boost::mutex::scoped_lock loch(*share_info.first);
+                    std::unique_lock<std::mutex> loch(*share_info.first);
                     std::for_each(share_info.second->begin(),
                                   share_info.second->end(),
                                   [&public_id, &result, this]
@@ -863,7 +863,7 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
   }
 
   {
-    boost::mutex::scoped_lock loch(*social_info.first);
+    std::unique_lock<std::mutex> loch(*social_info.first);
     social_info.second->at(kPicture) = message.content[0];
   }
   session_.set_changed(true);
@@ -891,7 +891,7 @@ std::string LifeStuffImpl::GetOwnProfilePicture(const std::string& my_public_id)
   }
 
   {
-    boost::mutex::scoped_lock loch(*social_info.first);
+    std::unique_lock<std::mutex> loch(*social_info.first);
     if (social_info.second->at(kPicture) == kBlankProfilePicture) {
       LOG(kInfo) << "Blank picture in session.";
       return "";
@@ -1255,7 +1255,7 @@ int LifeStuffImpl::CreateEmptyPrivateShare(const std::string& my_public_id,
 
     bool session_changed(false);
     {
-      boost::mutex::scoped_lock loch(*share_information.first);
+      std::unique_lock<std::mutex> loch(*share_information.first);
       auto insert_result(share_information.second->insert(
                              std::make_pair(*share_name, ShareDetails(kPrivateOwner))));
       if (!insert_result.second) {
@@ -1290,7 +1290,7 @@ int LifeStuffImpl::GetPrivateShareList(const std::string& my_public_id, StringIn
   }
 
   {
-    boost::mutex::scoped_lock loch(*share_information.first);
+    std::unique_lock<std::mutex> loch(*share_information.first);
     std::for_each(share_information.second->begin(),
                   share_information.second->end(),
                   [=] (const ShareInformation::value_type& element) {
@@ -1350,7 +1350,7 @@ int LifeStuffImpl::GetPrivateSharesIncludingMember(const std::string& my_public_
 
   std::vector<std::string> all_share_names;
   {
-    boost::mutex::scoped_lock loch(*share_information.first);
+    std::unique_lock<std::mutex> loch(*share_information.first);
     std::for_each(share_information.second->begin(),
                   share_information.second->end(),
                   [&all_share_names] (const ShareInformation::value_type& element) {
@@ -1439,7 +1439,7 @@ int LifeStuffImpl::AcceptPrivateShareInvitation(const std::string& my_public_id,
     }
 
     {
-      boost::mutex::scoped_lock loch(*share_information.first);
+      std::unique_lock<std::mutex> loch(*share_information.first);
       auto insert_result(share_information.second->insert(std::make_pair(*share_name,
                                                                          share_details)));
       if (!insert_result.second) {
@@ -1849,7 +1849,7 @@ int LifeStuffImpl::DeletePrivateShare(const std::string& my_public_id,
     }
 
     {
-      boost::mutex::scoped_lock loch(*share_information.first);
+      std::unique_lock<std::mutex> loch(*share_information.first);
       share_information.second->erase(share_name);
     }
     session_.set_changed(true);
@@ -1876,7 +1876,7 @@ int LifeStuffImpl::LeavePrivateShare(const std::string& my_public_id,
     }
 
     {
-      boost::mutex::scoped_lock loch(*share_information.first);
+      std::unique_lock<std::mutex> loch(*share_information.first);
       share_information.second->erase(share_name);
     }
     session_.set_changed(true);
@@ -1939,7 +1939,7 @@ int LifeStuffImpl::CreateOpenShareFromExistingDirectory(const std::string& my_pu
 
     bool session_changed(false);
     {
-      boost::mutex::scoped_lock loch(*share_information.first);
+      std::unique_lock<std::mutex> loch(*share_information.first);
       auto insert_result(share_information.second->insert(
                              std::make_pair(*share_name, ShareDetails(kOpenOwner))));
       if (!insert_result.second) {
@@ -1995,7 +1995,7 @@ int LifeStuffImpl::CreateEmptyOpenShare(const std::string& my_public_id,
 
     bool session_changed(false);
     {
-      boost::mutex::scoped_lock loch(*share_information.first);
+      std::unique_lock<std::mutex> loch(*share_information.first);
       auto insert_result(share_information.second->insert(
                              std::make_pair(*share_name, ShareDetails(kOpenOwner))));
       if (!insert_result.second) {
@@ -2048,7 +2048,7 @@ int LifeStuffImpl::GetOpenShareList(const std::string& my_public_id,
   }
 
   {
-    boost::mutex::scoped_lock loch(*share_information.first);
+    std::unique_lock<std::mutex> loch(*share_information.first);
     std::for_each(share_information.second->begin(),
                   share_information.second->end(),
                   [=] (const ShareInformation::value_type& element) {
@@ -2143,7 +2143,7 @@ int LifeStuffImpl::AcceptOpenShareInvitation(const std::string& my_public_id,
     }
 
     {
-      boost::mutex::scoped_lock loch(*share_information.first);
+      std::unique_lock<std::mutex> loch(*share_information.first);
       share_information.second->insert(std::make_pair(*share_name,
                                                       ShareDetails(kOpenReadWriteMember)));
     }
@@ -2248,7 +2248,7 @@ int LifeStuffImpl::LeaveOpenShare(const std::string& my_public_id, const std::st
   }
 
   {
-    boost::mutex::scoped_lock loch(*share_information.first);
+    std::unique_lock<std::mutex> loch(*share_information.first);
     share_information.second->erase(share_name);
   }
   session_.set_changed(true);
@@ -2508,7 +2508,7 @@ void LifeStuffImpl::ShareRenameSlot(const std::string& old_share_name,
       return;
     }
 
-    boost::mutex::scoped_lock loch(*share_information.first);
+    std::unique_lock<std::mutex> loch(*share_information.first);
     auto itr(share_information.second->find(old_share_name));
     if (itr != share_information.second->end()) {
       share_information.second->insert(std::make_pair(new_share_name, (*itr).second));
@@ -2541,7 +2541,7 @@ void LifeStuffImpl::MemberAccessChangeSlot(const std::string& share_id,
 
       bool session_changed(false);
       {
-        boost::mutex::scoped_lock loch(*share_information.first);
+        std::unique_lock<std::mutex> loch(*share_information.first);
         auto itr(share_information.second->find(share_name));
         if (itr != share_information.second->end()) {
           if (access_right == kShareReadOnly &&

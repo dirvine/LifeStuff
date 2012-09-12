@@ -270,6 +270,7 @@ TEST_F(TwoUsersApiTest, FUNC_SendFileSaveToGivenPath) {
               file_content1(RandomString(5 * 1024)),
               file_name2(RandomAlphaNumericString(8));
 
+  LOG(kError) << "1111";
   {
     EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_1_, keyword_1_, pin_1_, password_1_));
 
@@ -281,9 +282,10 @@ TEST_F(TwoUsersApiTest, FUNC_SendFileSaveToGivenPath) {
     EXPECT_EQ(0, error_code.value());
     EXPECT_EQ(kSuccess, test_elements_1_.SendFile(public_id_1_, public_id_2_, file_path1));
 
-    Sleep(bptime::seconds(2));
+//    Sleep(bptime::seconds(2));
     EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_1_));
   }
+  LOG(kError) << "2222";
   {
     EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_2_, keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.file_transfer_received)

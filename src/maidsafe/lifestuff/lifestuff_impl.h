@@ -278,10 +278,6 @@ class LifeStuffImpl {
   LifeStuffState state_;
   uint logged_in_state_;
 
-  // Session saving control
-  boost::mutex save_session_mutex_;
-  bool saving_session_;
-
   void ConnectInternalElements();
   int SetValidPmidAndInitialisePublicComponents();
   int CheckStateAndReadOnlyAccess() const;

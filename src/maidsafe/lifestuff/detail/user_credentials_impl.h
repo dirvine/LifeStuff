@@ -25,19 +25,19 @@
 #define MAIDSAFE_LIFESTUFF_DETAIL_USER_CREDENTIALS_IMPL_H_
 
 #include <memory>
+#include <mutex>
 #include <string>
 
 #include "boost/asio/deadline_timer.hpp"
 #include "boost/asio/io_service.hpp"
-#include "boost/thread/mutex.hpp"
-#include "boost/signals2.hpp"
+#include "boost/signals2/signal.hpp"
 
 #include "maidsafe/common/rsa.h"
 
 
-#include "maidsafe/lifestuff/detail/data_atlas_pb.h"
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
+#include "maidsafe/lifestuff/detail/data_atlas_pb.h"
 
 namespace maidsafe {
 
@@ -96,7 +96,7 @@ class UserCredentialsImpl {
   pcs::RemoteChunkStore& remote_chunk_store_;
   Session& session_;
   passport::Passport& passport_;
-  boost::mutex single_threaded_class_mutex_;
+  std::mutex single_threaded_class_mutex_;
   boost::asio::io_service& asio_service_;
   boost::asio::deadline_timer session_saver_timer_;
   bool session_saver_timer_active_, session_saved_once_;

@@ -25,13 +25,12 @@
 #ifndef MAIDSAFE_LIFESTUFF_DETAIL_SESSION_H_
 #define MAIDSAFE_LIFESTUFF_DETAIL_SESSION_H_
 
+#include <mutex>
 #include <map>
 #include <string>
 #include <set>
 #include <utility>
 #include <vector>
-
-#include "boost/thread/mutex.hpp"
 
 #include "maidsafe/passport/passport.h"
 
@@ -81,8 +80,8 @@ typedef std::shared_ptr<ContactsHandler> ContactsHandlerPtr;
 typedef std::shared_ptr<ShareInformation> ShareInformationPtr;
 typedef std::shared_ptr<SocialInfo> SocialInfoPtr;
 
-typedef std::pair<std::shared_ptr<boost::mutex>, ShareInformationPtr> ShareInformationDetail;
-typedef std::pair<std::shared_ptr<boost::mutex>, SocialInfoPtr> SocialInfoDetail;
+typedef std::pair<std::shared_ptr<std::mutex>, ShareInformationPtr> ShareInformationDetail;
+typedef std::pair<std::shared_ptr<std::mutex>, SocialInfoPtr> SocialInfoDetail;
 
 struct PublicIdDetails {
   PublicIdDetails();
@@ -93,7 +92,7 @@ struct PublicIdDetails {
   SocialInfoPtr social_info;
   ContactsHandlerPtr contacts_handler;
   ShareInformationPtr share_information;
-  std::shared_ptr<boost::mutex> social_info_mutex, share_information_mutex;
+  std::shared_ptr<std::mutex> social_info_mutex, share_information_mutex;
 };
 
 class Session {
@@ -151,9 +150,9 @@ class Session {
 
   passport::Passport passport_;
   UserDetails user_details_;
-  mutable boost::mutex user_details_mutex_;
+  mutable std::mutex user_details_mutex_;
   std::map<std::string, PublicIdDetails> public_id_details_;
-  boost::mutex public_id_details_mutex_;
+  std::mutex public_id_details_mutex_;
 
   bool CreateTestPackets(bool with_public_ids);
 };
