@@ -181,7 +181,7 @@ if(NOT ${LOCAL_TARGETS_ONLY})
                        VERBATIM
                        )
     foreach(NetworkTarget ${NetworkTargets})
-    target_link_libraries(${NetworkTarget} maidsafe_lifestuff ${BoostIostreamsLibs} ${BoostRegexLibs})
+    target_link_libraries(${NetworkTarget} maidsafe_lifestuff maidsafe_process_management ${BoostIostreamsLibs} ${BoostRegexLibs})
     add_dependencies(${NetworkTarget} pd-vault pd-keys-helper)
 
   endforeach()

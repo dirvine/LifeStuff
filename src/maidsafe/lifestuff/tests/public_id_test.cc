@@ -348,7 +348,6 @@ class PublicIdTest : public testing::Test {
                                             callback,
                                             shared_keys));
     {
-
       std::unique_lock<std::mutex> lock(mutex);
       ASSERT_TRUE(cond_var.wait_for(lock,
                                     std::chrono::seconds(60),
