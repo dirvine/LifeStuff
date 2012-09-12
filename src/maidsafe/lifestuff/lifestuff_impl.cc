@@ -297,6 +297,7 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
                    "messages and intros have been stopped.";
     return kWrongOrderFailure;
   }
+  // TODO(Alison) - should we reset session here?
 
   int result(user_credentials_->CreateUser(keyword, pin, password));
   if (result != kSuccess) {
@@ -348,7 +349,6 @@ int LifeStuffImpl::CreatePublicId(const std::string& public_id) {
 int LifeStuffImpl::LogIn(const std::string& keyword,
                          const std::string& pin,
                          const std::string& password) {
-  session_.Reset();
   if (state_ != kConnected) {
     LOG(kError) << "Make sure that object is initialised and connected";
     return kGeneralError;
@@ -362,6 +362,7 @@ int LifeStuffImpl::LogIn(const std::string& keyword,
                    "messages and intros have been stopped.";
     return kWrongOrderFailure;
   }
+  session_.Reset();
 
   int login_result(user_credentials_->LogIn(keyword, pin, password));
   if (login_result != kSuccess && login_result != kReadOnlyRestrictedSuccess) {
@@ -397,17 +398,6 @@ int LifeStuffImpl::LogOut() {
                    "Make user credentials are logged in first.";
     return kWrongOrderFailure;
   }
-
-//  if (session_.session_access_level() == kFullAccess) {
-//    bool saving_session(true);
-//    while (saving_session) {
-//      {
-//        std::unique_lock<std::mutex> loch_tangy(save_session_mutex_);
-//        saving_session = saving_session_;
-//      }
-//      Sleep(bptime::milliseconds(100));
-//    }
-//  }
 
   if (user_credentials_->Logout() != kSuccess) {
     LOG(kError) << "Failed to log out.";
@@ -522,23 +512,13 @@ int LifeStuffImpl::MountDrive(bool read_only) {
 
 int LifeStuffImpl::UnMountDrive() {
   if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
+      (kDriveMounted & logged_in_state_) != kDriveMounted ||
       (kMessagesAndIntrosStarted & logged_in_state_) == kMessagesAndIntrosStarted) {
     LOG(kError) << "In unsuitable state to unmount drive: " <<
-                   "make sure user_credentials are logged in and"
+                   "make sure user_credentials are logged in, drive is mounted and "
                    "messages and intros have been stopped.";
     return kWrongOrderFailure;
   }
-
-//  if (session_.session_access_level() == kFullAccess) {
-//    bool saving_session(true);
-//    while (saving_session) {
-//      {
-//        std::unique_lock<std::mutex> loch_tangy(save_session_mutex_);
-//        saving_session = saving_session_;
-//      }
-//      Sleep(bptime::milliseconds(100));
-//    }
-//  }
 
   user_storage_->UnMountDrive();
   if (user_storage_->mount_status()) {
@@ -559,9 +539,11 @@ int LifeStuffImpl::UnMountDrive() {
 
 int LifeStuffImpl::StartMessagesAndIntros() {
   if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
-      (kDriveMounted & logged_in_state_) != kDriveMounted) {
+      (kDriveMounted & logged_in_state_) != kDriveMounted ||
+      (kMessagesAndIntrosStarted & logged_in_state_) == kMessagesAndIntrosStarted) {
      LOG(kError) << "In unsuitable state to start mesages and intros: " <<
-                    "make sure user_credentials are logged in and drive is mounted.";
+                    "make sure user_credentials are logged in, drive is mounted and " <<
+                    "messages/intros have not been started already.";
      return kWrongOrderFailure;
   }
   if (session_.session_access_level() != kFullAccess) {
@@ -582,9 +564,10 @@ int LifeStuffImpl::StartMessagesAndIntros() {
 }
 
 int LifeStuffImpl::StopMessagesAndIntros() {
-  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn) {
+  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
+      (kDriveMounted & logged_in_state_) != kDriveMounted) {
      LOG(kError) << "In unsuitable state to stop messages and intros: " <<
-                    "make sure user_credentials are logged in.";
+                    "make sure user_credentials are logged in and drive is mounted.";
      return kWrongOrderFailure;
   }
 
@@ -663,7 +646,7 @@ int LifeStuffImpl::ChangePassword(const std::string& new_password,
 
 int LifeStuffImpl::LeaveLifeStuff() {
   state_ = kZeroth;
-  logged_in_state_ = kBaseState;  // TODO(Alison) - check this
+  // TODO(Alison) - set logged_in_state_ - to which value?
 
   // Stop Messaging
   message_handler_->StopCheckingForNewMessages();
@@ -2266,7 +2249,6 @@ fs::path LifeStuffImpl::mount_path() const {
     LOG(kError) << "Incorrect state. Should be logged in: " << state_;
     return fs::path();
   }
-  // TODO(Alison) - check logged_in_state_? Drive mounted?
   if ((kDriveMounted & logged_in_state_) != kDriveMounted) {
     LOG(kError) << "Incorrect logged_in_state_. Drive should be mounted: " << logged_in_state_;
     return fs::path();
