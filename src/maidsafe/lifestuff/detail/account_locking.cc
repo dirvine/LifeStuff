@@ -152,13 +152,13 @@ int CheckLockingPacketForIdentifier(LockingPacket& locking_packet, const std::st
 int AddItemToLockingPacket(LockingPacket& locking_packet,
                            const std::string& identifier,
                            bool full_access) {
-  LOG(kInfo) << "AddItemToLockingPacket - locking_packet.locking_item_size() BEFORE: " <<
-                locking_packet.locking_item_size();
+//  LOG(kInfo) << "AddItemToLockingPacket - locking_packet.locking_item_size() BEFORE: " <<
+//                locking_packet.locking_item_size();
   for (int i = 0; i < locking_packet.locking_item_size(); ++i) {
     if (locking_packet.locking_item(i).identifier() == identifier) {
       LOG(kError) << "Item with identifier already exists! Identifier: " << identifier;
-      LOG(kInfo) << "AddItemToLockingPacket - locking_packet.locking_item_size() AFTER: " <<
-                    locking_packet.locking_item_size();
+//      LOG(kInfo) << "AddItemToLockingPacket - locking_packet.locking_item_size() AFTER: " <<
+//                    locking_packet.locking_item_size();
       return kLidIdentifierAlreadyInUse;
     }
   }
@@ -177,8 +177,8 @@ int AddItemToLockingPacket(LockingPacket& locking_packet,
   locking_item->set_timestamp(IsoTimeWithMicroSeconds());
   locking_item->set_full_access(full_access);
   locking_item->set_active(0);
-  LOG(kInfo) << "AddItemToLockingPacket - locking_packet.locking_item_size() AFTER: " <<
-                locking_packet.locking_item_size();
+//  LOG(kInfo) << "AddItemToLockingPacket - locking_packet.locking_item_size() AFTER: " <<
+//                locking_packet.locking_item_size();
 
   if (need_to_wait)
     return kLidFullAccessUnavailable;
@@ -187,8 +187,8 @@ int AddItemToLockingPacket(LockingPacket& locking_packet,
 }
 
 int RemoveItemFromLockingPacket(LockingPacket& locking_packet, const std::string& identifier) {
-  LOG(kInfo) << "RemoveItemFromLockingPacket - locking_packet.locking_item_size() BEFORE: " <<
-                locking_packet.locking_item_size();
+//  LOG(kInfo) << "RemoveItemFromLockingPacket - locking_packet.locking_item_size() BEFORE: " <<
+//                locking_packet.locking_item_size();
   LockingPacket new_locking_packet;
   new_locking_packet.set_space_filler(locking_packet.space_filler());
   for (int i = 0; i < locking_packet.locking_item_size(); ++i) {
@@ -204,8 +204,8 @@ int RemoveItemFromLockingPacket(LockingPacket& locking_packet, const std::string
   }
 
   locking_packet = new_locking_packet;
-  LOG(kInfo) << "RemoveItemFromLockingPacket - locking_packet.locking_item_size() AFTER: " <<
-                locking_packet.locking_item_size();
+//  LOG(kInfo) << "RemoveItemFromLockingPacket - locking_packet.locking_item_size() AFTER: " <<
+//                locking_packet.locking_item_size();
   return kSuccess;
 }
 
@@ -215,8 +215,8 @@ int RemoveItemsFromLockingPacket(LockingPacket& locking_packet,
     LOG(kInfo) << "RemoveItemsFromLockingPacket - none to remove";
     return kSuccess;
   }
-  LOG(kInfo) << "RemoveItemsFromLockingPacket - locking_packet.locking_item_size() BEFORE: " <<
-                locking_packet.locking_item_size();
+//  LOG(kInfo) << "RemoveItemsFromLockingPacket - locking_packet.locking_item_size() BEFORE: " <<
+//                locking_packet.locking_item_size();
 
   LockingPacket new_locking_packet;
   new_locking_packet.set_space_filler(locking_packet.space_filler());
@@ -242,8 +242,8 @@ int RemoveItemsFromLockingPacket(LockingPacket& locking_packet,
   }
 
   locking_packet = new_locking_packet;
-  LOG(kInfo) << "RemoveItemsFromLockingPacket - locking_packet.locking_item_size() AFTER: " <<
-                locking_packet.locking_item_size();
+//  LOG(kInfo) << "RemoveItemsFromLockingPacket - locking_packet.locking_item_size() AFTER: " <<
+//                locking_packet.locking_item_size();
   return kSuccess;
 }
 
@@ -261,15 +261,16 @@ void OverthrowInstancesUsingLockingPacket(LockingPacket& locking_packet,
 
 int UpdateTimestampInLockingPacket(LockingPacket& locking_packet,
                                    const std::string& identifier) {
-  LOG(kInfo) << "UpdateTimestampInLockingPacket - locking_packet.locking_item_size() BEFORE: " <<
-                locking_packet.locking_item_size();
+//  LOG(kInfo) << "UpdateTimestampInLockingPacket - locking_packet.locking_item_size() BEFORE: " <<
+//                locking_packet.locking_item_size();
   int index(0);
   while (index < locking_packet.locking_item_size()) {
     if (locking_packet.locking_item(index).identifier() == identifier) {
       LockingItem* locking_item = locking_packet.mutable_locking_item(index);
       locking_item->set_timestamp(IsoTimeWithMicroSeconds());
-      LOG(kInfo) << "UpdateTimestampInLockingPacket - locking_packet.locking_item_size() AFTER: " <<
-                    locking_packet.locking_item_size();
+//      LOG(kInfo) << "UpdateTimestampInLockingPacket - " <<
+//                    "locking_packet.locking_item_size() AFTER: " <<
+//                    locking_packet.locking_item_size();
       return kSuccess;
     } else {
       ++index;

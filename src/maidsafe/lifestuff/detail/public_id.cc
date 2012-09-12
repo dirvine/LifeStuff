@@ -18,6 +18,8 @@
 
 #include <vector>
 
+#include "boost/thread/mutex.hpp"
+
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
@@ -117,8 +119,8 @@ int PublicId::CreatePublicId(const std::string& public_id, bool accepts_new_cont
   }
 
   // Store packets
-  boost::mutex mutex;
-  boost::condition_variable cond_var;
+  std::mutex mutex;
+  std::condition_variable cond_var;
   std::vector<int> results;
   results.push_back(kPendingResult);
   results.push_back(kPendingResult);
@@ -135,7 +137,7 @@ int PublicId::CreatePublicId(const std::string& public_id, bool accepts_new_cont
                                   AppendableIdValue(*mmid, true),
                                   callback,
                                   mmid)) {
-    boost::mutex::scoped_lock lock(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
     results[0] = kRemoteChunkStoreFailure;
   }
 
@@ -144,7 +146,7 @@ int PublicId::CreatePublicId(const std::string& public_id, bool accepts_new_cont
     };
   std::string anmpid_name(SignaturePacketName(anmpid->identity));
   if (!remote_chunk_store_->Store(anmpid_name, SignaturePacketValue(*anmpid), callback, anmpid)) {
-    boost::mutex::scoped_lock lock(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
     results[1] = kRemoteChunkStoreFailure;
   }
 
@@ -153,7 +155,7 @@ int PublicId::CreatePublicId(const std::string& public_id, bool accepts_new_cont
                utils::ChunkStoreOperationCallback(response, &mutex, &cond_var, &results[2]);
              };
   if (!remote_chunk_store_->Store(mpid_name, SignaturePacketValue(*mpid), callback, anmpid)) {
-    boost::mutex::scoped_lock lock(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
     results[2] = kRemoteChunkStoreFailure;
   }
 
@@ -165,7 +167,7 @@ int PublicId::CreatePublicId(const std::string& public_id, bool accepts_new_cont
                                   AppendableIdValue(*mpid, accepts_new_contacts),
                                   callback,
                                   mpid)) {
-    boost::mutex::scoped_lock lock(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
     results[3] = kRemoteChunkStoreFailure;
   }
 
@@ -257,8 +259,8 @@ int PublicId::EnablePublicId(const std::string& public_id) {
 
 int PublicId::DeletePublicId(const std::string& public_id) {
   std::vector<int> individual_results(4, kPendingResult);
-  boost::condition_variable condition_variable;
-  boost::mutex mutex;
+  std::condition_variable condition_variable;
+  std::mutex mutex;
   OperationResults results(mutex, condition_variable, individual_results);
 
   std::shared_ptr<asymm::Keys> inbox_keys(
@@ -277,7 +279,7 @@ int PublicId::DeletePublicId(const std::string& public_id) {
   SocialInfoDetail social_info(session_.social_info(public_id));
   if (social_info.first) {
     {
-      boost::mutex::scoped_lock loch(*social_info.first);
+      std::unique_lock<std::mutex> loch(*social_info.first);
       card_address = social_info.second->at(kInfoPointer);
     }
     result = RemoveLifestuffCard(card_address, inbox_keys);
@@ -435,8 +437,8 @@ int PublicId::RemoveContact(const std::string& own_public_id,
     return kGenerateNewMMIDFailure;
   }
 
-  boost::mutex mutex;
-  boost::condition_variable cond_var;
+  std::mutex mutex;
+  std::condition_variable cond_var;
   std::vector<int> results;
   results.push_back(kPendingResult);
 
@@ -452,7 +454,7 @@ int PublicId::RemoveContact(const std::string& own_public_id,
                                   AppendableIdValue(*new_mmid, true),
                                   callback,
                                   new_mmid)) {
-    boost::mutex::scoped_lock lock(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
     results[0] = kRemoteChunkStoreFailure;
   }
   result = utils::WaitForResults(mutex, cond_var, results);
@@ -475,7 +477,7 @@ int PublicId::RemoveContact(const std::string& own_public_id,
   SocialInfoDetail social_info(session_.social_info(own_public_id));
   std::string old_card_address;
   if (social_info.first) {
-    boost::mutex::scoped_lock loch(*social_info.first);
+    std::unique_lock<std::mutex> loch(*social_info.first);
     old_card_address = social_info.second->at(kInfoPointer);
     social_info.second->at(kInfoPointer) = new_card_address;
   }
@@ -506,7 +508,7 @@ int PublicId::RemoveContact(const std::string& own_public_id,
                                                                 pca::kModifiableByOwner),
                                    callback,
                                    old_mmid)) {
-    boost::mutex::scoped_lock lock(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
     results[0] = kRemoteChunkStoreFailure;
   }
 
@@ -608,12 +610,12 @@ int PublicId::SetLifestuffCard(const std::string& my_public_id, const SocialInfo
     LOG(kError) << "No such public id " << my_public_id;
     return kPublicIdNotFoundFailure;
   } else {
-    boost::mutex::scoped_lock loch(*detail.first);
+    std::unique_lock<std::mutex> loch(*detail.first);
     card_address = pca::ApplyTypeToName(detail.second->at(kInfoPointer), pca::kModifiableByOwner);
   }
 
-  boost::mutex mutex;
-  boost::condition_variable cond_var;
+  std::mutex mutex;
+  std::condition_variable cond_var;
   std::vector<int> results;
   results.push_back(kPendingResult);
 
@@ -953,8 +955,8 @@ int PublicId::ModifyAppendability(const std::string& public_id, const char appen
   }
 
   // Change appendability of MCID,MMID by modify them via ModifyAppendableByAll
-  boost::mutex mutex;
-  boost::condition_variable cond_var;
+  std::mutex mutex;
+  std::condition_variable cond_var;
   std::vector<int> results;
   results.push_back(kPendingResult);
   results.push_back(kPendingResult);
@@ -977,7 +979,7 @@ int PublicId::ModifyAppendability(const std::string& public_id, const char appen
                                    callback,
                                    mpid)) {
     LOG(kError) << "Immediate modify failure for MPID.";
-    boost::mutex::scoped_lock lock(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
     results[0] = kRemoteChunkStoreFailure;
   }
 
@@ -989,7 +991,7 @@ int PublicId::ModifyAppendability(const std::string& public_id, const char appen
                                    callback,
                                    mmid)) {
     LOG(kError) << "Immediate modify failure for MMID.";
-    boost::mutex::scoped_lock lock(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
     results[1] = kRemoteChunkStoreFailure;
   }
 
@@ -1027,8 +1029,8 @@ int PublicId::InformContactInfo(const std::string& public_id,
   }
 
   // Inform each contact in the contact list of the MMID contact info
-  boost::mutex mutex;
-  boost::condition_variable cond_var;
+  std::mutex mutex;
+  std::condition_variable cond_var;
   std::vector<int> results(contacts.size(), kPendingResult);
   size_t size(contacts.size());
 
@@ -1046,7 +1048,7 @@ int PublicId::InformContactInfo(const std::string& public_id,
 
     SocialInfoDetail social_info(session_.social_info(public_id));
     if (social_info.first) {
-      boost::mutex::scoped_lock loch(*social_info.first);
+      std::unique_lock<std::mutex> loch(*social_info.first);
       introduction.set_profile_picture_data_map(social_info.second->at(kPicture));
       introduction.set_pointer_to_info(social_info.second->at(kInfoPointer));
     } else {
@@ -1083,7 +1085,7 @@ int PublicId::InformContactInfo(const std::string& public_id,
                                      callback,
                                      mpid)) {
       LOG(kError) << "Failed to send out the message to: " << contact_id;
-      boost::mutex::scoped_lock lock(mutex);
+      std::unique_lock<std::mutex> lock(mutex);
       results[i] = kRemoteChunkStoreFailure;
     }
   }
@@ -1155,8 +1157,8 @@ int PublicId::StoreLifestuffCard(std::shared_ptr<asymm::Keys> mmid,
   int attempts(0), wait_result(kSuccess);
   std::string card_address, empty_card_content(EmptyCardContent(mmid->private_key));
   std::vector<int> results(1, kPendingResult);
-  boost::mutex mutex;
-  boost::condition_variable cond_var;
+  std::mutex mutex;
+  std::condition_variable cond_var;
   VoidFunctionOneBool callback = [&] (const bool& response) {
                                    utils::ChunkStoreOperationCallback(response,
                                                                       &mutex,
@@ -1186,8 +1188,8 @@ int PublicId::StoreLifestuffCard(std::shared_ptr<asymm::Keys> mmid,
 int PublicId::RemoveLifestuffCard(const std::string& lifestuff_card_address,
                                   std::shared_ptr<asymm::Keys> mmid) {
   std::vector<int> results(1, kPendingResult);
-  boost::mutex mutex;
-  boost::condition_variable cond_var;
+  std::mutex mutex;
+  std::condition_variable cond_var;
   VoidFunctionOneBool callback = [&] (const bool& response) {
                                    utils::ChunkStoreOperationCallback(response,
                                                                       &mutex,
@@ -1223,7 +1225,7 @@ std::string PublicId::GetOwnCardAddress(const std::string& my_public_id) {
     return "";
   }
 
-  boost::mutex::scoped_lock loch(*details.first);
+  std::unique_lock<std::mutex> loch(*details.first);
   return details.second->at(kInfoPointer);
 }
 

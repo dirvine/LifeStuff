@@ -57,7 +57,8 @@ int LifeStuff::ConnectToSignals(
     const ShareChangedFunction& share_changed_function,
     const LifestuffCardUpdateFunction& lifestuff_card_update_function,
     const ImmediateQuitRequiredFunction& immediate_quit_required_function) {
-  return lifestuff_impl_->ConnectToSignals(chat_slot,
+  return lifestuff_impl_->ConnectToSignals(true,
+                                           chat_slot,
                                            file_slot,
                                            new_contact_slot,
                                            confirmed_contact_slot,
@@ -98,6 +99,26 @@ int LifeStuff::LogIn(const std::string& keyword,
 
 int LifeStuff::LogOut() {
   return lifestuff_impl_->LogOut();
+}
+
+int LifeStuff::CreateAndMountDrive() {
+  return lifestuff_impl_->CreateAndMountDrive();
+}
+
+int LifeStuff::MountDrive(bool read_only) {
+  return lifestuff_impl_->MountDrive(read_only);
+}
+
+int LifeStuff::UnMountDrive() {
+  return lifestuff_impl_->UnMountDrive();
+}
+
+int LifeStuff::StartMessagesAndIntros() {
+  return lifestuff_impl_->StartMessagesAndIntros();
+}
+
+int LifeStuff::StopMessagesAndIntros() {
+  return lifestuff_impl_->StopMessagesAndIntros();
 }
 
 int LifeStuff::CheckPassword(const std::string& password) {

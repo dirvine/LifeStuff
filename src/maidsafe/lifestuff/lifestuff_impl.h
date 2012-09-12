@@ -101,7 +101,8 @@ class LifeStuffImpl {
 
   /// State operations
   int Initialise(const fs::path& base_directory = fs::path());
-  int ConnectToSignals(const ChatFunction& chat_slot,
+  int ConnectToSignals(const bool& apply_changes,
+                       const ChatFunction& chat_slot,
                        const FileTransferFunction& file_slot,
                        const NewContactFunction& new_contact_slot,
                        const ContactConfirmationFunction& confirmed_contact_slot,
@@ -126,6 +127,11 @@ class LifeStuffImpl {
   int CreatePublicId(const std::string& public_id);
   int LogIn(const std::string& username, const std::string& pin, const std::string& password);
   int LogOut();
+  int CreateAndMountDrive();
+  int MountDrive(bool read_only);
+  int UnMountDrive();
+  int StartMessagesAndIntros();
+  int StopMessagesAndIntros();
 
   int CheckPassword(const std::string& password);
   int ChangeKeyword(const std::string& new_username, const std::string& password);
@@ -247,8 +253,8 @@ class LifeStuffImpl {
   int RejectOpenShareInvitation(const std::string& my_public_id, const std::string& share_id);
   int LeaveOpenShare(const std::string& my_public_id, const std::string& share_name);
 
-  ///
   int state() const;
+  int logged_in_state() const;
   fs::path mount_path() const;
 
  private:
@@ -270,10 +276,7 @@ class LifeStuffImpl {
   std::shared_ptr<MessageHandler> message_handler_;
   Slots slots_;
   LifeStuffState state_;
-
-  // Session saving control
-  boost::mutex save_session_mutex_;
-  bool saving_session_;
+  uint logged_in_state_;
 
   void ConnectInternalElements();
   int SetValidPmidAndInitialisePublicComponents();

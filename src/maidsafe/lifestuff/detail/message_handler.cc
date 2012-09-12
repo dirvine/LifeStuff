@@ -18,6 +18,8 @@
 
 #include <vector>
 
+#include "boost/thread/mutex.hpp"
+
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
@@ -185,8 +187,8 @@ int MessageHandler::Send(const InboxItem& inbox_item) {
   signed_data.set_signature(message_signature);
 
   // Store encrypted MMID at recipient's MPID's name
-  boost::mutex mutex;
-  boost::condition_variable cond_var;
+  std::mutex mutex;
+  std::condition_variable cond_var;
   result = kPendingResult;
 
   std::string inbox_id(AppendableByAllType(recipient_contact.inbox_name));
@@ -202,10 +204,10 @@ int MessageHandler::Send(const InboxItem& inbox_item) {
   }
 
   try {
-    boost::mutex::scoped_lock lock(mutex);
-    if (!cond_var.timed_wait(lock,
-                             bptime::seconds(kSecondsInterval),
-                             [&result] { return result != kPendingResult; })) {  // NOLINT (Dan)
+    std::unique_lock<std::mutex> lock(mutex);
+    if (!cond_var.wait_for(lock,
+                           std::chrono::seconds(kSecondsInterval),
+                           [&result] ()->bool { return result != kPendingResult; })) {  // NOLINT (Dan)
       LOG(kError) << "Timed out storing packet.";
       return kPublicIdTimeout;
     }

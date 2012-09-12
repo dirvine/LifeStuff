@@ -17,13 +17,13 @@
 #ifndef MAIDSAFE_LIFESTUFF_DETAIL_UTILS_H_
 #define MAIDSAFE_LIFESTUFF_DETAIL_UTILS_H_
 
+#include <condition_variable>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
 #include "boost/lexical_cast.hpp"
-#include "boost/thread/condition_variable.hpp"
-#include "boost/thread/mutex.hpp"
 #include "boost/filesystem/path.hpp"
 
 #include "maidsafe/common/rsa.h"
@@ -96,14 +96,14 @@ enum SocialInfoFields {
 };
 
 struct OperationResults {
-  OperationResults(boost::mutex& mutex_in,
-                   boost::condition_variable& conditional_variable_in,
+  OperationResults(std::mutex& mutex_in,
+                   std::condition_variable& conditional_variable_in,
                    std::vector<int>& individual_results_in)
       : mutex(mutex_in),
         conditional_variable(conditional_variable_in),
         individual_results(individual_results_in) {}
-  boost::mutex& mutex;
-  boost::condition_variable& conditional_variable;
+  std::mutex& mutex;
+  std::condition_variable& conditional_variable;
   std::vector<int>& individual_results;
 };
 

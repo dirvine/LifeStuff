@@ -71,7 +71,6 @@ class UserCredentials {
   int CreateUser(const std::string& keyword, const std::string& pin, const std::string& password);
   int Logout();
   int SaveSession();
-  int UpdateLid();
 
   int ChangeKeyword(const std::string& new_keyword);
   int ChangePin(const std::string& new_pin);

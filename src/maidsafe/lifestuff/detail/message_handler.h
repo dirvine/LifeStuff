@@ -24,13 +24,11 @@
 #include <string>
 #include <vector>
 
-#include "boost/config.hpp"
-#include "boost/signals2.hpp"
+#include "boost/signals2/signal.hpp"
 
 #include "boost/asio/deadline_timer.hpp"
 #include "boost/asio/io_service.hpp"
 #include "boost/date_time/posix_time/posix_time_duration.hpp"
-#include "boost/thread/mutex.hpp"
 
 #include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"

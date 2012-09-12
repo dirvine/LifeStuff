@@ -43,13 +43,12 @@ namespace bptime = boost::posix_time;
 namespace bs2 = boost::signals2;
 namespace fs = boost::filesystem;
 namespace pca = maidsafe::priv::chunk_actions;
+
 namespace maidsafe {
 
 namespace lifestuff {
 
 namespace test {
-
-namespace testresources {
 
 struct ShareChangeLog {
   ShareChangeLog()
@@ -252,10 +251,22 @@ void LifestuffCardSlot(const std::string&,
                        const std::string&,
                        volatile bool* done);
 
+int DoFullCreateUser(LifeStuff& test_elements,
+                     const std::string& keyword,
+                     const std::string& pin,
+                     const std::string& password);
+
+int DoFullLogIn(LifeStuff& test_elements,
+                const std::string& keyword,
+                const std::string& pin,
+                const std::string& password);
+
+int DoFullLogOut(LifeStuff& test_elements);
+
 int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                  LifeStuff& test_elements2,
-                                 testresources::TestingVariables& testing_variables1,
-                                 testresources::TestingVariables& testing_variables2,
+                                 TestingVariables& testing_variables1,
+                                 TestingVariables& testing_variables2,
                                  const fs::path& test_dir,
                                  const std::string& keyword1,
                                  const std::string& pin1,
@@ -272,31 +283,31 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                  boost::mutex* mutex = nullptr);
 
 int InitialiseAndConnect(LifeStuff& test_elements,
-                   testresources::TestingVariables& testing_variables,
-                   const fs::path& test_dir,
-                   bool several_files = false,
-                   std::vector<std::string>* ids = nullptr,
-                   std::vector<std::string>* names = nullptr,
-                   size_t* total_files = nullptr,
-                   boost::mutex* mutex = nullptr);
+                         TestingVariables& testing_variables,
+                         const fs::path& test_dir,
+                         bool several_files = false,
+                         std::vector<std::string>* ids = nullptr,
+                         std::vector<std::string>* names = nullptr,
+                         size_t* total_files = nullptr,
+                         boost::mutex* mutex = nullptr);
 
 int CreateAccountWithPublicId(LifeStuff& test_elements,
-                   testresources::TestingVariables& testing_variables,
-                   const fs::path& test_dir,
-                   const std::string& keyword,
-                   const std::string& pin,
-                   const std::string& password,
-                   const std::string& public_id,
-                   bool several_files = false,
-                   std::vector<std::string>* ids = nullptr,
-                   std::vector<std::string>* names = nullptr,
-                   size_t* total_files = nullptr,
-                   boost::mutex* mutex = nullptr);
+                              TestingVariables& testing_variables,
+                              const fs::path& test_dir,
+                              const std::string& keyword,
+                              const std::string& pin,
+                              const std::string& password,
+                              const std::string& public_id,
+                              bool several_files = false,
+                              std::vector<std::string>* ids = nullptr,
+                              std::vector<std::string>* names = nullptr,
+                              size_t* total_files = nullptr,
+                              boost::mutex* mutex = nullptr);
 
 int ConnectTwoPublicIds(LifeStuff& test_elements1,
                         LifeStuff& test_elements2,
-                        testresources::TestingVariables& testing_variables1,
-                        testresources::TestingVariables& testing_variables2,
+                        TestingVariables& testing_variables1,
+                        TestingVariables& testing_variables2,
                         const std::string& keyword1,
                         const std::string& pin1,
                         const std::string& password1,
@@ -308,7 +319,7 @@ int ConnectTwoPublicIds(LifeStuff& test_elements1,
 
 void CreatePrivateShareAddingOneContact(LifeStuff& test_elements_a,
                                         LifeStuff& test_elements_b,
-                                        testresources::TestingVariables& testing_variables_b,
+                                        TestingVariables& testing_variables_b,
                                         const std::string& keyword_a,
                                         const std::string& pin_a,
                                         const std::string& password_a,
@@ -322,7 +333,7 @@ void CreatePrivateShareAddingOneContact(LifeStuff& test_elements_a,
 
 void AddOneContactToExistingPrivateShare(LifeStuff& test_elements_a,
                                          LifeStuff& test_elements_b,
-                                         testresources::TestingVariables& testing_variables_b,
+                                         TestingVariables& testing_variables_b,
                                          const std::string& keyword_a,
                                          const std::string& pin_a,
                                          const std::string& password_a,
@@ -336,7 +347,7 @@ void AddOneContactToExistingPrivateShare(LifeStuff& test_elements_a,
 
 void CreateOpenShareAddingOneContact(LifeStuff& test_elements_a,
                                      LifeStuff& test_elements_b,
-                                     testresources::TestingVariables& testing_variables_b,
+                                     TestingVariables& testing_variables_b,
                                      const std::string& keyword_a,
                                      const std::string& pin_a,
                                      const std::string& password_a,
@@ -349,7 +360,7 @@ void CreateOpenShareAddingOneContact(LifeStuff& test_elements_a,
 
 void TwoUsersDefriendEachOther(LifeStuff& test_elements_a,
                                LifeStuff& test_elements_b,
-                               testresources::TestingVariables& testing_variables_b,
+                               TestingVariables& testing_variables_b,
                                const std::string& keyword_a,
                                const std::string& pin_a,
                                const std::string& password_a,
@@ -359,9 +370,6 @@ void TwoUsersDefriendEachOther(LifeStuff& test_elements_a,
                                const std::string& password_b,
                                const std::string& public_id_b);
 
-
-}  // namespace testresources
-
 namespace sleepthreads {
 
 void RandomSleep(const std::pair<int, int> sleeps);
@@ -370,13 +378,13 @@ void RunChangePin(LifeStuff& test_elements,
                   int& result,
                   const std::string& new_pin,
                   const std::string& password,
-                  const std::pair<int, int> sleeps);
+                  const std::pair<int, int> sleeps = std::make_pair(0, 0));
 
 void RunChangeKeyword(LifeStuff& test_elements,
                       int& result,
                       const std::string& new_keyword,
                       const std::string& password,
-                      const std::pair<int, int> sleeps);
+                      const std::pair<int, int> sleeps = std::make_pair(0, 0));
 
 void RunChangePassword(LifeStuff& test_elements,
                        int& result,
@@ -394,7 +402,7 @@ void RunCreateUser(LifeStuff& test_elements,
                    const std::string& keyword,
                    const std::string& pin,
                    const std::string& password,
-                   const std::pair<int, int> sleeps);
+                   const std::pair<int, int> sleeps = std::make_pair(0, 0));
 
 void RunChangeProfilePicture(LifeStuff& test_elements_,
                              int& result,
@@ -444,8 +452,8 @@ class TwoInstancesApiTest : public OneUserApiTest {
 
  protected:
   LifeStuff test_elements_2_;
-  testresources::TestingVariables testing_variables_1_;
-  testresources::TestingVariables testing_variables_2_;
+  TestingVariables testing_variables_1_;
+  TestingVariables testing_variables_2_;
 
   virtual void SetUp();
 
@@ -481,8 +489,8 @@ class TwoUsersApiTest : public testing::Test {
   std::string public_id_2_;
   LifeStuff test_elements_1_;
   LifeStuff test_elements_2_;
-  testresources::TestingVariables testing_variables_1_;
-  testresources::TestingVariables testing_variables_2_;
+  TestingVariables testing_variables_1_;
+  TestingVariables testing_variables_2_;
 
   virtual void SetUp();
 
@@ -520,8 +528,8 @@ class PrivateSharesApiTest : public ::testing::TestWithParam<int> {
   std::string public_id_2_;
   LifeStuff test_elements_1_;
   LifeStuff test_elements_2_;
-  testresources::TestingVariables testing_variables_1_;
-  testresources::TestingVariables testing_variables_2_;
+  TestingVariables testing_variables_1_;
+  TestingVariables testing_variables_2_;
   std::string share_name_1_;
 
   virtual void SetUp();
