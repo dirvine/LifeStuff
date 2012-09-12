@@ -288,7 +288,7 @@ class LifeStuffImpl {
   std::shared_ptr<MessageHandler> message_handler_;
   Slots slots_;
   LifeStuffState state_;
-  uint logged_in_state_;
+  uint8_t logged_in_state_;
 
   void ConnectInternalElements();
   int SetValidPmidAndInitialisePublicComponents();
