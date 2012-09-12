@@ -26,13 +26,11 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "boost/filesystem.hpp"
 #include "boost/asio/io_service.hpp"
-#include "boost/thread/condition_variable.hpp"
-#include "boost/thread/mutex.hpp"
-#include "boost/thread/thread.hpp"
 
 #ifdef WIN32
 #  include "maidsafe/drive/win_drive.h"
@@ -246,7 +244,7 @@ class UserStorage {
   Session* session_;
   MessageHandler& message_handler_;
   fs::path mount_dir_;
-  std::shared_ptr<boost::thread> mount_thread_;
+  std::thread mount_thread_;
 };
 
 }  // namespace lifestuff

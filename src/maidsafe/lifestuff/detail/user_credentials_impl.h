@@ -25,19 +25,19 @@
 #define MAIDSAFE_LIFESTUFF_DETAIL_USER_CREDENTIALS_IMPL_H_
 
 #include <memory>
+#include <mutex>
 #include <string>
 
 #include "boost/asio/deadline_timer.hpp"
 #include "boost/asio/io_service.hpp"
-#include "boost/thread/mutex.hpp"
-#include "boost/signals2.hpp"
+#include "boost/signals2/signal.hpp"
 
 #include "maidsafe/common/rsa.h"
 
 
-#include "maidsafe/lifestuff/detail/data_atlas_pb.h"
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
+#include "maidsafe/lifestuff/detail/data_atlas_pb.h"
 
 namespace maidsafe {
 
@@ -72,8 +72,11 @@ class UserCredentialsImpl {
                       boost::asio::io_service& service);
   ~UserCredentialsImpl();
 
-  int GetUserInfo(const std::string& username, const std::string& pin, const std::string& password);
-  int CreateUser(const std::string& username, const std::string& pin, const std::string& password);
+  int LogIn(const std::string& keyword, const std::string& pin, const std::string& password);
+
+  int LogOut();
+
+  int CreateUser(const std::string& keyword, const std::string& pin, const std::string& password);
 
   int SaveSession(bool log_out);
 
@@ -81,7 +84,7 @@ class UserCredentialsImpl {
 
   int ChangePin(const std::string& new_pin);
   int ChangeKeyword(const std::string new_keyword);
-  int ChangeUsernamePin(const std::string& new_username, const std::string& new_pin);
+  int ChangeKeywordPin(const std::string& new_keyword, const std::string& new_pin);
   int ChangePassword(const std::string& new_password);
 
   int DeleteUserCredentials();
@@ -93,11 +96,22 @@ class UserCredentialsImpl {
   pcs::RemoteChunkStore& remote_chunk_store_;
   Session& session_;
   passport::Passport& passport_;
-  boost::mutex single_threaded_class_mutex_;
+  std::mutex single_threaded_class_mutex_;
   boost::asio::io_service& asio_service_;
   boost::asio::deadline_timer session_saver_timer_;
   bool session_saver_timer_active_, session_saved_once_;
   const boost::posix_time::seconds session_saver_interval_;
+
+  int AttemptLogInProcess(const std::string& keyword,
+                          const std::string& pin,
+                          const std::string& password);
+
+  int GetUserInfo(const std::string& keyword,
+                  const std::string& pin,
+                  const std::string& password,
+                  const bool& compare_names,
+                  std::string& mid_packet,
+                  std::string& smid_packet);
 
   void StartSessionSaver();
 
@@ -106,13 +120,14 @@ class UserCredentialsImpl {
                     const std::string& password,
                     std::string& lid_packet,
                     LockingPacket& locking_packet);
-  void GetIdAndTemporaryId(const std::string& username,
+  void GetIdAndTemporaryId(const std::string& keyword,
                            const std::string& pin,
                            const std::string& password,
                            bool surrogate,
                            int* result,
+                           std::string* id_contents,
                            std::string* temporary_packet);
-  int HandleSerialisedDataMaps(const std::string& username,
+  int HandleSerialisedDataMaps(const std::string& keyword,
                                const std::string& pin,
                                const std::string& password,
                                const std::string& tmid_serialised_data_atlas,
@@ -130,7 +145,7 @@ class UserCredentialsImpl {
                             OperationResults& results,
                             int index);
 
-  int ProcessIdentityPackets(const std::string& username,
+  int ProcessIdentityPackets(const std::string& keyword,
                              const std::string& pin,
                              const std::string& password);
   int StoreIdentityPackets();
@@ -184,7 +199,7 @@ class UserCredentialsImpl {
   int DoChangePasswordAdditions();
   int DoChangePasswordRemovals();
 
-  int SerialiseAndSetIdentity(const std::string& username,
+  int SerialiseAndSetIdentity(const std::string& keyword,
                               const std::string& pin,
                               const std::string& password,
                               std::string* new_data_atlas);

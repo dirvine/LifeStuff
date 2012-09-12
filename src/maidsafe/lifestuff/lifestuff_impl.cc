@@ -72,8 +72,7 @@ LifeStuffImpl::LifeStuffImpl()
       message_handler_(),
       slots_(),
       state_(kZeroth),
-      save_session_mutex_(),
-      saving_session_(false) {}
+      logged_in_state_(kBaseState) {}
 
 LifeStuffImpl::~LifeStuffImpl() {}
 
@@ -151,6 +150,7 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
 }
 
 int LifeStuffImpl::ConnectToSignals(
+    const bool& set_slots,
     const ChatFunction& chat_slot,
     const FileTransferFunction& file_slot,
     const NewContactFunction& new_contact_slot,
@@ -172,129 +172,122 @@ int LifeStuffImpl::ConnectToSignals(
     return kGeneralError;
   }
 
-  int connects(0);
-  if (chat_slot) {
-    slots_.chat_slot = chat_slot;
-    ++connects;
-    if (message_handler_)
-      message_handler_->ConnectToChatSignal(chat_slot);
-  }
-  if (file_slot) {
-    slots_.file_slot = file_slot;
-    ++connects;
-    if (message_handler_)
-      message_handler_->ConnectToFileTransferSignal(file_slot);
-  }
-  if (new_contact_slot) {
-    slots_.new_contact_slot = new_contact_slot;
-    ++connects;
-    if (public_id_)
-      public_id_->ConnectToNewContactSignal(new_contact_slot);
-  }
-  if (confirmed_contact_slot) {
-    slots_.confirmed_contact_slot = confirmed_contact_slot;
-    ++connects;
-    if (public_id_)
-      public_id_->ConnectToContactConfirmedSignal(confirmed_contact_slot);
-  }
-  if (profile_picture_slot) {
-    slots_.profile_picture_slot = profile_picture_slot;
-    ++connects;
-    if (message_handler_)
-      message_handler_->ConnectToContactProfilePictureSignal(
-          profile_picture_slot);
-  }
-  if (contact_presence_slot) {
-    slots_.contact_presence_slot = contact_presence_slot;
-    ++connects;
-    if (message_handler_)
-      message_handler_->ConnectToContactPresenceSignal(contact_presence_slot);
-  }
-  if (contact_deletion_function) {
-    slots_.contact_deletion_function = contact_deletion_function;
-    ++connects;
-    if (public_id_)
-      public_id_->ConnectToContactDeletionProcessedSignal(contact_deletion_function);
-  }
-  if (private_share_invitation_function) {
-    slots_.private_share_invitation_function = private_share_invitation_function;
-    ++connects;
-    if (message_handler_)
-      message_handler_->ConnectToPrivateShareInvitationSignal(private_share_invitation_function);
-  }
-  if (private_share_deletion_function) {
-    slots_.private_share_deletion_function = private_share_deletion_function;
-    ++connects;
-    if (message_handler_)
-      message_handler_->ConnectToPrivateShareDeletionSignal(private_share_deletion_function);
-  }
-  if (private_access_change_function) {
-    slots_.private_access_change_function = private_access_change_function;
-    ++connects;
-    if (message_handler_)
-      message_handler_->ConnectToPrivateMemberAccessChangeSignal(private_access_change_function);
-  }
-  if (open_share_invitation_function) {
-    slots_.open_share_invitation_function = open_share_invitation_function;
-    ++connects;
-    if (message_handler_)
-      message_handler_->ConnectToOpenShareInvitationSignal(open_share_invitation_function);
-  }
-  if (share_renamed_function) {
-    slots_.share_renamed_function = share_renamed_function;
-    ++connects;
-    if (user_storage_)
-      user_storage_->ConnectToShareRenamedSignal(share_renamed_function);
-  }
-  if (share_changed_function) {
-    slots_.share_changed_function = share_changed_function;
-    ++connects;
-    if (user_storage_)
-      user_storage_->ConnectToShareChangedSignal(share_changed_function);
-  }
-  if (lifestuff_card_update_function) {
-    slots_.lifestuff_card_update_function = lifestuff_card_update_function;
-    ++connects;
-    if (user_storage_)
-      public_id_->ConnectToLifestuffCardUpdatedSignal(lifestuff_card_update_function);
-  }
-  if (network_health_function) {
-    slots_.network_health_function = network_health_function;
-    ++connects;
-    network_health_signal_.connect(network_health_function);
-      slots_.lifestuff_card_update_function = lifestuff_card_update_function;
+  if (set_slots) {
+    int connects(0);
+    if (chat_slot) {
       ++connects;
-      if (public_id_)
-        public_id_->ConnectToLifestuffCardUpdatedSignal(lifestuff_card_update_function);
-  }
-  if (immediate_quit_required_function) {
-    slots_.immediate_quit_required_function = immediate_quit_required_function;
-    ++connects;
-    if (user_credentials_)
-      user_credentials_->ConnectToImmediateQuitRequiredSignal(immediate_quit_required_function);
-  }
-  if (user_credentials_) {
+      slots_.chat_slot = chat_slot;
+    }
+    if (file_slot) {
+      ++connects;
+      slots_.file_slot = file_slot;
+    }
+    if (new_contact_slot) {
+      ++connects;
+      slots_.new_contact_slot = new_contact_slot;
+    }
+    if (confirmed_contact_slot) {
+      ++connects;
+      slots_.confirmed_contact_slot = confirmed_contact_slot;
+    }
+    if (profile_picture_slot) {
+      ++connects;
+      slots_.profile_picture_slot = profile_picture_slot;
+    }
+    if (contact_presence_slot) {
+      ++connects;
+      slots_.contact_presence_slot = contact_presence_slot;
+    }
+    if (contact_deletion_function) {
+      ++connects;
+      slots_.contact_deletion_function = contact_deletion_function;
+    }
+    if (private_share_invitation_function) {
+      ++connects;
+      slots_.private_share_invitation_function = private_share_invitation_function;
+    }
+    if (private_share_deletion_function) {
+      ++connects;
+      slots_.private_share_deletion_function = private_share_deletion_function;
+    }
+    if (private_access_change_function) {
+      ++connects;
+      slots_.private_access_change_function = private_access_change_function;
+    }
+    if (open_share_invitation_function) {
+      ++connects;
+      slots_.open_share_invitation_function = open_share_invitation_function;
+    }
+    if (share_renamed_function) {
+      ++connects;
+      slots_.share_renamed_function = share_renamed_function;
+    }
+    if (share_changed_function) {
+      ++connects;
+      slots_.share_changed_function = share_changed_function;
+    }
+    if (lifestuff_card_update_function) {
+      ++connects;
+      slots_.lifestuff_card_update_function = lifestuff_card_update_function;
+    }
+    if (network_health_function) {
+      ++connects;
+      slots_.network_health_function = network_health_function;
+    }
+    if (immediate_quit_required_function) {
+      ++connects;
+      slots_.immediate_quit_required_function = immediate_quit_required_function;
+    }
+    if (connects == 0) {
+      LOG(kError) << "No signals connected.";
+      return kGeneralError;
+    }
     ImmediateQuitRequiredFunction must_die = [&] {
                                                LOG(kInfo) << "Immediate quit required! " <<
                                                              "Stopping activity.";
-                                               user_storage_->UnMountDrive();
-                                               public_id_->ShutDown();
-                                               message_handler_->StopCheckingForNewMessages();
+                                               StopMessagesAndIntros();
+                                               UnMountDrive();
+                                               LogOut();
                                              };
     user_credentials_->ConnectToImmediateQuitRequiredSignal(must_die);
-    if (immediate_quit_required_function) {
-      slots_.immediate_quit_required_function = immediate_quit_required_function;
-      ++connects;
-      user_credentials_->ConnectToImmediateQuitRequiredSignal(immediate_quit_required_function);
-    }
-  }
-
-  if (connects > 0) {
     state_ = kConnected;
     return kSuccess;
   }
 
-  return kGeneralError;
+  if (!message_handler_ || !public_id_ || !user_storage_) {
+    LOG(kError) << "Unable to connect to signals.";
+    return kGeneralError;
+  }
+
+  message_handler_->ConnectToChatSignal(chat_slot);
+  message_handler_->ConnectToFileTransferSignal(file_slot);
+  public_id_->ConnectToNewContactSignal(new_contact_slot);
+  public_id_->ConnectToContactConfirmedSignal(confirmed_contact_slot);
+  message_handler_->ConnectToContactProfilePictureSignal(profile_picture_slot);
+  message_handler_->ConnectToContactPresenceSignal(contact_presence_slot);
+  public_id_->ConnectToContactDeletionProcessedSignal(contact_deletion_function);
+  message_handler_->ConnectToPrivateShareInvitationSignal(private_share_invitation_function);
+  message_handler_->ConnectToPrivateShareDeletionSignal(private_share_deletion_function);
+  message_handler_->ConnectToPrivateMemberAccessChangeSignal(private_access_change_function);
+  message_handler_->ConnectToOpenShareInvitationSignal(open_share_invitation_function);
+  user_storage_->ConnectToShareRenamedSignal(share_renamed_function);
+  user_storage_->ConnectToShareChangedSignal(share_changed_function);
+  public_id_->ConnectToLifestuffCardUpdatedSignal(lifestuff_card_update_function);
+  user_credentials_->ConnectToImmediateQuitRequiredSignal(immediate_quit_required_function);
+  public_id_->ConnectToContactDeletionReceivedSignal(
+      [&] (const std::string& own_public_id,
+           const std::string& contact_public_id,
+           const std::string& removal_message,
+           const std::string& timestamp) {
+        int result(RemoveContact(own_public_id,
+                                 contact_public_id,
+                                 removal_message,
+                                 timestamp,
+                                 false));
+        if (result != kSuccess)
+          LOG(kError) << "Failed to remove contact after receiving contact deletion signal!";
+      });
+  return kSuccess;
 }
 
 int LifeStuffImpl::Finalise() {
@@ -332,6 +325,15 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
     return kGeneralError;
   }
 
+  if ((kCredentialsLoggedIn & logged_in_state_) == kCredentialsLoggedIn ||
+      (kDriveMounted & logged_in_state_) == kDriveMounted ||
+      (kMessagesAndIntrosStarted & logged_in_state_) == kMessagesAndIntrosStarted) {
+    LOG(kError) << "In unsuitable state to create user: " <<
+                   "make sure user_credentials are logged out, the drive is unmounted and " <<
+                   "messages and intros have been stopped.";
+    return kWrongOrderFailure;
+  }
+
   int result(user_credentials_->CreateUser(keyword, pin, password));
   if (result != kSuccess) {
     LOG(kError) << "Failed to Create User.";
@@ -358,6 +360,137 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
                                                         ValidatedMessageSignal());
 #endif
 
+  state_ = kLoggedIn;
+  logged_in_state_ = kCreating | kCredentialsLoggedIn;
+
+  return kSuccess;
+}
+
+int LifeStuffImpl::CreatePublicId(const std::string& public_id) {
+  int result(CheckStateAndFullAccess());
+  if (result != kSuccess)
+    return result;
+
+  // Check if it's the 1st one
+  bool first_public_id(false);
+  if (session_.PublicIdentities().empty())
+    first_public_id = true;
+
+  result = public_id_->CreatePublicId(public_id, true);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to create public ID.";
+    return result;
+  }
+
+  if (first_public_id) {
+    public_id_->StartUp(interval_);
+    message_handler_->StartUp(interval_);
+    if ((logged_in_state_ & kMessagesAndIntrosStarted) != kMessagesAndIntrosStarted) {
+      logged_in_state_ = logged_in_state_ ^ kMessagesAndIntrosStarted;
+    }
+  }
+
+  session_.set_changed(true);
+
+  return kSuccess;
+}
+
+int LifeStuffImpl::LogIn(const std::string& keyword,
+                         const std::string& pin,
+                         const std::string& password) {
+  session_.Reset();
+  if (state_ != kConnected) {
+    LOG(kError) << "Make sure that object is initialised and connected";
+    return kGeneralError;
+  }
+
+  if ((kCredentialsLoggedIn & logged_in_state_) == kCredentialsLoggedIn ||
+      (kDriveMounted & logged_in_state_) == kDriveMounted ||
+      (kMessagesAndIntrosStarted & logged_in_state_) == kMessagesAndIntrosStarted) {
+    LOG(kError) << "In unsuitable state to log in: " <<
+                   "make sure user_credentials are logged out, the drive is unmounted and " <<
+                   "messages and intros have been stopped.";
+    return kWrongOrderFailure;
+  }
+
+  int login_result(user_credentials_->LogIn(keyword, pin, password));
+  if (login_result != kSuccess && login_result != kReadOnlyRestrictedSuccess) {
+    LOG(kError) << "LogIn failed with result: " << login_result;
+    return login_result;
+  }
+
+  int result(SetValidPmidAndInitialisePublicComponents());
+  if (result != kSuccess)  {
+    LOG(kError) << "Failed to set valid PMID";
+    return result;
+  }
+
+  state_ = kLoggedIn;
+  logged_in_state_ = kCredentialsLoggedIn;
+
+  return login_result;
+}
+
+int LifeStuffImpl::LogOut() {
+  if (state_ != kLoggedIn) {
+    LOG(kError) << "Should be logged in to log out.";
+    return kGeneralError;
+  }
+  if ((kMessagesAndIntrosStarted & logged_in_state_) == kMessagesAndIntrosStarted ||
+      (kDriveMounted & logged_in_state_) == kDriveMounted) {
+    LOG(kError) << "In incorrect state to log out. " <<
+                   "Make sure messages and intros have been stopped and drive has been unmounted.";
+    return kWrongOrderFailure;
+  }
+  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn) {
+    LOG(kError) << "In incorrect state to log out. " <<
+                   "Make user credentials are logged in first.";
+    return kWrongOrderFailure;
+  }
+
+//  if (session_.session_access_level() == kFullAccess) {
+//    bool saving_session(true);
+//    while (saving_session) {
+//      {
+//        std::unique_lock<std::mutex> loch_tangy(save_session_mutex_);
+//        saving_session = saving_session_;
+//      }
+//      Sleep(bptime::milliseconds(100));
+//    }
+//  }
+
+  if (user_credentials_->Logout() != kSuccess) {
+    LOG(kError) << "Failed to log out.";
+    return kGeneralError;
+  }
+
+  if (!remote_chunk_store_->WaitForCompletion()) {
+    LOG(kError) << "Failed complete chunk operations.";
+    return kGeneralError;
+  }
+
+  session_.Reset();
+
+  state_ = kConnected;
+  logged_in_state_ = kBaseState;
+
+  return kSuccess;
+}
+
+int LifeStuffImpl::CreateAndMountDrive() {
+  if (session_.session_access_level() == kReadOnly) {
+    LOG(kError) << "Can't create and mount drive when session is read only!";
+    return kGeneralError;
+  }
+
+  if ((kCreating & logged_in_state_) != kCreating ||
+      (kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
+      (kDriveMounted & logged_in_state_) == kDriveMounted) {
+    LOG(kError) << "In unsuitable state to create and mount drive: " <<
+                   "make sure a CreateUser has just been run and drive is not already mounted.";
+    return kWrongOrderFailure;
+  }
+
   boost::system::error_code error_code;
   fs::path mount_dir(GetHomeDir() / kAppHomeDirectory / session_.session_name());
   if (!fs::exists(mount_dir, error_code)) {
@@ -382,6 +515,7 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
     user_storage_->UnMountDrive();
     return kGeneralError;
   }
+
   fs::create_directory(mount_path / kSharedStuff, error_code);
   if (error_code) {
     LOG(kError) << "Failed creating Shared Stuff: " << error_code.message();
@@ -389,62 +523,22 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
     return kGeneralError;
   }
 
-  state_ = kLoggedIn;
-
+  logged_in_state_ = logged_in_state_ ^ kDriveMounted;
   return kSuccess;
 }
 
-int LifeStuffImpl::CreatePublicId(const std::string& public_id) {
-  int result(CheckStateAndFullAccess());
-  if (result != kSuccess)
-    return result;
-
-  // Check if it's the 1st one
-  bool first_public_id(false);
-  if (session_.PublicIdentities().empty())
-    first_public_id = true;
-
-  result = public_id_->CreatePublicId(public_id, true);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to create public ID.";
-    return result;
-  }
-
-  if (first_public_id) {
-    public_id_->StartCheckingForNewContacts(interval_);
-    message_handler_->StartUp(interval_);
-  }
-
-  session_.set_changed(true);
-
-  return kSuccess;
-}
-
-int LifeStuffImpl::LogIn(const std::string& keyword,
-                         const std::string& pin,
-                         const std::string& password) {
-  session_.Reset();
-  if (state_ != kConnected) {
-    LOG(kError) << "Make sure that object is initialised and connected";
+int LifeStuffImpl::MountDrive(bool read_only) {
+  if (!read_only && session_.session_access_level() == kReadOnly) {
+    LOG(kError) << "Can't mount drive with full access when session is read only!";
     return kGeneralError;
   }
 
-  int result(user_credentials_->LogIn(keyword, pin, password));
-  if (result != kSuccess && result != kReadOnlyRestrictedSuccess) {
-    LOG(kError) << "LogIn failed with result: " << result;
-    return result;
-  }
-
-  SessionAccessLevel anticipated_access_level;
-  if (result == kSuccess)
-    anticipated_access_level = kFullAccess;
-  else
-    anticipated_access_level = kReadOnly;
-
-  result = SetValidPmidAndInitialisePublicComponents();
-  if (result != kSuccess)  {
-    LOG(kError) << "Failed to set valid PMID";
-    return result;
+  if ((kCreating & logged_in_state_) == kCreating ||
+      (kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
+      (kDriveMounted & logged_in_state_) == kDriveMounted) {
+    LOG(kError) << "In unsuitable state to mount drive: " <<
+                   "make sure LogIn has been run and drive is not already mounted.";
+    return kWrongOrderFailure;
   }
 
   boost::system::error_code error_code;
@@ -464,42 +558,37 @@ int LifeStuffImpl::LogIn(const std::string& keyword,
     }
   }
 
-  user_storage_->MountDrive(mount_dir, &session_, false, anticipated_access_level == kReadOnly);
+  user_storage_->MountDrive(mount_dir, &session_, false, read_only);
   if (!user_storage_->mount_status()) {
     LOG(kError) << "Failed to mount";
     return kGeneralError;
   }
 
-  state_ = kLoggedIn;
-  if (anticipated_access_level == kFullAccess) {
-    if (!session_.PublicIdentities().empty()) {
-      public_id_->StartUp(interval_);
-      message_handler_->StartUp(interval_);
-    }
-  }
-
-  if (anticipated_access_level == kFullAccess)
-    return kSuccess;
-  else
+  logged_in_state_ = logged_in_state_ ^ kDriveMounted;
+  if (read_only)
     return kReadOnlyRestrictedSuccess;
+  return kSuccess;
 }
 
-int LifeStuffImpl::LogOut() {
-  if (state_ != kLoggedIn) {
-    LOG(kError) << "Should be logged in to log out.";
-    return kGeneralError;
+int LifeStuffImpl::UnMountDrive() {
+  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
+      (kMessagesAndIntrosStarted & logged_in_state_) == kMessagesAndIntrosStarted) {
+    LOG(kError) << "In unsuitable state to unmount drive: " <<
+                   "make sure user_credentials are logged in and"
+                   "messages and intros have been stopped.";
+    return kWrongOrderFailure;
   }
 
-  if (session_.session_access_level() == kFullAccess) {
-    bool saving_session(true);
-    while (saving_session) {
-      {
-        boost::mutex::scoped_lock loch_tangy(save_session_mutex_);
-        saving_session = saving_session_;
-      }
-      Sleep(bptime::milliseconds(100));
-    }
-  }
+//  if (session_.session_access_level() == kFullAccess) {
+//    bool saving_session(true);
+//    while (saving_session) {
+//      {
+//        std::unique_lock<std::mutex> loch_tangy(save_session_mutex_);
+//        saving_session = saving_session_;
+//      }
+//      Sleep(bptime::milliseconds(100));
+//    }
+//  }
 
   user_storage_->UnMountDrive();
   if (user_storage_->mount_status()) {
@@ -507,31 +596,52 @@ int LifeStuffImpl::LogOut() {
     return kGeneralError;
   }
 
-  if (session_.session_access_level() == kFullAccess) {
-    public_id_->ShutDown();
-    message_handler_->ShutDown();
-  }
-
-  if (user_credentials_->Logout() != kSuccess) {
-    LOG(kError) << "Failed to log out.";
-    return kGeneralError;
-  }
-
-  if (!remote_chunk_store_->WaitForCompletion()) {
-    LOG(kError) << "Failed complete chunk operations.";
-    return kGeneralError;
-  }
-
   // Delete mount directory
   boost::system::error_code error_code;
   fs::remove_all(mount_path(), error_code);
   if (error_code)
-    LOG(kWarning) << "Failed to delete mount directory: "
-                  << mount_path();
-  session_.Reset();
+    LOG(kWarning) << "Failed to delete mount directory: " << mount_path();
 
-  state_ = kConnected;
+  if ((kDriveMounted & logged_in_state_) == kDriveMounted)
+    logged_in_state_ = logged_in_state_ ^ kDriveMounted;
+  return kSuccess;
+}
 
+int LifeStuffImpl::StartMessagesAndIntros() {
+  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
+      (kDriveMounted & logged_in_state_) != kDriveMounted) {
+     LOG(kError) << "In unsuitable state to start mesages and intros: " <<
+                    "make sure user_credentials are logged in and drive is mounted.";
+     return kWrongOrderFailure;
+  }
+  if (session_.session_access_level() != kFullAccess) {
+    LOG(kError) << "Shouldn't check for messages/intros when session access level is " <<
+                   session_.session_access_level();
+    return kGeneralError;
+  }
+  if (session_.PublicIdentities().empty()) {
+    LOG(kInfo) << "Won't check for messages/intros because there is no public ID.";
+    return kNoPublicIds;
+  }
+
+  public_id_->StartUp(interval_);
+  message_handler_->StartUp(interval_);
+  if ((kMessagesAndIntrosStarted & logged_in_state_) != kMessagesAndIntrosStarted)
+    logged_in_state_ = logged_in_state_ ^ kMessagesAndIntrosStarted;
+  return kSuccess;
+}
+
+int LifeStuffImpl::StopMessagesAndIntros() {
+  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn) {
+     LOG(kError) << "In unsuitable state to stop messages and intros: " <<
+                    "make sure user_credentials are logged in.";
+     return kWrongOrderFailure;
+  }
+
+  public_id_->ShutDown();
+  message_handler_->ShutDown();
+  if ((kMessagesAndIntrosStarted & logged_in_state_) == kMessagesAndIntrosStarted)
+    logged_in_state_ = logged_in_state_ ^ kMessagesAndIntrosStarted;
   return kSuccess;
 }
 
@@ -603,12 +713,14 @@ int LifeStuffImpl::ChangePassword(const std::string& new_password,
 
 int LifeStuffImpl::LeaveLifeStuff() {
   state_ = kZeroth;
-  // Unmount
-  user_storage_->UnMountDrive();
+  logged_in_state_ = kBaseState;  // TODO(Alison) - check this
 
   // Stop Messaging
   message_handler_->StopCheckingForNewMessages();
   public_id_->StopCheckingForNewContacts();
+
+  // Unmount
+  user_storage_->UnMountDrive();
 
   int result(0);
   // Leave all shares
@@ -618,7 +730,7 @@ int LifeStuffImpl::LeaveLifeStuff() {
                 [&result, this] (const std::string& public_id) {
                   const ShareInformationDetail share_info(session_.share_information(public_id));
                   if (share_info.first) {
-                    boost::mutex::scoped_lock loch(*share_info.first);
+                    std::unique_lock<std::mutex> loch(*share_info.first);
                     std::for_each(share_info.second->begin(),
                                   share_info.second->end(),
                                   [&public_id, &result, this]
@@ -801,7 +913,7 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
   }
 
   {
-    boost::mutex::scoped_lock loch(*social_info.first);
+    std::unique_lock<std::mutex> loch(*social_info.first);
     social_info.second->at(kPicture) = message.content[0];
   }
   session_.set_changed(true);
@@ -829,7 +941,7 @@ std::string LifeStuffImpl::GetOwnProfilePicture(const std::string& my_public_id)
   }
 
   {
-    boost::mutex::scoped_lock loch(*social_info.first);
+    std::unique_lock<std::mutex> loch(*social_info.first);
     if (social_info.second->at(kPicture) == kBlankProfilePicture) {
       LOG(kInfo) << "Blank picture in session.";
       return "";
@@ -1193,7 +1305,7 @@ int LifeStuffImpl::CreateEmptyPrivateShare(const std::string& my_public_id,
 
     bool session_changed(false);
     {
-      boost::mutex::scoped_lock loch(*share_information.first);
+      std::unique_lock<std::mutex> loch(*share_information.first);
       auto insert_result(share_information.second->insert(
                              std::make_pair(*share_name, ShareDetails(kPrivateOwner))));
       if (!insert_result.second) {
@@ -1228,7 +1340,7 @@ int LifeStuffImpl::GetPrivateShareList(const std::string& my_public_id, StringIn
   }
 
   {
-    boost::mutex::scoped_lock loch(*share_information.first);
+    std::unique_lock<std::mutex> loch(*share_information.first);
     std::for_each(share_information.second->begin(),
                   share_information.second->end(),
                   [=] (const ShareInformation::value_type& element) {
@@ -1288,7 +1400,7 @@ int LifeStuffImpl::GetPrivateSharesIncludingMember(const std::string& my_public_
 
   std::vector<std::string> all_share_names;
   {
-    boost::mutex::scoped_lock loch(*share_information.first);
+    std::unique_lock<std::mutex> loch(*share_information.first);
     std::for_each(share_information.second->begin(),
                   share_information.second->end(),
                   [&all_share_names] (const ShareInformation::value_type& element) {
@@ -1377,7 +1489,7 @@ int LifeStuffImpl::AcceptPrivateShareInvitation(const std::string& my_public_id,
     }
 
     {
-      boost::mutex::scoped_lock loch(*share_information.first);
+      std::unique_lock<std::mutex> loch(*share_information.first);
       auto insert_result(share_information.second->insert(std::make_pair(*share_name,
                                                                          share_details)));
       if (!insert_result.second) {
@@ -1787,7 +1899,7 @@ int LifeStuffImpl::DeletePrivateShare(const std::string& my_public_id,
     }
 
     {
-      boost::mutex::scoped_lock loch(*share_information.first);
+      std::unique_lock<std::mutex> loch(*share_information.first);
       share_information.second->erase(share_name);
     }
     session_.set_changed(true);
@@ -1814,7 +1926,7 @@ int LifeStuffImpl::LeavePrivateShare(const std::string& my_public_id,
     }
 
     {
-      boost::mutex::scoped_lock loch(*share_information.first);
+      std::unique_lock<std::mutex> loch(*share_information.first);
       share_information.second->erase(share_name);
     }
     session_.set_changed(true);
@@ -1877,7 +1989,7 @@ int LifeStuffImpl::CreateOpenShareFromExistingDirectory(const std::string& my_pu
 
     bool session_changed(false);
     {
-      boost::mutex::scoped_lock loch(*share_information.first);
+      std::unique_lock<std::mutex> loch(*share_information.first);
       auto insert_result(share_information.second->insert(
                              std::make_pair(*share_name, ShareDetails(kOpenOwner))));
       if (!insert_result.second) {
@@ -1933,7 +2045,7 @@ int LifeStuffImpl::CreateEmptyOpenShare(const std::string& my_public_id,
 
     bool session_changed(false);
     {
-      boost::mutex::scoped_lock loch(*share_information.first);
+      std::unique_lock<std::mutex> loch(*share_information.first);
       auto insert_result(share_information.second->insert(
                              std::make_pair(*share_name, ShareDetails(kOpenOwner))));
       if (!insert_result.second) {
@@ -1986,7 +2098,7 @@ int LifeStuffImpl::GetOpenShareList(const std::string& my_public_id,
   }
 
   {
-    boost::mutex::scoped_lock loch(*share_information.first);
+    std::unique_lock<std::mutex> loch(*share_information.first);
     std::for_each(share_information.second->begin(),
                   share_information.second->end(),
                   [=] (const ShareInformation::value_type& element) {
@@ -2081,7 +2193,7 @@ int LifeStuffImpl::AcceptOpenShareInvitation(const std::string& my_public_id,
     }
 
     {
-      boost::mutex::scoped_lock loch(*share_information.first);
+      std::unique_lock<std::mutex> loch(*share_information.first);
       share_information.second->insert(std::make_pair(*share_name,
                                                       ShareDetails(kOpenReadWriteMember)));
     }
@@ -2186,7 +2298,7 @@ int LifeStuffImpl::LeaveOpenShare(const std::string& my_public_id, const std::st
   }
 
   {
-    boost::mutex::scoped_lock loch(*share_information.first);
+    std::unique_lock<std::mutex> loch(*share_information.first);
     share_information.second->erase(share_name);
   }
   session_.set_changed(true);
@@ -2197,9 +2309,16 @@ int LifeStuffImpl::LeaveOpenShare(const std::string& my_public_id, const std::st
 ///
 int LifeStuffImpl::state() const { return state_; }
 
+int LifeStuffImpl::logged_in_state() const { return logged_in_state_; }
+
 fs::path LifeStuffImpl::mount_path() const {
   if (state_ != kLoggedIn) {
     LOG(kError) << "Incorrect state. Should be logged in: " << state_;
+    return fs::path();
+  }
+  // TODO(Alison) - check logged_in_state_? Drive mounted?
+  if ((kDriveMounted & logged_in_state_) != kDriveMounted) {
+    LOG(kError) << "Incorrect logged_in_state_. Drive should be mounted: " << logged_in_state_;
     return fs::path();
   }
 
@@ -2279,39 +2398,24 @@ void LifeStuffImpl::ConnectInternalElements() {
       });
 
   message_handler_->ConnectToPrivateShareDetailsSignal(
-      [&] (const std::string& share_id, fs::path* relative_path)->int {
-        return user_storage_->GetShareDetails(share_id,
-                                              relative_path,
-                                              nullptr,
-                                              nullptr,
-                                              nullptr);
+      [&] (const std::string& share_id, fs::path* relative_path) {
+      return user_storage_->GetShareDetails(share_id,
+                                            relative_path,
+                                            nullptr,
+                                            nullptr,
+                                            nullptr);
       });
 
   public_id_->ConnectToContactConfirmedSignal(
-      [&] (const std::string& own_public_id,
-           const std::string& recipient_public_id,
+      [&] (const std::string& own_public_id, const std::string& recipient_public_id,
            const std::string&) {
         message_handler_->InformConfirmedContactOnline(own_public_id, recipient_public_id);
       });
 
-  public_id_->ConnectToContactDeletionReceivedSignal(
-      [&] (const std::string& own_public_id,
-           const std::string& contact_public_id,
-           const std::string& removal_message,
-           const std::string& timestamp) {
-        int result(RemoveContact(own_public_id,
-                                 contact_public_id,
-                                 removal_message,
-                                 timestamp,
-                                 false));
-        if (result != kSuccess)
-          LOG(kError) << "Failed to remove contact after receiving contact deletion signal!";
+  user_storage_->ConnectToShareRenamedSignal(
+      [this] (const std::string& old_share_name, const std::string& new_share_name) {
+        this->ShareRenameSlot(old_share_name, new_share_name);
       });
-
-  user_storage_->ConnectToShareRenamedSignal([&] (const std::string& old_share_name,
-                                                  const std::string& new_share_name) {
-                                               ShareRenameSlot(old_share_name, new_share_name);
-                                             });
 }
 
 int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
@@ -2354,7 +2458,8 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
   ConnectInternalElements();
   state_ = kInitialised;
 
-  result = ConnectToSignals(slots_.chat_slot,
+  result = ConnectToSignals(false,
+                            slots_.chat_slot,
                             slots_.file_slot,
                             slots_.new_contact_slot,
                             slots_.confirmed_contact_slot,
@@ -2379,6 +2484,11 @@ int LifeStuffImpl::CheckStateAndReadOnlyAccess() const {
     return kGeneralError;
   }
 
+  if ((kDriveMounted & logged_in_state_) != kDriveMounted) {
+    LOG(kError) << "Incorrect state. Drive should be mounted: " << logged_in_state_;
+    return kGeneralError;
+  }
+
   SessionAccessLevel session_access_level(session_.session_access_level());
   if (session_access_level != kFullAccess && session_access_level != kReadOnly) {
     LOG(kError) << "Insufficient access. Should have at least read access: " <<
@@ -2391,6 +2501,11 @@ int LifeStuffImpl::CheckStateAndReadOnlyAccess() const {
 int LifeStuffImpl::CheckStateAndFullAccess() const {
   if (state_ != kLoggedIn) {
     LOG(kError) << "Incorrect state. Should be logged in: " << state_;
+    return kGeneralError;
+  }
+
+  if ((kDriveMounted & logged_in_state_) != kDriveMounted) {
+    LOG(kError) << "Incorrect state. Drive should be mounted: " << logged_in_state_;
     return kGeneralError;
   }
 
@@ -2441,7 +2556,7 @@ void LifeStuffImpl::ShareRenameSlot(const std::string& old_share_name,
       return;
     }
 
-    boost::mutex::scoped_lock loch(*share_information.first);
+    std::unique_lock<std::mutex> loch(*share_information.first);
     auto itr(share_information.second->find(old_share_name));
     if (itr != share_information.second->end()) {
       share_information.second->insert(std::make_pair(new_share_name, (*itr).second));
@@ -2474,7 +2589,7 @@ void LifeStuffImpl::MemberAccessChangeSlot(const std::string& share_id,
 
       bool session_changed(false);
       {
-        boost::mutex::scoped_lock loch(*share_information.first);
+        std::unique_lock<std::mutex> loch(*share_information.first);
         auto itr(share_information.second->find(share_name));
         if (itr != share_information.second->end()) {
           if (access_right == kShareReadOnly &&

@@ -53,6 +53,14 @@ enum ContactStatus {
 };
 
 
+enum LoggedInState {
+  kBaseState = 0x00,
+  kCreating = 0x01,
+  kCredentialsLoggedIn = 0x02,
+  kDriveMounted = 0x04,
+  kMessagesAndIntrosStarted = 0x08
+};
+
 /// THIS ENUM MUST BE KEPT IN SYNC WITH THE ONE IN DRIVE'S CONFIG.H !!!
 enum PrivateShareRoles {
   kShareReadOnlyUnConfirmed = -10,

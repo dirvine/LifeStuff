@@ -25,8 +25,6 @@ namespace lifestuff {
 
 namespace test {
 
-namespace testresources {
-
 void ChatSlot(const std::string&,
               const std::string&,
               const std::string& signal_message,
@@ -213,10 +211,80 @@ void LifestuffCardSlot(const std::string&,
   *done = true;
 }
 
+int DoFullCreateUser(LifeStuff& test_elements,
+                     const std::string& keyword,
+                     const std::string& pin,
+                     const std::string& password) {
+  int result = test_elements.CreateUser(keyword, pin, password);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to create user: " << result;
+    return result;
+  }
+
+  result = test_elements.CreateAndMountDrive();
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to create and mount drive: " << result;
+    return result;
+  }
+
+  return kSuccess;
+}
+
+
+int DoFullLogIn(LifeStuff& test_elements,
+                const std::string& keyword,
+                const std::string& pin,
+                const std::string& password) {
+  int result = test_elements.LogIn(keyword, pin, password);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to create log in: " << result;
+    return result;
+  }
+
+  result = test_elements.MountDrive(false);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to mount drive: " << result;
+    return result;
+  }
+
+  result = test_elements.StartMessagesAndIntros();
+  if (result != kSuccess && result != kNoPublicIds) {
+    LOG(kError) << "Failed to start checking for messages and intros: " << result;
+    return result;
+  }
+
+  return kSuccess;
+}
+
+int DoFullLogOut(LifeStuff& test_elements) {
+  LOG(kInfo) << "About to stop messages and intros";
+  int result = test_elements.StopMessagesAndIntros();
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to start checking for messages and intros: " << result;
+    return result;
+  }
+
+  LOG(kInfo) << "About to unmount drive";
+  result = test_elements.UnMountDrive();
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to unmount drive: " << result;
+    return result;
+  }
+
+  LOG(kInfo) << "About to log out";
+  result = test_elements.LogOut();
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to create log out: " << result;
+    return result;
+  }
+
+  return kSuccess;
+}
+
 int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                  LifeStuff& test_elements2,
-                                 testresources::TestingVariables& testing_variables1,
-                                 testresources::TestingVariables& testing_variables2,
+                                 TestingVariables& testing_variables1,
+                                 TestingVariables& testing_variables2,
                                  const fs::path& test_dir,
                                  const std::string& keyword1,
                                  const std::string& pin1,
@@ -276,13 +344,14 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
 }
 
 int InitialiseAndConnect(LifeStuff& test_elements,
-                         testresources::TestingVariables& testing_variables,
+                         TestingVariables& testing_variables,
                          const fs::path& test_dir,
                          bool several_files,
                          std::vector<std::string>* ids,
                          std::vector<std::string>* names,
                          size_t* total_files,
                          boost::mutex* mutex) {
+
   FileTransferFunction ftf;
   if (several_files) {
     ftf = [=, &testing_variables] (const std::string& own_public_id,
@@ -477,7 +546,7 @@ int InitialiseAndConnect(LifeStuff& test_elements,
 }
 
 int CreateAccountWithPublicId(LifeStuff& test_elements,
-                              testresources::TestingVariables& testing_variables,
+                              TestingVariables& testing_variables,
                               const fs::path& test_dir,
                               const std::string& keyword,
                               const std::string& pin,
@@ -501,9 +570,9 @@ int CreateAccountWithPublicId(LifeStuff& test_elements,
     LOG(kError) << "Failure initialising and connecting";
     return result;
   }
-  result += test_elements.CreateUser(keyword, pin, password);
+  result += DoFullCreateUser(test_elements, keyword, pin, password);
   result += test_elements.CreatePublicId(public_id);
-  result += test_elements.LogOut();
+  result += DoFullLogOut(test_elements);
   if (result != kSuccess) {
     LOG(kError) << "Failure creating account";
   }
@@ -512,8 +581,8 @@ int CreateAccountWithPublicId(LifeStuff& test_elements,
 
 int ConnectTwoPublicIds(LifeStuff& test_elements1,
                         LifeStuff& test_elements2,
-                        testresources::TestingVariables& testing_variables1,
-                        testresources::TestingVariables& testing_variables2,
+                        TestingVariables& testing_variables1,
+                        TestingVariables& testing_variables2,
                         const std::string& keyword1,
                         const std::string& pin1,
                         const std::string& password1,
@@ -527,32 +596,32 @@ int ConnectTwoPublicIds(LifeStuff& test_elements1,
   testing_variables1.confirmed = false;
   testing_variables2.newly_contacted = false;
   {
-    result += test_elements1.LogIn(keyword1, pin1, password1);
+    result += DoFullLogIn(test_elements1, keyword1, pin1, password1);
     result += test_elements1.AddContact(public_id1, public_id2);
-    result += test_elements1.LogOut();
+    result += DoFullLogOut(test_elements1);
     if (result != kSuccess) {
       LOG(kError) << "Failure adding contact";
       return result;
     }
   }
   {
-    result += test_elements2.LogIn(keyword2, pin2, password2);
+    result += DoFullLogIn(test_elements2, keyword2, pin2, password2);
 
     while (!testing_variables2.newly_contacted)
       Sleep(bptime::milliseconds(100));
 
     result += test_elements2.ConfirmContact(public_id2, public_id1);
-    result += test_elements2.LogOut();
+    result += DoFullLogOut(test_elements2);
     if (result != kSuccess) {
       LOG(kError) << "Failure confirming contact";
       return result;
     }
   }
   {
-    result += test_elements1.LogIn(keyword1, pin1, password1);
+    result += DoFullLogIn(test_elements1, keyword1, pin1, password1);
     while (!testing_variables1.confirmed)
       Sleep(bptime::milliseconds(100));
-    result += test_elements1.LogOut();
+    result += DoFullLogOut(test_elements1);
     if (result != kSuccess)
       return result;
   }
@@ -562,7 +631,7 @@ int ConnectTwoPublicIds(LifeStuff& test_elements1,
 
 void CreatePrivateShareAddingOneContact(LifeStuff& test_elements_a,
                                  LifeStuff& test_elements_b,
-                                 testresources::TestingVariables& testing_variables_b,
+                                 TestingVariables& testing_variables_b,
                                  const std::string& keyword_a,
                                  const std::string& pin_a,
                                  const std::string& password_a,
@@ -587,7 +656,7 @@ void CreatePrivateShareAddingOneContact(LifeStuff& test_elements_a,
   boost::system::error_code error_code;
 
   // a creates share, inviting b
-  EXPECT_EQ(kSuccess, test_elements_a.LogIn(keyword_a, pin_a, password_a));
+  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_a, keyword_a, pin_a, password_a));
 
   StringIntMap contacts, results;
   contacts.insert(std::make_pair(public_id_b, rights));
@@ -608,10 +677,10 @@ void CreatePrivateShareAddingOneContact(LifeStuff& test_elements_a,
     expected_state = kShareReadWriteUnConfirmed;
   EXPECT_EQ(expected_state, shares_members.find(public_id_b)->second);
 
-  EXPECT_EQ(kSuccess, test_elements_a.LogOut());
+  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_a));
 
   // b accepts invitation into share
-  EXPECT_EQ(kSuccess, test_elements_b.LogIn(keyword_b, pin_b, password_b));
+  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_b, keyword_b, pin_b, password_b));
   while (!testing_variables_b.privately_invited)
     Sleep(bptime::milliseconds(100));
   EXPECT_FALSE(testing_variables_b.new_private_share_id.empty());
@@ -623,12 +692,12 @@ void CreatePrivateShareAddingOneContact(LifeStuff& test_elements_a,
                                                    &share_name));
   fs::path directory2(test_elements_b.mount_path() / kSharedStuff / share_name);
   EXPECT_TRUE(fs::is_directory(directory2, error_code)) << directory2;
-  EXPECT_EQ(kSuccess, test_elements_b.LogOut());
+  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_b));
 }
 
 void AddOneContactToExistingPrivateShare(LifeStuff& test_elements_a,
                                   LifeStuff& test_elements_b,
-                                  testresources::TestingVariables& testing_variables_b,
+                                  TestingVariables& testing_variables_b,
                                   const std::string& keyword_a,
                                   const std::string& pin_a,
                                   const std::string& password_a,
@@ -653,7 +722,7 @@ void AddOneContactToExistingPrivateShare(LifeStuff& test_elements_a,
   boost::system::error_code error_code;
 
   // a invites b into share
-  EXPECT_EQ(kSuccess, test_elements_a.LogIn(keyword_a, pin_a, password_a));
+  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_a, keyword_a, pin_a, password_a));
 
   StringIntMap results;
   EXPECT_EQ(kSuccess, test_elements_a.GetPrivateShareMembers(public_id_a,
@@ -680,10 +749,10 @@ void AddOneContactToExistingPrivateShare(LifeStuff& test_elements_a,
     expected_state = kShareReadWriteUnConfirmed;
   EXPECT_EQ(expected_state, results[public_id_b]);
 
-  EXPECT_EQ(kSuccess, test_elements_a.LogOut());
+  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_a));
 
   // b accepts invitation into share
-  EXPECT_EQ(kSuccess, test_elements_b.LogIn(keyword_b, pin_b, password_b));
+  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_b, keyword_b, pin_b, password_b));
   while (!testing_variables_b.privately_invited)
     Sleep(bptime::milliseconds(100));
   EXPECT_FALSE(testing_variables_b.new_private_share_id.empty());
@@ -695,7 +764,7 @@ void AddOneContactToExistingPrivateShare(LifeStuff& test_elements_a,
                                                    &share_name));
   fs::path directory2(test_elements_b.mount_path() / kSharedStuff / share_name);
   EXPECT_TRUE(fs::is_directory(directory2, error_code)) << directory2;
-  EXPECT_EQ(kSuccess, test_elements_b.LogOut());
+  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_b));
 }
 
 void CreateOpenShareAddingOneContact(LifeStuff &test_elements_a,
@@ -720,7 +789,7 @@ void CreateOpenShareAddingOneContact(LifeStuff &test_elements_a,
   boost::system::error_code error_code;
 
   // a creates share, inviting b
-  EXPECT_EQ(kSuccess, test_elements_a.LogIn(keyword_a, pin_a, password_a));
+  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_a, keyword_a, pin_a, password_a));
 
   StringIntMap results;
   std::vector<std::string> contacts;
@@ -732,10 +801,10 @@ void CreateOpenShareAddingOneContact(LifeStuff &test_elements_a,
   EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
   EXPECT_EQ(0, error_code.value());
   EXPECT_EQ(kSuccess, results[public_id_b]);
-  EXPECT_EQ(kSuccess, test_elements_a.LogOut());
+  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_a));
 
   // b accepts invitation into share
-  EXPECT_EQ(kSuccess, test_elements_b.LogIn(keyword_b, pin_b, password_b));
+  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_b, keyword_b, pin_b, password_b));
   while (!testing_variables_b.openly_invited)
     Sleep(bptime::milliseconds(100));
   EXPECT_FALSE(testing_variables_b.new_open_share_id.empty());
@@ -746,12 +815,12 @@ void CreateOpenShareAddingOneContact(LifeStuff &test_elements_a,
                                                       &share_name));
   fs::path share(test_elements_b.mount_path() / kSharedStuff / share_name);
   EXPECT_TRUE(fs::is_directory(share, error_code)) << share;
-  EXPECT_EQ(kSuccess, test_elements_b.LogOut());
+  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_b));
 }
 
 void TwoUsersDefriendEachOther(LifeStuff& test_elements_a,
                                LifeStuff& test_elements_b,
-                               testresources::TestingVariables& testing_variables_b,
+                               TestingVariables& testing_variables_b,
                                const std::string& keyword_a,
                                const std::string& pin_a,
                                const std::string& password_a,
@@ -763,12 +832,12 @@ void TwoUsersDefriendEachOther(LifeStuff& test_elements_a,
   int i(0);
   testing_variables_b.removed = false;
 
-  EXPECT_EQ(kSuccess, test_elements_b.LogIn(keyword_b, pin_b, password_b)) << "Public ID: "
+  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_b, keyword_b, pin_b, password_b)) << "Public ID: "
                                                                            << public_id_b;
   size_t num_contacts_b(test_elements_b.GetContacts(public_id_b).size());
-  EXPECT_EQ(kSuccess, test_elements_b.LogOut());
+  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_b));
 
-  EXPECT_EQ(kSuccess, test_elements_a.LogIn(keyword_a, pin_a, password_a));
+  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_a, keyword_a, pin_a, password_a));
 
 
   size_t num_contacts_a(test_elements_a.GetContacts(public_id_a).size());
@@ -779,9 +848,9 @@ void TwoUsersDefriendEachOther(LifeStuff& test_elements_a,
             test_elements_a.GetPrivateSharesIncludingMember(public_id_a, public_id_b, share_names));
   EXPECT_EQ(0, share_names->size());
   share_names->clear();
-  EXPECT_EQ(kSuccess, test_elements_a.LogOut());
+  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_a));
 
-  EXPECT_EQ(kSuccess, test_elements_b.LogIn(keyword_b, pin_b, password_b));
+  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_b, keyword_b, pin_b, password_b));
   while (!testing_variables_b.removed && i < 150) {
     ++i;
     Sleep(bptime::milliseconds(100));
@@ -796,10 +865,8 @@ void TwoUsersDefriendEachOther(LifeStuff& test_elements_a,
   EXPECT_EQ(kSuccess,
             test_elements_b.GetPrivateSharesIncludingMember(public_id_b, public_id_a, share_names));
   EXPECT_EQ(0, share_names->size());
-  EXPECT_EQ(kSuccess, test_elements_b.LogOut());
+  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_b));
 }
-
-}  // namespace testresources
 
 namespace sleepthreads {
 
@@ -855,7 +922,7 @@ void RunCreateUser(LifeStuff& test_elements,
                    const std::string& password,
                    const std::pair<int, int> sleeps) {
   RandomSleep(sleeps);
-  result = test_elements.CreateUser(keyword, pin, password);
+  result = DoFullCreateUser(test_elements, keyword, pin, password);
 }
 
 void RunChangeProfilePicture(LifeStuff& test_elements_,
@@ -872,7 +939,7 @@ void RunLogIn(LifeStuff& test_elements,
               const std::string& password,
               const std::pair<int, int> sleeps) {
   RandomSleep(sleeps);
-  result = test_elements.LogIn(keyword, pin, password);
+  result = DoFullLogIn(test_elements, keyword, pin, password);
 }
 
 }  // namespace sleepthreads
@@ -889,7 +956,7 @@ void OneUserApiTest::SetUp() {
                                                  const std::string& contact_public_id,
                                                  const std::string& timestamp,
                                                  ContactPresence cp) {
-                                              testresources::ContactPresenceSlot(own_public_id,
+                                              ContactPresenceSlot(own_public_id,
                                                                                  contact_public_id,
                                                                                  timestamp,
                                                                                  cp,
@@ -905,11 +972,11 @@ void OneUserApiTest::SetUp() {
                                             LifestuffCardUpdateFunction(),
                                             NetworkHealthFunction(),
                                             ImmediateQuitRequiredFunction()));
-  EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_));
+  EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements_, keyword_, pin_, password_));
 }
 
 void OneUserApiTest::TearDown() {
-  EXPECT_EQ(kSuccess, test_elements_.LogOut());
+  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
   EXPECT_EQ(kSuccess, test_elements_.Finalise());
 }
 
@@ -926,7 +993,7 @@ void TwoInstancesApiTest::SetUp() {
                                                  const std::string& contact_public_id,
                                                  const std::string& timestamp,
                                                  ContactPresence cp) {
-                                              testresources::ContactPresenceSlot(own_public_id,
+                                              ContactPresenceSlot(own_public_id,
                                                                                  contact_public_id,
                                                                                  timestamp,
                                                                                  cp,
@@ -952,7 +1019,7 @@ void TwoInstancesApiTest::SetUp() {
                                                  const std::string& contact_public_id,
                                                  const std::string& timestamp,
                                                  ContactPresence cp) {
-                                              testresources::ContactPresenceSlot(own_public_id,
+                                              ContactPresenceSlot(own_public_id,
                                                                                  contact_public_id,
                                                                                  timestamp,
                                                                                  cp,

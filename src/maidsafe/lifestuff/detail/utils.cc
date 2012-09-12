@@ -454,7 +454,7 @@ std::string IsoTimeWithMicroSeconds() {
 }
 
 void OperationCallback(bool result, OperationResults& results, int index) {
-  boost::mutex::scoped_lock barra_loch_an_duin(results.mutex);
+  std::unique_lock<std::mutex> barra_loch_an_duin(results.mutex);
   results.individual_results.at(index) = result ? kSuccess : kRemoteChunkStoreFailure;
   results.conditional_variable.notify_one();
 }
@@ -462,9 +462,7 @@ void OperationCallback(bool result, OperationResults& results, int index) {
 int AssessJointResult(const std::vector<int>& results) {
   auto it(std::find_if(results.begin(),
                        results.end(),
-                       [&](const int& element)->bool {
-                         return element != kSuccess;
-                       }));
+                       [&] (const int& element)->bool { return element != kSuccess; }));
   if (it != results.end())
     return kAtLeastOneFailure;
 

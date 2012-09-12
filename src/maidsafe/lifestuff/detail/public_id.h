@@ -27,9 +27,7 @@
 #include "boost/asio/deadline_timer.hpp"
 #include "boost/asio/io_service.hpp"
 #include "boost/date_time/posix_time/posix_time_duration.hpp"
-#include "boost/thread/condition_variable.hpp"
-#include "boost/thread/mutex.hpp"
-#include "boost/signals2.hpp"
+#include "boost/signals2/signal.hpp"
 
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 

@@ -90,10 +90,10 @@ source_group("LifeStuff Detail Header Files" FILES ${HEADER_FILES_DETAIL_DIR})
 
 ####    TESTS    ####
 set(TESTS_MAIN_CC "${PATH_TO_TESTS}/tests_main.cc")
-set(CLIENT_CONTROLLER_TEST_CC "${PATH_TO_TESTS}/user_credentials_test.cc")
+set(CLIENT_CONTROLLER_TEST_CC "${PATH_TO_TESTS}/credentials_test.cc")
 set(PUBLIC_ID_TEST_CC "${PATH_TO_TESTS}/public_id_test.cc"
                       "${PATH_TO_TESTS}/message_handler_test.cc")
-set(USER_STORAGE_TEST_CC "${PATH_TO_TESTS}/user_storage_test.cc")
+set(STORAGE_TEST_CC "${PATH_TO_TESTS}/storage_test.cc")
 set(API_TEST_CC "${PATH_TO_TESTS}/api/full_api_test.cc"
                 "${PATH_TO_TESTS}/api/api_user_credentials_test.cc"
                 "${PATH_TO_TESTS}/api/api_public_id_test.cc"
@@ -112,7 +112,7 @@ set(NETWORK_HELPER_FILES ${NETWORK_HELPER_CC} ${NETWORK_HELPER_H} ${NETWORK_HELP
 source_group("Tests Source Files" FILES ${TESTS_MAIN_CC}
                                         ${CLIENT_CONTROLLER_TEST_CC}
                                         ${PUBLIC_ID_TEST_CC}
-                                        ${USER_STORAGE_TEST_CC}
+                                        ${STORAGE_TEST_CC}
                                         ${API_TEST_CC}
                                         ${LIFESTUFF_TESTS_CC}
                                         ${NETWORK_HELPER_CC})
@@ -131,8 +131,8 @@ ms_add_executable(TESTlifestuff_general "Tests/LifeStuff" ${LIFESTUFF_TESTS_CC} 
 
 ms_add_static_library(lifestuff_local ${ALL_FILES_LIFESTUFF_DIR})
 ms_add_executable(TESTlifestuff_public_id_local "Tests/LifeStuff" ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
-ms_add_executable(TESTlifestuff_user_credentials_local "Tests/LifeStuff" ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
-ms_add_executable(TESTlifestuff_user_storage_local "Tests/LifeStuff" ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC})
+ms_add_executable(TESTlifestuff_credentials_local "Tests/LifeStuff" ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
+ms_add_executable(TESTlifestuff_storage_local "Tests/LifeStuff" ${STORAGE_TEST_CC} ${TESTS_MAIN_CC})
 ms_add_executable(TESTlifestuff_api_local "Tests/LifeStuff" ${API_TEST_CC} ${TESTS_MAIN_CC})
 
 target_link_libraries(maidsafe_lifestuff_detail maidsafe_drive maidsafe_passport)
@@ -140,18 +140,18 @@ target_link_libraries(TESTlifestuff_general maidsafe_lifestuff_detail)
 
 target_link_libraries(maidsafe_lifestuff_local maidsafe_lifestuff_detail)
 target_link_libraries(TESTlifestuff_public_id_local maidsafe_lifestuff_local)
-target_link_libraries(TESTlifestuff_user_credentials_local maidsafe_lifestuff_local)
-target_link_libraries(TESTlifestuff_user_storage_local maidsafe_lifestuff_local)
+target_link_libraries(TESTlifestuff_credentials_local maidsafe_lifestuff_local)
+target_link_libraries(TESTlifestuff_storage_local maidsafe_lifestuff_local)
 target_link_libraries(TESTlifestuff_api_local maidsafe_lifestuff_local)
 
 if(NOT ${LOCAL_TARGETS_ONLY})
   ms_add_static_library(lifestuff ${ALL_FILES_LIFESTUFF_DIR})
   ms_add_executable(TESTlifestuff_public_id "Tests/LifeStuff" ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
-  ms_add_executable(TESTlifestuff_user_credentials "Tests/LifeStuff" ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
-  ms_add_executable(TESTlifestuff_user_storage "Tests/LifeStuff" ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
+  ms_add_executable(TESTlifestuff_credentials "Tests/LifeStuff" ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
+  ms_add_executable(TESTlifestuff_storage "Tests/LifeStuff" ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
   ms_add_executable(TESTlifestuff_api "Tests/LifeStuff" ${API_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
   target_link_libraries(maidsafe_lifestuff maidsafe_lifestuff_detail maidsafe_pd_vault maidsafe_routing)
-  set(NetworkTargets TESTlifestuff_public_id TESTlifestuff_user_credentials TESTlifestuff_user_storage TESTlifestuff_api)
+  set(NetworkTargets TESTlifestuff_public_id TESTlifestuff_credentials TESTlifestuff_storage TESTlifestuff_api)
     add_custom_command(TARGET maidsafe_lifestuff
                        PRE_BUILD
                        COMMAND ${CMAKE_COMMAND} -E echo "#ifndef MAIDSAFE_PD_CLIENT_KEYS_HELPER_H_" > ${PROJECT_BINARY_DIR}/keys_helper.h &&
@@ -202,8 +202,8 @@ ms_disable_warnings(${PROTO_SOURCE_FILES})
 set_target_properties(maidsafe_lifestuff_local
                       TESTlifestuff_general
                       TESTlifestuff_public_id_local
-                      TESTlifestuff_user_credentials_local
-                      TESTlifestuff_user_storage_local
+                      TESTlifestuff_credentials_local
+                      TESTlifestuff_storage_local
                       TESTlifestuff_api_local
                       PROPERTIES COMPILE_FLAGS -DLOCAL_TARGETS_ONLY)
 
@@ -219,13 +219,13 @@ add_style_test(${STYLE_ALL}
                ${LIFESTUFF_TESTS_CC}
                ${CLIENT_CONTROLLER_TEST_CC}
                ${PUBLIC_ID_TEST_CC}
-               ${USER_STORAGE_TEST_CC}
+               ${STORAGE_TEST_CC}
                ${API_TEST_CC})
 
 add_gtests(TESTlifestuff_general)
 add_gtests(TESTlifestuff_public_id_local)
-add_gtests(TESTlifestuff_user_credentials_local)
-add_gtests(TESTlifestuff_user_storage_local)
+add_gtests(TESTlifestuff_credentials_local)
+add_gtests(TESTlifestuff_storage_local)
 add_gtests(TESTlifestuff_api_local)
 
 add_project_experimental()
