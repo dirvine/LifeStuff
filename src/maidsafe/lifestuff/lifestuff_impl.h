@@ -74,12 +74,6 @@ struct Slots {
         profile_picture_slot(),
         contact_presence_slot(),
         contact_deletion_function(),
-        private_share_invitation_function(),
-        private_share_deletion_function(),
-        private_access_change_function(),
-        open_share_invitation_function(),
-        share_renamed_function(),
-        share_changed_function(),
         lifestuff_card_update_function(),
         network_health_function(),
         immediate_quit_required_function() {}
@@ -90,12 +84,6 @@ struct Slots {
   ContactProfilePictureFunction profile_picture_slot;
   ContactPresenceFunction contact_presence_slot;
   ContactDeletionFunction contact_deletion_function;
-  PrivateShareInvitationFunction private_share_invitation_function;
-  PrivateShareDeletionFunction private_share_deletion_function;
-  PrivateMemberAccessChangeFunction private_access_change_function;
-  OpenShareInvitationFunction open_share_invitation_function;
-  ShareRenamedFunction share_renamed_function;
-  ShareChangedFunction share_changed_function;
   LifestuffCardUpdateFunction lifestuff_card_update_function;
   NetworkHealthFunction network_health_function;
   ImmediateQuitRequiredFunction immediate_quit_required_function;
@@ -117,12 +105,6 @@ class LifeStuffImpl {
                        const ContactProfilePictureFunction& profile_picture_slot,
                        const ContactPresenceFunction& contact_presence_slot,
                        const ContactDeletionFunction& contact_deletion_function,
-                       const PrivateShareInvitationFunction& share_invitation_function,
-                       const PrivateShareDeletionFunction& share_deletion_function,
-                       const PrivateMemberAccessChangeFunction& access_level_function,
-                       const OpenShareInvitationFunction& open_share_invitation_function,
-                       const ShareRenamedFunction& share_renamed_function,
-                       const ShareChangedFunction& share_changed_function,
                        const LifestuffCardUpdateFunction& lifestuff_card_update_function,
                        const NetworkHealthFunction& network_health_function,
                        const ImmediateQuitRequiredFunction& immediate_quit_required_function);
@@ -194,73 +176,6 @@ class LifeStuffImpl {
   int DeleteHiddenFile(const fs::path& absolute_path);
   int SearchHiddenFiles(const fs::path& absolute_path,
                         std::vector<std::string>* results);
-  /// Private Shares
-  // If error code is given, map of results should be empty. If nobody added,
-  // revert everything. Directory has to be moved, not copied. If directory
-  // already exists in shared stuff, append ending as dropbox does. If a
-  // contact is passed in as owner, it should fail for that contact.
-  int CreatePrivateShareFromExistingDirectory(const std::string& my_public_id,
-                                              const fs::path& directory_in_lifestuff_drive,
-                                              const StringIntMap& contacts,
-                                              std::string* share_name,
-                                              StringIntMap* results);
-  int CreateEmptyPrivateShare(const std::string& my_public_id,
-                              const StringIntMap& contacts,
-                              std::string* share_name,
-                              StringIntMap* results);
-  int GetPrivateShareList(const std::string& my_public_id, StringIntMap* share_names);
-  // For owners only
-  int GetPrivateShareMembers(const std::string& my_public_id,
-                             const std::string& share_name,
-                             StringIntMap* share_members);
-  int GetPrivateSharesIncludingMember(const std::string& my_public_id,
-                                      const std::string& contact_public_id,
-                                      std::vector<std::string>* share_names);
-  // Should create a directory adapting to other possible shares
-  int AcceptPrivateShareInvitation(const std::string& my_public_id,
-                                   const std::string& contact_public_id,
-                                   const std::string& share_id,
-                                   std::string* share_name);
-  int RejectPrivateShareInvitation(const std::string& my_public_id, const std::string& share_id);
-  // Only for owners
-  int EditPrivateShareMembers(const std::string& my_public_id,
-                              const StringIntMap& public_ids,
-                              const std::string& share_name,
-                              StringIntMap* results,
-                              bool inform_contacts = true);
-  // Only for owners
-  int DeletePrivateShare(const std::string& my_public_id,
-                         const std::string& share_name,
-                         bool delete_data);
-  // Should work for RO and full access. Only for non-owners
-  int LeavePrivateShare(const std::string& my_public_id,
-                        const std::string& share_name,
-                        bool inform_contacts = true);
-
-  /// Open Shares
-  int CreateOpenShareFromExistingDirectory(const std::string& my_public_id,
-                                           const fs::path& directory_in_lifestuff_drive,
-                                           const std::vector<std::string>& contacts,
-                                           std::string* share_name,
-                                           StringIntMap* results);
-  int CreateEmptyOpenShare(const std::string& my_public_id,
-                           const std::vector<std::string>& contacts,
-                           std::string* share_name,
-                           StringIntMap* results);
-  int InviteMembersToOpenShare(const std::string& my_public_id,
-                               const std::vector<std::string>& contacts,
-                               const std::string& share_name,
-                               StringIntMap* results);
-  int GetOpenShareList(const std::string& my_public_id, std::vector<std::string>* share_names);
-  int GetOpenShareMembers(const std::string& my_public_id,
-                          const std::string& share_name,
-                          StringIntMap* share_members);
-  int AcceptOpenShareInvitation(const std::string& my_public_id,
-                                const std::string& contact_public_id,
-                                const std::string& share_id,
-                                std::string* share_name);
-  int RejectOpenShareInvitation(const std::string& my_public_id, const std::string& share_id);
-  int LeaveOpenShare(const std::string& my_public_id, const std::string& share_name);
 
   int state() const;
   int logged_in_state() const;
@@ -296,13 +211,6 @@ class LifeStuffImpl {
   int CheckStateAndFullAccess() const;
   int PreContactChecksFullAccess(const std::string& my_public_id);
   int PreContactChecksReadOnly(const std::string& my_public_id);
-  void ShareRenameSlot(const std::string& old_share_name,
-                       const std::string& new_share_name);
-  void MemberAccessChangeSlot(const std::string& share_id,
-                              const std::string& directory_id,
-                              const std::string& new_share_id,
-                              const asymm::Keys& key_ring,
-                              int access_right);
   void NetworkHealthSlot(const int& index);
 #ifndef LOCAL_TARGETS_ONLY
   int CreateVaultInLocalMachine(const fs::path& chunk_store);

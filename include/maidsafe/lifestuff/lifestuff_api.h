@@ -59,12 +59,6 @@ class LifeStuff {
                        const ContactProfilePictureFunction& profile_picture_slot,
                        const ContactPresenceFunction& contact_presence_slot,
                        const ContactDeletionFunction& contact_deletion_function,
-                       const PrivateShareInvitationFunction& share_invitation_function,
-                       const PrivateShareDeletionFunction& share_deletion_function,
-                       const PrivateMemberAccessChangeFunction& access_change_function,
-                       const OpenShareInvitationFunction& open_share_invitation_function,
-                       const ShareRenamedFunction& share_renamed_function,
-                       const ShareChangedFunction& share_changed_function,
                        const LifestuffCardUpdateFunction& lifestuff_card_update_function,
                        const NetworkHealthFunction& network_health_function,
                        const ImmediateQuitRequiredFunction& immediate_quit_required_function);
@@ -134,71 +128,6 @@ class LifeStuff {
   int DeleteHiddenFile(const fs::path& absolute_path);
   int SearchHiddenFiles(const fs::path& absolute_path,
                         std::vector<std::string>* results);
-
-  /// Private Shares
-  // If error code is given, map of rsults should be empty. If nobody added,
-  // revert everything. Directory has to be moved, not copied. If directory
-  // already exists in shared stuff, append ending as dropbox does. If a
-  // contact is passed in as owner, it should fail for that contact.
-  int CreatePrivateShareFromExistingDirectory(const std::string& my_public_id,
-                                              const fs::path& directory_in_lifestuff_drive,
-                                              const StringIntMap& contacts,
-                                              std::string* share_name,
-                                              StringIntMap* results);
-  int CreateEmptyPrivateShare(const std::string& my_public_id,
-                              const StringIntMap& contacts,
-                              std::string* share_name,
-                              StringIntMap* results);
-  int GetPrivateShareList(const std::string& my_public_id, StringIntMap* shares_names);
-  // For owners only
-  int GetPrivateShareMembers(const std::string& my_public_id,
-                             const std::string& share_name,
-                             StringIntMap* shares_members);
-  int GetPrivateSharesIncludingMember(const std::string& my_public_id,
-                                      const std::string& contact_public_id,
-                                      std::vector<std::string>* shares_names);
-  // Should create a directory adapting to other possible shares
-  int AcceptPrivateShareInvitation(const std::string& my_public_id,
-                                   const std::string& contact_public_id,
-                                   const std::string& share_id,
-                                   std::string* share_name);
-  int RejectPrivateShareInvitation(const std::string& my_public_id, const std::string& share_id);
-  // Only for owners
-  int EditPrivateShareMembers(const std::string& my_public_id,
-                              const StringIntMap& public_ids,
-                              const std::string& share_name,
-                              StringIntMap* results);
-  // Only for owners
-  int DeletePrivateShare(const std::string& my_public_id,
-                         const std::string& share_name,
-                         bool delete_data);
-  // Should work for RO and full access. Only for non-owners
-  int LeavePrivateShare(const std::string& my_public_id, const std::string& share_name);
-
-  /// Open Shares
-  int CreateOpenShareFromExistingDirectory(const std::string& my_public_id,
-                                           const fs::path& directory_in_lifestuff_drive,
-                                           const std::vector<std::string>& contacts,
-                                           std::string* share_name,
-                                           StringIntMap* results);
-  int CreateEmptyOpenShare(const std::string& my_public_id,
-                           const std::vector<std::string>& contacts,
-                           std::string* share_name,
-                           StringIntMap* results);
-  int InviteMembersToOpenShare(const std::string& my_public_id,
-                               const std::vector<std::string>& contacts,
-                               const std::string& share_name,
-                               StringIntMap* results);
-  int GetOpenShareList(const std::string& my_public_id, std::vector<std::string>* shares_names);
-  int GetOpenShareMembers(const std::string& my_public_id,
-                          const std::string& share_name,
-                          StringIntMap* shares_members);
-  int AcceptOpenShareInvitation(const std::string& my_public_id,
-                                const std::string& contact_public_id,
-                                const std::string& share_id,
-                                std::string* share_name);
-  int RejectOpenShareInvitation(const std::string& my_public_id, const std::string& share_id);
-  int LeaveOpenShare(const std::string& my_public_id, const std::string& share_name);
 
   ///
   int state() const;
