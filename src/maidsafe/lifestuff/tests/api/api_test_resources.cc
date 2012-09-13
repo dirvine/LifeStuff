@@ -351,7 +351,6 @@ int InitialiseAndConnect(LifeStuff& test_elements,
                          std::vector<std::string>* names,
                          size_t* total_files,
                          boost::mutex* mutex) {
-
   FileTransferFunction ftf;
   if (several_files) {
     ftf = [=, &testing_variables] (const std::string& own_public_id,

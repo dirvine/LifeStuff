@@ -216,26 +216,26 @@ TEST_F(UserCredentialsTest, FUNC_LoginSequence) {
   LOG(kSuccess) << "Constructed new client node.\n===================\n\n\n\n";
 #endif
 
-//  ASSERT_EQ(kSuccess, user_credentials_->Logout());
-//  ASSERT_TRUE(session_.keyword().empty());
-//  ASSERT_TRUE(session_.pin().empty());
-//  ASSERT_TRUE(session_.password().empty());
-//  LOG(kInfo) << "Logged out.\n===================\n";
+  ASSERT_EQ(kSuccess, user_credentials_->Logout());
+  ASSERT_TRUE(session_.keyword().empty());
+  ASSERT_TRUE(session_.pin().empty());
+  ASSERT_TRUE(session_.password().empty());
+  LOG(kInfo) << "Logged out.\n===================\n";
 
-//  ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
-//  ASSERT_EQ(keyword_, session_.keyword());
-//  ASSERT_EQ(pin_, session_.pin());
-//  ASSERT_EQ(password_, session_.password());
-//  LOG(kInfo) << "Logged in.\n===================\n";
+  ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
+  ASSERT_EQ(keyword_, session_.keyword());
+  ASSERT_EQ(pin_, session_.pin());
+  ASSERT_EQ(password_, session_.password());
+  LOG(kInfo) << "Logged in.\n===================\n";
 
-//  ASSERT_EQ(kSuccess, user_credentials_->Logout());
-//  ASSERT_TRUE(session_.keyword().empty());
-//  ASSERT_TRUE(session_.pin().empty());
-//  ASSERT_TRUE(session_.password().empty());
-//  LOG(kInfo) << "Logged out.\n===================\n";
+  ASSERT_EQ(kSuccess, user_credentials_->Logout());
+  ASSERT_TRUE(session_.keyword().empty());
+  ASSERT_TRUE(session_.pin().empty());
+  ASSERT_TRUE(session_.password().empty());
+  LOG(kInfo) << "Logged out.\n===================\n";
 
-//  ASSERT_NE(kSuccess, user_credentials_->LogIn(RandomAlphaNumericString(9), pin_, password_));
-//  LOG(kInfo) << "Can't log in with fake details.";
+  ASSERT_NE(kSuccess, user_credentials_->LogIn(RandomAlphaNumericString(9), pin_, password_));
+  LOG(kInfo) << "Can't log in with fake details.";
 }
 
 TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {

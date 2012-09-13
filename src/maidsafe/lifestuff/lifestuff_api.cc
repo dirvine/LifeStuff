@@ -375,6 +375,8 @@ int LifeStuff::LeaveOpenShare(const std::string& my_public_id,
 ///
 int LifeStuff::state() const { return lifestuff_impl_->state(); }
 
+int LifeStuff::logged_in_state() const { return lifestuff_impl_->logged_in_state(); }
+
 fs::path LifeStuff::mount_path() const { return lifestuff_impl_->mount_path(); }
 
 }  // namespace lifestuff
