@@ -1140,7 +1140,6 @@ void LifeStuffImpl::ConnectInternalElements() {
            const std::string&) {
         message_handler_->InformConfirmedContactOnline(own_public_id, recipient_public_id);
       });
-
 }
 
 int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {

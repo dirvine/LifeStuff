@@ -67,7 +67,7 @@ class Session;
 
 class UserStorage {
  public:
-  UserStorage(std::shared_ptr<pcs::RemoteChunkStore> chunk_store);
+  explicit UserStorage(std::shared_ptr<pcs::RemoteChunkStore> chunk_store);
   virtual ~UserStorage() {}
 
   virtual void MountDrive(const fs::path& mount_dir_path,

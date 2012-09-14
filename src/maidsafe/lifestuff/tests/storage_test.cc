@@ -48,7 +48,7 @@ class UserStorageTest : public testing::Test {
   UserStorageTest()
     : test_dir_(maidsafe::test::CreateTestPath()),
       mount_dir_(*test_dir_ / RandomAlphaNumericString(8)),
-      interval_(1),
+      interval_(2),
       asio_service1_(5),
       asio_service2_(5),
 #ifndef LOCAL_TARGETS_ONLY
@@ -200,7 +200,7 @@ TEST_F(UserStorageTest, FUNC_SaveDataMapAndConstructFile) {
   EXPECT_EQ(kSuccess,
             user_storage1_->InsertDataMap(mount_dir / file_name_copy, serialised_data_map_copy));
   EXPECT_TRUE(ReadFile(mount_dir / retrived_file_name_copy, &copy_file_content));
-  EXPECT_EQ(file_content, copy_file_content) << file_content.size() << " - " << copy_file_content.size();
+  EXPECT_EQ(file_content, copy_file_content);
   UnMountDrive(user_storage1_);
 }
 
