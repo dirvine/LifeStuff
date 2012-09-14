@@ -258,7 +258,7 @@ class SessionTest : public testing::Test {
 
 TEST_F(SessionTest, BEH_SetsGetsAndReset) {
   // Check session is clean originally
-  ASSERT_EQ(kDefCon3, session_.def_con_level());
+  ASSERT_EQ(DefConLevels::kDefCon3, session_.def_con_level());
   ASSERT_EQ("", session_.keyword());
   ASSERT_EQ("", session_.pin());
   ASSERT_EQ("", session_.password());
@@ -267,14 +267,14 @@ TEST_F(SessionTest, BEH_SetsGetsAndReset) {
   ASSERT_EQ("", session_.root_parent_id());
 
   // Modify session
-  session_.set_def_con_level(kDefCon1);
+  session_.set_def_con_level(DefConLevels::kDefCon1);
   SetUsernamePinPassword("aaa", "bbb", "ccc");
   ASSERT_TRUE(session_.set_session_name());
   session_.set_unique_user_id("ddd1");
   session_.set_root_parent_id("ddd2");
 
   // Verify modifications
-  ASSERT_EQ(kDefCon1, session_.def_con_level());
+  ASSERT_EQ(DefConLevels::kDefCon1, session_.def_con_level());
   ASSERT_EQ("aaa", session_.keyword());
   ASSERT_EQ("bbb", session_.pin());
   ASSERT_EQ("ccc", session_.password());
@@ -286,7 +286,7 @@ TEST_F(SessionTest, BEH_SetsGetsAndReset) {
   session_.Reset();
 
   // Check session is clean again
-  ASSERT_EQ(kDefCon3, session_.def_con_level());
+  ASSERT_EQ(DefConLevels::kDefCon3, session_.def_con_level());
   ASSERT_EQ("", session_.keyword());
   ASSERT_EQ("", session_.pin());
   ASSERT_EQ("", session_.password());

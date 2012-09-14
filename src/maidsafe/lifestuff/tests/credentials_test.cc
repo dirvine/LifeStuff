@@ -269,7 +269,7 @@ TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
 }
 
 TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
-  ASSERT_TRUE(session_.def_con_level() == kDefCon3);
+  ASSERT_TRUE(session_.def_con_level() == DefConLevels::kDefCon3);
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());
@@ -299,7 +299,7 @@ TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
   ASSERT_TRUE(session_.password().empty());
   LOG(kInfo) << "Logged out.\n===================\n";
 
-  ASSERT_TRUE(session_.def_con_level() == kDefCon3);
+  ASSERT_TRUE(session_.def_con_level() == DefConLevels::kDefCon3);
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());
@@ -326,7 +326,7 @@ TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
   ASSERT_TRUE(session_.password().empty());
   LOG(kInfo) << "Logged out.\n===================\n";
 
-  ASSERT_TRUE(session_.def_con_level() == kDefCon3);
+  ASSERT_TRUE(session_.def_con_level() == DefConLevels::kDefCon3);
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());
@@ -343,7 +343,7 @@ TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
   ASSERT_NE(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_ + password_));
   LOG(kInfo) << "Invalid password fails.\n===================\n";
 
-  ASSERT_TRUE(session_.def_con_level() == kDefCon3);
+  ASSERT_TRUE(session_.def_con_level() == DefConLevels::kDefCon3);
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());
@@ -369,7 +369,7 @@ TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
   ASSERT_TRUE(session_.password().empty());
   LOG(kInfo) << "Logged out.\n===================\n";
 
-  ASSERT_TRUE(session_.def_con_level() == kDefCon3);
+  ASSERT_TRUE(session_.def_con_level() == DefConLevels::kDefCon3);
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());

@@ -38,7 +38,7 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-enum DefConLevels {
+enum class DefConLevels {
   kDefCon1 = 1,
   kDefCon2,
   kDefCon3

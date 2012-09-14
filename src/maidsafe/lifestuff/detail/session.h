@@ -47,7 +47,7 @@ enum SessionAccessLevel { kNoAccess, kFullAccess, kReadOnly, kMustDie };
 
 struct UserDetails {
   UserDetails()
-      : defconlevel(kDefCon3),
+      : defconlevel(DefConLevels::kDefCon3),
         keyword(),
         pin(),
         password(),
