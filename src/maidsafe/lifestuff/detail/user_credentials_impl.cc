@@ -131,19 +131,19 @@ int UserCredentialsImpl::AttemptLogInProcess(const std::string& keyword,
     return result;
   }
 
-  std::string lid_packet(remote_chunk_store_.Get(pca::ApplyTypeToName(lid::LidName(keyword, pin),
-                                                                      pca::kModifiableByOwner)));
-  LockingPacket locking_packet;
-  int lid_result(lid::ProcessAccountStatus(keyword, pin, password, lid_packet, locking_packet));
-  bool lid_corrupted(false);
-  if (lid_result != kSuccess) {
-    if (lid_result == kCorruptedLidPacket) {
-      lid_corrupted = true;
-    } else {
-      LOG(kError) << "Couldn't get or process LID. Account can't be logged in: " << lid_result;
-      return lid_result;
-    }
-  }
+//  std::string lid_packet(remote_chunk_store_.Get(pca::ApplyTypeToName(lid::LidName(keyword, pin),
+//                                                                      pca::kModifiableByOwner)));
+//  LockingPacket locking_packet;
+//  int lid_result(lid::ProcessAccountStatus(keyword, pin, password, lid_packet, locking_packet));
+//  bool lid_corrupted(false);
+//  if (lid_result != kSuccess) {
+//    if (lid_result == kCorruptedLidPacket) {
+//      lid_corrupted = true;
+//    } else {
+//      LOG(kError) << "Couldn't get or process LID. Account can't be logged in: " << lid_result;
+//      return lid_result;
+//    }
+//  }
 
 
   std::string mid_packet, smid_packet;
@@ -153,71 +153,71 @@ int UserCredentialsImpl::AttemptLogInProcess(const std::string& keyword,
     return result;
   }
 
-  bool need_to_wait(false);
-  result = GetAndLockLid(keyword, pin, password, lid_packet, locking_packet);
-  if (result == kCorruptedLidPacket && lid_corrupted == true) {
-    LOG(kInfo) << "Trying to fix corrupted packet...";
-    session_.set_keyword(keyword);
-    session_.set_pin(pin);
-    session_.set_password(password);
-    session_.set_session_access_level(kFullAccess);
-    if (!session_.set_session_name()) {
-      LOG(kError) << "Failed to set session.";
-      return kSessionFailure;
-    }
-    locking_packet = lid::CreateLockingPacket(session_.session_name());
-  } else if (result != kSuccess) {
-    LOG(kError) << "Failed to GetAndLock LID.";
-    return result;
-  } else {
-    session_.set_keyword(keyword);
-    session_.set_pin(pin);
-    session_.set_password(password);
-    session_.set_session_access_level(kFullAccess);
-    if (!session_.set_session_name()) {
-      LOG(kError) << "Failed to set session.";
-      return kSessionFailure;
-    }
+//  bool need_to_wait(false);
+//  result = GetAndLockLid(keyword, pin, password, lid_packet, locking_packet);
+//  if (result == kCorruptedLidPacket && lid_corrupted == true) {
+//    LOG(kInfo) << "Trying to fix corrupted packet...";
+//    session_.set_keyword(keyword);
+//    session_.set_pin(pin);
+//    session_.set_password(password);
+//    session_.set_session_access_level(kFullAccess);
+//    if (!session_.set_session_name()) {
+//      LOG(kError) << "Failed to set session.";
+//      return kSessionFailure;
+//    }
+//    locking_packet = lid::CreateLockingPacket(session_.session_name());
+//  } else if (result != kSuccess) {
+//    LOG(kError) << "Failed to GetAndLock LID.";
+//    return result;
+//  } else {
+//    session_.set_keyword(keyword);
+//    session_.set_pin(pin);
+//    session_.set_password(password);
+//    session_.set_session_access_level(kFullAccess);
+//    if (!session_.set_session_name()) {
+//      LOG(kError) << "Failed to set session.";
+//      return kSessionFailure;
+//    }
 
-    int i(0);
-    result = kGeneralError;
-    while (i++ < 10 && result != kSuccess) {
-      result = lid::CheckLockingPacketForIdentifier(locking_packet, session_.session_name());
-      if (result != kSuccess) {
-        if (!session_.set_session_name()) {
-          LOG(kError) << "Failed to set session name.";
-          return kSessionFailure;
-        }
-      }
-    }
-    result = lid::AddItemToLockingPacket(locking_packet, session_.session_name(), true);
-    if (result == kLidIdentifierAlreadyInUse) {
-      LOG(kError) << "Failed to add item to locking packet";
-      return result;
-    }
-    if (result == kLidFullAccessUnavailable)
-      need_to_wait = true;
-    lid::OverthrowInstancesUsingLockingPacket(locking_packet, session_.session_name());
-  }
+//    int i(0);
+//    result = kGeneralError;
+//    while (i++ < 10 && result != kSuccess) {
+//      result = lid::CheckLockingPacketForIdentifier(locking_packet, session_.session_name());
+//      if (result != kSuccess) {
+//        if (!session_.set_session_name()) {
+//          LOG(kError) << "Failed to set session name.";
+//          return kSessionFailure;
+//        }
+//      }
+//    }
+//    result = lid::AddItemToLockingPacket(locking_packet, session_.session_name(), true);
+//    if (result == kLidIdentifierAlreadyInUse) {
+//      LOG(kError) << "Failed to add item to locking packet";
+//      return result;
+//    }
+//    if (result == kLidFullAccessUnavailable)
+//      need_to_wait = true;
+//    lid::OverthrowInstancesUsingLockingPacket(locking_packet, session_.session_name());
+//  }
 
-  result = ModifyLid(keyword, pin, password, locking_packet);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to modify LID.";
-    return result;
-  }
+//  result = ModifyLid(keyword, pin, password, locking_packet);
+//  if (result != kSuccess) {
+//    LOG(kError) << "Failed to modify LID.";
+//    return result;
+//  }
 
-  if (need_to_wait) {
-    LOG(kInfo) << "Need to wait before logging in.";
-    Sleep(bptime::seconds(15));
-    result = GetUserInfo(keyword, pin, password, true, mid_packet, smid_packet);
-    if (result != kSuccess) {
-      LOG(kError) << "Failed to re-get user credentials.";
-      return result;
-    }
-  }
+//  if (need_to_wait) {
+//    LOG(kInfo) << "Need to wait before logging in.";
+//    Sleep(bptime::seconds(15));
+//    result = GetUserInfo(keyword, pin, password, true, mid_packet, smid_packet);
+//    if (result != kSuccess) {
+//      LOG(kError) << "Failed to re-get user credentials.";
+//      return result;
+//    }
+//  }
 
   session_saved_once_ = false;
-  StartSessionSaver();
+//  StartSessionSaver();
 
   return kSuccess;
 }
@@ -228,11 +228,11 @@ int UserCredentialsImpl::LogOut() {
     LOG(kError) << "Failed to save session on Logout";
     return result;
   }
-  result = AssessAndUpdateLid(true);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to update LID on Logout";
-    return result;
-  }
+//  result = AssessAndUpdateLid(true);
+//  if (result != kSuccess) {
+//    LOG(kError) << "Failed to update LID on Logout";
+//    return result;
+//  }
 
   session_.Reset();
   return kSuccess;
@@ -347,7 +347,7 @@ int UserCredentialsImpl::GetAndLockLid(const std::string& keyword,
   if (get_lock_result != kSuccess) {
     LOG(kError) << "Failed to GetAndLock LID: " << get_lock_result;
     return get_lock_result;
-  };
+  }
   return lid::ProcessAccountStatus(keyword, pin, password, lid_packet, locking_packet);
 }
 
@@ -505,12 +505,12 @@ int UserCredentialsImpl::CreateUser(const std::string& keyword,
   }
   session_.set_changed(true);
 
-  LockingPacket locking_packet(lid::CreateLockingPacket(session_.session_name()));
-  result = StoreLid(keyword, pin, password, locking_packet);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to create LID.";
-    return result;
-  }
+//  LockingPacket locking_packet(lid::CreateLockingPacket(session_.session_name()));
+//  result = StoreLid(keyword, pin, password, locking_packet);
+//  if (result != kSuccess) {
+//    LOG(kError) << "Failed to create LID.";
+//    return result;
+//  }
 
 //  StartSessionSaver();
 
@@ -1629,22 +1629,22 @@ void UserCredentialsImpl::SessionSaver(const bptime::seconds& interval,
     return;
   }
 
-  bool lid_success(true);
-  int result(AssessAndUpdateLid(false));
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to update LID: " << result << " - won't SaveSession.";
-    lid_success = false;
-  } else {
+//  bool lid_success(true);
+//  int result(AssessAndUpdateLid(false));
+//  if (result != kSuccess) {
+//    LOG(kError) << "Failed to update LID: " << result << " - won't SaveSession.";
+//    lid_success = false;
+//  } else {
     if (session_.session_access_level() == kFullAccess) {
-      result = SaveSession(false);
+      int result = SaveSession(false);
       LOG(kInfo) << "Session saver result: " << result;
     }
-  }
+//  }
 
-  if (lid_success)
-    session_saver_timer_.expires_from_now(bptime::seconds(interval));
-  else
-    session_saver_timer_.expires_from_now(interval + bptime::seconds(5));
+//  if (lid_success)
+//    session_saver_timer_.expires_from_now(bptime::seconds(interval));
+//  else
+//    session_saver_timer_.expires_from_now(interval + bptime::seconds(5));
   session_saver_timer_.async_wait([=] (const boost::system::error_code& error_code) {
                                     this->SessionSaver(bptime::seconds(interval), error_code);
                                   });

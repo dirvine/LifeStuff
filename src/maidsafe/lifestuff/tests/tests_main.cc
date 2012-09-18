@@ -32,9 +32,9 @@ int main(int argc, char** argv) {
   maidsafe::log::Logging::instance().AddFilter("drive", maidsafe::log::kFatal);
   maidsafe::log::Logging::instance().AddFilter("passport", maidsafe::log::kFatal);
 #ifndef LOCAL_TARGETS_ONLY
-  maidsafe::log::Logging::instance().AddFilter("rudp", maidsafe::log::kError);
-  maidsafe::log::Logging::instance().AddFilter("routing", maidsafe::log::kVerbose);
-  maidsafe::log::Logging::instance().AddFilter("pd", maidsafe::log::kSuccess);
+  maidsafe::log::Logging::instance().AddFilter("rudp", maidsafe::log::kFatal);
+  maidsafe::log::Logging::instance().AddFilter("routing", maidsafe::log::kFatal);
+  maidsafe::log::Logging::instance().AddFilter("pd", maidsafe::log::kInfo);
 #endif
   maidsafe::log::Logging::instance().AddFilter("lifestuff", maidsafe::log::kInfo);
   maidsafe::log::Logging::instance().SetColour(maidsafe::log::ColourMode::kFullLine);
