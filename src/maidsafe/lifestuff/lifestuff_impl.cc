@@ -327,18 +327,24 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
                    "messages and intros have been stopped.";
     return kWrongLoggedInState;
   }
-  // TODO(Alison) - should we reset session here?
+  session_.Reset();
 
   int result(user_credentials_->CreateUser(keyword, pin, password));
   if (result != kSuccess) {
-    LOG(kError) << "Failed to Create User with result: " << result;
-    return result;
+    if (result == kKeywordSizeInvalid || result == kKeywordPatternInvalid ||
+        result == kPinSizeInvalid || result == kPinPatternInvalid ||
+        result == kPasswordSizeInvalid || result == kPasswordPatternInvalid) {
+      return result;
+    } else {
+      LOG(kError) << "Failed to Create User with result: " << result;
+      return kCreateUserGeneralFailure;
+    }
   }
 
   result = SetValidPmidAndInitialisePublicComponents();
   if (result != kSuccess)  {
     LOG(kError) << "Failed to set valid PMID with result: " << result;
-    return kCreationPmidFailure;
+    return kCreateUserPmidFailure;
   }
 
 #ifdef LOCAL_TARGETS_ONLY
@@ -347,7 +353,7 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
   result = CreateVaultInLocalMachine(chunk_store);
   if (result != kSuccess)  {
     LOG(kError) << "Failed to create vault. No LifeStuff for you! (Result: " << result << ")";
-    return kCreationVaultFailure;
+    return kCreateUserVaultFailure;
   }
 
   routings_handler_ = std::make_shared<RoutingsHandler>(*remote_chunk_store_,
@@ -414,9 +420,16 @@ int LifeStuffImpl::LogIn(const std::string& keyword,
 
   int login_result(user_credentials_->LogIn(keyword, pin, password));
   if (login_result != kSuccess && login_result != kReadOnlyRestrictedSuccess) {
-    LOG(kError) << "LogIn failed with result: " << login_result;
-    return login_result;
-    // TODO(Alison) - translate into specific return code here.
+    if (login_result == kKeywordSizeInvalid || login_result == kKeywordPatternInvalid ||
+        login_result == kPinSizeInvalid || login_result == kPinPatternInvalid ||
+        login_result == kPasswordSizeInvalid || login_result == kPasswordPatternInvalid ||
+        login_result == kLoginUserNonExistence || login_result == kLoginAccountCorrupted ||
+        login_result == kLoginSessionNotYetSaved || login_result == kLoginUsingNextToLastSession) {
+      return login_result;
+    } else {
+      LOG(kError) << "LogIn failed with result: " << login_result;
+      return kLoginGeneralFailure;
+    }
   }
 
   int result(SetValidPmidAndInitialisePublicComponents());
@@ -538,12 +551,12 @@ int LifeStuffImpl::MountDrive(bool read_only) {
     if (error_code) {
       if (error_code.value() == boost::system::errc::not_connected) {
         LOG(kError) << "\tHint: Try unmounting the drive manually.";
-        return kGeneralError1;
+        return kMountDriveTryManualUnMount;
       } else if (error_code != boost::system::errc::no_such_file_or_directory) {
         if (!fs::create_directories(mount_dir, error_code) || error_code) {
           LOG(kError) << "Failed to create mount directory at " << mount_dir.string()
                       << " - " << error_code.value() << ": " << error_code.message();
-          return kGeneralError2;
+          return kMountDriveMountPointCreationFailure;
         }
       }
     }
@@ -654,12 +667,8 @@ int LifeStuffImpl::ChangeKeyword(const std::string& new_keyword, const std::stri
   }
 
   result = user_credentials_->ChangeKeyword(new_keyword);
-  if (result == kSuccess) {
-    return kSuccess;
-  } else if (result == kWordSizeInvalid) {
-    return kKeywordSizeInvalid;
-  } else if (result == kWordPatternInvalid) {
-    return kKeywordPatternInvalid;
+  if (result == kSuccess || result == kKeywordSizeInvalid || result == kKeywordPatternInvalid) {
+    return result;
   } else {
     LOG(kError) << "Changing Keyword failed with result: " << result;
     return kChangeKeywordFailure;
@@ -709,12 +718,8 @@ int LifeStuffImpl::ChangePassword(const std::string& new_password,
   }
 
   result = user_credentials_->ChangePassword(new_password);
-  if (result == kSuccess) {
-    return kSuccess;
-  } else if (result == kWordSizeInvalid) {
-    return kPasswordSizeInvalid;
-  } else if (result == kWordPatternInvalid) {
-    return kPasswordPatternInvalid;
+  if (result == kSuccess || result == kPasswordSizeInvalid || result == kPasswordPatternInvalid) {
+    return result;
   } else {
     LOG(kError) << "Changing Password failed with result: " << result;
     return kChangePasswordFailure;
@@ -1292,7 +1297,7 @@ int LifeStuffImpl::CreatePrivateShareFromExistingDirectory(
   fs::path store_path(mount_path() / kSharedStuff);
   if (!VerifyOrCreatePath(store_path)) {
     LOG(kError) << "Failed to verify or create path to shared stuff.";
-    return false;
+    return -1;
   }
 
   *share_name = directory_in_lifestuff_drive.filename().string();

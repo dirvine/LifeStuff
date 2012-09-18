@@ -310,7 +310,7 @@ int ProcessAccountStatus(const std::string& keyword,
                          LockingPacket& locking_packet) {
   if (lid_packet.empty()) {
     LOG(kInfo) << "LID not found.";
-    return kUserDoesntExist;
+    return kLidNotFound;
   }
 
   priv::chunk_actions::SignedData packet;

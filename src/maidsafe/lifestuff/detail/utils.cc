@@ -89,11 +89,21 @@ int CheckWordValidity(const std::string& word) {
 }
 
 int CheckKeywordValidity(const std::string& keyword) {
-  return CheckWordValidity(keyword);
+  int result(CheckWordValidity(keyword));
+  if (result == kWordSizeInvalid)
+    return kKeywordSizeInvalid;
+  else if (result == kWordPatternInvalid)
+    return kKeywordPatternInvalid;
+  return kSuccess;
 }
 
 int CheckPasswordValidity(const std::string& password) {
-  return CheckWordValidity(password);
+  int result(CheckWordValidity(password));
+  if (result == kWordSizeInvalid)
+    return kPasswordSizeInvalid;
+  else if (result == kWordPatternInvalid)
+    return kPasswordPatternInvalid;
+  return kSuccess;
 }
 
 int CheckPinValidity(const std::string& pin) {

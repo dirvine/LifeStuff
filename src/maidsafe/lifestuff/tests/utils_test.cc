@@ -53,24 +53,24 @@ TEST(UtilsTest, BEH_WordValidity) {
               too_short(RandomAlphaNumericString(4)),
               too_long(RandomAlphaNumericString(31)),
               correct(RandomAlphaNumericString(18));
-  EXPECT_EQ(kWordPatternInvalid, CheckKeywordValidity(one_leading));
-  EXPECT_EQ(kWordPatternInvalid, CheckKeywordValidity(three_leading));
-  EXPECT_EQ(kWordPatternInvalid, CheckKeywordValidity(one_trailing));
-  EXPECT_EQ(kWordPatternInvalid, CheckKeywordValidity(three_trailing));
-  EXPECT_EQ(kWordPatternInvalid, CheckKeywordValidity(one_middle));
-  EXPECT_EQ(kWordPatternInvalid, CheckKeywordValidity(three_middle));
-  EXPECT_EQ(kWordSizeInvalid, CheckKeywordValidity(too_short));
-  EXPECT_EQ(kWordSizeInvalid, CheckKeywordValidity(too_long));
+  EXPECT_EQ(kKeywordPatternInvalid, CheckKeywordValidity(one_leading));
+  EXPECT_EQ(kKeywordPatternInvalid, CheckKeywordValidity(three_leading));
+  EXPECT_EQ(kKeywordPatternInvalid, CheckKeywordValidity(one_trailing));
+  EXPECT_EQ(kKeywordPatternInvalid, CheckKeywordValidity(three_trailing));
+  EXPECT_EQ(kKeywordPatternInvalid, CheckKeywordValidity(one_middle));
+  EXPECT_EQ(kKeywordPatternInvalid, CheckKeywordValidity(three_middle));
+  EXPECT_EQ(kKeywordSizeInvalid, CheckKeywordValidity(too_short));
+  EXPECT_EQ(kKeywordSizeInvalid, CheckKeywordValidity(too_long));
   EXPECT_EQ(kSuccess, CheckKeywordValidity(correct));
 
-  EXPECT_EQ(kWordPatternInvalid, CheckPasswordValidity(one_leading));
-  EXPECT_EQ(kWordPatternInvalid, CheckPasswordValidity(three_leading));
-  EXPECT_EQ(kWordPatternInvalid, CheckPasswordValidity(one_trailing));
-  EXPECT_EQ(kWordPatternInvalid, CheckPasswordValidity(three_trailing));
-  EXPECT_EQ(kWordPatternInvalid, CheckPasswordValidity(one_middle));
-  EXPECT_EQ(kWordPatternInvalid, CheckPasswordValidity(three_middle));
-  EXPECT_EQ(kWordSizeInvalid, CheckPasswordValidity(too_short));
-  EXPECT_EQ(kWordSizeInvalid, CheckPasswordValidity(too_long));
+  EXPECT_EQ(kPasswordPatternInvalid, CheckPasswordValidity(one_leading));
+  EXPECT_EQ(kPasswordPatternInvalid, CheckPasswordValidity(three_leading));
+  EXPECT_EQ(kPasswordPatternInvalid, CheckPasswordValidity(one_trailing));
+  EXPECT_EQ(kPasswordPatternInvalid, CheckPasswordValidity(three_trailing));
+  EXPECT_EQ(kPasswordPatternInvalid, CheckPasswordValidity(one_middle));
+  EXPECT_EQ(kPasswordPatternInvalid, CheckPasswordValidity(three_middle));
+  EXPECT_EQ(kPasswordSizeInvalid, CheckPasswordValidity(too_short));
+  EXPECT_EQ(kPasswordSizeInvalid, CheckPasswordValidity(too_long));
   EXPECT_EQ(kSuccess, CheckPasswordValidity(correct));
 }
 

@@ -50,27 +50,26 @@ enum ReturnCode {
   kSetSlotsFailure = -209021,
   kConnectSignalsFailure = -209022,
   // API Credential operations
-  kCreationPmidFailure = -209031,
-  kCreationVaultFailure = -209032,
+  kCreateUserPmidFailure = -209031,
+  kCreateUserVaultFailure = -209032,
+  kCreateUserGeneralFailure =  -209033,
   kCreatePublicIdGeneralFailure = -209041,
   kLoginPmidFailure = -209051,
+  kLoginGeneralFailure = -209052,
   kLogoutCredentialsFailure = -209061,
   kLogoutCompleteChunkFailure = -209062,
   kCreateDirectoryError = -209071,
   kMountDriveOnCreationError = -209072,
   kCreateMyStuffError = -209073,
   kCreateSharedStuffError = -209074,
-  kGeneralError1 = -209081,  // TODO(Alison) - improve name (for problem when mounting drive)
-  kGeneralError2 = -209082,  // TODO(Alison) - improve name (for problem when mounting drive)
+  kMountDriveTryManualUnMount = -209081,
+  kMountDriveMountPointCreationFailure = -209082,
   kMountDriveError = -209083,
   kUnMountDriveError = -209091,
-  kStartMessagesNoPublicIds = -209101,
-  kKeywordSizeInvalid = -209121,
-  kKeywordPatternInvalid = -209122,
-  kChangeKeywordFailure = -209123,
+  kStartMessagesNoPublicIds = -209101,  // TODO(Alison) - make this more exclusive?
+  kChangeKeywordFailure = -209121,
   kChangePinFailure = -209131,
-  kPasswordSizeInvalid = -209141,
-  kPasswordPatternInvalid = -209142,
+  kChangePasswordFailure = -208041,  // TODO(Alison) - make this more exclusive?
   // API Contact operations
   kAddContactGeneralFailure = -209151,
   kConfirmContactGeneralFailure = -209161,
@@ -99,21 +98,27 @@ enum ReturnCode {
   // UNDERLYING RETURN CODES (May be passed through API to user)
   // Credentials
   kCheckPasswordFailure = -208011,
-  kChangePasswordFailure = -208012,
-  kWordSizeInvalid = -208021,
-  kWordPatternInvalid = -208022,
-  kPinSizeInvalid = -208031,
-  kPinPatternInvalid = -208032,
+  kKeywordSizeInvalid = -208121,
+  kKeywordPatternInvalid = -208122,
+  kPinSizeInvalid = -208031,  // TODO(Alison) - make this more exclusive?
+  kPinPatternInvalid = -208032,  // TODO(Alison) - make this more exclusive?
+  kPasswordSizeInvalid = -208141,
+  kPasswordPatternInvalid = -208142,
   // Logging out
-  kLogOutSaveSessionFailure = -208041,
-  kLogOutLidFailure = -208042,
+  kLogOutSaveSessionFailure = -208051,
+  kLogOutLidFailure = -208052,
   // Vault creation
-  kVaultCreationFailure = -208051,
+  kVaultCreationFailure = -208061,  // TODO(Alison) - make this more exclusive?
   // Public ID
-  kPublicIdEmpty = -208061,
-  kPublicIdLengthInvalid = -208062,
-  kPublicIdEndSpaceInvalid = -208063,
-  kPublicIdDoubleSpaceInvalid = -208064,
+  kPublicIdEmpty = -208071,  // TODO(Alison) - make this more exclusive?
+  kPublicIdLengthInvalid = -208072,
+  kPublicIdEndSpaceInvalid = -208073,
+  kPublicIdDoubleSpaceInvalid = -208074,
+  // Logging in
+  kLoginUserNonExistence = -208081,  // TODO(Alison) - make this more exclusive? (probably needn't)
+  kLoginAccountCorrupted = -208082,  // TODO(Alison) - make this more exclusive?
+  kLoginSessionNotYetSaved = -208083,  // User needs to wait ~15s for SaveSession
+  kLoginUsingNextToLastSession = -208084,
 
 
   // INTERNAL RETURN CODES (Should never reach API)
@@ -124,7 +129,8 @@ enum ReturnCode {
   kReadOnlyFailure = -201003,
   kMustDieFailure = -201004,
   kTryAgainLater = -201005,
-//  kWrongOrderFailure = -200013,
+  kWordSizeInvalid = -201006,
+  kWordPatternInvalid = -201007,
 
   // Authentication
   kCorruptedLidPacket = -202001,
@@ -148,6 +154,7 @@ enum ReturnCode {
   kUserDoesntExist = -202019,
   kAccountCorrupted = -202020,
   kAtLeastOneFailure = -202021,
+  kLidNotFound = -202022,
 
   // Session
   kPublicIdInsertionFailure = -203001,
