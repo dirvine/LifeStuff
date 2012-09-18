@@ -56,11 +56,6 @@ bs2::connection MessageHandler::ConnectToPrivateMemberAccessChangeSignal(
   return private_member_access_change_signal_.connect(function);
 }
 
-bs2::connection MessageHandler::ConnectToOpenShareInvitationSignal(
-    const OpenShareInvitationFunction& function) {
-  return open_share_invitation_signal_.connect(function);
-}
-
 bs2::connection MessageHandler::ConnectToShareInvitationResponseSignal(
     const ShareInvitationResponseFunction& function) {
   return share_invitation_response_signal_.connect(function);
@@ -102,11 +97,6 @@ bs2::connection MessageHandler::ConnectToSavePrivateShareDataSignal(
 bs2::connection MessageHandler::ConnectToDeletePrivateShareDataSignal(
     const DeletePrivateShareDataSignal::slot_type& function) {
   return delete_private_share_data_signal_.connect(function);
-}
-
-bs2::connection MessageHandler::ConnectToSaveOpenShareDataSignal(
-    const SaveOpenShareDataSignal::slot_type& function) {
-  return save_open_share_data_signal_.connect(function);
 }
 
 }  // namespace lifestuff

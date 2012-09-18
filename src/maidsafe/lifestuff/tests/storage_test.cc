@@ -409,7 +409,7 @@ class UserStorageTest : public testing::TestWithParam<bool> {
 };
 
 INSTANTIATE_TEST_CASE_P(PrivateAndOpenShareTests, UserStorageTest,
-                        testing::Values(drive::kMsOpenShare, drive::kMsPrivateShare));
+                        testing::Values(drive::kMsPrivateShare));
 
 TEST_P(UserStorageTest, FUNC_CreateShare) {
   MountDrive(user_storage1_, &session1_, true);

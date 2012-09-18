@@ -82,12 +82,6 @@ typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
                          int,
                          const std::string&)> PrivateMemberAccessLevelSignal;
 
-typedef bs2::signal<void(const std::string&,  // NOLINT
-                         const std::string&,
-                         const std::string&,
-                         const std::string&,
-                         const std::string&)> OpenShareInvitationSignal;
-
 typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
                          const std::string&,
                          const std::string&,
@@ -117,9 +111,6 @@ typedef bs2::signal<bool(const std::string&,  // NOLINT (Dan)
                          const std::string&)> SavePrivateShareDataSignal;
 
 typedef bs2::signal<bool(const std::string&)> DeletePrivateShareDataSignal;  // NOLINT (Dan)
-
-typedef bs2::signal<bool(const std::string&,  // NOLINT
-                         const std::string&)> SaveOpenShareDataSignal;
 
 }  // namespace lifestuff
 

@@ -97,18 +97,12 @@ class UserStorage {
   // ****************************** Shares *************************************
   bool SavePrivateShareData(const std::string& serialised_share_data, const std::string& share_id);
   bool DeletePrivateShareData(const std::string& share_id);
-  bool SaveOpenShareData(const std::string& serialised_share_data, const std::string& share_id);
   int CreateShare(const std::string& sender_public_username,
                   const fs::path& drive_path,
                   const fs::path& share_path,
                   const StringIntMap& contacts,
                   bool private_share,
                   StringIntMap* contacts_results);
-  int CreateOpenShare(const std::string& sender_public_username,
-                      const fs::path& drive_path,
-                      const fs::path& share_path,
-                      const StringIntMap& contacts,
-                      StringIntMap* contacts_results);
   int GetAllShares(StringIntMap* shares_names);
   int InsertShare(const fs::path& absolute_path,
                   const std::string& share_id,
@@ -133,11 +127,6 @@ class UserStorage {
                     const StringIntMap& contacts,
                     bool private_share,
                     StringIntMap* contacts_results);
-  int AddOpenShareUser(const fs::path& absolute_path, const StringIntMap& contacts);
-  int OpenShareInvitation(const std::string& sender_public_username,
-                          const fs::path& absolute_path,
-                          const StringIntMap& contacts,
-                          StringIntMap* contacts_results);
   int GetAllShareUsers(const fs::path& absolute_path, StringIntMap* all_share_users);
   int RemoveShareUsers(const std::string& sender_public_username,
                        const fs::path& absolute_path,
@@ -146,8 +135,6 @@ class UserStorage {
   void InvitationResponse(const std::string& user_id,
                           const std::string& share_name,
                           const std::string& share_id);
-  int RemoveOpenShareUsers(const fs::path& absolute_path,
-                           const std::vector<std::string>& user_ids);
   int GetShareUsersRights(const fs::path& absolute_path,
                           const std::string& user_id,
                           int* admin_rights);
@@ -226,15 +213,6 @@ class UserStorage {
  private:
   UserStorage &operator=(const UserStorage&);
   UserStorage(const UserStorage&);
-  int InformContacts(InboxItemType item_type,
-                     const std::string& sender_public_username,
-                     const StringIntMap& contacts,
-                     const std::string& share_id,
-                     const std::string& share_name,
-                     const std::string& directory_id,
-                     const asymm::Keys& key_ring = asymm::Keys(),
-                     const std::string& new_share_id = "",
-                     StringIntMap* contacts_results = nullptr);
 
   bool mount_status_;
   std::shared_ptr<pcs::RemoteChunkStore> chunk_store_;

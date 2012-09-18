@@ -62,7 +62,6 @@ class LifeStuff {
                        const PrivateShareInvitationFunction& share_invitation_function,
                        const PrivateShareDeletionFunction& share_deletion_function,
                        const PrivateMemberAccessChangeFunction& access_change_function,
-                       const OpenShareInvitationFunction& open_share_invitation_function,
                        const ShareRenamedFunction& share_renamed_function,
                        const ShareChangedFunction& share_changed_function,
                        const LifestuffCardUpdateFunction& lifestuff_card_update_function,
@@ -174,31 +173,6 @@ class LifeStuff {
                          bool delete_data);
   // Should work for RO and full access. Only for non-owners
   int LeavePrivateShare(const std::string& my_public_id, const std::string& share_name);
-
-  /// Open Shares
-  int CreateOpenShareFromExistingDirectory(const std::string& my_public_id,
-                                           const fs::path& directory_in_lifestuff_drive,
-                                           const std::vector<std::string>& contacts,
-                                           std::string* share_name,
-                                           StringIntMap* results);
-  int CreateEmptyOpenShare(const std::string& my_public_id,
-                           const std::vector<std::string>& contacts,
-                           std::string* share_name,
-                           StringIntMap* results);
-  int InviteMembersToOpenShare(const std::string& my_public_id,
-                               const std::vector<std::string>& contacts,
-                               const std::string& share_name,
-                               StringIntMap* results);
-  int GetOpenShareList(const std::string& my_public_id, std::vector<std::string>* shares_names);
-  int GetOpenShareMembers(const std::string& my_public_id,
-                          const std::string& share_name,
-                          StringIntMap* shares_members);
-  int AcceptOpenShareInvitation(const std::string& my_public_id,
-                                const std::string& contact_public_id,
-                                const std::string& share_id,
-                                std::string* share_name);
-  int RejectOpenShareInvitation(const std::string& my_public_id, const std::string& share_id);
-  int LeaveOpenShare(const std::string& my_public_id, const std::string& share_name);
 
   ///
   int state() const;

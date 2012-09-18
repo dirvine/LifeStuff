@@ -34,91 +34,146 @@ enum ReturnCode {
   // General
   kSuccess = 0,
   kGeneralError = -200001,
-  kGeneralException = -200002,
-  kGetPublicKeyFailure = -200004,
-  kGetMpidFailure = -200005,
-  kInvalidPublicKey = -200006,
-  kOperationTimeOut = -200007,
-  kRemoteChunkStoreFailure = -200008,
-  kReadOnlyRestrictedSuccess = -200009,
-  kReadOnlyFailure = -200010,
-  kMustDieFailure = -200011,
-  kTryAgainLater = -200012,
-  kWrongOrderFailure = -200013,
-  kVaultCreationFailure = -200014,
+
+  // API States and permissions
+  kWrongState = -200010,
+  kWrongLoggedInState = -200011,
+  kWrongAccessLevel = -200012,
+  kReadOnlyRestrictedSuccess = -200013,
+
+  // API RETURN CODES
+  // (Each should be traceable to a unique 'return' in public functions of lifestuff_impl.cc)
+  // API State operations
+  kInitialiseUpdateFunctionFailure = -209011,
+  kInitialiseBootstrapsFailure = -209012,
+  kInitialiseChunkStoreFailure = -209013,
+  kSetSlotsFailure = -209021,
+  kConnectSignalsFailure = -209022,
+  // API Credential operations
+  kCreationPmidFailure = -209031,
+  kCreationVaultFailure = -209032,
+  kCreatePublicIdGeneralFailure = -209041,
+  kLoginPmidFailure = -209051,
+  kLogoutCredentialsFailure = -209061,
+  kLogoutCompleteChunkFailure = -209062,
+  kCreateDirectoryError = -209071,
+  kMountDriveOnCreationError = -209072,
+  kCreateMyStuffError = -209073,
+  kCreateSharedStuffError = -209074,
+  kGeneralError1 = -209081,  // TODO(Alison) - improve name (for problem when mounting drive)
+  kGeneralError2 = -209082,  // TODO(Alison) - improve name (for problem when mounting drive)
+  kMountDriveError = -209083,
+  kUnMountDriveError = -209091,
+  kStartMessagesNoPublicIds = -209101,
+  kKeywordSizeInvalid = -209121,
+  kKeywordPatternInvalid = -209122,
+  kChangeKeywordFailure = -209123,
+  kChangePinFailure = -209131,
+  kPasswordSizeInvalid = -209141,
+  kPasswordPatternInvalid = -209142,
+  // API Contact operations
+  kAddContactGeneralFailure = -209151,
+  kConfirmContactGeneralFailure = -209161,
+  kConfirmContactPresenceFailure = -209162,
+  kDeclineContactGeneralFailure = -209171,
+  kRemoveContactGeneralFailure = -209181,
+  kChangePictureWrongSize = -209191,
+  kChangePictureGeneralFailure = -209192,  // TODO(Alison) - make this more exclusive?
+  kGetLifeStuffCardGeneralFailure = -209211,
+  kSetLifeStuffCardGeneralFailure = -209212,
+  // API Messaging
+  kSendMessageSizeFailure = -209221,
+  kSendMessageGeneralFailure = -209222,
+  kSendFileGeneralFailure = -209231,  // TODO(Alison) - make this more exclusive?
+  kAcceptFilePathError = -209241,
+  kAcceptFileGeneralFailure = -209242,  // TODO(Alison) - make this more exclusive?
+  kRejectFileGeneralFailure = -209251,
+  // API Filesystem
+  kReadHiddenFileContentFailure = -209261,
+  kReadHiddenFileGeneralFailure = -209262,
+  kWriteHiddenFileGeneralFailure = -209271,
+  kDeleteHiddenFileGeneralFailure = -209281,
+  kSearchHiddenFileGeneralFailure = -209291,
+
+
+  // UNDERLYING RETURN CODES (May be passed through API to user)
+  // Credentials
+  kCheckPasswordFailure = -208011,
+  kChangePasswordFailure = -208012,
+  kWordSizeInvalid = -208021,
+  kWordPatternInvalid = -208022,
+  kPinSizeInvalid = -208031,
+  kPinPatternInvalid = -208032,
+  // Logging out
+  kLogOutSaveSessionFailure = -208041,
+  kLogOutLidFailure = -208042,
+  // Vault creation
+  kVaultCreationFailure = -208051,
+  // Public ID
+  kPublicIdEmpty = -208061,
+  kPublicIdLengthInvalid = -208062,
+  kPublicIdEndSpaceInvalid = -208063,
+  kPublicIdDoubleSpaceInvalid = -208064,
+
+
+  // INTERNAL RETURN CODES (Should never reach API)
+
+  // General
+  kGetPublicKeyFailure = -201001,
+  kRemoteChunkStoreFailure = -201002,
+  kReadOnlyFailure = -201003,
+  kMustDieFailure = -201004,
+  kTryAgainLater = -201005,
+//  kWrongOrderFailure = -200013,
 
   // Authentication
-  kAuthenticationError = -201001,
-  kPasswordFailure = -201002,
-  kUserDoesntExist = -201003,
-  kUserExists = -201004,
-  kFailedToDeleteOldPacket = -201005,
-  kCorruptedPacket = -201006,
-  kIdPacketNotFound = -201007,
-  kTemporaryIdPacketNotFound = -201008,
-  kAccountCorrupted = -201009,
-  kUsingNextToLastSession = -201010,
-  kSessionFailure = -201011,
-  kCreateSignaturePacketInfoFailure = -201012,
-  kCreateSignaturePacketsFailure = -201013,
-  kSessionSerialisationFailure = -201014,
-  kSetIdentityPacketsFailure = -201015,
-  kStoreIdentityPacketsFailure = -201016,
-  kSaveSessionFailure = -201017,
-  kDeleteIdentityPacketsFailure = -201018,
-  kChangeUsernamePinFailure = -201019,
-  kChangePasswordFailure = -201020,
-  kAtLeastOneFailure = -201021,
-  kDeleteSignaturePacketsFailure = -201022,
-  kAccountAlreadyLoggedIn = -201023,
-  kCorruptedLidPacket = -201024,
-
-  // User Credentials
-  // kCredentialValidityFailure = -202001,
-  kWordSizeInvalid = -202002,
-  kWordPatternInvalid = -202003,
-  kPinSizeInvalid = -202004,
-  kPinPatternInvalid = -202005,
+  kCorruptedLidPacket = -202001,
+  kLidIdentifierAlreadyInUse = -202002,
+  kLidFullAccessUnavailable = -202003,
+  kLidIdentifierNotFound = -202004,
+  kCorruptedPacket = -202005,
+  kIdPacketNotFound = -202006,
+  kTemporaryIdPacketNotFound = -202007,
+  kSetIdentityPacketsFailure = -202008,
+  kStoreIdentityPacketsFailure = -202009,
+  kDeleteIdentityPacketsFailure = -202010,
+  kCreateSignaturePacketInfoFailure = -202011,
+  kCreateSignaturePacketsFailure = -202012,
+  kDeleteSignaturePacketsFailure = -202013,
+  kSessionFailure = -202014,
+  kSessionSerialisationFailure = -202015,
+  kSaveSessionFailure = -202016,
+  kUsingNextToLastSession = -202017,
+  kAccountAlreadyLoggedIn = -202018,
+  kUserDoesntExist = -202019,
+  kAccountCorrupted = -202020,
+  kAtLeastOneFailure = -202021,
 
   // Session
-  kPublicIdInsertionFailure = -204001,
-  kPublicIdNotFoundFailure = -204002,
-  kContactNotFoundFailure = -204003,
+  kPublicIdInsertionFailure = -203001,
+  kPublicIdNotFoundFailure = -203002,
+  kContactNotFoundFailure = -203003,
 
   // PublicId
-  kGetPublicIdError = -206002,
-  kSigningError = -206003,
-  kEncryptingError = -206004,
-  kPublicIdException = -206005,
-  kPublicIdTimeout = -206006,
-  kSendContactInfoFailure = -206007,
-  kStorePublicIdFailure = -206008,
-  kPublicIdEmpty = -206009,
-  kNoPublicIds = -206010,
-  kModifyAppendabilityFailure = -206011,
-  kGenerateNewMMIDFailure = -206012,
-  kRemoveContactFailure = -206013,
-  kSetProfilePictureError = -206014,
-  kPublicIdLengthInvalid = -206015,
-  kPublicIdEndSpaceInvalid = -206016,
-  kPublicIdDoubleSpaceInvalid = -206017,
-  kDeletePublicIdFailure = -206018,
+  kGetPublicIdError = -204002,
+  kSigningError = -204003,
+  kEncryptingError = -204004,
+  kPublicIdException = -204005,
+  kPublicIdTimeout = -204006,
+  kSendContactInfoFailure = -204007,
+  kStorePublicIdFailure = -204008,
+  kNoPublicIds = -204010,
+  kModifyAppendabilityFailure = -204011,
+  kGenerateNewMMIDFailure = -204012,
+  kRemoveContactFailure = -204013,
+  kDeletePublicIdFailure = -204018,
 
   // MessageHandler
-  kMessageHandlerException = -207001,
-  kMessageHandlerNotInitialised = -207002,
-  kMessageHandlerError = -207003,
+  kMessageHandlerException = -205001,
 
-  // Share
-  kNoShareTarget = -208001,
-  kOwnerTryingToLeave = -208002,
-  kNoKeyForUpgrade = -208003,
-  kInvalidKeyringForOpenShare = -208004,
-
-  // Other instances being logged in (LID)
-  kLidIdentifierAlreadyInUse = -209001,
-  kLidFullAccessUnavailable = -209002,
-  kLidIdentifierNotFound = -209003
+  // RETURN CODES USED ONLY BY SHARES
+  kNoShareTarget = -206001,
+  kOwnerTryingToLeave = -206002
 };
 
 }  // namespace lifestuff

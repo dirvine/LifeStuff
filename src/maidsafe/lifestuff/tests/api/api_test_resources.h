@@ -98,8 +98,6 @@ struct TestingVariables {
         new_private_share_id(),
         new_private_access_level(-1),
         privately_invited(false),
-        new_open_share_id(),
-        openly_invited(false),
         deleted_private_share_name(),
         private_share_deleted(false),
         access_private_share_name(),
@@ -124,8 +122,6 @@ struct TestingVariables {
   std::string new_private_share_name, new_private_share_id;
   int new_private_access_level;
   bool privately_invited;
-  std::string new_open_share_id;
-  bool openly_invited;
   std::string deleted_private_share_name;
   bool private_share_deleted;
   std::string access_private_share_name;
@@ -222,14 +218,6 @@ void PrivateMemberAccessChangeSlot(const std::string&,
                                    const std::string&  /*slot_share_name*/,
                                    int* slot_member_access,
                                    volatile bool* done);
-
-void OpenShareInvitationSlot(const std::string&,
-                             const std::string&,
-                             const std::string&,
-                             const std::string& signal_share_id,
-                             const std::string&,
-                             std::string* slot_share_id,
-                             volatile bool* done);
 
 void ShareRenameSlot(const std::string& old_share_name,
                      const std::string& new_share_name,
@@ -344,19 +332,6 @@ void AddOneContactToExistingPrivateShare(LifeStuff& test_elements_a,
                                          const std::string& public_id_b,
                                          std::string share_name,
                                          const int& rights);
-
-void CreateOpenShareAddingOneContact(LifeStuff& test_elements_a,
-                                     LifeStuff& test_elements_b,
-                                     TestingVariables& testing_variables_b,
-                                     const std::string& keyword_a,
-                                     const std::string& pin_a,
-                                     const std::string& password_a,
-                                     const std::string& public_id_a,
-                                     const std::string& keyword_b,
-                                     const std::string& pin_b,
-                                     const std::string& password_b,
-                                     const std::string& public_id_b,
-                                     std::string share_name);
 
 void TwoUsersDefriendEachOther(LifeStuff& test_elements_a,
                                LifeStuff& test_elements_b,

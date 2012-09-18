@@ -85,7 +85,6 @@ class MessageHandler {
   // Extra library connections
   bs2::connection ConnectToChatSignal(const ChatFunction& function);
   bs2::connection ConnectToFileTransferSignal(const FileTransferFunction& function);
-  bs2::connection ConnectToOpenShareInvitationSignal(const OpenShareInvitationFunction& function);
   bs2::connection ConnectToPrivateShareInvitationSignal(
       const PrivateShareInvitationFunction& function);
   bs2::connection ConnectToPrivateShareDeletionSignal(const PrivateShareDeletionFunction& function);
@@ -116,8 +115,6 @@ class MessageHandler {
       const SavePrivateShareDataSignal::slot_type& function);
   bs2::connection ConnectToDeletePrivateShareDataSignal(
       const DeletePrivateShareDataSignal::slot_type& function);
-  bs2::connection ConnectToSaveOpenShareDataSignal(
-      const SaveOpenShareDataSignal::slot_type& function);
 
  private:
   MessageHandler(const MessageHandler&);
@@ -134,7 +131,6 @@ class MessageHandler {
 
   void ProcessContactPresence(const InboxItem& presence_message);
   void ProcessContactProfilePicture(const InboxItem& profile_message);
-  void ProcessOpenShareInvitation(const InboxItem& open_share_invitation);
   void ProcessFileTransfer(const InboxItem& file_transfer_message);
   void ProcessShareInvitationResponse(const InboxItem& inbox_item);
   void ProcessPrivateShare(const InboxItem& private_share_message);
@@ -159,7 +155,6 @@ class MessageHandler {
   PrivateShareInvitationSignal private_share_invitation_signal_;
   PrivateShareDeletionSignal private_share_deletion_signal_;
   PrivateMemberAccessChangeSignal private_member_access_change_signal_;
-  OpenShareInvitationSignal open_share_invitation_signal_;
   ShareInvitationResponseSignal share_invitation_response_signal_;
 
   /// Intra and extra library signals
@@ -172,7 +167,6 @@ class MessageHandler {
   PrivateMemberAccessLevelSignal private_member_access_level_signal_;
   SavePrivateShareDataSignal save_private_share_data_signal_;
   DeletePrivateShareDataSignal delete_private_share_data_signal_;
-  SaveOpenShareDataSignal save_open_share_data_signal_;
 };
 
 }  // namespace lifestuff

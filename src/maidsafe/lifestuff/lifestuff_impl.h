@@ -77,7 +77,6 @@ struct Slots {
         private_share_invitation_function(),
         private_share_deletion_function(),
         private_access_change_function(),
-        open_share_invitation_function(),
         share_renamed_function(),
         share_changed_function(),
         lifestuff_card_update_function(),
@@ -93,7 +92,6 @@ struct Slots {
   PrivateShareInvitationFunction private_share_invitation_function;
   PrivateShareDeletionFunction private_share_deletion_function;
   PrivateMemberAccessChangeFunction private_access_change_function;
-  OpenShareInvitationFunction open_share_invitation_function;
   ShareRenamedFunction share_renamed_function;
   ShareChangedFunction share_changed_function;
   LifestuffCardUpdateFunction lifestuff_card_update_function;
@@ -120,7 +118,6 @@ class LifeStuffImpl {
                        const PrivateShareInvitationFunction& share_invitation_function,
                        const PrivateShareDeletionFunction& share_deletion_function,
                        const PrivateMemberAccessChangeFunction& access_level_function,
-                       const OpenShareInvitationFunction& open_share_invitation_function,
                        const ShareRenamedFunction& share_renamed_function,
                        const ShareChangedFunction& share_changed_function,
                        const LifestuffCardUpdateFunction& lifestuff_card_update_function,
@@ -236,31 +233,6 @@ class LifeStuffImpl {
   int LeavePrivateShare(const std::string& my_public_id,
                         const std::string& share_name,
                         bool inform_contacts = true);
-
-  /// Open Shares
-  int CreateOpenShareFromExistingDirectory(const std::string& my_public_id,
-                                           const fs::path& directory_in_lifestuff_drive,
-                                           const std::vector<std::string>& contacts,
-                                           std::string* share_name,
-                                           StringIntMap* results);
-  int CreateEmptyOpenShare(const std::string& my_public_id,
-                           const std::vector<std::string>& contacts,
-                           std::string* share_name,
-                           StringIntMap* results);
-  int InviteMembersToOpenShare(const std::string& my_public_id,
-                               const std::vector<std::string>& contacts,
-                               const std::string& share_name,
-                               StringIntMap* results);
-  int GetOpenShareList(const std::string& my_public_id, std::vector<std::string>* share_names);
-  int GetOpenShareMembers(const std::string& my_public_id,
-                          const std::string& share_name,
-                          StringIntMap* share_members);
-  int AcceptOpenShareInvitation(const std::string& my_public_id,
-                                const std::string& contact_public_id,
-                                const std::string& share_id,
-                                std::string* share_name);
-  int RejectOpenShareInvitation(const std::string& my_public_id, const std::string& share_id);
-  int LeaveOpenShare(const std::string& my_public_id, const std::string& share_name);
 
   int state() const;
   int logged_in_state() const;

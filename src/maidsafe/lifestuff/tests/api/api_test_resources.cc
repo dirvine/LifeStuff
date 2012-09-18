@@ -154,18 +154,6 @@ void PrivateMemberAccessChangeSlot(const std::string&,
   *done = true;
 }
 
-void OpenShareInvitationSlot(const std::string&,
-                             const std::string&,
-                             const std::string&,
-                             const std::string& signal_share_id,
-                             const std::string&,
-                             std::string* slot_share_id,
-                             volatile bool* done) {
-  if (slot_share_id)
-    *slot_share_id = signal_share_id;
-  *done = true;
-}
-
 void ShareRenameSlot(const std::string& old_share_name,
                      const std::string& new_share_name,
                      std::string* slot_old_share_name,
@@ -248,7 +236,7 @@ int DoFullLogIn(LifeStuff& test_elements,
   }
 
   result = test_elements.StartMessagesAndIntros();
-  if (result != kSuccess && result != kNoPublicIds) {
+  if (result != kSuccess && result != kStartMessagesNoPublicIds) {
     LOG(kError) << "Failed to start checking for messages and intros: " << result;
     return result;
   }
@@ -494,19 +482,6 @@ int InitialiseAndConnect(LifeStuff& test_elements,
                       testing_variables.access_private_share_name,
                       &testing_variables.private_member_access,
                       &testing_variables.private_member_access_changed);
-                },
-                [&] (const std::string& own_public_id,
-                     const std::string& contact_public_id,
-                     const std::string& signal_share_name,
-                     const std::string& signal_share_id,
-                     const std::string& timestamp) {
-                  OpenShareInvitationSlot(own_public_id,
-                                          contact_public_id,
-                                          signal_share_name,
-                                          signal_share_id,
-                                          timestamp,
-                                          &testing_variables.new_open_share_id,
-                                          &testing_variables.openly_invited);
                 },
                 [&] (const std::string& old_share_name,
                      const std::string& new_share_name) {
@@ -766,57 +741,6 @@ void AddOneContactToExistingPrivateShare(LifeStuff& test_elements_a,
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_b));
 }
 
-void CreateOpenShareAddingOneContact(LifeStuff &test_elements_a,
-                                     LifeStuff &test_elements_b,
-                                     TestingVariables &testing_variables_b,
-                                     const std::string &keyword_a,
-                                     const std::string &pin_a,
-                                     const std::string &password_a,
-                                     const std::string &public_id_a,
-                                     const std::string &keyword_b,
-                                     const std::string &pin_b,
-                                     const std::string &password_b,
-                                     const std::string &public_id_b,
-                                     std::string share_name) {
-  LOG(kInfo) << "\n\nCreating open share " << share_name <<
-                " owned by " << public_id_a <<
-                " and inviting " << public_id_b << "\n";
-
-  testing_variables_b.openly_invited = false;
-  testing_variables_b.new_open_share_id.clear();
-
-  boost::system::error_code error_code;
-
-  // a creates share, inviting b
-  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_a, keyword_a, pin_a, password_a));
-
-  StringIntMap results;
-  std::vector<std::string> contacts;
-  contacts.push_back(public_id_b);
-  results.insert(std::make_pair(public_id_b, kGeneralError));
-  EXPECT_EQ(kSuccess,
-            test_elements_a.CreateEmptyOpenShare(public_id_a, contacts, &share_name, &results));
-  fs::path share_path(test_elements_a.mount_path() / kSharedStuff / share_name);
-  EXPECT_TRUE(fs::is_directory(share_path, error_code)) << share_path;
-  EXPECT_EQ(0, error_code.value());
-  EXPECT_EQ(kSuccess, results[public_id_b]);
-  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_a));
-
-  // b accepts invitation into share
-  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_b, keyword_b, pin_b, password_b));
-  while (!testing_variables_b.openly_invited)
-    Sleep(bptime::milliseconds(100));
-  EXPECT_FALSE(testing_variables_b.new_open_share_id.empty());
-  EXPECT_EQ(kSuccess,
-            test_elements_b.AcceptOpenShareInvitation(public_id_b,
-                                                      public_id_a,
-                                                      testing_variables_b.new_open_share_id,
-                                                      &share_name));
-  fs::path share(test_elements_b.mount_path() / kSharedStuff / share_name);
-  EXPECT_TRUE(fs::is_directory(share, error_code)) << share;
-  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_b));
-}
-
 void TwoUsersDefriendEachOther(LifeStuff& test_elements_a,
                                LifeStuff& test_elements_b,
                                TestingVariables& testing_variables_b,
@@ -965,7 +889,6 @@ void OneUserApiTest::SetUp() {
                                             PrivateShareInvitationFunction(),
                                             PrivateShareDeletionFunction(),
                                             PrivateMemberAccessChangeFunction(),
-                                            OpenShareInvitationFunction(),
                                             ShareRenamedFunction(),
                                             ShareChangedFunction(),
                                             LifestuffCardUpdateFunction(),
@@ -1002,7 +925,6 @@ void TwoInstancesApiTest::SetUp() {
                                             PrivateShareInvitationFunction(),
                                             PrivateShareDeletionFunction(),
                                             PrivateMemberAccessChangeFunction(),
-                                            OpenShareInvitationFunction(),
                                             ShareRenamedFunction(),
                                             ShareChangedFunction(),
                                             LifestuffCardUpdateFunction(),
@@ -1028,7 +950,6 @@ void TwoInstancesApiTest::SetUp() {
                                             PrivateShareInvitationFunction(),
                                             PrivateShareDeletionFunction(),
                                             PrivateMemberAccessChangeFunction(),
-                                            OpenShareInvitationFunction(),
                                             ShareRenamedFunction(),
                                             ShareChangedFunction(),
                                             LifestuffCardUpdateFunction(),

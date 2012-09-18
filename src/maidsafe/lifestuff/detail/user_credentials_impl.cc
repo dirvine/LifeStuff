@@ -225,13 +225,13 @@ int UserCredentialsImpl::AttemptLogInProcess(const std::string& keyword,
 int UserCredentialsImpl::LogOut() {
   int result(SaveSession(true));
   if (result != kSuccess) {
-    LOG(kError) << "Failed to save session on Logout";
-    return result;
+    LOG(kError) << "Failed to save session on Logout with result " << result;
+    return kLogOutSaveSessionFailure;
   }
   result = AssessAndUpdateLid(true);
   if (result != kSuccess) {
-    LOG(kError) << "Failed to update LID on Logout";
-    return result;
+    LOG(kError) << "Failed to update LID on Logout with result " << result;
+    return kLogOutLidFailure;
   }
 
   session_.Reset();

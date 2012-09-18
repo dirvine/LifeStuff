@@ -72,7 +72,6 @@ MessageHandler::MessageHandler(std::shared_ptr<pcs::RemoteChunkStore> remote_chu
       private_share_invitation_signal_(),
       private_share_deletion_signal_(),
       private_member_access_change_signal_(),
-      open_share_invitation_signal_(),
       share_invitation_response_signal_(),
       private_share_user_leaving_signal_(),
       parse_and_save_data_map_signal_(),
@@ -80,8 +79,7 @@ MessageHandler::MessageHandler(std::shared_ptr<pcs::RemoteChunkStore> remote_chu
       private_share_update_signal_(),
       private_member_access_level_signal_(),
       save_private_share_data_signal_(),
-      delete_private_share_data_signal_(),
-      save_open_share_data_signal_() {}
+      delete_private_share_data_signal_() {}
 
 MessageHandler::~MessageHandler() {}
 
@@ -203,7 +201,6 @@ int MessageHandler::Send(const InboxItem& inbox_item) {
   }
 
   try {
-
     std::unique_lock<std::mutex> lock(mutex);
     if (!cond_var.wait_for(lock,
                            std::chrono::seconds(kSecondsInterval),
@@ -350,8 +347,6 @@ void MessageHandler::ProcessRetrieved(const std::string& public_id,
         case kPrivateShareKeysUpdate:
         case kPrivateShareMemberLeft: ProcessPrivateShare(inbox_item);
                                       break;
-        case kOpenShareInvitation: ProcessOpenShareInvitation(inbox_item);
-                                   break;
         case kRespondToShareInvitation: ProcessShareInvitationResponse(inbox_item);
                                         break;
       }
@@ -573,21 +568,6 @@ void MessageHandler::ProcessPrivateShare(const InboxItem& inbox_item) {
                                          kShareReadOnly : kShareReadWrite,
                                      inbox_item.timestamp);
   }
-}
-
-void MessageHandler::ProcessOpenShareInvitation(const InboxItem& inbox_item) {
-  BOOST_ASSERT(inbox_item.item_type == kOpenShareInvitation);
-  Message message;
-  InboxToProtobuf(inbox_item, &message);
-  if (!save_open_share_data_signal_(message.SerializeAsString(), inbox_item.content[kShareId])) {
-    LOG(kError) << "Failed to save received share data";
-    return;
-  }
-  open_share_invitation_signal_(inbox_item.receiver_public_id,
-                                inbox_item.sender_public_id,
-                                inbox_item.content[kShareName],
-                                inbox_item.content[kShareId],
-                                inbox_item.timestamp);
 }
 
 void MessageHandler::RetrieveMessagesForAllIds() {

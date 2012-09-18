@@ -298,7 +298,7 @@ int CheckLockingPacketForOthersLoggedIn(const LockingPacket& locking_packet,
   }
   if (locking_packet.locking_item(0).identifier() != identifier) {
     LOG(kError) << "LockingPacket says this instance isn't logged in!";
-    return kGeneralError;
+    return kLidIdentifierNotFound;
   }
   return kSuccess;
 }

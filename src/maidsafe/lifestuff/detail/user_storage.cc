@@ -229,30 +229,16 @@ bool UserStorage::DeletePrivateShareData(const std::string& share_id) {
   return true;
 }
 
-bool UserStorage::SaveOpenShareData(const std::string& serialised_share_data,
-                                    const std::string& share_id) {
-  fs::path store_path(mount_dir() / kSharedStuff);
-  if (!VerifyOrCreatePath(store_path)) {
-    LOG(kError) << "Failed to verify or create path to shared stuff.";
-    return false;
-  }
-
-  std::string temp_name(EncodeToBase32(crypto::Hash<crypto::SHA1>(share_id)) +
-                        kHiddenFileExtension);
-  int result(WriteHiddenFile(store_path / temp_name, serialised_share_data, true));
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to create file: " << result;
-    return false;
-  }
-  return true;
-}
-
 int UserStorage::CreateShare(const std::string& sender_public_id,
                              const fs::path& drive_path,
                              const fs::path& share_path,
                              const StringIntMap& contacts,
                              bool private_share,
                              StringIntMap* contacts_results) {
+  if (!private_share) {
+    LOG(kError) << "You can only create private shares at the moment!";
+    return kGeneralError;
+  }
   int result(kSuccess);
   if (!drive_path.empty()) {
     /*result = drive_in_user_space_->MoveDirectory(drive_path, share_path);
@@ -339,98 +325,6 @@ int UserStorage::CreateShare(const std::string& sender_public_id,
   result = AddShareUsers(sender_public_id, share_path, contacts, private_share, contacts_results);
   if (result != kSuccess) {
     LOG(kError) << "Failed to add users to share at " << share_path;
-    return result;
-  }
-  return kSuccess;
-}
-
-int UserStorage::CreateOpenShare(const std::string& sender_public_id,
-                                 const fs::path& drive_path,
-                                 const fs::path& share_path,
-                                 const StringIntMap& contacts,
-                                 StringIntMap* contacts_results) {
-  int result(kSuccess);
-  if (!drive_path.empty()) {
-    /*result = drive_in_user_space_->MoveDirectory(drive_path, share_path);
-    if (result != kSuccess) {
-      LOG(kError) << "Failed to create share directory " << share_path;
-      return result;
-    }*/
-    boost::system::error_code error_code;
-    fs::create_directory(share_path, error_code);
-    if (error_code) {
-      LOG(kError) << "Failed creating directory " << share_path << ": " << error_code.message();
-      return kGeneralError;
-    }
-    result = CopyDirectoryContent(drive_path, share_path);
-    if (result != kSuccess) {
-      LOG(kError) << "Failed to copy share directory content " << share_path;
-      return result;
-    }
-    fs::remove_all(drive_path, error_code);
-    if (error_code) {
-      LOG(kError) << "Failed deleting directory " << drive_path << ": " << error_code.message();
-    }
-  } else {
-    boost::system::error_code error_code;
-    fs::create_directory(share_path, error_code);
-    if (error_code) {
-      LOG(kError) << "Failed creating directory " << share_path << ": " << error_code.message();
-      return kGeneralError;
-    }
-  }
-  std::string share_id(crypto::Hash<crypto::SHA512>(share_path.string()));
-  asymm::Keys key_ring;
-  result = passport::CreateSignaturePacket(key_ring);
-  if (result != kSuccess) {
-    LOG(kError) << "failed to create open share keys.";
-    return result;
-  }
-
-  // Store packets
-  std::mutex mutex;
-  std::condition_variable cond_var;
-  std::vector<int> results;
-  results.push_back(priv::utilities::kPendingResult);
-
-  std::string packet_id(ComposeSignaturePacketName(key_ring.identity));
-  VoidFunctionOneBool callback([&] (const bool& response) {
-                                 utils::ChunkStoreOperationCallback(response,
-                                                                    &mutex,
-                                                                    &cond_var,
-                                                                    &results[0]);
-                               });
-  std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
-  if (!chunk_store_->Store(packet_id,
-                           utils::SerialisedSignedData(key_ring),
-                           callback,
-                           key_shared)) {
-    std::unique_lock<std::mutex> lock(mutex);
-    results[0] = kRemoteChunkStoreFailure;
-  }
-  result = utils::WaitForResults(mutex, cond_var, results);
-  if (result != kSuccess) {
-    LOG(kError) << "Timed out waiting for the response";
-    return result;
-  }
-  if (results[0] != kSuccess) {
-    LOG(kError) << "Failed to store packet.  Packet 1 : " << results[0];
-    return results[0];
-  }
-  std::string directory_id;
-  result = drive_in_user_space_->SetShareDetails(drive::RelativePath(mount_dir(), share_path),
-                                                 share_id,
-                                                 key_ring,
-                                                 sender_public_id,
-                                                 false,
-                                                 &directory_id);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed creating share " << share_path.string() << ", with result: " << result;
-    return result;
-  }
-  result = OpenShareInvitation(sender_public_id, share_path, contacts, contacts_results);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to invite users to share " << share_path;
     return result;
   }
   return kSuccess;
@@ -679,83 +573,6 @@ int UserStorage::AddShareUsers(const std::string& sender_public_id,
   return kSuccess;
 }
 
-int UserStorage::AddOpenShareUser(const fs::path& absolute_path, const StringIntMap& contacts) {
-  fs::path relative_path(drive::RelativePath(mount_dir(), absolute_path));
-  int result(drive_in_user_space_->AddShareUsers(relative_path, contacts, false));
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to add users to share: " << absolute_path.string();
-    return result;
-  }
-  return kSuccess;
-}
-
-int UserStorage::OpenShareInvitation(const std::string& sender_public_id,
-                                     const fs::path& absolute_path,
-                                     const StringIntMap& contacts,
-                                     StringIntMap* contacts_results) {
-  fs::path relative_path(drive::RelativePath(mount_dir(), absolute_path)),
-           share_name;
-  int result(drive_in_user_space_->AddShareUsers(relative_path,
-                                                 contacts,
-                                                 false));
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to add users to share: " << absolute_path.string();
-    return result;
-  }
-  std::string share_id, directory_id;
-  asymm::Keys key_ring;
-  result = GetShareDetails(relative_path,
-                           &share_name,
-                           &key_ring,
-                           &share_id,
-                           &directory_id,
-                           nullptr,
-                           nullptr);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to get share details: " << absolute_path.string();
-    return result;
-  }
-  std::vector<std::string> contacts_to_remove;
-  result = InformContacts(kOpenShareInvitation,
-                          sender_public_id,
-                          contacts,
-                          share_id,
-                          share_name.string(),
-                          directory_id,
-                          key_ring,
-                          "",
-                          contacts_results);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to inform contacts for " << absolute_path;
-    std::for_each(contacts.begin(),
-                  contacts.end(),
-                  [&](const StringIntMap::value_type& contact) {
-                    contacts_to_remove.push_back(contact.first);
-                  });
-    result = RemoveShareUsers(sender_public_id, absolute_path, contacts_to_remove);
-    if (result != kSuccess) {
-      LOG(kError) << "Failed to remove contacts.";
-    }
-    return result;
-  }
-  if (contacts_results) {
-    std::for_each(contacts_results->begin(),
-                  contacts_results->end(),
-                  [&](const StringIntMap::value_type& contact_result) {
-                    if (contact_result.second != kSuccess)
-                      contacts_to_remove.push_back(contact_result.first);
-                  });
-    if (!contacts_to_remove.empty()) {
-      result = RemoveShareUsers(sender_public_id, absolute_path, contacts_to_remove);
-      if (result != kSuccess) {
-        LOG(kError) << "Failed to remove failed contacts.";
-        return result;
-      }
-    }
-  }
-  return kSuccess;
-}
-
 int UserStorage::GetAllShareUsers(const fs::path& absolute_path,
                                   std::map<std::string, int>* all_share_users) {
   int result(GetShareDetails(drive::RelativePath(mount_dir(), absolute_path),
@@ -894,19 +711,6 @@ int UserStorage::MoveShare(const std::string& sender_public_id,
     *new_directory_id = directory_id;
   if (new_key_ring)
     *new_key_ring = key_ring;
-  return kSuccess;
-}
-
-int UserStorage::RemoveOpenShareUsers(const fs::path& absolute_path,
-                                      const std::vector<std::string>& user_ids) {
-  fs::path relative_path(drive::RelativePath(mount_dir(), absolute_path));
-  std::string share_id;
-  GetShareDetails(relative_path, nullptr, nullptr, &share_id, nullptr, nullptr, nullptr);
-  int result(drive_in_user_space_->RemoveShareUsers(share_id, user_ids));
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to remove share users for " << absolute_path;
-    return result;
-  }
   return kSuccess;
 }
 
@@ -1265,62 +1069,6 @@ int UserStorage::InformContactsOperation(InboxItemType item_type,
     }
   }
 
-  return aggregate == static_cast<int>(contacts.size()) ? aggregate : 0;
-}
-
-int UserStorage::InformContacts(InboxItemType item_type,
-                                const std::string& sender_public_id,
-                                const std::map<std::string, int>& contacts,
-                                const std::string& share_id,
-                                const std::string& share_name,
-                                const std::string& directory_id,
-                                const asymm::Keys& key_ring,
-                                const std::string& /*new_share_id*/,
-                                StringIntMap* contacts_results) {
-  InboxItem message(item_type);
-  std::string public_key, private_key;
-  message.sender_public_id = sender_public_id;
-  message.content.push_back(share_id);
-  switch (item_type) {
-    case kOpenShareInvitation:
-      message.content.push_back(share_name);
-      message.content.push_back(directory_id);
-      break;
-    default:
-      LOG(kError) << "Unknown constant";
-  }
-  message.content.push_back(std::string());
-  if (!key_ring.identity.empty() &&
-      !key_ring.validation_token.empty() &&
-      asymm::ValidateKey(key_ring.public_key) &&
-      asymm::ValidateKey(key_ring.private_key)) {
-    message.content.push_back(key_ring.identity);
-    message.content.push_back(key_ring.validation_token);
-    asymm::EncodePrivateKey(key_ring.private_key, &private_key);
-    message.content.push_back(private_key);
-    asymm::EncodePublicKey(key_ring.public_key, &public_key);
-    message.content.push_back(public_key);
-  } else {
-    LOG(kError) << "Invalid keyring for open share";
-    return kInvalidKeyringForOpenShare;
-  }
-
-  int result, aggregate(0);
-  if (contacts_results)
-    contacts_results->clear();
-  for (auto it = contacts.begin(); it != contacts.end(); ++it) {
-    if (it->first != sender_public_id) {
-      message.receiver_public_id = it->first;
-      result = message_handler_.Send(message);
-      if (result != kSuccess) {
-        LOG(kError) << "Failed to inform contact " << it->first << " of operation " << item_type
-                    << ", with result " << result;
-        ++aggregate;
-      }
-      if (contacts_results)
-        contacts_results->insert(std::make_pair(it->first, result));
-    }
-  }
   return aggregate == static_cast<int>(contacts.size()) ? aggregate : 0;
 }
 

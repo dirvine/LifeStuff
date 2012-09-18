@@ -239,7 +239,7 @@ testing::AssertionResult NetworkHelper::StopLocalNetwork() {
 
     std::unique_ptr<char[]> buffer(new char[size]);
     vault_process.second->read(buffer.get(), size);
-    LOG(kInfo).write(buffer.get(), size);
+    LOG(kInfo) << std::string(buffer.get(), size);
     LOG(kInfo) << pd::kKeysHelperExecutable() << " has completed with exit code " << exit_code;
   }
   return testing::AssertionSuccess();

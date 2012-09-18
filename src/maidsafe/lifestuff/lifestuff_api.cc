@@ -53,7 +53,6 @@ int LifeStuff::ConnectToSignals(
     const PrivateShareInvitationFunction& private_share_invitation_function,
     const PrivateShareDeletionFunction& private_share_deletion_function,
     const PrivateMemberAccessChangeFunction& private_access_change_function,
-    const OpenShareInvitationFunction& open_share_invitation_function,
     const ShareRenamedFunction& share_renamed_function,
     const ShareChangedFunction& share_changed_function,
     const LifestuffCardUpdateFunction& lifestuff_card_update_function,
@@ -70,7 +69,6 @@ int LifeStuff::ConnectToSignals(
                                            private_share_invitation_function,
                                            private_share_deletion_function,
                                            private_access_change_function,
-                                           open_share_invitation_function,
                                            share_renamed_function,
                                            share_changed_function,
                                            lifestuff_card_update_function,
@@ -313,63 +311,6 @@ int LifeStuff::DeletePrivateShare(const std::string& my_public_id,
 int LifeStuff::LeavePrivateShare(const std::string& my_public_id,
                                  const std::string& share_name) {
   return lifestuff_impl_->LeavePrivateShare(my_public_id, share_name);
-}
-
-int LifeStuff::CreateOpenShareFromExistingDirectory(const std::string& my_public_id,
-                                                    const fs::path& directory_in_lifestuff_drive,
-                                                    const std::vector<std::string>& contacts,
-                                                    std::string* share_name,
-                                                    StringIntMap* results) {
-  return lifestuff_impl_->CreateOpenShareFromExistingDirectory(my_public_id,
-                                                               directory_in_lifestuff_drive,
-                                                               contacts,
-                                                               share_name,
-                                                               results);
-}
-
-int LifeStuff::CreateEmptyOpenShare(const std::string& my_public_id,
-                                    const std::vector<std::string>& contacts,
-                                    std::string* share_name,
-                                    StringIntMap* results) {
-  return lifestuff_impl_->CreateEmptyOpenShare(my_public_id, contacts, share_name, results);
-}
-
-int LifeStuff::InviteMembersToOpenShare(const std::string& my_public_id,
-                                        const std::vector<std::string>& contacts,
-                                        const std::string& share_name,
-                                        StringIntMap* results) {
-  return lifestuff_impl_->InviteMembersToOpenShare(my_public_id, contacts, share_name, results);
-}
-
-int LifeStuff::GetOpenShareList(const std::string& my_public_id,
-                                std::vector<std::string>* shares_names) {
-  return lifestuff_impl_->GetOpenShareList(my_public_id, shares_names);
-}
-
-int LifeStuff::GetOpenShareMembers(const std::string& my_public_id,
-                                   const std::string& share_name,
-                                   StringIntMap* share_members) {
-  return lifestuff_impl_->GetOpenShareMembers(my_public_id, share_name, share_members);
-}
-
-int LifeStuff::AcceptOpenShareInvitation(const std::string& my_public_id,
-                                         const std::string& contact_public_id,
-                                         const std::string& share_id,
-                                         std::string* share_name) {
-  return lifestuff_impl_->AcceptOpenShareInvitation(my_public_id,
-                                                    contact_public_id,
-                                                    share_id,
-                                                    share_name);
-}
-
-int LifeStuff::RejectOpenShareInvitation(const std::string& my_public_id,
-                                         const std::string& share_id) {
-  return lifestuff_impl_->RejectOpenShareInvitation(my_public_id, share_id);
-}
-
-int LifeStuff::LeaveOpenShare(const std::string& my_public_id,
-                              const std::string& share_name) {
-  return lifestuff_impl_->LeaveOpenShare(my_public_id, share_name);
 }
 
 ///
