@@ -1078,8 +1078,7 @@ int LifeStuffImpl::AcceptSentFile(const std::string& identifier,
   if (result != kSuccess)
     return result;
 
-  if ((absolute_path.empty() && !file_name) ||
-      (!absolute_path.empty() && file_name)) {
+  if ((absolute_path.empty() && !file_name) || (!absolute_path.empty() && file_name)) {
     LOG(kError) << "Wrong parameters given. absolute_path and file_name are mutually exclusive.";
     return kGeneralError;
   }
@@ -1597,7 +1596,7 @@ int LifeStuffImpl::EditPrivateShareMembers(const std::string& my_public_id,
         results->insert(std::make_pair(*it, kSuccess));
     }
     asymm::Keys key_ring;
-    StringIntMap share_members;
+    share_members.clear();
     result = user_storage_->GetShareDetails(shared_relative_path,
                                             nullptr,
                                             &key_ring,
@@ -1641,14 +1640,13 @@ int LifeStuffImpl::EditPrivateShareMembers(const std::string& my_public_id,
           if (result != kSuccess) {
             LOG(kError) << "Failed to downgrade share members for " << share_name;
           }
-          asymm::Keys key_ring;
           result = user_storage_->InformContactsOperation(kPrivateShareMembershipDowngrade,
                                                           my_public_id,
                                                           *results,
                                                           share_id,
                                                           "",
                                                           new_directory_id,
-                                                          key_ring,
+                                                          asymm::Keys(),
                                                           new_share_id);
           if (result != kSuccess) {
             LOG(kError) << "Failed to inform contacts of downgrade for " << share_name;
@@ -1734,7 +1732,7 @@ int LifeStuffImpl::EditPrivateShareMembers(const std::string& my_public_id,
         return result;
       }
       asymm::Keys old_key_ring;
-      StringIntMap share_members;
+      share_members.clear();
       result = user_storage_->GetShareDetails(shared_relative_path,
                                               nullptr,
                                               &old_key_ring,

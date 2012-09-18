@@ -384,8 +384,9 @@ int Session::ParseDataAtlas(const std::string& serialised_data_atlas) {
       asymm::DecodePublicKey(
           data_atlas.public_ids(id_count).contacts(contact_count).inbox_public_key(),
           &contact.inbox_public_key);
-      int result(public_id_details.contacts_handler->AddContact(contact));
-      LOG(kInfo) << "Result of adding " << contact.public_id << " to " << pub_id << ":  " << result;
+      int add_contact_result(public_id_details.contacts_handler->AddContact(contact));
+      LOG(kInfo) << "Result of adding " << contact.public_id << " to " << pub_id << ":  "
+                 << add_contact_result;
     }
 
     for (int share_count(0);
@@ -456,10 +457,10 @@ int Session::SerialiseDataAtlas(std::string* serialised_data_atlas) {
     }
 
     ShareInformationPtr share_information((*it).second.share_information);
-    for (auto it(share_information->begin()); it != share_information->end(); ++it) {
+    for (auto& share_it : *share_information) {
       ShareInformationContainer* sic(pub_id->add_shares());
-      sic->set_share_name(it->first);
-      sic->set_share_type(it->second.share_type);
+      sic->set_share_name(share_it.first);
+      sic->set_share_type(share_it.second.share_type);
     }
   }
 

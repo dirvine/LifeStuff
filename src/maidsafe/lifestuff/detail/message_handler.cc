@@ -305,14 +305,14 @@ void MessageHandler::GetNewMessages(const bptime::seconds& interval,
 
 void MessageHandler::ProcessRetrieved(const std::string& public_id,
                                       const std::string& retrieved_mmid_packet) {
-  pca::AppendableByAll mmid;
-  if (!mmid.ParseFromString(retrieved_mmid_packet)) {
+  pca::AppendableByAll mmid_packet;
+  if (!mmid_packet.ParseFromString(retrieved_mmid_packet)) {
     LOG(kError) << "Failed to parse as AppendableByAll";
     return;
   }
 
-  for (int it(0); it < mmid.appendices_size(); ++it) {
-    pca::SignedData signed_data(mmid.appendices(it));
+  for (int it(0); it < mmid_packet.appendices_size(); ++it) {
+    pca::SignedData signed_data(mmid_packet.appendices(it));
     asymm::Keys mmid(passport_.SignaturePacketDetails(passport::kMmid, true, public_id));
 
     std::string decrypted_message;
