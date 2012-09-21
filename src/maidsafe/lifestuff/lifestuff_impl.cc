@@ -337,14 +337,14 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
       return result;
     } else {
       LOG(kError) << "Failed to Create User with result: " << result;
-      return kCreateUserGeneralFailure;
+      return result;
     }
   }
 
   result = SetValidPmidAndInitialisePublicComponents();
   if (result != kSuccess)  {
     LOG(kError) << "Failed to set valid PMID with result: " << result;
-    return kCreateUserPmidFailure;
+    return result;
   }
 
 #ifdef LOCAL_TARGETS_ONLY
@@ -353,7 +353,7 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
   result = CreateVaultInLocalMachine(chunk_store);
   if (result != kSuccess)  {
     LOG(kError) << "Failed to create vault. No LifeStuff for you! (Result: " << result << ")";
-    return kCreateUserVaultFailure;
+    return result;
   }
 
   routings_handler_ = std::make_shared<RoutingsHandler>(*remote_chunk_store_,
@@ -379,12 +379,13 @@ int LifeStuffImpl::CreatePublicId(const std::string& public_id) {
 
   result = public_id_->CreatePublicId(public_id, true);
   if (result != kSuccess) {
-    LOG(kError) << "Failed to create public ID with result: " << result;
     if (result == kPublicIdEmpty || result == kPublicIdLengthInvalid ||
-        result == kPublicIdEndSpaceInvalid || result == kPublicIdDoubleSpaceInvalid)
+        result == kPublicIdEndSpaceInvalid || result == kPublicIdDoubleSpaceInvalid) {
       return result;
-    else
-      return kCreatePublicIdGeneralFailure;
+    } else {
+      LOG(kError) << "Failed to create public ID with result: " << result;
+      return result;
+    }
   }
 
   if (first_public_id) {
@@ -428,14 +429,14 @@ int LifeStuffImpl::LogIn(const std::string& keyword,
       return login_result;
     } else {
       LOG(kError) << "LogIn failed with result: " << login_result;
-      return kLoginGeneralFailure;
+      return login_result;
     }
   }
 
   int result(SetValidPmidAndInitialisePublicComponents());
   if (result != kSuccess)  {
     LOG(kError) << "Failed to set valid PMID with result: " << result;
-    return kLoginPmidFailure;
+    return result;
   }
 
   state_ = kLoggedIn;
@@ -617,7 +618,7 @@ int LifeStuffImpl::StartMessagesAndIntros() {
   }
   if (session_.PublicIdentities().empty()) {
     LOG(kInfo) << "Won't check for messages/intros because there is no public ID.";
-    return kStartMessagesNoPublicIds;
+    return kStartMessagesAndContactsNoPublicIds;
   }
 
   public_id_->StartUp(interval_);
@@ -671,7 +672,7 @@ int LifeStuffImpl::ChangeKeyword(const std::string& new_keyword, const std::stri
     return result;
   } else {
     LOG(kError) << "Changing Keyword failed with result: " << result;
-    return kChangeKeywordFailure;
+    return result;
   }
 }
 
@@ -696,7 +697,7 @@ int LifeStuffImpl::ChangePin(const std::string& new_pin, const std::string& pass
     return result;
   } else {
     LOG(kError) << "Changing PIN failed with result: " << result;
-    return kChangePinFailure;
+    return result;
   }
 }
 
@@ -722,7 +723,7 @@ int LifeStuffImpl::ChangePassword(const std::string& new_password,
     return result;
   } else {
     LOG(kError) << "Changing Password failed with result: " << result;
-    return kChangePasswordFailure;
+    return result;
   }
 }
 
@@ -792,7 +793,7 @@ int LifeStuffImpl::AddContact(const std::string& my_public_id,
   result = public_id_->AddContact(my_public_id, contact_public_id, message);
   if (result != kSuccess) {
     LOG(kError) << "Failed to add contact with result: " << result;
-    return kAddContactGeneralFailure;
+    return result;
   }
   return kSuccess;
 }
@@ -808,13 +809,13 @@ int LifeStuffImpl::ConfirmContact(const std::string& my_public_id,
   result = public_id_->ConfirmContact(my_public_id, contact_public_id);
   if (result != kSuccess) {
     LOG(kError) << "Failed to Confirm Contact with result: " << result;
-    return kConfirmContactGeneralFailure;
+    return result;
   }
 
   result = message_handler_->SendPresenceMessage(my_public_id, contact_public_id, kOnline);
   if (result != kSuccess) {
     LOG(kError) << "Failed to send presence message with result: " << result;
-    return kConfirmContactPresenceFailure;
+    return result;
   }
   return kSuccess;
 }
@@ -830,7 +831,7 @@ int LifeStuffImpl::DeclineContact(const std::string& my_public_id,
   result = public_id_->RejectContact(my_public_id, contact_public_id);
   if (result != kSuccess) {
     LOG(kError) << "Failed to decline contact with result: " << result;
-    return kDeclineContactGeneralFailure;
+    return result;
   }
   return kSuccess;
 }
@@ -872,7 +873,7 @@ int LifeStuffImpl::RemoveContact(const std::string& my_public_id,
                                      instigator);
   if (result != kSuccess) {
     LOG(kError) << "Failed to remove contact with result: " << result;
-    return kRemoveContactGeneralFailure;
+    return result;
   }
   return kSuccess;
 }
@@ -905,7 +906,7 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
     if (result != kSuccess) {
       LOG(kError) << "Failed to write profile picture file: " << profile_picture_path <<
                      " with result: " << result;
-      return kChangePictureGeneralFailure;
+      return kChangePictureWriteHiddenFileFailure;
     }
 
     // Get datamap
@@ -918,7 +919,7 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
       if ((result != kSuccess || data_map.empty()) && count == limit) {
         LOG(kError) << "Failed obtaining DM of profile picture: " << result << ", file: "
                     << profile_picture_path << " with result " << result;
-        return kChangePictureGeneralFailure;
+        return result == kSuccess ? kChangePictureEmptyDataMap : result;
       }
 
       reconstructed = user_storage_->ConstructFile(data_map);
@@ -928,7 +929,7 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
     if (reconstructed != profile_picture_contents) {
       LOG(kError) << "Failed to reconstruct profile picture file: " << profile_picture_path <<
                      " with result " << result;
-      return kChangePictureGeneralFailure;
+      return kChangePictureReconstructionError;
     }
 
     message.content.push_back(data_map);
@@ -940,7 +941,7 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
   const SocialInfoDetail social_info(session_.social_info(my_public_id));
   if (!social_info.first) {
     LOG(kError) << "User does not hold such public ID: " << my_public_id;
-    return kChangePictureGeneralFailure;
+    return kPublicIdNotFoundFailure;
   }
 
   {
@@ -1037,7 +1038,7 @@ int LifeStuffImpl::GetLifestuffCard(const std::string& my_public_id,
   result = public_id_->GetLifestuffCard(my_public_id, contact_public_id, social_info);
   if (result != kSuccess) {
     LOG(kError) << "Failed to get LifeStuff card with result " << result;
-    return kGetLifeStuffCardGeneralFailure;
+    return result;
   }
   return kSuccess;
 }
@@ -1051,7 +1052,7 @@ int LifeStuffImpl::SetLifestuffCard(const std::string& my_public_id,
   result = public_id_->SetLifestuffCard(my_public_id, social_info);
   if (result != kSuccess) {
     LOG(kError) << "Failed to set LifeStuff card with result " << result;
-    return kSetLifeStuffCardGeneralFailure;
+    return result;
   }
   return kSuccess;
 }
@@ -1101,7 +1102,7 @@ int LifeStuffImpl::SendChatMessage(const std::string& sender_public_id,
   result = message_handler_->Send(inbox_item);
   if (result != kSuccess) {
     LOG(kError) << "Failed to send chat message with result " << result;
-    return kSendMessageGeneralFailure;
+    return result;
   }
   return kSuccess;
 }
@@ -1117,7 +1118,7 @@ int LifeStuffImpl::SendFile(const std::string& sender_public_id,
   result = user_storage_->GetDataMap(absolute_path, &serialised_datamap);
   if (result != kSuccess || serialised_datamap.empty()) {
     LOG(kError) << "Failed to get DM for " << absolute_path << " with result " << result;
-    return kSendFileGeneralFailure;
+    return result;
   }
 
   InboxItem inbox_item(kFileTransfer);
@@ -1129,7 +1130,7 @@ int LifeStuffImpl::SendFile(const std::string& sender_public_id,
   result = message_handler_->Send(inbox_item);
   if (result != kSuccess) {
     LOG(kError) << "Failed to send file with result " << result;
-    return kSendFileGeneralFailure;
+    return result;
   }
 
   return kSuccess;
@@ -1154,44 +1155,44 @@ int LifeStuffImpl::AcceptSentFile(const std::string& identifier,
                                          &serialised_identifier);
   if (result != kSuccess || serialised_identifier.empty()) {
     LOG(kError) << "No such identifier found: " << result;
-    return kAcceptFileGeneralFailure;
+    return result == kSuccess? kAcceptFileSerialisedIdentifierEmpty : result;
   }
 
   GetFilenameData(serialised_identifier, &saved_file_name, &serialised_data_map);
   if (saved_file_name.empty() || serialised_data_map.empty()) {
     LOG(kError) << "Failed to get filename or datamap.";
-    return kAcceptFileGeneralFailure;
+    return kAcceptFileGetFileNameDataFailure;
   }
 
   drive::DataMapPtr data_map_ptr(ParseSerialisedDataMap(serialised_data_map));
   if (!data_map_ptr) {
     LOG(kError) << "Corrupted DM in file";
-    return kAcceptFileGeneralFailure;
+    return kAcceptFileCorruptDatamap;
   }
 
   if (absolute_path.empty()) {
     fs::path store_path(mount_path() / kMyStuff / kDownloadStuff);
     if (!VerifyOrCreatePath(store_path)) {
       LOG(kError) << "Failed finding and creating: " << store_path;
-      return kAcceptFileGeneralFailure;
+      return kAcceptFileVerifyCreatePathFailure;
     }
     std::string adequate_name(GetNameInPath(store_path, saved_file_name));
     if (adequate_name.empty()) {
       LOG(kError) << "No name found to work for saving the file.";
-      return kAcceptFileGeneralFailure;
+      return kAcceptFileNameFailure;
     }
     result = user_storage_->InsertDataMap(store_path / adequate_name, serialised_data_map);
 
     if (result != kSuccess) {
       LOG(kError) << "Failed inserting DM: " << result;
-      return kAcceptFileGeneralFailure;
+      return result;
     }
     *file_name = adequate_name;
   } else {
     result = user_storage_->InsertDataMap(absolute_path, serialised_data_map);
     if (result != kSuccess) {
       LOG(kError) << "Failed inserting DM: " << result;
-      return kAcceptFileGeneralFailure;
+      return result;
     }
   }
 
@@ -1207,7 +1208,7 @@ int LifeStuffImpl::RejectSentFile(const std::string& identifier) {
   result = user_storage_->DeleteHiddenFile(hidden_file);
   if (result != kSuccess) {
     LOG(kError) << "Failed to reject file with result " << result;
-    return kRejectFileGeneralFailure;
+    return result;
   }
   return kSuccess;
 }
@@ -1226,7 +1227,7 @@ int LifeStuffImpl::ReadHiddenFile(const fs::path& absolute_path, std::string* co
   result = user_storage_->ReadHiddenFile(absolute_path, content);
   if (result != kSuccess) {
     LOG(kError) << "Failed to read hidden file with result " << result;
-    return kReadHiddenFileGeneralFailure;
+    return result;
   }
   return kSuccess;
 }
@@ -1241,7 +1242,7 @@ int LifeStuffImpl::WriteHiddenFile(const fs::path& absolute_path,
   result = user_storage_->WriteHiddenFile(absolute_path, content, overwrite_existing);
   if (result != kSuccess) {
     LOG(kError) << "Failed to write hidden file with result " << result;
-    return kWriteHiddenFileGeneralFailure;
+    return result;
   }
   return kSuccess;
 }
@@ -1254,7 +1255,7 @@ int LifeStuffImpl::DeleteHiddenFile(const fs::path& absolute_path) {
   result = user_storage_->DeleteHiddenFile(absolute_path);
   if (result != kSuccess) {
     LOG(kError) << "Failed to delete hidden file with result " << result;
-    return kDeleteHiddenFileGeneralFailure;
+    return result;
   }
   return kSuccess;
 }
@@ -1268,7 +1269,7 @@ int LifeStuffImpl::SearchHiddenFiles(const fs::path& absolute_path,
   result = user_storage_->SearchHiddenFiles(absolute_path, results);
   if (result != kSuccess) {
     LOG(kError) << "Failed to search hidden files with result " << result;
-    return kSearchHiddenFileGeneralFailure;
+    return result;
   }
   return kSuccess;
 }
@@ -2122,7 +2123,7 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
       session_.passport().SignaturePacketDetails(passport::kPmid, true)));
   if (!pmid || pmid->identity.empty()) {
     LOG(kError) << "Failed to obtain valid PMID keys.";
-    return -1;
+    return kCouldNotAcquirePmidKeys;
   }
   node_->set_keys(pmid);
   result = node_->Start(buffered_path_ / "buffered_chunk_store");
@@ -2311,12 +2312,12 @@ int LifeStuffImpl::CreateVaultInLocalMachine(const fs::path& chunk_store) {
   asymm::Keys pmid_keys(session_.passport().SignaturePacketDetails(passport::kPmid, true));
   if (account_name.empty() || pmid_keys.identity.empty()) {
     LOG(kError) << "Failed to obtain credentials to start vault from session.";
-    return kVaultCreationFailure;
+    return kVaultCreationCredentialsFailure;
   }
 
   if (!client_controller_->StartVault(pmid_keys, account_name, chunk_store)) {
     LOG(kError) << "Failed to create vault.";
-    return kVaultCreationFailure;
+    return kVaultCreationStartFailure;
   }
 
   return kSuccess;

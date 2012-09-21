@@ -338,11 +338,11 @@ int Session::ParseDataAtlas(const std::string& serialised_data_atlas) {
   DataAtlas data_atlas;
   if (serialised_data_atlas.empty()) {
     LOG(kError) << "TMID brought is empty.";
-    return -9000;
+    return kParseDataAtlasTmidEmpty;
   }
   if (!data_atlas.ParseFromString(serialised_data_atlas)) {
     LOG(kError) << "TMID doesn't parse.";
-    return -9000;
+    return kParseDataAtlasTmidDoesNotParse;
   }
 
   if (data_atlas.drive_data().unique_user_id().empty()) {
@@ -362,7 +362,7 @@ int Session::ParseDataAtlas(const std::string& serialised_data_atlas) {
   int result(passport_.Parse(data_atlas.passport_data().serialised_keyring()));
   if (result != kSuccess) {
     LOG(kError) << "Failed ParseKeyChain: " << result;
-    return -9003;
+    return kParseDataAtlasKeyringDoesNotParse;
   }
 
   std::string pub_id;
@@ -418,7 +418,7 @@ int Session::SerialiseDataAtlas(std::string* serialised_data_atlas) {
   std::string serialised_keyring(passport_.Serialise());
   if (serialised_keyring.empty()) {
     LOG(kError) << "Serialising keyring failed.";
-    return -1;
+    return kSerialiseDataAtlasKeyringFailure;
   }
 
   PassportData* passport_data(data_atlas.mutable_passport_data());
@@ -465,7 +465,7 @@ int Session::SerialiseDataAtlas(std::string* serialised_data_atlas) {
 
   if (!data_atlas.SerializeToString(serialised_data_atlas)) {
     LOG(kError) << "Failed to serialise.";
-    return -1;
+    return kSerialiseDataAtlasToStringFailure;
   }
 
   return kSuccess;

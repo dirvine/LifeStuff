@@ -58,7 +58,7 @@ TEST_F(OneUserApiTest, FUNC_LoggedInState) {
   EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn);
   EXPECT_EQ(kSuccess, test_elements_.MountDrive(false));
   EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
-  EXPECT_EQ(kStartMessagesNoPublicIds, test_elements_.StartMessagesAndIntros());
+  EXPECT_EQ(kStartMessagesAndContactsNoPublicIds, test_elements_.StartMessagesAndIntros());
   EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
   EXPECT_EQ(kSuccess, test_elements_.StopMessagesAndIntros());
   EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
@@ -80,7 +80,7 @@ TEST_F(OneUserApiTest, FUNC_LoggedInState) {
   EXPECT_EQ(test_elements_.logged_in_state(), kCreating | kCredentialsLoggedIn);
   EXPECT_EQ(kSuccess, test_elements_.CreateAndMountDrive());
   EXPECT_EQ(test_elements_.logged_in_state(), kCreating | kCredentialsLoggedIn | kDriveMounted);
-  EXPECT_EQ(kStartMessagesNoPublicIds, test_elements_.StartMessagesAndIntros());
+  EXPECT_EQ(kStartMessagesAndContactsNoPublicIds, test_elements_.StartMessagesAndIntros());
   EXPECT_EQ(test_elements_.logged_in_state(), kCreating | kCredentialsLoggedIn | kDriveMounted);
   EXPECT_EQ(kSuccess, test_elements_.CreatePublicId(public_id2));
   EXPECT_EQ(test_elements_.logged_in_state(),

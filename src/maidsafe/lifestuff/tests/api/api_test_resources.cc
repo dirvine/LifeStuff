@@ -236,7 +236,7 @@ int DoFullLogIn(LifeStuff& test_elements,
   }
 
   result = test_elements.StartMessagesAndIntros();
-  if (result != kSuccess && result != kStartMessagesNoPublicIds) {
+  if (result != kSuccess && result != kStartMessagesAndContactsNoPublicIds) {
     LOG(kError) << "Failed to start checking for messages and intros: " << result;
     return result;
   }

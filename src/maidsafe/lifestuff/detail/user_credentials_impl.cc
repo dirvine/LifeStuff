@@ -137,7 +137,8 @@ int UserCredentialsImpl::AttemptLogInProcess(const std::string& keyword,
   int lid_result(lid::ProcessAccountStatus(keyword, pin, password, lid_packet, locking_packet));
   bool lid_corrupted(false);
   if (lid_result != kSuccess) {
-    if (lid_result == kCorruptedLidPacket) {
+    if (lid_result == kLidParseToSignedDataFailure || lid_result == kLidDecryptDataFailure ||
+        lid_result == kLidParseToLockingPacketFailure) {
       lid_corrupted = true;
     } else {
       LOG(kError) << "Couldn't get or process LID. Account can't be logged in: " << lid_result;
@@ -155,7 +156,8 @@ int UserCredentialsImpl::AttemptLogInProcess(const std::string& keyword,
 
   bool need_to_wait(false);
   result = GetAndLockLid(keyword, pin, password, lid_packet, locking_packet);
-  if (result == kCorruptedLidPacket && lid_corrupted == true) {
+  if ((lid_result == kLidParseToSignedDataFailure || lid_result == kLidDecryptDataFailure ||
+       lid_result == kLidParseToLockingPacketFailure) && lid_corrupted == true) {
     LOG(kInfo) << "Trying to fix corrupted packet...";
     session_.set_keyword(keyword);
     session_.set_pin(pin);
@@ -191,11 +193,11 @@ int UserCredentialsImpl::AttemptLogInProcess(const std::string& keyword,
       }
     }
     result = lid::AddItemToLockingPacket(locking_packet, session_.session_name(), true);
-    if (result == kLidIdentifierAlreadyInUse) {
+    if (result == kLidAddItemIdentifierInUse) {
       LOG(kError) << "Failed to add item to locking packet";
       return result;
     }
-    if (result == kLidFullAccessUnavailable)
+    if (result == kLidAddItemFullAccessUnavailable)
       need_to_wait = true;
     lid::OverthrowInstancesUsingLockingPacket(locking_packet, session_.session_name());
   }
@@ -226,12 +228,12 @@ int UserCredentialsImpl::LogOut() {
   int result(SaveSession(true));
   if (result != kSuccess) {
     LOG(kError) << "Failed to save session on Logout with result " << result;
-    return kLogOutSaveSessionFailure;
+    return result;
   }
   result = AssessAndUpdateLid(true);
   if (result != kSuccess) {
     LOG(kError) << "Failed to update LID on Logout with result " << result;
-    return kLogOutLidFailure;
+    return result;
   }
 
   session_.Reset();

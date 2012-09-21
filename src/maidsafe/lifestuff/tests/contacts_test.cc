@@ -14,6 +14,7 @@
 
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
 
 namespace maidsafe {
@@ -82,17 +83,17 @@ TEST_F(ContactsTest, BEH_AddContacts) {
   ASSERT_EQ(0, sch_->ContactInfo(msc.public_id, &mic));
   ASSERT_EQ(msc.public_id, mic.public_id);
 
-  ASSERT_EQ(-77, sch_->AddContact(msc.public_id,
-                                  msc.mpid_name,
-                                  msc.inbox_name,
-                                  msc.profile_picture_data_map,
-                                  msc.pointer_to_info,
-                                  msc.mpid_public_key,
-                                  msc.inbox_public_key,
-                                  msc.status,
-                                  msc.rank,
-                                  msc.last_contact));
-  ASSERT_EQ(-77, sch_->AddContact(msc));
+  ASSERT_EQ(kContactInsertionFailure, sch_->AddContact(msc.public_id,
+                                                       msc.mpid_name,
+                                                       msc.inbox_name,
+                                                       msc.profile_picture_data_map,
+                                                       msc.pointer_to_info,
+                                                       msc.mpid_public_key,
+                                                       msc.inbox_public_key,
+                                                       msc.status,
+                                                       msc.rank,
+                                                       msc.last_contact));
+  ASSERT_EQ(kContactInsertionFailure, sch_->AddContact(msc));
   sch_->OrderedContacts(&mi_list);
   ASSERT_EQ(size_t(1), mi_list.size());
 
@@ -126,10 +127,10 @@ TEST_F(ContactsTest, BEH_DeleteContacts) {
   ASSERT_EQ(msc.public_id, mic.public_id);
 
   ASSERT_EQ(0, sch_->DeleteContact(msc.public_id));
-  ASSERT_EQ(-80, sch_->ContactInfo(msc.public_id, &mic));
+  ASSERT_EQ(kContactNotPresentFailure, sch_->ContactInfo(msc.public_id, &mic));
   sch_->OrderedContacts(&mi_list);
   ASSERT_EQ(size_t(0), mi_list.size());
-  ASSERT_EQ(-78, sch_->DeleteContact(msc.public_id));
+  ASSERT_EQ(kContactErasureFailure, sch_->DeleteContact(msc.public_id));
 }
 
 TEST_F(ContactsTest, BEH_Update_Select_PubName_Contacts) {

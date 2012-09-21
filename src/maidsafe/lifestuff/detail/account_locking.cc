@@ -143,7 +143,7 @@ int CheckLockingPacketForIdentifier(LockingPacket& locking_packet, const std::st
   for (int i = 0; i < locking_packet.locking_item_size(); ++i) {
     if (locking_packet.locking_item(i).identifier() == identifier) {
       LOG(kError) << "Item with identifier already exists! Identifier: " << identifier;
-      return kLidIdentifierAlreadyInUse;
+      return kLidIdentifierFound;
     }
   }
   return kSuccess;
@@ -159,7 +159,7 @@ int AddItemToLockingPacket(LockingPacket& locking_packet,
       LOG(kError) << "Item with identifier already exists! Identifier: " << identifier;
 //      LOG(kInfo) << "AddItemToLockingPacket - locking_packet.locking_item_size() AFTER: " <<
 //                    locking_packet.locking_item_size();
-      return kLidIdentifierAlreadyInUse;
+      return kLidAddItemIdentifierInUse;
     }
   }
 
@@ -181,7 +181,7 @@ int AddItemToLockingPacket(LockingPacket& locking_packet,
 //                locking_packet.locking_item_size();
 
   if (need_to_wait)
-    return kLidFullAccessUnavailable;
+    return kLidAddItemFullAccessUnavailable;
   else
     return kSuccess;
 }
@@ -200,7 +200,7 @@ int RemoveItemFromLockingPacket(LockingPacket& locking_packet, const std::string
 
   if (new_locking_packet.locking_item_size() == locking_packet.locking_item_size()) {
     LOG(kError) << "Item not found! " << locking_packet.locking_item_size();
-    return kLidIdentifierNotFound;
+    return kLidRemoveItemIdentifierNotFound;
   }
 
   locking_packet = new_locking_packet;
@@ -238,7 +238,7 @@ int RemoveItemsFromLockingPacket(LockingPacket& locking_packet,
 
   if (!identifiers.empty()) {
     LOG(kError) << "Item(s) not found! " << identifiers.size();
-    return kLidIdentifierNotFound;
+    return kLidRemoveItemsIdentifierNotFound;
   }
 
   locking_packet = new_locking_packet;
@@ -277,7 +277,7 @@ int UpdateTimestampInLockingPacket(LockingPacket& locking_packet,
     }
   }
   LOG(kError) << "Item not found!";
-  return kLidIdentifierNotFound;
+  return kLidUpdateTimestampIdentifierNotFound;
 }
 
 int CheckLockingPacketForFullAccess(const LockingPacket& locking_packet) {
@@ -298,7 +298,7 @@ int CheckLockingPacketForOthersLoggedIn(const LockingPacket& locking_packet,
   }
   if (locking_packet.locking_item(0).identifier() != identifier) {
     LOG(kError) << "LockingPacket says this instance isn't logged in!";
-    return kLidIdentifierNotFound;
+    return kLidCheckOthersIdentifierNotFound;
   }
   return kSuccess;
 }
@@ -316,18 +316,18 @@ int ProcessAccountStatus(const std::string& keyword,
   priv::chunk_actions::SignedData packet;
   if (!packet.ParseFromString(lid_packet) || packet.data().empty()) {
     LOG(kError) << "LID packet corrupted: Failed parse.";
-    return kCorruptedLidPacket;
+    return kLidParseToSignedDataFailure;
   }
 
   std::string decrypted_account_status(DecryptAccountStatus(keyword, pin, password, packet.data()));
   if (decrypted_account_status.empty()) {
     LOG(kError) << "LID packet corrupted: Failed decryption.";
-    return kCorruptedLidPacket;
+    return kLidDecryptDataFailure;
   }
 
   if (!locking_packet.ParseFromString(decrypted_account_status)) {
     LOG(kError) << "Failed to parse string into LockingPacket.";
-    return kCorruptedLidPacket;
+    return kLidParseToLockingPacketFailure;
   }
 
   return kSuccess;

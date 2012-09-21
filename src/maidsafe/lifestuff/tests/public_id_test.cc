@@ -382,7 +382,7 @@ TEST_F(PublicIdTest, FUNC_CreateInvalidId) {
   ASSERT_EQ(kPublicIdEmpty, public_id1_->CreatePublicId("", false));
   ASSERT_EQ(kPublicIdEmpty, public_id1_->CreatePublicId("", true));
 
-  ASSERT_EQ(kNoPublicIds, public_id1_->StartCheckingForNewContacts(timer_interval_));
+  ASSERT_EQ(kStartContactsNoPublicIds, public_id1_->StartCheckingForNewContacts(timer_interval_));
 
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, false));
 
@@ -608,8 +608,10 @@ TEST_F(PublicIdTest, FUNC_AddContactsIncorrectly) {
   std::string wrong_name("Name 42");
   ASSERT_NE(kSuccess, public_id1_->AddContact(wrong_name, wrong_name, ""));
   ASSERT_NE(kSuccess, public_id1_->AddContact(public_identity1_, wrong_name, ""));
-  ASSERT_EQ(kGeneralError, public_id1_->AddContact(public_identity1_, public_identity1_, ""));
-  ASSERT_EQ(kGeneralError, public_id1_->AddContact(public_identity1_, public_identity3, ""));
+  ASSERT_EQ(kCannotAddOwnPublicId,
+            public_id1_->AddContact(public_identity1_, public_identity1_, ""));
+  ASSERT_EQ(kCannotAddOwnPublicId,
+            public_id1_->AddContact(public_identity1_, public_identity3, ""));
 
 
   // 2 adds 1 (correct)
@@ -631,7 +633,8 @@ TEST_F(PublicIdTest, FUNC_AddContactsIncorrectly) {
   ASSERT_FALSE(received_public_identity_.empty());
 
   // 2 adds 1 again (incorrect)
-  ASSERT_EQ(-77, public_id2_->AddContact(public_identity2_, public_identity1_, ""));
+  ASSERT_EQ(kContactInsertionFailure,
+            public_id2_->AddContact(public_identity2_, public_identity1_, ""));
 
   // 2 confirms 1
   done = false;
@@ -650,7 +653,8 @@ TEST_F(PublicIdTest, FUNC_AddContactsIncorrectly) {
   }
 
   // 2 adds 1 again (incorrect)
-  ASSERT_EQ(-77, public_id2_->AddContact(public_identity2_, public_identity1_, ""));
+  ASSERT_EQ(kContactInsertionFailure,
+            public_id2_->AddContact(public_identity2_, public_identity1_, ""));
 }
 
 TEST_F(PublicIdTest, FUNC_ConfirmContactsIncorrectly) {
@@ -658,7 +662,8 @@ TEST_F(PublicIdTest, FUNC_ConfirmContactsIncorrectly) {
 
   ASSERT_EQ(kPublicIdNotFoundFailure, public_id1_->ConfirmContact(public_identity2_,
                                                                   public_identity2_));
-  ASSERT_EQ(-1, public_id1_->ConfirmContact(public_identity1_, public_identity2_));
+  ASSERT_EQ(kConfirmContactGetInfoFailure,
+            public_id1_->ConfirmContact(public_identity1_, public_identity2_));
 }
 
 TEST_F(PublicIdTest, FUNC_RejectContactsIncorrectly) {

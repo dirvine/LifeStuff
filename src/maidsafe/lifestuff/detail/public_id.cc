@@ -74,7 +74,7 @@ int PublicId::StartCheckingForNewContacts(const bptime::seconds& interval) {
   get_new_contacts_timer_active_ = true;
   if (session_.PublicIdentities().empty()) {
     LOG(kError) << "No public identites.";
-    return kNoPublicIds;
+    return kStartContactsNoPublicIds;
   }
   get_new_contacts_timer_.expires_from_now(interval);
   get_new_contacts_timer_.async_wait([=] (const boost::system::error_code error_code) {
@@ -213,7 +213,7 @@ int PublicId::AddContact(const std::string& own_public_id,
                          const std::string& message) {
   if (session_.OwnPublicId(recipient_public_id)) {
     LOG(kInfo) << "Cannot add own Public Id as a contact.";
-    return kGeneralError;
+    return kCannotAddOwnPublicId;
   }
 
   Contact recipient_contact;
@@ -359,19 +359,19 @@ int PublicId::ConfirmContact(const std::string& own_public_id,
     if (mic.status != kPendingResponse)
       LOG(kError) << "BBBBBBBBBBBBBB";
     LOG(kError) << "No such pending username found: " << recipient_public_id;
-    return -1;
+    return kConfirmContactGetInfoFailure;
   }
   std::vector<Contact> contacts(1, mic);
   result = InformContactInfo(own_public_id, contacts, "", kFriendResponse);
   if (result != kSuccess) {
     LOG(kError) << "Failed to send confirmation to " << recipient_public_id;
-    return -1;
+    return kConfirmContactInformFailure;
   }
 
   result = contacts_handler->UpdateStatus(recipient_public_id, kConfirmed);
   if (result != kSuccess) {
     LOG(kError) << "Failed to confirm " << recipient_public_id;
-    return -1;
+    return kConfirmContactStatusFailure;
   }
   session_.set_changed(true);
 
@@ -394,7 +394,7 @@ int PublicId::RejectContact(const std::string& own_public_id,
 
   if (contact.status != kPendingResponse) {
     LOG(kError) << "Cannot reject contact with status: " << contact.status;
-    return kGeneralError;
+    return kCanOnlyRejectPendingResponseContact;
   }
 
   int result(contacts_handler->DeleteContact(recipient_public_id));
@@ -906,7 +906,7 @@ int PublicId::ProcessRequestWhenExpectingResponse(Contact& contact,
     if (contact.status != kRequestSent)
       LOG(kError) << "BBBBBBBBBBBBBB";
     LOG(kError) << "No such kRequestSent username found: " << recipient_public_id;
-    return -1;
+    return kPRWERGetInfoFailure;
   }
 
   contact.status = kConfirmed;
@@ -915,20 +915,20 @@ int PublicId::ProcessRequestWhenExpectingResponse(Contact& contact,
   result = GetPublicKey(introduction.inbox_name(), contact, 1);
   if (result != kSuccess) {
     LOG(kError) << "Failed to get contact's public key!";
-    return -1;
+    return kPRWERPublicKeyFailure;
   }
 
   std::vector<Contact> contacts(1, contact);
   result = InformContactInfo(own_public_id, contacts, "", kFriendResponse);
   if (result != kSuccess) {
     LOG(kError) << "Failed to send confirmation to " << recipient_public_id;
-    return -1;
+    return kPRWERInformFailure;
   }
 
   result = contacts_handler->UpdateContact(contact);
   if (result != kSuccess) {
     LOG(kError) << "Failed to update contact after confirmation.";
-    return -1;
+    return kPRWERStatusFailure;
   }
 
   contact_confirmed_signal_(own_public_id,

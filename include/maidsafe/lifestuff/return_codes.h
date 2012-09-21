@@ -34,153 +34,152 @@ enum ReturnCode {
   // General
   kSuccess = 0,
   kGeneralError = -200001,
+  kReadOnlyRestrictedSuccess = -200002,
+  kRemoteChunkStoreFailure = -200003,
+  kPublicIdNotFoundFailure = -200004,
+  kGetPublicIdError = -200005,
 
-  // API States and permissions
-  kWrongState = -200010,
-  kWrongLoggedInState = -200011,
-  kWrongAccessLevel = -200012,
-  kReadOnlyRestrictedSuccess = -200013,
+  // LifeStuff Impl and API
+  kWrongState = -201001,
+  kWrongLoggedInState = -201002,
+  kWrongAccessLevel = -201003,
+  kInitialiseUpdateFunctionFailure = -201004,
+  kInitialiseBootstrapsFailure = -201005,
+  kInitialiseChunkStoreFailure = -201006,
+  kSetSlotsFailure = -201007,
+  kConnectSignalsFailure = -201008,
+  kLogoutCredentialsFailure = -201009,
+  kLogoutCompleteChunkFailure = -201010,
+  kCreateDirectoryError = -201011,
+  kMountDriveOnCreationError = -201012,
+  kCreateMyStuffError = -201013,
+  kCreateSharedStuffError = -201014,
+  kMountDriveTryManualUnMount = -201015,
+  kMountDriveMountPointCreationFailure = -201016,
+  kMountDriveError = -201017,
+  kUnMountDriveError = -201018,
+  kStartMessagesAndContactsNoPublicIds = -201019,
+  kChangePictureWrongSize = -201020,
+  kChangePictureWriteHiddenFileFailure = -201021,
+  kChangePictureEmptyDataMap = -201022,
+  kChangePictureReconstructionError = -201023,
+  kSendMessageSizeFailure = -201024,
+  kAcceptFilePathError = -201025,
+  kAcceptFileSerialisedIdentifierEmpty = -201026,
+  kAcceptFileGetFileNameDataFailure = -201027,
+  kAcceptFileCorruptDatamap = -201028,
+  kAcceptFileVerifyCreatePathFailure = -201029,
+  kAcceptFileNameFailure = -201030,
+  kReadHiddenFileContentFailure = -201031,
+  kCheckPasswordFailure = -201032,
+  kVaultCreationCredentialsFailure = -201033,
+  kVaultCreationStartFailure = -201034,
+  kNoShareTarget = -201035,
+  kCouldNotAcquirePmidKeys = -201036,
 
-  // API RETURN CODES
-  // (Each should be traceable to a unique 'return' in public functions of lifestuff_impl.cc)
-  // API State operations
-  kInitialiseUpdateFunctionFailure = -209011,
-  kInitialiseBootstrapsFailure = -209012,
-  kInitialiseChunkStoreFailure = -209013,
-  kSetSlotsFailure = -209021,
-  kConnectSignalsFailure = -209022,
-  // API Credential operations
-  kCreateUserPmidFailure = -209031,
-  kCreateUserVaultFailure = -209032,
-  kCreateUserGeneralFailure =  -209033,
-  kCreatePublicIdGeneralFailure = -209041,
-  kLoginPmidFailure = -209051,
-  kLoginGeneralFailure = -209052,
-  kLogoutCredentialsFailure = -209061,
-  kLogoutCompleteChunkFailure = -209062,
-  kCreateDirectoryError = -209071,
-  kMountDriveOnCreationError = -209072,
-  kCreateMyStuffError = -209073,
-  kCreateSharedStuffError = -209074,
-  kMountDriveTryManualUnMount = -209081,
-  kMountDriveMountPointCreationFailure = -209082,
-  kMountDriveError = -209083,
-  kUnMountDriveError = -209091,
-  kStartMessagesNoPublicIds = -209101,  // TODO(Alison) - make this more exclusive?
-  kChangeKeywordFailure = -209121,
-  kChangePinFailure = -209131,
-  kChangePasswordFailure = -208041,  // TODO(Alison) - make this more exclusive?
-  // API Contact operations
-  kAddContactGeneralFailure = -209151,
-  kConfirmContactGeneralFailure = -209161,
-  kConfirmContactPresenceFailure = -209162,
-  kDeclineContactGeneralFailure = -209171,
-  kRemoveContactGeneralFailure = -209181,
-  kChangePictureWrongSize = -209191,
-  kChangePictureGeneralFailure = -209192,  // TODO(Alison) - make this more exclusive?
-  kGetLifeStuffCardGeneralFailure = -209211,
-  kSetLifeStuffCardGeneralFailure = -209212,
-  // API Messaging
-  kSendMessageSizeFailure = -209221,
-  kSendMessageGeneralFailure = -209222,
-  kSendFileGeneralFailure = -209231,  // TODO(Alison) - make this more exclusive?
-  kAcceptFilePathError = -209241,
-  kAcceptFileGeneralFailure = -209242,  // TODO(Alison) - make this more exclusive?
-  kRejectFileGeneralFailure = -209251,
-  // API Filesystem
-  kReadHiddenFileContentFailure = -209261,
-  kReadHiddenFileGeneralFailure = -209262,
-  kWriteHiddenFileGeneralFailure = -209271,
-  kDeleteHiddenFileGeneralFailure = -209281,
-  kSearchHiddenFileGeneralFailure = -209291,
+  // Account Locking
+  kLidParseToSignedDataFailure = -202001,
+  kLidDecryptDataFailure = -202002,
+  kLidParseToLockingPacketFailure = -202003,
+  kLidAddItemIdentifierInUse = -202004,
+  kLidAddItemFullAccessUnavailable = -202005,
+  kLidRemoveItemIdentifierNotFound = -202006,
+  kLidRemoveItemsIdentifierNotFound = -202007,
+  kLidUpdateTimestampIdentifierNotFound = -202008,
+  kLidCheckOthersIdentifierNotFound = -202009,
+  kAccountAlreadyLoggedIn = -202010,
+  kLidNotFound = -202011,
+  kLidIdentifierFound = -202012,
 
+  // Contacts
+  kContactInsertionFailure = -203001,
+  kContactErasureFailure = -203002,
+  kContactNotPresentFailure = -203003,
+  kContactReplacementFailure = -203004,
 
-  // UNDERLYING RETURN CODES (May be passed through API to user)
-  // Credentials
-  kCheckPasswordFailure = -208011,
-  kKeywordSizeInvalid = -208121,
-  kKeywordPatternInvalid = -208122,
-  kPinSizeInvalid = -208031,  // TODO(Alison) - make this more exclusive?
-  kPinPatternInvalid = -208032,  // TODO(Alison) - make this more exclusive?
-  kPasswordSizeInvalid = -208141,
-  kPasswordPatternInvalid = -208142,
-  // Logging out
-  kLogOutSaveSessionFailure = -208051,
-  kLogOutLidFailure = -208052,
-  // Vault creation
-  kVaultCreationFailure = -208061,  // TODO(Alison) - make this more exclusive?
+  // Message Hander
+  kStartMessagesNoPublicIds = -204001,
+  kPublicIdTimeout = -204002,
+  kMessageHandlerException = -204003,
+  kCannotConvertInboxItemToProtobuf = -204004,
+  kContactInfoContentsFailure = -204005,
+
   // Public ID
-  kPublicIdEmpty = -208071,  // TODO(Alison) - make this more exclusive?
-  kPublicIdLengthInvalid = -208072,
-  kPublicIdEndSpaceInvalid = -208073,
-  kPublicIdDoubleSpaceInvalid = -208074,
-  // Logging in
-  kLoginUserNonExistence = -208081,  // TODO(Alison) - make this more exclusive? (probably needn't)
-  kLoginAccountCorrupted = -208082,  // TODO(Alison) - make this more exclusive?
-  kLoginSessionNotYetSaved = -208083,  // User needs to wait ~15s for SaveSession
-  kLoginUsingNextToLastSession = -208084,
+  kStartContactsNoPublicIds = -205001,
+  kGetPublicKeyFailure = -205002,
+  kContactNotFoundFailure = -205003,
+  kSigningError = -205004,
+  kEncryptingError = -205005,
+  kPublicIdException = -205006,
+  kSendContactInfoFailure = -205007,
+  kStorePublicIdFailure = -205008,
+  kModifyAppendabilityFailure = -205009,
+  kGenerateNewMMIDFailure = -205010,
+  kRemoveContactFailure = -205011,
+  kDeletePublicIdFailure = -205012,
+  kCannotAddOwnPublicId = -205013,
+  kCanOnlyRejectPendingResponseContact = -205014,
+  kConfirmContactGetInfoFailure = -205015,
+  kConfirmContactInformFailure = -205016,
+  kConfirmContactStatusFailure = -205017,
+  kPRWERGetInfoFailure = -205018,
+  kPRWERPublicKeyFailure = -205019,
+  kPRWERInformFailure = -205020,
+  kPRWERStatusFailure = -205021,
 
-
-  // INTERNAL RETURN CODES (Should never reach API)
-
-  // General
-  kGetPublicKeyFailure = -201001,
-  kRemoteChunkStoreFailure = -201002,
-  kReadOnlyFailure = -201003,
-  kMustDieFailure = -201004,
-  kTryAgainLater = -201005,
-  kWordSizeInvalid = -201006,
-  kWordPatternInvalid = -201007,
-
-  // Authentication
-  kCorruptedLidPacket = -202001,
-  kLidIdentifierAlreadyInUse = -202002,
-  kLidFullAccessUnavailable = -202003,
-  kLidIdentifierNotFound = -202004,
-  kCorruptedPacket = -202005,
-  kIdPacketNotFound = -202006,
-  kTemporaryIdPacketNotFound = -202007,
-  kSetIdentityPacketsFailure = -202008,
-  kStoreIdentityPacketsFailure = -202009,
-  kDeleteIdentityPacketsFailure = -202010,
-  kCreateSignaturePacketInfoFailure = -202011,
-  kCreateSignaturePacketsFailure = -202012,
-  kDeleteSignaturePacketsFailure = -202013,
-  kSessionFailure = -202014,
-  kSessionSerialisationFailure = -202015,
-  kSaveSessionFailure = -202016,
-  kUsingNextToLastSession = -202017,
-  kAccountAlreadyLoggedIn = -202018,
-  kUserDoesntExist = -202019,
-  kAccountCorrupted = -202020,
-  kAtLeastOneFailure = -202021,
-  kLidNotFound = -202022,
+  // Routings Handler
 
   // Session
-  kPublicIdInsertionFailure = -203001,
-  kPublicIdNotFoundFailure = -203002,
-  kContactNotFoundFailure = -203003,
+  kTryAgainLater = -206001,
+  kPublicIdInsertionFailure = -206002,
+  kParseDataAtlasTmidEmpty = -206003,
+  kParseDataAtlasTmidDoesNotParse = -206004,
+  kParseDataAtlasKeyringDoesNotParse = -206005,
+  kSerialiseDataAtlasKeyringFailure = -206006,
+  kSerialiseDataAtlasToStringFailure = -206007,
 
-  // PublicId
-  kGetPublicIdError = -204002,
-  kSigningError = -204003,
-  kEncryptingError = -204004,
-  kPublicIdException = -204005,
-  kPublicIdTimeout = -204006,
-  kSendContactInfoFailure = -204007,
-  kStorePublicIdFailure = -204008,
-  kNoPublicIds = -204010,
-  kModifyAppendabilityFailure = -204011,
-  kGenerateNewMMIDFailure = -204012,
-  kRemoveContactFailure = -204013,
-  kDeletePublicIdFailure = -204018,
+  // User Credentials
+  kChangePasswordFailure = -207001,  // TODO(Alison) - make this more exclusive? Or feed values up?
+  kLoginUserNonExistence = -207002,  // TODO(Alison) - make this more exclusive? (probably needn't)
+  kLoginAccountCorrupted = -207003,  // TODO(Alison) - make this more exclusive?
+  kLoginSessionNotYetSaved = -207004,  // User needs to wait ~15s for SaveSession
+  kLoginUsingNextToLastSession = -207005,
+  kMustDieFailure = -207006,
+  kCorruptedPacket = -207007,
+  kIdPacketNotFound = -207008,
+  kTemporaryIdPacketNotFound = -207009,
+  kSetIdentityPacketsFailure = -207010,
+  kStoreIdentityPacketsFailure = -207011,
+  kDeleteIdentityPacketsFailure = -207012,
+  kCreateSignaturePacketInfoFailure = -207013,
+  kCreateSignaturePacketsFailure = -207014,
+  kDeleteSignaturePacketsFailure = -207015,
+  kSessionFailure = -207016,
+  kSessionSerialisationFailure = -207017,
+  kSaveSessionFailure = -207018,
+  kUsingNextToLastSession = -207019,
 
-  // MessageHandler
-  kMessageHandlerException = -205001,
+  // User Storage
+  kOwnerTryingToLeave = -208001,  // Only used by Shares
 
-  // RETURN CODES USED ONLY BY SHARES
-  kNoShareTarget = -206001,
-  kOwnerTryingToLeave = -206002
+  // Utils
+  kWordSizeInvalid = -209001,
+  kWordPatternInvalid = -209002,
+  kKeywordSizeInvalid = -209003,
+  kKeywordPatternInvalid = -209004,
+  kPinSizeInvalid = -209005,
+  kPinPatternInvalid = -209006,
+  kPasswordSizeInvalid = -209007,
+  kPasswordPatternInvalid = -209008,
+  kPublicIdEmpty = -209009,  // TODO(Alison) - make this more exclusive?
+  kPublicIdLengthInvalid = -209010,
+  kPublicIdEndSpaceInvalid = -209011,
+  kPublicIdDoubleSpaceInvalid = -209012,
+  kAtLeastOneFailure = -209013,
+
+  // Codes remaining in DISABLED tests. Expect these codes to be redundant soon.
+  kReadOnlyFailure = -209991,
+  kUserDoesntExist = -209992
 };
 
 }  // namespace lifestuff
