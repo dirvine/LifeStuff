@@ -50,7 +50,8 @@ class LifeStuff {
   ~LifeStuff();
 
   /// State operations
-  int Initialise(const fs::path& base_directory = fs::path());
+  int Initialise(const UpdateAvailableFunction& software_update_available_function,
+                 const fs::path& base_directory = fs::path());
   int ConnectToSignals(const ChatFunction& chat_slot,
                        const FileTransferFunction& file_slot,
                        const NewContactFunction& new_contact_slot,
@@ -65,6 +66,7 @@ class LifeStuff {
                        const ShareRenamedFunction& share_renamed_function,
                        const ShareChangedFunction& share_changed_function,
                        const LifestuffCardUpdateFunction& lifestuff_card_update_function,
+                       const NetworkHealthFunction& network_health_function,
                        const ImmediateQuitRequiredFunction& immediate_quit_required_function);
 
   int Finalise();
@@ -200,6 +202,7 @@ class LifeStuff {
 
   ///
   int state() const;
+  int logged_in_state() const;
   fs::path mount_path() const;
 
  private:

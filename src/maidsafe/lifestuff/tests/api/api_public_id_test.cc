@@ -70,7 +70,7 @@ TEST_F(OneUserApiTest, FUNC_CreateSamePublicIdSimultaneously) {
   int result_1(0);
   int result_2(0);
 
-  std::vector<std::pair<int, int> > sleep_values;
+  std::vector<std::pair<int, int>> sleep_values;
   sleep_values.push_back(std::make_pair(0, 0));
   sleep_values.push_back(std::make_pair(100, 200));
   sleep_values.push_back(std::make_pair(100, 150));
@@ -208,7 +208,7 @@ TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdSimultaneously) {
   std::string new_public_id(RandomAlphaNumericString(6));
   int result_1(0), result_2(0);
 
-  std::vector<std::pair<int, int> > sleep_values;
+  std::vector<std::pair<int, int>> sleep_values;
   sleep_values.push_back(std::make_pair(0, 200));
   sleep_values.push_back(std::make_pair(100, 200));
   sleep_values.push_back(std::make_pair(100, 150));

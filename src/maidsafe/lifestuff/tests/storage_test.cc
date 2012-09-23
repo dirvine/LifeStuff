@@ -174,8 +174,15 @@ class UserStorageTest : public testing::TestWithParam<bool> {
                                            *test_dir_ / "simulation",
                                            asio_service2_.service());
 #else
-    remote_chunk_store1_ = BuildChunkStore(*test_dir_, node1_);
-    remote_chunk_store2_ = BuildChunkStore(*test_dir_, node2_);
+    std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
+    remote_chunk_store1_ = BuildChunkStore(*test_dir_,
+                                           bootstrap_endpoints,
+                                           node1_,
+                                           NetworkHealthFunction());
+    remote_chunk_store2_ = BuildChunkStore(*test_dir_,
+                                           bootstrap_endpoints,
+                                           node2_,
+                                           NetworkHealthFunction());
 #endif
     user_credentials1_.reset(new UserCredentials(*remote_chunk_store1_,
                                                  session1_,
@@ -1012,8 +1019,10 @@ TEST_P(UserStorageTest, FUNC_MoveShareWhenRemovingUser) {
   AsioService asio_service3(5);
   asio_service3.Start();
 #ifndef LOCAL_TARGETS_ONLY
+  std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
   std::shared_ptr<pd::Node> node3;
-  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store3(BuildChunkStore(*test_dir_, node3));
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store3(
+      BuildChunkStore(*test_dir_, bootstrap_endpoints, node3, NetworkHealthFunction()));
 #else
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store3(BuildChunkStore(
       *test_dir_ / RandomAlphaNumericString(8), *test_dir_ / "simulation",

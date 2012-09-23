@@ -37,8 +37,9 @@ LifeStuff::LifeStuff() : lifestuff_impl_(new LifeStuffImpl) {}
 
 LifeStuff::~LifeStuff() {}
 
-int LifeStuff::Initialise(const fs::path& base_directory) {
-  return lifestuff_impl_->Initialise(base_directory);
+int LifeStuff::Initialise(const UpdateAvailableFunction& software_update_available_function,
+                          const fs::path& base_directory) {
+  return lifestuff_impl_->Initialise(software_update_available_function, base_directory);
 }
 
 int LifeStuff::ConnectToSignals(
@@ -56,6 +57,7 @@ int LifeStuff::ConnectToSignals(
     const ShareRenamedFunction& share_renamed_function,
     const ShareChangedFunction& share_changed_function,
     const LifestuffCardUpdateFunction& lifestuff_card_update_function,
+    const NetworkHealthFunction& network_health_function,
     const ImmediateQuitRequiredFunction& immediate_quit_required_function) {
   return lifestuff_impl_->ConnectToSignals(true,
                                            chat_slot,
@@ -72,6 +74,7 @@ int LifeStuff::ConnectToSignals(
                                            share_renamed_function,
                                            share_changed_function,
                                            lifestuff_card_update_function,
+                                           network_health_function,
                                            immediate_quit_required_function);
 }
 
@@ -248,10 +251,10 @@ int LifeStuff::CreatePrivateShareFromExistingDirectory(const std::string& my_pub
                                                        std::string* share_name,
                                                        StringIntMap* results) {
   return lifestuff_impl_->CreatePrivateShareFromExistingDirectory(my_public_id,
-                                                                 directory_in_lifestuff_drive,
-                                                                 contacts,
-                                                                 share_name,
-                                                                 results);
+                                                                  directory_in_lifestuff_drive,
+                                                                  contacts,
+                                                                  share_name,
+                                                                  results);
 }
 
 int LifeStuff::CreateEmptyPrivateShare(const std::string& my_public_id,
@@ -275,8 +278,8 @@ int LifeStuff::GetPrivateSharesIncludingMember(const std::string& my_public_id,
                                                const std::string& contact_public_id,
                                                std::vector<std::string>* share_names) {
   return lifestuff_impl_->GetPrivateSharesIncludingMember(my_public_id,
-                                                         contact_public_id,
-                                                         share_names);
+                                                          contact_public_id,
+                                                          share_names);
 }
 
 int LifeStuff::AcceptPrivateShareInvitation(const std::string& my_public_id,
@@ -284,9 +287,9 @@ int LifeStuff::AcceptPrivateShareInvitation(const std::string& my_public_id,
                                             const std::string& share_id,
                                             std::string* share_name) {
   return lifestuff_impl_->AcceptPrivateShareInvitation(my_public_id,
-                                                      contact_public_id,
-                                                      share_id,
-                                                      share_name);
+                                                       contact_public_id,
+                                                       share_id,
+                                                       share_name);
 }
 
 int LifeStuff::RejectPrivateShareInvitation(const std::string& my_public_id,
@@ -318,10 +321,10 @@ int LifeStuff::CreateOpenShareFromExistingDirectory(const std::string& my_public
                                                     std::string* share_name,
                                                     StringIntMap* results) {
   return lifestuff_impl_->CreateOpenShareFromExistingDirectory(my_public_id,
-                                                              directory_in_lifestuff_drive,
-                                                              contacts,
-                                                              share_name,
-                                                              results);
+                                                               directory_in_lifestuff_drive,
+                                                               contacts,
+                                                               share_name,
+                                                               results);
 }
 
 int LifeStuff::CreateEmptyOpenShare(const std::string& my_public_id,
@@ -354,9 +357,9 @@ int LifeStuff::AcceptOpenShareInvitation(const std::string& my_public_id,
                                          const std::string& share_id,
                                          std::string* share_name) {
   return lifestuff_impl_->AcceptOpenShareInvitation(my_public_id,
-                                                   contact_public_id,
-                                                   share_id,
-                                                   share_name);
+                                                    contact_public_id,
+                                                    share_id,
+                                                    share_name);
 }
 
 int LifeStuff::RejectOpenShareInvitation(const std::string& my_public_id,
@@ -371,6 +374,8 @@ int LifeStuff::LeaveOpenShare(const std::string& my_public_id,
 
 ///
 int LifeStuff::state() const { return lifestuff_impl_->state(); }
+
+int LifeStuff::logged_in_state() const { return lifestuff_impl_->logged_in_state(); }
 
 fs::path LifeStuff::mount_path() const { return lifestuff_impl_->mount_path(); }
 

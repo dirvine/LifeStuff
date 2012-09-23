@@ -46,6 +46,223 @@ namespace lifestuff {
 
 namespace test {
 
+TEST_F(OneUserApiTest, FUNC_LoggedInState) {
+  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
+
+  EXPECT_EQ(test_elements_.state(), kConnected);
+  EXPECT_EQ(test_elements_.logged_in_state(), kBaseState);
+
+  // full login and logout (without public ID)
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
+  EXPECT_EQ(test_elements_.state(), kLoggedIn);
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn);
+  EXPECT_EQ(kSuccess, test_elements_.MountDrive(false));
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
+  EXPECT_EQ(kNoPublicIds, test_elements_.StartMessagesAndIntros());
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
+  EXPECT_EQ(kSuccess, test_elements_.StopMessagesAndIntros());
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
+  EXPECT_EQ(kSuccess, test_elements_.UnMountDrive());
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn);
+  EXPECT_EQ(kSuccess, test_elements_.LogOut());
+
+  EXPECT_EQ(test_elements_.state(), kConnected);
+  EXPECT_EQ(test_elements_.logged_in_state(), kBaseState);
+
+  std::string keyword2(RandomAlphaNumericString(6));
+  std::string pin2(CreatePin());
+  std::string password2(RandomAlphaNumericString(6));
+  std::string public_id2(RandomAlphaNumericString(5));
+
+  // full login, create public ID, full logout
+  EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword2, pin2, password2));
+  EXPECT_EQ(test_elements_.state(), kLoggedIn);
+  EXPECT_EQ(test_elements_.logged_in_state(), kCreating | kCredentialsLoggedIn);
+  EXPECT_EQ(kSuccess, test_elements_.CreateAndMountDrive());
+  EXPECT_EQ(test_elements_.logged_in_state(), kCreating | kCredentialsLoggedIn | kDriveMounted);
+  EXPECT_EQ(kNoPublicIds, test_elements_.StartMessagesAndIntros());
+  EXPECT_EQ(test_elements_.logged_in_state(), kCreating | kCredentialsLoggedIn | kDriveMounted);
+  EXPECT_EQ(kSuccess, test_elements_.CreatePublicId(public_id2));
+  EXPECT_EQ(test_elements_.logged_in_state(),
+            kCreating | kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
+  EXPECT_EQ(kSuccess, test_elements_.StopMessagesAndIntros());
+  EXPECT_EQ(test_elements_.logged_in_state(), kCreating | kCredentialsLoggedIn | kDriveMounted);
+  EXPECT_EQ(kSuccess, test_elements_.UnMountDrive());
+  EXPECT_EQ(test_elements_.logged_in_state(), kCreating | kCredentialsLoggedIn);
+  EXPECT_EQ(kSuccess, test_elements_.LogOut());
+
+  EXPECT_EQ(test_elements_.state(), kConnected);
+  EXPECT_EQ(test_elements_.logged_in_state(), kBaseState);
+
+  // full login and logout (with public ID)
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword2, pin2, password2));
+  EXPECT_EQ(test_elements_.state(), kLoggedIn);
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn);
+  EXPECT_EQ(kSuccess, test_elements_.MountDrive(false));
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
+  EXPECT_EQ(kSuccess, test_elements_.StartMessagesAndIntros());
+  EXPECT_EQ(test_elements_.logged_in_state(),
+            kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
+  EXPECT_EQ(kSuccess, test_elements_.StopMessagesAndIntros());
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
+  EXPECT_EQ(kSuccess, test_elements_.UnMountDrive());
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn);
+  EXPECT_EQ(kSuccess, test_elements_.LogOut());
+
+  EXPECT_EQ(test_elements_.state(), kConnected);
+  EXPECT_EQ(test_elements_.logged_in_state(), kBaseState);
+
+  // log credentials in and out
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
+  EXPECT_EQ(test_elements_.state(), kLoggedIn);
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn);
+  EXPECT_EQ(kSuccess, test_elements_.LogOut());
+  EXPECT_EQ(test_elements_.state(), kConnected);
+  EXPECT_EQ(test_elements_.logged_in_state(), kBaseState);
+
+  // do and undo credentials and drive aspects
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
+  EXPECT_EQ(test_elements_.state(), kLoggedIn);
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn);
+  EXPECT_EQ(kSuccess, test_elements_.MountDrive(false));
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
+  EXPECT_EQ(kSuccess, test_elements_.UnMountDrive());
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn);
+  EXPECT_EQ(kSuccess, test_elements_.LogOut());
+  EXPECT_EQ(test_elements_.state(), kConnected);
+  EXPECT_EQ(test_elements_.logged_in_state(), kBaseState);
+
+  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_, keyword_, pin_, password_));
+}
+
+TEST_F(OneUserApiTest, FUNC_IncorrectLoginLogoutSequences) {
+  // Logged in with no public ID
+  std::string public_id(RandomAlphaNumericString(5));
+  EXPECT_EQ(test_elements_.state(), kLoggedIn);
+  EXPECT_EQ(test_elements_.logged_in_state(), kCreating| kCredentialsLoggedIn | kDriveMounted);
+  EXPECT_EQ(kSuccess, test_elements_.CreatePublicId(public_id));
+
+  // Try logout components in wrong order
+  EXPECT_EQ(test_elements_.logged_in_state(),
+            kCreating | kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
+  EXPECT_EQ(kWrongOrderFailure, test_elements_.UnMountDrive());
+  EXPECT_EQ(test_elements_.logged_in_state(),
+            kCreating| kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
+  EXPECT_EQ(kWrongOrderFailure, test_elements_.LogOut());
+  EXPECT_EQ(test_elements_.logged_in_state(),
+            kCreating| kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
+  EXPECT_EQ(kSuccess, test_elements_.StopMessagesAndIntros());
+  EXPECT_EQ(test_elements_.logged_in_state(), kCreating | kCredentialsLoggedIn | kDriveMounted);
+  EXPECT_EQ(kWrongOrderFailure, test_elements_.LogOut());
+  EXPECT_EQ(test_elements_.logged_in_state(), kCreating| kCredentialsLoggedIn | kDriveMounted);
+  EXPECT_EQ(kSuccess, test_elements_.UnMountDrive());
+  EXPECT_EQ(test_elements_.logged_in_state(), kCreating | kCredentialsLoggedIn);
+  EXPECT_EQ(kSuccess, test_elements_.LogOut());
+
+  EXPECT_EQ(test_elements_.state(), kConnected);
+  EXPECT_EQ(test_elements_.logged_in_state(), kBaseState);
+
+  // try login components in wrong order
+  EXPECT_EQ(kWrongOrderFailure, test_elements_.MountDrive(false));
+  EXPECT_EQ(test_elements_.state(), kConnected);
+  EXPECT_EQ(test_elements_.logged_in_state(), kBaseState);
+  EXPECT_EQ(kWrongOrderFailure, test_elements_.StartMessagesAndIntros());
+  EXPECT_EQ(test_elements_.state(), kConnected);
+  EXPECT_EQ(test_elements_.logged_in_state(), kBaseState);
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
+  EXPECT_EQ(test_elements_.state(), kLoggedIn);
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn);
+  EXPECT_EQ(kWrongOrderFailure, test_elements_.StartMessagesAndIntros());
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn);
+  EXPECT_EQ(kSuccess, test_elements_.MountDrive(false));
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
+  EXPECT_EQ(kSuccess, test_elements_.StartMessagesAndIntros());
+  EXPECT_EQ(test_elements_.logged_in_state(),
+            kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
+
+  // try repeating logout components
+  EXPECT_EQ(kSuccess, test_elements_.StopMessagesAndIntros());
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
+  EXPECT_EQ(kSuccess, test_elements_.UnMountDrive());
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn);
+  EXPECT_EQ(kWrongOrderFailure, test_elements_.UnMountDrive());
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn);
+  EXPECT_EQ(kSuccess, test_elements_.LogOut());
+  EXPECT_EQ(test_elements_.state(), kConnected);
+  EXPECT_EQ(test_elements_.logged_in_state(), kBaseState);
+  EXPECT_EQ(kGeneralError, test_elements_.LogOut());
+
+  EXPECT_EQ(test_elements_.state(), kConnected);
+  EXPECT_EQ(test_elements_.logged_in_state(), kBaseState);
+
+  // try repeating login components
+  EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
+  EXPECT_EQ(test_elements_.state(), kLoggedIn);
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn);
+  EXPECT_EQ(kGeneralError, test_elements_.LogIn(keyword_, pin_, password_));
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn);
+  EXPECT_EQ(kSuccess, test_elements_.MountDrive(false));
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
+  EXPECT_EQ(kWrongOrderFailure, test_elements_.MountDrive(false));
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
+  EXPECT_EQ(kSuccess, test_elements_.StartMessagesAndIntros());
+  EXPECT_EQ(test_elements_.logged_in_state(),
+            kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
+  EXPECT_EQ(kWrongOrderFailure, test_elements_.StartMessagesAndIntros());
+  EXPECT_EQ(test_elements_.logged_in_state(),
+            kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
+}
+
+TEST_F(TwoUsersApiTest, FUNC_DriveNotMountedTryOperations) {
+  EXPECT_EQ(test_elements_1_.logged_in_state(), kBaseState);
+  EXPECT_EQ(test_elements_2_.logged_in_state(), kBaseState);
+  EXPECT_EQ(test_elements_1_.state(), kConnected);
+  EXPECT_EQ(test_elements_2_.state(), kConnected);
+
+  testing_variables_1_.newly_contacted = false;
+  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_2_, keyword_2_, pin_2_, password_2_));
+  EXPECT_EQ(test_elements_2_.logged_in_state(),
+            kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
+  EXPECT_EQ(test_elements_2_.state(), kLoggedIn);
+  std::string public_id_3(RandomAlphaNumericString(5));
+  EXPECT_EQ(kSuccess, test_elements_2_.CreatePublicId(public_id_3));
+  EXPECT_EQ(kSuccess, test_elements_2_.AddContact(public_id_3, public_id_1_));
+  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_2_));
+  EXPECT_EQ(test_elements_2_.logged_in_state(), kBaseState);
+  EXPECT_EQ(test_elements_2_.state(), kConnected);
+
+  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_1_, keyword_1_, pin_1_, password_1_));
+  int i(0);
+  while (!testing_variables_1_.newly_contacted && i < 100) {
+    ++i;
+    Sleep(bptime::milliseconds(100));
+  }
+  EXPECT_TRUE(testing_variables_1_.newly_contacted);
+  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_1_));
+
+  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
+  EXPECT_EQ(test_elements_1_.logged_in_state(), kCredentialsLoggedIn);
+  EXPECT_EQ(test_elements_1_.state(), kLoggedIn);
+
+  std::string public_id_4(RandomAlphaNumericString(5));
+  EXPECT_EQ(kGeneralError, test_elements_1_.CreatePublicId(public_id_4));
+  EXPECT_EQ(kGeneralError, test_elements_1_.CheckPassword(password_1_));
+  EXPECT_EQ(kGeneralError,
+            test_elements_1_.ChangeKeyword(RandomAlphaNumericString(5), password_1_));
+  EXPECT_EQ(kGeneralError, test_elements_1_.ChangePin(CreatePin(), password_1_));
+  EXPECT_EQ(kGeneralError,
+            test_elements_1_.ChangePassword(RandomAlphaNumericString(5), password_1_));
+  EXPECT_EQ(kGeneralError, test_elements_1_.AddContact(public_id_1_, RandomAlphaNumericString(5)));
+  EXPECT_EQ(kGeneralError, test_elements_1_.ConfirmContact(public_id_1_, public_id_3));
+  EXPECT_EQ(kGeneralError, test_elements_1_.DeclineContact(public_id_1_, public_id_3));
+  EXPECT_EQ(kGeneralError, test_elements_1_.RemoveContact(public_id_1_, public_id_2_, ""));
+  // TODO(Alison) - check that other functions in API aren't accessible when drive not mounted.
+
+  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
+  EXPECT_EQ(test_elements_1_.logged_in_state(), kBaseState);
+  EXPECT_EQ(test_elements_1_.state(), kConnected);
+}
+
 TEST_F(OneUserApiTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
   // Create directory
   std::string tail;
@@ -2079,6 +2296,7 @@ TEST_P(PrivateSharesApiTest, FUNC_PrivateShareTwoNonOwnersRemoveEachOther) {
               pin_3(CreatePin()),
               password_3(RandomAlphaNumericString(6)),
               public_id_3(RandomAlphaNumericString(5));
+
   ASSERT_EQ(kSuccess, CreateAccountWithPublicId(test_elements_3,
                                                 testing_variables_3,
                                                 *test_dir_,
@@ -2183,6 +2401,7 @@ TEST_P(PrivateSharesApiTest, DISABLED_FUNC_PrivateSharesMutualRemovalWithUninvol
               pin_3(CreatePin()),
               password_3(RandomAlphaNumericString(6)),
               public_id_3(RandomAlphaNumericString(5));
+
   ASSERT_EQ(kSuccess, CreateAccountWithPublicId(test_elements_3,
                                                 testing_variables_3,
                                                 *test_dir_,
@@ -2190,6 +2409,7 @@ TEST_P(PrivateSharesApiTest, DISABLED_FUNC_PrivateSharesMutualRemovalWithUninvol
                                                 pin_3,
                                                 password_3,
                                                 public_id_3));
+
   // 1 added 2 in setup
   // 1 adds 3
   ASSERT_EQ(kSuccess, ConnectTwoPublicIds(test_elements_1_,
@@ -2367,6 +2587,7 @@ TEST_P(PrivateSharesApiTest, DISABLED_FUNC_PrivateShareBefriendDefriendCombinati
               pin_4(CreatePin()),
               password_4(RandomAlphaNumericString(6)),
               public_id_4("User 4" + RandomAlphaNumericString(5));
+
   ASSERT_EQ(kSuccess, InitialiseAndConnect(test_elements_3,
                                            testing_variables_3,
                                            *test_dir_));

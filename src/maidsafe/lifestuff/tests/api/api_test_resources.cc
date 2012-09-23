@@ -344,13 +344,13 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
 }
 
 int InitialiseAndConnect(LifeStuff& test_elements,
-                   TestingVariables& testing_variables,
-                   const fs::path& test_dir,
-                   bool several_files,
-                   std::vector<std::string>* ids,
-                   std::vector<std::string>* names,
-                   size_t* total_files,
-                   boost::mutex* mutex) {
+                         TestingVariables& testing_variables,
+                         const fs::path& test_dir,
+                         bool several_files,
+                         std::vector<std::string>* ids,
+                         std::vector<std::string>* names,
+                         size_t* total_files,
+                         boost::mutex* mutex) {
   FileTransferFunction ftf;
   if (several_files) {
     ftf = [=, &testing_variables] (const std::string& own_public_id,
@@ -387,7 +387,7 @@ int InitialiseAndConnect(LifeStuff& test_elements,
 
   int result(0);
   // Initialise and connect
-  result += test_elements.Initialise(test_dir);
+  result += test_elements.Initialise([] (std::string) {}, test_dir);
   result += test_elements.ConnectToSignals(
                 [&] (const std::string& own_public_id,
                      const std::string& contact_public_id,
@@ -539,6 +539,7 @@ int InitialiseAndConnect(LifeStuff& test_elements,
                                     timestamp,
                                     &testing_variables.social_info_map_changed);
                 },
+                NetworkHealthFunction(),
                 ImmediateQuitRequiredFunction());
   return result;
 }
@@ -837,6 +838,7 @@ void TwoUsersDefriendEachOther(LifeStuff& test_elements_a,
 
   EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_a, keyword_a, pin_a, password_a));
 
+
   size_t num_contacts_a(test_elements_a.GetContacts(public_id_a).size());
   EXPECT_EQ(kSuccess, test_elements_a.RemoveContact(public_id_a, public_id_b, ""));
   EXPECT_EQ(test_elements_a.GetContacts(public_id_a).size(), num_contacts_a - 1);
@@ -942,7 +944,7 @@ void RunLogIn(LifeStuff& test_elements,
 }  // namespace sleepthreads
 
 void OneUserApiTest::SetUp() {
-  EXPECT_EQ(kSuccess, test_elements_.Initialise(*test_dir_));
+  EXPECT_EQ(kSuccess, test_elements_.Initialise([] (std::string) {}, *test_dir_));
   EXPECT_EQ(kSuccess,
             test_elements_.ConnectToSignals(ChatFunction(),
                                             FileTransferFunction(),
@@ -967,6 +969,7 @@ void OneUserApiTest::SetUp() {
                                             ShareRenamedFunction(),
                                             ShareChangedFunction(),
                                             LifestuffCardUpdateFunction(),
+                                            NetworkHealthFunction(),
                                             ImmediateQuitRequiredFunction()));
   EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements_, keyword_, pin_, password_));
 }
@@ -977,8 +980,8 @@ void OneUserApiTest::TearDown() {
 }
 
 void TwoInstancesApiTest::SetUp() {
-  EXPECT_EQ(kSuccess, test_elements_.Initialise(*test_dir_));
-  EXPECT_EQ(kSuccess, test_elements_2_.Initialise(*test_dir_));
+  EXPECT_EQ(kSuccess, test_elements_.Initialise([] (std::string) {}, *test_dir_));
+  EXPECT_EQ(kSuccess, test_elements_2_.Initialise([] (std::string) {}, *test_dir_));
   EXPECT_EQ(kSuccess,
             test_elements_.ConnectToSignals(ChatFunction(),
                                             FileTransferFunction(),
@@ -1003,6 +1006,7 @@ void TwoInstancesApiTest::SetUp() {
                                             ShareRenamedFunction(),
                                             ShareChangedFunction(),
                                             LifestuffCardUpdateFunction(),
+                                            NetworkHealthFunction(),
                                             ImmediateQuitRequiredFunction()));
   EXPECT_EQ(kSuccess,
             test_elements_2_.ConnectToSignals(ChatFunction(),
@@ -1028,6 +1032,7 @@ void TwoInstancesApiTest::SetUp() {
                                             ShareRenamedFunction(),
                                             ShareChangedFunction(),
                                             LifestuffCardUpdateFunction(),
+                                            NetworkHealthFunction(),
                                             ImmediateQuitRequiredFunction()));
 }
 

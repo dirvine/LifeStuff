@@ -27,9 +27,11 @@
 #include <list>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "boost/filesystem/path.hpp"
+#include "boost/signals2/signal.hpp"
 
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/log.h"
@@ -38,7 +40,10 @@
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 #ifndef LOCAL_TARGETS_ONLY
+#include "maidsafe/routing/routing_api.h"
+#include "maidsafe/private/process_management/client_controller.h"
 #include "maidsafe/pd/client/node.h"
+#include "maidsafe/lifestuff/detail/routings_handler.h"
 #endif
 
 #include "maidsafe/lifestuff/lifestuff.h"
@@ -76,6 +81,7 @@ struct Slots {
         share_renamed_function(),
         share_changed_function(),
         lifestuff_card_update_function(),
+        network_health_function(),
         immediate_quit_required_function() {}
   ChatFunction chat_slot;
   FileTransferFunction file_slot;
@@ -91,6 +97,7 @@ struct Slots {
   ShareRenamedFunction share_renamed_function;
   ShareChangedFunction share_changed_function;
   LifestuffCardUpdateFunction lifestuff_card_update_function;
+  NetworkHealthFunction network_health_function;
   ImmediateQuitRequiredFunction immediate_quit_required_function;
 };
 
@@ -100,7 +107,8 @@ class LifeStuffImpl {
   ~LifeStuffImpl();
 
   /// State operations
-  int Initialise(const fs::path& base_directory = fs::path());
+  int Initialise(const UpdateAvailableFunction& software_update_available_function,
+                 const fs::path& base_directory);
   int ConnectToSignals(const bool& apply_changes,
                        const ChatFunction& chat_slot,
                        const FileTransferFunction& file_slot,
@@ -116,6 +124,7 @@ class LifeStuffImpl {
                        const ShareRenamedFunction& share_renamed_function,
                        const ShareChangedFunction& share_changed_function,
                        const LifestuffCardUpdateFunction& lifestuff_card_update_function,
+                       const NetworkHealthFunction& network_health_function,
                        const ImmediateQuitRequiredFunction& immediate_quit_required_function);
   int Finalise();
 
@@ -267,8 +276,11 @@ class LifeStuffImpl {
   AsioService asio_service_;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
 #ifndef LOCAL_TARGETS_ONLY
+  std::shared_ptr<priv::process_management::ClientController> client_controller_;
   std::shared_ptr<pd::Node> node_;
+  std::shared_ptr<RoutingsHandler> routings_handler_;
 #endif
+  boost::signals2::signal<void(const int&)> network_health_signal_;
   Session session_;
   std::shared_ptr<UserCredentials> user_credentials_;
   std::shared_ptr<UserStorage> user_storage_;
@@ -291,6 +303,12 @@ class LifeStuffImpl {
                               const std::string& new_share_id,
                               const asymm::Keys& key_ring,
                               int access_right);
+  void NetworkHealthSlot(const int& index);
+#ifndef LOCAL_TARGETS_ONLY
+  int CreateVaultInLocalMachine(const fs::path& chunk_store);
+  int EstablishMaidRoutingObject(
+      const std::vector<std::pair<std::string, uint16_t>>& bootstrap_endpoints);  // NOLINT (Dan)
+#endif
 };
 
 }  // namespace lifestuff

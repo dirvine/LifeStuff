@@ -35,7 +35,6 @@ enum ReturnCode {
   kSuccess = 0,
   kGeneralError = -200001,
   kGeneralException = -200002,
-  kPendingResult = -200003,
   kGetPublicKeyFailure = -200004,
   kGetMpidFailure = -200005,
   kInvalidPublicKey = -200006,
@@ -46,6 +45,7 @@ enum ReturnCode {
   kMustDieFailure = -200011,
   kTryAgainLater = -200012,
   kWrongOrderFailure = -200013,
+  kVaultCreationFailure = -200014,
 
   // Authentication
   kAuthenticationError = -201001,

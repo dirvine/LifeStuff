@@ -16,12 +16,11 @@
 
 #include "maidsafe/lifestuff/rcs_helper.h"
 
-#include <fstream>  // NOLINT (Fraser)
-#include <iostream>  // NOLINT (Fraser)
-#include <istream>  // NOLINT (Fraser)
-#include <ostream>  // NOLINT (Fraser)
 #include <string>
+#include <utility>
 #include <vector>
+
+#include "boost/asio/ip/udp.hpp"
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
@@ -59,28 +58,45 @@ std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path& buffered_
   return remote_chunk_store;
 }
 #else
-std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path& base_dir,
-                                                       std::shared_ptr<pd::Node>& node) {
-  node = SetupNode(base_dir);
-  if (node) {
-    std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store(
-        new pcs::RemoteChunkStore(node->chunk_store(),
-                                  node->chunk_manager(),
-                                  node->chunk_action_authority()));
-    if (remote_chunk_store)
-      remote_chunk_store->SetMaxActiveOps(32);
-    return remote_chunk_store;
+std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
+    const fs::path& base_dir,
+    const std::vector<std::pair<std::string, uint16_t>>& endopints,  // NOLINT (Dan)
+    std::shared_ptr<pd::Node>& node,
+    const std::function<void(const int&)> network_health_function) {
+  node = SetupNode(base_dir, endopints, network_health_function);
+  if (!node) {
+    LOG(kError) << "Failed to start node";
+    return std::shared_ptr<pcs::RemoteChunkStore>();
   }
-  return std::shared_ptr<pcs::RemoteChunkStore>();
+
+  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store(
+      std::make_shared<pcs::RemoteChunkStore>(node->chunk_store(),
+                                              node->chunk_manager(),
+                                              node->chunk_action_authority()));
+  if (remote_chunk_store)
+    remote_chunk_store->SetMaxActiveOps(32);
+  return remote_chunk_store;
 }
 
-std::shared_ptr<pd::Node> SetupNode(const fs::path& base_dir) {
+std::shared_ptr<pd::Node> SetupNode(
+    const fs::path& base_dir,
+    const std::vector<std::pair<std::string, uint16_t>>& endopints,  // NOLINT (Dan)
+    const std::function<void(const int&)> network_health_function) {
   auto node = std::make_shared<pd::Node>();
+  node->set_on_network_status(network_health_function);
 
-  int result(node->Start(base_dir / "buffered_chunk_store"));
+  std::vector<boost::asio::ip::udp::endpoint> peer_endpoints;
+  for (auto& element : endopints) {
+    boost::asio::ip::udp::endpoint endpoint;
+    endpoint.address(boost::asio::ip::address::from_string(element.first));
+    endpoint.port(element.second);
+    peer_endpoints.push_back(endpoint);
+  }
+
+  int result(node->Start(base_dir / "buffered_chunk_store", peer_endpoints));
   if (result != kSuccess) {
     LOG(kError) << "Failed to start PD node.  Result: " << result;
-    return nullptr;
+    return std::shared_ptr<pd::Node>();
   }
 
   LOG(kInfo) << "Started PD node.";
