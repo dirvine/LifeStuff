@@ -75,7 +75,8 @@ class LifeStuff {
   int CreateUser(const std::string& keyword,
                  const std::string& pin,
                  const std::string& password,
-                 const fs::path& chunk_store = fs::path());
+                 const fs::path& chunk_store = fs::path(),
+                 bool vault_cheat = false);
   int CreatePublicId(const std::string& public_id);
   int LogIn(const std::string& keyword, const std::string& pin, const std::string& password);
   int LogOut();

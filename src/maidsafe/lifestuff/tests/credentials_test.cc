@@ -179,7 +179,7 @@ class UserCredentialsTest : public testing::Test {
       return result;
     }
 
-    node_->set_keys(nullptr);
+    node_->set_keys(asymm::Keys());
     node_->set_account_name("");
     result = node_->Start(*test_dir_ / "buffered_chunk_store");
     if (result != kSuccess) {

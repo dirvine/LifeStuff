@@ -214,8 +214,9 @@ void LifestuffCardSlot(const std::string&,
 int DoFullCreateUser(LifeStuff& test_elements,
                      const std::string& keyword,
                      const std::string& pin,
-                     const std::string& password) {
-  int result = test_elements.CreateUser(keyword, pin, password);
+                     const std::string& password,
+                     bool vault_cheat) {
+  int result = test_elements.CreateUser(keyword, pin, password, fs::path(), vault_cheat);
   if (result != kSuccess) {
     LOG(kError) << "Failed to create user: " << result;
     return result;
