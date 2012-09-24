@@ -170,14 +170,14 @@ int UserCredentialsImpl::AttemptLogInProcess(const std::string& keyword,
 //    LOG(kError) << "Failed to GetAndLock LID.";
 //    return result;
 //  } else {
-//    session_.set_keyword(keyword);
-//    session_.set_pin(pin);
-//    session_.set_password(password);
-//    session_.set_session_access_level(kFullAccess);
-//    if (!session_.set_session_name()) {
-//      LOG(kError) << "Failed to set session.";
-//      return kSessionFailure;
-//    }
+    session_.set_keyword(keyword);
+    session_.set_pin(pin);
+    session_.set_password(password);
+    session_.set_session_access_level(kFullAccess);
+    if (!session_.set_session_name()) {
+      LOG(kError) << "Failed to set session.";
+      return kSessionFailure;
+    }
 
 //    int i(0);
 //    result = kGeneralError;
