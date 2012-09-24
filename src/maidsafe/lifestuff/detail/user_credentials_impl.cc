@@ -59,22 +59,22 @@ namespace lifestuff {
 
 namespace {
 
-int CreateSignaturePacketInfo(std::shared_ptr<asymm::Keys> packet,
+int CreateSignaturePacketInfo(asymm::Keys packet,
                               std::string* packet_name,
                               std::string* packet_content) {
-  BOOST_ASSERT(packet && packet_name && packet_content);
-  *packet_name = pca::ApplyTypeToName(packet->identity, pca::kSignaturePacket);
+  BOOST_ASSERT(packet_name && packet_content);
+  *packet_name = pca::ApplyTypeToName(packet.identity, pca::kSignaturePacket);
 
   pca::SignedData signed_data;
   std::string public_key;
-  asymm::EncodePublicKey(packet->public_key, &public_key);
+  asymm::EncodePublicKey(packet.public_key, &public_key);
   if (public_key.empty()) {
     LOG(kError) << "Public key not properly encoded.";
     return kCreateSignaturePacketInfoFailure;
   }
 
   signed_data.set_data(public_key);
-  signed_data.set_signature(packet->validation_token);
+  signed_data.set_signature(packet.validation_token);
   if (!signed_data.SerializeToString(packet_content) || packet_content->empty()) {
     LOG(kError) << "SignedData not properly serialised.";
     return kCreateSignaturePacketInfoFailure;
@@ -344,8 +344,8 @@ int UserCredentialsImpl::GetAndLockLid(const std::string& keyword,
                                        LockingPacket& locking_packet) {
   std::string lid_name(pca::ApplyTypeToName(lid::LidName(keyword, pin), pca::kModifiableByOwner));
 
-  std::shared_ptr<asymm::Keys> keys(
-      new asymm::Keys(passport_.SignaturePacketDetails(passport::kAnmid, true)));
+  asymm::Keys keys(
+      asymm::Keys(passport_.SignaturePacketDetails(passport::kAnmid, true)));
   int get_lock_result(remote_chunk_store_.GetAndLock(lid_name, "", keys, &lid_packet));
   if (get_lock_result != kSuccess) {
     LOG(kError) << "Failed to GetAndLock LID: " << get_lock_result;
@@ -583,24 +583,24 @@ int UserCredentialsImpl::StoreAnonymousPackets() {
 }
 
 void UserCredentialsImpl::StoreAnmid(OperationResults& results) {
-  std::shared_ptr<asymm::Keys> anmid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kAnmid, false)));
+  asymm::Keys anmid(
+      passport_.SignaturePacketDetails(passport::kAnmid, false));
   StoreSignaturePacket(anmid, results, 0);
 }
 
 void UserCredentialsImpl::StoreAnsmid(OperationResults& results) {
-  std::shared_ptr<asymm::Keys> ansmid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kAnsmid, false)));
+  asymm::Keys ansmid(
+      passport_.SignaturePacketDetails(passport::kAnsmid, false));
   StoreSignaturePacket(ansmid, results, 1);
 }
 
 void UserCredentialsImpl::StoreAntmid(OperationResults& results) {
-  std::shared_ptr<asymm::Keys> antmid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kAntmid, false)));
+  asymm::Keys antmid(
+      passport_.SignaturePacketDetails(passport::kAntmid, false));
   StoreSignaturePacket(antmid, results, 2);
 }
 
-void UserCredentialsImpl::StoreSignaturePacket(std::shared_ptr<asymm::Keys> packet,
+void UserCredentialsImpl::StoreSignaturePacket(asymm::Keys packet,
                                                OperationResults& results,
                                                int index) {
   std::string packet_name, packet_content;
@@ -618,8 +618,8 @@ void UserCredentialsImpl::StoreSignaturePacket(std::shared_ptr<asymm::Keys> pack
 }
 
 void UserCredentialsImpl::StoreAnmaid(OperationResults& results) {
-  std::shared_ptr<asymm::Keys> anmaid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kAnmaid, false)));
+  asymm::Keys anmaid(
+      passport_.SignaturePacketDetails(passport::kAnmaid, false));
   std::string packet_name, packet_content;
 
   CreateSignaturePacketInfo(anmaid, &packet_name, &packet_content);
@@ -639,16 +639,16 @@ void UserCredentialsImpl::StoreMaid(bool result, OperationResults& results) {
     return;
   }
 
-  std::shared_ptr<asymm::Keys> maid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kMaid, false)));
-  std::shared_ptr<asymm::Keys> anmaid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kAnmaid, false)));
+  asymm::Keys maid(
+      passport_.SignaturePacketDetails(passport::kMaid, false));
+  asymm::Keys anmaid(
+      passport_.SignaturePacketDetails(passport::kAnmaid, false));
 
-  std::string maid_name(pca::ApplyTypeToName(maid->identity, pca::kSignaturePacket));
+  std::string maid_name(pca::ApplyTypeToName(maid.identity, pca::kSignaturePacket));
   pca::SignedData signed_maid;
-  signed_maid.set_signature(maid->validation_token);
+  signed_maid.set_signature(maid.validation_token);
   std::string maid_string_public_key;
-  asymm::EncodePublicKey(maid->public_key, &maid_string_public_key);
+  asymm::EncodePublicKey(maid.public_key, &maid_string_public_key);
   if (maid_string_public_key.empty()) {
     LOG(kError) << "Failed to procure sign MAID's public key.";
     StorePmid(false, results);
@@ -671,16 +671,16 @@ void UserCredentialsImpl::StorePmid(bool result, OperationResults& results) {
     return;
   }
 
-  std::shared_ptr<asymm::Keys> pmid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kPmid, false)));
-  std::shared_ptr<asymm::Keys> maid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kMaid, false)));
+  asymm::Keys pmid(
+      passport_.SignaturePacketDetails(passport::kPmid, false));
+  asymm::Keys maid(
+      passport_.SignaturePacketDetails(passport::kMaid, false));
 
-  std::string pmid_name(pca::ApplyTypeToName(pmid->identity, pca::kSignaturePacket));
+  std::string pmid_name(pca::ApplyTypeToName(pmid.identity, pca::kSignaturePacket));
   pca::SignedData signed_pmid;
-  signed_pmid.set_signature(pmid->validation_token);
+  signed_pmid.set_signature(pmid.validation_token);
   std::string pmid_string_public_key;
-  asymm::EncodePublicKey(pmid->public_key, &pmid_string_public_key);
+  asymm::EncodePublicKey(pmid.public_key, &pmid_string_public_key);
   if (pmid_string_public_key.empty()) {
     LOG(kError) << "Failed to procure sign PMID's public key.";
     StorePmid(false, results);
@@ -801,11 +801,10 @@ void UserCredentialsImpl::StoreIdentity(OperationResults& results,
   std::string packet_name(passport_.IdentityPacketName(id_pt, false)),
               packet_content(passport_.IdentityPacketValue(id_pt, false));
   packet_name = pca::ApplyTypeToName(packet_name, pca::kModifiableByOwner);
-  std::shared_ptr<asymm::Keys> signer(new asymm::Keys(
-      passport_.SignaturePacketDetails(sign_pt, true)));
+  asymm::Keys signer(passport_.SignaturePacketDetails(sign_pt, true));
 
   asymm::Signature signature;
-  int result(asymm::Sign(packet_content, signer->private_key, &signature));
+  int result(asymm::Sign(packet_content, signer.private_key, &signature));
   if (result != kSuccess) {
     LOG(kError) << "Failed to sign content: " << result;
     OperationCallback(false, results, index);
@@ -836,10 +835,9 @@ int UserCredentialsImpl::StoreLid(const std::string keyword,
   std::string encrypted_account_status(lid::EncryptAccountStatus(keyword, pin, password,
                                                                  account_status));
 
-  std::shared_ptr<asymm::Keys> signer(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kAnmid, true)));
+  asymm::Keys signer(passport_.SignaturePacketDetails(passport::kAnmid, true));
   asymm::Signature signature;
-  int result(asymm::Sign(encrypted_account_status, signer->private_key, &signature));
+  int result(asymm::Sign(encrypted_account_status, signer.private_key, &signature));
   if (result != kSuccess) {
     LOG(kError) << "Failed to sign content: " << result;
     return result;
@@ -1052,11 +1050,10 @@ void UserCredentialsImpl::ModifyIdentity(OperationResults& results,
   std::string name(passport_.IdentityPacketName(id_pt, false)),
               content(passport_.IdentityPacketValue(id_pt, false));
   name = pca::ApplyTypeToName(name, pca::kModifiableByOwner);
-  std::shared_ptr<asymm::Keys> signer(new asymm::Keys(passport_.SignaturePacketDetails(sign_pt,
-                                                                                       true)));
+  asymm::Keys signer(passport_.SignaturePacketDetails(sign_pt, true));
 
   asymm::Signature signature;
-  int result(asymm::Sign(content, signer->private_key, &signature));
+  int result(asymm::Sign(content, signer.private_key, &signature));
   if (result != kSuccess) {
     LOG(kError) << "Failed to sign content: " << result;
     OperationCallback(false, results, index);
@@ -1088,10 +1085,9 @@ int UserCredentialsImpl::ModifyLid(const std::string keyword,
   std::string encrypted_account_status(lid::EncryptAccountStatus(keyword, pin, password,
                                                                  account_status));
 
-  std::shared_ptr<asymm::Keys> signer(
-      new asymm::Keys(passport_.SignaturePacketDetails(passport::kAnmid, true)));
+  asymm::Keys signer(passport_.SignaturePacketDetails(passport::kAnmid, true));
   asymm::Signature signature;
-  int result(asymm::Sign(encrypted_account_status, signer->private_key, &signature));
+  int result(asymm::Sign(encrypted_account_status, signer.private_key, &signature));
   if (result != kSuccess) {
     LOG(kError) << "Failed to sign content: " << result;
     return result;
@@ -1265,8 +1261,7 @@ void UserCredentialsImpl::DeleteIdentity(OperationResults& results,
   }
   name = pca::ApplyTypeToName(name, pca::kModifiableByOwner);
 
-  std::shared_ptr<asymm::Keys> signer(new asymm::Keys(passport_.SignaturePacketDetails(sig_type,
-                                                                                       true)));
+  asymm::Keys signer(passport_.SignaturePacketDetails(sig_type, true));
   if (!remote_chunk_store_.Delete(name,
                                   [&, index] (bool result) {
                                     OperationCallback(result, results, index);
@@ -1282,9 +1277,7 @@ int UserCredentialsImpl::DeleteLid(const std::string& keyword,
   std::string packet_name(pca::ApplyTypeToName(lid::LidName(keyword, pin),
                                                pca::kModifiableByOwner));
   // TODO(Alison) - check LID and fail if any other instances are logged in
-  std::shared_ptr<asymm::Keys> signer(new asymm::Keys(
-                                          passport_.SignaturePacketDetails(passport::kAnmid,
-                                                                           true)));
+  asymm::Keys signer(passport_.SignaturePacketDetails(passport::kAnmid, true));
   std::vector<int> individual_result(1, priv::utilities::kPendingResult);
   std::condition_variable condition_variable;
   std::mutex mutex;
@@ -1537,62 +1530,57 @@ int UserCredentialsImpl::DeleteSignaturePackets() {
 }
 
 void UserCredentialsImpl::DeleteAnmid(OperationResults& results) {
-  std::shared_ptr<asymm::Keys> anmid(
-      new asymm::Keys(passport_.SignaturePacketDetails(passport::kAnmid, true)));
+  asymm::Keys anmid(passport_.SignaturePacketDetails(passport::kAnmid, true));
   DeleteSignaturePacket(anmid, results, 0);
 }
 
 void UserCredentialsImpl::DeleteAnsmid(OperationResults& results) {
-  std::shared_ptr<asymm::Keys> ansmid(
-      new asymm::Keys(passport_.SignaturePacketDetails(passport::kAnsmid, true)));
+  asymm::Keys ansmid(passport_.SignaturePacketDetails(passport::kAnsmid, true));
   DeleteSignaturePacket(ansmid, results, 1);
 }
 
 void UserCredentialsImpl::DeleteAntmid(OperationResults& results) {
-  std::shared_ptr<asymm::Keys> antmid(
-      new asymm::Keys(passport_.SignaturePacketDetails(passport::kAntmid, true)));
+  asymm::Keys antmid(passport_.SignaturePacketDetails(passport::kAntmid, true));
   DeleteSignaturePacket(antmid, results, 2);
 }
 
 void UserCredentialsImpl::DeletePmid(OperationResults& results) {
   asymm::Keys pmid(passport_.SignaturePacketDetails(passport::kPmid, true));
-  std::shared_ptr<asymm::Keys> maid(
-      new asymm::Keys(passport_.SignaturePacketDetails(passport::kMaid, true)));
+  asymm::Keys maid(passport_.SignaturePacketDetails(passport::kMaid, true));
 
   std::string pmid_name(pca::ApplyTypeToName(pmid.identity, pca::kSignaturePacket));
   if (!remote_chunk_store_.Delete(pmid_name,
                                   [&] (bool result) { DeleteMaid(result, results, maid); },
                                   maid)) {
     LOG(kError) << "Failed to delete PMID.";
-    DeleteMaid(false, results, nullptr);
+    DeleteMaid(false, results, asymm::Keys());
   }
 }
 
 void UserCredentialsImpl::DeleteMaid(bool result,
                                      OperationResults& results,
-                                     std::shared_ptr<asymm::Keys> maid) {
+                                     asymm::Keys maid) {
   if (!result) {
     LOG(kError) << "Failed to delete PMID.";
     OperationCallback(false, results, 3);
     return;
   }
 
-  std::shared_ptr<asymm::Keys> anmaid(
-      new asymm::Keys(passport_.SignaturePacketDetails(passport::kAnmaid, true)));
-  std::string maid_name(pca::ApplyTypeToName(maid->identity, pca::kSignaturePacket));
+  asymm::Keys anmaid(passport_.SignaturePacketDetails(passport::kAnmaid, true));
+  std::string maid_name(pca::ApplyTypeToName(maid.identity, pca::kSignaturePacket));
   if (!remote_chunk_store_.Delete(maid_name,
                                   [&] (bool result) {
                                     DeleteAnmaid(result, results, anmaid);
                                   },
                                   anmaid)) {
     LOG(kError) << "Failed to delete MAID.";
-    DeleteAnmaid(false, results, nullptr);
+    DeleteAnmaid(false, results, asymm::Keys());
   }
 }
 
 void UserCredentialsImpl::DeleteAnmaid(bool result,
                                        OperationResults& results,
-                                       std::shared_ptr<asymm::Keys> anmaid) {
+                                       asymm::Keys anmaid) {
   if (!result) {
     LOG(kError) << "Failed to delete MAID.";
     OperationCallback(false, results, 3);
@@ -1602,10 +1590,10 @@ void UserCredentialsImpl::DeleteAnmaid(bool result,
   DeleteSignaturePacket(anmaid, results, 3);
 }
 
-void UserCredentialsImpl::DeleteSignaturePacket(std::shared_ptr<asymm::Keys> packet,
+void UserCredentialsImpl::DeleteSignaturePacket(asymm::Keys packet,
                                                 OperationResults& results,
                                                 int index) {
-  std::string packet_name(pca::ApplyTypeToName(packet->identity, pca::kSignaturePacket));
+  std::string packet_name(pca::ApplyTypeToName(packet.identity, pca::kSignaturePacket));
   if (!remote_chunk_store_.Delete(packet_name,
                                   [&, index] (bool result) {
                                     OperationCallback(result, results, index);

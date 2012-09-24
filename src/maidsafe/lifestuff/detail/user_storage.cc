@@ -291,7 +291,7 @@ int UserStorage::CreateShare(const std::string& sender_public_id,
                                                                     &cond_var,
                                                                     &results[0]);
                                });
-  std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
+  asymm::Keys key_shared(key_ring);
   if (!chunk_store_->Store(packet_id,
                            utils::SerialisedSignedData(key_ring),
                            callback,
@@ -419,7 +419,7 @@ int UserStorage::StopShare(const std::string& sender_public_id,
                                                                     &cond_var,
                                                                     &results[0]);
                                });
-  std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
+  asymm::Keys key_shared(key_ring);
   if (!chunk_store_->Delete(packet_id, callback, key_shared)) {
     std::unique_lock<std::mutex> lock(mutex);
     results[0] = kRemoteChunkStoreFailure;
@@ -654,7 +654,7 @@ int UserStorage::MoveShare(const std::string& sender_public_id,
                                                                     &cond_var,
                                                                     &results[0]);
                                });
-  std::shared_ptr<asymm::Keys> key_shared(new asymm::Keys(key_ring));
+  asymm::Keys key_shared(key_ring);
   if (!chunk_store_->Store(packet_id,
                            utils::SerialisedSignedData(key_ring),
                            callback,
@@ -689,7 +689,7 @@ int UserStorage::MoveShare(const std::string& sender_public_id,
   results.clear();
   results.push_back(priv::utilities::kPendingResult);
 
-  std::shared_ptr<asymm::Keys> old_key_shared(new asymm::Keys(old_key_ring));
+  asymm::Keys old_key_shared(old_key_ring);
   packet_id = ComposeSignaturePacketName(old_key_ring.identity);
   if (!chunk_store_->Delete(packet_id, callback, old_key_shared)) {
     std::unique_lock<std::mutex> lock(mutex);

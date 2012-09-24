@@ -143,8 +143,7 @@ class UserCredentialsTest : public testing::Test {
                                                                         true).identity);
     LOG(kSuccess) << "Account name for vault " << Base32Substr(account_name);
     vault_node.set_account_name(account_name);
-    vault_node.set_keys(std::make_shared<asymm::Keys>(
-                            session_.passport().SignaturePacketDetails(passport::kPmid, true)));
+    vault_node.set_keys(session_.passport().SignaturePacketDetails(passport::kPmid, true));
 
     return vault_node.Start(*test_dir_ / ("client_vault" + RandomAlphaNumericString(8)));
   }
@@ -155,10 +154,9 @@ class UserCredentialsTest : public testing::Test {
       LOG(kError) << "Failed to stop client node.";
       return result;
     }
-    std::shared_ptr<asymm::Keys> maid(new asymm::Keys(
-        session_.passport().SignaturePacketDetails(passport::kMaid, true)));
+    asymm::Keys maid(session_.passport().SignaturePacketDetails(passport::kMaid, true));
     node_->set_keys(maid);
-    node_->set_account_name(maid->identity);
+    node_->set_account_name(maid.identity);
     result = node_->Start(*test_dir_ / "buffered_chunk_store");
     if (result != kSuccess) {
       LOG(kError) << "Failed to start client node.";
@@ -342,7 +340,7 @@ TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
 }
 
 TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
-  ASSERT_TRUE(session_.def_con_level() == kDefCon3);
+  ASSERT_TRUE(session_.def_con_level() == DefConLevels::kDefCon3);
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());
@@ -372,7 +370,7 @@ TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
   ASSERT_TRUE(session_.password().empty());
   LOG(kInfo) << "Logged out.\n===================\n";
 
-  ASSERT_TRUE(session_.def_con_level() == kDefCon3);
+  ASSERT_TRUE(session_.def_con_level() == DefConLevels::kDefCon3);
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());
@@ -399,7 +397,7 @@ TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
   ASSERT_TRUE(session_.password().empty());
   LOG(kInfo) << "Logged out.\n===================\n";
 
-  ASSERT_TRUE(session_.def_con_level() == kDefCon3);
+  ASSERT_TRUE(session_.def_con_level() == DefConLevels::kDefCon3);
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());
@@ -416,7 +414,7 @@ TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
   ASSERT_NE(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_ + password_));
   LOG(kInfo) << "Invalid password fails.\n===================\n";
 
-  ASSERT_TRUE(session_.def_con_level() == kDefCon3);
+  ASSERT_TRUE(session_.def_con_level() == DefConLevels::kDefCon3);
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());
@@ -442,7 +440,7 @@ TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
   ASSERT_TRUE(session_.password().empty());
   LOG(kInfo) << "Logged out.\n===================\n";
 
-  ASSERT_TRUE(session_.def_con_level() == kDefCon3);
+  ASSERT_TRUE(session_.def_con_level() == DefConLevels::kDefCon3);
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());

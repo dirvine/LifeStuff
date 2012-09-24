@@ -106,17 +106,9 @@ int PublicId::CreatePublicId(const std::string& public_id, bool accepts_new_cont
   }
 
   // Retrieves ANMPID, MPID, and MMID's <name, value, signature>
-  std::shared_ptr<asymm::Keys> anmpid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kAnmpid, false, public_id)));
-  std::shared_ptr<asymm::Keys> mpid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kMpid, false, public_id)));
-  std::shared_ptr<asymm::Keys> mmid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kMmid, false, public_id)));
-  if (!(anmpid && mpid && mmid)) {
-    LOG(kError) << "Failed to get own public ID data.";
-    return kGetPublicIdError;
-  }
-
+  asymm::Keys anmpid(passport_.SignaturePacketDetails(passport::kAnmpid, false, public_id));
+  asymm::Keys mpid(passport_.SignaturePacketDetails(passport::kMpid, false, public_id));
+  asymm::Keys mmid(passport_.SignaturePacketDetails(passport::kMmid, false, public_id));
   // Store packets
   std::mutex mutex;
   std::condition_variable cond_var;
@@ -132,8 +124,8 @@ int PublicId::CreatePublicId(const std::string& public_id, bool accepts_new_cont
                                                                       &cond_var,
                                                                       &results[0]);
                                  };
-  if (!remote_chunk_store_->Store(AppendableByAllName(mmid->identity),
-                                  AppendableIdValue(*mmid, true),
+  if (!remote_chunk_store_->Store(AppendableByAllName(mmid.identity),
+                                  AppendableIdValue(mmid, true),
                                   callback,
                                   mmid)) {
     std::unique_lock<std::mutex> lock(mutex);
@@ -143,17 +135,17 @@ int PublicId::CreatePublicId(const std::string& public_id, bool accepts_new_cont
   callback = [&] (const bool& response) {
       utils::ChunkStoreOperationCallback(response, &mutex, &cond_var, &results[1]);
     };
-  std::string anmpid_name(SignaturePacketName(anmpid->identity));
-  if (!remote_chunk_store_->Store(anmpid_name, SignaturePacketValue(*anmpid), callback, anmpid)) {
+  std::string anmpid_name(SignaturePacketName(anmpid.identity));
+  if (!remote_chunk_store_->Store(anmpid_name, SignaturePacketValue(anmpid), callback, anmpid)) {
     std::unique_lock<std::mutex> lock(mutex);
     results[1] = kRemoteChunkStoreFailure;
   }
 
-  std::string mpid_name(SignaturePacketName(mpid->identity));
+  std::string mpid_name(SignaturePacketName(mpid.identity));
   callback = [&] (const bool& response) {
                utils::ChunkStoreOperationCallback(response, &mutex, &cond_var, &results[2]);
              };
-  if (!remote_chunk_store_->Store(mpid_name, SignaturePacketValue(*mpid), callback, anmpid)) {
+  if (!remote_chunk_store_->Store(mpid_name, SignaturePacketValue(mpid), callback, anmpid)) {
     std::unique_lock<std::mutex> lock(mutex);
     results[2] = kRemoteChunkStoreFailure;
   }
@@ -163,7 +155,7 @@ int PublicId::CreatePublicId(const std::string& public_id, bool accepts_new_cont
                utils::ChunkStoreOperationCallback(response, &mutex, &cond_var, &results[3]);
              };
   if (!remote_chunk_store_->Store(mcid_name,
-                                  AppendableIdValue(*mpid, accepts_new_contacts),
+                                  AppendableIdValue(mpid, accepts_new_contacts),
                                   callback,
                                   mpid)) {
     std::unique_lock<std::mutex> lock(mutex);
@@ -262,15 +254,12 @@ int PublicId::DeletePublicId(const std::string& public_id) {
   std::mutex mutex;
   OperationResults results(mutex, condition_variable, individual_results);
 
-  std::shared_ptr<asymm::Keys> inbox_keys(
-      new asymm::Keys(passport_.SignaturePacketDetails(passport::kMmid, true, public_id)));
-  std::shared_ptr<asymm::Keys> mpid(
-      new asymm::Keys(passport_.SignaturePacketDetails(passport::kMpid, true, public_id)));
-  std::shared_ptr<asymm::Keys> anmpid(
-      new asymm::Keys(passport_.SignaturePacketDetails(passport::kAnmpid, true, public_id)));
-  std::string inbox_name(AppendableByAllName(inbox_keys->identity)),
-              mpid_name(SignaturePacketName(mpid->identity)),
-              anmpid_name(SignaturePacketName(anmpid->identity)),
+  asymm::Keys inbox_keys(passport_.SignaturePacketDetails(passport::kMmid, true, public_id));
+  asymm::Keys mpid(passport_.SignaturePacketDetails(passport::kMpid, true, public_id));
+  asymm::Keys anmpid(passport_.SignaturePacketDetails(passport::kAnmpid, true, public_id));
+  std::string inbox_name(AppendableByAllName(inbox_keys.identity)),
+              mpid_name(SignaturePacketName(mpid.identity)),
+              anmpid_name(SignaturePacketName(anmpid.identity)),
               mcid_name(MaidsafeContactIdName(public_id));
 
   std::string card_address;
@@ -447,10 +436,9 @@ int PublicId::RemoveContact(const std::string& own_public_id,
                                                                       &cond_var,
                                                                       &results[0]);
                                  };
-  std::shared_ptr<asymm::Keys> new_mmid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kMmid, false, own_public_id)));
-  if (!remote_chunk_store_->Store(AppendableByAllName(new_mmid->identity),
-                                  AppendableIdValue(*new_mmid, true),
+  asymm::Keys new_mmid(passport_.SignaturePacketDetails(passport::kMmid, false, own_public_id));
+  if (!remote_chunk_store_->Store(AppendableByAllName(new_mmid.identity),
+                                  AppendableIdValue(new_mmid, true),
                                   callback,
                                   new_mmid)) {
     std::unique_lock<std::mutex> lock(mutex);
@@ -497,13 +485,12 @@ int PublicId::RemoveContact(const std::string& own_public_id,
 
   // Invalidate previous MMID, i.e. put it into kModifiableByOwner
   results[0] = priv::utilities::kPendingResult;
-  std::shared_ptr<asymm::Keys> old_mmid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kMmid, true, own_public_id)));
+  asymm::Keys old_mmid(passport_.SignaturePacketDetails(passport::kMmid, true, own_public_id));
   callback = [&] (const bool& response) {
                utils::ChunkStoreOperationCallback(response, &mutex, &cond_var, &results[0]);
              };
-  if (!remote_chunk_store_->Modify(AppendableByAllName(old_mmid->identity),
-                                   ComposeModifyAppendableByAll(old_mmid->private_key,
+  if (!remote_chunk_store_->Modify(AppendableByAllName(old_mmid.identity),
+                                   ComposeModifyAppendableByAll(old_mmid.private_key,
                                                                 pca::kModifiableByOwner),
                                    callback,
                                    old_mmid)) {
@@ -592,11 +579,11 @@ int PublicId::SetLifestuffCard(const std::string& my_public_id, const SocialInfo
   pca::SignedData signed_data;
   signed_data.set_data(lifestuff_card.SerializeAsString());
   std::string signature;
-  std::shared_ptr<asymm::Keys> mmid(new asymm::Keys(session_.passport().SignaturePacketDetails(
+  asymm::Keys mmid(session_.passport().SignaturePacketDetails(
                                                         passport::kMmid,
                                                         true,
-                                                        my_public_id)));
-  if (asymm::Sign(signed_data.data(), mmid->private_key, &signature) != kSuccess ||
+                                                        my_public_id));
+  if (asymm::Sign(signed_data.data(), mmid.private_key, &signature) != kSuccess ||
       signature.empty()) {
     LOG(kError) << "Failed to sign card.";
     return kPublicIdException;
@@ -702,8 +689,7 @@ void PublicId::GetContactsHandle() {
   std::vector<std::string> selectables(session_.PublicIdentities());
   for (auto it(selectables.begin()); it != selectables.end(); ++it) {
     LOG(kInfo) << "PublicId::GetNewContacts: " << (*it);
-    std::shared_ptr<asymm::Keys> mpid(new asymm::Keys(
-        passport_.SignaturePacketDetails(passport::kMpid, true, *it)));
+    asymm::Keys mpid(passport_.SignaturePacketDetails(passport::kMpid, true, *it));
     std::string mpid_packet(remote_chunk_store_->Get(MaidsafeContactIdName(*it), mpid));
     if (mpid_packet.empty()) {
       LOG(kError) << "Failed to get MPID contents for " << (*it);
@@ -715,7 +701,7 @@ void PublicId::GetContactsHandle() {
 
 void PublicId::ProcessRequests(const std::string& own_public_id,
                                const std::string& retrieved_mpid_packet,
-                               std::shared_ptr<asymm::Keys> mpid) {
+                               asymm::Keys mpid) {
   pca::AppendableByAll mcid;
   if (!mcid.ParseFromString(retrieved_mpid_packet)) {
     LOG(kError) << "Failed to parse as AppendableByAll";
@@ -725,7 +711,7 @@ void PublicId::ProcessRequests(const std::string& own_public_id,
   for (int it(0); it < mcid.appendices_size(); ++it) {
     std::string encrypted_introduction;
     int result(asymm::Decrypt(mcid.appendices(it).data(),
-                              mpid->private_key,
+                              mpid.private_key,
                               &encrypted_introduction));
     if (result != kSuccess || encrypted_introduction.empty()) {
       LOG(kError) << "Failed to decrypt Introduction: " << result;
@@ -960,11 +946,9 @@ int PublicId::ModifyAppendability(const std::string& public_id, const char appen
   results.push_back(priv::utilities::kPendingResult);
   results.push_back(priv::utilities::kPendingResult);
 
-  std::shared_ptr<asymm::Keys> mpid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kMpid, true, public_id)));
-  std::shared_ptr<asymm::Keys> mmid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kMmid, true, public_id)));
-  if (mpid->identity.empty() || mmid->identity.empty()) {
+  asymm::Keys mpid(passport_.SignaturePacketDetails(passport::kMpid, true, public_id));
+  asymm::Keys mmid(passport_.SignaturePacketDetails(passport::kMmid, true, public_id));
+  if (mpid.identity.empty() || mmid.identity.empty()) {
     LOG(kError) << "Failed to find keys for " << public_id;
     return kGetPublicIdError;
   }
@@ -974,7 +958,7 @@ int PublicId::ModifyAppendability(const std::string& public_id, const char appen
                                                                       &results[0]);
                                  };
   if (!remote_chunk_store_->Modify(MaidsafeContactIdName(public_id),
-                                   ComposeModifyAppendableByAll(mpid->private_key, appendability),
+                                   ComposeModifyAppendableByAll(mpid.private_key, appendability),
                                    callback,
                                    mpid)) {
     LOG(kError) << "Immediate modify failure for MPID.";
@@ -985,8 +969,8 @@ int PublicId::ModifyAppendability(const std::string& public_id, const char appen
   callback = [&] (const bool& response) {
                utils::ChunkStoreOperationCallback(response, &mutex, &cond_var, &results[1]);
              };
-  if (!remote_chunk_store_->Modify(AppendableByAllName(mmid->identity),
-                                   ComposeModifyAppendableByAll(mmid->private_key, appendability),
+  if (!remote_chunk_store_->Modify(AppendableByAllName(mmid.identity),
+                                   ComposeModifyAppendableByAll(mmid.private_key, appendability),
                                    callback,
                                    mmid)) {
     LOG(kError) << "Immediate modify failure for MMID.";
@@ -1020,9 +1004,8 @@ int PublicId::InformContactInfo(const std::string& public_id,
     inbox_identity = passport_.SignaturePacketDetails(passport::kMmid, true, public_id).identity;
   else
     inbox_identity = inbox_name;
-  std::shared_ptr<asymm::Keys> mpid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kMpid, true, public_id)));
-  if (!mpid || mpid->identity.empty() || inbox_identity.empty()) {
+  asymm::Keys mpid(passport_.SignaturePacketDetails(passport::kMpid, true, public_id));
+  if (mpid.identity.empty() || inbox_identity.empty()) {
     LOG(kError) << "Failed to get own public ID data: " << public_id;
     return kGetPublicIdError;
   }
@@ -1064,7 +1047,7 @@ int PublicId::InformContactInfo(const std::string& public_id,
     }
 
     asymm::Signature signature;
-    result = asymm::Sign(encrypted_introduction, mpid->private_key, &signature);
+    result = asymm::Sign(encrypted_introduction, mpid.private_key, &signature);
     if (result != kSuccess) {
       LOG(kError) << "Failed to sign MCID data: " << result;
       return kSigningError;
@@ -1151,10 +1134,10 @@ std::string EmptyCardContent(const asymm::PrivateKey& private_key) {
   return signed_data.SerializeAsString();
 }
 
-int PublicId::StoreLifestuffCard(std::shared_ptr<asymm::Keys> mmid,
+int PublicId::StoreLifestuffCard(asymm::Keys mmid,
                                  std::string& lifestuff_card_address) {
   int attempts(0), wait_result(kSuccess);
-  std::string card_address, empty_card_content(EmptyCardContent(mmid->private_key));
+  std::string card_address, empty_card_content(EmptyCardContent(mmid.private_key));
   std::vector<int> results(1, priv::utilities::kPendingResult);
   std::mutex mutex;
   std::condition_variable cond_var;
@@ -1185,7 +1168,7 @@ int PublicId::StoreLifestuffCard(std::shared_ptr<asymm::Keys> mmid,
 }
 
 int PublicId::RemoveLifestuffCard(const std::string& lifestuff_card_address,
-                                  std::shared_ptr<asymm::Keys> mmid) {
+                                  asymm::Keys mmid) {
   std::vector<int> results(1, priv::utilities::kPendingResult);
   std::mutex mutex;
   std::condition_variable cond_var;
