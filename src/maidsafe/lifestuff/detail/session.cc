@@ -88,7 +88,7 @@ Session::~Session() {}
 void Session::Reset() {
   {
     std::unique_lock<std::mutex> arran_lochan_am_hill(user_details_mutex_);
-    user_details_.defconlevel = kDefCon3;
+    user_details_.defconlevel = DefConLevels::kDefCon3;
     user_details_.keyword.clear();
     user_details_.pin.clear();
     user_details_.password.clear();

@@ -157,13 +157,9 @@ int MessageHandler::Send(const InboxItem& inbox_item) {
   }
   asymm::PublicKey recipient_public_key(recipient_contact.inbox_public_key);
 
-  std::shared_ptr<asymm::Keys> mmid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kMmid, true, inbox_item.sender_public_id)));
-  if (!mmid) {
-    LOG(kError) << "Failed to get own public ID data: " << inbox_item.sender_public_id;
-    return kGetPublicIdError;
-  }
-
+  asymm::Keys mmid(passport_.SignaturePacketDetails(passport::kMmid,
+                                                    true,
+                                                    inbox_item.sender_public_id));
   // Encrypt the message for the recipient
   std::string encrypted_message;
   result = asymm::Encrypt(message.SerializeAsString(), recipient_public_key, &encrypted_message);
@@ -177,7 +173,7 @@ int MessageHandler::Send(const InboxItem& inbox_item) {
   signed_data.set_data(encrypted_message);
 
   std::string message_signature;
-  result = asymm::Sign(signed_data.data(), mmid->private_key, &message_signature);
+  result = asymm::Sign(signed_data.data(), mmid.private_key, &message_signature);
   if (result != kSuccess) {
     LOG(kError) << "Failed to sign message: " << result;
     return result;
@@ -595,9 +591,8 @@ void MessageHandler::RetrieveMessagesForAllIds() {
   std::vector<std::string> selectables(session_.PublicIdentities());
   for (auto it(selectables.begin()); it != selectables.end(); ++it) {
 //    LOG(kError) << "RetrieveMessagesForAllIds for " << (*it);
-    std::shared_ptr<asymm::Keys> mmid(new asymm::Keys(
-        passport_.SignaturePacketDetails(passport::kMmid, true, *it)));
-    std::string mmid_value(remote_chunk_store_->Get(AppendableByAllType(mmid->identity), mmid));
+    asymm::Keys mmid(passport_.SignaturePacketDetails(passport::kMmid, true, *it));
+    std::string mmid_value(remote_chunk_store_->Get(AppendableByAllType(mmid.identity), mmid));
 
     if (mmid_value.empty()) {
       LOG(kWarning) << "Failed to get MPID contents for " << (*it) << ": " << result;

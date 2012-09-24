@@ -162,7 +162,7 @@ class PublicId {
   void GetContactsHandle();
   void ProcessRequests(const std::string& mpid_name,
                        const std::string& retrieved_mpid_packet,
-                       std::shared_ptr<asymm::Keys> mpid);
+                       asymm::Keys mpid);
   void ProcessContactConfirmation(Contact& contact,
                                   const ContactsHandlerPtr contacts_handler,
                                   const std::string& own_public_id,
@@ -196,10 +196,10 @@ class PublicId {
                         const std::string& inbox_name = "");
   int GetPublicKey(const std::string& packet_name, Contact& contact, int type);
 
-  int StoreLifestuffCard(std::shared_ptr<asymm::Keys> mmid,
+  int StoreLifestuffCard(asymm::Keys mmid,
                          std::string& lifestuff_card_address);
   int RemoveLifestuffCard(const std::string& lifestuff_card_address,
-                          std::shared_ptr<asymm::Keys> mmid);
+                          asymm::Keys mmid);
   std::string GetOwnCardAddress(const std::string& my_public_id);
   std::string GetContactCardAddress(const std::string& my_public_id,
                                     const std::string& contact_public_id);

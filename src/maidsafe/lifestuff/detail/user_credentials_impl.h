@@ -141,7 +141,7 @@ class UserCredentialsImpl {
   void StoreAnmaid(OperationResults& results);
   void StoreMaid(bool result, OperationResults& results);
   void StorePmid(bool result, OperationResults& results);
-  void StoreSignaturePacket(std::shared_ptr<asymm::Keys> packet,
+  void StoreSignaturePacket(asymm::Keys packet,
                             OperationResults& results,
                             int index);
 
@@ -190,9 +190,9 @@ class UserCredentialsImpl {
   void DeleteAnsmid(OperationResults& results);
   void DeleteAntmid(OperationResults& results);
   void DeletePmid(OperationResults& results);
-  void DeleteMaid(bool result, OperationResults& results, std::shared_ptr<asymm::Keys> maid);
-  void DeleteAnmaid(bool result, OperationResults& results, std::shared_ptr<asymm::Keys> anmaid);
-  void DeleteSignaturePacket(std::shared_ptr<asymm::Keys> packet,
+  void DeleteMaid(bool result, OperationResults& results, asymm::Keys maid);
+  void DeleteAnmaid(bool result, OperationResults& results, asymm::Keys anmaid);
+  void DeleteSignaturePacket(asymm::Keys packet,
                              OperationResults& results,
                              int index);
 

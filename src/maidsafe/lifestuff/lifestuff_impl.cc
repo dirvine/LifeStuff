@@ -2406,9 +2406,8 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
     LOG(kError) << "Failed to stop client container: " << result;
     return result;
   }
-  std::shared_ptr<asymm::Keys> pmid(new asymm::Keys(
-      session_.passport().SignaturePacketDetails(passport::kPmid, true)));
-  if (!pmid || pmid->identity.empty()) {
+  asymm::Keys pmid(session_.passport().SignaturePacketDetails(passport::kPmid, true));
+  if (pmid.identity.empty()) {
     LOG(kError) << "Failed to obtain valid PMID keys.";
     return -1;
   }
