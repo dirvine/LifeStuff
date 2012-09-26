@@ -234,7 +234,7 @@ testing::AssertionResult NetworkHelper::StopLocalNetwork() {
     }
     auto exit_code = wait_for_exit(vault_process.first, error_code);
     vault_process.second->seekg(0, std::ios::end);
-    size_t size(vault_process.second->tellg());
+    size_t size(static_cast<size_t>(vault_process.second->tellg()));
     vault_process.second->seekg(0, std::ios::beg);
 
     std::unique_ptr<char[]> buffer(new char[size]);

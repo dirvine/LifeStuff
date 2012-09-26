@@ -63,6 +63,7 @@ LifeStuffImpl::LifeStuffImpl()
       client_controller_(),
       node_(),
       routings_handler_(),
+      vault_node_(),
 #endif
       network_health_signal_(),
       session_(),
@@ -283,7 +284,8 @@ int LifeStuffImpl::Finalise() {
 int LifeStuffImpl::CreateUser(const std::string& keyword,
                               const std::string& pin,
                               const std::string& password,
-                              const fs::path& chunk_store) {
+                              const fs::path& chunk_store,
+                              bool vault_cheat) {
   if (state_ != kConnected) {
     LOG(kError) << "Make sure that object is initialised and connected";
     return kGeneralError;
@@ -314,7 +316,7 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
 #ifdef LOCAL_TARGETS_ONLY
   LOG(kInfo) << "The chunkstore path for the ficticious vault is " << chunk_store;
 #else
-  result = CreateVaultInLocalMachine(chunk_store);
+  result = CreateVaultInLocalMachine(chunk_store, vault_cheat);
   if (result != kSuccess)  {
     LOG(kError) << "Failed to create vault. No LifeStuff for you!";
     return result;
@@ -1003,8 +1005,7 @@ int LifeStuffImpl::AcceptSentFile(const std::string& identifier,
   if (result != kSuccess)
     return result;
 
-  if ((absolute_path.empty() && !file_name) ||
-      (!absolute_path.empty() && file_name)) {
+  if ((absolute_path.empty() && !file_name) || (!absolute_path.empty() && file_name)) {
     LOG(kError) << "Wrong parameters given. absolute_path and file_name are mutually exclusive.";
     return kGeneralError;
   }
@@ -1147,19 +1148,20 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
 #ifndef LOCAL_TARGETS_ONLY
   result = node_->Stop();
   if (result != kSuccess) {
-    LOG(kError) << "Failed to stop client container: " << result;
+      LOG(kError) << "Failed to stop client container: " << result;
     return result;
   }
-  std::shared_ptr<asymm::Keys> pmid(new asymm::Keys(
-      session_.passport().SignaturePacketDetails(passport::kPmid, true)));
-  if (!pmid || pmid->identity.empty()) {
+  asymm::Keys maid(session_.passport().SignaturePacketDetails(passport::kMaid, true));
+  if (maid.identity.empty()) {
     LOG(kError) << "Failed to obtain valid PMID keys.";
     return -1;
   }
-  node_->set_keys(pmid);
+
+  node_->set_keys(maid);
+  node_->set_account_name(maid.identity);
   result = node_->Start(buffered_path_ / "buffered_chunk_store");
   if (result != kSuccess) {
-    LOG(kError) << "Failed to start client container: " << result;
+      LOG(kError) << "Failed to start client container: " << result;
     return result;
   }
 
@@ -1269,7 +1271,7 @@ void LifeStuffImpl::NetworkHealthSlot(const int& index) {
 
 
 #ifndef LOCAL_TARGETS_ONLY
-int LifeStuffImpl::CreateVaultInLocalMachine(const fs::path& chunk_store) {
+int LifeStuffImpl::CreateVaultInLocalMachine(const fs::path& chunk_store, bool vault_cheat) {
   std::string account_name(session_.passport().SignaturePacketDetails(passport::kMaid,
                                                                       true).identity);
   asymm::Keys pmid_keys(session_.passport().SignaturePacketDetails(passport::kPmid, true));
@@ -1278,16 +1280,34 @@ int LifeStuffImpl::CreateVaultInLocalMachine(const fs::path& chunk_store) {
     return kVaultCreationFailure;
   }
 
-  if (!client_controller_->StartVault(pmid_keys, account_name, chunk_store)) {
-    LOG(kError) << "Failed to create vault.";
-    return kVaultCreationFailure;
+  if (vault_cheat) {
+    vault_node_.set_do_backup_state(false);
+    vault_node_.set_do_synchronise(true);
+    vault_node_.set_do_check_integrity(false);
+    vault_node_.set_do_announce_chunks(false);
+    std::string account_name(session_.passport().SignaturePacketDetails(passport::kMaid,
+                                                                        true).identity);
+    LOG(kSuccess) << "Account name for vault " << Base32Substr(account_name);
+    vault_node_.set_account_name(account_name);
+    vault_node_.set_keys(session_.passport().SignaturePacketDetails(passport::kPmid, true));
+
+    int result(vault_node_.Start(buffered_path_ / ("client_vault" + RandomAlphaNumericString(8))));
+    if (result != kSuccess) {
+      LOG(kError) << "Failed to create vault through cheat: " << result;
+      return kVaultCreationFailure;
+    }
+  } else {
+    if (!client_controller_->StartVault(pmid_keys, account_name, chunk_store)) {
+      LOG(kError) << "Failed to create vault through client controller.";
+      return kVaultCreationFailure;
+    }
   }
 
   return kSuccess;
 }
 
 int LifeStuffImpl::EstablishMaidRoutingObject(
-    const std::vector<std::pair<std::string, uint16_t>>& bootstrap_endpoints) {  // NOLINT (Dan)
+    const std::vector<std::pair<std::string, uint16_t> >& bootstrap_endpoints) {  // NOLINT (Dan)
   asymm::Keys maid(session_.passport().SignaturePacketDetails(passport::kMaid, true));
   if (!routings_handler_->AddRoutingObject(maid, bootstrap_endpoints, maid.identity)) {
     LOG(kError) << "Failed to adding MAID routing.";

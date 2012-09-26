@@ -39,6 +39,59 @@ namespace lifestuff {
 
 namespace test {
 
+namespace {
+
+void InitialiseAndConnectElements(LifeStuff& elements, const fs::path& dir, volatile bool* done) {
+  EXPECT_EQ(kSuccess, elements.Initialise([] (std::string) {}, dir));
+  EXPECT_EQ(kSuccess,
+            elements.ConnectToSignals(ChatFunction(),
+                                      FileTransferFunction(),
+                                      NewContactFunction(),
+                                      ContactConfirmationFunction(),
+                                      ContactProfilePictureFunction(),
+                                      [&] (const std::string& own_public_id,
+                                           const std::string& contact_public_id,
+                                           const std::string& timestamp,
+                                           ContactPresence cp) {
+                                        ContactPresenceSlot(own_public_id,
+                                                            contact_public_id,
+                                                            timestamp,
+                                                            cp,
+                                                            done);
+                                      },
+                                      ContactDeletionFunction(),
+                                      PrivateShareInvitationFunction(),
+                                      PrivateShareDeletionFunction(),
+                                      PrivateMemberAccessChangeFunction(),
+                                      OpenShareInvitationFunction(),
+                                      ShareRenamedFunction(),
+                                      ShareChangedFunction(),
+                                      LifestuffCardUpdateFunction(),
+                                      NetworkHealthFunction(),
+                                      ImmediateQuitRequiredFunction()));
+
+}
+
+}  // namespace
+
+TEST(IndependentFullTest, FUNC_CreateLogoutLoginLogout) {
+  LifeStuff test_elements;
+  std::string keyword(RandomAlphaNumericString(5)),
+              pin(CreatePin()),
+              password(RandomAlphaNumericString(5));
+  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
+  volatile bool done(false);
+  InitialiseAndConnectElements(test_elements, *test_dir, &done);
+
+  EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword, pin, password, true));
+  Sleep(boost::posix_time::seconds(10));
+  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+  Sleep(boost::posix_time::seconds(10));
+  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword, pin, password));
+  Sleep(boost::posix_time::seconds(10));
+  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+}
+
 TEST_F(OneUserApiTest, FUNC_ChangeCredentials) {
   std::string new_pin(CreatePin());
   EXPECT_EQ(kSuccess, test_elements_.CheckPassword(password_));

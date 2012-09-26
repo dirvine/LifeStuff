@@ -40,9 +40,10 @@
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 #ifndef LOCAL_TARGETS_ONLY
-#include "maidsafe/routing/routing_api.h"
 #include "maidsafe/private/process_management/client_controller.h"
+#include "maidsafe/routing/routing_api.h"
 #include "maidsafe/pd/client/node.h"
+#include "maidsafe/pd/vault/node.h"
 #include "maidsafe/lifestuff/detail/routings_handler.h"
 #endif
 
@@ -114,7 +115,8 @@ class LifeStuffImpl {
   int CreateUser(const std::string& username,
                  const std::string& pin,
                  const std::string& password,
-                 const fs::path& chunk_store);
+                 const fs::path& chunk_store,
+                 bool vault_cheat = false);
   int CreatePublicId(const std::string& public_id);
   int LogIn(const std::string& username, const std::string& pin, const std::string& password);
   int LogOut();
@@ -194,6 +196,7 @@ class LifeStuffImpl {
   std::shared_ptr<priv::process_management::ClientController> client_controller_;
   std::shared_ptr<pd::Node> node_;
   std::shared_ptr<RoutingsHandler> routings_handler_;
+  pd::vault::Node vault_node_;
 #endif
   boost::signals2::signal<void(const int&)> network_health_signal_;
   Session session_;
@@ -213,9 +216,9 @@ class LifeStuffImpl {
   int PreContactChecksReadOnly(const std::string& my_public_id);
   void NetworkHealthSlot(const int& index);
 #ifndef LOCAL_TARGETS_ONLY
-  int CreateVaultInLocalMachine(const fs::path& chunk_store);
+  int CreateVaultInLocalMachine(const fs::path& chunk_store, bool vault_cheat);
   int EstablishMaidRoutingObject(
-      const std::vector<std::pair<std::string, uint16_t>>& bootstrap_endpoints);  // NOLINT (Dan)
+      const std::vector<std::pair<std::string, uint16_t> >& bootstrap_endpoints);  // NOLINT (Dan)
 #endif
 };
 

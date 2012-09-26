@@ -334,7 +334,7 @@ class PublicIdTest : public testing::Test {
     priv::utilities::CreateMaidsafeIdentity(new_inbox_keys);
     std::string new_inbox_value(AppendableIdValue(new_inbox_keys, true)),
                 new_inbox_name(AppendableByAllName(new_inbox_keys.identity));
-    std::shared_ptr<asymm::Keys> shared_keys(new asymm::Keys(new_inbox_keys));
+    asymm::Keys shared_keys(new_inbox_keys);
 
     int result(priv::utilities::kPendingResult);
     std::function<void(bool)> callback = [&] (const bool& response) {  // NOLINT (Dan)
@@ -976,10 +976,10 @@ TEST_F(PublicIdTest, FUNC_DeletePublicIdPacketVerification) {
                                                                pca::kAppendableByAll)));
   ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
                                                                pca::kAppendableByAll),
-                                          std::shared_ptr<asymm::Keys>(new asymm::Keys(mmid))));
+                                          asymm::Keys(asymm::Keys(mmid))));
   ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
                                                                pca::kAppendableByAll),
-                                          std::shared_ptr<asymm::Keys>(new asymm::Keys(mpid))));
+                                          asymm::Keys(asymm::Keys(mpid))));
   ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(card_address,
                                                                pca::kModifiableByOwner)));
 
@@ -994,10 +994,10 @@ TEST_F(PublicIdTest, FUNC_DeletePublicIdPacketVerification) {
                                                                pca::kAppendableByAll)));
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
                                                                pca::kAppendableByAll),
-                                          std::shared_ptr<asymm::Keys>(new asymm::Keys(mmid))));
+                                          asymm::Keys(asymm::Keys(mmid))));
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
                                                                pca::kAppendableByAll),
-                                          std::shared_ptr<asymm::Keys>(new asymm::Keys(mpid))));
+                                          asymm::Keys(asymm::Keys(mpid))));
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(card_address,
                                                                pca::kModifiableByOwner)));
 
@@ -1018,10 +1018,10 @@ TEST_F(PublicIdTest, FUNC_DeletePublicIdPacketVerification) {
                                                                pca::kAppendableByAll)));
   ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
                                                                pca::kAppendableByAll),
-                                          std::shared_ptr<asymm::Keys>(new asymm::Keys(mmid))));
+                                          asymm::Keys(asymm::Keys(mmid))));
   ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
                                                                pca::kAppendableByAll),
-                                          std::shared_ptr<asymm::Keys>(new asymm::Keys(mpid))));
+                                          asymm::Keys(asymm::Keys(mpid))));
   ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(card_address,
                                                                pca::kModifiableByOwner)));
 
@@ -1036,10 +1036,10 @@ TEST_F(PublicIdTest, FUNC_DeletePublicIdPacketVerification) {
                                                                pca::kAppendableByAll)));
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
                                                                pca::kAppendableByAll),
-                                          std::shared_ptr<asymm::Keys>(new asymm::Keys(mmid))));
+                                          asymm::Keys(asymm::Keys(mmid))));
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
                                                                pca::kAppendableByAll),
-                                          std::shared_ptr<asymm::Keys>(new asymm::Keys(mpid))));
+                                          asymm::Keys(asymm::Keys(mpid))));
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(card_address,
                                                                pca::kModifiableByOwner)));
 }

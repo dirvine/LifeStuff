@@ -59,22 +59,22 @@ namespace lifestuff {
 
 namespace {
 
-int CreateSignaturePacketInfo(std::shared_ptr<asymm::Keys> packet,
+int CreateSignaturePacketInfo(asymm::Keys packet,
                               std::string* packet_name,
                               std::string* packet_content) {
-  BOOST_ASSERT(packet && packet_name && packet_content);
-  *packet_name = pca::ApplyTypeToName(packet->identity, pca::kSignaturePacket);
+  BOOST_ASSERT(packet_name && packet_content);
+  *packet_name = pca::ApplyTypeToName(packet.identity, pca::kSignaturePacket);
 
   pca::SignedData signed_data;
   std::string public_key;
-  asymm::EncodePublicKey(packet->public_key, &public_key);
+  asymm::EncodePublicKey(packet.public_key, &public_key);
   if (public_key.empty()) {
     LOG(kError) << "Public key not properly encoded.";
     return kCreateSignaturePacketInfoFailure;
   }
 
   signed_data.set_data(public_key);
-  signed_data.set_signature(packet->validation_token);
+  signed_data.set_signature(packet.validation_token);
   if (!signed_data.SerializeToString(packet_content) || packet_content->empty()) {
     LOG(kError) << "SignedData not properly serialised.";
     return kCreateSignaturePacketInfoFailure;
@@ -131,19 +131,19 @@ int UserCredentialsImpl::AttemptLogInProcess(const std::string& keyword,
     return result;
   }
 
-  std::string lid_packet(remote_chunk_store_.Get(pca::ApplyTypeToName(lid::LidName(keyword, pin),
-                                                                      pca::kModifiableByOwner)));
-  LockingPacket locking_packet;
-  int lid_result(lid::ProcessAccountStatus(keyword, pin, password, lid_packet, locking_packet));
-  bool lid_corrupted(false);
-  if (lid_result != kSuccess) {
-    if (lid_result == kCorruptedLidPacket) {
-      lid_corrupted = true;
-    } else {
-      LOG(kError) << "Couldn't get or process LID. Account can't be logged in: " << lid_result;
-      return lid_result;
-    }
-  }
+//  std::string lid_packet(remote_chunk_store_.Get(pca::ApplyTypeToName(lid::LidName(keyword, pin),
+//                                                                      pca::kModifiableByOwner)));
+//  LockingPacket locking_packet;
+//  int lid_result(lid::ProcessAccountStatus(keyword, pin, password, lid_packet, locking_packet));
+//  bool lid_corrupted(false);
+//  if (lid_result != kSuccess) {
+//    if (lid_result == kCorruptedLidPacket) {
+//      lid_corrupted = true;
+//    } else {
+//      LOG(kError) << "Couldn't get or process LID. Account can't be logged in: " << lid_result;
+//      return lid_result;
+//    }
+//  }
 
 
   std::string mid_packet, smid_packet;
@@ -153,10 +153,23 @@ int UserCredentialsImpl::AttemptLogInProcess(const std::string& keyword,
     return result;
   }
 
-  bool need_to_wait(false);
-  result = GetAndLockLid(keyword, pin, password, lid_packet, locking_packet);
-  if (result == kCorruptedLidPacket && lid_corrupted == true) {
-    LOG(kInfo) << "Trying to fix corrupted packet...";
+//  bool need_to_wait(false);
+//  result = GetAndLockLid(keyword, pin, password, lid_packet, locking_packet);
+//  if (result == kCorruptedLidPacket && lid_corrupted == true) {
+//    LOG(kInfo) << "Trying to fix corrupted packet...";
+//    session_.set_keyword(keyword);
+//    session_.set_pin(pin);
+//    session_.set_password(password);
+//    session_.set_session_access_level(kFullAccess);
+//    if (!session_.set_session_name()) {
+//      LOG(kError) << "Failed to set session.";
+//      return kSessionFailure;
+//    }
+//    locking_packet = lid::CreateLockingPacket(session_.session_name());
+//  } else if (result != kSuccess) {
+//    LOG(kError) << "Failed to GetAndLock LID.";
+//    return result;
+//  } else {
     session_.set_keyword(keyword);
     session_.set_pin(pin);
     session_.set_password(password);
@@ -165,59 +178,46 @@ int UserCredentialsImpl::AttemptLogInProcess(const std::string& keyword,
       LOG(kError) << "Failed to set session.";
       return kSessionFailure;
     }
-    locking_packet = lid::CreateLockingPacket(session_.session_name());
-  } else if (result != kSuccess) {
-    LOG(kError) << "Failed to GetAndLock LID.";
-    return result;
-  } else {
-    session_.set_keyword(keyword);
-    session_.set_pin(pin);
-    session_.set_password(password);
-    session_.set_session_access_level(kFullAccess);
-    if (!session_.set_session_name()) {
-      LOG(kError) << "Failed to set session.";
-      return kSessionFailure;
-    }
 
-    int i(0);
-    result = kGeneralError;
-    while (i++ < 10 && result != kSuccess) {
-      result = lid::CheckLockingPacketForIdentifier(locking_packet, session_.session_name());
-      if (result != kSuccess) {
-        if (!session_.set_session_name()) {
-          LOG(kError) << "Failed to set session name.";
-          return kSessionFailure;
-        }
-      }
-    }
-    result = lid::AddItemToLockingPacket(locking_packet, session_.session_name(), true);
-    if (result == kLidIdentifierAlreadyInUse) {
-      LOG(kError) << "Failed to add item to locking packet";
-      return result;
-    }
-    if (result == kLidFullAccessUnavailable)
-      need_to_wait = true;
-    lid::OverthrowInstancesUsingLockingPacket(locking_packet, session_.session_name());
-  }
+//    int i(0);
+//    result = kGeneralError;
+//    while (i++ < 10 && result != kSuccess) {
+//      result = lid::CheckLockingPacketForIdentifier(locking_packet, session_.session_name());
+//      if (result != kSuccess) {
+//        if (!session_.set_session_name()) {
+//          LOG(kError) << "Failed to set session name.";
+//          return kSessionFailure;
+//        }
+//      }
+//    }
+//    result = lid::AddItemToLockingPacket(locking_packet, session_.session_name(), true);
+//    if (result == kLidIdentifierAlreadyInUse) {
+//      LOG(kError) << "Failed to add item to locking packet";
+//      return result;
+//    }
+//    if (result == kLidFullAccessUnavailable)
+//      need_to_wait = true;
+//    lid::OverthrowInstancesUsingLockingPacket(locking_packet, session_.session_name());
+//  }
 
-  result = ModifyLid(keyword, pin, password, locking_packet);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to modify LID.";
-    return result;
-  }
+//  result = ModifyLid(keyword, pin, password, locking_packet);
+//  if (result != kSuccess) {
+//    LOG(kError) << "Failed to modify LID.";
+//    return result;
+//  }
 
-  if (need_to_wait) {
-    LOG(kInfo) << "Need to wait before logging in.";
-    Sleep(bptime::seconds(15));
-    result = GetUserInfo(keyword, pin, password, true, mid_packet, smid_packet);
-    if (result != kSuccess) {
-      LOG(kError) << "Failed to re-get user credentials.";
-      return result;
-    }
-  }
+//  if (need_to_wait) {
+//    LOG(kInfo) << "Need to wait before logging in.";
+//    Sleep(bptime::seconds(15));
+//    result = GetUserInfo(keyword, pin, password, true, mid_packet, smid_packet);
+//    if (result != kSuccess) {
+//      LOG(kError) << "Failed to re-get user credentials.";
+//      return result;
+//    }
+//  }
 
   session_saved_once_ = false;
-  StartSessionSaver();
+//  StartSessionSaver();
 
   return kSuccess;
 }
@@ -228,11 +228,11 @@ int UserCredentialsImpl::LogOut() {
     LOG(kError) << "Failed to save session on Logout";
     return result;
   }
-  result = AssessAndUpdateLid(true);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to update LID on Logout";
-    return result;
-  }
+//  result = AssessAndUpdateLid(true);
+//  if (result != kSuccess) {
+//    LOG(kError) << "Failed to update LID on Logout";
+//    return result;
+//  }
 
   session_.Reset();
   return kSuccess;
@@ -341,13 +341,13 @@ int UserCredentialsImpl::GetAndLockLid(const std::string& keyword,
                                        LockingPacket& locking_packet) {
   std::string lid_name(pca::ApplyTypeToName(lid::LidName(keyword, pin), pca::kModifiableByOwner));
 
-  std::shared_ptr<asymm::Keys> keys(
-      new asymm::Keys(passport_.SignaturePacketDetails(passport::kAnmid, true)));
+  asymm::Keys keys(
+      asymm::Keys(passport_.SignaturePacketDetails(passport::kAnmid, true)));
   int get_lock_result(remote_chunk_store_.GetAndLock(lid_name, "", keys, &lid_packet));
   if (get_lock_result != kSuccess) {
     LOG(kError) << "Failed to GetAndLock LID: " << get_lock_result;
     return get_lock_result;
-  };
+  }
   return lid::ProcessAccountStatus(keyword, pin, password, lid_packet, locking_packet);
 }
 
@@ -505,12 +505,12 @@ int UserCredentialsImpl::CreateUser(const std::string& keyword,
   }
   session_.set_changed(true);
 
-  LockingPacket locking_packet(lid::CreateLockingPacket(session_.session_name()));
-  result = StoreLid(keyword, pin, password, locking_packet);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to create LID.";
-    return result;
-  }
+//  LockingPacket locking_packet(lid::CreateLockingPacket(session_.session_name()));
+//  result = StoreLid(keyword, pin, password, locking_packet);
+//  if (result != kSuccess) {
+//    LOG(kError) << "Failed to create LID.";
+//    return result;
+//  }
 
 //  StartSessionSaver();
 
@@ -580,24 +580,24 @@ int UserCredentialsImpl::StoreAnonymousPackets() {
 }
 
 void UserCredentialsImpl::StoreAnmid(OperationResults& results) {
-  std::shared_ptr<asymm::Keys> anmid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kAnmid, false)));
+  asymm::Keys anmid(
+      passport_.SignaturePacketDetails(passport::kAnmid, false));
   StoreSignaturePacket(anmid, results, 0);
 }
 
 void UserCredentialsImpl::StoreAnsmid(OperationResults& results) {
-  std::shared_ptr<asymm::Keys> ansmid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kAnsmid, false)));
+  asymm::Keys ansmid(
+      passport_.SignaturePacketDetails(passport::kAnsmid, false));
   StoreSignaturePacket(ansmid, results, 1);
 }
 
 void UserCredentialsImpl::StoreAntmid(OperationResults& results) {
-  std::shared_ptr<asymm::Keys> antmid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kAntmid, false)));
+  asymm::Keys antmid(
+      passport_.SignaturePacketDetails(passport::kAntmid, false));
   StoreSignaturePacket(antmid, results, 2);
 }
 
-void UserCredentialsImpl::StoreSignaturePacket(std::shared_ptr<asymm::Keys> packet,
+void UserCredentialsImpl::StoreSignaturePacket(asymm::Keys packet,
                                                OperationResults& results,
                                                int index) {
   std::string packet_name, packet_content;
@@ -615,8 +615,8 @@ void UserCredentialsImpl::StoreSignaturePacket(std::shared_ptr<asymm::Keys> pack
 }
 
 void UserCredentialsImpl::StoreAnmaid(OperationResults& results) {
-  std::shared_ptr<asymm::Keys> anmaid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kAnmaid, false)));
+  asymm::Keys anmaid(
+      passport_.SignaturePacketDetails(passport::kAnmaid, false));
   std::string packet_name, packet_content;
 
   CreateSignaturePacketInfo(anmaid, &packet_name, &packet_content);
@@ -636,16 +636,16 @@ void UserCredentialsImpl::StoreMaid(bool result, OperationResults& results) {
     return;
   }
 
-  std::shared_ptr<asymm::Keys> maid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kMaid, false)));
-  std::shared_ptr<asymm::Keys> anmaid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kAnmaid, false)));
+  asymm::Keys maid(
+      passport_.SignaturePacketDetails(passport::kMaid, false));
+  asymm::Keys anmaid(
+      passport_.SignaturePacketDetails(passport::kAnmaid, false));
 
-  std::string maid_name(pca::ApplyTypeToName(maid->identity, pca::kSignaturePacket));
+  std::string maid_name(pca::ApplyTypeToName(maid.identity, pca::kSignaturePacket));
   pca::SignedData signed_maid;
-  signed_maid.set_signature(maid->validation_token);
+  signed_maid.set_signature(maid.validation_token);
   std::string maid_string_public_key;
-  asymm::EncodePublicKey(maid->public_key, &maid_string_public_key);
+  asymm::EncodePublicKey(maid.public_key, &maid_string_public_key);
   if (maid_string_public_key.empty()) {
     LOG(kError) << "Failed to procure sign MAID's public key.";
     StorePmid(false, results);
@@ -668,16 +668,16 @@ void UserCredentialsImpl::StorePmid(bool result, OperationResults& results) {
     return;
   }
 
-  std::shared_ptr<asymm::Keys> pmid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kPmid, false)));
-  std::shared_ptr<asymm::Keys> maid(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kMaid, false)));
+  asymm::Keys pmid(
+      passport_.SignaturePacketDetails(passport::kPmid, false));
+  asymm::Keys maid(
+      passport_.SignaturePacketDetails(passport::kMaid, false));
 
-  std::string pmid_name(pca::ApplyTypeToName(pmid->identity, pca::kSignaturePacket));
+  std::string pmid_name(pca::ApplyTypeToName(pmid.identity, pca::kSignaturePacket));
   pca::SignedData signed_pmid;
-  signed_pmid.set_signature(pmid->validation_token);
+  signed_pmid.set_signature(pmid.validation_token);
   std::string pmid_string_public_key;
-  asymm::EncodePublicKey(pmid->public_key, &pmid_string_public_key);
+  asymm::EncodePublicKey(pmid.public_key, &pmid_string_public_key);
   if (pmid_string_public_key.empty()) {
     LOG(kError) << "Failed to procure sign PMID's public key.";
     StorePmid(false, results);
@@ -798,11 +798,10 @@ void UserCredentialsImpl::StoreIdentity(OperationResults& results,
   std::string packet_name(passport_.IdentityPacketName(id_pt, false)),
               packet_content(passport_.IdentityPacketValue(id_pt, false));
   packet_name = pca::ApplyTypeToName(packet_name, pca::kModifiableByOwner);
-  std::shared_ptr<asymm::Keys> signer(new asymm::Keys(
-      passport_.SignaturePacketDetails(sign_pt, true)));
+  asymm::Keys signer(passport_.SignaturePacketDetails(sign_pt, true));
 
   asymm::Signature signature;
-  int result(asymm::Sign(packet_content, signer->private_key, &signature));
+  int result(asymm::Sign(packet_content, signer.private_key, &signature));
   if (result != kSuccess) {
     LOG(kError) << "Failed to sign content: " << result;
     OperationCallback(false, results, index);
@@ -833,10 +832,9 @@ int UserCredentialsImpl::StoreLid(const std::string keyword,
   std::string encrypted_account_status(lid::EncryptAccountStatus(keyword, pin, password,
                                                                  account_status));
 
-  std::shared_ptr<asymm::Keys> signer(new asymm::Keys(
-      passport_.SignaturePacketDetails(passport::kAnmid, true)));
+  asymm::Keys signer(passport_.SignaturePacketDetails(passport::kAnmid, true));
   asymm::Signature signature;
-  int result(asymm::Sign(encrypted_account_status, signer->private_key, &signature));
+  int result(asymm::Sign(encrypted_account_status, signer.private_key, &signature));
   if (result != kSuccess) {
     LOG(kError) << "Failed to sign content: " << result;
     return result;
@@ -1049,11 +1047,10 @@ void UserCredentialsImpl::ModifyIdentity(OperationResults& results,
   std::string name(passport_.IdentityPacketName(id_pt, false)),
               content(passport_.IdentityPacketValue(id_pt, false));
   name = pca::ApplyTypeToName(name, pca::kModifiableByOwner);
-  std::shared_ptr<asymm::Keys> signer(new asymm::Keys(passport_.SignaturePacketDetails(sign_pt,
-                                                                                       true)));
+  asymm::Keys signer(passport_.SignaturePacketDetails(sign_pt, true));
 
   asymm::Signature signature;
-  int result(asymm::Sign(content, signer->private_key, &signature));
+  int result(asymm::Sign(content, signer.private_key, &signature));
   if (result != kSuccess) {
     LOG(kError) << "Failed to sign content: " << result;
     OperationCallback(false, results, index);
@@ -1085,10 +1082,9 @@ int UserCredentialsImpl::ModifyLid(const std::string keyword,
   std::string encrypted_account_status(lid::EncryptAccountStatus(keyword, pin, password,
                                                                  account_status));
 
-  std::shared_ptr<asymm::Keys> signer(
-      new asymm::Keys(passport_.SignaturePacketDetails(passport::kAnmid, true)));
+  asymm::Keys signer(passport_.SignaturePacketDetails(passport::kAnmid, true));
   asymm::Signature signature;
-  int result(asymm::Sign(encrypted_account_status, signer->private_key, &signature));
+  int result(asymm::Sign(encrypted_account_status, signer.private_key, &signature));
   if (result != kSuccess) {
     LOG(kError) << "Failed to sign content: " << result;
     return result;
@@ -1262,8 +1258,7 @@ void UserCredentialsImpl::DeleteIdentity(OperationResults& results,
   }
   name = pca::ApplyTypeToName(name, pca::kModifiableByOwner);
 
-  std::shared_ptr<asymm::Keys> signer(new asymm::Keys(passport_.SignaturePacketDetails(sig_type,
-                                                                                       true)));
+  asymm::Keys signer(passport_.SignaturePacketDetails(sig_type, true));
   if (!remote_chunk_store_.Delete(name,
                                   [&, index] (bool result) {
                                     OperationCallback(result, results, index);
@@ -1279,9 +1274,7 @@ int UserCredentialsImpl::DeleteLid(const std::string& keyword,
   std::string packet_name(pca::ApplyTypeToName(lid::LidName(keyword, pin),
                                                pca::kModifiableByOwner));
   // TODO(Alison) - check LID and fail if any other instances are logged in
-  std::shared_ptr<asymm::Keys> signer(new asymm::Keys(
-                                          passport_.SignaturePacketDetails(passport::kAnmid,
-                                                                           true)));
+  asymm::Keys signer(passport_.SignaturePacketDetails(passport::kAnmid, true));
   std::vector<int> individual_result(1, priv::utilities::kPendingResult);
   std::condition_variable condition_variable;
   std::mutex mutex;
@@ -1534,62 +1527,57 @@ int UserCredentialsImpl::DeleteSignaturePackets() {
 }
 
 void UserCredentialsImpl::DeleteAnmid(OperationResults& results) {
-  std::shared_ptr<asymm::Keys> anmid(
-      new asymm::Keys(passport_.SignaturePacketDetails(passport::kAnmid, true)));
+  asymm::Keys anmid(passport_.SignaturePacketDetails(passport::kAnmid, true));
   DeleteSignaturePacket(anmid, results, 0);
 }
 
 void UserCredentialsImpl::DeleteAnsmid(OperationResults& results) {
-  std::shared_ptr<asymm::Keys> ansmid(
-      new asymm::Keys(passport_.SignaturePacketDetails(passport::kAnsmid, true)));
+  asymm::Keys ansmid(passport_.SignaturePacketDetails(passport::kAnsmid, true));
   DeleteSignaturePacket(ansmid, results, 1);
 }
 
 void UserCredentialsImpl::DeleteAntmid(OperationResults& results) {
-  std::shared_ptr<asymm::Keys> antmid(
-      new asymm::Keys(passport_.SignaturePacketDetails(passport::kAntmid, true)));
+  asymm::Keys antmid(passport_.SignaturePacketDetails(passport::kAntmid, true));
   DeleteSignaturePacket(antmid, results, 2);
 }
 
 void UserCredentialsImpl::DeletePmid(OperationResults& results) {
   asymm::Keys pmid(passport_.SignaturePacketDetails(passport::kPmid, true));
-  std::shared_ptr<asymm::Keys> maid(
-      new asymm::Keys(passport_.SignaturePacketDetails(passport::kMaid, true)));
+  asymm::Keys maid(passport_.SignaturePacketDetails(passport::kMaid, true));
 
   std::string pmid_name(pca::ApplyTypeToName(pmid.identity, pca::kSignaturePacket));
   if (!remote_chunk_store_.Delete(pmid_name,
                                   [&] (bool result) { DeleteMaid(result, results, maid); },
                                   maid)) {
     LOG(kError) << "Failed to delete PMID.";
-    DeleteMaid(false, results, nullptr);
+    DeleteMaid(false, results, asymm::Keys());
   }
 }
 
 void UserCredentialsImpl::DeleteMaid(bool result,
                                      OperationResults& results,
-                                     std::shared_ptr<asymm::Keys> maid) {
+                                     asymm::Keys maid) {
   if (!result) {
     LOG(kError) << "Failed to delete PMID.";
     OperationCallback(false, results, 3);
     return;
   }
 
-  std::shared_ptr<asymm::Keys> anmaid(
-      new asymm::Keys(passport_.SignaturePacketDetails(passport::kAnmaid, true)));
-  std::string maid_name(pca::ApplyTypeToName(maid->identity, pca::kSignaturePacket));
+  asymm::Keys anmaid(passport_.SignaturePacketDetails(passport::kAnmaid, true));
+  std::string maid_name(pca::ApplyTypeToName(maid.identity, pca::kSignaturePacket));
   if (!remote_chunk_store_.Delete(maid_name,
                                   [&] (bool result) {
                                     DeleteAnmaid(result, results, anmaid);
                                   },
                                   anmaid)) {
     LOG(kError) << "Failed to delete MAID.";
-    DeleteAnmaid(false, results, nullptr);
+    DeleteAnmaid(false, results, asymm::Keys());
   }
 }
 
 void UserCredentialsImpl::DeleteAnmaid(bool result,
                                        OperationResults& results,
-                                       std::shared_ptr<asymm::Keys> anmaid) {
+                                       asymm::Keys anmaid) {
   if (!result) {
     LOG(kError) << "Failed to delete MAID.";
     OperationCallback(false, results, 3);
@@ -1599,10 +1587,10 @@ void UserCredentialsImpl::DeleteAnmaid(bool result,
   DeleteSignaturePacket(anmaid, results, 3);
 }
 
-void UserCredentialsImpl::DeleteSignaturePacket(std::shared_ptr<asymm::Keys> packet,
+void UserCredentialsImpl::DeleteSignaturePacket(asymm::Keys packet,
                                                 OperationResults& results,
                                                 int index) {
-  std::string packet_name(pca::ApplyTypeToName(packet->identity, pca::kSignaturePacket));
+  std::string packet_name(pca::ApplyTypeToName(packet.identity, pca::kSignaturePacket));
   if (!remote_chunk_store_.Delete(packet_name,
                                   [&, index] (bool result) {
                                     OperationCallback(result, results, index);
@@ -1629,22 +1617,22 @@ void UserCredentialsImpl::SessionSaver(const bptime::seconds& interval,
     return;
   }
 
-  bool lid_success(true);
-  int result(AssessAndUpdateLid(false));
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to update LID: " << result << " - won't SaveSession.";
-    lid_success = false;
-  } else {
+//  bool lid_success(true);
+//  int result(AssessAndUpdateLid(false));
+//  if (result != kSuccess) {
+//    LOG(kError) << "Failed to update LID: " << result << " - won't SaveSession.";
+//    lid_success = false;
+//  } else {
     if (session_.session_access_level() == kFullAccess) {
-      result = SaveSession(false);
+      int result = SaveSession(false);
       LOG(kInfo) << "Session saver result: " << result;
     }
-  }
+//  }
 
-  if (lid_success)
-    session_saver_timer_.expires_from_now(bptime::seconds(interval));
-  else
-    session_saver_timer_.expires_from_now(interval + bptime::seconds(5));
+//  if (lid_success)
+//    session_saver_timer_.expires_from_now(bptime::seconds(interval));
+//  else
+//    session_saver_timer_.expires_from_now(interval + bptime::seconds(5));
   session_saver_timer_.async_wait([=] (const boost::system::error_code& error_code) {
                                     this->SessionSaver(bptime::seconds(interval), error_code);
                                   });

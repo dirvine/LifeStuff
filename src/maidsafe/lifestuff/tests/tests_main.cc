@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
 #ifndef LOCAL_TARGETS_ONLY
   maidsafe::log::Logging::instance().AddFilter("rudp", maidsafe::log::kFatal);
   maidsafe::log::Logging::instance().AddFilter("routing", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("pd", maidsafe::log::kFatal);
+  maidsafe::log::Logging::instance().AddFilter("pd", maidsafe::log::kInfo);
 #endif
   maidsafe::log::Logging::instance().AddFilter("lifestuff", maidsafe::log::kInfo);
   maidsafe::log::Logging::instance().SetColour(maidsafe::log::ColourMode::kFullLine);

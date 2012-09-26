@@ -143,22 +143,44 @@ class UserCredentialsTest : public testing::Test {
                                                                         true).identity);
     LOG(kSuccess) << "Account name for vault " << Base32Substr(account_name);
     vault_node.set_account_name(account_name);
-    vault_node.set_keys(std::make_shared<asymm::Keys>(
-                            session_.passport().SignaturePacketDetails(passport::kPmid, true)));
+    vault_node.set_keys(session_.passport().SignaturePacketDetails(passport::kPmid, true));
 
     return vault_node.Start(*test_dir_ / ("client_vault" + RandomAlphaNumericString(8)));
   }
 
-  int ResetNodeAndDependencies() {
+  int MakeClientNode() {
     int result(node_->Stop());
     if (result != kSuccess) {
       LOG(kError) << "Failed to stop client node.";
       return result;
     }
-    std::shared_ptr<asymm::Keys> maid(new asymm::Keys(
-        session_.passport().SignaturePacketDetails(passport::kMaid, true)));
+    asymm::Keys maid(session_.passport().SignaturePacketDetails(passport::kMaid, true));
     node_->set_keys(maid);
-    node_->set_account_name(maid->identity);
+    node_->set_account_name(maid.identity);
+    result = node_->Start(*test_dir_ / "buffered_chunk_store");
+    if (result != kSuccess) {
+      LOG(kError) << "Failed to start client node.";
+      return result;
+    }
+
+    remote_chunk_store_.reset(new pcs::RemoteChunkStore(node_->chunk_store(),
+                                                        node_->chunk_manager(),
+                                                        node_->chunk_action_authority()));
+    user_credentials_.reset(new UserCredentials(*remote_chunk_store_,
+                                                session_,
+                                                asio_service_.service()));
+    return kSuccess;
+  }
+
+  int MakeAnonymousNode() {
+    int result(node_->Stop());
+    if (result != kSuccess) {
+      LOG(kError) << "Failed to stop client node.";
+      return result;
+    }
+
+    node_->set_keys(asymm::Keys());
+    node_->set_account_name("");
     result = node_->Start(*test_dir_ / "buffered_chunk_store");
     if (result != kSuccess) {
       LOG(kError) << "Failed to start client node.";
@@ -208,12 +230,38 @@ TEST_F(UserCredentialsTest, FUNC_LoginSequence) {
   LOG(kSuccess) << "User created.\n===================\n\n\n\n";
 
 #ifndef LOCAL_TARGETS_ONLY
-  pd::vault::Node node;
-  ASSERT_EQ(kSuccess, CreateVaultForClient(node));
+  pd::vault::Node vault_node;
+  ASSERT_EQ(kSuccess, CreateVaultForClient(vault_node));
   LOG(kSuccess) << "Constructed vault.\n===================\n\n\n\n";
   Sleep(bptime::seconds(15));
-  ASSERT_EQ(kSuccess, ResetNodeAndDependencies());
-  LOG(kSuccess) << "Constructed new client node.\n===================\n\n\n\n";
+  ASSERT_EQ(kSuccess, MakeClientNode());
+  LOG(kSuccess) << "Constructed client node.\n===================\n\n\n\n";
+  Sleep(bptime::seconds(15));
+#endif
+
+  EXPECT_EQ(kSuccess, user_credentials_->Logout());
+  EXPECT_TRUE(session_.keyword().empty());
+  EXPECT_TRUE(session_.pin().empty());
+  EXPECT_TRUE(session_.password().empty());
+  LOG(kInfo) << "Logged out.\n===================\n";
+  Sleep(bptime::seconds(15));
+
+#ifndef LOCAL_TARGETS_ONLY
+  ASSERT_EQ(kSuccess, MakeAnonymousNode());
+  Sleep(bptime::seconds(15));
+  LOG(kSuccess) << "Constructed anonymous node.\n===================\n\n\n\n";
+#endif
+
+  ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
+  ASSERT_EQ(keyword_, session_.keyword());
+  ASSERT_EQ(pin_, session_.pin());
+  ASSERT_EQ(password_, session_.password());
+  LOG(kInfo) << "Logged in.\n===================\n";
+
+#ifndef LOCAL_TARGETS_ONLY
+  ASSERT_EQ(kSuccess, MakeClientNode());
+  LOG(kSuccess) << "Constructed client node.\n===================\n\n\n\n";
+  Sleep(bptime::seconds(15));
 #endif
 
   ASSERT_EQ(kSuccess, user_credentials_->Logout());
@@ -222,20 +270,12 @@ TEST_F(UserCredentialsTest, FUNC_LoginSequence) {
   ASSERT_TRUE(session_.password().empty());
   LOG(kInfo) << "Logged out.\n===================\n";
 
-  ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
-  ASSERT_EQ(keyword_, session_.keyword());
-  ASSERT_EQ(pin_, session_.pin());
-  ASSERT_EQ(password_, session_.password());
-  LOG(kInfo) << "Logged in.\n===================\n";
-
-  ASSERT_EQ(kSuccess, user_credentials_->Logout());
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
-  LOG(kInfo) << "Logged out.\n===================\n";
-
-  ASSERT_NE(kSuccess, user_credentials_->LogIn(RandomAlphaNumericString(9), pin_, password_));
-  LOG(kInfo) << "Can't log in with fake details.";
+#ifndef LOCAL_TARGETS_ONLY
+  ASSERT_EQ(kSuccess, node_->Stop());
+  ASSERT_EQ(kSuccess, vault_node.Stop());
+#endif
+//  ASSERT_NE(kSuccess, user_credentials_->LogIn(RandomAlphaNumericString(9), pin_, password_));
+//  LOG(kInfo) << "Can't log in with fake details.";
 }
 
 TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
@@ -342,7 +382,7 @@ TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
 }
 
 TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
-  ASSERT_TRUE(session_.def_con_level() == kDefCon3);
+  ASSERT_TRUE(session_.def_con_level() == DefConLevels::kDefCon3);
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());
@@ -372,7 +412,7 @@ TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
   ASSERT_TRUE(session_.password().empty());
   LOG(kInfo) << "Logged out.\n===================\n";
 
-  ASSERT_TRUE(session_.def_con_level() == kDefCon3);
+  ASSERT_TRUE(session_.def_con_level() == DefConLevels::kDefCon3);
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());
@@ -399,7 +439,7 @@ TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
   ASSERT_TRUE(session_.password().empty());
   LOG(kInfo) << "Logged out.\n===================\n";
 
-  ASSERT_TRUE(session_.def_con_level() == kDefCon3);
+  ASSERT_TRUE(session_.def_con_level() == DefConLevels::kDefCon3);
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());
@@ -416,7 +456,7 @@ TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
   ASSERT_NE(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_ + password_));
   LOG(kInfo) << "Invalid password fails.\n===================\n";
 
-  ASSERT_TRUE(session_.def_con_level() == kDefCon3);
+  ASSERT_TRUE(session_.def_con_level() == DefConLevels::kDefCon3);
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());
@@ -442,7 +482,7 @@ TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
   ASSERT_TRUE(session_.password().empty());
   LOG(kInfo) << "Logged out.\n===================\n";
 
-  ASSERT_TRUE(session_.def_con_level() == kDefCon3);
+  ASSERT_TRUE(session_.def_con_level() == DefConLevels::kDefCon3);
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());

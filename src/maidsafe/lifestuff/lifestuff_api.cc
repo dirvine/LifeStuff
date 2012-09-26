@@ -74,8 +74,9 @@ int LifeStuff::Finalise() {
 int LifeStuff::CreateUser(const std::string& keyword,
                           const std::string& pin,
                           const std::string& password,
-                          const fs::path& chunk_store) {
-  return lifestuff_impl_->CreateUser(keyword, pin, password, chunk_store);
+                          const fs::path& chunk_store,
+                          bool vault_cheat) {
+  return lifestuff_impl_->CreateUser(keyword, pin, password, chunk_store, vault_cheat);
 }
 
 int LifeStuff::CreatePublicId(const std::string& public_id) {
