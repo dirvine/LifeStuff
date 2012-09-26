@@ -103,7 +103,7 @@ void MessageHandler::EnqueuePresenceMessages(ContactPresence presence) {
 int MessageHandler::StartCheckingForNewMessages(bptime::seconds interval) {
   if (session_.PublicIdentities().empty()) {
     LOG(kError) << "No public username set";
-    return kNoPublicIds;
+    return kStartMessagesNoPublicIds;
   }
   get_new_messages_timer_active_ = true;
   get_new_messages_timer_.expires_from_now(interval);
@@ -124,7 +124,7 @@ int MessageHandler::Send(const InboxItem& inbox_item) {
   Message message;
   if (!InboxToProtobuf(inbox_item, &message)) {
     LOG(kError) << "Invalid message. Won't send. Good day. I said: 'Good day!'";
-    return -7;
+    return kCannotConvertInboxItemToProtobuf;
   }
 
   const ContactsHandlerPtr contacts_handler(session_.contacts_handler(inbox_item.sender_public_id));
@@ -141,7 +141,7 @@ int MessageHandler::Send(const InboxItem& inbox_item) {
     LOG(kError) << "Failed to get MMID for " << inbox_item.receiver_public_id << ", type: "
                 << inbox_item.item_type << ", result: " << result
                 << ", " << std::boolalpha << asymm::ValidateKey(recipient_contact.inbox_public_key);
-    return result == kSuccess ? kGeneralError : result;
+    return result == kSuccess ? kContactInfoContentsFailure : result;
   }
   asymm::PublicKey recipient_public_key(recipient_contact.inbox_public_key);
 
@@ -187,7 +187,6 @@ int MessageHandler::Send(const InboxItem& inbox_item) {
   }
 
   try {
-
     std::unique_lock<std::mutex> lock(mutex);
     if (!cond_var.wait_for(lock,
                            std::chrono::seconds(kSecondsInterval),

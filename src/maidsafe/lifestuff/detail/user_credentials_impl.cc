@@ -225,7 +225,7 @@ int UserCredentialsImpl::AttemptLogInProcess(const std::string& keyword,
 int UserCredentialsImpl::LogOut() {
   int result(SaveSession(true));
   if (result != kSuccess) {
-    LOG(kError) << "Failed to save session on Logout";
+    LOG(kError) << "Failed to save session on Logout with result " << result;
     return result;
   }
 //  result = AssessAndUpdateLid(true);
@@ -311,24 +311,25 @@ int UserCredentialsImpl::GetUserInfo(const std::string& keyword,
   // Evaluate MID & TMID
   if (mid_tmid_result == kIdPacketNotFound && smid_stmid_result == kIdPacketNotFound) {
     LOG(kInfo) << "User doesn't exist: " << keyword << ", " << pin;
-    return kUserDoesntExist;
+    return kLoginUserNonExistence;
   }
 
   if (mid_tmid_result == kCorruptedPacket && smid_stmid_result == kCorruptedPacket) {
     LOG(kError) << "Account corrupted. Should never happen: "
                 << keyword << ", " << pin;
-    return kAccountCorrupted;
+    return kLoginAccountCorrupted;
   }
 
   int result(HandleSerialisedDataMaps(keyword, pin, password, tmid_packet, stmid_packet));
   if (result != kSuccess) {
     if (result == kTryAgainLater) {
-      return result;
-    } else if (result != kUsingNextToLastSession) {
+      return kLoginSessionNotYetSaved;
+    } else if (result == kUsingNextToLastSession) {
+      return kLoginUsingNextToLastSession;
+    } else {
       LOG(kError) << "Failed to initialise session: " << result;
-      result = kAccountCorrupted;
+      return kLoginAccountCorrupted;
     }
-    return result;
   }
 
   return kSuccess;
@@ -452,9 +453,9 @@ int UserCredentialsImpl::HandleSerialisedDataMaps(const std::string& keyword,
     }
   }
 
-  result = passport_.SetIdentityPackets(keyword, pin, password, tmid_da, stmid_da);
-  result += passport_.ConfirmIdentityPackets();
-  if (result != kSuccess) {
+  int id_packets_result = passport_.SetIdentityPackets(keyword, pin, password, tmid_da, stmid_da);
+  id_packets_result += passport_.ConfirmIdentityPackets();
+  if (id_packets_result != kSuccess) {
     LOG(kError) << "Failure to set and confirm identity packets.";
     return kSetIdentityPacketsFailure;
   }
@@ -1447,35 +1448,35 @@ int UserCredentialsImpl::SerialiseAndSetIdentity(const std::string& keyword,
 }
 
 int UserCredentialsImpl::DeleteUserCredentials() {
-  std::string lid_packet;
-  LockingPacket locking_packet;
-  int lid_result(GetAndLockLid(session_.keyword(),
-                               session_.pin(),
-                               session_.password(),
-                               lid_packet,
-                               locking_packet));
-  if (lid_result != kSuccess) {
-    LOG(kError) << "Failed to GetAndLock LID.";
-    return lid_result;
-  }
+//  std::string lid_packet;
+//  LockingPacket locking_packet;
+//  int lid_result(GetAndLockLid(session_.keyword(),
+//                               session_.pin(),
+//                               session_.password(),
+//                               lid_packet,
+//                               locking_packet));
+//  if (lid_result != kSuccess) {
+//    LOG(kError) << "Failed to GetAndLock LID.";
+//    return lid_result;
+//  }
 
-  int result(lid::CheckLockingPacketForOthersLoggedIn(locking_packet, session_.session_name()));
-  if (result != kSuccess) {
-    LOG(kError) << "Can't delete locking packet because of LID contents: " << result;
-    return result;
-  }
+//  int result(lid::CheckLockingPacketForOthersLoggedIn(locking_packet, session_.session_name()));
+//  if (result != kSuccess) {
+//    LOG(kError) << "Can't delete locking packet because of LID contents: " << result;
+//    return result;
+//  }
 
-  result = DeleteOldIdentityPackets();
+  int result(DeleteOldIdentityPackets());
   if (result != kSuccess) {
     LOG(kError) << "Failed to delete identity packets.";
     return result;
   }
 
-  result = DeleteLid(session_.keyword(), session_.pin());
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to delete LID.";
-    return result;
-  }
+//  result = DeleteLid(session_.keyword(), session_.pin());
+//  if (result != kSuccess) {
+//    LOG(kError) << "Failed to delete LID.";
+//    return result;
+//  }
 
   result = DeleteSignaturePackets();
   if (result != kSuccess) {

@@ -60,16 +60,9 @@ void InitialiseAndConnectElements(LifeStuff& elements, const fs::path& dir, vola
                                                             done);
                                       },
                                       ContactDeletionFunction(),
-                                      PrivateShareInvitationFunction(),
-                                      PrivateShareDeletionFunction(),
-                                      PrivateMemberAccessChangeFunction(),
-                                      OpenShareInvitationFunction(),
-                                      ShareRenamedFunction(),
-                                      ShareChangedFunction(),
                                       LifestuffCardUpdateFunction(),
                                       NetworkHealthFunction(),
                                       ImmediateQuitRequiredFunction()));
-
 }
 
 }  // namespace

@@ -107,7 +107,6 @@ class MessageHandler {
 
   void ProcessContactPresence(const InboxItem& presence_message);
   void ProcessContactProfilePicture(const InboxItem& profile_message);
-  void ProcessOpenShareInvitation(const InboxItem& open_share_invitation);
   void ProcessFileTransfer(const InboxItem& file_transfer_message);
   void ProcessShareInvitationResponse(const InboxItem& inbox_item);
 

@@ -218,7 +218,7 @@ TEST_F(UserCredentialsTest, FUNC_LoginSequence) {
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());
-  ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
+  ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(keyword_, pin_, password_));
   LOG(kSuccess) << "Preconditions fulfilled.\n===================\n";
 
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
@@ -282,7 +282,7 @@ TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());
-  ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
+  ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(keyword_, pin_, password_));
   LOG(kInfo) << "Preconditions fulfilled.\n===================\n";
 
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
@@ -368,11 +368,11 @@ TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
   ASSERT_TRUE(session_.password().empty());
   LOG(kInfo) << "Logged out.\n===================\n";
 
-  ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
-  ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(kNewKeyword, pin_, password_));
-  ASSERT_EQ(kAccountCorrupted, user_credentials_->LogIn(kNewKeyword, kNewPin, password_));
-  ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(kNewKeyword, pin_, kNewPassword));
-  ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, kNewPin, kNewPassword));
+  ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(keyword_, pin_, password_));
+  ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(kNewKeyword, pin_, password_));
+  ASSERT_EQ(kLoginAccountCorrupted, user_credentials_->LogIn(kNewKeyword, kNewPin, password_));
+  ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(kNewKeyword, pin_, kNewPassword));
+  ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(keyword_, kNewPin, kNewPassword));
   LOG(kInfo) << "Can't log in with old u/p/w.";
 
   EXPECT_EQ("", remote_chunk_store_->Get(lid::LidName(keyword_, pin_)));
@@ -396,7 +396,7 @@ TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
   ASSERT_EQ(session_.session_access_level(), kNoAccess);
   LOG(kInfo) << "Preconditions fulfilled.\n===================\n";
 
-  ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
+  ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(keyword_, pin_, password_));
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
   session_.set_unique_user_id(RandomString(64));
   session_.set_root_parent_id(RandomString(64));
@@ -560,13 +560,13 @@ TEST_F(UserCredentialsTest, DISABLED_FUNC_MonitorLidPacket) {
   }
 }
 
-TEST_F(UserCredentialsTest, FUNC_ParallelLogin) {
+TEST_F(UserCredentialsTest, DISABLED_FUNC_ParallelLogin) {
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());
   LOG(kInfo) << "Preconditions fulfilled.\n===================\n";
 
-  ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
+  ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(keyword_, pin_, password_));
 
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
   session_.set_unique_user_id(RandomString(64));
@@ -632,7 +632,7 @@ TEST_F(UserCredentialsTest, FUNC_MultiUserCredentialsLoginAndLogout) {
   ASSERT_TRUE(session_.password().empty());
   LOG(kInfo) << "Preconditions fulfilled.\n===================\n";
 
-  ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
+  ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(keyword_, pin_, password_));
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
   session_.set_unique_user_id(RandomString(64));
   session_.set_root_parent_id(RandomString(64));

@@ -81,12 +81,12 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
                               const fs::path& base_directory) {
   if (state_ != kZeroth) {
     LOG(kError) << "Make sure that object is in the original Zeroth state. Asimov rules.";
-    return kGeneralError;
+    return kWrongState;
   }
 
   if (!software_update_available_function) {
     LOG(kError) << "No function provided for SW update. Unacceptable. Good day!";
-    return kGeneralError;
+    return kInitialiseUpdateFunctionFailure;
   }
 
   // Initialisation
@@ -126,7 +126,7 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
 
   if (bootstrap_endpoints.empty()) {
     LOG(kWarning) << "Failure to initialise client controller. No bootstrap contacts.";
-    return kGeneralError;
+    return kInitialiseBootstrapsFailure;
   }
 
   remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path,
@@ -136,7 +136,7 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
 #endif
   if (!remote_chunk_store_) {
     LOG(kError) << "Could not initialise chunk store.";
-    return kGeneralError;
+    return kInitialiseChunkStoreFailure;
   }
 
   buffered_path_ = buffered_chunk_store_path;
@@ -164,11 +164,11 @@ int LifeStuffImpl::ConnectToSignals(
     const ImmediateQuitRequiredFunction& immediate_quit_required_function) {
   if (state_ != kInitialised) {
     LOG(kError) << "Make sure that object is initialised";
-    return kGeneralError;
+    return kWrongState;
   }
 
   if (set_slots) {
-    int connects(0);
+    uint32_t connects(0);
     if (chat_slot) {
       ++connects;
       slots_.chat_slot = chat_slot;
@@ -211,7 +211,7 @@ int LifeStuffImpl::ConnectToSignals(
     }
     if (connects == 0) {
       LOG(kError) << "No signals connected.";
-      return kGeneralError;
+      return kSetSlotsFailure;
     }
     ImmediateQuitRequiredFunction must_die = [&] {
                                                LOG(kInfo) << "Immediate quit required! " <<
@@ -227,7 +227,7 @@ int LifeStuffImpl::ConnectToSignals(
 
   if (!message_handler_ || !public_id_ || !user_storage_) {
     LOG(kError) << "Unable to connect to signals.";
-    return kGeneralError;
+    return kConnectSignalsFailure;
   }
 
   message_handler_->ConnectToChatSignal(chat_slot);
@@ -258,7 +258,7 @@ int LifeStuffImpl::ConnectToSignals(
 int LifeStuffImpl::Finalise() {
   if (state_ != kConnected) {
     LOG(kError) << "Need to be connected to finalise.";
-    return kGeneralError;
+    return kWrongState;
   }
 
   boost::system::error_code error_code;
@@ -288,7 +288,7 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
                               bool vault_cheat) {
   if (state_ != kConnected) {
     LOG(kError) << "Make sure that object is initialised and connected";
-    return kGeneralError;
+    return kWrongState;
   }
 
   if ((kCredentialsLoggedIn & logged_in_state_) == kCredentialsLoggedIn ||
@@ -297,19 +297,25 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
     LOG(kError) << "In unsuitable state to create user: " <<
                    "make sure user_credentials are logged out, the drive is unmounted and " <<
                    "messages and intros have been stopped.";
-    return kWrongOrderFailure;
+    return kWrongLoggedInState;
   }
-  // TODO(Alison) - should we reset session here?
+  session_.Reset();
 
   int result(user_credentials_->CreateUser(keyword, pin, password));
   if (result != kSuccess) {
-    LOG(kError) << "Failed to Create User.";
-    return result;
+    if (result == kKeywordSizeInvalid || result == kKeywordPatternInvalid ||
+        result == kPinSizeInvalid || result == kPinPatternInvalid ||
+        result == kPasswordSizeInvalid || result == kPasswordPatternInvalid) {
+      return result;
+    } else {
+      LOG(kError) << "Failed to Create User with result: " << result;
+      return result;
+    }
   }
 
   result = SetValidPmidAndInitialisePublicComponents();
   if (result != kSuccess)  {
-    LOG(kError) << "Failed to set valid PMID";
+    LOG(kError) << "Failed to set valid PMID with result: " << result;
     return result;
   }
 
@@ -318,7 +324,7 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
 #else
   result = CreateVaultInLocalMachine(chunk_store, vault_cheat);
   if (result != kSuccess)  {
-    LOG(kError) << "Failed to create vault. No LifeStuff for you!";
+    LOG(kError) << "Failed to create vault. No LifeStuff for you! (Result: " << result << ")";
     return result;
   }
 
@@ -345,8 +351,13 @@ int LifeStuffImpl::CreatePublicId(const std::string& public_id) {
 
   result = public_id_->CreatePublicId(public_id, true);
   if (result != kSuccess) {
-    LOG(kError) << "Failed to create public ID.";
-    return result;
+    if (result == kPublicIdEmpty || result == kPublicIdLengthInvalid ||
+        result == kPublicIdEndSpaceInvalid || result == kPublicIdDoubleSpaceInvalid) {
+      return result;
+    } else {
+      LOG(kError) << "Failed to create public ID with result: " << result;
+      return result;
+    }
   }
 
   if (first_public_id) {
@@ -367,7 +378,7 @@ int LifeStuffImpl::LogIn(const std::string& keyword,
                          const std::string& password) {
   if (state_ != kConnected) {
     LOG(kError) << "Make sure that object is initialised and connected";
-    return kGeneralError;
+    return kWrongState;
   }
 
   if ((kCredentialsLoggedIn & logged_in_state_) == kCredentialsLoggedIn ||
@@ -376,19 +387,27 @@ int LifeStuffImpl::LogIn(const std::string& keyword,
     LOG(kError) << "In unsuitable state to log in: " <<
                    "make sure user_credentials are logged out, the drive is unmounted and " <<
                    "messages and intros have been stopped.";
-    return kWrongOrderFailure;
+    return kWrongLoggedInState;
   }
   session_.Reset();
 
   int login_result(user_credentials_->LogIn(keyword, pin, password));
   if (login_result != kSuccess && login_result != kReadOnlyRestrictedSuccess) {
-    LOG(kError) << "LogIn failed with result: " << login_result;
-    return login_result;
+    if (login_result == kKeywordSizeInvalid || login_result == kKeywordPatternInvalid ||
+        login_result == kPinSizeInvalid || login_result == kPinPatternInvalid ||
+        login_result == kPasswordSizeInvalid || login_result == kPasswordPatternInvalid ||
+        login_result == kLoginUserNonExistence || login_result == kLoginAccountCorrupted ||
+        login_result == kLoginSessionNotYetSaved || login_result == kLoginUsingNextToLastSession) {
+      return login_result;
+    } else {
+      LOG(kError) << "LogIn failed with result: " << login_result;
+      return login_result;
+    }
   }
 
   int result(SetValidPmidAndInitialisePublicComponents());
   if (result != kSuccess)  {
-    LOG(kError) << "Failed to set valid PMID";
+    LOG(kError) << "Failed to set valid PMID with result: " << result;
     return result;
   }
 
@@ -401,28 +420,29 @@ int LifeStuffImpl::LogIn(const std::string& keyword,
 int LifeStuffImpl::LogOut() {
   if (state_ != kLoggedIn) {
     LOG(kError) << "Should be logged in to log out.";
-    return kGeneralError;
+    return kWrongState;
   }
   if ((kMessagesAndIntrosStarted & logged_in_state_) == kMessagesAndIntrosStarted ||
       (kDriveMounted & logged_in_state_) == kDriveMounted) {
     LOG(kError) << "In incorrect state to log out. " <<
                    "Make sure messages and intros have been stopped and drive has been unmounted.";
-    return kWrongOrderFailure;
+    return kWrongLoggedInState;
   }
   if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn) {
     LOG(kError) << "In incorrect state to log out. " <<
                    "Make user credentials are logged in first.";
-    return kWrongOrderFailure;
+    return kWrongLoggedInState;
   }
 
-  if (user_credentials_->Logout() != kSuccess) {
-    LOG(kError) << "Failed to log out.";
-    return kGeneralError;
+  int result(user_credentials_->Logout());
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to log out with result " << result;
+    return kLogoutCredentialsFailure;
   }
 
   if (!remote_chunk_store_->WaitForCompletion()) {
     LOG(kError) << "Failed complete chunk operations.";
-    return kGeneralError;
+    return kLogoutCompleteChunkFailure;
   }
 
   session_.Reset();
@@ -436,7 +456,7 @@ int LifeStuffImpl::LogOut() {
 int LifeStuffImpl::CreateAndMountDrive() {
   if (session_.session_access_level() == kReadOnly) {
     LOG(kError) << "Can't create and mount drive when session is read only!";
-    return kGeneralError;
+    return kWrongAccessLevel;
   }
 
   if ((kCreating & logged_in_state_) != kCreating ||
@@ -444,7 +464,7 @@ int LifeStuffImpl::CreateAndMountDrive() {
       (kDriveMounted & logged_in_state_) == kDriveMounted) {
     LOG(kError) << "In unsuitable state to create and mount drive: " <<
                    "make sure a CreateUser has just been run and drive is not already mounted.";
-    return kWrongOrderFailure;
+    return kWrongLoggedInState;
   }
 
   boost::system::error_code error_code;
@@ -454,14 +474,14 @@ int LifeStuffImpl::CreateAndMountDrive() {
     if (error_code) {
       LOG(kError) << "Failed to create app directories - " << error_code.value()
                   << ": " << error_code.message();
-      return kGeneralError;
+      return kCreateDirectoryError;
     }
   }
 
   user_storage_->MountDrive(mount_dir, &session_, true, false);
   if (!user_storage_->mount_status()) {
     LOG(kError) << "Failed to mount";
-    return kGeneralError;
+    return kMountDriveOnCreationError;
   }
 
   fs::path mount_path(user_storage_->mount_dir());
@@ -469,14 +489,14 @@ int LifeStuffImpl::CreateAndMountDrive() {
   if (error_code) {
     LOG(kError) << "Failed creating My Stuff: " << error_code.message();
     user_storage_->UnMountDrive();
-    return kGeneralError;
+    return kCreateMyStuffError;
   }
 
   fs::create_directory(mount_path / kSharedStuff, error_code);
   if (error_code) {
     LOG(kError) << "Failed creating Shared Stuff: " << error_code.message();
     user_storage_->UnMountDrive();
-    return kGeneralError;
+    return kCreateSharedStuffError;
   }
 
   logged_in_state_ = logged_in_state_ ^ kDriveMounted;
@@ -486,7 +506,7 @@ int LifeStuffImpl::CreateAndMountDrive() {
 int LifeStuffImpl::MountDrive(bool read_only) {
   if (!read_only && session_.session_access_level() == kReadOnly) {
     LOG(kError) << "Can't mount drive with full access when session is read only!";
-    return kGeneralError;
+    return kWrongAccessLevel;
   }
 
   if ((kCreating & logged_in_state_) == kCreating ||
@@ -494,21 +514,22 @@ int LifeStuffImpl::MountDrive(bool read_only) {
       (kDriveMounted & logged_in_state_) == kDriveMounted) {
     LOG(kError) << "In unsuitable state to mount drive: " <<
                    "make sure LogIn has been run and drive is not already mounted.";
-    return kWrongOrderFailure;
+    return kWrongLoggedInState;
   }
 
+  // TODO(Alison) - give error codes proper names
   boost::system::error_code error_code;
   fs::path mount_dir(GetHomeDir() / kAppHomeDirectory / session_.session_name());
   if (!fs::exists(mount_dir, error_code)) {
     if (error_code) {
       if (error_code.value() == boost::system::errc::not_connected) {
         LOG(kError) << "\tHint: Try unmounting the drive manually.";
-        return kGeneralError;
+        return kMountDriveTryManualUnMount;
       } else if (error_code != boost::system::errc::no_such_file_or_directory) {
         if (!fs::create_directories(mount_dir, error_code) || error_code) {
           LOG(kError) << "Failed to create mount directory at " << mount_dir.string()
                       << " - " << error_code.value() << ": " << error_code.message();
-          return kGeneralError;
+          return kMountDriveMountPointCreationFailure;
         }
       }
     }
@@ -517,7 +538,7 @@ int LifeStuffImpl::MountDrive(bool read_only) {
   user_storage_->MountDrive(mount_dir, &session_, false, read_only);
   if (!user_storage_->mount_status()) {
     LOG(kError) << "Failed to mount";
-    return kGeneralError;
+    return kMountDriveError;
   }
 
   logged_in_state_ = logged_in_state_ ^ kDriveMounted;
@@ -533,13 +554,13 @@ int LifeStuffImpl::UnMountDrive() {
     LOG(kError) << "In unsuitable state to unmount drive: " <<
                    "make sure user_credentials are logged in, drive is mounted and "
                    "messages and intros have been stopped.";
-    return kWrongOrderFailure;
+    return kWrongLoggedInState;
   }
 
   user_storage_->UnMountDrive();
   if (user_storage_->mount_status()) {
     LOG(kError) << "Failed to un-mount.";
-    return kGeneralError;
+    return kUnMountDriveError;
   }
 
   // Delete mount directory
@@ -560,16 +581,16 @@ int LifeStuffImpl::StartMessagesAndIntros() {
      LOG(kError) << "In unsuitable state to start mesages and intros: " <<
                     "make sure user_credentials are logged in, drive is mounted and " <<
                     "messages/intros have not been started already.";
-     return kWrongOrderFailure;
+     return kWrongLoggedInState;
   }
   if (session_.session_access_level() != kFullAccess) {
     LOG(kError) << "Shouldn't check for messages/intros when session access level is " <<
                    session_.session_access_level();
-    return kGeneralError;
+    return kWrongAccessLevel;
   }
   if (session_.PublicIdentities().empty()) {
     LOG(kInfo) << "Won't check for messages/intros because there is no public ID.";
-    return kNoPublicIds;
+    return kStartMessagesAndContactsNoPublicIds;
   }
 
   public_id_->StartUp(interval_);
@@ -584,7 +605,7 @@ int LifeStuffImpl::StopMessagesAndIntros() {
       (kDriveMounted & logged_in_state_) != kDriveMounted) {
      LOG(kError) << "In unsuitable state to stop messages and intros: " <<
                     "make sure user_credentials are logged in and drive is mounted.";
-     return kWrongOrderFailure;
+     return kWrongLoggedInState;
   }
 
   public_id_->ShutDown();
@@ -599,7 +620,7 @@ int LifeStuffImpl::CheckPassword(const std::string& password) {
   if (result != kSuccess)
     return result;
 
-  return session_.password() == password ? kSuccess : kGeneralError;
+  return session_.password() == password ? kSuccess : kCheckPasswordFailure;
 }
 
 int LifeStuffImpl::ChangeKeyword(const std::string& new_keyword, const std::string& password) {
@@ -618,7 +639,13 @@ int LifeStuffImpl::ChangeKeyword(const std::string& new_keyword, const std::stri
     return kSuccess;
   }
 
-  return user_credentials_->ChangeKeyword(new_keyword);
+  result = user_credentials_->ChangeKeyword(new_keyword);
+  if (result == kSuccess || result == kKeywordSizeInvalid || result == kKeywordPatternInvalid) {
+    return result;
+  } else {
+    LOG(kError) << "Changing Keyword failed with result: " << result;
+    return result;
+  }
 }
 
 int LifeStuffImpl::ChangePin(const std::string& new_pin, const std::string& password) {
@@ -637,7 +664,13 @@ int LifeStuffImpl::ChangePin(const std::string& new_pin, const std::string& pass
     return kSuccess;
   }
 
-  return user_credentials_->ChangePin(new_pin);
+  result = user_credentials_->ChangePin(new_pin);
+  if (result == kSuccess || result == kPinSizeInvalid || result == kPinPatternInvalid) {
+    return result;
+  } else {
+    LOG(kError) << "Changing PIN failed with result: " << result;
+    return result;
+  }
 }
 
 int LifeStuffImpl::ChangePassword(const std::string& new_password,
@@ -657,7 +690,13 @@ int LifeStuffImpl::ChangePassword(const std::string& new_password,
     return kSuccess;
   }
 
-  return user_credentials_->ChangePassword(new_password);
+  result = user_credentials_->ChangePassword(new_password);
+  if (result == kSuccess || result == kPasswordSizeInvalid || result == kPasswordPatternInvalid) {
+    return result;
+  } else {
+    LOG(kError) << "Changing Password failed with result: " << result;
+    return result;
+  }
 }
 
 int LifeStuffImpl::LeaveLifeStuff() {
@@ -704,7 +743,12 @@ int LifeStuffImpl::AddContact(const std::string& my_public_id,
     return result;
   }
 
-  return public_id_->AddContact(my_public_id, contact_public_id, message);
+  result = public_id_->AddContact(my_public_id, contact_public_id, message);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to add contact with result: " << result;
+    return result;
+  }
+  return kSuccess;
 }
 
 int LifeStuffImpl::ConfirmContact(const std::string& my_public_id,
@@ -717,11 +761,16 @@ int LifeStuffImpl::ConfirmContact(const std::string& my_public_id,
 
   result = public_id_->ConfirmContact(my_public_id, contact_public_id);
   if (result != kSuccess) {
-    LOG(kError) << "Failed to Confirm Contact.";
+    LOG(kError) << "Failed to Confirm Contact with result: " << result;
     return result;
   }
 
-  return message_handler_->SendPresenceMessage(my_public_id, contact_public_id, kOnline);
+  result = message_handler_->SendPresenceMessage(my_public_id, contact_public_id, kOnline);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to send presence message with result: " << result;
+    return result;
+  }
+  return kSuccess;
 }
 
 int LifeStuffImpl::DeclineContact(const std::string& my_public_id,
@@ -732,7 +781,12 @@ int LifeStuffImpl::DeclineContact(const std::string& my_public_id,
     return result;
   }
 
-  return public_id_->RejectContact(my_public_id, contact_public_id);
+  result = public_id_->RejectContact(my_public_id, contact_public_id);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to decline contact with result: " << result;
+    return result;
+  }
+  return kSuccess;
 }
 
 int LifeStuffImpl::RemoveContact(const std::string& my_public_id,
@@ -752,10 +806,11 @@ int LifeStuffImpl::RemoveContact(const std::string& my_public_id,
                                      removal_message,
                                      timestamp,
                                      instigator);
-  if (result != kSuccess)
-    LOG(kError) << "Failed remove contact in RemoveContact.";
-
-  return result;
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to remove contact with result: " << result;
+    return result;
+  }
+  return kSuccess;
 }
 
 int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
@@ -770,7 +825,7 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
       profile_picture_contents.size() > kFileRecontructionLimit) {
     LOG(kError) << "Contents of picture inadequate(" << profile_picture_contents.size()
                 << "). Good day!";
-    return kGeneralError;
+    return kChangePictureWrongSize;
   }
 
   // Message construction
@@ -782,10 +837,11 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
     fs::path profile_picture_path(mount_path() / std::string(my_public_id +
                                                              "_profile_picture" +
                                                              kHiddenFileExtension));
-    if (user_storage_->WriteHiddenFile(profile_picture_path, profile_picture_contents, true) !=
-        kSuccess) {
-      LOG(kError) << "Failed to write profile picture file: " << profile_picture_path;
-      return kGeneralError;
+    result = user_storage_->WriteHiddenFile(profile_picture_path, profile_picture_contents, true);
+    if (result != kSuccess) {
+      LOG(kError) << "Failed to write profile picture file: " << profile_picture_path <<
+                     " with result: " << result;
+      return kChangePictureWriteHiddenFileFailure;
     }
 
     // Get datamap
@@ -797,8 +853,8 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
       result = user_storage_->GetHiddenFileDataMap(profile_picture_path, &data_map);
       if ((result != kSuccess || data_map.empty()) && count == limit) {
         LOG(kError) << "Failed obtaining DM of profile picture: " << result << ", file: "
-                    << profile_picture_path;
-        return result;
+                    << profile_picture_path << " with result " << result;
+        return result == kSuccess ? kChangePictureEmptyDataMap : result;
       }
 
       reconstructed = user_storage_->ConstructFile(data_map);
@@ -806,8 +862,9 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
     }
 
     if (reconstructed != profile_picture_contents) {
-      LOG(kError) << "Failed to reconstruct profile picture file: " << profile_picture_path;
-      return kGeneralError;
+      LOG(kError) << "Failed to reconstruct profile picture file: " << profile_picture_path <<
+                     " with result " << result;
+      return kChangePictureReconstructionError;
     }
 
     message.content.push_back(data_map);
@@ -912,7 +969,13 @@ int LifeStuffImpl::GetLifestuffCard(const std::string& my_public_id,
     LOG(kError) << "Failed pre checks in GetLifestuffCard.";
     return result;
   }
-  return public_id_->GetLifestuffCard(my_public_id, contact_public_id, social_info);
+
+  result = public_id_->GetLifestuffCard(my_public_id, contact_public_id, social_info);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to get LifeStuff card with result " << result;
+    return result;
+  }
+  return kSuccess;
 }
 
 int LifeStuffImpl::SetLifestuffCard(const std::string& my_public_id,
@@ -921,7 +984,12 @@ int LifeStuffImpl::SetLifestuffCard(const std::string& my_public_id,
   if (result != kSuccess)
     return result;
 
-  return public_id_->SetLifestuffCard(my_public_id, social_info);
+  result = public_id_->SetLifestuffCard(my_public_id, social_info);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to set LifeStuff card with result " << result;
+    return result;
+  }
+  return kSuccess;
 }
 
 ContactMap LifeStuffImpl::GetContacts(const std::string& my_public_id, uint16_t bitwise_status) {
@@ -958,7 +1026,7 @@ int LifeStuffImpl::SendChatMessage(const std::string& sender_public_id,
 
   if (message.size() > kMaxChatMessageSize) {
     LOG(kError) << "Message too large: " << message.size();
-    return kGeneralError;
+    return kSendMessageSizeFailure;
   }
 
   InboxItem inbox_item(kChat);
@@ -966,7 +1034,12 @@ int LifeStuffImpl::SendChatMessage(const std::string& sender_public_id,
   inbox_item.sender_public_id = sender_public_id;
   inbox_item.content.push_back(message);
 
-  return message_handler_->Send(inbox_item);
+  result = message_handler_->Send(inbox_item);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to send chat message with result " << result;
+    return result;
+  }
+  return kSuccess;
 }
 
 int LifeStuffImpl::SendFile(const std::string& sender_public_id,
@@ -979,7 +1052,7 @@ int LifeStuffImpl::SendFile(const std::string& sender_public_id,
   std::string serialised_datamap;
   result = user_storage_->GetDataMap(absolute_path, &serialised_datamap);
   if (result != kSuccess || serialised_datamap.empty()) {
-    LOG(kError) << "Failed to get DM for " << absolute_path << ": " << result;
+    LOG(kError) << "Failed to get DM for " << absolute_path << " with result " << result;
     return result;
   }
 
@@ -991,7 +1064,7 @@ int LifeStuffImpl::SendFile(const std::string& sender_public_id,
 
   result = message_handler_->Send(inbox_item);
   if (result != kSuccess) {
-    LOG(kError) << "Failed to send message: " << result;
+    LOG(kError) << "Failed to send file with result " << result;
     return result;
   }
 
@@ -1007,7 +1080,7 @@ int LifeStuffImpl::AcceptSentFile(const std::string& identifier,
 
   if ((absolute_path.empty() && !file_name) || (!absolute_path.empty() && file_name)) {
     LOG(kError) << "Wrong parameters given. absolute_path and file_name are mutually exclusive.";
-    return kGeneralError;
+    return kAcceptFilePathError;
   }
 
   std::string serialised_identifier, saved_file_name, serialised_data_map;
@@ -1016,31 +1089,31 @@ int LifeStuffImpl::AcceptSentFile(const std::string& identifier,
                                          &serialised_identifier);
   if (result != kSuccess || serialised_identifier.empty()) {
     LOG(kError) << "No such identifier found: " << result;
-    return result == kSuccess ? kGeneralError : result;
+    return result == kSuccess? kAcceptFileSerialisedIdentifierEmpty : result;
   }
 
   GetFilenameData(serialised_identifier, &saved_file_name, &serialised_data_map);
   if (saved_file_name.empty() || serialised_data_map.empty()) {
     LOG(kError) << "Failed to get filename or datamap.";
-    return kGeneralError;
+    return kAcceptFileGetFileNameDataFailure;
   }
 
   drive::DataMapPtr data_map_ptr(ParseSerialisedDataMap(serialised_data_map));
   if (!data_map_ptr) {
     LOG(kError) << "Corrupted DM in file";
-    return kGeneralError;
+    return kAcceptFileCorruptDatamap;
   }
 
   if (absolute_path.empty()) {
     fs::path store_path(mount_path() / kMyStuff / kDownloadStuff);
     if (!VerifyOrCreatePath(store_path)) {
       LOG(kError) << "Failed finding and creating: " << store_path;
-      return kGeneralError;
+      return kAcceptFileVerifyCreatePathFailure;
     }
     std::string adequate_name(GetNameInPath(store_path, saved_file_name));
     if (adequate_name.empty()) {
       LOG(kError) << "No name found to work for saving the file.";
-      return kGeneralError;
+      return kAcceptFileNameFailure;
     }
     result = user_storage_->InsertDataMap(store_path / adequate_name, serialised_data_map);
 
@@ -1066,7 +1139,12 @@ int LifeStuffImpl::RejectSentFile(const std::string& identifier) {
     return result;
 
   fs::path hidden_file(mount_path() / std::string(identifier + kHiddenFileExtension));
-  return user_storage_->DeleteHiddenFile(hidden_file);
+  result = user_storage_->DeleteHiddenFile(hidden_file);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to reject file with result " << result;
+    return result;
+  }
+  return kSuccess;
 }
 
 /// Filesystem
@@ -1077,10 +1155,15 @@ int LifeStuffImpl::ReadHiddenFile(const fs::path& absolute_path, std::string* co
 
   if (!content) {
     LOG(kError) << "Content parameter must be valid.";
-    return kGeneralError;
+    return kReadHiddenFileContentFailure;
   }
 
-  return user_storage_->ReadHiddenFile(absolute_path, content);
+  result = user_storage_->ReadHiddenFile(absolute_path, content);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to read hidden file with result " << result;
+    return result;
+  }
+  return kSuccess;
 }
 
 int LifeStuffImpl::WriteHiddenFile(const fs::path& absolute_path,
@@ -1090,7 +1173,12 @@ int LifeStuffImpl::WriteHiddenFile(const fs::path& absolute_path,
   if (result != kSuccess)
     return result;
 
-  return user_storage_->WriteHiddenFile(absolute_path, content, overwrite_existing);
+  result = user_storage_->WriteHiddenFile(absolute_path, content, overwrite_existing);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to write hidden file with result " << result;
+    return result;
+  }
+  return kSuccess;
 }
 
 int LifeStuffImpl::DeleteHiddenFile(const fs::path& absolute_path) {
@@ -1098,7 +1186,12 @@ int LifeStuffImpl::DeleteHiddenFile(const fs::path& absolute_path) {
   if (result != kSuccess)
     return result;
 
-  return user_storage_->DeleteHiddenFile(absolute_path);
+  result = user_storage_->DeleteHiddenFile(absolute_path);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to delete hidden file with result " << result;
+    return result;
+  }
+  return kSuccess;
 }
 
 int LifeStuffImpl::SearchHiddenFiles(const fs::path& absolute_path,
@@ -1107,7 +1200,12 @@ int LifeStuffImpl::SearchHiddenFiles(const fs::path& absolute_path,
   if (result != kSuccess)
     return result;
 
-  return user_storage_->SearchHiddenFiles(absolute_path, results);
+  result = user_storage_->SearchHiddenFiles(absolute_path, results);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to search hidden files with result " << result;
+    return result;
+  }
+  return kSuccess;
 }
 
 ///
@@ -1154,7 +1252,7 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
   asymm::Keys maid(session_.passport().SignaturePacketDetails(passport::kMaid, true));
   if (maid.identity.empty()) {
     LOG(kError) << "Failed to obtain valid PMID keys.";
-    return -1;
+    return kCouldNotAcquirePmidKeys;
   }
 
   node_->set_keys(maid);
@@ -1201,19 +1299,19 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
 int LifeStuffImpl::CheckStateAndReadOnlyAccess() const {
   if (state_ != kLoggedIn) {
     LOG(kError) << "Incorrect state. Should be logged in: " << state_;
-    return kGeneralError;
+    return kWrongState;
   }
 
   if ((kDriveMounted & logged_in_state_) != kDriveMounted) {
     LOG(kError) << "Incorrect state. Drive should be mounted: " << logged_in_state_;
-    return kGeneralError;
+    return kWrongLoggedInState;
   }
 
   SessionAccessLevel session_access_level(session_.session_access_level());
   if (session_access_level != kFullAccess && session_access_level != kReadOnly) {
     LOG(kError) << "Insufficient access. Should have at least read access: " <<
                    session_access_level;
-    return kGeneralError;
+    return kWrongAccessLevel;
   }
   return kSuccess;
 }
@@ -1221,20 +1319,18 @@ int LifeStuffImpl::CheckStateAndReadOnlyAccess() const {
 int LifeStuffImpl::CheckStateAndFullAccess() const {
   if (state_ != kLoggedIn) {
     LOG(kError) << "Incorrect state. Should be logged in: " << state_;
-    return kGeneralError;
+    return kWrongState;
   }
 
   if ((kDriveMounted & logged_in_state_) != kDriveMounted) {
     LOG(kError) << "Incorrect state. Drive should be mounted: " << logged_in_state_;
-    return kGeneralError;
+    return kWrongLoggedInState;
   }
 
   SessionAccessLevel session_access_level(session_.session_access_level());
   if (session_access_level != kFullAccess) {
     LOG(kError) << "Insufficient access. Should have full access: " << session_access_level;
-    if (session_access_level == kReadOnly)
-      return kReadOnlyFailure;
-    return kGeneralError;
+    return kWrongAccessLevel;
   }
   return kSuccess;
 }
@@ -1277,7 +1373,7 @@ int LifeStuffImpl::CreateVaultInLocalMachine(const fs::path& chunk_store, bool v
   asymm::Keys pmid_keys(session_.passport().SignaturePacketDetails(passport::kPmid, true));
   if (account_name.empty() || pmid_keys.identity.empty()) {
     LOG(kError) << "Failed to obtain credentials to start vault from session.";
-    return kVaultCreationFailure;
+    return kVaultCreationCredentialsFailure;
   }
 
   if (vault_cheat) {
@@ -1294,14 +1390,14 @@ int LifeStuffImpl::CreateVaultInLocalMachine(const fs::path& chunk_store, bool v
     int result(vault_node_.Start(buffered_path_ / ("client_vault" + RandomAlphaNumericString(8))));
     if (result != kSuccess) {
       LOG(kError) << "Failed to create vault through cheat: " << result;
-      return kVaultCreationFailure;
+      return kVaultCreationStartFailure;
     }
   } else {
     if (!client_controller_->StartVault(pmid_keys, account_name, chunk_store)) {
       LOG(kError) << "Failed to create vault through client controller.";
-      return kVaultCreationFailure;
+      return kVaultCreationStartFailure;
     }
-  }
+}
 
   return kSuccess;
 }

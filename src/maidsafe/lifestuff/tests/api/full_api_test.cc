@@ -58,7 +58,7 @@ TEST_F(OneUserApiTest, FUNC_LoggedInState) {
   EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn);
   EXPECT_EQ(kSuccess, test_elements_.MountDrive(false));
   EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
-  EXPECT_EQ(kNoPublicIds, test_elements_.StartMessagesAndIntros());
+  EXPECT_EQ(kStartMessagesAndContactsNoPublicIds, test_elements_.StartMessagesAndIntros());
   EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
   EXPECT_EQ(kSuccess, test_elements_.StopMessagesAndIntros());
   EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
@@ -80,7 +80,7 @@ TEST_F(OneUserApiTest, FUNC_LoggedInState) {
   EXPECT_EQ(test_elements_.logged_in_state(), kCreating | kCredentialsLoggedIn);
   EXPECT_EQ(kSuccess, test_elements_.CreateAndMountDrive());
   EXPECT_EQ(test_elements_.logged_in_state(), kCreating | kCredentialsLoggedIn | kDriveMounted);
-  EXPECT_EQ(kNoPublicIds, test_elements_.StartMessagesAndIntros());
+  EXPECT_EQ(kStartMessagesAndContactsNoPublicIds, test_elements_.StartMessagesAndIntros());
   EXPECT_EQ(test_elements_.logged_in_state(), kCreating | kCredentialsLoggedIn | kDriveMounted);
   EXPECT_EQ(kSuccess, test_elements_.CreatePublicId(public_id2));
   EXPECT_EQ(test_elements_.logged_in_state(),
@@ -145,15 +145,15 @@ TEST_F(OneUserApiTest, FUNC_IncorrectLoginLogoutSequences) {
   // Try logout components in wrong order
   EXPECT_EQ(test_elements_.logged_in_state(),
             kCreating | kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
-  EXPECT_EQ(kWrongOrderFailure, test_elements_.UnMountDrive());
+  EXPECT_EQ(kWrongLoggedInState, test_elements_.UnMountDrive());
   EXPECT_EQ(test_elements_.logged_in_state(),
             kCreating| kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
-  EXPECT_EQ(kWrongOrderFailure, test_elements_.LogOut());
+  EXPECT_EQ(kWrongLoggedInState, test_elements_.LogOut());
   EXPECT_EQ(test_elements_.logged_in_state(),
             kCreating| kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
   EXPECT_EQ(kSuccess, test_elements_.StopMessagesAndIntros());
   EXPECT_EQ(test_elements_.logged_in_state(), kCreating | kCredentialsLoggedIn | kDriveMounted);
-  EXPECT_EQ(kWrongOrderFailure, test_elements_.LogOut());
+  EXPECT_EQ(kWrongLoggedInState, test_elements_.LogOut());
   EXPECT_EQ(test_elements_.logged_in_state(), kCreating| kCredentialsLoggedIn | kDriveMounted);
   EXPECT_EQ(kSuccess, test_elements_.UnMountDrive());
   EXPECT_EQ(test_elements_.logged_in_state(), kCreating | kCredentialsLoggedIn);
@@ -163,16 +163,16 @@ TEST_F(OneUserApiTest, FUNC_IncorrectLoginLogoutSequences) {
   EXPECT_EQ(test_elements_.logged_in_state(), kBaseState);
 
   // try login components in wrong order
-  EXPECT_EQ(kWrongOrderFailure, test_elements_.MountDrive(false));
+  EXPECT_EQ(kWrongLoggedInState, test_elements_.MountDrive(false));
   EXPECT_EQ(test_elements_.state(), kConnected);
   EXPECT_EQ(test_elements_.logged_in_state(), kBaseState);
-  EXPECT_EQ(kWrongOrderFailure, test_elements_.StartMessagesAndIntros());
+  EXPECT_EQ(kWrongLoggedInState, test_elements_.StartMessagesAndIntros());
   EXPECT_EQ(test_elements_.state(), kConnected);
   EXPECT_EQ(test_elements_.logged_in_state(), kBaseState);
   EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
   EXPECT_EQ(test_elements_.state(), kLoggedIn);
   EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn);
-  EXPECT_EQ(kWrongOrderFailure, test_elements_.StartMessagesAndIntros());
+  EXPECT_EQ(kWrongLoggedInState, test_elements_.StartMessagesAndIntros());
   EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn);
   EXPECT_EQ(kSuccess, test_elements_.MountDrive(false));
   EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
@@ -185,12 +185,12 @@ TEST_F(OneUserApiTest, FUNC_IncorrectLoginLogoutSequences) {
   EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
   EXPECT_EQ(kSuccess, test_elements_.UnMountDrive());
   EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn);
-  EXPECT_EQ(kWrongOrderFailure, test_elements_.UnMountDrive());
+  EXPECT_EQ(kWrongLoggedInState, test_elements_.UnMountDrive());
   EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn);
   EXPECT_EQ(kSuccess, test_elements_.LogOut());
   EXPECT_EQ(test_elements_.state(), kConnected);
   EXPECT_EQ(test_elements_.logged_in_state(), kBaseState);
-  EXPECT_EQ(kGeneralError, test_elements_.LogOut());
+  EXPECT_EQ(kWrongState, test_elements_.LogOut());
 
   EXPECT_EQ(test_elements_.state(), kConnected);
   EXPECT_EQ(test_elements_.logged_in_state(), kBaseState);
@@ -199,16 +199,16 @@ TEST_F(OneUserApiTest, FUNC_IncorrectLoginLogoutSequences) {
   EXPECT_EQ(kSuccess, test_elements_.LogIn(keyword_, pin_, password_));
   EXPECT_EQ(test_elements_.state(), kLoggedIn);
   EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn);
-  EXPECT_EQ(kGeneralError, test_elements_.LogIn(keyword_, pin_, password_));
+  EXPECT_EQ(kWrongState, test_elements_.LogIn(keyword_, pin_, password_));
   EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn);
   EXPECT_EQ(kSuccess, test_elements_.MountDrive(false));
   EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
-  EXPECT_EQ(kWrongOrderFailure, test_elements_.MountDrive(false));
+  EXPECT_EQ(kWrongLoggedInState, test_elements_.MountDrive(false));
   EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
   EXPECT_EQ(kSuccess, test_elements_.StartMessagesAndIntros());
   EXPECT_EQ(test_elements_.logged_in_state(),
             kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
-  EXPECT_EQ(kWrongOrderFailure, test_elements_.StartMessagesAndIntros());
+  EXPECT_EQ(kWrongLoggedInState, test_elements_.StartMessagesAndIntros());
   EXPECT_EQ(test_elements_.logged_in_state(),
             kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
 }
@@ -245,17 +245,18 @@ TEST_F(TwoUsersApiTest, FUNC_DriveNotMountedTryOperations) {
   EXPECT_EQ(test_elements_1_.state(), kLoggedIn);
 
   std::string public_id_4(RandomAlphaNumericString(5));
-  EXPECT_EQ(kGeneralError, test_elements_1_.CreatePublicId(public_id_4));
-  EXPECT_EQ(kGeneralError, test_elements_1_.CheckPassword(password_1_));
-  EXPECT_EQ(kGeneralError,
+  EXPECT_EQ(kWrongLoggedInState, test_elements_1_.CreatePublicId(public_id_4));
+  EXPECT_EQ(kWrongLoggedInState, test_elements_1_.CheckPassword(password_1_));
+  EXPECT_EQ(kWrongLoggedInState,
             test_elements_1_.ChangeKeyword(RandomAlphaNumericString(5), password_1_));
-  EXPECT_EQ(kGeneralError, test_elements_1_.ChangePin(CreatePin(), password_1_));
-  EXPECT_EQ(kGeneralError,
+  EXPECT_EQ(kWrongLoggedInState, test_elements_1_.ChangePin(CreatePin(), password_1_));
+  EXPECT_EQ(kWrongLoggedInState,
             test_elements_1_.ChangePassword(RandomAlphaNumericString(5), password_1_));
-  EXPECT_EQ(kGeneralError, test_elements_1_.AddContact(public_id_1_, RandomAlphaNumericString(5)));
-  EXPECT_EQ(kGeneralError, test_elements_1_.ConfirmContact(public_id_1_, public_id_3));
-  EXPECT_EQ(kGeneralError, test_elements_1_.DeclineContact(public_id_1_, public_id_3));
-  EXPECT_EQ(kGeneralError, test_elements_1_.RemoveContact(public_id_1_, public_id_2_, ""));
+  EXPECT_EQ(kWrongLoggedInState,
+            test_elements_1_.AddContact(public_id_1_, RandomAlphaNumericString(5)));
+  EXPECT_EQ(kWrongLoggedInState, test_elements_1_.ConfirmContact(public_id_1_, public_id_3));
+  EXPECT_EQ(kWrongLoggedInState, test_elements_1_.DeclineContact(public_id_1_, public_id_3));
+  EXPECT_EQ(kWrongLoggedInState, test_elements_1_.RemoveContact(public_id_1_, public_id_2_, ""));
   // TODO(Alison) - check that other functions in API aren't accessible when drive not mounted.
 
   EXPECT_EQ(kSuccess, test_elements_1_.LogOut());

@@ -41,7 +41,6 @@ bs2::connection MessageHandler::ConnectToContactProfilePictureSignal(
   return contact_profile_picture_signal_.connect(function);
 }
 
-
 /// Intra library connections
 bs2::connection MessageHandler::ConnectToParseAndSaveDataMapSignal(
     const ParseAndSaveDataMapSignal::slot_type& function) {

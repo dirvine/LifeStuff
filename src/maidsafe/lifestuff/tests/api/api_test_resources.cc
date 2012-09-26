@@ -154,18 +154,6 @@ void PrivateMemberAccessChangeSlot(const std::string&,
   *done = true;
 }
 
-void OpenShareInvitationSlot(const std::string&,
-                             const std::string&,
-                             const std::string&,
-                             const std::string& signal_share_id,
-                             const std::string&,
-                             std::string* slot_share_id,
-                             volatile bool* done) {
-  if (slot_share_id)
-    *slot_share_id = signal_share_id;
-  *done = true;
-}
-
 void ShareRenameSlot(const std::string& old_share_name,
                      const std::string& new_share_name,
                      std::string* slot_old_share_name,
@@ -249,7 +237,7 @@ int DoFullLogIn(LifeStuff& test_elements,
   }
 
   result = test_elements.StartMessagesAndIntros();
-  if (result != kSuccess && result != kNoPublicIds) {
+  if (result != kSuccess && result != kStartMessagesAndContactsNoPublicIds) {
     LOG(kError) << "Failed to start checking for messages and intros: " << result;
     return result;
   }

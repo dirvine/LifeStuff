@@ -71,12 +71,9 @@ enum MessageContentIndexes {
 };
 
 enum ShareType {
-  kOpenReadOnlyMember = 0,
-  kOpenReadWriteMember = 1,
-  kOpenOwner = 2,
-  kPrivateReadOnlyMember = 3,
-  kPrivateReadWriteMember = 4,
-  kPrivateOwner = 5,
+  kPrivateReadOnlyMember = 0,
+  kPrivateReadWriteMember = 1,
+  kPrivateOwner = 2,
 
   // Max
   kMaxShareType = kPrivateOwner
