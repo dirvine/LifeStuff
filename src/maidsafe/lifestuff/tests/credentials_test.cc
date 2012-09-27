@@ -73,6 +73,7 @@ class UserCredentialsTest : public testing::Test {
         network_(),
         node_(),
         node2_(),
+        vault_node_(new pd::vault::Node),
 #endif
         remote_chunk_store_(),
         remote_chunk_store2_(),
@@ -134,18 +135,18 @@ class UserCredentialsTest : public testing::Test {
   }
 
 #ifndef LOCAL_TARGETS_ONLY
-  int CreateVaultForClient(pd::vault::Node& vault_node) {
-    vault_node.set_do_backup_state(false);
-    vault_node.set_do_synchronise(true);
-    vault_node.set_do_check_integrity(false);
-    vault_node.set_do_announce_chunks(false);
+  int CreateVaultForClient() {
+    vault_node_->set_do_backup_state(false);
+    vault_node_->set_do_synchronise(true);
+    vault_node_->set_do_check_integrity(false);
+    vault_node_->set_do_announce_chunks(false);
     std::string account_name(session_.passport().SignaturePacketDetails(passport::kMaid,
                                                                         true).identity);
     LOG(kSuccess) << "Account name for vault " << Base32Substr(account_name);
-    vault_node.set_account_name(account_name);
-    vault_node.set_keys(session_.passport().SignaturePacketDetails(passport::kPmid, true));
+    vault_node_->set_account_name(account_name);
+    vault_node_->set_keys(session_.passport().SignaturePacketDetails(passport::kPmid, true));
 
-    return vault_node.Start(*test_dir_ / ("client_vault" + RandomAlphaNumericString(8)));
+    return vault_node_->Start(*test_dir_ / ("client_vault" + RandomAlphaNumericString(8)));
   }
 
   int MakeClientNode() {
@@ -199,76 +200,80 @@ class UserCredentialsTest : public testing::Test {
 
   void DoCreateUser(const std::string& keyword,
                     const std::string& pin,
-                    const std::string& password,
-                    pd::vault::Node& vault_node) {
+                    const std::string& password) {
+    LOG(kInfo) << "\n\nStarting DoCreateUser\n\n";
     ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword, pin, password));
     session_.set_unique_user_id(RandomString(64));
     session_.set_root_parent_id(RandomString(64));
-    LOG(kSuccess) << "User credentials created.\n===================\n\n\n\n";
+    LOG(kSuccess) << "User credentials created.\n===================\n";
 
   #ifndef LOCAL_TARGETS_ONLY
-    ASSERT_EQ(kSuccess, CreateVaultForClient(vault_node));
-    LOG(kSuccess) << "Constructed vault.\n===================\n\n\n\n";
+    ASSERT_EQ(kSuccess, CreateVaultForClient());
+    LOG(kSuccess) << "Constructed vault.\n===================\n";
     Sleep(bptime::seconds(15));
     ASSERT_EQ(kSuccess, MakeClientNode());
-    LOG(kSuccess) << "Constructed client node.\n===================\n\n\n\n";
+    LOG(kSuccess) << "Constructed client node.\n===================\n";
     Sleep(bptime::seconds(15));
   #endif
 
     ASSERT_EQ(keyword, session_.keyword());
     ASSERT_EQ(pin, session_.pin());
     ASSERT_EQ(password, session_.password());
-    LOG(kSuccess) << "User created.\n===================\n\n\n\n";
+    LOG(kSuccess) << "User created.\n===================\n\n\n";
   }
 
   void DoLogOut() {
+    LOG(kInfo) << "\n\nStarting DoLogOut\n\n";
     EXPECT_EQ(kSuccess, user_credentials_->Logout());
     LOG(kInfo) << "Credentials logged out.\n===================\n";
-    Sleep(bptime::seconds(15));
+    Sleep(bptime::seconds(15));  // TODO(Alison) - Why sleep here?
 
   #ifndef LOCAL_TARGETS_ONLY
     ASSERT_EQ(kSuccess, MakeAnonymousNode());
     Sleep(bptime::seconds(15));
-    LOG(kSuccess) << "Constructed anonymous node.\n===================\n\n\n\n";
+    LOG(kSuccess) << "Constructed anonymous node.\n===================\n";
   #endif
 
     EXPECT_TRUE(session_.keyword().empty());
     EXPECT_TRUE(session_.pin().empty());
     EXPECT_TRUE(session_.password().empty());
-    LOG(kInfo) << "Logged out.\n===================\n";
+    LOG(kInfo) << "Logged out.\n===================\n\n\n";
   }
 
   void DoLogIn(const std::string& keyword,
                const std::string& pin,
                const std::string& password) {
+    LOG(kInfo) << "\n\nStarting DoLogIn\n\n";
     ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword, pin, password));
     LOG(kInfo) << "Credentials logged in.\n===================\n";
 
   #ifndef LOCAL_TARGETS_ONLY
     ASSERT_EQ(kSuccess, MakeClientNode());
-    LOG(kSuccess) << "Constructed client node.\n===================\n\n\n\n";
+    LOG(kSuccess) << "Constructed client node.\n===================\n";
     Sleep(bptime::seconds(15));
   #endif
 
     ASSERT_EQ(keyword, session_.keyword());
     ASSERT_EQ(pin, session_.pin());
     ASSERT_EQ(password, session_.password());
-    LOG(kInfo) << "Logged in.\n===================\n";
+    LOG(kInfo) << "Logged in.\n===================\n\n\n";
   }
 
-  void DoLogOutAndStop(pd::vault::Node& vault_node) {
+  void DoLogOutAndStop() {
+    LOG(kInfo) << "\n\nStarting DoLogOutAndStop\n\n";
     ASSERT_EQ(kSuccess, user_credentials_->Logout());
     LOG(kInfo) << "Credentials logged out.\n===================\n";
 
   #ifndef LOCAL_TARGETS_ONLY
     ASSERT_EQ(kSuccess, node_->Stop());
-    ASSERT_EQ(kSuccess, vault_node.Stop());
+    ASSERT_EQ(kSuccess, vault_node_->Stop());
+    LOG(kInfo) << "Stopped nodes.\n===================\n";
   #endif
 
     ASSERT_TRUE(session_.keyword().empty());
     ASSERT_TRUE(session_.pin().empty());
     ASSERT_TRUE(session_.password().empty());
-    LOG(kInfo) << "Logged out.\n===================\n";
+    LOG(kInfo) << "Logged out.\n===================\n\n\n";
   }
 
   std::shared_ptr<fs::path> test_dir_;
@@ -277,6 +282,7 @@ class UserCredentialsTest : public testing::Test {
 #ifndef LOCAL_TARGETS_ONLY
   NetworkHelper network_;
   std::shared_ptr<pd::Node> node_, node2_;
+  std::shared_ptr<pd::vault::Node> vault_node_;
 #endif
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_, remote_chunk_store2_;
   std::shared_ptr<UserCredentials> user_credentials_, user_credentials2_;
@@ -312,8 +318,7 @@ TEST_F(UserCredentialsTest, FUNC_LoginSequence) {
 //  LOG(kSuccess) << "Constructed client node.\n===================\n\n\n\n";
 //  Sleep(bptime::seconds(15));
 // #endif
-  pd::vault::Node vault_node;
-  DoCreateUser(keyword_, pin_, password_, vault_node);
+  DoCreateUser(keyword_, pin_, password_);
 
 //  EXPECT_EQ(kSuccess, user_credentials_->Logout());
 //  EXPECT_TRUE(session_.keyword().empty());
@@ -352,7 +357,7 @@ TEST_F(UserCredentialsTest, FUNC_LoginSequence) {
 //  ASSERT_EQ(kSuccess, node_->Stop());
 //  ASSERT_EQ(kSuccess, vault_node.Stop());
 // #endif
-  DoLogOutAndStop(vault_node);
+  DoLogOutAndStop();
 
 //  ASSERT_NE(kSuccess, user_credentials_->LogIn(RandomAlphaNumericString(9), pin_, password_));
 //  LOG(kInfo) << "Can't log in with fake details.";
@@ -365,24 +370,27 @@ TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
   ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(keyword_, pin_, password_));
   LOG(kInfo) << "Preconditions fulfilled.\n===================\n";
 
-  ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
-  session_.set_unique_user_id(RandomString(64));
-  session_.set_root_parent_id(RandomString(64));
-  ASSERT_EQ(keyword_, session_.keyword());
-  ASSERT_EQ(pin_, session_.pin());
-  ASSERT_EQ(password_, session_.password());
-  LOG(kInfo) << "User created.\n===================\n";
+//  ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
+//  session_.set_unique_user_id(RandomString(64));
+//  session_.set_root_parent_id(RandomString(64));
+//  ASSERT_EQ(keyword_, session_.keyword());
+//  ASSERT_EQ(pin_, session_.pin());
+//  ASSERT_EQ(password_, session_.password());
+//  LOG(kInfo) << "User created.\n===================\n";
+  DoCreateUser(keyword_, pin_, password_);
 
-  ASSERT_EQ(kSuccess, user_credentials_->Logout());
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
-  LOG(kInfo) << "Logged out.\n===================\n";
+//  ASSERT_EQ(kSuccess, user_credentials_->Logout());
+//  ASSERT_TRUE(session_.keyword().empty());
+//  ASSERT_TRUE(session_.pin().empty());
+//  ASSERT_TRUE(session_.password().empty());
+//  LOG(kInfo) << "Logged out.\n===================\n";
+  DoLogOut();
 
-  ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
-  ASSERT_EQ(keyword_, session_.keyword());
-  ASSERT_EQ(pin_, session_.pin());
-  ASSERT_EQ(password_, session_.password());
+//  ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
+//  ASSERT_EQ(keyword_, session_.keyword());
+//  ASSERT_EQ(pin_, session_.pin());
+//  ASSERT_EQ(password_, session_.password());
+  DoLogIn(keyword_, pin_, password_);
 
   LOG(kInfo) << "Logged in.\n===================\n";
   const std::string kNewKeyword(RandomAlphaNumericString(9));
@@ -392,17 +400,19 @@ TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
   ASSERT_EQ(password_, session_.password());
   LOG(kInfo) << "Changed keyword.\n===================\n";
 
-  ASSERT_EQ(kSuccess, user_credentials_->Logout());
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
-  LOG(kInfo) << "Logged out.\n===================\n";
+//  ASSERT_EQ(kSuccess, user_credentials_->Logout());
+//  ASSERT_TRUE(session_.keyword().empty());
+//  ASSERT_TRUE(session_.pin().empty());
+//  ASSERT_TRUE(session_.password().empty());
+//  LOG(kInfo) << "Logged out.\n===================\n";
+  DoLogOut();
 
-  ASSERT_EQ(kSuccess, user_credentials_->LogIn(kNewKeyword, pin_, password_));
-  ASSERT_EQ(kNewKeyword, session_.keyword());
-  ASSERT_EQ(pin_, session_.pin());
-  ASSERT_EQ(password_, session_.password());
-  LOG(kInfo) << "Logged in.\n===================\n";
+//  ASSERT_EQ(kSuccess, user_credentials_->LogIn(kNewKeyword, pin_, password_));
+//  ASSERT_EQ(kNewKeyword, session_.keyword());
+//  ASSERT_EQ(pin_, session_.pin());
+//  ASSERT_EQ(password_, session_.password());
+//  LOG(kInfo) << "Logged in.\n===================\n";
+  DoLogIn(kNewKeyword, pin_, password_);
 
   const std::string kNewPin(CreatePin());
   ASSERT_EQ(kSuccess, user_credentials_->ChangePin(kNewPin));
@@ -411,17 +421,19 @@ TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
   ASSERT_EQ(password_, session_.password());
   LOG(kInfo) << "Changed pin.\n===================\n";
 
-  ASSERT_EQ(kSuccess, user_credentials_->Logout());
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
-  LOG(kInfo) << "Logged out.\n===================\n";
+//  ASSERT_EQ(kSuccess, user_credentials_->Logout());
+//  ASSERT_TRUE(session_.keyword().empty());
+//  ASSERT_TRUE(session_.pin().empty());
+//  ASSERT_TRUE(session_.password().empty());
+//  LOG(kInfo) << "Logged out.\n===================\n";
+  DoLogOut();
 
-  ASSERT_EQ(kSuccess, user_credentials_->LogIn(kNewKeyword, kNewPin, password_));
-  ASSERT_EQ(kNewKeyword, session_.keyword());
-  ASSERT_EQ(kNewPin, session_.pin());
-  ASSERT_EQ(password_, session_.password());
-  LOG(kInfo) << "Logged in.\n===================\n";
+//  ASSERT_EQ(kSuccess, user_credentials_->LogIn(kNewKeyword, kNewPin, password_));
+//  ASSERT_EQ(kNewKeyword, session_.keyword());
+//  ASSERT_EQ(kNewPin, session_.pin());
+//  ASSERT_EQ(password_, session_.password());
+//  LOG(kInfo) << "Logged in.\n===================\n";
+  DoLogIn(kNewKeyword, kNewPin, password_);
 
   const std::string kNewPassword(RandomAlphaNumericString(9));
   ASSERT_EQ(kSuccess, user_credentials_->ChangePassword(kNewPassword));
@@ -430,23 +442,26 @@ TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
   ASSERT_EQ(kNewPassword, session_.password());
   LOG(kInfo) << "Changed password.\n===================\n";
 
-  ASSERT_EQ(kSuccess, user_credentials_->Logout());
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
-  LOG(kInfo) << "Logged out.\n===================\n";
+//  ASSERT_EQ(kSuccess, user_credentials_->Logout());
+//  ASSERT_TRUE(session_.keyword().empty());
+//  ASSERT_TRUE(session_.pin().empty());
+//  ASSERT_TRUE(session_.password().empty());
+//  LOG(kInfo) << "Logged out.\n===================\n";
+  DoLogOut();
 
-  ASSERT_EQ(kSuccess, user_credentials_->LogIn(kNewKeyword, kNewPin, kNewPassword));
-  ASSERT_EQ(kNewKeyword, session_.keyword());
-  ASSERT_EQ(kNewPin, session_.pin());
-  ASSERT_EQ(kNewPassword, session_.password());
-  LOG(kInfo) << "Logged in. New u/p/w.\n===================\n";
+//  ASSERT_EQ(kSuccess, user_credentials_->LogIn(kNewKeyword, kNewPin, kNewPassword));
+//  ASSERT_EQ(kNewKeyword, session_.keyword());
+//  ASSERT_EQ(kNewPin, session_.pin());
+//  ASSERT_EQ(kNewPassword, session_.password());
+//  LOG(kInfo) << "Logged in. New u/p/w.\n===================\n";
+  DoLogIn(kNewKeyword, kNewPin, kNewPassword);
 
-  ASSERT_EQ(kSuccess, user_credentials_->Logout());
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
-  LOG(kInfo) << "Logged out.\n===================\n";
+//  ASSERT_EQ(kSuccess, user_credentials_->Logout());
+//  ASSERT_TRUE(session_.keyword().empty());
+//  ASSERT_TRUE(session_.pin().empty());
+//  ASSERT_TRUE(session_.password().empty());
+//  LOG(kInfo) << "Logged out.\n===================\n";
+  DoLogOutAndStop();
 
   ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(keyword_, pin_, password_));
   ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(kNewKeyword, pin_, password_));
@@ -477,25 +492,28 @@ TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
   LOG(kInfo) << "Preconditions fulfilled.\n===================\n";
 
   ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(keyword_, pin_, password_));
-  ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
-  session_.set_unique_user_id(RandomString(64));
-  session_.set_root_parent_id(RandomString(64));
-  ASSERT_EQ(keyword_, session_.keyword());
-  ASSERT_EQ(pin_, session_.pin());
-  ASSERT_EQ(password_, session_.password());
+//  ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
+//  session_.set_unique_user_id(RandomString(64));
+//  session_.set_root_parent_id(RandomString(64));
+//  ASSERT_EQ(keyword_, session_.keyword());
+//  ASSERT_EQ(pin_, session_.pin());
+//  ASSERT_EQ(password_, session_.password());
+//  ASSERT_EQ(session_.session_access_level(), kFullAccess);
+//  LOG(kInfo) << "User created.\n===================\n";
+  DoCreateUser(keyword_, pin_, password_);
   ASSERT_EQ(session_.session_access_level(), kFullAccess);
-  LOG(kInfo) << "User created.\n===================\n";
 
-  ASSERT_EQ(kSuccess, user_credentials_->Logout());
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
-  LOG(kInfo) << "Logged out.\n===================\n";
+//  ASSERT_EQ(kSuccess, user_credentials_->Logout());
+//  ASSERT_TRUE(session_.keyword().empty());
+//  ASSERT_TRUE(session_.pin().empty());
+//  ASSERT_TRUE(session_.password().empty());
+//  LOG(kInfo) << "Logged out.\n===================\n";
+  DoLogOut();
 
   ASSERT_TRUE(session_.def_con_level() == DefConLevels::kDefCon3);
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
+//  ASSERT_TRUE(session_.keyword().empty());
+//  ASSERT_TRUE(session_.pin().empty());
+//  ASSERT_TRUE(session_.password().empty());
   ASSERT_TRUE(session_.session_name().empty());
   ASSERT_TRUE(session_.unique_user_id().empty());
   ASSERT_TRUE(session_.root_parent_id().empty());
@@ -506,23 +524,26 @@ TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
   ASSERT_EQ(session_.session_access_level(), kNoAccess);
   LOG(kInfo) << "Session seems clear.\n===================\n";
 
-  ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
-  ASSERT_EQ(keyword_, session_.keyword());
-  ASSERT_EQ(pin_, session_.pin());
-  ASSERT_EQ(password_, session_.password());
+//  ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
+//  ASSERT_EQ(keyword_, session_.keyword());
+//  ASSERT_EQ(pin_, session_.pin());
+//  ASSERT_EQ(password_, session_.password());
+//  ASSERT_EQ(session_.session_access_level(), kFullAccess);
+//  LOG(kInfo) << "Logged in.\n===================\n";
+  DoLogIn(keyword_, pin_, password_);
   ASSERT_EQ(session_.session_access_level(), kFullAccess);
-  LOG(kInfo) << "Logged in.\n===================\n";
 
-  ASSERT_EQ(kSuccess, user_credentials_->Logout());
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
-  LOG(kInfo) << "Logged out.\n===================\n";
+//  ASSERT_EQ(kSuccess, user_credentials_->Logout());
+//  ASSERT_TRUE(session_.keyword().empty());
+//  ASSERT_TRUE(session_.pin().empty());
+//  ASSERT_TRUE(session_.password().empty());
+//  LOG(kInfo) << "Logged out.\n===================\n";
+  DoLogOut();
 
   ASSERT_TRUE(session_.def_con_level() == DefConLevels::kDefCon3);
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
+//  ASSERT_TRUE(session_.keyword().empty());
+//  ASSERT_TRUE(session_.pin().empty());
+//  ASSERT_TRUE(session_.password().empty());
   ASSERT_TRUE(session_.session_name().empty());
   ASSERT_TRUE(session_.unique_user_id().empty());
   ASSERT_TRUE(session_.root_parent_id().empty());
@@ -550,22 +571,24 @@ TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
   ASSERT_EQ(session_.session_access_level(), kNoAccess);
   LOG(kInfo) << "Session seems clear.\n===================\n";
 
-  ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
-  ASSERT_EQ(keyword_, session_.keyword());
-  ASSERT_EQ(pin_, session_.pin());
-  ASSERT_EQ(password_, session_.password());
-  LOG(kInfo) << "Logged in.\n===================\n";
+//  ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
+//  ASSERT_EQ(keyword_, session_.keyword());
+//  ASSERT_EQ(pin_, session_.pin());
+//  ASSERT_EQ(password_, session_.password());
+//  LOG(kInfo) << "Logged in.\n===================\n";
+  DoLogIn(keyword_, pin_, password_);
 
-  ASSERT_EQ(kSuccess, user_credentials_->Logout());
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
-  LOG(kInfo) << "Logged out.\n===================\n";
+//  ASSERT_EQ(kSuccess, user_credentials_->Logout());
+//  ASSERT_TRUE(session_.keyword().empty());
+//  ASSERT_TRUE(session_.pin().empty());
+//  ASSERT_TRUE(session_.password().empty());
+//  LOG(kInfo) << "Logged out.\n===================\n";
+  DoLogOutAndStop();
 
   ASSERT_TRUE(session_.def_con_level() == DefConLevels::kDefCon3);
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
+//  ASSERT_TRUE(session_.keyword().empty());
+//  ASSERT_TRUE(session_.pin().empty());
+//  ASSERT_TRUE(session_.password().empty());
   ASSERT_TRUE(session_.session_name().empty());
   ASSERT_TRUE(session_.unique_user_id().empty());
   ASSERT_TRUE(session_.root_parent_id().empty());
@@ -713,22 +736,29 @@ TEST_F(UserCredentialsTest, FUNC_MultiUserCredentialsLoginAndLogout) {
   LOG(kInfo) << "Preconditions fulfilled.\n===================\n";
 
   ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(keyword_, pin_, password_));
-  ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
-  session_.set_unique_user_id(RandomString(64));
-  session_.set_root_parent_id(RandomString(64));
-  ASSERT_EQ(keyword_, session_.keyword());
-  ASSERT_EQ(pin_, session_.pin());
-  ASSERT_EQ(password_, session_.password());
-  LOG(kInfo) << "User created.\n===================\n";
+//  ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
+//  session_.set_unique_user_id(RandomString(64));
+//  session_.set_root_parent_id(RandomString(64));
+//  ASSERT_EQ(keyword_, session_.keyword());
+//  ASSERT_EQ(pin_, session_.pin());
+//  ASSERT_EQ(password_, session_.password());
+//  LOG(kInfo) << "User created.\n===================\n";
+  DoCreateUser(keyword_, pin_, password_);
 
-  ASSERT_EQ(kSuccess, user_credentials_->Logout());
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
-  LOG(kInfo) << "Logged out.\n===================\n";
+//  ASSERT_EQ(kSuccess, user_credentials_->Logout());
+//  ASSERT_TRUE(session_.keyword().empty());
+//  ASSERT_TRUE(session_.pin().empty());
+//  ASSERT_TRUE(session_.password().empty());
+//  LOG(kInfo) << "Logged out.\n===================\n";
+  DoLogOutAndStop();
 
-  CreateSecondUserCredentials();
+  CreateSecondUserCredentials();  // TODO(Alison) - rename
   ASSERT_EQ(kSuccess, user_credentials2_->LogIn(keyword_, pin_, password_));
+  session2_.set_unique_user_id(RandomString(64));
+  session2_.set_root_parent_id(RandomString(64));
+  ASSERT_EQ(keyword_, session2_.keyword());
+  ASSERT_EQ(pin_, session2_.pin());
+  ASSERT_EQ(password_, session2_.password());
   LOG(kInfo) << "Successful consecutive log in.";
   ASSERT_EQ(kSuccess, user_credentials2_->Logout());
   ASSERT_TRUE(session_.keyword().empty());
@@ -782,7 +812,16 @@ TEST_F(UserCredentialsTest, FUNC_UserCredentialsDeletion) {
   ASSERT_NE("", remote_chunk_store_->Get(stmid_name));
 //  ASSERT_NE("", remote_chunk_store_->Get(lid_name));
 
+#ifndef LOCAL_TARGETS_ONLY
+  ASSERT_EQ(kSuccess, vault_node_->Stop());
+  LOG(kInfo) << "Stopped vault.\n===================\n";
+#endif
   ASSERT_EQ(kSuccess, user_credentials_->DeleteUserCredentials());
+#ifndef LOCAL_TARGETS_ONLY
+  ASSERT_EQ(kSuccess, MakeAnonymousNode());
+  Sleep(bptime::seconds(15));
+  LOG(kSuccess) << "Constructed anonymous node.\n===================\n";
+#endif
 
   ASSERT_EQ("", remote_chunk_store_->Get(anmid_name));
   ASSERT_EQ("", remote_chunk_store_->Get(ansmid_name));
