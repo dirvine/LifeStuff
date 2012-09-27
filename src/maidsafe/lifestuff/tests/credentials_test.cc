@@ -197,6 +197,80 @@ class UserCredentialsTest : public testing::Test {
   }
 #endif
 
+  void DoCreateUser(const std::string& keyword,
+                    const std::string& pin,
+                    const std::string& password,
+                    pd::vault::Node& vault_node) {
+    ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword, pin, password));
+    session_.set_unique_user_id(RandomString(64));
+    session_.set_root_parent_id(RandomString(64));
+    LOG(kSuccess) << "User credentials created.\n===================\n\n\n\n";
+
+  #ifndef LOCAL_TARGETS_ONLY
+    ASSERT_EQ(kSuccess, CreateVaultForClient(vault_node));
+    LOG(kSuccess) << "Constructed vault.\n===================\n\n\n\n";
+    Sleep(bptime::seconds(15));
+    ASSERT_EQ(kSuccess, MakeClientNode());
+    LOG(kSuccess) << "Constructed client node.\n===================\n\n\n\n";
+    Sleep(bptime::seconds(15));
+  #endif
+
+    ASSERT_EQ(keyword, session_.keyword());
+    ASSERT_EQ(pin, session_.pin());
+    ASSERT_EQ(password, session_.password());
+    LOG(kSuccess) << "User created.\n===================\n\n\n\n";
+  }
+
+  void DoLogOut() {
+    EXPECT_EQ(kSuccess, user_credentials_->Logout());
+    LOG(kInfo) << "Credentials logged out.\n===================\n";
+    Sleep(bptime::seconds(15));
+
+  #ifndef LOCAL_TARGETS_ONLY
+    ASSERT_EQ(kSuccess, MakeAnonymousNode());
+    Sleep(bptime::seconds(15));
+    LOG(kSuccess) << "Constructed anonymous node.\n===================\n\n\n\n";
+  #endif
+
+    EXPECT_TRUE(session_.keyword().empty());
+    EXPECT_TRUE(session_.pin().empty());
+    EXPECT_TRUE(session_.password().empty());
+    LOG(kInfo) << "Logged out.\n===================\n";
+  }
+
+  void DoLogIn(const std::string& keyword,
+               const std::string& pin,
+               const std::string& password) {
+    ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword, pin, password));
+    LOG(kInfo) << "Credentials logged in.\n===================\n";
+
+  #ifndef LOCAL_TARGETS_ONLY
+    ASSERT_EQ(kSuccess, MakeClientNode());
+    LOG(kSuccess) << "Constructed client node.\n===================\n\n\n\n";
+    Sleep(bptime::seconds(15));
+  #endif
+
+    ASSERT_EQ(keyword, session_.keyword());
+    ASSERT_EQ(pin, session_.pin());
+    ASSERT_EQ(password, session_.password());
+    LOG(kInfo) << "Logged in.\n===================\n";
+  }
+
+  void DoLogOutAndStop(pd::vault::Node& vault_node) {
+    ASSERT_EQ(kSuccess, user_credentials_->Logout());
+    LOG(kInfo) << "Credentials logged out.\n===================\n";
+
+  #ifndef LOCAL_TARGETS_ONLY
+    ASSERT_EQ(kSuccess, node_->Stop());
+    ASSERT_EQ(kSuccess, vault_node.Stop());
+  #endif
+
+    ASSERT_TRUE(session_.keyword().empty());
+    ASSERT_TRUE(session_.pin().empty());
+    ASSERT_TRUE(session_.password().empty());
+    LOG(kInfo) << "Logged out.\n===================\n";
+  }
+
   std::shared_ptr<fs::path> test_dir_;
   Session session_, session2_;
   AsioService asio_service_, asio_service2_;
@@ -221,59 +295,65 @@ TEST_F(UserCredentialsTest, FUNC_LoginSequence) {
   ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(keyword_, pin_, password_));
   LOG(kSuccess) << "Preconditions fulfilled.\n===================\n";
 
-  ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
-  session_.set_unique_user_id(RandomString(64));
-  session_.set_root_parent_id(RandomString(64));
-  ASSERT_EQ(keyword_, session_.keyword());
-  ASSERT_EQ(pin_, session_.pin());
-  ASSERT_EQ(password_, session_.password());
-  LOG(kSuccess) << "User created.\n===================\n\n\n\n";
+//  ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
+//  session_.set_unique_user_id(RandomString(64));
+//  session_.set_root_parent_id(RandomString(64));
+//  ASSERT_EQ(keyword_, session_.keyword());
+//  ASSERT_EQ(pin_, session_.pin());
+//  ASSERT_EQ(password_, session_.password());
+//  LOG(kSuccess) << "User created.\n===================\n\n\n\n";
 
-#ifndef LOCAL_TARGETS_ONLY
+// #ifndef LOCAL_TARGETS_ONLY
+//  pd::vault::Node vault_node;
+//  ASSERT_EQ(kSuccess, CreateVaultForClient(vault_node));
+//  LOG(kSuccess) << "Constructed vault.\n===================\n\n\n\n";
+//  Sleep(bptime::seconds(15));
+//  ASSERT_EQ(kSuccess, MakeClientNode());
+//  LOG(kSuccess) << "Constructed client node.\n===================\n\n\n\n";
+//  Sleep(bptime::seconds(15));
+// #endif
   pd::vault::Node vault_node;
-  ASSERT_EQ(kSuccess, CreateVaultForClient(vault_node));
-  LOG(kSuccess) << "Constructed vault.\n===================\n\n\n\n";
-  Sleep(bptime::seconds(15));
-  ASSERT_EQ(kSuccess, MakeClientNode());
-  LOG(kSuccess) << "Constructed client node.\n===================\n\n\n\n";
-  Sleep(bptime::seconds(15));
-#endif
+  DoCreateUser(keyword_, pin_, password_, vault_node);
 
-  EXPECT_EQ(kSuccess, user_credentials_->Logout());
-  EXPECT_TRUE(session_.keyword().empty());
-  EXPECT_TRUE(session_.pin().empty());
-  EXPECT_TRUE(session_.password().empty());
-  LOG(kInfo) << "Logged out.\n===================\n";
-  Sleep(bptime::seconds(15));
+//  EXPECT_EQ(kSuccess, user_credentials_->Logout());
+//  EXPECT_TRUE(session_.keyword().empty());
+//  EXPECT_TRUE(session_.pin().empty());
+//  EXPECT_TRUE(session_.password().empty());
+//  LOG(kInfo) << "Logged out.\n===================\n";
+//  Sleep(bptime::seconds(15));
 
-#ifndef LOCAL_TARGETS_ONLY
-  ASSERT_EQ(kSuccess, MakeAnonymousNode());
-  Sleep(bptime::seconds(15));
-  LOG(kSuccess) << "Constructed anonymous node.\n===================\n\n\n\n";
-#endif
+// #ifndef LOCAL_TARGETS_ONLY
+//  ASSERT_EQ(kSuccess, MakeAnonymousNode());
+//  Sleep(bptime::seconds(15));
+//  LOG(kSuccess) << "Constructed anonymous node.\n===================\n\n\n\n";
+// #endif
+  DoLogOut();
 
-  ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
-  ASSERT_EQ(keyword_, session_.keyword());
-  ASSERT_EQ(pin_, session_.pin());
-  ASSERT_EQ(password_, session_.password());
-  LOG(kInfo) << "Logged in.\n===================\n";
+//  ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
+//  ASSERT_EQ(keyword_, session_.keyword());
+//  ASSERT_EQ(pin_, session_.pin());
+//  ASSERT_EQ(password_, session_.password());
+//  LOG(kInfo) << "Logged in.\n===================\n";
 
-#ifndef LOCAL_TARGETS_ONLY
-  ASSERT_EQ(kSuccess, MakeClientNode());
-  LOG(kSuccess) << "Constructed client node.\n===================\n\n\n\n";
-  Sleep(bptime::seconds(15));
-#endif
+// #ifndef LOCAL_TARGETS_ONLY
+//  ASSERT_EQ(kSuccess, MakeClientNode());
+//  LOG(kSuccess) << "Constructed client node.\n===================\n\n\n\n";
+//  Sleep(bptime::seconds(15));
+// #endif
+  DoLogIn(keyword_, pin_, password_);
 
-  ASSERT_EQ(kSuccess, user_credentials_->Logout());
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
-  LOG(kInfo) << "Logged out.\n===================\n";
+//  ASSERT_EQ(kSuccess, user_credentials_->Logout());
+//  ASSERT_TRUE(session_.keyword().empty());
+//  ASSERT_TRUE(session_.pin().empty());
+//  ASSERT_TRUE(session_.password().empty());
+//  LOG(kInfo) << "Logged out.\n===================\n";
 
-#ifndef LOCAL_TARGETS_ONLY
-  ASSERT_EQ(kSuccess, node_->Stop());
-  ASSERT_EQ(kSuccess, vault_node.Stop());
-#endif
+// #ifndef LOCAL_TARGETS_ONLY
+//  ASSERT_EQ(kSuccess, node_->Stop());
+//  ASSERT_EQ(kSuccess, vault_node.Stop());
+// #endif
+  DoLogOutAndStop(vault_node);
+
 //  ASSERT_NE(kSuccess, user_credentials_->LogIn(RandomAlphaNumericString(9), pin_, password_));
 //  LOG(kInfo) << "Can't log in with fake details.";
 }
