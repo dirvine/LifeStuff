@@ -29,10 +29,8 @@
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
-#ifndef LOCAL_TARGETS_ONLY
 #include "maidsafe/pd/client/node.h"
 #include "maidsafe/pd/client/utils.h"
-#endif
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
@@ -44,25 +42,11 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-#ifdef LOCAL_TARGETS_ONLY
-std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path& buffered_chunk_store_path,
-                                                       const fs::path& local_chunk_manager_path,
-                                                       boost::asio::io_service& asio_service) {
-  boost::system::error_code error_code;
-  fs::create_directories(local_chunk_manager_path / "lock", error_code);
-  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store(
-      pcs::CreateLocalChunkStore(buffered_chunk_store_path,
-                                 local_chunk_manager_path,
-                                 local_chunk_manager_path / "lock",
-                                 asio_service));
-  return remote_chunk_store;
-}
-#else
 std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
     const fs::path& base_dir,
     const std::vector<std::pair<std::string, uint16_t>>& endopints,  // NOLINT (Dan)
     std::shared_ptr<pd::Node>& node,
-    const std::function<void(const int&)> network_health_function) {
+    const std::function<void(const int&)>& network_health_function) {
   node = SetupNode(base_dir, endopints, network_health_function);
   if (!node) {
     LOG(kError) << "Failed to start node";
@@ -81,7 +65,7 @@ std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
 std::shared_ptr<pd::Node> SetupNode(
     const fs::path& base_dir,
     const std::vector<std::pair<std::string, uint16_t>>& endopints,  // NOLINT (Dan)
-    const std::function<void(const int&)> network_health_function) {
+    const std::function<void(const int&)>& network_health_function) {
   auto node = std::make_shared<pd::Node>();
   node->set_on_network_status(network_health_function);
 
@@ -102,7 +86,6 @@ std::shared_ptr<pd::Node> SetupNode(
   LOG(kInfo) << "Started PD node.";
   return node;
 }
-#endif
 
 }  // namespace lifestuff
 

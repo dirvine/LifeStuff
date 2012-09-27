@@ -34,29 +34,20 @@ namespace priv { namespace chunk_store { class RemoteChunkStore; } }
 
 namespace pcs = maidsafe::priv::chunk_store;
 
-#ifndef LOCAL_TARGETS_ONLY
-namespace dht { class Contact; }
 namespace pd { class Node; }
-#endif
 
 namespace lifestuff {
 
-#ifdef LOCAL_TARGETS_ONLY
-std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(const fs::path& buffered_chunk_store_path,
-                                                       const fs::path& local_chunk_manager_path,
-                                                       boost::asio::io_service& asio_service);
-#else
 std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
     const fs::path& base_dir,
     const std::vector<std::pair<std::string, uint16_t>>& endpoints,  // NOLINT (Dan)
     std::shared_ptr<pd::Node>& node,
-    const std::function<void(const int&)> network_health_function);
+    const std::function<void(const int&)>& network_health_function);
 
 std::shared_ptr<pd::Node> SetupNode(
     const fs::path& base_dir,
     const std::vector<std::pair<std::string, uint16_t>>& endpoints,  // NOLINT (Dan)
-    const std::function<void(const int&)> network_health_function);
-#endif
+    const std::function<void(const int&)>& network_health_function);
 
 }  // namespace lifestuff
 

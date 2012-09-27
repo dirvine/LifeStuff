@@ -22,9 +22,7 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
-#ifndef LOCAL_TARGETS_ONLY
-#  include "maidsafe/pd/client/node.h"
-#endif
+#include "maidsafe/pd/client/node.h"
 
 #include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/detail/session.h"
@@ -51,10 +49,8 @@ class UserStorageTest : public testing::Test {
       interval_(2),
       asio_service1_(5),
       asio_service2_(5),
-#ifndef LOCAL_TARGETS_ONLY
       node1_(),
       node2_(),
-#endif
       remote_chunk_store1_(),
       remote_chunk_store2_(),
       session1_(),
@@ -66,14 +62,6 @@ class UserStorageTest : public testing::Test {
 
  protected:
   void CreateChunkStores() {
-#ifdef LOCAL_TARGETS_ONLY
-    remote_chunk_store1_ = BuildChunkStore(*test_dir_ / RandomAlphaNumericString(8),
-                                           *test_dir_ / "simulation",
-                                           asio_service1_.service());
-    remote_chunk_store2_ = BuildChunkStore(*test_dir_ / RandomAlphaNumericString(8),
-                                           *test_dir_ / "simulation",
-                                           asio_service2_.service());
-#else
     std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
     remote_chunk_store1_ = BuildChunkStore(*test_dir_,
                                            bootstrap_endpoints,
@@ -83,7 +71,6 @@ class UserStorageTest : public testing::Test {
                                            bootstrap_endpoints,
                                            node2_,
                                            NetworkHealthFunction());
-#endif
   }
 
   void SetUp() {
@@ -134,9 +121,7 @@ class UserStorageTest : public testing::Test {
   fs::path mount_dir_;
   bptime::seconds interval_;
   AsioService asio_service1_, asio_service2_;
-#ifndef LOCAL_TARGETS_ONLY
   std::shared_ptr<pd::Node> node1_, node2_;
-#endif
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store1_, remote_chunk_store2_;
   Session session1_, session2_;
   std::shared_ptr<UserCredentials> user_credentials1_, user_credentials2_;

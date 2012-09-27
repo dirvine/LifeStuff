@@ -26,9 +26,7 @@
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 #include "maidsafe/private/utils/utilities.h"
 
-#ifndef LOCAL_TARGETS_ONLY
 #include "maidsafe/pd/client/node.h"
-#endif
 
 #include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/return_codes.h"
@@ -180,10 +178,8 @@ class PublicIdTest : public testing::Test {
         public_identity2_("User 2 " + RandomAlphaNumericString(8)),
         received_public_identity_(),
         received_message_(),
-#ifndef LOCAL_TARGETS_ONLY
         node1_(),
         node2_(),
-#endif
         timer_interval_(3),
         interval_(3) {}
 
@@ -275,14 +271,6 @@ class PublicIdTest : public testing::Test {
     asio_service1_.Start();
     asio_service2_.Start();
 
-#ifdef LOCAL_TARGETS_ONLY
-    remote_chunk_store1_ = BuildChunkStore(*test_dir_ / RandomAlphaNumericString(8),
-                                           *test_dir_ / "simulation",
-                                           asio_service1_.service());
-    remote_chunk_store2_ = BuildChunkStore(*test_dir_ / RandomAlphaNumericString(8),
-                                           *test_dir_ / "simulation",
-                                           asio_service2_.service());
-#else
     std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
     remote_chunk_store1_ = BuildChunkStore(*test_dir_,
                                            bootstrap_endpoints,
@@ -292,7 +280,6 @@ class PublicIdTest : public testing::Test {
                                            bootstrap_endpoints,
                                            node2_,
                                            NetworkHealthFunction());
-#endif
 
     public_id1_.reset(new PublicId(remote_chunk_store1_, session1_, asio_service1_.service()));
 
@@ -302,10 +289,8 @@ class PublicIdTest : public testing::Test {
   void TearDown() {
     public_id1_->StopCheckingForNewContacts();
     public_id2_->StopCheckingForNewContacts();
-#ifndef LOCAL_TARGETS_ONLY
     node1_->Stop();
     node2_->Stop();
-#endif
     asio_service1_.Stop();
     asio_service2_.Stop();
     remote_chunk_store1_->WaitForCompletion();
@@ -367,9 +352,7 @@ class PublicIdTest : public testing::Test {
   std::shared_ptr<PublicId> public_id1_, public_id2_;
 
   std::string public_identity1_, public_identity2_, received_public_identity_, received_message_;
-#ifndef LOCAL_TARGETS_ONLY
   std::shared_ptr<pd::Node> node1_, node2_;
-#endif
   bptime::seconds timer_interval_;
   std::chrono::seconds interval_;
 
@@ -1457,18 +1440,10 @@ int CreatePublicIdObject(std::shared_ptr<PublicId>& public_id,
                          AsioService& asio_service,
                          Session& session,
                          std::shared_ptr<pcs::RemoteChunkStore>& remote_chunk_store,
-                         maidsafe::test::TestPath& test_dir,
+                         maidsafe::test::TestPath& /*test_dir*/,
                          const std::string& public_identity) {
   session.Reset();
   asio_service.Start();
-#ifdef LOCAL_TARGETS_ONLY
-  remote_chunk_store = BuildChunkStore(*test_dir / RandomAlphaNumericString(8),
-                                       *test_dir / "simulation",
-                                       asio_service.service());
-#else
-  // Suppress Windows unused variable warning
-  (void)test_dir;
-#endif
 
   public_id.reset(new PublicId(remote_chunk_store, session, asio_service.service()));
 
