@@ -36,6 +36,8 @@
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 
+#include "maidsafe/pd/client/node.h"
+
 #include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/detail/account_locking.h"
 #include "maidsafe/lifestuff/detail/session.h"
@@ -97,7 +99,7 @@ class UserCredentialsTest : public testing::Test {
                                           *test_dir_ / "simulation",
                                           asio_service_.service());
 #else
-//    ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 8));
+    ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12));
     std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
     remote_chunk_store_ = BuildChunkStore(*test_dir_,
                                           bootstrap_endpoints,
@@ -109,9 +111,30 @@ class UserCredentialsTest : public testing::Test {
                                                 asio_service_.service()));
   }
 
+#ifndef LOCAL_TARGETS_ONLY
+  void ResetNode() {
+    node_->Stop();
+
+    std::shared_ptr<asymm::Keys> pmid(new asymm::Keys(
+        session_.passport().SignaturePacketDetails(passport::kPmid, true)));
+    node_->set_keys(*pmid);
+    node_->set_account_name(session_.passport().SignaturePacketDetails(passport::kMaid, true).identity);
+    node_->Start(*test_dir_ / "buffered_chunk_store");
+
+    remote_chunk_store_.reset(new pcs::RemoteChunkStore(node_->chunk_store(),
+                                                        node_->chunk_manager(),
+                                                        node_->chunk_action_authority()));
+
+    user_credentials_.reset(new UserCredentials(*remote_chunk_store_,
+                                                session_,
+                                                asio_service_.service()));
+  }
+#endif
+
   void TearDown() {
 #ifndef LOCAL_TARGETS_ONLY
-//    EXPECT_TRUE(network_.StopLocalNetwork());
+  // trying to terminate a null process (dead vault node) will cause segmentation
+//     EXPECT_TRUE(network_.StopLocalNetwork());
 #endif
     asio_service_.Stop();
     asio_service2_.Stop();
@@ -301,66 +324,13 @@ TEST_F(UserCredentialsTest, FUNC_LoginSequence) {
   ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(keyword_, pin_, password_));
   LOG(kSuccess) << "Preconditions fulfilled.\n===================\n";
 
-//  ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
-//  session_.set_unique_user_id(RandomString(64));
-//  session_.set_root_parent_id(RandomString(64));
-//  ASSERT_EQ(keyword_, session_.keyword());
-//  ASSERT_EQ(pin_, session_.pin());
-//  ASSERT_EQ(password_, session_.password());
-//  LOG(kSuccess) << "User created.\n===================\n\n\n\n";
-
-// #ifndef LOCAL_TARGETS_ONLY
-//  pd::vault::Node vault_node;
-//  ASSERT_EQ(kSuccess, CreateVaultForClient(vault_node));
-//  LOG(kSuccess) << "Constructed vault.\n===================\n\n\n\n";
-//  Sleep(bptime::seconds(15));
-//  ASSERT_EQ(kSuccess, MakeClientNode());
-//  LOG(kSuccess) << "Constructed client node.\n===================\n\n\n\n";
-//  Sleep(bptime::seconds(15));
-// #endif
   DoCreateUser(keyword_, pin_, password_);
 
-//  EXPECT_EQ(kSuccess, user_credentials_->Logout());
-//  EXPECT_TRUE(session_.keyword().empty());
-//  EXPECT_TRUE(session_.pin().empty());
-//  EXPECT_TRUE(session_.password().empty());
-//  LOG(kInfo) << "Logged out.\n===================\n";
-//  Sleep(bptime::seconds(15));
-
-// #ifndef LOCAL_TARGETS_ONLY
-//  ASSERT_EQ(kSuccess, MakeAnonymousNode());
-//  Sleep(bptime::seconds(15));
-//  LOG(kSuccess) << "Constructed anonymous node.\n===================\n\n\n\n";
-// #endif
   DoLogOut();
 
-//  ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
-//  ASSERT_EQ(keyword_, session_.keyword());
-//  ASSERT_EQ(pin_, session_.pin());
-//  ASSERT_EQ(password_, session_.password());
-//  LOG(kInfo) << "Logged in.\n===================\n";
-
-// #ifndef LOCAL_TARGETS_ONLY
-//  ASSERT_EQ(kSuccess, MakeClientNode());
-//  LOG(kSuccess) << "Constructed client node.\n===================\n\n\n\n";
-//  Sleep(bptime::seconds(15));
-// #endif
   DoLogIn(keyword_, pin_, password_);
 
-//  ASSERT_EQ(kSuccess, user_credentials_->Logout());
-//  ASSERT_TRUE(session_.keyword().empty());
-//  ASSERT_TRUE(session_.pin().empty());
-//  ASSERT_TRUE(session_.password().empty());
-//  LOG(kInfo) << "Logged out.\n===================\n";
-
-// #ifndef LOCAL_TARGETS_ONLY
-//  ASSERT_EQ(kSuccess, node_->Stop());
-//  ASSERT_EQ(kSuccess, vault_node.Stop());
-// #endif
   DoLogOutAndStop();
-
-//  ASSERT_NE(kSuccess, user_credentials_->LogIn(RandomAlphaNumericString(9), pin_, password_));
-//  LOG(kInfo) << "Can't log in with fake details.";
 }
 
 TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
