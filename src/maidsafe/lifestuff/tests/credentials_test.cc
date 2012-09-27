@@ -42,12 +42,10 @@
 #include "maidsafe/lifestuff/detail/user_credentials.h"
 #include "maidsafe/lifestuff/detail/utils.h"
 
-#ifndef LOCAL_TARGETS_ONLY
 #include "maidsafe/pd/client/node.h"
 #include "maidsafe/pd/client/utils.h"
 #include "maidsafe/pd/vault/node.h"
 #include "maidsafe/lifestuff/tests/network_helper.h"
-#endif
 
 
 namespace args = std::placeholders;
@@ -69,11 +67,9 @@ class UserCredentialsTest : public testing::Test {
         session2_(),
         asio_service_(10),
         asio_service2_(10),
-#ifndef LOCAL_TARGETS_ONLY
         network_(),
-        node_(),
+        client_node_(),
         node2_(),
-#endif
         remote_chunk_store_(),
         remote_chunk_store2_(),
         user_credentials_(),
@@ -91,49 +87,34 @@ class UserCredentialsTest : public testing::Test {
   void SetUp() {
     asio_service_.Start();
     asio_service2_.Start();
-#ifdef LOCAL_TARGETS_ONLY
-    remote_chunk_store_ = BuildChunkStore(*test_dir_ / RandomAlphaNumericString(8),
-                                          *test_dir_ / "simulation",
-                                          asio_service_.service());
-#else
 //    ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 8));
     std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
     remote_chunk_store_ = BuildChunkStore(*test_dir_,
                                           bootstrap_endpoints,
-                                          node_,
+                                          client_node_,
                                           [] (const int&) {}/*NetworkHealthFunction()*/);
-#endif
     user_credentials_.reset(new UserCredentials(*remote_chunk_store_,
                                                 session_,
                                                 asio_service_.service()));
   }
 
   void TearDown() {
-#ifndef LOCAL_TARGETS_ONLY
 //    EXPECT_TRUE(network_.StopLocalNetwork());
-#endif
     asio_service_.Stop();
     asio_service2_.Stop();
   }
 
   void CreateSecondUserCredentials() {
-#ifdef LOCAL_TARGETS_ONLY
-    remote_chunk_store2_ = BuildChunkStore(*test_dir_ / RandomAlphaNumericString(8),
-                                           *test_dir_ / "simulation",
-                                           asio_service2_.service());
-#else
     std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
     remote_chunk_store2_ = BuildChunkStore(*test_dir_,
                                            bootstrap_endpoints,
                                            node2_,
                                            NetworkHealthFunction());
-#endif
     user_credentials2_.reset(new UserCredentials(*remote_chunk_store2_,
                                                  session2_,
                                                  asio_service2_.service()));
   }
 
-#ifndef LOCAL_TARGETS_ONLY
   int CreateVaultForClient(pd::vault::Node& vault_node) {
     vault_node.set_do_backup_state(false);
     vault_node.set_do_synchronise(true);
@@ -149,23 +130,23 @@ class UserCredentialsTest : public testing::Test {
   }
 
   int MakeClientNode() {
-    int result(node_->Stop());
+    int result(client_node_->Stop());
     if (result != kSuccess) {
       LOG(kError) << "Failed to stop client node.";
       return result;
     }
     asymm::Keys maid(session_.passport().SignaturePacketDetails(passport::kMaid, true));
-    node_->set_keys(maid);
-    node_->set_account_name(maid.identity);
-    result = node_->Start(*test_dir_ / "buffered_chunk_store");
+    client_node_->set_keys(maid);
+    client_node_->set_account_name(maid.identity);
+    result = client_node_->Start(*test_dir_ / "buffered_chunk_store");
     if (result != kSuccess) {
       LOG(kError) << "Failed to start client node.";
       return result;
     }
 
-    remote_chunk_store_.reset(new pcs::RemoteChunkStore(node_->chunk_store(),
-                                                        node_->chunk_manager(),
-                                                        node_->chunk_action_authority()));
+    remote_chunk_store_.reset(new pcs::RemoteChunkStore(client_node_->chunk_store(),
+                                                        client_node_->chunk_manager(),
+                                                        client_node_->chunk_action_authority()));
     user_credentials_.reset(new UserCredentials(*remote_chunk_store_,
                                                 session_,
                                                 asio_service_.service()));
@@ -173,37 +154,34 @@ class UserCredentialsTest : public testing::Test {
   }
 
   int MakeAnonymousNode() {
-    int result(node_->Stop());
+    int result(client_node_->Stop());
     if (result != kSuccess) {
       LOG(kError) << "Failed to stop client node.";
       return result;
     }
 
-    node_->set_keys(asymm::Keys());
-    node_->set_account_name("");
-    result = node_->Start(*test_dir_ / "buffered_chunk_store");
+    client_node_->set_keys(asymm::Keys());
+    client_node_->set_account_name("");
+    result = client_node_->Start(*test_dir_ / "buffered_chunk_store");
     if (result != kSuccess) {
       LOG(kError) << "Failed to start client node.";
       return result;
     }
 
-    remote_chunk_store_.reset(new pcs::RemoteChunkStore(node_->chunk_store(),
-                                                        node_->chunk_manager(),
-                                                        node_->chunk_action_authority()));
+    remote_chunk_store_.reset(new pcs::RemoteChunkStore(client_node_->chunk_store(),
+                                                        client_node_->chunk_manager(),
+                                                        client_node_->chunk_action_authority()));
     user_credentials_.reset(new UserCredentials(*remote_chunk_store_,
                                                 session_,
                                                 asio_service_.service()));
     return kSuccess;
   }
-#endif
 
   std::shared_ptr<fs::path> test_dir_;
   Session session_, session2_;
   AsioService asio_service_, asio_service2_;
-#ifndef LOCAL_TARGETS_ONLY
   NetworkHelper network_;
-  std::shared_ptr<pd::Node> node_, node2_;
-#endif
+  std::shared_ptr<pd::Node> client_node_, node2_;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_, remote_chunk_store2_;
   std::shared_ptr<UserCredentials> user_credentials_, user_credentials2_;
   std::string keyword_, pin_, password_;
@@ -229,7 +207,6 @@ TEST_F(UserCredentialsTest, FUNC_LoginSequence) {
   ASSERT_EQ(password_, session_.password());
   LOG(kSuccess) << "User created.\n===================\n\n\n\n";
 
-#ifndef LOCAL_TARGETS_ONLY
   pd::vault::Node vault_node;
   ASSERT_EQ(kSuccess, CreateVaultForClient(vault_node));
   LOG(kSuccess) << "Constructed vault.\n===================\n\n\n\n";
@@ -237,7 +214,6 @@ TEST_F(UserCredentialsTest, FUNC_LoginSequence) {
   ASSERT_EQ(kSuccess, MakeClientNode());
   LOG(kSuccess) << "Constructed client node.\n===================\n\n\n\n";
   Sleep(bptime::seconds(15));
-#endif
 
   EXPECT_EQ(kSuccess, user_credentials_->Logout());
   EXPECT_TRUE(session_.keyword().empty());
@@ -246,11 +222,9 @@ TEST_F(UserCredentialsTest, FUNC_LoginSequence) {
   LOG(kInfo) << "Logged out.\n===================\n";
   Sleep(bptime::seconds(15));
 
-#ifndef LOCAL_TARGETS_ONLY
   ASSERT_EQ(kSuccess, MakeAnonymousNode());
   Sleep(bptime::seconds(15));
   LOG(kSuccess) << "Constructed anonymous node.\n===================\n\n\n\n";
-#endif
 
   ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
   ASSERT_EQ(keyword_, session_.keyword());
@@ -258,11 +232,9 @@ TEST_F(UserCredentialsTest, FUNC_LoginSequence) {
   ASSERT_EQ(password_, session_.password());
   LOG(kInfo) << "Logged in.\n===================\n";
 
-#ifndef LOCAL_TARGETS_ONLY
   ASSERT_EQ(kSuccess, MakeClientNode());
   LOG(kSuccess) << "Constructed client node.\n===================\n\n\n\n";
   Sleep(bptime::seconds(15));
-#endif
 
   ASSERT_EQ(kSuccess, user_credentials_->Logout());
   ASSERT_TRUE(session_.keyword().empty());
@@ -270,12 +242,8 @@ TEST_F(UserCredentialsTest, FUNC_LoginSequence) {
   ASSERT_TRUE(session_.password().empty());
   LOG(kInfo) << "Logged out.\n===================\n";
 
-#ifndef LOCAL_TARGETS_ONLY
-  ASSERT_EQ(kSuccess, node_->Stop());
+  ASSERT_EQ(kSuccess, client_node_->Stop());
   ASSERT_EQ(kSuccess, vault_node.Stop());
-#endif
-//  ASSERT_NE(kSuccess, user_credentials_->LogIn(RandomAlphaNumericString(9), pin_, password_));
-//  LOG(kInfo) << "Can't log in with fake details.";
 }
 
 TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {

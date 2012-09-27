@@ -39,13 +39,11 @@
 
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
-#ifndef LOCAL_TARGETS_ONLY
 #include "maidsafe/private/process_management/client_controller.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/pd/client/node.h"
 #include "maidsafe/pd/vault/node.h"
 #include "maidsafe/lifestuff/detail/routings_handler.h"
-#endif
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
@@ -186,18 +184,14 @@ class LifeStuffImpl {
  private:
   int thread_count_;
   fs::path buffered_path_;
-#ifdef LOCAL_TARGETS_ONLY
   fs::path simulation_path_;
-#endif
   bptime::seconds interval_;
   AsioService asio_service_;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
-#ifndef LOCAL_TARGETS_ONLY
   std::shared_ptr<priv::process_management::ClientController> client_controller_;
   std::shared_ptr<pd::Node> node_;
   std::shared_ptr<RoutingsHandler> routings_handler_;
   pd::vault::Node vault_node_;
-#endif
   boost::signals2::signal<void(const int&)> network_health_signal_;
   Session session_;
   std::shared_ptr<UserCredentials> user_credentials_;
@@ -215,11 +209,9 @@ class LifeStuffImpl {
   int PreContactChecksFullAccess(const std::string& my_public_id);
   int PreContactChecksReadOnly(const std::string& my_public_id);
   void NetworkHealthSlot(const int& index);
-#ifndef LOCAL_TARGETS_ONLY
   int CreateVaultInLocalMachine(const fs::path& chunk_store, bool vault_cheat);
   int EstablishMaidRoutingObject(
       const std::vector<std::pair<std::string, uint16_t> >& bootstrap_endpoints);  // NOLINT (Dan)
-#endif
 };
 
 }  // namespace lifestuff
