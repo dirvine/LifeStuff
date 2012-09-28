@@ -272,8 +272,8 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
   anon_pipe = bp::create_pipe();
   sink = biostr::file_descriptor_sink(anon_pipe.sink, biostr::close_handle);
   bp::child store_key_child(
-      bp::execute(bp::initializers::run_exe(boost::filesystem::path("/home/maidsafe/Work/MyMaidSafe-SuperProject/build/pd-store-keys")),
-                  bp::initializers::set_cmd_line("/home/maidsafe/Work/MyMaidSafe-SuperProject/build/pd-store-keys -ls"),
+      bp::execute(bp::initializers::run_exe(pd::kKeysHelperExecutable()),
+                  bp::initializers::set_cmd_line(ConstructCommandLine(false, "-ls")),
                   bp::initializers::set_on_error(error_code),
                   bp::initializers::inherit_env()/*,
                   bp::initializers::bind_stdout(sink),
