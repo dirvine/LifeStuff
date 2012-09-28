@@ -49,7 +49,7 @@ class RoutingsHandler {
   ~RoutingsHandler();
 
   bool AddRoutingObject(const asymm::Keys& owner_credentials,
-                        const std::vector<std::pair<std::string, uint16_t>>& bootstrap_endpoints,  // NOLINT (Dan)
+                        const std::vector<std::pair<std::string, uint16_t> >& bootstrap_endpoints,  // NOLINT (Dan)
                         const std::string& search_id);
 
   bool Send(const std::string& source_id,

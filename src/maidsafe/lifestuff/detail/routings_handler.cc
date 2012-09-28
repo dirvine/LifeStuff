@@ -71,7 +71,7 @@ RoutingsHandler::~RoutingsHandler() {}
 
 bool RoutingsHandler::AddRoutingObject(
     const asymm::Keys& owner_credentials,
-    const std::vector<std::pair<std::string, uint16_t>>& bootstrap_endpoints,  // NOLINT (Dan)
+    const std::vector<std::pair<std::string, uint16_t> >& bootstrap_endpoints,  // NOLINT (Dan)
     const std::string& search_id) {
   RoutingDetails routing_details(owner_credentials, search_id);
 
