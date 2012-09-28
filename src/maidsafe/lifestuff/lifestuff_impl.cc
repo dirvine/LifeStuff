@@ -53,18 +53,14 @@ const int kRetryLimit(10);
 LifeStuffImpl::LifeStuffImpl()
     : thread_count_(kThreads),
       buffered_path_(),
-#ifdef LOCAL_TARGETS_ONLY
       simulation_path_(),
-#endif
       interval_(kSecondsInterval),
       asio_service_(thread_count_),
       remote_chunk_store_(),
-#ifndef LOCAL_TARGETS_ONLY
       client_controller_(),
       node_(),
       routings_handler_(),
       vault_node_(),
-#endif
       network_health_signal_(),
       session_(),
       user_credentials_(),
@@ -106,12 +102,6 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
     network_simulation_path = base_path / "simulated_network";
   }
 
-#ifdef LOCAL_TARGETS_ONLY
-  remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path,
-                                        network_simulation_path,
-                                        asio_service_.service());
-  simulation_path_ = network_simulation_path;
-#else
   int counter(0);
   std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
   while (counter++ < kRetryLimit) {
@@ -133,7 +123,6 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
                                         bootstrap_endpoints,
                                         node_,
                                         [&] (const int& index) { NetworkHealthSlot(index); });  // NOLINT (Dan)
-#endif
   if (!remote_chunk_store_) {
     LOG(kError) << "Could not initialise chunk store.";
     return kInitialiseChunkStoreFailure;
@@ -268,9 +257,7 @@ int LifeStuffImpl::Finalise() {
 
   asio_service_.Stop();
   remote_chunk_store_.reset();
-#ifndef LOCAL_TARGETS_ONLY
   node_.reset();
-#endif
   message_handler_.reset();
   public_id_.reset();
   user_credentials_.reset();
@@ -319,9 +306,6 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
     return result;
   }
 
-#ifdef LOCAL_TARGETS_ONLY
-  LOG(kInfo) << "The chunkstore path for the ficticious vault is " << chunk_store;
-#else
   result = CreateVaultInLocalMachine(chunk_store, vault_cheat);
   if (result != kSuccess)  {
     LOG(kError) << "Failed to create vault. No LifeStuff for you! (Result: " << result << ")";
@@ -331,7 +315,6 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
   routings_handler_ = std::make_shared<RoutingsHandler>(*remote_chunk_store_,
                                                         session_,
                                                         ValidatedMessageSignal());
-#endif
 
   state_ = kLoggedIn;
   logged_in_state_ = kCreating | kCredentialsLoggedIn;
@@ -1243,7 +1226,6 @@ void LifeStuffImpl::ConnectInternalElements() {
 
 int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
   int result(kSuccess);
-#ifndef LOCAL_TARGETS_ONLY
   result = node_->Stop();
   if (result != kSuccess) {
       LOG(kError) << "Failed to stop client container: " << result;
@@ -1269,7 +1251,6 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
   user_credentials_.reset(new UserCredentials(*remote_chunk_store_,
                                               session_,
                                               asio_service_.service()));
-#endif
 
   public_id_.reset(new PublicId(remote_chunk_store_, session_, asio_service_.service()));
 
@@ -1366,7 +1347,6 @@ void LifeStuffImpl::NetworkHealthSlot(const int& index) {
 }
 
 
-#ifndef LOCAL_TARGETS_ONLY
 int LifeStuffImpl::CreateVaultInLocalMachine(const fs::path& chunk_store, bool vault_cheat) {
   std::string account_name(session_.passport().SignaturePacketDetails(passport::kMaid,
                                                                       true).identity);
@@ -1412,7 +1392,6 @@ int LifeStuffImpl::EstablishMaidRoutingObject(
 
   return kSuccess;
 }
-#endif
 
 }  // namespace lifestuff
 

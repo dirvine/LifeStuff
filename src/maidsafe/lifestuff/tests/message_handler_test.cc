@@ -28,9 +28,7 @@
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
-#ifndef LOCAL_TARGETS_ONLY
 #include "maidsafe/pd/client/node.h"
-#endif
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/rcs_helper.h"
@@ -78,11 +76,9 @@ class MessageHandlerTest : public testing::Test {
         public_username3_("User 3 " + RandomAlphaNumericString(8)),
         received_public_username_(),
         received_message_(),
-#ifndef LOCAL_TARGETS_ONLY
         node1_(),
         node2_(),
         node3_(),
-#endif
         interval_(3),
         multiple_messages_(5),
         invitations_(0) {}
@@ -161,17 +157,6 @@ class MessageHandlerTest : public testing::Test {
     asio_service2_.Start();
     asio_service3_.Start();
 
-#ifdef LOCAL_TARGETS_ONLY
-    remote_chunk_store1_ = BuildChunkStore(*test_dir_ / RandomAlphaNumericString(8),
-                                           *test_dir_ / "simulation",
-                                           asio_service1_.service());
-    remote_chunk_store2_ = BuildChunkStore(*test_dir_ / RandomAlphaNumericString(8),
-                                           *test_dir_ / "simulation",
-                                           asio_service2_.service());
-    remote_chunk_store3_ = BuildChunkStore(*test_dir_ / RandomAlphaNumericString(8),
-                                           *test_dir_ / "simulation",
-                                           asio_service3_.service());
-#else
     std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
     remote_chunk_store1_ = BuildChunkStore(*test_dir_,
                                            bootstrap_endpoints,
@@ -185,7 +170,6 @@ class MessageHandlerTest : public testing::Test {
                                            bootstrap_endpoints,
                                            node3_,
                                            NetworkHealthFunction());
-#endif
 
     public_id1_.reset(new PublicId(remote_chunk_store1_, session1_, asio_service1_.service()));
     message_handler1_.reset(new MessageHandler(remote_chunk_store1_,
@@ -207,11 +191,9 @@ class MessageHandlerTest : public testing::Test {
     asio_service1_.Stop();
     asio_service2_.Stop();
     asio_service3_.Stop();
-#ifndef LOCAL_TARGETS_ONLY
     node1_->Stop();
     node2_->Stop();
     node3_->Stop();
-#endif
     remote_chunk_store1_->WaitForCompletion();
     remote_chunk_store2_->WaitForCompletion();
     remote_chunk_store3_->WaitForCompletion();
@@ -263,9 +245,7 @@ class MessageHandlerTest : public testing::Test {
 
   std::string public_username1_, public_username2_, public_username3_, received_public_username_,
               received_message_;
-#ifndef LOCAL_TARGETS_ONLY
   std::shared_ptr<pd::Node> node1_, node2_, node3_;
-#endif
   bptime::seconds interval_;
   size_t multiple_messages_, invitations_;
 
