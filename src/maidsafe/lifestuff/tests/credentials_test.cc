@@ -59,9 +59,9 @@ namespace lifestuff {
 
 namespace test {
 
-class UserCredentialsTest : public testing::Test {
+class CredentialsTest : public testing::Test {
  public:
-  UserCredentialsTest()
+  CredentialsTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
         session_(),
         session2_(),
@@ -188,11 +188,11 @@ class UserCredentialsTest : public testing::Test {
   bool immediate_quit_required_;
 
  private:
-  UserCredentialsTest(const UserCredentialsTest&);
-  UserCredentialsTest &operator=(const UserCredentialsTest&);
+  CredentialsTest(const CredentialsTest&);
+  CredentialsTest &operator=(const CredentialsTest&);
 };
 
-TEST_F(UserCredentialsTest, FUNC_LoginSequence) {
+TEST_F(CredentialsTest, FUNC_LoginSequence) {
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());
@@ -246,7 +246,7 @@ TEST_F(UserCredentialsTest, FUNC_LoginSequence) {
   ASSERT_EQ(kSuccess, vault_node.Stop());
 }
 
-TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
+TEST_F(CredentialsTest, FUNC_ChangeDetails) {
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());
@@ -349,7 +349,7 @@ TEST_F(UserCredentialsTest, FUNC_ChangeDetails) {
   LOG(kInfo) << "Old LID packets should be deleted.";
 }
 
-TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
+TEST_F(CredentialsTest, FUNC_CheckSessionClearsFully) {
   ASSERT_TRUE(session_.def_con_level() == DefConLevels::kDefCon3);
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
@@ -465,7 +465,7 @@ TEST_F(UserCredentialsTest, FUNC_CheckSessionClearsFully) {
   LOG(kInfo) << "Session seems clear.\n===================\n";
 }
 
-TEST_F(UserCredentialsTest, DISABLED_FUNC_MonitorLidPacket) {
+TEST_F(CredentialsTest, DISABLED_FUNC_MonitorLidPacket) {
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());
@@ -528,7 +528,7 @@ TEST_F(UserCredentialsTest, DISABLED_FUNC_MonitorLidPacket) {
   }
 }
 
-TEST_F(UserCredentialsTest, DISABLED_FUNC_ParallelLogin) {
+TEST_F(CredentialsTest, DISABLED_FUNC_ParallelLogin) {
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());
@@ -594,7 +594,7 @@ TEST_F(UserCredentialsTest, DISABLED_FUNC_ParallelLogin) {
   EXPECT_EQ(session2_.session_access_level(), kNoAccess);
 }
 
-TEST_F(UserCredentialsTest, FUNC_MultiUserCredentialsLoginAndLogout) {
+TEST_F(CredentialsTest, FUNC_MultiUserCredentialsLoginAndLogout) {
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());
@@ -625,7 +625,7 @@ TEST_F(UserCredentialsTest, FUNC_MultiUserCredentialsLoginAndLogout) {
   LOG(kInfo) << "Logged out.\n===================\n";
 }
 
-TEST_F(UserCredentialsTest, FUNC_UserCredentialsDeletion) {
+TEST_F(CredentialsTest, FUNC_UserCredentialsDeletion) {
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
   session_.set_unique_user_id(RandomString(64));
   session_.set_root_parent_id(RandomString(64));
@@ -720,7 +720,7 @@ TEST_F(UserCredentialsTest, FUNC_UserCredentialsDeletion) {
   ASSERT_NE(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
 }
 
-TEST_F(UserCredentialsTest, DISABLED_FUNC_SessionSaverTimer) {
+TEST_F(CredentialsTest, DISABLED_FUNC_SessionSaverTimer) {
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
   ASSERT_TRUE(session_.password().empty());

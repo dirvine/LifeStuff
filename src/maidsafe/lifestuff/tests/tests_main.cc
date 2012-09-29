@@ -26,20 +26,16 @@
 #include "maidsafe/common/test.h"
 
 int main(int argc, char** argv) {
-  maidsafe::log::Logging::instance().AddFilter("common", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("private", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("encrypt", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("drive", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("passport", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("rudp", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("routing", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("pd", maidsafe::log::kInfo);
-  maidsafe::log::Logging::instance().AddFilter("lifestuff", maidsafe::log::kInfo);
-  maidsafe::log::Logging::instance().SetColour(maidsafe::log::ColourMode::kFullLine);
-
-  testing::FLAGS_gtest_catch_exceptions = false;
-  testing::InitGoogleTest(&argc, argv);
-  int result(RUN_ALL_TESTS());
-  int test_count = testing::UnitTest::GetInstance()->test_to_run_count();
-  return (test_count == 0) ? -1 : result;
+  maidsafe::log::FilterMap filter;
+  filter["common"] = maidsafe::log::kFatal;
+  filter["private"] = maidsafe::log::kFatal;
+  filter["encrypt"] = maidsafe::log::kFatal;
+  filter["private"] = maidsafe::log::kFatal;
+  filter["drive"] = maidsafe::log::kFatal;
+  filter["passport"] = maidsafe::log::kFatal;
+  filter["rudp"] = maidsafe::log::kFatal;
+  filter["routing"] = maidsafe::log::kInfo;
+  filter["pd"] = maidsafe::log::kFatal;
+  filter["lifestuff"] = maidsafe::log::kInfo;
+  return ExecuteMain(argc, argv, filter, false, maidsafe::log::ColourMode::kPartialLine);
 }

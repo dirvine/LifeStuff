@@ -88,6 +88,7 @@ set(CLIENT_CONTROLLER_TEST_CC "${PATH_TO_TESTS}/credentials_test.cc")
 set(PUBLIC_ID_TEST_CC "${PATH_TO_TESTS}/public_id_test.cc"
                       "${PATH_TO_TESTS}/message_handler_test.cc")
 set(STORAGE_TEST_CC "${PATH_TO_TESTS}/storage_test.cc")
+set(ROUTINGS_HANDLER_TEST_CC "${PATH_TO_TESTS}/routings_handler_test.cc")
 set(API_TEST_CC "${PATH_TO_TESTS}/api/full_api_test.cc"
                 "${PATH_TO_TESTS}/api/api_user_credentials_test.cc"
                 "${PATH_TO_TESTS}/api/api_public_id_test.cc"
@@ -107,6 +108,7 @@ source_group("Tests Source Files" FILES ${TESTS_MAIN_CC}
                                         ${CLIENT_CONTROLLER_TEST_CC}
                                         ${PUBLIC_ID_TEST_CC}
                                         ${STORAGE_TEST_CC}
+                                        ${ROUTINGS_HANDLER_TEST_CC}
                                         ${API_TEST_CC}
                                         ${LIFESTUFF_TESTS_CC}
                                         ${NETWORK_HELPER_CC})
@@ -122,9 +124,11 @@ source_group("Tests Proto Files" FILES ${NETWORK_HELPER_PROTOS})
 ###################################################################################################
 ms_add_static_library(lifestuff_detail ${ALL_FILES_DETAIL_DIR})
 ms_add_executable(TESTlifestuff_general "Tests/LifeStuff" ${LIFESTUFF_TESTS_CC} ${TESTS_MAIN_CC})
+ms_add_executable(TESTlifestuff_routings_handler "Tests/LifeStuff" ${ROUTINGS_HANDLER_TEST_CC} ${TESTS_MAIN_CC})
 
 target_link_libraries(maidsafe_lifestuff_detail maidsafe_drive maidsafe_passport)
 target_link_libraries(TESTlifestuff_general maidsafe_lifestuff_detail)
+target_link_libraries(TESTlifestuff_routings_handler maidsafe_lifestuff_detail maidsafe_routing)
 
 ms_add_static_library(lifestuff ${ALL_FILES_LIFESTUFF_DIR})
 ms_add_executable(TESTlifestuff_public_id "Tests/LifeStuff" ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
@@ -192,12 +196,14 @@ add_style_test(${STYLE_ALL}
                ${CLIENT_CONTROLLER_TEST_CC}
                ${PUBLIC_ID_TEST_CC}
                ${STORAGE_TEST_CC}
+               ${ROUTINGS_HANDLER_TEST_CC}
                ${API_TEST_CC})
 
 add_gtests(TESTlifestuff_general)
 add_gtests(TESTlifestuff_public_id)
 add_gtests(TESTlifestuff_credentials)
 add_gtests(TESTlifestuff_storage)
+add_gtests(TESTlifestuff_routings_handler)
 add_gtests(TESTlifestuff_api)
 
 add_project_experimental()

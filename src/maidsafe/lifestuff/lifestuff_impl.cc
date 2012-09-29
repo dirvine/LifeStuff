@@ -314,7 +314,7 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
 
   routings_handler_ = std::make_shared<RoutingsHandler>(*remote_chunk_store_,
                                                         session_,
-                                                        ValidatedMessageSignal());
+                                                        ValidatedMessageFunction());
 
   state_ = kLoggedIn;
   logged_in_state_ = kCreating | kCredentialsLoggedIn;
@@ -473,13 +473,6 @@ int LifeStuffImpl::CreateAndMountDrive() {
     LOG(kError) << "Failed creating My Stuff: " << error_code.message();
     user_storage_->UnMountDrive();
     return kCreateMyStuffError;
-  }
-
-  fs::create_directory(mount_path / kSharedStuff, error_code);
-  if (error_code) {
-    LOG(kError) << "Failed creating Shared Stuff: " << error_code.message();
-    user_storage_->UnMountDrive();
-    return kCreateSharedStuffError;
   }
 
   logged_in_state_ = logged_in_state_ ^ kDriveMounted;
@@ -1381,7 +1374,7 @@ int LifeStuffImpl::EstablishMaidRoutingObject(
     const std::vector<std::pair<std::string, uint16_t> >& bootstrap_endpoints) {  // NOLINT (Dan)
   asymm::Keys maid(session_.passport().SignaturePacketDetails(passport::kMaid, true));
   assert(!maid.identity.empty());
-  if (!routings_handler_->AddRoutingObject(maid, bootstrap_endpoints, maid.identity)) {
+  if (!routings_handler_->AddRoutingObject(maid, bootstrap_endpoints, maid.identity, nullptr)) {
     LOG(kError) << "Failed to adding MAID routing.";
     return kGeneralError;
   }
