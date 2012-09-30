@@ -158,6 +158,7 @@ enum ReturnCode {
   kSessionSerialisationFailure = -207017,
   kSaveSessionFailure = -207018,
   kUsingNextToLastSession = -207019,
+  kNoLogoutResponse = -207020,
 
   // User Storage
   kOwnerTryingToLeave = -208001,  // Only used by Shares

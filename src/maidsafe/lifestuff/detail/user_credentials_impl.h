@@ -24,6 +24,7 @@
 #ifndef MAIDSAFE_LIFESTUFF_DETAIL_USER_CREDENTIALS_IMPL_H_
 #define MAIDSAFE_LIFESTUFF_DETAIL_USER_CREDENTIALS_IMPL_H_
 
+#include <condition_variable>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -34,25 +35,23 @@
 
 #include "maidsafe/common/rsa.h"
 
-
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/detail/data_atlas_pb.h"
 
+namespace bs2 = boost::signals2;
+
 namespace maidsafe {
 
 namespace priv {
-namespace chunk_store {
-class RemoteChunkStore;
-}  // namespace chunk_store
+namespace chunk_store { class RemoteChunkStore; }
 }  // namespace priv
-namespace bs2 = boost::signals2;
-namespace pcs = maidsafe::priv::chunk_store;
 
 namespace passport { class Passport; }
 
 namespace lifestuff {
 
+class RoutingsHandler;
 class Session;
 struct OperationResults;
 
@@ -67,9 +66,10 @@ class UserCredentialsImpl {
   typedef bs2::signal<void()> ImmediateQuitRequiredSignal;
   typedef std::shared_ptr<ImmediateQuitRequiredSignal> ImmediateQuitRequiredSignalPtr;
 
-  UserCredentialsImpl(pcs::RemoteChunkStore& remote_chunk_store,
+  UserCredentialsImpl(priv::chunk_store::RemoteChunkStore& remote_chunk_store,
                       Session& session,
-                      boost::asio::io_service& service);
+                      boost::asio::io_service& service,
+                      RoutingsHandler& routings_handler);
   ~UserCredentialsImpl();
 
   int LogIn(const std::string& keyword, const std::string& pin, const std::string& password);
@@ -92,15 +92,23 @@ class UserCredentialsImpl {
   bs2::connection ConnectToImmediateQuitRequiredSignal(
       const ImmediateQuitRequiredFunction& immediate_quit_required_slot);
 
+  void LogoutCompletedArrived(const std::string& session_marker);
+
  private:
-  pcs::RemoteChunkStore& remote_chunk_store_;
+  priv::chunk_store::RemoteChunkStore& remote_chunk_store_;
   Session& session_;
   passport::Passport& passport_;
+  RoutingsHandler& routings_handler_;
   std::mutex single_threaded_class_mutex_;
   boost::asio::io_service& asio_service_;
   boost::asio::deadline_timer session_saver_timer_;
   bool session_saver_timer_active_, session_saved_once_;
   const boost::posix_time::seconds session_saver_interval_;
+  ImmediateQuitRequiredSignal immediate_quit_required_signal_;
+  bool completed_log_out_;
+  std::condition_variable completed_log_out_conditional_;
+  std::mutex completed_log_out_mutex_;
+  std::string completed_log_out_message_;
 
   int AttemptLogInProcess(const std::string& keyword,
                           const std::string& pin,
@@ -112,6 +120,12 @@ class UserCredentialsImpl {
                   const bool& compare_names,
                   std::string& mid_packet,
                   std::string& smid_packet);
+
+  int CheckForOtherRunningInstances(const std::string& keyword,
+                                    const std::string& pin,
+                                    const std::string& password,
+                                    std::string& mid_packet,
+                                    std::string& smid_packet);
 
   void StartSessionSaver();
 
@@ -206,8 +220,6 @@ class UserCredentialsImpl {
 
   void SessionSaver(const boost::posix_time::seconds& interval,
                     const boost::system::error_code& error_code);
-
-  ImmediateQuitRequiredSignal immediate_quit_required_signal_;
 };
 
 }  // namespace lifestuff

@@ -45,26 +45,23 @@ namespace fs = boost::filesystem;
 namespace maidsafe {
 
 namespace priv {
-namespace chunk_store {
-class RemoteChunkStore;
-}  // namespace chunk_store
+namespace chunk_store { class RemoteChunkStore; }
 }  // namespace priv
-
-namespace pcs = maidsafe::priv::chunk_store;
 
 namespace lifestuff {
 
-class UserCredentialsImpl;
+class RoutingsHandler;
 class Session;
+class UserCredentialsImpl;
 
 class UserCredentials {
  public:
-  UserCredentials(pcs::RemoteChunkStore& chunk_store,
+  UserCredentials(priv::chunk_store::RemoteChunkStore& chunk_store,
                   Session& session,
-                  boost::asio::io_service& service);
+                  boost::asio::io_service& service,
+                  RoutingsHandler& routings_handler);
 
   ~UserCredentials();
-  void Init(const fs::path& chunk_store_dir);
 
   // User credential operations
   int LogIn(const std::string& keyword, const std::string& pin, const std::string& password);
@@ -81,12 +78,13 @@ class UserCredentials {
   bs2::connection ConnectToImmediateQuitRequiredSignal(
       const ImmediateQuitRequiredFunction& immediate_quit_required_slot);
 
+  void LogoutCompletedArrived(const std::string& session_marker);
+
  private:
   UserCredentials &operator=(const UserCredentials&);
   UserCredentials(const UserCredentials&);
 
-  Session& session_;
-  std::shared_ptr<UserCredentialsImpl> impl_;
+  std::unique_ptr<UserCredentialsImpl> impl_;
 };
 
 }  // namespace lifestuff

@@ -130,9 +130,17 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
 
   buffered_path_ = buffered_chunk_store_path;
 
+  routings_handler_.reset(new RoutingsHandler(*remote_chunk_store_,
+                                              session_,
+                                              [&] (const std::string& message,
+                                                   std::string& response) {
+                                                return HandleRoutingsHandlerMessage(message,
+                                                                                    response);
+                                              }));
   user_credentials_.reset(new UserCredentials(*remote_chunk_store_,
                                               session_,
-                                              asio_service_.service()));
+                                              asio_service_.service(),
+                                              *routings_handler_));
 
   state_ = kInitialised;
 
@@ -1240,7 +1248,8 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
                                                       node_->chunk_action_authority()));
   user_credentials_.reset(new UserCredentials(*remote_chunk_store_,
                                               session_,
-                                              asio_service_.service()));
+                                              asio_service_.service(),
+                                              *routings_handler_));
 
   public_id_.reset(new PublicId(remote_chunk_store_, session_, asio_service_.service()));
 
@@ -1365,21 +1374,39 @@ int LifeStuffImpl::CreateVaultInLocalMachine(const fs::path& chunk_store, bool v
       LOG(kError) << "Failed to create vault through client controller.";
       return kVaultCreationStartFailure;
     }
-}
-
-  return kSuccess;
-}
-
-int LifeStuffImpl::EstablishMaidRoutingObject(
-    const std::vector<std::pair<std::string, uint16_t> >& bootstrap_endpoints) {  // NOLINT (Dan)
-  asymm::Keys maid(session_.passport().SignaturePacketDetails(passport::kMaid, true));
-  assert(!maid.identity.empty());
-  if (!routings_handler_->AddRoutingObject(maid, bootstrap_endpoints, maid.identity, nullptr)) {
-    LOG(kError) << "Failed to adding MAID routing.";
-    return kGeneralError;
   }
 
   return kSuccess;
+}
+
+bool LifeStuffImpl::HandleRoutingsHandlerMessage(const std::string& message,
+                                                 std::string& /*response*/) {
+  // Check for message from another instance trying to log in
+  OtherInstanceMessage other_instance_message;
+  if (other_instance_message.ParseFromString(message)) {
+    switch (other_instance_message.message_type()) {
+      case 1: {
+          asymm::PrivateKey maid_private_key(
+              session_.passport().SignaturePacketDetails(passport::kMaid, true).private_key);
+          std::string decrypted_message;
+          int result(asymm::Decrypt(other_instance_message.encrypted_message(),
+                                    maid_private_key,
+                                    &decrypted_message));
+          if (result == kSuccess) {
+            LogoutProceedings proceedings;
+            if (proceedings.ParseFromString(decrypted_message)) {
+              if (proceedings.has_session_requestor()) {
+                // TODO(Team): Run log out
+              } else if (proceedings.has_session_terminated()) {
+                user_credentials_->LogoutCompletedArrived(proceedings.session_acknowledger());
+              }
+            }
+          }
+      }
+      default: break;
+    }
+  }
+  return false;
 }
 
 }  // namespace lifestuff

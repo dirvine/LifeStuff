@@ -43,11 +43,11 @@
 
 #include "maidsafe/lifestuff/detail/account_locking.h"
 #include "maidsafe/lifestuff/detail/data_atlas_pb.h"
+#include "maidsafe/lifestuff/detail/routings_handler.h"
 #include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/utils.h"
 
 
-namespace args = std::placeholders;
 namespace pca = maidsafe::priv::chunk_actions;
 namespace bptime = boost::posix_time;
 namespace lid = maidsafe::lifestuff::account_locking;
@@ -59,10 +59,10 @@ namespace lifestuff {
 
 namespace {
 
-int CreateSignaturePacketInfo(asymm::Keys packet,
+int CreateSignaturePacketInfo(const asymm::Keys& packet,
                               std::string* packet_name,
                               std::string* packet_content) {
-  BOOST_ASSERT(packet_name && packet_content);
+  assert(packet_name && packet_content);
   *packet_name = pca::ApplyTypeToName(packet.identity, pca::kSignaturePacket);
 
   pca::SignedData signed_data;
@@ -83,21 +83,45 @@ int CreateSignaturePacketInfo(asymm::Keys packet,
   return kSuccess;
 }
 
+void GenerateLogoutRequest(const std::string& session_marker,
+                           const asymm::PublicKey& maid_public_key,
+                           std::string& serialised_message) {
+  assert(serialised_message.empty());
+  LogoutProceedings proceedings;
+  proceedings.set_session_requestor(session_marker);
+  OtherInstanceMessage other_instance_message;
+  other_instance_message.set_message_type(1);
+
+  std::string encrypted;
+  int result(asymm::Encrypt(proceedings.SerializeAsString(), maid_public_key, &encrypted));
+  assert(result == kSuccess && !encrypted.empty());
+
+  other_instance_message.set_encrypted_message(encrypted);
+  serialised_message = other_instance_message.SerializeAsString();
+  assert(!serialised_message.empty());
+}
+
 }  // namespace
 
-UserCredentialsImpl::UserCredentialsImpl(pcs::RemoteChunkStore& remote_chunk_store,
+UserCredentialsImpl::UserCredentialsImpl(priv::chunk_store::RemoteChunkStore& remote_chunk_store,
                                          Session& session,
-                                         boost::asio::io_service& service)
+                                         boost::asio::io_service& service,
+                                         RoutingsHandler& routings_handler)
     : remote_chunk_store_(remote_chunk_store),
       session_(session),
       passport_(session_.passport()),
+      routings_handler_(routings_handler),
       single_threaded_class_mutex_(),
       asio_service_(service),
       session_saver_timer_(asio_service_),
       session_saver_timer_active_(false),
       session_saved_once_(false),
       session_saver_interval_(kSecondsInterval * 3),
-      immediate_quit_required_signal_() {}
+      immediate_quit_required_signal_(),
+      completed_log_out_(false),
+      completed_log_out_conditional_(),
+      completed_log_out_mutex_(),
+      completed_log_out_message_() {}
 
 UserCredentialsImpl::~UserCredentialsImpl() {}
 
@@ -131,21 +155,6 @@ int UserCredentialsImpl::AttemptLogInProcess(const std::string& keyword,
     return result;
   }
 
-//  std::string lid_packet(remote_chunk_store_.Get(pca::ApplyTypeToName(lid::LidName(keyword, pin),
-//                                                                      pca::kModifiableByOwner)));
-//  LockingPacket locking_packet;
-//  int lid_result(lid::ProcessAccountStatus(keyword, pin, password, lid_packet, locking_packet));
-//  bool lid_corrupted(false);
-//  if (lid_result != kSuccess) {
-//    if (lid_result == kCorruptedLidPacket) {
-//      lid_corrupted = true;
-//    } else {
-//      LOG(kError) << "Couldn't get or process LID. Account can't be logged in: " << lid_result;
-//      return lid_result;
-//    }
-//  }
-
-
   std::string mid_packet, smid_packet;
   result = GetUserInfo(keyword, pin, password, false, mid_packet, smid_packet);
   if (result != kSuccess) {
@@ -153,71 +162,93 @@ int UserCredentialsImpl::AttemptLogInProcess(const std::string& keyword,
     return result;
   }
 
-//  bool need_to_wait(false);
-//  result = GetAndLockLid(keyword, pin, password, lid_packet, locking_packet);
-//  if (result == kCorruptedLidPacket && lid_corrupted == true) {
-//    LOG(kInfo) << "Trying to fix corrupted packet...";
-//    session_.set_keyword(keyword);
-//    session_.set_pin(pin);
-//    session_.set_password(password);
-//    session_.set_session_access_level(kFullAccess);
-//    if (!session_.set_session_name()) {
-//      LOG(kError) << "Failed to set session.";
-//      return kSessionFailure;
-//    }
-//    locking_packet = lid::CreateLockingPacket(session_.session_name());
-//  } else if (result != kSuccess) {
-//    LOG(kError) << "Failed to GetAndLock LID.";
-//    return result;
-//  } else {
-    session_.set_keyword(keyword);
-    session_.set_pin(pin);
-    session_.set_password(password);
-    session_.set_session_access_level(kFullAccess);
-    if (!session_.set_session_name()) {
-      LOG(kError) << "Failed to set session.";
-      return kSessionFailure;
-    }
+  // Check other running instances
+  result = CheckForOtherRunningInstances(keyword, pin, password, mid_packet, smid_packet);
+  if (result != kSuccess) {
+    LOG(kInfo) << "UserCredentialsImpl::LogIn - Failure to deal with other running instances.";
+    return result;
+  }
 
-//    int i(0);
-//    result = kGeneralError;
-//    while (i++ < 10 && result != kSuccess) {
-//      result = lid::CheckLockingPacketForIdentifier(locking_packet, session_.session_name());
-//      if (result != kSuccess) {
-//        if (!session_.set_session_name()) {
-//          LOG(kError) << "Failed to set session name.";
-//          return kSessionFailure;
-//        }
-//      }
-//    }
-//    result = lid::AddItemToLockingPacket(locking_packet, session_.session_name(), true);
-//    if (result == kLidIdentifierAlreadyInUse) {
-//      LOG(kError) << "Failed to add item to locking packet";
-//      return result;
-//    }
-//    if (result == kLidFullAccessUnavailable)
-//      need_to_wait = true;
-//    lid::OverthrowInstancesUsingLockingPacket(locking_packet, session_.session_name());
-//  }
-
-//  result = ModifyLid(keyword, pin, password, locking_packet);
-//  if (result != kSuccess) {
-//    LOG(kError) << "Failed to modify LID.";
-//    return result;
-//  }
-
-//  if (need_to_wait) {
-//    LOG(kInfo) << "Need to wait before logging in.";
-//    Sleep(bptime::seconds(15));
-//    result = GetUserInfo(keyword, pin, password, true, mid_packet, smid_packet);
-//    if (result != kSuccess) {
-//      LOG(kError) << "Failed to re-get user credentials.";
-//      return result;
-//    }
-//  }
+  session_.set_keyword(keyword);
+  session_.set_pin(pin);
+  session_.set_password(password);
+  session_.set_session_access_level(kFullAccess);
+  if (!session_.set_session_name()) {
+    LOG(kError) << "Failed to set session.";
+    return kSessionFailure;
+  }
 
   session_saved_once_ = false;
 //  StartSessionSaver();
+
+  return kSuccess;
+}
+
+int UserCredentialsImpl::CheckForOtherRunningInstances(const std::string& keyword,
+                                                       const std::string& pin,
+                                                       const std::string& password,
+                                                       std::string& mid_packet,
+                                                       std::string& smid_packet) {
+  // Start MAID routing
+  asymm::Keys maid(passport_.SignaturePacketDetails(passport::kMaid, true));
+  assert(!maid.identity.empty());
+  routings_handler_.AddRoutingObject(maid,
+                                     std::vector<std::pair<std::string, uint16_t> >(),
+                                     maid.identity,
+                                     nullptr);
+
+  // Message self and wait for response
+  std::string request_logout, logout_request_acknowledgement, session_marker(RandomString(64));
+  GenerateLogoutRequest(session_marker, maid.public_key, request_logout);
+  routings_handler_.Send(maid.identity,
+                         maid.identity,
+                         maid.public_key,
+                         request_logout,
+                         &logout_request_acknowledgement);
+
+  // If other instances exist wait for log out message
+  if (!logout_request_acknowledgement.empty()) {
+    // Check logout_request_acknowledgement
+    std::string decrypted_message;
+    int result(asymm::Decrypt(completed_log_out_message_, maid.private_key, &decrypted_message));
+    if (result != kSuccess) {
+      LOG(kError) << "Message received does not decrypt.";
+      return -1;
+    }
+
+    LogoutProceedings proceedings;
+    if (!proceedings.ParseFromString(decrypted_message) || !proceedings.has_session_acknowledger()) {
+      LOG(kError) << "Message has wrong format.";
+      return -1;
+    }
+
+    if (proceedings.session_acknowledger() != session_marker) {
+      LOG(kError) << "Session marker not replicated in acknowlegdement";
+      return -1;
+    }
+
+    std::unique_lock<std::mutex> loch(completed_log_out_mutex_);
+    if (!completed_log_out_conditional_.wait_for(loch,
+                                                 std::chrono::minutes(1),
+                                                 [&] () { return completed_log_out_; })) {
+      LOG(kError) << "Timed out waiting for other party to report logout. "
+                  << "Failure! Too dangerous to log in.";
+      return kNoLogoutResponse;
+    }
+
+    // Check response is valid
+    if (completed_log_out_message_ != session_marker) {
+      LOG(kError) << "Session marker does not match marker sent in request.";
+      return -1;
+    }
+
+    // Run GetUserInfo again
+    result = GetUserInfo(keyword, pin, password, true, mid_packet, smid_packet);
+    if (result != kSuccess) {
+      LOG(kInfo) << "UserCredentialsImpl::LogIn - Failed to get user info after remote logout.";
+      return result;
+    }
+  }
 
   return kSuccess;
 }
@@ -228,11 +259,6 @@ int UserCredentialsImpl::LogOut() {
     LOG(kError) << "Failed to save session on Logout with result " << result;
     return result;
   }
-//  result = AssessAndUpdateLid(true);
-//  if (result != kSuccess) {
-//    LOG(kError) << "Failed to update LID on Logout";
-//    return result;
-//  }
 
   session_.Reset();
   return kSuccess;
@@ -249,16 +275,18 @@ int UserCredentialsImpl::GetUserInfo(const std::string& keyword,
     std::string new_smid_packet;
 
     boost::thread get_mid_thread(
-          [&] {
-            new_mid_packet = remote_chunk_store_.Get(pca::ApplyTypeToName(
-                                                       passport::MidName(keyword, pin, false),
-                                                       pca::kModifiableByOwner));
-          });
+        [&] {
+          new_mid_packet = remote_chunk_store_.Get(pca::ApplyTypeToName(passport::MidName(keyword,
+                                                                                          pin,
+                                                                                          false),
+                                                                        pca::kModifiableByOwner));
+        });
     boost::thread get_smid_thread(
         [&] {
-          new_smid_packet = remote_chunk_store_.Get(pca::ApplyTypeToName(
-                                                     passport::MidName(keyword, pin, true),
-                                                     pca::kModifiableByOwner));
+          new_smid_packet = remote_chunk_store_.Get(pca::ApplyTypeToName(passport::MidName(keyword,
+                                                                                           pin,
+                                                                                           true),
+                                                                         pca::kModifiableByOwner));
         });
 
     get_mid_thread.join();
@@ -1654,6 +1682,13 @@ void UserCredentialsImpl::SessionSaver(const bptime::seconds& interval,
 bs2::connection UserCredentialsImpl::ConnectToImmediateQuitRequiredSignal(
     const ImmediateQuitRequiredFunction& immediate_quit_required_slot) {
   return immediate_quit_required_signal_.connect(immediate_quit_required_slot);
+}
+
+void UserCredentialsImpl::LogoutCompletedArrived(const std::string& session_marker) {
+  std::lock_guard<std::mutex> loch(completed_log_out_mutex_);
+  completed_log_out_message_ = session_marker;
+  completed_log_out_ = true;
+  completed_log_out_conditional_.notify_one();
 }
 
 }  // namespace lifestuff

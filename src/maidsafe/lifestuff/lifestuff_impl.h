@@ -210,8 +210,7 @@ class LifeStuffImpl {
   int PreContactChecksReadOnly(const std::string& my_public_id);
   void NetworkHealthSlot(const int& index);
   int CreateVaultInLocalMachine(const fs::path& chunk_store, bool vault_cheat);
-  int EstablishMaidRoutingObject(
-      const std::vector<std::pair<std::string, uint16_t> >& bootstrap_endpoints);  // NOLINT (Dan)
+  bool HandleRoutingsHandlerMessage(const std::string& message, std::string& response);
 };
 
 }  // namespace lifestuff

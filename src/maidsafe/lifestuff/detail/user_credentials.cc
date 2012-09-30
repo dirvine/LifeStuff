@@ -26,8 +26,6 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/lifestuff/detail/user_credentials_impl.h"
-#include "maidsafe/lifestuff/detail/session.h"
-#include "maidsafe/lifestuff/detail/utils.h"
 
 namespace args = std::placeholders;
 
@@ -35,11 +33,11 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-UserCredentials::UserCredentials(pcs::RemoteChunkStore& chunk_store,
+UserCredentials::UserCredentials(priv::chunk_store::RemoteChunkStore& chunk_store,
                                  Session& session,
-                                 boost::asio::io_service& service)
-    : session_(session),
-      impl_(new UserCredentialsImpl(chunk_store, session, service)) {}
+                                 boost::asio::io_service& service,
+                                 RoutingsHandler& routings_handler)
+    : impl_(new UserCredentialsImpl(chunk_store, session, service, routings_handler)) {}
 
 UserCredentials::~UserCredentials() {}
 
@@ -80,6 +78,10 @@ int UserCredentials::DeleteUserCredentials() {
 bs2::connection UserCredentials::ConnectToImmediateQuitRequiredSignal(
     const ImmediateQuitRequiredFunction& immediate_quit_required_slot) {
   return impl_->ConnectToImmediateQuitRequiredSignal(immediate_quit_required_slot);
+}
+
+void UserCredentials::LogoutCompletedArrived(const std::string& session_marker) {
+  impl_->LogoutCompletedArrived(session_marker);
 }
 
 }  // namespace lifestuff
