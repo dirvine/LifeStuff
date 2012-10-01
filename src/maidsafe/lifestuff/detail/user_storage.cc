@@ -70,7 +70,8 @@ void UserStorage::MountDrive(const fs::path& mount_dir_path,
     fs::create_directory(mount_dir_path);
 
   session_ = session;
-  asymm::Keys key_ring(session->passport().SignaturePacketDetails(passport::kPmid, true));
+  asymm::Keys key_ring(session->passport().SignaturePacketDetails(passport::kMaid, true));
+  assert(!key_ring.identity.empty());
   drive_in_user_space_.reset(new MaidDriveInUserSpace(*chunk_store_, key_ring));
 
   int result(kGeneralError);

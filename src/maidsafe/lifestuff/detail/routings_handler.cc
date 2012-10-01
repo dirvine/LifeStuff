@@ -60,19 +60,23 @@ RoutingsHandler::RoutingDetails::RoutingDetails(const asymm::Keys& owner_credent
 
 RoutingsHandler::RoutingsHandler(priv::chunk_store::RemoteChunkStore& chunk_store,
                                  Session& session,
-                                 const ValidatedMessageSignal& validated_message_signal)
+                                 const ValidatedMessageFunction& validated_message_signal)
     : chunk_store_(chunk_store),
       routing_objects_(),
       routing_objects_mutex_(),
       session_(session),
       validated_message_signal_(validated_message_signal) {}
 
-RoutingsHandler::~RoutingsHandler() {}
+RoutingsHandler::~RoutingsHandler() {
+  routing_objects_.clear();
+  LOG(kInfo) << "Cleared objects\n\n\n\n";
+}
 
 bool RoutingsHandler::AddRoutingObject(
     const asymm::Keys& owner_credentials,
-    const std::vector<std::pair<std::string, uint16_t>>& bootstrap_endpoints,  // NOLINT (Dan)
-    const std::string& search_id) {
+    const std::vector<std::pair<std::string, uint16_t> >& bootstrap_endpoints,  // NOLINT (Dan)
+    const std::string& search_id,
+    const routing::RequestPublicKeyFunctor& public_key_functor) {
   RoutingDetails routing_details(owner_credentials, search_id);
 
   // Bootstrap endpoints to udp endpoints
@@ -95,10 +99,13 @@ bool RoutingsHandler::AddRoutingObject(
                                                   reply_functor);
                               };
 
-  functors.request_public_key = [this] (const NodeId& node_id,
-                                        const routing::GivePublicKeyFunctor& give_key) {
-                                  OnPublicKeyRequested(node_id, give_key);
-                                };
+  if (public_key_functor)
+    functors.request_public_key = public_key_functor;
+  else
+    functors.request_public_key = [this] (const NodeId& node_id,
+                                          const routing::GivePublicKeyFunctor& give_key) {
+                                    OnPublicKeyRequested(node_id, give_key);
+                                  };
   // Network health
   functors.network_status = [&] (const int& network_health) {
                               std::unique_lock<std::mutex> health_loch(*routing_details.mutex);
@@ -143,7 +150,7 @@ bool RoutingsHandler::Send(const std::string& source_id,
     std::unique_lock<std::mutex> loch(routing_objects_mutex_);
     auto it(routing_objects_.find(source_id));
     if (it == routing_objects_.end()) {
-      LOG(kError) << "No such ID to send message: " << Base32Substr(source_id);
+      LOG(kError) << "No such ID to send message: " << DebugId(NodeId(source_id));
       return false;
     }
     routing_details = it->second;
@@ -153,7 +160,7 @@ bool RoutingsHandler::Send(const std::string& source_id,
                                           destination_public_key,
                                           routing_details.keys.private_key));
   if (wrapped_message.empty()) {
-    LOG(kError) << "Failed to wrap message: " <<  Base32Substr(source_id);
+    LOG(kError) << "Failed to wrap message: " <<  DebugId(NodeId(source_id));
     return false;
   }
 
@@ -167,13 +174,18 @@ bool RoutingsHandler::Send(const std::string& source_id,
                            std::unique_lock<std::mutex> message_loch(message_mutex);
                            if (!messages.empty())
                              message_from_routing = messages.front();
+                           else
+                             LOG(kInfo) << "Message count: " << messages.size();
                            message_received = true;
                            condition_variable.notify_one();
                          };
   }
 
+  NodeId group_claim_as_own_id;
+  if (source_id == destination_id)
+    group_claim_as_own_id = NodeId(destination_id);
   routing_details.routing_object->Send(NodeId(destination_id),
-                                       NodeId(),
+                                       group_claim_as_own_id,
                                        wrapped_message,
                                        response_functor,
                                        boost::posix_time::seconds(10),
@@ -185,11 +197,11 @@ bool RoutingsHandler::Send(const std::string& source_id,
     if (!condition_variable.wait_for(message_loch,
                                      std::chrono::seconds(10),
                                      [&] ()->bool { return message_received; })) {
-      LOG(kError) << "Timed out waiting for response from " << Base32Substr(destination_id);
+      LOG(kError) << "Timed out waiting for response from " << DebugId(NodeId(destination_id));
       return false;
     }
     if (message_from_routing.empty()) {
-      LOG(kError) << "Message from " << Base32Substr(destination_id) << " is empty. "
+      LOG(kError) << "Message from " << DebugId(NodeId(destination_id)) << " is empty. "
                   << "Probably timed out in routing.";
       return false;
     }
@@ -199,7 +211,7 @@ bool RoutingsHandler::Send(const std::string& source_id,
                        destination_public_key,
                        routing_details.keys.private_key,
                        unwrapped_message)) {
-      LOG(kError) << "Message from " << Base32Substr(destination_id) << " is not decryptable. "
+      LOG(kError) << "Message from " <<DebugId(NodeId(destination_id)) << " is not decryptable. "
                   << "Probably corrupted.";
       return false;
     }
@@ -237,6 +249,7 @@ void RoutingsHandler::OnRequestReceived(const std::string& receiver_id,
                                         const std::string& wrapped_message,
                                         const NodeId& sender_id,
                                         const routing::ReplyFunctor& reply_functor) {
+  LOG(kInfo) << "receiver: " << DebugId(NodeId(receiver_id)) << ", sender: " << DebugId(sender_id);
   RoutingDetails routing_details;
   {
     std::unique_lock<std::mutex> loch(routing_objects_mutex_);
@@ -272,8 +285,10 @@ void RoutingsHandler::OnRequestReceived(const std::string& receiver_id,
 
   // Signal and assess response
   std::string response;
-  if (validated_message_signal_(unwrapped_message, response))
+  if (validated_message_signal_(unwrapped_message, response)) {
+    LOG(kInfo) << "About to invoke reply functor";
     reply_functor(response);
+  }
 }
 
 void RoutingsHandler::OnPublicKeyRequested(const NodeId& node_id,

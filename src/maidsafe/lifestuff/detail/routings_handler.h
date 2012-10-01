@@ -44,13 +44,14 @@ class RoutingsHandler {
  public:
   explicit RoutingsHandler(priv::chunk_store::RemoteChunkStore& chunk_store,
                            Session& session,
-                           const ValidatedMessageSignal& validated_message_signal);
+                           const ValidatedMessageFunction& validated_message_signal);
 
   ~RoutingsHandler();
 
   bool AddRoutingObject(const asymm::Keys& owner_credentials,
-                        const std::vector<std::pair<std::string, uint16_t>>& bootstrap_endpoints,  // NOLINT (Dan)
-                        const std::string& search_id);
+                        const std::vector<std::pair<std::string, uint16_t> >& bootstrap_endpoints,  // NOLINT (Dan)
+                        const std::string& search_id,
+                        const routing::RequestPublicKeyFunctor& public_key_functor);
 
   bool Send(const std::string& source_id,
             const std::string& destination_id,
@@ -74,7 +75,7 @@ class RoutingsHandler {
   std::map<std::string, RoutingDetails> routing_objects_;
   std::mutex routing_objects_mutex_;
   Session& session_;
-  ValidatedMessageSignal validated_message_signal_;
+  ValidatedMessageFunction validated_message_signal_;
 
 
   RoutingsHandler(const RoutingsHandler&);

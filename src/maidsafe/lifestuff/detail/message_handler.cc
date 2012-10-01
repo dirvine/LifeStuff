@@ -148,6 +148,7 @@ int MessageHandler::Send(const InboxItem& inbox_item) {
   asymm::Keys mmid(passport_.SignaturePacketDetails(passport::kMmid,
                                                     true,
                                                     inbox_item.sender_public_id));
+  assert(!mmid.identity.empty());
   // Encrypt the message for the recipient
   std::string encrypted_message;
   result = asymm::Encrypt(message.SerializeAsString(), recipient_public_key, &encrypted_message);
@@ -297,6 +298,7 @@ void MessageHandler::ProcessRetrieved(const std::string& public_id,
   for (int it(0); it < mmid_packet.appendices_size(); ++it) {
     pca::SignedData signed_data(mmid_packet.appendices(it));
     asymm::Keys mmid(passport_.SignaturePacketDetails(passport::kMmid, true, public_id));
+    assert(!mmid.identity.empty());
 
     std::string decrypted_message;
     int n(asymm::Decrypt(signed_data.data(), mmid.private_key, &decrypted_message));
@@ -442,6 +444,7 @@ void MessageHandler::RetrieveMessagesForAllIds() {
   for (auto it(selectables.begin()); it != selectables.end(); ++it) {
 //    LOG(kError) << "RetrieveMessagesForAllIds for " << (*it);
     asymm::Keys mmid(passport_.SignaturePacketDetails(passport::kMmid, true, *it));
+    assert(!mmid.identity.empty());
     std::string mmid_value(remote_chunk_store_->Get(AppendableByAllType(mmid.identity), mmid));
 
     if (mmid_value.empty()) {

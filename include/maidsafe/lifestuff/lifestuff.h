@@ -61,19 +61,6 @@ enum LoggedInState {
   kMessagesAndIntrosStarted = 0x08
 };
 
-/// THIS ENUM MUST BE KEPT IN SYNC WITH THE ONE IN DRIVE'S CONFIG.H !!!
-enum PrivateShareRoles {
-  kShareReadOnlyUnConfirmed = -10,
-  kShareReadWriteUnConfirmed = -9,
-  kShareRemover  = -1,
-  kShareReadOnly = 0,
-  kShareReadWrite = 1,
-  kShareOwner = 2
-};
-
-/// THIS ENUM MUST BE KEPT IN SYNC WITH THE ONE IN DRIVE'S CONFIG.H !!!
-enum OpType { kCreated, kRenamed, kAdded, kRemoved, kMoved, kModified };
-
 const size_t kMaxChatMessageSize(1 * 1024 * 1024);
 const uint32_t kFileRecontructionLimit(20 * 1024 * 1024);
 const uint8_t kThreads(10);
@@ -89,7 +76,6 @@ const std::string kAppHomeDirectory(".lifestuff");
 const std::string kMyStuff("My Stuff");
 const std::string kDownloadStuff("Accepted Files");
 
-const std::string kSharedStuff("Shared Stuff");
 const std::string kHiddenFileExtension(".ms_hidden");
 
 /// General
@@ -111,8 +97,8 @@ typedef std::function<void(int)> VoidFunctionOneInt;  // NOLINT (Dan)
 typedef std::function<void(bool)> VoidFunctionOneBool;  // NOLINT (Dan)
 typedef std::map<std::string, int> StringIntMap;
 typedef std::map<std::string, std::string> SocialInfoMap;
-typedef std::map<std::string, std::pair<ContactStatus, ContactPresence>> ContactMap;
-typedef std::function<bool(const std::string&, std::string&)> ValidatedMessageSignal;
+typedef std::map<std::string, std::pair<ContactStatus, ContactPresence> > ContactMap;
+typedef std::function<bool(const std::string&, std::string&)> ValidatedMessageFunction;
 
 
 /// Private Shares
