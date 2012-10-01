@@ -81,7 +81,6 @@ class RoutingsHandlerTest : public routing::test::GenericNetwork {
     if (reply) {
       response = message + message;
 //      std::reverse_copy(std::begin(message), std::end(message), std::begin(response));
-      LOG(kInfo) << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Reversing with response: " << response;
     }
     return reply;
   }
@@ -169,9 +168,9 @@ TEST_F(RoutingsHandlerTest, FUNC_SendOneMessageToSelfTwoInstances) {
     std::condition_variable condition_variable;
     EXPECT_TRUE(condition_variable.wait_for(loch,
                                             std::chrono::seconds(5),
-                                            [this] () { return message_arrived_; }));
+                                            [this] () { return message_arrived_; }));  // NOLINT (Dan)
     EXPECT_EQ(2U, messages_.size());
-    for (const auto& element : messages_)
+    for (const auto& element : messages_)  // NOLINT (Dan)
       EXPECT_EQ(message, element);
   }
 }

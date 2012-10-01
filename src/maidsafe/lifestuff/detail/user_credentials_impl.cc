@@ -24,6 +24,7 @@
 #include "maidsafe/lifestuff/detail/user_credentials_impl.h"
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "boost/thread/condition_variable.hpp"
@@ -1529,7 +1530,7 @@ int UserCredentialsImpl::DeleteUserCredentials() {
 }
 
 int UserCredentialsImpl::DeleteSignaturePackets() {
-  std::vector<int> individual_results(4, priv::utilities::kPendingResult);
+  std::vector<int> individual_results(3, priv::utilities::kPendingResult);
   std::condition_variable condition_variable;
   std::mutex mutex;
   OperationResults results(mutex, condition_variable, individual_results);
@@ -1541,7 +1542,7 @@ int UserCredentialsImpl::DeleteSignaturePackets() {
   // ANTMID path
   DeleteAntmid(results);
   // PMID path: PMID, MAID, ANMAID
-  DeletePmid(results);
+//  DeletePmid(results);
 
   int result(utils::WaitForResults(mutex, condition_variable, individual_results,
                                    std::chrono::seconds(30)));
@@ -1549,14 +1550,14 @@ int UserCredentialsImpl::DeleteSignaturePackets() {
     LOG(kError) << "Wait for results timed out: " << result;
     LOG(kError) << "ANMID: " << individual_results.at(0)
               << ", ANSMID: " << individual_results.at(1)
-              << ", ANTMID: " << individual_results.at(2)
-              << ", PMID path: " << individual_results.at(3);
+              << ", ANTMID: " << individual_results.at(2);
+//              << ", PMID path: " << individual_results.at(3);
     return result;
   }
   LOG(kInfo) << "ANMID: " << individual_results.at(0)
              << ", ANSMID: " << individual_results.at(1)
-             << ", ANTMID: " << individual_results.at(2)
-             << ", PMID path: " << individual_results.at(3);
+             << ", ANTMID: " << individual_results.at(2);
+//             << ", PMID path: " << individual_results.at(3);
 
   result = AssessJointResult(individual_results);
   if (result != kSuccess) {
