@@ -70,8 +70,8 @@ class CredentialsTest : public testing::Test {
         network_(),
         client_node_(),
         client_node2_(),
-        vault_node_(new pd::vault::Node),
-        vault_node2_(new pd::vault::Node),
+        vault_node_(),
+        vault_node2_(),
         remote_chunk_store_(),
         remote_chunk_store2_(),
         routings_handler_(),
@@ -89,6 +89,8 @@ class CredentialsTest : public testing::Test {
 
  protected:
   void SetUp() {
+    vault_node_.reset(new pd::vault::Node);
+    vault_node2_.reset(new pd::vault::Node);
     asio_service_.Start();
     asio_service2_.Start();
     ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12));
@@ -111,6 +113,21 @@ class CredentialsTest : public testing::Test {
   }
 
   void TearDown() {
+    user_credentials_.reset();
+    remote_chunk_store_.reset();
+    {
+      int result(client_node_->Stop());
+      if (result != kSuccess)
+        LOG(kError) << "Failed to stop client node, result : " << result;
+      client_node_.reset();
+    }
+    {
+      int result(vault_node_->Stop());
+      if (result != kSuccess)
+        LOG(kError) << "Failed to stop vault node, result : " << result;
+      vault_node_.reset();
+    }
+
     EXPECT_TRUE(network_.StopLocalNetwork());
     asio_service_.Stop();
     asio_service2_.Stop();
