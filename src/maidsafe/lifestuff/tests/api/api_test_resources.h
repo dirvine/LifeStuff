@@ -36,6 +36,7 @@
 #include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/user_credentials.h"
 #include "maidsafe/lifestuff/detail/user_storage.h"
+#include "maidsafe/lifestuff/tests/network_helper.h"
 
 namespace args = std::placeholders;
 namespace ba = boost::asio;
@@ -358,6 +359,7 @@ class OneUserApiTest : public testing::Test {
       keyword_(RandomAlphaNumericString(6)),
       pin_(CreatePin()),
       password_(RandomAlphaNumericString(6)),
+      network_(),
       error_code_(),
       done_(),
       test_elements_() {}
@@ -367,6 +369,7 @@ class OneUserApiTest : public testing::Test {
   std::string keyword_;
   std::string pin_;
   std::string password_;
+  NetworkHelper network_;
   boost::system::error_code error_code_;
   volatile bool done_;
   LifeStuff test_elements_;
@@ -408,7 +411,8 @@ class TwoUsersApiTest : public testing::Test {
       test_elements_1_(),
       test_elements_2_(),
       testing_variables_1_(),
-      testing_variables_2_() {}
+      testing_variables_2_(),
+      network_() {}
 
  protected:
   maidsafe::test::TestPath test_dir_;
@@ -424,6 +428,7 @@ class TwoUsersApiTest : public testing::Test {
   LifeStuff test_elements_2_;
   TestingVariables testing_variables_1_;
   TestingVariables testing_variables_2_;
+  NetworkHelper network_;
 
   virtual void SetUp();
 
@@ -446,6 +451,7 @@ class PrivateSharesApiTest : public ::testing::TestWithParam<int> {
     test_elements_2_(),
     testing_variables_1_(),
     testing_variables_2_(),
+    network_(),
     share_name_1_(RandomAlphaNumericString(5)) {}
 
  protected:
@@ -463,6 +469,7 @@ class PrivateSharesApiTest : public ::testing::TestWithParam<int> {
   LifeStuff test_elements_2_;
   TestingVariables testing_variables_1_;
   TestingVariables testing_variables_2_;
+  NetworkHelper network_;
   std::string share_name_1_;
 
   virtual void SetUp();
@@ -479,6 +486,8 @@ class TwoUsersMutexApiTest : public TwoUsersApiTest {
   boost::mutex mutex_;
 
   virtual void SetUp();
+
+  virtual void TearDown();
 };
 
 }  // namespace test

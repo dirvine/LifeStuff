@@ -470,7 +470,7 @@ int CreateAccountWithPublicId(LifeStuff& test_elements,
     LOG(kError) << "Failure initialising and connecting";
     return result;
   }
-  result += DoFullCreateUser(test_elements, keyword, pin, password);
+  result += DoFullCreateUser(test_elements, keyword, pin, password, true);
   result += test_elements.CreatePublicId(public_id);
   result += DoFullLogOut(test_elements);
   if (result != kSuccess) {
@@ -583,7 +583,7 @@ void RunCreateUser(LifeStuff& test_elements,
                    const std::string& password,
                    const std::pair<int, int> sleeps) {
   RandomSleep(sleeps);
-  result = DoFullCreateUser(test_elements, keyword, pin, password);
+  result = DoFullCreateUser(test_elements, keyword, pin, password, true);
 }
 
 void RunChangeProfilePicture(LifeStuff& test_elements_,
@@ -606,6 +606,7 @@ void RunLogIn(LifeStuff& test_elements,
 }  // namespace sleepthreads
 
 void OneUserApiTest::SetUp() {
+  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12));
   EXPECT_EQ(kSuccess, test_elements_.Initialise([] (std::string) {}, *test_dir_));
   EXPECT_EQ(kSuccess,
             test_elements_.ConnectToSignals(ChatFunction(),
@@ -627,15 +628,17 @@ void OneUserApiTest::SetUp() {
                                             LifestuffCardUpdateFunction(),
                                             NetworkHealthFunction(),
                                             ImmediateQuitRequiredFunction()));
-  EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements_, keyword_, pin_, password_));
+  EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements_, keyword_, pin_, password_, true));
 }
 
 void OneUserApiTest::TearDown() {
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
+  EXPECT_TRUE(network_.StopLocalNetwork());
   EXPECT_EQ(kSuccess, test_elements_.Finalise());
 }
 
 void TwoInstancesApiTest::SetUp() {
+  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12));
   EXPECT_EQ(kSuccess, test_elements_.Initialise([] (std::string) {}, *test_dir_));
   EXPECT_EQ(kSuccess, test_elements_2_.Initialise([] (std::string) {}, *test_dir_));
   EXPECT_EQ(kSuccess,
@@ -681,11 +684,13 @@ void TwoInstancesApiTest::SetUp() {
 }
 
 void TwoInstancesApiTest::TearDown() {
+  EXPECT_TRUE(network_.StopLocalNetwork());
   EXPECT_EQ(kSuccess, test_elements_.Finalise());
   EXPECT_EQ(kSuccess, test_elements_2_.Finalise());
 }
 
 void TwoUsersApiTest::SetUp() {
+  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12));
   ASSERT_EQ(kSuccess,
             CreateAndConnectTwoPublicIds(test_elements_1_, test_elements_2_,
                                          testing_variables_1_, testing_variables_2_,
@@ -695,6 +700,7 @@ void TwoUsersApiTest::SetUp() {
 }
 
 void TwoUsersApiTest::TearDown() {
+  EXPECT_TRUE(network_.StopLocalNetwork());
   if (test_elements_1_.state() == kConnected)
     EXPECT_EQ(kSuccess, test_elements_1_.Finalise());
   if (test_elements_2_.state() == kConnected)
@@ -702,6 +708,7 @@ void TwoUsersApiTest::TearDown() {
 }
 
 void PrivateSharesApiTest::SetUp() {
+  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12));
   ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements_1_,
                                                    test_elements_2_,
                                                    testing_variables_1_,
@@ -714,6 +721,7 @@ void PrivateSharesApiTest::SetUp() {
 }
 
 void PrivateSharesApiTest::TearDown() {
+  EXPECT_TRUE(network_.StopLocalNetwork());
   if (test_elements_1_.state() == kConnected)
     EXPECT_EQ(kSuccess, test_elements_1_.Finalise());
   if (test_elements_2_.state() == kConnected)
@@ -721,6 +729,7 @@ void PrivateSharesApiTest::TearDown() {
 }
 
 void TwoUsersMutexApiTest::SetUp() {
+  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12));
   ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements_1_,
                                                    test_elements_2_,
                                                    testing_variables_1_,
@@ -731,6 +740,10 @@ void TwoUsersMutexApiTest::SetUp() {
                                                    keyword_2_, pin_2_, password_2_,
                                                    public_id_2_, false,
                                                    nullptr, nullptr, nullptr));
+}
+
+void TwoUsersMutexApiTest::TearDown() {
+  EXPECT_TRUE(network_.StopLocalNetwork());
 }
 
 }  // namespace test
