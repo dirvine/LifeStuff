@@ -101,8 +101,7 @@ class UserCredentialsTest : public testing::Test {
   }
 
   void TearDown() {
-    // trying to terminate a null process (dead vault node) will cause segmentation
-//    EXPECT_TRUE(network_.StopLocalNetwork());
+    EXPECT_TRUE(network_.StopLocalNetwork());
     asio_service_.Stop();
     asio_service2_.Stop();
   }
