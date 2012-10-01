@@ -63,14 +63,12 @@ struct OperationResults;
 
 class UserCredentialsImpl {
  public:
-  typedef bs2::signal<void()> ImmediateQuitRequiredSignal;
-  typedef std::shared_ptr<ImmediateQuitRequiredSignal> ImmediateQuitRequiredSignalPtr;
-
   UserCredentialsImpl(priv::chunk_store::RemoteChunkStore& remote_chunk_store,
                       Session& session,
                       boost::asio::io_service& service,
                       RoutingsHandler& routings_handler);
   ~UserCredentialsImpl();
+  void set_remote_chunk_store(priv::chunk_store::RemoteChunkStore& chunk_store);
 
   int LogIn(const std::string& keyword, const std::string& pin, const std::string& password);
 
@@ -89,13 +87,13 @@ class UserCredentialsImpl {
 
   int DeleteUserCredentials();
 
-  bs2::connection ConnectToImmediateQuitRequiredSignal(
-      const ImmediateQuitRequiredFunction& immediate_quit_required_slot);
-
   void LogoutCompletedArrived(const std::string& session_marker);
 
  private:
-  priv::chunk_store::RemoteChunkStore& remote_chunk_store_;
+  UserCredentialsImpl &operator=(const UserCredentialsImpl&);
+  UserCredentialsImpl(const UserCredentialsImpl&);
+
+  priv::chunk_store::RemoteChunkStore* remote_chunk_store_;
   Session& session_;
   passport::Passport& passport_;
   RoutingsHandler& routings_handler_;
@@ -104,7 +102,6 @@ class UserCredentialsImpl {
   boost::asio::deadline_timer session_saver_timer_;
   bool session_saver_timer_active_, session_saved_once_;
   const boost::posix_time::seconds session_saver_interval_;
-  ImmediateQuitRequiredSignal immediate_quit_required_signal_;
   bool completed_log_out_;
   std::condition_variable completed_log_out_conditional_;
   std::mutex completed_log_out_mutex_;

@@ -36,19 +36,19 @@
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_types.h"
 
-#include "maidsafe/lifestuff/rcs_helper.h"
-#include "maidsafe/lifestuff/detail/account_locking.h"
-#include "maidsafe/lifestuff/detail/session.h"
-#include "maidsafe/lifestuff/detail/user_credentials.h"
-#include "maidsafe/lifestuff/detail/utils.h"
-
 #include "maidsafe/pd/client/node.h"
 #include "maidsafe/pd/client/utils.h"
 #include "maidsafe/pd/vault/node.h"
+
+#include "maidsafe/lifestuff/rcs_helper.h"
+#include "maidsafe/lifestuff/detail/account_locking.h"
+#include "maidsafe/lifestuff/detail/routings_handler.h"
+#include "maidsafe/lifestuff/detail/session.h"
+#include "maidsafe/lifestuff/detail/user_credentials.h"
+#include "maidsafe/lifestuff/detail/utils.h"
 #include "maidsafe/lifestuff/tests/network_helper.h"
 
 
-namespace args = std::placeholders;
 namespace pca = maidsafe::priv::chunk_actions;
 namespace fs = boost::filesystem;
 namespace lid = maidsafe::lifestuff::account_locking;
@@ -72,6 +72,8 @@ class CredentialsTest : public testing::Test {
         node2_(),
         remote_chunk_store_(),
         remote_chunk_store2_(),
+        routings_handler_(),
+        routings_handler2_(),
         user_credentials_(),
         user_credentials2_(),
         keyword_(RandomAlphaNumericString(8)),
@@ -93,9 +95,17 @@ class CredentialsTest : public testing::Test {
                                           bootstrap_endpoints,
                                           client_node_,
                                           [] (const int&) {}/*NetworkHealthFunction()*/);
-    user_credentials_.reset(new UserCredentials(*remote_chunk_store_,
-                                                session_,
-                                                asio_service_.service()));
+
+    routings_handler_ = std::make_shared<RoutingsHandler>(*remote_chunk_store_,
+                                                          session_,
+                                                          [] (const std::string&, std::string&) {
+                                                            return false;
+                                                          });
+
+    user_credentials_ = std::make_shared<UserCredentials>(*remote_chunk_store_,
+                                                          session_,
+                                                          asio_service_.service(),
+                                                          *routings_handler_);
   }
 
   void TearDown() {
@@ -110,9 +120,10 @@ class CredentialsTest : public testing::Test {
                                            bootstrap_endpoints,
                                            node2_,
                                            NetworkHealthFunction());
-    user_credentials2_.reset(new UserCredentials(*remote_chunk_store2_,
-                                                 session2_,
-                                                 asio_service2_.service()));
+    user_credentials2_ = std::make_shared<UserCredentials>(*remote_chunk_store2_,
+                                                           session2_,
+                                                           asio_service2_.service(),
+                                                           *routings_handler2_);
   }
 
   int CreateVaultForClient(pd::vault::Node& vault_node) {
@@ -144,12 +155,13 @@ class CredentialsTest : public testing::Test {
       return result;
     }
 
-    remote_chunk_store_.reset(new pcs::RemoteChunkStore(client_node_->chunk_store(),
-                                                        client_node_->chunk_manager(),
-                                                        client_node_->chunk_action_authority()));
-    user_credentials_.reset(new UserCredentials(*remote_chunk_store_,
-                                                session_,
-                                                asio_service_.service()));
+    remote_chunk_store_ =
+        std::make_shared<pcs::RemoteChunkStore>(client_node_->chunk_store(),
+                                                client_node_->chunk_manager(),
+                                                client_node_->chunk_action_authority());
+    routings_handler_->set_remote_chunk_store(*remote_chunk_store_);
+    user_credentials_->set_remote_chunk_store(*remote_chunk_store_);
+
     return kSuccess;
   }
 
@@ -168,12 +180,13 @@ class CredentialsTest : public testing::Test {
       return result;
     }
 
-    remote_chunk_store_.reset(new pcs::RemoteChunkStore(client_node_->chunk_store(),
-                                                        client_node_->chunk_manager(),
-                                                        client_node_->chunk_action_authority()));
-    user_credentials_.reset(new UserCredentials(*remote_chunk_store_,
-                                                session_,
-                                                asio_service_.service()));
+    remote_chunk_store_ =
+        std::make_shared<pcs::RemoteChunkStore>(client_node_->chunk_store(),
+                                                client_node_->chunk_manager(),
+                                                client_node_->chunk_action_authority());
+    routings_handler_->set_remote_chunk_store(*remote_chunk_store_);
+    user_credentials_->set_remote_chunk_store(*remote_chunk_store_);
+
     return kSuccess;
   }
 
@@ -183,6 +196,7 @@ class CredentialsTest : public testing::Test {
   NetworkHelper network_;
   std::shared_ptr<pd::Node> client_node_, node2_;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_, remote_chunk_store2_;
+  std::shared_ptr<RoutingsHandler> routings_handler_, routings_handler2_;
   std::shared_ptr<UserCredentials> user_credentials_, user_credentials2_;
   std::string keyword_, pin_, password_;
   bool immediate_quit_required_;
@@ -544,10 +558,6 @@ TEST_F(CredentialsTest, DISABLED_FUNC_ParallelLogin) {
   ASSERT_EQ(password_, session_.password());
   ASSERT_EQ(kFullAccess, session_.session_access_level());
   ASSERT_EQ(kSuccess, user_credentials_->Logout());
-
-  user_credentials_->ConnectToImmediateQuitRequiredSignal(
-    [&] { ImmediateQuitRequiredSlot(); }
-  );
 
   ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
 

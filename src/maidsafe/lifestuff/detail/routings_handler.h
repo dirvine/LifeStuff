@@ -59,6 +59,8 @@ class RoutingsHandler {
             const std::string& message,
             std::string* reply_message);
 
+  void set_remote_chunk_store(priv::chunk_store::RemoteChunkStore& chunk_store);
+
  private:
   struct RoutingDetails {
     RoutingDetails();
@@ -71,7 +73,7 @@ class RoutingsHandler {
     std::string search_id;
   };
 
-  priv::chunk_store::RemoteChunkStore& chunk_store_;
+  priv::chunk_store::RemoteChunkStore* chunk_store_;
   std::map<std::string, RoutingDetails> routing_objects_;
   std::mutex routing_objects_mutex_;
   Session& session_;

@@ -200,6 +200,7 @@ class LifeStuffImpl {
   Slots slots_;
   LifeStuffState state_;
   uint8_t logged_in_state_;
+  bs2::signal<void()> immediate_quit_required_signal_;
 
   void ConnectInternalElements();
   int SetValidPmidAndInitialisePublicComponents();
@@ -210,6 +211,7 @@ class LifeStuffImpl {
   void NetworkHealthSlot(const int& index);
   int CreateVaultInLocalMachine(const fs::path& chunk_store, bool vault_cheat);
   bool HandleRoutingsHandlerMessage(const std::string& message, std::string& response);
+  bool HandleLogoutProceedingsMessage(const std::string& message, std::string& response);
 };
 
 }  // namespace lifestuff

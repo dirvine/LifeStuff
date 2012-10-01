@@ -62,6 +62,7 @@ class UserCredentials {
                   RoutingsHandler& routings_handler);
 
   ~UserCredentials();
+  void set_remote_chunk_store(priv::chunk_store::RemoteChunkStore& chunk_store);
 
   // User credential operations
   int LogIn(const std::string& keyword, const std::string& pin, const std::string& password);
@@ -74,9 +75,6 @@ class UserCredentials {
   int ChangePassword(const std::string& new_password);
 
   int DeleteUserCredentials();
-
-  bs2::connection ConnectToImmediateQuitRequiredSignal(
-      const ImmediateQuitRequiredFunction& immediate_quit_required_slot);
 
   void LogoutCompletedArrived(const std::string& session_marker);
 

@@ -102,7 +102,7 @@ UserCredentialsImpl::UserCredentialsImpl(priv::chunk_store::RemoteChunkStore& re
                                          Session& session,
                                          boost::asio::io_service& service,
                                          RoutingsHandler& routings_handler)
-    : remote_chunk_store_(remote_chunk_store),
+    : remote_chunk_store_(&remote_chunk_store),
       session_(session),
       passport_(session_.passport()),
       routings_handler_(routings_handler),
@@ -112,13 +112,17 @@ UserCredentialsImpl::UserCredentialsImpl(priv::chunk_store::RemoteChunkStore& re
       session_saver_timer_active_(false),
       session_saved_once_(false),
       session_saver_interval_(kSecondsInterval * 3),
-      immediate_quit_required_signal_(),
       completed_log_out_(false),
       completed_log_out_conditional_(),
       completed_log_out_mutex_(),
       completed_log_out_message_() {}
 
 UserCredentialsImpl::~UserCredentialsImpl() {}
+
+void UserCredentialsImpl::set_remote_chunk_store(priv::chunk_store::RemoteChunkStore& chunk_store) {
+  remote_chunk_store_ = &chunk_store;
+}
+
 
 int UserCredentialsImpl::LogIn(const std::string& keyword,
                                const std::string& pin,
@@ -279,17 +283,17 @@ int UserCredentialsImpl::GetUserInfo(const std::string& keyword,
 
     boost::thread get_mid_thread(
         [&] {
-          new_mid_packet = remote_chunk_store_.Get(pca::ApplyTypeToName(passport::MidName(keyword,
-                                                                                          pin,
-                                                                                          false),
-                                                                        pca::kModifiableByOwner));
+          new_mid_packet = remote_chunk_store_->Get(pca::ApplyTypeToName(passport::MidName(keyword,
+                                                                                           pin,
+                                                                                           false),
+                                                                         pca::kModifiableByOwner));
         });
     boost::thread get_smid_thread(
         [&] {
-          new_smid_packet = remote_chunk_store_.Get(pca::ApplyTypeToName(passport::MidName(keyword,
-                                                                                           pin,
-                                                                                           true),
-                                                                         pca::kModifiableByOwner));
+          new_smid_packet = remote_chunk_store_->Get(pca::ApplyTypeToName(passport::MidName(keyword,
+                                                                                            pin,
+                                                                                            true),
+                                                                          pca::kModifiableByOwner));
         });
 
     get_mid_thread.join();
@@ -375,7 +379,7 @@ int UserCredentialsImpl::GetAndLockLid(const std::string& keyword,
 
   asymm::Keys keys(asymm::Keys(passport_.SignaturePacketDetails(passport::kAnmid, true)));
   assert(!keys.identity.empty());
-  int get_lock_result(remote_chunk_store_.GetAndLock(lid_name, "", keys, &lid_packet));
+  int get_lock_result(remote_chunk_store_->GetAndLock(lid_name, "", keys, &lid_packet));
   if (get_lock_result != kSuccess) {
     LOG(kError) << "Failed to GetAndLock LID: " << get_lock_result;
     return get_lock_result;
@@ -401,7 +405,7 @@ void UserCredentialsImpl::GetIdAndTemporaryId(const std::string& keyword,
                                               std::string* temporary_packet) {
   std::string id_name(pca::ApplyTypeToName(passport::MidName(keyword, pin, surrogate),
                                            pca::kModifiableByOwner));
-  std::string id_packet(remote_chunk_store_.Get(id_name));
+  std::string id_packet(remote_chunk_store_->Get(id_name));
   if (id_packet.empty()) {
     LOG(kError) << "No " << (surrogate ? "SMID" : "MID") << " found.";
     *result = kIdPacketNotFound;
@@ -424,7 +428,7 @@ void UserCredentialsImpl::GetIdAndTemporaryId(const std::string& keyword,
   }
   decrypted_rid = pca::ApplyTypeToName(decrypted_rid, pca::kModifiableByOwner);
 
-  std::string temporary_id_packet(remote_chunk_store_.Get(decrypted_rid));
+  std::string temporary_id_packet(remote_chunk_store_->Get(decrypted_rid));
   if (temporary_id_packet.empty()) {
     LOG(kError) << "No " << (surrogate ? "STMID" : "TMID") << " found.";
     *result = kTemporaryIdPacketNotFound;
@@ -635,12 +639,12 @@ void UserCredentialsImpl::StoreSignaturePacket(asymm::Keys packet,
   std::string packet_name, packet_content;
 
   CreateSignaturePacketInfo(packet, &packet_name, &packet_content);
-  if (!remote_chunk_store_.Store(packet_name,
-                                 packet_content,
-                                 [&, index] (bool result) {
-                                   OperationCallback(result, results, index);
-                                 },
-                                 packet)) {
+  if (!remote_chunk_store_->Store(packet_name,
+                                  packet_content,
+                                  [&, index] (bool result) {
+                                    OperationCallback(result, results, index);
+                                  },
+                                  packet)) {
     LOG(kError) << "Failed to store: " << index;
     OperationCallback(false, results, index);
   }
@@ -652,10 +656,10 @@ void UserCredentialsImpl::StoreAnmaid(OperationResults& results) {
   std::string packet_name, packet_content;
 
   CreateSignaturePacketInfo(anmaid, &packet_name, &packet_content);
-  if (!remote_chunk_store_.Store(packet_name,
-                                 packet_content,
-                                 [&] (bool result) { StoreMaid(result, results); },
-                                 anmaid)) {
+  if (!remote_chunk_store_->Store(packet_name,
+                                  packet_content,
+                                  [&] (bool result) { StoreMaid(result, results); },
+                                  anmaid)) {
     LOG(kError) << "Failed to store ANMAID.";
     StoreMaid(false, results);
   }
@@ -684,10 +688,10 @@ void UserCredentialsImpl::StoreMaid(bool result, OperationResults& results) {
     return;
   }
   signed_maid.set_data(maid_string_public_key);
-  if (!remote_chunk_store_.Store(maid_name,
-                                 signed_maid.SerializeAsString(),
-                                 [&] (bool result) { StorePmid(result, results); },
-                                 anmaid)) {
+  if (!remote_chunk_store_->Store(maid_name,
+                                  signed_maid.SerializeAsString(),
+                                  [&] (bool result) { StorePmid(result, results); },
+                                  anmaid)) {
     LOG(kError) << "Failed to store MAID.";
     StorePmid(false, results);
   }
@@ -717,12 +721,12 @@ void UserCredentialsImpl::StorePmid(bool result, OperationResults& results) {
   }
   signed_pmid.set_data(pmid_string_public_key);
 
-  if (!remote_chunk_store_.Store(pmid_name,
-                                 signed_pmid.SerializeAsString(),
-                                 [&] (bool result) {
-                                   OperationCallback(result, results, 3);
-                                 },
-                                 maid)) {
+  if (!remote_chunk_store_->Store(pmid_name,
+                                  signed_pmid.SerializeAsString(),
+                                  [&] (bool result) {
+                                    OperationCallback(result, results, 3);
+                                  },
+                                  maid)) {
     LOG(kError) << "Failed to store PMID.";
     OperationCallback(false, results, 3);
   }
@@ -844,12 +848,12 @@ void UserCredentialsImpl::StoreIdentity(OperationResults& results,
   pca::SignedData signed_data;
   signed_data.set_data(packet_content);
   signed_data.set_signature(signature);
-  if (!remote_chunk_store_.Store(packet_name,
-                                 signed_data.SerializeAsString(),
-                                 [&, index] (bool result) {
-                                   OperationCallback(result, results, index);
-                                 },
-                                 signer)) {
+  if (!remote_chunk_store_->Store(packet_name,
+                                  signed_data.SerializeAsString(),
+                                  [&, index] (bool result) {
+                                    OperationCallback(result, results, index);
+                                  },
+                                  signer)) {
     LOG(kError) << "Failed to store: " << index;
     OperationCallback(false, results, index);
   }
@@ -882,12 +886,12 @@ int UserCredentialsImpl::StoreLid(const std::string keyword,
   std::condition_variable condition_variable;
   std::mutex mutex;
   OperationResults operation_result(mutex, condition_variable, individual_result);
-  if (!remote_chunk_store_.Store(packet_name,
-                                 signed_data.SerializeAsString(),
-                                 [&] (bool result) {
-                                   OperationCallback(result, operation_result, 0);
-                                 },
-                                 signer)) {
+  if (!remote_chunk_store_->Store(packet_name,
+                                  signed_data.SerializeAsString(),
+                                  [&] (bool result) {
+                                    OperationCallback(result, operation_result, 0);
+                                  },
+                                  signer)) {
     LOG(kError) << "Failed to store LID.";
     OperationCallback(false, operation_result, 0);
   }
@@ -990,7 +994,7 @@ int UserCredentialsImpl::AssessAndUpdateLid(bool log_out) {
     if (session_.session_access_level() == kFullAccess) {
       if (!locking_packet.locking_item(index).full_access()) {
         LOG(kInfo) << "Quit - full access in LID has been changed to false!";
-        immediate_quit_required_signal_();
+//        immediate_quit_required_signal_();
         session_saver_timer_active_ = false;
         session_saver_timer_.cancel();
         session_.set_changed(false);
@@ -1095,12 +1099,12 @@ void UserCredentialsImpl::ModifyIdentity(OperationResults& results,
   pca::SignedData signed_data;
   signed_data.set_data(content);
   signed_data.set_signature(signature);
-  if (!remote_chunk_store_.Modify(name,
-                                  signed_data.SerializeAsString(),
-                                  [&, index] (bool result) {
-                                    OperationCallback(result, results, index);
-                                  },
-                                  signer)) {
+  if (!remote_chunk_store_->Modify(name,
+                                   signed_data.SerializeAsString(),
+                                   [&, index] (bool result) {
+                                     OperationCallback(result, results, index);
+                                   },
+                                   signer)) {
     LOG(kError) << "Failed to modify: " << index;
     OperationCallback(false, results, index);
   }
@@ -1134,12 +1138,12 @@ int UserCredentialsImpl::ModifyLid(const std::string keyword,
   std::condition_variable condition_variable;
   std::mutex mutex;
   OperationResults operation_result(mutex, condition_variable, individual_result);
-  if (!remote_chunk_store_.Modify(packet_name,
-                                  signed_data.SerializeAsString(),
-                                  [&] (bool result) {
-                                    OperationCallback(result, operation_result, 0);
-                                  },
-                                  signer)) {
+  if (!remote_chunk_store_->Modify(packet_name,
+                                   signed_data.SerializeAsString(),
+                                   [&] (bool result) {
+                                     OperationCallback(result, operation_result, 0);
+                                   },
+                                   signer)) {
     LOG(kError) << "Failed to modify LID.";
     OperationCallback(false, operation_result, 0);
   }
@@ -1296,11 +1300,11 @@ void UserCredentialsImpl::DeleteIdentity(OperationResults& results,
 
   asymm::Keys signer(passport_.SignaturePacketDetails(sig_type, true));
   assert(!signer.identity.empty());
-  if (!remote_chunk_store_.Delete(name,
-                                  [&, index] (bool result) {
-                                    OperationCallback(result, results, index);
-                                  },
-                                  signer)) {
+  if (!remote_chunk_store_->Delete(name,
+                                   [&, index] (bool result) {
+                                     OperationCallback(result, results, index);
+                                   },
+                                   signer)) {
     LOG(kError) << "Failed to delete: " << index;
     OperationCallback(false, results, index);
   }
@@ -1317,11 +1321,11 @@ int UserCredentialsImpl::DeleteLid(const std::string& keyword,
   std::condition_variable condition_variable;
   std::mutex mutex;
   OperationResults operation_result(mutex, condition_variable, individual_result);
-  if (!remote_chunk_store_.Delete(packet_name,
-                                  [&] (bool result) {
-                                    OperationCallback(result, operation_result, 0);
-                                  },
-                                  signer)) {
+  if (!remote_chunk_store_->Delete(packet_name,
+                                   [&] (bool result) {
+                                     OperationCallback(result, operation_result, 0);
+                                   },
+                                   signer)) {
     LOG(kError) << "Failed to delete LID.";
     OperationCallback(false, operation_result, 0);
   }
@@ -1589,9 +1593,9 @@ void UserCredentialsImpl::DeletePmid(OperationResults& results) {
   assert(!maid.identity.empty());
 
   std::string pmid_name(pca::ApplyTypeToName(pmid.identity, pca::kSignaturePacket));
-  if (!remote_chunk_store_.Delete(pmid_name,
-                                  [&] (bool result) { DeleteMaid(result, results, maid); },
-                                  maid)) {
+  if (!remote_chunk_store_->Delete(pmid_name,
+                                   [&] (bool result) { DeleteMaid(result, results, maid); },
+                                   maid)) {
     LOG(kError) << "Failed to delete PMID.";
     DeleteMaid(false, results, asymm::Keys());
   }
@@ -1609,11 +1613,11 @@ void UserCredentialsImpl::DeleteMaid(bool result,
   asymm::Keys anmaid(passport_.SignaturePacketDetails(passport::kAnmaid, true));
   assert(!anmaid.identity.empty());
   std::string maid_name(pca::ApplyTypeToName(maid.identity, pca::kSignaturePacket));
-  if (!remote_chunk_store_.Delete(maid_name,
-                                  [&] (bool result) {
-                                    DeleteAnmaid(result, results, anmaid);
-                                  },
-                                  anmaid)) {
+  if (!remote_chunk_store_->Delete(maid_name,
+                                   [&] (bool result) {
+                                     DeleteAnmaid(result, results, anmaid);
+                                   },
+                                   anmaid)) {
     LOG(kError) << "Failed to delete MAID.";
     DeleteAnmaid(false, results, asymm::Keys());
   }
@@ -1635,11 +1639,11 @@ void UserCredentialsImpl::DeleteSignaturePacket(asymm::Keys packet,
                                                 OperationResults& results,
                                                 int index) {
   std::string packet_name(pca::ApplyTypeToName(packet.identity, pca::kSignaturePacket));
-  if (!remote_chunk_store_.Delete(packet_name,
-                                  [&, index] (bool result) {
-                                    OperationCallback(result, results, index);
-                                  },
-                                  packet)) {
+  if (!remote_chunk_store_->Delete(packet_name,
+                                   [&, index] (bool result) {
+                                     OperationCallback(result, results, index);
+                                   },
+                                   packet)) {
     LOG(kError) << "Failed to delete packet: " << index;
     OperationCallback(false, results, index);
   }
@@ -1680,11 +1684,6 @@ void UserCredentialsImpl::SessionSaver(const bptime::seconds& interval,
   session_saver_timer_.async_wait([=] (const boost::system::error_code& error_code) {
                                     this->SessionSaver(bptime::seconds(interval), error_code);
                                   });
-}
-
-bs2::connection UserCredentialsImpl::ConnectToImmediateQuitRequiredSignal(
-    const ImmediateQuitRequiredFunction& immediate_quit_required_slot) {
-  return immediate_quit_required_signal_.connect(immediate_quit_required_slot);
 }
 
 void UserCredentialsImpl::LogoutCompletedArrived(const std::string& session_marker) {

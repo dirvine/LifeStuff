@@ -25,7 +25,7 @@
 
 #include <algorithm>
 #include <functional>
-#include <list>
+#include <future>
 #include <utility>
 #include <vector>
 
@@ -70,7 +70,8 @@ LifeStuffImpl::LifeStuffImpl()
       message_handler_(),
       slots_(),
       state_(kZeroth),
-      logged_in_state_(kBaseState) {}
+      logged_in_state_(kBaseState),
+      immediate_quit_required_signal_() {}
 
 LifeStuffImpl::~LifeStuffImpl() {}
 
@@ -131,17 +132,16 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
 
   buffered_path_ = buffered_chunk_store_path;
 
-  routings_handler_.reset(new RoutingsHandler(*remote_chunk_store_,
-                                              session_,
-                                              [&] (const std::string& message,
-                                                   std::string& response) {
-                                                return HandleRoutingsHandlerMessage(message,
-                                                                                    response);
-                                              }));
-  user_credentials_.reset(new UserCredentials(*remote_chunk_store_,
-                                              session_,
-                                              asio_service_.service(),
-                                              *routings_handler_));
+  routings_handler_ = std::make_shared<RoutingsHandler>(
+                          *remote_chunk_store_,
+                          session_,
+                          [&] (const std::string& message, std::string& response) {
+                            return HandleRoutingsHandlerMessage(message, response);
+                          });
+  user_credentials_ = std::make_shared<UserCredentials>(*remote_chunk_store_,
+                                                        session_,
+                                                        asio_service_.service(),
+                                                        *routings_handler_);
 
   state_ = kInitialised;
 
@@ -211,14 +211,6 @@ int LifeStuffImpl::ConnectToSignals(
       LOG(kError) << "No signals connected.";
       return kSetSlotsFailure;
     }
-    ImmediateQuitRequiredFunction must_die = [&] {
-                                               LOG(kInfo) << "Immediate quit required! " <<
-                                                             "Stopping activity.";
-                                               StopMessagesAndIntros();
-                                               UnMountDrive();
-                                               LogOut();
-                                             };
-    user_credentials_->ConnectToImmediateQuitRequiredSignal(must_die);
     state_ = kConnected;
     return kSuccess;
   }
@@ -236,7 +228,7 @@ int LifeStuffImpl::ConnectToSignals(
   message_handler_->ConnectToContactPresenceSignal(contact_presence_slot);
   public_id_->ConnectToContactDeletionProcessedSignal(contact_deletion_function);
   public_id_->ConnectToLifestuffCardUpdatedSignal(lifestuff_card_update_function);
-  user_credentials_->ConnectToImmediateQuitRequiredSignal(immediate_quit_required_function);
+  immediate_quit_required_signal_.connect(immediate_quit_required_function);
   public_id_->ConnectToContactDeletionReceivedSignal(
       [&] (const std::string& own_public_id,
            const std::string& contact_public_id,
@@ -265,12 +257,12 @@ int LifeStuffImpl::Finalise() {
     LOG(kWarning) << "Failed to remove buffered chunk store path.";
 
   asio_service_.Stop();
-  remote_chunk_store_.reset();
-  node_.reset();
-  message_handler_.reset();
-  public_id_.reset();
-  user_credentials_.reset();
-  user_storage_.reset();
+//  remote_chunk_store_.reset();
+//  node_.reset();
+//  message_handler_.reset();
+//  public_id_.reset();
+//  user_credentials_.reset();
+//  user_storage_.reset();
   state_ = kZeroth;
 
   return kSuccess;
@@ -1244,21 +1236,20 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
     return result;
   }
 
-  remote_chunk_store_.reset(new pcs::RemoteChunkStore(node_->chunk_store(),
-                                                      node_->chunk_manager(),
-                                                      node_->chunk_action_authority()));
-  user_credentials_.reset(new UserCredentials(*remote_chunk_store_,
-                                              session_,
-                                              asio_service_.service(),
-                                              *routings_handler_));
+  remote_chunk_store_ = std::make_shared<pcs::RemoteChunkStore>(node_->chunk_store(),
+                                                                node_->chunk_manager(),
+                                                                node_->chunk_action_authority());
 
-  public_id_.reset(new PublicId(remote_chunk_store_, session_, asio_service_.service()));
+  routings_handler_->set_remote_chunk_store(*remote_chunk_store_);
+  user_credentials_->set_remote_chunk_store(*remote_chunk_store_);
 
-  message_handler_.reset(new MessageHandler(remote_chunk_store_,
-                                            session_,
-                                            asio_service_.service()));
+  public_id_ = std::make_shared<PublicId>(remote_chunk_store_, session_, asio_service_.service());
 
-  user_storage_.reset(new UserStorage(remote_chunk_store_));
+  message_handler_ = std::make_shared<MessageHandler>(remote_chunk_store_,
+                                                      session_,
+                                                      asio_service_.service());
+
+  user_storage_ = std::make_shared<UserStorage>(remote_chunk_store_);
 
   ConnectInternalElements();
   state_ = kInitialised;
@@ -1381,24 +1372,68 @@ int LifeStuffImpl::CreateVaultInLocalMachine(const fs::path& chunk_store, bool v
 }
 
 bool LifeStuffImpl::HandleRoutingsHandlerMessage(const std::string& message,
-                                                 std::string& /*response*/) {
+                                                 std::string& response) {
+  assert(response.empty());
   // Check for message from another instance trying to log in
   OtherInstanceMessage other_instance_message;
   if (other_instance_message.ParseFromString(message)) {
     switch (other_instance_message.message_type()) {
-      case 1: {
-          LogoutProceedings proceedings;
-          if (proceedings.ParseFromString(other_instance_message.serialised_message())) {
-            if (proceedings.has_session_requestor()) {
-              // TODO(Team): Run log out
-            } else if (proceedings.has_session_terminated()) {
-              user_credentials_->LogoutCompletedArrived(proceedings.session_acknowledger());
-            }
-          }
-      }
+      case 1: return HandleLogoutProceedingsMessage(other_instance_message.serialised_message(),
+                                                    response);
       default: break;
     }
   }
+  return false;
+}
+
+bool LifeStuffImpl::HandleLogoutProceedingsMessage(const std::string& message,
+                                                   std::string& response) {
+  LogoutProceedings proceedings;
+  if (proceedings.ParseFromString(message)) {
+    if (proceedings.has_session_requestor()) {
+      std::string session_marker(proceedings.session_requestor());
+      proceedings.set_session_acknowledger(session_marker);
+      proceedings.clear_session_requestor();
+
+      OtherInstanceMessage other_instance_message;
+      other_instance_message.set_message_type(1);
+      other_instance_message.set_serialised_message(proceedings.SerializeAsString());
+      response = other_instance_message.SerializeAsString();
+
+      // Actions to be done to quit
+      std::async(std::launch::async,
+                 [&, session_marker] () {
+                   asymm::Keys maid(session_.passport().SignaturePacketDetails(passport::kMaid,
+                                                                               true));
+                   int result(StopMessagesAndIntros());
+                   LOG(kInfo) << "StopMessagesAndIntros: " << result;
+                   result = UnMountDrive();
+                   LOG(kInfo) << "UnMountDrive: " << result;
+                   result = LogOut();
+                   LOG(kInfo) << "LogOut: " << result;
+
+                   LogoutProceedings proceedings;
+                   proceedings.set_session_terminated(session_marker);
+                   OtherInstanceMessage other_instance_message;
+                   other_instance_message.set_message_type(1);
+                   other_instance_message.set_serialised_message(proceedings.SerializeAsString());
+                   std::string session_termination(
+                       other_instance_message.SerializePartialAsString());
+                   assert(routings_handler_->Send(maid.identity,
+                                                  maid.identity,
+                                                  maid.public_key,
+                                                  session_termination,
+                                                  nullptr));
+
+                   immediate_quit_required_signal_();
+                 });
+      return true;
+    } else if (proceedings.has_session_terminated()) {
+      user_credentials_->LogoutCompletedArrived(proceedings.session_terminated());
+      return false;
+    }
+  }
+
   return false;
 }
 

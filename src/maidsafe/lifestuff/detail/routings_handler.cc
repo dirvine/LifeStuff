@@ -61,7 +61,7 @@ RoutingsHandler::RoutingDetails::RoutingDetails(const asymm::Keys& owner_credent
 RoutingsHandler::RoutingsHandler(priv::chunk_store::RemoteChunkStore& chunk_store,
                                  Session& session,
                                  const ValidatedMessageFunction& validated_message_signal)
-    : chunk_store_(chunk_store),
+    : chunk_store_(&chunk_store),
       routing_objects_(),
       routing_objects_mutex_(),
       session_(session),
@@ -70,6 +70,10 @@ RoutingsHandler::RoutingsHandler(priv::chunk_store::RemoteChunkStore& chunk_stor
 RoutingsHandler::~RoutingsHandler() {
   routing_objects_.clear();
   LOG(kInfo) << "Cleared objects\n\n\n\n";
+}
+
+void RoutingsHandler::set_remote_chunk_store(priv::chunk_store::RemoteChunkStore& chunk_store) {
+  chunk_store_ = &chunk_store;
 }
 
 bool RoutingsHandler::AddRoutingObject(
@@ -196,7 +200,7 @@ bool RoutingsHandler::Send(const std::string& source_id,
     std::unique_lock<std::mutex> message_loch(message_mutex);
     if (!condition_variable.wait_for(message_loch,
                                      std::chrono::seconds(10),
-                                     [&] ()->bool { return message_received; })) {
+                                     [&] () { return message_received; })) {
       LOG(kError) << "Timed out waiting for response from " << DebugId(NodeId(destination_id));
       return false;
     }
@@ -307,7 +311,7 @@ void RoutingsHandler::OnRequestReceived(const std::string& receiver_id,
 void RoutingsHandler::OnPublicKeyRequested(const NodeId& node_id,
                                            const routing::GivePublicKeyFunctor& give_key) {
   std::string network_name(node_id.String() + std::string(1, pca::kSignaturePacket));
-  std::string network_value(chunk_store_.Get(network_name));
+  std::string network_value(chunk_store_->Get(network_name));
 
   asymm::PublicKey public_key;
   pca::SignedData signed_data;

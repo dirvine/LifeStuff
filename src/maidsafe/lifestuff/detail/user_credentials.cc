@@ -41,6 +41,11 @@ UserCredentials::UserCredentials(priv::chunk_store::RemoteChunkStore& chunk_stor
 
 UserCredentials::~UserCredentials() {}
 
+void UserCredentials::set_remote_chunk_store(priv::chunk_store::RemoteChunkStore& chunk_store) {
+  impl_->set_remote_chunk_store(chunk_store);
+}
+
+
 int UserCredentials::CreateUser(const std::string& keyword,
                                 const std::string& pin,
                                 const std::string& password) {
@@ -73,11 +78,6 @@ int UserCredentials::ChangePassword(const std::string& new_password) {
 
 int UserCredentials::DeleteUserCredentials() {
   return impl_->DeleteUserCredentials();
-}
-
-bs2::connection UserCredentials::ConnectToImmediateQuitRequiredSignal(
-    const ImmediateQuitRequiredFunction& immediate_quit_required_slot) {
-  return impl_->ConnectToImmediateQuitRequiredSignal(immediate_quit_required_slot);
 }
 
 void UserCredentials::LogoutCompletedArrived(const std::string& session_marker) {
