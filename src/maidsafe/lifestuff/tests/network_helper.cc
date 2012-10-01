@@ -305,6 +305,8 @@ testing::AssertionResult NetworkHelper::StopLocalNetwork() {
     catch(const std::exception& e) {
       LOG(kError) << e.what();
     }
+    vault_processes_.clear();
+    zero_state_processes_.clear();
 //  Sleep(boost::posix_time::seconds(2));
 /*    auto exit_code = wait_for_exit(vault_process.first, error_code);
     vault_process.second->seekg(0, std::ios::end);
