@@ -241,7 +241,8 @@ TEST_F(OneUserApiTest, FUNC_CreateUserWhenLoggedIn) {
   EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_,
                                        RandomAlphaNumericString(5),
                                        CreatePin(),
-                                       RandomAlphaNumericString(5)));
+                                       RandomAlphaNumericString(5),
+                                       true));
 }
 
 TEST_F(OneUserApiTest, FUNC_LogOutCreateNewUser) {
@@ -249,7 +250,8 @@ TEST_F(OneUserApiTest, FUNC_LogOutCreateNewUser) {
   EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements_,
                                        RandomAlphaNumericString(5),
                                        CreatePin(),
-                                       RandomAlphaNumericString(5)));
+                                       RandomAlphaNumericString(5),
+                                       true));
 }
 
 TEST_F(OneUserApiTest, FUNC_CreateInvalidUsers) {
@@ -260,16 +262,16 @@ TEST_F(OneUserApiTest, FUNC_CreateInvalidUsers) {
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
 
   // Try to create existing account
-  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_, keyword_, pin_, password_));
+  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_, keyword_, pin_, password_, true));
 
   // Try to create new account when logged in
   EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_, keyword_, pin_, password_));
-  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_, new_keyword, new_pin, new_password));
+  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_, new_keyword, new_pin, new_password, true));
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
 
   // Bad Pin
-  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_, new_keyword, "", new_password));
-  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_, new_keyword, "0000", new_password));
+  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_, new_keyword, "", new_password, true));
+  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_, new_keyword, "0000", new_password, true));
   std::string not_digits_only(RandomAlphaNumericString(4));
   bool is_all_digits(true);
   while (is_all_digits) {
@@ -282,47 +284,59 @@ TEST_F(OneUserApiTest, FUNC_CreateInvalidUsers) {
       is_all_digits = false;
     }
   }
-  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_, new_keyword, not_digits_only, new_password));
+  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_,
+                                       new_keyword,
+                                       not_digits_only,
+                                       new_password,
+                                       true));
   EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_,
                                        new_keyword,
                                        CreatePin().erase(3, 1),
-                                       new_password));
+                                       new_password,
+                                       true));
   EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_,
                                        new_keyword,
                                        CreatePin().append("1"),
-                                       new_password));
+                                       new_password,
+                                       true));
 
   // Bad Keyword
   EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_,
                                        RandomAlphaNumericString(RandomUint32() % 5),
                                        new_pin,
-                                       new_password));
+                                       new_password,
+                                       true));
   EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_,
                                        RandomAlphaNumericString(31),
                                        new_pin,
-                                       new_password));
+                                       new_password,
+                                       true));
   EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_,
                                        RandomAlphaNumericString(RandomUint32() % 13 + 2) +
                                        " " +
                                        RandomAlphaNumericString(RandomUint32() % 14 + 2),
                                        new_pin,
-                                       new_password));
+                                       new_password,
+                                       true));
 
   // Bad Password
   EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_,
                                        new_keyword,
                                        new_pin,
-                                       RandomAlphaNumericString(RandomUint32() % 5)));
+                                       RandomAlphaNumericString(RandomUint32() % 5),
+                                       true));
   EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_,
                                        new_keyword,
                                        new_pin,
-                                       RandomAlphaNumericString(31)));
+                                       RandomAlphaNumericString(31),
+                                       true));
   EXPECT_NE(kSuccess,
             DoFullCreateUser(test_elements_,
                              new_keyword,
                              new_pin,
                              RandomAlphaNumericString(RandomUint32() % 13 + 2) + " " +
-                             RandomAlphaNumericString(RandomUint32() % 14 + 2)));
+                             RandomAlphaNumericString(RandomUint32() % 14 + 2),
+                             true));
 
   EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_, keyword_, pin_, password_));
 }
@@ -431,7 +445,7 @@ TEST_F(OneUserApiTest, FUNC_ChangeCredentialsAndLogOut) {
 }
 
 TEST_F(TwoInstancesApiTest, DISABLED_FUNC_BasicLogInFromTwoPlaces) {
-  EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements_, keyword_, pin_, password_));
+  EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements_, keyword_, pin_, password_, true));
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
 
   EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_, keyword_, pin_, password_));
@@ -454,7 +468,7 @@ TEST_F(TwoInstancesApiTest, DISABLED_FUNC_BasicLogInFromTwoPlaces) {
 }
 
 TEST_F(TwoInstancesApiTest, DISABLED_FUNC_LogInFromTwoPlacesCheckFileSystem) {
-  EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements_, keyword_, pin_, password_));
+  EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements_, keyword_, pin_, password_, true));
 
   std::string directory;
   fs::path path_directory(CreateTestDirectory(test_elements_.mount_path(), &directory));
@@ -633,7 +647,7 @@ TEST_F(TwoUsersApiTest, DISABLED_FUNC_LogInFromTwoPlacesCheckContacts) {
 
 TEST_F(TwoInstancesApiTest, DISABLED_FUNC_LogInFromTwoPlacesSimultaneously) {
 #ifdef MAIDSAFE_LINUX
-  EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements_, keyword_, pin_, password_));
+  EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements_, keyword_, pin_, password_, true));
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
 
   int result_1(0), result_2(0);
