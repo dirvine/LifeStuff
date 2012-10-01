@@ -1,7 +1,6 @@
 package maidsafe.lifestuff;
 
 // Messages between same identities
-
 message LogoutProceedings {  // type 1
   optional bytes session_requestor = 1;
   optional bytes session_acknowledger = 2;
@@ -10,7 +9,7 @@ message LogoutProceedings {  // type 1
 
 message OtherInstanceMessage {
   required uint32 message_type = 1;
-  required bytes encrypted_message = 2;
+  required bytes serialised_message = 2;
 }
 
 // Message used to send owner's contact info to recipient for acceptance into recipient's list

@@ -73,12 +73,16 @@ class RoutingsHandlerTest : public routing::test::GenericNetwork {
   }
 
   bool ValidatedMessageSlot(const std::string& message, std::string& response, bool reply) {
+    LOG(kInfo) << "ValidatedMessageSlot message: " << message << ", response: " << response;
     std::lock_guard<std::mutex> loch(mutex_);
     messages_.push_back(message);
     if (messages_.size() == messages_expected_)
       message_arrived_ = true;
-    if (reply)
-      std::reverse_copy(std::begin(message), std::end(message), std::begin(response));
+    if (reply) {
+      response = message + message;
+//      std::reverse_copy(std::begin(message), std::end(message), std::begin(response));
+      LOG(kInfo) << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Reversing with response: " << response;
+    }
     return reply;
   }
 
@@ -200,10 +204,12 @@ TEST_F(RoutingsHandlerTest, FUNC_TwoInstancesWithReply) {
                                                              request_key_functor));
 
   // Send the message and wait for the response
-  std::string request_message("hello world"), reply_message, reversed_message;
-  std::reverse_copy(std::begin(request_message),
-                    std::end(request_message),
-                    std::begin(reversed_message));
+  std::string request_message("hello world"),
+              reversed_message(request_message + request_message),
+              reply_message;
+//  std::reverse_copy(std::begin(request_message),
+//                    std::end(request_message),
+//                    std::begin(reversed_message));
   EXPECT_TRUE(origin_routings_handler->Send(maid.identity,
                                             maid.identity,
                                             maid.public_key,

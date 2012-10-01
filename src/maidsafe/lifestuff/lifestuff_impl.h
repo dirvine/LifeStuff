@@ -43,7 +43,6 @@
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/pd/client/node.h"
 #include "maidsafe/pd/vault/node.h"
-#include "maidsafe/lifestuff/detail/routings_handler.h"
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
@@ -52,17 +51,17 @@
 
 namespace fs = boost::filesystem;
 namespace bptime = boost::posix_time;
-namespace pcs = maidsafe::priv::chunk_store;
 
 namespace maidsafe {
 
 namespace lifestuff {
 
+class MessageHandler;
+class PublicId;
+class RoutingsHandler;
 class Session;
 class UserCredentials;
 class UserStorage;
-class PublicId;
-class MessageHandler;
 
 struct Slots {
   Slots()
@@ -187,7 +186,7 @@ class LifeStuffImpl {
   fs::path simulation_path_;
   bptime::seconds interval_;
   AsioService asio_service_;
-  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
+  std::shared_ptr<priv::chunk_store::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<priv::process_management::ClientController> client_controller_;
   std::shared_ptr<pd::Node> node_;
   std::shared_ptr<RoutingsHandler> routings_handler_;

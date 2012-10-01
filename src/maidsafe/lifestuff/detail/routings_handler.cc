@@ -212,7 +212,7 @@ bool RoutingsHandler::Send(const std::string& source_id,
                        routing_details.keys.private_key,
                        unwrapped_message)) {
       LOG(kError) << "Message from " <<DebugId(NodeId(destination_id)) << " is not decryptable. "
-                  << "Probably corrupted.";
+                  << "Probably corrupted: " << message_from_routing;
       return false;
     }
 
@@ -262,8 +262,10 @@ void RoutingsHandler::OnRequestReceived(const std::string& receiver_id,
   }
 
   asymm::PublicKey sender_public_key;
+  asymm::PrivateKey receiver_private_key;
   if (sender_id.String() == receiver_id) {
     sender_public_key = routing_details.keys.public_key;
+    receiver_private_key = routing_details.keys.private_key;
   } else {
     // Well, this is not gonna be easy
     if (!FindPublicKeyForSenderId(session_.contacts_handler(routing_details.search_id),
@@ -272,6 +274,12 @@ void RoutingsHandler::OnRequestReceived(const std::string& receiver_id,
       LOG(kError) << "Failed to find sender's pub key. Silent drop. Should I even be writing this?";
       return;
     }
+
+    receiver_private_key =
+        session_.passport().SignaturePacketDetails(passport::kMmid,
+                                                   true,
+                                                   routing_details.search_id).private_key;
+    assert(asymm::ValidateKey(receiver_private_key));
   }
 
   std::string unwrapped_message;
@@ -286,8 +294,13 @@ void RoutingsHandler::OnRequestReceived(const std::string& receiver_id,
   // Signal and assess response
   std::string response;
   if (validated_message_signal_(unwrapped_message, response)) {
-    LOG(kInfo) << "About to invoke reply functor";
-    reply_functor(response);
+    assert(!response.empty());
+    std::string wrapped_message(WrapMessage(response,
+                                            sender_public_key,
+                                            receiver_private_key));
+    assert(!wrapped_message.empty());
+    LOG(kInfo) << "About to invoke reply functor, response: " << response;
+    reply_functor(wrapped_message);
   }
 }
 

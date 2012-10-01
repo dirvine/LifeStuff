@@ -39,6 +39,7 @@
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/detail/message_handler.h"
 #include "maidsafe/lifestuff/detail/public_id.h"
+#include "maidsafe/lifestuff/detail/routings_handler.h"
 #include "maidsafe/lifestuff/detail/user_credentials.h"
 #include "maidsafe/lifestuff/detail/user_storage.h"
 
@@ -1386,20 +1387,12 @@ bool LifeStuffImpl::HandleRoutingsHandlerMessage(const std::string& message,
   if (other_instance_message.ParseFromString(message)) {
     switch (other_instance_message.message_type()) {
       case 1: {
-          asymm::PrivateKey maid_private_key(
-              session_.passport().SignaturePacketDetails(passport::kMaid, true).private_key);
-          std::string decrypted_message;
-          int result(asymm::Decrypt(other_instance_message.encrypted_message(),
-                                    maid_private_key,
-                                    &decrypted_message));
-          if (result == kSuccess) {
-            LogoutProceedings proceedings;
-            if (proceedings.ParseFromString(decrypted_message)) {
-              if (proceedings.has_session_requestor()) {
-                // TODO(Team): Run log out
-              } else if (proceedings.has_session_terminated()) {
-                user_credentials_->LogoutCompletedArrived(proceedings.session_acknowledger());
-              }
+          LogoutProceedings proceedings;
+          if (proceedings.ParseFromString(other_instance_message.serialised_message())) {
+            if (proceedings.has_session_requestor()) {
+              // TODO(Team): Run log out
+            } else if (proceedings.has_session_terminated()) {
+              user_credentials_->LogoutCompletedArrived(proceedings.session_acknowledger());
             }
           }
       }

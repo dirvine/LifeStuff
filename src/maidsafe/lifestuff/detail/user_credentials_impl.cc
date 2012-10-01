@@ -83,20 +83,15 @@ int CreateSignaturePacketInfo(const asymm::Keys& packet,
   return kSuccess;
 }
 
-void GenerateLogoutRequest(const std::string& session_marker,
-                           const asymm::PublicKey& maid_public_key,
-                           std::string& serialised_message) {
+void GenerateLogoutRequest(const std::string& session_marker, std::string& serialised_message) {
   assert(serialised_message.empty());
   LogoutProceedings proceedings;
   proceedings.set_session_requestor(session_marker);
+
   OtherInstanceMessage other_instance_message;
   other_instance_message.set_message_type(1);
 
-  std::string encrypted;
-  int result(asymm::Encrypt(proceedings.SerializeAsString(), maid_public_key, &encrypted));
-  assert(result == kSuccess && !encrypted.empty());
-
-  other_instance_message.set_encrypted_message(encrypted);
+  other_instance_message.set_serialised_message(proceedings.SerializeAsString());
   serialised_message = other_instance_message.SerializeAsString();
   assert(!serialised_message.empty());
 }
@@ -199,25 +194,33 @@ int UserCredentialsImpl::CheckForOtherRunningInstances(const std::string& keywor
 
   // Message self and wait for response
   std::string request_logout, logout_request_acknowledgement, session_marker(RandomString(64));
-  GenerateLogoutRequest(session_marker, maid.public_key, request_logout);
-  routings_handler_.Send(maid.identity,
-                         maid.identity,
-                         maid.public_key,
-                         request_logout,
-                         &logout_request_acknowledgement);
+  GenerateLogoutRequest(session_marker, request_logout);
+  bool successful_send(routings_handler_.Send(maid.identity,
+                                              maid.identity,
+                                              maid.public_key,
+                                              request_logout,
+                                              &logout_request_acknowledgement));
+  if (!successful_send) {
+    if (logout_request_acknowledgement.empty()) {
+      LOG(kWarning) << "Timed out. Not necessarily a failure.";
+    } else {
+      LOG(kError) << "Sending failed.";
+      return -1;
+    }
+  }
 
   // If other instances exist wait for log out message
   if (!logout_request_acknowledgement.empty()) {
     // Check logout_request_acknowledgement
-    std::string decrypted_message;
-    int result(asymm::Decrypt(completed_log_out_message_, maid.private_key, &decrypted_message));
-    if (result != kSuccess) {
-      LOG(kError) << "Message received does not decrypt.";
+    OtherInstanceMessage other_instance_message;
+    if (!other_instance_message.ParseFromString(logout_request_acknowledgement) ||
+        other_instance_message.message_type() != 1) {
+      LOG(kError) << "Message response is not of the type expected.";
       return -1;
     }
-
     LogoutProceedings proceedings;
-    if (!proceedings.ParseFromString(decrypted_message) || !proceedings.has_session_acknowledger()) {
+    if (!proceedings.ParseFromString(other_instance_message.serialised_message()) ||
+        !proceedings.has_session_acknowledger()) {
       LOG(kError) << "Message has wrong format.";
       return -1;
     }
@@ -243,7 +246,7 @@ int UserCredentialsImpl::CheckForOtherRunningInstances(const std::string& keywor
     }
 
     // Run GetUserInfo again
-    result = GetUserInfo(keyword, pin, password, true, mid_packet, smid_packet);
+    int result(GetUserInfo(keyword, pin, password, true, mid_packet, smid_packet));
     if (result != kSuccess) {
       LOG(kInfo) << "UserCredentialsImpl::LogIn - Failed to get user info after remote logout.";
       return result;
