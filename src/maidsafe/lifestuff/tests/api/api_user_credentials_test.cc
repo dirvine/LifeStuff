@@ -444,6 +444,39 @@ TEST_F(OneUserApiTest, FUNC_ChangeCredentialsAndLogOut) {
   EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_, new_keyword, new_pin, new_password));
 }
 
+TEST_F(TwoInstancesApiTest, FUNC_LogInFromTwoPlaces) {
+  EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements_, keyword_, pin_, password_, true));
+  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
+
+  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_, keyword_, pin_, password_));
+
+  testing_variables_1_.immediate_quit_required = false;
+  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_2_, keyword_, pin_, password_));
+  int i(0);
+  while (!testing_variables_1_.immediate_quit_required && i < 100) {
+    ++i;
+    Sleep(bptime::milliseconds(100));
+  }
+  EXPECT_TRUE(testing_variables_1_.immediate_quit_required);
+  EXPECT_EQ(kConnected, test_elements_.state());
+  EXPECT_EQ(kBaseState, test_elements_.logged_in_state());
+  EXPECT_EQ(fs::path(), test_elements_.mount_path());
+
+  testing_variables_2_.immediate_quit_required = false;
+  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_, keyword_, pin_, password_));
+  i = 0;
+  while (!testing_variables_2_.immediate_quit_required && i < 100) {
+    ++i;
+    Sleep(bptime::milliseconds(100));
+  }
+  EXPECT_TRUE(testing_variables_2_.immediate_quit_required);
+  EXPECT_EQ(kConnected, test_elements_2_.state());
+  EXPECT_EQ(kBaseState, test_elements_2_.logged_in_state());
+  EXPECT_EQ(fs::path(), test_elements_2_.mount_path());
+
+  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
+}
+
 TEST_F(TwoInstancesApiTest, DISABLED_FUNC_BasicLogInFromTwoPlaces) {
   EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements_, keyword_, pin_, password_, true));
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
