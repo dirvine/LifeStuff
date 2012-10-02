@@ -77,22 +77,8 @@ message DriveData {
 }
 
 message DataAtlas {
-  required DriveData drive_data = 1;
+  optional DriveData drive_data = 1;
   required PassportData passport_data = 2;
   repeated PublicIdentity public_ids = 3;
   required bytes timestamp = 4;
 }
-
-message LockingItem {
-  required bytes identifier = 1;
-  required bytes timestamp = 2;
-  required bool full_access = 3;
-  required int64 active = 4;
-  repeated bytes pending_action = 5;
-}
-
-message LockingPacket {
-  required bytes space_filler = 1;
-  repeated LockingItem locking_item = 2;
-}
-

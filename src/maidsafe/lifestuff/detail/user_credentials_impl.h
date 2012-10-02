@@ -78,8 +78,6 @@ class UserCredentialsImpl {
 
   int SaveSession(bool log_out);
 
-  int AssessAndUpdateLid(bool log_out);
-
   int ChangePin(const std::string& new_pin);
   int ChangeKeyword(const std::string new_keyword);
   int ChangeKeywordPin(const std::string& new_keyword, const std::string& new_pin);
@@ -88,6 +86,7 @@ class UserCredentialsImpl {
   int DeleteUserCredentials();
 
   void LogoutCompletedArrived(const std::string& session_marker);
+  bool IsOwnSessionTerminationMessage(const std::string& session_marker);
 
  private:
   UserCredentialsImpl &operator=(const UserCredentialsImpl&);
@@ -105,7 +104,7 @@ class UserCredentialsImpl {
   bool completed_log_out_;
   std::condition_variable completed_log_out_conditional_;
   std::mutex completed_log_out_mutex_;
-  std::string completed_log_out_message_;
+  std::string completed_log_out_message_, pending_session_marker_;
 
   int AttemptLogInProcess(const std::string& keyword,
                           const std::string& pin,
@@ -126,11 +125,6 @@ class UserCredentialsImpl {
 
   void StartSessionSaver();
 
-  int GetAndLockLid(const std::string& keyword,
-                    const std::string& pin,
-                    const std::string& password,
-                    std::string& lid_packet,
-                    LockingPacket& locking_packet);
   void GetIdAndTemporaryId(const std::string& keyword,
                            const std::string& pin,
                            const std::string& password,
@@ -168,10 +162,6 @@ class UserCredentialsImpl {
                      int identity_type,
                      int signer_type,
                      int index);
-  int StoreLid(const std::string keyword,
-               const std::string pin,
-               const std::string password,
-               const LockingPacket& locking_packet);
 
   void ModifyMid(OperationResults& results);
   void ModifySmid(OperationResults& results);
@@ -179,10 +169,6 @@ class UserCredentialsImpl {
                       int identity_type,
                       int signer_type,
                       int index);
-  int ModifyLid(const std::string keyword,
-                const std::string pin,
-                const std::string password,
-                const LockingPacket& locking_packet);
 
   int DeleteOldIdentityPackets();
   void DeleteMid(OperationResults& results);
@@ -193,8 +179,6 @@ class UserCredentialsImpl {
                       int packet_type,
                       int signer_type,
                       int index);
-  int DeleteLid(const std::string& keyword,
-                const std::string& pin);
 
   int DeleteSignaturePackets();
   void DeleteAnmid(OperationResults& results);

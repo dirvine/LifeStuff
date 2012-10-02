@@ -41,7 +41,6 @@
 #include "maidsafe/pd/vault/node.h"
 
 #include "maidsafe/lifestuff/rcs_helper.h"
-#include "maidsafe/lifestuff/detail/account_locking.h"
 #include "maidsafe/lifestuff/detail/routings_handler.h"
 #include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/user_credentials.h"
@@ -51,7 +50,6 @@
 
 namespace pca = maidsafe::priv::chunk_actions;
 namespace fs = boost::filesystem;
-namespace lid = maidsafe::lifestuff::account_locking;
 
 namespace maidsafe {
 
@@ -503,11 +501,6 @@ TEST_F(CredentialsTest, FUNC_ChangeDetails) {
   ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(kNewKeyword, pin_, kNewPassword));
   ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(keyword_, kNewPin, kNewPassword));
   LOG(kInfo) << "Can't log in with old u/p/w.";
-
-  EXPECT_EQ("", remote_chunk_store_->Get(lid::LidName(keyword_, pin_)));
-  EXPECT_EQ("", remote_chunk_store_->Get(lid::LidName(kNewKeyword, pin_)));
-  EXPECT_EQ("", remote_chunk_store_->Get(lid::LidName(kNewKeyword, kNewPin)));
-  LOG(kInfo) << "Old LID packets should be deleted.";
 }
 
 TEST_F(CredentialsTest, FUNC_CheckSessionClearsFully) {
@@ -622,69 +615,6 @@ TEST_F(CredentialsTest, FUNC_CheckSessionClearsFully) {
   ASSERT_FALSE(session_.changed());
   ASSERT_EQ(session_.session_access_level(), kNoAccess);
   LOG(kInfo) << "Session seems clear.\n===================\n";
-}
-
-TEST_F(CredentialsTest, DISABLED_FUNC_MonitorLidPacket) {
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
-  ASSERT_EQ(kUserDoesntExist, user_credentials_->LogIn(keyword_, pin_, password_));
-  LOG(kInfo) << "Preconditions fulfilled.\n===================\n";
-
-  std::string lid_name(pca::ApplyTypeToName(lid::LidName(keyword_, pin_), pca::kModifiableByOwner));
-
-  ASSERT_EQ("", remote_chunk_store_->Get(lid_name));
-
-  ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
-  session_.set_unique_user_id(RandomString(64));
-  session_.set_root_parent_id(RandomString(64));
-  ASSERT_EQ(keyword_, session_.keyword());
-  ASSERT_EQ(pin_, session_.pin());
-  ASSERT_EQ(password_, session_.password());
-  LOG(kInfo) << "User created.\n===================\n";
-
-  LockingPacket locking_packet;
-  EXPECT_EQ(kAccountAlreadyLoggedIn,
-            lid::ProcessAccountStatus(keyword_,
-                                      pin_,
-                                      password_,
-                                      remote_chunk_store_->Get(lid_name),
-                                      locking_packet));
-
-  ASSERT_EQ(kSuccess, user_credentials_->Logout());
-  LOG(kInfo) << "Logged out.\n===================\n";
-
-  locking_packet.Clear();
-  EXPECT_EQ(kSuccess,
-            lid::ProcessAccountStatus(keyword_,
-                                      pin_,
-                                      password_,
-                                      remote_chunk_store_->Get(lid_name),
-                                      locking_packet));
-
-  for (int i = 0; i < 10; ++i) {
-    ASSERT_EQ(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_));
-    LOG(kInfo) << "Logged in.\n===================\n";
-
-    locking_packet.Clear();
-    EXPECT_EQ(kAccountAlreadyLoggedIn,
-              lid::ProcessAccountStatus(keyword_,
-                                        pin_,
-                                        password_,
-                                        remote_chunk_store_->Get(lid_name),
-                                        locking_packet));
-
-    ASSERT_EQ(kSuccess, user_credentials_->Logout());
-    LOG(kInfo) << "Logged out.\n===================\n";
-
-    locking_packet.Clear();
-    EXPECT_EQ(kSuccess,
-              lid::ProcessAccountStatus(keyword_,
-                                        pin_,
-                                        password_,
-                                        remote_chunk_store_->Get(lid_name),
-                                        locking_packet));
-  }
 }
 
 TEST_F(CredentialsTest, DISABLED_FUNC_ParallelLogin) {
@@ -829,7 +759,6 @@ TEST_F(CredentialsTest, FUNC_UserCredentialsDeletion) {
                                              pca::kModifiableByOwner));
   std::string stmid_name(pca::ApplyTypeToName(pass.IdentityPacketName(passport::kStmid, true),
                                               pca::kModifiableByOwner));
-  std::string lid_name(pca::ApplyTypeToName(lid::LidName(keyword_, pin_), pca::kModifiableByOwner));
 
   ASSERT_NE("", remote_chunk_store_->Get(anmid_name));
   ASSERT_NE("", remote_chunk_store_->Get(ansmid_name));
@@ -841,7 +770,6 @@ TEST_F(CredentialsTest, FUNC_UserCredentialsDeletion) {
   ASSERT_NE("", remote_chunk_store_->Get(smid_name));
   ASSERT_NE("", remote_chunk_store_->Get(tmid_name));
   ASSERT_NE("", remote_chunk_store_->Get(stmid_name));
-//  ASSERT_NE("", remote_chunk_store_->Get(lid_name));
 
   ASSERT_EQ(kSuccess, user_credentials_->DeleteUserCredentials());
   LOG(kInfo) << "Deleted user credentials.\n=================\n";
@@ -862,7 +790,6 @@ TEST_F(CredentialsTest, FUNC_UserCredentialsDeletion) {
   ASSERT_EQ("", remote_chunk_store_->Get(smid_name));
   ASSERT_EQ("", remote_chunk_store_->Get(tmid_name));
   ASSERT_EQ("", remote_chunk_store_->Get(stmid_name));
-//  ASSERT_EQ("", remote_chunk_store_->Get(lid_name));
 
   ASSERT_NE(kSuccess, user_credentials_->Logout());
 
@@ -924,7 +851,6 @@ TEST_F(CredentialsTest, FUNC_UserCredentialsDeletion) {
   ASSERT_NE("", remote_chunk_store2_->Get(smid_name));
   ASSERT_NE("", remote_chunk_store2_->Get(tmid_name));
   ASSERT_NE("", remote_chunk_store2_->Get(stmid_name));
-//  ASSERT_NE("", remote_chunk_store_->Get(lid_name));
 
   ASSERT_EQ(kSuccess, user_credentials2_->DeleteUserCredentials());
   ASSERT_EQ(kSuccess, MakeAnonymousNode(user_credentials2_,
@@ -943,7 +869,6 @@ TEST_F(CredentialsTest, FUNC_UserCredentialsDeletion) {
   ASSERT_EQ("", remote_chunk_store2_->Get(smid_name));
   ASSERT_EQ("", remote_chunk_store2_->Get(tmid_name));
   ASSERT_EQ("", remote_chunk_store2_->Get(stmid_name));
-//  ASSERT_EQ("", remote_chunk_store2_->Get(lid_name));
 
   ASSERT_NE(kSuccess, user_credentials2_->Logout());
   ASSERT_NE(kSuccess, user_credentials2_->LogIn(keyword_, pin_, password_));

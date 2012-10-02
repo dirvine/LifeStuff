@@ -42,9 +42,9 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
+std::shared_ptr<priv::chunk_store::RemoteChunkStore> BuildChunkStore(
     const fs::path& base_dir,
-    const std::vector<std::pair<std::string, uint16_t>>& endopints,  // NOLINT (Dan)
+    const std::vector<std::pair<std::string, uint16_t> >& endopints,  // NOLINT (Dan)
     std::shared_ptr<pd::Node>& node,
     const std::function<void(const int&)>& network_health_function) {
   node = SetupNode(base_dir, endopints, network_health_function);
@@ -64,7 +64,7 @@ std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
 
 std::shared_ptr<pd::Node> SetupNode(
     const fs::path& base_dir,
-    const std::vector<std::pair<std::string, uint16_t>>& endopints,  // NOLINT (Dan)
+    const std::vector<std::pair<std::string, uint16_t> >& endopints,  // NOLINT (Dan)
     const std::function<void(const int&)>& network_health_function) {
   auto node = std::make_shared<pd::Node>();
   node->set_on_network_status(network_health_function);

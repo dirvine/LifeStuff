@@ -118,7 +118,7 @@ class LifeStuffImpl {
   int LogIn(const std::string& username, const std::string& pin, const std::string& password);
   int LogOut();
   int CreateAndMountDrive();
-  int MountDrive(bool read_only);
+  int MountDrive();
   int UnMountDrive();
   int StartMessagesAndIntros();
   int StopMessagesAndIntros();
@@ -188,7 +188,7 @@ class LifeStuffImpl {
   AsioService asio_service_;
   std::shared_ptr<priv::chunk_store::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<priv::process_management::ClientController> client_controller_;
-  std::shared_ptr<pd::Node> node_;
+  std::shared_ptr<pd::Node> client_node_;
   std::shared_ptr<RoutingsHandler> routings_handler_;
   pd::vault::Node vault_node_;
   boost::signals2::signal<void(const int&)> network_health_signal_;
@@ -204,10 +204,8 @@ class LifeStuffImpl {
 
   void ConnectInternalElements();
   int SetValidPmidAndInitialisePublicComponents();
-  int CheckStateAndReadOnlyAccess() const;
   int CheckStateAndFullAccess() const;
   int PreContactChecksFullAccess(const std::string& my_public_id);
-  int PreContactChecksReadOnly(const std::string& my_public_id);
   void NetworkHealthSlot(const int& index);
   int CreateVaultInLocalMachine(const fs::path& chunk_store, bool vault_cheat);
   bool HandleRoutingsHandlerMessage(const std::string& message, std::string& response);

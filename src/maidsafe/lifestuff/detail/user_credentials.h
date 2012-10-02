@@ -77,6 +77,7 @@ class UserCredentials {
   int DeleteUserCredentials();
 
   void LogoutCompletedArrived(const std::string& session_marker);
+  bool IsOwnSessionTerminationMessage(const std::string& session_marker);
 
  private:
   UserCredentials &operator=(const UserCredentials&);

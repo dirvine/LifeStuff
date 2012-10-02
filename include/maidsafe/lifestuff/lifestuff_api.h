@@ -75,7 +75,7 @@ class LifeStuff {
   int LogIn(const std::string& keyword, const std::string& pin, const std::string& password);
   int LogOut();
   int CreateAndMountDrive();
-  int MountDrive(bool read_only);
+  int MountDrive();
   int UnMountDrive();
   int StartMessagesAndIntros();
   int StopMessagesAndIntros();

@@ -345,19 +345,19 @@ int Session::ParseDataAtlas(const std::string& serialised_data_atlas) {
     return kParseDataAtlasTmidDoesNotParse;
   }
 
-  if (data_atlas.drive_data().unique_user_id().empty()) {
-    LOG(kError) << "Unique user ID is empty.";
-    return kTryAgainLater;
-  }
-  if (data_atlas.drive_data().root_parent_id().empty()) {
-    LOG(kError) << "Root parent id is empty.";
-    return kTryAgainLater;
-  }
+//  if (data_atlas.drive_data().unique_user_id().empty()) {
+//    LOG(kError) << "Unique user ID is empty.";
+//    return kTryAgainLater;
+//  }
+//  if (data_atlas.drive_data().root_parent_id().empty()) {
+//    LOG(kError) << "Root parent id is empty.";
+//    return kTryAgainLater;
+//  }
 
-  set_unique_user_id(data_atlas.drive_data().unique_user_id());
-  set_root_parent_id(data_atlas.drive_data().root_parent_id());
-  set_max_space(data_atlas.drive_data().max_space());
-  set_used_space(data_atlas.drive_data().used_space());
+//  set_unique_user_id(data_atlas.drive_data().unique_user_id());
+//  set_root_parent_id(data_atlas.drive_data().root_parent_id());
+//  set_max_space(data_atlas.drive_data().max_space());
+//  set_used_space(data_atlas.drive_data().used_space());
 
   int result(passport_.Parse(data_atlas.passport_data().serialised_keyring()));
   if (result != kSuccess) {
@@ -407,11 +407,11 @@ int Session::ParseDataAtlas(const std::string& serialised_data_atlas) {
 int Session::SerialiseDataAtlas(std::string* serialised_data_atlas) {
   BOOST_ASSERT(serialised_data_atlas);
   DataAtlas data_atlas;
-  DriveData* drive_data(data_atlas.mutable_drive_data());
-  drive_data->set_unique_user_id(unique_user_id());
-  drive_data->set_root_parent_id(root_parent_id());
-  drive_data->set_max_space(max_space());
-  drive_data->set_used_space(used_space());
+//  DriveData* drive_data(data_atlas.mutable_drive_data());
+//  drive_data->set_unique_user_id(unique_user_id());
+//  drive_data->set_root_parent_id(root_parent_id());
+//  drive_data->set_max_space(max_space());
+//  drive_data->set_used_space(used_space());
 
   data_atlas.set_timestamp(boost::lexical_cast<std::string>(
       GetDurationSinceEpoch().total_microseconds()));

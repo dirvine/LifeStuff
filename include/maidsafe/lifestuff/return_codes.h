@@ -34,7 +34,6 @@ enum ReturnCode {
   // General
   kSuccess = 0,
   kGeneralError = -200001,
-  kReadOnlyRestrictedSuccess = -200002,
   kRemoteChunkStoreFailure = -200003,
   kPublicIdNotFoundFailure = -200004,
   kGetPublicIdError = -200005,
@@ -76,20 +75,6 @@ enum ReturnCode {
   kVaultCreationStartFailure = -201034,
   kNoShareTarget = -201035,
   kCouldNotAcquirePmidKeys = -201036,
-
-  // Account Locking
-  kLidParseToSignedDataFailure = -202001,
-  kLidDecryptDataFailure = -202002,
-  kLidParseToLockingPacketFailure = -202003,
-  kLidAddItemIdentifierInUse = -202004,
-  kLidAddItemFullAccessUnavailable = -202005,
-  kLidRemoveItemIdentifierNotFound = -202006,
-  kLidRemoveItemsIdentifierNotFound = -202007,
-  kLidUpdateTimestampIdentifierNotFound = -202008,
-  kLidCheckOthersIdentifierNotFound = -202009,
-  kAccountAlreadyLoggedIn = -202010,
-  kLidNotFound = -202011,
-  kLidIdentifierFound = -202012,
 
   // Contacts
   kContactInsertionFailure = -203001,
@@ -179,7 +164,6 @@ enum ReturnCode {
   kAtLeastOneFailure = -209013,
 
   // Codes remaining in DISABLED tests. Expect these codes to be redundant soon.
-  kReadOnlyFailure = -209991,
   kUserDoesntExist = -209992
 };
 
