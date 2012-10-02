@@ -109,7 +109,8 @@ struct TestingVariables {
         share_renamed(false),
         share_changes(),
         contact_request_message(),
-        social_info_map_changed(false) {}
+        social_info_map_changed(false),
+        immediate_quit_required(false) {}
   std::string chat_message;
   bool chat_message_received;
   std::string file_name, file_id;
@@ -134,6 +135,7 @@ struct TestingVariables {
   ShareChangeLogBook share_changes;
   std::string contact_request_message;
   bool social_info_map_changed;
+  bool immediate_quit_required;
 };
 
 void ChatSlot(const std::string&,

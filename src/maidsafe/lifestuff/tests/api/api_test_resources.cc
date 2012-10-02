@@ -199,6 +199,10 @@ void LifestuffCardSlot(const std::string&,
   *done = true;
 }
 
+void ImmediateQuitRequiredSlot(volatile bool* done) {
+  *done = true;
+}
+
 int DoFullCreateUser(LifeStuff& test_elements,
                      const std::string& keyword,
                      const std::string& pin,
@@ -443,7 +447,9 @@ int InitialiseAndConnect(LifeStuff& test_elements,
                                     &testing_variables.social_info_map_changed);
                 },
                 NetworkHealthFunction(),
-                ImmediateQuitRequiredFunction());
+                [&] {
+                  ImmediateQuitRequiredSlot(&testing_variables.immediate_quit_required);
+                });
   return result;
 }
 
@@ -660,7 +666,10 @@ void TwoInstancesApiTest::SetUp() {
                                             ContactDeletionFunction(),
                                             LifestuffCardUpdateFunction(),
                                             NetworkHealthFunction(),
-                                            ImmediateQuitRequiredFunction()));
+                                            [&] {
+                                              ImmediateQuitRequiredSlot(
+                                                    &testing_variables_1_.immediate_quit_required);
+                                            }));
   EXPECT_EQ(kSuccess,
             test_elements_2_.ConnectToSignals(ChatFunction(),
                                             FileTransferFunction(),
@@ -680,7 +689,10 @@ void TwoInstancesApiTest::SetUp() {
                                             ContactDeletionFunction(),
                                             LifestuffCardUpdateFunction(),
                                             NetworkHealthFunction(),
-                                            ImmediateQuitRequiredFunction()));
+                                            [&] {
+                                              ImmediateQuitRequiredSlot(
+                                                    &testing_variables_2_.immediate_quit_required);
+                                            }));
 }
 
 void TwoInstancesApiTest::TearDown() {
