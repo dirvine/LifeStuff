@@ -242,6 +242,8 @@ void LifestuffCardSlot(const std::string&,
                        const std::string&,
                        volatile bool* done);
 
+void ImmediateQuitRequiredSlot(volatile bool* done);
+
 int DoFullCreateUser(LifeStuff& test_elements,
                      const std::string& keyword,
                      const std::string& pin,

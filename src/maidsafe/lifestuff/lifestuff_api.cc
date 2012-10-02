@@ -97,8 +97,8 @@ int LifeStuff::CreateAndMountDrive() {
   return lifestuff_impl_->CreateAndMountDrive();
 }
 
-int LifeStuff::MountDrive(bool read_only) {
-  return lifestuff_impl_->MountDrive(read_only);
+int LifeStuff::MountDrive() {
+  return lifestuff_impl_->MountDrive();
 }
 
 int LifeStuff::UnMountDrive() {

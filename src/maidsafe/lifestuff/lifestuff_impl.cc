@@ -118,7 +118,7 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
 
   if (bootstrap_endpoints.empty()) {
     LOG(kWarning) << "Failure to initialise client controller. No bootstrap contacts.";
-    return kInitialiseBootstrapsFailure;
+//    return kInitialiseBootstrapsFailure;
   }
 
   remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path,
@@ -301,15 +301,15 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
     }
   }
 
-  result = SetValidPmidAndInitialisePublicComponents();
-  if (result != kSuccess)  {
-    LOG(kError) << "Failed to set valid PMID with result: " << result;
-    return result;
-  }
-
   result = CreateVaultInLocalMachine(chunk_store, vault_cheat);
   if (result != kSuccess)  {
     LOG(kError) << "Failed to create vault. No LifeStuff for you! (Result: " << result << ")";
+    return result;
+  }
+
+  result = SetValidPmidAndInitialisePublicComponents();
+  if (result != kSuccess)  {
+    LOG(kError) << "Failed to set valid PMID with result: " << result;
     return result;
   }
 
@@ -376,7 +376,7 @@ int LifeStuffImpl::LogIn(const std::string& keyword,
   session_.Reset();
 
   int login_result(user_credentials_->LogIn(keyword, pin, password));
-  if (login_result != kSuccess && login_result != kReadOnlyRestrictedSuccess) {
+  if (login_result != kSuccess) {
     if (login_result == kKeywordSizeInvalid || login_result == kKeywordPatternInvalid ||
         login_result == kPinSizeInvalid || login_result == kPinPatternInvalid ||
         login_result == kPasswordSizeInvalid || login_result == kPasswordPatternInvalid ||
@@ -438,11 +438,6 @@ int LifeStuffImpl::LogOut() {
 }
 
 int LifeStuffImpl::CreateAndMountDrive() {
-  if (session_.session_access_level() == kReadOnly) {
-    LOG(kError) << "Can't create and mount drive when session is read only!";
-    return kWrongAccessLevel;
-  }
-
   if ((kCreating & logged_in_state_) != kCreating ||
       (kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
       (kDriveMounted & logged_in_state_) == kDriveMounted) {
@@ -480,12 +475,7 @@ int LifeStuffImpl::CreateAndMountDrive() {
   return kSuccess;
 }
 
-int LifeStuffImpl::MountDrive(bool read_only) {
-  if (!read_only && session_.session_access_level() == kReadOnly) {
-    LOG(kError) << "Can't mount drive with full access when session is read only!";
-    return kWrongAccessLevel;
-  }
-
+int LifeStuffImpl::MountDrive() {
   if ((kCreating & logged_in_state_) == kCreating ||
       (kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
       (kDriveMounted & logged_in_state_) == kDriveMounted) {
@@ -512,15 +502,13 @@ int LifeStuffImpl::MountDrive(bool read_only) {
     }
   }
 
-  user_storage_->MountDrive(mount_dir, &session_, false, read_only);
+  user_storage_->MountDrive(mount_dir, &session_, false, false);
   if (!user_storage_->mount_status()) {
     LOG(kError) << "Failed to mount";
     return kMountDriveError;
   }
 
   logged_in_state_ = logged_in_state_ ^ kDriveMounted;
-  if (read_only)
-    return kReadOnlyRestrictedSuccess;
   return kSuccess;
 }
 
@@ -593,7 +581,7 @@ int LifeStuffImpl::StopMessagesAndIntros() {
 }
 
 int LifeStuffImpl::CheckPassword(const std::string& password) {
-  int result(CheckStateAndReadOnlyAccess());
+  int result(CheckStateAndFullAccess());
   if (result != kSuccess)
     return result;
 
@@ -872,7 +860,7 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
 std::string LifeStuffImpl::GetOwnProfilePicture(const std::string& my_public_id) {
   // Read contents, put them in a string, give them back. Should not be a file
   // over a certain size (kFileRecontructionLimit).
-  int result(PreContactChecksReadOnly(my_public_id));
+  int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in ChangeProfilePicture.";
     return "";
@@ -907,7 +895,7 @@ std::string LifeStuffImpl::GetOwnProfilePicture(const std::string& my_public_id)
 
 std::string LifeStuffImpl::GetContactProfilePicture(const std::string& my_public_id,
                                                     const std::string& contact_public_id) {
-  int result(PreContactChecksReadOnly(my_public_id));
+  int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in GetContactProfilePicture.";
     return "";
@@ -941,7 +929,7 @@ std::string LifeStuffImpl::GetContactProfilePicture(const std::string& my_public
 int LifeStuffImpl::GetLifestuffCard(const std::string& my_public_id,
                                     const std::string& contact_public_id,
                                     SocialInfoMap& social_info) {
-  int result(PreContactChecksReadOnly(my_public_id));
+  int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in GetLifestuffCard.";
     return result;
@@ -970,7 +958,7 @@ int LifeStuffImpl::SetLifestuffCard(const std::string& my_public_id,
 }
 
 ContactMap LifeStuffImpl::GetContacts(const std::string& my_public_id, uint16_t bitwise_status) {
-  int result(PreContactChecksReadOnly(my_public_id));
+  int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in GetContacts.";
     return ContactMap();
@@ -986,7 +974,7 @@ ContactMap LifeStuffImpl::GetContacts(const std::string& my_public_id, uint16_t 
 }
 
 std::vector<std::string> LifeStuffImpl::PublicIdsList() const {
-  int result = CheckStateAndReadOnlyAccess();
+  int result = CheckStateAndFullAccess();
   if (result != kSuccess)
     return std::vector<std::string>();
 
@@ -1126,7 +1114,7 @@ int LifeStuffImpl::RejectSentFile(const std::string& identifier) {
 
 /// Filesystem
 int LifeStuffImpl::ReadHiddenFile(const fs::path& absolute_path, std::string* content) const {
-  int result(CheckStateAndReadOnlyAccess());
+  int result(CheckStateAndFullAccess());
   if (result != kSuccess)
     return result;
 
@@ -1173,7 +1161,7 @@ int LifeStuffImpl::DeleteHiddenFile(const fs::path& absolute_path) {
 
 int LifeStuffImpl::SearchHiddenFiles(const fs::path& absolute_path,
                                      std::vector<std::string>* results) {
-  int result(CheckStateAndReadOnlyAccess());
+  int result(CheckStateAndFullAccess());
   if (result != kSuccess)
     return result;
 
@@ -1268,26 +1256,6 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
   return result;
 }
 
-int LifeStuffImpl::CheckStateAndReadOnlyAccess() const {
-  if (state_ != kLoggedIn) {
-    LOG(kError) << "Incorrect state. Should be logged in: " << state_;
-    return kWrongState;
-  }
-
-  if ((kDriveMounted & logged_in_state_) != kDriveMounted) {
-    LOG(kError) << "Incorrect state. Drive should be mounted: " << logged_in_state_;
-    return kWrongLoggedInState;
-  }
-
-  SessionAccessLevel session_access_level(session_.session_access_level());
-  if (session_access_level != kFullAccess && session_access_level != kReadOnly) {
-    LOG(kError) << "Insufficient access. Should have at least read access: " <<
-                   session_access_level;
-    return kWrongAccessLevel;
-  }
-  return kSuccess;
-}
-
 int LifeStuffImpl::CheckStateAndFullAccess() const {
   if (state_ != kLoggedIn) {
     LOG(kError) << "Incorrect state. Should be logged in: " << state_;
@@ -1309,19 +1277,6 @@ int LifeStuffImpl::CheckStateAndFullAccess() const {
 
 int LifeStuffImpl::PreContactChecksFullAccess(const std::string &my_public_id) {
   int result = CheckStateAndFullAccess();
-  if (result != kSuccess)
-    return result;
-
-  if (!session_.OwnPublicId(my_public_id)) {
-    LOG(kError) << "User does not hold such public ID: " << my_public_id;
-    return kPublicIdNotFoundFailure;
-  }
-
-  return kSuccess;
-}
-
-int LifeStuffImpl::PreContactChecksReadOnly(const std::string &my_public_id) {
-  int result = CheckStateAndReadOnlyAccess();
   if (result != kSuccess)
     return result;
 

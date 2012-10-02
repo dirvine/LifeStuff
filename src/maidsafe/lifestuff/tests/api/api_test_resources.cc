@@ -234,7 +234,7 @@ int DoFullLogIn(LifeStuff& test_elements,
     return result;
   }
 
-  result = test_elements.MountDrive(false);
+  result = test_elements.MountDrive();
   if (result != kSuccess) {
     LOG(kError) << "Failed to mount drive: " << result;
     return result;
@@ -668,31 +668,31 @@ void TwoInstancesApiTest::SetUp() {
                                             NetworkHealthFunction(),
                                             [&] {
                                               ImmediateQuitRequiredSlot(
-                                                    &testing_variables_1_.immediate_quit_required);
+                                                  &testing_variables_1_.immediate_quit_required);
                                             }));
   EXPECT_EQ(kSuccess,
             test_elements_2_.ConnectToSignals(ChatFunction(),
-                                            FileTransferFunction(),
-                                            NewContactFunction(),
-                                            ContactConfirmationFunction(),
-                                            ContactProfilePictureFunction(),
-                                            [&] (const std::string& own_public_id,
-                                                 const std::string& contact_public_id,
-                                                 const std::string& timestamp,
-                                                 ContactPresence cp) {
-                                              ContactPresenceSlot(own_public_id,
-                                                                  contact_public_id,
-                                                                  timestamp,
-                                                                  cp,
-                                                                  &done_);
-                                            },
-                                            ContactDeletionFunction(),
-                                            LifestuffCardUpdateFunction(),
-                                            NetworkHealthFunction(),
-                                            [&] {
-                                              ImmediateQuitRequiredSlot(
+                                              FileTransferFunction(),
+                                              NewContactFunction(),
+                                              ContactConfirmationFunction(),
+                                              ContactProfilePictureFunction(),
+                                              [&] (const std::string& own_public_id,
+                                                   const std::string& contact_public_id,
+                                                   const std::string& timestamp,
+                                                   ContactPresence cp) {
+                                                ContactPresenceSlot(own_public_id,
+                                                                    contact_public_id,
+                                                                    timestamp,
+                                                                    cp,
+                                                                    &done_);
+                                              },
+                                              ContactDeletionFunction(),
+                                              LifestuffCardUpdateFunction(),
+                                              NetworkHealthFunction(),
+                                              [&] {
+                                                ImmediateQuitRequiredSlot(
                                                     &testing_variables_2_.immediate_quit_required);
-                                            }));
+                                              }));
 }
 
 void TwoInstancesApiTest::TearDown() {

@@ -43,7 +43,7 @@ namespace lifestuff {
 
 namespace test { class SessionTest; }
 
-enum SessionAccessLevel { kNoAccess, kFullAccess, kReadOnly, kMustDie };
+enum SessionAccessLevel { kNoAccess, kFullAccess, kMustDie };
 
 struct UserDetails {
   UserDetails()

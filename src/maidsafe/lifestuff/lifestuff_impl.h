@@ -118,7 +118,7 @@ class LifeStuffImpl {
   int LogIn(const std::string& username, const std::string& pin, const std::string& password);
   int LogOut();
   int CreateAndMountDrive();
-  int MountDrive(bool read_only);
+  int MountDrive();
   int UnMountDrive();
   int StartMessagesAndIntros();
   int StopMessagesAndIntros();
@@ -204,10 +204,8 @@ class LifeStuffImpl {
 
   void ConnectInternalElements();
   int SetValidPmidAndInitialisePublicComponents();
-  int CheckStateAndReadOnlyAccess() const;
   int CheckStateAndFullAccess() const;
   int PreContactChecksFullAccess(const std::string& my_public_id);
-  int PreContactChecksReadOnly(const std::string& my_public_id);
   void NetworkHealthSlot(const int& index);
   int CreateVaultInLocalMachine(const fs::path& chunk_store, bool vault_cheat);
   bool HandleRoutingsHandlerMessage(const std::string& message, std::string& response);
