@@ -86,6 +86,7 @@ class UserCredentialsImpl {
   int DeleteUserCredentials();
 
   void LogoutCompletedArrived(const std::string& session_marker);
+  bool IsOwnSessionTerminationMessage(const std::string& session_marker);
 
  private:
   UserCredentialsImpl &operator=(const UserCredentialsImpl&);
@@ -103,7 +104,7 @@ class UserCredentialsImpl {
   bool completed_log_out_;
   std::condition_variable completed_log_out_conditional_;
   std::mutex completed_log_out_mutex_;
-  std::string completed_log_out_message_;
+  std::string completed_log_out_message_, pending_session_marker_;
 
   int AttemptLogInProcess(const std::string& keyword,
                           const std::string& pin,

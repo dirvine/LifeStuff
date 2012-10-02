@@ -58,9 +58,7 @@ int UserCredentials::LogIn(const std::string& keyword,
   return impl_->LogIn(keyword, pin, password);
 }
 
-int UserCredentials::Logout() {
-  return impl_->LogOut();
-}
+int UserCredentials::Logout() { return impl_->LogOut(); }
 
 int UserCredentials::SaveSession() { return impl_->SaveSession(false); }
 
@@ -76,12 +74,14 @@ int UserCredentials::ChangePassword(const std::string& new_password) {
   return impl_->ChangePassword(new_password);
 }
 
-int UserCredentials::DeleteUserCredentials() {
-  return impl_->DeleteUserCredentials();
-}
+int UserCredentials::DeleteUserCredentials() { return impl_->DeleteUserCredentials(); }
 
 void UserCredentials::LogoutCompletedArrived(const std::string& session_marker) {
   impl_->LogoutCompletedArrived(session_marker);
+}
+
+bool UserCredentials::IsOwnSessionTerminationMessage(const std::string& session_marker) {
+  return impl_->IsOwnSessionTerminationMessage(session_marker);
 }
 
 }  // namespace lifestuff
