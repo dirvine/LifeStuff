@@ -116,7 +116,8 @@ UserCredentialsImpl::UserCredentialsImpl(priv::chunk_store::RemoteChunkStore& re
       completed_log_out_(false),
       completed_log_out_conditional_(),
       completed_log_out_mutex_(),
-      completed_log_out_message_() {}
+      completed_log_out_message_(),
+      pending_session_marker_() {}
 
 UserCredentialsImpl::~UserCredentialsImpl() {}
 
@@ -198,8 +199,9 @@ int UserCredentialsImpl::CheckForOtherRunningInstances(const std::string& keywor
                                      nullptr);
 
   // Message self and wait for response
-  std::string request_logout, logout_request_acknowledgement, session_marker(RandomString(64));
-  GenerateLogoutRequest(session_marker, request_logout);
+  std::string request_logout, logout_request_acknowledgement;
+  pending_session_marker_ = RandomString(64);
+  GenerateLogoutRequest(pending_session_marker_, request_logout);
   bool successful_send(routings_handler_.Send(maid.identity,
                                               maid.identity,
                                               maid.public_key,
@@ -230,7 +232,7 @@ int UserCredentialsImpl::CheckForOtherRunningInstances(const std::string& keywor
       return -1;
     }
 
-    if (proceedings.session_acknowledger() != session_marker) {
+    if (proceedings.session_acknowledger() != pending_session_marker_) {
       LOG(kError) << "Session marker not replicated in acknowlegdement";
       return -1;
     }
@@ -245,7 +247,7 @@ int UserCredentialsImpl::CheckForOtherRunningInstances(const std::string& keywor
     }
 
     // Check response is valid
-    if (completed_log_out_message_ != session_marker) {
+    if (completed_log_out_message_ != pending_session_marker_) {
       LOG(kError) << "Session marker does not match marker sent in request.";
       return -1;
     }
@@ -1692,6 +1694,10 @@ void UserCredentialsImpl::LogoutCompletedArrived(const std::string& session_mark
   completed_log_out_message_ = session_marker;
   completed_log_out_ = true;
   completed_log_out_conditional_.notify_one();
+}
+
+bool  UserCredentialsImpl::IsOwnSessionTerminationMessage(const std::string& session_marker) {
+  return pending_session_marker_ == session_marker;
 }
 
 }  // namespace lifestuff

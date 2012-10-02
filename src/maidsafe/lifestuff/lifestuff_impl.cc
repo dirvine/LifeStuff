@@ -33,8 +33,6 @@
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/encrypt/data_map.h"
-
 #include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/detail/message_handler.h"
@@ -59,7 +57,7 @@ LifeStuffImpl::LifeStuffImpl()
       asio_service_(thread_count_),
       remote_chunk_store_(),
       client_controller_(),
-      node_(),
+      client_node_(),
       routings_handler_(),
       vault_node_(),
       network_health_signal_(),
@@ -123,8 +121,8 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
 
   remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path,
                                         bootstrap_endpoints,
-                                        node_,
-                                        [&] (const int& index) { NetworkHealthSlot(index); });  // NOLINT (Dan)
+                                        client_node_,
+                                        [&] (const int&) {});
   if (!remote_chunk_store_) {
     LOG(kError) << "Could not initialise chunk store.";
     return kInitialiseChunkStoreFailure;
@@ -229,19 +227,20 @@ int LifeStuffImpl::ConnectToSignals(
   public_id_->ConnectToContactDeletionProcessedSignal(contact_deletion_function);
   public_id_->ConnectToLifestuffCardUpdatedSignal(lifestuff_card_update_function);
   immediate_quit_required_signal_.connect(immediate_quit_required_function);
-  public_id_->ConnectToContactDeletionReceivedSignal(
-      [&] (const std::string& own_public_id,
-           const std::string& contact_public_id,
-           const std::string& removal_message,
-           const std::string& timestamp) {
-        int result(RemoveContact(own_public_id,
-                                 contact_public_id,
-                                 removal_message,
-                                 timestamp,
-                                 false));
-        if (result != kSuccess)
-          LOG(kError) << "Failed to remove contact after receiving contact deletion signal!";
-      });
+  public_id_->ConnectToContactDeletionReceivedSignal([&] (const std::string& own_public_id,
+                                                          const std::string& contact_public_id,
+                                                          const std::string& removal_message,
+                                                          const std::string& timestamp) {
+                                                       int result(RemoveContact(own_public_id,
+                                                                                contact_public_id,
+                                                                                removal_message,
+                                                                                timestamp,
+                                                                                false));
+                                                       if (result != kSuccess)
+                                                         LOG(kError) << "Failed to remove contact "
+                                                                        "after receiving contact "
+                                                                        "deletion signal!";
+                                                     });
   return kSuccess;
 }
 
@@ -335,8 +334,10 @@ int LifeStuffImpl::CreatePublicId(const std::string& public_id) {
 
   result = public_id_->CreatePublicId(public_id, true);
   if (result != kSuccess) {
-    if (result == kPublicIdEmpty || result == kPublicIdLengthInvalid ||
-        result == kPublicIdEndSpaceInvalid || result == kPublicIdDoubleSpaceInvalid) {
+    if (result == kPublicIdEmpty ||
+        result == kPublicIdLengthInvalid ||
+        result == kPublicIdEndSpaceInvalid ||
+        result == kPublicIdDoubleSpaceInvalid) {
       return result;
     } else {
       LOG(kError) << "Failed to create public ID with result: " << result;
@@ -377,11 +378,16 @@ int LifeStuffImpl::LogIn(const std::string& keyword,
 
   int login_result(user_credentials_->LogIn(keyword, pin, password));
   if (login_result != kSuccess && login_result != kReadOnlyRestrictedSuccess) {
-    if (login_result == kKeywordSizeInvalid || login_result == kKeywordPatternInvalid ||
-        login_result == kPinSizeInvalid || login_result == kPinPatternInvalid ||
-        login_result == kPasswordSizeInvalid || login_result == kPasswordPatternInvalid ||
-        login_result == kLoginUserNonExistence || login_result == kLoginAccountCorrupted ||
-        login_result == kLoginSessionNotYetSaved || login_result == kLoginUsingNextToLastSession) {
+    if (login_result == kKeywordSizeInvalid ||
+        login_result == kKeywordPatternInvalid ||
+        login_result == kPinSizeInvalid ||
+        login_result == kPinPatternInvalid ||
+        login_result == kPasswordSizeInvalid ||
+        login_result == kPasswordPatternInvalid ||
+        login_result == kLoginUserNonExistence ||
+        login_result == kLoginAccountCorrupted ||
+        login_result == kLoginSessionNotYetSaved ||
+        login_result == kLoginUsingNextToLastSession) {
       return login_result;
     } else {
       LOG(kError) << "LogIn failed with result: " << login_result;
@@ -489,8 +495,8 @@ int LifeStuffImpl::MountDrive(bool read_only) {
   if ((kCreating & logged_in_state_) == kCreating ||
       (kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
       (kDriveMounted & logged_in_state_) == kDriveMounted) {
-    LOG(kError) << "In unsuitable state to mount drive: " <<
-                   "make sure LogIn has been run and drive is not already mounted.";
+    LOG(kError) << "In unsuitable state to mount drive: "
+                << "make sure LogIn has been run and drive is not already mounted.";
     return kWrongLoggedInState;
   }
 
@@ -839,8 +845,8 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
     }
 
     if (reconstructed != profile_picture_contents) {
-      LOG(kError) << "Failed to reconstruct profile picture file: " << profile_picture_path <<
-                     " with result " << result;
+      LOG(kError) << "Failed to reconstruct profile picture file: " << profile_picture_path
+                  << " with result " << result;
       return kChangePictureReconstructionError;
     }
 
@@ -857,7 +863,7 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
   }
 
   {
-    std::unique_lock<std::mutex> loch(*social_info.first);
+    std::lock_guard<std::mutex> loch(*social_info.first);
     social_info.second->at(kPicture) = message.content[0];
   }
   session_.set_changed(true);
@@ -885,7 +891,7 @@ std::string LifeStuffImpl::GetOwnProfilePicture(const std::string& my_public_id)
   }
 
   {
-    std::unique_lock<std::mutex> loch(*social_info.first);
+    std::lock_guard<std::mutex> loch(*social_info.first);
     if (social_info.second->at(kPicture) == kBlankProfilePicture) {
       LOG(kInfo) << "Blank picture in session.";
       return "";
@@ -1060,25 +1066,11 @@ int LifeStuffImpl::AcceptSentFile(const std::string& identifier,
     return kAcceptFilePathError;
   }
 
-  std::string serialised_identifier, saved_file_name, serialised_data_map;
-  result = user_storage_->ReadHiddenFile(mount_path() /
-                                         std::string(identifier + kHiddenFileExtension),
-                                         &serialised_identifier);
-  if (result != kSuccess || serialised_identifier.empty()) {
-    LOG(kError) << "No such identifier found: " << result;
-    return result == kSuccess? kAcceptFileSerialisedIdentifierEmpty : result;
-  }
 
-  GetFilenameData(serialised_identifier, &saved_file_name, &serialised_data_map);
-  if (saved_file_name.empty() || serialised_data_map.empty()) {
-    LOG(kError) << "Failed to get filename or datamap.";
-    return kAcceptFileGetFileNameDataFailure;
-  }
-
-  drive::DataMapPtr data_map_ptr(ParseSerialisedDataMap(serialised_data_map));
-  if (!data_map_ptr) {
-    LOG(kError) << "Corrupted DM in file";
-    return kAcceptFileCorruptDatamap;
+  std::string saved_file_name, serialised_data_map;
+  if (!user_storage_->GetSavedDataMap(identifier, &serialised_data_map, &saved_file_name)) {
+    LOG(kError) << "Failed to get saved details for identifier " << Base64Substr(identifier);
+    return -1;
   }
 
   if (absolute_path.empty()) {
@@ -1220,7 +1212,7 @@ void LifeStuffImpl::ConnectInternalElements() {
 
 int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
   int result(kSuccess);
-  result = node_->Stop();
+  result = client_node_->Stop();
   if (result != kSuccess) {
       LOG(kError) << "Failed to stop client container: " << result;
     return result;
@@ -1228,17 +1220,17 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
   asymm::Keys maid(session_.passport().SignaturePacketDetails(passport::kMaid, true));
   assert(!maid.identity.empty());
 
-  node_->set_keys(maid);
-  node_->set_account_name(maid.identity);
-  result = node_->Start(buffered_path_ / "buffered_chunk_store");
+  client_node_->set_keys(maid);
+  client_node_->set_account_name(maid.identity);
+  result = client_node_->Start(buffered_path_ / "buffered_chunk_store");
   if (result != kSuccess) {
       LOG(kError) << "Failed to start client container: " << result;
     return result;
   }
 
-  remote_chunk_store_ = std::make_shared<pcs::RemoteChunkStore>(node_->chunk_store(),
-                                                                node_->chunk_manager(),
-                                                                node_->chunk_action_authority());
+  remote_chunk_store_ = std::make_shared<pcs::RemoteChunkStore>(client_node_->chunk_store(),
+                                                                client_node_->chunk_manager(),
+                                                                client_node_->chunk_action_authority());
 
   routings_handler_->set_remote_chunk_store(*remote_chunk_store_);
   user_credentials_->set_remote_chunk_store(*remote_chunk_store_);
@@ -1392,6 +1384,12 @@ bool LifeStuffImpl::HandleLogoutProceedingsMessage(const std::string& message,
   if (proceedings.ParseFromString(message)) {
     if (proceedings.has_session_requestor()) {
       std::string session_marker(proceedings.session_requestor());
+      // Check message is not one we sent out
+      if (user_credentials_->IsOwnSessionTerminationMessage(session_marker)) {
+        LOG(kInfo) << "It's our own message the has been received. Ignoring...";
+        return false;
+      }
+
       proceedings.set_session_acknowledger(session_marker);
       proceedings.clear_session_requestor();
 
