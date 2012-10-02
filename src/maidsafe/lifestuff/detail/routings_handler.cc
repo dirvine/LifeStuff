@@ -58,6 +58,12 @@ RoutingsHandler::RoutingDetails::RoutingDetails(const asymm::Keys& owner_credent
       condition_variable(std::make_shared<std::condition_variable>()),
       search_id(search_id) {}
 
+RoutingsHandler::RoutingDetails::~RoutingDetails() {
+//   routing_object.reset();
+  if (routing_object.use_count() > 0)
+    routing_object->DisconnectFunctors();
+}
+
 RoutingsHandler::RoutingsHandler(priv::chunk_store::RemoteChunkStore& chunk_store,
                                  Session& session,
                                  const ValidatedMessageFunction& validated_message_signal)

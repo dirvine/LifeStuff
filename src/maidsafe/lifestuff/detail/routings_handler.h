@@ -65,6 +65,7 @@ class RoutingsHandler {
   struct RoutingDetails {
     RoutingDetails();
     RoutingDetails(const asymm::Keys& owner_credentials, const std::string& search_id);
+    ~RoutingDetails();
     std::shared_ptr<routing::Routing> routing_object;
     int newtwork_health;
     asymm::Keys keys;
