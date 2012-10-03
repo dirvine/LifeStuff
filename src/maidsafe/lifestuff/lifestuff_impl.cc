@@ -1382,6 +1382,11 @@ bool LifeStuffImpl::HandleLogoutProceedingsMessage(const std::string& message,
                  });
       return true;
     } else if (proceedings.has_session_terminated()) {
+      // Check message is intended for this instance
+      if (!user_credentials_->IsOwnSessionTerminationMessage(proceedings.session_terminated())) {
+        LOG(kInfo) << "Recieved irrelevant session termination message. Ignoring.";
+        return false;
+      }
       user_credentials_->LogoutCompletedArrived(proceedings.session_terminated());
       return false;
     }
