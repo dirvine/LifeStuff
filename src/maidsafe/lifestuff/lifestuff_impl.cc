@@ -69,12 +69,14 @@ LifeStuffImpl::LifeStuffImpl()
       slots_(),
       state_(kZeroth),
       logged_in_state_(kBaseState),
-      immediate_quit_required_signal_() {}
+      immediate_quit_required_signal_(),
+      vault_cheat_(false) {}
 
 LifeStuffImpl::~LifeStuffImpl() {}
 
 int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_available_function,
-                              const fs::path& base_directory) {
+                              const fs::path& base_directory,
+                              bool vault_cheat) {
   if (state_ != kZeroth) {
     LOG(kError) << "Make sure that object is in the original Zeroth state. Asimov rules.";
     return kWrongState;
@@ -102,27 +104,30 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
     network_simulation_path = base_path / "simulated_network";
   }
 
-  int counter(0);
   std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
-  while (counter++ < kRetryLimit) {
-    Sleep(bptime::milliseconds(100 + RandomUint32() % 1000));
-    client_controller_.reset(
-        new priv::process_management::ClientController(software_update_available_function));
-    if (client_controller_->BootstrapEndpoints(bootstrap_endpoints) && !bootstrap_endpoints.empty())
-      counter = kRetryLimit;
-    else
-      LOG(kWarning) << "Failure to initialise client controller. Try #" << counter;
+  if (!vault_cheat) {
+    int counter(0);
+    while (counter++ < kRetryLimit) {
+      Sleep(bptime::milliseconds(100 + RandomUint32() % 1000));
+      client_controller_.reset(
+          new priv::process_management::ClientController(software_update_available_function));
+      if (client_controller_->BootstrapEndpoints(bootstrap_endpoints) &&
+          !bootstrap_endpoints.empty())
+        counter = kRetryLimit;
+      else
+        LOG(kWarning) << "Failure to initialise client controller. Try #" << counter;
+    }
+    if (bootstrap_endpoints.empty()) {
+      LOG(kWarning) << "Failure to initialise client controller. No bootstrap contacts.";
+      return kInitialiseBootstrapsFailure;
+    }
   }
 
-  if (bootstrap_endpoints.empty()) {
-    LOG(kWarning) << "Failure to initialise client controller. No bootstrap contacts.";
-//    return kInitialiseBootstrapsFailure;
-  }
 
   remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path,
                                         bootstrap_endpoints,
                                         client_node_,
-                                        [&] (const int&) {});
+                                        [&] (const int& health) { NetworkHealthSlot(health); });
   if (!remote_chunk_store_) {
     LOG(kError) << "Could not initialise chunk store.";
     return kInitialiseChunkStoreFailure;
@@ -142,6 +147,7 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
                                                         *routings_handler_);
 
   state_ = kInitialised;
+  vault_cheat_ = vault_cheat;
 
   return kSuccess;
 }
@@ -271,8 +277,7 @@ int LifeStuffImpl::Finalise() {
 int LifeStuffImpl::CreateUser(const std::string& keyword,
                               const std::string& pin,
                               const std::string& password,
-                              const fs::path& chunk_store,
-                              bool vault_cheat) {
+                              const fs::path& chunk_store) {
   if (state_ != kConnected) {
     LOG(kError) << "Make sure that object is initialised and connected";
     return kWrongState;
@@ -300,7 +305,7 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
     }
   }
 
-  result = CreateVaultInLocalMachine(chunk_store, vault_cheat);
+  result = CreateVaultInLocalMachine(chunk_store);
   if (result != kSuccess)  {
     LOG(kError) << "Failed to create vault. No LifeStuff for you! (Result: " << result << ")";
     return result;
@@ -1285,14 +1290,14 @@ void LifeStuffImpl::NetworkHealthSlot(const int& index) {
 }
 
 
-int LifeStuffImpl::CreateVaultInLocalMachine(const fs::path& chunk_store, bool vault_cheat) {
+int LifeStuffImpl::CreateVaultInLocalMachine(const fs::path& chunk_store) {
   std::string account_name(session_.passport().SignaturePacketDetails(passport::kMaid,
                                                                       true).identity);
   asymm::Keys pmid_keys(session_.passport().SignaturePacketDetails(passport::kPmid, true));
   assert(!account_name.empty());
   assert(!pmid_keys.identity.empty());
 
-  if (vault_cheat) {
+  if (vault_cheat_) {
     vault_node_.set_do_backup_state(false);
     vault_node_.set_do_synchronise(true);
     vault_node_.set_do_check_integrity(false);

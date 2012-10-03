@@ -206,9 +206,8 @@ void ImmediateQuitRequiredSlot(volatile bool* done) {
 int DoFullCreateUser(LifeStuff& test_elements,
                      const std::string& keyword,
                      const std::string& pin,
-                     const std::string& password,
-                     bool vault_cheat) {
-  int result = test_elements.CreateUser(keyword, pin, password, fs::path(), vault_cheat);
+                     const std::string& password) {
+  int result = test_elements.CreateUser(keyword, pin, password, fs::path());
   if (result != kSuccess) {
     LOG(kError) << "Failed to create user: " << result;
     return result;
@@ -376,7 +375,7 @@ int InitialiseAndConnect(LifeStuff& test_elements,
 
   int result(0);
   // Initialise and connect
-  result += test_elements.Initialise([] (std::string) {}, test_dir);
+  result += test_elements.Initialise([] (std::string) {}, test_dir, true);
   result += test_elements.ConnectToSignals(
                 [&] (const std::string& own_public_id,
                      const std::string& contact_public_id,
@@ -476,7 +475,7 @@ int CreateAccountWithPublicId(LifeStuff& test_elements,
     LOG(kError) << "Failure initialising and connecting";
     return result;
   }
-  result += DoFullCreateUser(test_elements, keyword, pin, password, true);
+  result += DoFullCreateUser(test_elements, keyword, pin, password);
   result += test_elements.CreatePublicId(public_id);
   result += DoFullLogOut(test_elements);
   if (result != kSuccess) {
@@ -589,7 +588,7 @@ void RunCreateUser(LifeStuff& test_elements,
                    const std::string& password,
                    const std::pair<int, int> sleeps) {
   RandomSleep(sleeps);
-  result = DoFullCreateUser(test_elements, keyword, pin, password, true);
+  result = DoFullCreateUser(test_elements, keyword, pin, password);
 }
 
 void RunChangeProfilePicture(LifeStuff& test_elements_,
@@ -613,7 +612,7 @@ void RunLogIn(LifeStuff& test_elements,
 
 void OneUserApiTest::SetUp() {
   ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12));
-  EXPECT_EQ(kSuccess, test_elements_.Initialise([] (std::string) {}, *test_dir_));
+  EXPECT_EQ(kSuccess, test_elements_.Initialise([] (std::string) {}, *test_dir_, true));
   EXPECT_EQ(kSuccess,
             test_elements_.ConnectToSignals(ChatFunction(),
                                             FileTransferFunction(),
@@ -634,7 +633,7 @@ void OneUserApiTest::SetUp() {
                                             LifestuffCardUpdateFunction(),
                                             NetworkHealthFunction(),
                                             ImmediateQuitRequiredFunction()));
-  EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements_, keyword_, pin_, password_, true));
+  EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements_, keyword_, pin_, password_));
 }
 
 void OneUserApiTest::TearDown() {
@@ -645,8 +644,8 @@ void OneUserApiTest::TearDown() {
 
 void TwoInstancesApiTest::SetUp() {
   ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12));
-  EXPECT_EQ(kSuccess, test_elements_.Initialise([] (std::string) {}, *test_dir_));
-  EXPECT_EQ(kSuccess, test_elements_2_.Initialise([] (std::string) {}, *test_dir_));
+  EXPECT_EQ(kSuccess, test_elements_.Initialise([] (std::string) {}, *test_dir_, true));
+  EXPECT_EQ(kSuccess, test_elements_2_.Initialise([] (std::string) {}, *test_dir_, true));
   EXPECT_EQ(kSuccess,
             test_elements_.ConnectToSignals(ChatFunction(),
                                             FileTransferFunction(),

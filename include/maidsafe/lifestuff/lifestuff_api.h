@@ -51,7 +51,8 @@ class LifeStuff {
 
   /// State operations
   int Initialise(const UpdateAvailableFunction& software_update_available_function,
-                 const fs::path& base_directory = fs::path());
+                 const fs::path& base_directory,
+                 bool vault_cheat);
   int ConnectToSignals(const ChatFunction& chat_slot,
                        const FileTransferFunction& file_slot,
                        const NewContactFunction& new_contact_slot,
@@ -69,8 +70,7 @@ class LifeStuff {
   int CreateUser(const std::string& keyword,
                  const std::string& pin,
                  const std::string& password,
-                 const fs::path& chunk_store = fs::path(),
-                 bool vault_cheat = false);
+                 const fs::path& chunk_store = fs::path());
   int CreatePublicId(const std::string& public_id);
   int LogIn(const std::string& keyword, const std::string& pin, const std::string& password);
   int LogOut();
