@@ -112,6 +112,7 @@ class CredentialsTest : public testing::Test {
 
   void TearDown() {
     user_credentials_.reset();
+    routings_handler_.reset();
     remote_chunk_store_.reset();
     {
       int result(client_node_->Stop());

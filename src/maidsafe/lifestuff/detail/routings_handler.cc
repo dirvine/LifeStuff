@@ -68,6 +68,9 @@ RoutingsHandler::RoutingsHandler(priv::chunk_store::RemoteChunkStore& chunk_stor
       validated_message_signal_(validated_message_signal) {}
 
 RoutingsHandler::~RoutingsHandler() {
+  std::lock_guard<std::mutex> loch(routing_objects_mutex_);
+  for (auto& element : routing_objects_)
+    element.second.routing_object->DisconnectFunctors();
   routing_objects_.clear();
   LOG(kInfo) << "Cleared objects\n\n\n\n";
 }

@@ -94,7 +94,8 @@ class LifeStuffImpl {
 
   /// State operations
   int Initialise(const UpdateAvailableFunction& software_update_available_function,
-                 const fs::path& base_directory);
+                 const fs::path& base_directory,
+                 bool vault_cheat);
   int ConnectToSignals(const bool& apply_changes,
                        const ChatFunction& chat_slot,
                        const FileTransferFunction& file_slot,
@@ -112,8 +113,7 @@ class LifeStuffImpl {
   int CreateUser(const std::string& username,
                  const std::string& pin,
                  const std::string& password,
-                 const fs::path& chunk_store,
-                 bool vault_cheat = false);
+                 const fs::path& chunk_store);
   int CreatePublicId(const std::string& public_id);
   int LogIn(const std::string& username, const std::string& pin, const std::string& password);
   int LogOut();
@@ -201,13 +201,14 @@ class LifeStuffImpl {
   LifeStuffState state_;
   uint8_t logged_in_state_;
   bs2::signal<void()> immediate_quit_required_signal_;
+  bool vault_cheat_;
 
   void ConnectInternalElements();
   int SetValidPmidAndInitialisePublicComponents();
   int CheckStateAndFullAccess() const;
   int PreContactChecksFullAccess(const std::string& my_public_id);
   void NetworkHealthSlot(const int& index);
-  int CreateVaultInLocalMachine(const fs::path& chunk_store, bool vault_cheat);
+  int CreateVaultInLocalMachine(const fs::path& chunk_store);
   bool HandleRoutingsHandlerMessage(const std::string& message, std::string& response);
   bool HandleLogoutProceedingsMessage(const std::string& message, std::string& response);
 };

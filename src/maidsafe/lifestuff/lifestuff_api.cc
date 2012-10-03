@@ -38,8 +38,11 @@ LifeStuff::LifeStuff() : lifestuff_impl_(new LifeStuffImpl) {}
 LifeStuff::~LifeStuff() {}
 
 int LifeStuff::Initialise(const UpdateAvailableFunction& software_update_available_function,
-                          const fs::path& base_directory) {
-  return lifestuff_impl_->Initialise(software_update_available_function, base_directory);
+                          const fs::path& base_directory,
+                          bool vault_cheat) {
+  return lifestuff_impl_->Initialise(software_update_available_function,
+                                     base_directory,
+                                     vault_cheat);
 }
 
 int LifeStuff::ConnectToSignals(
@@ -74,9 +77,8 @@ int LifeStuff::Finalise() {
 int LifeStuff::CreateUser(const std::string& keyword,
                           const std::string& pin,
                           const std::string& password,
-                          const fs::path& chunk_store,
-                          bool vault_cheat) {
-  return lifestuff_impl_->CreateUser(keyword, pin, password, chunk_store, vault_cheat);
+                          const fs::path& chunk_store) {
+  return lifestuff_impl_->CreateUser(keyword, pin, password, chunk_store);
 }
 
 int LifeStuff::CreatePublicId(const std::string& public_id) {

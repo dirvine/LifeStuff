@@ -247,8 +247,7 @@ void ImmediateQuitRequiredSlot(volatile bool* done);
 int DoFullCreateUser(LifeStuff& test_elements,
                      const std::string& keyword,
                      const std::string& pin,
-                     const std::string& password,
-                     bool vault_cheat = false);
+                     const std::string& password);
 
 int DoFullLogIn(LifeStuff& test_elements,
                 const std::string& keyword,
