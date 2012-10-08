@@ -59,8 +59,6 @@ UserStorage::UserStorage(std::shared_ptr<pcs::RemoteChunkStore> chunk_store)
 
 void UserStorage::MountDrive(const fs::path& mount_dir_path,
                              Session* session,
-                             bool creation,
-                             bool read_only,
                              const std::string& drive_logo) {
   if (mount_status_) {
     LOG(kInfo) << "Already mounted.";
@@ -72,10 +70,10 @@ void UserStorage::MountDrive(const fs::path& mount_dir_path,
   session_ = session;
   asymm::Keys key_ring(session->passport().SignaturePacketDetails(passport::kMaid, true));
   assert(!key_ring.identity.empty());
-  drive_in_user_space_.reset(new MaidDriveInUserSpace(*chunk_store_, key_ring));
+  drive_in_user_space_ = std::make_shared<MaidDriveInUserSpace>(*chunk_store_, key_ring);
 
   int result(kGeneralError);
-  if (creation) {
+  if (!session->has_drive_data()) {
     session->set_unique_user_id(crypto::Hash<crypto::SHA512>(session->session_name()));
     result = drive_in_user_space_->Init(session->unique_user_id(), "");
     session->set_root_parent_id(drive_in_user_space_->root_parent_id());
@@ -105,7 +103,7 @@ void UserStorage::MountDrive(const fs::path& mount_dir_path,
                                        drive_logo,
                                        session->max_space(),
                                        session->used_space(),
-                                       read_only);
+                                       false);
   if (result != kSuccess) {
     LOG(kError) << "Failed to Mount Drive: " << result;
     return;
@@ -113,12 +111,12 @@ void UserStorage::MountDrive(const fs::path& mount_dir_path,
   mount_status_ = true;
 #else
   mount_dir_ = mount_dir_path;
-  mount_thread_ = std::move(std::thread([this, drive_logo, read_only] {
+  mount_thread_ = std::move(std::thread([this, drive_logo] {
                                           drive_in_user_space_->Mount(mount_dir_,
                                                                       drive_logo,
                                                                       session_->max_space(),
                                                                       session_->used_space(),
-                                                                      read_only);
+                                                                      false);
                                         }));
   mount_status_ = drive_in_user_space_->WaitUntilMounted();
 #endif

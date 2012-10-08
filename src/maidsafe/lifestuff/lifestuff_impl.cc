@@ -328,7 +328,7 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
   }
 
   state_ = kLoggedIn;
-  logged_in_state_ = kCreating | kCredentialsLoggedIn;
+  logged_in_state_ = kCredentialsLoggedIn;
 
   return kSuccess;
 }
@@ -460,47 +460,8 @@ int LifeStuffImpl::LogOut(bool clear_maid_routing) {
   return kSuccess;
 }
 
-int LifeStuffImpl::CreateAndMountDrive() {
-  if ((kCreating & logged_in_state_) != kCreating ||
-      (kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
-      (kDriveMounted & logged_in_state_) == kDriveMounted) {
-    LOG(kError) << "In unsuitable state to create and mount drive: " <<
-                   "make sure a CreateUser has just been run and drive is not already mounted.";
-    return kWrongLoggedInState;
-  }
-
-  boost::system::error_code error_code;
-  fs::path mount_dir(GetHomeDir() / kAppHomeDirectory / session_.session_name());
-  if (!fs::exists(mount_dir, error_code)) {
-    fs::create_directories(mount_dir, error_code);
-    if (error_code) {
-      LOG(kError) << "Failed to create app directories - " << error_code.value()
-                  << ": " << error_code.message();
-      return kCreateDirectoryError;
-    }
-  }
-
-  user_storage_->MountDrive(mount_dir, &session_, true, false);
-  if (!user_storage_->mount_status()) {
-    LOG(kError) << "Failed to mount";
-    return kMountDriveOnCreationError;
-  }
-
-  fs::path mount_path(user_storage_->mount_dir());
-  fs::create_directories(mount_path / kMyStuff / kDownloadStuff, error_code);
-  if (error_code) {
-    LOG(kError) << "Failed creating My Stuff: " << error_code.message();
-    user_storage_->UnMountDrive();
-    return kCreateMyStuffError;
-  }
-
-  logged_in_state_ = logged_in_state_ ^ kDriveMounted;
-  return kSuccess;
-}
-
 int LifeStuffImpl::MountDrive() {
-  if ((kCreating & logged_in_state_) == kCreating ||
-      (kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
+  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
       (kDriveMounted & logged_in_state_) == kDriveMounted) {
     LOG(kError) << "In unsuitable state to mount drive: "
                 << "make sure LogIn has been run and drive is not already mounted.";
@@ -525,7 +486,7 @@ int LifeStuffImpl::MountDrive() {
     }
   }
 
-  user_storage_->MountDrive(mount_dir, &session_, false, false);
+  user_storage_->MountDrive(mount_dir, &session_);
   if (!user_storage_->mount_status()) {
     LOG(kError) << "Failed to mount";
     return kMountDriveError;
@@ -1403,10 +1364,7 @@ bool LifeStuffImpl::HandleLogoutProceedingsMessage(const std::string& message,
                  });
       return true;
     } else if (proceedings.has_session_terminated()) {
-<<<<<<< Updated upstream
       // Check message is intended for this instance
-=======
->>>>>>> Stashed changes
       if (!user_credentials_->IsOwnSessionTerminationMessage(proceedings.session_terminated())) {
         LOG(kInfo) << "Recieved irrelevant session termination message. Ignoring.";
         return false;

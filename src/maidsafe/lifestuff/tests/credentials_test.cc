@@ -39,6 +39,10 @@
 #include "maidsafe/pd/client/node.h"
 #include "maidsafe/pd/client/utils.h"
 #include "maidsafe/pd/vault/node.h"
+#include "maidsafe/pd/common/rpc_handler.h"
+#include "maidsafe/pd/common/timed_event_handler.h"
+#include "maidsafe/pd/common/routing_message_handler.h"
+#include "maidsafe/pd/common/key_manager.h"
 
 #include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/detail/routings_handler.h"
@@ -91,7 +95,7 @@ class CredentialsTest : public testing::Test {
     vault_node2_.reset(new pd::vault::Node);
     asio_service_.Start();
     asio_service2_.Start();
-    ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12));
+//    ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12));
     std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
     remote_chunk_store_ = BuildChunkStore(*test_dir_,
                                           bootstrap_endpoints,
@@ -127,9 +131,52 @@ class CredentialsTest : public testing::Test {
       vault_node_.reset();
     }
 
-    EXPECT_TRUE(network_.StopLocalNetwork());
+//    EXPECT_TRUE(network_.StopLocalNetwork());
     asio_service_.Stop();
     asio_service2_.Stop();
+  }
+
+  int CreateAccountCheat(const asymm::Keys& /*pmid*/, const std::string& /*account_name*/) {
+//    std::shared_ptr<pd::Node> temp_account_node(SetupNode(*test_dir_ / "temp_pmid_node",
+//                                                          std::vector<std::pair<std::string, uint16_t> >(),  // NOLINT (Dan)
+//                                                          [] (const int&) {}));
+//    temp_account_node->set_keys(pmid);
+//    temp_account_node->set_account_name(account_name);
+//    int result(temp_account_node->Start(*test_dir_ / "temp_pmid_node"));
+//    if (result != kSuccess) {
+//      LOG(kError) << "Failed to start pmid node.";
+//      return result;
+//    }
+
+//    int64_t capacity(123123123123);
+//    bool done(false), success(false);
+//    boost::mutex mutex;
+//    boost::condition_variable cond_var;
+//    temp_account_node->rpc_handler()->Amend(account_name,
+//                                            pd::RpcAccountAmendmentType::kSetOffered,
+//                                            capacity,
+//                                            NodeId(pmid.identity),
+//                                            "",
+//                                            "",
+//                                            NodeId(),
+//                                            [&](bool result) {
+//                                              boost::mutex::scoped_lock lock(mutex);
+//                                              done = true;
+//                                              success = result;
+//                                              cond_var.notify_one();
+//                                            });
+//    boost::mutex::scoped_lock lock(mutex);
+//    if (cond_var.timed_wait(lock, bptime::seconds(30), [&] () { return done; }) && success) {
+//      LOG(kInfo) << "UpdateAccount - " << HexSubstr(pmid.identity)
+//                 << " - Set space offered to " << BytesToBinarySiUnits(capacity) << " in account "
+//                 << HexSubstr(account_name);
+      return kSuccess;
+//    } else {
+//      LOG(kError) << "UpdateAccount - " << HexSubstr(pmid.identity)
+//                  << " - Could not set space offered to " << BytesToBinarySiUnits(capacity)
+//                  << " in account " << HexSubstr(account_name);
+//      return -1;
+//    }
   }
 
   void SetUpSecondUserCredentials() {
@@ -144,8 +191,7 @@ class CredentialsTest : public testing::Test {
                                                            *routings_handler2_);
   }
 
-  int CreateVaultForClient(std::shared_ptr<pd::vault::Node>& vault_node,
-                           Session& session) {
+  int CreateVaultForClient(std::shared_ptr<pd::vault::Node>& vault_node, Session& session) {
     vault_node->set_do_backup_state(false);
     vault_node->set_do_synchronise(true);
     vault_node->set_do_check_integrity(false);
@@ -227,8 +273,6 @@ class CredentialsTest : public testing::Test {
                     std::shared_ptr<pd::vault::Node>& vault_node) {
     LOG(kInfo) << "\n\nStarting DoCreateUser\n\n";
     ASSERT_EQ(kSuccess, user_credentials->CreateUser(keyword, pin, password));
-    session.set_unique_user_id(RandomString(64));
-    session.set_root_parent_id(RandomString(64));
     LOG(kSuccess) << "User credentials created.\n===================\n";
 
     ASSERT_EQ(kSuccess, CreateVaultForClient(vault_node, session));
@@ -264,9 +308,7 @@ class CredentialsTest : public testing::Test {
     Sleep(bptime::seconds(15));
     LOG(kSuccess) << "Constructed anonymous node.\n===================\n";
 
-    EXPECT_TRUE(session.keyword().empty());
-    EXPECT_TRUE(session.pin().empty());
-    EXPECT_TRUE(session.password().empty());
+    session.Reset();
     LOG(kInfo) << "Logged out.\n===================\n\n\n";
   }
 
@@ -290,9 +332,7 @@ class CredentialsTest : public testing::Test {
     LOG(kSuccess) << "Constructed client node.\n===================\n";
     Sleep(bptime::seconds(15));
 
-    ASSERT_EQ(keyword, session.keyword());
-    ASSERT_EQ(pin, session.pin());
-    ASSERT_EQ(password, session.password());
+    session.Reset();
     LOG(kInfo) << "Logged in.\n===================\n\n\n";
   }
 
@@ -306,12 +346,8 @@ class CredentialsTest : public testing::Test {
 
     ASSERT_EQ(kSuccess, client_node->Stop());
     ASSERT_EQ(kSuccess, vault_node->Stop());
+    session.Reset();
     LOG(kInfo) << "Stopped nodes.\n===================\n";
-
-    ASSERT_TRUE(session.keyword().empty());
-    ASSERT_TRUE(session.pin().empty());
-    ASSERT_TRUE(session.password().empty());
-    LOG(kInfo) << "Logged out.\n===================\n\n\n";
   }
 
   std::shared_ptr<fs::path> test_dir_;

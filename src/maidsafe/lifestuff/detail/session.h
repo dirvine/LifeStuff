@@ -58,12 +58,13 @@ struct UserDetails {
         used_space(0),
         serialised_data_atlas(),
         changed(false),
+        has_drive_data(false),
         session_access_level(kNoAccess) {}
   DefConLevels defconlevel;
   std::string keyword, pin, password, session_name, unique_user_id, root_parent_id;
   int64_t max_space, used_space;
   std::string serialised_data_atlas;
-  bool changed;
+  bool changed, has_drive_data;
   SessionAccessLevel session_access_level;
 };
 
@@ -121,6 +122,7 @@ class Session {
   int64_t used_space() const;
   std::string serialised_data_atlas() const;
   bool changed() const;
+  bool has_drive_data() const;
   SessionAccessLevel session_access_level() const;
 
   void set_def_con_level(DefConLevels defconlevel);
@@ -154,6 +156,7 @@ class Session {
   std::map<std::string, PublicIdDetails> public_id_details_;
   std::mutex public_id_details_mutex_;
 
+  void set_has_drive_data(bool has_drive_data);
   bool CreateTestPackets(bool with_public_ids);
 };
 

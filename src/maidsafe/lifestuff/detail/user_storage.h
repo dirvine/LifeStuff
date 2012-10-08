@@ -72,8 +72,6 @@ class UserStorage {
 
   virtual void MountDrive(const fs::path& mount_dir_path,
                           Session* session,
-                          bool creation,
-                          bool read_only,
                           const std::string& drive_logo = "LifeStuff Drive");
   virtual void UnMountDrive();
   virtual fs::path mount_dir();

@@ -95,10 +95,6 @@ int LifeStuff::LogOut() {
   return lifestuff_impl_->LogOut();
 }
 
-int LifeStuff::CreateAndMountDrive() {
-  return lifestuff_impl_->CreateAndMountDrive();
-}
-
 int LifeStuff::MountDrive() {
   return lifestuff_impl_->MountDrive();
 }

@@ -52,13 +52,11 @@ enum ContactStatus {
   kBlocked = 0x10
 };
 
-
 enum LoggedInState {
   kBaseState = 0x00,
-  kCreating = 0x01,
-  kCredentialsLoggedIn = 0x02,
-  kDriveMounted = 0x04,
-  kMessagesAndIntrosStarted = 0x08
+  kCredentialsLoggedIn = 0x01,
+  kDriveMounted = 0x02,
+  kMessagesAndIntrosStarted = 0x04
 };
 
 const size_t kMaxChatMessageSize(1 * 1024 * 1024);

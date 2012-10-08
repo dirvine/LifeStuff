@@ -99,6 +99,7 @@ void Session::Reset() {
     user_details_.used_space = 0;
     user_details_.serialised_data_atlas.clear();
     user_details_.changed = false;
+    user_details_.has_drive_data = false;
     user_details_.session_access_level = kNoAccess;
   }
 
@@ -243,6 +244,11 @@ bool Session::changed() const {
   return user_details_.changed;
 }
 
+bool Session::has_drive_data() const {
+  std::unique_lock<std::mutex> arran_lochan_am_hill(user_details_mutex_);
+  return user_details_.has_drive_data;
+}
+
 SessionAccessLevel Session::session_access_level() const {
   std::unique_lock<std::mutex> arran_lochan_am_hill(user_details_mutex_);
   return user_details_.session_access_level;
@@ -329,6 +335,11 @@ void Session::set_changed(bool state) {
   user_details_.changed = state;
 }
 
+void Session::set_has_drive_data(bool has_drive_data) {
+  std::unique_lock<std::mutex> arran_lochan_am_hill(user_details_mutex_);
+  user_details_.has_drive_data = has_drive_data;
+}
+
 void Session::set_session_access_level(SessionAccessLevel session_access_level) {
   std::unique_lock<std::mutex> arran_lochan_am_hill(user_details_mutex_);
   user_details_.session_access_level = session_access_level;
@@ -345,19 +356,22 @@ int Session::ParseDataAtlas(const std::string& serialised_data_atlas) {
     return kParseDataAtlasTmidDoesNotParse;
   }
 
-//  if (data_atlas.drive_data().unique_user_id().empty()) {
-//    LOG(kError) << "Unique user ID is empty.";
-//    return kTryAgainLater;
-//  }
-//  if (data_atlas.drive_data().root_parent_id().empty()) {
-//    LOG(kError) << "Root parent id is empty.";
-//    return kTryAgainLater;
-//  }
+  if (data_atlas.has_drive_data()) {
+    set_has_drive_data(true);
+    if (data_atlas.drive_data().unique_user_id().empty()) {
+      LOG(kError) << "Unique user ID is empty.";
+      return kTryAgainLater;
+    }
+    if (data_atlas.drive_data().root_parent_id().empty()) {
+      LOG(kError) << "Root parent id is empty.";
+      return kTryAgainLater;
+    }
 
-//  set_unique_user_id(data_atlas.drive_data().unique_user_id());
-//  set_root_parent_id(data_atlas.drive_data().root_parent_id());
-//  set_max_space(data_atlas.drive_data().max_space());
-//  set_used_space(data_atlas.drive_data().used_space());
+    set_unique_user_id(data_atlas.drive_data().unique_user_id());
+    set_root_parent_id(data_atlas.drive_data().root_parent_id());
+    set_max_space(data_atlas.drive_data().max_space());
+    set_used_space(data_atlas.drive_data().used_space());
+  }
 
   int result(passport_.Parse(data_atlas.passport_data().serialised_keyring()));
   if (result != kSuccess) {
@@ -407,11 +421,14 @@ int Session::ParseDataAtlas(const std::string& serialised_data_atlas) {
 int Session::SerialiseDataAtlas(std::string* serialised_data_atlas) {
   BOOST_ASSERT(serialised_data_atlas);
   DataAtlas data_atlas;
-//  DriveData* drive_data(data_atlas.mutable_drive_data());
-//  drive_data->set_unique_user_id(unique_user_id());
-//  drive_data->set_root_parent_id(root_parent_id());
-//  drive_data->set_max_space(max_space());
-//  drive_data->set_used_space(used_space());
+
+  if (has_drive_data()) {
+    DriveData* drive_data(data_atlas.mutable_drive_data());
+    drive_data->set_unique_user_id(unique_user_id());
+    drive_data->set_root_parent_id(root_parent_id());
+    drive_data->set_max_space(max_space());
+    drive_data->set_used_space(used_space());
+  }
 
   data_atlas.set_timestamp(boost::lexical_cast<std::string>(
       GetDurationSinceEpoch().total_microseconds()));
@@ -490,7 +507,6 @@ bool Session::CreateTestPackets(bool with_public_ids) {
 
   return true;
 }
-
 
 std::vector<std::string> Session::PublicIdentities() const {
   std::vector<std::string> public_identities;

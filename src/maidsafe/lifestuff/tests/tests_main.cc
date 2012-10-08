@@ -32,10 +32,10 @@ int main(int argc, char** argv) {
   filter["encrypt"] = maidsafe::log::kFatal;
   filter["private"] = maidsafe::log::kFatal;
   filter["drive"] = maidsafe::log::kFatal;
-  filter["passport"] = maidsafe::log::kFatal;
+  filter["passport"] = maidsafe::log::kError;
   filter["rudp"] = maidsafe::log::kFatal;
   filter["routing"] = maidsafe::log::kFatal;
-  filter["pd"] = maidsafe::log::kFatal;
+  filter["pd"] = maidsafe::log::kError;
   filter["lifestuff"] = maidsafe::log::kInfo;
   return ExecuteMain(argc, argv, filter, false, maidsafe::log::ColourMode::kPartialLine);
 }

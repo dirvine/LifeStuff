@@ -74,7 +74,6 @@ class LifeStuff {
   int CreatePublicId(const std::string& public_id);
   int LogIn(const std::string& keyword, const std::string& pin, const std::string& password);
   int LogOut();
-  int CreateAndMountDrive();
   int MountDrive();
   int UnMountDrive();
   int StartMessagesAndIntros();
