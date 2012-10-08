@@ -52,6 +52,7 @@ class RoutingsHandler {
                         const std::vector<std::pair<std::string, uint16_t> >& bootstrap_endpoints,  // NOLINT (Dan)
                         const std::string& search_id,
                         const routing::RequestPublicKeyFunctor& public_key_functor);
+  bool DeleteRoutingObject(const std::string& identity);
 
   bool Send(const std::string& source_id,
             const std::string& destination_id,
@@ -78,6 +79,7 @@ class RoutingsHandler {
   std::mutex routing_objects_mutex_;
   Session& session_;
   ValidatedMessageFunction validated_message_signal_;
+  std::mutex cs_mutex_;
 
 
   RoutingsHandler(const RoutingsHandler&);

@@ -60,9 +60,9 @@ class RoutingsHandlerTest : public routing::test::GenericNetwork {
 
   virtual void TearDown() {
     LOG(kInfo) << "STARTING TEARDOWN\n\n\n\n";
-    asio_service_.Stop();
     routing::test::GenericNetwork::TearDown();
-    Sleep(boost::posix_time::seconds(10));
+    asio_service_.Stop();
+//    Sleep(boost::posix_time::seconds(10));
   }
 
   virtual void SetNodeValidationFunctor(std::shared_ptr<routing::test::GenericNode> node) {

@@ -435,8 +435,7 @@ TEST_F(OneUserApiTest, FUNC_ChangeCredentialsAndLogOut) {
 
 TEST_F(TwoInstancesApiTest, FUNC_LogInFromTwoPlaces) {
   LOG(kInfo) << "\n\nABOUT TO CREATE USER...\n\n";
-  EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_, fs::path()));
-  // test_elements_
+  ASSERT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_, fs::path()));
   LOG(kInfo) << "\n\nCREATED USER. ABOUT TO LOG OUT...\n\n";
   EXPECT_EQ(kSuccess, test_elements_.LogOut());
   LOG(kInfo) << "\n\nLOGGED OUT.\n\n";
@@ -485,6 +484,33 @@ TEST_F(TwoInstancesApiTest, FUNC_LogInFromTwoPlaces) {
   EXPECT_EQ(kSuccess, test_elements_3.LogOut());
   LOG(kInfo) << "\n\nFINALISING 3RD INSTANCE...\n\n";
   EXPECT_EQ(kSuccess, test_elements_3.Finalise());
+  LOG(kInfo) << "\n\nFINISHED TEST BODY! TAH-DAH!\n\n";
+}
+
+TEST_F(TwoInstancesApiTest, FUNC_LogInAfterCreateUser) {
+  LOG(kInfo) << "\n\nABOUT TO CREATE USER...\n\n";
+  EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_, fs::path()));
+  EXPECT_EQ(kLoggedIn, test_elements_.state());
+  EXPECT_EQ(kCreating | kCredentialsLoggedIn, test_elements_.logged_in_state());
+
+  testing_variables_1_.immediate_quit_required = false;
+  LOG(kInfo) << "\n\nABOUT TO LOG 2ND INSTANCE IN...\n\n";
+  EXPECT_EQ(kSuccess, test_elements_2_.LogIn(keyword_, pin_, password_));
+  int i(0);
+  while (!testing_variables_1_.immediate_quit_required && i < 100) {
+    ++i;
+    Sleep(bptime::milliseconds(100));
+  }
+  LOG(kInfo) << "\n\nCHECKING STATE OF 2ND AND 3RD INSTANCES...\n\n";
+  EXPECT_TRUE(testing_variables_1_.immediate_quit_required);
+  EXPECT_EQ(kConnected, test_elements_.state());
+  EXPECT_EQ(kBaseState, test_elements_.logged_in_state());
+  EXPECT_EQ(fs::path(), test_elements_.mount_path());
+  EXPECT_EQ(kLoggedIn, test_elements_2_.state());
+  EXPECT_EQ(kCredentialsLoggedIn, test_elements_2_.logged_in_state());
+
+  LOG(kInfo) << "\n\nLOGGING 3RD INSTANCE OUT...\n\n";
+  EXPECT_EQ(kSuccess, test_elements_2_.LogOut());
   LOG(kInfo) << "\n\nFINISHED TEST BODY! TAH-DAH!\n\n";
 }
 

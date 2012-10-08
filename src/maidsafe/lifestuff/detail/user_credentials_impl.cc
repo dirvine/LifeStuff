@@ -268,7 +268,7 @@ int UserCredentialsImpl::LogOut() {
     return result;
   }
 
-  session_.Reset();
+//  session_.Reset();
   return kSuccess;
 }
 
@@ -524,6 +524,16 @@ int UserCredentialsImpl::CreateUser(const std::string& keyword,
     return kSessionFailure;
   }
   session_.set_changed(true);
+
+  asymm::Keys maid(passport_.SignaturePacketDetails(passport::kMaid, true));
+  assert(!maid.identity.empty());
+  if (!routings_handler_.AddRoutingObject(maid,
+                                          std::vector<std::pair<std::string, uint16_t> >(),
+                                          maid.identity,
+                                          nullptr)) {
+    LOG(kError) << "Failure to start the routing object for the MAID.";
+    return -1;
+  }
 
   return kSuccess;
 }

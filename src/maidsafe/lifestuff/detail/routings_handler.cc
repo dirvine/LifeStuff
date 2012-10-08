@@ -65,7 +65,8 @@ RoutingsHandler::RoutingsHandler(priv::chunk_store::RemoteChunkStore& chunk_stor
       routing_objects_(),
       routing_objects_mutex_(),
       session_(session),
-      validated_message_signal_(validated_message_signal) {}
+      validated_message_signal_(validated_message_signal),
+      cs_mutex_() {}
 
 RoutingsHandler::~RoutingsHandler() {
   std::lock_guard<std::mutex> loch(routing_objects_mutex_);
@@ -76,6 +77,7 @@ RoutingsHandler::~RoutingsHandler() {
 }
 
 void RoutingsHandler::set_remote_chunk_store(priv::chunk_store::RemoteChunkStore& chunk_store) {
+  std::lock_guard<std::mutex> loch(cs_mutex_);
   chunk_store_ = &chunk_store;
 }
 
@@ -115,8 +117,10 @@ bool RoutingsHandler::AddRoutingObject(
                                   };
   // Network health
   functors.network_status = [&] (const int& network_health) {
-                              std::unique_lock<std::mutex> health_loch(*routing_details.mutex);
-                              routing_details.newtwork_health = network_health;
+                              if (routing_details.mutex) {
+                                std::unique_lock<std::mutex> health_loch(*routing_details.mutex);
+                                routing_details.newtwork_health = network_health;
+                              }
                             };
 
   routing_details.routing_object->Join(functors, peer_endpoints);
@@ -146,6 +150,14 @@ bool RoutingsHandler::AddRoutingObject(
 
   return true;
 }
+
+bool RoutingsHandler::DeleteRoutingObject(const std::string& identity) {
+  std::unique_lock<std::mutex> loch(routing_objects_mutex_);
+  size_t erased_count(routing_objects_.erase(identity));
+  LOG(kInfo) << "RoutingsHandler::DeleteRoutingObject erased: " << erased_count << ", out of: " << routing_objects_.size();
+  return erased_count == size_t(1);
+}
+
 
 bool RoutingsHandler::Send(const std::string& source_id,
                            const std::string& destination_id,
@@ -191,6 +203,7 @@ bool RoutingsHandler::Send(const std::string& source_id,
   NodeId group_claim_as_own_id;
   if (source_id == destination_id)
     group_claim_as_own_id = NodeId(destination_id);
+  LOG(kInfo) << "sender: " << DebugId(group_claim_as_own_id) << ", receiver: " << DebugId(NodeId(destination_id));
   routing_details.routing_object->Send(NodeId(destination_id),
                                        group_claim_as_own_id,
                                        wrapped_message,
@@ -314,26 +327,30 @@ void RoutingsHandler::OnRequestReceived(const std::string& receiver_id,
 void RoutingsHandler::OnPublicKeyRequested(const NodeId& node_id,
                                            const routing::GivePublicKeyFunctor& give_key) {
   std::string network_name(node_id.String() + std::string(1, pca::kSignaturePacket));
-  std::string network_value(chunk_store_->Get(network_name));
+  std::string network_value;
+  {
+    std::lock_guard<std::mutex> loch(cs_mutex_);
+    network_value = chunk_store_->Get(network_name);
+  }
 
   asymm::PublicKey public_key;
   pca::SignedData signed_data;
   if (!signed_data.ParseFromString(network_value)) {
-    LOG(kError) << "Failed to parse retrieved info as SignedData";
+    LOG(kError) << "Failed to parse retrieved info as SignedData: " << DebugId(node_id);
     give_key(public_key);
     return;
   }
 
   if (node_id.String() !=
       crypto::Hash<crypto::SHA512>(signed_data.data() + signed_data.signature())) {
-    LOG(kError) << "Failed to verify validity of info retrieved.";
+    LOG(kError) << "Failed to verify validity of info retrieved: " << DebugId(node_id);
     give_key(public_key);
     return;
   }
 
   asymm::DecodePublicKey(signed_data.data(), &public_key);
   if (!asymm::ValidateKey(public_key)) {
-    LOG(kError) << "Failed to decode key.";
+    LOG(kError) << "Failed to decode key: " << DebugId(node_id);
     give_key(public_key);
     return;
   }

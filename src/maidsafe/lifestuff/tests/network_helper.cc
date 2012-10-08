@@ -78,7 +78,7 @@ std::vector<std::pair<std::string, uint16_t>> ExtractEndpoints(const std::string
                                            uint16_t(boost::lexical_cast<uint16_t>(
                                                std::string(result[2].first, result[2].second)))));
     });
-  } 
+  }
   catch (boost::regex_error& e) {
     std::cout << "Error: " << e.what() << std::endl;
   }
@@ -120,7 +120,7 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
 
   zero_state_processes_.push_back(bp::child(
       bp::execute(bp::initializers::run_exe(pd::kKeysHelperExecutable()),
-                  bp::initializers::set_cmd_line(ConstructCommandLine(false, "-cpb -n 20")),
+                  bp::initializers::set_cmd_line(ConstructCommandLine(false, "-cpb -n " + boost::lexical_cast<std::string>(2 + vault_count))),
                   bp::initializers::set_on_error(error_code),
                   bp::initializers::inherit_env(),
                   bp::initializers::bind_stdout(sink),
@@ -261,7 +261,7 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
 //     return testing::AssertionFailure() << "Could not parse bootstrap contacts.";
 //   std::cout << "\n\n\n protobuf_bootstrap.bootstrap_contacts_size() : "
 //             << protobuf_bootstrap.bootstrap_contacts_size() << std::endl;
-// 
+//
 //   for (int i(0); i != protobuf_bootstrap.bootstrap_contacts_size(); ++i)
 //     std::cout <<protobuf_bootstrap.bootstrap_contacts(i).ip()
 //               << " : " << protobuf_bootstrap.bootstrap_contacts(i).port() << std::endl;

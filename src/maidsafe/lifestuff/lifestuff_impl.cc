@@ -72,7 +72,10 @@ LifeStuffImpl::LifeStuffImpl()
       immediate_quit_required_signal_(),
       vault_cheat_(false) {}
 
-LifeStuffImpl::~LifeStuffImpl() {}
+LifeStuffImpl::~LifeStuffImpl() {
+  int result(vault_node_.Stop());
+  LOG(kInfo) << "Result of stopping cheat vault: " << result;
+}
 
 int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_available_function,
                               const fs::path& base_directory,
@@ -127,7 +130,7 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
   remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path,
                                         bootstrap_endpoints,
                                         client_node_,
-                                        [&] (const int& health) { NetworkHealthSlot(health); });
+                                        nullptr);
   if (!remote_chunk_store_) {
     LOG(kError) << "Could not initialise chunk store.";
     return kInitialiseChunkStoreFailure;
@@ -303,23 +306,26 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
       LOG(kError) << "Failed to Create User with result: " << result;
       return result;
     }
+  } else {
+    LOG(kInfo) << "user_credentials_->CreateUser success.";
   }
+
 
   result = CreateVaultInLocalMachine(chunk_store);
   if (result != kSuccess)  {
     LOG(kError) << "Failed to create vault. No LifeStuff for you! (Result: " << result << ")";
     return result;
+  } else {
+    LOG(kInfo) << "CreateVaultInLocalMachine success.";
   }
 
   result = SetValidPmidAndInitialisePublicComponents();
   if (result != kSuccess)  {
     LOG(kError) << "Failed to set valid PMID with result: " << result;
     return result;
+  } else {
+    LOG(kInfo) << "SetValidPmidAndInitialisePublicComponents success.";
   }
-
-  routings_handler_ = std::make_shared<RoutingsHandler>(*remote_chunk_store_,
-                                                        session_,
-                                                        ValidatedMessageFunction());
 
   state_ = kLoggedIn;
   logged_in_state_ = kCreating | kCredentialsLoggedIn;
@@ -412,7 +418,7 @@ int LifeStuffImpl::LogIn(const std::string& keyword,
   return login_result;
 }
 
-int LifeStuffImpl::LogOut() {
+int LifeStuffImpl::LogOut(bool clear_maid_routing) {
   if (state_ != kLoggedIn) {
     LOG(kError) << "Should be logged in to log out.";
     return kWrongState;
@@ -424,8 +430,7 @@ int LifeStuffImpl::LogOut() {
     return kWrongLoggedInState;
   }
   if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn) {
-    LOG(kError) << "In incorrect state to log out. " <<
-                   "Make user credentials are logged in first.";
+    LOG(kError) << "In incorrect state to log out. Make user credentials are logged in first.";
     return kWrongLoggedInState;
   }
 
@@ -438,6 +443,13 @@ int LifeStuffImpl::LogOut() {
   if (!remote_chunk_store_->WaitForCompletion()) {
     LOG(kError) << "Failed complete chunk operations.";
     return kLogoutCompleteChunkFailure;
+  }
+
+  client_node_->set_on_network_status(nullptr);
+  if (clear_maid_routing) {
+    std::string maid_id(session_.passport().SignaturePacketDetails(passport::kMaid, true).identity);
+    assert(!maid_id.empty());
+    assert(routings_handler_->DeleteRoutingObject(maid_id));
   }
 
   session_.Reset();
@@ -1221,9 +1233,10 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
     return result;
   }
 
-  remote_chunk_store_ = std::make_shared<pcs::RemoteChunkStore>(client_node_->chunk_store(),
-                                                                client_node_->chunk_manager(),
-                                                                client_node_->chunk_action_authority());
+  remote_chunk_store_ =
+      std::make_shared<pcs::RemoteChunkStore>(client_node_->chunk_store(),
+                                              client_node_->chunk_manager(),
+                                              client_node_->chunk_action_authority());
 
   routings_handler_->set_remote_chunk_store(*remote_chunk_store_);
   user_credentials_->set_remote_chunk_store(*remote_chunk_store_);
@@ -1313,6 +1326,7 @@ int LifeStuffImpl::CreateVaultInLocalMachine(const fs::path& chunk_store) {
       LOG(kError) << "Failed to create vault through cheat: " << result;
       return kVaultCreationStartFailure;
     }
+    Sleep(bptime::seconds(10));
   } else {
     if (!client_controller_->StartVault(pmid_keys, account_name, chunk_store)) {
       LOG(kError) << "Failed to create vault through client controller.";
@@ -1346,7 +1360,7 @@ bool LifeStuffImpl::HandleLogoutProceedingsMessage(const std::string& message,
       std::string session_marker(proceedings.session_requestor());
       // Check message is not one we sent out
       if (user_credentials_->IsOwnSessionTerminationMessage(session_marker)) {
-        LOG(kInfo) << "It's our own message the has been received. Ignoring...";
+        LOG(kInfo) << "It's our own message that has been received. Ignoring...";
         return false;
       }
 
@@ -1367,7 +1381,7 @@ bool LifeStuffImpl::HandleLogoutProceedingsMessage(const std::string& message,
                    LOG(kInfo) << "StopMessagesAndIntros: " << result;
                    result = UnMountDrive();
                    LOG(kInfo) << "UnMountDrive: " << result;
-                   result = LogOut();
+                   result = LogOut(false);
                    LOG(kInfo) << "LogOut: " << result;
 
                    LogoutProceedings proceedings;
@@ -1382,12 +1396,17 @@ bool LifeStuffImpl::HandleLogoutProceedingsMessage(const std::string& message,
                                                   maid.public_key,
                                                   session_termination,
                                                   nullptr));
+                   routings_handler_->DeleteRoutingObject(
+                       session_.passport().SignaturePacketDetails(passport::kMaid, true).identity);
 
                    immediate_quit_required_signal_();
                  });
       return true;
     } else if (proceedings.has_session_terminated()) {
+<<<<<<< Updated upstream
       // Check message is intended for this instance
+=======
+>>>>>>> Stashed changes
       if (!user_credentials_->IsOwnSessionTerminationMessage(proceedings.session_terminated())) {
         LOG(kInfo) << "Recieved irrelevant session termination message. Ignoring.";
         return false;

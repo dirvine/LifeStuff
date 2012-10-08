@@ -116,7 +116,7 @@ class LifeStuffImpl {
                  const fs::path& chunk_store);
   int CreatePublicId(const std::string& public_id);
   int LogIn(const std::string& username, const std::string& pin, const std::string& password);
-  int LogOut();
+  int LogOut(bool clear_maid_routing = true);
   int CreateAndMountDrive();
   int MountDrive();
   int UnMountDrive();
