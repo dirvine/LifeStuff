@@ -66,16 +66,17 @@ class RoutingsHandler {
   struct RoutingDetails {
     RoutingDetails();
     RoutingDetails(const asymm::Keys& owner_credentials, const std::string& search_id);
-    std::shared_ptr<routing::Routing> routing_object;
+    routing::Routing routing_object;
     int newtwork_health;
     asymm::Keys keys;
-    std::shared_ptr<std::mutex> mutex;
-    std::shared_ptr<std::condition_variable> condition_variable;
+    std::mutex mutex;
+    std::condition_variable condition_variable;
     std::string search_id;
+    bool action_health;
   };
 
   priv::chunk_store::RemoteChunkStore* chunk_store_;
-  std::map<std::string, RoutingDetails> routing_objects_;
+  std::map<std::string, std::shared_ptr<RoutingDetails> > routing_objects_;
   std::mutex routing_objects_mutex_;
   Session& session_;
   ValidatedMessageFunction validated_message_signal_;

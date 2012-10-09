@@ -299,6 +299,7 @@ class CredentialsTest : public testing::Test {
                 std::shared_ptr<pcs::RemoteChunkStore>& remote_chunk_store) {
     LOG(kInfo) << "\n\nStarting DoLogOut\n\n";
     EXPECT_EQ(kSuccess, user_credentials->Logout());
+    session.Reset();
     LOG(kInfo) << "Credentials logged out.\n===================\n";
 
     ASSERT_EQ(kSuccess, MakeAnonymousNode(user_credentials,
@@ -308,7 +309,6 @@ class CredentialsTest : public testing::Test {
     Sleep(bptime::seconds(15));
     LOG(kSuccess) << "Constructed anonymous node.\n===================\n";
 
-    session.Reset();
     LOG(kInfo) << "Logged out.\n===================\n\n\n";
   }
 
@@ -332,7 +332,6 @@ class CredentialsTest : public testing::Test {
     LOG(kSuccess) << "Constructed client node.\n===================\n";
     Sleep(bptime::seconds(15));
 
-    session.Reset();
     LOG(kInfo) << "Logged in.\n===================\n\n\n";
   }
 
