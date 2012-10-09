@@ -77,18 +77,18 @@ TEST_F(OneUserApiTest, FUNC_LoggedInState) {
   // full login, create public ID, full logout
   EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword2, pin2, password2));
   EXPECT_EQ(test_elements_.state(), kLoggedIn);
-  EXPECT_EQ(test_elements_.logged_in_state(), kCreating | kCredentialsLoggedIn);
-  EXPECT_EQ(kSuccess, test_elements_.CreateAndMountDrive());
-  EXPECT_EQ(test_elements_.logged_in_state(), kCreating | kCredentialsLoggedIn | kDriveMounted);
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn);
+  EXPECT_EQ(kSuccess, test_elements_.MountDrive());
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
   EXPECT_EQ(kStartMessagesAndContactsNoPublicIds, test_elements_.StartMessagesAndIntros());
-  EXPECT_EQ(test_elements_.logged_in_state(), kCreating | kCredentialsLoggedIn | kDriveMounted);
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
   EXPECT_EQ(kSuccess, test_elements_.CreatePublicId(public_id2));
   EXPECT_EQ(test_elements_.logged_in_state(),
-            kCreating | kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
+            kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
   EXPECT_EQ(kSuccess, test_elements_.StopMessagesAndIntros());
-  EXPECT_EQ(test_elements_.logged_in_state(), kCreating | kCredentialsLoggedIn | kDriveMounted);
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
   EXPECT_EQ(kSuccess, test_elements_.UnMountDrive());
-  EXPECT_EQ(test_elements_.logged_in_state(), kCreating | kCredentialsLoggedIn);
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn);
   EXPECT_EQ(kSuccess, test_elements_.LogOut());
 
   EXPECT_EQ(test_elements_.state(), kConnected);
@@ -139,24 +139,24 @@ TEST_F(OneUserApiTest, FUNC_IncorrectLoginLogoutSequences) {
   // Logged in with no public ID
   std::string public_id(RandomAlphaNumericString(5));
   EXPECT_EQ(test_elements_.state(), kLoggedIn);
-  EXPECT_EQ(test_elements_.logged_in_state(), kCreating| kCredentialsLoggedIn | kDriveMounted);
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
   EXPECT_EQ(kSuccess, test_elements_.CreatePublicId(public_id));
 
   // Try logout components in wrong order
   EXPECT_EQ(test_elements_.logged_in_state(),
-            kCreating | kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
+            kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
   EXPECT_EQ(kWrongLoggedInState, test_elements_.UnMountDrive());
   EXPECT_EQ(test_elements_.logged_in_state(),
-            kCreating| kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
+            kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
   EXPECT_EQ(kWrongLoggedInState, test_elements_.LogOut());
   EXPECT_EQ(test_elements_.logged_in_state(),
-            kCreating| kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
+            kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
   EXPECT_EQ(kSuccess, test_elements_.StopMessagesAndIntros());
-  EXPECT_EQ(test_elements_.logged_in_state(), kCreating | kCredentialsLoggedIn | kDriveMounted);
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
   EXPECT_EQ(kWrongLoggedInState, test_elements_.LogOut());
-  EXPECT_EQ(test_elements_.logged_in_state(), kCreating| kCredentialsLoggedIn | kDriveMounted);
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
   EXPECT_EQ(kSuccess, test_elements_.UnMountDrive());
-  EXPECT_EQ(test_elements_.logged_in_state(), kCreating | kCredentialsLoggedIn);
+  EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn);
   EXPECT_EQ(kSuccess, test_elements_.LogOut());
 
   EXPECT_EQ(test_elements_.state(), kConnected);

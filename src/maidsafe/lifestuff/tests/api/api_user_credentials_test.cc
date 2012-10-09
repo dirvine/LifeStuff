@@ -491,7 +491,7 @@ TEST_F(TwoInstancesApiTest, FUNC_LogInAfterCreateUser) {
   LOG(kInfo) << "\n\nABOUT TO CREATE USER...\n\n";
   EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_, fs::path()));
   EXPECT_EQ(kLoggedIn, test_elements_.state());
-  EXPECT_EQ(kCreating | kCredentialsLoggedIn, test_elements_.logged_in_state());
+  EXPECT_EQ(kCredentialsLoggedIn, test_elements_.logged_in_state());
 
   testing_variables_1_.immediate_quit_required = false;
   LOG(kInfo) << "\n\nABOUT TO LOG 2ND INSTANCE IN...\n\n";

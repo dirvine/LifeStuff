@@ -213,7 +213,7 @@ int DoFullCreateUser(LifeStuff& test_elements,
     return result;
   }
 
-  result = test_elements.CreateAndMountDrive();
+  result = test_elements.MountDrive();
   if (result != kSuccess) {
     LOG(kError) << "Failed to create and mount drive: " << result;
     return result;
