@@ -40,7 +40,7 @@
 
 namespace args = std::placeholders;
 namespace pca = maidsafe::priv::chunk_actions;
-namespace utils = maidsafe::priv::utilities;
+namespace utils = maidsafe::priv::utils;
 
 namespace maidsafe {
 
