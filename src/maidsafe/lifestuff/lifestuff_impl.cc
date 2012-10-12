@@ -112,8 +112,8 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
     int counter(0);
     while (counter++ < kRetryLimit) {
       Sleep(bptime::milliseconds(100 + RandomUint32() % 1000));
-      client_controller_.reset(
-          new priv::process_management::ClientController(software_update_available_function));
+      client_controller_ = std::make_shared<priv::process_management::ClientController>(
+                               software_update_available_function);
       if (client_controller_->BootstrapEndpoints(bootstrap_endpoints) &&
           !bootstrap_endpoints.empty())
         counter = kRetryLimit;

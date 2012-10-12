@@ -41,21 +41,21 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-PublicIdDetails::PublicIdDetails() : social_info(new SocialInfo),
-                                     contacts_handler(new ContactsHandler),
-                                     share_information(new ShareInformation),
-                                     social_info_mutex(new std::mutex),
-                                     share_information_mutex(new std::mutex) {
+  PublicIdDetails::PublicIdDetails() : social_info(std::make_shared<SocialInfo>()),
+                                       contacts_handler(std::make_shared<ContactsHandler>()),
+                                       share_information(std::make_shared<ShareInformation>()),
+                                       social_info_mutex(std::make_shared<std::mutex>()),
+                                       share_information_mutex(std::make_shared<std::mutex>()) {
   social_info->push_back(kBlankProfilePicture);
   social_info->push_back("");
 }
 
 PublicIdDetails::PublicIdDetails(const std::string& card_address)
-    : social_info(new SocialInfo),
-      contacts_handler(new ContactsHandler),
-      share_information(new ShareInformation),
-      social_info_mutex(new std::mutex),
-      share_information_mutex(new std::mutex) {
+    : social_info(std::make_shared<SocialInfo>()),
+      contacts_handler(std::make_shared<ContactsHandler>()),
+      share_information(std::make_shared<ShareInformation>()),
+      social_info_mutex(std::make_shared<std::mutex>()),
+      share_information_mutex(std::make_shared<std::mutex>()) {
   social_info->push_back(kBlankProfilePicture);
   social_info->push_back(card_address);
 }

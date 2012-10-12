@@ -45,10 +45,8 @@ namespace pcs = maidsafe::priv::chunk_store;
 namespace maidsafe {
 
 namespace priv {
-namespace chunk_actions {
-class SignedData;
-}
-}
+namespace chunk_actions { class SignedData; }
+}  // namespace priv
 
 namespace passport {
 class Passport;
@@ -67,7 +65,7 @@ enum IntroductionType {
 
 namespace test {
 class PublicIdTest;
-}
+}  // namespace test
 
 class Session;
 class Introduction;
