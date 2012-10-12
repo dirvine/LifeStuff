@@ -42,21 +42,23 @@ namespace lifestuff {
 const int kMinAcceptableClientHealth(75);
 
 RoutingsHandler::RoutingDetails::RoutingDetails()
-    : routing_object(),
+    : routing_object(asymm::Keys(), true),
       newtwork_health(-1),
       keys(),
-      mutex(std::make_shared<std::mutex>()),
-      condition_variable(std::make_shared<std::condition_variable>()),
-      search_id() {}
+      mutex(),
+      condition_variable(),
+      search_id(),
+      action_health(true) {}
 
 RoutingsHandler::RoutingDetails::RoutingDetails(const asymm::Keys& owner_credentials,
                                                 const std::string& search_id)
-    : routing_object(std::make_shared<routing::Routing>(owner_credentials, true)),
+    : routing_object(owner_credentials, true),
       newtwork_health(-1),
       keys(owner_credentials),
-      mutex(std::make_shared<std::mutex>()),
-      condition_variable(std::make_shared<std::condition_variable>()),
-      search_id(search_id) {}
+      mutex(),
+      condition_variable(),
+      search_id(search_id),
+      action_health(true) {}
 
 RoutingsHandler::RoutingsHandler(priv::chunk_store::RemoteChunkStore& chunk_store,
                                  Session& session,
@@ -71,7 +73,7 @@ RoutingsHandler::RoutingsHandler(priv::chunk_store::RemoteChunkStore& chunk_stor
 RoutingsHandler::~RoutingsHandler() {
   std::lock_guard<std::mutex> loch(routing_objects_mutex_);
   for (auto& element : routing_objects_)
-    element.second.routing_object->DisconnectFunctors();
+    element.second->routing_object.DisconnectFunctors();
   routing_objects_.clear();
   LOG(kInfo) << "Cleared objects\n\n\n\n";
 }
@@ -86,7 +88,8 @@ bool RoutingsHandler::AddRoutingObject(
     const std::vector<std::pair<std::string, uint16_t> >& bootstrap_endpoints,  // NOLINT (Dan)
     const std::string& search_id,
     const routing::RequestPublicKeyFunctor& public_key_functor) {
-  RoutingDetails routing_details(owner_credentials, search_id);
+  std::shared_ptr<RoutingDetails> routing_details(
+        std::make_shared<RoutingDetails>(owner_credentials, search_id));
 
   // Bootstrap endpoints to udp endpoints
   std::vector<boost::asio::ip::udp::endpoint> peer_endpoints;
@@ -102,7 +105,7 @@ bool RoutingsHandler::AddRoutingObject(
   functors.message_received = [&, routing_details] (const std::string& wrapped_message,
                                                     const NodeId& group_claim,
                                                     const routing::ReplyFunctor& reply_functor) {
-                                OnRequestReceived(routing_details.keys.identity,
+                                OnRequestReceived(routing_details->keys.identity,
                                                   wrapped_message,
                                                   group_claim,
                                                   reply_functor);
@@ -116,31 +119,33 @@ bool RoutingsHandler::AddRoutingObject(
                                     OnPublicKeyRequested(node_id, give_key);
                                   };
   // Network health
-  functors.network_status = [&] (const int& network_health) {
-                              if (routing_details.mutex) {
-                                std::unique_lock<std::mutex> health_loch(*routing_details.mutex);
-                                routing_details.newtwork_health = network_health;
+  functors.network_status = [routing_details]
+                            (const int& network_health) {
+                              if (routing_details->action_health) {
+                                std::lock_guard<std::mutex> health_loch(routing_details->mutex);
+                                routing_details->newtwork_health = network_health;
                               }
                             };
 
-  routing_details.routing_object->Join(functors, peer_endpoints);
+  routing_details->routing_object.Join(functors, peer_endpoints);
   {
-    std::unique_lock<std::mutex> health_loch(*routing_details.mutex);
-    routing_details.condition_variable->wait_for(health_loch,
+    std::unique_lock<std::mutex> health_loch(routing_details->mutex);
+    routing_details->condition_variable.wait_for(health_loch,
                                                  std::chrono::seconds(5),
                                                  [&] ()->bool {
                                                    // TODO(Team): Remove this blatantly arbitrary
                                                    //             network level
-                                                   return routing_details.newtwork_health != -1 &&
-                                                          routing_details.newtwork_health >=
+                                                   return routing_details->newtwork_health != -1 &&
+                                                          routing_details->newtwork_health >=
                                                               kMinAcceptableClientHealth;
                                                  });
-    if (routing_details.newtwork_health == routing::kNotJoined ||
-        routing_details.newtwork_health < kMinAcceptableClientHealth) {
+    if (routing_details->newtwork_health == routing::kNotJoined ||
+        routing_details->newtwork_health < kMinAcceptableClientHealth) {
       LOG(kError) << "Failed to join this routing object.";
       return false;
     }
   }
+  routing_details->action_health = false;
 
   auto result(routing_objects_.insert(std::make_pair(owner_credentials.identity, routing_details)));
   if (!result.second) {
@@ -164,7 +169,7 @@ bool RoutingsHandler::Send(const std::string& source_id,
                            const asymm::PublicKey& destination_public_key,
                            const std::string& message,
                            std::string* reply_message) {
-  RoutingDetails routing_details;
+  std::shared_ptr<RoutingDetails> routing_details;
   {
     std::unique_lock<std::mutex> loch(routing_objects_mutex_);
     auto it(routing_objects_.find(source_id));
@@ -173,11 +178,12 @@ bool RoutingsHandler::Send(const std::string& source_id,
       return false;
     }
     routing_details = it->second;
+    assert(routing_details);
   }
 
   std::string wrapped_message(WrapMessage(message,
                                           destination_public_key,
-                                          routing_details.keys.private_key));
+                                          routing_details->keys.private_key));
   if (wrapped_message.empty()) {
     LOG(kError) << "Failed to wrap message: " <<  DebugId(NodeId(source_id));
     return false;
@@ -203,8 +209,9 @@ bool RoutingsHandler::Send(const std::string& source_id,
   NodeId group_claim_as_own_id;
   if (source_id == destination_id)
     group_claim_as_own_id = NodeId(destination_id);
+
   LOG(kInfo) << "sender: " << DebugId(group_claim_as_own_id) << ", receiver: " << DebugId(NodeId(destination_id));
-  routing_details.routing_object->Send(NodeId(destination_id),
+  routing_details->routing_object.Send(NodeId(destination_id),
                                        group_claim_as_own_id,
                                        wrapped_message,
                                        response_functor,
@@ -229,7 +236,7 @@ bool RoutingsHandler::Send(const std::string& source_id,
     std::string unwrapped_message;
     if (!UnwrapMessage(message_from_routing,
                        destination_public_key,
-                       routing_details.keys.private_key,
+                       routing_details->keys.private_key,
                        unwrapped_message)) {
       LOG(kError) << "Message from " <<DebugId(NodeId(destination_id)) << " is not decryptable. "
                   << "Probably corrupted: " << message_from_routing;
@@ -270,7 +277,12 @@ void RoutingsHandler::OnRequestReceived(const std::string& receiver_id,
                                         const NodeId& sender_id,
                                         const routing::ReplyFunctor& reply_functor) {
   LOG(kInfo) << "receiver: " << DebugId(NodeId(receiver_id)) << ", sender: " << DebugId(sender_id);
-  RoutingDetails routing_details;
+  if (sender_id == NodeId()) {
+    LOG(kWarning) << "Void sender. Dropping.";
+    return;
+  }
+
+  std::shared_ptr<RoutingDetails> routing_details;
   {
     std::unique_lock<std::mutex> loch(routing_objects_mutex_);
     auto it(routing_objects_.find(receiver_id));
@@ -284,11 +296,11 @@ void RoutingsHandler::OnRequestReceived(const std::string& receiver_id,
   asymm::PublicKey sender_public_key;
   asymm::PrivateKey receiver_private_key;
   if (sender_id.String() == receiver_id) {
-    sender_public_key = routing_details.keys.public_key;
-    receiver_private_key = routing_details.keys.private_key;
+    sender_public_key = routing_details->keys.public_key;
+    receiver_private_key = routing_details->keys.private_key;
   } else {
     // Well, this is not gonna be easy
-    if (!FindPublicKeyForSenderId(session_.contacts_handler(routing_details.search_id),
+    if (!FindPublicKeyForSenderId(session_.contacts_handler(routing_details->search_id),
                                   sender_id.String(),
                                   sender_public_key)) {
       LOG(kError) << "Failed to find sender's pub key. Silent drop. Should I even be writing this?";
@@ -298,14 +310,14 @@ void RoutingsHandler::OnRequestReceived(const std::string& receiver_id,
     receiver_private_key =
         session_.passport().SignaturePacketDetails(passport::kMmid,
                                                    true,
-                                                   routing_details.search_id).private_key;
+                                                   routing_details->search_id).private_key;
     assert(asymm::ValidateKey(receiver_private_key));
   }
 
   std::string unwrapped_message;
   if (!UnwrapMessage(wrapped_message,
                      sender_public_key,
-                     routing_details.keys.private_key,
+                     routing_details->keys.private_key,
                      unwrapped_message)) {
     LOG(kError) << "Failed to unwrap. Silently drop. Should I even be writing this?";
     return;

@@ -95,7 +95,7 @@ class CredentialsTest : public testing::Test {
     vault_node2_.reset(new pd::vault::Node);
     asio_service_.Start();
     asio_service2_.Start();
-//    ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12));
+    ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 10));
     std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
     remote_chunk_store_ = BuildChunkStore(*test_dir_,
                                           bootstrap_endpoints,
@@ -131,52 +131,9 @@ class CredentialsTest : public testing::Test {
       vault_node_.reset();
     }
 
-//    EXPECT_TRUE(network_.StopLocalNetwork());
+    EXPECT_TRUE(network_.StopLocalNetwork());
     asio_service_.Stop();
     asio_service2_.Stop();
-  }
-
-  int CreateAccountCheat(const asymm::Keys& /*pmid*/, const std::string& /*account_name*/) {
-//    std::shared_ptr<pd::Node> temp_account_node(SetupNode(*test_dir_ / "temp_pmid_node",
-//                                                          std::vector<std::pair<std::string, uint16_t> >(),  // NOLINT (Dan)
-//                                                          [] (const int&) {}));
-//    temp_account_node->set_keys(pmid);
-//    temp_account_node->set_account_name(account_name);
-//    int result(temp_account_node->Start(*test_dir_ / "temp_pmid_node"));
-//    if (result != kSuccess) {
-//      LOG(kError) << "Failed to start pmid node.";
-//      return result;
-//    }
-
-//    int64_t capacity(123123123123);
-//    bool done(false), success(false);
-//    boost::mutex mutex;
-//    boost::condition_variable cond_var;
-//    temp_account_node->rpc_handler()->Amend(account_name,
-//                                            pd::RpcAccountAmendmentType::kSetOffered,
-//                                            capacity,
-//                                            NodeId(pmid.identity),
-//                                            "",
-//                                            "",
-//                                            NodeId(),
-//                                            [&](bool result) {
-//                                              boost::mutex::scoped_lock lock(mutex);
-//                                              done = true;
-//                                              success = result;
-//                                              cond_var.notify_one();
-//                                            });
-//    boost::mutex::scoped_lock lock(mutex);
-//    if (cond_var.timed_wait(lock, bptime::seconds(30), [&] () { return done; }) && success) {
-//      LOG(kInfo) << "UpdateAccount - " << HexSubstr(pmid.identity)
-//                 << " - Set space offered to " << BytesToBinarySiUnits(capacity) << " in account "
-//                 << HexSubstr(account_name);
-      return kSuccess;
-//    } else {
-//      LOG(kError) << "UpdateAccount - " << HexSubstr(pmid.identity)
-//                  << " - Could not set space offered to " << BytesToBinarySiUnits(capacity)
-//                  << " in account " << HexSubstr(account_name);
-//      return -1;
-//    }
   }
 
   void SetUpSecondUserCredentials() {
@@ -237,11 +194,17 @@ class CredentialsTest : public testing::Test {
   int MakeAnonymousNode(std::shared_ptr<UserCredentials>& user_credentials,
                         std::shared_ptr<RoutingsHandler>& routings_handler,
                         std::shared_ptr<pd::Node>& client_node,
-                        std::shared_ptr<pcs::RemoteChunkStore>& remote_chunk_store) {
+                        std::shared_ptr<pcs::RemoteChunkStore>& remote_chunk_store,
+                        const std::string& maid_id) {
     int result(client_node->Stop());
     if (result != kSuccess) {
       LOG(kError) << "Failed to stop client node.";
       return result;
+    }
+
+    if (!routings_handler->DeleteRoutingObject(maid_id)) {
+      LOG(kError) << "Failed to delete MAID routing object.";
+      return -1;
     }
 
     client_node->set_keys(asymm::Keys());
@@ -299,16 +262,18 @@ class CredentialsTest : public testing::Test {
                 std::shared_ptr<pcs::RemoteChunkStore>& remote_chunk_store) {
     LOG(kInfo) << "\n\nStarting DoLogOut\n\n";
     EXPECT_EQ(kSuccess, user_credentials->Logout());
+    std::string maid_id(session.passport().SignaturePacketDetails(passport::kMaid, true).identity);
+    session.Reset();
     LOG(kInfo) << "Credentials logged out.\n===================\n";
 
     ASSERT_EQ(kSuccess, MakeAnonymousNode(user_credentials,
                                           routings_handler,
                                           client_node,
-                                          remote_chunk_store));
+                                          remote_chunk_store,
+                                          maid_id));
     Sleep(bptime::seconds(15));
     LOG(kSuccess) << "Constructed anonymous node.\n===================\n";
 
-    session.Reset();
     LOG(kInfo) << "Logged out.\n===================\n\n\n";
   }
 
@@ -332,7 +297,6 @@ class CredentialsTest : public testing::Test {
     LOG(kSuccess) << "Constructed client node.\n===================\n";
     Sleep(bptime::seconds(15));
 
-    session.Reset();
     LOG(kInfo) << "Logged in.\n===================\n\n\n";
   }
 
@@ -539,120 +503,6 @@ TEST_F(CredentialsTest, FUNC_ChangeDetails) {
   LOG(kInfo) << "Can't log in with old u/p/w.";
 }
 
-TEST_F(CredentialsTest, FUNC_CheckSessionClearsFully) {
-  ASSERT_TRUE(session_.def_con_level() == DefConLevels::kDefCon3);
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
-  ASSERT_TRUE(session_.session_name().empty());
-  ASSERT_TRUE(session_.unique_user_id().empty());
-  ASSERT_TRUE(session_.root_parent_id().empty());
-  ASSERT_EQ(session_.max_space(), 1073741824);
-  ASSERT_EQ(session_.used_space(), 0);
-  ASSERT_TRUE(session_.serialised_data_atlas().empty());
-  ASSERT_FALSE(session_.changed());
-  ASSERT_EQ(session_.session_access_level(), kNoAccess);
-  LOG(kInfo) << "Preconditions fulfilled.\n===================\n";
-
-  ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(keyword_, pin_, password_));
-  DoCreateUser(keyword_,
-               pin_,
-               password_,
-               user_credentials_,
-               routings_handler_,
-               client_node_,
-               session_,
-               remote_chunk_store_,
-               vault_node_);
-  ASSERT_EQ(session_.session_access_level(), kFullAccess);
-
-  DoLogOut(user_credentials_,
-           routings_handler_,
-           client_node_,
-           session_,
-           remote_chunk_store_);
-
-  ASSERT_TRUE(session_.def_con_level() == DefConLevels::kDefCon3);
-  ASSERT_TRUE(session_.session_name().empty());
-  ASSERT_TRUE(session_.unique_user_id().empty());
-  ASSERT_TRUE(session_.root_parent_id().empty());
-  ASSERT_EQ(session_.max_space(), 1073741824);
-  ASSERT_EQ(session_.used_space(), 0);
-  ASSERT_TRUE(session_.serialised_data_atlas().empty());
-  ASSERT_FALSE(session_.changed());
-  ASSERT_EQ(session_.session_access_level(), kNoAccess);
-  LOG(kInfo) << "Session seems clear.\n===================\n";
-
-  DoLogIn(keyword_,
-          pin_,
-          password_,
-          user_credentials_,
-          routings_handler_,
-          client_node_,
-          session_,
-          remote_chunk_store_);
-  ASSERT_EQ(session_.session_access_level(), kFullAccess);
-
-  DoLogOut(user_credentials_,
-           routings_handler_,
-           client_node_,
-           session_,
-           remote_chunk_store_);
-
-  ASSERT_TRUE(session_.def_con_level() == DefConLevels::kDefCon3);
-  ASSERT_TRUE(session_.session_name().empty());
-  ASSERT_TRUE(session_.unique_user_id().empty());
-  ASSERT_TRUE(session_.root_parent_id().empty());
-  ASSERT_EQ(session_.max_space(), 1073741824);
-  ASSERT_EQ(session_.used_space(), 0);
-  ASSERT_TRUE(session_.serialised_data_atlas().empty());
-  ASSERT_FALSE(session_.changed());
-  ASSERT_EQ(session_.session_access_level(), kNoAccess);
-  LOG(kInfo) << "Session seems clear.\n===================\n";
-
-  ASSERT_NE(kSuccess, user_credentials_->LogIn(keyword_, pin_, password_ + password_));
-  LOG(kInfo) << "Invalid password fails.\n===================\n";
-
-  ASSERT_TRUE(session_.def_con_level() == DefConLevels::kDefCon3);
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
-  ASSERT_TRUE(session_.session_name().empty());
-  ASSERT_TRUE(session_.unique_user_id().empty());
-  ASSERT_TRUE(session_.root_parent_id().empty());
-  ASSERT_EQ(session_.max_space(), 1073741824);
-  ASSERT_EQ(session_.used_space(), 0);
-  ASSERT_TRUE(session_.serialised_data_atlas().empty());
-  ASSERT_FALSE(session_.changed());
-  ASSERT_EQ(session_.session_access_level(), kNoAccess);
-  LOG(kInfo) << "Session seems clear.\n===================\n";
-
-  DoLogIn(keyword_,
-          pin_,
-          password_,
-          user_credentials_,
-          routings_handler_,
-          client_node_,
-          session_,
-          remote_chunk_store_);
-
-  DoLogOutAndStop(user_credentials_,
-                  client_node_,
-                  vault_node_,
-                  session_);
-
-  ASSERT_TRUE(session_.def_con_level() == DefConLevels::kDefCon3);
-  ASSERT_TRUE(session_.session_name().empty());
-  ASSERT_TRUE(session_.unique_user_id().empty());
-  ASSERT_TRUE(session_.root_parent_id().empty());
-  ASSERT_EQ(session_.max_space(), 1073741824);
-  ASSERT_EQ(session_.used_space(), 0);
-  ASSERT_TRUE(session_.serialised_data_atlas().empty());
-  ASSERT_FALSE(session_.changed());
-  ASSERT_EQ(session_.session_access_level(), kNoAccess);
-  LOG(kInfo) << "Session seems clear.\n===================\n";
-}
-
 TEST_F(CredentialsTest, DISABLED_FUNC_ParallelLogin) {
   ASSERT_TRUE(session_.keyword().empty());
   ASSERT_TRUE(session_.pin().empty());
@@ -812,7 +662,8 @@ TEST_F(CredentialsTest, FUNC_UserCredentialsDeletion) {
   ASSERT_EQ(kSuccess, MakeAnonymousNode(user_credentials_,
                                         routings_handler_,
                                         client_node_,
-                                        remote_chunk_store_));
+                                        remote_chunk_store_,
+                                        maid_name.substr(0, 64)));
   Sleep(bptime::seconds(15));
   LOG(kSuccess) << "Constructed anonymous node.\n===================\n";
 
@@ -892,7 +743,8 @@ TEST_F(CredentialsTest, FUNC_UserCredentialsDeletion) {
   ASSERT_EQ(kSuccess, MakeAnonymousNode(user_credentials2_,
                                         routings_handler2_,
                                         client_node2_,
-                                        remote_chunk_store2_));
+                                        remote_chunk_store2_,
+                                        maid_name.substr(0, 64)));
   Sleep(bptime::seconds(15));
   LOG(kSuccess) << "Constructed anonymous node.\n===================\n";
   ASSERT_EQ("", remote_chunk_store2_->Get(anmid_name));

@@ -54,7 +54,7 @@ std::string AppendableByAllType(const std::string& mmid) {
 
 }  // namespace
 
-MessageHandler::MessageHandler(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
+MessageHandler::MessageHandler(priv::chunk_store::RemoteChunkStore& remote_chunk_store,
                                Session& session,
                                boost::asio::io_service& asio_service)
     : remote_chunk_store_(remote_chunk_store),
@@ -182,7 +182,7 @@ int MessageHandler::Send(const InboxItem& inbox_item) {
                                                                     &cond_var,
                                                                     &result);
                                });
-  if (!remote_chunk_store_->Modify(inbox_id, signed_data.SerializeAsString(), callback, mmid)) {
+  if (!remote_chunk_store_.Modify(inbox_id, signed_data.SerializeAsString(), callback, mmid)) {
     LOG(kError) << "Immediate remote chunkstore failure.";
     return kRemoteChunkStoreFailure;
   }
@@ -265,7 +265,7 @@ void MessageHandler::SendEveryone(const InboxItem& message) {
 void MessageHandler::GetNewMessages(const bptime::seconds& interval,
                                     const boost::system::error_code& error_code) {
   if (error_code) {
-    if (error_code != ba::error::operation_aborted) {
+    if (error_code != boost::asio::error::operation_aborted) {
       LOG(kWarning) << "Refresh timer error: " << error_code.message();
     } else {
       LOG(kInfo) << "Timer cancel triggered: " << error_code.message();
@@ -445,7 +445,7 @@ void MessageHandler::RetrieveMessagesForAllIds() {
 //    LOG(kError) << "RetrieveMessagesForAllIds for " << (*it);
     asymm::Keys mmid(passport_.SignaturePacketDetails(passport::kMmid, true, *it));
     assert(!mmid.identity.empty());
-    std::string mmid_value(remote_chunk_store_->Get(AppendableByAllType(mmid.identity), mmid));
+    std::string mmid_value(remote_chunk_store_.Get(AppendableByAllType(mmid.identity), mmid));
 
     if (mmid_value.empty()) {
       LOG(kWarning) << "Failed to get MPID contents for " << (*it) << ": " << result;

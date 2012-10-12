@@ -68,11 +68,14 @@ void InitialiseAndConnectElements(LifeStuff& elements, const fs::path& dir, vola
 }  // namespace
 
 TEST(IndependentFullTest, FUNC_CreateLogoutLoginLogout) {
+  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
+  NetworkHelper network;
+  network.StartLocalNetwork(test_dir, 10);
+
   LifeStuff test_elements;
   std::string keyword(RandomAlphaNumericString(5)),
               pin(CreatePin()),
               password(RandomAlphaNumericString(5));
-  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   volatile bool done(false);
   InitialiseAndConnectElements(test_elements, *test_dir, &done);
 
@@ -83,6 +86,8 @@ TEST(IndependentFullTest, FUNC_CreateLogoutLoginLogout) {
   EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword, pin, password));
   Sleep(boost::posix_time::seconds(10));
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+  test_elements.Finalise();
+  network.StopLocalNetwork();
 }
 
 TEST_F(OneUserApiTest, FUNC_ChangeCredentials) {

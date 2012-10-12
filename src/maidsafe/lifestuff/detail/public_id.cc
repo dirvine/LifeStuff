@@ -46,9 +46,9 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-PublicId::PublicId(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
+PublicId::PublicId(priv::chunk_store::RemoteChunkStore& remote_chunk_store,
                    Session& session,
-                   ba::io_service& asio_service)
+                   boost::asio::io_service& asio_service)
     : remote_chunk_store_(remote_chunk_store),
       session_(session),
       passport_(session_.passport()),
@@ -127,10 +127,10 @@ int PublicId::CreatePublicId(const std::string& public_id, bool accepts_new_cont
                                                                       &cond_var,
                                                                       &results[0]);
                                  };
-  if (!remote_chunk_store_->Store(AppendableByAllName(mmid.identity),
-                                  AppendableIdValue(mmid, true),
-                                  callback,
-                                  mmid)) {
+  if (!remote_chunk_store_.Store(AppendableByAllName(mmid.identity),
+                                 AppendableIdValue(mmid, true),
+                                 callback,
+                                 mmid)) {
     std::unique_lock<std::mutex> lock(mutex);
     results[0] = kRemoteChunkStoreFailure;
   }
@@ -139,7 +139,7 @@ int PublicId::CreatePublicId(const std::string& public_id, bool accepts_new_cont
       utils::ChunkStoreOperationCallback(response, &mutex, &cond_var, &results[1]);
     };
   std::string anmpid_name(SignaturePacketName(anmpid.identity));
-  if (!remote_chunk_store_->Store(anmpid_name, SignaturePacketValue(anmpid), callback, anmpid)) {
+  if (!remote_chunk_store_.Store(anmpid_name, SignaturePacketValue(anmpid), callback, anmpid)) {
     std::unique_lock<std::mutex> lock(mutex);
     results[1] = kRemoteChunkStoreFailure;
   }
@@ -148,7 +148,7 @@ int PublicId::CreatePublicId(const std::string& public_id, bool accepts_new_cont
   callback = [&] (const bool& response) {
                utils::ChunkStoreOperationCallback(response, &mutex, &cond_var, &results[2]);
              };
-  if (!remote_chunk_store_->Store(mpid_name, SignaturePacketValue(mpid), callback, anmpid)) {
+  if (!remote_chunk_store_.Store(mpid_name, SignaturePacketValue(mpid), callback, anmpid)) {
     std::unique_lock<std::mutex> lock(mutex);
     results[2] = kRemoteChunkStoreFailure;
   }
@@ -157,10 +157,10 @@ int PublicId::CreatePublicId(const std::string& public_id, bool accepts_new_cont
   callback = [&] (const bool& response) {
                utils::ChunkStoreOperationCallback(response, &mutex, &cond_var, &results[3]);
              };
-  if (!remote_chunk_store_->Store(mcid_name,
-                                  AppendableIdValue(mpid, accepts_new_contacts),
-                                  callback,
-                                  mpid)) {
+  if (!remote_chunk_store_.Store(mcid_name,
+                                 AppendableIdValue(mpid, accepts_new_contacts),
+                                 callback,
+                                 mpid)) {
     std::unique_lock<std::mutex> lock(mutex);
     results[3] = kRemoteChunkStoreFailure;
   }
@@ -280,30 +280,30 @@ int PublicId::DeletePublicId(const std::string& public_id) {
     LOG(kInfo) << "Deleting LS card: " << result;
   }
 
-  if (!remote_chunk_store_->Delete(inbox_name,
-                                   [&] (bool result) { OperationCallback(result, results, 0); },  // NOLINT (Dan)
-                                   inbox_keys)) {
+  if (!remote_chunk_store_.Delete(inbox_name,
+                                  [&] (bool result) { OperationCallback(result, results, 0); },  // NOLINT (Dan)
+                                  inbox_keys)) {
     LOG(kError) << "Failed to delete inbox.";
     OperationCallback(false, results, 0);
   }
 
-  if (!remote_chunk_store_->Delete(mcid_name,
-                                   [&] (bool result) { OperationCallback(result, results, 1); },  // NOLINT (Dan)
-                                   mpid)) {
+  if (!remote_chunk_store_.Delete(mcid_name,
+                                  [&] (bool result) { OperationCallback(result, results, 1); },  // NOLINT (Dan)
+                                  mpid)) {
     LOG(kError) << "Failed to delete MCID.";
     OperationCallback(false, results, 1);
   }
 
-  if (!remote_chunk_store_->Delete(mpid_name,
-                                   [&] (bool result) { OperationCallback(result, results, 2); },  // NOLINT (Dan)
-                                   anmpid)) {
+  if (!remote_chunk_store_.Delete(mpid_name,
+                                  [&] (bool result) { OperationCallback(result, results, 2); },  // NOLINT (Dan)
+                                  anmpid)) {
     LOG(kError) << "Failed to delete MPID.";
     OperationCallback(false, results, 2);
   }
 
-  if (!remote_chunk_store_->Delete(anmpid_name,
-                                   [&] (bool result) { OperationCallback(result, results, 3); },  // NOLINT (Dan)
-                                   anmpid)) {
+  if (!remote_chunk_store_.Delete(anmpid_name,
+                                  [&] (bool result) { OperationCallback(result, results, 3); },  // NOLINT (Dan)
+                                  anmpid)) {
     LOG(kError) << "Failed to delete ANMPID.";
     OperationCallback(false, results, 3);
   }
@@ -444,10 +444,10 @@ int PublicId::RemoveContact(const std::string& own_public_id,
                                  };
   asymm::Keys new_mmid(passport_.SignaturePacketDetails(passport::kMmid, false, own_public_id));
   assert(!new_mmid.identity.empty());
-  if (!remote_chunk_store_->Store(AppendableByAllName(new_mmid.identity),
-                                  AppendableIdValue(new_mmid, true),
-                                  callback,
-                                  new_mmid)) {
+  if (!remote_chunk_store_.Store(AppendableByAllName(new_mmid.identity),
+                                 AppendableIdValue(new_mmid, true),
+                                 callback,
+                                 new_mmid)) {
     std::unique_lock<std::mutex> lock(mutex);
     results[0] = kRemoteChunkStoreFailure;
   }
@@ -497,11 +497,11 @@ int PublicId::RemoveContact(const std::string& own_public_id,
   callback = [&] (const bool& response) {
                utils::ChunkStoreOperationCallback(response, &mutex, &cond_var, &results[0]);
              };
-  if (!remote_chunk_store_->Modify(AppendableByAllName(old_mmid.identity),
-                                   ComposeModifyAppendableByAll(old_mmid.private_key,
-                                                                pca::kModifiableByOwner),
-                                   callback,
-                                   old_mmid)) {
+  if (!remote_chunk_store_.Modify(AppendableByAllName(old_mmid.identity),
+                                  ComposeModifyAppendableByAll(old_mmid.private_key,
+                                                               pca::kModifiableByOwner),
+                                  callback,
+                                  old_mmid)) {
     std::unique_lock<std::mutex> lock(mutex);
     results[0] = kRemoteChunkStoreFailure;
   }
@@ -619,7 +619,7 @@ int PublicId::SetLifestuffCard(const std::string& my_public_id, const SocialInfo
                                                                       &cond_var,
                                                                       &results[0]);
                                  };
-  if (!remote_chunk_store_->Modify(card_address, signed_data.SerializeAsString(), callback, mmid)) {
+  if (!remote_chunk_store_.Modify(card_address, signed_data.SerializeAsString(), callback, mmid)) {
     LOG(kError) << "Immediate chunkstore error.";
     return kRemoteChunkStoreFailure;
   }
@@ -673,7 +673,7 @@ bs2::connection PublicId::ConnectToLifestuffCardUpdatedSignal(
 void PublicId::GetNewContacts(const bptime::seconds& interval,
                               const boost::system::error_code& error_code) {
   if (error_code) {
-    if (error_code != ba::error::operation_aborted) {
+    if (error_code != boost::asio::error::operation_aborted) {
       LOG(kWarning) << "Refresh timer error: " << error_code.message();
     } else {
       LOG(kInfo) << "Timer cancel triggered: " << error_code.message();
@@ -699,7 +699,7 @@ void PublicId::GetContactsHandle() {
     LOG(kInfo) << "PublicId::GetNewContacts: " << (*it);
     asymm::Keys mpid(passport_.SignaturePacketDetails(passport::kMpid, true, *it));
     assert(!mpid.identity.empty());
-    std::string mpid_packet(remote_chunk_store_->Get(MaidsafeContactIdName(*it), mpid));
+    std::string mpid_packet(remote_chunk_store_.Get(MaidsafeContactIdName(*it), mpid));
     if (mpid_packet.empty()) {
       LOG(kError) << "Failed to get MPID contents for " << (*it);
     } else {
@@ -964,10 +964,10 @@ int PublicId::ModifyAppendability(const std::string& public_id, const char appen
                                    utils::ChunkStoreOperationCallback(response, &mutex, &cond_var,
                                                                       &results[0]);
                                  };
-  if (!remote_chunk_store_->Modify(MaidsafeContactIdName(public_id),
-                                   ComposeModifyAppendableByAll(mpid.private_key, appendability),
-                                   callback,
-                                   mpid)) {
+  if (!remote_chunk_store_.Modify(MaidsafeContactIdName(public_id),
+                                  ComposeModifyAppendableByAll(mpid.private_key, appendability),
+                                  callback,
+                                  mpid)) {
     LOG(kError) << "Immediate modify failure for MPID.";
     std::unique_lock<std::mutex> lock(mutex);
     results[0] = kRemoteChunkStoreFailure;
@@ -976,10 +976,10 @@ int PublicId::ModifyAppendability(const std::string& public_id, const char appen
   callback = [&] (const bool& response) {
                utils::ChunkStoreOperationCallback(response, &mutex, &cond_var, &results[1]);
              };
-  if (!remote_chunk_store_->Modify(AppendableByAllName(mmid.identity),
-                                   ComposeModifyAppendableByAll(mmid.private_key, appendability),
-                                   callback,
-                                   mmid)) {
+  if (!remote_chunk_store_.Modify(AppendableByAllName(mmid.identity),
+                                  ComposeModifyAppendableByAll(mmid.private_key, appendability),
+                                  callback,
+                                  mmid)) {
     LOG(kError) << "Immediate modify failure for MMID.";
     std::unique_lock<std::mutex> lock(mutex);
     results[1] = kRemoteChunkStoreFailure;
@@ -1067,10 +1067,10 @@ int PublicId::InformContactInfo(const std::string& public_id,
                                      utils::ChunkStoreOperationCallback(response, &mutex, &cond_var,
                                                                         &results[i]);
                                    };
-    if (!remote_chunk_store_->Modify(contact_id,
-                                     signed_data.SerializeAsString(),
-                                     callback,
-                                     mpid)) {
+    if (!remote_chunk_store_.Modify(contact_id,
+                                    signed_data.SerializeAsString(),
+                                    callback,
+                                    mpid)) {
       LOG(kError) << "Failed to send out the message to: " << contact_id;
       std::unique_lock<std::mutex> lock(mutex);
       results[i] = kRemoteChunkStoreFailure;
@@ -1093,7 +1093,7 @@ int PublicId::InformContactInfo(const std::string& public_id,
 
 int PublicId::GetPublicKey(const std::string& packet_name, Contact& contact, int type) {
   std::string chunk_type(1, pca::kAppendableByAll);
-  std::string network_packet(remote_chunk_store_->Get(packet_name + chunk_type));
+  std::string network_packet(remote_chunk_store_.Get(packet_name + chunk_type));
   if (network_packet.empty()) {
     LOG(kError) << "Failed to obtain packet from network.";
     return kGetPublicKeyFailure;
@@ -1155,7 +1155,7 @@ int PublicId::StoreLifestuffCard(asymm::Keys mmid,
   while (attempts++ < 10) {
     results[0] = priv::utilities::kPendingResult;
     card_address = pca::ApplyTypeToName(RandomString(64), pca::kModifiableByOwner);
-    if (!remote_chunk_store_->Store(card_address, empty_card_content, callback, mmid)) {
+    if (!remote_chunk_store_.Store(card_address, empty_card_content, callback, mmid)) {
       LOG(kInfo) << "Failed to store lifestuff card, attempt: " << (attempts - 1);
       return kRemoteChunkStoreFailure;
     }
@@ -1183,10 +1183,10 @@ int PublicId::RemoveLifestuffCard(const std::string& lifestuff_card_address,
                                                                       &cond_var,
                                                                       &results[0]);
                                  };
-  if (!remote_chunk_store_->Delete(pca::ApplyTypeToName(lifestuff_card_address,
-                                                        pca::kModifiableByOwner),
-                                   callback,
-                                   mmid)) {
+  if (!remote_chunk_store_.Delete(pca::ApplyTypeToName(lifestuff_card_address,
+                                                       pca::kModifiableByOwner),
+                                  callback,
+                                  mmid)) {
     LOG(kError) << "Failed to delete lifestuff card.";
     return kRemoteChunkStoreFailure;
   }
@@ -1233,7 +1233,7 @@ std::string PublicId::GetContactCardAddress(const std::string& my_public_id,
 int PublicId::RetrieveLifestuffCard(const std::string& lifestuff_card_address,
                                     SocialInfoMap& social_info) {
   std::string card_address(pca::ApplyTypeToName(lifestuff_card_address, pca::kModifiableByOwner));
-  std::string net_lifestuff_card(remote_chunk_store_->Get(card_address));
+  std::string net_lifestuff_card(remote_chunk_store_.Get(card_address));
 
   pca::SignedData signed_data;
   if (!signed_data.ParseFromString(net_lifestuff_card)) {

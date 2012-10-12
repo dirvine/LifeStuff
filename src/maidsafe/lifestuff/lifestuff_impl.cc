@@ -112,8 +112,8 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
     int counter(0);
     while (counter++ < kRetryLimit) {
       Sleep(bptime::milliseconds(100 + RandomUint32() % 1000));
-      client_controller_.reset(
-          new priv::process_management::ClientController(software_update_available_function));
+      client_controller_ = std::make_shared<priv::process_management::ClientController>(
+                               software_update_available_function);
       if (client_controller_->BootstrapEndpoints(bootstrap_endpoints) &&
           !bootstrap_endpoints.empty())
         counter = kRetryLimit;
@@ -264,6 +264,8 @@ int LifeStuffImpl::Finalise() {
   if (error_code)
     LOG(kWarning) << "Failed to remove buffered chunk store path.";
 
+  if (vault_cheat_)
+    vault_node_.Stop();
   asio_service_.Stop();
 //  remote_chunk_store_.reset();
 //  node_.reset();
@@ -486,7 +488,7 @@ int LifeStuffImpl::MountDrive() {
     }
   }
 
-  user_storage_->MountDrive(mount_dir, &session_);
+  user_storage_->MountDrive( buffered_path_ / "encryption_drive_chunks", mount_dir, &session_);
   if (!user_storage_->mount_status()) {
     LOG(kError) << "Failed to mount";
     return kMountDriveError;
@@ -1202,9 +1204,9 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
   routings_handler_->set_remote_chunk_store(*remote_chunk_store_);
   user_credentials_->set_remote_chunk_store(*remote_chunk_store_);
 
-  public_id_ = std::make_shared<PublicId>(remote_chunk_store_, session_, asio_service_.service());
+  public_id_ = std::make_shared<PublicId>(*remote_chunk_store_, session_, asio_service_.service());
 
-  message_handler_ = std::make_shared<MessageHandler>(remote_chunk_store_,
+  message_handler_ = std::make_shared<MessageHandler>(*remote_chunk_store_,
                                                       session_,
                                                       asio_service_.service());
 

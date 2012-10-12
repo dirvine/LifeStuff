@@ -168,6 +168,12 @@ TEST_F(OneUserApiTest, FUNC_ChangeProfilePictureAfterSaveSession) {
   }
 }
 
+TEST_F(TwoUsersApiTest, FUNC_TrivialTest) {
+  LOG(kInfo) << "\n\n\n\n";
+  Sleep(bptime::seconds(10));
+  LOG(kInfo) << "\n\n\n\n";
+}
+
 TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdConsecutively) {
   EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_1_, keyword_1_, pin_1_, password_1_));
   std::string new_public_id(RandomAlphaNumericString(6));

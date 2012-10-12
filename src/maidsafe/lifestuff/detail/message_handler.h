@@ -40,10 +40,8 @@
 #include "maidsafe/lifestuff/detail/message_handler_signal_types.h"
 #include "maidsafe/lifestuff/detail/utils.h"
 
-namespace ba = boost::asio;
 namespace bptime = boost::posix_time;
 namespace bs2 = boost::signals2;
-namespace pcs = maidsafe::priv::chunk_store;
 
 namespace maidsafe {
 
@@ -60,9 +58,9 @@ class MessageHandler {
  public:
   typedef std::map<std::string, uint64_t> ReceivedMessagesMap;
 
-  MessageHandler(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
+  MessageHandler(priv::chunk_store::RemoteChunkStore& remote_chunk_store,
                  Session& session,
-                 ba::io_service& asio_service);
+                 boost::asio::io_service& asio_service);
   ~MessageHandler();
 
   void StartUp(bptime::seconds interval);
@@ -113,12 +111,12 @@ class MessageHandler {
   void ContentsDontParseAsDataMap(const std::string& serialised_dm, std::string* data_map);
   void ProcessPresenceMessages();
 
-  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
+  priv::chunk_store::RemoteChunkStore& remote_chunk_store_;
   Session& session_;
   passport::Passport& passport_;
-  ba::deadline_timer get_new_messages_timer_;
+  boost::asio::deadline_timer get_new_messages_timer_;
   bool get_new_messages_timer_active_;
-  ba::io_service& asio_service_;
+  boost::asio::io_service& asio_service_;
   bool start_up_done_;
   ReceivedMessagesMap received_messages_;
 

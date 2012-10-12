@@ -340,7 +340,7 @@ std::string GetNameInPath(const fs::path& save_path, const std::string& file_nam
 
 encrypt::DataMapPtr ParseSerialisedDataMap(const std::string& serialised_data_map) {
 //  LOG(kError) << "ParseSerialisedDataMap - input size: " << serialised_data_map.size();
-  encrypt::DataMapPtr data_map(new encrypt::DataMap);
+  encrypt::DataMapPtr data_map(std::make_shared<encrypt::DataMap>());
   if (encrypt::ParseDataMap(serialised_data_map, *data_map) != kSuccess) {
     LOG(kError) << "Failed to parse DataMap.";
     return encrypt::DataMapPtr();

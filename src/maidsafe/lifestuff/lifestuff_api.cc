@@ -33,7 +33,7 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-LifeStuff::LifeStuff() : lifestuff_impl_(new LifeStuffImpl) {}
+LifeStuff::LifeStuff() : lifestuff_impl_(std::make_shared<LifeStuffImpl>()) {}
 
 LifeStuff::~LifeStuff() {}
 

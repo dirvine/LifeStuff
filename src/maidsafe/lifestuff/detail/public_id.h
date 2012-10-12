@@ -37,22 +37,16 @@
 #include "maidsafe/lifestuff/detail/contacts.h"
 #include "maidsafe/lifestuff/detail/session.h"
 
-namespace ba = boost::asio;
 namespace bptime = boost::posix_time;
 namespace bs2 = boost::signals2;
-namespace pcs = maidsafe::priv::chunk_store;
 
 namespace maidsafe {
 
 namespace priv {
-namespace chunk_actions {
-class SignedData;
-}
-}
+namespace chunk_actions { class SignedData; }
+}  // namespace priv
 
-namespace passport {
-class Passport;
-}  // namespace passport
+namespace passport { class Passport; }
 
 namespace lifestuff {
 
@@ -65,9 +59,7 @@ enum IntroductionType {
   kLifestuffCardChanged
 };
 
-namespace test {
-class PublicIdTest;
-}
+namespace test { class PublicIdTest; }
 
 class Session;
 class Introduction;
@@ -78,28 +70,28 @@ class PublicId {
                            const std::string&,
                            const std::string&,
                            const std::string&)> NewContactSignal;
-  typedef std::shared_ptr<NewContactSignal> NewContactSignalPtr;
+
   typedef bs2::signal<void(const std::string&,  // NOLINT (Fraser)
                            const std::string&,
                            const std::string&)> ContactConfirmedSignal;
-  typedef std::shared_ptr<ContactConfirmedSignal> ContactConfirmedSignalPtr;
+
   typedef bs2::signal<void(const std::string&,  // NOLINT (Alison)
                            const std::string&,
                            const std::string&,
                            const std::string&)> ContactDeletionReceivedSignal;
-  typedef std::shared_ptr<ContactDeletionReceivedSignal> ContactDeletionReceivedSignalPtr;
+
   typedef bs2::signal<void(const std::string&,  // NOLINT (Alison)
                            const std::string&,
                            const std::string&,
                            const std::string&)> ContactDeletionProcessedSignal;
-  typedef std::shared_ptr<ContactDeletionProcessedSignal> ContactDeletionProcessedSignalPtr;
+
   typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
                            const std::string&,
                            const std::string&)> LifestuffCardUpdatedSignal;
 
-  PublicId(std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store,
+  PublicId(priv::chunk_store::RemoteChunkStore& remote_chunk_store,
            Session& session,
-           ba::io_service& asio_service);
+           boost::asio::io_service& asio_service);
   ~PublicId();
 
   // Periodically retrieves saved MCIDs from MPID and fires new_contact_signal_
@@ -196,20 +188,18 @@ class PublicId {
                         const std::string& inbox_name = "");
   int GetPublicKey(const std::string& packet_name, Contact& contact, int type);
 
-  int StoreLifestuffCard(asymm::Keys mmid,
-                         std::string& lifestuff_card_address);
-  int RemoveLifestuffCard(const std::string& lifestuff_card_address,
-                          asymm::Keys mmid);
+  int StoreLifestuffCard(asymm::Keys mmid, std::string& lifestuff_card_address);
+  int RemoveLifestuffCard(const std::string& lifestuff_card_address, asymm::Keys mmid);
   std::string GetOwnCardAddress(const std::string& my_public_id);
   std::string GetContactCardAddress(const std::string& my_public_id,
                                     const std::string& contact_public_id);
   int RetrieveLifestuffCard(const std::string& lifestuff_card_address,
                             SocialInfoMap& social_info);
 
-  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_;
+  priv::chunk_store::RemoteChunkStore& remote_chunk_store_;
   Session& session_;
   passport::Passport& passport_;
-  ba::deadline_timer get_new_contacts_timer_;
+  boost::asio::deadline_timer get_new_contacts_timer_;
   bool get_new_contacts_timer_active_;
   NewContactSignal new_contact_signal_;
   ContactConfirmedSignal contact_confirmed_signal_;
