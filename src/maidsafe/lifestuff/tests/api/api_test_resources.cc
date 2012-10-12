@@ -643,7 +643,7 @@ void OneUserApiTest::TearDown() {
 }
 
 void TwoInstancesApiTest::SetUp() {
-  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12));
+  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 10));
   EXPECT_EQ(kSuccess, test_elements_.Initialise([] (std::string) {}, *test_dir_, true));
   EXPECT_EQ(kSuccess, test_elements_2_.Initialise([] (std::string) {}, *test_dir_, true));
   EXPECT_EQ(kSuccess,
@@ -701,7 +701,7 @@ void TwoInstancesApiTest::TearDown() {
 }
 
 void TwoUsersApiTest::SetUp() {
-  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12));
+//  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12));
   ASSERT_EQ(kSuccess,
             CreateAndConnectTwoPublicIds(test_elements_1_, test_elements_2_,
                                          testing_variables_1_, testing_variables_2_,
@@ -711,7 +711,7 @@ void TwoUsersApiTest::SetUp() {
 }
 
 void TwoUsersApiTest::TearDown() {
-  EXPECT_TRUE(network_.StopLocalNetwork());
+//  EXPECT_TRUE(network_.StopLocalNetwork());
   if (test_elements_1_.state() == kConnected)
     EXPECT_EQ(kSuccess, test_elements_1_.Finalise());
   if (test_elements_2_.state() == kConnected)

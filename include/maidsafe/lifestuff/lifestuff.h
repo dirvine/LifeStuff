@@ -61,7 +61,7 @@ enum LoggedInState {
 
 const size_t kMaxChatMessageSize(1 * 1024 * 1024);
 const uint32_t kFileRecontructionLimit(20 * 1024 * 1024);
-const uint8_t kThreads(10);
+const uint8_t kThreads(5);
 const uint8_t kSecondsInterval(5);
 const size_t kMinWordSize(5);
 const size_t kMaxWordSize(30);

@@ -50,6 +50,7 @@ namespace lifestuff {
 UserStorage::UserStorage(std::shared_ptr<pcs::RemoteChunkStore> chunk_store)
     : mount_status_(false),
       chunk_store_(chunk_store),
+      file_chunk_store_(),
       drive_in_user_space_(),
       share_renamed_function_(),
       share_changed_function_(),
@@ -57,20 +58,29 @@ UserStorage::UserStorage(std::shared_ptr<pcs::RemoteChunkStore> chunk_store)
       mount_dir_(),
       mount_thread_() {}
 
-void UserStorage::MountDrive(const fs::path& mount_dir_path,
+void UserStorage::MountDrive(const fs::path& file_chunk_store_path,
+                             const fs::path& mount_dir_path,
                              Session* session,
                              const std::string& drive_logo) {
   if (mount_status_) {
     LOG(kInfo) << "Already mounted.";
     return;
   }
+
+  if (!file_chunk_store_.Init(file_chunk_store_path)) {
+    LOG(kError) << "Failed to initialise needed file chunkstore.";
+    return;
+  }
+
   if (!fs::exists(mount_dir_path))
     fs::create_directory(mount_dir_path);
 
   session_ = session;
   asymm::Keys key_ring(session->passport().SignaturePacketDetails(passport::kMaid, true));
   assert(!key_ring.identity.empty());
-  drive_in_user_space_ = std::make_shared<MaidDriveInUserSpace>(*chunk_store_, key_ring);
+  drive_in_user_space_ = std::make_shared<MaidDriveInUserSpace>(*chunk_store_,
+                                                                file_chunk_store_,
+                                                                key_ring);
 
   int result(kGeneralError);
   if (!session->has_drive_data()) {
@@ -285,7 +295,7 @@ std::string UserStorage::ConstructFile(const std::string& serialised_data_map) {
   // if (file_size > 'some limit')
   //   return "";
 
-  encrypt::SelfEncryptor self_encryptor(data_map, *chunk_store_);
+  encrypt::SelfEncryptor self_encryptor(data_map, *chunk_store_, file_chunk_store_);
   std::unique_ptr<char[]> contents(new char[file_size]);
   if (!self_encryptor.Read(contents.get(), file_size, 0)) {
     LOG(kError) << "Failure to read contents from SE: " << file_size;

@@ -268,7 +268,6 @@ int UserCredentialsImpl::LogOut() {
     return result;
   }
 
-//  session_.Reset();
   return kSuccess;
 }
 

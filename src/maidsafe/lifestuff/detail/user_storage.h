@@ -40,6 +40,7 @@
 #include "maidsafe/drive/return_codes.h"
 
 #include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
+#include "maidsafe/private/chunk_store/file_chunk_store.h"
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 
@@ -70,7 +71,8 @@ class UserStorage {
   explicit UserStorage(std::shared_ptr<pcs::RemoteChunkStore> chunk_store);
   virtual ~UserStorage() {}
 
-  virtual void MountDrive(const fs::path& mount_dir_path,
+  virtual void MountDrive(const fs::path& file_chunk_store_path,
+                          const fs::path& mount_dir_path,
                           Session* session,
                           const std::string& drive_logo = "LifeStuff Drive");
   virtual void UnMountDrive();
@@ -112,6 +114,7 @@ class UserStorage {
 
   bool mount_status_;
   std::shared_ptr<pcs::RemoteChunkStore> chunk_store_;
+  pcs::FileChunkStore file_chunk_store_;
   std::shared_ptr<MaidDriveInUserSpace> drive_in_user_space_;
   ShareRenamedFunction share_renamed_function_;
   ShareChangedFunction share_changed_function_;

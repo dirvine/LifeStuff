@@ -264,6 +264,8 @@ int LifeStuffImpl::Finalise() {
   if (error_code)
     LOG(kWarning) << "Failed to remove buffered chunk store path.";
 
+  if (vault_cheat_)
+    vault_node_.Stop();
   asio_service_.Stop();
 //  remote_chunk_store_.reset();
 //  node_.reset();
@@ -486,7 +488,7 @@ int LifeStuffImpl::MountDrive() {
     }
   }
 
-  user_storage_->MountDrive(mount_dir, &session_);
+  user_storage_->MountDrive( buffered_path_ / "encryption_drive_chunks", mount_dir, &session_);
   if (!user_storage_->mount_status()) {
     LOG(kError) << "Failed to mount";
     return kMountDriveError;

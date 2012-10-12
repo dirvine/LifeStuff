@@ -66,7 +66,7 @@ std::string ConstructCommandLine(bool is_vault_exe, const std::string& args) {
 }
 #endif
 
-std::vector<std::pair<std::string, uint16_t>> ExtractEndpoints(const std::string& input) {
+std::vector<std::pair<std::string, uint16_t> > ExtractEndpoints(const std::string& input) {
   std::vector<std::pair<std::string, uint16_t>> endpoints;
   boost::regex expression("(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}):(\\d{1,5})");
   try {
@@ -85,7 +85,7 @@ std::vector<std::pair<std::string, uint16_t>> ExtractEndpoints(const std::string
   return endpoints;
 }
 
-bool WriteBootstrap(const std::vector<std::pair<std::string, uint16_t>>& endpoints) {
+bool WriteBootstrap(const std::vector<std::pair<std::string, uint16_t> >& endpoints) {
   protobuf::Bootstrap protobuf_bootstrap;
   for (size_t i = 0; i < endpoints.size(); ++i) {
     protobuf::Endpoint* endpoint = protobuf_bootstrap.add_bootstrap_contacts();

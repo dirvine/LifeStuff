@@ -209,6 +209,7 @@ bool RoutingsHandler::Send(const std::string& source_id,
   NodeId group_claim_as_own_id;
   if (source_id == destination_id)
     group_claim_as_own_id = NodeId(destination_id);
+
   LOG(kInfo) << "sender: " << DebugId(group_claim_as_own_id) << ", receiver: " << DebugId(NodeId(destination_id));
   routing_details->routing_object.Send(NodeId(destination_id),
                                        group_claim_as_own_id,
@@ -276,6 +277,11 @@ void RoutingsHandler::OnRequestReceived(const std::string& receiver_id,
                                         const NodeId& sender_id,
                                         const routing::ReplyFunctor& reply_functor) {
   LOG(kInfo) << "receiver: " << DebugId(NodeId(receiver_id)) << ", sender: " << DebugId(sender_id);
+  if (sender_id == NodeId()) {
+    LOG(kWarning) << "Void sender. Dropping.";
+    return;
+  }
+
   std::shared_ptr<RoutingDetails> routing_details;
   {
     std::unique_lock<std::mutex> loch(routing_objects_mutex_);
