@@ -1204,9 +1204,9 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
   routings_handler_->set_remote_chunk_store(*remote_chunk_store_);
   user_credentials_->set_remote_chunk_store(*remote_chunk_store_);
 
-  public_id_ = std::make_shared<PublicId>(remote_chunk_store_, session_, asio_service_.service());
+  public_id_ = std::make_shared<PublicId>(*remote_chunk_store_, session_, asio_service_.service());
 
-  message_handler_ = std::make_shared<MessageHandler>(remote_chunk_store_,
+  message_handler_ = std::make_shared<MessageHandler>(*remote_chunk_store_,
                                                       session_,
                                                       asio_service_.service());
 

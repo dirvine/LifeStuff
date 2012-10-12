@@ -171,18 +171,18 @@ class MessageHandlerTest : public testing::Test {
                                            node3_,
                                            NetworkHealthFunction());
 
-    public_id1_.reset(new PublicId(remote_chunk_store1_, session1_, asio_service1_.service()));
-    message_handler1_.reset(new MessageHandler(remote_chunk_store1_,
+    public_id1_.reset(new PublicId(*remote_chunk_store1_, session1_, asio_service1_.service()));
+    message_handler1_.reset(new MessageHandler(*remote_chunk_store1_,
                                                session1_,
                                                asio_service1_.service()));
 
-    public_id2_.reset(new PublicId(remote_chunk_store2_, session2_, asio_service2_.service()));
-    message_handler2_.reset(new MessageHandler(remote_chunk_store2_,
+    public_id2_.reset(new PublicId(*remote_chunk_store2_, session2_, asio_service2_.service()));
+    message_handler2_.reset(new MessageHandler(*remote_chunk_store2_,
                                                session2_,
                                                asio_service2_.service()));
 
-    public_id3_.reset(new PublicId(remote_chunk_store3_, session3_, asio_service3_.service()));
-    message_handler3_.reset(new MessageHandler(remote_chunk_store3_,
+    public_id3_.reset(new PublicId(*remote_chunk_store3_, session3_, asio_service3_.service()));
+    message_handler3_.reset(new MessageHandler(*remote_chunk_store3_,
                                                session3_,
                                                asio_service3_.service()));
   }

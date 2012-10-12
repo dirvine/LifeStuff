@@ -281,9 +281,9 @@ class PublicIdTest : public testing::Test {
                                            node2_,
                                            NetworkHealthFunction());
 
-    public_id1_.reset(new PublicId(remote_chunk_store1_, session1_, asio_service1_.service()));
+    public_id1_.reset(new PublicId(*remote_chunk_store1_, session1_, asio_service1_.service()));
 
-    public_id2_.reset(new PublicId(remote_chunk_store2_, session2_, asio_service2_.service()));
+    public_id2_.reset(new PublicId(*remote_chunk_store2_, session2_, asio_service2_.service()));
   }
 
   void TearDown() {
@@ -1445,7 +1445,7 @@ int CreatePublicIdObject(std::shared_ptr<PublicId>& public_id,
   session.Reset();
   asio_service.Start();
 
-  public_id.reset(new PublicId(remote_chunk_store, session, asio_service.service()));
+  public_id.reset(new PublicId(*remote_chunk_store, session, asio_service.service()));
 
   return public_id->CreatePublicId(public_identity, true);
 }
