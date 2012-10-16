@@ -78,7 +78,7 @@ void UserStorage::MountDrive(const fs::path& file_chunk_store_path,
   session_ = session;
   asymm::Keys key_ring(session->passport().SignaturePacketDetails(passport::kMaid, true));
   assert(!key_ring.identity.empty());
-  drive_in_user_space_ = std::make_shared<MaidDriveInUserSpace>(*chunk_store_,
+  drive_in_user_space_ = std::make_shared<MaidDriveInUserSpace>(chunk_store_,
                                                                 file_chunk_store_,
                                                                 key_ring);
 

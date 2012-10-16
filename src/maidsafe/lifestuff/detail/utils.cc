@@ -35,7 +35,7 @@
 #include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_action_authority.h"
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
-#include "maidsafe/private/chunk_actions/chunk_types.h"
+#include "maidsafe/private/chunk_actions/chunk_id.h"
 
 #include "maidsafe/encrypt/data_map.h"
 
@@ -221,70 +221,61 @@ int CreateSmallTestFile(fs::path const& parent, int size_in_kb, std::string* fil
   return kSuccess;
 }
 
-std::string ComposeSignaturePacketName(const std::string& name) {
-  return name + std::string (1, pca::kSignaturePacket);
+priv::ChunkId ComposeSignaturePacketName(const Identity& name) {
+  return priv::ApplyTypeToName(name, priv::ChunkType::kSignaturePacket);
 }
 
-std::string ComposeModifyAppendableByAll(const asymm::PrivateKey& signing_key,
-                                         const char appendability) {
-  std::string appendability_string(1, appendability);
+NonEmptyString ComposeModifyAppendableByAll(const asymm::PrivateKey& signing_key,
+                                            const char appendability) {
+  asymm::PlainText appendability_string(std::string(1, appendability));
   pca::SignedData signed_data;
-  std::string signature;
-
-  asymm::Sign(appendability_string, signing_key, &signature);
-  signed_data.set_data(appendability_string);
-  signed_data.set_signature(signature);
+  asymm::Signature signature(asymm::Sign(appendability_string, signing_key));
+  signed_data.set_data(appendability_string.string());
+  signed_data.set_signature(signature.string());
   pca::ModifyAppendableByAll modify;
   modify.mutable_allow_others_to_append()->CopyFrom(signed_data);
-  return modify.SerializeAsString();
+  return NonEmptyString(modify.SerializeAsString());
 }
 
-std::string AppendableIdValue(const asymm::Keys& data, bool accepts_new_contacts) {
+NonEmptyString AppendableIdValue(const Fob& fob, bool accepts_new_contacts) {
   pca::AppendableByAll contact_id;
   pca::SignedData* identity_key = contact_id.mutable_identity_key();
   pca::SignedData* allow_others_to_append = contact_id.mutable_allow_others_to_append();
 
-  std::string public_key;
-  asymm::EncodePublicKey(data.public_key, &public_key);
-  identity_key->set_data(public_key);
-  identity_key->set_signature(data.validation_token);
-  allow_others_to_append->set_data(accepts_new_contacts ? std::string(1, pca::kAppendableByAll) :
-                                                          std::string(1, pca::kModifiableByOwner));
+  asymm::EncodedPublicKey public_key(asymm::EncodeKey(fob.keys.public_key));
+  identity_key->set_data(public_key.string());
+  identity_key->set_signature(fob.validation_token.string());
+  allow_others_to_append->set_data(
+      accepts_new_contacts ?
+          std::string(1, static_cast<char>(priv::ChunkType::kAppendableByAll)) :
+          std::string(1, static_cast<char>(priv::ChunkType::kModifiableByOwner)));
 
-  asymm::Signature packet_signature;
-  int result(asymm::Sign(allow_others_to_append->data(), data.private_key, &packet_signature));
-  if (result != kSuccess) {
-    LOG(kError) << "AppendableIdValue - Failed to sign";
-    return "";
-  }
+  asymm::Signature packet_signature(asymm::Sign(asymm::PlainText(allow_others_to_append->data()),
+                                                fob.keys.private_key));
+  allow_others_to_append->set_signature(packet_signature.string());
 
-  allow_others_to_append->set_signature(packet_signature);
-
-  return contact_id.SerializeAsString();
+  return NonEmptyString(contact_id.SerializeAsString());
 }
 
-std::string MaidsafeContactIdName(const std::string& public_id) {
-  return crypto::Hash<crypto::SHA512>(public_id) + std::string(1, pca::kAppendableByAll);
+priv::ChunkId MaidsafeContactIdName(const std::string& public_id) {
+  return priv::ChunkId(crypto::Hash<crypto::SHA512>(public_id).string() +
+                       std::string(1, static_cast<char>(priv::ChunkType::kAppendableByAll)));
 }
 
-std::string SignaturePacketName(const std::string& name) {
-  return name + std::string (1, pca::kSignaturePacket);
+priv::ChunkId SignaturePacketName(const Identity& name) {
+  return priv::ApplyTypeToName(name, priv::ChunkType::kSignaturePacket);
 }
 
-std::string AppendableByAllName(const std::string& name) {
-  return name + std::string (1, pca::kAppendableByAll);
+priv::ChunkId AppendableByAllName(const Identity& name) {
+  return priv::ApplyTypeToName(name, priv::ChunkType::kAppendableByAll);
 }
 
-std::string SignaturePacketValue(const asymm::Keys& keys) {
+NonEmptyString SignaturePacketValue(const Fob& fob) {
   pca::SignedData signed_data;
-  std::string serialised_public_key;
-  asymm::EncodePublicKey(keys.public_key, &serialised_public_key);
-  if (serialised_public_key.empty())
-    return "";
-
-  signed_data.set_data(serialised_public_key);
-  signed_data.set_signature(keys.validation_token);
-  return signed_data.SerializeAsString();
+  asymm::EncodedPublicKey serialised_public_key(asymm::EncodeKey(fob.keys.public_key));
+  signed_data.set_data(serialised_public_key.string());
+  signed_data.set_signature(fob.validation_token.string());
+  return NonEmptyString(signed_data.SerializeAsString());
 }
 
 std::string PutFilenameData(const std::string& file_name) {
@@ -338,7 +329,7 @@ std::string GetNameInPath(const fs::path& save_path, const std::string& file_nam
   return path_file_name.string();
 }
 
-encrypt::DataMapPtr ParseSerialisedDataMap(const std::string& serialised_data_map) {
+encrypt::DataMapPtr ParseSerialisedDataMap(const NonEmptyString& serialised_data_map) {
 //  LOG(kError) << "ParseSerialisedDataMap - input size: " << serialised_data_map.size();
   encrypt::DataMapPtr data_map(std::make_shared<encrypt::DataMap>());
   if (encrypt::ParseDataMap(serialised_data_map, *data_map) != kSuccess) {
@@ -346,22 +337,6 @@ encrypt::DataMapPtr ParseSerialisedDataMap(const std::string& serialised_data_ma
     return encrypt::DataMapPtr();
   }
   return data_map;
-}
-
-bool CheckCorrectKeys(const std::vector<std::string>& content, asymm::Keys* keys) {
-  if (content.at(kKeysIdentity).empty())
-    return true;
-  asymm::DecodePrivateKey(content.at(kKeysPrivateKey), &(keys->private_key));
-  asymm::DecodePublicKey(content.at(kKeysPublicKey), &(keys->public_key));
-  if (!asymm::ValidateKey(keys->private_key) || !asymm::ValidateKey(keys->public_key)) {
-    LOG(kError) << "Keys in message are invalid.";
-    keys->private_key = asymm::PrivateKey();
-    keys->public_key = asymm::PublicKey();
-    return false;
-  }
-  keys->identity = content.at(kKeysIdentity);
-  keys->validation_token = content.at(kKeysValidationToken);
-  return true;
 }
 
 int CopyDir(const fs::path& source, const fs::path& dest) {
@@ -479,57 +454,40 @@ int AssessJointResult(const std::vector<int>& results) {
   return kSuccess;
 }
 
-bool MessagePointToPoint(const std::string& unwrapped_message,
-                         const asymm::PublicKey& recipient_public_key,
-                         const asymm::PrivateKey& sender_private_key,
-                         std::string& final_message) {
-  std::string encrypted_message;
-  int result(asymm::Encrypt(unwrapped_message, recipient_public_key, &encrypted_message));
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to encrypt message: " << result;
-    return false;
-  }
-
+NonEmptyString MessagePointToPoint(const NonEmptyString& unwrapped_message,
+                                   const asymm::PublicKey& recipient_public_key,
+                                   const asymm::PrivateKey& sender_private_key) {
+  asymm::CipherText encrypted_message(asymm::Encrypt(unwrapped_message, recipient_public_key));
   pca::SignedData signed_data;
-  signed_data.set_data(encrypted_message);
+  signed_data.set_data(encrypted_message.string());
 
-  std::string message_signature;
-  result = asymm::Sign(signed_data.data(), sender_private_key, &message_signature);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to sign message: " << result;
-    return false;
-  }
-  signed_data.set_signature(message_signature);
+  asymm::Signature message_signature(asymm::Sign(asymm::PlainText(signed_data.data()),
+                                                 sender_private_key));
+  signed_data.set_signature(message_signature.string());
 
-  if (!signed_data.SerializeToString(&final_message)) {
-    LOG(kError) << "Failed to sign message: " << result;
-    return false;
-  }
-
-  return true;
+  return NonEmptyString(signed_data.SerializeAsString());
 }
 
-bool PointToPointMessageValid(const std::string& wrapped_message,
+bool PointToPointMessageValid(const NonEmptyString& wrapped_message,
                               const asymm::PublicKey& sender_public_key,
                               const asymm::PrivateKey& receiver_private_key,
                               std::string& final_message) {
   pca::SignedData signed_data;
-  if (!signed_data.ParseFromString(wrapped_message)) {
+  if (!signed_data.ParseFromString(wrapped_message.string())) {
     LOG(kError) << "Message doesn't parse to SignedData.";
     return false;
   }
 
-  int result(asymm::CheckSignature(signed_data.data(), signed_data.signature(), sender_public_key));
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to validate signature of message: " << result;
+  if (!asymm::CheckSignature(asymm::PlainText(signed_data.data()),
+                             asymm::Signature(signed_data.signature()),
+                             sender_public_key)) {
+    LOG(kError) << "Failed to validate signature of message";
     return false;
   }
 
-  result = asymm::Decrypt(signed_data.data(), receiver_private_key, &final_message);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to decrypt message: " << result;
-    return false;
-  }
+  asymm::PlainText decrypted_message(asymm::Decrypt(asymm::CipherText(signed_data.data()),
+                                                    receiver_private_key));
+  final_message = decrypted_message.string();
 
   return true;
 }

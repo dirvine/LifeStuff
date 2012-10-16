@@ -25,7 +25,7 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
-#include "maidsafe/private/chunk_actions/chunk_types.h"
+#include "maidsafe/private/chunk_actions/chunk_id.h"
 
 #include "maidsafe/routing/return_codes.h"
 
@@ -42,19 +42,19 @@ namespace lifestuff {
 const int kMinAcceptableClientHealth(75);
 
 RoutingsHandler::RoutingDetails::RoutingDetails()
-    : routing_object(asymm::Keys(), true),
+    : routing_object(Fob(), true),
       newtwork_health(-1),
-      keys(),
+      fob(),
       mutex(),
       condition_variable(),
       search_id(),
       action_health(true) {}
 
-RoutingsHandler::RoutingDetails::RoutingDetails(const asymm::Keys& owner_credentials,
-                                                const std::string& search_id)
+RoutingsHandler::RoutingDetails::RoutingDetails(const Fob& owner_credentials,
+                                                const NonEmptyString& search_id)
     : routing_object(owner_credentials, true),
       newtwork_health(-1),
-      keys(owner_credentials),
+      fob(owner_credentials),
       mutex(),
       condition_variable(),
       search_id(search_id),
@@ -84,9 +84,9 @@ void RoutingsHandler::set_remote_chunk_store(priv::chunk_store::RemoteChunkStore
 }
 
 bool RoutingsHandler::AddRoutingObject(
-    const asymm::Keys& owner_credentials,
+    const Fob& owner_credentials,
     const std::vector<std::pair<std::string, uint16_t> >& bootstrap_endpoints,  // NOLINT (Dan)
-    const std::string& search_id,
+    const NonEmptyString& search_id,
     const routing::RequestPublicKeyFunctor& public_key_functor) {
   std::shared_ptr<RoutingDetails> routing_details(
         std::make_shared<RoutingDetails>(owner_credentials, search_id));
@@ -105,8 +105,8 @@ bool RoutingsHandler::AddRoutingObject(
   functors.message_received = [&, routing_details] (const std::string& wrapped_message,
                                                     const NodeId& group_claim,
                                                     const routing::ReplyFunctor& reply_functor) {
-                                OnRequestReceived(routing_details->keys.identity,
-                                                  wrapped_message,
+                                OnRequestReceived(routing_details->fob.identity,
+                                                  NonEmptyString(wrapped_message),
                                                   group_claim,
                                                   reply_functor);
                               };
@@ -156,7 +156,7 @@ bool RoutingsHandler::AddRoutingObject(
   return true;
 }
 
-bool RoutingsHandler::DeleteRoutingObject(const std::string& identity) {
+bool RoutingsHandler::DeleteRoutingObject(const Identity& identity) {
   std::unique_lock<std::mutex> loch(routing_objects_mutex_);
   size_t erased_count(routing_objects_.erase(identity));
   LOG(kInfo) << "RoutingsHandler::DeleteRoutingObject erased: " << erased_count << ", out of: " << routing_objects_.size();
@@ -164,10 +164,10 @@ bool RoutingsHandler::DeleteRoutingObject(const std::string& identity) {
 }
 
 
-bool RoutingsHandler::Send(const std::string& source_id,
-                           const std::string& destination_id,
+bool RoutingsHandler::Send(const Identity& source_id,
+                           const Identity& destination_id,
                            const asymm::PublicKey& destination_public_key,
-                           const std::string& message,
+                           const NonEmptyString& message,
                            std::string* reply_message) {
   std::shared_ptr<RoutingDetails> routing_details;
   {
@@ -181,13 +181,9 @@ bool RoutingsHandler::Send(const std::string& source_id,
     assert(routing_details);
   }
 
-  std::string wrapped_message(WrapMessage(message,
-                                          destination_public_key,
-                                          routing_details->keys.private_key));
-  if (wrapped_message.empty()) {
-    LOG(kError) << "Failed to wrap message: " <<  DebugId(NodeId(source_id));
-    return false;
-  }
+  NonEmptyString wrapped_message(WrapMessage(message,
+                                             destination_public_key,
+                                             routing_details->fob.keys.private_key));
 
   routing::ResponseFunctor response_functor;
   std::mutex message_mutex;
@@ -208,12 +204,12 @@ bool RoutingsHandler::Send(const std::string& source_id,
 
   NodeId group_claim_as_own_id;
   if (source_id == destination_id)
-    group_claim_as_own_id = NodeId(destination_id);
+    group_claim_as_own_id = NodeId(destination_id.string());
 
   LOG(kInfo) << "sender: " << DebugId(group_claim_as_own_id) << ", receiver: " << DebugId(NodeId(destination_id));
-  routing_details->routing_object.Send(NodeId(destination_id),
+  routing_details->routing_object.Send(NodeId(destination_id.string()),
                                        group_claim_as_own_id,
-                                       wrapped_message,
+                                       wrapped_message.string(),
                                        response_functor,
                                        boost::posix_time::seconds(10),
                                        true,
@@ -233,24 +229,18 @@ bool RoutingsHandler::Send(const std::string& source_id,
       return false;
     }
 
-    std::string unwrapped_message;
-    if (!UnwrapMessage(message_from_routing,
-                       destination_public_key,
-                       routing_details->keys.private_key,
-                       unwrapped_message)) {
-      LOG(kError) << "Message from " <<DebugId(NodeId(destination_id)) << " is not decryptable. "
-                  << "Probably corrupted: " << message_from_routing;
-      return false;
-    }
+    NonEmptyString unwrapped_message(UnwrapMessage(NonEmptyString(message_from_routing),
+                                                   destination_public_key,
+                                                   routing_details->fob.keys.private_key));
 
-    *reply_message = unwrapped_message;
+    *reply_message = unwrapped_message.string();
   }
 
   return true;
 }
 
 bool FindPublicKeyForSenderId(const ContactsHandlerPtr& contacts_handler,
-                              const std::string& sender_id,
+                              const Identity& sender_id,
                               asymm::PublicKey& sender_public_key) {
   std::vector<Contact> contacts;
   contacts_handler->OrderedContacts(&contacts, kAlphabetical, kConfirmed | kRequestSent);
@@ -272,8 +262,8 @@ bool FindPublicKeyForSenderId(const ContactsHandlerPtr& contacts_handler,
   return false;
 }
 
-void RoutingsHandler::OnRequestReceived(const std::string& receiver_id,
-                                        const std::string& wrapped_message,
+void RoutingsHandler::OnRequestReceived(const Identity& receiver_id,
+                                        const NonEmptyString& wrapped_message,
                                         const NodeId& sender_id,
                                         const routing::ReplyFunctor& reply_functor) {
   LOG(kInfo) << "receiver: " << DebugId(NodeId(receiver_id)) << ", sender: " << DebugId(sender_id);
@@ -295,13 +285,13 @@ void RoutingsHandler::OnRequestReceived(const std::string& receiver_id,
 
   asymm::PublicKey sender_public_key;
   asymm::PrivateKey receiver_private_key;
-  if (sender_id.String() == receiver_id) {
-    sender_public_key = routing_details->keys.public_key;
-    receiver_private_key = routing_details->keys.private_key;
+  if (sender_id.string() == receiver_id.string()) {
+    sender_public_key = routing_details->fob.keys.public_key;
+    receiver_private_key = routing_details->fob.keys.private_key;
   } else {
     // Well, this is not gonna be easy
     if (!FindPublicKeyForSenderId(session_.contacts_handler(routing_details->search_id),
-                                  sender_id.String(),
+                                  Identity(sender_id.string()),
                                   sender_public_key)) {
       LOG(kError) << "Failed to find sender's pub key. Silent drop. Should I even be writing this?";
       return;
@@ -310,86 +300,67 @@ void RoutingsHandler::OnRequestReceived(const std::string& receiver_id,
     receiver_private_key =
         session_.passport().SignaturePacketDetails(passport::kMmid,
                                                    true,
-                                                   routing_details->search_id).private_key;
-    assert(asymm::ValidateKey(receiver_private_key));
+                                                   routing_details->search_id).keys.private_key;
   }
 
-  std::string unwrapped_message;
-  if (!UnwrapMessage(wrapped_message,
-                     sender_public_key,
-                     routing_details->keys.private_key,
-                     unwrapped_message)) {
-    LOG(kError) << "Failed to unwrap. Silently drop. Should I even be writing this?";
-    return;
-  }
+  NonEmptyString unwrapped_message(UnwrapMessage(wrapped_message,
+                                                 sender_public_key,
+                                                 routing_details->fob.keys.private_key));
 
   // Signal and assess response
   std::string response;
   if (validated_message_signal_(unwrapped_message, response)) {
-    assert(!response.empty());
-    std::string wrapped_message(WrapMessage(response,
-                                            sender_public_key,
-                                            receiver_private_key));
-    assert(!wrapped_message.empty());
+    NonEmptyString wrapped_message(WrapMessage(NonEmptyString(response),
+                                               sender_public_key,
+                                               receiver_private_key));
     LOG(kInfo) << "About to invoke reply functor, response: " << response;
-    reply_functor(wrapped_message);
+    reply_functor(wrapped_message.string());
   }
 }
 
 void RoutingsHandler::OnPublicKeyRequested(const NodeId& node_id,
                                            const routing::GivePublicKeyFunctor& give_key) {
-  std::string network_name(node_id.String() + std::string(1, pca::kSignaturePacket));
   std::string network_value;
   {
     std::lock_guard<std::mutex> loch(cs_mutex_);
-    network_value = chunk_store_->Get(network_name);
+    network_value = chunk_store_->Get(SignaturePacketName(Identity(node_id.string())), Fob());
   }
 
-  asymm::PublicKey public_key;
   pca::SignedData signed_data;
   if (!signed_data.ParseFromString(network_value)) {
     LOG(kError) << "Failed to parse retrieved info as SignedData: " << DebugId(node_id);
-    give_key(public_key);
     return;
   }
 
-  if (node_id.String() !=
-      crypto::Hash<crypto::SHA512>(signed_data.data() + signed_data.signature())) {
+  if (node_id.string() !=
+      crypto::Hash<crypto::SHA512>(signed_data.data() + signed_data.signature()).string()) {
     LOG(kError) << "Failed to verify validity of info retrieved: " << DebugId(node_id);
-    give_key(public_key);
     return;
   }
 
-  asymm::DecodePublicKey(signed_data.data(), &public_key);
-  if (!asymm::ValidateKey(public_key)) {
-    LOG(kError) << "Failed to decode key: " << DebugId(node_id);
-    give_key(public_key);
+
+  asymm::PublicKey public_key;
+  try {
+    public_key = asymm::DecodeKey(asymm::EncodedPublicKey(signed_data.data()));
+  }
+  catch (const std::exception& exception) {
+    LOG(kError) << "Did not find valid public key. Won't execute callback.";
     return;
   }
 
   give_key(public_key);
 }
 
-std::string RoutingsHandler::WrapMessage(const std::string& message,
+NonEmptyString RoutingsHandler::WrapMessage(const NonEmptyString& message,
                                          const asymm::PublicKey& receiver_public_key,
                                          const asymm::PrivateKey& sender_private_key) {
-  std::string return_message;
-  if (!MessagePointToPoint(message,
-                           receiver_public_key,
-                           sender_private_key,
-                           return_message))
-    LOG(kError) << "Failed to wrap message.";
-  return return_message;
+  return MessagePointToPoint(message, receiver_public_key, sender_private_key);
 }
 
-bool RoutingsHandler::UnwrapMessage(const std::string& wrapped_message,
-                                    const asymm::PublicKey& sender_public_key,
-                                    const asymm::PrivateKey& receiver_private_key,
-                                    std::string& final_message) {
-  return PointToPointMessageValid(wrapped_message,
-                                  sender_public_key,
-                                  receiver_private_key,
-                                  final_message);
+NonEmptyString RoutingsHandler::UnwrapMessage(const NonEmptyString& wrapped_message,
+                                              const asymm::PublicKey& sender_public_key,
+                                              const asymm::PrivateKey& receiver_private_key) {
+  return PointToPointMessageValid(wrapped_message, sender_public_key, receiver_private_key);
 }
 
 }  // namespace lifestuff

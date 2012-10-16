@@ -45,9 +45,7 @@ namespace bs2 = boost::signals2;
 
 namespace maidsafe {
 
-namespace passport {
-class Passport;
-}  // namespace passport
+namespace passport { class Passport; }
 
 namespace lifestuff {
 
@@ -73,11 +71,11 @@ class MessageHandler {
   void StopCheckingForNewMessages();
 
   int Send(const InboxItem& message);
-  int SendPresenceMessage(const std::string& own_public_id,
-                          const std::string& recipient_public_id,
+  int SendPresenceMessage(const NonEmptyString& own_public_id,
+                          const NonEmptyString& recipient_public_id,
                           const ContactPresence& presence);
-  void InformConfirmedContactOnline(const std::string& own_public_id,
-                                    const std::string& recipient_public_id);
+  void InformConfirmedContactOnline(const NonEmptyString& own_public_id,
+                                    const NonEmptyString& recipient_public_id);
   void SendEveryone(const InboxItem& message);
 
   // Extra library connections
@@ -94,10 +92,11 @@ class MessageHandler {
   MessageHandler(const MessageHandler&);
   MessageHandler& operator=(const MessageHandler&);
 
-  bool ProtobufToInbox(const Message& message, InboxItem* inbox_item) const;
-  bool InboxToProtobuf(const InboxItem& inbox_item, Message* message) const;
+  bool ProtobufToInbox(const Message& message, InboxItem& inbox_item) const;
+  void InboxToProtobuf(const InboxItem& inbox_item, Message& message) const;
   void GetNewMessages(const bptime::seconds& interval, const boost::system::error_code& error_code);
-  void ProcessRetrieved(const std::string& public_id, const std::string& retrieved_mmid_packet);
+  void ProcessRetrieved(const NonEmptyString& public_id,
+                        const NonEmptyString& retrieved_mmid_packet);
   void RetrieveMessagesForAllIds();
   bool MessagePreviouslyReceived(const std::string& message);
   void ClearExpiredReceivedMessages();
@@ -122,7 +121,8 @@ class MessageHandler {
 
   /// Extra library signals
   ChatMessageSignal chat_signal_;
-  FileTransferSignal file_transfer_signal_;
+  FileTransferSuccessSignal file_transfer_success_signal_;
+  FileTransferFailureSignal file_transfer_failure_signal_;
   ContactPresenceSignal contact_presence_signal_;
   ContactProfilePictureSignal contact_profile_picture_signal_;
 

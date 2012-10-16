@@ -267,12 +267,6 @@ int LifeStuffImpl::Finalise() {
   if (vault_cheat_)
     vault_node_.Stop();
   asio_service_.Stop();
-//  remote_chunk_store_.reset();
-//  node_.reset();
-//  message_handler_.reset();
-//  public_id_.reset();
-//  user_credentials_.reset();
-//  user_storage_.reset();
   state_ = kZeroth;
 
   return kSuccess;

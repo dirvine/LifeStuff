@@ -621,30 +621,30 @@ TEST_F(CredentialsTest, FUNC_UserCredentialsDeletion) {
   passport::Passport& pass(session_.passport());
   std::string anmid_name(pca::ApplyTypeToName(
                            pass.SignaturePacketDetails(passport::kAnmid, true).identity,
-                           pca::kSignaturePacket));
+                           priv::ChunkType::kSignaturePacket));
   std::string ansmid_name(pca::ApplyTypeToName(
                     pass.SignaturePacketDetails(passport::kAnsmid, true).identity,
-                    pca::kSignaturePacket));
+                    priv::ChunkType::kSignaturePacket));
   std::string antmid_name(pca::ApplyTypeToName(
                     pass.SignaturePacketDetails(passport::kAntmid, true).identity,
-                    pca::kSignaturePacket));
+                    priv::ChunkType::kSignaturePacket));
   std::string anmaid_name(pca::ApplyTypeToName(
                     pass.SignaturePacketDetails(passport::kAnmaid, true).identity,
-                    pca::kSignaturePacket));
+                    priv::ChunkType::kSignaturePacket));
   std::string maid_name(pca::ApplyTypeToName(
                           pass.SignaturePacketDetails(passport::kMaid, true).identity,
-                          pca::kSignaturePacket));
+                          priv::ChunkType::kSignaturePacket));
   std::string pmid_name(pca::ApplyTypeToName(
                           pass.SignaturePacketDetails(passport::kPmid, true).identity,
-                          pca::kSignaturePacket));
+                          priv::ChunkType::kSignaturePacket));
   std::string mid_name(pca::ApplyTypeToName(pass.IdentityPacketName(passport::kMid, true),
-                                            pca::kModifiableByOwner));
+                                            priv::ChunkType::kModifiableByOwner));
   std::string smid_name(pca::ApplyTypeToName(pass.IdentityPacketName(passport::kSmid, true),
-                                             pca::kModifiableByOwner));
+                                             priv::ChunkType::kModifiableByOwner));
   std::string tmid_name(pca::ApplyTypeToName(pass.IdentityPacketName(passport::kTmid, true),
-                                             pca::kModifiableByOwner));
+                                             priv::ChunkType::kModifiableByOwner));
   std::string stmid_name(pca::ApplyTypeToName(pass.IdentityPacketName(passport::kStmid, true),
-                                              pca::kModifiableByOwner));
+                                              priv::ChunkType::kModifiableByOwner));
 
   ASSERT_NE("", remote_chunk_store_->Get(anmid_name));
   ASSERT_NE("", remote_chunk_store_->Get(ansmid_name));
@@ -708,25 +708,25 @@ TEST_F(CredentialsTest, FUNC_UserCredentialsDeletion) {
   passport::Passport& pass2(session2_.passport());
 
   anmid_name = pca::ApplyTypeToName(pass2.SignaturePacketDetails(passport::kAnmid, true).identity,
-                                    pca::kSignaturePacket);
+                                    priv::ChunkType::kSignaturePacket);
   ansmid_name = pca::ApplyTypeToName(pass2.SignaturePacketDetails(passport::kAnsmid, true).identity,
-                                     pca::kSignaturePacket);
+                                     priv::ChunkType::kSignaturePacket);
   antmid_name = pca::ApplyTypeToName(pass2.SignaturePacketDetails(passport::kAntmid, true).identity,
-                                     pca::kSignaturePacket);
+                                     priv::ChunkType::kSignaturePacket);
   anmaid_name = pca::ApplyTypeToName(pass2.SignaturePacketDetails(passport::kAnmaid, true).identity,
-                                     pca::kSignaturePacket);
+                                     priv::ChunkType::kSignaturePacket);
   maid_name = pca::ApplyTypeToName(pass2.SignaturePacketDetails(passport::kMaid, true).identity,
-                                   pca::kSignaturePacket);
+                                   priv::ChunkType::kSignaturePacket);
   pmid_name = pca::ApplyTypeToName(pass2.SignaturePacketDetails(passport::kPmid, true).identity,
-                                   pca::kSignaturePacket);
+                                   priv::ChunkType::kSignaturePacket);
   mid_name = pca::ApplyTypeToName(pass2.IdentityPacketName(passport::kMid, true),
-                                  pca::kModifiableByOwner);
+                                  priv::ChunkType::kModifiableByOwner);
   smid_name = pca::ApplyTypeToName(pass2.IdentityPacketName(passport::kSmid, true),
-                                   pca::kModifiableByOwner);
+                                   priv::ChunkType::kModifiableByOwner);
   tmid_name = pca::ApplyTypeToName(pass2.IdentityPacketName(passport::kTmid, true),
-                                   pca::kModifiableByOwner);
+                                   priv::ChunkType::kModifiableByOwner);
   stmid_name = pca::ApplyTypeToName(pass2.IdentityPacketName(passport::kStmid, true),
-                                    pca::kModifiableByOwner);
+                                    priv::ChunkType::kModifiableByOwner);
 
   ASSERT_NE("", remote_chunk_store2_->Get(anmid_name));
   ASSERT_NE("", remote_chunk_store2_->Get(ansmid_name));

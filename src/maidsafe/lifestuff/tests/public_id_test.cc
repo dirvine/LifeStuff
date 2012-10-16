@@ -955,39 +955,39 @@ TEST_F(PublicIdTest, FUNC_DeletePublicIdPacketVerification) {
   std::string mcid_name(crypto::Hash<crypto::SHA512>(public_identity1_));
 
   ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
-                                                               pca::kAppendableByAll)));
+                                                               priv::ChunkType::kAppendableByAll)));
   ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mpid.identity,
-                                                               pca::kSignaturePacket)));
+                                                               priv::ChunkType::kSignaturePacket)));
   ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(anmpid.identity,
-                                                               pca::kSignaturePacket)));
+                                                               priv::ChunkType::kSignaturePacket)));
   ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
-                                                               pca::kAppendableByAll)));
+                                                               priv::ChunkType::kAppendableByAll)));
   ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
-                                                               pca::kAppendableByAll),
+                                                               priv::ChunkType::kAppendableByAll),
                                           asymm::Keys(asymm::Keys(mmid))));
   ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
-                                                               pca::kAppendableByAll),
+                                                               priv::ChunkType::kAppendableByAll),
                                           asymm::Keys(asymm::Keys(mpid))));
   ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(card_address,
-                                                               pca::kModifiableByOwner)));
+                                                               priv::ChunkType::kModifiableByOwner)));
 
   ASSERT_EQ(kSuccess, public_id1_->DeletePublicId(public_identity1_));
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
-                                                               pca::kAppendableByAll)));
+                                                               priv::ChunkType::kAppendableByAll)));
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mpid.identity,
-                                                               pca::kSignaturePacket)));
+                                                               priv::ChunkType::kSignaturePacket)));
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(anmpid.identity,
-                                                               pca::kSignaturePacket)));
+                                                               priv::ChunkType::kSignaturePacket)));
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
-                                                               pca::kAppendableByAll)));
+                                                               priv::ChunkType::kAppendableByAll)));
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
-                                                               pca::kAppendableByAll),
+                                                               priv::ChunkType::kAppendableByAll),
                                           asymm::Keys(asymm::Keys(mmid))));
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
-                                                               pca::kAppendableByAll),
+                                                               priv::ChunkType::kAppendableByAll),
                                           asymm::Keys(asymm::Keys(mpid))));
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(card_address,
-                                                               pca::kModifiableByOwner)));
+                                                               priv::ChunkType::kModifiableByOwner)));
 
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, false));
   card_address = session1_.social_info(public_identity1_).second->at(kInfoPointer);
@@ -997,39 +997,39 @@ TEST_F(PublicIdTest, FUNC_DeletePublicIdPacketVerification) {
   mcid_name = crypto::Hash<crypto::SHA512>(public_identity1_);
 
   ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
-                                                               pca::kAppendableByAll)));
+                                                               priv::ChunkType::kAppendableByAll)));
   ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mpid.identity,
-                                                               pca::kSignaturePacket)));
+                                                               priv::ChunkType::kSignaturePacket)));
   ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(anmpid.identity,
-                                                               pca::kSignaturePacket)));
+                                                               priv::ChunkType::kSignaturePacket)));
   ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
-                                                               pca::kAppendableByAll)));
+                                                               priv::ChunkType::kAppendableByAll)));
   ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
-                                                               pca::kAppendableByAll),
+                                                               priv::ChunkType::kAppendableByAll),
                                           asymm::Keys(asymm::Keys(mmid))));
   ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
-                                                               pca::kAppendableByAll),
+                                                               priv::ChunkType::kAppendableByAll),
                                           asymm::Keys(asymm::Keys(mpid))));
   ASSERT_NE("", remote_chunk_store1_->Get(pca::ApplyTypeToName(card_address,
-                                                               pca::kModifiableByOwner)));
+                                                               priv::ChunkType::kModifiableByOwner)));
 
   ASSERT_EQ(kSuccess, public_id1_->DeletePublicId(public_identity1_));
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
-                                                               pca::kAppendableByAll)));
+                                                               priv::ChunkType::kAppendableByAll)));
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mpid.identity,
-                                                               pca::kSignaturePacket)));
+                                                               priv::ChunkType::kSignaturePacket)));
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(anmpid.identity,
-                                                               pca::kSignaturePacket)));
+                                                               priv::ChunkType::kSignaturePacket)));
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
-                                                               pca::kAppendableByAll)));
+                                                               priv::ChunkType::kAppendableByAll)));
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mmid.identity,
-                                                               pca::kAppendableByAll),
+                                                               priv::ChunkType::kAppendableByAll),
                                           asymm::Keys(asymm::Keys(mmid))));
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(mcid_name,
-                                                               pca::kAppendableByAll),
+                                                               priv::ChunkType::kAppendableByAll),
                                           asymm::Keys(asymm::Keys(mpid))));
   ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(card_address,
-                                                               pca::kModifiableByOwner)));
+                                                               priv::ChunkType::kModifiableByOwner)));
 }
 
 TEST_F(PublicIdTest, FUNC_RemoveContact) {
@@ -1102,7 +1102,7 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
   ASSERT_FALSE(received_public_identity_.empty());
   ASSERT_EQ(received_message_, message);
   received_message_.clear();
-  ASSERT_EQ("", remote_chunk_store2_->Get(pca::ApplyTypeToName(card1, pca::kModifiableByOwner)));
+  ASSERT_EQ("", remote_chunk_store2_->Get(pca::ApplyTypeToName(card1, priv::ChunkType::kModifiableByOwner)));
 
   // 2 processes the deletion by 1
   done = false;
@@ -1122,7 +1122,7 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
   }
   ASSERT_EQ(received_message_, message);
   received_message_.clear();
-  ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(card2, pca::kModifiableByOwner)));
+  ASSERT_EQ("", remote_chunk_store1_->Get(pca::ApplyTypeToName(card2, priv::ChunkType::kModifiableByOwner)));
 
   ASSERT_TRUE(session1_.changed());
   ASSERT_TRUE(session2_.changed());

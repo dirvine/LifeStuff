@@ -34,6 +34,8 @@
 
 #include "boost/filesystem/path.hpp"
 
+#include "maidsafe/common/types.h"
+
 namespace maidsafe {
 
 namespace lifestuff {
@@ -69,7 +71,7 @@ const size_t kMaxPublicIdSize(30);
 const size_t kPinSize(4);
 const std::string kLiteralOnline("kOnline");
 const std::string kLiteralOffline("kOffline");
-const std::string kBlankProfilePicture("BlankPicture");
+const NonEmptyString kBlankProfilePicture("BlankPicture");
 const std::string kAppHomeDirectory(".lifestuff");
 const std::string kMyStuff("My Stuff");
 const std::string kDownloadStuff("Accepted Files");
@@ -94,44 +96,10 @@ typedef std::function<void(const std::string&,
 typedef std::function<void(int)> VoidFunctionOneInt;  // NOLINT (Dan)
 typedef std::function<void(bool)> VoidFunctionOneBool;  // NOLINT (Dan)
 typedef std::map<std::string, int> StringIntMap;
-typedef std::map<std::string, std::string> SocialInfoMap;
-typedef std::map<std::string, std::pair<ContactStatus, ContactPresence> > ContactMap;
-typedef std::function<bool(const std::string&, std::string&)> ValidatedMessageFunction;
+typedef std::map<NonEmptyString, std::string> SocialInfoMap;
+typedef std::map<NonEmptyString, std::pair<ContactStatus, ContactPresence> > ContactMap;
+typedef std::function<bool(const NonEmptyString&, std::string&)> ValidatedMessageFunction;
 
-
-/// Private Shares
-// Own ID, Contact ID, Share Name, Share ID, Access Level, Timestamp
-typedef std::function<void(const std::string&,    // Own public ID
-                           const std::string&,    // Contact public ID
-                           const std::string&,    // Share name
-                           const std::string&,    // Share ID
-                           int,                   // Access level
-                           const std::string&)>   // Timestamp
-        PrivateShareInvitationFunction;
-
-// Own public ID, Contact public ID, Share Name, Share ID, Timestamp
-typedef FiveStringsFunction PrivateShareDeletionFunction;
-typedef FiveStringsFunction ShareInvitationResponseFunction;
-
-typedef PrivateShareInvitationFunction PrivateMemberAccessChangeFunction;
-
-/// Private Shares (and Public?)
-// Old ShareName, New ShareName
-typedef std::function<void(const std::string&, const std::string&)> ShareRenamedFunction;
-
-// share_name,
-// target path relative to the Share's root,
-// num_of_entries (normally 1, only greater in case of Add and Delete children)
-// old path relative to the Share's root (only for Rename and Move),
-// new path relative to the Share's root (only for Rename and Move),
-// and operation type.
-typedef std::function<void(const std::string&,
-                           const boost::filesystem::path&,
-                           const uint32_t&,
-                           const boost::filesystem::path&,
-                           const boost::filesystem::path&,
-                           const int&)>
-        ShareChangedFunction;
 
 /// Chat
 // Own public ID, Contact public ID, Message, Timestamp

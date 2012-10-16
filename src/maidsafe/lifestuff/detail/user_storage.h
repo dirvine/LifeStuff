@@ -68,7 +68,7 @@ class Session;
 
 class UserStorage {
  public:
-  explicit UserStorage(std::shared_ptr<pcs::RemoteChunkStore> chunk_store);
+  explicit UserStorage(pcs::RemoteChunkStore& chunk_store);
   virtual ~UserStorage() {}
 
   virtual void MountDrive(const fs::path& file_chunk_store_path,
@@ -113,7 +113,7 @@ class UserStorage {
   UserStorage(const UserStorage&);
 
   bool mount_status_;
-  std::shared_ptr<pcs::RemoteChunkStore> chunk_store_;
+  pcs::RemoteChunkStore& chunk_store_;
   pcs::FileChunkStore file_chunk_store_;
   std::shared_ptr<MaidDriveInUserSpace> drive_in_user_space_;
   ShareRenamedFunction share_renamed_function_;

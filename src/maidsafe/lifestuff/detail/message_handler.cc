@@ -25,7 +25,7 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
-#include "maidsafe/private/chunk_actions/chunk_types.h"
+#include "maidsafe/private/chunk_actions/chunk_id.h"
 #include "maidsafe/private/utils/utilities.h"
 
 #include "maidsafe/encrypt/data_map.h"
@@ -46,14 +46,6 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-namespace {
-
-std::string AppendableByAllType(const std::string& mmid) {
-  return mmid + std::string(1, pca::kAppendableByAll);
-}
-
-}  // namespace
-
 MessageHandler::MessageHandler(priv::chunk_store::RemoteChunkStore& remote_chunk_store,
                                Session& session,
                                boost::asio::io_service& asio_service)
@@ -66,7 +58,8 @@ MessageHandler::MessageHandler(priv::chunk_store::RemoteChunkStore& remote_chunk
       start_up_done_(false),
       received_messages_(),
       chat_signal_(),
-      file_transfer_signal_(),
+      file_transfer_success_signal_(),
+      file_transfer_failure_signal_(),
       contact_presence_signal_(),
       contact_profile_picture_signal_(),
       parse_and_save_data_map_signal_() {}
@@ -88,7 +81,7 @@ void MessageHandler::ShutDown() {
 
 void MessageHandler::EnqueuePresenceMessages(ContactPresence presence) {
   // Get online contacts and message them to notify online status
-  std::vector<std::string> public_ids(session_.PublicIdentities());
+  std::vector<NonEmptyString> public_ids(session_.PublicIdentities());
   std::vector<Contact> contacts;
   for (auto it(public_ids.begin()); it != public_ids.end(); ++it) {
     const ContactsHandlerPtr contacts_handler(session_.contacts_handler(*it));
@@ -122,67 +115,53 @@ void MessageHandler::StopCheckingForNewMessages() {
 
 int MessageHandler::Send(const InboxItem& inbox_item) {
   Message message;
-  if (!InboxToProtobuf(inbox_item, &message)) {
-    LOG(kError) << "Invalid message. Won't send. Good day. I said: 'Good day!'";
-    return kCannotConvertInboxItemToProtobuf;
-  }
+  InboxToProtobuf(inbox_item, message);
 
   const ContactsHandlerPtr contacts_handler(session_.contacts_handler(inbox_item.sender_public_id));
   if (!contacts_handler) {
-    LOG(kError) << "User does not hold such public ID: " << inbox_item.sender_public_id;
+    LOG(kError) << "User does not hold such public ID: " << inbox_item.sender_public_id.string();
     return kPublicIdNotFoundFailure;
   }
 
   Contact recipient_contact;
   int result(contacts_handler->ContactInfo(inbox_item.receiver_public_id, &recipient_contact));
-  if (result != kSuccess ||
-      recipient_contact.inbox_name.empty() ||
-      !asymm::ValidateKey(recipient_contact.inbox_public_key)) {
-    LOG(kError) << "Failed to get MMID for " << inbox_item.receiver_public_id << ", type: "
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to get MMID for " << inbox_item.receiver_public_id.string() << ", type: "
                 << inbox_item.item_type << ", result: " << result
                 << ", " << std::boolalpha << asymm::ValidateKey(recipient_contact.inbox_public_key);
     return result == kSuccess ? kContactInfoContentsFailure : result;
   }
   asymm::PublicKey recipient_public_key(recipient_contact.inbox_public_key);
 
-  asymm::Keys mmid(passport_.SignaturePacketDetails(passport::kMmid,
-                                                    true,
-                                                    inbox_item.sender_public_id));
-  assert(!mmid.identity.empty());
+  Fob mmid(passport_.SignaturePacketDetails(passport::kMmid,
+                                            true,
+                                            NonEmptyString(inbox_item.sender_public_id)));
   // Encrypt the message for the recipient
-  std::string encrypted_message;
-  result = asymm::Encrypt(message.SerializeAsString(), recipient_public_key, &encrypted_message);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to encrypt message to recipient( " << inbox_item.receiver_public_id
-                << "): " << result;
-    return kGetPublicIdError;
-  }
-
+  asymm::CipherText encrypted_message(asymm::Encrypt(asymm::PlainText(message.SerializeAsString()),
+                                                     recipient_public_key));
   pca::SignedData signed_data;
-  signed_data.set_data(encrypted_message);
+  signed_data.set_data(encrypted_message.string());
 
-  std::string message_signature;
-  result = asymm::Sign(signed_data.data(), mmid.private_key, &message_signature);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to sign message: " << result;
-    return result;
-  }
-
-  signed_data.set_signature(message_signature);
+  asymm::Signature message_signature(asymm::Sign(asymm::PlainText(signed_data.data()),
+                                                 mmid.keys.private_key));
+  signed_data.set_signature(message_signature.string());
 
   // Store encrypted MMID at recipient's MPID's name
   std::mutex mutex;
   std::condition_variable cond_var;
-  result = priv::utilities::kPendingResult;
+  result = priv::utils::kPendingResult;
 
-  std::string inbox_id(AppendableByAllType(recipient_contact.inbox_name));
+  priv::ChunkId inbox_id(AppendableByAllName(recipient_contact.inbox_name));
   VoidFunctionOneBool callback([&] (const bool& response) {
                                  utils::ChunkStoreOperationCallback(response,
                                                                     &mutex,
                                                                     &cond_var,
                                                                     &result);
                                });
-  if (!remote_chunk_store_.Modify(inbox_id, signed_data.SerializeAsString(), callback, mmid)) {
+  if (!remote_chunk_store_.Modify(inbox_id,
+                                  NonEmptyString(signed_data.SerializeAsString()),
+                                  callback,
+                                  mmid)) {
     LOG(kError) << "Immediate remote chunkstore failure.";
     return kRemoteChunkStoreFailure;
   }
@@ -192,7 +171,7 @@ int MessageHandler::Send(const InboxItem& inbox_item) {
     if (!cond_var.wait_for(lock,
                            std::chrono::seconds(kSecondsInterval),
                            [&result] ()->bool {
-                             return result != priv::utilities::kPendingResult;
+                             return result != priv::utils::kPendingResult;
                            })) {
       LOG(kError) << "Timed out storing packet.";
       return kPublicIdTimeout;
@@ -210,26 +189,26 @@ int MessageHandler::Send(const InboxItem& inbox_item) {
   return kSuccess;
 }
 
-int MessageHandler::SendPresenceMessage(const std::string& own_public_id,
-                                        const std::string& recipient_public_id,
+int MessageHandler::SendPresenceMessage(const NonEmptyString& own_public_id,
+                                        const NonEmptyString& recipient_public_id,
                                         const ContactPresence& presence) {
   InboxItem inbox_item(kContactPresence);
   inbox_item.sender_public_id  = own_public_id;
   inbox_item.receiver_public_id = recipient_public_id;
 
   if (presence == kOnline)
-    inbox_item.content.push_back("kOnline");
+    inbox_item.content.push_back(NonEmptyString("kOnline"));
   else
-    inbox_item.content.push_back("kOffline");
+    inbox_item.content.push_back(NonEmptyString("kOffline"));
 
   int result(Send(inbox_item));
   if (result != kSuccess) {
-    LOG(kError) << own_public_id << " failed to inform "
-                << recipient_public_id << " of presence state "
+    LOG(kError) << own_public_id.string() << " failed to inform "
+                << recipient_public_id.string() << " of presence state "
                 << presence << ", result: " << result;
     const ContactsHandlerPtr contacts_handler(session_.contacts_handler(own_public_id));
     if (!contacts_handler) {
-      LOG(kError) << "User does not hold such public ID: " << own_public_id;
+      LOG(kError) << "User does not hold such public ID: " << own_public_id.string();
       return result;
     }
 
@@ -239,8 +218,8 @@ int MessageHandler::SendPresenceMessage(const std::string& own_public_id,
   return result;
 }
 
-void MessageHandler::InformConfirmedContactOnline(const std::string& own_public_id,
-                                                  const std::string& recipient_public_id) {
+void MessageHandler::InformConfirmedContactOnline(const NonEmptyString& own_public_id,
+                                                  const NonEmptyString& recipient_public_id) {
   asio_service_.post([=] {
                        return SendPresenceMessage(own_public_id, recipient_public_id, kOnline);
                      });
@@ -250,7 +229,7 @@ void MessageHandler::SendEveryone(const InboxItem& message) {
   std::vector<Contact> contacts;
   const ContactsHandlerPtr contacts_handler(session_.contacts_handler(message.sender_public_id));
   if (!contacts_handler) {
-    LOG(kError) << "User does not hold such public ID: " << message.sender_public_id;
+    LOG(kError) << "User does not hold such public ID: " << message.sender_public_id.string();
     return;
   }
   contacts_handler->OrderedContacts(&contacts, kAlphabetical, kConfirmed);
@@ -287,35 +266,38 @@ void MessageHandler::GetNewMessages(const bptime::seconds& interval,
                                      });
 }
 
-void MessageHandler::ProcessRetrieved(const std::string& public_id,
-                                      const std::string& retrieved_mmid_packet) {
+void MessageHandler::ProcessRetrieved(const NonEmptyString& public_id,
+                                      const NonEmptyString& retrieved_mmid_packet) {
   pca::AppendableByAll mmid_packet;
-  if (!mmid_packet.ParseFromString(retrieved_mmid_packet)) {
+  if (!mmid_packet.ParseFromString(retrieved_mmid_packet.string())) {
     LOG(kError) << "Failed to parse as AppendableByAll";
     return;
   }
 
   for (int it(0); it < mmid_packet.appendices_size(); ++it) {
     pca::SignedData signed_data(mmid_packet.appendices(it));
-    asymm::Keys mmid(passport_.SignaturePacketDetails(passport::kMmid, true, public_id));
-    assert(!mmid.identity.empty());
+    Fob mmid(passport_.SignaturePacketDetails(passport::kMmid, true, NonEmptyString(public_id)));
 
-    std::string decrypted_message;
-    int n(asymm::Decrypt(signed_data.data(), mmid.private_key, &decrypted_message));
-    if (n != kSuccess) {
-      LOG(kError) << "Failed to decrypt message: " << n;
+    std::string str_message;
+    try {
+      crypto::PlainText decrypted_message(asymm::Decrypt(asymm::CipherText(signed_data.data()),
+                                                         mmid.keys.private_key));
+      str_message = decrypted_message.string();
+    }
+//    catch(const AsymmErrors::decryption_error& error) {
+    catch(const std::exception& error) {
+      // Failed to decrypt, not for us --> ignore
       continue;
     }
 
     Message mmid_message;
-    if (!mmid_message.ParseFromString(decrypted_message)) {
+    if (!mmid_message.ParseFromString(str_message)) {
       LOG(kError) << "Failed to parse decrypted message";
       continue;
     }
 
     InboxItem inbox_item;
-    if (ProtobufToInbox(mmid_message, &inbox_item) &&
-        !MessagePreviouslyReceived(decrypted_message)) {
+    if (ProtobufToInbox(mmid_message, inbox_item) && !MessagePreviouslyReceived(str_message)) {
       switch (inbox_item.item_type) {
         case kChat: chat_signal_(inbox_item.receiver_public_id,
                                  inbox_item.sender_public_id,
@@ -334,61 +316,54 @@ void MessageHandler::ProcessRetrieved(const std::string& public_id,
 }
 
 void MessageHandler::ProcessFileTransfer(const InboxItem& inbox_item) {
-  if (inbox_item.content.size() != 2U ||
-      inbox_item.content[0].empty() ||
-      inbox_item.content[1].empty()) {
+  if (inbox_item.content.size() != 2U) {
     LOG(kError) << "Wrong number of arguments for message.";
-    file_transfer_signal_(inbox_item.receiver_public_id,
-                          inbox_item.sender_public_id,
-                          "",
-                          "",
-                          inbox_item.timestamp);
+    file_transfer_failure_signal_(inbox_item.receiver_public_id,
+                                  inbox_item.sender_public_id,
+                                  inbox_item.timestamp);
     return;
   }
 
-  std::string data_map_hash;
+  NonEmptyString data_map_hash;
   if (!parse_and_save_data_map_signal_(inbox_item.content[0],
                                        inbox_item.content[1],
-                                       &data_map_hash)) {
+                                       data_map_hash)) {
     LOG(kError) << "Failed to parse file DM";
-    file_transfer_signal_(inbox_item.receiver_public_id,
-                          inbox_item.sender_public_id,
-                          inbox_item.content[0],
-                          "",
-                          inbox_item.timestamp);
+    file_transfer_failure_signal_(inbox_item.receiver_public_id,
+                                  inbox_item.sender_public_id,
+                                  inbox_item.timestamp);
     return;
   }
 
-  file_transfer_signal_(inbox_item.receiver_public_id,
-                        inbox_item.sender_public_id,
-                        inbox_item.content[0],
-                        data_map_hash,
-                        inbox_item.timestamp);
+  file_transfer_success_signal_(inbox_item.receiver_public_id,
+                                inbox_item.sender_public_id,
+                                inbox_item.content[0],
+                                inbox_item.timestamp);
 }
 
 void MessageHandler::ProcessContactPresence(const InboxItem& presence_message) {
   if (presence_message.content.size() != 1U) {
     // Drop silently
-    LOG(kWarning) << presence_message.sender_public_id
+    LOG(kWarning) << presence_message.sender_public_id.string()
                   << " has sent a presence message with bad content: "
                   << presence_message.content.size();
     return;
   }
 
-  std::string sender(presence_message.sender_public_id),
-              receiver(presence_message.receiver_public_id);
+  NonEmptyString sender(presence_message.sender_public_id),
+                 receiver(presence_message.receiver_public_id);
   const ContactsHandlerPtr contacts_handler(session_.contacts_handler(receiver));
   if (!contacts_handler) {
-    LOG(kError) << "User does not hold such public ID: " << receiver;
+    LOG(kError) << "User does not hold such public ID: " << receiver.string();
     return;
   }
 
   int result(0);
-  if (presence_message.content[0] == "kOnline") {
+  if (presence_message.content[0] == NonEmptyString("kOnline")) {
     result = contacts_handler->UpdatePresence(sender, kOnline);
     if (result == kSuccess && start_up_done_)
       contact_presence_signal_(receiver, sender, presence_message.timestamp, kOnline);
-  } else if (presence_message.content[0] == "kOffline") {
+  } else if (presence_message.content[0] == NonEmptyString("kOffline")) {
     result = contacts_handler->UpdatePresence(sender, kOffline);
     if (result == kSuccess && start_up_done_)
       contact_presence_signal_(receiver, sender, presence_message.timestamp, kOffline);
@@ -398,21 +373,14 @@ void MessageHandler::ProcessContactPresence(const InboxItem& presence_message) {
                          return SendPresenceMessage(receiver, sender, kOnline);
                        });
   } else {
-    LOG(kWarning) << presence_message.sender_public_id
+    LOG(kWarning) << presence_message.sender_public_id.string()
                   << " has sent a presence message with wrong content.";
   }
 }
 
 void MessageHandler::ProcessContactProfilePicture(const InboxItem& profile_picture_message) {
-  if (profile_picture_message.content.size() != 1U || profile_picture_message.content[0].empty()) {
-    // Drop silently
-    LOG(kError) << profile_picture_message.sender_public_id
-                  << " has sent a profile picture message with bad content.";
-    return;
-  }
-
-  std::string sender(profile_picture_message.sender_public_id),
-              receiver(profile_picture_message.receiver_public_id);
+  NonEmptyString sender(profile_picture_message.sender_public_id),
+                 receiver(profile_picture_message.receiver_public_id);
   if (profile_picture_message.content[0] != kBlankProfilePicture) {
     encrypt::DataMapPtr data_map(ParseSerialisedDataMap(profile_picture_message.content[0]));
     if (!data_map) {
@@ -423,7 +391,7 @@ void MessageHandler::ProcessContactProfilePicture(const InboxItem& profile_pictu
 
   const ContactsHandlerPtr contacts_handler(session_.contacts_handler(receiver));
   if (!contacts_handler) {
-    LOG(kError) << "User does not hold public ID: " << receiver;
+    LOG(kError) << "User does not hold public ID: " << receiver.string();
     return;
   }
 
@@ -440,23 +408,23 @@ void MessageHandler::ProcessContactProfilePicture(const InboxItem& profile_pictu
 
 void MessageHandler::RetrieveMessagesForAllIds() {
   int result(-1);
-  std::vector<std::string> selectables(session_.PublicIdentities());
+  std::vector<NonEmptyString> selectables(session_.PublicIdentities());
   for (auto it(selectables.begin()); it != selectables.end(); ++it) {
 //    LOG(kError) << "RetrieveMessagesForAllIds for " << (*it);
-    asymm::Keys mmid(passport_.SignaturePacketDetails(passport::kMmid, true, *it));
-    assert(!mmid.identity.empty());
-    std::string mmid_value(remote_chunk_store_.Get(AppendableByAllType(mmid.identity), mmid));
+    Fob mmid(passport_.SignaturePacketDetails(passport::kMmid, true, *it));
+    std::string mmid_value(remote_chunk_store_.Get(AppendableByAllName(mmid.identity), mmid));
 
     if (mmid_value.empty()) {
-      LOG(kWarning) << "Failed to get MPID contents for " << (*it) << ": " << result;
-    } else {
-      ProcessRetrieved(*it, mmid_value);
-      ClearExpiredReceivedMessages();
+      LOG(kWarning) << "Failed to get MPID contents for " << (*it).string() << ": " << result;
+      continue;
     }
+
+    ProcessRetrieved(*it, NonEmptyString(mmid_value));
+    ClearExpiredReceivedMessages();
   }
 }
 
-bool MessageHandler::ProtobufToInbox(const Message& message, InboxItem* inbox_item) const {
+bool MessageHandler::ProtobufToInbox(const Message& message, InboxItem& inbox_item) const {
   if (!message.IsInitialized()) {
     LOG(kWarning) << "Message not initialised.";
     return false;
@@ -472,28 +440,23 @@ bool MessageHandler::ProtobufToInbox(const Message& message, InboxItem* inbox_it
     return false;
   }
 
-  inbox_item->item_type = static_cast<InboxItemType>(message.type());
-  inbox_item->sender_public_id = message.sender_public_id();
-  inbox_item->receiver_public_id = message.receiver_public_id();
-  inbox_item->timestamp = message.timestamp();
+  inbox_item.item_type = static_cast<InboxItemType>(message.type());
+  inbox_item.sender_public_id = NonEmptyString(message.sender_public_id());
+  inbox_item.receiver_public_id = NonEmptyString(message.receiver_public_id());
+  inbox_item.timestamp = NonEmptyString(message.timestamp());
   for (auto n(0); n < message.content_size(); ++n)
-    inbox_item->content.push_back(message.content(n));
+    inbox_item.content.push_back(NonEmptyString(message.content(n)));
 
   return true;
 }
 
-bool MessageHandler::InboxToProtobuf(const InboxItem& inbox_item, Message* message) const {
-  if (!message)
-    return false;
-
-  message->set_type(inbox_item.item_type);
-  message->set_sender_public_id(inbox_item.sender_public_id);
-  message->set_receiver_public_id(inbox_item.receiver_public_id);
-  message->set_timestamp(inbox_item.timestamp);
-  for (size_t n(0); n < inbox_item.content.size(); ++n)
-    message->add_content(inbox_item.content[n]);
-
-  return true;
+void MessageHandler::InboxToProtobuf(const InboxItem& inbox_item, Message& message) const {
+  message.set_type(inbox_item.item_type);
+  message.set_sender_public_id(inbox_item.sender_public_id.string());
+  message.set_receiver_public_id(inbox_item.receiver_public_id.string());
+  message.set_timestamp(inbox_item.timestamp.string());
+  for (auto item : inbox_item.content)
+    message.add_content(item.string());
 }
 
 bool MessageHandler::MessagePreviouslyReceived(const std::string& message) {
@@ -507,7 +470,7 @@ bool MessageHandler::MessagePreviouslyReceived(const std::string& message) {
 }
 
 void MessageHandler::ClearExpiredReceivedMessages() {
-  // TODO(Team): There might be a more efficient way of doing this (BIMAP)
+  // TODO(Team): There might be a more efficient way of doing this (vector)
   uint64_t now(GetDurationSinceEpoch().total_milliseconds());
   for (auto it(received_messages_.begin()); it != received_messages_.end(); ) {
     if ((*it).second < now)

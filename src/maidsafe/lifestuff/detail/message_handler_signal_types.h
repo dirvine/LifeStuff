@@ -24,6 +24,8 @@
 
 #include "boost/signals2.hpp"
 
+#include "maidsafe/common/types.h"
+
 namespace bs2 = boost::signals2;
 
 
@@ -32,30 +34,33 @@ namespace maidsafe {
 namespace lifestuff {
 
 /// Extra library signals
-typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
-                         const std::string&,
-                         const std::string&,
-                         const std::string&)> ChatMessageSignal;
+typedef bs2::signal<void(const NonEmptyString&,  // NOLINT (Dan)
+                         const NonEmptyString&,
+                         const NonEmptyString&,
+                         const NonEmptyString&)> ChatMessageSignal;
 
-typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
-                         const std::string&,
-                         const std::string&,
-                         const std::string&,
-                         const std::string&)> FileTransferSignal;
+typedef bs2::signal<void(const NonEmptyString&,  // NOLINT (Dan)
+                         const NonEmptyString&,
+                         const NonEmptyString&,
+                         const NonEmptyString&)> FileTransferSuccessSignal;
 
-typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
-                         const std::string&,
-                         const std::string&,
+typedef bs2::signal<void(const NonEmptyString&,  // NOLINT (Dan)
+                         const NonEmptyString&,
+                         const NonEmptyString&)> FileTransferFailureSignal;
+
+typedef bs2::signal<void(const NonEmptyString&,  // NOLINT (Dan)
+                         const NonEmptyString&,
+                         const NonEmptyString&,
                          ContactPresence presence)> ContactPresenceSignal;
 
-typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
-                         const std::string&,
-                         const std::string&)> ContactProfilePictureSignal;
+typedef bs2::signal<void(const NonEmptyString&,  // NOLINT (Dan)
+                         const NonEmptyString&,
+                         const NonEmptyString&)> ContactProfilePictureSignal;
 
 /// Intra library signals
-typedef bs2::signal<bool(const std::string&,  // NOLINT (Dan)
-                         const std::string&,
-                         std::string*)> ParseAndSaveDataMapSignal;
+typedef bs2::signal<bool(const NonEmptyString&,  // NOLINT (Dan)
+                         const NonEmptyString&,
+                         NonEmptyString&)> ParseAndSaveDataMapSignal;
 
 }  // namespace lifestuff
 

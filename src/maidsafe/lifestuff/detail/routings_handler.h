@@ -48,16 +48,16 @@ class RoutingsHandler {
 
   ~RoutingsHandler();
 
-  bool AddRoutingObject(const asymm::Keys& owner_credentials,
+  bool AddRoutingObject(const Fob& owner_fob,
                         const std::vector<std::pair<std::string, uint16_t> >& bootstrap_endpoints,  // NOLINT (Dan)
-                        const std::string& search_id,
+                        const NonEmptyString& search_id,
                         const routing::RequestPublicKeyFunctor& public_key_functor);
-  bool DeleteRoutingObject(const std::string& identity);
+  bool DeleteRoutingObject(const Identity& identity);
 
-  bool Send(const std::string& source_id,
-            const std::string& destination_id,
+  bool Send(const Identity& source_id,
+            const Identity& destination_id,
             const asymm::PublicKey& destination_public_key,
-            const std::string& message,
+            const NonEmptyString& message,
             std::string* reply_message);
 
   void set_remote_chunk_store(priv::chunk_store::RemoteChunkStore& chunk_store);
@@ -65,18 +65,18 @@ class RoutingsHandler {
  private:
   struct RoutingDetails {
     RoutingDetails();
-    RoutingDetails(const asymm::Keys& owner_credentials, const std::string& search_id);
+    RoutingDetails(const Fob& owner_fob, const NonEmptyString& search_id);
     routing::Routing routing_object;
     int newtwork_health;
-    asymm::Keys keys;
+    Fob fob;
     std::mutex mutex;
     std::condition_variable condition_variable;
-    std::string search_id;
+    NonEmptyString search_id;
     bool action_health;
   };
 
   priv::chunk_store::RemoteChunkStore* chunk_store_;
-  std::map<std::string, std::shared_ptr<RoutingDetails> > routing_objects_;
+  std::map<Identity, std::shared_ptr<RoutingDetails> > routing_objects_;
   std::mutex routing_objects_mutex_;
   Session& session_;
   ValidatedMessageFunction validated_message_signal_;
@@ -86,22 +86,21 @@ class RoutingsHandler {
   RoutingsHandler(const RoutingsHandler&);
   RoutingsHandler& operator=(const RoutingsHandler&);
 
-  void OnRequestReceived(const std::string& owner_id,
-                         const std::string& wrapped_message,
+  void OnRequestReceived(const Identity& owner_id,
+                         const NonEmptyString& wrapped_message,
                          const NodeId& group_claim,
                          const routing::ReplyFunctor& reply_functor);
 
   void OnPublicKeyRequested(const NodeId& node_id,
                             const routing::GivePublicKeyFunctor& give_key);
 
-  std::string WrapMessage(const std::string &message,
-                          const asymm::PublicKey &receiver_public_key,
-                          const asymm::PrivateKey &sender_private_key);
+  NonEmptyString WrapMessage(const NonEmptyString& message,
+                             const asymm::PublicKey& receiver_public_key,
+                             const asymm::PrivateKey& sender_private_key);
 
-  bool UnwrapMessage(const std::string& wrapped_message,
-                     const asymm::PublicKey& sender_public_key,
-                     const asymm::PrivateKey& receiver_private_key,
-                     std::string& final_message);
+  NonEmptyString UnwrapMessage(const NonEmptyString& wrapped_message,
+                               const asymm::PublicKey& sender_public_key,
+                               const asymm::PrivateKey& receiver_private_key);
 };
 
 }  // namespace lifestuff

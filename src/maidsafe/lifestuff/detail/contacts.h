@@ -59,18 +59,19 @@ class PublicContact;
 
 struct Contact {
   Contact();
-  Contact(const std::string& public_id_in,
-          const std::string& mpid_name_in,
-          const std::string& inbox_name_in,
-          const std::string& profile_picture_data_map,
-          const std::string& pointer_to_info,
+  Contact(const NonEmptyString& public_id_in,
+          const NonEmptyString& mpid_name_in,
+          const NonEmptyString& inbox_name_in,
+          const NonEmptyString& profile_picture_data_map,
+          const NonEmptyString& pointer_to_info,
           const asymm::PublicKey& mpid_public_key_in,
           const asymm::PublicKey& inbox_public_key_in,
           ContactStatus status);
   explicit Contact(const PublicContact& contact);
   bool Equals(const Contact& other);
 
-  std::string public_id, mpid_name, inbox_name, profile_picture_data_map, pointer_to_info;
+  NonEmptyString public_id, profile_picture_data_map, pointer_to_info;
+  Identity mpid_name, inbox_name;
   asymm::PublicKey mpid_public_key, inbox_public_key;
   ContactStatus status;
   uint32_t rank;
@@ -90,7 +91,7 @@ typedef boost::multi_index::multi_index_container<
   boost::multi_index::indexed_by<
     boost::multi_index::ordered_unique<
       boost::multi_index::tag<Alphabetical>,
-      BOOST_MULTI_INDEX_MEMBER(Contact, std::string, public_id)
+      BOOST_MULTI_INDEX_MEMBER(Contact, NonEmptyString, public_id)
     >,
     boost::multi_index::ordered_non_unique<
       boost::multi_index::tag<Popular>,
@@ -116,26 +117,26 @@ typedef boost::multi_index::multi_index_container<
 class ContactsHandler {
  public:
   ContactsHandler() : contact_set_() { }
-  int AddContact(const std::string& public_id,
-                 const std::string& mpid_name,
-                 const std::string& inbox_name,
-                 const std::string& profile_picture_data_map,
-                 const std::string& pointer_to_info,
+  int AddContact(const NonEmptyString& public_id,
+                 const NonEmptyString& mpid_name,
+                 const NonEmptyString& inbox_name,
+                 const NonEmptyString& profile_picture_data_map,
+                 const NonEmptyString& pointer_to_info,
                  const asymm::PublicKey& mpid_public_key,
                  const asymm::PublicKey& inbox_public_key,
                  ContactStatus status,
                  const uint32_t& rank,
                  const uint32_t& last_contact);
   int AddContact(const Contact& contact);
-  int DeleteContact(const std::string& public_id);
+  int DeleteContact(const NonEmptyString& public_id);
   int UpdateContact(const Contact& contact);
-  int UpdateProfilePictureDataMap(const std::string& public_id,
-                                  const std::string& profile_picture_data_map);
-  int UpdatePointerToInfo(const std::string& public_id, const std::string& pointer_to_info);
-  int UpdateStatus(const std::string& public_id, const ContactStatus& status);
-  int UpdatePresence(const std::string& public_id, const ContactPresence& presence);
-  int TouchContact(const std::string& public_id);
-  int ContactInfo(const std::string& public_id, Contact* contact);
+  int UpdateProfilePictureDataMap(const NonEmptyString& public_id,
+                                  const NonEmptyString& profile_picture_data_map);
+  int UpdatePointerToInfo(const NonEmptyString& public_id, const NonEmptyString& pointer_to_info);
+  int UpdateStatus(const NonEmptyString& public_id, const ContactStatus& status);
+  int UpdatePresence(const NonEmptyString& public_id, const ContactPresence& presence);
+  int TouchContact(const NonEmptyString& public_id);
+  int ContactInfo(const NonEmptyString& public_id, Contact* contact);
   void OrderedContacts(std::vector<Contact>* contacts,
                        ContactOrder type = kAlphabetical,
                        uint16_t bitwise_status = 0x00);

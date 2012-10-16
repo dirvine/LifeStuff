@@ -36,7 +36,7 @@
 
 #include "maidsafe/private/chunk_actions/chunk_action_authority.h"
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
-#include "maidsafe/private/chunk_actions/chunk_types.h"
+#include "maidsafe/private/chunk_actions/chunk_id.h"
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 #include "maidsafe/private/utils/utilities.h"
 
@@ -62,7 +62,7 @@ int CreateSignaturePacketInfo(const asymm::Keys& packet,
                               std::string* packet_name,
                               std::string* packet_content) {
   assert(packet_name && packet_content);
-  *packet_name = pca::ApplyTypeToName(packet.identity, pca::kSignaturePacket);
+  *packet_name = pca::ApplyTypeToName(packet.identity, priv::ChunkType::kSignaturePacket);
 
   pca::SignedData signed_data;
   std::string public_key;
@@ -286,14 +286,14 @@ int UserCredentialsImpl::GetUserInfo(const std::string& keyword,
           new_mid_packet = remote_chunk_store_->Get(pca::ApplyTypeToName(passport::MidName(keyword,
                                                                                            pin,
                                                                                            false),
-                                                                         pca::kModifiableByOwner));
+                                                                         priv::ChunkType::kModifiableByOwner));
         });
     boost::thread get_smid_thread(
         [&] {
           new_smid_packet = remote_chunk_store_->Get(pca::ApplyTypeToName(passport::MidName(keyword,
                                                                                             pin,
                                                                                             true),
-                                                                          pca::kModifiableByOwner));
+                                                                          priv::ChunkType::kModifiableByOwner));
         });
 
     get_mid_thread.join();
@@ -387,7 +387,7 @@ void UserCredentialsImpl::GetIdAndTemporaryId(const std::string& keyword,
                                               std::string* id_contents,
                                               std::string* temporary_packet) {
   std::string id_name(pca::ApplyTypeToName(passport::MidName(keyword, pin, surrogate),
-                                           pca::kModifiableByOwner));
+                                           priv::ChunkType::kModifiableByOwner));
   std::string id_packet(remote_chunk_store_->Get(id_name));
   if (id_packet.empty()) {
     LOG(kError) << "No " << (surrogate ? "SMID" : "MID") << " found.";
@@ -409,7 +409,7 @@ void UserCredentialsImpl::GetIdAndTemporaryId(const std::string& keyword,
     *result = kCorruptedPacket;
     return;
   }
-  decrypted_rid = pca::ApplyTypeToName(decrypted_rid, pca::kModifiableByOwner);
+  decrypted_rid = pca::ApplyTypeToName(decrypted_rid, priv::ChunkType::kModifiableByOwner);
 
   std::string temporary_id_packet(remote_chunk_store_->Get(decrypted_rid));
   if (temporary_id_packet.empty()) {
@@ -661,7 +661,7 @@ void UserCredentialsImpl::StoreMaid(bool result, OperationResults& results) {
   asymm::Keys anmaid(passport_.SignaturePacketDetails(passport::kAnmaid, false));
   assert(!anmaid.identity.empty());
 
-  std::string maid_name(pca::ApplyTypeToName(maid.identity, pca::kSignaturePacket));
+  std::string maid_name(pca::ApplyTypeToName(maid.identity, priv::ChunkType::kSignaturePacket));
   pca::SignedData signed_maid;
   signed_maid.set_signature(maid.validation_token);
   std::string maid_string_public_key;
@@ -693,7 +693,7 @@ void UserCredentialsImpl::StorePmid(bool result, OperationResults& results) {
   asymm::Keys maid(passport_.SignaturePacketDetails(passport::kMaid, false));
   assert(!maid.identity.empty());
 
-  std::string pmid_name(pca::ApplyTypeToName(pmid.identity, pca::kSignaturePacket));
+  std::string pmid_name(pca::ApplyTypeToName(pmid.identity, priv::ChunkType::kSignaturePacket));
   pca::SignedData signed_pmid;
   signed_pmid.set_signature(pmid.validation_token);
   std::string pmid_string_public_key;
@@ -817,7 +817,7 @@ void UserCredentialsImpl::StoreIdentity(OperationResults& results,
   passport::PacketType sign_pt(static_cast<passport::PacketType>(signer_type));
   std::string packet_name(passport_.IdentityPacketName(id_pt, false)),
               packet_content(passport_.IdentityPacketValue(id_pt, false));
-  packet_name = pca::ApplyTypeToName(packet_name, pca::kModifiableByOwner);
+  packet_name = pca::ApplyTypeToName(packet_name, priv::ChunkType::kModifiableByOwner);
   asymm::Keys signer(passport_.SignaturePacketDetails(sign_pt, true));
   assert(!signer.identity.empty());
 
@@ -919,7 +919,7 @@ void UserCredentialsImpl::ModifyIdentity(OperationResults& results,
   passport::PacketType sign_pt(static_cast<passport::PacketType>(signer_type));
   std::string name(passport_.IdentityPacketName(id_pt, false)),
               content(passport_.IdentityPacketValue(id_pt, false));
-  name = pca::ApplyTypeToName(name, pca::kModifiableByOwner);
+  name = pca::ApplyTypeToName(name, priv::ChunkType::kModifiableByOwner);
   asymm::Keys signer(passport_.SignaturePacketDetails(sign_pt, true));
   assert(!signer.identity.empty());
 
@@ -1070,7 +1070,7 @@ void UserCredentialsImpl::DeleteIdentity(OperationResults& results,
     OperationCallback(false, results, index);
     return;
   }
-  name = pca::ApplyTypeToName(name, pca::kModifiableByOwner);
+  name = pca::ApplyTypeToName(name, priv::ChunkType::kModifiableByOwner);
 
   asymm::Keys signer(passport_.SignaturePacketDetails(sig_type, true));
   assert(!signer.identity.empty());
@@ -1297,7 +1297,7 @@ void UserCredentialsImpl::DeletePmid(OperationResults& results) {
   asymm::Keys maid(passport_.SignaturePacketDetails(passport::kMaid, true));
   assert(!maid.identity.empty());
 
-  std::string pmid_name(pca::ApplyTypeToName(pmid.identity, pca::kSignaturePacket));
+  std::string pmid_name(pca::ApplyTypeToName(pmid.identity, priv::ChunkType::kSignaturePacket));
   if (!remote_chunk_store_->Delete(pmid_name,
                                    [&] (bool result) { DeleteMaid(result, results, maid); },
                                    maid)) {
@@ -1317,7 +1317,7 @@ void UserCredentialsImpl::DeleteMaid(bool result,
 
   asymm::Keys anmaid(passport_.SignaturePacketDetails(passport::kAnmaid, true));
   assert(!anmaid.identity.empty());
-  std::string maid_name(pca::ApplyTypeToName(maid.identity, pca::kSignaturePacket));
+  std::string maid_name(pca::ApplyTypeToName(maid.identity, priv::ChunkType::kSignaturePacket));
   if (!remote_chunk_store_->Delete(maid_name,
                                    [&] (bool result) {
                                      DeleteAnmaid(result, results, anmaid);
@@ -1343,7 +1343,7 @@ void UserCredentialsImpl::DeleteAnmaid(bool result,
 void UserCredentialsImpl::DeleteSignaturePacket(asymm::Keys packet,
                                                 OperationResults& results,
                                                 int index) {
-  std::string packet_name(pca::ApplyTypeToName(packet.identity, pca::kSignaturePacket));
+  std::string packet_name(pca::ApplyTypeToName(packet.identity, priv::ChunkType::kSignaturePacket));
   if (!remote_chunk_store_->Delete(packet_name,
                                    [&, index] (bool result) {
                                      OperationCallback(result, results, index);
