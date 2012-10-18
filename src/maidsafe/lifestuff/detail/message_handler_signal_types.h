@@ -42,6 +42,7 @@ typedef bs2::signal<void(const NonEmptyString&,  // NOLINT (Dan)
 typedef bs2::signal<void(const NonEmptyString&,  // NOLINT (Dan)
                          const NonEmptyString&,
                          const NonEmptyString&,
+                         const NonEmptyString&,
                          const NonEmptyString&)> FileTransferSuccessSignal;
 
 typedef bs2::signal<void(const NonEmptyString&,  // NOLINT (Dan)
