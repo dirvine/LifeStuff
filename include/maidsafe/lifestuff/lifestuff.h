@@ -86,6 +86,12 @@ typedef std::function<void(const NonEmptyString&,  // NOLINT (Fraser)
                            const NonEmptyString&,
                            const NonEmptyString&)>
         FourStringsFunction;
+typedef std::function<void(const NonEmptyString&,  // NOLINT (Fraser)
+                           const NonEmptyString&,
+                           const NonEmptyString&,
+                           const NonEmptyString&,
+                           const NonEmptyString&)>
+        FiveStringsFunction;
 
 typedef std::function<void(int)> VoidFunctionOneInt;  // NOLINT (Dan)
 typedef std::function<void(bool)> VoidFunctionOneBool;  // NOLINT (Dan)
@@ -103,7 +109,7 @@ typedef FourStringsFunction ChatFunction;
 // Own public ID, Contact public ID, Timestamp
 typedef ThreeStringsFunction FileTransferFailureFunction;
 // Own public ID, Contact public ID, File name, File ID, Timestamp
-typedef FourStringsFunction FileTransferSuccessFunction;
+typedef FiveStringsFunction FileTransferSuccessFunction;
 
 /// Contact info
 // Own & other public ID, Timestamp

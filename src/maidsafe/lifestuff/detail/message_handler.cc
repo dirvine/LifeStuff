@@ -338,6 +338,7 @@ void MessageHandler::ProcessFileTransfer(const InboxItem& inbox_item) {
   file_transfer_success_signal_(inbox_item.receiver_public_id,
                                 inbox_item.sender_public_id,
                                 inbox_item.content[0],
+                                NonEmptyString(data_map_hash),
                                 inbox_item.timestamp);
 }
 
