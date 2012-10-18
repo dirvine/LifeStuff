@@ -41,8 +41,9 @@
 
 #include "maidsafe/private/process_management/client_controller.h"
 #include "maidsafe/routing/routing_api.h"
+
 #include "maidsafe/pd/client/node.h"
-#include "maidsafe/pd/vault/node.h"
+//#include "maidsafe/pd/vault/node.h"
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
@@ -66,7 +67,8 @@ class UserStorage;
 struct Slots {
   Slots()
       : chat_slot(),
-        file_slot(),
+        file_success_slot(),
+        file_failure_slot(),
         new_contact_slot(),
         confirmed_contact_slot(),
         profile_picture_slot(),
@@ -76,7 +78,8 @@ struct Slots {
         network_health_function(),
         immediate_quit_required_function() {}
   ChatFunction chat_slot;
-  FileTransferFunction file_slot;
+  FileTransferSuccessFunction file_success_slot;
+  FileTransferFailureFunction file_failure_slot;
   NewContactFunction new_contact_slot;
   ContactConfirmationFunction confirmed_contact_slot;
   ContactProfilePictureFunction profile_picture_slot;
@@ -98,7 +101,8 @@ class LifeStuffImpl {
                  bool vault_cheat);
   int ConnectToSignals(const bool& apply_changes,
                        const ChatFunction& chat_slot,
-                       const FileTransferFunction& file_slot,
+                       const FileTransferSuccessFunction& file_success_slot,
+                       const FileTransferFailureFunction& file_failure_slot,
                        const NewContactFunction& new_contact_slot,
                        const ContactConfirmationFunction& confirmed_contact_slot,
                        const ContactProfilePictureFunction& profile_picture_slot,
@@ -110,66 +114,65 @@ class LifeStuffImpl {
   int Finalise();
 
   /// Credential operations
-  int CreateUser(const std::string& username,
-                 const std::string& pin,
-                 const std::string& password,
+  int CreateUser(const NonEmptyString& username,
+                 const NonEmptyString& pin,
+                 const NonEmptyString& password,
                  const fs::path& chunk_store);
-  int CreatePublicId(const std::string& public_id);
-  int LogIn(const std::string& username, const std::string& pin, const std::string& password);
+  int CreatePublicId(const NonEmptyString& public_id);
+  int LogIn(const NonEmptyString& username, const NonEmptyString& pin, const NonEmptyString& password);
   int LogOut(bool clear_maid_routing = true);
   int MountDrive();
   int UnMountDrive();
   int StartMessagesAndIntros();
   int StopMessagesAndIntros();
 
-  int CheckPassword(const std::string& password);
-  int ChangeKeyword(const std::string& new_username, const std::string& password);
-  int ChangePin(const std::string& new_pin, const std::string& password);
-  int ChangePassword(const std::string& new_password, const std::string& current_password);
-  int ChangePublicId(const std::string& public_id, const std::string& password);
+  int CheckPassword(const NonEmptyString& password);
+  int ChangeKeyword(const NonEmptyString& new_username, const NonEmptyString& password);
+  int ChangePin(const NonEmptyString& new_pin, const NonEmptyString& password);
+  int ChangePassword(const NonEmptyString& new_password, const NonEmptyString& current_password);
+  int ChangePublicId(const NonEmptyString& public_id, const NonEmptyString& password);
 
   int LeaveLifeStuff();  // ='(
 
   /// Contact operations
-  int AddContact(const std::string& my_public_id,
-                 const std::string& contact_public_id,
-                 const std::string& message);
-  int ConfirmContact(const std::string& my_public_id, const std::string& contact_public_id);
-  int DeclineContact(const std::string& my_public_id, const std::string& contact_public_id);
-  int RemoveContact(const std::string& my_public_id,
-                    const std::string& contact_public_id,
-                    const std::string& removal_message,
-                    const std::string& timestamp,
+  int AddContact(const NonEmptyString& my_public_id,
+                 const NonEmptyString& contact_public_id,
+                 const NonEmptyString& message);
+  int ConfirmContact(const NonEmptyString& my_public_id, const NonEmptyString& contact_public_id);
+  int DeclineContact(const NonEmptyString& my_public_id, const NonEmptyString& contact_public_id);
+  int RemoveContact(const NonEmptyString& my_public_id,
+                    const NonEmptyString& contact_public_id,
+                    const NonEmptyString& removal_message,
                     const bool& instigator);
-  int ChangeProfilePicture(const std::string& my_public_id,
-                           const std::string& profile_picture_contents);
-  std::string GetOwnProfilePicture(const std::string& my_public_id);
-  std::string GetContactProfilePicture(const std::string& my_public_id,
-                                       const std::string& contact_public_id);
-  int GetLifestuffCard(const std::string& my_public_id,
+  int ChangeProfilePicture(const NonEmptyString& my_public_id,
+                           const NonEmptyString& profile_picture_contents);
+  NonEmptyString GetOwnProfilePicture(const NonEmptyString& my_public_id);
+  NonEmptyString GetContactProfilePicture(const NonEmptyString& my_public_id,
+                                       const NonEmptyString& contact_public_id);
+  int GetLifestuffCard(const NonEmptyString& my_public_id,
                        const std::string& contact_public_id,
                        SocialInfoMap& social_info);
-  int SetLifestuffCard(const std::string& my_public_id, const SocialInfoMap& social_info);
-  ContactMap GetContacts(const std::string& my_public_id,
+  int SetLifestuffCard(const NonEmptyString& my_public_id, const SocialInfoMap& social_info);
+  ContactMap GetContacts(const NonEmptyString& my_public_id,
                          uint16_t bitwise_status = kConfirmed | kRequestSent);
-  std::vector<std::string> PublicIdsList() const;
+  std::vector<NonEmptyString> PublicIdsList() const;
 
   /// Messaging
-  int SendChatMessage(const std::string& sender_public_id,
-                      const std::string& receiver_public_id,
-                      const std::string& message);
-  int SendFile(const std::string& sender_public_id,
-               const std::string& receiver_public_id,
+  int SendChatMessage(const NonEmptyString& sender_public_id,
+                      const NonEmptyString& receiver_public_id,
+                      const NonEmptyString& message);
+  int SendFile(const NonEmptyString& sender_public_id,
+               const NonEmptyString& receiver_public_id,
                const fs::path& absolute_path);
-  int AcceptSentFile(const std::string& identifier,
+  int AcceptSentFile(const NonEmptyString& identifier,
                      const fs::path& absolute_path = fs::path(),
                      std::string* file_name = nullptr);
-  int RejectSentFile(const std::string& identifier);
+  int RejectSentFile(const NonEmptyString& identifier);
 
   /// Filesystem
   int ReadHiddenFile(const fs::path& absolute_path, std::string* content) const;
   int WriteHiddenFile(const fs::path& absolute_path,
-                      const std::string& content,
+                      const NonEmptyString& content,
                       bool overwrite_existing);
   int DeleteHiddenFile(const fs::path& absolute_path);
   int SearchHiddenFiles(const fs::path& absolute_path,
@@ -189,7 +192,7 @@ class LifeStuffImpl {
   std::shared_ptr<priv::process_management::ClientController> client_controller_;
   std::shared_ptr<pd::Node> client_node_;
   std::shared_ptr<RoutingsHandler> routings_handler_;
-  pd::vault::Node vault_node_;
+//  pd::vault::Node vault_node_;
   boost::signals2::signal<void(const int&)> network_health_signal_;
   Session session_;
   std::shared_ptr<UserCredentials> user_credentials_;
@@ -205,11 +208,11 @@ class LifeStuffImpl {
   void ConnectInternalElements();
   int SetValidPmidAndInitialisePublicComponents();
   int CheckStateAndFullAccess() const;
-  int PreContactChecksFullAccess(const std::string& my_public_id);
+  int PreContactChecksFullAccess(const NonEmptyString& my_public_id);
   void NetworkHealthSlot(const int& index);
   int CreateVaultInLocalMachine(const fs::path& chunk_store);
-  bool HandleRoutingsHandlerMessage(const std::string& message, std::string& response);
-  bool HandleLogoutProceedingsMessage(const std::string& message, std::string& response);
+  bool HandleRoutingsHandlerMessage(const NonEmptyString& message, std::string& response);
+  bool HandleLogoutProceedingsMessage(const NonEmptyString& message, std::string& response);
 };
 
 }  // namespace lifestuff

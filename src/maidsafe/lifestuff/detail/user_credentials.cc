@@ -46,15 +46,15 @@ void UserCredentials::set_remote_chunk_store(priv::chunk_store::RemoteChunkStore
 }
 
 
-int UserCredentials::CreateUser(const std::string& keyword,
-                                const std::string& pin,
-                                const std::string& password) {
+int UserCredentials::CreateUser(const NonEmptyString& keyword,
+                                const NonEmptyString& pin,
+                                const NonEmptyString& password) {
   return impl_->CreateUser(keyword, pin, password);
 }
 
-int UserCredentials::LogIn(const std::string& keyword,
-                           const std::string& pin,
-                           const std::string& password) {
+int UserCredentials::LogIn(const NonEmptyString& keyword,
+                           const NonEmptyString& pin,
+                           const NonEmptyString& password) {
   return impl_->LogIn(keyword, pin, password);
 }
 
@@ -62,15 +62,15 @@ int UserCredentials::Logout() { return impl_->LogOut(); }
 
 int UserCredentials::SaveSession() { return impl_->SaveSession(false); }
 
-int UserCredentials::ChangeKeyword(const std::string& new_keyword) {
+int UserCredentials::ChangeKeyword(const NonEmptyString& new_keyword) {
   return impl_->ChangeKeyword(new_keyword);
 }
 
-int UserCredentials::ChangePin(const std::string& new_pin) {
+int UserCredentials::ChangePin(const NonEmptyString& new_pin) {
   return impl_->ChangePin(new_pin);
 }
 
-int UserCredentials::ChangePassword(const std::string& new_password) {
+int UserCredentials::ChangePassword(const NonEmptyString& new_password) {
   return impl_->ChangePassword(new_password);
 }
 

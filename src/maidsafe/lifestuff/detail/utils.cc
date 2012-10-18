@@ -56,13 +56,13 @@ InboxItem::InboxItem(InboxItemType inbox_item_type)
       content(),
       timestamp(IsoTimeWithMicroSeconds()) {}
 
-std::string CreatePin() {
+NonEmptyString CreatePin() {
   std::stringstream pin_stream;
   uint32_t pin(0);
   while (pin < 1000)
     pin = RandomUint32() % 10000;
   pin_stream << pin;
-  return pin_stream.str();
+  return NonEmptyString(pin_stream.str());
 }
 
 bool AcceptableWordSize(const std::string& word) {
@@ -74,21 +74,21 @@ bool AcceptableWordPattern(const std::string& word) {
   return !boost::regex_search(word.begin(), word.end(), space);
 }
 
-int CheckWordValidity(const std::string& word) {
-  if (!AcceptableWordSize(word)) {
-    LOG(kError) << "Unacceptable size: " << word.size();
+int CheckWordValidity(const NonEmptyString& word) {
+  if (!AcceptableWordSize(word.string())) {
+    LOG(kError) << "Unacceptable size: " << word.string().size();
     return kWordSizeInvalid;
   }
 
-  if (!AcceptableWordPattern(word)) {
-    LOG(kError) << "Unacceptable pattern: '" << word << "'";
+  if (!AcceptableWordPattern(word.string())) {
+    LOG(kError) << "Unacceptable pattern: '" << word.string() << "'";
     return kWordPatternInvalid;
   }
 
   return kSuccess;
 }
 
-int CheckKeywordValidity(const std::string& keyword) {
+int CheckKeywordValidity(const NonEmptyString& keyword) {
   int result(CheckWordValidity(keyword));
   if (result == kWordSizeInvalid)
     return kKeywordSizeInvalid;
@@ -97,7 +97,7 @@ int CheckKeywordValidity(const std::string& keyword) {
   return kSuccess;
 }
 
-int CheckPasswordValidity(const std::string& password) {
+int CheckPasswordValidity(const NonEmptyString& password) {
   int result(CheckWordValidity(password));
   if (result == kWordSizeInvalid)
     return kPasswordSizeInvalid;
@@ -106,14 +106,14 @@ int CheckPasswordValidity(const std::string& password) {
   return kSuccess;
 }
 
-int CheckPinValidity(const std::string& pin) {
-  if (pin.size() != kPinSize) {
-    LOG(kError) << "PIN wrong size: " << pin;
+int CheckPinValidity(const NonEmptyString& pin) {
+  if (pin.string().size() != kPinSize) {
+    LOG(kError) << "PIN wrong size: " << pin.string();
     return kPinSizeInvalid;
   }
 
   try {
-    int peen(boost::lexical_cast<int>(pin));
+    int peen(boost::lexical_cast<int>(pin.string()));
     if (peen < 1) {
       LOG(kError) << "PIN out of range: " << peen;
       return kPinPatternInvalid;
@@ -126,26 +126,23 @@ int CheckPinValidity(const std::string& pin) {
   }
 }
 
-int CheckPublicIdValidity(const std::string& public_id) {
-  if (public_id.empty()) {
-    LOG(kError) << "Public ID empty.";
-    return kPublicIdEmpty;
-  }
-  if (public_id.length() > kMaxPublicIdSize) {
-    LOG(kError) << "Public ID too long: '" << public_id << "'";
+int CheckPublicIdValidity(const NonEmptyString& public_id) {
+  std::string str_public_id(public_id.string());
+  if (str_public_id.length() > kMaxPublicIdSize) {
+    LOG(kError) << "Public ID too long: '" << str_public_id << "'";
     return kPublicIdLengthInvalid;
   }
-  if (public_id.at(0) == ' ') {
-    LOG(kError) << "Public ID starts with space: '" << public_id << "'";
+  if (str_public_id.at(0) == ' ') {
+    LOG(kError) << "Public ID starts with space: '" << str_public_id << "'";
     return kPublicIdEndSpaceInvalid;
   }
-  if (public_id.at(public_id.length() - 1) == ' ') {
-    LOG(kError) << "Public ID ends with space: '" << public_id << "'";
+  if (str_public_id.at(str_public_id.length() - 1) == ' ') {
+    LOG(kError) << "Public ID ends with space: '" << str_public_id << "'";
     return kPublicIdEndSpaceInvalid;
   }
   boost::regex double_space("  ");
-  if (boost::regex_search(public_id.begin(), public_id.end(), double_space)) {
-    LOG(kError) << "Public ID contains double space: '" << public_id << "'";
+  if (boost::regex_search(str_public_id.begin(), str_public_id.end(), double_space)) {
+    LOG(kError) << "Public ID contains double space: '" << str_public_id << "'";
     return kPublicIdDoubleSpaceInvalid;
   }
   return kSuccess;
@@ -226,8 +223,10 @@ priv::ChunkId ComposeSignaturePacketName(const Identity& name) {
 }
 
 NonEmptyString ComposeModifyAppendableByAll(const asymm::PrivateKey& signing_key,
-                                            const char appendability) {
-  asymm::PlainText appendability_string(std::string(1, appendability));
+                                            const bool appendability) {
+  asymm::PlainText appendability_string(
+      std::string(1, static_cast<char>(appendability ? priv::ChunkType::kAppendableByAll :
+                                                       priv::ChunkType::kModifiableByOwner)));
   pca::SignedData signed_data;
   asymm::Signature signature(asymm::Sign(appendability_string, signing_key));
   signed_data.set_data(appendability_string.string());
@@ -257,7 +256,7 @@ NonEmptyString AppendableIdValue(const Fob& fob, bool accepts_new_contacts) {
   return NonEmptyString(contact_id.SerializeAsString());
 }
 
-priv::ChunkId MaidsafeContactIdName(const std::string& public_id) {
+priv::ChunkId MaidsafeContactIdName(const NonEmptyString& public_id) {
   return priv::ChunkId(crypto::Hash<crypto::SHA512>(public_id).string() +
                        std::string(1, static_cast<char>(priv::ChunkType::kAppendableByAll)));
 }
@@ -268,6 +267,10 @@ priv::ChunkId SignaturePacketName(const Identity& name) {
 
 priv::ChunkId AppendableByAllName(const Identity& name) {
   return priv::ApplyTypeToName(name, priv::ChunkType::kAppendableByAll);
+}
+
+priv::ChunkId ModifiableName(const Identity& name) {
+  return priv::ApplyTypeToName(name, priv::ChunkType::kModifiableByOwner);
 }
 
 NonEmptyString SignaturePacketValue(const Fob& fob) {
@@ -296,16 +299,16 @@ std::string PutFilenameData(const std::string& file_name) {
 }
 
 void GetFilenameData(const std::string& content,
-                     std::string* file_name,
-                     std::string* serialised_data_map) {
+                     std::string& file_name,
+                     std::string& serialised_data_map) {
   if (content.size() < 5U)
     return;
 
   try {
     int chars_to_read(boost::lexical_cast<int>(content.substr(0, 3)));
-    *file_name = content.substr(3, chars_to_read);
+    file_name = content.substr(3, chars_to_read);
     chars_to_read += 3;
-    *serialised_data_map = content.substr(chars_to_read);
+    serialised_data_map = content.substr(chars_to_read);
   }
   catch(const std::exception& e) {
     LOG(kError) << e.what();
@@ -329,13 +332,9 @@ std::string GetNameInPath(const fs::path& save_path, const std::string& file_nam
   return path_file_name.string();
 }
 
-encrypt::DataMapPtr ParseSerialisedDataMap(const NonEmptyString& serialised_data_map) {
-//  LOG(kError) << "ParseSerialisedDataMap - input size: " << serialised_data_map.size();
-  encrypt::DataMapPtr data_map(std::make_shared<encrypt::DataMap>());
-  if (encrypt::ParseDataMap(serialised_data_map, *data_map) != kSuccess) {
-    LOG(kError) << "Failed to parse DataMap.";
-    return encrypt::DataMapPtr();
-  }
+encrypt::DataMap ParseSerialisedDataMap(const NonEmptyString& serialised_data_map) {
+  encrypt::DataMap data_map;
+  encrypt::ParseDataMap(serialised_data_map.string(), data_map);
   return data_map;
 }
 

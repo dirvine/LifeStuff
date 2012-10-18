@@ -54,7 +54,8 @@ class LifeStuff {
                  const fs::path& base_directory,
                  bool vault_cheat);
   int ConnectToSignals(const ChatFunction& chat_slot,
-                       const FileTransferFunction& file_slot,
+                       const FileTransferSuccessFunction& file_success_slot,
+                       const FileTransferFailureFunction& file_failure_slot,
                        const NewContactFunction& new_contact_slot,
                        const ContactConfirmationFunction& confirmed_contact_slot,
                        const ContactProfilePictureFunction& profile_picture_slot,
@@ -67,63 +68,66 @@ class LifeStuff {
   int Finalise();
 
   /// Credential operations
-  int CreateUser(const std::string& keyword,
-                 const std::string& pin,
-                 const std::string& password,
+  int CreateUser(const NonEmptyString& keyword,
+                 const NonEmptyString& pin,
+                 const NonEmptyString& password,
                  const fs::path& chunk_store = fs::path());
-  int CreatePublicId(const std::string& public_id);
-  int LogIn(const std::string& keyword, const std::string& pin, const std::string& password);
+  int CreatePublicId(const NonEmptyString& public_id);
+  int LogIn(const NonEmptyString& keyword,
+            const NonEmptyString& pin,
+            const NonEmptyString& password);
   int LogOut();
   int MountDrive();
   int UnMountDrive();
   int StartMessagesAndIntros();
   int StopMessagesAndIntros();
 
-  int CheckPassword(const std::string& password);
-  int ChangeKeyword(const std::string& new_keyword, const std::string& password);
-  int ChangePin(const std::string& new_pin, const std::string& password);
-  int ChangePassword(const std::string& new_password, const std::string& current_password);
-  int ChangePublicId(const std::string& public_id, const std::string& password);
+  int CheckPassword(const NonEmptyString& password);
+  int ChangeKeyword(const NonEmptyString& new_keyword, const NonEmptyString& password);
+  int ChangePin(const NonEmptyString& new_pin, const NonEmptyString& password);
+  int ChangePassword(const NonEmptyString& new_password, const NonEmptyString& current_password);
+  int ChangePublicId(const NonEmptyString& public_id, const NonEmptyString& password);
 
   int LeaveLifeStuff();  // ='(
 
   /// Contact operations
-  int AddContact(const std::string& my_public_id, const std::string& contact_public_id,
-                 const std::string& message = "");
-  int ConfirmContact(const std::string& my_public_id, const std::string& contact_public_id);
-  int DeclineContact(const std::string& my_public_id, const std::string& contact_public_id);
-  int RemoveContact(const std::string& my_public_id,
-                    const std::string& contact_public_id,
-                    const std::string& removal_message);
-  int ChangeProfilePicture(const std::string& my_public_id,
-                           const std::string& profile_picture_contents);
-  std::string GetOwnProfilePicture(const std::string& my_public_id);
-  std::string GetContactProfilePicture(const std::string& my_public_id,
-                                       const std::string& contact_public_id);
-  int GetLifestuffCard(const std::string& my_public_id,
+  int AddContact(const NonEmptyString& my_public_id,
+                 const NonEmptyString& contact_public_id,
+                 const NonEmptyString& message);
+  int ConfirmContact(const NonEmptyString& my_public_id, const NonEmptyString& contact_public_id);
+  int DeclineContact(const NonEmptyString& my_public_id, const NonEmptyString& contact_public_id);
+  int RemoveContact(const NonEmptyString& my_public_id,
+                    const NonEmptyString& contact_public_id,
+                    const NonEmptyString& removal_message);
+  int ChangeProfilePicture(const NonEmptyString& my_public_id,
+                           const NonEmptyString& profile_picture_contents);
+  NonEmptyString GetOwnProfilePicture(const NonEmptyString& my_public_id);
+  NonEmptyString GetContactProfilePicture(const NonEmptyString& my_public_id,
+                                          const NonEmptyString& contact_public_id);
+  int GetLifestuffCard(const NonEmptyString& my_public_id,
                        const std::string& contact_public_id,
                        SocialInfoMap& social_info);
-  int SetLifestuffCard(const std::string& my_public_id, const SocialInfoMap& social_info);
-  ContactMap GetContacts(const std::string& my_public_id,
+  int SetLifestuffCard(const NonEmptyString& my_public_id, const SocialInfoMap& social_info);
+  ContactMap GetContacts(const NonEmptyString& my_public_id,
                          uint16_t bitwise_status = kConfirmed | kRequestSent);
-  std::vector<std::string> PublicIdsList() const;
+  std::vector<NonEmptyString> PublicIdsList() const;
 
   /// Messaging
-  int SendChatMessage(const std::string& sender_public_id,
-                      const std::string& receiver_public_id,
-                      const std::string& message);
-  int SendFile(const std::string& sender_public_id,
-               const std::string& receiver_public_id,
+  int SendChatMessage(const NonEmptyString& sender_public_id,
+                      const NonEmptyString& receiver_public_id,
+                      const NonEmptyString& message);
+  int SendFile(const NonEmptyString& sender_public_id,
+               const NonEmptyString& receiver_public_id,
                const fs::path& absolute_path);
-  int AcceptSentFile(const std::string& identifier,
+  int AcceptSentFile(const NonEmptyString& identifier,
                      const fs::path& absolute_path = fs::path(),
                      std::string* file_name = nullptr);
-  int RejectSentFile(const std::string& identifier);
+  int RejectSentFile(const NonEmptyString& identifier);
 
   /// Filesystem
   int ReadHiddenFile(const fs::path& absolute_path, std::string* content) const;
   int WriteHiddenFile(const fs::path& absolute_path,
-                      const std::string& content,
+                      const NonEmptyString& content,
                       bool overwrite_existing);
   int DeleteHiddenFile(const fs::path& absolute_path);
   int SearchHiddenFiles(const fs::path& absolute_path,

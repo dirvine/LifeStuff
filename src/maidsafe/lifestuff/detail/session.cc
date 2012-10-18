@@ -85,7 +85,7 @@ void Session::Reset() {
     user_details_.pin = NonEmptyString();
     user_details_.password = NonEmptyString();
     user_details_.session_name = NonEmptyString();
-    user_details_.unique_user_id.clear();
+    user_details_.unique_user_id = Identity();
     user_details_.root_parent_id.clear();
     user_details_.max_space = 1073741824;
     user_details_.used_space = 0;
@@ -189,7 +189,7 @@ NonEmptyString Session::session_name() const {
   return user_details_.session_name;
 }
 
-std::string Session::unique_user_id() const {
+Identity Session::unique_user_id() const {
   std::unique_lock<std::mutex> arran_lochan_am_hill(user_details_mutex_);
   return user_details_.unique_user_id;
 }
@@ -263,10 +263,7 @@ void Session::clear_session_name() {
   user_details_.session_name = NonEmptyString();
 }
 
-void Session::set_unique_user_id(const std::string& unique_user_id) {
-  if (unique_user_id.empty())
-    LOG(kWarning) << "Passed empty unique user ID.";
-
+void Session::set_unique_user_id(const Identity& unique_user_id) {
   std::unique_lock<std::mutex> arran_lochan_am_hill(user_details_mutex_);
   user_details_.unique_user_id = unique_user_id;
 }
@@ -333,7 +330,7 @@ int Session::ParseDataAtlas(const NonEmptyString& serialised_data_atlas) {
       return kTryAgainLater;
     }
 
-    set_unique_user_id(data_atlas.drive_data().unique_user_id());
+    set_unique_user_id(Identity(data_atlas.drive_data().unique_user_id()));
     set_root_parent_id(data_atlas.drive_data().root_parent_id());
     set_max_space(data_atlas.drive_data().max_space());
     set_used_space(data_atlas.drive_data().used_space());
@@ -365,8 +362,8 @@ int Session::ParseDataAtlas(const NonEmptyString& serialised_data_atlas) {
           asymm::DecodeKey(asymm::EncodedPublicKey(
               data_atlas.public_ids(id_count).contacts(contact_count).inbox_public_key()));
       int add_contact_result(public_id_details.contacts_handler->AddContact(contact));
-      LOG(kInfo) << "Result of adding " << contact.public_id << " to " << pub_id.string() << ":  "
-                 << add_contact_result;
+      LOG(kInfo) << "Result of adding " << contact.public_id.string()
+                 << " to " << pub_id.string() << ":  " << add_contact_result;
     }
 
     public_id_details_[pub_id] = public_id_details;
@@ -380,7 +377,7 @@ NonEmptyString Session::SerialiseDataAtlas() {
 
   if (has_drive_data()) {
     DriveData* drive_data(data_atlas.mutable_drive_data());
-    drive_data->set_unique_user_id(unique_user_id());
+    drive_data->set_unique_user_id(unique_user_id().string());
     drive_data->set_root_parent_id(root_parent_id());
     drive_data->set_max_space(max_space());
     drive_data->set_used_space(used_space());
@@ -408,9 +405,9 @@ NonEmptyString Session::SerialiseDataAtlas() {
                                                                              kBlocked);
     for (size_t n(0); n < contacts.size(); ++n) {
       PublicContact* pc(pub_id->add_contacts());
-      pc->set_public_id(contacts[n].public_id);
-      pc->set_mpid_name(contacts[n].mpid_name);
-      pc->set_inbox_name(contacts[n].inbox_name);
+      pc->set_public_id(contacts[n].public_id.string());
+      pc->set_mpid_name(contacts[n].mpid_name.string());
+      pc->set_inbox_name(contacts[n].inbox_name.string());
       asymm::EncodedPublicKey serialised_mpid_public_key(
                                   asymm::EncodeKey(contacts[n].mpid_public_key)),
                               serialised_inbox_public_key(
@@ -420,9 +417,9 @@ NonEmptyString Session::SerialiseDataAtlas() {
       pc->set_status(contacts[n].status);
       pc->set_rank(contacts[n].rank);
       pc->set_last_contact(contacts[n].last_contact);
-      pc->set_profile_picture_data_map(contacts[n].profile_picture_data_map);
-      pc->set_pointer_to_info(contacts[n].pointer_to_info);
-      LOG(kInfo) << "Added contact " << contacts[n].public_id
+      pc->set_profile_picture_data_map(contacts[n].profile_picture_data_map.string());
+      pc->set_pointer_to_info(contacts[n].pointer_to_info.string());
+      LOG(kInfo) << "Added contact " << contacts[n].public_id.string()
                  << " to " << (*it).first.string() << " map.";
     }
   }
@@ -430,7 +427,7 @@ NonEmptyString Session::SerialiseDataAtlas() {
   return NonEmptyString(data_atlas.SerializeAsString());
 }
 
-bool Session::CreateTestPackets(bool with_public_ids) {
+bool Session::CreateTestPackets(bool with_public_ids, std::vector<NonEmptyString>& public_ids) {
   passport_.CreateSigningPackets();
   if (passport_.ConfirmSigningPackets() != kSuccess)
     return false;
@@ -441,6 +438,7 @@ bool Session::CreateTestPackets(bool with_public_ids) {
       passport_.CreateSelectableIdentity(public_id);
       if (passport_.ConfirmSelectableIdentity(public_id) != kSuccess)
         return false;
+      public_ids.push_back(public_id);
     }
   }
 

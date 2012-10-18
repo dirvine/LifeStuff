@@ -27,8 +27,14 @@ bs2::connection MessageHandler::ConnectToChatSignal(const ChatFunction& function
   return chat_signal_.connect(function);
 }
 
-bs2::connection MessageHandler::ConnectToFileTransferSignal(const FileTransferFunction& function) {
-  return file_transfer_signal_.connect(function);
+bs2::connection MessageHandler::ConnectToFileTransferSuccessSignal(
+    const FileTransferSuccessFunction& function) {
+  return file_transfer_success_signal_.connect(function);
+}
+
+bs2::connection MessageHandler::ConnectToFileTransferFailureSignal(
+    const FileTransferFailureFunction& function) {
+  return file_transfer_failure_signal_.connect(function);
 }
 
 bs2::connection MessageHandler::ConnectToContactPresenceSignal(

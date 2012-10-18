@@ -324,7 +324,7 @@ void MessageHandler::ProcessFileTransfer(const InboxItem& inbox_item) {
     return;
   }
 
-  NonEmptyString data_map_hash;
+  std::string data_map_hash;
   if (!parse_and_save_data_map_signal_(inbox_item.content[0],
                                        inbox_item.content[1],
                                        data_map_hash)) {
@@ -382,11 +382,7 @@ void MessageHandler::ProcessContactProfilePicture(const InboxItem& profile_pictu
   NonEmptyString sender(profile_picture_message.sender_public_id),
                  receiver(profile_picture_message.receiver_public_id);
   if (profile_picture_message.content[0] != kBlankProfilePicture) {
-    encrypt::DataMapPtr data_map(ParseSerialisedDataMap(profile_picture_message.content[0]));
-    if (!data_map) {
-      LOG(kError) << "Data map didn't parse.";
-      return;
-    }
+    encrypt::DataMap data_map(ParseSerialisedDataMap(profile_picture_message.content[0]));
   }
 
   const ContactsHandlerPtr contacts_handler(session_.contacts_handler(receiver));

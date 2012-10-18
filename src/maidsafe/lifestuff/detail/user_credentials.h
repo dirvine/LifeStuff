@@ -65,14 +65,18 @@ class UserCredentials {
   void set_remote_chunk_store(priv::chunk_store::RemoteChunkStore& chunk_store);
 
   // User credential operations
-  int LogIn(const std::string& keyword, const std::string& pin, const std::string& password);
-  int CreateUser(const std::string& keyword, const std::string& pin, const std::string& password);
+  int LogIn(const NonEmptyString& keyword,
+            const NonEmptyString& pin,
+            const NonEmptyString& password);
+  int CreateUser(const NonEmptyString& keyword,
+                 const NonEmptyString& pin,
+                 const NonEmptyString& password);
   int Logout();
   int SaveSession();
 
-  int ChangeKeyword(const std::string& new_keyword);
-  int ChangePin(const std::string& new_pin);
-  int ChangePassword(const std::string& new_password);
+  int ChangeKeyword(const NonEmptyString& new_keyword);
+  int ChangePin(const NonEmptyString& new_pin);
+  int ChangePassword(const NonEmptyString& new_password);
 
   int DeleteUserCredentials();
 

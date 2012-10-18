@@ -39,21 +39,19 @@
 #include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/utils.h"
 
-namespace args = std::placeholders;
 namespace fs = boost::filesystem;
-namespace utils = maidsafe::priv::utilities;
 
 namespace maidsafe {
 
+namespace utils = priv::utils;
+
 namespace lifestuff {
 
-UserStorage::UserStorage(std::shared_ptr<pcs::RemoteChunkStore> chunk_store)
+UserStorage::UserStorage(pcs::RemoteChunkStore& chunk_store)
     : mount_status_(false),
-      chunk_store_(chunk_store),
+      remote_chunk_store_(chunk_store),
       file_chunk_store_(),
       drive_in_user_space_(),
-      share_renamed_function_(),
-      share_changed_function_(),
       session_(),
       mount_dir_(),
       mount_thread_() {}
@@ -61,7 +59,7 @@ UserStorage::UserStorage(std::shared_ptr<pcs::RemoteChunkStore> chunk_store)
 void UserStorage::MountDrive(const fs::path& file_chunk_store_path,
                              const fs::path& mount_dir_path,
                              Session* session,
-                             const std::string& drive_logo) {
+                             const NonEmptyString& drive_logo) {
   if (mount_status_) {
     LOG(kInfo) << "Already mounted.";
     return;
@@ -76,11 +74,10 @@ void UserStorage::MountDrive(const fs::path& file_chunk_store_path,
     fs::create_directory(mount_dir_path);
 
   session_ = session;
-  asymm::Keys key_ring(session->passport().SignaturePacketDetails(passport::kMaid, true));
-  assert(!key_ring.identity.empty());
-  drive_in_user_space_ = std::make_shared<MaidDriveInUserSpace>(chunk_store_,
+  Fob fob(session->passport().SignaturePacketDetails(passport::kMaid, true));
+  drive_in_user_space_ = std::make_shared<MaidDriveInUserSpace>(remote_chunk_store_,
                                                                 file_chunk_store_,
-                                                                key_ring);
+                                                                fob);
 
   int result(kGeneralError);
   if (!session->has_drive_data()) {
@@ -88,7 +85,8 @@ void UserStorage::MountDrive(const fs::path& file_chunk_store_path,
     result = drive_in_user_space_->Init(session->unique_user_id(), "");
     session->set_root_parent_id(drive_in_user_space_->root_parent_id());
   } else {
-    result = drive_in_user_space_->Init(session->unique_user_id(), session->root_parent_id());
+    result = drive_in_user_space_->Init(session->unique_user_id(),
+                                        session->root_parent_id());
   }
 
   if (result != kSuccess) {
@@ -123,7 +121,7 @@ void UserStorage::MountDrive(const fs::path& file_chunk_store_path,
   mount_dir_ = mount_dir_path;
   mount_thread_ = std::move(std::thread([this, drive_logo] {
                                           drive_in_user_space_->Mount(mount_dir_,
-                                                                      drive_logo,
+                                                                      drive_logo.string(),
                                                                       session_->max_space(),
                                                                       session_->used_space(),
                                                                       false);
@@ -163,26 +161,23 @@ bool UserStorage::mount_status() {
   return mount_status_;
 }
 
-bool UserStorage::ParseAndSaveDataMap(const std::string& file_name,
-                                      const std::string& serialised_data_map,
-                                      std::string* data_map_hash) {
-  encrypt::DataMapPtr data_map(ParseSerialisedDataMap(serialised_data_map));
-  if (!data_map) {
-    LOG(kError) << "Serialised DM doesn't parse.";
-    return false;
-  }
+bool UserStorage::ParseAndSaveDataMap(const NonEmptyString& file_name,
+                                      const NonEmptyString& serialised_data_map,
+                                      std::string& data_map_hash) {
+  encrypt::DataMap data_map(ParseSerialisedDataMap(serialised_data_map));
 
-  *data_map_hash = EncodeToBase32(crypto::Hash<crypto::SHA1>(serialised_data_map)) +
-                                  boost::lexical_cast<std::string>(
-                                      GetDurationSinceEpoch().total_microseconds());
-  std::string filename_data(PutFilenameData(file_name));
+  std::string timestamp(boost::lexical_cast<std::string>(
+                            GetDurationSinceEpoch().total_microseconds()));
+  data_map_hash = EncodeToBase32(crypto::Hash<crypto::SHA1>(serialised_data_map).string() +
+                                 timestamp);
+  std::string filename_data(PutFilenameData(file_name.string()));
   if (filename_data.empty()) {
-    LOG(kError) << "No suitable filename given: " << file_name;
+    LOG(kError) << "No suitable filename given: " << file_name.string();
     return false;
   }
 
-  int result(WriteHiddenFile(mount_dir() / std::string(*data_map_hash + kHiddenFileExtension),
-                             filename_data + serialised_data_map,
+  int result(WriteHiddenFile(mount_dir() / std::string(data_map_hash + kHiddenFileExtension),
+                             NonEmptyString(filename_data) + serialised_data_map,
                              true));
   if (result != kSuccess) {
     LOG(kError) << "Failed to create file: " << result;
@@ -192,11 +187,11 @@ bool UserStorage::ParseAndSaveDataMap(const std::string& file_name,
   return true;
 }
 
-bool UserStorage::GetSavedDataMap(const std::string& data_map_hash,
-                                  std::string* serialised_data_map,
-                                  std::string* file_name) {
+bool UserStorage::GetSavedDataMap(const NonEmptyString& data_map_hash,
+                                  std::string& serialised_data_map,
+                                  std::string& file_name) {
   std::string serialised_identifier;
-  int result(ReadHiddenFile(mount_dir() / std::string(data_map_hash + kHiddenFileExtension),
+  int result(ReadHiddenFile(mount_dir() / std::string(data_map_hash.string() + kHiddenFileExtension),
                             &serialised_identifier));
   if (result != kSuccess || serialised_identifier.empty()) {
     LOG(kError) << "No such identifier found.";
@@ -204,16 +199,12 @@ bool UserStorage::GetSavedDataMap(const std::string& data_map_hash,
   }
 
   GetFilenameData(serialised_identifier, file_name, serialised_data_map);
-  if (file_name->empty() || serialised_data_map->empty()) {
+  if (file_name.empty() || serialised_data_map.empty()) {
     LOG(kError) << "Failed to get filename or datamap.";
     return false;
   }
 
-  drive::DataMapPtr data_map_ptr(ParseSerialisedDataMap(*serialised_data_map));
-  if (!data_map_ptr) {
-    LOG(kError) << "Corrupted DM in file";
-    return false;
-  }
+  encrypt::DataMap data_map(ParseSerialisedDataMap(NonEmptyString(serialised_data_map)));
 
   return true;
 }
@@ -225,9 +216,9 @@ int UserStorage::GetDataMap(const fs::path& absolute_path, std::string* serialis
 }
 
 int UserStorage::InsertDataMap(const fs::path& absolute_path,
-                               const std::string& serialised_data_map) {
+                               const NonEmptyString& serialised_data_map) {
   return drive_in_user_space_->InsertDataMap(drive::RelativePath(mount_dir(), absolute_path),
-                                             serialised_data_map);
+                                             serialised_data_map.string());
 }
 
 int UserStorage::GetNotes(const fs::path& absolute_path, std::vector<std::string>* notes) {
@@ -244,10 +235,10 @@ int UserStorage::ReadHiddenFile(const fs::path& absolute_path, std::string* cont
 }
 
 int UserStorage::WriteHiddenFile(const fs::path& absolute_path,
-                                 const std::string& content,
+                                 const NonEmptyString& content,
                                  bool overwrite_existing) {
   return drive_in_user_space_->WriteHiddenFile(drive::RelativePath(mount_dir(), absolute_path),
-                                               content,
+                                               content.string(),
                                                overwrite_existing);
 }
 
@@ -271,17 +262,13 @@ bs2::connection UserStorage::ConnectToDriveChanged(drive::DriveChangedSlotPtr sl
   return drive_in_user_space_->ConnectToDriveChanged(slot);
 }
 
-std::string UserStorage::ConstructFile(const std::string& serialised_data_map) {
-  encrypt::DataMapPtr data_map(ParseSerialisedDataMap(serialised_data_map));
-  if (!data_map) {
-    LOG(kError) << "Data map didn't parse.";
-    return "";
-  }
+std::string UserStorage::ConstructFile(const NonEmptyString& serialised_data_map) {
+  encrypt::DataMap data_map(ParseSerialisedDataMap(serialised_data_map));
 
-  uint32_t file_size(data_map->chunks.empty() ?
-                     static_cast<uint32_t>(data_map->content.size()) : 0);
-  auto it(data_map->chunks.begin());
-  while (it != data_map->chunks.end()) {
+  uint32_t file_size(data_map.chunks.empty() ?
+                     static_cast<uint32_t>(data_map.content.size()) : 0);
+  auto it(data_map.chunks.begin());
+  while (it != data_map.chunks.end()) {
     if (kFileRecontructionLimit < (file_size + (*it).size)) {
       LOG(kError) << "File too large to read.";
       return "";
@@ -295,7 +282,9 @@ std::string UserStorage::ConstructFile(const std::string& serialised_data_map) {
   // if (file_size > 'some limit')
   //   return "";
 
-  encrypt::SelfEncryptor self_encryptor(data_map, *chunk_store_, file_chunk_store_);
+  encrypt::SelfEncryptor self_encryptor(std::make_shared<encrypt::DataMap>(data_map),
+                                        remote_chunk_store_,
+                                        file_chunk_store_);
   std::unique_ptr<char[]> contents(new char[file_size]);
   if (!self_encryptor.Read(contents.get(), file_size, 0)) {
     LOG(kError) << "Failure to read contents from SE: " << file_size;

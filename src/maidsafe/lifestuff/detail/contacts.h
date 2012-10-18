@@ -60,18 +60,18 @@ class PublicContact;
 struct Contact {
   Contact();
   Contact(const NonEmptyString& public_id_in,
-          const NonEmptyString& mpid_name_in,
-          const NonEmptyString& inbox_name_in,
+          const Identity& mpid_name_in,
+          const Identity& inbox_name_in,
           const NonEmptyString& profile_picture_data_map,
-          const NonEmptyString& pointer_to_info,
+          const Identity& pointer_to_info,
           const asymm::PublicKey& mpid_public_key_in,
           const asymm::PublicKey& inbox_public_key_in,
           ContactStatus status);
   explicit Contact(const PublicContact& contact);
   bool Equals(const Contact& other);
 
-  NonEmptyString public_id, profile_picture_data_map, pointer_to_info;
-  Identity mpid_name, inbox_name;
+  NonEmptyString public_id, profile_picture_data_map;
+  Identity mpid_name, inbox_name, pointer_to_info;
   asymm::PublicKey mpid_public_key, inbox_public_key;
   ContactStatus status;
   uint32_t rank;
@@ -118,10 +118,10 @@ class ContactsHandler {
  public:
   ContactsHandler() : contact_set_() { }
   int AddContact(const NonEmptyString& public_id,
-                 const NonEmptyString& mpid_name,
-                 const NonEmptyString& inbox_name,
+                 const Identity& mpid_name,
+                 const Identity& inbox_name,
                  const NonEmptyString& profile_picture_data_map,
-                 const NonEmptyString& pointer_to_info,
+                 const Identity& pointer_to_info,
                  const asymm::PublicKey& mpid_public_key,
                  const asymm::PublicKey& inbox_public_key,
                  ContactStatus status,

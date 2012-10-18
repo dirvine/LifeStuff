@@ -47,7 +47,7 @@ class RoutingsHandlerTest : public routing::test::GenericNetwork {
  protected:
   virtual void SetUp() {
     LOG(kInfo) << "STARTING SETUP\n\n\n\n";
-    EXPECT_EQ(kSuccess, session_.passport().CreateSigningPackets());
+    session_.passport().CreateSigningPackets();
     EXPECT_EQ(kSuccess, session_.passport().ConfirmSigningPackets());
     asio_service_.Start();
     remote_chunkstore_ = priv::chunk_store::CreateLocalChunkStore(*test_dir_ / "buffered",
@@ -72,14 +72,15 @@ class RoutingsHandlerTest : public routing::test::GenericNetwork {
         };
   }
 
-  bool ValidatedMessageSlot(const std::string& message, std::string& response, bool reply) {
-    LOG(kInfo) << "ValidatedMessageSlot message: " << message << ", response: " << response;
+  bool ValidatedMessageSlot(const NonEmptyString& message, std::string& response, bool reply) {
+    LOG(kInfo) << "ValidatedMessageSlot message: " << message.string()
+               << ", response: " << response;
     std::lock_guard<std::mutex> loch(mutex_);
-    messages_.push_back(message);
+    messages_.push_back(message.string());
     if (messages_.size() == messages_expected_)
       message_arrived_ = true;
     if (reply) {
-      response = message + message;
+      response = message.string() + message.string();
 //      std::reverse_copy(std::begin(message), std::end(message), std::begin(response));
     }
     return reply;
@@ -105,7 +106,7 @@ class RoutingsHandlerTest : public routing::test::GenericNetwork {
 
   std::shared_ptr<RoutingsHandler> CreateAndAddRoutingObject(bool reply) {
     ValidatedMessageFunction validated_message_functor =
-        [&, reply] (const std::string& message, std::string& response) {
+        [&, reply] (const NonEmptyString& message, std::string& response) {
           return this->ValidatedMessageSlot(message, response, reply);
         };
     return std::make_shared<RoutingsHandler>(*remote_chunkstore_,
@@ -130,8 +131,8 @@ TEST_F(RoutingsHandlerTest, FUNC_SendOneMessageToSelfTwoInstances) {
   {
     LOG(kInfo) << "STARTING TEST\n\n\n\n";
     set_messages_expected(2);
-    asymm::Keys maid(session_.passport().SignaturePacketDetails(passport::kMaid, true));
-    public_key_map_.insert(std::make_pair(NodeId(maid.identity), maid.public_key));
+    Fob maid(session_.passport().SignaturePacketDetails(passport::kMaid, true));
+    public_key_map_.insert(std::make_pair(NodeId(maid.identity), maid.keys.public_key));
     std::vector<std::pair<std::string, uint16_t> > bootstrap_endpoints;
     bootstrap_endpoints.push_back(std::make_pair(nodes_[0]->endpoint().address().to_string(),
                                                  nodes_[0]->endpoint().port()));
@@ -145,7 +146,7 @@ TEST_F(RoutingsHandlerTest, FUNC_SendOneMessageToSelfTwoInstances) {
     std::shared_ptr<RoutingsHandler> origin_routings_handler(CreateAndAddRoutingObject(false));
     EXPECT_TRUE(origin_routings_handler->AddRoutingObject(maid,
                                                           bootstrap_endpoints,
-                                                          maid.identity,
+                                                          NonEmptyString(maid.identity),
                                                           request_key_functor));
 
 
@@ -153,14 +154,14 @@ TEST_F(RoutingsHandlerTest, FUNC_SendOneMessageToSelfTwoInstances) {
     std::shared_ptr<RoutingsHandler> destination_routings_handler(CreateAndAddRoutingObject(false));
     EXPECT_TRUE(destination_routings_handler->AddRoutingObject(maid,
                                                                bootstrap_endpoints,
-                                                               maid.identity,
+                                                               NonEmptyString(maid.identity),
                                                                request_key_functor));
 
     // Sending message
-    std::string message("hello world");
+    NonEmptyString message("hello world");
     EXPECT_TRUE(origin_routings_handler->Send(maid.identity,
                                               maid.identity,
-                                              maid.public_key,
+                                              maid.keys.public_key,
                                               message,
                                               nullptr));
     std::mutex mutex;
@@ -171,13 +172,13 @@ TEST_F(RoutingsHandlerTest, FUNC_SendOneMessageToSelfTwoInstances) {
                                             [this] () { return message_arrived_; }));  // NOLINT (Dan)
     EXPECT_EQ(2U, messages_.size());
     for (const auto& element : messages_)  // NOLINT (Dan)
-      EXPECT_EQ(message, element);
+      EXPECT_EQ(message.string(), element);
   }
 }
 
 TEST_F(RoutingsHandlerTest, FUNC_TwoInstancesWithReply) {
-  asymm::Keys maid(session_.passport().SignaturePacketDetails(passport::kMaid, true));
-  public_key_map_.insert(std::make_pair(NodeId(maid.identity), maid.public_key));
+  Fob maid(session_.passport().SignaturePacketDetails(passport::kMaid, true));
+  public_key_map_.insert(std::make_pair(NodeId(maid.identity), maid.keys.public_key));
   std::vector<std::pair<std::string, uint16_t> > bootstrap_endpoints;
   bootstrap_endpoints.push_back(std::make_pair(nodes_[0]->endpoint().address().to_string(),
                                                nodes_[0]->endpoint().port()));
@@ -191,7 +192,7 @@ TEST_F(RoutingsHandlerTest, FUNC_TwoInstancesWithReply) {
   std::shared_ptr<RoutingsHandler> origin_routings_handler(CreateAndAddRoutingObject(false));
   EXPECT_TRUE(origin_routings_handler->AddRoutingObject(maid,
                                                         bootstrap_endpoints,
-                                                        maid.identity,
+                                                        NonEmptyString(maid.identity),
                                                         request_key_functor));
 
 
@@ -199,19 +200,19 @@ TEST_F(RoutingsHandlerTest, FUNC_TwoInstancesWithReply) {
   std::shared_ptr<RoutingsHandler> destination_routings_handler(CreateAndAddRoutingObject(true));
   EXPECT_TRUE(destination_routings_handler->AddRoutingObject(maid,
                                                              bootstrap_endpoints,
-                                                             maid.identity,
+                                                             NonEmptyString(maid.identity),
                                                              request_key_functor));
 
   // Send the message and wait for the response
-  std::string request_message("hello world"),
-              reversed_message(request_message + request_message),
+  NonEmptyString request_message("hello world");
+  std::string reversed_message(request_message.string() + request_message.string()),
               reply_message;
 //  std::reverse_copy(std::begin(request_message),
 //                    std::end(request_message),
 //                    std::begin(reversed_message));
   EXPECT_TRUE(origin_routings_handler->Send(maid.identity,
                                             maid.identity,
-                                            maid.public_key,
+                                            maid.keys.public_key,
                                             request_message,
                                             &reply_message));
   EXPECT_EQ(reversed_message, reply_message);

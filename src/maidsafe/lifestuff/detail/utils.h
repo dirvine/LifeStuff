@@ -76,11 +76,11 @@ struct OperationResults {
 
 NonEmptyString CreatePin();
 
-int CheckKeywordValidity(const std::string& keyword);
-int CheckPinValidity(const std::string& pin);
-int CheckPasswordValidity(const std::string& password);
+int CheckKeywordValidity(const NonEmptyString& keyword);
+int CheckPinValidity(const NonEmptyString& pin);
+int CheckPasswordValidity(const NonEmptyString& password);
 
-int CheckPublicIdValidity(const std::string& public_id);
+int CheckPublicIdValidity(const NonEmptyString& public_id);
 
 fs::path CreateTestDirectory(fs::path const& parent, std::string* tail);
 int CreateTestFile(fs::path const& parent, int size_in_mb, std::string* file_name);
@@ -89,21 +89,23 @@ int CreateSmallTestFile(fs::path const& parent, int size_in_kb, std::string* fil
 int AssessJointResult(const std::vector<int>& results);
 void OperationCallback(bool result, OperationResults& results, int index);
 
-priv::ChunkId ComposeSignaturePacketName(const Identity& name);
 NonEmptyString ComposeModifyAppendableByAll(const asymm::PrivateKey& signing_key,
-                                            const char appendability);
+                                            const bool appendability);
 NonEmptyString AppendableIdValue(const Fob& data, bool accepts_new_contacts);
+NonEmptyString SignaturePacketValue(const Fob& keys);
+
+priv::ChunkId ComposeSignaturePacketName(const Identity& name);
 priv::ChunkId MaidsafeContactIdName(const NonEmptyString& public_id);
 priv::ChunkId SignaturePacketName(const Identity& name);
 priv::ChunkId AppendableByAllName(const Identity& name);
-NonEmptyString SignaturePacketValue(const Fob& keys);
+priv::ChunkId ModifiableName(const Identity& name);
 
-std::shared_ptr<encrypt::DataMap> ParseSerialisedDataMap(const NonEmptyString& serialised_data_map);
+encrypt::DataMap ParseSerialisedDataMap(const NonEmptyString& serialised_data_map);
 
 std::string PutFilenameData(const std::string& file_name);
 void GetFilenameData(const std::string& content,
-                     std::string* file_name,
-                     std::string* serialised_data_map);
+                     std::string& file_name,
+                     std::string& serialised_data_map);
 std::string GetNameInPath(const fs::path& save_path, const std::string& file_name);
 int CopyDir(const fs::path& source, const fs::path& dest);
 int CopyDirectoryContent(const fs::path& from, const fs::path& to);
@@ -114,9 +116,10 @@ std::string IsoTimeWithMicroSeconds();
 NonEmptyString MessagePointToPoint(const NonEmptyString& unwrapped_message,
                                    const asymm::PublicKey& recipient_public_key,
                                    const asymm::PrivateKey& sender_private_key);
-NonEmptyString PointToPointMessageValid(const NonEmptyString& wrapped_message,
-                                        const asymm::PublicKey& sender_public_key,
-                                        const asymm::PrivateKey& receiver_private_key);
+bool PointToPointMessageValid(const NonEmptyString& wrapped_message,
+                              const asymm::PublicKey& sender_public_key,
+                              const asymm::PrivateKey& receiver_private_key,
+                              std::string& final_message);
 }  // namespace lifestuff
 
 }  // namespace maidsafe

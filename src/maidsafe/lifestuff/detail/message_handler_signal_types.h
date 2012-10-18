@@ -60,7 +60,7 @@ typedef bs2::signal<void(const NonEmptyString&,  // NOLINT (Dan)
 /// Intra library signals
 typedef bs2::signal<bool(const NonEmptyString&,  // NOLINT (Dan)
                          const NonEmptyString&,
-                         NonEmptyString&)> ParseAndSaveDataMapSignal;
+                         std::string&)> ParseAndSaveDataMapSignal;
 
 }  // namespace lifestuff
 

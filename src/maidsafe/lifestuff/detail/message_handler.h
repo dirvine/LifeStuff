@@ -80,7 +80,8 @@ class MessageHandler {
 
   // Extra library connections
   bs2::connection ConnectToChatSignal(const ChatFunction& function);
-  bs2::connection ConnectToFileTransferSignal(const FileTransferFunction& function);
+  bs2::connection ConnectToFileTransferSuccessSignal(const FileTransferSuccessFunction& function);
+  bs2::connection ConnectToFileTransferFailureSignal(const FileTransferFailureFunction& function);
   bs2::connection ConnectToContactPresenceSignal(const ContactPresenceFunction& function);
   bs2::connection ConnectToContactProfilePictureSignal(
       const ContactProfilePictureFunction& function);

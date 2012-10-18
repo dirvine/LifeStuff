@@ -360,7 +360,11 @@ NonEmptyString RoutingsHandler::WrapMessage(const NonEmptyString& message,
 NonEmptyString RoutingsHandler::UnwrapMessage(const NonEmptyString& wrapped_message,
                                               const asymm::PublicKey& sender_public_key,
                                               const asymm::PrivateKey& receiver_private_key) {
-  return PointToPointMessageValid(wrapped_message, sender_public_key, receiver_private_key);
+  std::string message;
+  if (PointToPointMessageValid(wrapped_message, sender_public_key, receiver_private_key, message))
+      return NonEmptyString(message);
+
+  return NonEmptyString();
 }
 
 }  // namespace lifestuff

@@ -74,20 +74,20 @@ class UserStorage {
   virtual void MountDrive(const fs::path& file_chunk_store_path,
                           const fs::path& mount_dir_path,
                           Session* session,
-                          const std::string& drive_logo = "LifeStuff Drive");
+                          const NonEmptyString& drive_logo);
   virtual void UnMountDrive();
   virtual fs::path mount_dir();
   virtual bool mount_status();
 
   // ********************* File / Folder Transfers *****************************
-  bool ParseAndSaveDataMap(const std::string& file_name,
-                           const std::string& serialised_data_map,
-                           std::string* data_map_hash);
-  bool GetSavedDataMap(const std::string& data_map_hash,
-                       std::string* serialised_data_map,
-                       std::string* file_name);
+  bool ParseAndSaveDataMap(const NonEmptyString& file_name,
+                           const NonEmptyString& serialised_data_map,
+                           std::string& data_map_hash);
+  bool GetSavedDataMap(const NonEmptyString& data_map_hash,
+                       std::string& serialised_data_map,
+                       std::string& file_name);
   int GetDataMap(const fs::path& absolute_path, std::string* serialised_data_map);
-  int InsertDataMap(const fs::path& absolute_path, const std::string& serialised_data_map);
+  int InsertDataMap(const fs::path& absolute_path, const NonEmptyString& serialised_data_map);
 
   // **************************** File Notes ***********************************
   int GetNotes(const fs::path& absolute_path, std::vector<std::string>* notes);
@@ -96,7 +96,7 @@ class UserStorage {
   // *************************** Hidden Files **********************************
   int ReadHiddenFile(const fs::path& absolute_path, std::string* content);
   int WriteHiddenFile(const fs::path& absolute_path,
-                      const std::string& content,
+                      const NonEmptyString& content,
                       bool overwrite_existing);
   int DeleteHiddenFile(const fs::path& absolute_path);
   int SearchHiddenFiles(const fs::path& absolute_path,
@@ -106,18 +106,16 @@ class UserStorage {
   // ************************* Signals Handling ********************************
   bs2::connection ConnectToDriveChanged(drive::DriveChangedSlotPtr slot) const;
 
-  std::string ConstructFile(const std::string& serialised_data_map);
+  std::string ConstructFile(const NonEmptyString& serialised_data_map);
 
  private:
   UserStorage &operator=(const UserStorage&);
   UserStorage(const UserStorage&);
 
   bool mount_status_;
-  pcs::RemoteChunkStore& chunk_store_;
+  pcs::RemoteChunkStore& remote_chunk_store_;
   pcs::FileChunkStore file_chunk_store_;
   std::shared_ptr<MaidDriveInUserSpace> drive_in_user_space_;
-  ShareRenamedFunction share_renamed_function_;
-  ShareChangedFunction share_changed_function_;
   Session* session_;
   fs::path mount_dir_;
   std::thread mount_thread_;

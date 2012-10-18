@@ -62,7 +62,8 @@ struct UserDetails {
         session_access_level(kNoAccess) {}
   DefConLevels defconlevel;
   NonEmptyString keyword, pin, password, session_name;
-  std::string unique_user_id, root_parent_id;
+  Identity unique_user_id;
+  std::string root_parent_id;
   int64_t max_space, used_space;
   NonEmptyString serialised_data_atlas;
   bool changed, has_drive_data;
@@ -106,7 +107,7 @@ class Session {
   NonEmptyString pin() const;
   NonEmptyString password() const;
   NonEmptyString session_name() const;
-  std::string unique_user_id() const;
+  Identity unique_user_id() const;
   std::string root_parent_id() const;
   int64_t max_space() const;
   int64_t used_space() const;
@@ -121,7 +122,7 @@ class Session {
   void set_password(const NonEmptyString& password);
   void set_session_name();
   void clear_session_name();
-  void set_unique_user_id(const std::string& unique_user_id);
+  void set_unique_user_id(const Identity& unique_user_id);
   void set_root_parent_id(const std::string& root_parent_id);
   void set_max_space(const int64_t& max_space);
   void set_used_space(const int64_t& used_space);
@@ -147,7 +148,7 @@ class Session {
   std::mutex public_id_details_mutex_;
 
   void set_has_drive_data(bool has_drive_data);
-  bool CreateTestPackets(bool with_public_ids);
+  bool CreateTestPackets(bool with_public_ids, std::vector<NonEmptyString>& public_ids);
 };
 
 }  // namespace lifestuff

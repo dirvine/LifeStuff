@@ -41,13 +41,12 @@
 #include "maidsafe/lifestuff/detail/user_credentials.h"
 #include "maidsafe/lifestuff/detail/user_storage.h"
 
-namespace args = std::placeholders;
-
 namespace maidsafe {
 
 namespace lifestuff {
 
 const int kRetryLimit(10);
+const NonEmptyString kDriveLogo("Lifestuff Drive");
 
 LifeStuffImpl::LifeStuffImpl()
     : thread_count_(kThreads),
@@ -59,7 +58,7 @@ LifeStuffImpl::LifeStuffImpl()
       client_controller_(),
       client_node_(),
       routings_handler_(),
-      vault_node_(),
+//      vault_node_(),
       network_health_signal_(),
       session_(),
       user_credentials_(),
@@ -73,8 +72,8 @@ LifeStuffImpl::LifeStuffImpl()
       vault_cheat_(false) {}
 
 LifeStuffImpl::~LifeStuffImpl() {
-  int result(vault_node_.Stop());
-  LOG(kInfo) << "Result of stopping cheat vault: " << result;
+//  int result(vault_node_.Stop());
+//  LOG(kInfo) << "Result of stopping cheat vault: " << result;
 }
 
 int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_available_function,
@@ -141,7 +140,7 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
   routings_handler_ = std::make_shared<RoutingsHandler>(
                           *remote_chunk_store_,
                           session_,
-                          [&] (const std::string& message, std::string& response) {
+                          [&] (const NonEmptyString& message, std::string& response) {
                             return HandleRoutingsHandlerMessage(message, response);
                           });
   user_credentials_ = std::make_shared<UserCredentials>(*remote_chunk_store_,
@@ -158,7 +157,8 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
 int LifeStuffImpl::ConnectToSignals(
     const bool& set_slots,
     const ChatFunction& chat_slot,
-    const FileTransferFunction& file_slot,
+    const FileTransferSuccessFunction& file_success_slot,
+    const FileTransferFailureFunction& file_failure_slot,
     const NewContactFunction& new_contact_slot,
     const ContactConfirmationFunction& confirmed_contact_slot,
     const ContactProfilePictureFunction& profile_picture_slot,
@@ -178,9 +178,13 @@ int LifeStuffImpl::ConnectToSignals(
       ++connects;
       slots_.chat_slot = chat_slot;
     }
-    if (file_slot) {
+    if (file_success_slot) {
       ++connects;
-      slots_.file_slot = file_slot;
+      slots_.file_success_slot = file_success_slot;
+    }
+    if (file_failure_slot) {
+      ++connects;
+      slots_.file_failure_slot = file_failure_slot;
     }
     if (new_contact_slot) {
       ++connects;
@@ -228,7 +232,8 @@ int LifeStuffImpl::ConnectToSignals(
   }
 
   message_handler_->ConnectToChatSignal(chat_slot);
-  message_handler_->ConnectToFileTransferSignal(file_slot);
+  message_handler_->ConnectToFileTransferSuccessSignal(file_success_slot);
+  message_handler_->ConnectToFileTransferFailureSignal(file_failure_slot);
   public_id_->ConnectToNewContactSignal(new_contact_slot);
   public_id_->ConnectToContactConfirmedSignal(confirmed_contact_slot);
   message_handler_->ConnectToContactProfilePictureSignal(profile_picture_slot);
@@ -236,14 +241,13 @@ int LifeStuffImpl::ConnectToSignals(
   public_id_->ConnectToContactDeletionProcessedSignal(contact_deletion_function);
   public_id_->ConnectToLifestuffCardUpdatedSignal(lifestuff_card_update_function);
   immediate_quit_required_signal_.connect(immediate_quit_required_function);
-  public_id_->ConnectToContactDeletionReceivedSignal([&] (const std::string& own_public_id,
-                                                          const std::string& contact_public_id,
-                                                          const std::string& removal_message,
-                                                          const std::string& timestamp) {
+  public_id_->ConnectToContactDeletionReceivedSignal([&] (const NonEmptyString& own_public_id,
+                                                          const NonEmptyString& contact_public_id,
+                                                          const NonEmptyString& removal_message,
+                                                          const NonEmptyString& /*timestamp*/) {
                                                        int result(RemoveContact(own_public_id,
                                                                                 contact_public_id,
                                                                                 removal_message,
-                                                                                timestamp,
                                                                                 false));
                                                        if (result != kSuccess)
                                                          LOG(kError) << "Failed to remove contact "
@@ -264,8 +268,8 @@ int LifeStuffImpl::Finalise() {
   if (error_code)
     LOG(kWarning) << "Failed to remove buffered chunk store path.";
 
-  if (vault_cheat_)
-    vault_node_.Stop();
+//  if (vault_cheat_)
+//    vault_node_.Stop();
   asio_service_.Stop();
   state_ = kZeroth;
 
@@ -273,9 +277,9 @@ int LifeStuffImpl::Finalise() {
 }
 
 /// Credential operations
-int LifeStuffImpl::CreateUser(const std::string& keyword,
-                              const std::string& pin,
-                              const std::string& password,
+int LifeStuffImpl::CreateUser(const NonEmptyString& keyword,
+                              const NonEmptyString& pin,
+                              const NonEmptyString& password,
                               const fs::path& chunk_store) {
   if (state_ != kConnected) {
     LOG(kError) << "Make sure that object is initialised and connected";
@@ -329,7 +333,7 @@ int LifeStuffImpl::CreateUser(const std::string& keyword,
   return kSuccess;
 }
 
-int LifeStuffImpl::CreatePublicId(const std::string& public_id) {
+int LifeStuffImpl::CreatePublicId(const NonEmptyString& public_id) {
   int result(CheckStateAndFullAccess());
   if (result != kSuccess)
     return result;
@@ -365,9 +369,9 @@ int LifeStuffImpl::CreatePublicId(const std::string& public_id) {
   return kSuccess;
 }
 
-int LifeStuffImpl::LogIn(const std::string& keyword,
-                         const std::string& pin,
-                         const std::string& password) {
+int LifeStuffImpl::LogIn(const NonEmptyString& keyword,
+                         const NonEmptyString& pin,
+                         const NonEmptyString& password) {
   if (state_ != kConnected) {
     LOG(kError) << "Make sure that object is initialised and connected";
     return kWrongState;
@@ -443,8 +447,7 @@ int LifeStuffImpl::LogOut(bool clear_maid_routing) {
 
   client_node_->set_on_network_status(nullptr);
   if (clear_maid_routing) {
-    std::string maid_id(session_.passport().SignaturePacketDetails(passport::kMaid, true).identity);
-    assert(!maid_id.empty());
+    Identity maid_id(session_.passport().SignaturePacketDetails(passport::kMaid, true).identity);
     assert(routings_handler_->DeleteRoutingObject(maid_id));
   }
 
@@ -466,7 +469,7 @@ int LifeStuffImpl::MountDrive() {
 
   // TODO(Alison) - give error codes proper names
   boost::system::error_code error_code;
-  fs::path mount_dir(GetHomeDir() / kAppHomeDirectory / session_.session_name());
+  fs::path mount_dir(GetHomeDir() / kAppHomeDirectory / session_.session_name().string());
   if (!fs::exists(mount_dir, error_code)) {
     if (error_code) {
       if (error_code.value() == boost::system::errc::not_connected) {
@@ -482,7 +485,10 @@ int LifeStuffImpl::MountDrive() {
     }
   }
 
-  user_storage_->MountDrive( buffered_path_ / "encryption_drive_chunks", mount_dir, &session_);
+  user_storage_->MountDrive(buffered_path_ / "encryption_drive_chunks",
+                            mount_dir,
+                            &session_,
+                            kDriveLogo);
   if (!user_storage_->mount_status()) {
     LOG(kError) << "Failed to mount";
     return kMountDriveError;
@@ -560,7 +566,7 @@ int LifeStuffImpl::StopMessagesAndIntros() {
   return kSuccess;
 }
 
-int LifeStuffImpl::CheckPassword(const std::string& password) {
+int LifeStuffImpl::CheckPassword(const NonEmptyString& password) {
   int result(CheckStateAndFullAccess());
   if (result != kSuccess)
     return result;
@@ -568,7 +574,7 @@ int LifeStuffImpl::CheckPassword(const std::string& password) {
   return session_.password() == password ? kSuccess : kCheckPasswordFailure;
 }
 
-int LifeStuffImpl::ChangeKeyword(const std::string& new_keyword, const std::string& password) {
+int LifeStuffImpl::ChangeKeyword(const NonEmptyString& new_keyword, const NonEmptyString& password) {
   int result(CheckStateAndFullAccess());
   if (result != kSuccess)
     return result;
@@ -579,7 +585,7 @@ int LifeStuffImpl::ChangeKeyword(const std::string& new_keyword, const std::stri
     return result;
   }
 
-  if (new_keyword.compare(session_.keyword()) == 0) {
+  if (new_keyword == session_.keyword()) {
     LOG(kInfo) << "Same value for old and new.";
     return kSuccess;
   }
@@ -593,7 +599,7 @@ int LifeStuffImpl::ChangeKeyword(const std::string& new_keyword, const std::stri
   }
 }
 
-int LifeStuffImpl::ChangePin(const std::string& new_pin, const std::string& password) {
+int LifeStuffImpl::ChangePin(const NonEmptyString& new_pin, const NonEmptyString& password) {
   int result(CheckStateAndFullAccess());
   if (result != kSuccess)
     return result;
@@ -604,7 +610,7 @@ int LifeStuffImpl::ChangePin(const std::string& new_pin, const std::string& pass
     return result;
   }
 
-  if (new_pin.compare(session_.pin()) == 0) {
+  if (new_pin == session_.pin()) {
     LOG(kInfo) << "Same value for old and new.";
     return kSuccess;
   }
@@ -618,8 +624,8 @@ int LifeStuffImpl::ChangePin(const std::string& new_pin, const std::string& pass
   }
 }
 
-int LifeStuffImpl::ChangePassword(const std::string& new_password,
-                                  const std::string& current_password) {
+int LifeStuffImpl::ChangePassword(const NonEmptyString& new_password,
+                                  const NonEmptyString& current_password) {
   int result(CheckStateAndFullAccess());
   if (result != kSuccess)
     return result;
@@ -630,7 +636,7 @@ int LifeStuffImpl::ChangePassword(const std::string& new_password,
     return result;
   }
 
-  if (current_password.compare(new_password) == 0) {
+  if (current_password == new_password) {
     LOG(kInfo) << "Same value for old and new.";
     return kSuccess;
   }
@@ -656,7 +662,7 @@ int LifeStuffImpl::LeaveLifeStuff() {
   user_storage_->UnMountDrive();
 
   int result(0);
-  std::vector<std::string> public_ids(session_.PublicIdentities());
+  std::vector<NonEmptyString> public_ids(session_.PublicIdentities());
   // Delete all files
 
   // Inform everyone of suicide?
@@ -664,7 +670,7 @@ int LifeStuffImpl::LeaveLifeStuff() {
   // Delete all public IDs
   std::for_each(public_ids.begin(),
                 public_ids.end(),
-                [&result, this] (const std::string& public_id) {
+                [&result, this] (const NonEmptyString& public_id) {
                   result += public_id_->DeletePublicId(public_id);
                 });
 
@@ -679,9 +685,9 @@ int LifeStuffImpl::LeaveLifeStuff() {
 }
 
 /// Contact operations
-int LifeStuffImpl::AddContact(const std::string& my_public_id,
-                              const std::string& contact_public_id,
-                              const std::string& message) {
+int LifeStuffImpl::AddContact(const NonEmptyString& my_public_id,
+                              const NonEmptyString& contact_public_id,
+                              const NonEmptyString& message) {
   int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in AddContact.";
@@ -696,8 +702,8 @@ int LifeStuffImpl::AddContact(const std::string& my_public_id,
   return kSuccess;
 }
 
-int LifeStuffImpl::ConfirmContact(const std::string& my_public_id,
-                                  const std::string& contact_public_id) {
+int LifeStuffImpl::ConfirmContact(const NonEmptyString& my_public_id,
+                                  const NonEmptyString& contact_public_id) {
   int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in ConfirmContact.";
@@ -718,8 +724,8 @@ int LifeStuffImpl::ConfirmContact(const std::string& my_public_id,
   return kSuccess;
 }
 
-int LifeStuffImpl::DeclineContact(const std::string& my_public_id,
-                                  const std::string& contact_public_id) {
+int LifeStuffImpl::DeclineContact(const NonEmptyString& my_public_id,
+                                  const NonEmptyString& contact_public_id) {
   int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in DeclineContact.";
@@ -734,10 +740,9 @@ int LifeStuffImpl::DeclineContact(const std::string& my_public_id,
   return kSuccess;
 }
 
-int LifeStuffImpl::RemoveContact(const std::string& my_public_id,
-                                 const std::string& contact_public_id,
-                                 const std::string& removal_message,
-                                 const std::string& timestamp,
+int LifeStuffImpl::RemoveContact(const NonEmptyString& my_public_id,
+                                 const NonEmptyString& contact_public_id,
+                                 const NonEmptyString& removal_message,
                                  const bool& instigator) {
   int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
@@ -746,6 +751,7 @@ int LifeStuffImpl::RemoveContact(const std::string& my_public_id,
   }
 
   // Remove the contact
+  NonEmptyString timestamp(IsoTimeWithMicroSeconds());
   result = public_id_->RemoveContact(my_public_id,
                                      contact_public_id,
                                      removal_message,
@@ -758,17 +764,16 @@ int LifeStuffImpl::RemoveContact(const std::string& my_public_id,
   return kSuccess;
 }
 
-int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
-                                        const std::string& profile_picture_contents) {
+int LifeStuffImpl::ChangeProfilePicture(const NonEmptyString& my_public_id,
+                                        const NonEmptyString& profile_picture_contents) {
   int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in ChangeProfilePicture.";
     return result;
   }
 
-  if (profile_picture_contents.empty() ||
-      profile_picture_contents.size() > kFileRecontructionLimit) {
-    LOG(kError) << "Contents of picture inadequate(" << profile_picture_contents.size()
+  if (profile_picture_contents.string().size() > kFileRecontructionLimit) {
+    LOG(kError) << "Contents of picture inadequate(" << profile_picture_contents.string().size()
                 << "). Good day!";
     return kChangePictureWrongSize;
   }
@@ -779,10 +784,12 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
 
   if (profile_picture_contents != kBlankProfilePicture) {
     // Write contents
-    fs::path profile_picture_path(mount_path() / std::string(my_public_id +
+    fs::path profile_picture_path(mount_path() / std::string(my_public_id.string() +
                                                              "_profile_picture" +
                                                              kHiddenFileExtension));
-    result = user_storage_->WriteHiddenFile(profile_picture_path, profile_picture_contents, true);
+    result = user_storage_->WriteHiddenFile(profile_picture_path,
+                                            profile_picture_contents,
+                                            true);
     if (result != kSuccess) {
       LOG(kError) << "Failed to write profile picture file: " << profile_picture_path <<
                      " with result: " << result;
@@ -793,7 +800,7 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
     std::string data_map;
     std::string reconstructed;
     int count(0), limit(10);
-    while (reconstructed != profile_picture_contents && count++ < limit) {
+    while (reconstructed != profile_picture_contents.string() && count++ < limit) {
       data_map.clear();
       result = user_storage_->GetHiddenFileDataMap(profile_picture_path, &data_map);
       if ((result != kSuccess || data_map.empty()) && count == limit) {
@@ -802,17 +809,17 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
         return result == kSuccess ? kChangePictureEmptyDataMap : result;
       }
 
-      reconstructed = user_storage_->ConstructFile(data_map);
+      reconstructed = user_storage_->ConstructFile(NonEmptyString(data_map));
       Sleep(bptime::milliseconds(500));
     }
 
-    if (reconstructed != profile_picture_contents) {
+    if (reconstructed != profile_picture_contents.string()) {
       LOG(kError) << "Failed to reconstruct profile picture file: " << profile_picture_path
                   << " with result " << result;
       return kChangePictureReconstructionError;
     }
 
-    message.content.push_back(data_map);
+    message.content.push_back(NonEmptyString(data_map));
   } else {
     message.content.push_back(kBlankProfilePicture);
   }
@@ -820,7 +827,7 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
   // Set in session
   const SocialInfoDetail social_info(session_.social_info(my_public_id));
   if (!social_info.first) {
-    LOG(kError) << "User does not hold such public ID: " << my_public_id;
+    LOG(kError) << "User does not hold such public ID: " << my_public_id.string();
     return kPublicIdNotFoundFailure;
   }
 
@@ -837,62 +844,62 @@ int LifeStuffImpl::ChangeProfilePicture(const std::string& my_public_id,
   return kSuccess;
 }
 
-std::string LifeStuffImpl::GetOwnProfilePicture(const std::string& my_public_id) {
+NonEmptyString LifeStuffImpl::GetOwnProfilePicture(const NonEmptyString& my_public_id) {
   // Read contents, put them in a string, give them back. Should not be a file
   // over a certain size (kFileRecontructionLimit).
   int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in ChangeProfilePicture.";
-    return "";
+    return NonEmptyString();
   }
 
   const SocialInfoDetail social_info(session_.social_info(my_public_id));
   if (!social_info.first) {
-    LOG(kError) << "User does not hold such public ID: " << my_public_id;
-    return "";
+    LOG(kError) << "User does not hold such public ID: " << my_public_id.string();
+    return NonEmptyString();
   }
 
   {
     std::lock_guard<std::mutex> loch(*social_info.first);
     if (social_info.second->at(kPicture) == kBlankProfilePicture) {
       LOG(kInfo) << "Blank picture in session.";
-      return "";
+      return NonEmptyString();
     }
   }
 
-  fs::path profile_picture_path(mount_path() / std::string(my_public_id +
+  fs::path profile_picture_path(mount_path() / std::string(my_public_id.string() +
                                                            "_profile_picture" +
                                                            kHiddenFileExtension));
   std::string profile_picture_contents;
   if (user_storage_->ReadHiddenFile(profile_picture_path, &profile_picture_contents) != kSuccess ||
       profile_picture_contents.empty()) {
     LOG(kError) << "Failed reading profile picture: " << profile_picture_path;
-    return "";
+    return NonEmptyString();
   }
 
-  return profile_picture_contents;
+  return NonEmptyString(profile_picture_contents);
 }
 
-std::string LifeStuffImpl::GetContactProfilePicture(const std::string& my_public_id,
-                                                    const std::string& contact_public_id) {
+NonEmptyString LifeStuffImpl::GetContactProfilePicture(const NonEmptyString& my_public_id,
+                                                       const NonEmptyString& contact_public_id) {
   int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in GetContactProfilePicture.";
-    return "";
+    return NonEmptyString();
   }
 
   // Look up data map in session.
   const ContactsHandlerPtr contacts_handler(session_.contacts_handler(my_public_id));
   if (!contacts_handler) {
-    LOG(kError) << "User does not hold such public ID: " << my_public_id;
-    return "";
+    LOG(kError) << "User does not hold such public ID: " << my_public_id.string();
+    return NonEmptyString();
   }
 
   Contact contact;
   result = contacts_handler->ContactInfo(contact_public_id, &contact);
-  if (result != kSuccess || contact.profile_picture_data_map.empty()) {
-    LOG(kError) << "No such contact(" << result << "): " << contact_public_id;
-    return "";
+  if (result != kSuccess) {
+    LOG(kError) << "No such contact(" << result << "): " << contact_public_id.string();
+    return NonEmptyString();
   }
 
   // Might be blank
@@ -903,10 +910,10 @@ std::string LifeStuffImpl::GetContactProfilePicture(const std::string& my_public
 
   // Read contents, put them in a string, give them back. Should not be
   // over a certain size (kFileRecontructionLimit).
-  return user_storage_->ConstructFile(contact.profile_picture_data_map);
+  return NonEmptyString(user_storage_->ConstructFile(contact.profile_picture_data_map));
 }
 
-int LifeStuffImpl::GetLifestuffCard(const std::string& my_public_id,
+int LifeStuffImpl::GetLifestuffCard(const NonEmptyString& my_public_id,
                                     const std::string& contact_public_id,
                                     SocialInfoMap& social_info) {
   int result(PreContactChecksFullAccess(my_public_id));
@@ -923,7 +930,7 @@ int LifeStuffImpl::GetLifestuffCard(const std::string& my_public_id,
   return kSuccess;
 }
 
-int LifeStuffImpl::SetLifestuffCard(const std::string& my_public_id,
+int LifeStuffImpl::SetLifestuffCard(const NonEmptyString& my_public_id,
                                     const SocialInfoMap& social_info) {
   int result(CheckStateAndFullAccess());
   if (result != kSuccess)
@@ -937,7 +944,7 @@ int LifeStuffImpl::SetLifestuffCard(const std::string& my_public_id,
   return kSuccess;
 }
 
-ContactMap LifeStuffImpl::GetContacts(const std::string& my_public_id, uint16_t bitwise_status) {
+ContactMap LifeStuffImpl::GetContacts(const NonEmptyString& my_public_id, uint16_t bitwise_status) {
   int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in GetContacts.";
@@ -946,31 +953,31 @@ ContactMap LifeStuffImpl::GetContacts(const std::string& my_public_id, uint16_t 
 
   const ContactsHandlerPtr contacts_handler(session_.contacts_handler(my_public_id));
   if (!contacts_handler) {
-    LOG(kError) << "User does not hold such public ID: " << my_public_id;
+    LOG(kError) << "User does not hold such public ID: " << my_public_id.string();
     return ContactMap();
   }
 
   return contacts_handler->GetContacts(bitwise_status);
 }
 
-std::vector<std::string> LifeStuffImpl::PublicIdsList() const {
+std::vector<NonEmptyString> LifeStuffImpl::PublicIdsList() const {
   int result = CheckStateAndFullAccess();
   if (result != kSuccess)
-    return std::vector<std::string>();
+    return std::vector<NonEmptyString>();
 
   return session_.PublicIdentities();
 }
 
 /// Messaging
-int LifeStuffImpl::SendChatMessage(const std::string& sender_public_id,
-                                   const std::string& receiver_public_id,
-                                   const std::string& message) {
+int LifeStuffImpl::SendChatMessage(const NonEmptyString& sender_public_id,
+                                   const NonEmptyString& receiver_public_id,
+                                   const NonEmptyString& message) {
   int result(CheckStateAndFullAccess());
   if (result != kSuccess)
     return result;
 
-  if (message.size() > kMaxChatMessageSize) {
-    LOG(kError) << "Message too large: " << message.size();
+  if (message.string().size() > kMaxChatMessageSize) {
+    LOG(kError) << "Message too large: " << message.string().size();
     return kSendMessageSizeFailure;
   }
 
@@ -987,8 +994,8 @@ int LifeStuffImpl::SendChatMessage(const std::string& sender_public_id,
   return kSuccess;
 }
 
-int LifeStuffImpl::SendFile(const std::string& sender_public_id,
-                            const std::string& receiver_public_id,
+int LifeStuffImpl::SendFile(const NonEmptyString& sender_public_id,
+                            const NonEmptyString& receiver_public_id,
                             const fs::path& absolute_path) {
   int result(CheckStateAndFullAccess());
   if (result != kSuccess)
@@ -1004,8 +1011,8 @@ int LifeStuffImpl::SendFile(const std::string& sender_public_id,
   InboxItem inbox_item(kFileTransfer);
   inbox_item.receiver_public_id = receiver_public_id;
   inbox_item.sender_public_id = sender_public_id;
-  inbox_item.content.push_back(absolute_path.filename().string());
-  inbox_item.content.push_back(serialised_datamap);
+  inbox_item.content.push_back(NonEmptyString(absolute_path.filename().string()));
+  inbox_item.content.push_back(NonEmptyString(serialised_datamap));
 
   result = message_handler_->Send(inbox_item);
   if (result != kSuccess) {
@@ -1016,7 +1023,7 @@ int LifeStuffImpl::SendFile(const std::string& sender_public_id,
   return kSuccess;
 }
 
-int LifeStuffImpl::AcceptSentFile(const std::string& identifier,
+int LifeStuffImpl::AcceptSentFile(const NonEmptyString& identifier,
                                   const fs::path& absolute_path,
                                   std::string* file_name) {
   int result(CheckStateAndFullAccess());
@@ -1030,7 +1037,7 @@ int LifeStuffImpl::AcceptSentFile(const std::string& identifier,
 
 
   std::string saved_file_name, serialised_data_map;
-  if (!user_storage_->GetSavedDataMap(identifier, &serialised_data_map, &saved_file_name)) {
+  if (!user_storage_->GetSavedDataMap(identifier, serialised_data_map, saved_file_name)) {
     LOG(kError) << "Failed to get saved details for identifier " << Base64Substr(identifier);
     return -1;
   }
@@ -1046,7 +1053,8 @@ int LifeStuffImpl::AcceptSentFile(const std::string& identifier,
       LOG(kError) << "No name found to work for saving the file.";
       return kAcceptFileNameFailure;
     }
-    result = user_storage_->InsertDataMap(store_path / adequate_name, serialised_data_map);
+    result = user_storage_->InsertDataMap(store_path / adequate_name,
+                                          NonEmptyString(serialised_data_map));
 
     if (result != kSuccess) {
       LOG(kError) << "Failed inserting DM: " << result;
@@ -1054,7 +1062,7 @@ int LifeStuffImpl::AcceptSentFile(const std::string& identifier,
     }
     *file_name = adequate_name;
   } else {
-    result = user_storage_->InsertDataMap(absolute_path, serialised_data_map);
+    result = user_storage_->InsertDataMap(absolute_path, NonEmptyString(serialised_data_map));
     if (result != kSuccess) {
       LOG(kError) << "Failed inserting DM: " << result;
       return result;
@@ -1064,12 +1072,12 @@ int LifeStuffImpl::AcceptSentFile(const std::string& identifier,
   return kSuccess;
 }
 
-int LifeStuffImpl::RejectSentFile(const std::string& identifier) {
+int LifeStuffImpl::RejectSentFile(const NonEmptyString& identifier) {
   int result(CheckStateAndFullAccess());
   if (result != kSuccess)
     return result;
 
-  fs::path hidden_file(mount_path() / std::string(identifier + kHiddenFileExtension));
+  fs::path hidden_file(mount_path() / std::string(identifier.string() + kHiddenFileExtension));
   result = user_storage_->DeleteHiddenFile(hidden_file);
   if (result != kSuccess) {
     LOG(kError) << "Failed to reject file with result " << result;
@@ -1098,7 +1106,7 @@ int LifeStuffImpl::ReadHiddenFile(const fs::path& absolute_path, std::string* co
 }
 
 int LifeStuffImpl::WriteHiddenFile(const fs::path& absolute_path,
-                                   const std::string& content,
+                                   const NonEmptyString& content,
                                    bool overwrite_existing) {
   int result(CheckStateAndFullAccess());
   if (result != kSuccess)
@@ -1159,15 +1167,16 @@ fs::path LifeStuffImpl::mount_path() const {
 
 void LifeStuffImpl::ConnectInternalElements() {
   message_handler_->ConnectToParseAndSaveDataMapSignal(
-      [&] (const std::string& file_name,
-           const std::string& serialised_data_map,
-           std::string* data_map_hash)->bool {
+      [&] (const NonEmptyString& file_name,
+           const NonEmptyString& serialised_data_map,
+           std::string& data_map_hash)->bool {
         return user_storage_->ParseAndSaveDataMap(file_name, serialised_data_map, data_map_hash);
       });
 
   public_id_->ConnectToContactConfirmedSignal(
-      [&] (const std::string& own_public_id, const std::string& recipient_public_id,
-           const std::string&) {
+      [&] (const NonEmptyString& own_public_id,
+           const NonEmptyString& recipient_public_id,
+           const NonEmptyString&) {
         message_handler_->InformConfirmedContactOnline(own_public_id, recipient_public_id);
       });
 }
@@ -1179,10 +1188,9 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
       LOG(kError) << "Failed to stop client container: " << result;
     return result;
   }
-  asymm::Keys maid(session_.passport().SignaturePacketDetails(passport::kMaid, true));
-  assert(!maid.identity.empty());
+  Fob maid(session_.passport().SignaturePacketDetails(passport::kMaid, true));
 
-  client_node_->set_keys(maid);
+  client_node_->set_fob(maid);
   client_node_->set_account_name(maid.identity);
   result = client_node_->Start(buffered_path_ / "buffered_chunk_store");
   if (result != kSuccess) {
@@ -1204,14 +1212,15 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
                                                       session_,
                                                       asio_service_.service());
 
-  user_storage_ = std::make_shared<UserStorage>(remote_chunk_store_);
+  user_storage_ = std::make_shared<UserStorage>(*remote_chunk_store_);
 
   ConnectInternalElements();
   state_ = kInitialised;
 
   result = ConnectToSignals(false,
                             slots_.chat_slot,
-                            slots_.file_slot,
+                            slots_.file_success_slot,
+                            slots_.file_failure_slot,
                             slots_.new_contact_slot,
                             slots_.confirmed_contact_slot,
                             slots_.profile_picture_slot,
@@ -1242,13 +1251,13 @@ int LifeStuffImpl::CheckStateAndFullAccess() const {
   return kSuccess;
 }
 
-int LifeStuffImpl::PreContactChecksFullAccess(const std::string &my_public_id) {
+int LifeStuffImpl::PreContactChecksFullAccess(const NonEmptyString &my_public_id) {
   int result = CheckStateAndFullAccess();
   if (result != kSuccess)
     return result;
 
   if (!session_.OwnPublicId(my_public_id)) {
-    LOG(kError) << "User does not hold such public ID: " << my_public_id;
+    LOG(kError) << "User does not hold such public ID: " << my_public_id.string();
     return kPublicIdNotFoundFailure;
   }
 
@@ -1261,31 +1270,29 @@ void LifeStuffImpl::NetworkHealthSlot(const int& index) {
 
 
 int LifeStuffImpl::CreateVaultInLocalMachine(const fs::path& chunk_store) {
-  std::string account_name(session_.passport().SignaturePacketDetails(passport::kMaid,
+  Identity account_name(session_.passport().SignaturePacketDetails(passport::kMaid,
                                                                       true).identity);
-  asymm::Keys pmid_keys(session_.passport().SignaturePacketDetails(passport::kPmid, true));
-  assert(!account_name.empty());
-  assert(!pmid_keys.identity.empty());
+  Fob pmid_keys(session_.passport().SignaturePacketDetails(passport::kPmid, true));
 
   if (vault_cheat_) {
-    vault_node_.set_do_backup_state(false);
-    vault_node_.set_do_synchronise(true);
-    vault_node_.set_do_check_integrity(false);
-    vault_node_.set_do_announce_chunks(false);
-    std::string account_name(session_.passport().SignaturePacketDetails(passport::kMaid,
-                                                                        true).identity);
-    LOG(kSuccess) << "Account name for vault " << Base32Substr(account_name);
-    vault_node_.set_account_name(account_name);
-    vault_node_.set_keys(session_.passport().SignaturePacketDetails(passport::kPmid, true));
+//    vault_node_.set_do_backup_state(false);
+//    vault_node_.set_do_synchronise(true);
+//    vault_node_.set_do_check_integrity(false);
+//    vault_node_.set_do_announce_chunks(false);
+//    std::string account_name(session_.passport().SignaturePacketDetails(passport::kMaid,
+//                                                                        true).identity);
+//    LOG(kSuccess) << "Account name for vault " << Base32Substr(account_name);
+//    vault_node_.set_account_name(account_name);
+//    vault_node_.set_keys(session_.passport().SignaturePacketDetails(passport::kPmid, true));
 
-    int result(vault_node_.Start(buffered_path_ / ("client_vault" + RandomAlphaNumericString(8))));
-    if (result != kSuccess) {
-      LOG(kError) << "Failed to create vault through cheat: " << result;
-      return kVaultCreationStartFailure;
-    }
-    Sleep(bptime::seconds(10));
+//    int result(vault_node_.Start(buffered_path_ / ("client_vault" + RandomAlphaNumericString(8))));
+//    if (result != kSuccess) {
+//      LOG(kError) << "Failed to create vault through cheat: " << result;
+//      return kVaultCreationStartFailure;
+//    }
+//    Sleep(bptime::seconds(10));
   } else {
-    if (!client_controller_->StartVault(pmid_keys, account_name, chunk_store)) {
+    if (!client_controller_->StartVault(pmid_keys, account_name.string(), chunk_store)) {
       LOG(kError) << "Failed to create vault through client controller.";
       return kVaultCreationStartFailure;
     }
@@ -1294,25 +1301,26 @@ int LifeStuffImpl::CreateVaultInLocalMachine(const fs::path& chunk_store) {
   return kSuccess;
 }
 
-bool LifeStuffImpl::HandleRoutingsHandlerMessage(const std::string& message,
+bool LifeStuffImpl::HandleRoutingsHandlerMessage(const NonEmptyString& message,
                                                  std::string& response) {
   assert(response.empty());
   // Check for message from another instance trying to log in
   OtherInstanceMessage other_instance_message;
-  if (other_instance_message.ParseFromString(message)) {
+  if (other_instance_message.ParseFromString(message.string())) {
     switch (other_instance_message.message_type()) {
-      case 1: return HandleLogoutProceedingsMessage(other_instance_message.serialised_message(),
-                                                    response);
+      case 1: return HandleLogoutProceedingsMessage(
+                         NonEmptyString(other_instance_message.serialised_message()),
+                         response);
       default: break;
     }
   }
   return false;
 }
 
-bool LifeStuffImpl::HandleLogoutProceedingsMessage(const std::string& message,
+bool LifeStuffImpl::HandleLogoutProceedingsMessage(const NonEmptyString& message,
                                                    std::string& response) {
   LogoutProceedings proceedings;
-  if (proceedings.ParseFromString(message)) {
+  if (proceedings.ParseFromString(message.string())) {
     if (proceedings.has_session_requestor()) {
       std::string session_marker(proceedings.session_requestor());
       // Check message is not one we sent out
@@ -1332,7 +1340,7 @@ bool LifeStuffImpl::HandleLogoutProceedingsMessage(const std::string& message,
       // Actions to be done to quit
       std::async(std::launch::async,
                  [&, session_marker] () {
-                   asymm::Keys maid(session_.passport().SignaturePacketDetails(passport::kMaid,
+                   Fob maid(session_.passport().SignaturePacketDetails(passport::kMaid,
                                                                                true));
                    int result(StopMessagesAndIntros());
                    LOG(kInfo) << "StopMessagesAndIntros: " << result;
@@ -1346,11 +1354,11 @@ bool LifeStuffImpl::HandleLogoutProceedingsMessage(const std::string& message,
                    OtherInstanceMessage other_instance_message;
                    other_instance_message.set_message_type(1);
                    other_instance_message.set_serialised_message(proceedings.SerializeAsString());
-                   std::string session_termination(
+                   NonEmptyString session_termination(
                        other_instance_message.SerializePartialAsString());
                    assert(routings_handler_->Send(maid.identity,
                                                   maid.identity,
-                                                  maid.public_key,
+                                                  maid.keys.public_key,
                                                   session_termination,
                                                   nullptr));
                    routings_handler_->DeleteRoutingObject(

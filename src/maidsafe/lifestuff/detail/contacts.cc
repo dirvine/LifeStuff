@@ -36,9 +36,9 @@ namespace lifestuff {
 //  Contacts
 Contact::Contact()
     : public_id(),
+      profile_picture_data_map(),
       mpid_name(),
       inbox_name(),
-      profile_picture_data_map(),
       pointer_to_info(),
       mpid_public_key(),
       inbox_public_key(),
@@ -48,17 +48,17 @@ Contact::Contact()
       presence(kOffline) {}
 
 Contact::Contact(const NonEmptyString& public_name_in,
-                 const NonEmptyString& mpid_name_in,
-                 const NonEmptyString& inbox_name_in,
+                 const Identity& mpid_name_in,
+                 const Identity& inbox_name_in,
                  const NonEmptyString& profile_picture_data_map_in,
-                 const NonEmptyString& pointer_to_info_in,
+                 const Identity& pointer_to_info_in,
                  const asymm::PublicKey& mpid_public_key_in,
                  const asymm::PublicKey& inbox_public_key_in,
                  ContactStatus status)
     : public_id(public_name_in),
+      profile_picture_data_map(profile_picture_data_map_in),
       mpid_name(mpid_name_in),
       inbox_name(inbox_name_in),
-      profile_picture_data_map(profile_picture_data_map_in),
       pointer_to_info(pointer_to_info_in),
       mpid_public_key(mpid_public_key_in),
       inbox_public_key(inbox_public_key_in),
@@ -66,11 +66,12 @@ Contact::Contact(const NonEmptyString& public_name_in,
       rank(0),
       last_contact(0),
       presence(kOffline) {}
+
 Contact::Contact(const PublicContact& contact)
     : public_id(contact.public_id()),
-      mpid_name(),
-      inbox_name(contact.inbox_name()),
       profile_picture_data_map(contact.profile_picture_data_map()),
+      mpid_name(contact.mpid_name()),
+      inbox_name(contact.inbox_name()),
       pointer_to_info(contact.pointer_to_info()),
       mpid_public_key(),
       inbox_public_key(),
@@ -117,10 +118,10 @@ bool Contact::Equals(const Contact& other) {
 
 //  ContactsHandler
 int ContactsHandler::AddContact(const NonEmptyString& public_id,
-                                const NonEmptyString& mpid_name,
-                                const NonEmptyString& inbox_name,
+                                const Identity& mpid_name,
+                                const Identity& inbox_name,
                                 const NonEmptyString& profile_picture_data_map,
-                                const NonEmptyString& pointer_to_info,
+                                const Identity& pointer_to_info,
                                 const asymm::PublicKey& mpid_public_key,
                                 const asymm::PublicKey& inbox_public_key,
                                 ContactStatus status,

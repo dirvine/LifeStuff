@@ -35,6 +35,8 @@
 
 #include "maidsafe/common/rsa.h"
 
+#include "maidsafe/private/utils/fob.h"
+
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/detail/data_atlas_pb.h"
@@ -70,18 +72,22 @@ class UserCredentialsImpl {
   ~UserCredentialsImpl();
   void set_remote_chunk_store(priv::chunk_store::RemoteChunkStore& chunk_store);
 
-  int LogIn(const std::string& keyword, const std::string& pin, const std::string& password);
+  int LogIn(const NonEmptyString& keyword,
+            const NonEmptyString& pin,
+            const NonEmptyString& password);
 
   int LogOut();
 
-  int CreateUser(const std::string& keyword, const std::string& pin, const std::string& password);
+  int CreateUser(const NonEmptyString& keyword,
+                 const NonEmptyString& pin,
+                 const NonEmptyString& password);
 
   int SaveSession(bool log_out);
 
-  int ChangePin(const std::string& new_pin);
-  int ChangeKeyword(const std::string new_keyword);
-  int ChangeKeywordPin(const std::string& new_keyword, const std::string& new_pin);
-  int ChangePassword(const std::string& new_password);
+  int ChangePin(const NonEmptyString& new_pin);
+  int ChangeKeyword(const NonEmptyString& new_keyword);
+  int ChangeKeywordPin(const NonEmptyString& new_keyword, const NonEmptyString& new_pin);
+  int ChangePassword(const NonEmptyString& new_password);
 
   int DeleteUserCredentials();
 
@@ -106,35 +112,35 @@ class UserCredentialsImpl {
   std::mutex completed_log_out_mutex_;
   std::string completed_log_out_message_, pending_session_marker_;
 
-  int AttemptLogInProcess(const std::string& keyword,
-                          const std::string& pin,
-                          const std::string& password);
+  int AttemptLogInProcess(const NonEmptyString&  keyword,
+                          const NonEmptyString&  pin,
+                          const NonEmptyString&  password);
 
-  int GetUserInfo(const std::string& keyword,
-                  const std::string& pin,
-                  const std::string& password,
+  int GetUserInfo(const NonEmptyString&  keyword,
+                  const NonEmptyString&  pin,
+                  const NonEmptyString&  password,
                   const bool& compare_names,
                   std::string& mid_packet,
                   std::string& smid_packet);
 
-  int CheckForOtherRunningInstances(const std::string& keyword,
-                                    const std::string& pin,
-                                    const std::string& password,
+  int CheckForOtherRunningInstances(const NonEmptyString&  keyword,
+                                    const NonEmptyString&  pin,
+                                    const NonEmptyString&  password,
                                     std::string& mid_packet,
                                     std::string& smid_packet);
 
   void StartSessionSaver();
 
-  void GetIdAndTemporaryId(const std::string& keyword,
-                           const std::string& pin,
-                           const std::string& password,
+  void GetIdAndTemporaryId(const NonEmptyString&  keyword,
+                           const NonEmptyString&  pin,
+                           const NonEmptyString&  password,
                            bool surrogate,
                            int* result,
                            std::string* id_contents,
                            std::string* temporary_packet);
-  int HandleSerialisedDataMaps(const std::string& keyword,
-                               const std::string& pin,
-                               const std::string& password,
+  int HandleSerialisedDataMaps(const NonEmptyString&  keyword,
+                               const NonEmptyString&  pin,
+                               const NonEmptyString&  password,
                                const std::string& tmid_serialised_data_atlas,
                                const std::string& stmid_serialised_data_atlas);
 
@@ -146,58 +152,45 @@ class UserCredentialsImpl {
   void StoreAnmaid(OperationResults& results);
   void StoreMaid(bool result, OperationResults& results);
   void StorePmid(bool result, OperationResults& results);
-  void StoreSignaturePacket(asymm::Keys packet,
-                            OperationResults& results,
-                            int index);
+  void StoreSignaturePacket(const Fob& packet, OperationResults& results, int index);
 
-  int ProcessIdentityPackets(const std::string& keyword,
-                             const std::string& pin,
-                             const std::string& password);
+  int ProcessIdentityPackets(const NonEmptyString&  keyword,
+                             const NonEmptyString&  pin,
+                             const NonEmptyString&  password);
   int StoreIdentityPackets();
   void StoreMid(OperationResults& results);
   void StoreSmid(OperationResults& results);
   void StoreTmid(OperationResults& results);
   void StoreStmid(OperationResults& results);
-  void StoreIdentity(OperationResults& results,
-                     int identity_type,
-                     int signer_type,
-                     int index);
+  void StoreIdentity(OperationResults& results, int identity_type, int signer_type, int index);
 
   void ModifyMid(OperationResults& results);
   void ModifySmid(OperationResults& results);
-  void ModifyIdentity(OperationResults& results,
-                      int identity_type,
-                      int signer_type,
-                      int index);
+  void ModifyIdentity(OperationResults& results, int identity_type, int signer_type, int index);
 
   int DeleteOldIdentityPackets();
   void DeleteMid(OperationResults& results);
   void DeleteSmid(OperationResults& results);
   void DeleteTmid(OperationResults& results);
   void DeleteStmid(OperationResults& results);
-  void DeleteIdentity(OperationResults& results,
-                      int packet_type,
-                      int signer_type,
-                      int index);
+  void DeleteIdentity(OperationResults& results, int packet_type, int signer_type, int index);
 
   int DeleteSignaturePackets();
   void DeleteAnmid(OperationResults& results);
   void DeleteAnsmid(OperationResults& results);
   void DeleteAntmid(OperationResults& results);
   void DeletePmid(OperationResults& results);
-  void DeleteMaid(bool result, OperationResults& results, asymm::Keys maid);
-  void DeleteAnmaid(bool result, OperationResults& results, asymm::Keys anmaid);
-  void DeleteSignaturePacket(asymm::Keys packet,
-                             OperationResults& results,
-                             int index);
+  void DeleteMaid(bool result, OperationResults& results, const Fob& maid);
+  void DeleteAnmaid(bool result, OperationResults& results, const Fob& anmaid);
+  void DeleteSignaturePacket(const Fob& packet, OperationResults& results, int index);
 
   int DoChangePasswordAdditions();
   int DoChangePasswordRemovals();
 
-  int SerialiseAndSetIdentity(const std::string& keyword,
-                              const std::string& pin,
-                              const std::string& password,
-                              std::string* new_data_atlas);
+  int SerialiseAndSetIdentity(const std::string&  keyword,
+                              const std::string&  pin,
+                              const std::string&  password,
+                              NonEmptyString& new_data_atlas);
 
   void SessionSaver(const boost::posix_time::seconds& interval,
                     const boost::system::error_code& error_code);

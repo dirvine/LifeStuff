@@ -79,19 +79,13 @@ const std::string kDownloadStuff("Accepted Files");
 const std::string kHiddenFileExtension(".ms_hidden");
 
 /// General
-typedef std::function<void(const std::string&, const std::string&, const std::string&)>
+typedef std::function<void(const NonEmptyString&, const NonEmptyString&, const NonEmptyString&)>
         ThreeStringsFunction;
-typedef std::function<void(const std::string&,
-                           const std::string&,
-                           const std::string&,
-                           const std::string&)>
+typedef std::function<void(const NonEmptyString&,  // NOLINT (Fraser)
+                           const NonEmptyString&,
+                           const NonEmptyString&,
+                           const NonEmptyString&)>
         FourStringsFunction;
-typedef std::function<void(const std::string&,
-                           const std::string&,
-                           const std::string&,
-                           const std::string&,
-                           const std::string&)>
-        FiveStringsFunction;
 
 typedef std::function<void(int)> VoidFunctionOneInt;  // NOLINT (Dan)
 typedef std::function<void(bool)> VoidFunctionOneBool;  // NOLINT (Dan)
@@ -106,18 +100,20 @@ typedef std::function<bool(const NonEmptyString&, std::string&)> ValidatedMessag
 typedef FourStringsFunction ChatFunction;
 
 /// File transfer
+// Own public ID, Contact public ID, Timestamp
+typedef ThreeStringsFunction FileTransferFailureFunction;
 // Own public ID, Contact public ID, File name, File ID, Timestamp
-typedef FiveStringsFunction FileTransferFunction;
+typedef FourStringsFunction FileTransferSuccessFunction;
 
 /// Contact info
 // Own & other public ID, Timestamp
 typedef ThreeStringsFunction ContactConfirmationFunction;
 // Own & other public ID, Timestamp
 typedef ThreeStringsFunction ContactProfilePictureFunction;
-typedef std::function<void(const std::string&,          // Own public ID
-                           const std::string&,          // Contact public ID
-                           const std::string&,          // Timestamp
-                           ContactPresence presence)>   // online/offline
+typedef std::function<void(const NonEmptyString&,          // Own public ID
+                           const NonEmptyString&,          // Contact public ID
+                           const NonEmptyString&,          // Timestamp
+                           ContactPresence presence)>      // online/offline
         ContactPresenceFunction;
 // Own public ID, Contact public ID, Message, Timestamp
 typedef FourStringsFunction ContactDeletionReceivedFunction;

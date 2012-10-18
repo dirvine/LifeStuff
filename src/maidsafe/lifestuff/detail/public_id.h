@@ -66,28 +66,28 @@ class Introduction;
 
 class PublicId {
  public:
-  typedef bs2::signal<void(const std::string&,  // NOLINT (Fraser)
-                           const std::string&,
-                           const std::string&,
-                           const std::string&)> NewContactSignal;
+  typedef bs2::signal<void(const NonEmptyString&,  // NOLINT (Fraser)
+                           const NonEmptyString&,
+                           const NonEmptyString&,
+                           const NonEmptyString&)> NewContactSignal;
 
-  typedef bs2::signal<void(const std::string&,  // NOLINT (Fraser)
-                           const std::string&,
-                           const std::string&)> ContactConfirmedSignal;
+  typedef bs2::signal<void(const NonEmptyString&,  // NOLINT (Fraser)
+                           const NonEmptyString&,
+                           const NonEmptyString&)> ContactConfirmedSignal;
 
-  typedef bs2::signal<void(const std::string&,  // NOLINT (Alison)
-                           const std::string&,
-                           const std::string&,
-                           const std::string&)> ContactDeletionReceivedSignal;
+  typedef bs2::signal<void(const NonEmptyString&,  // NOLINT (Alison)
+                           const NonEmptyString&,
+                           const NonEmptyString&,
+                           const NonEmptyString&)> ContactDeletionReceivedSignal;
 
-  typedef bs2::signal<void(const std::string&,  // NOLINT (Alison)
-                           const std::string&,
-                           const std::string&,
-                           const std::string&)> ContactDeletionProcessedSignal;
+  typedef bs2::signal<void(const NonEmptyString&,  // NOLINT (Alison)
+                           const NonEmptyString&,
+                           const NonEmptyString&,
+                           const NonEmptyString&)> ContactDeletionProcessedSignal;
 
-  typedef bs2::signal<void(const std::string&,  // NOLINT (Dan)
-                           const std::string&,
-                           const std::string&)> LifestuffCardUpdatedSignal;
+  typedef bs2::signal<void(const NonEmptyString&,  // NOLINT (Dan)
+                           const NonEmptyString&,
+                           const NonEmptyString&)> LifestuffCardUpdatedSignal;
 
   PublicId(priv::chunk_store::RemoteChunkStore& remote_chunk_store,
            Session& session,
@@ -104,34 +104,35 @@ class PublicId {
   void StopCheckingForNewContacts();
 
   // Creates and stores to the network a new MSID, MPID, ANMPID and MMID.
-  int CreatePublicId(const std::string& own_public_id, bool accepts_new_contacts);
+  int CreatePublicId(const NonEmptyString& own_public_id, bool accepts_new_contacts);
 
   // Appends our info as an MCID to the recipient's MPID packet.
-  int AddContact(const std::string& own_public_id,
-                 const std::string& recipient_public_id,
-                 const std::string& message);
+  int AddContact(const NonEmptyString& own_public_id,
+                 const NonEmptyString& recipient_public_id,
+                 const NonEmptyString& message);
 
   // Disallow/allow others add contact or send messages
-  int DisablePublicId(const std::string& own_public_id);
-  int EnablePublicId(const std::string& own_public_id);
-  int DeletePublicId(const std::string& own_public_id);
+  int DisablePublicId(const NonEmptyString& own_public_id);
+  int EnablePublicId(const NonEmptyString& own_public_id);
+  int DeletePublicId(const NonEmptyString& own_public_id);
 
   // To confirm/reject a contact once user has decided on the introduction
-  int ConfirmContact(const std::string& own_public_id, const std::string& recipient_public_id);
-  int RejectContact(const std::string& own_public_id, const std::string& recipient_public_id);
+  int ConfirmContact(const NonEmptyString& own_public_id,
+                     const NonEmptyString& recipient_public_id);
+  int RejectContact(const NonEmptyString& own_public_id, const NonEmptyString& recipient_public_id);
 
   // Remove a contact from current contact list, and inform other contacts the new MMID
-  int RemoveContact(const std::string& own_public_id,
-                    const std::string& recipient_public_id,
-                    const std::string& message,
-                    const std::string& timestamp,
+  int RemoveContact(const NonEmptyString& own_public_id,
+                    const NonEmptyString& recipient_public_id,
+                    const NonEmptyString& message,
+                    const NonEmptyString& timestamp,
                     const bool& instigator);
 
   // Lifestuff Card
-  int GetLifestuffCard(const std::string& my_public_id,
+  int GetLifestuffCard(const NonEmptyString& my_public_id,
                        const std::string& contact_public_id,
                        SocialInfoMap& social_info);
-  int SetLifestuffCard(const std::string& my_public_id, const SocialInfoMap& social_info);
+  int SetLifestuffCard(const NonEmptyString& my_public_id, const SocialInfoMap& social_info);
 
   // Signals
   bs2::connection ConnectToNewContactSignal(const NewContactFunction& new_contact_slot);
@@ -152,49 +153,48 @@ class PublicId {
 
   void GetNewContacts(const bptime::seconds& interval, const boost::system::error_code& error_code);
   void GetContactsHandle();
-  void ProcessRequests(const std::string& mpid_name,
-                       const std::string& retrieved_mpid_packet,
-                       asymm::Keys mpid);
+  void ProcessRequests(const NonEmptyString& own_public_id,
+                       const NonEmptyString& retrieved_mpid_packet,
+                       const Fob& mpid);
   void ProcessContactConfirmation(Contact& contact,
                                   const ContactsHandlerPtr contacts_handler,
-                                  const std::string& own_public_id,
+                                  const NonEmptyString& own_public_id,
                                   const Introduction& introduction);
   void ProcessContactMoveInbox(Contact& contact,
                                const ContactsHandlerPtr contacts_handler,
-                               const std::string& inbox_name,
-                               const std::string& pointer_to_info);
+                               const Identity& inbox_name,
+                               const Identity& pointer_to_info);
   void ProcessNewContact(Contact& contact,
                          const ContactsHandlerPtr contacts_handler,
-                         const std::string& own_public_id,
+                         const NonEmptyString& own_public_id,
                          const Introduction& introduction,
                          const priv::chunk_actions::SignedData& singed_introduction);
   int ProcessRequestWhenExpectingResponse(Contact& contact,
                                           const ContactsHandlerPtr contacts_handler,
-                                          const std::string& own_public_id,
+                                          const NonEmptyString& own_public_id,
                                           const Introduction& introduction);
-  void ProcessMisplacedContactRequest(Contact& contact, const std::string& own_public_id);
-  void ProcessNewLifestuffCardInformation(const std::string& card_address,
-                                          const std::string& own_public_id,
-                                          const std::string& contact_public_id,
-                                          const std::string& timestamp);
+  void ProcessMisplacedContactRequest(Contact& contact, const NonEmptyString& own_public_id);
+  void ProcessNewLifestuffCardInformation(const Identity& card_address,
+                                          const NonEmptyString& own_public_id,
+                                          const NonEmptyString& contact_public_id,
+                                          const NonEmptyString& timestamp);
   // Modify the Appendability of MCID and MMID associated with the public_id
   // i.e. enable/disable others add new contact and send msg
-  int ModifyAppendability(const std::string& own_public_id, const char appendability);
+  int ModifyAppendability(const NonEmptyString& own_public_id, const bool appendability);
   // Notify each contact in the list about the contact_info
-  int InformContactInfo(const std::string& own_public_id,
+  int InformContactInfo(const NonEmptyString& own_public_id,
                         const std::vector<Contact>& contacts,
-                        const std::string& message,
+                        const NonEmptyString& message,
                         const IntroductionType& type,
                         const std::string& inbox_name = "");
-  int GetPublicKey(const std::string& packet_name, Contact& contact, int type);
+  int GetPublicKey(const Identity& packet_name, Contact& contact, int type);
 
-  int StoreLifestuffCard(asymm::Keys mmid, std::string& lifestuff_card_address);
-  int RemoveLifestuffCard(const std::string& lifestuff_card_address, asymm::Keys mmid);
-  std::string GetOwnCardAddress(const std::string& my_public_id);
-  std::string GetContactCardAddress(const std::string& my_public_id,
-                                    const std::string& contact_public_id);
-  int RetrieveLifestuffCard(const std::string& lifestuff_card_address,
-                            SocialInfoMap& social_info);
+  int StoreLifestuffCard(const Fob& mmid, Identity& lifestuff_card_address);
+  int RemoveLifestuffCard(const Identity& lifestuff_card_address, const Fob& mmid);
+  Identity GetOwnCardAddress(const NonEmptyString& my_public_id);
+  Identity GetContactCardAddress(const NonEmptyString& my_public_id,
+                                 const NonEmptyString& contact_public_id);
+  int RetrieveLifestuffCard(const Identity& lifestuff_card_address, SocialInfoMap& social_info);
 
   priv::chunk_store::RemoteChunkStore& remote_chunk_store_;
   Session& session_;
