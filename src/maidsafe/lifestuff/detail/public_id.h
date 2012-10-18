@@ -36,6 +36,7 @@
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
 #include "maidsafe/lifestuff/detail/session.h"
+#include "maidsafe/lifestuff/detail/utils.h"
 
 namespace bptime = boost::posix_time;
 namespace bs2 = boost::signals2;
@@ -195,6 +196,15 @@ class PublicId {
   Identity GetContactCardAddress(const NonEmptyString& my_public_id,
                                  const NonEmptyString& contact_public_id);
   int RetrieveLifestuffCard(const Identity& lifestuff_card_address, SocialInfoMap& social_info);
+
+  void StoreMpid(bool result,
+                 OperationResults& results,
+                 const NonEmptyString& public_id,
+                 bool accepts_new_contacts);
+  void StoreMcid(bool result,
+                 OperationResults& results,
+                 const NonEmptyString& public_id,
+                 bool accepts_new_contacts);
 
   priv::chunk_store::RemoteChunkStore& remote_chunk_store_;
   Session& session_;
