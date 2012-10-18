@@ -153,11 +153,11 @@ int UserCredentialsImpl::AttemptLogInProcess(const NonEmptyString& keyword,
   }
 
   // Check other running instances
-  result = CheckForOtherRunningInstances(keyword, pin, password, mid_packet, smid_packet);
-  if (result != kSuccess) {
-    LOG(kInfo) << "UserCredentialsImpl::LogIn - Failure to deal with other running instances.";
-    return result;
-  }
+//  result = CheckForOtherRunningInstances(keyword, pin, password, mid_packet, smid_packet);
+//  if (result != kSuccess) {
+//    LOG(kInfo) << "UserCredentialsImpl::LogIn - Failure to deal with other running instances.";
+//    return result;
+//  }
 
   session_.set_keyword(keyword);
   session_.set_pin(pin);
@@ -512,14 +512,14 @@ int UserCredentialsImpl::CreateUser(const NonEmptyString& keyword,
   session_.set_session_name();
   session_.set_changed(true);
 
-  Fob maid(passport_.SignaturePacketDetails(passport::kMaid, true));
-  if (!routings_handler_.AddRoutingObject(maid,
-                                          std::vector<std::pair<std::string, uint16_t> >(),
-                                          NonEmptyString(maid.identity),
-                                          nullptr)) {
-    LOG(kError) << "Failure to start the routing object for the MAID.";
-    return -1;
-  }
+//  Fob maid(passport_.SignaturePacketDetails(passport::kMaid, true));
+//  if (!routings_handler_.AddRoutingObject(maid,
+//                                          std::vector<std::pair<std::string, uint16_t> >(),
+//                                          NonEmptyString(maid.identity),
+//                                          nullptr)) {
+//    LOG(kError) << "Failure to start the routing object for the MAID.";
+//    return -1;
+//  }
 
   return kSuccess;
 }
@@ -781,7 +781,7 @@ void UserCredentialsImpl::StoreIdentity(OperationResults& results,
   pca::SignedData signed_data;
   signed_data.set_data(packet_content.string());
   signed_data.set_signature(signature.string());
-  if (!remote_chunk_store_->Store(SignaturePacketName(packet_name),
+  if (!remote_chunk_store_->Store(ModifiableName(packet_name),
                                   NonEmptyString(signed_data.SerializeAsString()),
                                   [&, index] (bool result) {
                                     OperationCallback(result, results, index);
@@ -1157,7 +1157,7 @@ int UserCredentialsImpl::DeleteUserCredentials() {
 }
 
 int UserCredentialsImpl::DeleteSignaturePackets() {
-  std::vector<int> individual_results(3, utils::kPendingResult);
+  std::vector<int> individual_results(4, utils::kPendingResult);
   std::condition_variable condition_variable;
   std::mutex mutex;
   OperationResults results(mutex, condition_variable, individual_results);
@@ -1169,7 +1169,7 @@ int UserCredentialsImpl::DeleteSignaturePackets() {
   // ANTMID path
   DeleteAntmid(results);
   // PMID path: PMID, MAID, ANMAID
-//  DeletePmid(results);
+  DeletePmid(results);
 
   int result(utils::WaitForResults(mutex, condition_variable, individual_results,
                                    std::chrono::seconds(30)));
@@ -1177,14 +1177,14 @@ int UserCredentialsImpl::DeleteSignaturePackets() {
     LOG(kError) << "Wait for results timed out: " << result;
     LOG(kError) << "ANMID: " << individual_results.at(0)
               << ", ANSMID: " << individual_results.at(1)
-              << ", ANTMID: " << individual_results.at(2);
-//              << ", PMID path: " << individual_results.at(3);
+              << ", ANTMID: " << individual_results.at(2)
+              << ", PMID path: " << individual_results.at(3);
     return result;
   }
   LOG(kInfo) << "ANMID: " << individual_results.at(0)
              << ", ANSMID: " << individual_results.at(1)
-             << ", ANTMID: " << individual_results.at(2);
-//             << ", PMID path: " << individual_results.at(3);
+             << ", ANTMID: " << individual_results.at(2)
+             << ", PMID path: " << individual_results.at(3);
 
   result = AssessJointResult(individual_results);
   if (result != kSuccess) {

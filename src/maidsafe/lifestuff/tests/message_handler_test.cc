@@ -28,10 +28,7 @@
 #include "maidsafe/private/chunk_actions/chunk_id.h"
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
-#include "maidsafe/pd/client/node.h"
-
 #include "maidsafe/lifestuff/lifestuff.h"
-#include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
 #include "maidsafe/lifestuff/detail/data_atlas_pb.h"
@@ -77,9 +74,6 @@ class MessageHandlerTest : public testing::Test {
         public_username3_("User 3 " + RandomAlphaNumericString(8)),
         received_public_username_(),
         received_message_(),
-        node1_(),
-        node2_(),
-        node3_(),
         interval_(3),
         multiple_messages_(5),
         invitations_(0) {}
@@ -158,19 +152,21 @@ class MessageHandlerTest : public testing::Test {
     asio_service2_.Start();
     asio_service3_.Start();
 
-    std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
-    remote_chunk_store1_ = BuildChunkStore(*test_dir_,
-                                           bootstrap_endpoints,
-                                           node1_,
-                                           NetworkHealthFunction());
-    remote_chunk_store2_ = BuildChunkStore(*test_dir_,
-                                           bootstrap_endpoints,
-                                           node2_,
-                                           NetworkHealthFunction());
-    remote_chunk_store3_ = BuildChunkStore(*test_dir_,
-                                           bootstrap_endpoints,
-                                           node3_,
-                                           NetworkHealthFunction());
+    std::string dir1(RandomAlphaNumericString(8));
+    remote_chunk_store1_ = priv::chunk_store::CreateLocalChunkStore(*test_dir_ / dir1 / "buffer",
+                                                                    *test_dir_ / "simulation",
+                                                                    *test_dir_ / dir1 / "lock",
+                                                                    asio_service1_.service());
+    std::string dir2(RandomAlphaNumericString(8));
+    remote_chunk_store2_ = priv::chunk_store::CreateLocalChunkStore(*test_dir_ / dir2 / "buffer",
+                                                                    *test_dir_ / "simulation",
+                                                                    *test_dir_ / dir2 / "lock",
+                                                                    asio_service2_.service());
+    std::string dir3(RandomAlphaNumericString(8));
+    remote_chunk_store3_ = priv::chunk_store::CreateLocalChunkStore(*test_dir_ / dir3 / "buffer",
+                                                                    *test_dir_ / "simulation",
+                                                                    *test_dir_ / dir3 / "lock",
+                                                                    asio_service2_.service());
 
     public_id1_.reset(new PublicId(*remote_chunk_store1_, session1_, asio_service1_.service()));
     message_handler1_.reset(new MessageHandler(*remote_chunk_store1_,
@@ -192,9 +188,6 @@ class MessageHandlerTest : public testing::Test {
     asio_service1_.Stop();
     asio_service2_.Stop();
     asio_service3_.Stop();
-    node1_->Stop();
-    node2_->Stop();
-    node3_->Stop();
     remote_chunk_store1_->WaitForCompletion();
     remote_chunk_store2_->WaitForCompletion();
     remote_chunk_store3_->WaitForCompletion();
@@ -246,7 +239,6 @@ class MessageHandlerTest : public testing::Test {
 
   NonEmptyString public_username1_, public_username2_, public_username3_, received_public_username_,
               received_message_;
-  std::shared_ptr<pd::Node> node1_, node2_, node3_;
   bptime::seconds interval_;
   size_t multiple_messages_, invitations_;
 

@@ -31,7 +31,6 @@ include_directories(${passport_SOURCE_DIR}/include)
 include_directories(${rudp_SOURCE_DIR}/include)
 include_directories(${routing_SOURCE_DIR}/include)
 include_directories(${pd_SOURCE_DIR}/include)
-# include_directories(${pd_SOURCE_DIR}/src/)
 
 
 ###################################################################################################
@@ -125,18 +124,22 @@ source_group("Tests Proto Files" FILES ${NETWORK_HELPER_PROTOS})
 ms_add_static_library(lifestuff_detail ${ALL_FILES_DETAIL_DIR})
 ms_add_executable(TESTlifestuff_general "Tests/LifeStuff" ${LIFESTUFF_TESTS_CC} ${TESTS_MAIN_CC})
 ms_add_executable(TESTlifestuff_routings_handler "Tests/LifeStuff" ${ROUTINGS_HANDLER_TEST_CC} ${TESTS_MAIN_CC})
+ms_add_executable(TESTlifestuff_credentials "Tests/LifeStuff" ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
+ms_add_executable(TESTlifestuff_public_id "Tests/LifeStuff" ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
+ms_add_executable(TESTlifestuff_storage "Tests/LifeStuff" ${STORAGE_TEST_CC} ${TESTS_MAIN_CC})
 
 target_link_libraries(maidsafe_lifestuff_detail maidsafe_drive maidsafe_passport maidsafe_routing)
 target_link_libraries(TESTlifestuff_general maidsafe_lifestuff_detail)
 target_link_libraries(TESTlifestuff_routings_handler maidsafe_lifestuff_detail)
+target_link_libraries(TESTlifestuff_credentials maidsafe_lifestuff_detail)
+target_link_libraries(TESTlifestuff_public_id maidsafe_lifestuff_detail)
+target_link_libraries(TESTlifestuff_storage maidsafe_lifestuff_detail)
 
 ms_add_static_library(lifestuff ${ALL_FILES_LIFESTUFF_DIR})
-ms_add_executable(TESTlifestuff_public_id "Tests/LifeStuff" ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
-ms_add_executable(TESTlifestuff_credentials "Tests/LifeStuff" ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
-ms_add_executable(TESTlifestuff_storage "Tests/LifeStuff" ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
 ms_add_executable(TESTlifestuff_api "Tests/LifeStuff" ${API_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
 target_link_libraries(maidsafe_lifestuff maidsafe_pd maidsafe_lifestuff_detail)
-set(NetworkTargets TESTlifestuff_credentials TESTlifestuff_public_id TESTlifestuff_storage TESTlifestuff_api)
+
+set(NetworkTargets TESTlifestuff_api)
 add_custom_command(TARGET maidsafe_lifestuff
                    PRE_BUILD
                    COMMAND ${CMAKE_COMMAND} -E echo "#ifndef MAIDSAFE_PD_CLIENT_KEYS_HELPER_H_" > ${PROJECT_BINARY_DIR}/keys_helper.h &&
@@ -199,12 +202,7 @@ add_style_test(${STYLE_ALL}
                ${ROUTINGS_HANDLER_TEST_CC}
                ${API_TEST_CC})
 
-add_gtests(TESTlifestuff_general)
-add_gtests(TESTlifestuff_public_id)
-#add_gtests(TESTlifestuff_credentials)
-#add_gtests(TESTlifestuff_storage)
-add_gtests(TESTlifestuff_routings_handler)
-#add_gtests(TESTlifestuff_api)
+add_gtests(TESTlifestuff_api)
 
 add_project_experimental()
 test_summary_output()
