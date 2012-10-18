@@ -34,15 +34,11 @@
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 #include "maidsafe/private/chunk_actions/chunk_action_authority.h"
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
-#include "maidsafe/private/chunk_actions/chunk_types.h"
+#include "maidsafe/private/chunk_actions/chunk_id.h"
 
 #include "maidsafe/pd/client/node.h"
 #include "maidsafe/pd/client/utils.h"
-#include "maidsafe/pd/vault/node.h"
-#include "maidsafe/pd/common/rpc_handler.h"
-#include "maidsafe/pd/common/timed_event_handler.h"
-#include "maidsafe/pd/common/routing_message_handler.h"
-#include "maidsafe/pd/common/key_manager.h"
+//#include "maidsafe/pd/vault/node.h"
 
 #include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/detail/routings_handler.h"
@@ -72,8 +68,8 @@ class CredentialsTest : public testing::Test {
         network_(),
         client_node_(),
         client_node2_(),
-        vault_node_(),
-        vault_node2_(),
+//        vault_node_(),
+//        vault_node2_(),
         remote_chunk_store_(),
         remote_chunk_store2_(),
         routings_handler_(),
@@ -85,16 +81,15 @@ class CredentialsTest : public testing::Test {
         password_(RandomAlphaNumericString(8)),
         immediate_quit_required_(false) {}
 
-  void ImmediateQuitRequiredSlot() {
-    immediate_quit_required_ = true;
-  }
+  void ImmediateQuitRequiredSlot() { immediate_quit_required_ = true; }
 
  protected:
   void SetUp() {
-    vault_node_.reset(new pd::vault::Node);
-    vault_node2_.reset(new pd::vault::Node);
+//    vault_node_.reset(new pd::vault::Node);
+//    vault_node2_.reset(new pd::vault::Node);
     asio_service_.Start();
     asio_service2_.Start();
+
     ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 10));
     std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
     remote_chunk_store_ = BuildChunkStore(*test_dir_,
@@ -104,7 +99,7 @@ class CredentialsTest : public testing::Test {
 
     routings_handler_ = std::make_shared<RoutingsHandler>(*remote_chunk_store_,
                                                           session_,
-                                                          [] (const std::string&, std::string&) {
+                                                          [] (const NonEmptyString&, std::string&) {
                                                             return false;
                                                           });
 
@@ -124,12 +119,12 @@ class CredentialsTest : public testing::Test {
         LOG(kError) << "Failed to stop client node, result : " << result;
       client_node_.reset();
     }
-    {
-      int result(vault_node_->Stop());
-      if (result != kSuccess)
-        LOG(kError) << "Failed to stop vault node, result : " << result;
-      vault_node_.reset();
-    }
+//    {
+//      int result(vault_node_->Stop());
+//      if (result != kSuccess)
+//        LOG(kError) << "Failed to stop vault node, result : " << result;
+//      vault_node_.reset();
+//    }
 
     EXPECT_TRUE(network_.StopLocalNetwork());
     asio_service_.Stop();
@@ -148,19 +143,19 @@ class CredentialsTest : public testing::Test {
                                                            *routings_handler2_);
   }
 
-  int CreateVaultForClient(std::shared_ptr<pd::vault::Node>& vault_node, Session& session) {
-    vault_node->set_do_backup_state(false);
-    vault_node->set_do_synchronise(true);
-    vault_node->set_do_check_integrity(false);
-    vault_node->set_do_announce_chunks(false);
-    std::string account_name(session.passport().SignaturePacketDetails(passport::kMaid,
-                                                                       true).identity);
-    LOG(kSuccess) << "Account name for vault " << Base32Substr(account_name);
-    vault_node->set_account_name(account_name);
-    vault_node->set_keys(session.passport().SignaturePacketDetails(passport::kPmid, true));
+//  int CreateVaultForClient(std::shared_ptr<pd::vault::Node>& vault_node, Session& session) {
+//    vault_node->set_do_backup_state(false);
+//    vault_node->set_do_synchronise(true);
+//    vault_node->set_do_check_integrity(false);
+//    vault_node->set_do_announce_chunks(false);
+//    std::string account_name(session.passport().SignaturePacketDetails(passport::kMaid,
+//                                                                       true).identity);
+//    LOG(kSuccess) << "Account name for vault " << Base32Substr(account_name);
+//    vault_node->set_account_name(account_name);
+//    vault_node->set_keys(session.passport().SignaturePacketDetails(passport::kPmid, true));
 
-    return vault_node->Start(*test_dir_ / ("client_vault" + RandomAlphaNumericString(8)));
-  }
+//    return vault_node->Start(*test_dir_ / ("client_vault" + RandomAlphaNumericString(8)));
+//  }
 
   int MakeClientNode(std::shared_ptr<UserCredentials>& user_credentials,
                      std::shared_ptr<RoutingsHandler>& routings_handler,
@@ -172,8 +167,8 @@ class CredentialsTest : public testing::Test {
       LOG(kError) << "Failed to stop client node.";
       return result;
     }
-    asymm::Keys maid(session.passport().SignaturePacketDetails(passport::kMaid, true));
-    client_node->set_keys(maid);
+    Fob maid(session.passport().SignaturePacketDetails(passport::kMaid, true));
+    client_node->set_fob(maid);
     client_node->set_account_name(maid.identity);
     result = client_node->Start(*test_dir_ / "buffered_chunk_store");
     if (result != kSuccess) {
@@ -195,7 +190,7 @@ class CredentialsTest : public testing::Test {
                         std::shared_ptr<RoutingsHandler>& routings_handler,
                         std::shared_ptr<pd::Node>& client_node,
                         std::shared_ptr<pcs::RemoteChunkStore>& remote_chunk_store,
-                        const std::string& maid_id) {
+                        const Identity& maid_id) {
     int result(client_node->Stop());
     if (result != kSuccess) {
       LOG(kError) << "Failed to stop client node.";
@@ -207,8 +202,8 @@ class CredentialsTest : public testing::Test {
       return -1;
     }
 
-    client_node->set_keys(asymm::Keys());
-    client_node->set_account_name("");
+    client_node->set_fob(Fob());
+    client_node->set_account_name(Identity());
     result = client_node->Start(*test_dir_ / "buffered_chunk_store");
     if (result != kSuccess) {
       LOG(kError) << "Failed to start client node.";
@@ -225,22 +220,22 @@ class CredentialsTest : public testing::Test {
     return kSuccess;
   }
 
-  void DoCreateUser(const std::string& keyword,
-                    const std::string& pin,
-                    const std::string& password,
+  void DoCreateUser(const NonEmptyString& keyword,
+                    const NonEmptyString& pin,
+                    const NonEmptyString& password,
                     std::shared_ptr<UserCredentials>& user_credentials,
                     std::shared_ptr<RoutingsHandler>& routings_handler,
                     std::shared_ptr<pd::Node>& client_node,
                     Session& session,
-                    std::shared_ptr<pcs::RemoteChunkStore>& remote_chunk_store,
-                    std::shared_ptr<pd::vault::Node>& vault_node) {
+                    std::shared_ptr<pcs::RemoteChunkStore>& remote_chunk_store/*,
+                    std::shared_ptr<pd::vault::Node>& vault_node*/) {
     LOG(kInfo) << "\n\nStarting DoCreateUser\n\n";
     ASSERT_EQ(kSuccess, user_credentials->CreateUser(keyword, pin, password));
     LOG(kSuccess) << "User credentials created.\n===================\n";
 
-    ASSERT_EQ(kSuccess, CreateVaultForClient(vault_node, session));
-    LOG(kSuccess) << "Constructed vault.\n===================\n";
-    Sleep(bptime::seconds(15));
+//    ASSERT_EQ(kSuccess, CreateVaultForClient(vault_node, session));
+//    LOG(kSuccess) << "Constructed vault.\n===================\n";
+//    Sleep(bptime::seconds(15));
     ASSERT_EQ(kSuccess, MakeClientNode(user_credentials,
                                        routings_handler,
                                        client_node,
@@ -262,7 +257,7 @@ class CredentialsTest : public testing::Test {
                 std::shared_ptr<pcs::RemoteChunkStore>& remote_chunk_store) {
     LOG(kInfo) << "\n\nStarting DoLogOut\n\n";
     EXPECT_EQ(kSuccess, user_credentials->Logout());
-    std::string maid_id(session.passport().SignaturePacketDetails(passport::kMaid, true).identity);
+    Identity maid_id(session.passport().SignaturePacketDetails(passport::kMaid, true).identity);
     session.Reset();
     LOG(kInfo) << "Credentials logged out.\n===================\n";
 
@@ -277,9 +272,9 @@ class CredentialsTest : public testing::Test {
     LOG(kInfo) << "Logged out.\n===================\n\n\n";
   }
 
-  void DoLogIn(const std::string& keyword,
-               const std::string& pin,
-               const std::string& password,
+  void DoLogIn(const NonEmptyString& keyword,
+               const NonEmptyString& pin,
+               const NonEmptyString& password,
                std::shared_ptr<UserCredentials>& user_credentials,
                std::shared_ptr<RoutingsHandler>& routings_handler,
                std::shared_ptr<pd::Node>& client_node,
@@ -294,22 +289,21 @@ class CredentialsTest : public testing::Test {
                                        client_node,
                                        session,
                                        remote_chunk_store));
-    LOG(kSuccess) << "Constructed client node.\n===================\n";
     Sleep(bptime::seconds(15));
+    LOG(kSuccess) << "Constructed client node.\n===================\n";
 
-    LOG(kInfo) << "Logged in.\n===================\n\n\n";
   }
 
   void DoLogOutAndStop(std::shared_ptr<UserCredentials>& user_credentials,
                        std::shared_ptr<pd::Node>& client_node,
-                       std::shared_ptr<pd::vault::Node>& vault_node,
+//                       std::shared_ptr<pd::vault::Node>& vault_node,
                        Session& session) {
     LOG(kInfo) << "\n\nStarting DoLogOutAndStop\n\n";
     ASSERT_EQ(kSuccess, user_credentials->Logout());
     LOG(kInfo) << "Credentials logged out.\n===================\n";
 
     ASSERT_EQ(kSuccess, client_node->Stop());
-    ASSERT_EQ(kSuccess, vault_node->Stop());
+//    ASSERT_EQ(kSuccess, vault_node->Stop());
     session.Reset();
     LOG(kInfo) << "Stopped nodes.\n===================\n";
   }
@@ -319,11 +313,11 @@ class CredentialsTest : public testing::Test {
   AsioService asio_service_, asio_service2_;
   NetworkHelper network_;
   std::shared_ptr<pd::Node> client_node_, client_node2_;
-  std::shared_ptr<pd::vault::Node> vault_node_, vault_node2_;
+//  std::shared_ptr<pd::vault::Node> vault_node_, vault_node2_;
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store_, remote_chunk_store2_;
   std::shared_ptr<RoutingsHandler> routings_handler_, routings_handler2_;
   std::shared_ptr<UserCredentials> user_credentials_, user_credentials2_;
-  std::string keyword_, pin_, password_;
+  NonEmptyString keyword_, pin_, password_;
   bool immediate_quit_required_;
 
  private:
@@ -332,9 +326,9 @@ class CredentialsTest : public testing::Test {
 };
 
 TEST_F(CredentialsTest, FUNC_DoCreateUserDoLogOutAndStop) {
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
+  ASSERT_THROW(session_.keyword().string(), std::exception);
+  ASSERT_THROW(session_.pin().string(), std::exception);
+  ASSERT_THROW(session_.password().string(), std::exception);
   ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(keyword_, pin_, password_));
   LOG(kSuccess) << "Preconditions fulfilled.\n===================\n";
 
@@ -345,18 +339,18 @@ TEST_F(CredentialsTest, FUNC_DoCreateUserDoLogOutAndStop) {
                routings_handler_,
                client_node_,
                session_,
-               remote_chunk_store_,
-               vault_node_);
+               remote_chunk_store_/*,
+               vault_node_*/);
   DoLogOutAndStop(user_credentials_,
                   client_node_,
-                  vault_node_,
+//                  vault_node_,
                   session_);
 }
 
 TEST_F(CredentialsTest, FUNC_LoginSequence) {
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
+  ASSERT_THROW(session_.keyword().string(), std::exception);
+  ASSERT_THROW(session_.pin().string(), std::exception);
+  ASSERT_THROW(session_.password().string(), std::exception);
   ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(keyword_, pin_, password_));
   LOG(kSuccess) << "Preconditions fulfilled.\n===================\n";
 
@@ -367,8 +361,8 @@ TEST_F(CredentialsTest, FUNC_LoginSequence) {
                routings_handler_,
                client_node_,
                session_,
-               remote_chunk_store_,
-               vault_node_);
+               remote_chunk_store_/*,
+               vault_node_*/);
 
   DoLogOut(user_credentials_,
            routings_handler_,
@@ -387,14 +381,14 @@ TEST_F(CredentialsTest, FUNC_LoginSequence) {
 
   DoLogOutAndStop(user_credentials_,
                   client_node_,
-                  vault_node_,
+//                  vault_node_,
                   session_);
 }
 
 TEST_F(CredentialsTest, FUNC_ChangeDetails) {
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
+  ASSERT_THROW(session_.keyword().string(), std::exception);
+  ASSERT_THROW(session_.pin().string(), std::exception);
+  ASSERT_THROW(session_.password().string(), std::exception);
   ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(keyword_, pin_, password_));
   LOG(kInfo) << "Preconditions fulfilled.\n===================\n";
 
@@ -405,8 +399,8 @@ TEST_F(CredentialsTest, FUNC_ChangeDetails) {
                routings_handler_,
                client_node_,
                session_,
-               remote_chunk_store_,
-               vault_node_);
+               remote_chunk_store_/*,
+               vault_node_*/);
 
   DoLogOut(user_credentials_,
            routings_handler_,
@@ -424,7 +418,7 @@ TEST_F(CredentialsTest, FUNC_ChangeDetails) {
           remote_chunk_store_);
 
   LOG(kInfo) << "Logged in.\n===================\n";
-  const std::string kNewKeyword(RandomAlphaNumericString(9));
+  const NonEmptyString kNewKeyword(RandomAlphaNumericString(9));
   ASSERT_EQ(kSuccess, user_credentials_->ChangeKeyword(kNewKeyword));
   ASSERT_EQ(kNewKeyword, session_.keyword());
   ASSERT_EQ(pin_, session_.pin());
@@ -446,7 +440,7 @@ TEST_F(CredentialsTest, FUNC_ChangeDetails) {
           session_,
           remote_chunk_store_);
 
-  const std::string kNewPin(CreatePin());
+  const NonEmptyString kNewPin(CreatePin());
   ASSERT_EQ(kSuccess, user_credentials_->ChangePin(kNewPin));
   ASSERT_EQ(kNewKeyword, session_.keyword());
   ASSERT_EQ(kNewPin, session_.pin());
@@ -468,7 +462,7 @@ TEST_F(CredentialsTest, FUNC_ChangeDetails) {
           session_,
           remote_chunk_store_);
 
-  const std::string kNewPassword(RandomAlphaNumericString(9));
+  const NonEmptyString kNewPassword(RandomAlphaNumericString(9));
   ASSERT_EQ(kSuccess, user_credentials_->ChangePassword(kNewPassword));
   ASSERT_EQ(kNewKeyword, session_.keyword());
   ASSERT_EQ(kNewPin, session_.pin());
@@ -492,7 +486,7 @@ TEST_F(CredentialsTest, FUNC_ChangeDetails) {
 
   DoLogOutAndStop(user_credentials_,
                   client_node_,
-                  vault_node_,
+//                  vault_node_,
                   session_);
 
   ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(keyword_, pin_, password_));
@@ -504,16 +498,14 @@ TEST_F(CredentialsTest, FUNC_ChangeDetails) {
 }
 
 TEST_F(CredentialsTest, DISABLED_FUNC_ParallelLogin) {
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
+  ASSERT_THROW(session_.keyword().string(), std::exception);
+  ASSERT_THROW(session_.pin().string(), std::exception);
+  ASSERT_THROW(session_.password().string(), std::exception);
   LOG(kInfo) << "Preconditions fulfilled.\n===================\n";
 
   ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(keyword_, pin_, password_));
 
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
-  session_.set_unique_user_id(RandomString(64));
-  session_.set_root_parent_id(RandomString(64));
   ASSERT_EQ(keyword_, session_.keyword());
   ASSERT_EQ(pin_, session_.pin());
   ASSERT_EQ(password_, session_.password());
@@ -552,23 +544,23 @@ TEST_F(CredentialsTest, DISABLED_FUNC_ParallelLogin) {
   EXPECT_EQ(session_.session_access_level(), kMustDie);
   EXPECT_EQ(kSuccess, user_credentials_->Logout());
 
-  EXPECT_TRUE(session_.keyword().empty());
-  EXPECT_TRUE(session_.pin().empty());
-  EXPECT_TRUE(session_.password().empty());
+  EXPECT_THROW(session_.keyword().string(), std::exception);
+  EXPECT_THROW(session_.pin().string(), std::exception);
+  EXPECT_THROW(session_.password().string(), std::exception);
   EXPECT_EQ(session_.session_access_level(), kNoAccess);
 
   ASSERT_EQ(kSuccess, user_credentials2_->Logout());
 
-  EXPECT_TRUE(session2_.keyword().empty());
-  EXPECT_TRUE(session2_.pin().empty());
-  EXPECT_TRUE(session2_.password().empty());
+  EXPECT_THROW(session2_.keyword().string(), std::exception);
+  EXPECT_THROW(session2_.pin().string(), std::exception);
+  EXPECT_THROW(session2_.password().string(), std::exception);
   EXPECT_EQ(session2_.session_access_level(), kNoAccess);
 }
 
 TEST_F(CredentialsTest, FUNC_MultiUserCredentialsLoginAndLogout) {
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
+  ASSERT_THROW(session_.keyword().string(), std::exception);
+  ASSERT_THROW(session_.pin().string(), std::exception);
+  ASSERT_THROW(session_.password().string(), std::exception);
   LOG(kInfo) << "Preconditions fulfilled.\n===================\n";
 
   ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(keyword_, pin_, password_));
@@ -579,12 +571,12 @@ TEST_F(CredentialsTest, FUNC_MultiUserCredentialsLoginAndLogout) {
                routings_handler_,
                client_node_,
                session_,
-               remote_chunk_store_,
-               vault_node_);
+               remote_chunk_store_/*,
+               vault_node_*/);
 
   DoLogOutAndStop(user_credentials_,
                   client_node_,
-                  vault_node_,
+//                  vault_node_,
                   session_);
 
   SetUpSecondUserCredentials();
@@ -598,14 +590,14 @@ TEST_F(CredentialsTest, FUNC_MultiUserCredentialsLoginAndLogout) {
           remote_chunk_store2_);
   DoLogOutAndStop(user_credentials2_,
                   client_node2_,
-                  vault_node2_,
+//                  vault_node2_,
                   session2_);
 }
 
 TEST_F(CredentialsTest, FUNC_UserCredentialsDeletion) {
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
+  ASSERT_THROW(session_.keyword().string(), std::exception);
+  ASSERT_THROW(session_.pin().string(), std::exception);
+  ASSERT_THROW(session_.password().string(), std::exception);
   ASSERT_EQ(kLoginUserNonExistence, user_credentials_->LogIn(keyword_, pin_, password_));
   LOG(kInfo) << "Preconditions fulfilled.\n===================\n";
 
@@ -616,46 +608,36 @@ TEST_F(CredentialsTest, FUNC_UserCredentialsDeletion) {
                routings_handler_,
                client_node_,
                session_,
-               remote_chunk_store_,
-               vault_node_);
+               remote_chunk_store_/*,
+               vault_node_*/);
   passport::Passport& pass(session_.passport());
-  std::string anmid_name(pca::ApplyTypeToName(
-                           pass.SignaturePacketDetails(passport::kAnmid, true).identity,
-                           priv::ChunkType::kSignaturePacket));
-  std::string ansmid_name(pca::ApplyTypeToName(
-                    pass.SignaturePacketDetails(passport::kAnsmid, true).identity,
-                    priv::ChunkType::kSignaturePacket));
-  std::string antmid_name(pca::ApplyTypeToName(
-                    pass.SignaturePacketDetails(passport::kAntmid, true).identity,
-                    priv::ChunkType::kSignaturePacket));
-  std::string anmaid_name(pca::ApplyTypeToName(
-                    pass.SignaturePacketDetails(passport::kAnmaid, true).identity,
-                    priv::ChunkType::kSignaturePacket));
-  std::string maid_name(pca::ApplyTypeToName(
-                          pass.SignaturePacketDetails(passport::kMaid, true).identity,
-                          priv::ChunkType::kSignaturePacket));
-  std::string pmid_name(pca::ApplyTypeToName(
-                          pass.SignaturePacketDetails(passport::kPmid, true).identity,
-                          priv::ChunkType::kSignaturePacket));
-  std::string mid_name(pca::ApplyTypeToName(pass.IdentityPacketName(passport::kMid, true),
-                                            priv::ChunkType::kModifiableByOwner));
-  std::string smid_name(pca::ApplyTypeToName(pass.IdentityPacketName(passport::kSmid, true),
-                                             priv::ChunkType::kModifiableByOwner));
-  std::string tmid_name(pca::ApplyTypeToName(pass.IdentityPacketName(passport::kTmid, true),
-                                             priv::ChunkType::kModifiableByOwner));
-  std::string stmid_name(pca::ApplyTypeToName(pass.IdentityPacketName(passport::kStmid, true),
-                                              priv::ChunkType::kModifiableByOwner));
+  priv::ChunkId anmid_name(
+      SignaturePacketName(pass.SignaturePacketDetails(passport::kAnmid, true).identity));
+  priv::ChunkId ansmid_name(
+      SignaturePacketName(pass.SignaturePacketDetails(passport::kAnsmid, true).identity));
+  priv::ChunkId antmid_name(
+      SignaturePacketName(pass.SignaturePacketDetails(passport::kAntmid, true).identity));
+  priv::ChunkId anmaid_name(
+      SignaturePacketName(pass.SignaturePacketDetails(passport::kAnmaid, true).identity));
+  priv::ChunkId maid_name(
+      SignaturePacketName(pass.SignaturePacketDetails(passport::kMaid, true).identity));
+  priv::ChunkId pmid_name(
+      SignaturePacketName(pass.SignaturePacketDetails(passport::kPmid, true).identity));
+  priv::ChunkId mid_name(ModifiableName(pass.IdentityPacketName(passport::kMid, true)));
+  priv::ChunkId smid_name(ModifiableName(pass.IdentityPacketName(passport::kSmid, true)));
+  priv::ChunkId tmid_name(ModifiableName(pass.IdentityPacketName(passport::kTmid, true)));
+  priv::ChunkId stmid_name(ModifiableName(pass.IdentityPacketName(passport::kStmid, true)));
 
-  ASSERT_NE("", remote_chunk_store_->Get(anmid_name));
-  ASSERT_NE("", remote_chunk_store_->Get(ansmid_name));
-  ASSERT_NE("", remote_chunk_store_->Get(antmid_name));
-  ASSERT_NE("", remote_chunk_store_->Get(anmaid_name));
-  ASSERT_NE("", remote_chunk_store_->Get(maid_name));
-  ASSERT_NE("", remote_chunk_store_->Get(pmid_name));
-  ASSERT_NE("", remote_chunk_store_->Get(mid_name));
-  ASSERT_NE("", remote_chunk_store_->Get(smid_name));
-  ASSERT_NE("", remote_chunk_store_->Get(tmid_name));
-  ASSERT_NE("", remote_chunk_store_->Get(stmid_name));
+  ASSERT_NE("", remote_chunk_store_->Get(anmid_name, Fob()));
+  ASSERT_NE("", remote_chunk_store_->Get(ansmid_name, Fob()));
+  ASSERT_NE("", remote_chunk_store_->Get(antmid_name, Fob()));
+  ASSERT_NE("", remote_chunk_store_->Get(anmaid_name, Fob()));
+  ASSERT_NE("", remote_chunk_store_->Get(maid_name, Fob()));
+  ASSERT_NE("", remote_chunk_store_->Get(pmid_name, Fob()));
+  ASSERT_NE("", remote_chunk_store_->Get(mid_name, Fob()));
+  ASSERT_NE("", remote_chunk_store_->Get(smid_name, Fob()));
+  ASSERT_NE("", remote_chunk_store_->Get(tmid_name, Fob()));
+  ASSERT_NE("", remote_chunk_store_->Get(stmid_name, Fob()));
 
   ASSERT_EQ(kSuccess, user_credentials_->DeleteUserCredentials());
   LOG(kInfo) << "Deleted user credentials.\n=================\n";
@@ -663,20 +645,20 @@ TEST_F(CredentialsTest, FUNC_UserCredentialsDeletion) {
                                         routings_handler_,
                                         client_node_,
                                         remote_chunk_store_,
-                                        maid_name.substr(0, 64)));
+                                        Identity(maid_name.string().substr(0, 64))));
   Sleep(bptime::seconds(15));
   LOG(kSuccess) << "Constructed anonymous node.\n===================\n";
 
-  ASSERT_EQ("", remote_chunk_store_->Get(anmid_name));
-  ASSERT_EQ("", remote_chunk_store_->Get(ansmid_name));
-  ASSERT_EQ("", remote_chunk_store_->Get(antmid_name));
+  ASSERT_EQ("", remote_chunk_store_->Get(anmid_name, Fob()));
+  ASSERT_EQ("", remote_chunk_store_->Get(ansmid_name, Fob()));
+  ASSERT_EQ("", remote_chunk_store_->Get(antmid_name, Fob()));
 //  ASSERT_EQ("", remote_chunk_store_->Get(anmaid_name));
 //  ASSERT_EQ("", remote_chunk_store_->Get(maid_name));
 //  ASSERT_EQ("", remote_chunk_store_->Get(pmid_name));
-  ASSERT_EQ("", remote_chunk_store_->Get(mid_name));
-  ASSERT_EQ("", remote_chunk_store_->Get(smid_name));
-  ASSERT_EQ("", remote_chunk_store_->Get(tmid_name));
-  ASSERT_EQ("", remote_chunk_store_->Get(stmid_name));
+  ASSERT_EQ("", remote_chunk_store_->Get(mid_name, Fob()));
+  ASSERT_EQ("", remote_chunk_store_->Get(smid_name, Fob()));
+  ASSERT_EQ("", remote_chunk_store_->Get(tmid_name, Fob()));
+  ASSERT_EQ("", remote_chunk_store_->Get(stmid_name, Fob()));
 
   ASSERT_NE(kSuccess, user_credentials_->Logout());
 
@@ -689,8 +671,8 @@ TEST_F(CredentialsTest, FUNC_UserCredentialsDeletion) {
                routings_handler2_,
                client_node2_,
                session2_,
-               remote_chunk_store2_,
-               vault_node2_);
+               remote_chunk_store2_/*,
+               vault_node2_*/);
 
   DoLogOut(user_credentials2_,
            routings_handler2_,
@@ -707,74 +689,64 @@ TEST_F(CredentialsTest, FUNC_UserCredentialsDeletion) {
           remote_chunk_store2_);
   passport::Passport& pass2(session2_.passport());
 
-  anmid_name = pca::ApplyTypeToName(pass2.SignaturePacketDetails(passport::kAnmid, true).identity,
-                                    priv::ChunkType::kSignaturePacket);
-  ansmid_name = pca::ApplyTypeToName(pass2.SignaturePacketDetails(passport::kAnsmid, true).identity,
-                                     priv::ChunkType::kSignaturePacket);
-  antmid_name = pca::ApplyTypeToName(pass2.SignaturePacketDetails(passport::kAntmid, true).identity,
-                                     priv::ChunkType::kSignaturePacket);
-  anmaid_name = pca::ApplyTypeToName(pass2.SignaturePacketDetails(passport::kAnmaid, true).identity,
-                                     priv::ChunkType::kSignaturePacket);
-  maid_name = pca::ApplyTypeToName(pass2.SignaturePacketDetails(passport::kMaid, true).identity,
-                                   priv::ChunkType::kSignaturePacket);
-  pmid_name = pca::ApplyTypeToName(pass2.SignaturePacketDetails(passport::kPmid, true).identity,
-                                   priv::ChunkType::kSignaturePacket);
-  mid_name = pca::ApplyTypeToName(pass2.IdentityPacketName(passport::kMid, true),
-                                  priv::ChunkType::kModifiableByOwner);
-  smid_name = pca::ApplyTypeToName(pass2.IdentityPacketName(passport::kSmid, true),
-                                   priv::ChunkType::kModifiableByOwner);
-  tmid_name = pca::ApplyTypeToName(pass2.IdentityPacketName(passport::kTmid, true),
-                                   priv::ChunkType::kModifiableByOwner);
-  stmid_name = pca::ApplyTypeToName(pass2.IdentityPacketName(passport::kStmid, true),
-                                    priv::ChunkType::kModifiableByOwner);
+  anmid_name = SignaturePacketName(pass2.SignaturePacketDetails(passport::kAnmid, true).identity);
+  ansmid_name = SignaturePacketName(pass2.SignaturePacketDetails(passport::kAnsmid, true).identity);
+  antmid_name = SignaturePacketName(pass2.SignaturePacketDetails(passport::kAntmid, true).identity);
+  anmaid_name = SignaturePacketName(pass2.SignaturePacketDetails(passport::kAnmaid, true).identity);
+  maid_name = SignaturePacketName(pass2.SignaturePacketDetails(passport::kMaid, true).identity);
+  pmid_name = SignaturePacketName(pass2.SignaturePacketDetails(passport::kPmid, true).identity);
+  mid_name = ModifiableName(pass2.IdentityPacketName(passport::kMid, true));
+  smid_name = ModifiableName(pass2.IdentityPacketName(passport::kSmid, true));
+  tmid_name = ModifiableName(pass2.IdentityPacketName(passport::kTmid, true));
+  stmid_name = ModifiableName(pass2.IdentityPacketName(passport::kStmid, true));
 
-  ASSERT_NE("", remote_chunk_store2_->Get(anmid_name));
-  ASSERT_NE("", remote_chunk_store2_->Get(ansmid_name));
-  ASSERT_NE("", remote_chunk_store2_->Get(antmid_name));
-  ASSERT_NE("", remote_chunk_store2_->Get(anmaid_name));
-  ASSERT_NE("", remote_chunk_store2_->Get(maid_name));
-  ASSERT_NE("", remote_chunk_store2_->Get(pmid_name));
-  ASSERT_NE("", remote_chunk_store2_->Get(mid_name));
-  ASSERT_NE("", remote_chunk_store2_->Get(smid_name));
-  ASSERT_NE("", remote_chunk_store2_->Get(tmid_name));
-  ASSERT_NE("", remote_chunk_store2_->Get(stmid_name));
+  ASSERT_NE("", remote_chunk_store2_->Get(anmid_name, Fob()));
+  ASSERT_NE("", remote_chunk_store2_->Get(ansmid_name, Fob()));
+  ASSERT_NE("", remote_chunk_store2_->Get(antmid_name, Fob()));
+  ASSERT_NE("", remote_chunk_store2_->Get(anmaid_name, Fob()));
+  ASSERT_NE("", remote_chunk_store2_->Get(maid_name, Fob()));
+  ASSERT_NE("", remote_chunk_store2_->Get(pmid_name, Fob()));
+  ASSERT_NE("", remote_chunk_store2_->Get(mid_name, Fob()));
+  ASSERT_NE("", remote_chunk_store2_->Get(smid_name, Fob()));
+  ASSERT_NE("", remote_chunk_store2_->Get(tmid_name, Fob()));
+  ASSERT_NE("", remote_chunk_store2_->Get(stmid_name, Fob()));
 
   ASSERT_EQ(kSuccess, user_credentials2_->DeleteUserCredentials());
   ASSERT_EQ(kSuccess, MakeAnonymousNode(user_credentials2_,
                                         routings_handler2_,
                                         client_node2_,
                                         remote_chunk_store2_,
-                                        maid_name.substr(0, 64)));
+                                        Identity(maid_name.string().substr(0, 64))));
   Sleep(bptime::seconds(15));
   LOG(kSuccess) << "Constructed anonymous node.\n===================\n";
-  ASSERT_EQ("", remote_chunk_store2_->Get(anmid_name));
-  ASSERT_EQ("", remote_chunk_store2_->Get(ansmid_name));
-  ASSERT_EQ("", remote_chunk_store2_->Get(antmid_name));
+  ASSERT_EQ("", remote_chunk_store2_->Get(anmid_name, Fob()));
+  ASSERT_EQ("", remote_chunk_store2_->Get(ansmid_name, Fob()));
+  ASSERT_EQ("", remote_chunk_store2_->Get(antmid_name, Fob()));
 //  ASSERT_EQ("", remote_chunk_store2_->Get(anmaid_name));
 //  ASSERT_EQ("", remote_chunk_store2_->Get(maid_name));
 //  ASSERT_EQ("", remote_chunk_store2_->Get(pmid_name));
-  ASSERT_EQ("", remote_chunk_store2_->Get(mid_name));
-  ASSERT_EQ("", remote_chunk_store2_->Get(smid_name));
-  ASSERT_EQ("", remote_chunk_store2_->Get(tmid_name));
-  ASSERT_EQ("", remote_chunk_store2_->Get(stmid_name));
+  ASSERT_EQ("", remote_chunk_store2_->Get(mid_name, Fob()));
+  ASSERT_EQ("", remote_chunk_store2_->Get(smid_name, Fob()));
+  ASSERT_EQ("", remote_chunk_store2_->Get(tmid_name, Fob()));
+  ASSERT_EQ("", remote_chunk_store2_->Get(stmid_name, Fob()));
 
   ASSERT_NE(kSuccess, user_credentials2_->Logout());
   ASSERT_NE(kSuccess, user_credentials2_->LogIn(keyword_, pin_, password_));
 }
 
 TEST_F(CredentialsTest, DISABLED_FUNC_SessionSaverTimer) {
-  ASSERT_TRUE(session_.keyword().empty());
-  ASSERT_TRUE(session_.pin().empty());
-  ASSERT_TRUE(session_.password().empty());
+  ASSERT_THROW(session_.keyword().string(), std::exception);
+  ASSERT_THROW(session_.pin().string(), std::exception);
+  ASSERT_THROW(session_.password().string(), std::exception);
   LOG(kInfo) << "Preconditions fulfilled.\n===================\n";
 
   ASSERT_EQ(kSuccess, user_credentials_->CreateUser(keyword_, pin_, password_));
-  session_.set_unique_user_id(RandomString(64));
-  session_.set_root_parent_id(RandomString(64));
   LOG(kInfo) << "Created user.\n===================\n";
   Sleep(bptime::seconds(3));
   LOG(kInfo) << "Slept 3.\n===================\n";
-  ASSERT_EQ(kSuccess, session_.AddPublicId(RandomAlphaNumericString(5), RandomString(64)));
+  NonEmptyString public_id(RandomAlphaNumericString(5));
+  Identity info(RandomString(64));
+  ASSERT_EQ(kSuccess, session_.AddPublicId(public_id, info));
   LOG(kInfo) << "Modified session.\n===================\n";
   Sleep(bptime::seconds(/*kSecondsInterval * 12*/5));
   LOG(kInfo) << "Slept 3.\n===================\n";
@@ -787,7 +759,9 @@ TEST_F(CredentialsTest, DISABLED_FUNC_SessionSaverTimer) {
   LOG(kInfo) << "Log in.\n===================\n";
   Sleep(bptime::seconds(3));
   LOG(kInfo) << "Slept 3.\n===================\n";
-  ASSERT_EQ(kSuccess, session_.AddPublicId(RandomAlphaNumericString(5), RandomString(64)));
+  public_id = NonEmptyString(RandomAlphaNumericString(5));
+  info = Identity(RandomString(64));
+  ASSERT_EQ(kSuccess, session_.AddPublicId(public_id, info));
   LOG(kInfo) << "Modified session.\n===================\n";
   Sleep(bptime::seconds(/*kSecondsInterval * 12*/5));
   LOG(kInfo) << "Slept 3.\n===================\n";
