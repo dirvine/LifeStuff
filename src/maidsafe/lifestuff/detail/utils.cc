@@ -438,8 +438,10 @@ std::string IsoTimeWithMicroSeconds() {
 }
 
 void OperationCallback(bool result, OperationResults& results, int index) {
-  std::unique_lock<std::mutex> barra_loch_an_duin(results.mutex);
-  results.individual_results.at(index) = result ? kSuccess : kRemoteChunkStoreFailure;
+  {
+    std::lock_guard<std::mutex> barra_loch_an_duin(results.mutex);
+    results.individual_results.at(index) = result ? kSuccess : kRemoteChunkStoreFailure;
+  }
   results.conditional_variable.notify_one();
 }
 

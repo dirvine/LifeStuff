@@ -26,16 +26,12 @@
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 #include "maidsafe/private/utils/utilities.h"
 
-#include "maidsafe/pd/client/node.h"
-
-#include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
 #include "maidsafe/lifestuff/detail/data_atlas_pb.h"
 #include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/utils.h"
 
-namespace ba = boost::asio;
 namespace bptime = boost::posix_time;
 namespace bs2 = boost::signals2;
 namespace fs = boost::filesystem;
@@ -173,8 +169,6 @@ class PublicIdTest : public testing::Test {
         public_identity2_("User 2 " + RandomAlphaNumericString(8)),
         received_public_identity_(),
         received_message_(),
-        node1_(),
-        node2_(),
         timer_interval_(3),
         interval_(3) {}
 
@@ -261,20 +255,19 @@ class PublicIdTest : public testing::Test {
 
  protected:
   void SetUp() {
-    session1_.Reset();
-    session2_.Reset();
     asio_service1_.Start();
     asio_service2_.Start();
 
-    std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
-    remote_chunk_store1_ = BuildChunkStore(*test_dir_,
-                                           bootstrap_endpoints,
-                                           node1_,
-                                           NetworkHealthFunction());
-    remote_chunk_store2_ = BuildChunkStore(*test_dir_,
-                                           bootstrap_endpoints,
-                                           node2_,
-                                           NetworkHealthFunction());
+    std::string dir1(RandomAlphaNumericString(8));
+    remote_chunk_store1_ = priv::chunk_store::CreateLocalChunkStore(*test_dir_ / dir1 / "buffer",
+                                                                    *test_dir_ / "simulation",
+                                                                    *test_dir_ / dir1 / "lock",
+                                                                    asio_service1_.service());
+    std::string dir2(RandomAlphaNumericString(8));
+    remote_chunk_store2_ = priv::chunk_store::CreateLocalChunkStore(*test_dir_ / dir2 / "buffer",
+                                                                    *test_dir_ / "simulation",
+                                                                    *test_dir_ / dir2 / "lock",
+                                                                    asio_service2_.service());
 
     public_id1_.reset(new PublicId(*remote_chunk_store1_, session1_, asio_service1_.service()));
 
@@ -284,8 +277,6 @@ class PublicIdTest : public testing::Test {
   void TearDown() {
     public_id1_->StopCheckingForNewContacts();
     public_id2_->StopCheckingForNewContacts();
-    node1_->Stop();
-    node2_->Stop();
     asio_service1_.Stop();
     asio_service2_.Stop();
     remote_chunk_store1_->WaitForCompletion();
@@ -344,7 +335,6 @@ class PublicIdTest : public testing::Test {
   std::shared_ptr<PublicId> public_id1_, public_id2_;
 
   NonEmptyString public_identity1_, public_identity2_, received_public_identity_, received_message_;
-  std::shared_ptr<pd::Node> node1_, node2_;
   bptime::seconds timer_interval_;
   std::chrono::seconds interval_;
 
@@ -1393,10 +1383,10 @@ int CreatePublicIdObject(std::shared_ptr<PublicId>& public_id,
   asio_service.Start();
 
   std::string dir(RandomAlphaNumericString(8));
-  remote_chunk_store = pcs::CreateLocalChunkStore(*test_dir / dir / "buffer",
-                                                  *test_dir / "simulation",
-                                                  *test_dir / dir / "lock",
-                                                  asio_service.service());
+  remote_chunk_store = priv::chunk_store::CreateLocalChunkStore(*test_dir / dir / "buffer",
+                                                                *test_dir / "simulation",
+                                                                *test_dir / dir / "lock",
+                                                                asio_service.service());
 
   public_id.reset(new PublicId(*remote_chunk_store, session, asio_service.service()));
 
