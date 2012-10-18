@@ -344,7 +344,7 @@ void RoutingsHandler::OnPublicKeyRequested(const NodeId& node_id,
     public_key = asymm::DecodeKey(asymm::EncodedPublicKey(signed_data.data()));
   }
   catch (const std::exception& exception) {
-    LOG(kError) << "Did not find valid public key. Won't execute callback.";
+    LOG(kError) << "Did not find valid public key. Won't execute callback: " << exception.what();
     return;
   }
 

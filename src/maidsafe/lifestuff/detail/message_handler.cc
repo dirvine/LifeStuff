@@ -285,7 +285,8 @@ void MessageHandler::ProcessRetrieved(const NonEmptyString& public_id,
       str_message = decrypted_message.string();
     }
 //    catch(const AsymmErrors::decryption_error& error) {
-    catch(const std::exception& error) {
+    catch(const std::exception& exception) {
+      LOG(kError) << "Failed to decrypt message: " << exception.what();
       // Failed to decrypt, not for us --> ignore
       continue;
     }

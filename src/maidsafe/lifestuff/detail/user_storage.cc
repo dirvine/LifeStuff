@@ -108,7 +108,7 @@ void UserStorage::MountDrive(const fs::path& file_chunk_store_path,
   char drive_name[3] = {'A' + static_cast<char>(count), ':', '\0'};
   mount_dir_ = drive_name;
   result = drive_in_user_space_->Mount(mount_dir_,
-                                       drive_logo,
+                                       drive_logo.string(),
                                        session->max_space(),
                                        session->used_space(),
                                        false);
