@@ -37,14 +37,9 @@ include_directories(${pd_SOURCE_DIR}/include)
 ###################################################################################################
 # Callback File System / Fuse library search                                                      #
 ###################################################################################################
-if(WIN32)
-  include(maidsafe_find_cbfs)
-  set(INCLUDE_DIRS ${INCLUDE_DIRS} ${Cbfs_INCLUDE_DIR})
-  set(LIBS_DIRS ${LIBS_DIRS} ${Cbfs_LIBRARY_DIR})
-  set(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Cbfs_LIBRARY_DIR})
-  set(Fuse_LIBRARY ${Cbfs_LIBRARY})
+if(WIN32 OR APPLE)
+  include_directories(${DRIVE_THIRD_PARTY_INCLUDES})
 endif()
-
 
 ###################################################################################################
 # Set up all files as GLOBs                                                                       #
