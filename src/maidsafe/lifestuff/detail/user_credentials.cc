@@ -36,8 +36,9 @@ namespace lifestuff {
 UserCredentials::UserCredentials(priv::chunk_store::RemoteChunkStore& chunk_store,
                                  Session& session,
                                  boost::asio::io_service& service,
-                                 RoutingsHandler& routings_handler)
-    : impl_(new UserCredentialsImpl(chunk_store, session, service, routings_handler)) {}
+                                 RoutingsHandler& routings_handler,
+                                 bool test)
+    : impl_(new UserCredentialsImpl(chunk_store, session, service, routings_handler, test)) {}
 
 UserCredentials::~UserCredentials() {}
 

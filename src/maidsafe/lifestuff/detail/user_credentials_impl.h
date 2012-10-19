@@ -68,7 +68,8 @@ class UserCredentialsImpl {
   UserCredentialsImpl(priv::chunk_store::RemoteChunkStore& remote_chunk_store,
                       Session& session,
                       boost::asio::io_service& service,
-                      RoutingsHandler& routings_handler);
+                      RoutingsHandler& routings_handler,
+                      bool test = false);
   ~UserCredentialsImpl();
   void set_remote_chunk_store(priv::chunk_store::RemoteChunkStore& chunk_store);
 
@@ -111,6 +112,7 @@ class UserCredentialsImpl {
   std::condition_variable completed_log_out_conditional_;
   std::mutex completed_log_out_mutex_;
   std::string completed_log_out_message_, pending_session_marker_;
+  bool test_;
 
   int AttemptLogInProcess(const NonEmptyString&  keyword,
                           const NonEmptyString&  pin,

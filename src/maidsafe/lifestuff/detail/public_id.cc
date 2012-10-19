@@ -238,7 +238,7 @@ int PublicId::DeletePublicId(const NonEmptyString& public_id) {
   if (social_info.first) {
     {
       std::lock_guard<std::mutex> loch(*social_info.first);
-      card_address = social_info.second->at(kInfoPointer);
+      card_address = social_info.second->card_address;
     }
     result = RemoveLifestuffCard(card_address, inbox_keys);
     LOG(kInfo) << "Deleting LS card: " << result;
@@ -428,8 +428,8 @@ int PublicId::RemoveContact(const NonEmptyString& own_public_id,
   Identity old_card_address;
   if (social_info.first) {
     std::lock_guard<std::mutex> loch(*social_info.first);
-    old_card_address = social_info.second->at(kInfoPointer);
-    social_info.second->at(kInfoPointer) = new_card_address;
+    old_card_address = social_info.second->card_address;
+    social_info.second->card_address = new_card_address;
   }
 
   // Get contact we're deleting so we can message him later
@@ -551,7 +551,7 @@ int PublicId::SetLifestuffCard(const NonEmptyString& my_public_id,
     return kPublicIdNotFoundFailure;
   } else {
     std::lock_guard<std::mutex> loch(*detail.first);
-    card_address = detail.second->at(kInfoPointer);
+    card_address = detail.second->card_address;
   }
 
   std::mutex mutex;
@@ -850,7 +850,7 @@ int PublicId::ProcessRequestWhenExpectingResponse(Contact& contact,
 
   contact.status = kConfirmed;
   contact.profile_picture_data_map = NonEmptyString(introduction.profile_picture_data_map());
-  contact.pointer_to_info = NonEmptyString(introduction.pointer_to_info());
+  contact.pointer_to_info = Identity(introduction.pointer_to_info());
   result = GetPublicKey(Identity(introduction.inbox_name()), contact, 1);
   if (result != kSuccess) {
     LOG(kError) << "Failed to get contact's public key!";
@@ -977,8 +977,8 @@ int PublicId::InformContactInfo(const NonEmptyString& public_id,
     SocialInfoDetail social_info(session_.social_info(public_id));
     if (social_info.first) {
       std::lock_guard<std::mutex> loch(*social_info.first);
-      introduction.set_profile_picture_data_map(social_info.second->at(kPicture).string());
-      introduction.set_pointer_to_info(social_info.second->at(kInfoPointer).string());
+      introduction.set_profile_picture_data_map(social_info.second->profile_picture_datamap.string());
+      introduction.set_pointer_to_info(social_info.second->card_address.string());
     } else {
       LOG(kInfo) << "Failure to find profile picture data map for public id: "
                  << public_id.string();
@@ -1136,7 +1136,7 @@ int PublicId::RemoveLifestuffCard(const Identity& lifestuff_card_address, const 
 Identity PublicId::GetOwnCardAddress(const NonEmptyString& my_public_id) {
   const SocialInfoDetail details(session_.social_info(my_public_id));
   std::lock_guard<std::mutex> loch(*details.first);
-  return Identity(details.second->at(kInfoPointer));
+  return details.second->card_address;
 }
 
 Identity PublicId::GetContactCardAddress(const NonEmptyString& my_public_id,

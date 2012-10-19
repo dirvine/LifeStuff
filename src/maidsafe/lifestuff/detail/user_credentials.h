@@ -59,7 +59,8 @@ class UserCredentials {
   UserCredentials(priv::chunk_store::RemoteChunkStore& chunk_store,
                   Session& session,
                   boost::asio::io_service& service,
-                  RoutingsHandler& routings_handler);
+                  RoutingsHandler& routings_handler,
+                  bool test = false);
 
   ~UserCredentials();
   void set_remote_chunk_store(priv::chunk_store::RemoteChunkStore& chunk_store);

@@ -60,8 +60,6 @@ struct InboxItem {
   NonEmptyString timestamp;
 };
 
-enum SocialInfoFields { kPicture = 0, kInfoPointer };
-
 struct OperationResults {
   OperationResults(std::mutex& mutex_in,
                    std::condition_variable& conditional_variable_in,

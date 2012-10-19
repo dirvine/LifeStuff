@@ -441,8 +441,8 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
   // Create users who both accept new contacts
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, true));
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_identity2_, true));
-  Identity card1(session1_.social_info(public_identity1_).second->at(kInfoPointer)),
-           card2(session2_.social_info(public_identity2_).second->at(kInfoPointer));
+  Identity card1(session1_.social_info(public_identity1_).second->card_address),
+           card2(session2_.social_info(public_identity2_).second->card_address);
 
   // Connect a slot which will reject the new contact
   public_id1_->ConnectToNewContactSignal(
@@ -909,7 +909,7 @@ TEST_F(PublicIdTest, FUNC_EnablePublicId) {
 TEST_F(PublicIdTest, FUNC_DeletePublicIdPacketVerification) {
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, true));
 
-  Identity card_address(session1_.social_info(public_identity1_).second->at(kInfoPointer));
+  Identity card_address(session1_.social_info(public_identity1_).second->card_address);
   passport::Passport& pass(session1_.passport());
   Fob mmid(pass.SignaturePacketDetails(passport::kMmid, true, public_identity1_)),
       mpid(pass.SignaturePacketDetails(passport::kMpid, true, public_identity1_)),
@@ -934,7 +934,7 @@ TEST_F(PublicIdTest, FUNC_DeletePublicIdPacketVerification) {
   ASSERT_EQ("", remote_chunk_store1_->Get(ModifiableName(card_address), Fob()));
 
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, false));
-  card_address = session1_.social_info(public_identity1_).second->at(kInfoPointer);
+  card_address = session1_.social_info(public_identity1_).second->card_address;
   mmid = pass.SignaturePacketDetails(passport::kMmid, true, public_identity1_);
   mpid = pass.SignaturePacketDetails(passport::kMpid, true, public_identity1_);
   anmpid = pass.SignaturePacketDetails(passport::kAnmpid, true, public_identity1_);
@@ -966,8 +966,8 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
 
   ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_identity1_, true));
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_identity2_, true));
-  Identity card1(session1_.social_info(public_identity1_).second->at(kInfoPointer)),
-           card2(session2_.social_info(public_identity2_).second->at(kInfoPointer));
+  Identity card1(session1_.social_info(public_identity1_).second->card_address),
+           card2(session2_.social_info(public_identity2_).second->card_address);
 
   // 2 adds 1
   bool done(false);
@@ -1102,7 +1102,7 @@ TEST_F(PublicIdTest, FUNC_RemoveContactMoveInbox) {
 
   Identity old_inbox_name_2(session2_.passport().SignaturePacketDetails(
                                 passport::kMmid, true, public_identity2_).identity);
-  Identity old_card_address_2(session2_.social_info(public_identity2_).second->at(kInfoPointer));
+  Identity old_card_address_2(session2_.social_info(public_identity2_).second->card_address);
 
   // 2 removes 1
   done = false;
@@ -1133,7 +1133,7 @@ TEST_F(PublicIdTest, FUNC_RemoveContactMoveInbox) {
                                                         true,
                                                         public_identity2_).identity);
   ASSERT_EQ(contact.pointer_to_info,
-            Identity(session2_.social_info(public_identity2_).second->at(kInfoPointer)));
+            session2_.social_info(public_identity2_).second->card_address);
 }
 
 TEST_F(PublicIdTest, FUNC_MovedInbox) {

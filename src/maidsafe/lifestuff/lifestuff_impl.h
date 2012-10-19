@@ -114,12 +114,12 @@ class LifeStuffImpl {
   int Finalise();
 
   /// Credential operations
-  int CreateUser(const NonEmptyString& username,
+  int CreateUser(const NonEmptyString& keyword,
                  const NonEmptyString& pin,
                  const NonEmptyString& password,
                  const fs::path& chunk_store);
   int CreatePublicId(const NonEmptyString& public_id);
-  int LogIn(const NonEmptyString& username, const NonEmptyString& pin, const NonEmptyString& password);
+  int LogIn(const NonEmptyString& keyword, const NonEmptyString& pin, const NonEmptyString& password);
   int LogOut(bool clear_maid_routing = true);
   int MountDrive();
   int UnMountDrive();
@@ -127,7 +127,7 @@ class LifeStuffImpl {
   int StopMessagesAndIntros();
 
   int CheckPassword(const NonEmptyString& password);
-  int ChangeKeyword(const NonEmptyString& new_username, const NonEmptyString& password);
+  int ChangeKeyword(const NonEmptyString& new_keyword, const NonEmptyString& password);
   int ChangePin(const NonEmptyString& new_pin, const NonEmptyString& password);
   int ChangePassword(const NonEmptyString& new_password, const NonEmptyString& current_password);
   int ChangePublicId(const NonEmptyString& public_id, const NonEmptyString& password);

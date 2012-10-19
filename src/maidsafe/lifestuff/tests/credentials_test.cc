@@ -86,7 +86,8 @@ class CredentialsTest : public testing::Test {
     user_credentials_ = std::make_shared<UserCredentials>(*remote_chunk_store_,
                                                           session_,
                                                           asio_service_.service(),
-                                                          *routings_handler_);
+                                                          *routings_handler_,
+                                                          true);
   }
 
   void TearDown() {
@@ -103,7 +104,8 @@ class CredentialsTest : public testing::Test {
     user_credentials2_ = std::make_shared<UserCredentials>(*remote_chunk_store2_,
                                                            session2_,
                                                            asio_service2_.service(),
-                                                           *routings_handler2_);
+                                                           *routings_handler2_,
+                                                           true);
   }
 
   void DoPreChecks(const NonEmptyString& keyword,

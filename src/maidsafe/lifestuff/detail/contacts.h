@@ -132,7 +132,7 @@ class ContactsHandler {
   int UpdateContact(const Contact& contact);
   int UpdateProfilePictureDataMap(const NonEmptyString& public_id,
                                   const NonEmptyString& profile_picture_data_map);
-  int UpdatePointerToInfo(const NonEmptyString& public_id, const NonEmptyString& pointer_to_info);
+  int UpdatePointerToInfo(const NonEmptyString& public_id, const Identity& pointer_to_info);
   int UpdateStatus(const NonEmptyString& public_id, const ContactStatus& status);
   int UpdatePresence(const NonEmptyString& public_id, const ContactPresence& presence);
   int TouchContact(const NonEmptyString& public_id);

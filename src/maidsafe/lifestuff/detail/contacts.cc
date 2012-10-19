@@ -212,7 +212,7 @@ int ContactsHandler::UpdateProfilePictureDataMap(const NonEmptyString& public_id
 }
 
 int ContactsHandler::UpdatePointerToInfo(const NonEmptyString& public_id,
-                                         const NonEmptyString& pointer_to_info) {
+                                         const Identity& pointer_to_info) {
   ContactSet::iterator it = contact_set_.find(public_id);
   if (it == contact_set_.end()) {
     LOG(kError) << "Contact(" << public_id.string() << ") not present in list.";

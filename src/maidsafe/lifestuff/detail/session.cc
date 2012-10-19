@@ -41,20 +41,20 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-PublicIdDetails::PublicIdDetails() : social_info(std::make_shared<SocialInfo>()),
+SocialInfo::SocialInfo(const NonEmptyString& picture_datamap,
+                       const Identity& the_card_address)
+    : profile_picture_datamap(picture_datamap),
+      card_address(the_card_address) {}
+
+PublicIdDetails::PublicIdDetails() : social_info(std::make_shared<SocialInfo>(kBlankProfilePicture,
+                                                                              Identity())),
                                      contacts_handler(std::make_shared<ContactsHandler>()),
-                                     social_info_mutex(std::make_shared<std::mutex>()) {
-  social_info->push_back(kBlankProfilePicture);
-  social_info->push_back(NonEmptyString("1"));
-}
+                                     social_info_mutex(std::make_shared<std::mutex>()) {}
 
 PublicIdDetails::PublicIdDetails(const Identity& card_address)
-    : social_info(std::make_shared<SocialInfo>()),
+    : social_info(std::make_shared<SocialInfo>(kBlankProfilePicture, card_address)),
       contacts_handler(std::make_shared<ContactsHandler>()),
-      social_info_mutex(std::make_shared<std::mutex>()) {
-  social_info->push_back(kBlankProfilePicture);
-  social_info->push_back(NonEmptyString(card_address));
-}
+      social_info_mutex(std::make_shared<std::mutex>()) {}
 
 PublicIdDetails& PublicIdDetails::operator=(const PublicIdDetails& other) {
   this->social_info = other.social_info;
@@ -346,9 +346,9 @@ int Session::ParseDataAtlas(const NonEmptyString& serialised_data_atlas) {
   for (int id_count(0); id_count < data_atlas.public_ids_size(); ++id_count) {
     pub_id = NonEmptyString(data_atlas.public_ids(id_count).public_id());
     PublicIdDetails public_id_details;
-    public_id_details.social_info->at(kPicture) =
+    public_id_details.social_info->profile_picture_datamap =
         NonEmptyString(data_atlas.public_ids(id_count).profile_picture_data_map());
-    public_id_details.social_info->at(kInfoPointer) =
+    public_id_details.social_info->card_address =
         Identity(data_atlas.public_ids(id_count).pointer_to_info());
 
     for (int contact_count(0);
@@ -396,8 +396,9 @@ NonEmptyString Session::SerialiseDataAtlas() {
     pub_id->set_public_id((*it).first.string());
     {
       std::unique_lock<std::mutex> loch(*(*it).second.social_info_mutex);
-      pub_id->set_profile_picture_data_map((*it).second.social_info->at(kPicture).string());
-      pub_id->set_pointer_to_info((*it).second.social_info->at(kInfoPointer).string());
+      pub_id->set_profile_picture_data_map(
+          (*it).second.social_info->profile_picture_datamap.string());
+      pub_id->set_pointer_to_info((*it).second.social_info->card_address.string());
     }
     (*it).second.contacts_handler->OrderedContacts(&contacts, kAlphabetical, kRequestSent |
                                                                              kPendingResponse |

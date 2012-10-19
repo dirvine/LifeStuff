@@ -70,7 +70,12 @@ struct UserDetails {
   SessionAccessLevel session_access_level;
 };
 
-typedef std::vector<NonEmptyString> SocialInfo;
+struct SocialInfo {
+  SocialInfo(const NonEmptyString& picture_datamap,
+             const Identity& the_card_address);
+  NonEmptyString profile_picture_datamap;
+  Identity card_address;
+};
 
 typedef std::shared_ptr<ContactsHandler> ContactsHandlerPtr;
 typedef std::shared_ptr<SocialInfo> SocialInfoPtr;

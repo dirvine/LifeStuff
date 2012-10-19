@@ -91,7 +91,8 @@ uint32_t StringToIntPin(const NonEmptyString& pin) {
 UserCredentialsImpl::UserCredentialsImpl(priv::chunk_store::RemoteChunkStore& remote_chunk_store,
                                          Session& session,
                                          boost::asio::io_service& service,
-                                         RoutingsHandler& routings_handler)
+                                         RoutingsHandler& routings_handler,
+                                         bool test)
     : remote_chunk_store_(&remote_chunk_store),
       session_(session),
       passport_(session_.passport()),
@@ -106,7 +107,8 @@ UserCredentialsImpl::UserCredentialsImpl(priv::chunk_store::RemoteChunkStore& re
       completed_log_out_conditional_(),
       completed_log_out_mutex_(),
       completed_log_out_message_(),
-      pending_session_marker_() {}
+      pending_session_marker_(),
+      test_(test) {}
 
 UserCredentialsImpl::~UserCredentialsImpl() {}
 
@@ -153,11 +155,13 @@ int UserCredentialsImpl::AttemptLogInProcess(const NonEmptyString& keyword,
   }
 
   // Check other running instances
-//  result = CheckForOtherRunningInstances(keyword, pin, password, mid_packet, smid_packet);
-//  if (result != kSuccess) {
-//    LOG(kInfo) << "UserCredentialsImpl::LogIn - Failure to deal with other running instances.";
-//    return result;
-//  }
+  if (!test_) {
+    result = CheckForOtherRunningInstances(keyword, pin, password, mid_packet, smid_packet);
+    if (result != kSuccess) {
+      LOG(kInfo) << "UserCredentialsImpl::LogIn - Failure to deal with other running instances.";
+      return result;
+    }
+  }
 
   session_.set_keyword(keyword);
   session_.set_pin(pin);
@@ -388,9 +392,9 @@ void UserCredentialsImpl::GetIdAndTemporaryId(const NonEmptyString& keyword,
     return;
   }
 
-  NonEmptyString decrypted_rid(passport::DecryptRid(keyword,
-                                                    StringToIntPin(pin),
-                                                    NonEmptyString(packet.data())));
+  Identity decrypted_rid(passport::DecryptRid(keyword,
+                                              StringToIntPin(pin),
+                                              NonEmptyString(packet.data())).string());
 
   std::string temporary_id_packet(remote_chunk_store_->Get(ModifiableName(Identity(decrypted_rid)),
                                                            Fob()));
@@ -512,14 +516,16 @@ int UserCredentialsImpl::CreateUser(const NonEmptyString& keyword,
   session_.set_session_name();
   session_.set_changed(true);
 
-//  Fob maid(passport_.SignaturePacketDetails(passport::kMaid, true));
-//  if (!routings_handler_.AddRoutingObject(maid,
-//                                          std::vector<std::pair<std::string, uint16_t> >(),
-//                                          NonEmptyString(maid.identity),
-//                                          nullptr)) {
-//    LOG(kError) << "Failure to start the routing object for the MAID.";
-//    return -1;
-//  }
+  if (!test_) {
+    Fob maid(passport_.SignaturePacketDetails(passport::kMaid, true));
+    if (!routings_handler_.AddRoutingObject(maid,
+                                            std::vector<std::pair<std::string, uint16_t> >(),
+                                            NonEmptyString(maid.identity),
+                                            nullptr)) {
+      LOG(kError) << "Failure to start the routing object for the MAID.";
+      return -1;
+    }
+  }
 
   return kSuccess;
 }

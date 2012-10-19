@@ -44,11 +44,9 @@ class SessionTest : public testing::Test {
  protected:
   Session session_;
 
-  void SetUp() { session_.Reset(); }
-
-  void SetUsernamePinPassword(const NonEmptyString& keyword,
-                              const NonEmptyString& pin,
-                              const NonEmptyString& password) {
+  void SetKeywordPinPassword(const NonEmptyString& keyword,
+                             const NonEmptyString& pin,
+                             const NonEmptyString& password) {
     session_.set_keyword(keyword);
     session_.set_pin(pin);
     session_.set_password(password);
@@ -210,11 +208,11 @@ class SessionTest : public testing::Test {
       if (!EqualContactHandlers(lhs.contacts_handler(lhs_public_ids[n]),
                                 rhs.contacts_handler(rhs_public_ids[n])))
         return false;
-      if (lhs.social_info(lhs_public_ids[n]).second->at(kPicture) !=
-          rhs.social_info(rhs_public_ids[n]).second->at(kPicture))
+      if (lhs.social_info(lhs_public_ids[n]).second->profile_picture_datamap !=
+          rhs.social_info(rhs_public_ids[n]).second->profile_picture_datamap)
         return false;
-      if (lhs.social_info(lhs_public_ids[n]).second->at(kInfoPointer) !=
-          rhs.social_info(rhs_public_ids[n]).second->at(kInfoPointer))
+      if (lhs.social_info(lhs_public_ids[n]).second->card_address !=
+          rhs.social_info(rhs_public_ids[n]).second->card_address)
         return false;
     }
 
@@ -239,7 +237,7 @@ TEST_F(SessionTest, BEH_SetsGetsAndReset) {
   // Modify session
   session_.set_def_con_level(DefConLevels::kDefCon1);
   NonEmptyString aaa("aaa"), bbb("bbb"), ccc("ccc");
-  SetUsernamePinPassword(aaa, bbb, ccc);
+  SetKeywordPinPassword(aaa, bbb, ccc);
   ASSERT_NO_THROW(session_.set_session_name());
   Identity ddd1(crypto::Hash<crypto::SHA512>("ddd1"));
   session_.set_unique_user_id(ddd1);
@@ -279,7 +277,7 @@ TEST_F(SessionTest, BEH_SessionName) {
   // Set the session values
   NonEmptyString keyword(RandomAlphaNumericString(6)), password(RandomAlphaNumericString(6));
   NonEmptyString pin(CreatePin());
-  SetUsernamePinPassword(keyword, pin, password);
+  SetKeywordPinPassword(keyword, pin, password);
   ASSERT_NO_THROW(session_.set_session_name());
 
   // Check session name
