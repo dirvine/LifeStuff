@@ -80,12 +80,14 @@ class UserStorageTest : public testing::Test {
     user_credentials1_ = std::make_shared<UserCredentials>(*remote_chunk_store1_,
                                                            session1_,
                                                            asio_service1_.service(),
-                                                           *routings_handler1_);
+                                                           *routings_handler1_,
+                                                           true);
     EXPECT_EQ(kSuccess, user_credentials1_->CreateUser(keyword1, CreatePin(), password1));
     user_credentials2_ = std::make_shared<UserCredentials>(*remote_chunk_store2_,
                                                            session2_,
                                                            asio_service2_.service(),
-                                                           *routings_handler2_);
+                                                           *routings_handler2_,
+                                                           true);
     EXPECT_EQ(kSuccess, user_credentials2_->CreateUser(keyword2, CreatePin(), password2));
     user_storage1_ = std::make_shared<UserStorage>(*remote_chunk_store1_);
     user_storage2_ = std::make_shared<UserStorage>(*remote_chunk_store2_);
@@ -102,10 +104,11 @@ class UserStorageTest : public testing::Test {
 
   void MountDrive(std::shared_ptr<UserStorage>& user_storage, Session* session) {
     user_storage->MountDrive(mount_dir_ / "file_chunk_store",
-                             mount_dir_,
+                             mount_dir_ / "mount_point",
                              session,
                              NonEmptyString("Lifestuff Drive"));
     Sleep(interval_);
+    ASSERT_TRUE(user_storage->mount_status());
   }
 
   void UnMountDrive(std::shared_ptr<UserStorage> user_storage) {
