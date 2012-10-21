@@ -42,16 +42,17 @@ namespace test {
 namespace {
 
 void InitialiseAndConnectElements(LifeStuff& elements, const fs::path& dir, volatile bool* done) {
-  EXPECT_EQ(kSuccess, elements.Initialise([] (std::string) {}, dir, true));
+  EXPECT_EQ(kSuccess, elements.Initialise([] (NonEmptyString) {}, dir, true));
   EXPECT_EQ(kSuccess,
             elements.ConnectToSignals(ChatFunction(),
-                                      FileTransferFunction(),
+                                      FileTransferSuccessFunction(),
+                                      FileTransferFailureFunction(),
                                       NewContactFunction(),
                                       ContactConfirmationFunction(),
                                       ContactProfilePictureFunction(),
-                                      [&] (const std::string& own_public_id,
-                                           const std::string& contact_public_id,
-                                           const std::string& timestamp,
+                                      [&] (const NonEmptyString& own_public_id,
+                                           const NonEmptyString& contact_public_id,
+                                           const NonEmptyString& timestamp,
                                            ContactPresence cp) {
                                         ContactPresenceSlot(own_public_id,
                                                             contact_public_id,
@@ -73,9 +74,9 @@ TEST(IndependentFullTest, FUNC_CreateLogoutLoginLogout) {
   network.StartLocalNetwork(test_dir, 10);
 
   LifeStuff test_elements;
-  std::string keyword(RandomAlphaNumericString(5)),
-              pin(CreatePin()),
-              password(RandomAlphaNumericString(5));
+  NonEmptyString keyword(RandomAlphaNumericString(5)),
+                 pin(CreatePin()),
+                 password(RandomAlphaNumericString(5));
   volatile bool done(false);
   InitialiseAndConnectElements(test_elements, *test_dir, &done);
 
@@ -91,7 +92,7 @@ TEST(IndependentFullTest, FUNC_CreateLogoutLoginLogout) {
 }
 
 TEST_F(OneUserApiTest, FUNC_ChangeCredentials) {
-  std::string new_pin(CreatePin());
+  NonEmptyString new_pin(CreatePin());
   EXPECT_EQ(kSuccess, test_elements_.CheckPassword(password_));
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
 
@@ -128,8 +129,8 @@ TEST_F(OneUserApiTest, FUNC_ChangeCredentials) {
 }
 
 TEST_F(OneUserApiTest, FUNC_ChangePinAndPasswordSimultaneously) {
-  std::string new_pin(CreatePin());
-  std::string new_password(RandomAlphaNumericString(5));
+  NonEmptyString new_pin(CreatePin());
+  NonEmptyString new_password(RandomAlphaNumericString(5));
   int result_pin(0), result_password(0);
 
   std::vector<std::pair<int, int>> sleep_values;
@@ -160,14 +161,14 @@ TEST_F(OneUserApiTest, FUNC_ChangePinAndPasswordSimultaneously) {
 
     EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
     ASSERT_EQ(kSuccess, DoFullLogIn(test_elements_, keyword_, new_pin, new_password));
-    new_pin.swap(pin_);
-    new_password.swap(password_);
+    swap(new_pin, pin_);
+    swap(new_password, password_);
   }
 }
 
 TEST_F(OneUserApiTest, FUNC_ChangeKeywordAndPasswordSimultaneously) {
-  std::string new_keyword(RandomAlphaNumericString(5));
-  std::string new_password(RandomAlphaNumericString(5));
+  NonEmptyString new_keyword(RandomAlphaNumericString(5));
+  NonEmptyString new_password(RandomAlphaNumericString(5));
   int result_keyword(0), result_password(0);
 
   std::vector<std::pair<int, int>> sleep_values;
@@ -198,14 +199,14 @@ TEST_F(OneUserApiTest, FUNC_ChangeKeywordAndPasswordSimultaneously) {
 
     EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
     ASSERT_EQ(kSuccess, DoFullLogIn(test_elements_, new_keyword, pin_, new_password));
-    new_keyword.swap(keyword_);
-    new_password.swap(password_);
+    swap(new_keyword, keyword_);
+    swap(new_password, password_);
   }
 }
 
 TEST_F(OneUserApiTest, FUNC_ChangePinAndKeywordSimultaneously) {
-  std::string new_pin(CreatePin());
-  std::string new_keyword(RandomAlphaNumericString(5));
+  NonEmptyString new_pin(CreatePin());
+  NonEmptyString new_keyword(RandomAlphaNumericString(5));
   int result_pin(0), result_keyword(0);
 
   std::vector<std::pair<int, int>> sleep_values;
@@ -237,30 +238,30 @@ TEST_F(OneUserApiTest, FUNC_ChangePinAndKeywordSimultaneously) {
 
     EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
     ASSERT_EQ(kSuccess, DoFullLogIn(test_elements_, new_keyword, new_pin, password_));
-    new_pin.swap(pin_);
-    new_keyword.swap(keyword_);
+    swap(new_pin, pin_);
+    swap(new_keyword, keyword_);
   }
 }
 
 TEST_F(OneUserApiTest, FUNC_CreateUserWhenLoggedIn) {
   EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_,
-                                       RandomAlphaNumericString(5),
+                                       NonEmptyString(RandomAlphaNumericString(5)),
                                        CreatePin(),
-                                       RandomAlphaNumericString(5)));
+                                       NonEmptyString(RandomAlphaNumericString(5))));
 }
 
 TEST_F(OneUserApiTest, FUNC_LogOutCreateNewUser) {
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
   EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements_,
-                                       RandomAlphaNumericString(5),
+                                       NonEmptyString(RandomAlphaNumericString(5)),
                                        CreatePin(),
-                                       RandomAlphaNumericString(5)));
+                                       NonEmptyString(RandomAlphaNumericString(5))));
 }
 
 TEST_F(OneUserApiTest, FUNC_CreateInvalidUsers) {
-  std::string new_pin(CreatePin());
-  std::string new_keyword(RandomAlphaNumericString(5));
-  std::string new_password(RandomAlphaNumericString(5));
+  NonEmptyString new_pin(CreatePin());
+  NonEmptyString new_keyword(RandomAlphaNumericString(5));
+  NonEmptyString new_password(RandomAlphaNumericString(5));
 
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
 
@@ -273,15 +274,15 @@ TEST_F(OneUserApiTest, FUNC_CreateInvalidUsers) {
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
 
   // Bad Pin
-  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_, new_keyword, "", new_password));
-  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_, new_keyword, "0000", new_password));
-  std::string not_digits_only(RandomAlphaNumericString(4));
+  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_, new_keyword, NonEmptyString(" "), new_password));
+  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_, new_keyword, NonEmptyString("0000"), new_password));
+  NonEmptyString not_digits_only(RandomAlphaNumericString(4));
   bool is_all_digits(true);
   while (is_all_digits) {
     try {
-      boost::lexical_cast<int>(not_digits_only);
+      boost::lexical_cast<int>(not_digits_only.string());
       is_all_digits = true;
-      not_digits_only = RandomAlphaNumericString(4);
+      not_digits_only = NonEmptyString(RandomAlphaNumericString(4));
     }
     catch(const std::exception& /*e*/) {
       is_all_digits = false;
@@ -293,26 +294,26 @@ TEST_F(OneUserApiTest, FUNC_CreateInvalidUsers) {
                                        new_password));
   EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_,
                                        new_keyword,
-                                       CreatePin().erase(3, 1),
+                                       NonEmptyString(const_cast<std::string&>(CreatePin().string()).erase(3, 1)),
                                        new_password));
   EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_,
                                        new_keyword,
-                                       CreatePin().append("1"),
+                                       NonEmptyString(const_cast<std::string&>(CreatePin().string()).append("1")),
                                        new_password));
 
   // Bad Keyword
   EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_,
-                                       RandomAlphaNumericString(RandomUint32() % 5),
+                                       NonEmptyString(RandomAlphaNumericString(RandomUint32() % 5)),
                                        new_pin,
                                        new_password));
   EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_,
-                                       RandomAlphaNumericString(31),
+                                       NonEmptyString(RandomAlphaNumericString(31)),
                                        new_pin,
                                        new_password));
   EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_,
-                                       RandomAlphaNumericString(RandomUint32() % 13 + 2) +
+                                       NonEmptyString(RandomAlphaNumericString(RandomUint32() % 13 + 2) +
                                        " " +
-                                       RandomAlphaNumericString(RandomUint32() % 14 + 2),
+                                       RandomAlphaNumericString(RandomUint32() % 14 + 2)),
                                        new_pin,
                                        new_password));
 
@@ -320,71 +321,71 @@ TEST_F(OneUserApiTest, FUNC_CreateInvalidUsers) {
   EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_,
                                        new_keyword,
                                        new_pin,
-                                       RandomAlphaNumericString(RandomUint32() % 5)));
+                                       NonEmptyString(RandomAlphaNumericString(RandomUint32() % 5))));
   EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_,
                                        new_keyword,
                                        new_pin,
-                                       RandomAlphaNumericString(31)));
+                                       NonEmptyString(RandomAlphaNumericString(31))));
   EXPECT_NE(kSuccess,
             DoFullCreateUser(test_elements_,
                              new_keyword,
                              new_pin,
-                             RandomAlphaNumericString(RandomUint32() % 13 + 2) + " " +
-                             RandomAlphaNumericString(RandomUint32() % 14 + 2)));
+                             NonEmptyString(RandomAlphaNumericString(RandomUint32() % 13 + 2) + " " +
+                             RandomAlphaNumericString(RandomUint32() % 14 + 2))));
 
   EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_, keyword_, pin_, password_));
 }
 
 TEST_F(OneUserApiTest, FUNC_TryChangeCredentialsToInvalid) {
-  std::string incorrect_password(RandomAlphaNumericString(RandomUint32() % 26 + 5));
+  NonEmptyString incorrect_password(RandomAlphaNumericString(RandomUint32() % 26 + 5));
   while (incorrect_password == password_)
-    incorrect_password = RandomAlphaNumericString(RandomUint32() % 26 + 5);
+    incorrect_password = NonEmptyString(RandomAlphaNumericString(RandomUint32() % 26 + 5));
 
   // Check Password
   EXPECT_NE(kSuccess, test_elements_.CheckPassword(incorrect_password));
-  EXPECT_NE(kSuccess, test_elements_.CheckPassword(RandomAlphaNumericString(RandomUint32() % 5)));
-  EXPECT_NE(kSuccess, test_elements_.CheckPassword(RandomAlphaNumericString(31)));
+  EXPECT_NE(kSuccess, test_elements_.CheckPassword(NonEmptyString(RandomAlphaNumericString(RandomUint32() % 5))));
+  EXPECT_NE(kSuccess, test_elements_.CheckPassword(NonEmptyString(RandomAlphaNumericString(31))));
 
   // Change PIN
-  EXPECT_NE(kSuccess, test_elements_.ChangePin("", password_));
-  EXPECT_NE(kSuccess, test_elements_.ChangePin("0000", password_));
-  std::string not_digits_only(RandomAlphaNumericString(4));
+  EXPECT_NE(kSuccess, test_elements_.ChangePin(NonEmptyString(" "), password_));
+  EXPECT_NE(kSuccess, test_elements_.ChangePin(NonEmptyString("0000"), password_));
+  NonEmptyString not_digits_only(RandomAlphaNumericString(4));
   bool is_all_digits(true);
   while (is_all_digits) {
     try {
-      boost::lexical_cast<int>(not_digits_only);
+      boost::lexical_cast<int>(not_digits_only.string());
       is_all_digits = true;
-      not_digits_only = RandomAlphaNumericString(4);
+      not_digits_only = NonEmptyString(RandomAlphaNumericString(4));
     }
     catch(const std::exception& /*e*/) {
       is_all_digits = false;
     }
   }
   EXPECT_NE(kSuccess, test_elements_.ChangePin(not_digits_only, password_));
-  EXPECT_NE(kSuccess, test_elements_.ChangePin(CreatePin().erase(3, 1), password_));
-  EXPECT_NE(kSuccess, test_elements_.ChangePin(CreatePin().append("1"), password_));
+  EXPECT_NE(kSuccess, test_elements_.ChangePin(NonEmptyString(const_cast<std::string&>(CreatePin().string()).erase(3, 1)), password_));
+  EXPECT_NE(kSuccess, test_elements_.ChangePin(NonEmptyString(const_cast<std::string&>(CreatePin().string()).append("1")), password_));
   EXPECT_NE(kSuccess, test_elements_.ChangePin(CreatePin(), incorrect_password));
 
   // Change Keyword
   EXPECT_NE(kSuccess,
-            test_elements_.ChangeKeyword(RandomAlphaNumericString(RandomUint32() % 5), password_));
-  EXPECT_NE(kSuccess, test_elements_.ChangeKeyword(RandomAlphaNumericString(31), password_));
+            test_elements_.ChangeKeyword(NonEmptyString(RandomAlphaNumericString(RandomUint32() % 5)), password_));
+  EXPECT_NE(kSuccess, test_elements_.ChangeKeyword(NonEmptyString(RandomAlphaNumericString(31)), password_));
   EXPECT_NE(kSuccess,
-            test_elements_.ChangeKeyword(RandomAlphaNumericString(RandomUint32() % 13 + 2) + " " +
-                                         RandomAlphaNumericString(RandomUint32() % 14 + 2),
+            test_elements_.ChangeKeyword(NonEmptyString(RandomAlphaNumericString(RandomUint32() % 13 + 2) + " " +
+                                         RandomAlphaNumericString(RandomUint32() % 14 + 2)),
                                          password_));
   // Change Password
   EXPECT_NE(kSuccess,
-            test_elements_.ChangePassword(RandomAlphaNumericString(RandomUint32() % 5), password_));
-  EXPECT_NE(kSuccess, test_elements_.ChangePassword(RandomAlphaNumericString(31), password_));
+            test_elements_.ChangePassword(NonEmptyString(RandomAlphaNumericString(RandomUint32() % 5)), password_));
+  EXPECT_NE(kSuccess, test_elements_.ChangePassword(NonEmptyString(RandomAlphaNumericString(31)), password_));
   EXPECT_NE(kSuccess,
-            test_elements_.ChangeKeyword(RandomAlphaNumericString(RandomUint32() % 13 + 2) + " " +
-                                         RandomAlphaNumericString(RandomUint32() % 14 + 2),
+            test_elements_.ChangeKeyword(NonEmptyString(RandomAlphaNumericString(RandomUint32() % 13 + 2) + " " +
+                                         RandomAlphaNumericString(RandomUint32() % 14 + 2)),
                                          password_));
 }
 
 TEST_F(OneUserApiTest, FUNC_ChangeCredentialsWhenLoggedOut) {
-  std::string new_pin(CreatePin());
+  NonEmptyString new_pin(CreatePin());
 
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
 
@@ -399,9 +400,9 @@ TEST_F(OneUserApiTest, FUNC_ChangeCredentialsWhenLoggedOut) {
 }
 
 TEST_F(OneUserApiTest, FUNC_ChangeCredentialsAndLogOut) {
-  std::string new_pin(CreatePin());
-  std::string new_keyword(RandomAlphaNumericString(5));
-  std::string new_password(RandomAlphaNumericString(5));
+  NonEmptyString new_pin(CreatePin());
+  NonEmptyString new_keyword(RandomAlphaNumericString(5));
+  NonEmptyString new_password(RandomAlphaNumericString(5));
   int result(0);
 
   boost::thread thread_pin([&] {
@@ -448,10 +449,11 @@ TEST_F(TwoInstancesApiTest, FUNC_LogInFromTwoPlaces) {
   LOG(kInfo) << "\n\nSETTING UP 3RD TEST ELEMENTS...\n\n";
   LifeStuff test_elements_3;
   bool immediate_quit_required_3(false);
-  EXPECT_EQ(kSuccess, test_elements_3.Initialise([] (std::string) {}, *test_dir_, true));
+  EXPECT_EQ(kSuccess, test_elements_3.Initialise([] (NonEmptyString) {}, *test_dir_, true));
   EXPECT_EQ(kSuccess,
             test_elements_3.ConnectToSignals(ChatFunction(),
-                                             FileTransferFunction(),
+                                             FileTransferSuccessFunction(),
+                                             FileTransferFailureFunction(),
                                              NewContactFunction(),
                                              ContactConfirmationFunction(),
                                              ContactProfilePictureFunction(),

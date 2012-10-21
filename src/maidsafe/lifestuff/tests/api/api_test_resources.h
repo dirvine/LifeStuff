@@ -59,7 +59,7 @@ struct ShareChangeLog {
         old_path(),
         new_path(),
         op_type() {}
-  ShareChangeLog(const std::string& share_name_in,
+  ShareChangeLog(const NonEmptyString& share_name_in,
                  const fs::path& target_path_in,
                  const uint32_t& num_of_entries_in,
                  const fs::path& old_path_in,
@@ -72,7 +72,7 @@ struct ShareChangeLog {
         new_path(new_path_in),
         op_type(op_type_in) {}
 
-  std::string share_name;
+  NonEmptyString share_name;
   fs::path target_path;
   uint32_t num_of_entries;
   fs::path old_path;
@@ -111,124 +111,124 @@ struct TestingVariables {
         contact_request_message(),
         social_info_map_changed(false),
         immediate_quit_required(false) {}
-  std::string chat_message;
+  NonEmptyString chat_message;
   bool chat_message_received;
-  std::string file_name, file_id;
+  NonEmptyString file_name, file_id;
   bool file_transfer_received,
        newly_contacted,
        confirmed,
        picture_updated,
        presence_announced;
-  std::string removal_message;
+  NonEmptyString removal_message;
   bool removed;
-  std::string new_private_share_name, new_private_share_id;
+  NonEmptyString new_private_share_name, new_private_share_id;
   int new_private_access_level;
   bool privately_invited;
-  std::string deleted_private_share_name;
+  NonEmptyString deleted_private_share_name;
   bool private_share_deleted;
-  std::string access_private_share_name;
+  NonEmptyString access_private_share_name;
   int private_member_access;
   bool private_member_access_changed;
-  std::string old_share_name;
-  std::string new_share_name;
+  NonEmptyString old_share_name;
+  NonEmptyString new_share_name;
   bool share_renamed;
   ShareChangeLogBook share_changes;
-  std::string contact_request_message;
+  NonEmptyString contact_request_message;
   bool social_info_map_changed;
   bool immediate_quit_required;
 };
 
-void ChatSlot(const std::string&,
-              const std::string&,
-              const std::string& signal_message,
-              const std::string&,
-              std::string* slot_message,
+void ChatSlot(const NonEmptyString&,
+              const NonEmptyString&,
+              const NonEmptyString& signal_message,
+              const NonEmptyString&,
+              NonEmptyString* slot_message,
               volatile bool* done);
 
-void FileTransferSlot(const std::string&,
-                      const std::string&,
-                      const std::string& signal_file_name,
-                      const std::string& signal_file_id,
-                      const std::string&,
-                      std::string* slot_file_name,
-                      std::string* slot_file_id,
+void FileTransferSlot(const NonEmptyString&,
+                      const NonEmptyString&,
+                      const NonEmptyString& signal_file_name,
+                      const NonEmptyString& signal_file_id,
+                      const NonEmptyString&,
+                      NonEmptyString* slot_file_name,
+                      NonEmptyString* slot_file_id,
                       volatile bool* done);
 
-void MultipleFileTransferSlot(const std::string&,
-                              const std::string&,
-                              const std::string& signal_file_name,
-                              const std::string& signal_file_id,
-                              const std::string&,
-                              std::vector<std::string>* ids,
-                              std::vector<std::string>* names,
+void MultipleFileTransferSlot(const NonEmptyString&,
+                              const NonEmptyString&,
+                              const NonEmptyString& signal_file_name,
+                              const NonEmptyString& signal_file_id,
+                              const NonEmptyString&,
+                              std::vector<NonEmptyString>* ids,
+                              std::vector<NonEmptyString>* names,
                               size_t* total_files,
                               volatile bool* done);
 
-void NewContactSlot(const std::string&,
-                    const std::string&,
-                    const std::string&,
-                    const std::string&,
+void NewContactSlot(const NonEmptyString&,
+                    const NonEmptyString&,
+                    const NonEmptyString&,
+                    const NonEmptyString&,
                     volatile bool* done,
-                    std::string* contact_request_message);
+                    NonEmptyString* contact_request_message);
 
-void ContactConfirmationSlot(const std::string&,
-                             const std::string&,
-                             const std::string&,
+void ContactConfirmationSlot(const NonEmptyString&,
+                             const NonEmptyString&,
+                             const NonEmptyString&,
                              volatile bool* done);
 
-void ContactProfilePictureSlot(const std::string&,
-                               const std::string&,
-                               const std::string&,
+void ContactProfilePictureSlot(const NonEmptyString&,
+                               const NonEmptyString&,
+                               const NonEmptyString&,
                                volatile bool* done);
 
-void ContactPresenceSlot(const std::string&,
-                         const std::string&,
-                         const std::string&,
+void ContactPresenceSlot(const NonEmptyString&,
+                         const NonEmptyString&,
+                         const NonEmptyString&,
                          ContactPresence,
                          volatile bool* done);
 
-void ContactDeletionSlot(const std::string&,
-                         const std::string&,
-                         const std::string& signal_message,
-                         const std::string&,
-                         std::string* slot_message,
+void ContactDeletionSlot(const NonEmptyString&,
+                         const NonEmptyString&,
+                         const NonEmptyString& signal_message,
+                         const NonEmptyString&,
+                         NonEmptyString* slot_message,
                          volatile bool* done);
 
-void PrivateShareInvitationSlot(const std::string&,
-                                const std::string&,
-                                const std::string& signal_share_name,
-                                const std::string& signal_share_id,
+void PrivateShareInvitationSlot(const NonEmptyString&,
+                                const NonEmptyString&,
+                                const NonEmptyString& signal_share_name,
+                                const NonEmptyString& signal_share_id,
                                 int access_level,
-                                const std::string&,
-                                std::string* slot_share_name,
-                                std::string* slot_share_id,
+                                const NonEmptyString&,
+                                NonEmptyString* slot_share_name,
+                                NonEmptyString* slot_share_id,
                                 int* slot_access_level,
                                 volatile bool* done);
 
-void PrivateShareDeletionSlot(const std::string&,
-                              const std::string& signal_share_name,
-                              const std::string&,
-                              const std::string&,
-                              const std::string&,
-                              std::string* slot_share_name,
+void PrivateShareDeletionSlot(const NonEmptyString&,
+                              const NonEmptyString& signal_share_name,
+                              const NonEmptyString&,
+                              const NonEmptyString&,
+                              const NonEmptyString&,
+                              NonEmptyString* slot_share_name,
                               volatile bool* done);
 
-void PrivateMemberAccessChangeSlot(const std::string&,
-                                   const std::string&,
-                                   const std::string&,
-                                   const std::string&,
+void PrivateMemberAccessChangeSlot(const NonEmptyString&,
+                                   const NonEmptyString&,
+                                   const NonEmptyString&,
+                                   const NonEmptyString&,
                                    int signal_member_access,
-                                   const std::string&  /*slot_share_name*/,
+                                   const NonEmptyString&  /*slot_share_name*/,
                                    int* slot_member_access,
                                    volatile bool* done);
 
-void ShareRenameSlot(const std::string& old_share_name,
-                     const std::string& new_share_name,
-                     std::string* slot_old_share_name,
-                     std::string* slot_new_share_name,
+void ShareRenameSlot(const NonEmptyString& old_share_name,
+                     const NonEmptyString& new_share_name,
+                     NonEmptyString* slot_old_share_name,
+                     NonEmptyString* slot_new_share_name,
                      volatile bool* done);
 
-void ShareChangedSlot(const std::string& share_name,
+void ShareChangedSlot(const NonEmptyString& share_name,
                       const fs::path& target_path,
                       const uint32_t& num_of_entries,
                       const fs::path& old_path,
@@ -237,22 +237,22 @@ void ShareChangedSlot(const std::string& share_name,
                       boost::mutex* mutex,
                       ShareChangeLogBook* share_changes);
 
-void LifestuffCardSlot(const std::string&,
-                       const std::string&,
-                       const std::string&,
+void LifestuffCardSlot(const NonEmptyString&,
+                       const NonEmptyString&,
+                       const NonEmptyString&,
                        volatile bool* done);
 
 void ImmediateQuitRequiredSlot(volatile bool* done);
 
 int DoFullCreateUser(LifeStuff& test_elements,
-                     const std::string& keyword,
-                     const std::string& pin,
-                     const std::string& password);
+                     const NonEmptyString& keyword,
+                     const NonEmptyString& pin,
+                     const NonEmptyString& password);
 
 int DoFullLogIn(LifeStuff& test_elements,
-                const std::string& keyword,
-                const std::string& pin,
-                const std::string& password);
+                const NonEmptyString& keyword,
+                const NonEmptyString& pin,
+                const NonEmptyString& password);
 
 int DoFullLogOut(LifeStuff& test_elements);
 
@@ -261,51 +261,51 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                  TestingVariables& testing_variables1,
                                  TestingVariables& testing_variables2,
                                  const fs::path& test_dir,
-                                 const std::string& keyword1,
-                                 const std::string& pin1,
-                                 const std::string& password1,
-                                 const std::string& public_id1,
-                                 const std::string& keyword2,
-                                 const std::string& pin2,
-                                 const std::string& password2,
-                                 const std::string& public_id2,
+                                 const NonEmptyString& keyword1,
+                                 const NonEmptyString& pin1,
+                                 const NonEmptyString& password1,
+                                 const NonEmptyString& public_id1,
+                                 const NonEmptyString& keyword2,
+                                 const NonEmptyString& pin2,
+                                 const NonEmptyString& password2,
+                                 const NonEmptyString& public_id2,
                                  bool several_files = false,
-                                 std::vector<std::string>* ids = nullptr,
-                                 std::vector<std::string>* names = nullptr,
+                                 std::vector<NonEmptyString>* ids = nullptr,
+                                 std::vector<NonEmptyString>* names = nullptr,
                                  size_t* total_files = nullptr);
 
 int InitialiseAndConnect(LifeStuff& test_elements,
                          TestingVariables& testing_variables,
                          const fs::path& test_dir,
                          bool several_files = false,
-                         std::vector<std::string>* ids = nullptr,
-                         std::vector<std::string>* names = nullptr,
+                         std::vector<NonEmptyString>* ids = nullptr,
+                         std::vector<NonEmptyString>* names = nullptr,
                          size_t* total_files = nullptr);
 
 int CreateAccountWithPublicId(LifeStuff& test_elements,
                               TestingVariables& testing_variables,
                               const fs::path& test_dir,
-                              const std::string& keyword,
-                              const std::string& pin,
-                              const std::string& password,
-                              const std::string& public_id,
+                              const NonEmptyString& keyword,
+                              const NonEmptyString& pin,
+                              const NonEmptyString& password,
+                              const NonEmptyString& public_id,
                               bool several_files = false,
-                              std::vector<std::string>* ids = nullptr,
-                              std::vector<std::string>* names = nullptr,
+                              std::vector<NonEmptyString>* ids = nullptr,
+                              std::vector<NonEmptyString>* names = nullptr,
                               size_t* total_files = nullptr);
 
 int ConnectTwoPublicIds(LifeStuff& test_elements1,
                         LifeStuff& test_elements2,
                         TestingVariables& testing_variables1,
                         TestingVariables& testing_variables2,
-                        const std::string& keyword1,
-                        const std::string& pin1,
-                        const std::string& password1,
-                        const std::string& public_id1,
-                        const std::string& keyword2,
-                        const std::string& pin2,
-                        const std::string& password2,
-                        const std::string& public_id2);
+                        const NonEmptyString& keyword1,
+                        const NonEmptyString& pin1,
+                        const NonEmptyString& password1,
+                        const NonEmptyString& public_id1,
+                        const NonEmptyString& keyword2,
+                        const NonEmptyString& pin2,
+                        const NonEmptyString& password2,
+                        const NonEmptyString& public_id2);
 
 namespace sleepthreads {
 
@@ -313,44 +313,44 @@ void RandomSleep(const std::pair<int, int> sleeps);
 
 void RunChangePin(LifeStuff& test_elements,
                   int& result,
-                  const std::string& new_pin,
-                  const std::string& password,
+                  const NonEmptyString& new_pin,
+                  const NonEmptyString& password,
                   const std::pair<int, int> sleeps = std::make_pair(0, 0));
 
 void RunChangeKeyword(LifeStuff& test_elements,
                       int& result,
-                      const std::string& new_keyword,
-                      const std::string& password,
+                      const NonEmptyString& new_keyword,
+                      const NonEmptyString& password,
                       const std::pair<int, int> sleeps = std::make_pair(0, 0));
 
 void RunChangePassword(LifeStuff& test_elements,
                        int& result,
-                       const std::string& new_password,
-                       const std::string& password,
+                       const NonEmptyString& new_password,
+                       const NonEmptyString& password,
                        const std::pair<int, int> sleeps);
 
 void RunCreatePublicId(LifeStuff& test_elements,
                        int& result,
-                       const std::string& new_id,
+                       const NonEmptyString& new_id,
                        const std::pair<int, int> sleeps);
 
 void RunCreateUser(LifeStuff& test_elements,
                    int& result,
-                   const std::string& keyword,
-                   const std::string& pin,
-                   const std::string& password,
+                   const NonEmptyString& keyword,
+                   const NonEmptyString& pin,
+                   const NonEmptyString& password,
                    const std::pair<int, int> sleeps = std::make_pair(0, 0));
 
 void RunChangeProfilePicture(LifeStuff& test_elements_,
                              int& result,
-                             const std::string public_id,
-                             const std::string file_content);
+                             const NonEmptyString public_id,
+                             const NonEmptyString file_content);
 
 void RunLogIn(LifeStuff& test_elements,
               int& result,
-              const std::string& keyword,
-              const std::string& pin,
-              const std::string& password,
+              const NonEmptyString& keyword,
+              const NonEmptyString& pin,
+              const NonEmptyString& password,
               const std::pair<int, int> sleeps);
 
 }  // namespace sleepthreads
@@ -369,9 +369,9 @@ class OneUserApiTest : public testing::Test {
 
  protected:
   maidsafe::test::TestPath test_dir_;
-  std::string keyword_;
-  std::string pin_;
-  std::string password_;
+  NonEmptyString keyword_;
+  NonEmptyString pin_;
+  NonEmptyString password_;
   NetworkHelper network_;
   boost::system::error_code error_code_;
   volatile bool done_;
@@ -419,14 +419,14 @@ class TwoUsersApiTest : public testing::Test {
 
  protected:
   maidsafe::test::TestPath test_dir_;
-  std::string keyword_1_;
-  std::string pin_1_;
-  std::string password_1_;
-  std::string public_id_1_;
-  std::string keyword_2_;
-  std::string pin_2_;
-  std::string password_2_;
-  std::string public_id_2_;
+  NonEmptyString keyword_1_;
+  NonEmptyString pin_1_;
+  NonEmptyString password_1_;
+  NonEmptyString public_id_1_;
+  NonEmptyString keyword_2_;
+  NonEmptyString pin_2_;
+  NonEmptyString password_2_;
+  NonEmptyString public_id_2_;
   LifeStuff test_elements_1_;
   LifeStuff test_elements_2_;
   TestingVariables testing_variables_1_;
@@ -460,20 +460,20 @@ class PrivateSharesApiTest : public ::testing::TestWithParam<int> {
  protected:
   int rights_;
   maidsafe::test::TestPath test_dir_;
-  std::string keyword_1_;
-  std::string pin_1_;
-  std::string password_1_;
-  std::string public_id_1_;
-  std::string keyword_2_;
-  std::string pin_2_;
-  std::string password_2_;
-  std::string public_id_2_;
+  NonEmptyString keyword_1_;
+  NonEmptyString pin_1_;
+  NonEmptyString password_1_;
+  NonEmptyString public_id_1_;
+  NonEmptyString keyword_2_;
+  NonEmptyString pin_2_;
+  NonEmptyString password_2_;
+  NonEmptyString public_id_2_;
   LifeStuff test_elements_1_;
   LifeStuff test_elements_2_;
   TestingVariables testing_variables_1_;
   TestingVariables testing_variables_2_;
   NetworkHelper network_;
-  std::string share_name_1_;
+  NonEmptyString share_name_1_;
 
   virtual void SetUp();
 

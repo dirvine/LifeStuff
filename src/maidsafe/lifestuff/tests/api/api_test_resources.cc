@@ -25,24 +25,24 @@ namespace lifestuff {
 
 namespace test {
 
-void ChatSlot(const std::string&,
-              const std::string&,
-              const std::string& signal_message,
-              const std::string&,
-              std::string* slot_message,
+void ChatSlot(const NonEmptyString&,
+              const NonEmptyString&,
+              const NonEmptyString& signal_message,
+              const NonEmptyString&,
+              NonEmptyString* slot_message,
               volatile bool* done) {
   if (slot_message)
     *slot_message = signal_message;
   *done = true;
 }
 
-void FileTransferSlot(const std::string&,
-                      const std::string&,
-                      const std::string& signal_file_name,
-                      const std::string& signal_file_id,
-                      const std::string&,
-                      std::string* slot_file_name,
-                      std::string* slot_file_id,
+void FileTransferSlot(const NonEmptyString&,
+                      const NonEmptyString&,
+                      const NonEmptyString& signal_file_name,
+                      const NonEmptyString& signal_file_id,
+                      const NonEmptyString&,
+                      NonEmptyString* slot_file_name,
+                      NonEmptyString* slot_file_id,
                       volatile bool* done) {
   if (slot_file_name)
     *slot_file_name = signal_file_name;
@@ -51,13 +51,13 @@ void FileTransferSlot(const std::string&,
   *done = true;
 }
 
-void MultipleFileTransferSlot(const std::string&,
-                              const std::string&,
-                              const std::string& signal_file_name,
-                              const std::string& signal_file_id,
-                              const std::string&,
-                              std::vector<std::string>* ids,
-                              std::vector<std::string>* names,
+void MultipleFileTransferSlot(const NonEmptyString&,
+                              const NonEmptyString&,
+                              const NonEmptyString& signal_file_name,
+                              const NonEmptyString& signal_file_id,
+                              const NonEmptyString&,
+                              std::vector<NonEmptyString>* ids,
+                              std::vector<NonEmptyString>* names,
                               size_t* total_files,
                               volatile bool* done) {
   ids->push_back(signal_file_id);
@@ -66,57 +66,57 @@ void MultipleFileTransferSlot(const std::string&,
     *done = true;
 }
 
-void NewContactSlot(const std::string&,
-                    const std::string&,
-                    const std::string& message,
-                    const std::string&,
+void NewContactSlot(const NonEmptyString&,
+                    const NonEmptyString&,
+                    const NonEmptyString& message,
+                    const NonEmptyString&,
                     volatile bool* done,
-                    std::string* contact_request_message) {
+                    NonEmptyString* contact_request_message) {
   *done = true;
   *contact_request_message = message;
 }
 
-void ContactConfirmationSlot(const std::string&,
-                             const std::string&,
-                             const std::string&,
+void ContactConfirmationSlot(const NonEmptyString&,
+                             const NonEmptyString&,
+                             const NonEmptyString&,
                              volatile bool* done) {
   *done = true;
 }
 
-void ContactProfilePictureSlot(const std::string&,
-                               const std::string&,
-                               const std::string&,
+void ContactProfilePictureSlot(const NonEmptyString&,
+                               const NonEmptyString&,
+                               const NonEmptyString&,
                                volatile bool* done) {
   *done = true;
 }
 
-void ContactPresenceSlot(const std::string&,
-                         const std::string&,
-                         const std::string&,
+void ContactPresenceSlot(const NonEmptyString&,
+                         const NonEmptyString&,
+                         const NonEmptyString&,
                          ContactPresence,
                          volatile bool* done) {
   *done = true;
 }
 
-void ContactDeletionSlot(const std::string&,
-                         const std::string&,
-                         const std::string& signal_message,
-                         const std::string&,
-                         std::string* slot_message,
+void ContactDeletionSlot(const NonEmptyString&,
+                         const NonEmptyString&,
+                         const NonEmptyString& signal_message,
+                         const NonEmptyString&,
+                         NonEmptyString* slot_message,
                          volatile bool* done) {
   if (slot_message)
     *slot_message = signal_message;
   *done = true;
 }
 
-void PrivateShareInvitationSlot(const std::string&,
-                                const std::string&,
-                                const std::string& signal_share_name,
-                                const std::string& signal_share_id,
+void PrivateShareInvitationSlot(const NonEmptyString&,
+                                const NonEmptyString&,
+                                const NonEmptyString& signal_share_name,
+                                const NonEmptyString& signal_share_id,
                                 int access_level,
-                                const std::string&,
-                                std::string* slot_share_name,
-                                std::string* slot_share_id,
+                                const NonEmptyString&,
+                                NonEmptyString* slot_share_name,
+                                NonEmptyString* slot_share_id,
                                 int* slot_access_level,
                                 volatile bool* done) {
   if (slot_share_name)
@@ -128,36 +128,36 @@ void PrivateShareInvitationSlot(const std::string&,
   *done = true;
 }
 
-void PrivateShareDeletionSlot(const std::string&,
-                              const std::string& signal_share_name,
-                              const std::string&,
-                              const std::string&,
-                              const std::string&,
-                              std::string* slot_share_name,
+void PrivateShareDeletionSlot(const NonEmptyString&,
+                              const NonEmptyString& signal_share_name,
+                              const NonEmptyString&,
+                              const NonEmptyString&,
+                              const NonEmptyString&,
+                              NonEmptyString* slot_share_name,
                               volatile bool* done) {
   if (slot_share_name)
     *slot_share_name = signal_share_name;
   *done = true;
 }
 
-void PrivateMemberAccessChangeSlot(const std::string&,
-                                   const std::string&,
-                                   const std::string& share_name,
-                                   const std::string&,
+void PrivateMemberAccessChangeSlot(const NonEmptyString&,
+                                   const NonEmptyString&,
+                                   const NonEmptyString& share_name,
+                                   const NonEmptyString&,
                                    int signal_member_access,
-                                   const std::string& /*slot_share_name*/,
+                                   const NonEmptyString& /*slot_share_name*/,
                                    int* slot_member_access,
                                    volatile bool *done) {
-  ASSERT_NE("", share_name);
+  ASSERT_NE(NonEmptyString(" "), share_name);
   if (slot_member_access)
     *slot_member_access = signal_member_access;
   *done = true;
 }
 
-void ShareRenameSlot(const std::string& old_share_name,
-                     const std::string& new_share_name,
-                     std::string* slot_old_share_name,
-                     std::string* slot_new_share_name,
+void ShareRenameSlot(const NonEmptyString& old_share_name,
+                     const NonEmptyString& new_share_name,
+                     NonEmptyString* slot_old_share_name,
+                     NonEmptyString* slot_new_share_name,
                      volatile bool* done) {
   if (slot_old_share_name)
     *slot_old_share_name = old_share_name;
@@ -166,7 +166,7 @@ void ShareRenameSlot(const std::string& old_share_name,
   *done = true;
 }
 
-void ShareChangedSlot(const std::string& share_name,
+void ShareChangedSlot(const NonEmptyString& share_name,
                       const fs::path& target_path,
                       const uint32_t& num_of_entries,
                       const fs::path& old_path,
@@ -192,9 +192,9 @@ void ShareChangedSlot(const std::string& share_name,
   }
 }
 
-void LifestuffCardSlot(const std::string&,
-                       const std::string&,
-                       const std::string&,
+void LifestuffCardSlot(const NonEmptyString&,
+                       const NonEmptyString&,
+                       const NonEmptyString&,
                        volatile bool* done) {
   *done = true;
 }
@@ -204,9 +204,9 @@ void ImmediateQuitRequiredSlot(volatile bool* done) {
 }
 
 int DoFullCreateUser(LifeStuff& test_elements,
-                     const std::string& keyword,
-                     const std::string& pin,
-                     const std::string& password) {
+                     const NonEmptyString& keyword,
+                     const NonEmptyString& pin,
+                     const NonEmptyString& password) {
   int result = test_elements.CreateUser(keyword, pin, password, fs::path());
   if (result != kSuccess) {
     LOG(kError) << "Failed to create user: " << result;
@@ -224,9 +224,9 @@ int DoFullCreateUser(LifeStuff& test_elements,
 
 
 int DoFullLogIn(LifeStuff& test_elements,
-                const std::string& keyword,
-                const std::string& pin,
-                const std::string& password) {
+                const NonEmptyString& keyword,
+                const NonEmptyString& pin,
+                const NonEmptyString& password) {
   int result = test_elements.LogIn(keyword, pin, password);
   if (result != kSuccess) {
     LOG(kError) << "Failed to create log in: " << result;
@@ -278,17 +278,17 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                  TestingVariables& testing_variables1,
                                  TestingVariables& testing_variables2,
                                  const fs::path& test_dir,
-                                 const std::string& keyword1,
-                                 const std::string& pin1,
-                                 const std::string& password1,
-                                 const std::string& public_id1,
-                                 const std::string& keyword2,
-                                 const std::string& pin2,
-                                 const std::string& password2,
-                                 const std::string& public_id2,
+                                 const NonEmptyString& keyword1,
+                                 const NonEmptyString& pin1,
+                                 const NonEmptyString& password1,
+                                 const NonEmptyString& public_id1,
+                                 const NonEmptyString& keyword2,
+                                 const NonEmptyString& pin2,
+                                 const NonEmptyString& password2,
+                                 const NonEmptyString& public_id2,
                                  bool several_files,
-                                 std::vector<std::string>* ids,
-                                 std::vector<std::string>* names,
+                                 std::vector<NonEmptyString>* ids,
+                                 std::vector<NonEmptyString>* names,
                                  size_t* total_files) {
   int result(0);
   result = CreateAccountWithPublicId(test_elements1,
@@ -336,16 +336,16 @@ int InitialiseAndConnect(LifeStuff& test_elements,
                          TestingVariables& testing_variables,
                          const fs::path& test_dir,
                          bool several_files,
-                         std::vector<std::string>* ids,
-                         std::vector<std::string>* names,
+                         std::vector<NonEmptyString>* ids,
+                         std::vector<NonEmptyString>* names,
                          size_t* total_files) {
-  FileTransferFunction ftf;
+  FileTransferSuccessFunction ftf;
   if (several_files) {
-    ftf = [=, &testing_variables] (const std::string& own_public_id,
-                                   const std::string& contact_public_id,
-                                   const std::string& signal_file_name,
-                                   const std::string& signal_file_id,
-                                   const std::string& timestamp) {
+    ftf = [=, &testing_variables] (const NonEmptyString& own_public_id,
+                                   const NonEmptyString& contact_public_id,
+                                   const NonEmptyString& signal_file_name,
+                                   const NonEmptyString& signal_file_id,
+                                   const NonEmptyString& timestamp) {
       MultipleFileTransferSlot(own_public_id,
                                contact_public_id,
                                signal_file_name,
@@ -357,11 +357,11 @@ int InitialiseAndConnect(LifeStuff& test_elements,
                                &testing_variables.file_transfer_received);
     };
   } else {
-    ftf = [=, &testing_variables] (const std::string& own_public_id,
-                                   const std::string& contact_public_id,
-                                   const std::string& signal_file_name,
-                                   const std::string& signal_file_id,
-                                   const std::string& timestamp) {
+    ftf = [=, &testing_variables] (const NonEmptyString& own_public_id,
+                                   const NonEmptyString& contact_public_id,
+                                   const NonEmptyString& signal_file_name,
+                                   const NonEmptyString& signal_file_id,
+                                   const NonEmptyString& timestamp) {
             FileTransferSlot(own_public_id,
                              contact_public_id,
                              signal_file_name,
@@ -375,12 +375,12 @@ int InitialiseAndConnect(LifeStuff& test_elements,
 
   int result(0);
   // Initialise and connect
-  result += test_elements.Initialise([] (std::string) {}, test_dir, true);
+  result += test_elements.Initialise([] (NonEmptyString) {}, test_dir, true);
   result += test_elements.ConnectToSignals(
-                [&] (const std::string& own_public_id,
-                     const std::string& contact_public_id,
-                     const std::string& signal_message,
-                     const std::string& timestamp) {
+                [&] (const NonEmptyString& own_public_id,
+                     const NonEmptyString& contact_public_id,
+                     const NonEmptyString& signal_message,
+                     const NonEmptyString& timestamp) {
                   ChatSlot(own_public_id,
                            contact_public_id,
                            signal_message,
@@ -389,10 +389,11 @@ int InitialiseAndConnect(LifeStuff& test_elements,
                            &testing_variables.chat_message_received);
                 },
                 ftf,
-                [&] (const std::string& own_public_id,
-                     const std::string& contact_public_id,
-                     const std::string& message,
-                     const std::string& timestamp) {
+                FileTransferFailureFunction(),
+                [&] (const NonEmptyString& own_public_id,
+                     const NonEmptyString& contact_public_id,
+                     const NonEmptyString& message,
+                     const NonEmptyString& timestamp) {
                   NewContactSlot(own_public_id,
                                  contact_public_id,
                                  message,
@@ -400,25 +401,25 @@ int InitialiseAndConnect(LifeStuff& test_elements,
                                  &testing_variables.newly_contacted,
                                  &testing_variables.contact_request_message);
                 },
-                [&] (const std::string& own_public_id,
-                     const std::string& contact_public_id,
-                     const std::string& timestamp) {
+                [&] (const NonEmptyString& own_public_id,
+                     const NonEmptyString& contact_public_id,
+                     const NonEmptyString& timestamp) {
                   ContactConfirmationSlot(own_public_id,
                                           contact_public_id,
                                           timestamp,
                                           &testing_variables.confirmed);
                 },
-                [&] (const std::string& own_public_id,
-                     const std::string& contact_public_id,
-                     const std::string& timestamp) {
+                [&] (const NonEmptyString& own_public_id,
+                     const NonEmptyString& contact_public_id,
+                     const NonEmptyString& timestamp) {
                   ContactProfilePictureSlot(own_public_id,
                                             contact_public_id,
                                             timestamp,
                                             &testing_variables.picture_updated);
                 },
-                [&] (const std::string& own_public_id,
-                     const std::string& contact_public_id,
-                     const std::string& timestamp,
+                [&] (const NonEmptyString& own_public_id,
+                     const NonEmptyString& contact_public_id,
+                     const NonEmptyString& timestamp,
                     ContactPresence contact_presence) {
                   ContactPresenceSlot(own_public_id,
                                       contact_public_id,
@@ -426,10 +427,10 @@ int InitialiseAndConnect(LifeStuff& test_elements,
                                       contact_presence,
                                       &testing_variables.presence_announced);
                 },
-                [&] (const std::string& own_public_id,
-                     const std::string& contact_public_id,
-                     const std::string& signal_message,
-                     const std::string& timestamp) {
+                [&] (const NonEmptyString& own_public_id,
+                     const NonEmptyString& contact_public_id,
+                     const NonEmptyString& signal_message,
+                     const NonEmptyString& timestamp) {
                   ContactDeletionSlot(own_public_id,
                                       contact_public_id,
                                       signal_message,
@@ -437,9 +438,9 @@ int InitialiseAndConnect(LifeStuff& test_elements,
                                       &testing_variables.removal_message,
                                       &testing_variables.removed);
                 },
-                [&] (const std::string& own_id,
-                     const std::string& contact_id,
-                     const std::string& timestamp) {
+                [&] (const NonEmptyString& own_id,
+                     const NonEmptyString& contact_id,
+                     const NonEmptyString& timestamp) {
                   LifestuffCardSlot(own_id,
                                     contact_id,
                                     timestamp,
@@ -455,13 +456,13 @@ int InitialiseAndConnect(LifeStuff& test_elements,
 int CreateAccountWithPublicId(LifeStuff& test_elements,
                               TestingVariables& testing_variables,
                               const fs::path& test_dir,
-                              const std::string& keyword,
-                              const std::string& pin,
-                              const std::string& password,
-                              const std::string& public_id,
+                              const NonEmptyString& keyword,
+                              const NonEmptyString& pin,
+                              const NonEmptyString& password,
+                              const NonEmptyString& public_id,
                               bool several_files,
-                              std::vector<std::string>* ids,
-                              std::vector<std::string>* names,
+                              std::vector<NonEmptyString>* ids,
+                              std::vector<NonEmptyString>* names,
                               size_t* total_files) {
   int result(0);
   result = InitialiseAndConnect(test_elements,
@@ -488,21 +489,22 @@ int ConnectTwoPublicIds(LifeStuff& test_elements1,
                         LifeStuff& test_elements2,
                         TestingVariables& testing_variables1,
                         TestingVariables& testing_variables2,
-                        const std::string& keyword1,
-                        const std::string& pin1,
-                        const std::string& password1,
-                        const std::string& public_id1,
-                        const std::string& keyword2,
-                        const std::string& pin2,
-                        const std::string& password2,
-                        const std::string& public_id2) {
+                        const NonEmptyString& keyword1,
+                        const NonEmptyString& pin1,
+                        const NonEmptyString& password1,
+                        const NonEmptyString& public_id1,
+                        const NonEmptyString& keyword2,
+                        const NonEmptyString& pin2,
+                        const NonEmptyString& password2,
+                        const NonEmptyString& public_id2) {
   // First user adds second user
   int result(0);
   testing_variables1.confirmed = false;
   testing_variables2.newly_contacted = false;
+  NonEmptyString message(RandomAlphaNumericString(5));
   {
     result += DoFullLogIn(test_elements1, keyword1, pin1, password1);
-    result += test_elements1.AddContact(public_id1, public_id2);
+    result += test_elements1.AddContact(public_id1, public_id2, message);
     result += DoFullLogOut(test_elements1);
     if (result != kSuccess) {
       LOG(kError) << "Failure adding contact";
@@ -548,8 +550,8 @@ void RandomSleep(const std::pair<int, int> sleeps) {
 
 void RunChangePin(LifeStuff& test_elements,
                   int& result,
-                  const std::string& new_pin,
-                  const std::string& password,
+                  const NonEmptyString& new_pin,
+                  const NonEmptyString& password,
                   const std::pair<int, int> sleeps) {
   RandomSleep(sleeps);
   result = test_elements.ChangePin(new_pin, password);
@@ -557,8 +559,8 @@ void RunChangePin(LifeStuff& test_elements,
 
 void RunChangeKeyword(LifeStuff& test_elements,
                       int& result,
-                      const std::string& new_keyword,
-                      const std::string& password,
+                      const NonEmptyString& new_keyword,
+                      const NonEmptyString& password,
                       const std::pair<int, int> sleeps) {
   RandomSleep(sleeps);
   result = test_elements.ChangeKeyword(new_keyword, password);
@@ -566,8 +568,8 @@ void RunChangeKeyword(LifeStuff& test_elements,
 
 void RunChangePassword(LifeStuff& test_elements,
                        int& result,
-                       const std::string& new_password,
-                       const std::string& password,
+                       const NonEmptyString& new_password,
+                       const NonEmptyString& password,
                        const std::pair<int, int> sleeps) {
   RandomSleep(sleeps);
   result = test_elements.ChangePassword(new_password, password);
@@ -575,7 +577,7 @@ void RunChangePassword(LifeStuff& test_elements,
 
 void RunCreatePublicId(LifeStuff& test_elements,
                        int& result,
-                       const std::string& new_id,
+                       const NonEmptyString& new_id,
                        const std::pair<int, int> sleeps) {
   RandomSleep(sleeps);
   result = test_elements.CreatePublicId(new_id);
@@ -583,9 +585,9 @@ void RunCreatePublicId(LifeStuff& test_elements,
 
 void RunCreateUser(LifeStuff& test_elements,
                    int& result,
-                   const std::string& keyword,
-                   const std::string& pin,
-                   const std::string& password,
+                   const NonEmptyString& keyword,
+                   const NonEmptyString& pin,
+                   const NonEmptyString& password,
                    const std::pair<int, int> sleeps) {
   RandomSleep(sleeps);
   result = DoFullCreateUser(test_elements, keyword, pin, password);
@@ -593,16 +595,16 @@ void RunCreateUser(LifeStuff& test_elements,
 
 void RunChangeProfilePicture(LifeStuff& test_elements_,
                              int& result,
-                             const std::string public_id,
-                             const std::string file_content) {
+                             const NonEmptyString public_id,
+                             const NonEmptyString file_content) {
   result = test_elements_.ChangeProfilePicture(public_id, file_content);
 }
 
 void RunLogIn(LifeStuff& test_elements,
               int& result,
-              const std::string& keyword,
-              const std::string& pin,
-              const std::string& password,
+              const NonEmptyString& keyword,
+              const NonEmptyString& pin,
+              const NonEmptyString& password,
               const std::pair<int, int> sleeps) {
   RandomSleep(sleeps);
   result = DoFullLogIn(test_elements, keyword, pin, password);
@@ -612,22 +614,23 @@ void RunLogIn(LifeStuff& test_elements,
 
 void OneUserApiTest::SetUp() {
   ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12));
-  EXPECT_EQ(kSuccess, test_elements_.Initialise([] (std::string) {}, *test_dir_, true));
+  EXPECT_EQ(kSuccess, test_elements_.Initialise([] (NonEmptyString) {}, *test_dir_, true));
   EXPECT_EQ(kSuccess,
             test_elements_.ConnectToSignals(ChatFunction(),
-                                            FileTransferFunction(),
+                                            FileTransferSuccessFunction(),
+                                            FileTransferFailureFunction(),
                                             NewContactFunction(),
                                             ContactConfirmationFunction(),
                                             ContactProfilePictureFunction(),
-                                            [&] (const std::string& own_public_id,
-                                                 const std::string& contact_public_id,
-                                                 const std::string& timestamp,
+                                            [&] (const NonEmptyString& own_public_id,
+                                                 const NonEmptyString& contact_public_id,
+                                                 const NonEmptyString& timestamp,
                                                  ContactPresence cp) {
                                               ContactPresenceSlot(own_public_id,
-                                                                                 contact_public_id,
-                                                                                 timestamp,
-                                                                                 cp,
-                                                                                 &done_);
+                                                                  contact_public_id,
+                                                                  timestamp,
+                                                                  cp,
+                                                                  &done_);
                                             },
                                             ContactDeletionFunction(),
                                             LifestuffCardUpdateFunction(),
@@ -644,23 +647,24 @@ void OneUserApiTest::TearDown() {
 
 void TwoInstancesApiTest::SetUp() {
   ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 10));
-  EXPECT_EQ(kSuccess, test_elements_.Initialise([] (std::string) {}, *test_dir_, true));
-  EXPECT_EQ(kSuccess, test_elements_2_.Initialise([] (std::string) {}, *test_dir_, true));
+  EXPECT_EQ(kSuccess, test_elements_.Initialise([] (NonEmptyString) {}, *test_dir_, true));
+  EXPECT_EQ(kSuccess, test_elements_2_.Initialise([] (NonEmptyString) {}, *test_dir_, true));
   EXPECT_EQ(kSuccess,
             test_elements_.ConnectToSignals(ChatFunction(),
-                                            FileTransferFunction(),
+                                            FileTransferSuccessFunction(),
+                                            FileTransferFailureFunction(),
                                             NewContactFunction(),
                                             ContactConfirmationFunction(),
                                             ContactProfilePictureFunction(),
-                                            [&] (const std::string& own_public_id,
-                                                 const std::string& contact_public_id,
-                                                 const std::string& timestamp,
+                                            [&] (const NonEmptyString& own_public_id,
+                                                 const NonEmptyString& contact_public_id,
+                                                 const NonEmptyString& timestamp,
                                                  ContactPresence cp) {
                                               ContactPresenceSlot(own_public_id,
-                                                                                 contact_public_id,
-                                                                                 timestamp,
-                                                                                 cp,
-                                                                                 &done_);
+                                                                  contact_public_id,
+                                                                  timestamp,
+                                                                  cp,
+                                                                  &done_);
                                             },
                                             ContactDeletionFunction(),
                                             LifestuffCardUpdateFunction(),
@@ -671,13 +675,14 @@ void TwoInstancesApiTest::SetUp() {
                                             }));
   EXPECT_EQ(kSuccess,
             test_elements_2_.ConnectToSignals(ChatFunction(),
-                                              FileTransferFunction(),
+                                              FileTransferSuccessFunction(),
+                                              FileTransferFailureFunction(),
                                               NewContactFunction(),
                                               ContactConfirmationFunction(),
                                               ContactProfilePictureFunction(),
-                                              [&] (const std::string& own_public_id,
-                                                   const std::string& contact_public_id,
-                                                   const std::string& timestamp,
+                                              [&] (const NonEmptyString& own_public_id,
+                                                   const NonEmptyString& contact_public_id,
+                                                   const NonEmptyString& timestamp,
                                                    ContactPresence cp) {
                                                 ContactPresenceSlot(own_public_id,
                                                                     contact_public_id,

@@ -166,7 +166,7 @@ class LifeStuffImpl {
                const fs::path& absolute_path);
   int AcceptSentFile(const NonEmptyString& identifier,
                      const fs::path& absolute_path = fs::path(),
-                     std::string* file_name = nullptr);
+                     NonEmptyString* file_name = nullptr);
   int RejectSentFile(const NonEmptyString& identifier);
 
   /// Filesystem

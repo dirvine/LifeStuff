@@ -69,10 +69,10 @@ TEST_F(OneUserApiTest, FUNC_LoggedInState) {
   EXPECT_EQ(test_elements_.state(), kConnected);
   EXPECT_EQ(test_elements_.logged_in_state(), kBaseState);
 
-  std::string keyword2(RandomAlphaNumericString(6));
-  std::string pin2(CreatePin());
-  std::string password2(RandomAlphaNumericString(6));
-  std::string public_id2(RandomAlphaNumericString(5));
+  NonEmptyString keyword2(RandomAlphaNumericString(6));
+  NonEmptyString pin2(CreatePin());
+  NonEmptyString password2(RandomAlphaNumericString(6));
+  NonEmptyString public_id2(RandomAlphaNumericString(5));
 
   // full login, create public ID, full logout
   EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword2, pin2, password2));
@@ -137,7 +137,7 @@ TEST_F(OneUserApiTest, FUNC_LoggedInState) {
 
 TEST_F(OneUserApiTest, FUNC_IncorrectLoginLogoutSequences) {
   // Logged in with no public ID
-  std::string public_id(RandomAlphaNumericString(5));
+  NonEmptyString public_id(RandomAlphaNumericString(5));
   EXPECT_EQ(test_elements_.state(), kLoggedIn);
   EXPECT_EQ(test_elements_.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
   EXPECT_EQ(kSuccess, test_elements_.CreatePublicId(public_id));
@@ -224,9 +224,10 @@ TEST_F(TwoUsersApiTest, FUNC_DriveNotMountedTryOperations) {
   EXPECT_EQ(test_elements_2_.logged_in_state(),
             kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
   EXPECT_EQ(test_elements_2_.state(), kLoggedIn);
-  std::string public_id_3(RandomAlphaNumericString(5));
+  NonEmptyString public_id_3(RandomAlphaNumericString(5));
+  NonEmptyString message(RandomAlphaNumericString(5));
   EXPECT_EQ(kSuccess, test_elements_2_.CreatePublicId(public_id_3));
-  EXPECT_EQ(kSuccess, test_elements_2_.AddContact(public_id_3, public_id_1_));
+  EXPECT_EQ(kSuccess, test_elements_2_.AddContact(public_id_3, public_id_1_, message));
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_2_));
   EXPECT_EQ(test_elements_2_.logged_in_state(), kBaseState);
   EXPECT_EQ(test_elements_2_.state(), kConnected);
@@ -244,19 +245,21 @@ TEST_F(TwoUsersApiTest, FUNC_DriveNotMountedTryOperations) {
   EXPECT_EQ(test_elements_1_.logged_in_state(), kCredentialsLoggedIn);
   EXPECT_EQ(test_elements_1_.state(), kLoggedIn);
 
-  std::string public_id_4(RandomAlphaNumericString(5));
+  NonEmptyString public_id_4(RandomAlphaNumericString(5));
   EXPECT_EQ(kWrongLoggedInState, test_elements_1_.CreatePublicId(public_id_4));
   EXPECT_EQ(kWrongLoggedInState, test_elements_1_.CheckPassword(password_1_));
   EXPECT_EQ(kWrongLoggedInState,
-            test_elements_1_.ChangeKeyword(RandomAlphaNumericString(5), password_1_));
+            test_elements_1_.ChangeKeyword(NonEmptyString(RandomAlphaNumericString(5)), password_1_));
   EXPECT_EQ(kWrongLoggedInState, test_elements_1_.ChangePin(CreatePin(), password_1_));
   EXPECT_EQ(kWrongLoggedInState,
-            test_elements_1_.ChangePassword(RandomAlphaNumericString(5), password_1_));
+            test_elements_1_.ChangePassword(NonEmptyString(RandomAlphaNumericString(5)), password_1_));
   EXPECT_EQ(kWrongLoggedInState,
-            test_elements_1_.AddContact(public_id_1_, RandomAlphaNumericString(5)));
+            test_elements_1_.AddContact(public_id_1_,
+                                        NonEmptyString(RandomAlphaNumericString(5)),
+                                        NonEmptyString(RandomAlphaNumericString(5))));
   EXPECT_EQ(kWrongLoggedInState, test_elements_1_.ConfirmContact(public_id_1_, public_id_3));
   EXPECT_EQ(kWrongLoggedInState, test_elements_1_.DeclineContact(public_id_1_, public_id_3));
-  EXPECT_EQ(kWrongLoggedInState, test_elements_1_.RemoveContact(public_id_1_, public_id_2_, ""));
+  EXPECT_EQ(kWrongLoggedInState, test_elements_1_.RemoveContact(public_id_1_, public_id_2_, message));
   // TODO(Alison) - check that other functions in API aren't accessible when drive not mounted.
 
   EXPECT_EQ(kSuccess, test_elements_1_.LogOut());

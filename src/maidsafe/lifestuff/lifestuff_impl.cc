@@ -1025,7 +1025,7 @@ int LifeStuffImpl::SendFile(const NonEmptyString& sender_public_id,
 
 int LifeStuffImpl::AcceptSentFile(const NonEmptyString& identifier,
                                   const fs::path& absolute_path,
-                                  std::string* file_name) {
+                                  NonEmptyString* file_name) {
   int result(CheckStateAndFullAccess());
   if (result != kSuccess)
     return result;
@@ -1048,12 +1048,12 @@ int LifeStuffImpl::AcceptSentFile(const NonEmptyString& identifier,
       LOG(kError) << "Failed finding and creating: " << store_path;
       return kAcceptFileVerifyCreatePathFailure;
     }
-    std::string adequate_name(GetNameInPath(store_path, saved_file_name));
-    if (adequate_name.empty()) {
+    NonEmptyString adequate_name(GetNameInPath(store_path, saved_file_name));
+    if (adequate_name.string().empty()) {
       LOG(kError) << "No name found to work for saving the file.";
       return kAcceptFileNameFailure;
     }
-    result = user_storage_->InsertDataMap(store_path / adequate_name,
+    result = user_storage_->InsertDataMap(store_path / adequate_name.string(),
                                           NonEmptyString(serialised_data_map));
 
     if (result != kSuccess) {
