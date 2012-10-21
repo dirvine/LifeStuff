@@ -204,7 +204,7 @@ int LifeStuff::SendFile(const NonEmptyString& sender_public_id,
 
 int LifeStuff::AcceptSentFile(const NonEmptyString& identifier,
                               const fs::path& absolute_path,
-                              NonEmptyString* file_name) {
+                              std::string* file_name) {
   return lifestuff_impl_->AcceptSentFile(identifier, absolute_path, file_name);
 }
 

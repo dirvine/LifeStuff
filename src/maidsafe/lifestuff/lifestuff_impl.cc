@@ -1025,7 +1025,7 @@ int LifeStuffImpl::SendFile(const NonEmptyString& sender_public_id,
 
 int LifeStuffImpl::AcceptSentFile(const NonEmptyString& identifier,
                                   const fs::path& absolute_path,
-                                  NonEmptyString* file_name) {
+                                  std::string* file_name) {
   int result(CheckStateAndFullAccess());
   if (result != kSuccess)
     return result;
@@ -1034,7 +1034,6 @@ int LifeStuffImpl::AcceptSentFile(const NonEmptyString& identifier,
     LOG(kError) << "Wrong parameters given. absolute_path and file_name are mutually exclusive.";
     return kAcceptFilePathError;
   }
-
 
   std::string saved_file_name, serialised_data_map;
   if (!user_storage_->GetSavedDataMap(identifier, serialised_data_map, saved_file_name)) {
@@ -1048,12 +1047,12 @@ int LifeStuffImpl::AcceptSentFile(const NonEmptyString& identifier,
       LOG(kError) << "Failed finding and creating: " << store_path;
       return kAcceptFileVerifyCreatePathFailure;
     }
-    NonEmptyString adequate_name(GetNameInPath(store_path, saved_file_name));
-    if (adequate_name.string().empty()) {
+    std::string adequate_name(GetNameInPath(store_path, saved_file_name));
+    if (adequate_name.empty()) {
       LOG(kError) << "No name found to work for saving the file.";
       return kAcceptFileNameFailure;
     }
-    result = user_storage_->InsertDataMap(store_path / adequate_name.string(),
+    result = user_storage_->InsertDataMap(store_path / adequate_name,
                                           NonEmptyString(serialised_data_map));
 
     if (result != kSuccess) {

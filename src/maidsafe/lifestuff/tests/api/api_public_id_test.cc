@@ -135,7 +135,7 @@ TEST_F(OneUserApiTest, FUNC_AddOwnPublicIdAsContact) {
   test_elements_.CreatePublicId(public_id_2);
 
   EXPECT_NE(kSuccess, test_elements_.AddContact(public_id_1, public_id_1, message));
-  EXPECT_NE(kSuccess, test_elements_.AddContact(public_id_1, public_id_2,message));
+  EXPECT_NE(kSuccess, test_elements_.AddContact(public_id_1, public_id_2, message));
 }
 
 TEST_F(OneUserApiTest, FUNC_ChangeProfilePictureAfterSaveSession) {
@@ -275,8 +275,8 @@ TEST_F(TwoUsersApiTest, FUNC_SendFileSaveToGivenPath) {
   boost::system::error_code error_code;
   fs::path file_path1;
   NonEmptyString file_name1(RandomAlphaNumericString(8)),
-                 file_content1(RandomString(5 * 1024)),
-                 file_name2(RandomAlphaNumericString(8));
+                 file_content1(RandomString(5 * 1024));
+  std::string file_name2(RandomAlphaNumericString(8));
 
   LOG(kError) << "1111";
   {
@@ -298,18 +298,16 @@ TEST_F(TwoUsersApiTest, FUNC_SendFileSaveToGivenPath) {
     EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_2_, keyword_2_, pin_2_, password_2_));
     while (!testing_variables_2_.file_transfer_received)
       Sleep(bptime::milliseconds(100));
-    EXPECT_FALSE(testing_variables_2_.file_id.string().empty());
-    EXPECT_EQ(file_name1, testing_variables_2_.file_name);
-    EXPECT_NE(kSuccess, test_elements_2_.AcceptSentFile(testing_variables_2_.file_id));
-    EXPECT_NE(kSuccess, test_elements_2_.AcceptSentFile(
-                                             testing_variables_2_.file_id,
-                                             test_elements_2_.mount_path() / file_name2.string(),
-                                             &file_name2));
-    EXPECT_EQ(kSuccess, test_elements_2_.AcceptSentFile(
-                                             testing_variables_2_.file_id,
-                                             test_elements_2_.mount_path() / file_name2.string()));
+    EXPECT_FALSE(testing_variables_2_.file_id.empty());
+    EXPECT_EQ(file_name1.string(), testing_variables_2_.file_name);
+    EXPECT_NE(kSuccess, test_elements_2_.AcceptSentFile(NonEmptyString(testing_variables_2_.file_id)));
+    EXPECT_NE(kSuccess, test_elements_2_.AcceptSentFile(NonEmptyString(testing_variables_2_.file_id),
+                                                        test_elements_2_.mount_path() / file_name2,
+                                                        &file_name2));
+    EXPECT_EQ(kSuccess, test_elements_2_.AcceptSentFile(NonEmptyString(testing_variables_2_.file_id),
+                                                      test_elements_2_.mount_path() / file_name2));
 
-    EXPECT_TRUE(fs::exists(test_elements_2_.mount_path() / file_name2.string(), error_code));
+    EXPECT_TRUE(fs::exists(test_elements_2_.mount_path() / file_name2, error_code));
     EXPECT_EQ(0, error_code.value());
 
     Sleep(bptime::seconds(2));
@@ -340,20 +338,18 @@ TEST_F(TwoUsersApiTest, FUNC_SendFileSaveToDefaultLocation) {
     while (!testing_variables_2_.file_transfer_received)
       Sleep(bptime::milliseconds(100));
 
-    EXPECT_FALSE(testing_variables_2_.file_id.string().empty());
-    EXPECT_EQ(file_name1, testing_variables_2_.file_name);
-    NonEmptyString saved_file_name;
-    EXPECT_EQ(kSuccess, test_elements_2_.AcceptSentFile(testing_variables_2_.file_id,
-                                                        fs::path(),
-                                                        &saved_file_name));
-    EXPECT_EQ(file_name1, saved_file_name);
-    fs::path path2(test_elements_2_.mount_path() / 
-                     kMyStuff / kDownloadStuff / saved_file_name.string());
+    EXPECT_FALSE(testing_variables_2_.file_id.empty());
+    EXPECT_EQ(file_name1.string(), testing_variables_2_.file_name);
+    std::string saved_file_name;
+    NonEmptyString file_id(testing_variables_2_.file_id);
+    EXPECT_EQ(kSuccess, test_elements_2_.AcceptSentFile(file_id, fs::path(), &saved_file_name));
+    EXPECT_EQ(file_name1.string(), saved_file_name);
+    fs::path path2(test_elements_2_.mount_path() / kMyStuff / kDownloadStuff / saved_file_name);
     EXPECT_TRUE(fs::exists(path2, error_code));
     EXPECT_EQ(0, error_code.value());
-    NonEmptyString file_content2;
-    EXPECT_TRUE(ReadFile(path2, const_cast<std::string*>(&file_content2.string())));
-    EXPECT_EQ(file_content1, file_content2);
+    std::string file_content2;
+    EXPECT_TRUE(ReadFile(path2, &file_content2));
+    EXPECT_EQ(file_content1.string(), file_content2);
 
     EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_2_));
   }
@@ -375,25 +371,23 @@ TEST_F(TwoUsersApiTest, FUNC_SendFileSaveToDefaultLocation) {
     while (!testing_variables_2_.file_transfer_received)
       Sleep(bptime::milliseconds(100));
 
-    EXPECT_FALSE(testing_variables_2_.file_id.string().empty());
-    EXPECT_EQ(file_name1, testing_variables_2_.file_name);
-    NonEmptyString saved_file_name;
-    EXPECT_EQ(kSuccess, test_elements_2_.AcceptSentFile(testing_variables_2_.file_id,
-                                                      fs::path(),
-                                                      &saved_file_name));
-    EXPECT_EQ(file_name1 + NonEmptyString(" (1)"), saved_file_name);
+    EXPECT_FALSE(testing_variables_2_.file_id.empty());
+    EXPECT_EQ(file_name1.string(), testing_variables_2_.file_name);
+    std::string saved_file_name;
+    NonEmptyString file_id(testing_variables_2_.file_id);
+    EXPECT_EQ(kSuccess, test_elements_2_.AcceptSentFile(file_id, fs::path(), &saved_file_name));
+    EXPECT_EQ((file_name1 + NonEmptyString(" (1)")).string(), saved_file_name);
     fs::path path2a(test_elements_2_.mount_path() /
                       kMyStuff / kDownloadStuff / file_name1.string()),
-             path2b(test_elements_2_.mount_path() /
-                      kMyStuff / kDownloadStuff / saved_file_name.string());
+             path2b(test_elements_2_.mount_path() / kMyStuff / kDownloadStuff / saved_file_name);
 
     EXPECT_TRUE(fs::exists(path2a, error_code));
     EXPECT_EQ(0, error_code.value());
     EXPECT_TRUE(fs::exists(path2b, error_code));
     EXPECT_EQ(0, error_code.value());
-    NonEmptyString file_content2;
-    EXPECT_TRUE(ReadFile(path2b, const_cast<std::string*>(&file_content2.string())));
-    EXPECT_TRUE(file_content1 == file_content2);
+    std::string file_content2;
+    EXPECT_TRUE(ReadFile(path2b, &file_content2));
+    EXPECT_TRUE(file_content1.string() == file_content2);
 
     EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_2_));
   }
@@ -425,8 +419,8 @@ TEST_F(TwoUsersApiTest, FUNC_SendFileAcceptToDeletedDefaultLocation) {
     while (!testing_variables_2_.file_transfer_received)
       Sleep(bptime::milliseconds(100));
 
-    EXPECT_FALSE(testing_variables_2_.file_id.string().empty());
-    EXPECT_EQ(file_name1, testing_variables_2_.file_name);
+    EXPECT_FALSE(testing_variables_2_.file_id.empty());
+    EXPECT_EQ(file_name1.string(), testing_variables_2_.file_name);
 
     // Delete accepted files dir
     fs::remove_all(test_elements_2_.mount_path() / kMyStuff, error_code);
@@ -434,18 +428,16 @@ TEST_F(TwoUsersApiTest, FUNC_SendFileAcceptToDeletedDefaultLocation) {
     EXPECT_FALSE(fs::exists(test_elements_2_.mount_path() / kMyStuff, error_code));
     EXPECT_NE(0, error_code.value());
 
-    NonEmptyString saved_file_name;
-    EXPECT_EQ(kSuccess, test_elements_2_.AcceptSentFile(testing_variables_2_.file_id,
-                                                      fs::path(),
-                                                      &saved_file_name));
-    EXPECT_EQ(file_name1, saved_file_name);
-    fs::path path2(test_elements_2_.mount_path() /
-                      kMyStuff / kDownloadStuff / saved_file_name.string());
+    std::string saved_file_name;
+    NonEmptyString file_id(testing_variables_2_.file_id);
+    EXPECT_EQ(kSuccess, test_elements_2_.AcceptSentFile(file_id, fs::path(), &saved_file_name));
+    EXPECT_EQ(file_name1.string(), saved_file_name);
+    fs::path path2(test_elements_2_.mount_path() / kMyStuff / kDownloadStuff / saved_file_name);
     EXPECT_TRUE(fs::exists(path2, error_code));
     EXPECT_EQ(0, error_code.value());
-    NonEmptyString file_content2;
-    EXPECT_TRUE(ReadFile(path2, const_cast<std::string*>(&file_content2.string())));
-    EXPECT_EQ(file_content1, file_content2);
+    std::string file_content2;
+    EXPECT_TRUE(ReadFile(path2, &file_content2));
+    EXPECT_EQ(file_content1.string(), file_content2);
 
     EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_2_));
   }
@@ -467,7 +459,7 @@ TEST(IndependentFullTest, FUNC_SendFileWithRejection) {
   int file_count(0), file_max(10);
   size_t files_expected(file_max);
   std::vector<fs::path> file_paths;
-  std::vector<NonEmptyString> file_contents, received_ids, received_names;
+  std::vector<std::string> file_contents, received_ids, received_names;
   ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements1,
                                                    test_elements2,
                                                    testing_variables1,
@@ -489,8 +481,8 @@ TEST(IndependentFullTest, FUNC_SendFileWithRejection) {
     for (; file_count < file_max; ++file_count) {
       file_paths.push_back(fs::path(test_elements1.mount_path() / RandomAlphaNumericString(8)));
       std::ofstream ofstream(file_paths[file_count].c_str(), std::ios::binary);
-      file_contents.push_back(NonEmptyString(RandomString(5 * 1024)));
-      ofstream << file_contents[file_count].string();
+      file_contents.push_back(RandomString(5 * 1024));
+      ofstream << file_contents[file_count];
       ofstream.close();
       EXPECT_TRUE(fs::exists(file_paths[file_count], error_code));
       EXPECT_EQ(0, error_code.value());
@@ -508,13 +500,13 @@ TEST(IndependentFullTest, FUNC_SendFileWithRejection) {
     EXPECT_EQ(files_expected, received_names.size());
     fs::path path2(test_elements2.mount_path() / kMyStuff / kDownloadStuff);
     for (size_t st(0); st < received_ids.size(); ++st) {
-      EXPECT_EQ(file_paths[st].filename().string(), received_names[st].string());
-      EXPECT_EQ(kSuccess, test_elements2.RejectSentFile(received_ids[st]));
-      EXPECT_FALSE(fs::exists(path2 / received_names[st].string(), error_code));
+      EXPECT_EQ(file_paths[st].filename().string(), received_names[st]);
+      EXPECT_EQ(kSuccess, test_elements2.RejectSentFile(NonEmptyString(received_ids[st])));
+      EXPECT_FALSE(fs::exists(path2 / received_names[st], error_code));
       EXPECT_NE(0, error_code.value());
-      NonEmptyString hidden(received_ids[st].string() + kHiddenFileExtension), content;
-      EXPECT_NE(kSuccess, test_elements2.ReadHiddenFile(test_elements2.mount_path() / hidden.string(),
-                                                        const_cast<std::string*>(&content.string())));
+      std::string hidden(received_ids[st] + kHiddenFileExtension), content;
+      EXPECT_NE(kSuccess, test_elements2.ReadHiddenFile(test_elements2.mount_path() / hidden,
+                                                        &content));
     }
 
     EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2));
@@ -524,7 +516,7 @@ TEST(IndependentFullTest, FUNC_SendFileWithRejection) {
 }
 
 TEST_F(TwoUsersApiTest, FUNC_ProfilePicture) {
-  NonEmptyString file_content1, file_content2(RandomString(5 * 1024));
+  NonEmptyString file_content1(RandomString(1)), file_content2(RandomString(5 * 1024));
   {
     EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_2_, keyword_2_, pin_2_, password_2_));
     // Setting of profile image
@@ -565,7 +557,7 @@ TEST_F(TwoUsersApiTest, FUNC_ProfilePicture) {
 }
 
 TEST_F(TwoUsersApiTest, FUNC_ProfilePictureAndLogOut) {
-  NonEmptyString file_content1, file_content2(RandomString(5 * 1024));
+  NonEmptyString file_content1(RandomString(1)), file_content2(RandomString(5 * 1024));
   EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_2_, keyword_2_, pin_2_, password_2_));
   // Setting of profile image
   EXPECT_EQ(kSuccess, test_elements_2_.ChangeProfilePicture(public_id_2_, file_content2));
@@ -605,7 +597,7 @@ TEST_F(TwoUsersApiTest, FUNC_RemoveContact) {
     while (!testing_variables_2_.removed)
       Sleep(bptime::milliseconds(100));
 
-    EXPECT_EQ(removal_message, testing_variables_2_.removal_message);
+    EXPECT_EQ(removal_message.string(), testing_variables_2_.removal_message);
     bool contact_deleted(false);
     while (!contact_deleted)
       contact_deleted = test_elements_2_.GetContacts(public_id_2_).empty();
@@ -632,7 +624,7 @@ TEST_F(TwoUsersApiTest, FUNC_RemoveContactAddContact) {
       while (!testing_variables_2_.removed)
         Sleep(bptime::milliseconds(100));
 
-      EXPECT_EQ(removal_message, testing_variables_2_.removal_message);
+      EXPECT_EQ(removal_message.string(), testing_variables_2_.removal_message);
       bool contact_deleted(false);
       while (!contact_deleted)
         contact_deleted = test_elements_2_.GetContacts(public_id_2_).empty();
@@ -652,7 +644,7 @@ TEST_F(TwoUsersApiTest, FUNC_RemoveContactAddContact) {
       DoFullLogIn(test_elements_2_, keyword_2_, pin_2_, password_2_);
       while (!testing_variables_2_.newly_contacted)
         Sleep(bptime::milliseconds(100));
-      EXPECT_EQ(testing_variables_2_.contact_request_message, request_message);
+      EXPECT_EQ(testing_variables_2_.contact_request_message, request_message.string());
       test_elements_2_.ConfirmContact(public_id_2_, public_id_1_);
       EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_2_));
     } else {
@@ -664,7 +656,7 @@ TEST_F(TwoUsersApiTest, FUNC_RemoveContactAddContact) {
       DoFullLogIn(test_elements_1_, keyword_1_, pin_1_, password_1_);
       while (!testing_variables_1_.newly_contacted)
         Sleep(bptime::milliseconds(100));
-      EXPECT_EQ(testing_variables_1_.contact_request_message, request_message);
+      EXPECT_EQ(testing_variables_1_.contact_request_message, request_message.string());
       test_elements_1_.ConfirmContact(public_id_1_, public_id_2_);
       EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_1_));
     }
@@ -686,7 +678,7 @@ TEST_F(TwoUsersApiTest, FUNC_AddContactWithMessage) {
   DoFullLogIn(test_elements_1_, keyword_1_, pin_1_, password_1_);
   while (!testing_variables_1_.newly_contacted)
     Sleep(bptime::milliseconds(100));
-  EXPECT_EQ(testing_variables_1_.contact_request_message, message);
+  EXPECT_EQ(testing_variables_1_.contact_request_message, message.string());
   test_elements_1_.ConfirmContact(public_id_1_, public_id_3);
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_1_));
 }
@@ -717,7 +709,7 @@ TEST_F(TwoUsersApiTest, FUNC_AddThenRemoveOfflineUser) {
     Sleep(bptime::milliseconds(100));
   }
   EXPECT_TRUE(testing_variables_2_.newly_contacted);
-  EXPECT_EQ(add_message, testing_variables_2_.contact_request_message);
+  EXPECT_EQ(add_message.string(), testing_variables_2_.contact_request_message);
 
   i = 0;
   while (!testing_variables_2_.removed && i < 60) {
@@ -725,7 +717,7 @@ TEST_F(TwoUsersApiTest, FUNC_AddThenRemoveOfflineUser) {
     Sleep(bptime::milliseconds(100));
   }
   EXPECT_TRUE(testing_variables_2_.removed);
-  EXPECT_EQ(remove_message, testing_variables_2_.removal_message);
+  EXPECT_EQ(remove_message.string(), testing_variables_2_.removal_message);
 
   EXPECT_EQ(1, test_elements_2_.GetContacts(public_id_2_).size());
 

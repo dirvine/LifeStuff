@@ -59,7 +59,7 @@ struct ShareChangeLog {
         old_path(),
         new_path(),
         op_type() {}
-  ShareChangeLog(const NonEmptyString& share_name_in,
+  ShareChangeLog(const std::string& share_name_in,
                  const fs::path& target_path_in,
                  const uint32_t& num_of_entries_in,
                  const fs::path& old_path_in,
@@ -72,7 +72,7 @@ struct ShareChangeLog {
         new_path(new_path_in),
         op_type(op_type_in) {}
 
-  NonEmptyString share_name;
+  std::string share_name;
   fs::path target_path;
   uint32_t num_of_entries;
   fs::path old_path;
@@ -111,29 +111,29 @@ struct TestingVariables {
         contact_request_message(),
         social_info_map_changed(false),
         immediate_quit_required(false) {}
-  NonEmptyString chat_message;
+  std::string chat_message;
   bool chat_message_received;
-  NonEmptyString file_name, file_id;
+  std::string file_name, file_id;
   bool file_transfer_received,
        newly_contacted,
        confirmed,
        picture_updated,
        presence_announced;
-  NonEmptyString removal_message;
+  std::string removal_message;
   bool removed;
-  NonEmptyString new_private_share_name, new_private_share_id;
+  std::string new_private_share_name, new_private_share_id;
   int new_private_access_level;
   bool privately_invited;
-  NonEmptyString deleted_private_share_name;
+  std::string deleted_private_share_name;
   bool private_share_deleted;
-  NonEmptyString access_private_share_name;
+  std::string access_private_share_name;
   int private_member_access;
   bool private_member_access_changed;
-  NonEmptyString old_share_name;
-  NonEmptyString new_share_name;
+  std::string old_share_name;
+  std::string new_share_name;
   bool share_renamed;
   ShareChangeLogBook share_changes;
-  NonEmptyString contact_request_message;
+  std::string contact_request_message;
   bool social_info_map_changed;
   bool immediate_quit_required;
 };
@@ -142,7 +142,7 @@ void ChatSlot(const NonEmptyString&,
               const NonEmptyString&,
               const NonEmptyString& signal_message,
               const NonEmptyString&,
-              NonEmptyString* slot_message,
+              std::string* slot_message,
               volatile bool* done);
 
 void FileTransferSlot(const NonEmptyString&,
@@ -150,8 +150,8 @@ void FileTransferSlot(const NonEmptyString&,
                       const NonEmptyString& signal_file_name,
                       const NonEmptyString& signal_file_id,
                       const NonEmptyString&,
-                      NonEmptyString* slot_file_name,
-                      NonEmptyString* slot_file_id,
+                      std::string* slot_file_name,
+                      std::string* slot_file_id,
                       volatile bool* done);
 
 void MultipleFileTransferSlot(const NonEmptyString&,
@@ -159,8 +159,8 @@ void MultipleFileTransferSlot(const NonEmptyString&,
                               const NonEmptyString& signal_file_name,
                               const NonEmptyString& signal_file_id,
                               const NonEmptyString&,
-                              std::vector<NonEmptyString>* ids,
-                              std::vector<NonEmptyString>* names,
+                              std::vector<std::string>* ids,
+                              std::vector<std::string>* names,
                               size_t* total_files,
                               volatile bool* done);
 
@@ -270,16 +270,16 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                  const NonEmptyString& password2,
                                  const NonEmptyString& public_id2,
                                  bool several_files = false,
-                                 std::vector<NonEmptyString>* ids = nullptr,
-                                 std::vector<NonEmptyString>* names = nullptr,
+                                 std::vector<std::string>* ids = nullptr,
+                                 std::vector<std::string>* names = nullptr,
                                  size_t* total_files = nullptr);
 
 int InitialiseAndConnect(LifeStuff& test_elements,
                          TestingVariables& testing_variables,
                          const fs::path& test_dir,
                          bool several_files = false,
-                         std::vector<NonEmptyString>* ids = nullptr,
-                         std::vector<NonEmptyString>* names = nullptr,
+                         std::vector<std::string>* ids = nullptr,
+                         std::vector<std::string>* names = nullptr,
                          size_t* total_files = nullptr);
 
 int CreateAccountWithPublicId(LifeStuff& test_elements,
@@ -290,8 +290,8 @@ int CreateAccountWithPublicId(LifeStuff& test_elements,
                               const NonEmptyString& password,
                               const NonEmptyString& public_id,
                               bool several_files = false,
-                              std::vector<NonEmptyString>* ids = nullptr,
-                              std::vector<NonEmptyString>* names = nullptr,
+                              std::vector<std::string>* ids = nullptr,
+                              std::vector<std::string>* names = nullptr,
                               size_t* total_files = nullptr);
 
 int ConnectTwoPublicIds(LifeStuff& test_elements1,

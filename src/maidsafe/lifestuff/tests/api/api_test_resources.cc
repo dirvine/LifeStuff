@@ -29,10 +29,10 @@ void ChatSlot(const NonEmptyString&,
               const NonEmptyString&,
               const NonEmptyString& signal_message,
               const NonEmptyString&,
-              NonEmptyString* slot_message,
+              std::string* slot_message,
               volatile bool* done) {
   if (slot_message)
-    *slot_message = signal_message;
+    *slot_message = signal_message.string();
   *done = true;
 }
 
@@ -41,13 +41,13 @@ void FileTransferSlot(const NonEmptyString&,
                       const NonEmptyString& signal_file_name,
                       const NonEmptyString& signal_file_id,
                       const NonEmptyString&,
-                      NonEmptyString* slot_file_name,
-                      NonEmptyString* slot_file_id,
+                      std::string* slot_file_name,
+                      std::string* slot_file_id,
                       volatile bool* done) {
   if (slot_file_name)
-    *slot_file_name = signal_file_name;
+    *slot_file_name = signal_file_name.string();
   if (slot_file_id)
-    *slot_file_id = signal_file_id;
+    *slot_file_id = signal_file_id.string();
   *done = true;
 }
 
@@ -56,12 +56,12 @@ void MultipleFileTransferSlot(const NonEmptyString&,
                               const NonEmptyString& signal_file_name,
                               const NonEmptyString& signal_file_id,
                               const NonEmptyString&,
-                              std::vector<NonEmptyString>* ids,
-                              std::vector<NonEmptyString>* names,
+                              std::vector<std::string>* ids,
+                              std::vector<std::string>* names,
                               size_t* total_files,
                               volatile bool* done) {
-  ids->push_back(signal_file_id);
-  names->push_back(signal_file_name);
+  ids->push_back(signal_file_id.string());
+  names->push_back(signal_file_name.string());
   if (ids->size() == *total_files)
     *done = true;
 }
@@ -71,9 +71,9 @@ void NewContactSlot(const NonEmptyString&,
                     const NonEmptyString& message,
                     const NonEmptyString&,
                     volatile bool* done,
-                    NonEmptyString* contact_request_message) {
+                    std::string* contact_request_message) {
   *done = true;
-  *contact_request_message = message;
+  *contact_request_message = message.string();
 }
 
 void ContactConfirmationSlot(const NonEmptyString&,
@@ -102,10 +102,10 @@ void ContactDeletionSlot(const NonEmptyString&,
                          const NonEmptyString&,
                          const NonEmptyString& signal_message,
                          const NonEmptyString&,
-                         NonEmptyString* slot_message,
+                         std::string* slot_message,
                          volatile bool* done) {
   if (slot_message)
-    *slot_message = signal_message;
+    *slot_message = signal_message.string();
   *done = true;
 }
 
@@ -115,14 +115,14 @@ void PrivateShareInvitationSlot(const NonEmptyString&,
                                 const NonEmptyString& signal_share_id,
                                 int access_level,
                                 const NonEmptyString&,
-                                NonEmptyString* slot_share_name,
-                                NonEmptyString* slot_share_id,
+                                std::string* slot_share_name,
+                                std::string* slot_share_id,
                                 int* slot_access_level,
                                 volatile bool* done) {
   if (slot_share_name)
-    *slot_share_name = signal_share_name;
+    *slot_share_name = signal_share_name.string();
   if (slot_share_id)
-    *slot_share_id = signal_share_id;
+    *slot_share_id = signal_share_id.string();
   if (slot_access_level)
     *slot_access_level = access_level;
   *done = true;
@@ -133,22 +133,22 @@ void PrivateShareDeletionSlot(const NonEmptyString&,
                               const NonEmptyString&,
                               const NonEmptyString&,
                               const NonEmptyString&,
-                              NonEmptyString* slot_share_name,
+                              std::string* slot_share_name,
                               volatile bool* done) {
   if (slot_share_name)
-    *slot_share_name = signal_share_name;
+    *slot_share_name = signal_share_name.string();
   *done = true;
 }
 
 void PrivateMemberAccessChangeSlot(const NonEmptyString&,
                                    const NonEmptyString&,
-                                   const NonEmptyString& share_name,
+                                   const NonEmptyString& /*share_name*/,
                                    const NonEmptyString&,
                                    int signal_member_access,
-                                   const NonEmptyString& /*slot_share_name*/,
+                                   const std::string& /*slot_share_name*/,
                                    int* slot_member_access,
                                    volatile bool *done) {
-  ASSERT_NE(NonEmptyString(" "), share_name);
+  // ASSERT_NE("", share_name);
   if (slot_member_access)
     *slot_member_access = signal_member_access;
   *done = true;
@@ -156,17 +156,17 @@ void PrivateMemberAccessChangeSlot(const NonEmptyString&,
 
 void ShareRenameSlot(const NonEmptyString& old_share_name,
                      const NonEmptyString& new_share_name,
-                     NonEmptyString* slot_old_share_name,
-                     NonEmptyString* slot_new_share_name,
+                     std::string* slot_old_share_name,
+                     std::string* slot_new_share_name,
                      volatile bool* done) {
   if (slot_old_share_name)
-    *slot_old_share_name = old_share_name;
+    *slot_old_share_name = old_share_name.string();
   if (slot_new_share_name)
-    *slot_new_share_name = new_share_name;
+    *slot_new_share_name = new_share_name.string();
   *done = true;
 }
 
-void ShareChangedSlot(const NonEmptyString& share_name,
+void ShareChangedSlot(const std::string& share_name,
                       const fs::path& target_path,
                       const uint32_t& num_of_entries,
                       const fs::path& old_path,
@@ -287,8 +287,8 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                  const NonEmptyString& password2,
                                  const NonEmptyString& public_id2,
                                  bool several_files,
-                                 std::vector<NonEmptyString>* ids,
-                                 std::vector<NonEmptyString>* names,
+                                 std::vector<std::string>* ids,
+                                 std::vector<std::string>* names,
                                  size_t* total_files) {
   int result(0);
   result = CreateAccountWithPublicId(test_elements1,
@@ -336,8 +336,8 @@ int InitialiseAndConnect(LifeStuff& test_elements,
                          TestingVariables& testing_variables,
                          const fs::path& test_dir,
                          bool several_files,
-                         std::vector<NonEmptyString>* ids,
-                         std::vector<NonEmptyString>* names,
+                         std::vector<std::string>* ids,
+                         std::vector<std::string>* names,
                          size_t* total_files) {
   FileTransferSuccessFunction ftf;
   if (several_files) {
@@ -461,8 +461,8 @@ int CreateAccountWithPublicId(LifeStuff& test_elements,
                               const NonEmptyString& password,
                               const NonEmptyString& public_id,
                               bool several_files,
-                              std::vector<NonEmptyString>* ids,
-                              std::vector<NonEmptyString>* names,
+                              std::vector<std::string>* ids,
+                              std::vector<std::string>* names,
                               size_t* total_files) {
   int result(0);
   result = InitialiseAndConnect(test_elements,
