@@ -51,37 +51,6 @@ namespace lifestuff {
 
 namespace test {
 
-struct ShareChangeLog {
-  ShareChangeLog()
-      : share_name(),
-        target_path(),
-        num_of_entries(1),
-        old_path(),
-        new_path(),
-        op_type() {}
-  ShareChangeLog(const std::string& share_name_in,
-                 const fs::path& target_path_in,
-                 const uint32_t& num_of_entries_in,
-                 const fs::path& old_path_in,
-                 const fs::path& new_path_in,
-                 const int& op_type_in)
-      : share_name(share_name_in),
-        target_path(target_path_in),
-        num_of_entries(num_of_entries_in),
-        old_path(old_path_in),
-        new_path(new_path_in),
-        op_type(op_type_in) {}
-
-  std::string share_name;
-  fs::path target_path;
-  uint32_t num_of_entries;
-  fs::path old_path;
-  fs::path new_path;
-  int op_type;
-};
-
-typedef std::vector<ShareChangeLog> ShareChangeLogBook;
-
 struct TestingVariables {
   TestingVariables()
       : chat_message(),
@@ -95,19 +64,6 @@ struct TestingVariables {
         presence_announced(false),
         removal_message(),
         removed(false),
-        new_private_share_name(),
-        new_private_share_id(),
-        new_private_access_level(-1),
-        privately_invited(false),
-        deleted_private_share_name(),
-        private_share_deleted(false),
-        access_private_share_name(),
-        private_member_access(0),
-        private_member_access_changed(false),
-        old_share_name(),
-        new_share_name(),
-        share_renamed(false),
-        share_changes(),
         contact_request_message(),
         social_info_map_changed(false),
         immediate_quit_required(false) {}
@@ -121,18 +77,6 @@ struct TestingVariables {
        presence_announced;
   std::string removal_message;
   bool removed;
-  std::string new_private_share_name, new_private_share_id;
-  int new_private_access_level;
-  bool privately_invited;
-  std::string deleted_private_share_name;
-  bool private_share_deleted;
-  std::string access_private_share_name;
-  int private_member_access;
-  bool private_member_access_changed;
-  std::string old_share_name;
-  std::string new_share_name;
-  bool share_renamed;
-  ShareChangeLogBook share_changes;
   std::string contact_request_message;
   bool social_info_map_changed;
   bool immediate_quit_required;
@@ -193,49 +137,6 @@ void ContactDeletionSlot(const NonEmptyString&,
                          const NonEmptyString&,
                          NonEmptyString* slot_message,
                          volatile bool* done);
-
-void PrivateShareInvitationSlot(const NonEmptyString&,
-                                const NonEmptyString&,
-                                const NonEmptyString& signal_share_name,
-                                const NonEmptyString& signal_share_id,
-                                int access_level,
-                                const NonEmptyString&,
-                                NonEmptyString* slot_share_name,
-                                NonEmptyString* slot_share_id,
-                                int* slot_access_level,
-                                volatile bool* done);
-
-void PrivateShareDeletionSlot(const NonEmptyString&,
-                              const NonEmptyString& signal_share_name,
-                              const NonEmptyString&,
-                              const NonEmptyString&,
-                              const NonEmptyString&,
-                              NonEmptyString* slot_share_name,
-                              volatile bool* done);
-
-void PrivateMemberAccessChangeSlot(const NonEmptyString&,
-                                   const NonEmptyString&,
-                                   const NonEmptyString&,
-                                   const NonEmptyString&,
-                                   int signal_member_access,
-                                   const NonEmptyString&  /*slot_share_name*/,
-                                   int* slot_member_access,
-                                   volatile bool* done);
-
-void ShareRenameSlot(const NonEmptyString& old_share_name,
-                     const NonEmptyString& new_share_name,
-                     NonEmptyString* slot_old_share_name,
-                     NonEmptyString* slot_new_share_name,
-                     volatile bool* done);
-
-void ShareChangedSlot(const NonEmptyString& share_name,
-                      const fs::path& target_path,
-                      const uint32_t& num_of_entries,
-                      const fs::path& old_path,
-                      const fs::path& new_path,
-                      const int& op_type,
-                      boost::mutex* mutex,
-                      ShareChangeLogBook* share_changes);
 
 void LifestuffCardSlot(const NonEmptyString&,
                        const NonEmptyString&,
@@ -358,7 +259,7 @@ void RunLogIn(LifeStuff& test_elements,
 class OneUserApiTest : public testing::Test {
  public:
   OneUserApiTest()
-    :  test_dir_(maidsafe::test::CreateTestPath()),
+    : test_dir_(maidsafe::test::CreateTestPath()),
       keyword_(RandomAlphaNumericString(6)),
       pin_(CreatePin()),
       password_(RandomAlphaNumericString(6)),
@@ -432,48 +333,6 @@ class TwoUsersApiTest : public testing::Test {
   TestingVariables testing_variables_1_;
   TestingVariables testing_variables_2_;
   NetworkHelper network_;
-
-  virtual void SetUp();
-
-  virtual void TearDown();
-};
-
-class PrivateSharesApiTest : public ::testing::TestWithParam<int> {
- public:
-  PrivateSharesApiTest() : rights_(GetParam()),
-    test_dir_(maidsafe::test::CreateTestPath()),
-    keyword_1_(RandomAlphaNumericString(6)),
-    pin_1_(CreatePin()),
-    password_1_(RandomAlphaNumericString(6)),
-    public_id_1_(RandomAlphaNumericString(5)),
-    keyword_2_(RandomAlphaNumericString(6)),
-    pin_2_(CreatePin()),
-    password_2_(RandomAlphaNumericString(6)),
-    public_id_2_(RandomAlphaNumericString(5)),
-    test_elements_1_(),
-    test_elements_2_(),
-    testing_variables_1_(),
-    testing_variables_2_(),
-    network_(),
-    share_name_1_(RandomAlphaNumericString(5)) {}
-
- protected:
-  int rights_;
-  maidsafe::test::TestPath test_dir_;
-  NonEmptyString keyword_1_;
-  NonEmptyString pin_1_;
-  NonEmptyString password_1_;
-  NonEmptyString public_id_1_;
-  NonEmptyString keyword_2_;
-  NonEmptyString pin_2_;
-  NonEmptyString password_2_;
-  NonEmptyString public_id_2_;
-  LifeStuff test_elements_1_;
-  LifeStuff test_elements_2_;
-  TestingVariables testing_variables_1_;
-  TestingVariables testing_variables_2_;
-  NetworkHelper network_;
-  NonEmptyString share_name_1_;
 
   virtual void SetUp();
 
