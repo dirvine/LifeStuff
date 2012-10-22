@@ -22,8 +22,15 @@
 #include <vector>
 
 #include "boost/filesystem/path.hpp"
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4702)
+#endif
 #include "boost/iostreams/device/file_descriptor.hpp"
 #include "boost/iostreams/stream.hpp"
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
 #include "boost/process/child.hpp"
 
 #include "maidsafe/common/test.h"
