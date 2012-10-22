@@ -43,20 +43,19 @@ TEST_F(OneUserApiTest, FUNC_TryCreateInvalidPublicId) {
   // EXPECT_NE(kSuccess, test_elements_.CreatePublicId(NonEmptyString("")));
   EXPECT_NE(kSuccess, test_elements_.CreatePublicId(NonEmptyString(RandomAlphaNumericString(31))));
   EXPECT_NE(kSuccess, test_elements_.CreatePublicId(NonEmptyString(" ")));
-  EXPECT_NE(kSuccess,
-            test_elements_.CreatePublicId(NonEmptyString(" " + RandomAlphaNumericString(RandomUint32() % 26 + 4))));
-  EXPECT_NE(kSuccess,
-            test_elements_.CreatePublicId(NonEmptyString(RandomAlphaNumericString(RandomUint32() % 26 + 4) + " ")));
-  EXPECT_NE(kSuccess,
-            test_elements_.CreatePublicId(NonEmptyString(RandomAlphaNumericString(RandomUint32() % 13 + 2) + "  " +
-                                          RandomAlphaNumericString(RandomUint32() % 14 + 1))));
-  EXPECT_NE(kSuccess,
-            test_elements_.CreatePublicId(NonEmptyString(" " + RandomAlphaNumericString(RandomUint32() % 13 + 1)
-                                          + "  " +
-                                          RandomAlphaNumericString(RandomUint32() % 13 + 1) + " ")));
-  EXPECT_EQ(kSuccess,
-            test_elements_.CreatePublicId(NonEmptyString(RandomAlphaNumericString(RandomUint32() % 14 + 1) + " " +
-                                          RandomAlphaNumericString(RandomUint32() % 15 + 1))));
+  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(
+      NonEmptyString(" " + RandomAlphaNumericString(RandomUint32() % 26 + 4))));
+  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(
+      NonEmptyString(RandomAlphaNumericString(RandomUint32() % 26 + 4) + " ")));
+  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(
+      NonEmptyString(RandomAlphaNumericString(RandomUint32() % 13 + 2) + "  " +
+      RandomAlphaNumericString(RandomUint32() % 14 + 1))));
+  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(
+      NonEmptyString(" " + RandomAlphaNumericString(RandomUint32() % 13 + 1) + "  " +
+                     RandomAlphaNumericString(RandomUint32() % 13 + 1) + " ")));
+  EXPECT_EQ(kSuccess, test_elements_.CreatePublicId(
+      NonEmptyString(RandomAlphaNumericString(RandomUint32() % 14 + 1) + " " +
+                     RandomAlphaNumericString(RandomUint32() % 15 + 1))));
 }
 
 TEST_F(OneUserApiTest, FUNC_CreateSamePublicIdConsecutively) {
@@ -142,7 +141,8 @@ TEST_F(OneUserApiTest, FUNC_ChangeProfilePictureAfterSaveSession) {
   NonEmptyString public_id(RandomAlphaNumericString(5));
   EXPECT_EQ(kSuccess, test_elements_.CreatePublicId(public_id));
   for (int n(1001); n > 1; n-=100) {
-    NonEmptyString profile_picture1(RandomString(1177 * n)), profile_picture2(RandomString(1177 * n));
+    NonEmptyString profile_picture1(RandomString(1177 * n)),
+                   profile_picture2(RandomString(1177 * n));
     EXPECT_EQ(kSuccess, test_elements_.ChangeProfilePicture(public_id, profile_picture1));
     NonEmptyString retrieved_picture(test_elements_.GetOwnProfilePicture(public_id));
     EXPECT_TRUE(profile_picture1 == retrieved_picture);
@@ -213,7 +213,7 @@ TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdSimultaneously) {
   EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_1_, keyword_1_, pin_1_, password_1_));
   EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_2_, keyword_2_, pin_2_, password_2_));
 
-  std::string new_public_id(RandomAlphaNumericString(6));
+  NonEmptyString new_public_id(RandomAlphaNumericString(6));
   int result_1(0), result_2(0);
 
   std::vector<std::pair<int, int>> sleep_values;
@@ -251,8 +251,8 @@ TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdSimultaneously) {
     EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_2_, keyword_2_, pin_2_, password_2_));
 
     int new_instances(0);
-    std::vector<std::string>::iterator it;
-    std::vector<std::string> names(test_elements_1_.PublicIdsList());
+    std::vector<NonEmptyString>::iterator it;
+    std::vector<NonEmptyString> names(test_elements_1_.PublicIdsList());
     for (it = names.begin(); it < names.end(); it++) {
       if (*it == new_public_id)
         ++new_instances;
@@ -263,7 +263,7 @@ TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdSimultaneously) {
         ++new_instances;
     }
     EXPECT_EQ(new_instances, 1);
-    new_public_id = RandomAlphaNumericString(new_public_id.length() + 1);
+    new_public_id = NonEmptyString(RandomAlphaNumericString(new_public_id.string().length() + 1));
   }
 
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_1_));
@@ -300,12 +300,12 @@ TEST_F(TwoUsersApiTest, FUNC_SendFileSaveToGivenPath) {
       Sleep(bptime::milliseconds(100));
     EXPECT_FALSE(testing_variables_2_.file_id.empty());
     EXPECT_EQ(file_name1.string(), testing_variables_2_.file_name);
-    EXPECT_NE(kSuccess, test_elements_2_.AcceptSentFile(NonEmptyString(testing_variables_2_.file_id)));
-    EXPECT_NE(kSuccess, test_elements_2_.AcceptSentFile(NonEmptyString(testing_variables_2_.file_id),
-                                                        test_elements_2_.mount_path() / file_name2,
-                                                        &file_name2));
-    EXPECT_EQ(kSuccess, test_elements_2_.AcceptSentFile(NonEmptyString(testing_variables_2_.file_id),
-                                                      test_elements_2_.mount_path() / file_name2));
+    EXPECT_NE(kSuccess, test_elements_2_.AcceptSentFile(NonEmptyString(
+        testing_variables_2_.file_id)));
+    EXPECT_NE(kSuccess, test_elements_2_.AcceptSentFile(NonEmptyString(
+        testing_variables_2_.file_id), test_elements_2_.mount_path() / file_name2, &file_name2));
+    EXPECT_EQ(kSuccess, test_elements_2_.AcceptSentFile(NonEmptyString(
+        testing_variables_2_.file_id), test_elements_2_.mount_path() / file_name2));
 
     EXPECT_TRUE(fs::exists(test_elements_2_.mount_path() / file_name2, error_code));
     EXPECT_EQ(0, error_code.value());

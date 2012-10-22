@@ -248,18 +248,18 @@ TEST_F(TwoUsersApiTest, FUNC_DriveNotMountedTryOperations) {
   NonEmptyString public_id_4(RandomAlphaNumericString(5));
   EXPECT_EQ(kWrongLoggedInState, test_elements_1_.CreatePublicId(public_id_4));
   EXPECT_EQ(kWrongLoggedInState, test_elements_1_.CheckPassword(password_1_));
-  EXPECT_EQ(kWrongLoggedInState,
-            test_elements_1_.ChangeKeyword(NonEmptyString(RandomAlphaNumericString(5)), password_1_));
+  EXPECT_EQ(kWrongLoggedInState, test_elements_1_.ChangeKeyword(NonEmptyString(
+      RandomAlphaNumericString(5)), password_1_));
   EXPECT_EQ(kWrongLoggedInState, test_elements_1_.ChangePin(CreatePin(), password_1_));
-  EXPECT_EQ(kWrongLoggedInState,
-            test_elements_1_.ChangePassword(NonEmptyString(RandomAlphaNumericString(5)), password_1_));
-  EXPECT_EQ(kWrongLoggedInState,
-            test_elements_1_.AddContact(public_id_1_,
-                                        NonEmptyString(RandomAlphaNumericString(5)),
-                                        NonEmptyString(RandomAlphaNumericString(5))));
+  EXPECT_EQ(kWrongLoggedInState, test_elements_1_.ChangePassword(
+      NonEmptyString(RandomAlphaNumericString(5)), password_1_));
+  EXPECT_EQ(kWrongLoggedInState, test_elements_1_.AddContact(
+      public_id_1_, NonEmptyString(RandomAlphaNumericString(5)),
+      NonEmptyString(RandomAlphaNumericString(5))));
   EXPECT_EQ(kWrongLoggedInState, test_elements_1_.ConfirmContact(public_id_1_, public_id_3));
   EXPECT_EQ(kWrongLoggedInState, test_elements_1_.DeclineContact(public_id_1_, public_id_3));
-  EXPECT_EQ(kWrongLoggedInState, test_elements_1_.RemoveContact(public_id_1_, public_id_2_, message));
+  EXPECT_EQ(kWrongLoggedInState, test_elements_1_.RemoveContact(
+      public_id_1_, public_id_2_, message));
   // TODO(Alison) - check that other functions in API aren't accessible when drive not mounted.
 
   EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
