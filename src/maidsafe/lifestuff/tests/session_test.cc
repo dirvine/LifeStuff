@@ -63,13 +63,14 @@ class SessionTest : public testing::Test {
                       this->session_.AddPublicId(pub_id, Identity(RandomString(64)));
                       const ContactsHandlerPtr ch(this->session_.contacts_handler(pub_id));
                       for (int n(0); n < 5; ++n) {
+                        asymm::Keys keys(asymm::GenerateKeyPair());
                         Contact c(NonEmptyString(RandomAlphaNumericString(5)),
                                   Identity(RandomString(64)),
                                   Identity(RandomString(64)),
                                   kBlankProfilePicture,
                                   Identity(RandomString(64)),
-                                  asymm::PublicKey(),
-                                  asymm::PublicKey(),
+                                  keys.public_key,
+                                  keys.public_key,
                                   kConfirmed);
                         ch->AddContact(c);
                       }

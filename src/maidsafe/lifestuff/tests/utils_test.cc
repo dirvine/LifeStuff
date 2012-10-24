@@ -129,7 +129,7 @@ TEST(UtilsTest, BEH_GetNameInPath) {
   ASSERT_EQ(0, ec.value());
 
   std::string generated_name;
-  int file_count(1022);
+  int file_count(120);
   for (int n(1); n < file_count; ++n) {
     generated_name = GetNameInPath(*test_dir, file_name);
     ASSERT_EQ(file_name + " (" + IntToString(n) + ")", generated_name);
