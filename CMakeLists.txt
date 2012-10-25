@@ -134,7 +134,6 @@ ms_add_static_library(lifestuff ${ALL_FILES_LIFESTUFF_DIR})
 ms_add_executable(TESTlifestuff_api "Tests/LifeStuff" ${API_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
 target_link_libraries(maidsafe_lifestuff maidsafe_pd maidsafe_lifestuff_detail)
 
-set(NetworkTargets TESTlifestuff_api)
 add_custom_command(TARGET maidsafe_lifestuff
                    PRE_BUILD
                    COMMAND ${CMAKE_COMMAND} -E echo "#ifndef MAIDSAFE_PD_CLIENT_KEYS_HELPER_H_" > ${PROJECT_BINARY_DIR}/keys_helper.h &&
@@ -163,10 +162,8 @@ add_custom_command(TARGET maidsafe_lifestuff
                            ${CMAKE_COMMAND} -E echo "#endif  // MAIDSAFE_PD_CLIENT_KEYS_HELPER_H_" >> ${PROJECT_BINARY_DIR}/keys_helper.h
                    VERBATIM
                    )
-foreach(NetworkTarget ${NetworkTargets})
- target_link_libraries(${NetworkTarget} maidsafe_lifestuff maidsafe_process_management ${BoostIostreamsLibs} ${BoostRegexLibs})
- add_dependencies(${NetworkTarget} pd-vault pd-keys-helper)
-endforeach()
+target_link_libraries(TESTlifestuff_api maidsafe_lifestuff maidsafe_process_management ${BoostIostreamsLibs} ${BoostRegexLibs})
+add_dependencies(${NetworkTarget} pd-vault pd-keys-helper)
 
 include_directories(${PROJECT_BINARY_DIR})
 

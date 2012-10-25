@@ -43,7 +43,6 @@
 #include "maidsafe/routing/routing_api.h"
 
 #include "maidsafe/pd/client/node.h"
-//#include "maidsafe/pd/vault/node.h"
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
@@ -183,26 +182,24 @@ class LifeStuffImpl {
   fs::path mount_path() const;
 
  private:
+  struct LoggedInComponents;  
   int thread_count_;
   fs::path buffered_path_;
   fs::path simulation_path_;
   bptime::seconds interval_;
   AsioService asio_service_;
+  boost::signals2::signal<void(const int&)> network_health_signal_;
+  Session session_;
   std::shared_ptr<priv::chunk_store::RemoteChunkStore> remote_chunk_store_;
   std::shared_ptr<priv::process_management::ClientController> client_controller_;
   std::shared_ptr<pd::Node> client_node_;
   std::shared_ptr<RoutingsHandler> routings_handler_;
-//  pd::vault::Node vault_node_;
-  boost::signals2::signal<void(const int&)> network_health_signal_;
-  Session session_;
   std::shared_ptr<UserCredentials> user_credentials_;
-  std::shared_ptr<UserStorage> user_storage_;
-  std::shared_ptr<PublicId> public_id_;
-  std::shared_ptr<MessageHandler> message_handler_;
+  std::shared_ptr<LoggedInComponents> logged_in_components_;
   Slots slots_;
   LifeStuffState state_;
   uint8_t logged_in_state_;
-  bs2::signal<void()> immediate_quit_required_signal_;
+  boost::signals2::signal<void()> immediate_quit_required_signal_;
   bool vault_cheat_;
 
   void ConnectInternalElements();
