@@ -46,7 +46,7 @@ namespace lifestuff {
 
 namespace test {
 
-TEST_F(OneUserApiTest, FUNC_LoggedInState) {
+TEST_F(OneUserApiTest, DISABLED_FUNC_LoggedInState) {
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
 
   EXPECT_EQ(test_elements_.state(), kConnected);
@@ -135,7 +135,7 @@ TEST_F(OneUserApiTest, FUNC_LoggedInState) {
   EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_, keyword_, pin_, password_));
 }
 
-TEST_F(OneUserApiTest, FUNC_IncorrectLoginLogoutSequences) {
+TEST_F(OneUserApiTest, DISABLED_FUNC_IncorrectLoginLogoutSequences) {
   // Logged in with no public ID
   NonEmptyString public_id(RandomAlphaNumericString(5));
   EXPECT_EQ(test_elements_.state(), kLoggedIn);
@@ -213,7 +213,7 @@ TEST_F(OneUserApiTest, FUNC_IncorrectLoginLogoutSequences) {
             kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
 }
 
-TEST_F(TwoUsersApiTest, FUNC_DriveNotMountedTryOperations) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_DriveNotMountedTryOperations) {
   EXPECT_EQ(test_elements_1_.logged_in_state(), kBaseState);
   EXPECT_EQ(test_elements_2_.logged_in_state(), kBaseState);
   EXPECT_EQ(test_elements_1_.state(), kConnected);
@@ -267,7 +267,7 @@ TEST_F(TwoUsersApiTest, FUNC_DriveNotMountedTryOperations) {
   EXPECT_EQ(test_elements_1_.state(), kConnected);
 }
 
-TEST_F(OneUserApiTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
+TEST_F(OneUserApiTest, DISABLED_FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
   // Create directory
   std::string tail;
   fs::path test(CreateTestDirectory(test_elements_.mount_path(), &tail));
@@ -284,7 +284,7 @@ TEST_F(OneUserApiTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
   EXPECT_EQ(0, error_code_.value());
 }
 
-TEST_F(OneUserApiTest, FUNC_LargeFileForMemoryCheck) {
+TEST_F(OneUserApiTest, DISABLED_FUNC_LargeFileForMemoryCheck) {
   // Create directory
   std::string tail;
   EXPECT_EQ(kSuccess, CreateTestFile(test_elements_.mount_path(), 500, &tail));
