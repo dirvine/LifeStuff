@@ -39,7 +39,7 @@ namespace lifestuff {
 
 namespace test {
 
-TEST_F(OneUserApiTest, FUNC_TryCreateInvalidPublicId) {
+TEST_F(OneUserApiTest, DISABLED_FUNC_TryCreateInvalidPublicId) {
   // EXPECT_NE(kSuccess, test_elements_.CreatePublicId(NonEmptyString("")));
   EXPECT_NE(kSuccess, test_elements_.CreatePublicId(NonEmptyString(RandomAlphaNumericString(31))));
   EXPECT_NE(kSuccess, test_elements_.CreatePublicId(NonEmptyString(" ")));
@@ -58,13 +58,13 @@ TEST_F(OneUserApiTest, FUNC_TryCreateInvalidPublicId) {
                      RandomAlphaNumericString(RandomUint32() % 15 + 1))));
 }
 
-TEST_F(OneUserApiTest, FUNC_CreateSamePublicIdConsecutively) {
+TEST_F(OneUserApiTest, DISABLED_FUNC_CreateSamePublicIdConsecutively) {
   NonEmptyString new_public_id(RandomAlphaNumericString(6));
   EXPECT_EQ(kSuccess, test_elements_.CreatePublicId(new_public_id));
   EXPECT_NE(kSuccess, test_elements_.CreatePublicId(new_public_id));
 }
 
-TEST_F(OneUserApiTest, FUNC_CreateSamePublicIdSimultaneously) {
+TEST_F(OneUserApiTest, DISABLED_FUNC_CreateSamePublicIdSimultaneously) {
   NonEmptyString new_public_id(RandomAlphaNumericString(6));
   int result_1(0);
   int result_2(0);
@@ -115,7 +115,7 @@ TEST_F(OneUserApiTest, FUNC_CreateSamePublicIdSimultaneously) {
   }
 }
 
-TEST_F(OneUserApiTest, FUNC_AddInvalidContact) {
+TEST_F(OneUserApiTest, DISABLED_FUNC_AddInvalidContact) {
   NonEmptyString own_public_id(RandomAlphaNumericString(5));
   NonEmptyString public_id_1(RandomAlphaNumericString(6));
   NonEmptyString public_id_2(RandomAlphaNumericString(7));
@@ -126,7 +126,7 @@ TEST_F(OneUserApiTest, FUNC_AddInvalidContact) {
   EXPECT_NE(kSuccess, test_elements_.AddContact(public_id_1, public_id_2, message));
 }
 
-TEST_F(OneUserApiTest, FUNC_AddOwnPublicIdAsContact) {
+TEST_F(OneUserApiTest, DISABLED_FUNC_AddOwnPublicIdAsContact) {
   NonEmptyString public_id_1(RandomAlphaNumericString(6));
   NonEmptyString public_id_2(RandomAlphaNumericString(7));
   NonEmptyString message(RandomAlphaNumericString(5));
@@ -137,7 +137,7 @@ TEST_F(OneUserApiTest, FUNC_AddOwnPublicIdAsContact) {
   EXPECT_NE(kSuccess, test_elements_.AddContact(public_id_1, public_id_2, message));
 }
 
-TEST_F(OneUserApiTest, FUNC_ChangeProfilePictureAfterSaveSession) {
+TEST_F(OneUserApiTest, DISABLED_FUNC_ChangeProfilePictureAfterSaveSession) {
   NonEmptyString public_id(RandomAlphaNumericString(5));
   EXPECT_EQ(kSuccess, test_elements_.CreatePublicId(public_id));
   for (int n(1001); n > 1; n-=100) {
@@ -170,13 +170,13 @@ TEST_F(OneUserApiTest, FUNC_ChangeProfilePictureAfterSaveSession) {
   }
 }
 
-TEST_F(TwoUsersApiTest, FUNC_TrivialTest) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_TrivialTest) {
   LOG(kInfo) << "\n\n\n\n";
   Sleep(bptime::seconds(10));
   LOG(kInfo) << "\n\n\n\n";
 }
 
-TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdConsecutively) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_CreateSamePublicIdConsecutively) {
   EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_1_, keyword_1_, pin_1_, password_1_));
   NonEmptyString new_public_id(RandomAlphaNumericString(6));
 
@@ -208,7 +208,7 @@ TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdConsecutively) {
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_2_));
 }
 
-TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdSimultaneously) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_CreateSamePublicIdSimultaneously) {
 #ifdef MAIDSAFE_LINUX
   EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_1_, keyword_1_, pin_1_, password_1_));
   EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_2_, keyword_2_, pin_2_, password_2_));
@@ -271,7 +271,7 @@ TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdSimultaneously) {
 #endif
 }
 
-TEST_F(TwoUsersApiTest, FUNC_SendFileSaveToGivenPath) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_SendFileSaveToGivenPath) {
   boost::system::error_code error_code;
   fs::path file_path1;
   NonEmptyString file_name1(RandomAlphaNumericString(8)),
@@ -315,7 +315,7 @@ TEST_F(TwoUsersApiTest, FUNC_SendFileSaveToGivenPath) {
   }
 }
 
-TEST_F(TwoUsersApiTest, FUNC_SendFileSaveToDefaultLocation) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_SendFileSaveToDefaultLocation) {
   boost::system::error_code error_code;
   fs::path file_path1;
   NonEmptyString file_name1(RandomAlphaNumericString(8)),
@@ -393,7 +393,7 @@ TEST_F(TwoUsersApiTest, FUNC_SendFileSaveToDefaultLocation) {
   }
 }
 
-TEST_F(TwoUsersApiTest, FUNC_SendFileAcceptToDeletedDefaultLocation) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_SendFileAcceptToDeletedDefaultLocation) {
   boost::system::error_code error_code;
   fs::path file_path1;
   NonEmptyString file_name1(RandomAlphaNumericString(8)),
@@ -444,7 +444,7 @@ TEST_F(TwoUsersApiTest, FUNC_SendFileAcceptToDeletedDefaultLocation) {
   LOG(kInfo) << "POINT 3";
 }
 
-TEST(IndependentFullTest, FUNC_SendFileWithRejection) {
+TEST(IndependentFullTest, DISABLED_FUNC_SendFileWithRejection) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   NonEmptyString keyword1(RandomAlphaNumericString(6)),
                  pin1(CreatePin()),
@@ -515,7 +515,7 @@ TEST(IndependentFullTest, FUNC_SendFileWithRejection) {
   EXPECT_EQ(kSuccess, test_elements2.Finalise());
 }
 
-TEST_F(TwoUsersApiTest, FUNC_ProfilePicture) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_ProfilePicture) {
   NonEmptyString file_content1(RandomString(1)), file_content2(RandomString(5 * 1024));
   {
     EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_2_, keyword_2_, pin_2_, password_2_));
@@ -556,7 +556,7 @@ TEST_F(TwoUsersApiTest, FUNC_ProfilePicture) {
   }
 }
 
-TEST_F(TwoUsersApiTest, FUNC_ProfilePictureAndLogOut) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_ProfilePictureAndLogOut) {
   NonEmptyString file_content1(RandomString(1)), file_content2(RandomString(5 * 1024));
   EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_2_, keyword_2_, pin_2_, password_2_));
   // Setting of profile image
@@ -581,7 +581,7 @@ TEST_F(TwoUsersApiTest, FUNC_ProfilePictureAndLogOut) {
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_1_));
 }
 
-TEST_F(TwoUsersApiTest, FUNC_RemoveContact) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_RemoveContact) {
   NonEmptyString removal_message("It's not me, it's you.");
   {
     EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_1_, keyword_1_, pin_1_, password_1_));
@@ -607,7 +607,7 @@ TEST_F(TwoUsersApiTest, FUNC_RemoveContact) {
   }
 }
 
-TEST_F(TwoUsersApiTest, FUNC_RemoveContactAddContact) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_RemoveContactAddContact) {
   for (int i = 0; i < 2; ++i) {
     NonEmptyString removal_message(RandomAlphaNumericString(RandomUint32() % 20 + 10));
     {
@@ -663,7 +663,7 @@ TEST_F(TwoUsersApiTest, FUNC_RemoveContactAddContact) {
   }
 }
 
-TEST_F(TwoUsersApiTest, FUNC_AddContactWithMessage) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_AddContactWithMessage) {
   DoFullLogIn(test_elements_1_, keyword_1_, pin_1_, password_1_);
   const NonEmptyString public_id_3(RandomAlphaNumericString(RandomUint32() % 30 + 1));
   test_elements_1_.CreatePublicId(public_id_3);
@@ -683,7 +683,7 @@ TEST_F(TwoUsersApiTest, FUNC_AddContactWithMessage) {
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_1_));
 }
 
-TEST_F(TwoUsersApiTest, FUNC_AddThenRemoveOfflineUser) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_AddThenRemoveOfflineUser) {
   DoFullLogIn(test_elements_1_, keyword_1_, pin_1_, password_1_);
 
   const NonEmptyString public_id_3(RandomAlphaNumericString(RandomUint32() % 30 + 1));
