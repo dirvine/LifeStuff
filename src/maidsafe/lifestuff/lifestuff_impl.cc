@@ -66,42 +66,31 @@ LifeStuffImpl::LoggedInComponents::LoggedInComponents(
       storage(remote_chunk_store) {
 }
 
-LifeStuffImpl::LifeStuffImpl()
+
+LifeStuffImpl::LifeStuffImpl(const Slots& slot_functions,
+                             const fs::path& base_directory,
+                             bool vault_cheat)
     : thread_count_(kThreads),
       buffered_path_(),
       simulation_path_(),
       interval_(kSecondsInterval),
       asio_service_(thread_count_),
+      network_health_signal_(),
+      session_(),
       remote_chunk_store_(),
       client_controller_(),
       client_node_(),
       routings_handler_(),
-      network_health_signal_(),
-      session_(),
       user_credentials_(),
       logged_in_components_(),
-      slots_(),
+      slots_(slot_functions),
       state_(kZeroth),
       logged_in_state_(kBaseState),
       immediate_quit_required_signal_(),
-      vault_cheat_(false) {}
-
-LifeStuffImpl::~LifeStuffImpl() {
-//  int result(vault_node_.Stop());
-//  LOG(kInfo) << "Result of stopping cheat vault: " << result;
-}
-
-int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_available_function,
-                              const fs::path& base_directory,
-                              bool vault_cheat) {
-  if (state_ != kZeroth) {
-    LOG(kError) << "Make sure that object is in the original Zeroth state. Asimov rules.";
-    return kWrongState;
-  }
-
-  if (!software_update_available_function) {
+      vault_cheat_(vault_cheat) {
+  if (!slots_.update_available_function) {
     LOG(kError) << "No function provided for SW update. Unacceptable. Good day!";
-    return kInitialiseUpdateFunctionFailure;
+    throw std::exception();
   }
 
   // Initialisation
@@ -112,8 +101,7 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
     // Not a test: everything in $HOME/.lifestuff
     base_path = GetHomeDir() / kAppHomeDirectory;
     buffered_chunk_store_path = base_path / RandomAlphaNumericString(16);
-    boost::system::error_code error_code;
-    network_simulation_path = fs::temp_directory_path(error_code) / "lifestuff_simulation";
+    network_simulation_path = fs::temp_directory_path() / "lifestuff_simulation";
   } else {
     // Presumably a test
     base_path = base_directory;
@@ -127,16 +115,12 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
     while (counter++ < kRetryLimit) {
       Sleep(bptime::milliseconds(100 + RandomUint32() % 1000));
       client_controller_ = std::make_shared<priv::process_management::ClientController>(
-                               software_update_available_function);
+                               slots_.update_available_function);
       if (client_controller_->BootstrapEndpoints(bootstrap_endpoints) &&
           !bootstrap_endpoints.empty())
         counter = kRetryLimit;
       else
         LOG(kWarning) << "Failure to initialise client controller. Try #" << counter;
-    }
-    if (bootstrap_endpoints.empty()) {
-      LOG(kWarning) << "Failure to initialise client controller. No bootstrap contacts.";
-      return kInitialiseBootstrapsFailure;
     }
   }
 
@@ -147,7 +131,7 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
                                         nullptr);
   if (!remote_chunk_store_) {
     LOG(kError) << "Could not initialise chunk store.";
-    return kInitialiseChunkStoreFailure;
+    throw std::exception();
   }
 
   buffered_path_ = buffered_chunk_store_path;
@@ -164,131 +148,44 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
                                                         *routings_handler_);
 
   state_ = kInitialised;
-  vault_cheat_ = vault_cheat;
-
-  return kSuccess;
 }
 
-int LifeStuffImpl::ConnectToSignals(
-    const bool& set_slots,
-    const ChatFunction& chat_slot,
-    const FileTransferSuccessFunction& file_success_slot,
-    const FileTransferFailureFunction& file_failure_slot,
-    const NewContactFunction& new_contact_slot,
-    const ContactConfirmationFunction& confirmed_contact_slot,
-    const ContactProfilePictureFunction& profile_picture_slot,
-    const ContactPresenceFunction& contact_presence_slot,
-    const ContactDeletionFunction& contact_deletion_function,
-    const LifestuffCardUpdateFunction& lifestuff_card_update_function,
-    const NetworkHealthFunction& network_health_function,
-    const ImmediateQuitRequiredFunction& immediate_quit_required_function) {
-  if (state_ != kInitialised) {
-    LOG(kError) << "Make sure that object is initialised";
-    return kWrongState;
-  }
-
-  if (set_slots) {
-    uint32_t connects(0);
-    if (chat_slot) {
-      ++connects;
-      slots_.chat_slot = chat_slot;
-    }
-    if (file_success_slot) {
-      ++connects;
-      slots_.file_success_slot = file_success_slot;
-    }
-    if (file_failure_slot) {
-      ++connects;
-      slots_.file_failure_slot = file_failure_slot;
-    }
-    if (new_contact_slot) {
-      ++connects;
-      slots_.new_contact_slot = new_contact_slot;
-    }
-    if (confirmed_contact_slot) {
-      ++connects;
-      slots_.confirmed_contact_slot = confirmed_contact_slot;
-    }
-    if (profile_picture_slot) {
-      ++connects;
-      slots_.profile_picture_slot = profile_picture_slot;
-    }
-    if (contact_presence_slot) {
-      ++connects;
-      slots_.contact_presence_slot = contact_presence_slot;
-    }
-    if (contact_deletion_function) {
-      ++connects;
-      slots_.contact_deletion_function = contact_deletion_function;
-    }
-    if (lifestuff_card_update_function) {
-      ++connects;
-      slots_.lifestuff_card_update_function = lifestuff_card_update_function;
-    }
-    if (network_health_function) {
-      ++connects;
-      slots_.network_health_function = network_health_function;
-    }
-    if (immediate_quit_required_function) {
-      ++connects;
-      slots_.immediate_quit_required_function = immediate_quit_required_function;
-    }
-    if (connects == 0) {
-      LOG(kError) << "No signals connected.";
-      return kSetSlotsFailure;
-    }
-    state_ = kConnected;
-    return kSuccess;
-  }
-
-  if (!logged_in_components_) {
-    LOG(kError) << "Unable to connect to signals.";
-    return kConnectSignalsFailure;
-  }
-
-  logged_in_components_->message_handler.ConnectToChatSignal(chat_slot);
-  logged_in_components_->message_handler.ConnectToFileTransferSuccessSignal(file_success_slot);
-  logged_in_components_->message_handler.ConnectToFileTransferFailureSignal(file_failure_slot);
-  logged_in_components_->public_id.ConnectToNewContactSignal(new_contact_slot);
-  logged_in_components_->public_id.ConnectToContactConfirmedSignal(confirmed_contact_slot);
-  logged_in_components_->message_handler.ConnectToContactProfilePictureSignal(profile_picture_slot);
-  logged_in_components_->message_handler.ConnectToContactPresenceSignal(contact_presence_slot);
-  logged_in_components_->public_id.ConnectToContactDeletionProcessedSignal(contact_deletion_function);
-  logged_in_components_->public_id.ConnectToLifestuffCardUpdatedSignal(lifestuff_card_update_function);
-  immediate_quit_required_signal_.connect(immediate_quit_required_function);
-  logged_in_components_->public_id.ConnectToContactDeletionReceivedSignal([&] (const NonEmptyString& own_public_id,
-                                                          const NonEmptyString& contact_public_id,
-                                                          const NonEmptyString& removal_message,
-                                                          const NonEmptyString& /*timestamp*/) {
-                                                       int result(RemoveContact(own_public_id,
-                                                                                contact_public_id,
-                                                                                removal_message,
-                                                                                false));
-                                                       if (result != kSuccess)
-                                                         LOG(kError) << "Failed to remove contact "
-                                                                        "after receiving contact "
-                                                                        "deletion signal!";
-                                                     });
-  return kSuccess;
-}
-
-int LifeStuffImpl::Finalise() {
-  if (state_ != kConnected) {
-    LOG(kError) << "Need to be connected to finalise.";
-    return kWrongState;
-  }
-
+LifeStuffImpl::~LifeStuffImpl() {
   boost::system::error_code error_code;
   fs::remove_all(buffered_path_, error_code);
   if (error_code)
     LOG(kWarning) << "Failed to remove buffered chunk store path.";
 
-//  if (vault_cheat_)
-//    vault_node_.Stop();
+//  if (vault_cheat_) {
+//    int result(vault_node_.Stop());
+//    LOG(kInfo) << "Result of stopping cheat vault: " << result;
+//  }
   asio_service_.Stop();
-  state_ = kZeroth;
+}
 
-  return kSuccess;
+void LifeStuffImpl::ConnectToSignals() {
+  logged_in_components_->message_handler.ConnectToChatSignal(slots_.chat_slot);
+  logged_in_components_->message_handler.ConnectToFileTransferSuccessSignal(slots_.file_success_slot);
+  logged_in_components_->message_handler.ConnectToFileTransferFailureSignal(slots_.file_failure_slot);
+  logged_in_components_->public_id.ConnectToNewContactSignal(slots_.new_contact_slot);
+  logged_in_components_->public_id.ConnectToContactConfirmedSignal(slots_.confirmed_contact_slot);
+  logged_in_components_->message_handler.ConnectToContactProfilePictureSignal(slots_.profile_picture_slot);
+  logged_in_components_->message_handler.ConnectToContactPresenceSignal(slots_.contact_presence_slot);
+  logged_in_components_->public_id.ConnectToContactDeletionProcessedSignal(slots_.contact_deletion_function);
+  logged_in_components_->public_id.ConnectToLifestuffCardUpdatedSignal(slots_.lifestuff_card_update_function);
+  immediate_quit_required_signal_.connect(slots_.immediate_quit_required_function);
+  logged_in_components_->public_id.ConnectToContactDeletionReceivedSignal(
+      [&] (const NonEmptyString& own_public_id,
+           const NonEmptyString& contact_public_id,
+           const NonEmptyString& removal_message,
+           const NonEmptyString& /*timestamp*/) {
+         int result(RemoveContact(own_public_id,
+                                  contact_public_id,
+                                  removal_message,
+                                  false));
+         if (result != kSuccess)
+           LOG(kError) << "Failed to remove contact after receiving contact deletion signal!";
+     });
 }
 
 /// Credential operations
@@ -1227,19 +1124,9 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
   ConnectInternalElements();
   state_ = kInitialised;
 
-  result = ConnectToSignals(false,
-                            slots_.chat_slot,
-                            slots_.file_success_slot,
-                            slots_.file_failure_slot,
-                            slots_.new_contact_slot,
-                            slots_.confirmed_contact_slot,
-                            slots_.profile_picture_slot,
-                            slots_.contact_presence_slot,
-                            slots_.contact_deletion_function,
-                            slots_.lifestuff_card_update_function,
-                            slots_.network_health_function,
-                            slots_.immediate_quit_required_function);
-  return result;
+  ConnectToSignals();
+
+  return kSuccess;
 }
 
 int LifeStuffImpl::CheckStateAndFullAccess() const {

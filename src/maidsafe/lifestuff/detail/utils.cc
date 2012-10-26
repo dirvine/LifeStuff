@@ -441,8 +441,8 @@ void OperationCallback(bool result, OperationResults& results, int index) {
   {
     std::lock_guard<std::mutex> barra_loch_an_duin(results.mutex);
     results.individual_results.at(index) = result ? kSuccess : kRemoteChunkStoreFailure;
+    results.conditional_variable.notify_one();
   }
-  results.conditional_variable.notify_one();
 }
 
 int AssessJointResult(const std::vector<int>& results) {

@@ -114,35 +114,39 @@ class UserCredentialsImpl {
   std::string completed_log_out_message_, pending_session_marker_;
   bool test_;
 
-  int AttemptLogInProcess(const NonEmptyString&  keyword,
-                          const NonEmptyString&  pin,
-                          const NonEmptyString&  password);
+  int CheckInputs(const NonEmptyString& keyword,
+                  const NonEmptyString& pin,
+                  const NonEmptyString& password);
 
-  int GetUserInfo(const NonEmptyString&  keyword,
-                  const NonEmptyString&  pin,
-                  const NonEmptyString&  password,
+  int AttemptLogInProcess(const NonEmptyString& keyword,
+                          const NonEmptyString& pin,
+                          const NonEmptyString& password);
+
+  int GetUserInfo(const NonEmptyString& keyword,
+                  const NonEmptyString& pin,
+                  const NonEmptyString& password,
                   const bool& compare_names,
                   std::string& mid_packet,
                   std::string& smid_packet);
 
-  int CheckForOtherRunningInstances(const NonEmptyString&  keyword,
-                                    const NonEmptyString&  pin,
-                                    const NonEmptyString&  password,
+  int CheckForOtherRunningInstances(const NonEmptyString& keyword,
+                                    const NonEmptyString& pin,
+                                    const NonEmptyString& password,
                                     std::string& mid_packet,
                                     std::string& smid_packet);
 
   void StartSessionSaver();
 
-  void GetIdAndTemporaryId(const NonEmptyString&  keyword,
-                           const NonEmptyString&  pin,
-                           const NonEmptyString&  password,
+  void GetIdAndTemporaryId(const NonEmptyString& keyword,
+                           const NonEmptyString& pin,
+                           const NonEmptyString& password,
                            bool surrogate,
                            int* result,
                            std::string* id_contents,
                            std::string* temporary_packet);
-  int HandleSerialisedDataMaps(const NonEmptyString&  keyword,
-                               const NonEmptyString&  pin,
-                               const NonEmptyString&  password,
+  int HandleSerialisedDataMaps(const NonEmptyString& keyword,
+                               const NonEmptyString& pin,
+                               const NonEmptyString& password,
                                const std::string& tmid_serialised_data_atlas,
                                const std::string& stmid_serialised_data_atlas);
 
@@ -156,9 +160,9 @@ class UserCredentialsImpl {
   void StorePmid(bool result, OperationResults& results);
   void StoreSignaturePacket(const Fob& packet, OperationResults& results, int index);
 
-  int ProcessIdentityPackets(const NonEmptyString&  keyword,
-                             const NonEmptyString&  pin,
-                             const NonEmptyString&  password);
+  int ProcessIdentityPackets(const NonEmptyString& keyword,
+                             const NonEmptyString& pin,
+                             const NonEmptyString& password);
   int StoreIdentityPackets();
   void StoreMid(OperationResults& results);
   void StoreSmid(OperationResults& results);
@@ -189,9 +193,9 @@ class UserCredentialsImpl {
   int DoChangePasswordAdditions();
   int DoChangePasswordRemovals();
 
-  int SerialiseAndSetIdentity(const std::string&  keyword,
-                              const std::string&  pin,
-                              const std::string&  password,
+  int SerialiseAndSetIdentity(const std::string& keyword,
+                              const std::string& pin,
+                              const std::string& password,
                               NonEmptyString& new_data_atlas);
 
   void SessionSaver(const boost::posix_time::seconds& interval,

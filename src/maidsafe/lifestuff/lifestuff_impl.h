@@ -63,54 +63,10 @@ class Session;
 class UserCredentials;
 class UserStorage;
 
-struct Slots {
-  Slots()
-      : chat_slot(),
-        file_success_slot(),
-        file_failure_slot(),
-        new_contact_slot(),
-        confirmed_contact_slot(),
-        profile_picture_slot(),
-        contact_presence_slot(),
-        contact_deletion_function(),
-        lifestuff_card_update_function(),
-        network_health_function(),
-        immediate_quit_required_function() {}
-  ChatFunction chat_slot;
-  FileTransferSuccessFunction file_success_slot;
-  FileTransferFailureFunction file_failure_slot;
-  NewContactFunction new_contact_slot;
-  ContactConfirmationFunction confirmed_contact_slot;
-  ContactProfilePictureFunction profile_picture_slot;
-  ContactPresenceFunction contact_presence_slot;
-  ContactDeletionFunction contact_deletion_function;
-  LifestuffCardUpdateFunction lifestuff_card_update_function;
-  NetworkHealthFunction network_health_function;
-  ImmediateQuitRequiredFunction immediate_quit_required_function;
-};
-
 class LifeStuffImpl {
  public:
-  LifeStuffImpl();
+  LifeStuffImpl(const Slots& slot_functions, const fs::path& base_directory, bool vault_cheat);
   ~LifeStuffImpl();
-
-  /// State operations
-  int Initialise(const UpdateAvailableFunction& software_update_available_function,
-                 const fs::path& base_directory,
-                 bool vault_cheat);
-  int ConnectToSignals(const bool& apply_changes,
-                       const ChatFunction& chat_slot,
-                       const FileTransferSuccessFunction& file_success_slot,
-                       const FileTransferFailureFunction& file_failure_slot,
-                       const NewContactFunction& new_contact_slot,
-                       const ContactConfirmationFunction& confirmed_contact_slot,
-                       const ContactProfilePictureFunction& profile_picture_slot,
-                       const ContactPresenceFunction& contact_presence_slot,
-                       const ContactDeletionFunction& contact_deletion_function,
-                       const LifestuffCardUpdateFunction& lifestuff_card_update_function,
-                       const NetworkHealthFunction& network_health_function,
-                       const ImmediateQuitRequiredFunction& immediate_quit_required_function);
-  int Finalise();
 
   /// Credential operations
   int CreateUser(const NonEmptyString& keyword,
@@ -118,7 +74,9 @@ class LifeStuffImpl {
                  const NonEmptyString& password,
                  const fs::path& chunk_store);
   int CreatePublicId(const NonEmptyString& public_id);
-  int LogIn(const NonEmptyString& keyword, const NonEmptyString& pin, const NonEmptyString& password);
+  int LogIn(const NonEmptyString& keyword,
+            const NonEmptyString& pin,
+            const NonEmptyString& password);
   int LogOut(bool clear_maid_routing = true);
   int MountDrive();
   int UnMountDrive();
@@ -182,7 +140,7 @@ class LifeStuffImpl {
   fs::path mount_path() const;
 
  private:
-  struct LoggedInComponents;  
+  struct LoggedInComponents;
   int thread_count_;
   fs::path buffered_path_;
   fs::path simulation_path_;
@@ -202,6 +160,7 @@ class LifeStuffImpl {
   boost::signals2::signal<void()> immediate_quit_required_signal_;
   bool vault_cheat_;
 
+  void ConnectToSignals();
   void ConnectInternalElements();
   int SetValidPmidAndInitialisePublicComponents();
   int CheckStateAndFullAccess() const;

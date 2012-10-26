@@ -138,6 +138,34 @@ typedef std::function<void(const int&)> NetworkHealthFunction;  // NOLINT (Dan)
 
 /// Quitting
 typedef std::function<void()> ImmediateQuitRequiredFunction;
+
+struct Slots {
+  Slots() : chat_slot(),
+            file_success_slot(),
+            file_failure_slot(),
+            new_contact_slot(),
+            confirmed_contact_slot(),
+            profile_picture_slot(),
+            contact_presence_slot(),
+            contact_deletion_function(),
+            lifestuff_card_update_function(),
+            network_health_function(),
+            immediate_quit_required_function(),
+            update_available_function() {}
+  ChatFunction chat_slot;
+  FileTransferSuccessFunction file_success_slot;
+  FileTransferFailureFunction file_failure_slot;
+  NewContactFunction new_contact_slot;
+  ContactConfirmationFunction confirmed_contact_slot;
+  ContactProfilePictureFunction profile_picture_slot;
+  ContactPresenceFunction contact_presence_slot;
+  ContactDeletionFunction contact_deletion_function;
+  LifestuffCardUpdateFunction lifestuff_card_update_function;
+  NetworkHealthFunction network_health_function;
+  ImmediateQuitRequiredFunction immediate_quit_required_function;
+  UpdateAvailableFunction update_available_function;
+};
+
 }  // namespace lifestuff
 
 }  // namespace maidsafe

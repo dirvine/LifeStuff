@@ -72,6 +72,8 @@ TEST(IndependentFullTest, FUNC_CreateLogoutLoginLogout) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   NetworkHelper network;
   network.StartLocalNetwork(test_dir, 10);
+  LOG(kInfo) << "Started network\n\n\n\n";
+  Sleep(bptime::seconds(10));
 
   LifeStuff test_elements;
   NonEmptyString keyword(RandomAlphaNumericString(5)),

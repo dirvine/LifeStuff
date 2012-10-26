@@ -129,21 +129,11 @@ int UserCredentialsImpl::LogIn(const NonEmptyString& keyword,
 int UserCredentialsImpl::AttemptLogInProcess(const NonEmptyString& keyword,
                                              const NonEmptyString& pin,
                                              const NonEmptyString& password) {
-  std::unique_lock<std::mutex>loch_a_phuill(single_threaded_class_mutex_);
+  std::unique_lock<std::mutex> lock(single_threaded_class_mutex_);
 
-  int result(CheckKeywordValidity(keyword));
+  int result(CheckInputs(keyword, pin, password));
   if (result != kSuccess) {
-    LOG(kInfo) << "Invalid keyword: " << keyword.string() << "    Return code: " << result << ")";
-    return result;
-  }
-  result = CheckPinValidity(pin);
-  if (result != kSuccess) {
-    LOG(kInfo) << "Invalid pin: " << pin.string() << "    Return code: " << result << ")";
-    return result;
-  }
-  result = CheckPasswordValidity(password);
-  if (result != kSuccess) {
-    LOG(kInfo) << "Invalid password: " << password.string() << "    Return code: " << result << ")";
+    LOG(kInfo) << "Invalid inputs.    (Return code: " << result << ")";
     return result;
   }
 
@@ -270,35 +260,29 @@ int UserCredentialsImpl::GetUserInfo(const NonEmptyString& keyword,
                                      std::string& mid_packet,
                                      std::string& smid_packet) {
   if (compare_names) {
-    std::string new_mid_packet;
-    std::string new_smid_packet;
+    std::string re_mid_packet;
+    std::string re_smid_packet;
 
     uint32_t int_pin(StringToIntPin(pin));
     priv::ChunkId mid_name(ModifiableName(Identity(passport::MidName(keyword, int_pin, false))));
     priv::ChunkId smid_name(ModifiableName(Identity(passport::MidName(keyword, int_pin, false))));
 
-    boost::thread get_mid_thread(
-        [&] {
-          new_mid_packet = remote_chunk_store_->Get(mid_name, Fob());
-        });
-    boost::thread get_smid_thread(
-        [&] {
-          new_smid_packet = remote_chunk_store_->Get(smid_name, Fob());
-        });
+    boost::thread mid_thread([&] { re_mid_packet = remote_chunk_store_->Get(mid_name, Fob()); });  // NOLINT (Dan)
+    boost::thread smid_thread([&] { re_smid_packet = remote_chunk_store_->Get(smid_name, Fob()); });  // NOLINT (Dan)
 
-    get_mid_thread.join();
-    get_smid_thread.join();
+    mid_thread.join();
+    smid_thread.join();
 
-    if (new_mid_packet.empty()) {
+    if (re_mid_packet.empty()) {
       LOG(kError) << "No MID found.";
       return kIdPacketNotFound;
     }
-    if (new_smid_packet.empty()) {
+    if (re_smid_packet.empty()) {
       LOG(kError) << "No SMID found.";
       return kIdPacketNotFound;
     }
 
-    if (mid_packet == new_mid_packet && smid_packet == new_smid_packet) {
+    if (mid_packet == re_mid_packet && smid_packet == re_smid_packet) {
       LOG(kInfo) << "MID and SMID are up to date.";
       return kSuccess;
     }
@@ -479,21 +463,11 @@ int UserCredentialsImpl::HandleSerialisedDataMaps(const NonEmptyString& keyword,
 int UserCredentialsImpl::CreateUser(const NonEmptyString& keyword,
                                     const NonEmptyString& pin,
                                     const NonEmptyString& password) {
-  std::unique_lock<std::mutex> loch_a_phuill(single_threaded_class_mutex_);
+  std::unique_lock<std::mutex> lock(single_threaded_class_mutex_);
 
-  int result(CheckKeywordValidity(keyword));
+  int result(CheckInputs(keyword, pin, password));
   if (result != kSuccess) {
-    LOG(kInfo) << "Invalid keyword: " << keyword.string() << "    Return code: " << result << ")";
-    return result;
-  }
-  result = CheckPinValidity(pin);
-  if (result != kSuccess) {
-    LOG(kInfo) << "Invalid pin: " << pin.string() << "    Return code: " << result << ")";
-    return result;
-  }
-  result = CheckPasswordValidity(password);
-  if (result != kSuccess) {
-    LOG(kInfo) << "Invalid password: " << password.string() << "    (Return code: " << result << ")";
+    LOG(kInfo) << "Invalid inputs.    (Return code: " << result << ")";
     return result;
   }
 
@@ -799,7 +773,7 @@ void UserCredentialsImpl::StoreIdentity(OperationResults& results,
 }
 
 int UserCredentialsImpl::SaveSession(bool log_out) {
-  std::unique_lock<std::mutex> loch_a_phuill(single_threaded_class_mutex_);
+  std::unique_lock<std::mutex> lock(single_threaded_class_mutex_);
 
   if (log_out) {
     session_saver_timer_active_ = false;
@@ -893,7 +867,7 @@ void UserCredentialsImpl::ModifyIdentity(OperationResults& results,
 }
 
 int UserCredentialsImpl::ChangePin(const NonEmptyString& new_pin) {
-  std::unique_lock<std::mutex> loch_a_phuill(single_threaded_class_mutex_);
+  std::unique_lock<std::mutex> lock(single_threaded_class_mutex_);
 
   int result(CheckPinValidity(new_pin));
   if (result != kSuccess) {
@@ -906,7 +880,7 @@ int UserCredentialsImpl::ChangePin(const NonEmptyString& new_pin) {
 }
 
 int UserCredentialsImpl::ChangeKeyword(const NonEmptyString& new_keyword) {
-  std::unique_lock<std::mutex> loch_a_phuill(single_threaded_class_mutex_);
+  std::unique_lock<std::mutex> lock(single_threaded_class_mutex_);
 
   int result(CheckKeywordValidity(new_keyword));
   if (result != kSuccess) {
@@ -1024,7 +998,7 @@ void UserCredentialsImpl::DeleteIdentity(OperationResults& results,
 }
 
 int UserCredentialsImpl::ChangePassword(const NonEmptyString& new_password) {
-  std::unique_lock<std::mutex> loch_a_phuill(single_threaded_class_mutex_);
+  std::unique_lock<std::mutex> lock(single_threaded_class_mutex_);
 
   int result(CheckPasswordValidity(new_password));
   if (result != kSuccess) {
@@ -1307,8 +1281,30 @@ void UserCredentialsImpl::LogoutCompletedArrived(const std::string& session_mark
   completed_log_out_conditional_.notify_one();
 }
 
-bool  UserCredentialsImpl::IsOwnSessionTerminationMessage(const std::string& session_marker) {
+bool UserCredentialsImpl::IsOwnSessionTerminationMessage(const std::string& session_marker) {
   return pending_session_marker_ == session_marker;
+}
+
+int UserCredentialsImpl::CheckInputs(const NonEmptyString& keyword,
+                                     const NonEmptyString& pin,
+                                     const NonEmptyString& password) {
+  int result(CheckKeywordValidity(keyword));
+  if (result != kSuccess) {
+    LOG(kInfo) << "Invalid keyword: " << keyword.string() << "    Return code: " << result << ")";
+    return result;
+  }
+  result = CheckPinValidity(pin);
+  if (result != kSuccess) {
+    LOG(kInfo) << "Invalid pin: " << pin.string() << "    Return code: " << result << ")";
+    return result;
+  }
+  result = CheckPasswordValidity(password);
+  if (result != kSuccess) {
+    LOG(kInfo) << "Invalid password: " << password.string() << "    (Return code: " << result << ")";
+    return result;
+  }
+
+  return kSuccess;
 }
 
 }  // namespace lifestuff
