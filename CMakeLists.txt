@@ -132,7 +132,7 @@ target_link_libraries(TESTlifestuff_storage maidsafe_lifestuff_detail)
 
 ms_add_static_library(lifestuff ${ALL_FILES_LIFESTUFF_DIR})
 ms_add_executable(TESTlifestuff_api "Tests/LifeStuff" ${API_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
-target_link_libraries(maidsafe_lifestuff maidsafe_pd maidsafe_lifestuff_detail)
+target_link_libraries(maidsafe_lifestuff maidsafe_private maidsafe_pd maidsafe_lifestuff_detail)
 
 set(NetworkTargets TESTlifestuff_api)
 add_custom_command(TARGET maidsafe_lifestuff
@@ -145,8 +145,9 @@ add_custom_command(TARGET maidsafe_lifestuff
                            ${CMAKE_COMMAND} -E echo "#include \"boost/filesystem/path.hpp\"" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "namespace maidsafe {" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
-                           ${CMAKE_COMMAND} -E echo "namespace pd {" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+
                            ${CMAKE_COMMAND} -E echo "" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "namespace pd {" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "boost::filesystem::path kVaultExecutable() {" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "  static boost::filesystem::path exe(\"$<TARGET_FILE:pd-vault>\");  // NOLINT" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "  return exe;" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
@@ -156,16 +157,25 @@ add_custom_command(TARGET maidsafe_lifestuff
                            ${CMAKE_COMMAND} -E echo "  static boost::filesystem::path exe(\"$<TARGET_FILE:pd-keys-helper>\");  // NOLINT" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "  return exe;" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "}" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "}  //  namespace pd" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
-                           ${CMAKE_COMMAND} -E echo "}  // namespace pd" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
-                           ${CMAKE_COMMAND} -E echo "}  // namespace maidsafe" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+
+                           ${CMAKE_COMMAND} -E echo "namespace priv {" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "boost::filesystem::path kInvigilatorExecutable() {" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "  static boost::filesystem::path exe(\"$<TARGET_FILE:invigilator>\");  // NOLINT" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "  return exe;" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "}" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "}  //  namespace priv" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+
+                           ${CMAKE_COMMAND} -E echo "}  //  namespace maidsafe" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "#endif  // MAIDSAFE_PD_CLIENT_KEYS_HELPER_H_" >> ${PROJECT_BINARY_DIR}/keys_helper.h
                    VERBATIM
                    )
 foreach(NetworkTarget ${NetworkTargets})
  target_link_libraries(${NetworkTarget} maidsafe_lifestuff maidsafe_process_management ${BoostIostreamsLibs} ${BoostRegexLibs})
- add_dependencies(${NetworkTarget} pd-vault pd-keys-helper)
+ add_dependencies(${NetworkTarget} pd-vault pd-keys-helper invigilator)
 endforeach()
 
 include_directories(${PROJECT_BINARY_DIR})

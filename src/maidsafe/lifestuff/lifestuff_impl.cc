@@ -79,6 +79,7 @@ LifeStuffImpl::~LifeStuffImpl() {
 int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_available_function,
                               const fs::path& base_directory,
                               bool vault_cheat) {
+  vault_cheat = false;
   if (state_ != kZeroth) {
     LOG(kError) << "Make sure that object is in the original Zeroth state. Asimov rules.";
     return kWrongState;
