@@ -288,8 +288,8 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
   auto exit_code = wait_for_exit(store_key_child, error_code);
 // std::cout << "current time : " << boost::posix_time::microsec_clock::universal_time() << std::endl;
   if (exit_code)
-    return testing::AssertionFailure() << "Executing " << "/home/maidsafe/Work/MyMaidSafe-SuperProject/build/pd-store-keys"
-                                       << " -ls returned : " << exit_code ;
+    return testing::AssertionFailure() << "Executing " << "pd-store-keys -ls returned : "
+                                       << exit_code;
 
   if (start_invigilator) {
     // Cleanup the previous resources
@@ -303,7 +303,11 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     // Startup Invigilator
     invigilator_processes_.push_back(std::make_pair(
         bp::child(bp::execute(bp::initializers::run_exe(priv::kInvigilatorTestExecutable()),
+#ifdef MAIDSAFE_WIN32
+                              bp::initializers::set_cmd_line(std::wstring()),
+#else
                               bp::initializers::set_cmd_line(""),
+#endif
                               bp::initializers::set_on_error(error_code),
                               bp::initializers::inherit_env()/*,
                               bp::initializers::bind_stdout(sink),
