@@ -16,12 +16,30 @@
 
 #include "maidsafe/common/log.h"
 
+#include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/lifestuff_api.h"
 #include "maidsafe/lifestuff/return_codes.h"
 
 namespace maidsafe {
 
 namespace lifestuff {
+
+int ConnectSignals(maidsafe::lifestuff::LifeStuff& lifestuff) {
+  return lifestuff.ConnectToSignals(ChatFunction(),
+                                    FileTransferSuccessFunction(),
+                                    FileTransferFailureFunction(),
+                                    NewContactFunction(),
+                                    ContactConfirmationFunction(),
+                                    ContactProfilePictureFunction(),
+                                    [&] (const NonEmptyString& /*own_public_id*/,
+                                         const NonEmptyString& /*contact_public_id*/,
+                                         const NonEmptyString& /*timestamp*/,
+                                         ContactPresence /*cp*/) {},
+                                    ContactDeletionFunction(),
+                                    LifestuffCardUpdateFunction(),
+                                    NetworkHealthFunction(),
+                                    ImmediateQuitRequiredFunction());
+}
 
 void PrintMenu() {
   printf("\n");
@@ -117,7 +135,7 @@ int main(/*int argc, char* argv[]*/) {
   maidsafe::log::Logging::instance().AddFilter("passport", maidsafe::log::kFatal);
   maidsafe::log::Logging::instance().AddFilter("encrypt", maidsafe::log::kFatal);
   maidsafe::log::Logging::instance().AddFilter("drive", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("lifestuff", maidsafe::log::kError);
+  maidsafe::log::Logging::instance().AddFilter("lifestuff", maidsafe::log::kInfo);
   maidsafe::log::Logging::instance().SetColour(maidsafe::log::ColourMode::kPartialLine);
   maidsafe::log::Logging::instance().SetAsync(false);
 
@@ -130,6 +148,12 @@ int main(/*int argc, char* argv[]*/) {
   int result(lifestuff.Initialise([] (maidsafe::NonEmptyString) {}, fs::path(), false));
   if (result != maidsafe::lifestuff::kSuccess) {
     printf("Lifestuff failed to initialise: %d\n", result);
+    return -1;
+  }
+
+  result = maidsafe::lifestuff::ConnectSignals(lifestuff);
+  if (result != maidsafe::lifestuff::kSuccess) {
+    printf("Lifestuff failed to connect signals: %d\n", result);
     return -1;
   }
 
