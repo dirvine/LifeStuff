@@ -122,7 +122,7 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
     }
     if (bootstrap_endpoints.empty()) {
       LOG(kWarning) << "Failure to initialise client controller. No bootstrap contacts.";
-      return kInitialiseBootstrapsFailure;
+//      return kInitialiseBootstrapsFailure;
     }
   }
 
