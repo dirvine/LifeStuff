@@ -33,10 +33,8 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-LifeStuff::LifeStuff(const Slots& slot_functions, const fs::path& base_directory, bool vault_cheat)
-    : lifestuff_impl_(std::make_shared<LifeStuffImpl>(slot_functions,
-                                                      base_directory,
-                                                      vault_cheat)) {}
+LifeStuff::LifeStuff(const Slots& slot_functions, const fs::path& base_directory)
+    : lifestuff_impl_(std::make_shared<LifeStuffImpl>(slot_functions, base_directory)) {}
 
 LifeStuff::~LifeStuff() {}
 
@@ -142,7 +140,8 @@ int LifeStuff::GetLifestuffCard(const NonEmptyString& my_public_id,
   return lifestuff_impl_->GetLifestuffCard(my_public_id, contact_public_id, social_info);
 }
 
-int LifeStuff::SetLifestuffCard(const NonEmptyString& my_public_id, const SocialInfoMap& social_info) {
+int LifeStuff::SetLifestuffCard(const NonEmptyString& my_public_id,
+                                const SocialInfoMap& social_info) {
   return lifestuff_impl_->SetLifestuffCard(my_public_id, social_info);
 }
 

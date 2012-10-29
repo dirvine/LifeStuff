@@ -46,7 +46,7 @@ class LifeStuffImpl;
 
 class LifeStuff {
  public:
-  LifeStuff(const Slots& slot_functions, const fs::path& base_directory, bool vault_cheat);
+  LifeStuff(const Slots& slot_functions, const fs::path& base_directory);
   ~LifeStuff();
 
   /// Credential operations

@@ -65,7 +65,7 @@ class UserStorage;
 
 class LifeStuffImpl {
  public:
-  LifeStuffImpl(const Slots& slot_functions, const fs::path& base_directory, bool vault_cheat);
+  LifeStuffImpl(const Slots& slot_functions, const fs::path& base_directory);
   ~LifeStuffImpl();
 
   /// Credential operations
@@ -158,8 +158,10 @@ class LifeStuffImpl {
   LifeStuffState state_;
   uint8_t logged_in_state_;
   boost::signals2::signal<void()> immediate_quit_required_signal_;
-  bool vault_cheat_;
 
+  void InitialisePreLoginComponents(
+      const fs::path& buffered_chunk_store_path,
+      const std::vector<std::pair<std::string, uint16_t> >& bootstrap_endpoints);
   void ConnectToSignals();
   void ConnectInternalElements();
   int SetValidPmidAndInitialisePublicComponents();

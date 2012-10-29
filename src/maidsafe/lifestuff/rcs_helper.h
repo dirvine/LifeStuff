@@ -40,13 +40,13 @@ namespace lifestuff {
 
 std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
     const fs::path& base_dir,
-    const std::vector<std::pair<std::string, uint16_t>>& endpoints,  // NOLINT (Dan)
+    const std::vector<std::pair<std::string, uint16_t> >& endpoints,  // NOLINT (Dan)
     std::shared_ptr<pd::Node>& node,
     const std::function<void(const int&)>& network_health_function);
 
 std::shared_ptr<pd::Node> SetupNode(
     const fs::path& base_dir,
-    const std::vector<std::pair<std::string, uint16_t>>& endpoints,  // NOLINT (Dan)
+    const std::vector<std::pair<std::string, uint16_t> >& endpoints,  // NOLINT (Dan)
     const std::function<void(const int&)>& network_health_function);
 
 }  // namespace lifestuff

@@ -48,6 +48,33 @@ namespace lifestuff {
 const int kRetryLimit(10);
 const NonEmptyString kDriveLogo("Lifestuff Drive");
 
+void CheckSlots(Slots& slot_functions) {
+  if (!slot_functions.chat_slot)
+    throw std::exception();
+  if (!slot_functions.file_success_slot)
+    throw std::exception();
+  if (!slot_functions.file_failure_slot)
+    throw std::exception();
+  if (!slot_functions.new_contact_slot)
+    throw std::exception();
+  if (!slot_functions.confirmed_contact_slot)
+    throw std::exception();
+  if (!slot_functions.profile_picture_slot)
+    throw std::exception();
+  if (!slot_functions.contact_presence_slot)
+    throw std::exception();
+  if (!slot_functions.contact_deletion_function)
+    throw std::exception();
+  if (!slot_functions.lifestuff_card_update_function)
+    throw std::exception();
+  if (!slot_functions.network_health_function)
+    throw std::exception();
+  if (!slot_functions.immediate_quit_required_function)
+    throw std::exception();
+  if (!slot_functions.update_available_function)
+    throw std::exception();
+}
+
 struct LifeStuffImpl::LoggedInComponents {
   LoggedInComponents(priv::chunk_store::RemoteChunkStore& remote_chunk_store,
                      Session& session,
@@ -63,13 +90,10 @@ LifeStuffImpl::LoggedInComponents::LoggedInComponents(
     boost::asio::io_service& service)
     : public_id(remote_chunk_store, session, service),
       message_handler(remote_chunk_store, session, service),
-      storage(remote_chunk_store) {
-}
+      storage(remote_chunk_store) {}
 
 
-LifeStuffImpl::LifeStuffImpl(const Slots& slot_functions,
-                             const fs::path& base_directory,
-                             bool vault_cheat)
+LifeStuffImpl::LifeStuffImpl(const Slots& slot_functions, const fs::path& base_directory)
     : thread_count_(kThreads),
       buffered_path_(),
       simulation_path_(),
@@ -86,12 +110,8 @@ LifeStuffImpl::LifeStuffImpl(const Slots& slot_functions,
       slots_(slot_functions),
       state_(kZeroth),
       logged_in_state_(kBaseState),
-      immediate_quit_required_signal_(),
-      vault_cheat_(vault_cheat) {
-  if (!slots_.update_available_function) {
-    LOG(kError) << "No function provided for SW update. Unacceptable. Good day!";
-    throw std::exception();
-  }
+      immediate_quit_required_signal_() {
+  CheckSlots(slots_);
 
   // Initialisation
   asio_service_.Start();
@@ -110,30 +130,28 @@ LifeStuffImpl::LifeStuffImpl(const Slots& slot_functions,
   }
 
   std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
-  if (!vault_cheat) {
-    int counter(0);
-    while (counter++ < kRetryLimit) {
-      Sleep(bptime::milliseconds(100 + RandomUint32() % 1000));
-      client_controller_ = std::make_shared<priv::process_management::ClientController>(
-                               slots_.update_available_function);
-      if (client_controller_->BootstrapEndpoints(bootstrap_endpoints) &&
-          !bootstrap_endpoints.empty())
-        counter = kRetryLimit;
-      else
-        LOG(kWarning) << "Failure to initialise client controller. Try #" << counter;
-    }
+  int counter(0);
+  while (counter++ < kRetryLimit) {
+    Sleep(bptime::milliseconds(100 + RandomUint32() % 1000));
+    client_controller_ = std::make_shared<priv::process_management::ClientController>(
+                             slots_.update_available_function);
+    if (client_controller_->BootstrapEndpoints(bootstrap_endpoints) &&
+        !bootstrap_endpoints.empty())
+      counter = kRetryLimit;
+    else
+      LOG(kWarning) << "Failure to initialise client controller. Try #" << counter;
   }
 
+  InitialisePreLoginComponents(buffered_chunk_store_path, bootstrap_endpoints);
+}
 
+void LifeStuffImpl::InitialisePreLoginComponents(
+    const fs::path& buffered_chunk_store_path,
+    const std::vector<std::pair<std::string, uint16_t> >& bootstrap_endpoints) {
   remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path,
                                         bootstrap_endpoints,
                                         client_node_,
                                         nullptr);
-  if (!remote_chunk_store_) {
-    LOG(kError) << "Could not initialise chunk store.";
-    throw std::exception();
-  }
-
   buffered_path_ = buffered_chunk_store_path;
 
   routings_handler_ = std::make_shared<RoutingsHandler>(
@@ -165,14 +183,20 @@ LifeStuffImpl::~LifeStuffImpl() {
 
 void LifeStuffImpl::ConnectToSignals() {
   logged_in_components_->message_handler.ConnectToChatSignal(slots_.chat_slot);
-  logged_in_components_->message_handler.ConnectToFileTransferSuccessSignal(slots_.file_success_slot);
-  logged_in_components_->message_handler.ConnectToFileTransferFailureSignal(slots_.file_failure_slot);
+  logged_in_components_->message_handler.ConnectToFileTransferSuccessSignal(
+      slots_.file_success_slot);
+  logged_in_components_->message_handler.ConnectToFileTransferFailureSignal(
+      slots_.file_failure_slot);
   logged_in_components_->public_id.ConnectToNewContactSignal(slots_.new_contact_slot);
   logged_in_components_->public_id.ConnectToContactConfirmedSignal(slots_.confirmed_contact_slot);
-  logged_in_components_->message_handler.ConnectToContactProfilePictureSignal(slots_.profile_picture_slot);
-  logged_in_components_->message_handler.ConnectToContactPresenceSignal(slots_.contact_presence_slot);
-  logged_in_components_->public_id.ConnectToContactDeletionProcessedSignal(slots_.contact_deletion_function);
-  logged_in_components_->public_id.ConnectToLifestuffCardUpdatedSignal(slots_.lifestuff_card_update_function);
+  logged_in_components_->message_handler.ConnectToContactProfilePictureSignal(
+      slots_.profile_picture_slot);
+  logged_in_components_->message_handler.ConnectToContactPresenceSignal(
+      slots_.contact_presence_slot);
+  logged_in_components_->public_id.ConnectToContactDeletionProcessedSignal(
+      slots_.contact_deletion_function);
+  logged_in_components_->public_id.ConnectToLifestuffCardUpdatedSignal(
+      slots_.lifestuff_card_update_function);
   immediate_quit_required_signal_.connect(slots_.immediate_quit_required_function);
   logged_in_components_->public_id.ConnectToContactDeletionReceivedSignal(
       [&] (const NonEmptyString& own_public_id,
@@ -486,7 +510,8 @@ int LifeStuffImpl::CheckPassword(const NonEmptyString& password) {
   return session_.password() == password ? kSuccess : kCheckPasswordFailure;
 }
 
-int LifeStuffImpl::ChangeKeyword(const NonEmptyString& new_keyword, const NonEmptyString& password) {
+int LifeStuffImpl::ChangeKeyword(const NonEmptyString& new_keyword,
+                                 const NonEmptyString& password) {
   int result(CheckStateAndFullAccess());
   if (result != kSuccess)
     return result;
@@ -1078,17 +1103,20 @@ fs::path LifeStuffImpl::mount_path() const {
 
 void LifeStuffImpl::ConnectInternalElements() {
   logged_in_components_->message_handler.ConnectToParseAndSaveDataMapSignal(
-      [&] (const NonEmptyString& file_name,
-           const NonEmptyString& serialised_data_map,
-           std::string& data_map_hash)->bool {
-        return logged_in_components_->storage.ParseAndSaveDataMap(file_name, serialised_data_map, data_map_hash);
+      [this] (const NonEmptyString& file_name,
+              const NonEmptyString& serialised_data_map,
+              std::string& data_map_hash)->bool {
+        return logged_in_components_->storage.ParseAndSaveDataMap(file_name,
+                                                                  serialised_data_map,
+                                                                  data_map_hash);
       });
 
   logged_in_components_->public_id.ConnectToContactConfirmedSignal(
-      [&] (const NonEmptyString& own_public_id,
-           const NonEmptyString& recipient_public_id,
-           const NonEmptyString&) {
-        logged_in_components_->message_handler.InformConfirmedContactOnline(own_public_id, recipient_public_id);
+      [this] (const NonEmptyString& own_public_id,
+              const NonEmptyString& recipient_public_id,
+              const NonEmptyString&) {
+        logged_in_components_->message_handler.InformConfirmedContactOnline(own_public_id,
+                                                                            recipient_public_id);
       });
 }
 
@@ -1161,21 +1189,16 @@ int LifeStuffImpl::PreContactChecksFullAccess(const NonEmptyString &my_public_id
   return kSuccess;
 }
 
-void LifeStuffImpl::NetworkHealthSlot(const int& index) {
-  network_health_signal_(index);
-}
-
+void LifeStuffImpl::NetworkHealthSlot(const int& index) { network_health_signal_(index); }
 
 int LifeStuffImpl::CreateVaultInLocalMachine(const fs::path& chunk_store) {
   Identity account_name(session_.passport().SignaturePacketDetails(passport::kMaid,
                                                                    true).identity);
   Fob pmid_keys(session_.passport().SignaturePacketDetails(passport::kPmid, true));
 
-  if (!vault_cheat_) {
-    if (!client_controller_->StartVault(pmid_keys, account_name.string(), chunk_store)) {
-      LOG(kError) << "Failed to create vault through client controller.";
-      return kVaultCreationStartFailure;
-    }
+  if (!client_controller_->StartVault(pmid_keys, account_name.string(), chunk_store)) {
+    LOG(kError) << "Failed to create vault through client controller.";
+    return kVaultCreationStartFailure;
   }
 
   return kSuccess;
