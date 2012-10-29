@@ -170,6 +170,11 @@ add_custom_command(TARGET maidsafe_lifestuff
                            ${CMAKE_COMMAND} -E echo "  static boost::filesystem::path exe(\"$<TARGET_FILE:invigilator>\");  // NOLINT" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "  return exe;" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "}" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "boost::filesystem::path kInvigilatorTestExecutable() {" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "  static boost::filesystem::path exe(\"$<TARGET_FILE:invigilator_test>\");  // NOLINT" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "  return exe;" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "}" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "}  //  namespace priv" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
 
@@ -178,10 +183,10 @@ add_custom_command(TARGET maidsafe_lifestuff
                            ${CMAKE_COMMAND} -E echo "#endif  // MAIDSAFE_PD_CLIENT_KEYS_HELPER_H_" >> ${PROJECT_BINARY_DIR}/keys_helper.h
                    VERBATIM
                    )
-target_link_libraries(TESTlifestuff_api maidsafe_lifestuff maidsafe_process_management ${BoostIostreamsLibs} ${BoostRegexLibs})
-add_dependencies(TESTlifestuff_api pd-vault pd-keys-helper invigilator)
-target_link_libraries(command_line_lifestuff maidsafe_lifestuff maidsafe_process_management)
-add_dependencies(command_line_lifestuff pd-vault pd-keys-helper invigilator)
+target_link_libraries(TESTlifestuff_api maidsafe_lifestuff maidsafe_process_management_test ${BoostIostreamsLibs} ${BoostRegexLibs})
+add_dependencies(TESTlifestuff_api pd-vault pd-keys-helper invigilator_test)
+target_link_libraries(command_line_lifestuff maidsafe_lifestuff maidsafe_process_management_test)
+add_dependencies(command_line_lifestuff pd-vault pd-keys-helper invigilator_test)
 
 include_directories(${PROJECT_BINARY_DIR})
 

@@ -302,7 +302,7 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
 
     // Startup Invigilator
     invigilator_processes_.push_back(std::make_pair(
-        bp::child(bp::execute(bp::initializers::run_exe(priv::kInvigilatorExecutable()),
+        bp::child(bp::execute(bp::initializers::run_exe(priv::kInvigilatorTestExecutable()),
 #ifdef MAIDSAFE_WIN32
                               bp::initializers::set_cmd_line(std::wstring()),
 #else
