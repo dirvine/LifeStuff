@@ -165,6 +165,11 @@ add_custom_command(TARGET maidsafe_lifestuff
                            ${CMAKE_COMMAND} -E echo "  static boost::filesystem::path exe(\"$<TARGET_FILE:invigilator>\");  // NOLINT" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "  return exe;" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "}" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "boost::filesystem::path kInvigilatorTestExecutable() {" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "  static boost::filesystem::path exe(\"$<TARGET_FILE:invigilator_test>\");  // NOLINT" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "  return exe;" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "}" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "}  //  namespace priv" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
 
@@ -174,8 +179,8 @@ add_custom_command(TARGET maidsafe_lifestuff
                    VERBATIM
                    )
 foreach(NetworkTarget ${NetworkTargets})
- target_link_libraries(${NetworkTarget} maidsafe_lifestuff maidsafe_process_management ${BoostIostreamsLibs} ${BoostRegexLibs})
- add_dependencies(${NetworkTarget} pd-vault pd-keys-helper invigilator)
+ target_link_libraries(${NetworkTarget} maidsafe_lifestuff maidsafe_process_management_test ${BoostIostreamsLibs} ${BoostRegexLibs})
+ add_dependencies(${NetworkTarget} pd-vault pd-keys-helper invigilator_test)
 endforeach()
 
 include_directories(${PROJECT_BINARY_DIR})
