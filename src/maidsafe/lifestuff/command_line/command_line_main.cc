@@ -126,18 +126,8 @@ int HandleChoice(const int& option, maidsafe::lifestuff::LifeStuff& lifestuff) {
 
 }  // namespace maidsafe
 
-int main(/*int argc, char* argv[]*/) {
-  maidsafe::log::Logging::instance().AddFilter("common", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("private", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("rudp", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("routing", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("pd", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("passport", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("encrypt", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("drive", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("lifestuff", maidsafe::log::kInfo);
-  maidsafe::log::Logging::instance().SetColour(maidsafe::log::ColourMode::kPartialLine);
-  maidsafe::log::Logging::instance().SetAsync(false);
+int main(int argc, char* argv[]) {
+  maidsafe::log::Logging::Instance().Initialise(argc, argv);
 
   printf("---------------------------------\n");
   printf("-- Lifestuff command line tool --\n");
