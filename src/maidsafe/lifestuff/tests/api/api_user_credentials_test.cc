@@ -68,7 +68,7 @@ void InitialiseAndConnectElements(LifeStuff& elements, const fs::path& dir, vola
 
 }  // namespace
 
-TEST(IndependentFullTest, FUNC_CreateLogoutLoginLogout) {
+TEST(IndependentFullTest, DISABLED_FUNC_CreateLogoutLoginLogout) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   NetworkHelper network;
   network.StartLocalNetwork(test_dir, 10, true);
@@ -91,7 +91,7 @@ TEST(IndependentFullTest, FUNC_CreateLogoutLoginLogout) {
   network.StopLocalNetwork();
 }
 
-TEST_F(OneUserApiTest, FUNC_ChangeCredentials) {
+TEST_F(OneUserApiTest, DISABLED_FUNC_ChangeCredentials) {
   NonEmptyString new_pin(CreatePin());
   EXPECT_EQ(kSuccess, test_elements_.CheckPassword(password_));
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
@@ -128,7 +128,7 @@ TEST_F(OneUserApiTest, FUNC_ChangeCredentials) {
   EXPECT_EQ(kSuccess, test_elements_.ChangePassword(password_, password_));
 }
 
-TEST_F(OneUserApiTest, FUNC_ChangePinAndPasswordSimultaneously) {
+TEST_F(OneUserApiTest, DISABLED_FUNC_ChangePinAndPasswordSimultaneously) {
   NonEmptyString new_pin(CreatePin());
   NonEmptyString new_password(RandomAlphaNumericString(5));
   int result_pin(0), result_password(0);
@@ -166,7 +166,7 @@ TEST_F(OneUserApiTest, FUNC_ChangePinAndPasswordSimultaneously) {
   }
 }
 
-TEST_F(OneUserApiTest, FUNC_ChangeKeywordAndPasswordSimultaneously) {
+TEST_F(OneUserApiTest, DISABLED_FUNC_ChangeKeywordAndPasswordSimultaneously) {
   NonEmptyString new_keyword(RandomAlphaNumericString(5));
   NonEmptyString new_password(RandomAlphaNumericString(5));
   int result_keyword(0), result_password(0);
@@ -204,7 +204,7 @@ TEST_F(OneUserApiTest, FUNC_ChangeKeywordAndPasswordSimultaneously) {
   }
 }
 
-TEST_F(OneUserApiTest, FUNC_ChangePinAndKeywordSimultaneously) {
+TEST_F(OneUserApiTest, DISABLED_FUNC_ChangePinAndKeywordSimultaneously) {
   NonEmptyString new_pin(CreatePin());
   NonEmptyString new_keyword(RandomAlphaNumericString(5));
   int result_pin(0), result_keyword(0);
@@ -243,14 +243,14 @@ TEST_F(OneUserApiTest, FUNC_ChangePinAndKeywordSimultaneously) {
   }
 }
 
-TEST_F(OneUserApiTest, FUNC_CreateUserWhenLoggedIn) {
+TEST_F(OneUserApiTest, DISABLED_FUNC_CreateUserWhenLoggedIn) {
   EXPECT_NE(kSuccess, DoFullCreateUser(test_elements_,
                                        NonEmptyString(RandomAlphaNumericString(5)),
                                        CreatePin(),
                                        NonEmptyString(RandomAlphaNumericString(5))));
 }
 
-TEST_F(OneUserApiTest, FUNC_LogOutCreateNewUser) {
+TEST_F(OneUserApiTest, DISABLED_FUNC_LogOutCreateNewUser) {
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
   EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements_,
                                        NonEmptyString(RandomAlphaNumericString(5)),
@@ -258,7 +258,7 @@ TEST_F(OneUserApiTest, FUNC_LogOutCreateNewUser) {
                                        NonEmptyString(RandomAlphaNumericString(5))));
 }
 
-TEST_F(OneUserApiTest, FUNC_CreateInvalidUsers) {
+TEST_F(OneUserApiTest, DISABLED_FUNC_CreateInvalidUsers) {
   NonEmptyString new_pin(CreatePin());
   NonEmptyString new_keyword(RandomAlphaNumericString(5));
   NonEmptyString new_password(RandomAlphaNumericString(5));
@@ -342,7 +342,7 @@ TEST_F(OneUserApiTest, FUNC_CreateInvalidUsers) {
   EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_, keyword_, pin_, password_));
 }
 
-TEST_F(OneUserApiTest, FUNC_TryChangeCredentialsToInvalid) {
+TEST_F(OneUserApiTest, DISABLED_FUNC_TryChangeCredentialsToInvalid) {
   NonEmptyString incorrect_password(RandomAlphaNumericString(RandomUint32() % 26 + 5));
   while (incorrect_password == password_)
     incorrect_password = NonEmptyString(RandomAlphaNumericString(RandomUint32() % 26 + 5));
@@ -393,7 +393,7 @@ TEST_F(OneUserApiTest, FUNC_TryChangeCredentialsToInvalid) {
       password_));
 }
 
-TEST_F(OneUserApiTest, FUNC_ChangeCredentialsWhenLoggedOut) {
+TEST_F(OneUserApiTest, DISABLED_FUNC_ChangeCredentialsWhenLoggedOut) {
   NonEmptyString new_pin(CreatePin());
 
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
@@ -408,7 +408,7 @@ TEST_F(OneUserApiTest, FUNC_ChangeCredentialsWhenLoggedOut) {
   EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_, keyword_, pin_, password_));
 }
 
-TEST_F(OneUserApiTest, FUNC_ChangeCredentialsAndLogOut) {
+TEST_F(OneUserApiTest, DISABLED_FUNC_ChangeCredentialsAndLogOut) {
   NonEmptyString new_pin(CreatePin());
   NonEmptyString new_keyword(RandomAlphaNumericString(5));
   NonEmptyString new_password(RandomAlphaNumericString(5));
@@ -448,7 +448,7 @@ TEST_F(OneUserApiTest, FUNC_ChangeCredentialsAndLogOut) {
   EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_, new_keyword, new_pin, new_password));
 }
 
-TEST_F(TwoInstancesApiTest, FUNC_LogInFromTwoPlaces) {
+TEST_F(TwoInstancesApiTest, DISABLED_FUNC_LogInFromTwoPlaces) {
   LOG(kInfo) << "\n\nABOUT TO CREATE USER...\n\n";
   ASSERT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_, fs::path()));
   LOG(kInfo) << "\n\nCREATED USER. ABOUT TO LOG OUT...\n\n";
@@ -503,7 +503,7 @@ TEST_F(TwoInstancesApiTest, FUNC_LogInFromTwoPlaces) {
   LOG(kInfo) << "\n\nFINISHED TEST BODY! TAH-DAH!\n\n";
 }
 
-TEST_F(TwoInstancesApiTest, FUNC_LogInAfterCreateUser) {
+TEST_F(TwoInstancesApiTest, DISABLED_FUNC_LogInAfterCreateUser) {
   LOG(kInfo) << "\n\nABOUT TO CREATE USER...\n\n";
   EXPECT_EQ(kSuccess, test_elements_.CreateUser(keyword_, pin_, password_, fs::path()));
   EXPECT_EQ(kLoggedIn, test_elements_.state());
@@ -568,10 +568,10 @@ TEST_F(TwoInstancesApiTest, DISABLED_FUNC_LogInFromTwoPlacesSimultaneously) {
 #endif
 }
 
-TEST_F(TwoInstancesApiTest, FUNC_NeverLogIn) {
+TEST_F(TwoInstancesApiTest, DISABLED_FUNC_NeverLogIn) {
 }
 
-TEST_F(TwoInstancesApiTest, FUNC_CreateSameUserSimultaneously) {
+TEST_F(TwoInstancesApiTest, DISABLED_FUNC_CreateSameUserSimultaneously) {
   int result_1(0), result_2(0);
   boost::thread thread_1([&] {
                            sleepthreads::RunCreateUser(test_elements_,
@@ -598,7 +598,7 @@ TEST_F(TwoInstancesApiTest, FUNC_CreateSameUserSimultaneously) {
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
 }
 
-TEST_F(TwoUsersApiTest, FUNC_ChangeCredentialsToSameConsecutively) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_ChangeCredentialsToSameConsecutively) {
 #ifdef MAIDSAFE_LINUX
   EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_1_, keyword_1_, pin_1_, password_1_));
   EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_2_, keyword_2_, pin_2_, password_2_));
@@ -621,7 +621,7 @@ TEST_F(TwoUsersApiTest, FUNC_ChangeCredentialsToSameConsecutively) {
 #endif
 }
 
-TEST_F(TwoUsersApiTest, FUNC_ChangePinsToSameThenKeywordsToSameSimultaneously) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_ChangePinsToSameThenKeywordsToSameSimultaneously) {
 #ifdef MAIDSAFE_LINUX
   ASSERT_NE(keyword_1_, keyword_2_);
 
@@ -745,7 +745,7 @@ TEST_F(TwoUsersApiTest, FUNC_ChangePinsToSameThenKeywordsToSameSimultaneously) {
 #endif
 }
 
-TEST_F(TwoUsersApiTest, FUNC_ChangeKeywordsToSameThenPinsToSameSimultaneously) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_ChangeKeywordsToSameThenPinsToSameSimultaneously) {
 #ifdef MAIDSAFE_LINUX
   ASSERT_NE(pin_1_, pin_2_);
 
@@ -871,7 +871,7 @@ TEST_F(TwoUsersApiTest, FUNC_ChangeKeywordsToSameThenPinsToSameSimultaneously) {
 #endif
 }
 
-TEST_F(TwoUsersApiTest, FUNC_ChangePinsAndKeywordsToSameSimultaneously) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_ChangePinsAndKeywordsToSameSimultaneously) {
 #ifdef MAIDSAFE_LINUX
   ASSERT_NE(keyword_1_, keyword_2_);
   ASSERT_NE(pin_1_, pin_2_);
@@ -939,7 +939,7 @@ TEST_F(TwoUsersApiTest, FUNC_ChangePinsAndKeywordsToSameSimultaneously) {
 #endif
 }
 
-TEST_F(TwoUsersApiTest, FUNC_ChangeCredentialsToSameSimultaneously) {
+TEST_F(TwoUsersApiTest, DISABLED_FUNC_ChangeCredentialsToSameSimultaneously) {
 #ifdef MAIDSAFE_LINUX
   std::vector<std::pair<int, int>> sleep_values;
   sleep_values.push_back(std::make_pair(0, 200));
