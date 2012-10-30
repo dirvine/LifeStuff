@@ -47,6 +47,7 @@ set(PATH_TO_INCLUDE ${PROJECT_SOURCE_DIR}/include/maidsafe/lifestuff)
 set(PATH_TO_SRC ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff)
 set(PATH_TO_DETAIL ${PATH_TO_SRC}/detail)
 set(PATH_TO_TESTS ${PATH_TO_SRC}/tests)
+set(PATH_TO_COMMAND_LINE ${PATH_TO_SRC}/command_line)
 
 ####    CODE    ####
 file(GLOB SOURCE_FILES_LIFESTUFF_DIR "${PATH_TO_SRC}/lifestuff_api.cc"
@@ -64,7 +65,10 @@ set(ALL_FILES_DETAIL_DIR ${SOURCE_FILES_DETAIL_DIR}
                          "${PATH_TO_INCLUDE}/lifestuff.h"
                          "${PATH_TO_INCLUDE}/return_codes.h")
 
-set(STYLE_ALL ${ALL_FILES_DETAIL_DIR} ${ALL_FILES_LIFESTUFF_DIR})
+file(GLOB SOURCE_FILES_COMMAND_LINE_DIR "${PATH_TO_COMMAND_LINE}/*.cc")
+set(ALL_FILES_COMMAND_LINE_DIR ${SOURCE_FILES_COMMAND_LINE_DIR})
+
+set(STYLE_ALL ${ALL_FILES_DETAIL_DIR} ${ALL_FILES_LIFESTUFF_DIR} ${ALL_FILES_COMMAND_LINE_DIR})
 list(REMOVE_ITEM STYLE_ALL "${PATH_TO_DETAIL}/data_atlas.pb.h"
                            "${PATH_TO_DETAIL}/data_atlas.pb.cc")
 
@@ -75,6 +79,7 @@ source_group("LifeStuff API Files" FILES ${API_FILES_LIFESTUFF_DIR}
                                          "${PATH_TO_INCLUDE}/return_codes.h")
 source_group("LifeStuff Detail Source Files" FILES ${SOURCE_FILES_DETAIL_DIR})
 source_group("LifeStuff Detail Header Files" FILES ${HEADER_FILES_DETAIL_DIR})
+source_group("LifeStuff Command Line Source Files" FILES ${SOURCE_FILES_COMMAND_LINE_DIR})
 
 ####    TESTS    ####
 set(TESTS_MAIN_CC "${PATH_TO_TESTS}/tests_main.cc")
@@ -132,8 +137,9 @@ target_link_libraries(TESTlifestuff_storage maidsafe_lifestuff_detail)
 
 ms_add_static_library(lifestuff ${ALL_FILES_LIFESTUFF_DIR})
 ms_add_executable(TESTlifestuff_api "Tests/LifeStuff" ${API_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
-target_link_libraries(maidsafe_lifestuff maidsafe_pd maidsafe_lifestuff_detail)
+ms_add_executable(command_line_lifestuff "Exe/LifeStuff" ${ALL_FILES_COMMAND_LINE_DIR})
 
+target_link_libraries(maidsafe_lifestuff maidsafe_private maidsafe_pd maidsafe_lifestuff_detail)
 add_custom_command(TARGET maidsafe_lifestuff
                    PRE_BUILD
                    COMMAND ${CMAKE_COMMAND} -E echo "#ifndef MAIDSAFE_PD_CLIENT_KEYS_HELPER_H_" > ${PROJECT_BINARY_DIR}/keys_helper.h &&
@@ -144,8 +150,9 @@ add_custom_command(TARGET maidsafe_lifestuff
                            ${CMAKE_COMMAND} -E echo "#include \"boost/filesystem/path.hpp\"" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "namespace maidsafe {" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
-                           ${CMAKE_COMMAND} -E echo "namespace pd {" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+
                            ${CMAKE_COMMAND} -E echo "" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "namespace pd {" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "boost::filesystem::path kVaultExecutable() {" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "  static boost::filesystem::path exe(\"$<TARGET_FILE:pd-vault>\");  // NOLINT" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "  return exe;" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
@@ -155,15 +162,31 @@ add_custom_command(TARGET maidsafe_lifestuff
                            ${CMAKE_COMMAND} -E echo "  static boost::filesystem::path exe(\"$<TARGET_FILE:pd-keys-helper>\");  // NOLINT" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "  return exe;" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "}" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "}  //  namespace pd" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
-                           ${CMAKE_COMMAND} -E echo "}  // namespace pd" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
-                           ${CMAKE_COMMAND} -E echo "}  // namespace maidsafe" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+
+                           ${CMAKE_COMMAND} -E echo "namespace priv {" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "boost::filesystem::path kInvigilatorExecutable() {" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "  static boost::filesystem::path exe(\"$<TARGET_FILE:invigilator>\");  // NOLINT" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "  return exe;" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "}" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "boost::filesystem::path kInvigilatorTestExecutable() {" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "  static boost::filesystem::path exe(\"$<TARGET_FILE:invigilator_test>\");  // NOLINT" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "  return exe;" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "}" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "}  //  namespace priv" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+                           ${CMAKE_COMMAND} -E echo "" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
+
+                           ${CMAKE_COMMAND} -E echo "}  //  namespace maidsafe" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                            ${CMAKE_COMMAND} -E echo "#endif  // MAIDSAFE_PD_CLIENT_KEYS_HELPER_H_" >> ${PROJECT_BINARY_DIR}/keys_helper.h
                    VERBATIM
                    )
-target_link_libraries(TESTlifestuff_api maidsafe_lifestuff maidsafe_process_management ${BoostIostreamsLibs} ${BoostRegexLibs})
-add_dependencies(${NetworkTarget} pd-vault pd-keys-helper)
+target_link_libraries(TESTlifestuff_api maidsafe_lifestuff maidsafe_process_management_test ${BoostIostreamsLibs} ${BoostRegexLibs})
+add_dependencies(TESTlifestuff_api pd-vault pd-keys-helper invigilator_test)
+target_link_libraries(command_line_lifestuff maidsafe_lifestuff maidsafe_process_management_test)
+add_dependencies(command_line_lifestuff pd-vault pd-keys-helper invigilator_test)
 
 include_directories(${PROJECT_BINARY_DIR})
 

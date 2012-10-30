@@ -102,10 +102,13 @@ bool WriteBootstrap(const std::vector<std::pair<std::string, uint16_t> >& endpoi
 }  // unnamed namespace
 
 
-NetworkHelper::NetworkHelper() : zero_state_processes_(), vault_processes_() {}
+NetworkHelper::NetworkHelper() : zero_state_processes_(),
+                                 vault_processes_(),
+                                 invigilator_processes_() {}
 
 testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::path> test_root,
-                                                          int vault_count) {
+                                                          int vault_count,
+                                                          bool start_invigilator) {
   if (vault_count > 16)
     return testing::AssertionFailure() << "Can't start " << vault_count << " vaults. Must be <= 16";
 
@@ -285,8 +288,36 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
   auto exit_code = wait_for_exit(store_key_child, error_code);
 // std::cout << "current time : " << boost::posix_time::microsec_clock::universal_time() << std::endl;
   if (exit_code)
-    return testing::AssertionFailure() << "Executing " << "/home/maidsafe/Work/MyMaidSafe-SuperProject/build/pd-store-keys"
-                                       << " -ls returned : " << exit_code ;
+    return testing::AssertionFailure() << "Executing " << "pd-store-keys -ls returned : "
+                                       << exit_code;
+
+  if (start_invigilator) {
+    // Cleanup the previous resources
+//     fs::path delete_path("/usr/share/maidsafe/lifestuff");
+    fs::path delete_path(GetSystemAppSupportDir());
+    boost::system::error_code ec;
+    if (fs::remove_all(delete_path, ec) == 0) {
+      std::cout << "Failed to remove " << delete_path << std::endl;
+    }
+
+    // Startup Invigilator
+    invigilator_processes_.push_back(std::make_pair(
+        bp::child(bp::execute(bp::initializers::run_exe(priv::kInvigilatorTestExecutable()),
+#ifdef MAIDSAFE_WIN32
+                              bp::initializers::set_cmd_line(std::wstring()),
+#else
+                              bp::initializers::set_cmd_line(""),
+#endif
+                              bp::initializers::set_on_error(error_code),
+                              bp::initializers::inherit_env()/*,
+                              bp::initializers::bind_stdout(sink),
+                              bp::initializers::bind_stderr(sink)*/)),
+        InStreamPtr(new biostr::stream<biostr::file_descriptor_source>(source))));
+    if (error_code)
+      return testing::AssertionFailure() << "Failed to start Invigilator: "
+                                         << error_code.message();
+    Sleep(boost::posix_time::seconds(10));
+  }
 
   return testing::AssertionSuccess();
 }
