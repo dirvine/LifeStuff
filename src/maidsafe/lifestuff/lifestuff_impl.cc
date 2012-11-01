@@ -264,6 +264,8 @@ int LifeStuffImpl::Finalise() {
     return kWrongState;
   }
 
+  client_node_->Stop();
+
   boost::system::error_code error_code;
   fs::remove_all(buffered_path_, error_code);
   if (error_code)

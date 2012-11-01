@@ -159,6 +159,8 @@ int main(int argc, char* argv[]) {
     }
   } while (option != 1);
 
+  lifestuff.Finalise();
+
   return 0;
 }
 
