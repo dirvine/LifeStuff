@@ -85,8 +85,7 @@ void UserStorage::MountDrive(const fs::path& file_chunk_store_path,
     result = drive_in_user_space_->Init(session->unique_user_id(), "");
     session->set_root_parent_id(drive_in_user_space_->root_parent_id());
   } else {
-    result = drive_in_user_space_->Init(session->unique_user_id(),
-                                        session->root_parent_id());
+    result = drive_in_user_space_->Init(session->unique_user_id(), session->root_parent_id());
   }
 
   if (result != kSuccess) {

@@ -325,7 +325,6 @@ int Session::ParseDataAtlas(const NonEmptyString& serialised_data_atlas) {
 
   if (data_atlas.has_drive_data()) {
     LOG(kInfo) << "ParseDataAtlas - Has drive data.";
-//    set_has_drive_data(true);
     if (data_atlas.drive_data().unique_user_id().empty()) {
       LOG(kError) << "Unique user ID is empty.";
       return kTryAgainLater;
