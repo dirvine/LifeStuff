@@ -152,11 +152,68 @@ class PublicId {
 
   friend class test::PublicIdTest;
 
+  int ProcessPublicIdPacketsStore(const NonEmptyString& public_id, bool accepts_new_contacts);
+  void StoreInbox(const NonEmptyString& public_id, OperationResults& results);
+  void StoreMpidPath(const NonEmptyString& public_id,
+                     OperationResults& results,
+                     bool accepts_new_contacts);
+  void StoreMpid(bool result,
+                 OperationResults& results,
+                 const NonEmptyString& public_id,
+                 bool accepts_new_contacts);
+  void StoreMcid(bool result,
+                 OperationResults& results,
+                 const NonEmptyString& public_id,
+                 bool accepts_new_contacts);
+
+  void DeleteLifestuffCard(const NonEmptyString& public_id);
+  int ProcessPublicIdPacketsDelete(const NonEmptyString& public_id);
+  void DeleteInbox(const NonEmptyString& public_id, OperationResults& results);
+  void DeleteMpidPath(const NonEmptyString& public_id, OperationResults& results);
+  void DeleteMpid(bool response, OperationResults& results, const NonEmptyString& public_id);
+  void DeleteAnmpid(bool response, OperationResults& results, const NonEmptyString& public_id);
+
+  int CheckContactAndMoveInbox(const NonEmptyString& own_public_id,
+                               const NonEmptyString& contact_public_id,
+                               ContactsHandlerPtr& contacts_handler);
+  int StoreNewInbox(const NonEmptyString& own_public_id);
+  int BlockOldInbox(const NonEmptyString& own_public_id);
+  int SendInformationMessages(const ContactsHandlerPtr& contacts_handler,
+                              const Contact& deleted_contact,
+                              const Identity& old_inbox_identity,
+                              const NonEmptyString& own_public_id,
+                              const NonEmptyString& contact_public_id,
+                              const NonEmptyString& removal_message,
+                              const NonEmptyString& timestamp,
+                              const bool& instigator);
+
   void GetNewContacts(const bptime::seconds& interval, const boost::system::error_code& error_code);
   void GetContactsHandle();
   void ProcessRequests(const NonEmptyString& own_public_id,
                        const NonEmptyString& retrieved_mpid_packet,
                        const Fob& mpid);
+  void HandleAppendix(const priv::chunk_actions::SignedData& signed_data,
+                      const NonEmptyString& own_public_id,
+                      const Fob& mpid);
+  void ProcessIntroduction(Contact& contact,
+                           const ContactsHandlerPtr& contacts_handler,
+                           const NonEmptyString& own_public_id,
+                           const Introduction& introduction,
+                           const priv::chunk_actions::SignedData& signed_data,
+                           int have_contact);
+  void ProccessFriendRequest(Contact& contact,
+                             const ContactsHandlerPtr& contacts_handler,
+                             const NonEmptyString& own_public_id,
+                             const Introduction& introduction,
+                             const priv::chunk_actions::SignedData& signed_data,
+                             int have_contact);
+  void ProccessFriendResponse(Contact& contact,
+                              const ContactsHandlerPtr& contacts_handler,
+                              const NonEmptyString& own_public_id,
+                              const Introduction& introduction,
+                              int have_contact);
+  void ProcessDefriending(const NonEmptyString& own_public_id,
+                          const Introduction& introduction);
   void ProcessContactConfirmation(Contact& contact,
                                   const ContactsHandlerPtr contacts_handler,
                                   const NonEmptyString& own_public_id,
@@ -164,7 +221,18 @@ class PublicId {
   void ProcessContactMoveInbox(Contact& contact,
                                const ContactsHandlerPtr contacts_handler,
                                const Identity& inbox_name,
-                               const Identity& pointer_to_info);
+                               const Identity& pointer_to_info,
+                               const Introduction& introduction,
+                               int have_contact);
+  void ProcessFixAsync(Contact& contact,
+                       const ContactsHandlerPtr& contacts_handler,
+                       const NonEmptyString& own_public_id,
+                       const Introduction& introduction,
+                       int have_contact);
+  void ProcessLifestuffCardChanged(Contact& contact,
+                                   const NonEmptyString& own_public_id,
+                                   const Introduction& introduction,
+                                   int have_contact);
   void ProcessNewContact(Contact& contact,
                          const ContactsHandlerPtr contacts_handler,
                          const NonEmptyString& own_public_id,
@@ -179,6 +247,7 @@ class PublicId {
                                           const NonEmptyString& own_public_id,
                                           const NonEmptyString& contact_public_id,
                                           const NonEmptyString& timestamp);
+
   // Modify the Appendability of MCID and MMID associated with the public_id
   // i.e. enable/disable others add new contact and send msg
   int ModifyAppendability(const NonEmptyString& own_public_id, const bool appendability);
@@ -190,21 +259,12 @@ class PublicId {
                         const std::string& inbox_name = "");
   int GetPublicKey(const Identity& packet_name, Contact& contact, int type);
 
-  int StoreLifestuffCard(const Fob& mmid, Identity& lifestuff_card_address);
+  int StoreLifestuffCard(const NonEmptyString& public_id, Identity& lifestuff_card_address);
   int RemoveLifestuffCard(const Identity& lifestuff_card_address, const Fob& mmid);
   Identity GetOwnCardAddress(const NonEmptyString& my_public_id);
   Identity GetContactCardAddress(const NonEmptyString& my_public_id,
                                  const NonEmptyString& contact_public_id);
   int RetrieveLifestuffCard(const Identity& lifestuff_card_address, SocialInfoMap& social_info);
-
-  void StoreMpid(bool result,
-                 OperationResults& results,
-                 const NonEmptyString& public_id,
-                 bool accepts_new_contacts);
-  void StoreMcid(bool result,
-                 OperationResults& results,
-                 const NonEmptyString& public_id,
-                 bool accepts_new_contacts);
 
   priv::chunk_store::RemoteChunkStore& remote_chunk_store_;
   Session& session_;
