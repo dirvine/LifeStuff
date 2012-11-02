@@ -237,7 +237,7 @@ int PublicId::DeletePublicId(const NonEmptyString& public_id) {
   SocialInfoDetail social_info(session_.social_info(public_id));
   if (social_info.first) {
     {
-      std::lock_guard<std::mutex> loch(*social_info.first);
+      std::lock_guard<std::mutex> lock(*social_info.first);
       card_address = social_info.second->card_address;
     }
     result = RemoveLifestuffCard(card_address, inbox_keys);
@@ -427,7 +427,7 @@ int PublicId::RemoveContact(const NonEmptyString& own_public_id,
   SocialInfoDetail social_info(session_.social_info(own_public_id));
   Identity old_card_address;
   if (social_info.first) {
-    std::lock_guard<std::mutex> loch(*social_info.first);
+    std::lock_guard<std::mutex> lock(*social_info.first);
     old_card_address = social_info.second->card_address;
     social_info.second->card_address = new_card_address;
   }
@@ -550,7 +550,7 @@ int PublicId::SetLifestuffCard(const NonEmptyString& my_public_id,
     LOG(kError) << "No such public id " << my_public_id.string();
     return kPublicIdNotFoundFailure;
   } else {
-    std::lock_guard<std::mutex> loch(*detail.first);
+    std::lock_guard<std::mutex> lock(*detail.first);
     card_address = detail.second->card_address;
   }
 
@@ -976,7 +976,7 @@ int PublicId::InformContactInfo(const NonEmptyString& public_id,
 
     SocialInfoDetail social_info(session_.social_info(public_id));
     if (social_info.first) {
-      std::lock_guard<std::mutex> loch(*social_info.first);
+      std::lock_guard<std::mutex> lock(*social_info.first);
       introduction.set_profile_picture_data_map(social_info.second->profile_picture_datamap.string());
       introduction.set_pointer_to_info(social_info.second->card_address.string());
     } else {
@@ -1135,7 +1135,7 @@ int PublicId::RemoveLifestuffCard(const Identity& lifestuff_card_address, const 
 
 Identity PublicId::GetOwnCardAddress(const NonEmptyString& my_public_id) {
   const SocialInfoDetail details(session_.social_info(my_public_id));
-  std::lock_guard<std::mutex> loch(*details.first);
+  std::lock_guard<std::mutex> lock(*details.first);
   return details.second->card_address;
 }
 

@@ -142,10 +142,6 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     if (!endpoints.empty())
       break;
   }
-// std::cout << " \n\n endpoints.size() " << endpoints.size() << std::endl;
-// for (auto &it : endpoints)
-//   std::cout << it.first << " : " << it.second << std::endl;
-// std::cout << "\n\n\n";
 
   // write the info of bootstrap nodes into the bootstrap file
   if (!WriteBootstrap(endpoints))
@@ -200,12 +196,6 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     if (!protobuf_bootstrap.ParseFromString(serialised_bootstrap_nodes))
       return testing::AssertionFailure() << "Could not parse bootstrap contacts.";
 
-//     std::cout << "\n\n\n protobuf_bootstrap.bootstrap_contacts_size() : "
-//               << protobuf_bootstrap.bootstrap_contacts_size() << std::endl;
-//     for (int i(0); i != protobuf_bootstrap.bootstrap_contacts_size(); ++i)
-//       std::cout <<protobuf_bootstrap.bootstrap_contacts(i).ip()
-//       << " : " << protobuf_bootstrap.bootstrap_contacts(i).port() << std::endl;
-
     endpoints.clear();
     for (int i(0); i != protobuf_bootstrap.bootstrap_contacts_size(); ++i) {
       if ((boot_port1 != protobuf_bootstrap.bootstrap_contacts(i).port()) &&
@@ -217,11 +207,6 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     if (!WriteBootstrap(endpoints))
       return testing::AssertionFailure() << "Failed to write updated local bootstrap file.";
   }
-
-// std::cout << " \n\n endpoints.size() " << endpoints.size() << std::endl;
-// for (auto &it : endpoints)
-//   std::cout << it.first << " : " << it.second << std::endl;
-// std::cout << "\n\n\n";
 
   // Start other vaults
   for (int i(4); i != vault_count + 2; ++i) {
@@ -278,41 +263,39 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
       bp::execute(bp::initializers::run_exe(pd::kKeysHelperExecutable()),
                   bp::initializers::set_cmd_line(ConstructCommandLine(false, "-ls")),
                   bp::initializers::set_on_error(error_code),
-                  bp::initializers::inherit_env()/*,
-                  bp::initializers::bind_stdout(sink),
-                  bp::initializers::bind_stderr(sink)*/));
+                  bp::initializers::inherit_env()));
   if (error_code)
     return testing::AssertionFailure() << "Failed to execute " << pd::kKeysHelperExecutable()
                                        << " -ls : " << error_code.message();
-// std::cout << "current time : " << boost::posix_time::microsec_clock::universal_time() << std::endl;
+
   auto exit_code = wait_for_exit(store_key_child, error_code);
-// std::cout << "current time : " << boost::posix_time::microsec_clock::universal_time() << std::endl;
   if (exit_code)
     return testing::AssertionFailure() << "Executing " << "pd-store-keys -ls returned : "
                                        << exit_code;
 
+
   if (start_invigilator) {
     // Cleanup the previous resources
 //     fs::path delete_path("/usr/share/maidsafe/lifestuff");
-    fs::path delete_path(GetSystemAppSupportDir());
-    boost::system::error_code ec;
-    if (fs::remove_all(delete_path, ec) == 0) {
-      std::cout << "Failed to remove " << delete_path << std::endl;
-    }
+
+//  Following commented out due to lack of permission to delete.
+//    fs::path delete_path(GetSystemAppSupportDir());
+//    boost::system::error_code ec;
+//    if (fs::remove_all(delete_path, ec) == 0) {
+//      std::cout << "Failed to remove " << delete_path << std::endl;
+//    }
 
     // Startup Invigilator
-    invigilator_processes_.push_back(std::make_pair(
+    std::string args(" --log_config ./maidsafe_log.ini");
+    invigilator_processes_.push_back(
         bp::child(bp::execute(bp::initializers::run_exe(priv::kInvigilatorTestExecutable()),
 #ifdef MAIDSAFE_WIN32
                               bp::initializers::set_cmd_line(std::wstring()),
 #else
-                              bp::initializers::set_cmd_line(""),
+                              bp::initializers::set_cmd_line(ConstructCommandLine(true, args)),
 #endif
                               bp::initializers::set_on_error(error_code),
-                              bp::initializers::inherit_env()/*,
-                              bp::initializers::bind_stdout(sink),
-                              bp::initializers::bind_stderr(sink)*/)),
-        InStreamPtr(new biostr::stream<biostr::file_descriptor_source>(source))));
+                              bp::initializers::inherit_env())));
     if (error_code)
       return testing::AssertionFailure() << "Failed to start Invigilator: "
                                          << error_code.message();
@@ -326,12 +309,10 @@ testing::AssertionResult NetworkHelper::StopLocalNetwork() {
   LOG(kInfo) << "=============================== Stopping network ===============================";
   boost::system::error_code error_code;
   int count(2);
+
   for (auto& vault_process : vault_processes_) {
-    LOG(kInfo) << "=============================== Dumping Vault " << count++
-               << "'s ouput ===============================";
-    // TODO(Fraser#5#): 2012-08-31 - Don't just terminate, send signal.
     try {
-      bp::terminate(vault_process.first);
+      kill(vault_process.first.pid, SIGINT);
     }
     catch(const std::exception& e) {
       LOG(kError) << e.what();
@@ -350,7 +331,17 @@ testing::AssertionResult NetworkHelper::StopLocalNetwork() {
     LOG(kInfo) << pd::kKeysHelperExecutable() << " has completed with exit code " << exit_code;
  */ }
 //    bp::terminate(zero_state_processes_[0]);
-// Sleep(boost::posix_time::seconds(2));
+
+  for (auto& invigilator_process : invigilator_processes_) {
+    try {
+      kill(invigilator_process.pid, SIGINT);
+    }
+    catch(const std::exception& e) {
+      LOG(kError) << e.what();
+    }
+    invigilator_processes_.clear();
+  }
+
   return testing::AssertionSuccess();
 }
 

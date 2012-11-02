@@ -97,7 +97,7 @@ void Session::Reset() {
 
   passport_.Clear(true, true, true);
   {
-    std::lock_guard<std::mutex> arran_coire_fhionn_lochan(public_id_details_mutex_);
+    std::lock_guard<std::mutex> lock(public_id_details_mutex_);
     public_id_details_.clear();
   }
 }
@@ -106,7 +106,7 @@ passport::Passport& Session::passport() { return passport_; }
 
 int Session::AddPublicId(const NonEmptyString& public_id, const Identity& pointer_to_card) {
   {
-    std::lock_guard<std::mutex> arran_coire_fhionn_lochan(public_id_details_mutex_);
+    std::lock_guard<std::mutex> lock(public_id_details_mutex_);
     auto result(public_id_details_.insert(std::make_pair(public_id,
                                                          PublicIdDetails(pointer_to_card))));
     if (!result.second) {
@@ -129,17 +129,17 @@ int Session::DeletePublicId(const NonEmptyString& public_id) {
     user_details_.changed = true;
   }
 
-  std::lock_guard<std::mutex> arran_coire_fhionn_lochan(public_id_details_mutex_);
+  std::lock_guard<std::mutex> lock(public_id_details_mutex_);
   return public_id_details_.erase(public_id) == size_t(1) ? kSuccess : kPublicIdNotFoundFailure;
 }
 
 bool Session::OwnPublicId(const NonEmptyString& public_id) {
-  std::lock_guard<std::mutex> arran_coire_fhionn_lochan(public_id_details_mutex_);
+  std::lock_guard<std::mutex> lock(public_id_details_mutex_);
   return public_id_details_.find(public_id) != public_id_details_.end();
 }
 
 const ContactsHandlerPtr Session::contacts_handler(const NonEmptyString& public_id) {
-  std::lock_guard<std::mutex> arran_coire_fhionn_lochan(public_id_details_mutex_);
+  std::lock_guard<std::mutex> lock(public_id_details_mutex_);
   auto it(public_id_details_.find(public_id));
   if (it == public_id_details_.end()) {
     LOG(kError) << "Failure to find public id: " << public_id.string();
@@ -152,7 +152,7 @@ const ContactsHandlerPtr Session::contacts_handler(const NonEmptyString& public_
 const SocialInfoDetail Session::social_info(const NonEmptyString& public_id) {
   SocialInfoDetail social_info_detail;
   {
-    std::lock_guard<std::mutex> arran_coire_fhionn_lochan(public_id_details_mutex_);
+    std::lock_guard<std::mutex> lock(public_id_details_mutex_);
     auto it(public_id_details_.find(public_id));
     if (it == public_id_details_.end()) {
       LOG(kError) << "Failure to find public id: " << public_id.string();
@@ -400,7 +400,7 @@ NonEmptyString Session::SerialiseDataAtlas() {
     PublicIdentity* pub_id(data_atlas.add_public_ids());
     pub_id->set_public_id((*it).first.string());
     {
-      std::lock_guard<std::mutex> loch(*(*it).second.social_info_mutex);
+      std::lock_guard<std::mutex> lock(*(*it).second.social_info_mutex);
       pub_id->set_profile_picture_data_map(
           (*it).second.social_info->profile_picture_datamap.string());
       pub_id->set_pointer_to_info((*it).second.social_info->card_address.string());

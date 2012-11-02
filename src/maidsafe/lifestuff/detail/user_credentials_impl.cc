@@ -129,7 +129,7 @@ int UserCredentialsImpl::LogIn(const NonEmptyString& keyword,
 int UserCredentialsImpl::AttemptLogInProcess(const NonEmptyString& keyword,
                                              const NonEmptyString& pin,
                                              const NonEmptyString& password) {
-  std::unique_lock<std::mutex>loch_a_phuill(single_threaded_class_mutex_);
+  std::unique_lock<std::mutex> lock(single_threaded_class_mutex_);
 
   int result(CheckKeywordValidity(keyword));
   if (result != kSuccess) {
@@ -227,8 +227,8 @@ int UserCredentialsImpl::CheckForOtherRunningInstances(const NonEmptyString& key
       return -1;
     }
 
-    std::unique_lock<std::mutex> loch(completed_log_out_mutex_);
-    if (!completed_log_out_conditional_.wait_for(loch,
+    std::unique_lock<std::mutex> lock(completed_log_out_mutex_);
+    if (!completed_log_out_conditional_.wait_for(lock,
                                                  std::chrono::minutes(1),
                                                  [&] () { return completed_log_out_; })) {
       LOG(kError) << "Timed out waiting for other party to report logout. "
@@ -479,7 +479,7 @@ int UserCredentialsImpl::HandleSerialisedDataMaps(const NonEmptyString& keyword,
 int UserCredentialsImpl::CreateUser(const NonEmptyString& keyword,
                                     const NonEmptyString& pin,
                                     const NonEmptyString& password) {
-  std::unique_lock<std::mutex> loch_a_phuill(single_threaded_class_mutex_);
+  std::unique_lock<std::mutex> lock(single_threaded_class_mutex_);
 
   int result(CheckKeywordValidity(keyword));
   if (result != kSuccess) {
@@ -799,7 +799,7 @@ void UserCredentialsImpl::StoreIdentity(OperationResults& results,
 }
 
 int UserCredentialsImpl::SaveSession(bool log_out) {
-  std::unique_lock<std::mutex> loch_a_phuill(single_threaded_class_mutex_);
+  std::unique_lock<std::mutex> lock(single_threaded_class_mutex_);
 
   if (log_out) {
     session_saver_timer_active_ = false;
@@ -893,7 +893,7 @@ void UserCredentialsImpl::ModifyIdentity(OperationResults& results,
 }
 
 int UserCredentialsImpl::ChangePin(const NonEmptyString& new_pin) {
-  std::unique_lock<std::mutex> loch_a_phuill(single_threaded_class_mutex_);
+  std::unique_lock<std::mutex> lock(single_threaded_class_mutex_);
 
   int result(CheckPinValidity(new_pin));
   if (result != kSuccess) {
@@ -906,7 +906,7 @@ int UserCredentialsImpl::ChangePin(const NonEmptyString& new_pin) {
 }
 
 int UserCredentialsImpl::ChangeKeyword(const NonEmptyString& new_keyword) {
-  std::unique_lock<std::mutex> loch_a_phuill(single_threaded_class_mutex_);
+  std::unique_lock<std::mutex> lock(single_threaded_class_mutex_);
 
   int result(CheckKeywordValidity(new_keyword));
   if (result != kSuccess) {
@@ -1024,7 +1024,7 @@ void UserCredentialsImpl::DeleteIdentity(OperationResults& results,
 }
 
 int UserCredentialsImpl::ChangePassword(const NonEmptyString& new_password) {
-  std::unique_lock<std::mutex> loch_a_phuill(single_threaded_class_mutex_);
+  std::unique_lock<std::mutex> lock(single_threaded_class_mutex_);
 
   int result(CheckPasswordValidity(new_password));
   if (result != kSuccess) {
@@ -1301,7 +1301,7 @@ void UserCredentialsImpl::SessionSaver(const bptime::seconds& interval,
 }
 
 void UserCredentialsImpl::LogoutCompletedArrived(const std::string& session_marker) {
-  std::lock_guard<std::mutex> loch(completed_log_out_mutex_);
+  std::lock_guard<std::mutex> lock(completed_log_out_mutex_);
   completed_log_out_message_ = session_marker;
   completed_log_out_ = true;
   completed_log_out_conditional_.notify_one();
