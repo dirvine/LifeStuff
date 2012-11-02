@@ -54,7 +54,7 @@ NonEmptyString GenerateNonemptyMessage() {
 void ExchangeSlot(std::mutex* mutex,
                   std::condition_variable* cond_var,
                   bool* done) {
-  std::unique_lock<std::mutex> loch(*mutex);
+  std::unique_lock<std::mutex> lock(*mutex);
   *done = true;
   cond_var->notify_one();
 }
@@ -62,7 +62,7 @@ void ExchangeSlot(std::mutex* mutex,
 void LifestuffCardSlot(std::mutex* mutex,
                        std::condition_variable* cond_var,
                        bool* done) {
-  std::unique_lock<std::mutex> loch(*mutex);
+  std::unique_lock<std::mutex> lock(*mutex);
   *done = true;
   cond_var->notify_one();
 }
@@ -108,8 +108,8 @@ int CreateAndConnectTwoIds(PublicId& public_id1,
     return result;
 
   {
-    std::unique_lock<std::mutex> loch(mutex);
-    if (!cond_var.wait_for(loch, interval * 2, [&] ()->bool { return done; }))  // NOLINT (Dan)
+    std::unique_lock<std::mutex> lock(mutex);
+    if (!cond_var.wait_for(lock, interval * 2, [&] ()->bool { return done; }))  // NOLINT (Dan)
       return -1;
   }
 
@@ -121,8 +121,8 @@ int CreateAndConnectTwoIds(PublicId& public_id1,
     return result;
 
   {
-    std::unique_lock<std::mutex> loch(mutex2);
-    if (!cond_var2.wait_for(loch, interval * 2, [&] ()->bool { return done2; }))  // NOLINT (Dan)
+    std::unique_lock<std::mutex> lock(mutex2);
+    if (!cond_var2.wait_for(lock, interval * 2, [&] ()->bool { return done2; }))  // NOLINT (Dan)
       return -1;
   }
 
@@ -1273,8 +1273,8 @@ TEST_F(PublicIdTest, FUNC_LifestuffCardSetAndGet) {
   ASSERT_EQ(kSuccess, public_id1_->GetLifestuffCard(public_identity1_, "", own_social_info_map));
   ASSERT_TRUE(EqualMaps(social_info_map, own_social_info_map));
   {
-    std::unique_lock<std::mutex> loch(mutex);
-    ASSERT_TRUE(cond_var.wait_for(loch, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+    std::unique_lock<std::mutex> lock(mutex);
+    ASSERT_TRUE(cond_var.wait_for(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
   }
   ASSERT_TRUE(done);
   ASSERT_EQ(kSuccess, public_id2_->GetLifestuffCard(public_identity2_,
@@ -1291,8 +1291,8 @@ TEST_F(PublicIdTest, FUNC_LifestuffCardSetAndGet) {
   ASSERT_EQ(kSuccess, public_id1_->GetLifestuffCard(public_identity1_, "", own_social_info_map));
   ASSERT_TRUE(EqualMaps(social_info_map, own_social_info_map));
   {
-    std::unique_lock<std::mutex> loch(mutex);
-    ASSERT_TRUE(cond_var.wait_for(loch, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+    std::unique_lock<std::mutex> lock(mutex);
+    ASSERT_TRUE(cond_var.wait_for(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
   }
   ASSERT_TRUE(done);
   ASSERT_EQ(kSuccess, public_id2_->GetLifestuffCard(public_identity2_,
@@ -1309,8 +1309,8 @@ TEST_F(PublicIdTest, FUNC_LifestuffCardSetAndGet) {
   ASSERT_EQ(kSuccess, public_id1_->GetLifestuffCard(public_identity1_, "", own_social_info_map));
   ASSERT_TRUE(EqualMaps(social_info_map, own_social_info_map));
   {
-    std::unique_lock<std::mutex> loch(mutex);
-    ASSERT_TRUE(cond_var.wait_for(loch, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+    std::unique_lock<std::mutex> lock(mutex);
+    ASSERT_TRUE(cond_var.wait_for(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
   }
   ASSERT_TRUE(done);
   ASSERT_EQ(kSuccess, public_id2_->GetLifestuffCard(public_identity2_,
@@ -1327,8 +1327,8 @@ TEST_F(PublicIdTest, FUNC_LifestuffCardSetAndGet) {
   ASSERT_EQ(kSuccess, public_id1_->GetLifestuffCard(public_identity1_, "", own_social_info_map));
   ASSERT_TRUE(EqualMaps(social_info_map, own_social_info_map));
   {
-    std::unique_lock<std::mutex> loch(mutex);
-    ASSERT_TRUE(cond_var.wait_for(loch, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+    std::unique_lock<std::mutex> lock(mutex);
+    ASSERT_TRUE(cond_var.wait_for(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
   }
   ASSERT_TRUE(done);
   ASSERT_EQ(kSuccess, public_id2_->GetLifestuffCard(public_identity2_,
@@ -1345,8 +1345,8 @@ TEST_F(PublicIdTest, FUNC_LifestuffCardSetAndGet) {
   ASSERT_EQ(kSuccess, public_id1_->GetLifestuffCard(public_identity1_, "", own_social_info_map));
   ASSERT_TRUE(EqualMaps(social_info_map, own_social_info_map));
   {
-    std::unique_lock<std::mutex> loch(mutex);
-    ASSERT_TRUE(cond_var.wait_for(loch, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+    std::unique_lock<std::mutex> lock(mutex);
+    ASSERT_TRUE(cond_var.wait_for(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
   }
   ASSERT_TRUE(done);
   ASSERT_EQ(kSuccess, public_id2_->GetLifestuffCard(public_identity2_,
@@ -1363,8 +1363,8 @@ TEST_F(PublicIdTest, FUNC_LifestuffCardSetAndGet) {
   ASSERT_EQ(kSuccess, public_id1_->GetLifestuffCard(public_identity1_, "", own_social_info_map));
   ASSERT_TRUE(EqualMaps(social_info_map, own_social_info_map));
   {
-    std::unique_lock<std::mutex> loch(mutex);
-    ASSERT_TRUE(cond_var.wait_for(loch, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+    std::unique_lock<std::mutex> lock(mutex);
+    ASSERT_TRUE(cond_var.wait_for(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
   }
   ASSERT_TRUE(done);
   ASSERT_EQ(kSuccess, public_id2_->GetLifestuffCard(public_identity2_,
@@ -1421,8 +1421,8 @@ int ConnectTwoIds(PublicId& public_id1,
     return result;
 
   {
-    std::unique_lock<std::mutex> loch(mutex3);
-    if (!cond_var3.wait_for(loch, interval * 2, [&] ()->bool { return done3; }))  // NOLINT (Dan)
+    std::unique_lock<std::mutex> lock(mutex3);
+    if (!cond_var3.wait_for(lock, interval * 2, [&] ()->bool { return done3; }))  // NOLINT (Dan)
       return -1;
   }
 
@@ -1431,8 +1431,8 @@ int ConnectTwoIds(PublicId& public_id1,
     return result;
 
   {
-    std::unique_lock<std::mutex> loch(mutex);
-    if (!cond_var.wait_for(loch, interval * 2, [&] ()->bool { return done; }))  // NOLINT (Dan)
+    std::unique_lock<std::mutex> lock(mutex);
+    if (!cond_var.wait_for(lock, interval * 2, [&] ()->bool { return done; }))  // NOLINT (Dan)
       return -1;
   }
 
@@ -1485,8 +1485,8 @@ TEST_F(PublicIdTest, FUNC_LifestuffCardOnlineOfflineContacts) {
   SocialInfoMap social_info_map(CreateRandomSocialInfoMap(10));
   ASSERT_EQ(kSuccess, public_id1_->SetLifestuffCard(public_identity1_, social_info_map));
   {
-    std::unique_lock<std::mutex> loch(mutex3);
-    ASSERT_FALSE(cond_var3.wait_for(loch, interval_ * 2, [&] ()->bool { return done3; }));  // NOLINT (Dan)
+    std::unique_lock<std::mutex> lock(mutex3);
+    ASSERT_FALSE(cond_var3.wait_for(lock, interval_ * 2, [&] ()->bool { return done3; }));  // NOLINT (Dan)
   }
   ASSERT_TRUE(done2);
   ASSERT_FALSE(done3);

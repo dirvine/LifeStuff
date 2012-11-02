@@ -75,7 +75,7 @@ class RoutingsHandlerTest : public routing::test::GenericNetwork {
   bool ValidatedMessageSlot(const NonEmptyString& message, std::string& response, bool reply) {
     LOG(kInfo) << "ValidatedMessageSlot message: " << message.string()
                << ", response: " << response;
-    std::lock_guard<std::mutex> loch(mutex_);
+    std::lock_guard<std::mutex> lock(mutex_);
     messages_.push_back(message.string());
     if (messages_.size() == messages_expected_)
       message_arrived_ = true;
@@ -165,9 +165,9 @@ TEST_F(RoutingsHandlerTest, FUNC_SendOneMessageToSelfTwoInstances) {
                                               message,
                                               nullptr));
     std::mutex mutex;
-    std::unique_lock<std::mutex> loch(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
     std::condition_variable condition_variable;
-    EXPECT_TRUE(condition_variable.wait_for(loch,
+    EXPECT_TRUE(condition_variable.wait_for(lock,
                                             std::chrono::seconds(5),
                                             [this] () { return message_arrived_; }));  // NOLINT (Dan)
     EXPECT_EQ(2U, messages_.size());
