@@ -835,7 +835,7 @@ int LifeStuffImpl::ChangeProfilePicture(const NonEmptyString& my_public_id,
   }
 
   {
-    std::lock_guard<std::mutex> loch(*social_info.first);
+    std::lock_guard<std::mutex> lock(*social_info.first);
     social_info.second->profile_picture_datamap = message.content[0];
   }
   session_.set_changed(true);
@@ -863,7 +863,7 @@ NonEmptyString LifeStuffImpl::GetOwnProfilePicture(const NonEmptyString& my_publ
   }
 
   {
-    std::lock_guard<std::mutex> loch(*social_info.first);
+    std::lock_guard<std::mutex> lock(*social_info.first);
     if (social_info.second->profile_picture_datamap == kBlankProfilePicture) {
       LOG(kInfo) << "Blank picture in session.";
       return NonEmptyString();

@@ -79,7 +79,11 @@ Session::~Session() {}
 
 void Session::Reset() {
   {
+<<<<<<< HEAD
     std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+    std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
     user_details_.defconlevel = DefConLevels::kDefCon3;
     user_details_.keyword = NonEmptyString();
     user_details_.pin = NonEmptyString();
@@ -97,7 +101,11 @@ void Session::Reset() {
 
   passport_.Clear(true, true, true);
   {
+<<<<<<< HEAD
     std::lock_guard<std::mutex> arran_coire_fhionn_lochan(public_id_details_mutex_);
+=======
+    std::unique_lock<std::mutex> lock(public_id_details_mutex_);
+>>>>>>> next
     public_id_details_.clear();
   }
 }
@@ -106,7 +114,11 @@ passport::Passport& Session::passport() { return passport_; }
 
 int Session::AddPublicId(const NonEmptyString& public_id, const Identity& pointer_to_card) {
   {
+<<<<<<< HEAD
     std::lock_guard<std::mutex> arran_coire_fhionn_lochan(public_id_details_mutex_);
+=======
+    std::unique_lock<std::mutex> lock(public_id_details_mutex_);
+>>>>>>> next
     auto result(public_id_details_.insert(std::make_pair(public_id,
                                                          PublicIdDetails(pointer_to_card))));
     if (!result.second) {
@@ -116,7 +128,11 @@ int Session::AddPublicId(const NonEmptyString& public_id, const Identity& pointe
   }
 
   {
+<<<<<<< HEAD
     std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+    std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
     user_details_.changed = true;
   }
 
@@ -125,21 +141,37 @@ int Session::AddPublicId(const NonEmptyString& public_id, const Identity& pointe
 
 int Session::DeletePublicId(const NonEmptyString& public_id) {
   {
+<<<<<<< HEAD
     std::lock_guard<std::mutex> lock(user_details_mutex_);
     user_details_.changed = true;
   }
 
   std::lock_guard<std::mutex> arran_coire_fhionn_lochan(public_id_details_mutex_);
+=======
+    std::unique_lock<std::mutex> lock(user_details_mutex_);
+    user_details_.changed = true;
+  }
+
+  std::unique_lock<std::mutex> lock(public_id_details_mutex_);
+>>>>>>> next
   return public_id_details_.erase(public_id) == size_t(1) ? kSuccess : kPublicIdNotFoundFailure;
 }
 
 bool Session::OwnPublicId(const NonEmptyString& public_id) {
+<<<<<<< HEAD
   std::lock_guard<std::mutex> arran_coire_fhionn_lochan(public_id_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(public_id_details_mutex_);
+>>>>>>> next
   return public_id_details_.find(public_id) != public_id_details_.end();
 }
 
 const ContactsHandlerPtr Session::contacts_handler(const NonEmptyString& public_id) {
+<<<<<<< HEAD
   std::lock_guard<std::mutex> arran_coire_fhionn_lochan(public_id_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(public_id_details_mutex_);
+>>>>>>> next
   auto it(public_id_details_.find(public_id));
   if (it == public_id_details_.end()) {
     LOG(kError) << "Failure to find public id: " << public_id.string();
@@ -152,7 +184,11 @@ const ContactsHandlerPtr Session::contacts_handler(const NonEmptyString& public_
 const SocialInfoDetail Session::social_info(const NonEmptyString& public_id) {
   SocialInfoDetail social_info_detail;
   {
+<<<<<<< HEAD
     std::lock_guard<std::mutex> arran_coire_fhionn_lochan(public_id_details_mutex_);
+=======
+    std::unique_lock<std::mutex> lock(public_id_details_mutex_);
+>>>>>>> next
     auto it(public_id_details_.find(public_id));
     if (it == public_id_details_.end()) {
       LOG(kError) << "Failure to find public id: " << public_id.string();
@@ -171,7 +207,11 @@ DefConLevels Session::def_con_level() const {
 }
 
 NonEmptyString Session::keyword() const {
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   return user_details_.keyword;
 }
 
@@ -180,77 +220,137 @@ NonEmptyString Session::pin() const {
 }
 
 NonEmptyString Session::password() const {
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   return user_details_.password;
 }
 
 NonEmptyString Session::session_name() const {
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   return user_details_.session_name;
 }
 
 Identity Session::unique_user_id() const {
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   return user_details_.unique_user_id;
 }
 
 std::string Session::root_parent_id() const {
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   return user_details_.root_parent_id;
 }
 
 int64_t Session::max_space() const {
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   return user_details_.max_space;
 }
 
 int64_t Session::used_space() const {
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   return user_details_.used_space;
 }
 
 NonEmptyString Session::serialised_data_atlas() const {
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   return user_details_.serialised_data_atlas;
 }
 
 bool Session::changed() const {
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   return user_details_.changed;
 }
 
 bool Session::has_drive_data() const {
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   return user_details_.has_drive_data;
 }
 
 SessionAccessLevel Session::session_access_level() const {
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   return user_details_.session_access_level;
 }
 
 void Session::set_def_con_level(DefConLevels defconlevel) {
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   user_details_.defconlevel = defconlevel;
 }
 
 void Session::set_keyword(const NonEmptyString& keyword) {
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   user_details_.keyword = keyword;
 }
 
 void Session::set_pin(const NonEmptyString& pin) {
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   user_details_.pin = pin;
 }
 
 void Session::set_password(const NonEmptyString& password) {
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   user_details_.password = password;
 }
 
 void Session::set_session_name() {
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   user_details_.session_name =
       NonEmptyString(EncodeToHex(crypto::Hash<crypto::SHA1>(
                                      user_details_.pin +
@@ -259,12 +359,20 @@ void Session::set_session_name() {
 }
 
 void Session::clear_session_name() {
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   user_details_.session_name = NonEmptyString();
 }
 
 void Session::set_unique_user_id(const Identity& unique_user_id) {
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   user_details_.unique_user_id = unique_user_id;
   if (!user_details_.root_parent_id.empty())
     user_details_.has_drive_data = true;
@@ -274,7 +382,11 @@ void Session::set_root_parent_id(const std::string& root_parent_id) {
   if (root_parent_id.empty())
     LOG(kWarning) << "Passed empty root parent ID.";
 
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   user_details_.root_parent_id = root_parent_id;
   if (user_details_.unique_user_id.IsInitialised())
     user_details_.has_drive_data = true;
@@ -284,7 +396,11 @@ void Session::set_max_space(const int64_t& max_space) {
   if (max_space == 0)
     LOG(kWarning) << "Passed zero maximum space.";
 
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   user_details_.max_space = max_space;
 }
 
@@ -292,27 +408,47 @@ void Session::set_used_space(const int64_t& used_space) {
   if (used_space > user_details_.max_space)
     LOG(kWarning) << "Passed used space greater than maximum.";
 
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   user_details_.used_space = used_space;
 }
 
 void Session::set_serialised_data_atlas(const NonEmptyString& serialised_data_atlas) {
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   user_details_.serialised_data_atlas = serialised_data_atlas;
 }
 
 void Session::set_changed(bool state) {
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   user_details_.changed = state;
 }
 
 void Session::set_has_drive_data(bool has_drive_data) {
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   user_details_.has_drive_data = has_drive_data;
 }
 
 void Session::set_session_access_level(SessionAccessLevel session_access_level) {
+<<<<<<< HEAD
   std::lock_guard<std::mutex> lock(user_details_mutex_);
+=======
+  std::unique_lock<std::mutex> lock(user_details_mutex_);
+>>>>>>> next
   user_details_.session_access_level = session_access_level;
 }
 
@@ -401,7 +537,7 @@ NonEmptyString Session::SerialiseDataAtlas() {
     PublicIdentity* pub_id(data_atlas.add_public_ids());
     pub_id->set_public_id((*it).first.string());
     {
-      std::lock_guard<std::mutex> loch(*(*it).second.social_info_mutex);
+      std::lock_guard<std::mutex> lock(*(*it).second.social_info_mutex);
       pub_id->set_profile_picture_data_map(
           (*it).second.social_info->profile_picture_datamap.string());
       pub_id->set_pointer_to_info((*it).second.social_info->card_address.string());

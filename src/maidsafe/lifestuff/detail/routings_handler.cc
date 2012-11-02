@@ -71,7 +71,7 @@ RoutingsHandler::RoutingsHandler(priv::chunk_store::RemoteChunkStore& chunk_stor
       cs_mutex_() {}
 
 RoutingsHandler::~RoutingsHandler() {
-  std::lock_guard<std::mutex> loch(routing_objects_mutex_);
+  std::lock_guard<std::mutex> lock(routing_objects_mutex_);
   for (auto& element : routing_objects_)
     element.second->routing_object.DisconnectFunctors();
   routing_objects_.clear();
@@ -79,7 +79,7 @@ RoutingsHandler::~RoutingsHandler() {
 }
 
 void RoutingsHandler::set_remote_chunk_store(priv::chunk_store::RemoteChunkStore& chunk_store) {
-  std::lock_guard<std::mutex> loch(cs_mutex_);
+  std::lock_guard<std::mutex> lock(cs_mutex_);
   chunk_store_ = &chunk_store;
 }
 
@@ -122,15 +122,15 @@ bool RoutingsHandler::AddRoutingObject(
   functors.network_status = [routing_details]
                             (const int& network_health) {
                               if (routing_details->action_health) {
-                                std::lock_guard<std::mutex> health_loch(routing_details->mutex);
+                                std::lock_guard<std::mutex> health_lock(routing_details->mutex);
                                 routing_details->newtwork_health = network_health;
                               }
                             };
 
   routing_details->routing_object.Join(functors, peer_endpoints);
   {
-    std::unique_lock<std::mutex> health_loch(routing_details->mutex);
-    routing_details->condition_variable.wait_for(health_loch,
+    std::unique_lock<std::mutex> health_lock(routing_details->mutex);
+    routing_details->condition_variable.wait_for(health_lock,
                                                  std::chrono::seconds(5),
                                                  [&] ()->bool {
                                                    // TODO(Team): Remove this blatantly arbitrary
@@ -157,7 +157,7 @@ bool RoutingsHandler::AddRoutingObject(
 }
 
 bool RoutingsHandler::DeleteRoutingObject(const Identity& identity) {
-  std::unique_lock<std::mutex> loch(routing_objects_mutex_);
+  std::unique_lock<std::mutex> lock(routing_objects_mutex_);
   size_t erased_count(routing_objects_.erase(identity));
   LOG(kInfo) << "RoutingsHandler::DeleteRoutingObject erased: " << erased_count << ", out of: " << routing_objects_.size();
   return erased_count == size_t(1);
@@ -171,7 +171,7 @@ bool RoutingsHandler::Send(const Identity& source_id,
                            std::string* reply_message) {
   std::shared_ptr<RoutingDetails> routing_details;
   {
-    std::unique_lock<std::mutex> loch(routing_objects_mutex_);
+    std::unique_lock<std::mutex> lock(routing_objects_mutex_);
     auto it(routing_objects_.find(source_id));
     if (it == routing_objects_.end()) {
       LOG(kError) << "No such ID to send message: " << DebugId(NodeId(source_id));
@@ -192,7 +192,7 @@ bool RoutingsHandler::Send(const Identity& source_id,
   bool message_received(false);
   if (reply_message) {
       response_functor = [&] (const std::vector<std::string>& messages) {
-                           std::unique_lock<std::mutex> message_loch(message_mutex);
+                           std::unique_lock<std::mutex> message_lock(message_mutex);
                            if (!messages.empty())
                              message_from_routing = messages.front();
                            else
@@ -216,8 +216,8 @@ bool RoutingsHandler::Send(const Identity& source_id,
                                        false);
 
   if (reply_message) {
-    std::unique_lock<std::mutex> message_loch(message_mutex);
-    if (!condition_variable.wait_for(message_loch,
+    std::unique_lock<std::mutex> message_lock(message_mutex);
+    if (!condition_variable.wait_for(message_lock,
                                      std::chrono::seconds(10),
                                      [&] () { return message_received; })) {
       LOG(kError) << "Timed out waiting for response from " << DebugId(NodeId(destination_id));
@@ -274,7 +274,7 @@ void RoutingsHandler::OnRequestReceived(const Identity& receiver_id,
 
   std::shared_ptr<RoutingDetails> routing_details;
   {
-    std::unique_lock<std::mutex> loch(routing_objects_mutex_);
+    std::unique_lock<std::mutex> lock(routing_objects_mutex_);
     auto it(routing_objects_.find(receiver_id));
     if (it == routing_objects_.end()) {
       LOG(kError) << "Failed to find ID locally. Silently drop. Should I even be writing this?";
@@ -322,7 +322,7 @@ void RoutingsHandler::OnPublicKeyRequested(const NodeId& node_id,
                                            const routing::GivePublicKeyFunctor& give_key) {
   std::string network_value;
   {
-    std::lock_guard<std::mutex> loch(cs_mutex_);
+    std::lock_guard<std::mutex> lock(cs_mutex_);
     network_value = chunk_store_->Get(SignaturePacketName(Identity(node_id.string())), Fob());
   }
 
