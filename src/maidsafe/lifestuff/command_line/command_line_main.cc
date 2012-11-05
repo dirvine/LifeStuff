@@ -53,7 +53,7 @@ int ConnectSignals(LifeStuff& lifestuff) {
                                     FileTransferFailureFunction(),
                                     [&lifestuff] (const NonEmptyString& own_id,
                                                   const NonEmptyString& other_id,
-                                                  const NonEmptyString&,
+                                                  const std::string&,
                                                   const NonEmptyString&) {
                                       int result(lifestuff.ConfirmContact(own_id, other_id));
                                       printf("%s confirming %s result: %d\n",
@@ -171,7 +171,7 @@ int DoAddContact(LifeStuff& lifestuff) {
     printf("Id size inadequate: %d", ids.size());
     return -1;
   }
-  return lifestuff.AddContact(ids.at(0), ids.at(1), NonEmptyString("Let's be friends."));
+  return lifestuff.AddContact(ids.at(0), ids.at(1), "Let's be friends.");
 }
 
 int DoGetMessages() {
