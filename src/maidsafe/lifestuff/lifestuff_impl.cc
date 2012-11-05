@@ -244,7 +244,7 @@ int LifeStuffImpl::ConnectToSignals(
   immediate_quit_required_signal_.connect(immediate_quit_required_function);
   public_id_->ConnectToContactDeletionReceivedSignal([&] (const NonEmptyString& own_public_id,
                                                           const NonEmptyString& contact_public_id,
-                                                          const NonEmptyString& removal_message,
+                                                          const std::string& removal_message,
                                                           const NonEmptyString& /*timestamp*/) {
                                                        int result(RemoveContact(own_public_id,
                                                                                 contact_public_id,
@@ -555,8 +555,8 @@ int LifeStuffImpl::StartMessagesAndIntros() {
 }
 
 int LifeStuffImpl::StopMessagesAndIntros() {
-  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
-      (kDriveMounted & logged_in_state_) != kDriveMounted) {
+  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn/* ||
+      (kDriveMounted & logged_in_state_) != kDriveMounted*/) {
      LOG(kError) << "In unsuitable state to stop messages and intros: " <<
                     "make sure user_credentials are logged in and drive is mounted.";
      return kWrongLoggedInState;
@@ -690,7 +690,7 @@ int LifeStuffImpl::LeaveLifeStuff() {
 /// Contact operations
 int LifeStuffImpl::AddContact(const NonEmptyString& my_public_id,
                               const NonEmptyString& contact_public_id,
-                              const NonEmptyString& message) {
+                              const std::string& message) {
   int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in AddContact.";
@@ -745,7 +745,7 @@ int LifeStuffImpl::DeclineContact(const NonEmptyString& my_public_id,
 
 int LifeStuffImpl::RemoveContact(const NonEmptyString& my_public_id,
                                  const NonEmptyString& contact_public_id,
-                                 const NonEmptyString& removal_message,
+                                 const std::string& removal_message,
                                  const bool& instigator) {
   int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
@@ -1240,10 +1240,10 @@ int LifeStuffImpl::CheckStateAndFullAccess() const {
     return kWrongState;
   }
 
-  if ((kDriveMounted & logged_in_state_) != kDriveMounted) {
-    LOG(kError) << "Incorrect state. Drive should be mounted: " << logged_in_state_;
-    return kWrongLoggedInState;
-  }
+//  if ((kDriveMounted & logged_in_state_) != kDriveMounted) {
+//    LOG(kError) << "Incorrect state. Drive should be mounted: " << logged_in_state_;
+//    return kWrongLoggedInState;
+//  }
 
   SessionAccessLevel session_access_level(session_.session_access_level());
   if (session_access_level != kFullAccess) {

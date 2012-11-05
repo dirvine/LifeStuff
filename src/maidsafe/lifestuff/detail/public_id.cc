@@ -48,7 +48,7 @@ const NonEmptyString kDefaultUnfriendMessage("You have been unfriended by: ");
 const NonEmptyString kDefaultConfirmationMessage("You have been confirmed by: ");
 const NonEmptyString kDefaultAsyncFixMessage("Async fix happening with: ");
 const NonEmptyString kDefaultRequestMessage("Accepting as confirmation request by: ");
-const NonEmptyString kDefaultCarChangeMessage("Lifestuff card change by: ");
+const NonEmptyString kDefaultCardChangeMessage("Lifestuff card change by: ");
 
 PublicId::PublicId(priv::chunk_store::RemoteChunkStore& remote_chunk_store,
                    Session& session,
@@ -172,7 +172,7 @@ int PublicId::CreatePublicId(const NonEmptyString& public_id, bool accepts_new_c
 
 int PublicId::AddContact(const NonEmptyString& own_public_id,
                          const NonEmptyString& recipient_public_id,
-                         const NonEmptyString& message) {
+                         const std::string& message) {
   if (session_.OwnPublicId(recipient_public_id)) {
     LOG(kInfo) << "Cannot add own Public Id as a contact.";
     return kCannotAddOwnPublicId;
@@ -317,7 +317,7 @@ int PublicId::ConfirmContact(const NonEmptyString& own_public_id,
     return kConfirmContactGetInfoFailure;
   }
   std::vector<Contact> contacts(1, mic);
-  result = InformContactInfo(own_public_id, contacts, kDefaultConfirmationMessage, kFriendResponse);
+  result = InformContactInfo(own_public_id, contacts, "", kFriendResponse);
   if (result != kSuccess) {
     LOG(kError) << "Failed to send confirmation to " << recipient_public_id.string();
     return kConfirmContactInformFailure;
@@ -361,7 +361,7 @@ int PublicId::RejectContact(const NonEmptyString& own_public_id,
 
 int PublicId::RemoveContact(const NonEmptyString& own_public_id,
                             const NonEmptyString& contact_public_id,
-                            const NonEmptyString& removal_message,
+                            const std::string& removal_message,
                             const NonEmptyString& timestamp,
                             const bool& instigator) {
   const ContactsHandlerPtr contacts_handler(session_.contacts_handler(own_public_id));
@@ -496,7 +496,7 @@ int PublicId::RemoveContact(const NonEmptyString& own_public_id,
   std::vector<Contact> contacts;
   uint16_t status(kConfirmed | kRequestSent);
   contacts_handler->OrderedContacts(&contacts, kAlphabetical, status);
-  result = InformContactInfo(own_public_id, contacts, kDefaultUnfriendMessage, kMovedInbox);
+  result = InformContactInfo(own_public_id, contacts, "", kMovedInbox);
 
   if (!instigator) {
     contact_deletion_processed_signal_(own_public_id,
@@ -588,7 +588,7 @@ int PublicId::SetLifestuffCard(const NonEmptyString& my_public_id,
   session_.contacts_handler(my_public_id)->OnlineContacts(&contacts);
   wait_result = InformContactInfo(my_public_id,
                                   contacts,
-                                  kDefaultCarChangeMessage,
+                                  kDefaultCardChangeMessage.string(),
                                   kLifestuffCardChanged);
   if (wait_result != kSuccess) {
     LOG(kError) << "Failed to inform all contacts.";
@@ -726,7 +726,7 @@ void PublicId::ProcessRequests(const NonEmptyString& own_public_id,
       case kDefriend:
         contact_deletion_received_signal_(own_public_id,
                                           NonEmptyString(introduction.public_id()),
-                                          NonEmptyString(introduction.message()),
+                                          introduction.message(),
                                           NonEmptyString(introduction.timestamp()));
           break;
       case kMovedInbox:
@@ -830,7 +830,7 @@ void PublicId::ProcessNewContact(Contact& contact,
     session_.set_changed(true);
     new_contact_signal_(own_public_id,
                         public_id,
-                        NonEmptyString(introduction.message()),
+                        introduction.message(),
                         NonEmptyString(introduction.timestamp()));
   } else {
     LOG(kInfo) << "Dropping contact " << contact.public_id.string();
@@ -858,7 +858,7 @@ int PublicId::ProcessRequestWhenExpectingResponse(Contact& contact,
   }
 
   std::vector<Contact> contacts(1, contact);
-  result = InformContactInfo(own_public_id, contacts, kDefaultRequestMessage, kFriendResponse);
+  result = InformContactInfo(own_public_id, contacts, "", kFriendResponse);
   if (result != kSuccess) {
     LOG(kError) << "Failed to send confirmation to " << recipient_public_id.string();
     return kPRWERInformFailure;
@@ -881,7 +881,10 @@ int PublicId::ProcessRequestWhenExpectingResponse(Contact& contact,
 void PublicId::ProcessMisplacedContactRequest(Contact& contact,
                                               const NonEmptyString& own_public_id) {
   std::vector<Contact> contacts(1, contact);
-  int result = InformContactInfo(own_public_id, contacts, kDefaultAsyncFixMessage, kFixAsync);
+  int result = InformContactInfo(own_public_id,
+                                 contacts,
+                                 kDefaultAsyncFixMessage.string(),
+                                 kFixAsync);
   if (result != kSuccess) {
     LOG(kError) << "Failed to send confirmation to " << contact.public_id.string();
   }
@@ -942,7 +945,7 @@ int PublicId::ModifyAppendability(const NonEmptyString& own_public_id, const boo
 
 int PublicId::InformContactInfo(const NonEmptyString& public_id,
                                 const std::vector<Contact>& contacts,
-                                const NonEmptyString& message,
+                                const std::string& message,
                                 const IntroductionType& type,
                                 const std::string& inbox_name) {
   // Get our MMID name, and MPID private key
@@ -972,7 +975,7 @@ int PublicId::InformContactInfo(const NonEmptyString& public_id,
     introduction.set_public_id(public_id.string());
     introduction.set_timestamp(IsoTimeWithMicroSeconds());
     introduction.set_type(type);
-    introduction.set_message(message.string());
+    introduction.set_message(message);
 
     SocialInfoDetail social_info(session_.social_info(public_id));
     if (social_info.first) {

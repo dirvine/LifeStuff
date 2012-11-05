@@ -137,7 +137,7 @@ int LifeStuff::LeaveLifeStuff() {
 /// Contact operations
 int LifeStuff::AddContact(const NonEmptyString& my_public_id,
                           const NonEmptyString& contact_public_id,
-                          const NonEmptyString& message) {
+                          const std::string& message) {
   return lifestuff_impl_->AddContact(my_public_id, contact_public_id, message);
 }
 
@@ -153,7 +153,7 @@ int LifeStuff::DeclineContact(const NonEmptyString& my_public_id,
 
 int LifeStuff::RemoveContact(const NonEmptyString& my_public_id,
                              const NonEmptyString& contact_public_id,
-                             const NonEmptyString& removal_message) {
+                             const std::string& removal_message) {
   return lifestuff_impl_->RemoveContact(my_public_id, contact_public_id, removal_message, true);
 }
 

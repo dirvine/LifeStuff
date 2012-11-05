@@ -137,12 +137,12 @@ class LifeStuffImpl {
   /// Contact operations
   int AddContact(const NonEmptyString& my_public_id,
                  const NonEmptyString& contact_public_id,
-                 const NonEmptyString& message);
+                 const std::string& message);
   int ConfirmContact(const NonEmptyString& my_public_id, const NonEmptyString& contact_public_id);
   int DeclineContact(const NonEmptyString& my_public_id, const NonEmptyString& contact_public_id);
   int RemoveContact(const NonEmptyString& my_public_id,
                     const NonEmptyString& contact_public_id,
-                    const NonEmptyString& removal_message,
+                    const std::string& removal_message,
                     const bool& instigator);
   int ChangeProfilePicture(const NonEmptyString& my_public_id,
                            const NonEmptyString& profile_picture_contents);

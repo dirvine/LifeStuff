@@ -227,7 +227,7 @@ TEST_F(TwoUsersApiTest, DISABLED_FUNC_DriveNotMountedTryOperations) {
   NonEmptyString public_id_3(RandomAlphaNumericString(5));
   NonEmptyString message(RandomAlphaNumericString(5));
   EXPECT_EQ(kSuccess, test_elements_2_.CreatePublicId(public_id_3));
-  EXPECT_EQ(kSuccess, test_elements_2_.AddContact(public_id_3, public_id_1_, message));
+  EXPECT_EQ(kSuccess, test_elements_2_.AddContact(public_id_3, public_id_1_, message.string()));
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_2_));
   EXPECT_EQ(test_elements_2_.logged_in_state(), kBaseState);
   EXPECT_EQ(test_elements_2_.state(), kConnected);
@@ -253,13 +253,14 @@ TEST_F(TwoUsersApiTest, DISABLED_FUNC_DriveNotMountedTryOperations) {
   EXPECT_EQ(kWrongLoggedInState, test_elements_1_.ChangePin(CreatePin(), password_1_));
   EXPECT_EQ(kWrongLoggedInState, test_elements_1_.ChangePassword(
       NonEmptyString(RandomAlphaNumericString(5)), password_1_));
-  EXPECT_EQ(kWrongLoggedInState, test_elements_1_.AddContact(
-      public_id_1_, NonEmptyString(RandomAlphaNumericString(5)),
-      NonEmptyString(RandomAlphaNumericString(5))));
+  EXPECT_EQ(kWrongLoggedInState,
+            test_elements_1_.AddContact(public_id_1_,
+                                        NonEmptyString(RandomAlphaNumericString(5)),
+                                        RandomAlphaNumericString(5)));
   EXPECT_EQ(kWrongLoggedInState, test_elements_1_.ConfirmContact(public_id_1_, public_id_3));
   EXPECT_EQ(kWrongLoggedInState, test_elements_1_.DeclineContact(public_id_1_, public_id_3));
-  EXPECT_EQ(kWrongLoggedInState, test_elements_1_.RemoveContact(
-      public_id_1_, public_id_2_, message));
+  EXPECT_EQ(kWrongLoggedInState,
+            test_elements_1_.RemoveContact(public_id_1_, public_id_2_, message.string()));
   // TODO(Alison) - check that other functions in API aren't accessible when drive not mounted.
 
   EXPECT_EQ(kSuccess, test_elements_1_.LogOut());

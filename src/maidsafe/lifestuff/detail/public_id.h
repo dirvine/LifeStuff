@@ -69,7 +69,7 @@ class PublicId {
  public:
   typedef bs2::signal<void(const NonEmptyString&,  // NOLINT (Fraser)
                            const NonEmptyString&,
-                           const NonEmptyString&,
+                           const std::string&,
                            const NonEmptyString&)> NewContactSignal;
 
   typedef bs2::signal<void(const NonEmptyString&,  // NOLINT (Fraser)
@@ -78,12 +78,12 @@ class PublicId {
 
   typedef bs2::signal<void(const NonEmptyString&,  // NOLINT (Alison)
                            const NonEmptyString&,
-                           const NonEmptyString&,
+                           const std::string&,
                            const NonEmptyString&)> ContactDeletionReceivedSignal;
 
   typedef bs2::signal<void(const NonEmptyString&,  // NOLINT (Alison)
                            const NonEmptyString&,
-                           const NonEmptyString&,
+                           const std::string&,
                            const NonEmptyString&)> ContactDeletionProcessedSignal;
 
   typedef bs2::signal<void(const NonEmptyString&,  // NOLINT (Dan)
@@ -110,7 +110,7 @@ class PublicId {
   // Appends our info as an MCID to the recipient's MPID packet.
   int AddContact(const NonEmptyString& own_public_id,
                  const NonEmptyString& recipient_public_id,
-                 const NonEmptyString& message);
+                 const std::string& message);
 
   // Disallow/allow others add contact or send messages
   int DisablePublicId(const NonEmptyString& own_public_id);
@@ -125,7 +125,7 @@ class PublicId {
   // Remove a contact from current contact list, and inform other contacts the new MMID
   int RemoveContact(const NonEmptyString& own_public_id,
                     const NonEmptyString& recipient_public_id,
-                    const NonEmptyString& message,
+                    const std::string& message,
                     const NonEmptyString& timestamp,
                     const bool& instigator);
 
@@ -185,7 +185,7 @@ class PublicId {
   // Notify each contact in the list about the contact_info
   int InformContactInfo(const NonEmptyString& own_public_id,
                         const std::vector<Contact>& contacts,
-                        const NonEmptyString& message,
+                        const std::string& message,
                         const IntroductionType& type,
                         const std::string& inbox_name = "");
   int GetPublicKey(const Identity& packet_name, Contact& contact, int type);
