@@ -119,6 +119,11 @@ class UserStorage {
   Session* session_;
   fs::path mount_dir_;
   std::thread mount_thread_;
+
+  bool ReadConfigFile(const fs::path& absolute_path, std::string* content);
+  bool WriteConfigFile(const fs::path& absolute_path,
+                       const NonEmptyString& content,
+                       bool overwrite_existing);
 };
 
 }  // namespace lifestuff
