@@ -308,17 +308,19 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
 testing::AssertionResult NetworkHelper::StopLocalNetwork() {
   LOG(kInfo) << "=============================== Stopping network ===============================";
   boost::system::error_code error_code;
-  int count(2);
+  // int count(2);
 
   for (auto& vault_process : vault_processes_) {
     try {
+#ifdef MAIDSAFE_WIN32
+      bp::terminate(vault_process.first);
+#else
       kill(vault_process.first.pid, SIGINT);
+#endif
     }
     catch(const std::exception& e) {
       LOG(kError) << e.what();
     }
-    vault_processes_.clear();
-    zero_state_processes_.clear();
 //  Sleep(boost::posix_time::seconds(2));
 /*    auto exit_code = wait_for_exit(vault_process.first, error_code);
     vault_process.second->seekg(0, std::ios::end);
@@ -330,17 +332,24 @@ testing::AssertionResult NetworkHelper::StopLocalNetwork() {
     LOG(kInfo) << std::string(buffer.get(), size);
     LOG(kInfo) << pd::kKeysHelperExecutable() << " has completed with exit code " << exit_code;
  */ }
-//    bp::terminate(zero_state_processes_[0]);
+  vault_processes_.clear();
+//  bp::terminate(zero_state_processes_[0]);
+  zero_state_processes_.clear();
 
   for (auto& invigilator_process : invigilator_processes_) {
     try {
+#ifdef MAIDSAFE_WIN32
+      bp::terminate(invigilator_process);
+      // invigilator_process.discard();
+#else
       kill(invigilator_process.pid, SIGINT);
+#endif
     }
     catch(const std::exception& e) {
       LOG(kError) << e.what();
     }
-    invigilator_processes_.clear();
   }
+  invigilator_processes_.clear();
 
   return testing::AssertionSuccess();
 }
