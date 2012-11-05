@@ -247,7 +247,8 @@ int ContactsHandler::UpdateStatus(const NonEmptyString& public_id, const Contact
   return kSuccess;
 }
 
-int ContactsHandler::UpdatePresence(const NonEmptyString& public_id, const ContactPresence& presence) {
+int ContactsHandler::UpdatePresence(const NonEmptyString& public_id,
+                                    const ContactPresence& presence) {
   ContactSet::iterator it = contact_set_.find(public_id);
   if (it == contact_set_.end()) {
     LOG(kError) << "Contact(" << public_id.string() << ") not present in list.";

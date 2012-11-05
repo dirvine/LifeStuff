@@ -43,7 +43,6 @@
 #include "maidsafe/routing/routing_api.h"
 
 #include "maidsafe/pd/client/node.h"
-//#include "maidsafe/pd/vault/node.h"
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
@@ -119,7 +118,9 @@ class LifeStuffImpl {
                  const NonEmptyString& password,
                  const fs::path& chunk_store);
   int CreatePublicId(const NonEmptyString& public_id);
-  int LogIn(const NonEmptyString& keyword, const NonEmptyString& pin, const NonEmptyString& password);
+  int LogIn(const NonEmptyString& keyword,
+            const NonEmptyString& pin,
+            const NonEmptyString& password);
   int LogOut(bool clear_maid_routing = true);
   int MountDrive();
   int UnMountDrive();
@@ -192,7 +193,6 @@ class LifeStuffImpl {
   std::shared_ptr<priv::process_management::ClientController> client_controller_;
   std::shared_ptr<pd::Node> client_node_;
   std::shared_ptr<RoutingsHandler> routings_handler_;
-//  pd::vault::Node vault_node_;
   boost::signals2::signal<void(const int&)> network_health_signal_;
   Session session_;
   std::shared_ptr<UserCredentials> user_credentials_;
@@ -203,8 +203,9 @@ class LifeStuffImpl {
   LifeStuffState state_;
   uint8_t logged_in_state_;
   bs2::signal<void()> immediate_quit_required_signal_;
-  bool vault_cheat_;
+  std::vector<std::pair<std::string, uint16_t> > bootstrap_endpoints_;
 
+  int MakeAnonymousComponents();
   void ConnectInternalElements();
   int SetValidPmidAndInitialisePublicComponents();
   int CheckStateAndFullAccess() const;

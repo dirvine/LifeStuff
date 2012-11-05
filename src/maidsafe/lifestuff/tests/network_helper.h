@@ -44,9 +44,10 @@ namespace test {
 
 class NetworkHelper {
  public:
-  NetworkHelper(); 
+  NetworkHelper();
   testing::AssertionResult StartLocalNetwork(std::shared_ptr<boost::filesystem::path> test_root,
-                                             int vault_count, bool start_invigilator = false);
+                                             int vault_count,
+                                             bool start_invigilator = false);
   testing::AssertionResult StopLocalNetwork();
 
  private:

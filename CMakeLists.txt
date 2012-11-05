@@ -217,6 +217,7 @@ add_style_test(${STYLE_ALL}
                ${ROUTINGS_HANDLER_TEST_CC}
                ${API_TEST_CC})
 
+add_gtests(TESTlifestuff_general)
 add_gtests(TESTlifestuff_api)
 
 add_project_experimental()

@@ -980,7 +980,8 @@ int PublicId::InformContactInfo(const NonEmptyString& public_id,
     SocialInfoDetail social_info(session_.social_info(public_id));
     if (social_info.first) {
       std::lock_guard<std::mutex> lock(*social_info.first);
-      introduction.set_profile_picture_data_map(social_info.second->profile_picture_datamap.string());
+      introduction.set_profile_picture_data_map(
+          social_info.second->profile_picture_datamap.string());
       introduction.set_pointer_to_info(social_info.second->card_address.string());
     } else {
       LOG(kInfo) << "Failure to find profile picture data map for public id: "

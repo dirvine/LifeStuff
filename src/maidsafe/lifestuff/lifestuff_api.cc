@@ -177,7 +177,8 @@ int LifeStuff::GetLifestuffCard(const NonEmptyString& my_public_id,
   return lifestuff_impl_->GetLifestuffCard(my_public_id, contact_public_id, social_info);
 }
 
-int LifeStuff::SetLifestuffCard(const NonEmptyString& my_public_id, const SocialInfoMap& social_info) {
+int LifeStuff::SetLifestuffCard(const NonEmptyString& my_public_id,
+                                const SocialInfoMap& social_info) {
   return lifestuff_impl_->SetLifestuffCard(my_public_id, social_info);
 }
 

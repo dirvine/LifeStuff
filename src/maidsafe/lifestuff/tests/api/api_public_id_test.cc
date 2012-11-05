@@ -40,19 +40,18 @@ namespace lifestuff {
 namespace test {
 
 TEST_F(OneUserApiTest, FUNC_TryCreateInvalidPublicId) {
-  // EXPECT_NE(kSuccess, test_elements_.CreatePublicId(NonEmptyString("")));
-//  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(NonEmptyString(RandomAlphaNumericString(31))));
-//  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(NonEmptyString(" ")));
-//  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(
-//      NonEmptyString(" " + RandomAlphaNumericString(RandomUint32() % 26 + 4))));
-//  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(
-//      NonEmptyString(RandomAlphaNumericString(RandomUint32() % 26 + 4) + " ")));
-//  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(
-//      NonEmptyString(RandomAlphaNumericString(RandomUint32() % 13 + 2) + "  " +
-//      RandomAlphaNumericString(RandomUint32() % 14 + 1))));
-//  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(
-//      NonEmptyString(" " + RandomAlphaNumericString(RandomUint32() % 13 + 1) + "  " +
-//                     RandomAlphaNumericString(RandomUint32() % 13 + 1) + " ")));
+  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(NonEmptyString(RandomAlphaNumericString(31))));
+  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(NonEmptyString(" ")));
+  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(
+      NonEmptyString(" " + RandomAlphaNumericString(RandomUint32() % 26 + 4))));
+  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(
+      NonEmptyString(RandomAlphaNumericString(RandomUint32() % 26 + 4) + " ")));
+  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(
+      NonEmptyString(RandomAlphaNumericString(RandomUint32() % 13 + 2) + "  " +
+      RandomAlphaNumericString(RandomUint32() % 14 + 1))));
+  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(
+      NonEmptyString(" " + RandomAlphaNumericString(RandomUint32() % 13 + 1) + "  " +
+                     RandomAlphaNumericString(RandomUint32() % 13 + 1) + " ")));
   NonEmptyString public_id(RandomAlphaNumericString(RandomUint32() % 14 + 1) +
                            " " +
                            RandomAlphaNumericString(RandomUint32() % 15 + 1));

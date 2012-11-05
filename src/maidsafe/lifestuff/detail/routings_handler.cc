@@ -159,7 +159,8 @@ bool RoutingsHandler::AddRoutingObject(
 bool RoutingsHandler::DeleteRoutingObject(const Identity& identity) {
   std::unique_lock<std::mutex> lock(routing_objects_mutex_);
   size_t erased_count(routing_objects_.erase(identity));
-  LOG(kInfo) << "RoutingsHandler::DeleteRoutingObject erased: " << erased_count << ", out of: " << routing_objects_.size();
+  LOG(kInfo) << "RoutingsHandler::DeleteRoutingObject erased: " << erased_count
+             << ", out of: " << (routing_objects_.size() + erased_count);
   return erased_count == size_t(1);
 }
 
@@ -206,7 +207,8 @@ bool RoutingsHandler::Send(const Identity& source_id,
   if (source_id == destination_id)
     group_claim_as_own_id = NodeId(destination_id.string());
 
-  LOG(kInfo) << "sender: " << DebugId(group_claim_as_own_id) << ", receiver: " << DebugId(NodeId(destination_id));
+  LOG(kInfo) << "sender: " << DebugId(group_claim_as_own_id)
+             << ", receiver: " << DebugId(NodeId(destination_id));
   routing_details->routing_object.Send(NodeId(destination_id.string()),
                                        group_claim_as_own_id,
                                        wrapped_message.string(),
@@ -343,7 +345,7 @@ void RoutingsHandler::OnPublicKeyRequested(const NodeId& node_id,
   try {
     public_key = asymm::DecodeKey(asymm::EncodedPublicKey(signed_data.data()));
   }
-  catch (const std::exception& exception) {
+  catch(const std::exception& exception) {
     LOG(kError) << "Did not find valid public key. Won't execute callback: " << exception.what();
     return;
   }

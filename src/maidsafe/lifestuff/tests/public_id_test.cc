@@ -400,7 +400,8 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
       });
 
   NonEmptyString message(GenerateNonemptyMessage());
-  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_, message.string()));
+  ASSERT_EQ(kSuccess,
+            public_id2_->AddContact(public_identity2_, public_identity1_, message.string()));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(timer_interval_));
 
   {

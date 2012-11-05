@@ -216,7 +216,7 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     source = biostr::file_descriptor_source(anon_pipe.source, biostr::close_handle);
 
     std::random_shuffle(endpoints.begin(), endpoints.end());
-    std::string args("--start --chunk_path ");
+    std::string args("--start --usr_id smer --chunk_path ");
     std::string index(boost::lexical_cast<std::string>(i));
     fs::path chunkstore(*test_root / (std::string("ChunkStore") + index));
     if (!fs::create_directories(chunkstore, error_code) || error_code)
@@ -286,7 +286,7 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
 //    }
 
     // Startup Invigilator
-    std::string args(" --log_config ./maidsafe_log.ini");
+    std::string args(" --log_config ./private_log.ini");
     invigilator_processes_.push_back(
         bp::child(bp::execute(bp::initializers::run_exe(priv::kInvigilatorTestExecutable()),
 #ifdef MAIDSAFE_WIN32
@@ -307,9 +307,6 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
 
 testing::AssertionResult NetworkHelper::StopLocalNetwork() {
   LOG(kInfo) << "=============================== Stopping network ===============================";
-  boost::system::error_code error_code;
-  // int count(2);
-
   for (auto& vault_process : vault_processes_) {
     try {
 #ifdef MAIDSAFE_WIN32
@@ -321,17 +318,7 @@ testing::AssertionResult NetworkHelper::StopLocalNetwork() {
     catch(const std::exception& e) {
       LOG(kError) << e.what();
     }
-//  Sleep(boost::posix_time::seconds(2));
-/*    auto exit_code = wait_for_exit(vault_process.first, error_code);
-    vault_process.second->seekg(0, std::ios::end);
-    size_t size(static_cast<size_t>(vault_process.second->tellg()));
-    vault_process.second->seekg(0, std::ios::beg);
-
-    std::unique_ptr<char[]> buffer(new char[size]);
-    vault_process.second->read(buffer.get(), size);
-    LOG(kInfo) << std::string(buffer.get(), size);
-    LOG(kInfo) << pd::kKeysHelperExecutable() << " has completed with exit code " << exit_code;
- */ }
+  }
   vault_processes_.clear();
 //  bp::terminate(zero_state_processes_[0]);
   zero_state_processes_.clear();

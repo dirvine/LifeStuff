@@ -190,7 +190,8 @@ bool UserStorage::GetSavedDataMap(const NonEmptyString& data_map_hash,
                                   std::string& serialised_data_map,
                                   std::string& file_name) {
   std::string serialised_identifier;
-  int result(ReadHiddenFile(mount_dir() / std::string(data_map_hash.string() + kHiddenFileExtension),
+  int result(ReadHiddenFile(mount_dir() / std::string(data_map_hash.string() +
+                                                      kHiddenFileExtension),
                             &serialised_identifier));
   if (result != kSuccess || serialised_identifier.empty()) {
     LOG(kError) << "No such identifier found.";

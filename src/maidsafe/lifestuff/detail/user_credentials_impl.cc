@@ -493,7 +493,7 @@ int UserCredentialsImpl::CreateUser(const NonEmptyString& keyword,
   }
   result = CheckPasswordValidity(password);
   if (result != kSuccess) {
-    LOG(kInfo) << "Invalid password: " << password.string() << "    (Return code: " << result << ")";
+    LOG(kInfo) << "Invalid password: " << password.string() << "   (Return code: " << result << ")";
     return result;
   }
 

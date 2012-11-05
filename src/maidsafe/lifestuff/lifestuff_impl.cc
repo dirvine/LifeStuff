@@ -58,7 +58,6 @@ LifeStuffImpl::LifeStuffImpl()
       client_controller_(),
       client_node_(),
       routings_handler_(),
-//      vault_node_(),
       network_health_signal_(),
       session_(),
       user_credentials_(),
@@ -69,17 +68,13 @@ LifeStuffImpl::LifeStuffImpl()
       state_(kZeroth),
       logged_in_state_(kBaseState),
       immediate_quit_required_signal_(),
-      vault_cheat_(false) {}
+      bootstrap_endpoints_() {}
 
-LifeStuffImpl::~LifeStuffImpl() {
-//  int result(vault_node_.Stop());
-//  LOG(kInfo) << "Result of stopping cheat vault: " << result;
-}
+LifeStuffImpl::~LifeStuffImpl() {}
 
 int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_available_function,
                               const fs::path& base_directory,
-                              bool vault_cheat) {
-  vault_cheat = false;
+                              bool /*vault_cheat*/) {
   if (state_ != kZeroth) {
     LOG(kError) << "Make sure that object is in the original Zeroth state. Asimov rules.";
     return kWrongState;
@@ -107,28 +102,29 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
     network_simulation_path = base_path / "simulated_network";
   }
 
-  std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
-  if (!vault_cheat) {
-    int counter(0);
-    while (counter++ < kRetryLimit) {
-      Sleep(bptime::milliseconds(100 + RandomUint32() % 1000));
-      client_controller_ = std::make_shared<priv::process_management::ClientController>(
-                               software_update_available_function);
-      if (client_controller_->BootstrapEndpoints(bootstrap_endpoints) &&
-          !bootstrap_endpoints.empty())
-        counter = kRetryLimit;
-      else
-        LOG(kWarning) << "Failure to initialise client controller. Try #" << counter;
-    }
-    if (bootstrap_endpoints.empty()) {
-      LOG(kWarning) << "Failure to initialise client controller. No bootstrap contacts.";
-//      return kInitialiseBootstrapsFailure;
-    }
+  int counter(0);
+  while (counter++ < kRetryLimit) {
+    Sleep(bptime::milliseconds(100 + RandomUint32() % 1000));
+    client_controller_ = std::make_shared<priv::process_management::ClientController>(
+                             software_update_available_function);
+    if (client_controller_->BootstrapEndpoints(bootstrap_endpoints_))
+      counter = kRetryLimit;
+    else
+      LOG(kWarning) << "Failure to initialise client controller. Try #" << counter;
+  }
+  if (bootstrap_endpoints_.empty()) {
+    LOG(kWarning) << "No bootstrap contacts from invigilator.";
   }
 
+  buffered_path_ = buffered_chunk_store_path;
+  state_ = kInitialised;
 
-  remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path,
-                                        bootstrap_endpoints,
+  return kSuccess;
+}
+
+int LifeStuffImpl::MakeAnonymousComponents() {
+  remote_chunk_store_ = BuildChunkStore(buffered_path_,
+                                        bootstrap_endpoints_,
                                         client_node_,
                                         nullptr);
   if (!remote_chunk_store_) {
@@ -136,7 +132,6 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
     return kInitialiseChunkStoreFailure;
   }
 
-  buffered_path_ = buffered_chunk_store_path;
 
   routings_handler_ = std::make_shared<RoutingsHandler>(
                           *remote_chunk_store_,
@@ -148,9 +143,6 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
                                                         session_,
                                                         asio_service_.service(),
                                                         *routings_handler_);
-
-  state_ = kInitialised;
-  vault_cheat_ = vault_cheat;
 
   return kSuccess;
 }
@@ -271,8 +263,6 @@ int LifeStuffImpl::Finalise() {
   if (error_code)
     LOG(kWarning) << "Failed to remove buffered chunk store path.";
 
-//  if (vault_cheat_)
-//    vault_node_.Stop();
   asio_service_.Stop();
   state_ = kZeroth;
 
@@ -299,7 +289,13 @@ int LifeStuffImpl::CreateUser(const NonEmptyString& keyword,
   }
   session_.Reset();
 
-  int result(user_credentials_->CreateUser(keyword, pin, password));
+  int result(MakeAnonymousComponents());
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to create anonymous components with result: " << result;
+    return result;
+  }
+
+  result = user_credentials_->CreateUser(keyword, pin, password);
   if (result != kSuccess) {
     if (result == kKeywordSizeInvalid || result == kKeywordPatternInvalid ||
         result == kPinSizeInvalid || result == kPinPatternInvalid ||
@@ -390,6 +386,12 @@ int LifeStuffImpl::LogIn(const NonEmptyString& keyword,
   }
   session_.Reset();
 
+  int result(MakeAnonymousComponents());
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to create anonymous components with result: " << result;
+    return result;
+  }
+
   int login_result(user_credentials_->LogIn(keyword, pin, password));
   if (login_result != kSuccess) {
     if (login_result == kKeywordSizeInvalid ||
@@ -409,7 +411,7 @@ int LifeStuffImpl::LogIn(const NonEmptyString& keyword,
     }
   }
 
-  int result(SetValidPmidAndInitialisePublicComponents());
+  result = SetValidPmidAndInitialisePublicComponents();
   if (result != kSuccess)  {
     LOG(kError) << "Failed to set valid PMID with result: " << result;
     return result;
@@ -555,8 +557,8 @@ int LifeStuffImpl::StartMessagesAndIntros() {
 }
 
 int LifeStuffImpl::StopMessagesAndIntros() {
-  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn/* ||
-      (kDriveMounted & logged_in_state_) != kDriveMounted*/) {
+  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn) {  // ||
+//      (kDriveMounted & logged_in_state_) != kDriveMounted) {
      LOG(kError) << "In unsuitable state to stop messages and intros: " <<
                     "make sure user_credentials are logged in and drive is mounted.";
      return kWrongLoggedInState;
@@ -577,7 +579,8 @@ int LifeStuffImpl::CheckPassword(const NonEmptyString& password) {
   return session_.password() == password ? kSuccess : kCheckPasswordFailure;
 }
 
-int LifeStuffImpl::ChangeKeyword(const NonEmptyString& new_keyword, const NonEmptyString& password) {
+int LifeStuffImpl::ChangeKeyword(const NonEmptyString& new_keyword,
+                                 const NonEmptyString& password) {
   int result(CheckStateAndFullAccess());
   if (result != kSuccess)
     return result;
@@ -1276,28 +1279,9 @@ int LifeStuffImpl::CreateVaultInLocalMachine(const fs::path& chunk_store) {
                                                                       true).identity);
   Fob pmid_keys(session_.passport().SignaturePacketDetails(passport::kPmid, true));
 
-  if (vault_cheat_) {
-//    vault_node_.set_do_backup_state(false);
-//    vault_node_.set_do_synchronise(true);
-//    vault_node_.set_do_check_integrity(false);
-//    vault_node_.set_do_announce_chunks(false);
-//    std::string account_name(session_.passport().SignaturePacketDetails(passport::kMaid,
-//                                                                        true).identity);
-//    LOG(kSuccess) << "Account name for vault " << Base32Substr(account_name);
-//    vault_node_.set_account_name(account_name);
-//    vault_node_.set_keys(session_.passport().SignaturePacketDetails(passport::kPmid, true));
-
-//    int result(vault_node_.Start(buffered_path_ / ("client_vault" + RandomAlphaNumericString(8))));
-//    if (result != kSuccess) {
-//      LOG(kError) << "Failed to create vault through cheat: " << result;
-//      return kVaultCreationStartFailure;
-//    }
-//    Sleep(bptime::seconds(10));
-  } else {
-    if (!client_controller_->StartVault(pmid_keys, account_name.string(), chunk_store)) {
-      LOG(kError) << "Failed to create vault through client controller.";
-      return kVaultCreationStartFailure;
-    }
+  if (!client_controller_->StartVault(pmid_keys, account_name.string(), chunk_store)) {
+    LOG(kError) << "Failed to create vault through client controller.";
+    return kVaultCreationStartFailure;
   }
 
   return kSuccess;
