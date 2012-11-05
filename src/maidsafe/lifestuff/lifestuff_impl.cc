@@ -355,13 +355,13 @@ int LifeStuffImpl::CreatePublicId(const NonEmptyString& public_id) {
     }
   }
 
-  if (first_public_id) {
-    public_id_->StartUp(interval_);
-    message_handler_->StartUp(interval_);
-    if ((logged_in_state_ & kMessagesAndIntrosStarted) != kMessagesAndIntrosStarted) {
-      logged_in_state_ = logged_in_state_ ^ kMessagesAndIntrosStarted;
-    }
-  }
+  //if (first_public_id) {
+  //  public_id_->StartUp(interval_);
+  //  message_handler_->StartUp(interval_);
+  //  if ((logged_in_state_ & kMessagesAndIntrosStarted) != kMessagesAndIntrosStarted) {
+  //    logged_in_state_ = logged_in_state_ ^ kMessagesAndIntrosStarted;
+  //  }
+  //}
 
   session_.set_changed(true);
 

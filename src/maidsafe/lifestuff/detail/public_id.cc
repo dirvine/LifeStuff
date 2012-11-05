@@ -135,7 +135,8 @@ int PublicId::CreatePublicId(const NonEmptyString& public_id, bool accepts_new_c
     OperationCallback(false, results, 1);
   }
 
-  result = utils::WaitForResults(mutex, condition_variable, individual_results);
+  result = utils::WaitForResults(mutex, condition_variable, individual_results,
+                                 std::chrono::seconds(30));
   if (result != kSuccess) {
       LOG(kError) << "Timed out.";
     return result;
