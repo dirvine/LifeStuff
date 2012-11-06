@@ -115,36 +115,41 @@ int PublicId::CreatePublicId(const NonEmptyString& public_id, bool accepts_new_c
   std::mutex mutex;
   OperationResults results(mutex, condition_variable, individual_results);
 
-  VoidFunctionOneBool callback = [&] (const bool& response) {
-                                   OperationCallback(response, results, 0);
-                                 };
-  if (!remote_chunk_store_.Store(AppendableByAllName(mmid.identity),
-                                 AppendableIdValue(mmid, true),
-                                 callback,
-                                 mmid)) {
-    LOG(kError) << "Failed to store MMID";
+  priv::ChunkId anmpid_name(SignaturePacketName(anmpid.identity));
+  if (!remote_chunk_store_.Store(anmpid_name,
+                                 SignaturePacketValue(anmpid),
+                                 [&] (const bool& response) {
+                                   StoreMpid(response, results, public_id, accepts_new_contacts);
+                                 },
+                                 anmpid)) {
+    LOG(kError) << "Failed to store ANMPID";
     OperationCallback(false, results, 0);
   }
 
-  callback = [&] (const bool& response) {
-               StoreMpid(response, results, public_id, accepts_new_contacts);
-             };
-  priv::ChunkId anmpid_name(SignaturePacketName(anmpid.identity));
-  if (!remote_chunk_store_.Store(anmpid_name, SignaturePacketValue(anmpid), callback, anmpid)) {
-    LOG(kError) << "Failed to store ANMPID";
+  if (!remote_chunk_store_.Store(AppendableByAllName(mmid.identity),
+                                 AppendableIdValue(mmid, true),
+                                 [&] (const bool& response) {
+                                   OperationCallback(response, results, 1);
+                                 },
+                                 mmid)) {
+    LOG(kError) << "Failed to store MMID";
     OperationCallback(false, results, 1);
   }
 
   result = utils::WaitForResults(mutex, condition_variable, individual_results,
                                  std::chrono::seconds(30));
   if (result != kSuccess) {
-      LOG(kError) << "Timed out.";
+    LOG(kError) << "Timed out: " << result;
+    LOG(kError) << "ANMPID path: " << individual_results.at(0)
+                << ", MMID: " << individual_results.at(1);
     return result;
   }
 
+  LOG(kInfo) << "ANMPID path: " << individual_results.at(0)
+             << ", MMID: " << individual_results.at(1);
   if (individual_results[0] != kSuccess || individual_results[1] != kSuccess) {
-    LOG(kError) << "Failed to store packets. " << "ANMPID path: " << individual_results[1]
-                << ", MMID: "<< individual_results[0];
+    LOG(kError) << "Failed to store packets. " << "ANMPID path: " << individual_results[0]
+                << ", MMID: "<< individual_results[1];
     return kStorePublicIdFailure;
   }
 
@@ -273,7 +278,8 @@ int PublicId::DeletePublicId(const NonEmptyString& public_id) {
     OperationCallback(false, results, 3);
   }
 
-  result = utils::WaitForResults(mutex, condition_variable, individual_results);
+  result = utils::WaitForResults(mutex, condition_variable, individual_results,
+                                 std::chrono::seconds(30));
   if (result != kSuccess) {
     LOG(kError) << "Wait for results timed out: " << result;
     LOG(kError) << "inbox: " << individual_results.at(0)
@@ -408,7 +414,7 @@ int PublicId::RemoveContact(const NonEmptyString& own_public_id,
     std::lock_guard<std::mutex> lock(mutex);
     results[0] = kRemoteChunkStoreFailure;
   }
-  result = utils::WaitForResults(mutex, cond_var, results);
+  result = utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(30));
   if (result != kSuccess) {
     LOG(kError) << "Timed out.";
     return result;
@@ -461,7 +467,7 @@ int PublicId::RemoveContact(const NonEmptyString& own_public_id,
     results[0] = kRemoteChunkStoreFailure;
   }
 
-  result = utils::WaitForResults(mutex, cond_var, results);
+  result = utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(30));
   if (result != kSuccess) {
     LOG(kError) << "Timed out.";
     return result;
@@ -574,7 +580,7 @@ int PublicId::SetLifestuffCard(const NonEmptyString& my_public_id,
     return kRemoteChunkStoreFailure;
   }
 
-  int wait_result(utils::WaitForResults(mutex, cond_var, results));
+  int wait_result(utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(30)));
   if (wait_result != kSuccess) {
     LOG(kError) << "Timed out";
     return wait_result;
@@ -929,7 +935,7 @@ int PublicId::ModifyAppendability(const NonEmptyString& own_public_id, const boo
     results[1] = kRemoteChunkStoreFailure;
   }
 
-  int result = utils::WaitForResults(mutex, cond_var, results);
+  int result = utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(30));
   if (result != kSuccess) {
     LOG(kError) << "Timed out wating for updates: " << own_public_id.string();
     return result;
@@ -1012,7 +1018,7 @@ int PublicId::InformContactInfo(const NonEmptyString& public_id,
       results[i] = kRemoteChunkStoreFailure;
     }
   }
-  int result(utils::WaitForResults(mutex, cond_var, results));
+  int result(utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(30)));
   if (result != kSuccess) {
     LOG(kError) << "Timed out.";
     return result;
@@ -1097,7 +1103,7 @@ int PublicId::StoreLifestuffCard(const Fob& mmid, Identity& lifestuff_card_addre
       return kRemoteChunkStoreFailure;
     }
 
-    wait_result = utils::WaitForResults(mutex, cond_var, results);
+    wait_result = utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(30));
     if (wait_result == kSuccess && results[0] == kSuccess) {
       LOG(kInfo) << "Success storing the lifestuff card.";
       break;
@@ -1124,7 +1130,7 @@ int PublicId::RemoveLifestuffCard(const Identity& lifestuff_card_address, const 
     return kRemoteChunkStoreFailure;
   }
 
-  int wait_result(utils::WaitForResults(mutex, cond_var, results));
+  int wait_result(utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(30)));
   if (wait_result != kSuccess) {
     LOG(kInfo) << "Timed out deleting the lifestuff card.";
     return wait_result;
@@ -1187,9 +1193,10 @@ void PublicId::StoreMpid(bool response,
                          OperationResults& results,
                          const NonEmptyString& public_id,
                          bool accepts_new_contacts) {
+  LOG(kInfo) << "StoreMpid - anmpid result: " << std::boolalpha << response;
   if (!response) {
     LOG(kError) << "Anmpid failed to store.";
-    OperationCallback(false, results, 1);
+    OperationCallback(false, results, 0);
     return;
   }
 
@@ -1201,7 +1208,7 @@ void PublicId::StoreMpid(bool response,
   priv::ChunkId mpid_name(SignaturePacketName(mpid.identity));
   if (!remote_chunk_store_.Store(mpid_name, SignaturePacketValue(mpid), callback, anmpid)) {
     LOG(kError) << "Failed to store ANMPID";
-    OperationCallback(false, results, 1);
+    OperationCallback(false, results, 0);
   }
 }
 
@@ -1209,22 +1216,23 @@ void PublicId::StoreMcid(bool response,
                          OperationResults& results,
                          const NonEmptyString& public_id,
                          bool accepts_new_contacts) {
+  LOG(kInfo) << "StoreMcid - mpid result: " << std::boolalpha << response;
   if (!response) {
     LOG(kError) << "Mpid failed to store.";
-    OperationCallback(false, results, 1);
+    OperationCallback(false, results, 0);
     return;
   }
   Fob mpid(passport_.SignaturePacketDetails(passport::kMpid, false, public_id));
   priv::ChunkId mcid_name(MaidsafeContactIdName(public_id));
   VoidFunctionOneBool callback = [&] (const bool& response) {
-                                   OperationCallback(response, results, 1);
+                                   OperationCallback(response, results, 0);
                                  };
   if (!remote_chunk_store_.Store(mcid_name,
                                  AppendableIdValue(mpid, accepts_new_contacts),
                                  callback,
                                  mpid)) {
     LOG(kError) << "Mcid failed to store";
-    OperationCallback(false, results, 1);
+    OperationCallback(false, results, 0);
   }
 }
 

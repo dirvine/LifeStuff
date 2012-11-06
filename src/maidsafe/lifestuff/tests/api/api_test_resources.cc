@@ -558,8 +558,8 @@ void OneUserApiTest::SetUp() {
 
 void OneUserApiTest::TearDown() {
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
-  EXPECT_TRUE(network_.StopLocalNetwork());
   EXPECT_EQ(kSuccess, test_elements_.Finalise());
+  EXPECT_TRUE(network_.StopLocalNetwork());
 }
 
 void TwoInstancesApiTest::SetUp() {

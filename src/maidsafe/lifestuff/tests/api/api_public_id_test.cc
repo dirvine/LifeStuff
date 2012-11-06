@@ -39,7 +39,7 @@ namespace lifestuff {
 
 namespace test {
 
-TEST_F(OneUserApiTest, FUNC_TryCreateInvalidPublicId) {
+TEST_F(OneUserApiTest, FUNC_CreatePublicIdCases) {
   EXPECT_NE(kSuccess, test_elements_.CreatePublicId(NonEmptyString(RandomAlphaNumericString(31))));
   EXPECT_NE(kSuccess, test_elements_.CreatePublicId(NonEmptyString(" ")));
   EXPECT_NE(kSuccess, test_elements_.CreatePublicId(

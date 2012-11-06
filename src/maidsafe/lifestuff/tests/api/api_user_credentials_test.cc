@@ -82,16 +82,11 @@ TEST(IndependentFullTest, FUNC_CreateLogoutLoginLogout) {
 
   EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword, pin, password));
   Sleep(boost::posix_time::seconds(10));
-  NonEmptyString public_id(RandomAlphaNumericString(RandomUint32() % 14 + 1) +
-                           " " +
-                           RandomAlphaNumericString(RandomUint32() % 15 + 1));
-  EXPECT_EQ(kSuccess, test_elements.CreatePublicId(public_id));
+  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+  Sleep(boost::posix_time::seconds(10));
+  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword, pin, password));
   Sleep(boost::posix_time::seconds(10));
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
-//  Sleep(boost::posix_time::seconds(10));
-//  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword, pin, password));
-//  Sleep(boost::posix_time::seconds(10));
-//  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
   test_elements.Finalise();
   network.StopLocalNetwork();
 }
