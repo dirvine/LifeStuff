@@ -130,11 +130,11 @@ int DoFullCreateUser(LifeStuff& test_elements,
     return result;
   }
 
-//  result = test_elements.MountDrive();
-//  if (result != kSuccess) {
-//    LOG(kError) << "Failed to create and mount drive: " << result;
-//    return result;
-//  }
+  result = test_elements.MountDrive();
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to create and mount drive: " << result;
+    return result;
+  }
 
   return kSuccess;
 }
@@ -173,12 +173,12 @@ int DoFullLogOut(LifeStuff& test_elements) {
     return result;
   }
 
-//  LOG(kInfo) << "About to unmount drive";
-//  result = test_elements.UnMountDrive();
-//  if (result != kSuccess) {
-//    LOG(kError) << "Failed to unmount drive: " << result;
-//    return result;
-//  }
+  LOG(kInfo) << "About to unmount drive";
+  result = test_elements.UnMountDrive();
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to unmount drive: " << result;
+    return result;
+  }
 
   LOG(kInfo) << "About to log out";
   result = test_elements.LogOut();

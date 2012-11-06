@@ -454,11 +454,13 @@ int UserCredentialsImpl::HandleSerialisedDataMaps(const NonEmptyString& keyword,
   }
 
   if (stmid_da.empty()) {
-    if (tmid_da.empty()) {
+    if (!stmid_serialised_data_atlas.empty()) {
+      stmid_da = stmid_serialised_data_atlas;
+    } else if (!tmid_da.empty()) {
+      stmid_da = tmid_da;
+    } else {
       LOG(kError) << "No valid DA.";
       return kSetIdentityPacketsFailure;
-    } else if (!stmid_serialised_data_atlas.empty()) {
-      stmid_da = stmid_serialised_data_atlas;
     }
   }
 

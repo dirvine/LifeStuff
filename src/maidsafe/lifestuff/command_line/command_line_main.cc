@@ -139,8 +139,12 @@ int DoLogin(LifeStuff& lifestuff) {
 }
 
 int DoLogout(LifeStuff& lifestuff) {
-  int result(lifestuff.LogOut());
-  return result == kSuccess ? 1 : result;
+  if (lifestuff.state() == kLoggedIn) {
+    int result(lifestuff.LogOut());
+    return result == kSuccess ? 1 : result;
+  } else {
+    return 1;
+  }
 }
 
 int DoMount(LifeStuff& lifestuff) {

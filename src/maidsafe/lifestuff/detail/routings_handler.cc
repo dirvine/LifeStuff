@@ -68,9 +68,11 @@ RoutingsHandler::RoutingsHandler(priv::chunk_store::RemoteChunkStore& chunk_stor
       routing_objects_mutex_(),
       session_(session),
       validated_message_signal_(validated_message_signal),
-      cs_mutex_() {}
+      cs_mutex_(),
+      stopped_(false) {}
 
 RoutingsHandler::~RoutingsHandler() {
+  stopped_ = true;
   std::lock_guard<std::mutex> lock(routing_objects_mutex_);
   for (auto& element : routing_objects_)
     element.second->routing_object.DisconnectFunctors();
@@ -102,10 +104,11 @@ bool RoutingsHandler::AddRoutingObject(
 
   // Functors
   routing::Functors functors;
-  functors.message_received = [&, routing_details] (const std::string& wrapped_message,
+  Identity id(routing_details->fob.identity);
+  functors.message_received = [this, id] (const std::string& wrapped_message,
                                                     const NodeId& group_claim,
                                                     const routing::ReplyFunctor& reply_functor) {
-                                OnRequestReceived(routing_details->fob.identity,
+                                OnRequestReceived(id,
                                                   NonEmptyString(wrapped_message),
                                                   group_claim,
                                                   reply_functor);
@@ -119,11 +122,13 @@ bool RoutingsHandler::AddRoutingObject(
                                     OnPublicKeyRequested(node_id, give_key);
                                   };
   // Network health
-  functors.network_status = [routing_details]
-                            (const int& network_health) {
-                              if (routing_details->action_health) {
-                                std::lock_guard<std::mutex> health_lock(routing_details->mutex);
-                                routing_details->newtwork_health = network_health;
+  std::weak_ptr<RoutingDetails> routing_details_weak_ptr(routing_details);
+  functors.network_status = [routing_details_weak_ptr] (const int& network_health) {
+                              if (auto spt = routing_details_weak_ptr.lock()) {
+                                if (spt->action_health) {
+                                  std::lock_guard<std::mutex> health_lock(spt->mutex);
+                                  spt->newtwork_health = network_health;
+                                }
                               }
                             };
 
@@ -157,7 +162,7 @@ bool RoutingsHandler::AddRoutingObject(
 }
 
 bool RoutingsHandler::DeleteRoutingObject(const Identity& identity) {
-  std::unique_lock<std::mutex> lock(routing_objects_mutex_);
+  std::lock_guard<std::mutex> lock(routing_objects_mutex_);
   size_t erased_count(routing_objects_.erase(identity));
   LOG(kInfo) << "RoutingsHandler::DeleteRoutingObject erased: " << erased_count
              << ", out of: " << (routing_objects_.size() + erased_count);
@@ -172,7 +177,7 @@ bool RoutingsHandler::Send(const Identity& source_id,
                            std::string* reply_message) {
   std::shared_ptr<RoutingDetails> routing_details;
   {
-    std::unique_lock<std::mutex> lock(routing_objects_mutex_);
+    std::lock_guard<std::mutex> lock(routing_objects_mutex_);
     auto it(routing_objects_.find(source_id));
     if (it == routing_objects_.end()) {
       LOG(kError) << "No such ID to send message: " << DebugId(NodeId(source_id));
@@ -193,7 +198,7 @@ bool RoutingsHandler::Send(const Identity& source_id,
   bool message_received(false);
   if (reply_message) {
       response_functor = [&] (const std::vector<std::string>& messages) {
-                           std::unique_lock<std::mutex> message_lock(message_mutex);
+                           std::lock_guard<std::mutex> message_lock(message_mutex);
                            if (!messages.empty())
                              message_from_routing = messages.front();
                            else
@@ -269,6 +274,11 @@ void RoutingsHandler::OnRequestReceived(const Identity& receiver_id,
                                         const NodeId& sender_id,
                                         const routing::ReplyFunctor& reply_functor) {
   LOG(kInfo) << "receiver: " << DebugId(NodeId(receiver_id)) << ", sender: " << DebugId(sender_id);
+  if (stopped_) {
+    LOG(kWarning) << "Stopped. Dropping.";
+    return;
+  }
+
   if (sender_id == NodeId()) {
     LOG(kWarning) << "Void sender. Dropping.";
     return;
@@ -276,7 +286,7 @@ void RoutingsHandler::OnRequestReceived(const Identity& receiver_id,
 
   std::shared_ptr<RoutingDetails> routing_details;
   {
-    std::unique_lock<std::mutex> lock(routing_objects_mutex_);
+    std::lock_guard<std::mutex> lock(routing_objects_mutex_);
     auto it(routing_objects_.find(receiver_id));
     if (it == routing_objects_.end()) {
       LOG(kError) << "Failed to find ID locally. Silently drop. Should I even be writing this?";
@@ -322,6 +332,11 @@ void RoutingsHandler::OnRequestReceived(const Identity& receiver_id,
 
 void RoutingsHandler::OnPublicKeyRequested(const NodeId& node_id,
                                            const routing::GivePublicKeyFunctor& give_key) {
+  if (stopped_) {
+    LOG(kWarning) << "Stopped. Dropping.";
+    return;
+  }
+
   std::string network_value;
   {
     std::lock_guard<std::mutex> lock(cs_mutex_);

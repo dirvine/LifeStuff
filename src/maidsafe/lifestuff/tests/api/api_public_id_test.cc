@@ -42,23 +42,34 @@ namespace test {
 TEST_F(OneUserApiTest, FUNC_CreatePublicIdCases) {
   EXPECT_NE(kSuccess, test_elements_.CreatePublicId(NonEmptyString(RandomAlphaNumericString(31))));
   EXPECT_NE(kSuccess, test_elements_.CreatePublicId(NonEmptyString(" ")));
-  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(
-      NonEmptyString(" " + RandomAlphaNumericString(RandomUint32() % 26 + 4))));
-  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(
-      NonEmptyString(RandomAlphaNumericString(RandomUint32() % 26 + 4) + " ")));
-  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(
-      NonEmptyString(RandomAlphaNumericString(RandomUint32() % 13 + 2) + "  " +
-      RandomAlphaNumericString(RandomUint32() % 14 + 1))));
-  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(
-      NonEmptyString(" " + RandomAlphaNumericString(RandomUint32() % 13 + 1) + "  " +
-                     RandomAlphaNumericString(RandomUint32() % 13 + 1) + " ")));
+  EXPECT_NE(kSuccess,
+            test_elements_.CreatePublicId(NonEmptyString(" " +
+                                                         RandomAlphaNumericString(RandomUint32() %
+                                                                                  26 + 4))));
+  EXPECT_NE(kSuccess,
+            test_elements_.CreatePublicId(NonEmptyString(RandomAlphaNumericString(RandomUint32() %
+                                                                                  26 + 4) + " ")));
+  EXPECT_NE(kSuccess,
+            test_elements_.CreatePublicId(NonEmptyString(RandomAlphaNumericString(RandomUint32() %
+                                                                                  13 + 2) +
+                                                         "  " +
+                                                         RandomAlphaNumericString(RandomUint32() %
+                                                                                  14 + 1))));
+  EXPECT_NE(kSuccess,
+            test_elements_.CreatePublicId(NonEmptyString(" " +
+                                                         RandomAlphaNumericString(RandomUint32() %
+                                                                                  13 + 1) +
+                                                         "  " +
+                                                         RandomAlphaNumericString(RandomUint32() %
+                                                                                  13 + 1) +
+                                                         " ")));
   NonEmptyString public_id(RandomAlphaNumericString(RandomUint32() % 14 + 1) +
                            " " +
                            RandomAlphaNumericString(RandomUint32() % 15 + 1));
   EXPECT_EQ(kSuccess, test_elements_.CreatePublicId(public_id));
 }
 
-TEST_F(OneUserApiTest, DISABLED_FUNC_CreateSamePublicIdConsecutively) {
+TEST_F(OneUserApiTest, FUNC_CreateSamePublicIdConsecutively) {
   NonEmptyString new_public_id(RandomAlphaNumericString(6));
   EXPECT_EQ(kSuccess, test_elements_.CreatePublicId(new_public_id));
   EXPECT_NE(kSuccess, test_elements_.CreatePublicId(new_public_id));
@@ -115,7 +126,7 @@ TEST_F(OneUserApiTest, DISABLED_FUNC_CreateSamePublicIdSimultaneously) {
   }
 }
 
-TEST_F(OneUserApiTest, DISABLED_FUNC_AddInvalidContact) {
+TEST_F(OneUserApiTest, FUNC_AddInvalidContact) {
   NonEmptyString own_public_id(RandomAlphaNumericString(5));
   NonEmptyString public_id_1(RandomAlphaNumericString(6));
   NonEmptyString public_id_2(RandomAlphaNumericString(7));
@@ -127,7 +138,7 @@ TEST_F(OneUserApiTest, DISABLED_FUNC_AddInvalidContact) {
   EXPECT_NE(kSuccess, test_elements_.AddContact(public_id_1, public_id_2, message.string()));
 }
 
-TEST_F(OneUserApiTest, DISABLED_FUNC_AddOwnPublicIdAsContact) {
+TEST_F(OneUserApiTest, FUNC_AddOwnPublicIdAsContact) {
   NonEmptyString public_id_1(RandomAlphaNumericString(6));
   NonEmptyString public_id_2(RandomAlphaNumericString(7));
   NonEmptyString message(RandomAlphaNumericString(5));

@@ -81,6 +81,7 @@ class RoutingsHandler {
   Session& session_;
   ValidatedMessageFunction validated_message_signal_;
   std::mutex cs_mutex_;
+  volatile bool stopped_;
 
 
   RoutingsHandler(const RoutingsHandler&);

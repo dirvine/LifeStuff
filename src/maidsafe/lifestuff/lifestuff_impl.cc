@@ -256,8 +256,6 @@ int LifeStuffImpl::Finalise() {
     return kWrongState;
   }
 
-  client_node_->Stop();
-
   boost::system::error_code error_code;
   fs::remove_all(buffered_path_, error_code);
   if (error_code)
@@ -355,13 +353,13 @@ int LifeStuffImpl::CreatePublicId(const NonEmptyString& public_id) {
     }
   }
 
-  //if (first_public_id) {
-  //  public_id_->StartUp(interval_);
-  //  message_handler_->StartUp(interval_);
-  //  if ((logged_in_state_ & kMessagesAndIntrosStarted) != kMessagesAndIntrosStarted) {
-  //    logged_in_state_ = logged_in_state_ ^ kMessagesAndIntrosStarted;
-  //  }
-  //}
+  if (first_public_id) {
+    public_id_->StartUp(interval_);
+    message_handler_->StartUp(interval_);
+    if ((logged_in_state_ & kMessagesAndIntrosStarted) != kMessagesAndIntrosStarted) {
+      logged_in_state_ = logged_in_state_ ^ kMessagesAndIntrosStarted;
+    }
+  }
 
   session_.set_changed(true);
 
@@ -451,6 +449,7 @@ int LifeStuffImpl::LogOut(bool clear_maid_routing) {
   }
 
   client_node_->set_on_network_status(nullptr);
+  client_node_->Stop();
   if (clear_maid_routing) {
     Identity maid_id(session_.passport().SignaturePacketDetails(passport::kMaid, true).identity);
     assert(routings_handler_->DeleteRoutingObject(maid_id));
