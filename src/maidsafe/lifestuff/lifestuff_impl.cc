@@ -105,12 +105,15 @@ LifeStuffImpl::LifeStuffImpl(const Slots& slot_functions, const fs::path& base_d
       client_controller_(),
       client_node_(),
       routings_handler_(),
+      network_health_signal_(),
+      session_(),
       user_credentials_(),
       logged_in_components_(),
       slots_(slot_functions),
       state_(kZeroth),
       logged_in_state_(kBaseState),
-      immediate_quit_required_signal_() {
+      immediate_quit_required_signal_(),
+      bootstrap_endpoints_() {
   CheckSlots(slots_);
 
   // Initialisation
@@ -129,35 +132,34 @@ LifeStuffImpl::LifeStuffImpl(const Slots& slot_functions, const fs::path& base_d
     network_simulation_path = base_path / "simulated_network";
   }
 
-  std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
+
   int counter(0);
   while (counter++ < kRetryLimit) {
     Sleep(bptime::milliseconds(100 + RandomUint32() % 1000));
     client_controller_ = std::make_shared<priv::process_management::ClientController>(
                              slots_.update_available_function);
-    if (client_controller_->BootstrapEndpoints(bootstrap_endpoints) &&
-        !bootstrap_endpoints.empty())
+    if (client_controller_->BootstrapEndpoints(bootstrap_endpoints_))
       counter = kRetryLimit;
     else
       LOG(kWarning) << "Failure to initialise client controller. Try #" << counter;
   }
-
-  InitialisePreLoginComponents(buffered_chunk_store_path, bootstrap_endpoints);
+  state_ = kInitialised;
 }
 
-void LifeStuffImpl::InitialisePreLoginComponents(
-    const fs::path& buffered_chunk_store_path,
-    const std::vector<std::pair<std::string, uint16_t> >& bootstrap_endpoints) {
-  remote_chunk_store_ = BuildChunkStore(buffered_chunk_store_path,
-                                        bootstrap_endpoints,
+int LifeStuffImpl::MakeAnonymousComponents() {
+  remote_chunk_store_ = BuildChunkStore(buffered_path_,
+                                        bootstrap_endpoints_,
                                         client_node_,
                                         nullptr);
-  buffered_path_ = buffered_chunk_store_path;
+  if (!remote_chunk_store_) {
+    LOG(kError) << "Could not initialise chunk store.";
+    return kInitialiseChunkStoreFailure;
+  }
 
   routings_handler_ = std::make_shared<RoutingsHandler>(
                           *remote_chunk_store_,
                           session_,
-                          [&] (const NonEmptyString& message, std::string& response) {
+                          [this] (const NonEmptyString& message, std::string& response) {
                             return HandleRoutingsHandlerMessage(message, response);
                           });
   user_credentials_ = std::make_shared<UserCredentials>(*remote_chunk_store_,
@@ -165,7 +167,7 @@ void LifeStuffImpl::InitialisePreLoginComponents(
                                                         asio_service_.service(),
                                                         *routings_handler_);
 
-  state_ = kInitialised;
+  return kSuccess;
 }
 
 LifeStuffImpl::~LifeStuffImpl() {
@@ -174,10 +176,6 @@ LifeStuffImpl::~LifeStuffImpl() {
   if (error_code)
     LOG(kWarning) << "Failed to remove buffered chunk store path.";
 
-//  if (vault_cheat_) {
-//    int result(vault_node_.Stop());
-//    LOG(kInfo) << "Result of stopping cheat vault: " << result;
-//  }
   asio_service_.Stop();
 }
 
@@ -232,7 +230,13 @@ int LifeStuffImpl::CreateUser(const NonEmptyString& keyword,
   }
   session_.Reset();
 
-  int result(user_credentials_->CreateUser(keyword, pin, password));
+  int result(MakeAnonymousComponents());
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to create anonymous components with result: " << result;
+    return result;
+  }
+
+  result = user_credentials_->CreateUser(keyword, pin, password);
   if (result != kSuccess) {
     if (result == kKeywordSizeInvalid || result == kKeywordPatternInvalid ||
         result == kPinSizeInvalid || result == kPinPatternInvalid ||
@@ -323,6 +327,12 @@ int LifeStuffImpl::LogIn(const NonEmptyString& keyword,
   }
   session_.Reset();
 
+  int result(MakeAnonymousComponents());
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to create anonymous components with result: " << result;
+    return result;
+  }
+
   int login_result(user_credentials_->LogIn(keyword, pin, password));
   if (login_result != kSuccess) {
     if (login_result == kKeywordSizeInvalid ||
@@ -342,7 +352,7 @@ int LifeStuffImpl::LogIn(const NonEmptyString& keyword,
     }
   }
 
-  int result(SetValidPmidAndInitialisePublicComponents());
+  result = SetValidPmidAndInitialisePublicComponents();
   if (result != kSuccess)  {
     LOG(kError) << "Failed to set valid PMID with result: " << result;
     return result;
@@ -382,6 +392,7 @@ int LifeStuffImpl::LogOut(bool clear_maid_routing) {
   }
 
   client_node_->set_on_network_status(nullptr);
+  client_node_->Stop();
   if (clear_maid_routing) {
     Identity maid_id(session_.passport().SignaturePacketDetails(passport::kMaid, true).identity);
     assert(routings_handler_->DeleteRoutingObject(maid_id));
@@ -488,8 +499,8 @@ int LifeStuffImpl::StartMessagesAndIntros() {
 }
 
 int LifeStuffImpl::StopMessagesAndIntros() {
-  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
-      (kDriveMounted & logged_in_state_) != kDriveMounted) {
+  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn) {  // ||
+//      (kDriveMounted & logged_in_state_) != kDriveMounted) {
      LOG(kError) << "In unsuitable state to stop messages and intros: " <<
                     "make sure user_credentials are logged in and drive is mounted.";
      return kWrongLoggedInState;
@@ -624,7 +635,7 @@ int LifeStuffImpl::LeaveLifeStuff() {
 /// Contact operations
 int LifeStuffImpl::AddContact(const NonEmptyString& my_public_id,
                               const NonEmptyString& contact_public_id,
-                              const NonEmptyString& message) {
+                              const std::string& message) {
   int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed pre checks in AddContact.";
@@ -679,7 +690,7 @@ int LifeStuffImpl::DeclineContact(const NonEmptyString& my_public_id,
 
 int LifeStuffImpl::RemoveContact(const NonEmptyString& my_public_id,
                                  const NonEmptyString& contact_public_id,
-                                 const NonEmptyString& removal_message,
+                                 const std::string& removal_message,
                                  const bool& instigator) {
   int result(PreContactChecksFullAccess(my_public_id));
   if (result != kSuccess) {
@@ -769,7 +780,7 @@ int LifeStuffImpl::ChangeProfilePicture(const NonEmptyString& my_public_id,
   }
 
   {
-    std::lock_guard<std::mutex> loch(*social_info.first);
+    std::lock_guard<std::mutex> lock(*social_info.first);
     social_info.second->profile_picture_datamap = message.content[0];
   }
   session_.set_changed(true);
@@ -797,7 +808,7 @@ NonEmptyString LifeStuffImpl::GetOwnProfilePicture(const NonEmptyString& my_publ
   }
 
   {
-    std::lock_guard<std::mutex> loch(*social_info.first);
+    std::lock_guard<std::mutex> lock(*social_info.first);
     if (social_info.second->profile_picture_datamap == kBlankProfilePicture) {
       LOG(kInfo) << "Blank picture in session.";
       return NonEmptyString();
@@ -1163,10 +1174,10 @@ int LifeStuffImpl::CheckStateAndFullAccess() const {
     return kWrongState;
   }
 
-  if ((kDriveMounted & logged_in_state_) != kDriveMounted) {
-    LOG(kError) << "Incorrect state. Drive should be mounted: " << logged_in_state_;
-    return kWrongLoggedInState;
-  }
+//  if ((kDriveMounted & logged_in_state_) != kDriveMounted) {
+//    LOG(kError) << "Incorrect state. Drive should be mounted: " << logged_in_state_;
+//    return kWrongLoggedInState;
+//  }
 
   SessionAccessLevel session_access_level(session_.session_access_level());
   if (session_access_level != kFullAccess) {

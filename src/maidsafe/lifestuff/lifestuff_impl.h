@@ -94,12 +94,12 @@ class LifeStuffImpl {
   /// Contact operations
   int AddContact(const NonEmptyString& my_public_id,
                  const NonEmptyString& contact_public_id,
-                 const NonEmptyString& message);
+                 const std::string& message);
   int ConfirmContact(const NonEmptyString& my_public_id, const NonEmptyString& contact_public_id);
   int DeclineContact(const NonEmptyString& my_public_id, const NonEmptyString& contact_public_id);
   int RemoveContact(const NonEmptyString& my_public_id,
                     const NonEmptyString& contact_public_id,
-                    const NonEmptyString& removal_message,
+                    const std::string& removal_message,
                     const bool& instigator);
   int ChangeProfilePicture(const NonEmptyString& my_public_id,
                            const NonEmptyString& profile_picture_contents);
@@ -158,11 +158,10 @@ class LifeStuffImpl {
   LifeStuffState state_;
   uint8_t logged_in_state_;
   boost::signals2::signal<void()> immediate_quit_required_signal_;
+  std::vector<std::pair<std::string, uint16_t> > bootstrap_endpoints_;
 
-  void InitialisePreLoginComponents(
-      const fs::path& buffered_chunk_store_path,
-      const std::vector<std::pair<std::string, uint16_t> >& bootstrap_endpoints);
   void ConnectToSignals();
+  int MakeAnonymousComponents();
   void ConnectInternalElements();
   int SetValidPmidAndInitialisePublicComponents();
   int CheckStateAndFullAccess() const;

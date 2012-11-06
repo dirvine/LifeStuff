@@ -54,7 +54,7 @@ NonEmptyString GenerateNonemptyMessage() {
 void ExchangeSlot(std::mutex* mutex,
                   std::condition_variable* cond_var,
                   bool* done) {
-  std::unique_lock<std::mutex> loch(*mutex);
+  std::unique_lock<std::mutex> lock(*mutex);
   *done = true;
   cond_var->notify_one();
 }
@@ -62,7 +62,7 @@ void ExchangeSlot(std::mutex* mutex,
 void LifestuffCardSlot(std::mutex* mutex,
                        std::condition_variable* cond_var,
                        bool* done) {
-  std::unique_lock<std::mutex> loch(*mutex);
+  std::unique_lock<std::mutex> lock(*mutex);
   *done = true;
   cond_var->notify_one();
 }
@@ -88,7 +88,7 @@ int CreateAndConnectTwoIds(PublicId& public_id1,
   public_id1.ConnectToNewContactSignal(
       [&] (const NonEmptyString& /*own_public_id*/,
            const NonEmptyString& /*contact_public_id*/,
-           const NonEmptyString& /*message*/,
+           const std::string& /*message*/,
            const NonEmptyString& /*timestamp*/) {
         ExchangeSlot(&mutex, &cond_var, &done);
       });
@@ -100,7 +100,7 @@ int CreateAndConnectTwoIds(PublicId& public_id1,
         ExchangeSlot(&mutex2, &cond_var2, &done2);
       });
 
-  result = public_id2.AddContact(public_identity2, public_identity1, kInvite);
+  result = public_id2.AddContact(public_identity2, public_identity1, kInvite.string());
   if (result != kSuccess)
     return result;
   result = public_id1.StartCheckingForNewContacts(timer_interval);
@@ -108,8 +108,8 @@ int CreateAndConnectTwoIds(PublicId& public_id1,
     return result;
 
   {
-    std::unique_lock<std::mutex> loch(mutex);
-    if (!cond_var.wait_for(loch, interval * 2, [&] ()->bool { return done; }))  // NOLINT (Dan)
+    std::unique_lock<std::mutex> lock(mutex);
+    if (!cond_var.wait_for(lock, interval * 2, [&] ()->bool { return done; }))  // NOLINT (Dan)
       return -1;
   }
 
@@ -121,8 +121,8 @@ int CreateAndConnectTwoIds(PublicId& public_id1,
     return result;
 
   {
-    std::unique_lock<std::mutex> loch(mutex2);
-    if (!cond_var2.wait_for(loch, interval * 2, [&] ()->bool { return done2; }))  // NOLINT (Dan)
+    std::unique_lock<std::mutex> lock(mutex2);
+    if (!cond_var2.wait_for(lock, interval * 2, [&] ()->bool { return done2; }))  // NOLINT (Dan)
       return -1;
   }
 
@@ -174,13 +174,13 @@ class PublicIdTest : public testing::Test {
 
   void NewContactSlot(const NonEmptyString&,
                       const NonEmptyString& contact_public_id,
-                      const NonEmptyString& message,
+                      const std::string& message,
                       std::mutex* mutex,
                       std::condition_variable* cond_var,
                       bool* done) {
     std::unique_lock<std::mutex> lock(*mutex);
     received_public_identity_ = contact_public_id;
-    received_message_ = message;
+    received_message_ = NonEmptyString(message);
     *done = true;
     cond_var->notify_one();
   }
@@ -203,13 +203,13 @@ class PublicIdTest : public testing::Test {
 
   void ContactRequestSlot(const NonEmptyString&,
                           const NonEmptyString& contact_public_id,
-                          const NonEmptyString& message,
+                          const std::string& message,
                           std::mutex* mutex,
                           std::condition_variable* cond_var,
                           bool* done) {
     std::unique_lock<std::mutex> lock(*mutex);
     received_public_identity_ = contact_public_id;
-    received_message_ = message;
+    received_message_ = NonEmptyString(message);
     *done = true;
     cond_var->notify_one();
   }
@@ -229,26 +229,26 @@ class PublicIdTest : public testing::Test {
 
   void ContactDeletionReceivedSlot(const NonEmptyString&,
                                    const NonEmptyString& contact_public_id,
-                                   const NonEmptyString& message,
+                                   const std::string& message,
                                    std::mutex* mutex,
                                    std::condition_variable* cond_var,
                                    bool* done) {
     std::unique_lock<std::mutex> lock(*mutex);
     received_public_identity_ = contact_public_id;
-    received_message_ = message;
+    received_message_ = NonEmptyString(message);
     *done = true;
     cond_var->notify_one();
   }
 
   void ContactDeletionProcessedSlot(const NonEmptyString&,
                                     const NonEmptyString& contact_public_id,
-                                    const NonEmptyString& message,
+                                    const std::string& message,
                                     std::mutex* mutex,
                                     std::condition_variable* cond_var,
                                     bool* done) {
     std::unique_lock<std::mutex> lock(*mutex);
     received_public_identity_ = contact_public_id;
-    received_message_ = message;
+    received_message_ = NonEmptyString(message);
     *done = true;
     cond_var->notify_one();
   }
@@ -293,12 +293,12 @@ class PublicIdTest : public testing::Test {
   }
 
   int InformContactInfo(std::shared_ptr<PublicId> public_id,
-                        const NonEmptyString& own_public_id,
+                        const NonEmptyString& own_id,
                         const std::vector<Contact>& contacts,
                         const NonEmptyString& message,
                         const IntroductionType& type,
                         const std::string& inbox_name = "") {
-    return public_id->InformContactInfo(own_public_id, contacts, message, type, inbox_name);
+    return public_id->InformContactInfo(own_id, contacts, message.string(), type, inbox_name);
   }
 
   void StoreNewInbox(Identity& inbox_name) {
@@ -370,16 +370,15 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdAntiSocial) {
   public_id1_->ConnectToNewContactSignal(
       [&] (const NonEmptyString& own_public_id,
            const NonEmptyString& contact_public_id,
-           const NonEmptyString& message,
+           const std::string& message,
            const NonEmptyString& /*timestamp*/) {
         NewContactSlot(own_public_id, contact_public_id, message, &mutex, &cond_var, &done);
       });
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(timer_interval_));
 
   NonEmptyString message(GenerateNonemptyMessage());
-
-  ASSERT_NE(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_, message));
-
+  ASSERT_NE(kSuccess,
+            public_id2_->AddContact(public_identity2_, public_identity1_, message.string()));
   {
     std::unique_lock<std::mutex> lock(mutex);
     ASSERT_FALSE(cond_var.wait_for(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
@@ -399,13 +398,14 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
   public_id1_->ConnectToNewContactSignal(
       [&] (const NonEmptyString& own_public_id,
            const NonEmptyString& contact_public_id,
-           const NonEmptyString& message,
+           const std::string& message,
            const NonEmptyString& /*timestamp*/) {
         NewContactSlot(own_public_id, contact_public_id, message, &mutex, &cond_var, &done);
       });
 
   NonEmptyString message(GenerateNonemptyMessage());
-  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_, message));
+  ASSERT_EQ(kSuccess,
+            public_id2_->AddContact(public_identity2_, public_identity1_, message.string()));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(timer_interval_));
 
   {
@@ -427,7 +427,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdSociable) {
   NonEmptyString public_id3(public_identity2_.string() + "1");
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_id3, true));
   message = GenerateNonemptyMessage();
-  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_id3, public_identity1_, message));
+  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_id3, public_identity1_, message.string()));
   {
     std::unique_lock<std::mutex> lock(mutex);
     ASSERT_TRUE(cond_var.wait_for(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
@@ -452,7 +452,7 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
   public_id1_->ConnectToNewContactSignal(
       [&] (const NonEmptyString& own_public_id,
            const NonEmptyString& contact_public_id,
-           const NonEmptyString& message,
+           const std::string& message,
            const NonEmptyString& /*timestamp*/) {
         ContactRequestSlot(own_public_id, contact_public_id, message, &mutex, &cond_var, &done);
       });
@@ -468,7 +468,8 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithReply) {
 
   // Send the message and start checking for messages
   NonEmptyString message(GenerateNonemptyMessage());
-  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_, message));
+  ASSERT_EQ(kSuccess,
+            public_id2_->AddContact(public_identity2_, public_identity1_, message.string()));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(timer_interval_));
 
   const ContactsHandlerPtr contacts_handler2(session2_.contacts_handler(public_identity2_));
@@ -528,14 +529,15 @@ TEST_F(PublicIdTest, FUNC_CreatePublicIdWithRefusal) {
   public_id1_->ConnectToNewContactSignal(
       [&] (const NonEmptyString& own_public_id,
            const NonEmptyString& contact_public_id,
-           const NonEmptyString& message,
+           const std::string& message,
            const NonEmptyString& /*timestamp*/) {
         ContactRequestSlot(own_public_id, contact_public_id, message, &mutex, &cond_var, &done);
        });
 
   // Send the message and start checking for messages
   NonEmptyString message(GenerateNonemptyMessage());
-  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_, message));
+  ASSERT_EQ(kSuccess,
+            public_id2_->AddContact(public_identity2_, public_identity1_, message.string()));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(timer_interval_));
   const ContactsHandlerPtr contacts_handler2(session2_.contacts_handler(public_identity2_));
   ASSERT_NE(nullptr, contacts_handler2.get());
@@ -573,12 +575,12 @@ TEST_F(PublicIdTest, FUNC_AddContactsIncorrectly) {
 
   // incorrect additions
   NonEmptyString wrong_name("Name 42");
-  ASSERT_NE(kSuccess, public_id1_->AddContact(wrong_name, wrong_name, kInvite));
-  ASSERT_NE(kSuccess, public_id1_->AddContact(public_identity1_, wrong_name, kInvite));
+  ASSERT_NE(kSuccess, public_id1_->AddContact(wrong_name, wrong_name, kInvite.string()));
+  ASSERT_NE(kSuccess, public_id1_->AddContact(public_identity1_, wrong_name, kInvite.string()));
   ASSERT_EQ(kCannotAddOwnPublicId,
-            public_id1_->AddContact(public_identity1_, public_identity1_, kInvite));
+            public_id1_->AddContact(public_identity1_, public_identity1_, kInvite.string()));
   ASSERT_EQ(kCannotAddOwnPublicId,
-            public_id1_->AddContact(public_identity1_, public_identity3, kInvite));
+            public_id1_->AddContact(public_identity1_, public_identity3, kInvite.string()));
 
 
   // 2 adds 1 (correct)
@@ -586,13 +588,14 @@ TEST_F(PublicIdTest, FUNC_AddContactsIncorrectly) {
   public_id1_->ConnectToNewContactSignal(
       [&] (const NonEmptyString& own_public_id,
            const NonEmptyString& contact_public_id,
-           const NonEmptyString& message,
+           const std::string& message,
            const NonEmptyString& /*timestamp*/) {
           NewContactSlot(own_public_id, contact_public_id, message, &mutex, &cond_var, &done);
       });
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(timer_interval_));
   ASSERT_EQ(kSuccess, public_id2_->StartCheckingForNewContacts(timer_interval_));
-  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_, kInvite));
+  ASSERT_EQ(kSuccess,
+            public_id2_->AddContact(public_identity2_, public_identity1_, kInvite.string()));
   {
     std::unique_lock<std::mutex> lock(mutex);
     ASSERT_TRUE(cond_var.wait_for(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Alison)
@@ -601,7 +604,7 @@ TEST_F(PublicIdTest, FUNC_AddContactsIncorrectly) {
 
   // 2 adds 1 again (incorrect)
   ASSERT_EQ(kContactInsertionFailure,
-            public_id2_->AddContact(public_identity2_, public_identity1_, kInvite));
+            public_id2_->AddContact(public_identity2_, public_identity1_, kInvite.string()));
 
   // 2 confirms 1
   done = false;
@@ -621,7 +624,7 @@ TEST_F(PublicIdTest, FUNC_AddContactsIncorrectly) {
 
   // 2 adds 1 again (incorrect)
   ASSERT_EQ(kContactInsertionFailure,
-            public_id2_->AddContact(public_identity2_, public_identity1_, kInvite));
+            public_id2_->AddContact(public_identity2_, public_identity1_, kInvite.string()));
 }
 
 TEST_F(PublicIdTest, FUNC_ConfirmContactsIncorrectly) {
@@ -652,13 +655,14 @@ TEST_F(PublicIdTest, FUNC_RejectContactsIncorrectly) {
   public_id1_->ConnectToNewContactSignal(
       [&] (const NonEmptyString& own_public_id,
            const NonEmptyString& contact_public_id,
-           const NonEmptyString& message,
+           const std::string& message,
            const NonEmptyString& /*timestamp*/) {
           NewContactSlot(own_public_id, contact_public_id, message, &mutex, &cond_var, &done);
       });
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(timer_interval_));
   ASSERT_EQ(kSuccess, public_id2_->StartCheckingForNewContacts(timer_interval_));
-  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_, kInvite));
+  ASSERT_EQ(kSuccess,
+            public_id2_->AddContact(public_identity2_, public_identity1_, kInvite.string()));
   {
     std::unique_lock<std::mutex> lock(mutex);
     ASSERT_TRUE(cond_var.wait_for(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Alison)
@@ -700,14 +704,15 @@ TEST_F(PublicIdTest, FUNC_RejectThenAddContact)  {
   public_id1_->ConnectToNewContactSignal(
       [&] (const NonEmptyString& own_public_id,
            const NonEmptyString& contact_public_id,
-           const NonEmptyString& message,
+           const std::string& message,
            const NonEmptyString& /*timestamp*/) {
         ContactRequestSlot(own_public_id, contact_public_id, message, &mutex, &cond_var, &done);
        });
 
   // 2 adds 1 and checks own state
   NonEmptyString message(GenerateNonemptyMessage());
-  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_, message));
+  ASSERT_EQ(kSuccess,
+            public_id2_->AddContact(public_identity2_, public_identity1_, message.string()));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(timer_interval_));
   const ContactsHandlerPtr contacts_handler2(session2_.contacts_handler(public_identity2_));
   ASSERT_NE(nullptr, contacts_handler2.get());
@@ -754,7 +759,8 @@ TEST_F(PublicIdTest, FUNC_RejectThenAddContact)  {
 
   // 1 adds 2
   message = GenerateNonemptyMessage();
-  ASSERT_EQ(kSuccess, public_id1_->AddContact(public_identity1_, public_identity2_, message));
+  ASSERT_EQ(kSuccess,
+            public_id1_->AddContact(public_identity1_, public_identity2_, message.string()));
   ASSERT_EQ(kSuccess, public_id2_->StartCheckingForNewContacts(timer_interval_));
   {
     std::unique_lock<std::mutex> lock(mutex);
@@ -812,7 +818,8 @@ TEST_F(PublicIdTest, FUNC_FixAsynchronousConfirmedContact) {
                              &cond_var, &done);
       });
 
-  ASSERT_EQ(kSuccess, public_id1_->AddContact(public_identity1_, public_identity2_, kInvite));
+  ASSERT_EQ(kSuccess,
+            public_id1_->AddContact(public_identity1_, public_identity2_, kInvite.string()));
   ASSERT_EQ(kSuccess, public_id2_->StartCheckingForNewContacts(timer_interval_));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(timer_interval_));
 
@@ -850,14 +857,14 @@ TEST_F(PublicIdTest, FUNC_DisablePublicId) {
   public_id1_->ConnectToNewContactSignal(
       [&] (const NonEmptyString& own_public_id,
            const NonEmptyString& contact_public_id,
-           const NonEmptyString& message,
+           const std::string& message,
            const NonEmptyString& /*timestamp*/) {
         NewContactSlot(own_public_id, contact_public_id, message, &mutex, &cond_var, &done);
       });
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(timer_interval_));
   NonEmptyString message(GenerateNonemptyMessage());
   ASSERT_EQ(kSendContactInfoFailure,
-            public_id2_->AddContact(public_identity2_, public_identity1_, message));
+            public_id2_->AddContact(public_identity2_, public_identity1_, message.string()));
   {
     std::unique_lock<std::mutex> lock(mutex);
     ASSERT_FALSE(cond_var.wait_for(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
@@ -881,7 +888,7 @@ TEST_F(PublicIdTest, FUNC_EnablePublicId) {
   public_id1_->ConnectToNewContactSignal(
       [&] (const NonEmptyString& own_public_id,
            const NonEmptyString& contact_public_id,
-           const NonEmptyString& message,
+           const std::string& message,
            const NonEmptyString& /*timestamp*/) {
         NewContactSlot(own_public_id, contact_public_id, message, &mutex, &cond_var, &done);
       });
@@ -889,7 +896,7 @@ TEST_F(PublicIdTest, FUNC_EnablePublicId) {
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(timer_interval_));
   NonEmptyString message(GenerateNonemptyMessage());
   ASSERT_EQ(kSendContactInfoFailure,
-            public_id2_->AddContact(public_identity2_, public_identity1_, message));
+            public_id2_->AddContact(public_identity2_, public_identity1_, message.string()));
   {
     std::unique_lock<std::mutex> lock(mutex);
     ASSERT_FALSE(cond_var.wait_for(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
@@ -901,7 +908,8 @@ TEST_F(PublicIdTest, FUNC_EnablePublicId) {
 
   // Check user2 can now add itself to user1's MCID
   message = GenerateNonemptyMessage();
-  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_, message));
+  ASSERT_EQ(kSuccess,
+            public_id2_->AddContact(public_identity2_, public_identity1_, message.string()));
   {
     std::unique_lock<std::mutex> lock(mutex);
     ASSERT_TRUE(cond_var.wait_for(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
@@ -978,13 +986,14 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
   public_id1_->ConnectToNewContactSignal(
       [&] (const NonEmptyString& own_public_id,
            const NonEmptyString& contact_public_id,
-           const NonEmptyString& message,
+           const std::string& message,
            const NonEmptyString& /*timestamp*/) {
           NewContactSlot(own_public_id, contact_public_id, message, &mutex, &cond_var, &done);
       });
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(timer_interval_));
   ASSERT_EQ(kSuccess, public_id2_->StartCheckingForNewContacts(timer_interval_));
-  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_, kInvite));
+  ASSERT_EQ(kSuccess,
+            public_id2_->AddContact(public_identity2_, public_identity1_, kInvite.string()));
   {
     std::unique_lock<std::mutex> lock(mutex);
     ASSERT_TRUE(cond_var.wait_for(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
@@ -1018,7 +1027,7 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
   public_id2_->ConnectToContactDeletionReceivedSignal(
       [&] (const NonEmptyString& own_public_id,
            const NonEmptyString& contact_public_id,
-           const NonEmptyString& message,
+           const std::string& message,
            const NonEmptyString& /*timestamp*/) {
           ContactDeletionReceivedSlot(own_public_id, contact_public_id, message, &mutex, &cond_var,
                                       &done);
@@ -1026,7 +1035,7 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
   NonEmptyString timestamp("now");
   ASSERT_EQ(kSuccess, public_id1_->RemoveContact(public_identity1_,
                                                  public_identity2_,
-                                                 message,
+                                                 message.string(),
                                                  timestamp,
                                                  true));
   {
@@ -1043,14 +1052,14 @@ TEST_F(PublicIdTest, FUNC_RemoveContact) {
   public_id2_->ConnectToContactDeletionProcessedSignal(
       [&] (const NonEmptyString& own_public_id,
            const NonEmptyString& contact_public_id,
-           const NonEmptyString& message,
+           const std::string& message,
            const NonEmptyString& /*timestamp*/) {
           ContactDeletionProcessedSlot(own_public_id, contact_public_id, message, &mutex,
                                        &cond_var, &done);
       });
   ASSERT_EQ(kSuccess, public_id2_->RemoveContact(public_identity2_,
                                                  public_identity1_,
-                                                 message,
+                                                 message.string(),
                                                  timestamp,
                                                  false));
   {
@@ -1082,13 +1091,14 @@ TEST_F(PublicIdTest, FUNC_RemoveContactMoveInbox) {
   public_id1_->ConnectToNewContactSignal(
       [&] (const NonEmptyString& own_public_id,
            const NonEmptyString& contact_public_id,
-           const NonEmptyString& message,
+           const std::string& message,
            const NonEmptyString& /*timestamp*/) {
         NewContactSlot(own_public_id, contact_public_id, message, &mutex, &cond_var, &done);
       });
   // 2 adds 1 and 3
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(timer_interval_));
-  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_, kInvite));
+  ASSERT_EQ(kSuccess,
+            public_id2_->AddContact(public_identity2_, public_identity1_, kInvite.string()));
   {
     std::unique_lock<std::mutex> lock(mutex);
     ASSERT_TRUE(cond_var.wait_for(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Alison)
@@ -1097,7 +1107,8 @@ TEST_F(PublicIdTest, FUNC_RemoveContactMoveInbox) {
 
   done = false;
   received_public_identity_ = NonEmptyString();
-  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity3, kInvite));
+  ASSERT_EQ(kSuccess,
+            public_id2_->AddContact(public_identity2_, public_identity3, kInvite.string()));
   {
     std::unique_lock<std::mutex> lock(mutex);
     ASSERT_TRUE(cond_var.wait_for(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Alison)
@@ -1113,7 +1124,7 @@ TEST_F(PublicIdTest, FUNC_RemoveContactMoveInbox) {
   NonEmptyString reason(GenerateNonemptyMessage()), timestamp("now");
   ASSERT_EQ(kSuccess, public_id2_->RemoveContact(public_identity2_,
                                                  public_identity1_,
-                                                 reason,
+                                                 reason.string(),
                                                  timestamp,
                                                  true));
 
@@ -1154,7 +1165,7 @@ TEST_F(PublicIdTest, FUNC_MovedInbox) {
   public_id1_->ConnectToNewContactSignal(
       [&] (const NonEmptyString& own_public_id,
            const NonEmptyString& contact_public_id,
-           const NonEmptyString& message,
+           const std::string& message,
            const NonEmptyString& /*timestamp*/) {
         ContactRequestSlot(own_public_id, contact_public_id, message, &mutex, &cond_var, &done);
       });
@@ -1170,7 +1181,8 @@ TEST_F(PublicIdTest, FUNC_MovedInbox) {
 
   // Send the message and start checking for contacts
   NonEmptyString message(GenerateNonemptyMessage());
-  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_identity1_, message));
+  ASSERT_EQ(kSuccess,
+            public_id2_->AddContact(public_identity2_, public_identity1_, message.string()));
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(timer_interval_));
 
   const ContactsHandlerPtr contacts_handler2(session2_.contacts_handler(public_identity2_));
@@ -1214,7 +1226,7 @@ TEST_F(PublicIdTest, FUNC_MovedInbox) {
 
   // Add the second one
   done = false;
-  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_id3, message));
+  ASSERT_EQ(kSuccess, public_id2_->AddContact(public_identity2_, public_id3, message.string()));
   {
     std::unique_lock<std::mutex> lock(mutex);
     ASSERT_TRUE(cond_var.wait_for(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
@@ -1277,8 +1289,8 @@ TEST_F(PublicIdTest, FUNC_LifestuffCardSetAndGet) {
   ASSERT_EQ(kSuccess, public_id1_->GetLifestuffCard(public_identity1_, "", own_social_info_map));
   ASSERT_TRUE(EqualMaps(social_info_map, own_social_info_map));
   {
-    std::unique_lock<std::mutex> loch(mutex);
-    ASSERT_TRUE(cond_var.wait_for(loch, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+    std::unique_lock<std::mutex> lock(mutex);
+    ASSERT_TRUE(cond_var.wait_for(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
   }
   ASSERT_TRUE(done);
   ASSERT_EQ(kSuccess, public_id2_->GetLifestuffCard(public_identity2_,
@@ -1295,8 +1307,8 @@ TEST_F(PublicIdTest, FUNC_LifestuffCardSetAndGet) {
   ASSERT_EQ(kSuccess, public_id1_->GetLifestuffCard(public_identity1_, "", own_social_info_map));
   ASSERT_TRUE(EqualMaps(social_info_map, own_social_info_map));
   {
-    std::unique_lock<std::mutex> loch(mutex);
-    ASSERT_TRUE(cond_var.wait_for(loch, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+    std::unique_lock<std::mutex> lock(mutex);
+    ASSERT_TRUE(cond_var.wait_for(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
   }
   ASSERT_TRUE(done);
   ASSERT_EQ(kSuccess, public_id2_->GetLifestuffCard(public_identity2_,
@@ -1313,8 +1325,8 @@ TEST_F(PublicIdTest, FUNC_LifestuffCardSetAndGet) {
   ASSERT_EQ(kSuccess, public_id1_->GetLifestuffCard(public_identity1_, "", own_social_info_map));
   ASSERT_TRUE(EqualMaps(social_info_map, own_social_info_map));
   {
-    std::unique_lock<std::mutex> loch(mutex);
-    ASSERT_TRUE(cond_var.wait_for(loch, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+    std::unique_lock<std::mutex> lock(mutex);
+    ASSERT_TRUE(cond_var.wait_for(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
   }
   ASSERT_TRUE(done);
   ASSERT_EQ(kSuccess, public_id2_->GetLifestuffCard(public_identity2_,
@@ -1331,8 +1343,8 @@ TEST_F(PublicIdTest, FUNC_LifestuffCardSetAndGet) {
   ASSERT_EQ(kSuccess, public_id1_->GetLifestuffCard(public_identity1_, "", own_social_info_map));
   ASSERT_TRUE(EqualMaps(social_info_map, own_social_info_map));
   {
-    std::unique_lock<std::mutex> loch(mutex);
-    ASSERT_TRUE(cond_var.wait_for(loch, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+    std::unique_lock<std::mutex> lock(mutex);
+    ASSERT_TRUE(cond_var.wait_for(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
   }
   ASSERT_TRUE(done);
   ASSERT_EQ(kSuccess, public_id2_->GetLifestuffCard(public_identity2_,
@@ -1349,8 +1361,8 @@ TEST_F(PublicIdTest, FUNC_LifestuffCardSetAndGet) {
   ASSERT_EQ(kSuccess, public_id1_->GetLifestuffCard(public_identity1_, "", own_social_info_map));
   ASSERT_TRUE(EqualMaps(social_info_map, own_social_info_map));
   {
-    std::unique_lock<std::mutex> loch(mutex);
-    ASSERT_TRUE(cond_var.wait_for(loch, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+    std::unique_lock<std::mutex> lock(mutex);
+    ASSERT_TRUE(cond_var.wait_for(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
   }
   ASSERT_TRUE(done);
   ASSERT_EQ(kSuccess, public_id2_->GetLifestuffCard(public_identity2_,
@@ -1367,8 +1379,8 @@ TEST_F(PublicIdTest, FUNC_LifestuffCardSetAndGet) {
   ASSERT_EQ(kSuccess, public_id1_->GetLifestuffCard(public_identity1_, "", own_social_info_map));
   ASSERT_TRUE(EqualMaps(social_info_map, own_social_info_map));
   {
-    std::unique_lock<std::mutex> loch(mutex);
-    ASSERT_TRUE(cond_var.wait_for(loch, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+    std::unique_lock<std::mutex> lock(mutex);
+    ASSERT_TRUE(cond_var.wait_for(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
   }
   ASSERT_TRUE(done);
   ASSERT_EQ(kSuccess, public_id2_->GetLifestuffCard(public_identity2_,
@@ -1408,7 +1420,7 @@ int ConnectTwoIds(PublicId& public_id1,
   public_id3.ConnectToNewContactSignal(
       [&] (const NonEmptyString& /*own_public_id*/,
            const NonEmptyString& /*contact_public_id*/,
-           const NonEmptyString& /*message*/,
+           const std::string& /*message*/,
            const NonEmptyString& /*timestamp*/) {
         ExchangeSlot(&mutex3, &cond_var3, &done3);
       });
@@ -1420,13 +1432,13 @@ int ConnectTwoIds(PublicId& public_id1,
         ExchangeSlot(&mutex, &cond_var, &done);
       });
 
-  int result(public_id1.AddContact(public_identity1, public_identity3, kInvite));
+  int result(public_id1.AddContact(public_identity1, public_identity3, kInvite.string()));
   if (result != kSuccess)
     return result;
 
   {
-    std::unique_lock<std::mutex> loch(mutex3);
-    if (!cond_var3.wait_for(loch, interval * 2, [&] ()->bool { return done3; }))  // NOLINT (Dan)
+    std::unique_lock<std::mutex> lock(mutex3);
+    if (!cond_var3.wait_for(lock, interval * 2, [&] ()->bool { return done3; }))  // NOLINT (Dan)
       return -1;
   }
 
@@ -1435,8 +1447,8 @@ int ConnectTwoIds(PublicId& public_id1,
     return result;
 
   {
-    std::unique_lock<std::mutex> loch(mutex);
-    if (!cond_var.wait_for(loch, interval * 2, [&] ()->bool { return done; }))  // NOLINT (Dan)
+    std::unique_lock<std::mutex> lock(mutex);
+    if (!cond_var.wait_for(lock, interval * 2, [&] ()->bool { return done; }))  // NOLINT (Dan)
       return -1;
   }
 
@@ -1489,8 +1501,8 @@ TEST_F(PublicIdTest, FUNC_LifestuffCardOnlineOfflineContacts) {
   SocialInfoMap social_info_map(CreateRandomSocialInfoMap(10));
   ASSERT_EQ(kSuccess, public_id1_->SetLifestuffCard(public_identity1_, social_info_map));
   {
-    std::unique_lock<std::mutex> loch(mutex3);
-    ASSERT_FALSE(cond_var3.wait_for(loch, interval_ * 2, [&] ()->bool { return done3; }));  // NOLINT (Dan)
+    std::unique_lock<std::mutex> lock(mutex3);
+    ASSERT_FALSE(cond_var3.wait_for(lock, interval_ * 2, [&] ()->bool { return done3; }));  // NOLINT (Dan)
   }
   ASSERT_TRUE(done2);
   ASSERT_FALSE(done3);

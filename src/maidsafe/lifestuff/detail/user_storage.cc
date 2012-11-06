@@ -47,6 +47,8 @@ namespace utils = priv::utils;
 
 namespace lifestuff {
 
+const fs::path kLifeStuffConfigPath("LifeStuff-Config");
+
 UserStorage::UserStorage(pcs::RemoteChunkStore& chunk_store)
     : mount_status_(false),
       remote_chunk_store_(chunk_store),
@@ -85,8 +87,7 @@ void UserStorage::MountDrive(const fs::path& file_chunk_store_path,
     result = drive_in_user_space_->Init(session->unique_user_id(), "");
     session->set_root_parent_id(drive_in_user_space_->root_parent_id());
   } else {
-    result = drive_in_user_space_->Init(session->unique_user_id(),
-                                        session->root_parent_id());
+    result = drive_in_user_space_->Init(session->unique_user_id(), session->root_parent_id());
   }
 
   if (result != kSuccess) {
@@ -176,11 +177,10 @@ bool UserStorage::ParseAndSaveDataMap(const NonEmptyString& file_name,
     return false;
   }
 
-  int result(WriteHiddenFile(mount_dir() / std::string(data_map_hash + kHiddenFileExtension),
-                             NonEmptyString(filename_data) + serialised_data_map,
-                             true));
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to create file: " << result;
+  if (!WriteConfigFile(mount_dir() / kLifeStuffConfigPath / data_map_hash,
+                       NonEmptyString(filename_data) + serialised_data_map,
+                       true)) {
+    LOG(kError) << "Failed to create file.";
     return false;
   }
 
@@ -191,9 +191,9 @@ bool UserStorage::GetSavedDataMap(const NonEmptyString& data_map_hash,
                                   std::string& serialised_data_map,
                                   std::string& file_name) {
   std::string serialised_identifier;
-  int result(ReadHiddenFile(mount_dir() / std::string(data_map_hash.string() + kHiddenFileExtension),
-                            &serialised_identifier));
-  if (result != kSuccess || serialised_identifier.empty()) {
+  if (!ReadConfigFile(mount_dir() / kLifeStuffConfigPath / data_map_hash.string(),
+                      &serialised_identifier) ||
+      serialised_identifier.empty()) {
     LOG(kError) << "No such identifier found.";
     return false;
   }
@@ -293,6 +293,35 @@ std::string UserStorage::ConstructFile(const NonEmptyString& serialised_data_map
   std::string file_content(contents.get(), file_size);
 
   return file_content;
+}
+
+bool UserStorage::ReadConfigFile(const fs::path& absolute_path, std::string* content) {
+  try {
+    NonEmptyString c(ReadFile(absolute_path));
+    *content = c.string();
+  }
+  catch(const std::exception& e) {
+    LOG(kError) << "Error reading file: " << e.what();
+    return false;
+  }
+
+  return true;
+}
+
+bool UserStorage::WriteConfigFile(const fs::path& absolute_path,
+                                  const NonEmptyString& content,
+                                  bool /*overwrite_existing*/) {
+  boost::system::error_code error_code;
+  if (!fs::exists(mount_dir() / kLifeStuffConfigPath, error_code) || error_code) {
+    LOG(kWarning) << "Config path doesn't exist. Recreating...";
+    fs::create_directories(mount_dir() / kLifeStuffConfigPath, error_code);
+    if (!fs::exists(mount_dir() / kLifeStuffConfigPath, error_code) || error_code) {
+      LOG(kError) << "Could not create config path.";
+      return false;
+    }
+  }
+
+  return WriteFile(absolute_path, content.string());
 }
 
 }  // namespace lifestuff

@@ -68,12 +68,12 @@ void MultipleFileTransferSlot(const NonEmptyString&,
 
 void NewContactSlot(const NonEmptyString&,
                     const NonEmptyString&,
-                    const NonEmptyString& message,
+                    const std::string& message,
                     const NonEmptyString&,
                     volatile bool* done,
                     std::string* contact_request_message) {
   *done = true;
-  *contact_request_message = message.string();
+  *contact_request_message = message;
 }
 
 void ContactConfirmationSlot(const NonEmptyString&,
@@ -100,12 +100,12 @@ void ContactPresenceSlot(const NonEmptyString&,
 
 void ContactDeletionSlot(const NonEmptyString&,
                          const NonEmptyString&,
-                         const NonEmptyString& signal_message,
+                         const std::string& signal_message,
                          const NonEmptyString&,
                          std::string* slot_message,
                          volatile bool* done) {
   if (slot_message)
-    *slot_message = signal_message.string();
+    *slot_message = signal_message;
   *done = true;
 }
 
@@ -309,7 +309,7 @@ int InitialiseAndConnect(LifeStuff& test_elements,
                 FileTransferFailureFunction(),
                 [&] (const NonEmptyString& own_public_id,
                      const NonEmptyString& contact_public_id,
-                     const NonEmptyString& message,
+                     const std::string& message,
                      const NonEmptyString& timestamp) {
                   NewContactSlot(own_public_id,
                                  contact_public_id,
@@ -346,7 +346,7 @@ int InitialiseAndConnect(LifeStuff& test_elements,
                 },
                 [&] (const NonEmptyString& own_public_id,
                      const NonEmptyString& contact_public_id,
-                     const NonEmptyString& signal_message,
+                     const std::string& signal_message,
                      const NonEmptyString& timestamp) {
                   ContactDeletionSlot(own_public_id,
                                       contact_public_id,
@@ -421,7 +421,7 @@ int ConnectTwoPublicIds(LifeStuff& test_elements1,
   NonEmptyString message(RandomAlphaNumericString(5));
   {
     result += DoFullLogIn(test_elements1, keyword1, pin1, password1);
-    result += test_elements1.AddContact(public_id1, public_id2, message);
+    result += test_elements1.AddContact(public_id1, public_id2, message.string());
     result += DoFullLogOut(test_elements1);
     if (result != kSuccess) {
       LOG(kError) << "Failure adding contact";
@@ -530,7 +530,7 @@ void RunLogIn(LifeStuff& test_elements,
 }  // namespace sleepthreads
 
 void OneUserApiTest::SetUp() {
-  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12));
+  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12, true));
   EXPECT_EQ(kSuccess, test_elements_.Initialise([] (NonEmptyString) {}, *test_dir_, true));
   EXPECT_EQ(kSuccess,
             test_elements_.ConnectToSignals(ChatFunction(),
@@ -558,8 +558,8 @@ void OneUserApiTest::SetUp() {
 
 void OneUserApiTest::TearDown() {
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
-  EXPECT_TRUE(network_.StopLocalNetwork());
   EXPECT_EQ(kSuccess, test_elements_.Finalise());
+  EXPECT_TRUE(network_.StopLocalNetwork());
 }
 
 void TwoInstancesApiTest::SetUp() {

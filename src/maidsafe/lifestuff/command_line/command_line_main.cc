@@ -24,17 +24,55 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-int ConnectSignals(maidsafe::lifestuff::LifeStuff& lifestuff) {
-  return lifestuff.ConnectToSignals(ChatFunction(),
+struct ChatMessage {
+  ChatMessage() : own_id(), other_id(), message(), timestamp() {}
+  ChatMessage(const NonEmptyString& own,
+              const NonEmptyString& other,
+              const NonEmptyString& msg,
+              const NonEmptyString& stamp)
+    : own_id(own), other_id(other), message(msg), timestamp(stamp) {}
+  NonEmptyString own_id;
+  NonEmptyString other_id;
+  NonEmptyString message;
+  NonEmptyString timestamp;
+};
+
+std::mutex g_messages_mutex;
+std::vector<ChatMessage> g_messages;
+
+int ConnectSignals(LifeStuff& lifestuff) {
+  return lifestuff.ConnectToSignals([] (const NonEmptyString& own_id,
+                                        const NonEmptyString& other_id,
+                                        const NonEmptyString& message,
+                                        const NonEmptyString& timestamp) {
+                                      std::lock_guard<std::mutex> lock(g_messages_mutex);
+                                      g_messages.push_back(ChatMessage(own_id, other_id, message,
+                                                                       timestamp));
+                                    },
                                     FileTransferSuccessFunction(),
                                     FileTransferFailureFunction(),
-                                    NewContactFunction(),
-                                    ContactConfirmationFunction(),
+                                    [&lifestuff] (const NonEmptyString& own_id,
+                                                  const NonEmptyString& other_id,
+                                                  const std::string&,
+                                                  const NonEmptyString&) {
+                                      int result(lifestuff.ConfirmContact(own_id, other_id));
+                                      printf("%s confirming %s result: %d\n",
+                                             own_id.string().c_str(),
+                                             other_id.string().c_str(),
+                                             result);
+                                    },
+                                    [&] (const NonEmptyString& own_id,
+                                         const NonEmptyString& other_id,
+                                         const NonEmptyString&) {
+                                      printf("%s confirmed %s\n",
+                                             own_id.string().c_str(),
+                                             other_id.string().c_str());
+                                    },
                                     ContactProfilePictureFunction(),
-                                    [&] (const NonEmptyString& /*own_public_id*/,
-                                         const NonEmptyString& /*contact_public_id*/,
-                                         const NonEmptyString& /*timestamp*/,
-                                         ContactPresence /*cp*/) {},
+                                    [] (const NonEmptyString& /*own_public_id*/,
+                                        const NonEmptyString& /*contact_public_id*/,
+                                        const NonEmptyString& /*timestamp*/,
+                                        ContactPresence /*cp*/) {},
                                     ContactDeletionFunction(),
                                     LifestuffCardUpdateFunction(),
                                     NetworkHealthFunction(),
@@ -49,26 +87,28 @@ void PrintMenu() {
   printf("3. Log in\n");
   printf("4. Mount drive\n");
   printf("5. Unmount drive\n");
-  printf("6. Log out\n");
+  printf("6. Create public id\n");
+  printf("7. Add contact\n");
+  printf("8. Get messages\n");
   printf("Choice: ");
 }
 
 bool ReadAndValidateInput(int& option) {
   option = -1;
   std::cin >> option;
-  if (option > 6 || option  < 0)
+  if (option > 7 || option  < 1)
     return false;
   return true;
 }
 
-void ReadAndParseCredentials(std::vector<maidsafe::NonEmptyString>& creds) {
+void ReadAndParseCredentials(std::vector<NonEmptyString>& creds) {
   printf("Please give keyword, pin & password (keyword,pin,password): ");
   std::string input;
   std::cin >> input;
   boost::regex re(",");
   boost::sregex_token_iterator it(input.begin(), input.end(), re, -1), end;
   while (it != end)
-    creds.push_back(maidsafe::NonEmptyString(*it++));
+    creds.push_back(NonEmptyString(*it++));
 
 #ifndef NDEBUG
   for (auto& s : creds)
@@ -76,8 +116,8 @@ void ReadAndParseCredentials(std::vector<maidsafe::NonEmptyString>& creds) {
 #endif
 }
 
-int DoCreateUser(maidsafe::lifestuff::LifeStuff& lifestuff) {
-  std::vector<maidsafe::NonEmptyString> creds;
+int DoCreateUser(LifeStuff& lifestuff) {
+  std::vector<NonEmptyString> creds;
   ReadAndParseCredentials(creds);
   if (creds.size() != 3U) {
     printf("Credentials size inadequate: %d", creds.size());
@@ -87,8 +127,8 @@ int DoCreateUser(maidsafe::lifestuff::LifeStuff& lifestuff) {
   return lifestuff.CreateUser(creds[0], creds[1], creds[2]);
 }
 
-int DoLogin(maidsafe::lifestuff::LifeStuff& lifestuff) {
-  std::vector<maidsafe::NonEmptyString> creds;
+int DoLogin(LifeStuff& lifestuff) {
+  std::vector<NonEmptyString> creds;
   ReadAndParseCredentials(creds);
   if (creds.size() != 3U) {
     printf("Credentials size inadequate: %d", creds.size());
@@ -98,26 +138,68 @@ int DoLogin(maidsafe::lifestuff::LifeStuff& lifestuff) {
   return lifestuff.LogIn(creds[0], creds[1], creds[2]);
 }
 
-int DoLogout(maidsafe::lifestuff::LifeStuff& lifestuff) {
-  return lifestuff.LogOut();
+int DoLogout(LifeStuff& lifestuff) {
+  if (lifestuff.state() == kLoggedIn) {
+    int result(lifestuff.LogOut());
+    return result == kSuccess ? 1 : result;
+  } else {
+    return 1;
+  }
 }
 
-int DoMount(maidsafe::lifestuff::LifeStuff& lifestuff) {
+int DoMount(LifeStuff& lifestuff) {
   return lifestuff.MountDrive();
 }
 
-int DoUnmont(maidsafe::lifestuff::LifeStuff& lifestuff) {
+int DoUnmont(LifeStuff& lifestuff) {
   return lifestuff.UnMountDrive();
 }
 
-int HandleChoice(const int& option, maidsafe::lifestuff::LifeStuff& lifestuff) {
+int DoCreatePublicId(LifeStuff& lifestuff) {
+  printf("Please give a public id: ");
+  std::string public_id;
+  std::cin >> public_id;
+  return lifestuff.CreatePublicId(NonEmptyString(public_id));
+}
+
+int DoAddContact(LifeStuff& lifestuff) {
+  printf("Please give your public id, contact public id, and message(own_id,other_id): ");
+  std::string input;
+  std::cin >> input;
+  boost::regex re(",");
+  boost::sregex_token_iterator it(input.begin(), input.end(), re, -1), end;
+  std::vector<NonEmptyString> ids;
+  while (it != end)
+    ids.push_back(NonEmptyString(*it++));
+  if (ids.size() != 2U) {
+    printf("Id size inadequate: %d", ids.size());
+    return -1;
+  }
+  return lifestuff.AddContact(ids.at(0), ids.at(1), "Let's be friends.");
+}
+
+int DoGetMessages() {
+  std::lock_guard<std::mutex> lock(g_messages_mutex);
+  for (auto& message : g_messages) {
+    printf("%s says(%s): %s\n",
+           message.other_id.string().c_str(),
+           message.timestamp.string().c_str(),
+           message.message.string().c_str());
+  }
+  g_messages.clear();
+  return kSuccess;
+}
+
+int HandleChoice(const int& option, LifeStuff& lifestuff) {
   switch (option) {
-    case 1: return 1;  // quit
+    case 1: return DoLogout(lifestuff);  // quit
     case 2: return DoCreateUser(lifestuff);
     case 3: return DoLogin(lifestuff);
     case 4: return DoMount(lifestuff);
     case 5: return DoUnmont(lifestuff);
-    case 6: return DoLogout(lifestuff);
+    case 6: return DoCreatePublicId(lifestuff);
+    case 7: return DoAddContact(lifestuff);
+    case 8: return DoGetMessages();
     default: return -1;
   }
 }
@@ -158,6 +240,8 @@ int main(int argc, char* argv[]) {
       printf("Operation result: %d\n", operation_result);
     }
   } while (option != 1);
+
+  lifestuff.Finalise();
 
   return 0;
 }

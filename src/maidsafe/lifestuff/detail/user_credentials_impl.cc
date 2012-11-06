@@ -217,8 +217,8 @@ int UserCredentialsImpl::CheckForOtherRunningInstances(const NonEmptyString& key
       return -1;
     }
 
-    std::unique_lock<std::mutex> loch(completed_log_out_mutex_);
-    if (!completed_log_out_conditional_.wait_for(loch,
+    std::unique_lock<std::mutex> lock(completed_log_out_mutex_);
+    if (!completed_log_out_conditional_.wait_for(lock,
                                                  std::chrono::minutes(1),
                                                  [&] () { return completed_log_out_; })) {
       LOG(kError) << "Timed out waiting for other party to report logout. "
@@ -438,11 +438,13 @@ int UserCredentialsImpl::HandleSerialisedDataMaps(const NonEmptyString& keyword,
   }
 
   if (stmid_da.empty()) {
-    if (tmid_da.empty()) {
+    if (!stmid_serialised_data_atlas.empty()) {
+      stmid_da = stmid_serialised_data_atlas;
+    } else if (!tmid_da.empty()) {
+      stmid_da = tmid_da;
+    } else {
       LOG(kError) << "No valid DA.";
       return kSetIdentityPacketsFailure;
-    } else if (!stmid_serialised_data_atlas.empty()) {
-      stmid_da = stmid_serialised_data_atlas;
     }
   }
 
@@ -1275,7 +1277,7 @@ void UserCredentialsImpl::SessionSaver(const bptime::seconds& interval,
 }
 
 void UserCredentialsImpl::LogoutCompletedArrived(const std::string& session_marker) {
-  std::lock_guard<std::mutex> loch(completed_log_out_mutex_);
+  std::lock_guard<std::mutex> lock(completed_log_out_mutex_);
   completed_log_out_message_ = session_marker;
   completed_log_out_ = true;
   completed_log_out_conditional_.notify_one();

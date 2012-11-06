@@ -44,9 +44,10 @@ namespace test {
 
 class NetworkHelper {
  public:
-  NetworkHelper(); 
+  NetworkHelper();
   testing::AssertionResult StartLocalNetwork(std::shared_ptr<boost::filesystem::path> test_root,
-                                             int vault_count, bool start_invigilator = false);
+                                             int vault_count,
+                                             bool start_invigilator = false);
   testing::AssertionResult StopLocalNetwork();
 
  private:
@@ -54,7 +55,7 @@ class NetworkHelper {
       InStreamPtr;
       std::vector<boost::process::child> zero_state_processes_;
    std::vector<std::pair<boost::process::child, InStreamPtr>> vault_processes_;
-   std::vector<std::pair<boost::process::child, InStreamPtr>> invigilator_processes_;
+   std::vector<boost::process::child> invigilator_processes_;
 };
 
 }  // namespace test

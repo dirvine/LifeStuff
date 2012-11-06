@@ -39,26 +39,37 @@ namespace lifestuff {
 
 namespace test {
 
-TEST_F(OneUserApiTest, DISABLED_FUNC_TryCreateInvalidPublicId) {
-  // EXPECT_NE(kSuccess, test_elements_.CreatePublicId(NonEmptyString("")));
+TEST_F(OneUserApiTest, FUNC_CreatePublicIdCases) {
   EXPECT_NE(kSuccess, test_elements_.CreatePublicId(NonEmptyString(RandomAlphaNumericString(31))));
   EXPECT_NE(kSuccess, test_elements_.CreatePublicId(NonEmptyString(" ")));
-  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(
-      NonEmptyString(" " + RandomAlphaNumericString(RandomUint32() % 26 + 4))));
-  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(
-      NonEmptyString(RandomAlphaNumericString(RandomUint32() % 26 + 4) + " ")));
-  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(
-      NonEmptyString(RandomAlphaNumericString(RandomUint32() % 13 + 2) + "  " +
-      RandomAlphaNumericString(RandomUint32() % 14 + 1))));
-  EXPECT_NE(kSuccess, test_elements_.CreatePublicId(
-      NonEmptyString(" " + RandomAlphaNumericString(RandomUint32() % 13 + 1) + "  " +
-                     RandomAlphaNumericString(RandomUint32() % 13 + 1) + " ")));
-  EXPECT_EQ(kSuccess, test_elements_.CreatePublicId(
-      NonEmptyString(RandomAlphaNumericString(RandomUint32() % 14 + 1) + " " +
-                     RandomAlphaNumericString(RandomUint32() % 15 + 1))));
+  EXPECT_NE(kSuccess,
+            test_elements_.CreatePublicId(NonEmptyString(" " +
+                                                         RandomAlphaNumericString(RandomUint32() %
+                                                                                  26 + 4))));
+  EXPECT_NE(kSuccess,
+            test_elements_.CreatePublicId(NonEmptyString(RandomAlphaNumericString(RandomUint32() %
+                                                                                  26 + 4) + " ")));
+  EXPECT_NE(kSuccess,
+            test_elements_.CreatePublicId(NonEmptyString(RandomAlphaNumericString(RandomUint32() %
+                                                                                  13 + 2) +
+                                                         "  " +
+                                                         RandomAlphaNumericString(RandomUint32() %
+                                                                                  14 + 1))));
+  EXPECT_NE(kSuccess,
+            test_elements_.CreatePublicId(NonEmptyString(" " +
+                                                         RandomAlphaNumericString(RandomUint32() %
+                                                                                  13 + 1) +
+                                                         "  " +
+                                                         RandomAlphaNumericString(RandomUint32() %
+                                                                                  13 + 1) +
+                                                         " ")));
+  NonEmptyString public_id(RandomAlphaNumericString(RandomUint32() % 14 + 1) +
+                           " " +
+                           RandomAlphaNumericString(RandomUint32() % 15 + 1));
+  EXPECT_EQ(kSuccess, test_elements_.CreatePublicId(public_id));
 }
 
-TEST_F(OneUserApiTest, DISABLED_FUNC_CreateSamePublicIdConsecutively) {
+TEST_F(OneUserApiTest, FUNC_CreateSamePublicIdConsecutively) {
   NonEmptyString new_public_id(RandomAlphaNumericString(6));
   EXPECT_EQ(kSuccess, test_elements_.CreatePublicId(new_public_id));
   EXPECT_NE(kSuccess, test_elements_.CreatePublicId(new_public_id));
@@ -115,26 +126,27 @@ TEST_F(OneUserApiTest, DISABLED_FUNC_CreateSamePublicIdSimultaneously) {
   }
 }
 
-TEST_F(OneUserApiTest, DISABLED_FUNC_AddInvalidContact) {
+TEST_F(OneUserApiTest, FUNC_AddInvalidContact) {
   NonEmptyString own_public_id(RandomAlphaNumericString(5));
   NonEmptyString public_id_1(RandomAlphaNumericString(6));
   NonEmptyString public_id_2(RandomAlphaNumericString(7));
   NonEmptyString message(RandomAlphaNumericString(5));
   test_elements_.CreatePublicId(own_public_id);
-  EXPECT_NE(kSuccess, test_elements_.AddContact(own_public_id, NonEmptyString(" "), message));
-  EXPECT_NE(kSuccess, test_elements_.AddContact(own_public_id, public_id_1, message));
-  EXPECT_NE(kSuccess, test_elements_.AddContact(public_id_1, public_id_2, message));
+  EXPECT_NE(kSuccess,
+            test_elements_.AddContact(own_public_id, NonEmptyString(" "), message.string()));
+  EXPECT_NE(kSuccess, test_elements_.AddContact(own_public_id, public_id_1, message.string()));
+  EXPECT_NE(kSuccess, test_elements_.AddContact(public_id_1, public_id_2, message.string()));
 }
 
-TEST_F(OneUserApiTest, DISABLED_FUNC_AddOwnPublicIdAsContact) {
+TEST_F(OneUserApiTest, FUNC_AddOwnPublicIdAsContact) {
   NonEmptyString public_id_1(RandomAlphaNumericString(6));
   NonEmptyString public_id_2(RandomAlphaNumericString(7));
   NonEmptyString message(RandomAlphaNumericString(5));
   test_elements_.CreatePublicId(public_id_1);
   test_elements_.CreatePublicId(public_id_2);
 
-  EXPECT_NE(kSuccess, test_elements_.AddContact(public_id_1, public_id_1, message));
-  EXPECT_NE(kSuccess, test_elements_.AddContact(public_id_1, public_id_2, message));
+  EXPECT_NE(kSuccess, test_elements_.AddContact(public_id_1, public_id_1, message.string()));
+  EXPECT_NE(kSuccess, test_elements_.AddContact(public_id_1, public_id_2, message.string()));
 }
 
 TEST_F(OneUserApiTest, DISABLED_FUNC_ChangeProfilePictureAfterSaveSession) {
@@ -168,12 +180,6 @@ TEST_F(OneUserApiTest, DISABLED_FUNC_ChangeProfilePictureAfterSaveSession) {
     retrieved_picture = test_elements_.GetOwnProfilePicture(public_id);
     EXPECT_TRUE(profile_picture1 == retrieved_picture);
   }
-}
-
-TEST_F(TwoUsersApiTest, DISABLED_FUNC_TrivialTest) {
-  LOG(kInfo) << "\n\n\n\n";
-  Sleep(bptime::seconds(10));
-  LOG(kInfo) << "\n\n\n\n";
 }
 
 TEST_F(TwoUsersApiTest, DISABLED_FUNC_CreateSamePublicIdConsecutively) {
@@ -587,7 +593,7 @@ TEST_F(TwoUsersApiTest, DISABLED_FUNC_RemoveContact) {
     EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_1_, keyword_1_, pin_1_, password_1_));
 
     EXPECT_EQ(kSuccess, test_elements_1_.RemoveContact(public_id_1_, public_id_2_,
-                                                       removal_message));
+                                                       removal_message.string()));
     EXPECT_TRUE(test_elements_1_.GetContacts(public_id_1_).empty());
 
     EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_1_));
@@ -614,7 +620,7 @@ TEST_F(TwoUsersApiTest, DISABLED_FUNC_RemoveContactAddContact) {
       EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_1_, keyword_1_, pin_1_, password_1_));
 
       EXPECT_EQ(kSuccess, test_elements_1_.RemoveContact(public_id_1_, public_id_2_,
-                                                         removal_message));
+                                                         removal_message.string()));
       EXPECT_TRUE(test_elements_1_.GetContacts(public_id_1_).empty());
 
       EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_1_));
@@ -638,7 +644,7 @@ TEST_F(TwoUsersApiTest, DISABLED_FUNC_RemoveContactAddContact) {
     if (i % 2 == 0) {
       testing_variables_2_.newly_contacted = false;
       DoFullLogIn(test_elements_1_, keyword_1_, pin_1_, password_1_);
-      test_elements_1_.AddContact(public_id_1_, public_id_2_, request_message);
+      test_elements_1_.AddContact(public_id_1_, public_id_2_, request_message.string());
       EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_1_));
 
       DoFullLogIn(test_elements_2_, keyword_2_, pin_2_, password_2_);
@@ -650,7 +656,7 @@ TEST_F(TwoUsersApiTest, DISABLED_FUNC_RemoveContactAddContact) {
     } else {
       testing_variables_1_.newly_contacted = false;
       DoFullLogIn(test_elements_2_, keyword_2_, pin_2_, password_2_);
-      test_elements_2_.AddContact(public_id_2_, public_id_1_, request_message);
+      test_elements_2_.AddContact(public_id_2_, public_id_1_, request_message.string());
       EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_2_));
 
       DoFullLogIn(test_elements_1_, keyword_1_, pin_1_, password_1_);
@@ -672,7 +678,7 @@ TEST_F(TwoUsersApiTest, DISABLED_FUNC_AddContactWithMessage) {
 
   DoFullLogIn(test_elements_2_, keyword_2_, pin_2_, password_2_);
   const NonEmptyString message(RandomAlphaNumericString(RandomUint32() % 90 + 10));
-  test_elements_2_.AddContact(public_id_2_, public_id_3, message);
+  test_elements_2_.AddContact(public_id_2_, public_id_3, message.string());
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_2_));
 
   DoFullLogIn(test_elements_1_, keyword_1_, pin_1_, password_1_);
@@ -690,10 +696,11 @@ TEST_F(TwoUsersApiTest, DISABLED_FUNC_AddThenRemoveOfflineUser) {
   test_elements_1_.CreatePublicId(public_id_3);
 
   const NonEmptyString add_message(RandomAlphaNumericString(RandomUint32() % 90));
-  EXPECT_EQ(kSuccess, test_elements_1_.AddContact(public_id_3, public_id_2_, add_message));
+  EXPECT_EQ(kSuccess, test_elements_1_.AddContact(public_id_3, public_id_2_, add_message.string()));
 
   const NonEmptyString remove_message(RandomAlphaNumericString(RandomUint32() % 90));
-  EXPECT_EQ(kSuccess, test_elements_1_.RemoveContact(public_id_3, public_id_2_, remove_message));
+  EXPECT_EQ(kSuccess,
+            test_elements_1_.RemoveContact(public_id_3, public_id_2_, remove_message.string()));
 
   EXPECT_TRUE(test_elements_1_.GetContacts(public_id_3).empty());
 

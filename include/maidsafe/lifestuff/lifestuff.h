@@ -122,11 +122,20 @@ typedef std::function<void(const NonEmptyString&,          // Own public ID
                            ContactPresence presence)>      // online/offline
         ContactPresenceFunction;
 // Own public ID, Contact public ID, Message, Timestamp
-typedef FourStringsFunction ContactDeletionReceivedFunction;
-// Own public ID, Contact public ID, Message, Timestamp
-typedef FourStringsFunction ContactDeletionFunction;  // For when deletion has been processed
+typedef std::function<void(const NonEmptyString&,          // Own public ID
+                           const NonEmptyString&,          // Contact public ID
+                           const std::string&,             // Message
+                           const NonEmptyString&)> ContactDeletionReceivedFunction;
+// Own public ID, Contact public ID, Message, Timestamp  // For when deletion has been processed
+typedef std::function<void(const NonEmptyString&,          // Own public ID
+                           const NonEmptyString&,          // Contact public ID
+                           const std::string&,             // Message
+                           const NonEmptyString&)> ContactDeletionFunction;
 // Own & other public ID, Message, Timestamp
-typedef FourStringsFunction NewContactFunction;
+typedef std::function<void(const NonEmptyString&,          // Own public ID
+                           const NonEmptyString&,          // Contact public ID
+                           const std::string&,             // Message
+                           const NonEmptyString&)> NewContactFunction;
 // Lifestuff Card change: Own & other public ID, Timestamp
 typedef ThreeStringsFunction LifestuffCardUpdateFunction;
 

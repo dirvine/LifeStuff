@@ -68,28 +68,33 @@ void InitialiseAndConnectElements(LifeStuff& elements, const fs::path& dir, vola
 
 }  // namespace
 
-TEST(IndependentFullTest, DISABLED_FUNC_CreateLogoutLoginLogout) {
+TEST(IndependentFullTest, FUNC_CreateLogoutLoginLogout) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   NetworkHelper network;
   network.StartLocalNetwork(test_dir, 10, true);
-  LOG(kInfo) << "Started network\n\n\n\n";
-  Sleep(bptime::seconds(10));
-
-  LifeStuff test_elements;
   NonEmptyString keyword(RandomAlphaNumericString(5)),
                  pin(CreatePin()),
                  password(RandomAlphaNumericString(5));
   volatile bool done(false);
-  InitialiseAndConnectElements(test_elements, *test_dir, &done);
 
-  EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword, pin, password));
-  Sleep(boost::posix_time::seconds(10));
-  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
-//   Sleep(boost::posix_time::seconds(10));
-//   EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword, pin, password));
-//   Sleep(boost::posix_time::seconds(10));
-//   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
-  test_elements.Finalise();
+  {
+    LifeStuff test_elements;
+    InitialiseAndConnectElements(test_elements, *test_dir, &done);
+
+    EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword, pin, password));
+    Sleep(boost::posix_time::seconds(5));
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+    test_elements.Finalise();
+  }
+  Sleep(boost::posix_time::seconds(5));
+  {
+    LifeStuff test_elements;
+    InitialiseAndConnectElements(test_elements, *test_dir, &done);
+    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword, pin, password));
+    Sleep(boost::posix_time::seconds(5));
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+    test_elements.Finalise();
+  }
   network.StopLocalNetwork();
 }
 

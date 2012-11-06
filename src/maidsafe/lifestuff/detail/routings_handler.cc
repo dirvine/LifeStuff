@@ -68,10 +68,12 @@ RoutingsHandler::RoutingsHandler(priv::chunk_store::RemoteChunkStore& chunk_stor
       routing_objects_mutex_(),
       session_(session),
       validated_message_signal_(validated_message_signal),
-      cs_mutex_() {}
+      cs_mutex_(),
+      stopped_(false) {}
 
 RoutingsHandler::~RoutingsHandler() {
-  std::lock_guard<std::mutex> loch(routing_objects_mutex_);
+  stopped_ = true;
+  std::lock_guard<std::mutex> lock(routing_objects_mutex_);
   for (auto& element : routing_objects_)
     element.second->routing_object.DisconnectFunctors();
   routing_objects_.clear();
@@ -79,7 +81,7 @@ RoutingsHandler::~RoutingsHandler() {
 }
 
 void RoutingsHandler::set_remote_chunk_store(priv::chunk_store::RemoteChunkStore& chunk_store) {
-  std::lock_guard<std::mutex> loch(cs_mutex_);
+  std::lock_guard<std::mutex> lock(cs_mutex_);
   chunk_store_ = &chunk_store;
 }
 
@@ -102,10 +104,11 @@ bool RoutingsHandler::AddRoutingObject(
 
   // Functors
   routing::Functors functors;
-  functors.message_received = [&, routing_details] (const std::string& wrapped_message,
+  Identity id(routing_details->fob.identity);
+  functors.message_received = [this, id] (const std::string& wrapped_message,
                                                     const NodeId& group_claim,
                                                     const routing::ReplyFunctor& reply_functor) {
-                                OnRequestReceived(routing_details->fob.identity,
+                                OnRequestReceived(id,
                                                   NonEmptyString(wrapped_message),
                                                   group_claim,
                                                   reply_functor);
@@ -119,18 +122,20 @@ bool RoutingsHandler::AddRoutingObject(
                                     OnPublicKeyRequested(node_id, give_key);
                                   };
   // Network health
-  functors.network_status = [routing_details]
-                            (const int& network_health) {
-                              if (routing_details->action_health) {
-                                std::lock_guard<std::mutex> health_loch(routing_details->mutex);
-                                routing_details->newtwork_health = network_health;
+  std::weak_ptr<RoutingDetails> routing_details_weak_ptr(routing_details);
+  functors.network_status = [routing_details_weak_ptr] (const int& network_health) {
+                              if (auto spt = routing_details_weak_ptr.lock()) {
+                                if (spt->action_health) {
+                                  std::lock_guard<std::mutex> health_lock(spt->mutex);
+                                  spt->newtwork_health = network_health;
+                                }
                               }
                             };
 
   routing_details->routing_object.Join(functors, peer_endpoints);
   {
-    std::unique_lock<std::mutex> health_loch(routing_details->mutex);
-    routing_details->condition_variable.wait_for(health_loch,
+    std::unique_lock<std::mutex> health_lock(routing_details->mutex);
+    routing_details->condition_variable.wait_for(health_lock,
                                                  std::chrono::seconds(5),
                                                  [&] ()->bool {
                                                    // TODO(Team): Remove this blatantly arbitrary
@@ -157,9 +162,10 @@ bool RoutingsHandler::AddRoutingObject(
 }
 
 bool RoutingsHandler::DeleteRoutingObject(const Identity& identity) {
-  std::unique_lock<std::mutex> loch(routing_objects_mutex_);
+  std::lock_guard<std::mutex> lock(routing_objects_mutex_);
   size_t erased_count(routing_objects_.erase(identity));
-  LOG(kInfo) << "RoutingsHandler::DeleteRoutingObject erased: " << erased_count << ", out of: " << routing_objects_.size();
+  LOG(kInfo) << "RoutingsHandler::DeleteRoutingObject erased: " << erased_count
+             << ", out of: " << (routing_objects_.size() + erased_count);
   return erased_count == size_t(1);
 }
 
@@ -171,7 +177,7 @@ bool RoutingsHandler::Send(const Identity& source_id,
                            std::string* reply_message) {
   std::shared_ptr<RoutingDetails> routing_details;
   {
-    std::unique_lock<std::mutex> loch(routing_objects_mutex_);
+    std::lock_guard<std::mutex> lock(routing_objects_mutex_);
     auto it(routing_objects_.find(source_id));
     if (it == routing_objects_.end()) {
       LOG(kError) << "No such ID to send message: " << DebugId(NodeId(source_id));
@@ -192,7 +198,7 @@ bool RoutingsHandler::Send(const Identity& source_id,
   bool message_received(false);
   if (reply_message) {
       response_functor = [&] (const std::vector<std::string>& messages) {
-                           std::unique_lock<std::mutex> message_loch(message_mutex);
+                           std::lock_guard<std::mutex> message_lock(message_mutex);
                            if (!messages.empty())
                              message_from_routing = messages.front();
                            else
@@ -206,7 +212,8 @@ bool RoutingsHandler::Send(const Identity& source_id,
   if (source_id == destination_id)
     group_claim_as_own_id = NodeId(destination_id.string());
 
-  LOG(kInfo) << "sender: " << DebugId(group_claim_as_own_id) << ", receiver: " << DebugId(NodeId(destination_id));
+  LOG(kInfo) << "sender: " << DebugId(group_claim_as_own_id)
+             << ", receiver: " << DebugId(NodeId(destination_id));
   routing_details->routing_object.Send(NodeId(destination_id.string()),
                                        group_claim_as_own_id,
                                        wrapped_message.string(),
@@ -216,8 +223,8 @@ bool RoutingsHandler::Send(const Identity& source_id,
                                        false);
 
   if (reply_message) {
-    std::unique_lock<std::mutex> message_loch(message_mutex);
-    if (!condition_variable.wait_for(message_loch,
+    std::unique_lock<std::mutex> message_lock(message_mutex);
+    if (!condition_variable.wait_for(message_lock,
                                      std::chrono::seconds(10),
                                      [&] () { return message_received; })) {
       LOG(kError) << "Timed out waiting for response from " << DebugId(NodeId(destination_id));
@@ -267,6 +274,11 @@ void RoutingsHandler::OnRequestReceived(const Identity& receiver_id,
                                         const NodeId& sender_id,
                                         const routing::ReplyFunctor& reply_functor) {
   LOG(kInfo) << "receiver: " << DebugId(NodeId(receiver_id)) << ", sender: " << DebugId(sender_id);
+  if (stopped_) {
+    LOG(kWarning) << "Stopped. Dropping.";
+    return;
+  }
+
   if (sender_id == NodeId()) {
     LOG(kWarning) << "Void sender. Dropping.";
     return;
@@ -274,7 +286,7 @@ void RoutingsHandler::OnRequestReceived(const Identity& receiver_id,
 
   std::shared_ptr<RoutingDetails> routing_details;
   {
-    std::unique_lock<std::mutex> loch(routing_objects_mutex_);
+    std::lock_guard<std::mutex> lock(routing_objects_mutex_);
     auto it(routing_objects_.find(receiver_id));
     if (it == routing_objects_.end()) {
       LOG(kError) << "Failed to find ID locally. Silently drop. Should I even be writing this?";
@@ -320,9 +332,14 @@ void RoutingsHandler::OnRequestReceived(const Identity& receiver_id,
 
 void RoutingsHandler::OnPublicKeyRequested(const NodeId& node_id,
                                            const routing::GivePublicKeyFunctor& give_key) {
+  if (stopped_) {
+    LOG(kWarning) << "Stopped. Dropping.";
+    return;
+  }
+
   std::string network_value;
   {
-    std::lock_guard<std::mutex> loch(cs_mutex_);
+    std::lock_guard<std::mutex> lock(cs_mutex_);
     network_value = chunk_store_->Get(SignaturePacketName(Identity(node_id.string())), Fob());
   }
 
@@ -343,7 +360,7 @@ void RoutingsHandler::OnPublicKeyRequested(const NodeId& node_id,
   try {
     public_key = asymm::DecodeKey(asymm::EncodedPublicKey(signed_data.data()));
   }
-  catch (const std::exception& exception) {
+  catch(const std::exception& exception) {
     LOG(kError) << "Did not find valid public key. Won't execute callback: " << exception.what();
     return;
   }
