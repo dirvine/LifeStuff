@@ -266,7 +266,7 @@ class OneUserApiTest : public testing::Test {
       network_(),
       error_code_(),
       done_(),
-      test_elements_() {}
+      test_elements_(lifestuff_slots_, *test_dir_ / "elements1") {}
 
  protected:
   maidsafe::test::TestPath test_dir_;
@@ -276,6 +276,7 @@ class OneUserApiTest : public testing::Test {
   NetworkHelper network_;
   boost::system::error_code error_code_;
   volatile bool done_;
+  Slots lifestuff_slots_;
   LifeStuff test_elements_;
 
   virtual void SetUp();
@@ -286,11 +287,13 @@ class OneUserApiTest : public testing::Test {
 class TwoInstancesApiTest : public OneUserApiTest {
  public:
   TwoInstancesApiTest()
-    : test_elements_2_(),
+    : lifestuff_slots_2_(),
+      test_elements_2_(lifestuff_slots_2_, *test_dir_ / "elements2"),
       testing_variables_1_(),
       testing_variables_2_() {}
 
  protected:
+  Slots lifestuff_slots_2_;
   LifeStuff test_elements_2_;
   TestingVariables testing_variables_1_;
   TestingVariables testing_variables_2_;
@@ -312,10 +315,12 @@ class TwoUsersApiTest : public testing::Test {
       pin_2_(CreatePin()),
       password_2_(RandomAlphaNumericString(6)),
       public_id_2_(RandomAlphaNumericString(5)),
-      test_elements_1_(),
-      test_elements_2_(),
       testing_variables_1_(),
       testing_variables_2_(),
+      lifestuff_slots_1_(),
+      lifestuff_slots_2_(),
+      test_elements_1_(lifestuff_slots_1_, *test_dir_ / "elements1"),
+      test_elements_2_(lifestuff_slots_2_, *test_dir_ / "elements2"),
       network_() {}
 
  protected:
@@ -328,10 +333,12 @@ class TwoUsersApiTest : public testing::Test {
   NonEmptyString pin_2_;
   NonEmptyString password_2_;
   NonEmptyString public_id_2_;
-  LifeStuff test_elements_1_;
-  LifeStuff test_elements_2_;
   TestingVariables testing_variables_1_;
   TestingVariables testing_variables_2_;
+  Slots lifestuff_slots_1_;
+  Slots lifestuff_slots_2_;
+  LifeStuff test_elements_1_;
+  LifeStuff test_elements_2_;
   NetworkHelper network_;
 
   virtual void SetUp();

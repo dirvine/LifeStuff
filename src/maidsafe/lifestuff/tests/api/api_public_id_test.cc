@@ -460,8 +460,10 @@ TEST(IndependentFullTest, DISABLED_FUNC_SendFileWithRejection) {
                  pin2(CreatePin()),
                  password2(RandomAlphaNumericString(6)),
                  public_id2(RandomAlphaNumericString(5));
-  LifeStuff test_elements1, test_elements2;
   TestingVariables testing_variables1, testing_variables2;
+  Slots lifestuff_slots1, lifestuff_slots2;
+  LifeStuff test_elements1(lifestuff_slots1, *test_dir / "elements1"),
+            test_elements2(lifestuff_slots2, *test_dir / "elements2");
   int file_count(0), file_max(10);
   size_t files_expected(file_max);
   std::vector<fs::path> file_paths;
@@ -517,8 +519,6 @@ TEST(IndependentFullTest, DISABLED_FUNC_SendFileWithRejection) {
 
     EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2));
   }
-  EXPECT_EQ(kSuccess, test_elements1.Finalise());
-  EXPECT_EQ(kSuccess, test_elements2.Finalise());
 }
 
 TEST_F(TwoUsersApiTest, DISABLED_FUNC_ProfilePicture) {

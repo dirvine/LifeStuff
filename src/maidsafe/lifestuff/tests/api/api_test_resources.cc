@@ -292,81 +292,80 @@ int InitialiseAndConnect(LifeStuff& test_elements,
 
   int result(0);
   // Initialise and connect
-  result += test_elements.Initialise([] (NonEmptyString) {}, test_dir, true);
-  result += test_elements.ConnectToSignals(
-                [&] (const NonEmptyString& own_public_id,
-                     const NonEmptyString& contact_public_id,
-                     const NonEmptyString& signal_message,
-                     const NonEmptyString& timestamp) {
-                  ChatSlot(own_public_id,
-                           contact_public_id,
-                           signal_message,
-                           timestamp,
-                           &testing_variables.chat_message,
-                           &testing_variables.chat_message_received);
-                },
-                ftf,
-                FileTransferFailureFunction(),
-                [&] (const NonEmptyString& own_public_id,
-                     const NonEmptyString& contact_public_id,
-                     const std::string& message,
-                     const NonEmptyString& timestamp) {
-                  NewContactSlot(own_public_id,
-                                 contact_public_id,
-                                 message,
-                                 timestamp,
-                                 &testing_variables.newly_contacted,
-                                 &testing_variables.contact_request_message);
-                },
-                [&] (const NonEmptyString& own_public_id,
-                     const NonEmptyString& contact_public_id,
-                     const NonEmptyString& timestamp) {
-                  ContactConfirmationSlot(own_public_id,
-                                          contact_public_id,
-                                          timestamp,
-                                          &testing_variables.confirmed);
-                },
-                [&] (const NonEmptyString& own_public_id,
-                     const NonEmptyString& contact_public_id,
-                     const NonEmptyString& timestamp) {
-                  ContactProfilePictureSlot(own_public_id,
-                                            contact_public_id,
-                                            timestamp,
-                                            &testing_variables.picture_updated);
-                },
-                [&] (const NonEmptyString& own_public_id,
-                     const NonEmptyString& contact_public_id,
-                     const NonEmptyString& timestamp,
-                    ContactPresence contact_presence) {
-                  ContactPresenceSlot(own_public_id,
-                                      contact_public_id,
-                                      timestamp,
-                                      contact_presence,
-                                      &testing_variables.presence_announced);
-                },
-                [&] (const NonEmptyString& own_public_id,
-                     const NonEmptyString& contact_public_id,
-                     const std::string& signal_message,
-                     const NonEmptyString& timestamp) {
-                  ContactDeletionSlot(own_public_id,
-                                      contact_public_id,
-                                      signal_message,
-                                      timestamp,
-                                      &testing_variables.removal_message,
-                                      &testing_variables.removed);
-                },
-                [&] (const NonEmptyString& own_id,
-                     const NonEmptyString& contact_id,
-                     const NonEmptyString& timestamp) {
-                  LifestuffCardSlot(own_id,
-                                    contact_id,
-                                    timestamp,
-                                    &testing_variables.social_info_map_changed);
-                },
-                NetworkHealthFunction(),
-                [&] {
-                  ImmediateQuitRequiredSlot(&testing_variables.immediate_quit_required);
-                });
+//  result += test_elements.ConnectToSignals(
+//                [&] (const NonEmptyString& own_public_id,
+//                     const NonEmptyString& contact_public_id,
+//                     const NonEmptyString& signal_message,
+//                     const NonEmptyString& timestamp) {
+//                  ChatSlot(own_public_id,
+//                           contact_public_id,
+//                           signal_message,
+//                           timestamp,
+//                           &testing_variables.chat_message,
+//                           &testing_variables.chat_message_received);
+//                },
+//                ftf,
+//                FileTransferFailureFunction(),
+//                [&] (const NonEmptyString& own_public_id,
+//                     const NonEmptyString& contact_public_id,
+//                     const std::string& message,
+//                     const NonEmptyString& timestamp) {
+//                  NewContactSlot(own_public_id,
+//                                 contact_public_id,
+//                                 message,
+//                                 timestamp,
+//                                 &testing_variables.newly_contacted,
+//                                 &testing_variables.contact_request_message);
+//                },
+//                [&] (const NonEmptyString& own_public_id,
+//                     const NonEmptyString& contact_public_id,
+//                     const NonEmptyString& timestamp) {
+//                  ContactConfirmationSlot(own_public_id,
+//                                          contact_public_id,
+//                                          timestamp,
+//                                          &testing_variables.confirmed);
+//                },
+//                [&] (const NonEmptyString& own_public_id,
+//                     const NonEmptyString& contact_public_id,
+//                     const NonEmptyString& timestamp) {
+//                  ContactProfilePictureSlot(own_public_id,
+//                                            contact_public_id,
+//                                            timestamp,
+//                                            &testing_variables.picture_updated);
+//                },
+//                [&] (const NonEmptyString& own_public_id,
+//                     const NonEmptyString& contact_public_id,
+//                     const NonEmptyString& timestamp,
+//                    ContactPresence contact_presence) {
+//                  ContactPresenceSlot(own_public_id,
+//                                      contact_public_id,
+//                                      timestamp,
+//                                      contact_presence,
+//                                      &testing_variables.presence_announced);
+//                },
+//                [&] (const NonEmptyString& own_public_id,
+//                     const NonEmptyString& contact_public_id,
+//                     const std::string& signal_message,
+//                     const NonEmptyString& timestamp) {
+//                  ContactDeletionSlot(own_public_id,
+//                                      contact_public_id,
+//                                      signal_message,
+//                                      timestamp,
+//                                      &testing_variables.removal_message,
+//                                      &testing_variables.removed);
+//                },
+//                [&] (const NonEmptyString& own_id,
+//                     const NonEmptyString& contact_id,
+//                     const NonEmptyString& timestamp) {
+//                  LifestuffCardSlot(own_id,
+//                                    contact_id,
+//                                    timestamp,
+//                                    &testing_variables.social_info_map_changed);
+//                },
+//                NetworkHealthFunction(),
+//                [&] {
+//                  ImmediateQuitRequiredSlot(&testing_variables.immediate_quit_required);
+//                });
   return result;
 }
 
@@ -531,95 +530,89 @@ void RunLogIn(LifeStuff& test_elements,
 
 void OneUserApiTest::SetUp() {
   ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12, true));
-  EXPECT_EQ(kSuccess, test_elements_.Initialise([] (NonEmptyString) {}, *test_dir_, true));
-  EXPECT_EQ(kSuccess,
-            test_elements_.ConnectToSignals(ChatFunction(),
-                                            FileTransferSuccessFunction(),
-                                            FileTransferFailureFunction(),
-                                            NewContactFunction(),
-                                            ContactConfirmationFunction(),
-                                            ContactProfilePictureFunction(),
-                                            [&] (const NonEmptyString& own_public_id,
-                                                 const NonEmptyString& contact_public_id,
-                                                 const NonEmptyString& timestamp,
-                                                 ContactPresence cp) {
-                                              ContactPresenceSlot(own_public_id,
-                                                                  contact_public_id,
-                                                                  timestamp,
-                                                                  cp,
-                                                                  &done_);
-                                            },
-                                            ContactDeletionFunction(),
-                                            LifestuffCardUpdateFunction(),
-                                            NetworkHealthFunction(),
-                                            ImmediateQuitRequiredFunction()));
+//  EXPECT_EQ(kSuccess,
+//            test_elements_.ConnectToSignals(ChatFunction(),
+//                                            FileTransferSuccessFunction(),
+//                                            FileTransferFailureFunction(),
+//                                            NewContactFunction(),
+//                                            ContactConfirmationFunction(),
+//                                            ContactProfilePictureFunction(),
+//                                            [&] (const NonEmptyString& own_public_id,
+//                                                 const NonEmptyString& contact_public_id,
+//                                                 const NonEmptyString& timestamp,
+//                                                 ContactPresence cp) {
+//                                              ContactPresenceSlot(own_public_id,
+//                                                                  contact_public_id,
+//                                                                  timestamp,
+//                                                                  cp,
+//                                                                  &done_);
+//                                            },
+//                                            ContactDeletionFunction(),
+//                                            LifestuffCardUpdateFunction(),
+//                                            NetworkHealthFunction(),
+//                                            ImmediateQuitRequiredFunction()));
   EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements_, keyword_, pin_, password_));
 }
 
 void OneUserApiTest::TearDown() {
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
-  EXPECT_EQ(kSuccess, test_elements_.Finalise());
   EXPECT_TRUE(network_.StopLocalNetwork());
 }
 
 void TwoInstancesApiTest::SetUp() {
   ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 10));
-  EXPECT_EQ(kSuccess, test_elements_.Initialise([] (NonEmptyString) {}, *test_dir_, true));
-  EXPECT_EQ(kSuccess, test_elements_2_.Initialise([] (NonEmptyString) {}, *test_dir_, true));
-  EXPECT_EQ(kSuccess,
-            test_elements_.ConnectToSignals(ChatFunction(),
-                                            FileTransferSuccessFunction(),
-                                            FileTransferFailureFunction(),
-                                            NewContactFunction(),
-                                            ContactConfirmationFunction(),
-                                            ContactProfilePictureFunction(),
-                                            [&] (const NonEmptyString& own_public_id,
-                                                 const NonEmptyString& contact_public_id,
-                                                 const NonEmptyString& timestamp,
-                                                 ContactPresence cp) {
-                                              ContactPresenceSlot(own_public_id,
-                                                                  contact_public_id,
-                                                                  timestamp,
-                                                                  cp,
-                                                                  &done_);
-                                            },
-                                            ContactDeletionFunction(),
-                                            LifestuffCardUpdateFunction(),
-                                            NetworkHealthFunction(),
-                                            [&] {
-                                              ImmediateQuitRequiredSlot(
-                                                  &testing_variables_1_.immediate_quit_required);
-                                            }));
-  EXPECT_EQ(kSuccess,
-            test_elements_2_.ConnectToSignals(ChatFunction(),
-                                              FileTransferSuccessFunction(),
-                                              FileTransferFailureFunction(),
-                                              NewContactFunction(),
-                                              ContactConfirmationFunction(),
-                                              ContactProfilePictureFunction(),
-                                              [&] (const NonEmptyString& own_public_id,
-                                                   const NonEmptyString& contact_public_id,
-                                                   const NonEmptyString& timestamp,
-                                                   ContactPresence cp) {
-                                                ContactPresenceSlot(own_public_id,
-                                                                    contact_public_id,
-                                                                    timestamp,
-                                                                    cp,
-                                                                    &done_);
-                                              },
-                                              ContactDeletionFunction(),
-                                              LifestuffCardUpdateFunction(),
-                                              NetworkHealthFunction(),
-                                              [&] {
-                                                ImmediateQuitRequiredSlot(
-                                                    &testing_variables_2_.immediate_quit_required);
-                                              }));
+//  EXPECT_EQ(kSuccess,
+//            test_elements_.ConnectToSignals(ChatFunction(),
+//                                            FileTransferSuccessFunction(),
+//                                            FileTransferFailureFunction(),
+//                                            NewContactFunction(),
+//                                            ContactConfirmationFunction(),
+//                                            ContactProfilePictureFunction(),
+//                                            [&] (const NonEmptyString& own_public_id,
+//                                                 const NonEmptyString& contact_public_id,
+//                                                 const NonEmptyString& timestamp,
+//                                                 ContactPresence cp) {
+//                                              ContactPresenceSlot(own_public_id,
+//                                                                  contact_public_id,
+//                                                                  timestamp,
+//                                                                  cp,
+//                                                                  &done_);
+//                                            },
+//                                            ContactDeletionFunction(),
+//                                            LifestuffCardUpdateFunction(),
+//                                            NetworkHealthFunction(),
+//                                            [&] {
+//                                              ImmediateQuitRequiredSlot(
+//                                                  &testing_variables_1_.immediate_quit_required);
+//                                            }));
+//  EXPECT_EQ(kSuccess,
+//            test_elements_2_.ConnectToSignals(ChatFunction(),
+//                                              FileTransferSuccessFunction(),
+//                                              FileTransferFailureFunction(),
+//                                              NewContactFunction(),
+//                                              ContactConfirmationFunction(),
+//                                              ContactProfilePictureFunction(),
+//                                              [&] (const NonEmptyString& own_public_id,
+//                                                   const NonEmptyString& contact_public_id,
+//                                                   const NonEmptyString& timestamp,
+//                                                   ContactPresence cp) {
+//                                                ContactPresenceSlot(own_public_id,
+//                                                                    contact_public_id,
+//                                                                    timestamp,
+//                                                                    cp,
+//                                                                    &done_);
+//                                              },
+//                                              ContactDeletionFunction(),
+//                                              LifestuffCardUpdateFunction(),
+//                                              NetworkHealthFunction(),
+//                                              [&] {
+//                                                ImmediateQuitRequiredSlot(
+//                                                    &testing_variables_2_.immediate_quit_required);
+//                                              }));
 }
 
 void TwoInstancesApiTest::TearDown() {
   EXPECT_TRUE(network_.StopLocalNetwork());
-  EXPECT_EQ(kSuccess, test_elements_.Finalise());
-  EXPECT_EQ(kSuccess, test_elements_2_.Finalise());
 }
 
 void TwoUsersApiTest::SetUp() {
@@ -634,10 +627,6 @@ void TwoUsersApiTest::SetUp() {
 
 void TwoUsersApiTest::TearDown() {
 //  EXPECT_TRUE(network_.StopLocalNetwork());
-  if (test_elements_1_.state() == kConnected)
-    EXPECT_EQ(kSuccess, test_elements_1_.Finalise());
-  if (test_elements_2_.state() == kConnected)
-    EXPECT_EQ(kSuccess, test_elements_2_.Finalise());
 }
 
 void TwoUsersMutexApiTest::SetUp() {

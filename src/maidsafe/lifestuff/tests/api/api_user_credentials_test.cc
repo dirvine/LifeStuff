@@ -42,28 +42,31 @@ namespace test {
 namespace {
 
 void InitialiseAndConnectElements(LifeStuff& elements, const fs::path& dir, volatile bool* done) {
-  EXPECT_EQ(kSuccess, elements.Initialise([] (NonEmptyString) {}, dir, true));
-  EXPECT_EQ(kSuccess,
-            elements.ConnectToSignals(ChatFunction(),
-                                      FileTransferSuccessFunction(),
-                                      FileTransferFailureFunction(),
-                                      NewContactFunction(),
-                                      ContactConfirmationFunction(),
-                                      ContactProfilePictureFunction(),
-                                      [&] (const NonEmptyString& own_public_id,
-                                           const NonEmptyString& contact_public_id,
-                                           const NonEmptyString& timestamp,
-                                           ContactPresence cp) {
-                                        ContactPresenceSlot(own_public_id,
-                                                            contact_public_id,
-                                                            timestamp,
-                                                            cp,
-                                                            done);
-                                      },
-                                      ContactDeletionFunction(),
-                                      LifestuffCardUpdateFunction(),
-                                      NetworkHealthFunction(),
-                                      ImmediateQuitRequiredFunction()));
+//  EXPECT_EQ(kSuccess,
+//            elements.ConnectToSignals(ChatFunction(),
+//                                      FileTransferSuccessFunction(),
+//                                      FileTransferFailureFunction(),
+//                                      NewContactFunction(),
+//                                      ContactConfirmationFunction(),
+//                                      ContactProfilePictureFunction(),
+//                                      [&] (const NonEmptyString& own_public_id,
+//                                           const NonEmptyString& contact_public_id,
+//                                           const NonEmptyString& timestamp,
+//                                           ContactPresence cp) {
+//                                        ContactPresenceSlot(own_public_id,
+//                                                            contact_public_id,
+//                                                            timestamp,
+//                                                            cp,
+//                                                            done);
+//                                      },
+//                                      ContactDeletionFunction(),
+//                                      LifestuffCardUpdateFunction(),
+//                                      NetworkHealthFunction(),
+//                                      ImmediateQuitRequiredFunction()));
+}
+
+void PopulateSlots(Slots& /*lifestuff_slots*/) {
+
 }
 
 }  // namespace
@@ -76,24 +79,24 @@ TEST(IndependentFullTest, FUNC_CreateLogoutLoginLogout) {
                  pin(CreatePin()),
                  password(RandomAlphaNumericString(5));
   volatile bool done(false);
+  Slots lifestuff_slots;
+  PopulateSlots(lifestuff_slots);
 
   {
-    LifeStuff test_elements;
+    LifeStuff test_elements(lifestuff_slots, *test_dir);
     InitialiseAndConnectElements(test_elements, *test_dir, &done);
 
     EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword, pin, password));
     Sleep(boost::posix_time::seconds(5));
     EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
-    test_elements.Finalise();
   }
   Sleep(boost::posix_time::seconds(5));
   {
-    LifeStuff test_elements;
+    LifeStuff test_elements(lifestuff_slots, *test_dir);
     InitialiseAndConnectElements(test_elements, *test_dir, &done);
     EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword, pin, password));
     Sleep(boost::posix_time::seconds(5));
     EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
-    test_elements.Finalise();
   }
   network.StopLocalNetwork();
 }
@@ -463,24 +466,24 @@ TEST_F(TwoInstancesApiTest, DISABLED_FUNC_LogInFromTwoPlaces) {
   LOG(kInfo) << "\n\nLOGGED OUT.\n\n";
 
   LOG(kInfo) << "\n\nSETTING UP 3RD TEST ELEMENTS...\n\n";
-  LifeStuff test_elements_3;
+  Slots lifestuff_slots3;
+  LifeStuff test_elements_3(lifestuff_slots3, *test_dir_ / "elements3");
   bool immediate_quit_required_3(false);
-  EXPECT_EQ(kSuccess, test_elements_3.Initialise([] (NonEmptyString) {}, *test_dir_, true));
-  EXPECT_EQ(kSuccess,
-            test_elements_3.ConnectToSignals(ChatFunction(),
-                                             FileTransferSuccessFunction(),
-                                             FileTransferFailureFunction(),
-                                             NewContactFunction(),
-                                             ContactConfirmationFunction(),
-                                             ContactProfilePictureFunction(),
-                                             ContactPresenceFunction(),
-                                             ContactDeletionFunction(),
-                                             LifestuffCardUpdateFunction(),
-                                             NetworkHealthFunction(),
-                                             [&] {
-                                             ImmediateQuitRequiredSlot(
-                                               &immediate_quit_required_3);
-                                             }));
+//  EXPECT_EQ(kSuccess,
+//            test_elements_3.ConnectToSignals(ChatFunction(),
+//                                             FileTransferSuccessFunction(),
+//                                             FileTransferFailureFunction(),
+//                                             NewContactFunction(),
+//                                             ContactConfirmationFunction(),
+//                                             ContactProfilePictureFunction(),
+//                                             ContactPresenceFunction(),
+//                                             ContactDeletionFunction(),
+//                                             LifestuffCardUpdateFunction(),
+//                                             NetworkHealthFunction(),
+//                                             [&] {
+//                                             ImmediateQuitRequiredSlot(
+//                                               &immediate_quit_required_3);
+//                                             }));
 
   testing_variables_2_.immediate_quit_required = false;
   LOG(kInfo) << "\n\nABOUT TO LOG 2ND INSTANCE IN...\n\n";
@@ -506,7 +509,6 @@ TEST_F(TwoInstancesApiTest, DISABLED_FUNC_LogInFromTwoPlaces) {
   LOG(kInfo) << "\n\nLOGGING 3RD INSTANCE OUT...\n\n";
   EXPECT_EQ(kSuccess, test_elements_3.LogOut());
   LOG(kInfo) << "\n\nFINALISING 3RD INSTANCE...\n\n";
-  EXPECT_EQ(kSuccess, test_elements_3.Finalise());
   LOG(kInfo) << "\n\nFINISHED TEST BODY! TAH-DAH!\n\n";
 }
 
