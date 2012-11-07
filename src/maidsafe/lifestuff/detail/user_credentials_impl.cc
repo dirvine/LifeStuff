@@ -410,43 +410,117 @@ void UserCredentialsImpl::GetIdAndTemporaryId(const NonEmptyString& keyword,
   }
 }
 
+int TmidAndNoStmid(const std::string& tmid_serialised_data_atlas,
+                   Session& session,
+                   std::string& tmid_da,
+                   std::string& stmid_da) {
+  int result = session.ParseDataAtlas(NonEmptyString(tmid_serialised_data_atlas));
+  if (result == kSuccess) {
+    tmid_da = tmid_serialised_data_atlas;
+    stmid_da = tmid_serialised_data_atlas;
+    session.set_serialised_data_atlas(NonEmptyString(tmid_serialised_data_atlas));
+    return kSuccess;
+  }
+  return kLoginAccountCorrupted;
+}
+
+int StmidAndNoTmid(const std::string& stmid_serialised_data_atlas,
+                   Session& session,
+                   std::string& tmid_da,
+                   std::string& stmid_da) {
+  int result = session.ParseDataAtlas(NonEmptyString(stmid_serialised_data_atlas));
+  if (result == kSuccess) {
+    tmid_da = stmid_serialised_data_atlas;
+    stmid_da = stmid_serialised_data_atlas;
+    session.set_serialised_data_atlas(NonEmptyString(stmid_serialised_data_atlas));
+    return kSuccess;
+  }
+  return kLoginAccountCorrupted;
+}
+
+int BothTmidAndStmid(const std::string& tmid_serialised_data_atlas,
+                     const std::string& stmid_serialised_data_atlas,
+                     Session& session,
+                     std::string& tmid_da,
+                     std::string& stmid_da) {
+  int result = session.ParseDataAtlas(NonEmptyString(tmid_serialised_data_atlas));
+  if (result == kSuccess) {
+    tmid_da = tmid_serialised_data_atlas;
+    stmid_da = stmid_serialised_data_atlas;
+    session.set_serialised_data_atlas(NonEmptyString(stmid_serialised_data_atlas));
+    return kSuccess;
+  } else {
+    result = session.ParseDataAtlas(NonEmptyString(stmid_serialised_data_atlas));
+    if (result == kSuccess) {
+      tmid_da = stmid_serialised_data_atlas;
+      stmid_da = stmid_serialised_data_atlas;
+      session.set_serialised_data_atlas(NonEmptyString(stmid_serialised_data_atlas));
+      return kSuccess;
+   }
+  }
+  return kLoginAccountCorrupted;
+}
+
 int UserCredentialsImpl::HandleSerialisedDataMaps(const NonEmptyString& keyword,
                                                   const NonEmptyString& pin,
                                                   const NonEmptyString& password,
                                                   const std::string& tmid_serialised_data_atlas,
                                                   const std::string& stmid_serialised_data_atlas) {
-  int result(kSuccess);
-  std::string tmid_da, stmid_da;
-  if (!tmid_serialised_data_atlas.empty()) {
-    result = session_.ParseDataAtlas(NonEmptyString(tmid_serialised_data_atlas));
-    if (result == kSuccess) {
-      session_.set_serialised_data_atlas(NonEmptyString(tmid_serialised_data_atlas));
-      tmid_da = tmid_serialised_data_atlas;
-    } else if (result == kTryAgainLater) {
-      return kTryAgainLater;
-    }
-  } else if (!stmid_serialised_data_atlas.empty()) {
-    tmid_da = stmid_serialised_data_atlas;
-    stmid_da = stmid_serialised_data_atlas;
-    result = session_.ParseDataAtlas(NonEmptyString(stmid_serialised_data_atlas));
-    if (result == kSuccess) {
-      session_.set_serialised_data_atlas(NonEmptyString(stmid_serialised_data_atlas));
-      result = kUsingNextToLastSession;
-    } else if (result == kTryAgainLater) {
-      return kTryAgainLater;
-    }
+  if (tmid_serialised_data_atlas.empty() && stmid_serialised_data_atlas.empty()) {
+    LOG(kError) << "No valid DA.";
+    return kSetIdentityPacketsFailure;
   }
 
-  if (stmid_da.empty()) {
-    if (!stmid_serialised_data_atlas.empty()) {
-      stmid_da = stmid_serialised_data_atlas;
-    } else if (!tmid_da.empty()) {
-      stmid_da = tmid_da;
-    } else {
-      LOG(kError) << "No valid DA.";
-      return kSetIdentityPacketsFailure;
-    }
+  int result(kSuccess);
+  std::string tmid_da, stmid_da;
+  if (!tmid_serialised_data_atlas.empty() && stmid_serialised_data_atlas.empty()) {
+    result = TmidAndNoStmid(tmid_serialised_data_atlas, session_, tmid_da, stmid_da);
+    if (result != kSuccess)
+      return result;
+  } else if (tmid_serialised_data_atlas.empty() && stmid_serialised_data_atlas.empty()) {
+    result = StmidAndNoTmid(stmid_serialised_data_atlas, session_, tmid_da, stmid_da);
+    if (result != kSuccess)
+      return result;
+  } else {
+    result = BothTmidAndStmid(tmid_serialised_data_atlas,
+                              stmid_serialised_data_atlas,
+                              session_,
+                              tmid_da,
+                              stmid_da);
+    if (result != kSuccess)
+      return result;
   }
+
+//  if (!tmid_serialised_data_atlas.empty()) {
+//    result = session_.ParseDataAtlas(NonEmptyString(tmid_serialised_data_atlas));
+//    if (result == kSuccess) {
+//      session_.set_serialised_data_atlas(NonEmptyString(tmid_serialised_data_atlas));
+//      tmid_da = tmid_serialised_data_atlas;
+//    } else if (result == kTryAgainLater) {
+//      return kTryAgainLater;
+//    }
+//  } else if (!stmid_serialised_data_atlas.empty()) {
+//    tmid_da = stmid_serialised_data_atlas;
+//    stmid_da = stmid_serialised_data_atlas;
+//    result = session_.ParseDataAtlas(NonEmptyString(stmid_serialised_data_atlas));
+//    if (result == kSuccess) {
+//      session_.set_serialised_data_atlas(NonEmptyString(stmid_serialised_data_atlas));
+//      result = kUsingNextToLastSession;
+//    } else if (result == kTryAgainLater) {
+//      return kTryAgainLater;
+//    }
+//  }
+
+//  if (stmid_da.empty()) {
+//    if (!stmid_serialised_data_atlas.empty()) {
+//      stmid_da = stmid_serialised_data_atlas;
+//    } else if (!tmid_da.empty()) {
+//      stmid_da = tmid_da;
+//    } else {
+//      LOG(kError) << "No valid DA.";
+//      return kSetIdentityPacketsFailure;
+//    }
+//  }
 
   int id_packets_result = passport_.SetIdentityPackets(keyword,
                                                        StringToIntPin(pin),

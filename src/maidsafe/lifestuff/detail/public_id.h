@@ -183,7 +183,7 @@ class PublicId {
                               const Identity& old_inbox_identity,
                               const NonEmptyString& own_public_id,
                               const NonEmptyString& contact_public_id,
-                              const NonEmptyString& removal_message,
+                              const std::string& removal_message,
                               const NonEmptyString& timestamp,
                               const bool& instigator);
 

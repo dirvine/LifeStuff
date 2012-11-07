@@ -188,6 +188,7 @@ void PublicId::StoreMpid(bool response,
     OperationCallback(false, results, 0);
     return;
   }
+  LOG(kInfo) << "Stored anmpid";
 
   Fob anmpid(passport_.SignaturePacketDetails(passport::kAnmpid, false, public_id));
   Fob mpid(passport_.SignaturePacketDetails(passport::kMpid, false, public_id));
@@ -210,10 +211,12 @@ void PublicId::StoreMcid(bool response,
     OperationCallback(false, results, 0);
     return;
   }
+  LOG(kInfo) << "Stored mpid";
+
   Fob mpid(passport_.SignaturePacketDetails(passport::kMpid, false, public_id));
   priv::ChunkId mcid_name(MaidsafeContactIdName(public_id));
   VoidFunctionOneBool callback = [&] (const bool& response) {
-                                   OperationCallback(response, results, 1);
+                                   OperationCallback(response, results, 0);
                                  };
   if (!remote_chunk_store_.Store(mcid_name,
                                  AppendableIdValue(mpid, accepts_new_contacts),
@@ -634,7 +637,7 @@ int PublicId::SendInformationMessages(const ContactsHandlerPtr& contacts_handler
                                       const Identity& old_inbox_identity,
                                       const NonEmptyString& own_public_id,
                                       const NonEmptyString& contact_public_id,
-                                      const NonEmptyString& removal_message,
+                                      const std::string& removal_message,
                                       const NonEmptyString& timestamp,
                                       const bool& instigator) {
   int result(0);
@@ -921,7 +924,7 @@ void PublicId::ProcessDefriending(const NonEmptyString& own_public_id,
                                   const Introduction& introduction) {
   contact_deletion_received_signal_(own_public_id,
                                     NonEmptyString(introduction.public_id()),
-                                    NonEmptyString(introduction.message()),
+                                    introduction.message(),
                                     NonEmptyString(introduction.timestamp()));
 }
 
