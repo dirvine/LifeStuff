@@ -143,7 +143,6 @@ class LifeStuffImpl {
   struct LoggedInComponents;
   int thread_count_;
   fs::path buffered_path_;
-  fs::path simulation_path_;
   bptime::seconds interval_;
   AsioService asio_service_;
   boost::signals2::signal<void(const int&)> network_health_signal_;

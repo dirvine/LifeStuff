@@ -96,7 +96,6 @@ LifeStuffImpl::LoggedInComponents::LoggedInComponents(
 LifeStuffImpl::LifeStuffImpl(const Slots& slot_functions, const fs::path& base_directory)
     : thread_count_(kThreads),
       buffered_path_(),
-      simulation_path_(),
       interval_(kSecondsInterval),
       asio_service_(thread_count_),
       network_health_signal_(),
@@ -105,8 +104,6 @@ LifeStuffImpl::LifeStuffImpl(const Slots& slot_functions, const fs::path& base_d
       client_controller_(),
       client_node_(),
       routings_handler_(),
-      network_health_signal_(),
-      session_(),
       user_credentials_(),
       logged_in_components_(),
       slots_(slot_functions),
@@ -119,17 +116,12 @@ LifeStuffImpl::LifeStuffImpl(const Slots& slot_functions, const fs::path& base_d
   // Initialisation
   asio_service_.Start();
 
-  fs::path base_path, buffered_chunk_store_path, network_simulation_path;
   if (base_directory.empty()) {
     // Not a test: everything in $HOME/.lifestuff
-    base_path = GetHomeDir() / kAppHomeDirectory;
-    buffered_chunk_store_path = base_path / RandomAlphaNumericString(16);
-    network_simulation_path = fs::temp_directory_path() / "lifestuff_simulation";
+    buffered_path_ =  GetHomeDir() / kAppHomeDirectory / RandomAlphaNumericString(16);
   } else {
     // Presumably a test
-    base_path = base_directory;
-    buffered_chunk_store_path = base_path / RandomAlphaNumericString(16);
-    network_simulation_path = base_path / "simulated_network";
+    buffered_path_ = base_directory / RandomAlphaNumericString(16);
   }
 
 
@@ -199,12 +191,9 @@ void LifeStuffImpl::ConnectToSignals() {
   logged_in_components_->public_id.ConnectToContactDeletionReceivedSignal(
       [&] (const NonEmptyString& own_public_id,
            const NonEmptyString& contact_public_id,
-           const NonEmptyString& removal_message,
+           const std::string& removal_message,
            const NonEmptyString& /*timestamp*/) {
-         int result(RemoveContact(own_public_id,
-                                  contact_public_id,
-                                  removal_message,
-                                  false));
+         int result(RemoveContact(own_public_id, contact_public_id, removal_message, false));
          if (result != kSuccess)
            LOG(kError) << "Failed to remove contact after receiving contact deletion signal!";
      });
