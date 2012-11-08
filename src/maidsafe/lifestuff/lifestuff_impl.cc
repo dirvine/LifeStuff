@@ -105,7 +105,7 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
   int counter(0);
   while (counter++ < kRetryLimit) {
     Sleep(bptime::milliseconds(100 + RandomUint32() % 1000));
-    client_controller_ = std::make_shared<priv::process_management::ClientController>(
+    client_controller_ = std::make_shared<priv::lifestuff_manager::ClientController>(
                              software_update_available_function);
     if (client_controller_->BootstrapEndpoints(bootstrap_endpoints_))
       counter = kRetryLimit;
@@ -113,7 +113,7 @@ int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_ava
       LOG(kWarning) << "Failure to initialise client controller. Try #" << counter;
   }
   if (bootstrap_endpoints_.empty()) {
-    LOG(kWarning) << "No bootstrap contacts from invigilator.";
+    LOG(kWarning) << "No bootstrap contacts from lifestuff_manager.";
   }
 
   buffered_path_ = buffered_chunk_store_path;

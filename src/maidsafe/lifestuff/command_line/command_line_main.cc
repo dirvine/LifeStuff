@@ -214,7 +214,7 @@ int main(int argc, char* argv[]) {
   printf("---------------------------------\n");
   printf("-- Lifestuff command line tool --\n");
   printf("---------------------------------\n");
-  printf("Initilising, please wait...\n");
+  printf("Initialising, please wait...\n");
 
   maidsafe::lifestuff::LifeStuff lifestuff;
   int result(lifestuff.Initialise([] (maidsafe::NonEmptyString) {}, fs::path(), false));
