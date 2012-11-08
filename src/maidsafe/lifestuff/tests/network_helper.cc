@@ -288,7 +288,7 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     // Startup LifeStuffManager
     std::string args(" --log_config ./private_log.ini");
     lifestuff_manager_processes_.push_back(
-        bp::child(bp::execute(bp::initializers::run_exe(priv::kLifeStuffManagerTestExecutable()),
+        bp::child(bp::execute(bp::initializers::run_exe(priv::kLifeStuffManagerExecutable()),
 #ifdef MAIDSAFE_WIN32
                               bp::initializers::set_cmd_line(std::wstring()),
 #else
