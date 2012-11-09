@@ -39,7 +39,7 @@ namespace lifestuff {
 
 namespace test {
 
-TEST(OneUserApiTest, FUNC_CreateLogoutLoginLogout) {
+TEST_F(OneUserApiTest, FUNC_CreateLogoutLoginLogout) {
   {
     PopulateSlots(lifestuff_slots_, testing_variables_);
     LifeStuff test_elements(lifestuff_slots_, *test_dir_);
@@ -49,7 +49,7 @@ TEST(OneUserApiTest, FUNC_CreateLogoutLoginLogout) {
   }
   Sleep(boost::posix_time::seconds(5));
   {
-    PopulateSlots(lifestuff_slots, testing_variables);
+    PopulateSlots(lifestuff_slots_, testing_variables_);
     LifeStuff test_elements(lifestuff_slots_, *test_dir_);
     EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, pin_, password_));
     Sleep(boost::posix_time::seconds(5));
@@ -61,15 +61,15 @@ TEST_F(OneUserApiTest, FUNC_ChangeCredentials) {
   NonEmptyString new_pin(CreatePin());
   {
     PopulateSlots(lifestuff_slots_, testing_variables_);
-    LifeStuff test_elements(lifestuff_slots, *test_dir);
-    EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword, pin, password));
+    LifeStuff test_elements(lifestuff_slots_, *test_dir_);
+    EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
     EXPECT_EQ(kSuccess, test_elements.CheckPassword(password_));
     EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
   }
 
   {
     PopulateSlots(lifestuff_slots_, testing_variables_);
-    LifeStuff test_elements(lifestuff_slots, *test_dir);
+    LifeStuff test_elements(lifestuff_slots_, *test_dir_);
     EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, pin_, password_));
     EXPECT_EQ(kSuccess, test_elements.CheckPassword(password_));
 
@@ -83,7 +83,7 @@ TEST_F(OneUserApiTest, FUNC_ChangeCredentials) {
 
   {
     PopulateSlots(lifestuff_slots_, testing_variables_);
-    LifeStuff test_elements(lifestuff_slots, *test_dir);
+    LifeStuff test_elements(lifestuff_slots_, *test_dir_);
     EXPECT_EQ(kSuccess, DoFullLogIn(test_elements,
                                     keyword_ + keyword_,
                                     new_pin,
@@ -94,7 +94,7 @@ TEST_F(OneUserApiTest, FUNC_ChangeCredentials) {
 
   {
     PopulateSlots(lifestuff_slots_, testing_variables_);
-    LifeStuff test_elements(lifestuff_slots, *test_dir);
+    LifeStuff test_elements(lifestuff_slots_, *test_dir_);
     EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, new_pin, password_ + password_));
     EXPECT_EQ(kSuccess, test_elements.ChangePin(pin_, password_ + password_));
     EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
@@ -102,7 +102,7 @@ TEST_F(OneUserApiTest, FUNC_ChangeCredentials) {
 
   {
     PopulateSlots(lifestuff_slots_, testing_variables_);
-    LifeStuff test_elements(lifestuff_slots, *test_dir);
+    LifeStuff test_elements(lifestuff_slots_, *test_dir_);
     EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, pin_, password_ + password_));
     EXPECT_EQ(kSuccess, test_elements.ChangePassword(password_, password_ + password_));
     EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
@@ -110,7 +110,7 @@ TEST_F(OneUserApiTest, FUNC_ChangeCredentials) {
 
   {
     PopulateSlots(lifestuff_slots_, testing_variables_);
-    LifeStuff test_elements(lifestuff_slots, *test_dir);
+    LifeStuff test_elements(lifestuff_slots_, *test_dir_);
     EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, pin_, password_));
     EXPECT_EQ(kSuccess, test_elements.CheckPassword(password_));
     EXPECT_EQ(kSuccess, test_elements.ChangeKeyword(keyword_, password_));
@@ -125,36 +125,55 @@ TEST_F(OneUserApiTest, DISABLED_FUNC_ChangePinAndPasswordSimultaneously) {
   NonEmptyString new_password(RandomAlphaNumericString(5));
   int result_pin(0), result_password(0);
 
-  std::vector<std::pair<int, int>> sleep_values;
+  std::vector<std::pair<int, int> > sleep_values;
   sleep_values.push_back(std::make_pair(0, 200));
   sleep_values.push_back(std::make_pair(100, 200));
   sleep_values.push_back(std::make_pair(100, 150));
   sleep_values.push_back(std::make_pair(0, 10));
 
+  {
+    PopulateSlots(lifestuff_slots_, testing_variables_);
+    LifeStuff test_elements(lifestuff_slots_, *test_dir_);
+    EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+  }
+
   for (size_t i = 0; i < sleep_values.size(); ++i) {
-    boost::thread thread_pin([&] {
+    {
+      PopulateSlots(lifestuff_slots_, testing_variables_);
+      LifeStuff test_elements(lifestuff_slots_, *test_dir_);
+      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, pin_, password_));
+      std::thread thread_pin([&] {
                                sleepthreads::RunChangePin(test_elements,
                                                           std::ref(result_pin),
                                                           new_pin,
                                                           password_,
                                                           sleep_values.at(i));
                              });
-    boost::thread thread_password([&] {
+      std::thread thread_password([&] {
                                     sleepthreads::RunChangePassword(test_elements,
                                                                     std::ref(result_password),
                                                                     new_password,
                                                                     password_,
                                                                     sleep_values.at(i));
                                   });
-    thread_pin.join();
-    thread_password.join();
-    EXPECT_EQ(kSuccess, result_pin);
-    EXPECT_EQ(kSuccess, result_password);
-
-    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
-    ASSERT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, new_pin, new_password));
-    swap(new_pin, pin_);
-    swap(new_password, password_);
+      thread_pin.join();
+      thread_password.join();
+      EXPECT_EQ(kSuccess, result_pin);
+      EXPECT_EQ(kSuccess, result_password);
+      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+    }
+    {
+      PopulateSlots(lifestuff_slots_, testing_variables_);
+      LifeStuff test_elements(lifestuff_slots_, *test_dir_);
+      int result = DoFullLogIn(test_elements, keyword_, new_pin, new_password);
+      EXPECT_EQ(kSuccess, result) << "iteration: " << i;
+      if (result != kSuccess)
+        i = sleep_values.size();
+      swap(new_pin, pin_);
+      swap(new_password, password_);
+      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+    }
   }
 }
 
@@ -163,36 +182,55 @@ TEST_F(OneUserApiTest, DISABLED_FUNC_ChangeKeywordAndPasswordSimultaneously) {
   NonEmptyString new_password(RandomAlphaNumericString(5));
   int result_keyword(0), result_password(0);
 
-  std::vector<std::pair<int, int>> sleep_values;
+  std::vector<std::pair<int, int> > sleep_values;
   sleep_values.push_back(std::make_pair(0, 200));
   sleep_values.push_back(std::make_pair(100, 200));
   sleep_values.push_back(std::make_pair(100, 150));
   sleep_values.push_back(std::make_pair(0, 10));
 
+  {
+    PopulateSlots(lifestuff_slots_, testing_variables_);
+    LifeStuff test_elements(lifestuff_slots_, *test_dir_);
+    EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+  }
+
   for (size_t i = 0; i < sleep_values.size(); ++i) {
-    boost::thread thread_keyword([&] {
+    {
+      PopulateSlots(lifestuff_slots_, testing_variables_);
+      LifeStuff test_elements(lifestuff_slots_, *test_dir_);
+      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, pin_, password_));
+      std::thread thread_keyword([&] {
                                    sleepthreads::RunChangeKeyword(test_elements,
                                                                   std::ref(result_keyword),
                                                                   new_keyword,
                                                                   password_,
                                                                   sleep_values.at(i));
                                  });
-    boost::thread thread_password([&] {
+      std::thread thread_password([&] {
                                     sleepthreads::RunChangePassword(test_elements,
                                                                     std::ref(result_password),
                                                                     new_password,
                                                                     password_,
                                                                     sleep_values.at(i));
                                   });
-    thread_keyword.join();
-    thread_password.join();
-    EXPECT_EQ(kSuccess, result_keyword);
-    EXPECT_EQ(kSuccess, result_password);
-
-    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
-    ASSERT_EQ(kSuccess, DoFullLogIn(test_elements, new_keyword, pin_, new_password));
-    swap(new_keyword, keyword_);
-    swap(new_password, password_);
+      thread_keyword.join();
+      thread_password.join();
+      EXPECT_EQ(kSuccess, result_keyword);
+      EXPECT_EQ(kSuccess, result_password);
+      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+    }
+    {
+      PopulateSlots(lifestuff_slots_, testing_variables_);
+      LifeStuff test_elements(lifestuff_slots_, *test_dir_);
+      int result = DoFullLogIn(test_elements, new_keyword, pin_, new_password);
+      swap(new_keyword, keyword_);
+      swap(new_password, password_);
+      EXPECT_EQ(kSuccess, result) << "iteration: " << i;
+      if (result != kSuccess)
+        i = sleep_values.size();
+      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+    }
   }
 }
 
@@ -201,135 +239,164 @@ TEST_F(OneUserApiTest, DISABLED_FUNC_ChangePinAndKeywordSimultaneously) {
   NonEmptyString new_keyword(RandomAlphaNumericString(5));
   int result_pin(0), result_keyword(0);
 
-  std::vector<std::pair<int, int>> sleep_values;
+  std::vector<std::pair<int, int> > sleep_values;
   sleep_values.push_back(std::make_pair(0, 200));
   sleep_values.push_back(std::make_pair(100, 200));
   sleep_values.push_back(std::make_pair(100, 150));
   sleep_values.push_back(std::make_pair(0, 10));
 
+  {
+    PopulateSlots(lifestuff_slots_, testing_variables_);
+    LifeStuff test_elements(lifestuff_slots_, *test_dir_);
+    EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+  }
+
   for (size_t i = 0; i < sleep_values.size(); ++i) {
-    boost::thread thread_pin([&] {
+    {
+      PopulateSlots(lifestuff_slots_, testing_variables_);
+      LifeStuff test_elements(lifestuff_slots_, *test_dir_);
+      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, pin_, password_));
+      std::thread thread_pin([&] {
                                sleepthreads::RunChangePin(test_elements,
                                                           std::ref(result_pin),
                                                           new_pin,
                                                           password_,
                                                           sleep_values.at(i));
                              });
-    boost::thread thread_keyword([&] {
+      std::thread thread_keyword([&] {
                                    sleepthreads::RunChangeKeyword(test_elements,
                                                                   std::ref(result_keyword),
                                                                   new_keyword,
                                                                   password_,
                                                                   sleep_values.at(i));
                                  });
-    thread_pin.join();
-    thread_keyword.join();
+      thread_pin.join();
+      thread_keyword.join();
 
-    EXPECT_EQ(kSuccess, result_pin);
-    EXPECT_EQ(kSuccess, result_keyword);
-
-    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
-    ASSERT_EQ(kSuccess, DoFullLogIn(test_elements, new_keyword, new_pin, password_));
-    swap(new_pin, pin_);
-    swap(new_keyword, keyword_);
+      EXPECT_EQ(kSuccess, result_pin);
+      EXPECT_EQ(kSuccess, result_keyword);
+      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+    }
+    {
+      PopulateSlots(lifestuff_slots_, testing_variables_);
+      LifeStuff test_elements(lifestuff_slots_, *test_dir_);
+      int result = DoFullLogIn(test_elements, new_keyword, new_pin, password_);
+      swap(new_pin, pin_);
+      swap(new_keyword, keyword_);
+      EXPECT_EQ(kSuccess, result) << "iteration: " << i;
+      if (result != kSuccess)
+        i = sleep_values.size();
+      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+    }
   }
-}
-
-TEST_F(OneUserApiTest, DISABLED_FUNC_CreateUserWhenLoggedIn) {
-  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements,
-                                       NonEmptyString(RandomAlphaNumericString(5)),
-                                       CreatePin(),
-                                       NonEmptyString(RandomAlphaNumericString(5))));
 }
 
 TEST_F(OneUserApiTest, DISABLED_FUNC_CreateInvalidUsers) {
   NonEmptyString new_pin(CreatePin());
   NonEmptyString new_keyword(RandomAlphaNumericString(5));
   NonEmptyString new_password(RandomAlphaNumericString(5));
-
-  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
-
-  // Try to create existing account
-  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
-
-  // Try to create new account when logged in
-  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, pin_, password_));
-  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements, new_keyword, new_pin, new_password));
-  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
-
-  // Bad Pin
-  EXPECT_NE(kSuccess,
-            DoFullCreateUser(test_elements, new_keyword, NonEmptyString(" "), new_password));
-  EXPECT_NE(kSuccess,
-            DoFullCreateUser(test_elements, new_keyword, NonEmptyString("0000"), new_password));
-  NonEmptyString not_digits_only(RandomAlphaNumericString(4));
-  bool is_all_digits(true);
-  while (is_all_digits) {
-    try {
-      boost::lexical_cast<int>(not_digits_only.string());
-      is_all_digits = true;
-      not_digits_only = NonEmptyString(RandomAlphaNumericString(4));
-    }
-    catch(const std::exception& /*e*/) {
-      is_all_digits = false;
-    }
+  {
+    PopulateSlots(lifestuff_slots_, testing_variables_);
+    LifeStuff test_elements(lifestuff_slots_, *test_dir_);
+    EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
   }
-  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements,
-                                       new_keyword,
-                                       not_digits_only,
-                                       new_password));
-  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements,
-                                       new_keyword,
-                                       NonEmptyString(const_cast<std::string&>(
-                                                        CreatePin().string()).erase(3, 1)),
-                                       new_password));
-  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements,
-                                       new_keyword,
-                                       NonEmptyString(const_cast<std::string&>(
-                                                        CreatePin().string()).append("1")),
-                                       new_password));
 
-  // Bad Keyword
-  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements,
-                                       NonEmptyString(RandomAlphaNumericString(RandomUint32() % 5)),
-                                       new_pin,
-                                       new_password));
-  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements,
-                                       NonEmptyString(RandomAlphaNumericString(31)),
-                                       new_pin,
-                                       new_password));
-  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements,
-                                       NonEmptyString(RandomAlphaNumericString(
-                                                        RandomUint32() % 13 + 2) + " " +
-                                                        RandomAlphaNumericString(
-                                                        RandomUint32() % 14 + 2)),
-                                       new_pin,
-                                       new_password));
+  {
+    PopulateSlots(lifestuff_slots_, testing_variables_);
+    LifeStuff test_elements(lifestuff_slots_, *test_dir_);
+    // Try to create existing account
+    EXPECT_NE(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
 
-  // Bad Password
-  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements,
-                                       new_keyword,
-                                       new_pin,
-                                       NonEmptyString(RandomAlphaNumericString(
-                                                        RandomUint32() % 5))));
-  EXPECT_NE(kSuccess, DoFullCreateUser(test_elements,
-                                       new_keyword,
-                                       new_pin,
-                                       NonEmptyString(RandomAlphaNumericString(31))));
-  EXPECT_NE(kSuccess,
-            DoFullCreateUser(test_elements,
-                             new_keyword,
-                             new_pin,
-                             NonEmptyString(RandomAlphaNumericString(RandomUint32() % 13 + 2) + " "
-                                            + RandomAlphaNumericString(RandomUint32() % 14 + 2))));
+    // Try to create new account when logged in
+    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, pin_, password_));
+    EXPECT_NE(kSuccess, DoFullCreateUser(test_elements, new_keyword, new_pin, new_password));
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+  }
 
-  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, pin_, password_));
+  {
+    PopulateSlots(lifestuff_slots_, testing_variables_);
+    LifeStuff test_elements(lifestuff_slots_, *test_dir_);
+    // Bad Pin
+    EXPECT_NE(kSuccess,
+              DoFullCreateUser(test_elements, new_keyword, NonEmptyString(" "), new_password));
+    EXPECT_NE(kSuccess,
+              DoFullCreateUser(test_elements, new_keyword, NonEmptyString("0000"), new_password));
+    NonEmptyString not_digits_only(RandomAlphaNumericString(4));
+    bool is_all_digits(true);
+    while (is_all_digits) {
+      try {
+        boost::lexical_cast<int>(not_digits_only.string());
+        is_all_digits = true;
+        not_digits_only = NonEmptyString(RandomAlphaNumericString(4));
+      }
+      catch(const std::exception& /*e*/) {
+        is_all_digits = false;
+      }
+    }
+    EXPECT_NE(kSuccess, DoFullCreateUser(test_elements,
+                                         new_keyword,
+                                         not_digits_only,
+                                         new_password));
+    EXPECT_NE(kSuccess, DoFullCreateUser(test_elements,
+                                         new_keyword,
+                                         NonEmptyString(const_cast<std::string&>(
+                                                          CreatePin().string()).erase(3, 1)),
+                                         new_password));
+    EXPECT_NE(kSuccess, DoFullCreateUser(test_elements,
+                                         new_keyword,
+                                         NonEmptyString(const_cast<std::string&>(
+                                                          CreatePin().string()).append("1")),
+                                         new_password));
+
+    // Bad Keyword
+    EXPECT_NE(kSuccess, DoFullCreateUser(test_elements,
+                                         NonEmptyString(RandomAlphaNumericString(RandomUint32() % 5)),
+                                         new_pin,
+                                         new_password));
+    EXPECT_NE(kSuccess, DoFullCreateUser(test_elements,
+                                         NonEmptyString(RandomAlphaNumericString(31)),
+                                         new_pin,
+                                         new_password));
+    EXPECT_NE(kSuccess, DoFullCreateUser(test_elements,
+                                         NonEmptyString(RandomAlphaNumericString(
+                                                          RandomUint32() % 13 + 2) + " " +
+                                                          RandomAlphaNumericString(
+                                                          RandomUint32() % 14 + 2)),
+                                         new_pin,
+                                         new_password));
+
+    // Bad Password
+    EXPECT_NE(kSuccess, DoFullCreateUser(test_elements,
+                                         new_keyword,
+                                         new_pin,
+                                         NonEmptyString(RandomAlphaNumericString(
+                                                          RandomUint32() % 5))));
+    EXPECT_NE(kSuccess, DoFullCreateUser(test_elements,
+                                         new_keyword,
+                                         new_pin,
+                                         NonEmptyString(RandomAlphaNumericString(31))));
+    EXPECT_NE(kSuccess,
+              DoFullCreateUser(test_elements,
+                               new_keyword,
+                               new_pin,
+                               NonEmptyString(RandomAlphaNumericString(RandomUint32() % 13 + 2) + " "
+                                              + RandomAlphaNumericString(RandomUint32() % 14 + 2))));
+
+    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, pin_, password_));
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+  }
 }
 
 TEST_F(OneUserApiTest, DISABLED_FUNC_TryChangeCredentialsToInvalid) {
   NonEmptyString incorrect_password(RandomAlphaNumericString(RandomUint32() % 26 + 5));
   while (incorrect_password == password_)
     incorrect_password = NonEmptyString(RandomAlphaNumericString(RandomUint32() % 26 + 5));
+
+  PopulateSlots(lifestuff_slots_, testing_variables_);
+  LifeStuff test_elements(lifestuff_slots_, *test_dir_);
+  EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
 
   // Check Password
   EXPECT_NE(kSuccess, test_elements.CheckPassword(incorrect_password));
@@ -375,12 +442,13 @@ TEST_F(OneUserApiTest, DISABLED_FUNC_TryChangeCredentialsToInvalid) {
   EXPECT_NE(kSuccess, test_elements.ChangeKeyword(NonEmptyString(RandomAlphaNumericString(
       RandomUint32() % 13 + 2) + " " + RandomAlphaNumericString(RandomUint32() % 14 + 2)),
       password_));
+  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
 }
 
 TEST_F(OneUserApiTest, DISABLED_FUNC_ChangeCredentialsWhenLoggedOut) {
   NonEmptyString new_pin(CreatePin());
-
-  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+  PopulateSlots(lifestuff_slots_, testing_variables_);
+  LifeStuff test_elements(lifestuff_slots_, *test_dir_);
 
   EXPECT_NE(kSuccess, test_elements.CheckPassword(password_));
 
@@ -389,7 +457,6 @@ TEST_F(OneUserApiTest, DISABLED_FUNC_ChangeCredentialsWhenLoggedOut) {
   EXPECT_NE(kSuccess, test_elements.ChangePin(new_pin, password_));
   EXPECT_NE(kSuccess, test_elements.ChangePassword(password_ + password_, password_));
 
-  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, pin_, password_));
 }
 
 TEST_F(OneUserApiTest, DISABLED_FUNC_ChangeCredentialsAndLogOut) {
@@ -398,38 +465,47 @@ TEST_F(OneUserApiTest, DISABLED_FUNC_ChangeCredentialsAndLogOut) {
   NonEmptyString new_password(RandomAlphaNumericString(5));
   int result(0);
 
-  boost::thread thread_pin([&] {
+  {
+    PopulateSlots(lifestuff_slots_, testing_variables_);
+    LifeStuff test_elements(lifestuff_slots_, *test_dir_);
+    EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
+    std::thread thread_pin([&] {
                              sleepthreads::RunChangePin(test_elements,
                                                         std::ref(result),
                                                         new_pin,
                                                         password_,
                                                         std::make_pair(0, 0));
-                           });
+                             });
+   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+  }
 
-  DoFullLogOut(test_elements);
-  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, new_pin, password_));
-
-  boost::thread thread_keyword([&] {
+  {
+    PopulateSlots(lifestuff_slots_, testing_variables_);
+    LifeStuff test_elements(lifestuff_slots_, *test_dir_);
+    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, new_pin, password_));
+    boost::thread thread_keyword([&] {
                                  sleepthreads::RunChangeKeyword(test_elements,
                                                                 std::ref(result),
                                                                 new_keyword,
                                                                 password_,
                                                                 std::make_pair(0, 0));
-                               });
+                                 });
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+  }
 
-  DoFullLogOut(test_elements);
-  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, new_keyword, new_pin, password_));
-
-  boost::thread thread_password([&] {
+  {
+    PopulateSlots(lifestuff_slots_, testing_variables_);
+    LifeStuff test_elements(lifestuff_slots_, *test_dir_);
+    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, new_keyword, new_pin, password_));
+    std::thread thread_password([&] {
                                   sleepthreads::RunChangePassword(test_elements,
                                                                   std::ref(result),
                                                                   new_password,
                                                                   password_,
                                                                   std::make_pair(0, 0));
-                                });
-
-  DoFullLogOut(test_elements);
-  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, new_keyword, new_pin, new_password));
+                                  });
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+  }
 }
 
 //TEST_F(TwoInstancesApiTest, DISABLED_FUNC_LogInFromTwoPlaces) {
