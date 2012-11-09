@@ -110,10 +110,10 @@ void MultipleFileTransferSlot(const NonEmptyString&,
 
 void NewContactSlot(const NonEmptyString&,
                     const NonEmptyString&,
-                    const NonEmptyString&,
+                    const std::string&,
                     const NonEmptyString&,
                     volatile bool* done,
-                    NonEmptyString* contact_request_message);
+                    std::string* contact_request_message);
 
 void ContactConfirmationSlot(const NonEmptyString&,
                              const NonEmptyString&,
@@ -133,9 +133,9 @@ void ContactPresenceSlot(const NonEmptyString&,
 
 void ContactDeletionSlot(const NonEmptyString&,
                          const NonEmptyString&,
-                         const NonEmptyString& signal_message,
+                         const std::string& signal_message,
                          const NonEmptyString&,
-                         NonEmptyString* slot_message,
+                         std::string* slot_message,
                          volatile bool* done);
 
 void LifestuffCardSlot(const NonEmptyString&,
@@ -144,6 +144,8 @@ void LifestuffCardSlot(const NonEmptyString&,
                        volatile bool* done);
 
 void ImmediateQuitRequiredSlot(volatile bool* done);
+
+void PopulateSlots(Slots& slot_functions, TestingVariables& testing_variables);
 
 int DoFullCreateUser(LifeStuff& test_elements,
                      const NonEmptyString& keyword,
@@ -266,7 +268,8 @@ class OneUserApiTest : public testing::Test {
       network_(),
       error_code_(),
       done_(),
-      test_elements_(lifestuff_slots_, *test_dir_ / "elements1") {}
+      testing_variables_(),
+      lifestuff_slots_() {}
 
  protected:
   maidsafe::test::TestPath test_dir_;
@@ -276,88 +279,88 @@ class OneUserApiTest : public testing::Test {
   NetworkHelper network_;
   boost::system::error_code error_code_;
   volatile bool done_;
+  TestingVariables testing_variables_;
   Slots lifestuff_slots_;
-  LifeStuff test_elements_;
 
   virtual void SetUp();
 
   virtual void TearDown();
 };
 
-class TwoInstancesApiTest : public OneUserApiTest {
- public:
-  TwoInstancesApiTest()
-    : lifestuff_slots_2_(),
-      test_elements_2_(lifestuff_slots_2_, *test_dir_ / "elements2"),
-      testing_variables_1_(),
-      testing_variables_2_() {}
+//class TwoInstancesApiTest : public OneUserApiTest {
+// public:
+//  TwoInstancesApiTest()
+//    : lifestuff_slots_2_(),
+//      test_elements_2_(lifestuff_slots_2_, *test_dir_ / "elements2"),
+//      testing_variables_1_(),
+//      testing_variables_2_() {}
 
- protected:
-  Slots lifestuff_slots_2_;
-  LifeStuff test_elements_2_;
-  TestingVariables testing_variables_1_;
-  TestingVariables testing_variables_2_;
+// protected:
+//  Slots lifestuff_slots_2_;
+//  LifeStuff test_elements_2_;
+//  TestingVariables testing_variables_1_;
+//  TestingVariables testing_variables_2_;
 
-  virtual void SetUp();
+//  virtual void SetUp();
 
-  virtual void TearDown();
-};
+//  virtual void TearDown();
+//};
 
-class TwoUsersApiTest : public testing::Test {
- public:
-  TwoUsersApiTest()
-    : test_dir_(maidsafe::test::CreateTestPath()),
-      keyword_1_(RandomAlphaNumericString(6)),
-      pin_1_(CreatePin()),
-      password_1_(RandomAlphaNumericString(6)),
-      public_id_1_(RandomAlphaNumericString(5)),
-      keyword_2_(RandomAlphaNumericString(6)),
-      pin_2_(CreatePin()),
-      password_2_(RandomAlphaNumericString(6)),
-      public_id_2_(RandomAlphaNumericString(5)),
-      testing_variables_1_(),
-      testing_variables_2_(),
-      lifestuff_slots_1_(),
-      lifestuff_slots_2_(),
-      test_elements_1_(lifestuff_slots_1_, *test_dir_ / "elements1"),
-      test_elements_2_(lifestuff_slots_2_, *test_dir_ / "elements2"),
-      network_() {}
+//class TwoUsersApiTest : public testing::Test {
+// public:
+//  TwoUsersApiTest()
+//    : test_dir_(maidsafe::test::CreateTestPath()),
+//      keyword_1_(RandomAlphaNumericString(6)),
+//      pin_1_(CreatePin()),
+//      password_1_(RandomAlphaNumericString(6)),
+//      public_id_1_(RandomAlphaNumericString(5)),
+//      keyword_2_(RandomAlphaNumericString(6)),
+//      pin_2_(CreatePin()),
+//      password_2_(RandomAlphaNumericString(6)),
+//      public_id_2_(RandomAlphaNumericString(5)),
+//      testing_variables_1_(),
+//      testing_variables_2_(),
+//      lifestuff_slots_1_(),
+//      lifestuff_slots_2_(),
+//      test_elements_1_(lifestuff_slots_1_, *test_dir_ / "elements1"),
+//      test_elements_2_(lifestuff_slots_2_, *test_dir_ / "elements2"),
+//      network_() {}
 
- protected:
-  maidsafe::test::TestPath test_dir_;
-  NonEmptyString keyword_1_;
-  NonEmptyString pin_1_;
-  NonEmptyString password_1_;
-  NonEmptyString public_id_1_;
-  NonEmptyString keyword_2_;
-  NonEmptyString pin_2_;
-  NonEmptyString password_2_;
-  NonEmptyString public_id_2_;
-  TestingVariables testing_variables_1_;
-  TestingVariables testing_variables_2_;
-  Slots lifestuff_slots_1_;
-  Slots lifestuff_slots_2_;
-  LifeStuff test_elements_1_;
-  LifeStuff test_elements_2_;
-  NetworkHelper network_;
+// protected:
+//  maidsafe::test::TestPath test_dir_;
+//  NonEmptyString keyword_1_;
+//  NonEmptyString pin_1_;
+//  NonEmptyString password_1_;
+//  NonEmptyString public_id_1_;
+//  NonEmptyString keyword_2_;
+//  NonEmptyString pin_2_;
+//  NonEmptyString password_2_;
+//  NonEmptyString public_id_2_;
+//  TestingVariables testing_variables_1_;
+//  TestingVariables testing_variables_2_;
+//  Slots lifestuff_slots_1_;
+//  Slots lifestuff_slots_2_;
+//  LifeStuff test_elements_1_;
+//  LifeStuff test_elements_2_;
+//  NetworkHelper network_;
 
-  virtual void SetUp();
+//  virtual void SetUp();
 
-  virtual void TearDown();
-};
+//  virtual void TearDown();
+//};
 
-class TwoUsersMutexApiTest : public TwoUsersApiTest {
- public:
-  TwoUsersMutexApiTest()
-    : mutex_() {}
+//class TwoUsersMutexApiTest : public TwoUsersApiTest {
+// public:
+//  TwoUsersMutexApiTest()
+//    : mutex_() {}
 
- protected:
-  boost::mutex mutex_;
+// protected:
+//  boost::mutex mutex_;
 
-  virtual void SetUp();
+//  virtual void SetUp();
 
-  virtual void TearDown();
-};
+//  virtual void TearDown();
+//};
 
 }  // namespace test
 

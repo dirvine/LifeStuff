@@ -120,6 +120,103 @@ void ImmediateQuitRequiredSlot(volatile bool* done) {
   *done = true;
 }
 
+void PopulateSlots(Slots& slot_functions, TestingVariables& testing_variables) {
+  testing_variables = TestingVariables();
+  slot_functions.chat_slot = [&testing_variables] (const NonEmptyString& own_public_id,
+                                                   const NonEmptyString& contact_public_id,
+                                                   const NonEmptyString& signal_message,
+                                                   const NonEmptyString& timestamp) {
+                               ChatSlot(own_public_id,
+                                        contact_public_id,
+                                        signal_message,
+                                        timestamp,
+                                        &testing_variables.chat_message,
+                                        &testing_variables.chat_message_received);
+                             };
+  slot_functions.file_success_slot = [&testing_variables] (const NonEmptyString& own_public_id,
+                                                           const NonEmptyString& contact_public_id,
+                                                           const NonEmptyString& signal_file_name,
+                                                           const NonEmptyString& signal_file_id,
+                                                           const NonEmptyString& timestamp) {
+                                        FileTransferSlot(own_public_id,
+                                                         contact_public_id,
+                                                         signal_file_name,
+                                                         signal_file_id,
+                                                         timestamp,
+                                                         &testing_variables.file_name,
+                                                         &testing_variables.file_id,
+                                                         &testing_variables.file_transfer_received);
+                                     };
+  slot_functions.file_failure_slot = [&testing_variables] (const NonEmptyString&,
+                                                           const NonEmptyString&,
+                                                           const NonEmptyString&) {
+                                     };
+  slot_functions.new_contact_slot = [&testing_variables] (const NonEmptyString& own_public_id,
+                                                          const NonEmptyString& contact_public_id,
+                                                          const std::string& message,
+                                                          const NonEmptyString& timestamp) {
+                                      NewContactSlot(own_public_id,
+                                                     contact_public_id,
+                                                     message,
+                                                     timestamp,
+                                                     &testing_variables.newly_contacted,
+                                                     &testing_variables.contact_request_message);
+                                    };
+  slot_functions.confirmed_contact_slot = [&testing_variables] (const NonEmptyString& own_public_id,
+                                                                const NonEmptyString& contact_public_id,
+                                                                const NonEmptyString& timestamp) {
+                                            ContactConfirmationSlot(own_public_id,
+                                                                    contact_public_id,
+                                                                    timestamp,
+                                                                    &testing_variables.confirmed);
+                                            printf("%s confirmed %s\n",
+                                                   own_public_id.string().c_str(),
+                                                   contact_public_id.string().c_str());
+                                          };
+  slot_functions.profile_picture_slot = [&testing_variables] (const NonEmptyString& own_public_id,
+                                                              const NonEmptyString& contact_public_id,
+                                                              const NonEmptyString& timestamp) {
+                                          ContactProfilePictureSlot(own_public_id,
+                                                                    contact_public_id,
+                                                                    timestamp,
+                                                                    &testing_variables.picture_updated);
+                                        };
+  slot_functions.contact_presence_slot = [&testing_variables] (const NonEmptyString& own_public_id,
+                                                               const NonEmptyString& contact_public_id,
+                                                               const NonEmptyString& timestamp,
+                                                               ContactPresence contact_presence) {
+                                           ContactPresenceSlot(own_public_id,
+                                                               contact_public_id,
+                                                               timestamp,
+                                                               contact_presence,
+                                                               &testing_variables.presence_announced);
+                                         };
+  slot_functions.contact_deletion_slot =  [&testing_variables] (const NonEmptyString& own_public_id,
+                                                                const NonEmptyString& contact_public_id,
+                                                                const std::string& signal_message,
+                                                                const NonEmptyString& timestamp) {
+                                            ContactDeletionSlot(own_public_id,
+                                                                contact_public_id,
+                                                                signal_message,
+                                                                timestamp,
+                                                                &testing_variables.removal_message,
+                                                                &testing_variables.removed);
+                                          };
+  slot_functions.lifestuff_card_update_slot = [&testing_variables] (const NonEmptyString& own_id,
+                                                                    const NonEmptyString& contact_id,
+                                                                    const NonEmptyString& timestamp) {
+                                                LifestuffCardSlot(own_id,
+                                                                  contact_id,
+                                                                  timestamp,
+                                                                  &testing_variables.social_info_map_changed);
+                                              };
+  slot_functions.network_health_slot = [&testing_variables] (const int&) {};
+  slot_functions.immediate_quit_required_slot = [&testing_variables] () {
+                                                  ImmediateQuitRequiredSlot(&testing_variables.immediate_quit_required);
+                                                };
+  slot_functions.update_available_slot = [&testing_variables] (NonEmptyString) {};
+}
+
 int DoFullCreateUser(LifeStuff& test_elements,
                      const NonEmptyString& keyword,
                      const NonEmptyString& pin,
@@ -530,37 +627,13 @@ void RunLogIn(LifeStuff& test_elements,
 
 void OneUserApiTest::SetUp() {
   ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12, true));
-//  EXPECT_EQ(kSuccess,
-//            test_elements_.ConnectToSignals(ChatFunction(),
-//                                            FileTransferSuccessFunction(),
-//                                            FileTransferFailureFunction(),
-//                                            NewContactFunction(),
-//                                            ContactConfirmationFunction(),
-//                                            ContactProfilePictureFunction(),
-//                                            [&] (const NonEmptyString& own_public_id,
-//                                                 const NonEmptyString& contact_public_id,
-//                                                 const NonEmptyString& timestamp,
-//                                                 ContactPresence cp) {
-//                                              ContactPresenceSlot(own_public_id,
-//                                                                  contact_public_id,
-//                                                                  timestamp,
-//                                                                  cp,
-//                                                                  &done_);
-//                                            },
-//                                            ContactDeletionFunction(),
-//                                            LifestuffCardUpdateFunction(),
-//                                            NetworkHealthFunction(),
-//                                            ImmediateQuitRequiredFunction()));
-  EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements_, keyword_, pin_, password_));
+  PopulateSlots(lifestuff_slots_, testing_variables_);
 }
 
-void OneUserApiTest::TearDown() {
-  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_));
-  EXPECT_TRUE(network_.StopLocalNetwork());
-}
+void OneUserApiTest::TearDown() { EXPECT_TRUE(network_.StopLocalNetwork()); }
 
-void TwoInstancesApiTest::SetUp() {
-  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 10));
+//void TwoInstancesApiTest::SetUp() {
+//  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 10));
 //  EXPECT_EQ(kSuccess,
 //            test_elements_.ConnectToSignals(ChatFunction(),
 //                                            FileTransferSuccessFunction(),
@@ -609,43 +682,43 @@ void TwoInstancesApiTest::SetUp() {
 //                                                ImmediateQuitRequiredSlot(
 //                                                    &testing_variables_2_.immediate_quit_required);
 //                                              }));
-}
+//}
 
-void TwoInstancesApiTest::TearDown() {
-  EXPECT_TRUE(network_.StopLocalNetwork());
-}
-
-void TwoUsersApiTest::SetUp() {
-//  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12));
-  ASSERT_EQ(kSuccess,
-            CreateAndConnectTwoPublicIds(test_elements_1_, test_elements_2_,
-                                         testing_variables_1_, testing_variables_2_,
-                                         *test_dir_,
-                                         keyword_1_, pin_1_, password_1_, public_id_1_,
-                                         keyword_2_, pin_2_, password_2_, public_id_2_));
-}
-
-void TwoUsersApiTest::TearDown() {
+//void TwoInstancesApiTest::TearDown() {
 //  EXPECT_TRUE(network_.StopLocalNetwork());
-}
+//}
 
-void TwoUsersMutexApiTest::SetUp() {
-  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12));
-  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements_1_,
-                                                   test_elements_2_,
-                                                   testing_variables_1_,
-                                                   testing_variables_2_,
-                                                   *test_dir_,
-                                                   keyword_1_, pin_1_, password_1_,
-                                                   public_id_1_,
-                                                   keyword_2_, pin_2_, password_2_,
-                                                   public_id_2_, false,
-                                                   nullptr, nullptr, nullptr));
-}
+//void TwoUsersApiTest::SetUp() {
+////  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12));
+//  ASSERT_EQ(kSuccess,
+//            CreateAndConnectTwoPublicIds(test_elements_1_, test_elements_2_,
+//                                         testing_variables_1_, testing_variables_2_,
+//                                         *test_dir_,
+//                                         keyword_1_, pin_1_, password_1_, public_id_1_,
+//                                         keyword_2_, pin_2_, password_2_, public_id_2_));
+//}
 
-void TwoUsersMutexApiTest::TearDown() {
-  EXPECT_TRUE(network_.StopLocalNetwork());
-}
+//void TwoUsersApiTest::TearDown() {
+////  EXPECT_TRUE(network_.StopLocalNetwork());
+//}
+
+//void TwoUsersMutexApiTest::SetUp() {
+//  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12));
+//  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements_1_,
+//                                                   test_elements_2_,
+//                                                   testing_variables_1_,
+//                                                   testing_variables_2_,
+//                                                   *test_dir_,
+//                                                   keyword_1_, pin_1_, password_1_,
+//                                                   public_id_1_,
+//                                                   keyword_2_, pin_2_, password_2_,
+//                                                   public_id_2_, false,
+//                                                   nullptr, nullptr, nullptr));
+//}
+
+//void TwoUsersMutexApiTest::TearDown() {
+//  EXPECT_TRUE(network_.StopLocalNetwork());
+//}
 
 }  // namespace test
 

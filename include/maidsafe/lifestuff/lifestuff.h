@@ -156,11 +156,11 @@ struct Slots {
             confirmed_contact_slot(),
             profile_picture_slot(),
             contact_presence_slot(),
-            contact_deletion_function(),
-            lifestuff_card_update_function(),
-            network_health_function(),
-            immediate_quit_required_function(),
-            update_available_function() {}
+            contact_deletion_slot(),
+            lifestuff_card_update_slot(),
+            network_health_slot(),
+            immediate_quit_required_slot(),
+            update_available_slot() {}
   ChatFunction chat_slot;
   FileTransferSuccessFunction file_success_slot;
   FileTransferFailureFunction file_failure_slot;
@@ -168,11 +168,11 @@ struct Slots {
   ContactConfirmationFunction confirmed_contact_slot;
   ContactProfilePictureFunction profile_picture_slot;
   ContactPresenceFunction contact_presence_slot;
-  ContactDeletionFunction contact_deletion_function;
-  LifestuffCardUpdateFunction lifestuff_card_update_function;
-  NetworkHealthFunction network_health_function;
-  ImmediateQuitRequiredFunction immediate_quit_required_function;
-  UpdateAvailableFunction update_available_function;
+  ContactDeletionFunction contact_deletion_slot;
+  LifestuffCardUpdateFunction lifestuff_card_update_slot;
+  NetworkHealthFunction network_health_slot;
+  ImmediateQuitRequiredFunction immediate_quit_required_slot;
+  UpdateAvailableFunction update_available_slot;
 };
 
 }  // namespace lifestuff

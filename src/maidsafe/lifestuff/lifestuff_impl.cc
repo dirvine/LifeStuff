@@ -63,15 +63,15 @@ void CheckSlots(Slots& slot_functions) {
     throw std::exception();
   if (!slot_functions.contact_presence_slot)
     throw std::exception();
-  if (!slot_functions.contact_deletion_function)
+  if (!slot_functions.contact_deletion_slot)
     throw std::exception();
-  if (!slot_functions.lifestuff_card_update_function)
+  if (!slot_functions.lifestuff_card_update_slot)
     throw std::exception();
-  if (!slot_functions.network_health_function)
+  if (!slot_functions.network_health_slot)
     throw std::exception();
-  if (!slot_functions.immediate_quit_required_function)
+  if (!slot_functions.immediate_quit_required_slot)
     throw std::exception();
-  if (!slot_functions.update_available_function)
+  if (!slot_functions.update_available_slot)
     throw std::exception();
 }
 
@@ -129,13 +129,13 @@ LifeStuffImpl::LifeStuffImpl(const Slots& slot_functions, const fs::path& base_d
   while (counter++ < kRetryLimit) {
     Sleep(bptime::milliseconds(100 + RandomUint32() % 1000));
     client_controller_ = std::make_shared<priv::process_management::ClientController>(
-                             slots_.update_available_function);
+                             slots_.update_available_slot);
     if (client_controller_->BootstrapEndpoints(bootstrap_endpoints_))
       counter = kRetryLimit;
     else
       LOG(kWarning) << "Failure to initialise client controller. Try #" << counter;
   }
-  state_ = kInitialised;
+  state_ = kConnected;
 }
 
 int LifeStuffImpl::MakeAnonymousComponents() {
@@ -184,10 +184,10 @@ void LifeStuffImpl::ConnectToSignals() {
   logged_in_components_->message_handler.ConnectToContactPresenceSignal(
       slots_.contact_presence_slot);
   logged_in_components_->public_id.ConnectToContactDeletionProcessedSignal(
-      slots_.contact_deletion_function);
+      slots_.contact_deletion_slot);
   logged_in_components_->public_id.ConnectToLifestuffCardUpdatedSignal(
-      slots_.lifestuff_card_update_function);
-  immediate_quit_required_signal_.connect(slots_.immediate_quit_required_function);
+      slots_.lifestuff_card_update_slot);
+  immediate_quit_required_signal_.connect(slots_.immediate_quit_required_slot);
   logged_in_components_->public_id.ConnectToContactDeletionReceivedSignal(
       [&] (const NonEmptyString& own_public_id,
            const NonEmptyString& contact_public_id,

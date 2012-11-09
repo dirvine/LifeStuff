@@ -59,10 +59,10 @@ void ConnectSignals(Slots& slot_functions) {
                                          const NonEmptyString&,
                                          const NonEmptyString&) {
                                      };
-  slot_functions.new_contact_slot = [&/*lifestuff*/] (const NonEmptyString& /*own_id*/,
-                                                  const NonEmptyString& /*other_id*/,
-                                                  const std::string&,
-                                                  const NonEmptyString&) {
+  slot_functions.new_contact_slot = [&/*lifestuff*/] (const NonEmptyString&,
+                                                      const NonEmptyString&,
+                                                      const std::string&,
+                                                      const NonEmptyString&) {
 //                                      int result(lifestuff.ConfirmContact(own_id, other_id));
 //                                      printf("%s confirming %s result: %d\n",
 //                                             own_id.string().c_str(),
@@ -80,17 +80,23 @@ void ConnectSignals(Slots& slot_functions) {
                                             const NonEmptyString&,
                                             const NonEmptyString&) {
                                         };
-  slot_functions.contact_presence_slot = [] (const NonEmptyString& /*own_public_id*/,
-                                             const NonEmptyString& /*contact_public_id*/,
-                                             const NonEmptyString& /*timestamp*/,
-                                             ContactPresence /*cp*/) {};
-  slot_functions.lifestuff_card_update_function = [] (const NonEmptyString&,
-                                                      const NonEmptyString&,
-                                                      const NonEmptyString&) {
-                                                  };
-  slot_functions.network_health_function = [] (const int&) {};
-  slot_functions.immediate_quit_required_function = [] () {};
-  slot_functions.update_available_function = [] (NonEmptyString) {};
+  slot_functions.contact_presence_slot = [] (const NonEmptyString&,
+                                             const NonEmptyString&,
+                                             const NonEmptyString&,
+                                             ContactPresence) {
+                                         };
+  slot_functions.contact_deletion_slot =  [] (const NonEmptyString&,
+                                              const NonEmptyString&,
+                                              const std::string&,
+                                              const NonEmptyString&) {
+                                          };
+  slot_functions.lifestuff_card_update_slot = [] (const NonEmptyString&,
+                                                  const NonEmptyString&,
+                                                  const NonEmptyString&) {
+                                              };
+  slot_functions.network_health_slot = [] (const int&) {};
+  slot_functions.immediate_quit_required_slot = [] () {};
+  slot_functions.update_available_slot = [] (NonEmptyString) {};
 }
 
 void PrintMenu() {
