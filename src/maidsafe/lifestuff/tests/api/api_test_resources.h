@@ -159,8 +159,8 @@ int DoFullLogIn(LifeStuff& test_elements,
 
 int DoFullLogOut(LifeStuff& test_elements);
 
-int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
-                                 LifeStuff& test_elements2,
+int CreateAndConnectTwoPublicIds(Slots& lifestuff_slots1,
+                                 Slots& lifestuff_slots2,
                                  TestingVariables& testing_variables1,
                                  TestingVariables& testing_variables2,
                                  const fs::path& test_dir,
@@ -171,34 +171,18 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                  const NonEmptyString& keyword2,
                                  const NonEmptyString& pin2,
                                  const NonEmptyString& password2,
-                                 const NonEmptyString& public_id2,
-                                 bool several_files = false,
-                                 std::vector<std::string>* ids = nullptr,
-                                 std::vector<std::string>* names = nullptr,
-                                 size_t* total_files = nullptr);
+                                 const NonEmptyString& public_id2);
 
-int InitialiseAndConnect(LifeStuff& test_elements,
-                         TestingVariables& testing_variables,
-                         const fs::path& test_dir,
-                         bool several_files = false,
-                         std::vector<std::string>* ids = nullptr,
-                         std::vector<std::string>* names = nullptr,
-                         size_t* total_files = nullptr);
-
-int CreateAccountWithPublicId(LifeStuff& test_elements,
-                              TestingVariables& testing_variables,
+int CreateAccountWithPublicId(Slots& lifestuff_slots,
                               const fs::path& test_dir,
                               const NonEmptyString& keyword,
                               const NonEmptyString& pin,
                               const NonEmptyString& password,
-                              const NonEmptyString& public_id,
-                              bool several_files = false,
-                              std::vector<std::string>* ids = nullptr,
-                              std::vector<std::string>* names = nullptr,
-                              size_t* total_files = nullptr);
+                              const NonEmptyString& public_id);
 
-int ConnectTwoPublicIds(LifeStuff& test_elements1,
-                        LifeStuff& test_elements2,
+int ConnectTwoPublicIds(const fs::path& test_dir,
+                        Slots& lifestuff_slots1,
+                        Slots& lifestuff_slots2,
                         TestingVariables& testing_variables1,
                         TestingVariables& testing_variables2,
                         const NonEmptyString& keyword1,
@@ -283,61 +267,44 @@ class OneUserApiTest : public testing::Test {
   virtual void TearDown();
 };
 
-//class TwoUsersApiTest : public testing::Test {
-// public:
-//  TwoUsersApiTest()
-//    : test_dir_(maidsafe::test::CreateTestPath()),
-//      keyword_1_(RandomAlphaNumericString(6)),
-//      pin_1_(CreatePin()),
-//      password_1_(RandomAlphaNumericString(6)),
-//      public_id_1_(RandomAlphaNumericString(5)),
-//      keyword_2_(RandomAlphaNumericString(6)),
-//      pin_2_(CreatePin()),
-//      password_2_(RandomAlphaNumericString(6)),
-//      public_id_2_(RandomAlphaNumericString(5)),
-//      testing_variables_1_(),
-//      testing_variables_2_(),
-//      lifestuff_slots_1_(),
-//      lifestuff_slots_2_(),
-//      test_elements_1_(lifestuff_slots_1_, *test_dir_ / "elements1"),
-//      test_elements_2_(lifestuff_slots_2_, *test_dir_ / "elements2"),
-//      network_() {}
+class TwoUsersApiTest : public testing::Test {
+ public:
+  TwoUsersApiTest()
+    : test_dir_(maidsafe::test::CreateTestPath()),
+      keyword_1_(RandomAlphaNumericString(6)),
+      pin_1_(CreatePin()),
+      password_1_(RandomAlphaNumericString(6)),
+      public_id_1_(RandomAlphaNumericString(5)),
+      keyword_2_(RandomAlphaNumericString(6)),
+      pin_2_(CreatePin()),
+      password_2_(RandomAlphaNumericString(6)),
+      public_id_2_(RandomAlphaNumericString(5)),
+      testing_variables_1_(),
+      testing_variables_2_(),
+      lifestuff_slots_1_(),
+      lifestuff_slots_2_(),
+      network_() {}
 
-// protected:
-//  maidsafe::test::TestPath test_dir_;
-//  NonEmptyString keyword_1_;
-//  NonEmptyString pin_1_;
-//  NonEmptyString password_1_;
-//  NonEmptyString public_id_1_;
-//  NonEmptyString keyword_2_;
-//  NonEmptyString pin_2_;
-//  NonEmptyString password_2_;
-//  NonEmptyString public_id_2_;
-//  TestingVariables testing_variables_1_;
-//  TestingVariables testing_variables_2_;
-//  Slots lifestuff_slots_1_;
-//  Slots lifestuff_slots_2_;
-//  LifeStuff test_elements_1_;
-//  LifeStuff test_elements_2_;
-//  NetworkHelper network_;
+ protected:
+  maidsafe::test::TestPath test_dir_;
+  NonEmptyString keyword_1_;
+  NonEmptyString pin_1_;
+  NonEmptyString password_1_;
+  NonEmptyString public_id_1_;
+  NonEmptyString keyword_2_;
+  NonEmptyString pin_2_;
+  NonEmptyString password_2_;
+  NonEmptyString public_id_2_;
+  TestingVariables testing_variables_1_;
+  TestingVariables testing_variables_2_;
+  Slots lifestuff_slots_1_;
+  Slots lifestuff_slots_2_;
+  NetworkHelper network_;
 
-//  virtual void SetUp();
+  virtual void SetUp();
 
-//  virtual void TearDown();
-//};
-
-//class TwoUsersMutexApiTest : public TwoUsersApiTest {
-// public:
-//  TwoUsersMutexApiTest()
-//    : mutex_() {}
-
-// protected:
-//  boost::mutex mutex_;
-
-//  virtual void SetUp();
-
-//  virtual void TearDown();
-//};
+  virtual void TearDown();
+};
 
 }  // namespace test
 

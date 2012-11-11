@@ -287,8 +287,8 @@ int DoFullLogOut(LifeStuff& test_elements) {
   return kSuccess;
 }
 
-int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
-                                 LifeStuff& test_elements2,
+int CreateAndConnectTwoPublicIds(Slots& lifestuff_slots1,
+                                 Slots& lifestuff_slots2,
                                  TestingVariables& testing_variables1,
                                  TestingVariables& testing_variables2,
                                  const fs::path& test_dir,
@@ -299,40 +299,27 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                  const NonEmptyString& keyword2,
                                  const NonEmptyString& pin2,
                                  const NonEmptyString& password2,
-                                 const NonEmptyString& public_id2,
-                                 bool several_files,
-                                 std::vector<std::string>* ids,
-                                 std::vector<std::string>* names,
-                                 size_t* total_files) {
+                                 const NonEmptyString& public_id2) {
   int result(0);
-  result = CreateAccountWithPublicId(test_elements1,
-                                     testing_variables1,
-                                     test_dir,
+  result = CreateAccountWithPublicId(lifestuff_slots1,
+                                     test_dir / "elements1",
                                      keyword1,
                                      pin1,
                                      password1,
-                                     public_id1,
-                                     false,
-                                     ids,
-                                     names,
-                                     total_files);
+                                     public_id1);
   if (result != kSuccess)
     return result;
-  result = CreateAccountWithPublicId(test_elements2,
-                                     testing_variables2,
-                                     test_dir,
+  result = CreateAccountWithPublicId(lifestuff_slots2,
+                                     test_dir / "elements2",
                                      keyword2,
                                      pin2,
                                      password2,
-                                     public_id2,
-                                     several_files,
-                                     ids,
-                                     names,
-                                     total_files);
+                                     public_id2);
   if (result != kSuccess)
     return result;
-  result = ConnectTwoPublicIds(test_elements1,
-                               test_elements2,
+  result = ConnectTwoPublicIds(test_dir,
+                               lifestuff_slots1,
+                               lifestuff_slots2,
                                testing_variables1,
                                testing_variables2,
                                keyword1,
@@ -346,150 +333,14 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
   return result;
 }
 
-int InitialiseAndConnect(LifeStuff& test_elements,
-                         TestingVariables& testing_variables,
-                         const fs::path& test_dir,
-                         bool several_files,
-                         std::vector<std::string>* ids,
-                         std::vector<std::string>* names,
-                         size_t* total_files) {
-  FileTransferSuccessFunction ftf;
-  if (several_files) {
-    ftf = [=, &testing_variables] (const NonEmptyString& own_public_id,
-                                   const NonEmptyString& contact_public_id,
-                                   const NonEmptyString& signal_file_name,
-                                   const NonEmptyString& signal_file_id,
-                                   const NonEmptyString& timestamp) {
-      MultipleFileTransferSlot(own_public_id,
-                               contact_public_id,
-                               signal_file_name,
-                               signal_file_id,
-                               timestamp,
-                               ids,
-                               names,
-                               total_files,
-                               &testing_variables.file_transfer_received);
-    };
-  } else {
-    ftf = [=, &testing_variables] (const NonEmptyString& own_public_id,
-                                   const NonEmptyString& contact_public_id,
-                                   const NonEmptyString& signal_file_name,
-                                   const NonEmptyString& signal_file_id,
-                                   const NonEmptyString& timestamp) {
-            FileTransferSlot(own_public_id,
-                             contact_public_id,
-                             signal_file_name,
-                             signal_file_id,
-                             timestamp,
-                             &testing_variables.file_name,
-                             &testing_variables.file_id,
-                             &testing_variables.file_transfer_received);
-          };
-  }
-
-  int result(0);
-  // Initialise and connect
-//  result += test_elements.ConnectToSignals(
-//                [&] (const NonEmptyString& own_public_id,
-//                     const NonEmptyString& contact_public_id,
-//                     const NonEmptyString& signal_message,
-//                     const NonEmptyString& timestamp) {
-//                  ChatSlot(own_public_id,
-//                           contact_public_id,
-//                           signal_message,
-//                           timestamp,
-//                           &testing_variables.chat_message,
-//                           &testing_variables.chat_message_received);
-//                },
-//                ftf,
-//                FileTransferFailureFunction(),
-//                [&] (const NonEmptyString& own_public_id,
-//                     const NonEmptyString& contact_public_id,
-//                     const std::string& message,
-//                     const NonEmptyString& timestamp) {
-//                  NewContactSlot(own_public_id,
-//                                 contact_public_id,
-//                                 message,
-//                                 timestamp,
-//                                 &testing_variables.newly_contacted,
-//                                 &testing_variables.contact_request_message);
-//                },
-//                [&] (const NonEmptyString& own_public_id,
-//                     const NonEmptyString& contact_public_id,
-//                     const NonEmptyString& timestamp) {
-//                  ContactConfirmationSlot(own_public_id,
-//                                          contact_public_id,
-//                                          timestamp,
-//                                          &testing_variables.confirmed);
-//                },
-//                [&] (const NonEmptyString& own_public_id,
-//                     const NonEmptyString& contact_public_id,
-//                     const NonEmptyString& timestamp) {
-//                  ContactProfilePictureSlot(own_public_id,
-//                                            contact_public_id,
-//                                            timestamp,
-//                                            &testing_variables.picture_updated);
-//                },
-//                [&] (const NonEmptyString& own_public_id,
-//                     const NonEmptyString& contact_public_id,
-//                     const NonEmptyString& timestamp,
-//                    ContactPresence contact_presence) {
-//                  ContactPresenceSlot(own_public_id,
-//                                      contact_public_id,
-//                                      timestamp,
-//                                      contact_presence,
-//                                      &testing_variables.presence_announced);
-//                },
-//                [&] (const NonEmptyString& own_public_id,
-//                     const NonEmptyString& contact_public_id,
-//                     const std::string& signal_message,
-//                     const NonEmptyString& timestamp) {
-//                  ContactDeletionSlot(own_public_id,
-//                                      contact_public_id,
-//                                      signal_message,
-//                                      timestamp,
-//                                      &testing_variables.removal_message,
-//                                      &testing_variables.removed);
-//                },
-//                [&] (const NonEmptyString& own_id,
-//                     const NonEmptyString& contact_id,
-//                     const NonEmptyString& timestamp) {
-//                  LifestuffCardSlot(own_id,
-//                                    contact_id,
-//                                    timestamp,
-//                                    &testing_variables.social_info_map_changed);
-//                },
-//                NetworkHealthFunction(),
-//                [&] {
-//                  ImmediateQuitRequiredSlot(&testing_variables.immediate_quit_required);
-//                });
-  return result;
-}
-
-int CreateAccountWithPublicId(LifeStuff& test_elements,
-                              TestingVariables& testing_variables,
+int CreateAccountWithPublicId(Slots& lifestuff_slots,
                               const fs::path& test_dir,
                               const NonEmptyString& keyword,
                               const NonEmptyString& pin,
                               const NonEmptyString& password,
-                              const NonEmptyString& public_id,
-                              bool several_files,
-                              std::vector<std::string>* ids,
-                              std::vector<std::string>* names,
-                              size_t* total_files) {
-  int result(0);
-  result = InitialiseAndConnect(test_elements,
-                                testing_variables,
-                                test_dir,
-                                several_files,
-                                ids,
-                                names,
-                                total_files);
-  if (result != kSuccess) {
-    LOG(kError) << "Failure initialising and connecting";
-    return result;
-  }
-  result += DoFullCreateUser(test_elements, keyword, pin, password);
+                              const NonEmptyString& public_id) {
+  LifeStuff test_elements(lifestuff_slots, test_dir);
+  int result(DoFullCreateUser(test_elements, keyword, pin, password));
   result += test_elements.CreatePublicId(public_id);
   result += DoFullLogOut(test_elements);
   if (result != kSuccess) {
@@ -498,8 +349,9 @@ int CreateAccountWithPublicId(LifeStuff& test_elements,
   return result;
 }
 
-int ConnectTwoPublicIds(LifeStuff& test_elements1,
-                        LifeStuff& test_elements2,
+int ConnectTwoPublicIds(const fs::path& test_dir,
+                        Slots& lifestuff_slots1,
+                        Slots& lifestuff_slots2,
                         TestingVariables& testing_variables1,
                         TestingVariables& testing_variables2,
                         const NonEmptyString& keyword1,
@@ -512,10 +364,10 @@ int ConnectTwoPublicIds(LifeStuff& test_elements1,
                         const NonEmptyString& public_id2) {
   // First user adds second user
   int result(0);
-  testing_variables1.confirmed = false;
-  testing_variables2.newly_contacted = false;
   NonEmptyString message(RandomAlphaNumericString(5));
   {
+    PopulateSlots(lifestuff_slots1, testing_variables1);
+    LifeStuff test_elements1(lifestuff_slots1, test_dir / "elements1");
     result += DoFullLogIn(test_elements1, keyword1, pin1, password1);
     result += test_elements1.AddContact(public_id1, public_id2, message.string());
     result += DoFullLogOut(test_elements1);
@@ -525,6 +377,8 @@ int ConnectTwoPublicIds(LifeStuff& test_elements1,
     }
   }
   {
+    PopulateSlots(lifestuff_slots2, testing_variables2);
+    LifeStuff test_elements2(lifestuff_slots2, test_dir / "elements2");
     result += DoFullLogIn(test_elements2, keyword2, pin2, password2);
 
     while (!testing_variables2.newly_contacted)
@@ -538,6 +392,8 @@ int ConnectTwoPublicIds(LifeStuff& test_elements1,
     }
   }
   {
+    PopulateSlots(lifestuff_slots1, testing_variables1);
+    LifeStuff test_elements1(lifestuff_slots1, test_dir / "elements1");
     result += DoFullLogIn(test_elements1, keyword1, pin1, password1);
     while (!testing_variables1.confirmed)
       Sleep(bptime::milliseconds(100));
@@ -629,37 +485,19 @@ void OneUserApiTest::SetUp() { ASSERT_TRUE(network_.StartLocalNetwork(test_dir_,
 
 void OneUserApiTest::TearDown() { EXPECT_TRUE(network_.StopLocalNetwork()); }
 
-//void TwoUsersApiTest::SetUp() {
-////  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12));
-//  ASSERT_EQ(kSuccess,
-//            CreateAndConnectTwoPublicIds(test_elements_1_, test_elements_2_,
-//                                         testing_variables_1_, testing_variables_2_,
-//                                         *test_dir_,
-//                                         keyword_1_, pin_1_, password_1_, public_id_1_,
-//                                         keyword_2_, pin_2_, password_2_, public_id_2_));
-//}
+void TwoUsersApiTest::SetUp() {
+  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 10, true));
+  PopulateSlots(lifestuff_slots_1_, testing_variables_1_);
+  PopulateSlots(lifestuff_slots_2_, testing_variables_2_);
+  ASSERT_EQ(kSuccess,
+            CreateAndConnectTwoPublicIds(lifestuff_slots_1_, lifestuff_slots_2_,
+                                         testing_variables_1_, testing_variables_2_,
+                                         *test_dir_,
+                                         keyword_1_, pin_1_, password_1_, public_id_1_,
+                                         keyword_2_, pin_2_, password_2_, public_id_2_));
+}
 
-//void TwoUsersApiTest::TearDown() {
-////  EXPECT_TRUE(network_.StopLocalNetwork());
-//}
-
-//void TwoUsersMutexApiTest::SetUp() {
-//  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12));
-//  ASSERT_EQ(kSuccess, CreateAndConnectTwoPublicIds(test_elements_1_,
-//                                                   test_elements_2_,
-//                                                   testing_variables_1_,
-//                                                   testing_variables_2_,
-//                                                   *test_dir_,
-//                                                   keyword_1_, pin_1_, password_1_,
-//                                                   public_id_1_,
-//                                                   keyword_2_, pin_2_, password_2_,
-//                                                   public_id_2_, false,
-//                                                   nullptr, nullptr, nullptr));
-//}
-
-//void TwoUsersMutexApiTest::TearDown() {
-//  EXPECT_TRUE(network_.StopLocalNetwork());
-//}
+void TwoUsersApiTest::TearDown() { EXPECT_TRUE(network_.StopLocalNetwork()); }
 
 }  // namespace test
 

@@ -242,61 +242,6 @@ TEST_F(OneUserApiTest, FUNC_IncorrectLoginLogoutSequences) {
   }
 }
 
-//TEST_F(TwoUsersApiTest, DISABLED_FUNC_DriveNotMountedTryOperations) {
-//  EXPECT_EQ(test_elements_1_.logged_in_state(), kBaseState);
-//  EXPECT_EQ(test_elements_2_.logged_in_state(), kBaseState);
-//  EXPECT_EQ(test_elements_1_.state(), kConnected);
-//  EXPECT_EQ(test_elements_2_.state(), kConnected);
-
-//  testing_variables_1_.newly_contacted = false;
-//  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_2_, keyword_2_, pin_2_, password_2_));
-//  EXPECT_EQ(test_elements_2_.logged_in_state(),
-//            kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
-//  EXPECT_EQ(test_elements_2_.state(), kLoggedIn);
-//  NonEmptyString public_id_3(RandomAlphaNumericString(5));
-//  NonEmptyString message(RandomAlphaNumericString(5));
-//  EXPECT_EQ(kSuccess, test_elements_2_.CreatePublicId(public_id_3));
-//  EXPECT_EQ(kSuccess, test_elements_2_.AddContact(public_id_3, public_id_1_, message.string()));
-//  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_2_));
-//  EXPECT_EQ(test_elements_2_.logged_in_state(), kBaseState);
-//  EXPECT_EQ(test_elements_2_.state(), kConnected);
-
-//  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements_1_, keyword_1_, pin_1_, password_1_));
-//  int i(0);
-//  while (!testing_variables_1_.newly_contacted && i < 100) {
-//    ++i;
-//    Sleep(bptime::milliseconds(100));
-//  }
-//  EXPECT_TRUE(testing_variables_1_.newly_contacted);
-//  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements_1_));
-
-//  EXPECT_EQ(kSuccess, test_elements_1_.LogIn(keyword_1_, pin_1_, password_1_));
-//  EXPECT_EQ(test_elements_1_.logged_in_state(), kCredentialsLoggedIn);
-//  EXPECT_EQ(test_elements_1_.state(), kLoggedIn);
-
-//  NonEmptyString public_id_4(RandomAlphaNumericString(5));
-//  EXPECT_EQ(kWrongLoggedInState, test_elements_1_.CreatePublicId(public_id_4));
-//  EXPECT_EQ(kWrongLoggedInState, test_elements_1_.CheckPassword(password_1_));
-//  EXPECT_EQ(kWrongLoggedInState, test_elements_1_.ChangeKeyword(NonEmptyString(
-//      RandomAlphaNumericString(5)), password_1_));
-//  EXPECT_EQ(kWrongLoggedInState, test_elements_1_.ChangePin(CreatePin(), password_1_));
-//  EXPECT_EQ(kWrongLoggedInState, test_elements_1_.ChangePassword(
-//      NonEmptyString(RandomAlphaNumericString(5)), password_1_));
-//  EXPECT_EQ(kWrongLoggedInState,
-//            test_elements_1_.AddContact(public_id_1_,
-//                                        NonEmptyString(RandomAlphaNumericString(5)),
-//                                        RandomAlphaNumericString(5)));
-//  EXPECT_EQ(kWrongLoggedInState, test_elements_1_.ConfirmContact(public_id_1_, public_id_3));
-//  EXPECT_EQ(kWrongLoggedInState, test_elements_1_.DeclineContact(public_id_1_, public_id_3));
-//  EXPECT_EQ(kWrongLoggedInState,
-//            test_elements_1_.RemoveContact(public_id_1_, public_id_2_, message.string()));
-//  // TODO(Alison) - check that other functions in API aren't accessible when drive not mounted.
-
-//  EXPECT_EQ(kSuccess, test_elements_1_.LogOut());
-//  EXPECT_EQ(test_elements_1_.logged_in_state(), kBaseState);
-//  EXPECT_EQ(test_elements_1_.state(), kConnected);
-//}
-
 TEST_F(OneUserApiTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
   // Create directory
   std::string tail;
