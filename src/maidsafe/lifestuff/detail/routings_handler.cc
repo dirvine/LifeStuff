@@ -27,6 +27,7 @@
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_id.h"
 
+#include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/return_codes.h"
 
 #include "maidsafe/lifestuff/return_codes.h"
@@ -106,8 +107,9 @@ bool RoutingsHandler::AddRoutingObject(
   routing::Functors functors;
   Identity id(routing_details->fob.identity);
   functors.message_received = [this, id] (const std::string& wrapped_message,
-                                                    const NodeId& group_claim,
-                                                    const routing::ReplyFunctor& reply_functor) {
+                                          const NodeId& group_claim,
+                                          const bool& /*cache_lookup*/,
+                                          const routing::ReplyFunctor& reply_functor) {
                                 OnRequestReceived(id,
                                                   NonEmptyString(wrapped_message),
                                                   group_claim,
@@ -219,7 +221,7 @@ bool RoutingsHandler::Send(const Identity& source_id,
                                        wrapped_message.string(),
                                        response_functor,
                                        boost::posix_time::seconds(10),
-                                       true,
+                                       routing::DestinationType::kDirect,
                                        false);
 
   if (reply_message) {
