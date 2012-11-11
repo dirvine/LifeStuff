@@ -47,25 +47,26 @@ TEST_F(OneUserApiTest, FUNC_CreatePublicIdCases) {
   EXPECT_NE(kSuccess, test_elements.CreatePublicId(NonEmptyString(" ")));
   EXPECT_NE(kSuccess,
             test_elements.CreatePublicId(NonEmptyString(" " +
-                                                         RandomAlphaNumericString(RandomUint32() %
-                                                                                  26 + 4))));
+                                                        RandomAlphaNumericString(RandomUint32() %
+                                                                                 26 + 4))));
   EXPECT_NE(kSuccess,
             test_elements.CreatePublicId(NonEmptyString(RandomAlphaNumericString(RandomUint32() %
-                                                                                  26 + 4) + " ")));
+                                                                                 26 + 4) +
+                                                        " ")));
   EXPECT_NE(kSuccess,
             test_elements.CreatePublicId(NonEmptyString(RandomAlphaNumericString(RandomUint32() %
-                                                                                  13 + 2) +
-                                                         "  " +
-                                                         RandomAlphaNumericString(RandomUint32() %
-                                                                                  14 + 1))));
+                                                                                 13 + 2) +
+                                                        "  " +
+                                                        RandomAlphaNumericString(RandomUint32() %
+                                                                                 14 + 1))));
   EXPECT_NE(kSuccess,
             test_elements.CreatePublicId(NonEmptyString(" " +
-                                                         RandomAlphaNumericString(RandomUint32() %
-                                                                                  13 + 1) +
-                                                         "  " +
-                                                         RandomAlphaNumericString(RandomUint32() %
-                                                                                  13 + 1) +
-                                                         " ")));
+                                                        RandomAlphaNumericString(RandomUint32() %
+                                                                                 13 + 1) +
+                                                        "  " +
+                                                        RandomAlphaNumericString(RandomUint32() %
+                                                                                 13 + 1) +
+                                                        " ")));
   NonEmptyString public_id(RandomAlphaNumericString(RandomUint32() % 14 + 1) +
                            " " +
                            RandomAlphaNumericString(RandomUint32() % 15 + 1));
@@ -83,7 +84,7 @@ TEST_F(OneUserApiTest, FUNC_CreateSamePublicIdConsecutively) {
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
 }
 
-TEST_F(OneUserApiTest, DISABLED_FUNC_CreateSamePublicIdSimultaneously) {
+TEST_F(OneUserApiTest, FUNC_CreateSamePublicIdSimultaneously) {
   NonEmptyString new_public_id(RandomAlphaNumericString(6));
   int result_1(0);
   int result_2(0);
@@ -184,7 +185,7 @@ TEST_F(OneUserApiTest, FUNC_AddOwnPublicIdAsContact) {
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
 }
 
-TEST_F(OneUserApiTest, DISABLED_FUNC_ChangeProfilePictureAfterSaveSession) {
+TEST_F(OneUserApiTest, FUNC_ChangeProfilePictureAfterSaveSession) {
   NonEmptyString public_id(RandomAlphaNumericString(5)), retrieved_picture;
   {
     PopulateSlots(lifestuff_slots_, testing_variables_);

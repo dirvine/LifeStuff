@@ -120,7 +120,7 @@ TEST_F(OneUserApiTest, FUNC_ChangeCredentials) {
   }
 }
 
-TEST_F(OneUserApiTest, DISABLED_FUNC_ChangePinAndPasswordSimultaneously) {
+TEST_F(OneUserApiTest, FUNC_ChangePinAndPasswordSimultaneously) {
   NonEmptyString new_pin(CreatePin());
   NonEmptyString new_password(RandomAlphaNumericString(5));
   int result_pin(0), result_password(0);
@@ -177,7 +177,7 @@ TEST_F(OneUserApiTest, DISABLED_FUNC_ChangePinAndPasswordSimultaneously) {
   }
 }
 
-TEST_F(OneUserApiTest, DISABLED_FUNC_ChangeKeywordAndPasswordSimultaneously) {
+TEST_F(OneUserApiTest, FUNC_ChangeKeywordAndPasswordSimultaneously) {
   NonEmptyString new_keyword(RandomAlphaNumericString(5));
   NonEmptyString new_password(RandomAlphaNumericString(5));
   int result_keyword(0), result_password(0);
@@ -234,7 +234,7 @@ TEST_F(OneUserApiTest, DISABLED_FUNC_ChangeKeywordAndPasswordSimultaneously) {
   }
 }
 
-TEST_F(OneUserApiTest, DISABLED_FUNC_ChangePinAndKeywordSimultaneously) {
+TEST_F(OneUserApiTest, FUNC_ChangePinAndKeywordSimultaneously) {
   NonEmptyString new_pin(CreatePin());
   NonEmptyString new_keyword(RandomAlphaNumericString(5));
   int result_pin(0), result_keyword(0);
@@ -292,7 +292,7 @@ TEST_F(OneUserApiTest, DISABLED_FUNC_ChangePinAndKeywordSimultaneously) {
   }
 }
 
-TEST_F(OneUserApiTest, DISABLED_FUNC_CreateInvalidUsers) {
+TEST_F(OneUserApiTest, FUNC_CreateInvalidUsers) {
   NonEmptyString new_pin(CreatePin());
   NonEmptyString new_keyword(RandomAlphaNumericString(5));
   NonEmptyString new_password(RandomAlphaNumericString(5));
@@ -389,7 +389,7 @@ TEST_F(OneUserApiTest, DISABLED_FUNC_CreateInvalidUsers) {
   }
 }
 
-TEST_F(OneUserApiTest, DISABLED_FUNC_TryChangeCredentialsToInvalid) {
+TEST_F(OneUserApiTest, FUNC_TryChangeCredentialsToInvalid) {
   NonEmptyString incorrect_password(RandomAlphaNumericString(RandomUint32() % 26 + 5));
   while (incorrect_password == password_)
     incorrect_password = NonEmptyString(RandomAlphaNumericString(RandomUint32() % 26 + 5));
@@ -445,7 +445,7 @@ TEST_F(OneUserApiTest, DISABLED_FUNC_TryChangeCredentialsToInvalid) {
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
 }
 
-TEST_F(OneUserApiTest, DISABLED_FUNC_ChangeCredentialsWhenLoggedOut) {
+TEST_F(OneUserApiTest, FUNC_ChangeCredentialsWhenLoggedOut) {
   NonEmptyString new_pin(CreatePin());
   PopulateSlots(lifestuff_slots_, testing_variables_);
   LifeStuff test_elements(lifestuff_slots_, *test_dir_);
@@ -459,7 +459,7 @@ TEST_F(OneUserApiTest, DISABLED_FUNC_ChangeCredentialsWhenLoggedOut) {
 
 }
 
-TEST_F(OneUserApiTest, DISABLED_FUNC_ChangeCredentialsAndLogOut) {
+TEST_F(OneUserApiTest, FUNC_ChangeCredentialsAndLogOut) {
   NonEmptyString new_pin(CreatePin());
   NonEmptyString new_keyword(RandomAlphaNumericString(5));
   NonEmptyString new_password(RandomAlphaNumericString(5));
@@ -508,154 +508,122 @@ TEST_F(OneUserApiTest, DISABLED_FUNC_ChangeCredentialsAndLogOut) {
   }
 }
 
-//TEST_F(TwoInstancesApiTest, DISABLED_FUNC_LogInFromTwoPlaces) {
-//  LOG(kInfo) << "\n\nABOUT TO CREATE USER...\n\n";
-//  ASSERT_EQ(kSuccess, test_elements.CreateUser(keyword_, pin_, password_, fs::path()));
-//  LOG(kInfo) << "\n\nCREATED USER. ABOUT TO LOG OUT...\n\n";
-//  EXPECT_EQ(kSuccess, test_elements.LogOut());
-//  LOG(kInfo) << "\n\nLOGGED OUT.\n\n";
+TEST_F(OneUserApiTest, FUNC_LogInFromTwoPlaces) {
+  LOG(kInfo) << "\n\nABOUT TO CREATE USER...\n\n";
+  {
+    PopulateSlots(lifestuff_slots_, testing_variables_);
+    LifeStuff test_elements(lifestuff_slots_, *test_dir_);
+    ASSERT_EQ(kSuccess, test_elements.CreateUser(keyword_, pin_, password_, fs::path()));
+    LOG(kInfo) << "\n\nCREATED USER. ABOUT TO LOG OUT...\n\n";
+    EXPECT_EQ(kSuccess, test_elements.LogOut());
+    LOG(kInfo) << "\n\nLOGGED OUT.\n\n";
+  }
 
-//  LOG(kInfo) << "\n\nSETTING UP 3RD TEST ELEMENTS...\n\n";
-//  Slots lifestuff_slots3;
-//  LifeStuff test_elements3(lifestuff_slots3, *test_dir_ / "elements3");
-////  bool immediate_quit_required_3(false);
-////  EXPECT_EQ(kSuccess,
-////            test_elements3.ConnectToSignals(ChatFunction(),
-////                                             FileTransferSuccessFunction(),
-////                                             FileTransferFailureFunction(),
-////                                             NewContactFunction(),
-////                                             ContactConfirmationFunction(),
-////                                             ContactProfilePictureFunction(),
-////                                             ContactPresenceFunction(),
-////                                             ContactDeletionFunction(),
-////                                             LifestuffCardUpdateFunction(),
-////                                             NetworkHealthFunction(),
-////                                             [&] {
-////                                             ImmediateQuitRequiredSlot(
-////                                               &immediate_quit_required_3);
-////                                             }));
+  {
+    TestingVariables testing_variables2;
+    Slots lifestuff_slots2;
+    PopulateSlots(lifestuff_slots2, testing_variables2);
+    LifeStuff test_elements2(lifestuff_slots2, *test_dir_ / "elements2");
+    LOG(kInfo) << "\n\nABOUT TO LOG 2ND INSTANCE IN...\n\n";
+    EXPECT_EQ(kSuccess, test_elements2.LogIn(keyword_, pin_, password_));
+    EXPECT_EQ(kLoggedIn, test_elements2.state());
+    EXPECT_EQ(kCredentialsLoggedIn, test_elements2.logged_in_state());
 
-//  testing_variables_2_.immediate_quit_required = false;
-//  LOG(kInfo) << "\n\nABOUT TO LOG 2ND INSTANCE IN...\n\n";
-//  EXPECT_EQ(kSuccess, test_elements2_.LogIn(keyword_, pin_, password_));
-//  EXPECT_EQ(kLoggedIn, test_elements2_.state());
-//  EXPECT_EQ(kCredentialsLoggedIn, test_elements2_.logged_in_state());
+    LOG(kInfo) << "\n\nABOUT TO LOG 3RD INSTANCE IN...\n\n";
+    TestingVariables testing_variables3;
+    Slots lifestuff_slots3;
+    PopulateSlots(lifestuff_slots3, testing_variables3);
+    LifeStuff test_elements3(lifestuff_slots3, *test_dir_ / "elements3");
+    EXPECT_EQ(kSuccess, test_elements3.LogIn(keyword_, pin_, password_));
+    int i(0);
+    while (!testing_variables2.immediate_quit_required && i < 100) {
+      ++i;
+      Sleep(bptime::milliseconds(100));
+    }
+    LOG(kInfo) << "\n\nCHECKING STATE OF 2ND AND 3RD INSTANCES...\n\n";
+    EXPECT_TRUE(testing_variables2.immediate_quit_required);
+    EXPECT_EQ(kConnected, test_elements2.state());
+    EXPECT_EQ(kBaseState, test_elements2.logged_in_state());
+    EXPECT_EQ(fs::path(), test_elements2.mount_path());
+    EXPECT_EQ(kLoggedIn, test_elements3.state());
+    EXPECT_EQ(kCredentialsLoggedIn, test_elements3.logged_in_state());
 
-//  LOG(kInfo) << "\n\nABOUT TO LOG 3RD INSTANCE IN...\n\n";
-//  EXPECT_EQ(kSuccess, test_elements3.LogIn(keyword_, pin_, password_));
-//  int i(0);
-//  while (!testing_variables_2_.immediate_quit_required && i < 100) {
-//    ++i;
-//    Sleep(bptime::milliseconds(100));
-//  }
-//  LOG(kInfo) << "\n\nCHECKING STATE OF 2ND AND 3RD INSTANCES...\n\n";
-//  EXPECT_TRUE(testing_variables_2_.immediate_quit_required);
-//  EXPECT_EQ(kConnected, test_elements2_.state());
-//  EXPECT_EQ(kBaseState, test_elements2_.logged_in_state());
-//  EXPECT_EQ(fs::path(), test_elements2_.mount_path());
-//  EXPECT_EQ(kLoggedIn, test_elements3.state());
-//  EXPECT_EQ(kCredentialsLoggedIn, test_elements3.logged_in_state());
+    LOG(kInfo) << "\n\nLOGGING 3RD INSTANCE OUT...\n\n";
+    EXPECT_EQ(kSuccess, test_elements3.LogOut());
+  }
+}
 
-//  LOG(kInfo) << "\n\nLOGGING 3RD INSTANCE OUT...\n\n";
-//  EXPECT_EQ(kSuccess, test_elements3.LogOut());
-//  LOG(kInfo) << "\n\nFINALISING 3RD INSTANCE...\n\n";
-//  LOG(kInfo) << "\n\nFINISHED TEST BODY! TAH-DAH!\n\n";
-//}
+TEST_F(OneUserApiTest, FUNC_LogInAfterCreateUser) {
+  PopulateSlots(lifestuff_slots_, testing_variables_);
+  LifeStuff test_elements(lifestuff_slots_, *test_dir_ / "elements1");
+  LOG(kInfo) << "\n\nABOUT TO CREATE USER...\n\n";
+  EXPECT_EQ(kSuccess, test_elements.CreateUser(keyword_, pin_, password_, fs::path()));
+  EXPECT_EQ(kLoggedIn, test_elements.state());
+  EXPECT_EQ(kCredentialsLoggedIn, test_elements.logged_in_state());
 
-//TEST_F(TwoInstancesApiTest, DISABLED_FUNC_LogInAfterCreateUser) {
-//  LOG(kInfo) << "\n\nABOUT TO CREATE USER...\n\n";
-//  EXPECT_EQ(kSuccess, test_elements.CreateUser(keyword_, pin_, password_, fs::path()));
-//  EXPECT_EQ(kLoggedIn, test_elements.state());
-//  EXPECT_EQ(kCredentialsLoggedIn, test_elements.logged_in_state());
+  LOG(kInfo) << "\n\nABOUT TO LOG 2ND INSTANCE IN...\n\n";
+  TestingVariables testing_variables2;
+  Slots lifestuff_slots2;
+  PopulateSlots(lifestuff_slots2, testing_variables2);
+  LifeStuff test_elements2(lifestuff_slots2, *test_dir_ / "elements2");
+  EXPECT_EQ(kSuccess, test_elements2.LogIn(keyword_, pin_, password_));
+  int i(0);
+  while (!testing_variables_.immediate_quit_required && i < 100) {
+    ++i;
+    Sleep(bptime::milliseconds(100));
+  }
+  LOG(kInfo) << "\n\nCHECKING STATE OF 2ND AND 3RD INSTANCES...\n\n";
+  EXPECT_TRUE(testing_variables_.immediate_quit_required);
+  EXPECT_EQ(kConnected, test_elements.state());
+  EXPECT_EQ(kBaseState, test_elements.logged_in_state());
+  EXPECT_EQ(fs::path(), test_elements.mount_path());
+  EXPECT_EQ(kLoggedIn, test_elements2.state());
+  EXPECT_EQ(kCredentialsLoggedIn, test_elements2.logged_in_state());
 
-//  testing_variables_1_.immediate_quit_required = false;
-//  LOG(kInfo) << "\n\nABOUT TO LOG 2ND INSTANCE IN...\n\n";
-//  EXPECT_EQ(kSuccess, test_elements2_.LogIn(keyword_, pin_, password_));
-//  int i(0);
-//  while (!testing_variables_1_.immediate_quit_required && i < 100) {
-//    ++i;
-//    Sleep(bptime::milliseconds(100));
-//  }
-//  LOG(kInfo) << "\n\nCHECKING STATE OF 2ND AND 3RD INSTANCES...\n\n";
-//  EXPECT_TRUE(testing_variables_1_.immediate_quit_required);
-//  EXPECT_EQ(kConnected, test_elements.state());
-//  EXPECT_EQ(kBaseState, test_elements.logged_in_state());
-//  EXPECT_EQ(fs::path(), test_elements.mount_path());
-//  EXPECT_EQ(kLoggedIn, test_elements2_.state());
-//  EXPECT_EQ(kCredentialsLoggedIn, test_elements2_.logged_in_state());
+  LOG(kInfo) << "\n\nLOGGING 3RD INSTANCE OUT...\n\n";
+  EXPECT_EQ(kSuccess, test_elements2.LogOut());
+}
 
-//  LOG(kInfo) << "\n\nLOGGING 3RD INSTANCE OUT...\n\n";
-//  EXPECT_EQ(kSuccess, test_elements2_.LogOut());
-//  LOG(kInfo) << "\n\nFINISHED TEST BODY! TAH-DAH!\n\n";
-//}
+TEST_F(OneUserApiTest, FUNC_CreateSameUserSimultaneously) {
+  {
+    PopulateSlots(lifestuff_slots_, testing_variables_);
+    LifeStuff test_elements(lifestuff_slots_, *test_dir_ / "elements1");
 
-//TEST_F(TwoInstancesApiTest, DISABLED_FUNC_LogInFromTwoPlacesSimultaneously) {
-//#ifdef MAIDSAFE_LINUX
-//  EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
-//  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
-
-//  int result_1(0), result_2(0);
-//  std::vector<std::pair<int, int>> sleep_values;
-//  sleep_values.push_back(std::make_pair(0, 200));
-//  sleep_values.push_back(std::make_pair(100, 200));
-//  sleep_values.push_back(std::make_pair(100, 150));
-//  sleep_values.push_back(std::make_pair(0, 10));
-
-//  for (size_t i = 0; i < sleep_values.size(); ++i) {
-//    boost::thread thread_1([&] { sleepthreads::RunLogIn(test_elements,
-//                                                        std::ref(result_1),
-//                                                        keyword_, pin_,
-//                                                        password_,
-//                                                        sleep_values.at(i)); });  // NOLINT (Alison)
-//    boost::thread thread_2([&] { sleepthreads::RunLogIn(test_elements2_,
-//                                                        std::ref(result_2),
-//                                                        keyword_,
-//                                                        pin_,
-//                                                        password_,
-//                                                        sleep_values.at(i)); });  // NOLINT (Alison)
-//    thread_1.join();
-//    thread_2.join();
-//    EXPECT_TRUE((result_1 == kSuccess && result_2 != kSuccess) ||
-//                (result_1 != kSuccess && result_2 == kSuccess));
-//    result_1 = DoFullLogOut(test_elements);
-//    result_2 = DoFullLogOut(test_elements2_);
-//    EXPECT_TRUE((result_1 == kSuccess && result_2 != kSuccess) ||
-//                (result_1 != kSuccess && result_2 == kSuccess));
-//    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, pin_, password_));
-//    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
-//  }
-//#endif
-//}
-
-//TEST_F(TwoInstancesApiTest, DISABLED_FUNC_NeverLogIn) {
-//}
-
-//TEST_F(TwoInstancesApiTest, DISABLED_FUNC_CreateSameUserSimultaneously) {
-//  int result_1(0), result_2(0);
-//  boost::thread thread_1([&] {
-//                           sleepthreads::RunCreateUser(test_elements,
-//                                                       std::ref(result_1),
-//                                                       keyword_, pin_,
-//                                                       password_);
-//                         });
-//  boost::thread thread_2([&] {
-//                           sleepthreads::RunCreateUser(test_elements2_,
-//                                                       std::ref(result_2),
-//                                                       keyword_,
-//                                                       pin_,
-//                                                       password_);
-//                         });
-//  thread_1.join();
-//  thread_2.join();
-//  EXPECT_TRUE((result_1 == kSuccess && result_2 != kSuccess) ||
-//              (result_1 != kSuccess && result_2 == kSuccess));
-//  result_1 = DoFullLogOut(test_elements);
-//  result_2 = DoFullLogOut(test_elements2_);
-//  EXPECT_TRUE((result_1 == kSuccess && result_2 != kSuccess) ||
-//              (result_1 != kSuccess && result_2 == kSuccess));
-//  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, pin_, password_));
-//  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
-//}
+    TestingVariables testing_variables2;
+    Slots lifestuff_slots2;
+    PopulateSlots(lifestuff_slots2, testing_variables2);
+    LifeStuff test_elements2(lifestuff_slots2, *test_dir_ / "elements2");
+    int result_1(0), result_2(0);
+    boost::thread thread_1([&] {
+                             sleepthreads::RunCreateUser(test_elements,
+                                                         std::ref(result_1),
+                                                         keyword_,
+                                                         pin_,
+                                                         password_);
+                           });
+    boost::thread thread_2([&] {
+                             sleepthreads::RunCreateUser(test_elements2,
+                                                         std::ref(result_2),
+                                                         keyword_,
+                                                         pin_,
+                                                         password_);
+                           });
+    thread_1.join();
+    thread_2.join();
+    EXPECT_TRUE((result_1 == kSuccess && result_2 != kSuccess) ||
+                (result_1 != kSuccess && result_2 == kSuccess));
+    result_1 = DoFullLogOut(test_elements);
+    result_2 = DoFullLogOut(test_elements2);
+    EXPECT_TRUE((result_1 == kSuccess && result_2 != kSuccess) ||
+                (result_1 != kSuccess && result_2 == kSuccess));
+  }
+  {
+    PopulateSlots(lifestuff_slots_, testing_variables_);
+    LifeStuff test_elements(lifestuff_slots_, *test_dir_ / "elements1");
+    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, pin_, password_));
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+  }
+}
 
 //TEST_F(TwoUsersApiTest, DISABLED_FUNC_ChangeCredentialsToSameConsecutively) {
 //#ifdef MAIDSAFE_LINUX

@@ -488,8 +488,8 @@ int LifeStuffImpl::StartMessagesAndIntros() {
 }
 
 int LifeStuffImpl::StopMessagesAndIntros() {
-  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn) {  // ||
-//      (kDriveMounted & logged_in_state_) != kDriveMounted) {
+  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
+      (kDriveMounted & logged_in_state_) != kDriveMounted) {
      LOG(kError) << "In unsuitable state to stop messages and intros: " <<
                     "make sure user_credentials are logged in and drive is mounted.";
      return kWrongLoggedInState;

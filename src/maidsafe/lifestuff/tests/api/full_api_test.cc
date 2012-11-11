@@ -49,6 +49,7 @@ namespace test {
 TEST_F(OneUserApiTest, FUNC_LoggedInState) {
   // full login and logout (without public ID)
   {
+    PopulateSlots(lifestuff_slots_, testing_variables_);
     LifeStuff test_elements(lifestuff_slots_, *test_dir_);
     EXPECT_EQ(test_elements.state(), kConnected);
     EXPECT_EQ(test_elements.logged_in_state(), kBaseState);
@@ -148,15 +149,16 @@ TEST_F(OneUserApiTest, FUNC_LoggedInState) {
   }
 }
 
-TEST_F(OneUserApiTest, DISABLED_FUNC_IncorrectLoginLogoutSequences) {
+TEST_F(OneUserApiTest, FUNC_IncorrectLoginLogoutSequences) {
   {
     PopulateSlots(lifestuff_slots_, testing_variables_);
     LifeStuff test_elements(lifestuff_slots_, *test_dir_);
-    EXPECT_EQ(kSuccess, test_elements.CreateUser(keyword_, pin_, password_));
-    // Logged in with no public ID
-    NonEmptyString public_id(RandomAlphaNumericString(5));
+    EXPECT_EQ(kSuccess, test_elements.CreateUser(keyword_, pin_, password_, fs::path()));
     EXPECT_EQ(test_elements.state(), kLoggedIn);
+    EXPECT_EQ(kSuccess, test_elements.MountDrive());
     EXPECT_EQ(test_elements.logged_in_state(), kCredentialsLoggedIn | kDriveMounted);
+
+    NonEmptyString public_id(RandomAlphaNumericString(5));
     EXPECT_EQ(kSuccess, test_elements.CreatePublicId(public_id));
 
     // Try logout components in wrong order
@@ -236,6 +238,7 @@ TEST_F(OneUserApiTest, DISABLED_FUNC_IncorrectLoginLogoutSequences) {
     EXPECT_EQ(kWrongLoggedInState, test_elements.StartMessagesAndIntros());
     EXPECT_EQ(test_elements.logged_in_state(),
               kCredentialsLoggedIn | kDriveMounted | kMessagesAndIntrosStarted);
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
   }
 }
 
@@ -294,16 +297,17 @@ TEST_F(OneUserApiTest, DISABLED_FUNC_IncorrectLoginLogoutSequences) {
 //  EXPECT_EQ(test_elements_1_.state(), kConnected);
 //}
 
-TEST_F(OneUserApiTest, DISABLED_FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
+TEST_F(OneUserApiTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
   // Create directory
   std::string tail;
+  boost::system::error_code error_code;
   {
     PopulateSlots(lifestuff_slots_, testing_variables_);
     LifeStuff test_elements(lifestuff_slots_, *test_dir_);
     EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
     fs::path test(CreateTestDirectory(test_elements.mount_path(), &tail));
-    EXPECT_TRUE(fs::exists(test, error_code_));
-    EXPECT_EQ(0, error_code_.value());
+    EXPECT_TRUE(fs::exists(test, error_code));
+    EXPECT_EQ(0, error_code.value());
     EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
   }
   // Check directory exists
@@ -312,22 +316,23 @@ TEST_F(OneUserApiTest, DISABLED_FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
     LifeStuff test_elements(lifestuff_slots_, *test_dir_);
     EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, pin_, password_));
     fs::path new_path(test_elements.mount_path() / tail);
-    EXPECT_TRUE(fs::exists(new_path, error_code_));
-    EXPECT_EQ(0, error_code_.value());
+    EXPECT_TRUE(fs::exists(new_path, error_code));
+    EXPECT_EQ(0, error_code.value());
     EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
   }
 }
 
-TEST_F(OneUserApiTest, DISABLED_FUNC_LargeFileForMemoryCheck) {
+TEST_F(OneUserApiTest, FUNC_LargeFileForMemoryCheck) {
   // Create directory
   std::string tail;
+  boost::system::error_code error_code;
   {
     PopulateSlots(lifestuff_slots_, testing_variables_);
     LifeStuff test_elements(lifestuff_slots_, *test_dir_);
     EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
     EXPECT_EQ(kSuccess, CreateTestFile(test_elements.mount_path(), 500, &tail));
-    EXPECT_TRUE(fs::exists(test_elements.mount_path() / tail, error_code_));
-    EXPECT_EQ(0, error_code_.value());
+    EXPECT_TRUE(fs::exists(test_elements.mount_path() / tail, error_code));
+    EXPECT_EQ(0, error_code.value());
     EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
   }
   // Check directory exists
@@ -335,8 +340,8 @@ TEST_F(OneUserApiTest, DISABLED_FUNC_LargeFileForMemoryCheck) {
     PopulateSlots(lifestuff_slots_, testing_variables_);
     LifeStuff test_elements(lifestuff_slots_, *test_dir_);
     EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, pin_, password_));
-    EXPECT_TRUE(fs::exists(test_elements.mount_path() / tail, error_code_));
-    EXPECT_EQ(0, error_code_.value());
+    EXPECT_TRUE(fs::exists(test_elements.mount_path() / tail, error_code));
+    EXPECT_EQ(0, error_code.value());
   }
 }
 

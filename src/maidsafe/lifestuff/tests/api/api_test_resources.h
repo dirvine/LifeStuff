@@ -266,8 +266,6 @@ class OneUserApiTest : public testing::Test {
       pin_(CreatePin()),
       password_(RandomAlphaNumericString(6)),
       network_(),
-      error_code_(),
-      done_(),
       testing_variables_(),
       lifestuff_slots_() {}
 
@@ -277,8 +275,6 @@ class OneUserApiTest : public testing::Test {
   NonEmptyString pin_;
   NonEmptyString password_;
   NetworkHelper network_;
-  boost::system::error_code error_code_;
-  volatile bool done_;
   TestingVariables testing_variables_;
   Slots lifestuff_slots_;
 
@@ -286,25 +282,6 @@ class OneUserApiTest : public testing::Test {
 
   virtual void TearDown();
 };
-
-//class TwoInstancesApiTest : public OneUserApiTest {
-// public:
-//  TwoInstancesApiTest()
-//    : lifestuff_slots_2_(),
-//      test_elements_2_(lifestuff_slots_2_, *test_dir_ / "elements2"),
-//      testing_variables_1_(),
-//      testing_variables_2_() {}
-
-// protected:
-//  Slots lifestuff_slots_2_;
-//  LifeStuff test_elements_2_;
-//  TestingVariables testing_variables_1_;
-//  TestingVariables testing_variables_2_;
-
-//  virtual void SetUp();
-
-//  virtual void TearDown();
-//};
 
 //class TwoUsersApiTest : public testing::Test {
 // public:

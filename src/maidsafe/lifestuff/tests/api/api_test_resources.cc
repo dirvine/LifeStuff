@@ -625,68 +625,9 @@ void RunLogIn(LifeStuff& test_elements,
 
 }  // namespace sleepthreads
 
-void OneUserApiTest::SetUp() {
-  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12, true));
-  PopulateSlots(lifestuff_slots_, testing_variables_);
-}
+void OneUserApiTest::SetUp() { ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 10, true)); }
 
 void OneUserApiTest::TearDown() { EXPECT_TRUE(network_.StopLocalNetwork()); }
-
-//void TwoInstancesApiTest::SetUp() {
-//  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 10));
-//  EXPECT_EQ(kSuccess,
-//            test_elements_.ConnectToSignals(ChatFunction(),
-//                                            FileTransferSuccessFunction(),
-//                                            FileTransferFailureFunction(),
-//                                            NewContactFunction(),
-//                                            ContactConfirmationFunction(),
-//                                            ContactProfilePictureFunction(),
-//                                            [&] (const NonEmptyString& own_public_id,
-//                                                 const NonEmptyString& contact_public_id,
-//                                                 const NonEmptyString& timestamp,
-//                                                 ContactPresence cp) {
-//                                              ContactPresenceSlot(own_public_id,
-//                                                                  contact_public_id,
-//                                                                  timestamp,
-//                                                                  cp,
-//                                                                  &done_);
-//                                            },
-//                                            ContactDeletionFunction(),
-//                                            LifestuffCardUpdateFunction(),
-//                                            NetworkHealthFunction(),
-//                                            [&] {
-//                                              ImmediateQuitRequiredSlot(
-//                                                  &testing_variables_1_.immediate_quit_required);
-//                                            }));
-//  EXPECT_EQ(kSuccess,
-//            test_elements_2_.ConnectToSignals(ChatFunction(),
-//                                              FileTransferSuccessFunction(),
-//                                              FileTransferFailureFunction(),
-//                                              NewContactFunction(),
-//                                              ContactConfirmationFunction(),
-//                                              ContactProfilePictureFunction(),
-//                                              [&] (const NonEmptyString& own_public_id,
-//                                                   const NonEmptyString& contact_public_id,
-//                                                   const NonEmptyString& timestamp,
-//                                                   ContactPresence cp) {
-//                                                ContactPresenceSlot(own_public_id,
-//                                                                    contact_public_id,
-//                                                                    timestamp,
-//                                                                    cp,
-//                                                                    &done_);
-//                                              },
-//                                              ContactDeletionFunction(),
-//                                              LifestuffCardUpdateFunction(),
-//                                              NetworkHealthFunction(),
-//                                              [&] {
-//                                                ImmediateQuitRequiredSlot(
-//                                                    &testing_variables_2_.immediate_quit_required);
-//                                              }));
-//}
-
-//void TwoInstancesApiTest::TearDown() {
-//  EXPECT_TRUE(network_.StopLocalNetwork());
-//}
 
 //void TwoUsersApiTest::SetUp() {
 ////  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 12));
