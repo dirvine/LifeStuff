@@ -456,7 +456,7 @@ int BothTmidAndStmid(const std::string& tmid_serialised_data_atlas,
       stmid_da = stmid_serialised_data_atlas;
       session.set_serialised_data_atlas(NonEmptyString(stmid_serialised_data_atlas));
       return kSuccess;
-   }
+    }
   }
   return kLoginAccountCorrupted;
 }
@@ -490,37 +490,6 @@ int UserCredentialsImpl::HandleSerialisedDataMaps(const NonEmptyString& keyword,
     if (result != kSuccess)
       return result;
   }
-
-//  if (!tmid_serialised_data_atlas.empty()) {
-//    result = session_.ParseDataAtlas(NonEmptyString(tmid_serialised_data_atlas));
-//    if (result == kSuccess) {
-//      session_.set_serialised_data_atlas(NonEmptyString(tmid_serialised_data_atlas));
-//      tmid_da = tmid_serialised_data_atlas;
-//    } else if (result == kTryAgainLater) {
-//      return kTryAgainLater;
-//    }
-//  } else if (!stmid_serialised_data_atlas.empty()) {
-//    tmid_da = stmid_serialised_data_atlas;
-//    stmid_da = stmid_serialised_data_atlas;
-//    result = session_.ParseDataAtlas(NonEmptyString(stmid_serialised_data_atlas));
-//    if (result == kSuccess) {
-//      session_.set_serialised_data_atlas(NonEmptyString(stmid_serialised_data_atlas));
-//      result = kUsingNextToLastSession;
-//    } else if (result == kTryAgainLater) {
-//      return kTryAgainLater;
-//    }
-//  }
-
-//  if (stmid_da.empty()) {
-//    if (!stmid_serialised_data_atlas.empty()) {
-//      stmid_da = stmid_serialised_data_atlas;
-//    } else if (!tmid_da.empty()) {
-//      stmid_da = tmid_da;
-//    } else {
-//      LOG(kError) << "No valid DA.";
-//      return kSetIdentityPacketsFailure;
-//    }
-//  }
 
   int id_packets_result = passport_.SetIdentityPackets(keyword,
                                                        StringToIntPin(pin),
@@ -1376,7 +1345,7 @@ int UserCredentialsImpl::CheckInputs(const NonEmptyString& keyword,
   }
   result = CheckPasswordValidity(password);
   if (result != kSuccess) {
-    LOG(kInfo) << "Invalid password: " << password.string() << "    (Return code: " << result << ")";
+    LOG(kInfo) << "Invalid password: " << password.string() << "   (Return code: " << result << ")";
     return result;
   }
 

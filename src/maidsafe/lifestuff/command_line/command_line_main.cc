@@ -94,9 +94,10 @@ void ConnectSignals(Slots& slot_functions) {
                                                   const NonEmptyString&,
                                                   const NonEmptyString&) {
                                               };
-  slot_functions.network_health_slot = [] (const int&) {};
-  slot_functions.immediate_quit_required_slot = [] () {};
-  slot_functions.update_available_slot = [] (NonEmptyString) {};
+  slot_functions.network_health_slot = [] (const int&) {};  // NOLINT (Dan)
+  slot_functions.immediate_quit_required_slot = [] () {};  // NOLINT (Dan)
+  slot_functions.update_available_slot = [] (NonEmptyString) {};  // NOLINT (Dan)
+  slot_functions.operation_progress_slot = [] (Operation, SubTask) {};  // NOLINT (Dan)
 }
 
 void PrintMenu() {

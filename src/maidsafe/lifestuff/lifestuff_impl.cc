@@ -33,6 +33,7 @@
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/detail/message_handler.h"
@@ -72,6 +73,8 @@ void CheckSlots(Slots& slot_functions) {
   if (!slot_functions.immediate_quit_required_slot)
     throw std::exception();
   if (!slot_functions.update_available_slot)
+    throw std::exception();
+  if (!slot_functions.operation_progress_slot)
     throw std::exception();
 }
 
@@ -219,12 +222,14 @@ int LifeStuffImpl::CreateUser(const NonEmptyString& keyword,
   }
   session_.Reset();
 
+  slots_.operation_progress_slot(Operation::kCreateUser, SubTask::kInitialiseAnonymousComponents);
   int result(MakeAnonymousComponents());
   if (result != kSuccess) {
     LOG(kError) << "Failed to create anonymous components with result: " << result;
     return result;
   }
 
+  slots_.operation_progress_slot(Operation::kCreateUser, SubTask::kCreateUserCredentials);
   result = user_credentials_->CreateUser(keyword, pin, password);
   if (result != kSuccess) {
     if (result == kKeywordSizeInvalid || result == kKeywordPatternInvalid ||
@@ -240,6 +245,7 @@ int LifeStuffImpl::CreateUser(const NonEmptyString& keyword,
   }
 
 
+  slots_.operation_progress_slot(Operation::kCreateUser, SubTask::kCreateVault);
   result = CreateVaultInLocalMachine(chunk_store);
   if (result != kSuccess)  {
     LOG(kError) << "Failed to create vault. No LifeStuff for you! (Result: " << result << ")";
@@ -248,6 +254,7 @@ int LifeStuffImpl::CreateUser(const NonEmptyString& keyword,
     LOG(kInfo) << "CreateVaultInLocalMachine success.";
   }
 
+  slots_.operation_progress_slot(Operation::kCreateUser, SubTask::kInitialiseClientComponents);
   result = SetValidPmidAndInitialisePublicComponents();
   if (result != kSuccess)  {
     LOG(kError) << "Failed to set valid PMID with result: " << result;
@@ -316,12 +323,14 @@ int LifeStuffImpl::LogIn(const NonEmptyString& keyword,
   }
   session_.Reset();
 
+  slots_.operation_progress_slot(Operation::kLogIn, SubTask::kInitialiseAnonymousComponents);
   int result(MakeAnonymousComponents());
   if (result != kSuccess) {
     LOG(kError) << "Failed to create anonymous components with result: " << result;
     return result;
   }
 
+  slots_.operation_progress_slot(Operation::kLogIn, SubTask::kRetrieveUserCredentials);
   int login_result(user_credentials_->LogIn(keyword, pin, password));
   if (login_result != kSuccess) {
     if (login_result == kKeywordSizeInvalid ||
@@ -341,6 +350,7 @@ int LifeStuffImpl::LogIn(const NonEmptyString& keyword,
     }
   }
 
+  slots_.operation_progress_slot(Operation::kLogIn, SubTask::kInitialiseClientComponents);
   result = SetValidPmidAndInitialisePublicComponents();
   if (result != kSuccess)  {
     LOG(kError) << "Failed to set valid PMID with result: " << result;
@@ -369,17 +379,20 @@ int LifeStuffImpl::LogOut(bool clear_maid_routing) {
     return kWrongLoggedInState;
   }
 
+  slots_.operation_progress_slot(Operation::kLogOut, SubTask::kStoreUserCredentials);
   int result(user_credentials_->Logout());
   if (result != kSuccess) {
     LOG(kError) << "Failed to log out with result " << result;
     return kLogoutCredentialsFailure;
   }
 
+  slots_.operation_progress_slot(Operation::kLogOut, SubTask::kWaitForNetworkOperations);
   if (!remote_chunk_store_->WaitForCompletion()) {
     LOG(kError) << "Failed complete chunk operations.";
     return kLogoutCompleteChunkFailure;
   }
 
+  slots_.operation_progress_slot(Operation::kLogOut, SubTask::kCleanUp);
   client_node_->set_on_network_status(nullptr);
   client_node_->Stop();
   if (clear_maid_routing) {
@@ -653,7 +666,9 @@ int LifeStuffImpl::ConfirmContact(const NonEmptyString& my_public_id,
     return result;
   }
 
-  result = logged_in_components_->message_handler.SendPresenceMessage(my_public_id, contact_public_id, kOnline);
+  result = logged_in_components_->message_handler.SendPresenceMessage(my_public_id,
+                                                                      contact_public_id,
+                                                                      kOnline);
   if (result != kSuccess) {
     LOG(kError) << "Failed to send presence message with result: " << result;
     return result;
@@ -808,7 +823,8 @@ NonEmptyString LifeStuffImpl::GetOwnProfilePicture(const NonEmptyString& my_publ
                                                            "_profile_picture" +
                                                            kHiddenFileExtension));
   std::string profile_picture_contents;
-  if (logged_in_components_->storage.ReadHiddenFile(profile_picture_path, &profile_picture_contents) != kSuccess ||
+  if (logged_in_components_->storage.ReadHiddenFile(profile_picture_path,
+                                                    &profile_picture_contents) != kSuccess ||
       profile_picture_contents.empty()) {
     LOG(kError) << "Failed reading profile picture: " << profile_picture_path;
     return NonEmptyString();
@@ -847,7 +863,8 @@ NonEmptyString LifeStuffImpl::GetContactProfilePicture(const NonEmptyString& my_
 
   // Read contents, put them in a string, give them back. Should not be
   // over a certain size (kFileRecontructionLimit).
-  return NonEmptyString(logged_in_components_->storage.ConstructFile(contact.profile_picture_data_map));
+  return NonEmptyString(logged_in_components_->storage.ConstructFile(
+                            contact.profile_picture_data_map));
 }
 
 int LifeStuffImpl::GetLifestuffCard(const NonEmptyString& my_public_id,
@@ -859,7 +876,9 @@ int LifeStuffImpl::GetLifestuffCard(const NonEmptyString& my_public_id,
     return result;
   }
 
-  result = logged_in_components_->public_id.GetLifestuffCard(my_public_id, contact_public_id, social_info);
+  result = logged_in_components_->public_id.GetLifestuffCard(my_public_id,
+                                                             contact_public_id,
+                                                             social_info);
   if (result != kSuccess) {
     LOG(kError) << "Failed to get LifeStuff card with result " << result;
     return result;
@@ -973,7 +992,9 @@ int LifeStuffImpl::AcceptSentFile(const NonEmptyString& identifier,
   }
 
   std::string saved_file_name, serialised_data_map;
-  if (!logged_in_components_->storage.GetSavedDataMap(identifier, serialised_data_map, saved_file_name)) {
+  if (!logged_in_components_->storage.GetSavedDataMap(identifier,
+                                                      serialised_data_map,
+                                                      saved_file_name)) {
     LOG(kError) << "Failed to get saved details for identifier " << Base64Substr(identifier);
     return -1;
   }
@@ -998,7 +1019,8 @@ int LifeStuffImpl::AcceptSentFile(const NonEmptyString& identifier,
     }
     *file_name = adequate_name;
   } else {
-    result = logged_in_components_->storage.InsertDataMap(absolute_path, NonEmptyString(serialised_data_map));
+    result = logged_in_components_->storage.InsertDataMap(absolute_path,
+                                                          NonEmptyString(serialised_data_map));
     if (result != kSuccess) {
       LOG(kError) << "Failed inserting DM: " << result;
       return result;
@@ -1048,7 +1070,9 @@ int LifeStuffImpl::WriteHiddenFile(const fs::path& absolute_path,
   if (result != kSuccess)
     return result;
 
-  result = logged_in_components_->storage.WriteHiddenFile(absolute_path, content, overwrite_existing);
+  result = logged_in_components_->storage.WriteHiddenFile(absolute_path,
+                                                          content,
+                                                          overwrite_existing);
   if (result != kSuccess) {
     LOG(kError) << "Failed to write hidden file with result " << result;
     return result;
