@@ -162,59 +162,66 @@ void PopulateSlots(Slots& slot_functions, TestingVariables& testing_variables) {
                                                      &testing_variables.newly_contacted,
                                                      &testing_variables.contact_request_message);
                                     };
-  slot_functions.confirmed_contact_slot = [&testing_variables] (const NonEmptyString& own_public_id,
-                                                                const NonEmptyString& contact_public_id,
-                                                                const NonEmptyString& timestamp) {
-                                            ContactConfirmationSlot(own_public_id,
-                                                                    contact_public_id,
-                                                                    timestamp,
-                                                                    &testing_variables.confirmed);
-                                            printf("%s confirmed %s\n",
-                                                   own_public_id.string().c_str(),
-                                                   contact_public_id.string().c_str());
+  slot_functions.confirmed_contact_slot =
+      [&testing_variables] (const NonEmptyString& own_public_id,
+                            const NonEmptyString& contact_public_id,
+                            const NonEmptyString& timestamp) {
+        ContactConfirmationSlot(own_public_id,
+                                contact_public_id,
+                                timestamp,
+                                &testing_variables.confirmed);
+        printf("%s confirmed %s\n",
+               own_public_id.string().c_str(),
+               contact_public_id.string().c_str());
                                           };
-  slot_functions.profile_picture_slot = [&testing_variables] (const NonEmptyString& own_public_id,
-                                                              const NonEmptyString& contact_public_id,
-                                                              const NonEmptyString& timestamp) {
-                                          ContactProfilePictureSlot(own_public_id,
-                                                                    contact_public_id,
-                                                                    timestamp,
-                                                                    &testing_variables.picture_updated);
-                                        };
-  slot_functions.contact_presence_slot = [&testing_variables] (const NonEmptyString& own_public_id,
-                                                               const NonEmptyString& contact_public_id,
-                                                               const NonEmptyString& timestamp,
-                                                               ContactPresence contact_presence) {
-                                           ContactPresenceSlot(own_public_id,
-                                                               contact_public_id,
-                                                               timestamp,
-                                                               contact_presence,
-                                                               &testing_variables.presence_announced);
-                                         };
-  slot_functions.contact_deletion_slot =  [&testing_variables] (const NonEmptyString& own_public_id,
-                                                                const NonEmptyString& contact_public_id,
-                                                                const std::string& signal_message,
-                                                                const NonEmptyString& timestamp) {
-                                            ContactDeletionSlot(own_public_id,
-                                                                contact_public_id,
-                                                                signal_message,
-                                                                timestamp,
-                                                                &testing_variables.removal_message,
-                                                                &testing_variables.removed);
+  slot_functions.profile_picture_slot =
+      [&testing_variables] (const NonEmptyString& own_public_id,
+                            const NonEmptyString& contact_public_id,
+                            const NonEmptyString& timestamp) {
+        ContactProfilePictureSlot(own_public_id,
+                                  contact_public_id,
+                                  timestamp,
+                                  &testing_variables.picture_updated);
+      };
+  slot_functions.contact_presence_slot =
+      [&testing_variables] (const NonEmptyString& own_public_id,
+                            const NonEmptyString& contact_public_id,
+                            const NonEmptyString& timestamp,
+                            ContactPresence contact_presence) {
+        ContactPresenceSlot(own_public_id,
+                            contact_public_id,
+                            timestamp,
+                            contact_presence,
+                            &testing_variables.presence_announced);
+      };
+  slot_functions.contact_deletion_slot =
+      [&testing_variables] (const NonEmptyString& own_public_id,
+                            const NonEmptyString& contact_public_id,
+                            const std::string& signal_message,
+                            const NonEmptyString& timestamp) {
+        ContactDeletionSlot(own_public_id,
+                            contact_public_id,
+                            signal_message,
+                            timestamp,
+                            &testing_variables.removal_message,
+                            &testing_variables.removed);
                                           };
-  slot_functions.lifestuff_card_update_slot = [&testing_variables] (const NonEmptyString& own_id,
-                                                                    const NonEmptyString& contact_id,
-                                                                    const NonEmptyString& timestamp) {
-                                                LifestuffCardSlot(own_id,
-                                                                  contact_id,
-                                                                  timestamp,
-                                                                  &testing_variables.social_info_map_changed);
-                                              };
-  slot_functions.network_health_slot = [&testing_variables] (const int&) {};
-  slot_functions.immediate_quit_required_slot = [&testing_variables] () {
-                                                  ImmediateQuitRequiredSlot(&testing_variables.immediate_quit_required);
-                                                };
-  slot_functions.update_available_slot = [&testing_variables] (NonEmptyString) {};
+  slot_functions.lifestuff_card_update_slot =
+      [&testing_variables] (const NonEmptyString& own_id,
+                            const NonEmptyString& contact_id,
+                            const NonEmptyString& timestamp) {
+        LifestuffCardSlot(own_id,
+                          contact_id,
+                          timestamp,
+                          &testing_variables.social_info_map_changed);
+      };
+  slot_functions.network_health_slot = [&testing_variables] (const int&) {};  // NOLINT (Dan)
+  slot_functions.immediate_quit_required_slot =
+      [&testing_variables] () {
+        ImmediateQuitRequiredSlot(&testing_variables.immediate_quit_required);
+      };
+  slot_functions.update_available_slot = [&testing_variables] (NonEmptyString) {};  // NOLINT (Dan)
+  slot_functions.operation_progress_slot = [] (Operation, SubTask) {};  // NOLINT (Dan)
 }
 
 int DoFullCreateUser(LifeStuff& test_elements,

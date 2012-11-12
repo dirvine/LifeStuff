@@ -148,6 +148,25 @@ typedef std::function<void(const int&)> NetworkHealthFunction;  // NOLINT (Dan)
 /// Quitting
 typedef std::function<void()> ImmediateQuitRequiredFunction;
 
+enum class Operation : int {
+  kCreateUser = -1,
+  kLogIn = -2,
+  kLogOut = -3
+};
+
+enum class SubTask : int {
+  kInitialiseAnonymousComponents = -1001,
+  kCreateUserCredentials = -1002,
+  kCreateVault = -1003,
+  kInitialiseClientComponents = -1004,
+  kRetrieveUserCredentials = -1005,
+  kStoreUserCredentials = -1006,
+  kWaitForNetworkOperations = -1007,
+  kCleanUp = -1008
+};
+
+typedef std::function<void(Operation, SubTask)> OperationProgressFunction;
+
 struct Slots {
   Slots() : chat_slot(),
             file_success_slot(),
@@ -160,7 +179,8 @@ struct Slots {
             lifestuff_card_update_slot(),
             network_health_slot(),
             immediate_quit_required_slot(),
-            update_available_slot() {}
+            update_available_slot(),
+            operation_progress_slot() {}
   ChatFunction chat_slot;
   FileTransferSuccessFunction file_success_slot;
   FileTransferFailureFunction file_failure_slot;
@@ -173,6 +193,7 @@ struct Slots {
   NetworkHealthFunction network_health_slot;
   ImmediateQuitRequiredFunction immediate_quit_required_slot;
   UpdateAvailableFunction update_available_slot;
+  OperationProgressFunction operation_progress_slot;
 };
 
 }  // namespace lifestuff
