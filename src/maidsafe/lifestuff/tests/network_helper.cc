@@ -30,6 +30,7 @@
 #include "boost/regex.hpp"
 
 #include "maidsafe/common/utils.h"
+#include "maidsafe/private/lifestuff_manager/client_controller.h"
 
 #include "maidsafe/lifestuff/tests/bootstrap_pb.h"
 
@@ -241,22 +242,6 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     Sleep(boost::posix_time::seconds(5));
   }
 
-// {
-//   std::string serialised_bootstrap_nodes;
-//   if (!maidsafe::ReadFile("bootstrap", &serialised_bootstrap_nodes))
-//     return testing::AssertionFailure() << "Could not read bootstrap file.";
-//   protobuf::Bootstrap protobuf_bootstrap;
-//   if (!protobuf_bootstrap.ParseFromString(serialised_bootstrap_nodes))
-//     return testing::AssertionFailure() << "Could not parse bootstrap contacts.";
-//   std::cout << "\n\n\n protobuf_bootstrap.bootstrap_contacts_size() : "
-//             << protobuf_bootstrap.bootstrap_contacts_size() << std::endl;
-//
-//   for (int i(0); i != protobuf_bootstrap.bootstrap_contacts_size(); ++i)
-//     std::cout <<protobuf_bootstrap.bootstrap_contacts(i).ip()
-//               << " : " << protobuf_bootstrap.bootstrap_contacts(i).port() << std::endl;
-// }
-
-
   // Invoke pd-keys-helper to store all keys
   anon_pipe = bp::create_pipe();
   sink = biostr::file_descriptor_sink(anon_pipe.sink, biostr::close_handle);
@@ -276,25 +261,14 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
 
 
   if (start_lifestuff_manager) {
-    // Cleanup the previous resources
-//     fs::path delete_path("/usr/share/maidsafe/lifestuff");
-
-//  Following commented out due to lack of permission to delete.
-//    fs::path delete_path(GetSystemAppSupportDir());
-//    boost::system::error_code ec;
-//    if (fs::remove_all(delete_path, ec) == 0) {
-//      std::cout << "Failed to remove " << delete_path << std::endl;
-//    }
-
     // Startup LifeStuffManager
-    std::string args(" --log_config ./private_log.ini");
+    uint16_t port(maidsafe::test::GetRandomPort());
+    priv::lifestuff_manager::ClientController::SetTestEnvironmentVariables(port, *test_root);
+    std::string args(" --port " + boost::lexical_cast<std::string>(port) + " --root_dir " +
+                     (*test_root / "lifestuff_manager").string());
     lifestuff_manager_processes_.push_back(
         bp::child(bp::execute(bp::initializers::run_exe(priv::kLifeStuffManagerExecutable()),
-#ifdef MAIDSAFE_WIN32
-                              bp::initializers::set_cmd_line(std::wstring()),
-#else
                               bp::initializers::set_cmd_line(ConstructCommandLine(true, args)),
-#endif
                               bp::initializers::set_on_error(error_code),
                               bp::initializers::inherit_env())));
     if (error_code)
