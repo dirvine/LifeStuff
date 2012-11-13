@@ -39,7 +39,7 @@
 
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
-#include "maidsafe/private/process_management/client_controller.h"
+#include "maidsafe/private/lifestuff_manager/client_controller.h"
 #include "maidsafe/routing/routing_api.h"
 
 #include "maidsafe/pd/client/node.h"
@@ -148,7 +148,7 @@ class LifeStuffImpl {
   boost::signals2::signal<void(const int&)> network_health_signal_;
   Session session_;
   std::shared_ptr<priv::chunk_store::RemoteChunkStore> remote_chunk_store_;
-  std::shared_ptr<priv::process_management::ClientController> client_controller_;
+  std::shared_ptr<priv::lifestuff_manager::ClientController> client_controller_;
   std::shared_ptr<pd::Node> client_node_;
   std::shared_ptr<RoutingsHandler> routings_handler_;
   std::shared_ptr<UserCredentials> user_credentials_;

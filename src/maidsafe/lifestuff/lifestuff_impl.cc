@@ -131,7 +131,7 @@ LifeStuffImpl::LifeStuffImpl(const Slots& slot_functions, const fs::path& base_d
   std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
   while (counter++ < kRetryLimit) {
     Sleep(bptime::milliseconds(100 + RandomUint32() % 1000));
-    client_controller_ = std::make_shared<priv::process_management::ClientController>(
+    client_controller_ = std::make_shared<priv::lifestuff_manager::ClientController>(
                              slots_.update_available_slot);
     if (client_controller_->BootstrapEndpoints(bootstrap_endpoints))
       counter = kRetryLimit;
